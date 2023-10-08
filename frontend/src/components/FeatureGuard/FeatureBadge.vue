@@ -8,14 +8,14 @@
   >
     <NTooltip :show-arrow="true">
       <template #trigger>
-        <heroicons-solid:lock-closed class="text-accent w-5 h-5" />
+        <heroicons-solid:lock-closed class="w-5 h-5" />
       </template>
       <span class="w-56 text-sm">
         {{ $t("subscription.instance-assignment.missing-license-attention") }}
       </span>
     </NTooltip>
   </div>
-  <template v-else-if="!hasFeature">
+  <div v-else-if="!hasFeature" :class="['text-accent', customClass]">
     <NTooltip :show-arrow="true">
       <template #trigger>
         <router-link
@@ -23,10 +23,10 @@
           to="/setting/subscription"
           exact-active-class=""
         >
-          <heroicons-solid:sparkles class="text-accent w-5 h-5" />
+          <heroicons-solid:sparkles class="w-5 h-5" />
         </router-link>
         <span v-else>
-          <heroicons-solid:sparkles class="text-accent w-5 h-5" />
+          <heroicons-solid:sparkles class="w-5 h-5" />
         </span>
       </template>
       <span class="w-56 text-sm">
@@ -41,7 +41,7 @@
         }}
       </span>
     </NTooltip>
-  </template>
+  </div>
   <InstanceAssignment
     v-if="instanceMissingLicense && canManageSubscription"
     :show="state.showInstanceAssignmentDrawer"
