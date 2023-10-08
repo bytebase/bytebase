@@ -982,15 +982,7 @@ func updateDatabaseConfig(databaseConfig, baselineDatabaseConfig, appliedTarget 
 				delete(columnConfigInBaselineMap, columnConfigWanted.Name)
 			}
 			for _, deletedColumnConfig := range columnConfigInBaselineMap {
-				columnNode := &columnConfigNode{
-					action: updateDatabaseConfigActionUpdate,
-					name:   deletedColumnConfig.Name,
-					// Instead of delete the column config, we will set all the fields to meaningless value.
-					semanticTypeAttributeChildren: &columnConfigSemanticTypeAttributeNode{
-						action: updateDatabaseConfigActionUpdate,
-						to:     "",
-					},
-				}
+				columnNode := getEmptyColumnConfigNode(deletedColumnConfig.Name)
 				tableNode.columnChildren = append(tableNode.columnChildren, columnNode)
 				schemaNode.tableChildren = append(schemaNode.tableChildren, tableNode)
 				diff.schemaChildren = append(diff.schemaChildren, schemaNode)
@@ -1009,15 +1001,7 @@ func updateDatabaseConfig(databaseConfig, baselineDatabaseConfig, appliedTarget 
 				name:   deletedTableConfig.Name,
 			}
 			for _, columnConfigInBaseline := range deletedTableConfig.ColumnConfigs {
-				columnNode := &columnConfigNode{
-					action: updateDatabaseConfigActionUpdate,
-					name:   columnConfigInBaseline.Name,
-					// Instead of delete the table config, we will set all the fields to meaningless value.
-					semanticTypeAttributeChildren: &columnConfigSemanticTypeAttributeNode{
-						action: updateDatabaseConfigActionUpdate,
-						to:     "",
-					},
-				}
+				columnNode := getEmptyColumnConfigNode(columnConfigInBaseline.Name)
 				tableNode.columnChildren = append(tableNode.columnChildren, columnNode)
 			}
 			schemaNode.tableChildren = append(schemaNode.tableChildren, tableNode)
@@ -1038,15 +1022,7 @@ func updateDatabaseConfig(databaseConfig, baselineDatabaseConfig, appliedTarget 
 				name:   tableInBaseline.Name,
 			}
 			for _, columnInBaseline := range tableInBaseline.ColumnConfigs {
-				columnNode := &columnConfigNode{
-					action: updateDatabaseConfigActionUpdate,
-					name:   columnInBaseline.Name,
-					// Instead of delete the schema config, we will set all the fields to meaningless value.
-					semanticTypeAttributeChildren: &columnConfigSemanticTypeAttributeNode{
-						action: updateDatabaseConfigActionUpdate,
-						to:     "",
-					},
-				}
+				columnNode := getEmptyColumnConfigNode(columnInBaseline.Name)
 				tableNode.columnChildren = append(tableNode.columnChildren, columnNode)
 			}
 			schemaNode.tableChildren = append(schemaNode.tableChildren, tableNode)
@@ -1133,4 +1109,16 @@ func updateDatabaseConfig(databaseConfig, baselineDatabaseConfig, appliedTarget 
 	}
 
 	return result
+}
+
+// getEmptyColumnConfigNode returns an empty column config node, whose fields are filled with meaningless value.
+func getEmptyColumnConfigNode(name string) *columnConfigNode {
+	return &columnConfigNode{
+		action: updateDatabaseConfigActionUpdate,
+		name:   name,
+		semanticTypeAttributeChildren: &columnConfigSemanticTypeAttributeNode{
+			action: updateDatabaseConfigActionUpdate,
+			to:     "",
+		},
+	}
 }
