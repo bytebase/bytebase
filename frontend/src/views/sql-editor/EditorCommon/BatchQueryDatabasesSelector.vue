@@ -28,6 +28,10 @@
     <div class="w-128">
       <p class="text-gray-500 mb-1">
         {{ $t("sql-editor.batch-query.description") }}
+        <LearnMoreLink
+          url="https://www.bytebase.com/docs/sql-editor/batch-query?source=console"
+          class="ml-1 text-sm"
+        />
       </p>
       <div class="w-full grid grid-cols-3 gap-2 py-1">
         <div class="col-span-1">
