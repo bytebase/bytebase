@@ -1623,7 +1623,6 @@
     "create-modal": {
       "project-name": "@:common.project @:common.name",
       "key": "@:common.key",
-      "key-hint": "(Uppercase letters identifying your project)",
       "cancel": "@:common.cancel",
       "confirm": "@:common.create",
       "success-prompt": "Successfully created project {name}."
@@ -1765,7 +1764,8 @@
       "project-owner": "Require LGTM from project owner"
     },
     "successfully-updated-db-name-template": "Successfully updated database name template.",
-    "all": "All projects"
+    "all": "All projects",
+    "key-hint": "Short descriptive alphanumberic letters to identify this project."
   },
   "inbox": {
     "mark-all-as-read": "Mark all as read",

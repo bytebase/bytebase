@@ -1618,7 +1618,6 @@
     "create-modal": {
       "project-name": "@:{'common.project'}@:{'common.name'}",
       "key": "@:common.key",
-      "key-hint": "（请使用大写字母来命名您的项目）",
       "cancel": "@:common.cancel",
       "confirm": "@:common.create",
       "success-prompt": "成功创建 {name}."
@@ -1760,7 +1759,8 @@
       "project-owner": "需要来自项目所有者的 LGTM"
     },
     "successfully-updated-db-name-template": "成功更新数据库名称模板。",
-    "all": "所有项目"
+    "all": "所有项目",
+    "key-hint": "简短且有辨识度的字母数字组合用于识别该项目。"
   },
   "inbox": {
     "mark-all-as-read": "全部标记为已读",
