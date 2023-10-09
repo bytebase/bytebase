@@ -89,12 +89,15 @@ func (s *ChangelistService) GetChangelist(ctx context.Context, request *v1pb.Get
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", request.Name)
+		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
 	}
 
 	changelist, err := s.store.GetChangelist(ctx, &store.FindChangelistMessage{ProjectID: &project.ResourceID, ResourceID: &changelistID})
 	if err != nil {
 		return nil, err
+	}
+	if changelist == nil {
+		return nil, status.Errorf(codes.NotFound, "changelist %q not found", changelistID)
 	}
 	v1Changelist, err := s.convertStoreChangelist(ctx, changelist)
 	if err != nil {
