@@ -12,17 +12,17 @@ import (
 
 func TestUpdateDatabaseConfig(t *testing.T) {
 	type testCase struct {
-		description            string
-		databaseConfig         *storepb.DatabaseConfig
-		baselineDatabaseConfig *storepb.DatabaseConfig
-		targetConfig           *storepb.DatabaseConfig
-		expectedConfig         *storepb.DatabaseConfig
+		description string
+		target      *storepb.DatabaseConfig
+		baseline    *storepb.DatabaseConfig
+		current     *storepb.DatabaseConfig
+		want        *storepb.DatabaseConfig
 	}
 
 	testCases := []testCase{
 		{
 			description: "easy change and the target config is the same as the baseline config",
-			databaseConfig: &storepb.DatabaseConfig{
+			target: &storepb.DatabaseConfig{
 				Name: "db1",
 				SchemaConfigs: []*storepb.SchemaConfig{
 					{
@@ -38,6 +38,7 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 									{
 										Name:           "b",
 										SemanticTypeId: "id_b",
+										Labels:         map[string]string{"hello": "world"},
 									},
 								},
 							},
@@ -45,7 +46,7 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 					},
 				},
 			},
-			baselineDatabaseConfig: &storepb.DatabaseConfig{
+			baseline: &storepb.DatabaseConfig{
 				Name: "db1",
 				SchemaConfigs: []*storepb.SchemaConfig{
 					{
@@ -64,7 +65,7 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 					},
 				},
 			},
-			targetConfig: &storepb.DatabaseConfig{
+			current: &storepb.DatabaseConfig{
 				Name: "db1",
 				SchemaConfigs: []*storepb.SchemaConfig{
 					{
@@ -83,7 +84,7 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 					},
 				},
 			},
-			expectedConfig: &storepb.DatabaseConfig{
+			want: &storepb.DatabaseConfig{
 				Name: "db1",
 				SchemaConfigs: []*storepb.SchemaConfig{
 					{
@@ -99,6 +100,7 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 									{
 										Name:           "b",
 										SemanticTypeId: "id_b",
+										Labels:         map[string]string{"hello": "world"},
 									},
 								},
 							},
@@ -109,7 +111,7 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 		},
 		{
 			description: "if the target config has changed the same column, we should overwrite it",
-			databaseConfig: &storepb.DatabaseConfig{
+			target: &storepb.DatabaseConfig{
 				Name: "db1",
 				SchemaConfigs: []*storepb.SchemaConfig{
 					{
@@ -128,7 +130,7 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 					},
 				},
 			},
-			baselineDatabaseConfig: &storepb.DatabaseConfig{
+			baseline: &storepb.DatabaseConfig{
 				Name: "db1",
 				SchemaConfigs: []*storepb.SchemaConfig{
 					{
@@ -147,7 +149,7 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 					},
 				},
 			},
-			targetConfig: &storepb.DatabaseConfig{
+			current: &storepb.DatabaseConfig{
 				Name: "db1",
 				SchemaConfigs: []*storepb.SchemaConfig{
 					{
@@ -166,7 +168,7 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 					},
 				},
 			},
-			expectedConfig: &storepb.DatabaseConfig{
+			want: &storepb.DatabaseConfig{
 				Name: "db1",
 				SchemaConfigs: []*storepb.SchemaConfig{
 					{
@@ -188,7 +190,7 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 		},
 		{
 			description: "if the target config has changed, we should not overwrite the difference set",
-			databaseConfig: &storepb.DatabaseConfig{
+			target: &storepb.DatabaseConfig{
 				Name: "db1",
 				SchemaConfigs: []*storepb.SchemaConfig{
 					{
@@ -201,6 +203,7 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 										// Modify the semantic type id to id_b.
 										Name:           "a",
 										SemanticTypeId: "id_b",
+										Labels:         map[string]string{"hello": "world"},
 									},
 									{
 										// Do not change.
@@ -242,7 +245,7 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 					},
 				},
 			},
-			baselineDatabaseConfig: &storepb.DatabaseConfig{
+			baseline: &storepb.DatabaseConfig{
 				Name: "db1",
 				SchemaConfigs: []*storepb.SchemaConfig{
 					{
@@ -254,6 +257,7 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 									{
 										Name:           "a",
 										SemanticTypeId: "id_a",
+										Labels:         map[string]string{"world": "hello"},
 									},
 									{
 										Name:           "b",
@@ -274,7 +278,7 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 					},
 				},
 			},
-			targetConfig: &storepb.DatabaseConfig{
+			current: &storepb.DatabaseConfig{
 				Name: "db1",
 				SchemaConfigs: []*storepb.SchemaConfig{
 					{
@@ -306,7 +310,7 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 					},
 				},
 			},
-			expectedConfig: &storepb.DatabaseConfig{
+			want: &storepb.DatabaseConfig{
 				Name: "db1",
 				SchemaConfigs: []*storepb.SchemaConfig{
 					{
@@ -318,6 +322,7 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 									{
 										Name:           "a",
 										SemanticTypeId: "id_b",
+										Labels:         map[string]string{"hello": "world"},
 									},
 									{
 										Name:           "b",
@@ -326,18 +331,6 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 									{
 										Name:           "c",
 										SemanticTypeId: "id_c",
-									},
-								},
-							},
-							{
-								Name: "table2",
-								ColumnConfigs: []*storepb.ColumnConfig{
-									{
-										Name:           "b",
-										SemanticTypeId: "id_b",
-									},
-									{
-										Name: "a",
 									},
 								},
 							},
@@ -363,8 +356,8 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 
 	a := require.New(t)
 	for _, tc := range testCases {
-		got := mergeDatabaseConfig(tc.databaseConfig, tc.baselineDatabaseConfig, tc.targetConfig)
-		equal := proto.Equal(got, tc.expectedConfig)
-		a.True(equal, fmt.Sprintf("%s: \ngot:\t%%+v, \nexpected:\t%%+v", tc.description), got, tc.expectedConfig)
+		got := mergeDatabaseConfig(tc.target, tc.baseline, tc.current)
+		equal := proto.Equal(got, tc.want)
+		a.True(equal, fmt.Sprintf("%s: \ngot:\t%%+v, \nexpected:\t%%+v", tc.description), got, tc.want)
 	}
 }
