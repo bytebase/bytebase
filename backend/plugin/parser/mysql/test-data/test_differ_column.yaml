@@ -372,3 +372,125 @@
   newSchema: |
     CREATE TABLE `book` (`name` VARCHAR(50) COLLATE utf8mb4_bin DEFAULT 'Harry Potter' NOT NULL);
   diff: ""
+
+- oldSchema: |
+    CREATE TABLE `book` (`id` INT PRIMARY KEY);
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT PRIMARY KEY,
+      `name` VARCHAR(50) NOT NULL,
+      `author` VARCHAR(50) NOT NULL
+    );
+  diff: |+
+    ALTER TABLE `book` ADD COLUMN IF NOT EXISTS `name` VARCHAR(50) NOT NULL AFTER `id`;
+
+    ALTER TABLE `book` ADD COLUMN IF NOT EXISTS `author` VARCHAR(50) NOT NULL AFTER `name`;
+
+- oldSchema: |
+    CREATE TABLE `book` (`author` VARCHAR(50) NOT NULL);
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT PRIMARY KEY,
+      `name` VARCHAR(50) NOT NULL,
+      `author` VARCHAR(50) NOT NULL
+    );
+  diff: |+
+    ALTER TABLE `book` ADD COLUMN IF NOT EXISTS `id` INT PRIMARY KEY FIRST;
+
+    ALTER TABLE `book` ADD COLUMN IF NOT EXISTS `name` VARCHAR(50) NOT NULL AFTER `id`;
+
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT PRIMARY KEY,
+      `author` VARCHAR(50) NOT NULL
+    );
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT PRIMARY KEY,
+      `name` VARCHAR(50) NOT NULL,
+      `author` VARCHAR(50) NOT NULL
+    );
+  diff: |+
+    ALTER TABLE `book` ADD COLUMN IF NOT EXISTS `name` VARCHAR(50) NOT NULL AFTER `id`;
+
+- oldSchema: |
+    CREATE TABLE `book` (
+      `author` VARCHAR(50) NOT NULL,
+      `id` INT PRIMARY KEY,
+      `name` VARCHAR(50) NOT NULL
+    );
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT PRIMARY KEY,
+      `name` VARCHAR(50) NOT NULL,
+      `author` VARCHAR(50) NOT NULL
+    );
+  diff: ""
+
+- oldSchema: |
+    CREATE TABLE `book` (
+      `name` VARCHAR(50) NOT NULL
+    );
+  newSchema: |
+    CREATE TABLE `book` (
+      `author` VARCHAR(50) NOT NULL
+    );
+  diff: |+
+    ALTER TABLE `book` ADD COLUMN IF NOT EXISTS `author` VARCHAR(50) NOT NULL FIRST;
+
+    ALTER TABLE `book` DROP COLUMN IF EXISTS `name`;
+
+- oldSchema: |
+    CREATE TABLE `book` (
+      `c1` INT,
+      `c2` INT,
+      `c3` INT,
+      `c4` INT,
+      `c8` INT
+    );
+  newSchema: |
+    CREATE TABLE `book` (
+      `c9` INT,
+      `c8` VARCHAR(10),
+      `c4` INT,
+      `c2` VARCHAR(10),
+      `c9` INT
+    );
+  diff: |+
+    ALTER TABLE `book` ADD COLUMN IF NOT EXISTS `c9` INT FIRST;
+
+    ALTER TABLE `book` MODIFY COLUMN IF EXISTS `c2` VARCHAR(10);
+
+    ALTER TABLE `book` MODIFY COLUMN IF EXISTS `c8` VARCHAR(10);
+
+    ALTER TABLE `book` DROP COLUMN IF EXISTS `c1`;
+
+    ALTER TABLE `book` DROP COLUMN IF EXISTS `c3`;
+
+- oldSchema: |
+    CREATE TABLE `book` (
+      `c1` INT,
+      `c2` INT,
+      `c3` INT,
+      `c4` INT,
+      `c5` INT
+    );
+  newSchema: |
+    CREATE TABLE `book` (
+      `c6` INT,
+      `c2` INT,
+      `c3` INT,
+      `c7` INT,
+      `c8` INT,
+      `c4` INT,
+      `c5` INT
+    );
+  diff: |+
+    ALTER TABLE `book` ADD COLUMN IF NOT EXISTS `c6` INT FIRST;
+
+    ALTER TABLE `book` ADD COLUMN IF NOT EXISTS `c7` INT AFTER `c3`;
+
+    ALTER TABLE `book` ADD COLUMN IF NOT EXISTS `c8` INT AFTER `c7`;
+
+    ALTER TABLE `book` DROP COLUMN IF EXISTS `c1`;
+
