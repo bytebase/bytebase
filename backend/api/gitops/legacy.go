@@ -1,6 +1,9 @@
 package gitops
 
-import "github.com/bytebase/bytebase/backend/plugin/db"
+import (
+	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/store/model"
+)
 
 // migrationDetail is the detail for database migration such as Migrate, Data.
 type migrationDetail struct {
@@ -14,7 +17,7 @@ type migrationDetail struct {
 	sheetID int
 	// schemaVersion is parsed from VCS file name.
 	// It is automatically generated in the UI workflow.
-	schemaVersion string
+	schemaVersion model.Version
 }
 
 // MigrationFileYAMLDatabase contains the information of a database in a YAML

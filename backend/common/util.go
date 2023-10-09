@@ -17,6 +17,8 @@ import (
 
 	"github.com/nyaruka/phonenumbers"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 const (
@@ -105,8 +107,8 @@ func GetResourceDir(dataDir string) string {
 // DefaultMigrationVersion returns the default migration version string.
 // Use the current time in second to guarantee uniqueness in a monotonic increasing way.
 // We cannot add task ID because tenant mode databases should use the same migration version string when applying a schema update.
-func DefaultMigrationVersion() string {
-	return time.Now().Format("20060102150405")
+func DefaultMigrationVersion() model.Version {
+	return model.Version{Version: time.Now().Format("20060102150405")}
 }
 
 // ParseTemplateTokens parses the template and returns template tokens and their delimiters.

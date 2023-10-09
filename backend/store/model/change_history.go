@@ -20,38 +20,41 @@ type Version struct {
 const nonSemanticPrefix = "0000.0000.0000-"
 
 // NewVersion converts stored version to version.
-func NewVersion(storedVersion string) (*Version, error) {
+func NewVersion(storedVersion string) (Version, error) {
+	if storedVersion == "" {
+		return Version{}, nil
+	}
 	if strings.HasPrefix(storedVersion, nonSemanticPrefix) {
-		return &Version{
+		return Version{
 			Version: strings.TrimPrefix(storedVersion, nonSemanticPrefix),
 		}, nil
 	}
 
 	idx := strings.Index(storedVersion, "-")
 	if idx < 0 {
-		return nil, errors.Errorf("invalid stored version %q, version should contain '-'", storedVersion)
+		return Version{}, errors.Errorf("invalid stored version %q, version should contain '-'", storedVersion)
 	}
 	prefix, suffix := storedVersion[:idx], storedVersion[idx+1:]
 	parts := strings.Split(prefix, ".")
 	if len(parts) != 3 {
-		return nil, errors.Errorf("invalid stored version %q, version prefix %q should be in semantic version format", storedVersion, prefix)
+		return Version{}, errors.Errorf("invalid stored version %q, version prefix %q should be in semantic version format", storedVersion, prefix)
 	}
 	major, err := strconv.Atoi(parts[0])
 	if err != nil {
-		return nil, errors.Errorf("invalid stored version %q, version prefix %q should be in semantic version format", storedVersion, prefix)
+		return Version{}, errors.Errorf("invalid stored version %q, version prefix %q should be in semantic version format", storedVersion, prefix)
 	}
 	minor, err := strconv.Atoi(parts[1])
 	if err != nil {
-		return nil, errors.Errorf("invalid stored version %q, version prefix %q should be in semantic version format", storedVersion, prefix)
+		return Version{}, errors.Errorf("invalid stored version %q, version prefix %q should be in semantic version format", storedVersion, prefix)
 	}
 	patch, err := strconv.Atoi(parts[2])
 	if err != nil {
-		return nil, errors.Errorf("invalid stored version %q, version prefix %q should be in semantic version format", storedVersion, prefix)
+		return Version{}, errors.Errorf("invalid stored version %q, version prefix %q should be in semantic version format", storedVersion, prefix)
 	}
 	if major >= 10000 || minor >= 10000 || patch >= 10000 {
-		return nil, errors.Errorf("invalid stored version %q, major, minor, patch version of %q should be < 10000", storedVersion, prefix)
+		return Version{}, errors.Errorf("invalid stored version %q, major, minor, patch version of %q should be < 10000", storedVersion, prefix)
 	}
-	return &Version{
+	return Version{
 		Semantic: true,
 		Version:  fmt.Sprintf("%d.%d.%d", major, minor, patch),
 		Suffix:   suffix,
@@ -62,6 +65,9 @@ func NewVersion(storedVersion string) (*Version, error) {
 // Non-semantic version will have additional "0000.0000.0000-" prefix.
 // Semantic version will add zero padding to MAJOR, MINOR, PATCH version with a timestamp suffix.
 func (v *Version) Marshal() (string, error) {
+	if v.Version == "" {
+		return "", nil
+	}
 	if !v.Semantic {
 		return fmt.Sprintf("%s%s", nonSemanticPrefix, v.Version), nil
 	}

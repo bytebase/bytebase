@@ -993,12 +993,12 @@ func getOrDefaultSchemaVersion(v string) string {
 	if v != "" {
 		return v
 	}
-	return common.DefaultMigrationVersion()
+	return common.DefaultMigrationVersion().Version
 }
 
 func getOrDefaultSchemaVersionWithSuffix(v string, suffix string) string {
 	if v != "" {
 		return v + suffix
 	}
-	return common.DefaultMigrationVersion() + suffix
+	return common.DefaultMigrationVersion().Version + suffix
 }
