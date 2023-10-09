@@ -1,7 +1,7 @@
 <template>
   <div class="p-4">
-    <div>{{ state.message }}</div>
     <div v-if="state.hasError" class="mt-2">
+      <div>{{ state.message }}</div>
       <button
         v-if="state.oAuthState?.popup"
         type="button"
