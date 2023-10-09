@@ -1,8 +1,4 @@
-import {
-  useChangeHistoryStore,
-  useSchemaDesignStore,
-  useSheetV1Store,
-} from "@/store";
+import { useChangeHistoryStore, useSheetV1Store } from "@/store";
 import { Changelist_Change_Source, ComposedDatabase } from "@/types";
 import { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
 import { getHistoryChangeType } from "./changeHistory";

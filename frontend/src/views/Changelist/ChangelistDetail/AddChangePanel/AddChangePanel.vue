@@ -77,7 +77,7 @@ import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { getBaselineMetadataOfBranch } from "@/components/SchemaEditorV1/utils/branch";
 import { Drawer, DrawerContent, ErrorTipsButton } from "@/components/v2";
-import { schemaDesignServiceClient, sqlServiceClient } from "@/grpcweb";
+import { schemaDesignServiceClient } from "@/grpcweb";
 import {
   pushNotification,
   useChangeHistoryStore,
