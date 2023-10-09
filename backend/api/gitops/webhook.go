@@ -35,6 +35,7 @@ import (
 	mapperparser "github.com/bytebase/bytebase/backend/plugin/parser/mybatis/mapper"
 	"github.com/bytebase/bytebase/backend/plugin/parser/mybatis/mapper/ast"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
+	"github.com/bytebase/bytebase/backend/store/model"
 
 	// Register azure plugin.
 	"github.com/bytebase/bytebase/backend/plugin/vcs/azure"
@@ -1557,7 +1558,7 @@ func sortFilesBySchemaVersion(fileInfoList []fileInfo) []fileInfo {
 		if mi.Database < mj.Database {
 			return true
 		}
-		if mi.Database == mj.Database && mi.Version < mj.Version {
+		if mi.Database == mj.Database && mi.Version.Version < mj.Version.Version {
 			return true
 		}
 		if mi.Database == mj.Database && mi.Version == mj.Version && mi.Type.GetVersionTypeSuffix() < mj.Type.GetVersionTypeSuffix() {
@@ -1582,7 +1583,7 @@ func (s *Service) createIssueFromMigrationDetailsV2(ctx context.Context, project
 								Type:          changeType,
 								Target:        fmt.Sprintf("projects/%s/deploymentConfigs/default", project.ResourceID),
 								Sheet:         fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, migrationDetail.sheetID),
-								SchemaVersion: migrationDetail.schemaVersion,
+								SchemaVersion: migrationDetail.schemaVersion.Version,
 							},
 						},
 					},
@@ -1630,7 +1631,7 @@ func (s *Service) createIssueFromMigrationDetailsV2(ctx context.Context, project
 						Type:          getChangeType(migrationDetail.migrationType),
 						Target:        fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName),
 						Sheet:         fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, migrationDetail.sheetID),
-						SchemaVersion: migrationDetail.schemaVersion,
+						SchemaVersion: migrationDetail.schemaVersion.Version,
 					},
 				},
 			})
@@ -1992,7 +1993,7 @@ func (s *Service) prepareIssueFromFile(
 				{
 					migrationType: fileInfo.migrationInfo.Type,
 					sheetID:       sheet.UID,
-					schemaVersion: fmt.Sprintf("%s-%s", fileInfo.migrationInfo.Version, fileInfo.migrationInfo.Type.GetVersionTypeSuffix()),
+					schemaVersion: model.Version{Version: fmt.Sprintf("%s-%s", fileInfo.migrationInfo.Version.Version, fileInfo.migrationInfo.Type.GetVersionTypeSuffix())},
 				},
 			}, nil
 		}
@@ -2045,7 +2046,7 @@ func (s *Service) prepareIssueFromFile(
 						migrationType: fileInfo.migrationInfo.Type,
 						databaseID:    db.UID,
 						sheetID:       sheet.UID,
-						schemaVersion: fmt.Sprintf("%s-%s", fileInfo.migrationInfo.Version, fileInfo.migrationInfo.Type.GetVersionTypeSuffix()),
+						schemaVersion: model.Version{Version: fmt.Sprintf("%s-%s", fileInfo.migrationInfo.Version.Version, fileInfo.migrationInfo.Type.GetVersionTypeSuffix())},
 					},
 				)
 			}
@@ -2083,14 +2084,14 @@ func (s *Service) prepareIssueFromFile(
 					migrationType: fileInfo.migrationInfo.Type,
 					databaseID:    database.UID,
 					sheetID:       sheet.UID,
-					schemaVersion: fmt.Sprintf("%s-%s", fileInfo.migrationInfo.Version, fileInfo.migrationInfo.Type.GetVersionTypeSuffix()),
+					schemaVersion: model.Version{Version: fmt.Sprintf("%s-%s", fileInfo.migrationInfo.Version.Version, fileInfo.migrationInfo.Type.GetVersionTypeSuffix())},
 				},
 			)
 		}
 		return migrationDetailList, nil
 	}
 
-	migrationVersion := fmt.Sprintf("%s-%s", fileInfo.migrationInfo.Version, fileInfo.migrationInfo.Type.GetVersionTypeSuffix())
+	migrationVersion := fmt.Sprintf("%s-%s", fileInfo.migrationInfo.Version.Version, fileInfo.migrationInfo.Type.GetVersionTypeSuffix())
 	if err := s.tryUpdateTasksFromModifiedFile(ctx, databases, fileInfo.item.FileName, migrationVersion, content, pushEvent); err != nil {
 		return nil, []*store.ActivityMessage{
 			getIgnoredFileActivityCreate(

@@ -16,6 +16,7 @@ import (
 	exprpb "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -35,7 +36,7 @@ type InstanceChangeHistoryMessage struct {
 	Source              db.MigrationSource
 	Type                db.MigrationType
 	Status              db.MigrationStatus
-	Version             string
+	Version             model.Version
 	Description         string
 	Statement           string
 	SheetID             *int
@@ -64,7 +65,7 @@ type FindInstanceChangeHistoryMessage struct {
 	DatabaseID      *int
 	SheetID         *int
 	Source          *db.MigrationSource
-	Version         *string
+	Version         *model.Version
 	ResourcesFilter *string
 	Limit           *int
 	Offset          *int
@@ -131,6 +132,10 @@ func (*Store) createInstanceChangeHistoryImpl(ctx context.Context, tx *Tx, creat
 	if err != nil {
 		return "", err
 	}
+	storedVersion, err := create.Version.Marshal()
+	if err != nil {
+		return "", err
+	}
 
 	var uid string
 	if err := tx.QueryRowContext(ctx, query,
@@ -144,7 +149,7 @@ func (*Store) createInstanceChangeHistoryImpl(ctx context.Context, tx *Tx, creat
 		create.Source,
 		create.Type,
 		create.Status,
-		create.Version,
+		storedVersion,
 		create.Description,
 		create.Statement,
 		create.Schema,
@@ -186,6 +191,10 @@ func (*Store) createInstanceChangeHistoryImplForMigrator(ctx context.Context, tx
 	if err != nil {
 		return "", err
 	}
+	storedVersion, err := create.Version.Marshal()
+	if err != nil {
+		return "", err
+	}
 
 	var uid string
 	if err := tx.QueryRowContext(ctx, query,
@@ -199,7 +208,7 @@ func (*Store) createInstanceChangeHistoryImplForMigrator(ctx context.Context, tx
 		create.Source,
 		create.Type,
 		create.Status,
-		create.Version,
+		storedVersion,
 		create.Description,
 		create.Statement,
 		create.Schema,
@@ -457,7 +466,11 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 		where, args = append(where, fmt.Sprintf("instance_change_history.source = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Version; v != nil {
-		where, args = append(where, fmt.Sprintf("instance_change_history.version = $%d", len(args)+1)), append(args, *v)
+		storedVersion, err := find.Version.Marshal()
+		if err != nil {
+			return nil, err
+		}
+		where, args = append(where, fmt.Sprintf("instance_change_history.version = $%d", len(args)+1)), append(args, storedVersion)
 	}
 	if v := find.ResourcesFilter; v != nil {
 		text, err := generateResourceFilter(*v)
@@ -534,7 +547,7 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 	var list []*InstanceChangeHistoryMessage
 	for rows.Next() {
 		var changeHistory InstanceChangeHistoryMessage
-		var rowStatus, payload string
+		var rowStatus, storedVersion, payload string
 		var instanceID, databaseID, issueID, sheetID sql.NullInt32
 		if err := rows.Scan(
 			&changeHistory.UID,
@@ -551,7 +564,7 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 			&changeHistory.Source,
 			&changeHistory.Type,
 			&changeHistory.Status,
-			&changeHistory.Version,
+			&storedVersion,
 			&changeHistory.Description,
 			&changeHistory.Statement,
 			&changeHistory.Schema,
@@ -580,6 +593,11 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 			n := int(sheetID.Int32)
 			changeHistory.SheetID = &n
 		}
+		version, err := model.NewVersion(storedVersion)
+		if err != nil {
+			return nil, err
+		}
+		changeHistory.Version = version
 		changeHistory.Payload = &storepb.InstanceChangeHistoryPayload{}
 		if err := protojson.Unmarshal([]byte(payload), changeHistory.Payload); err != nil {
 			return nil, err
@@ -693,7 +711,7 @@ func (*Store) getNextInstanceChangeHistorySequence(ctx context.Context, tx *Tx, 
 
 // CreatePendingInstanceChangeHistory creates an instance change history.
 // it deprecates the old InsertPendingHistory.
-func (s *Store) CreatePendingInstanceChangeHistory(ctx context.Context, prevSchema string, m *db.MigrationInfo, storedVersion, statement string, sheetID *int) (string, error) {
+func (s *Store) CreatePendingInstanceChangeHistory(ctx context.Context, prevSchema string, m *db.MigrationInfo, statement string, sheetID *int) (string, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return "", err
@@ -714,7 +732,7 @@ func (s *Store) CreatePendingInstanceChangeHistory(ctx context.Context, prevSche
 		Source:              m.Source,
 		Type:                m.Type,
 		Status:              db.Pending,
-		Version:             storedVersion,
+		Version:             m.Version,
 		Description:         m.Description,
 		Statement:           statement,
 		SheetID:             sheetID,
@@ -765,7 +783,11 @@ func (s *Store) ListInstanceChangeHistoryForMigrator(ctx context.Context, find *
 		where, args = append(where, fmt.Sprintf("instance_change_history.source = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Version; v != nil {
-		where, args = append(where, fmt.Sprintf("instance_change_history.version = $%d", len(args)+1)), append(args, *v)
+		storedVersion, err := find.Version.Marshal()
+		if err != nil {
+			return nil, err
+		}
+		where, args = append(where, fmt.Sprintf("instance_change_history.version = $%d", len(args)+1)), append(args, storedVersion)
 	}
 
 	statementField := fmt.Sprintf("LEFT(instance_change_history.statement, %d)", instanceChangeHistoryTruncateLength)
@@ -832,7 +854,7 @@ func (s *Store) ListInstanceChangeHistoryForMigrator(ctx context.Context, find *
 	var list []*InstanceChangeHistoryMessage
 	for rows.Next() {
 		var changeHistory InstanceChangeHistoryMessage
-		var rowStatus, payload string
+		var rowStatus, storedVersion, payload string
 		var instanceID, databaseID, issueID sql.NullInt32
 		if err := rows.Scan(
 			&changeHistory.UID,
@@ -849,7 +871,7 @@ func (s *Store) ListInstanceChangeHistoryForMigrator(ctx context.Context, find *
 			&changeHistory.Source,
 			&changeHistory.Type,
 			&changeHistory.Status,
-			&changeHistory.Version,
+			&storedVersion,
 			&changeHistory.Description,
 			&changeHistory.Statement,
 			&changeHistory.Schema,
@@ -877,6 +899,11 @@ func (s *Store) ListInstanceChangeHistoryForMigrator(ctx context.Context, find *
 		if err := protojson.Unmarshal([]byte(payload), changeHistory.Payload); err != nil {
 			return nil, err
 		}
+		version, err := model.NewVersion(storedVersion)
+		if err != nil {
+			return nil, err
+		}
+		changeHistory.Version = version
 
 		changeHistory.Deleted = convertRowStatusToDeleted(rowStatus)
 		list = append(list, &changeHistory)

@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
@@ -19,8 +20,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -132,10 +133,7 @@ func initializeSchema(ctx context.Context, storeInstance *store.Store, metadataD
 	// We will create the database together with initial schema and data migration.
 	stmt := fmt.Sprintf("%s\n%s", buf, dataBuf)
 
-	storedVersion, err := util.ToStoredVersion(true /* UseSemanticVersion */, cutoffSchemaVersion.String(), common.DefaultMigrationVersion())
-	if err != nil {
-		return err
-	}
+	version := model.Version{Semantic: true, Version: cutoffSchemaVersion.String(), Suffix: time.Now().Format("20060102150405")}
 	if _, err := metadataDriver.GetDB().ExecContext(ctx, stmt); err != nil {
 		return err
 	}
@@ -150,7 +148,7 @@ func initializeSchema(ctx context.Context, storeInstance *store.Store, metadataD
 		Source:              dbdriver.LIBRARY,
 		Type:                dbdriver.Migrate,
 		Status:              dbdriver.Done,
-		Version:             storedVersion,
+		Version:             version,
 		Description:         fmt.Sprintf("Initial migration version %s server version %s with file %s.", cutoffSchemaVersion, serverVersion, latestSchemaPath),
 		Statement:           stmt,
 		Schema:              stmt,
@@ -193,19 +191,15 @@ func getLatestVersion(ctx context.Context, storeInstance *store.Store) (semver.V
 			// schema has already been applied. Thus emitting a warning here will assist debugging.
 			slog.Warn(fmt.Sprintf("Found %s migration history", h.Status),
 				slog.String("type", string(h.Type)),
-				slog.String("version", h.Version),
+				slog.String("version", h.Version.Version),
 				slog.String("description", h.Description),
 				slog.String("statement", stmt),
 			)
 			continue
 		}
-		_, version, _, err := util.FromStoredVersion(h.Version)
+		v, err := semver.Make(h.Version.Version)
 		if err != nil {
-			return semver.Version{}, err
-		}
-		v, err := semver.Make(version)
-		if err != nil {
-			return semver.Version{}, errors.Wrapf(err, "invalid version %q", h.Version)
+			return semver.Version{}, errors.Wrapf(err, "invalid version %q", h.Version.Version)
 		}
 		return v, nil
 	}
@@ -339,19 +333,17 @@ func migrate(ctx context.Context, storeInstance *store.Store, metadataDriver dbd
 			}
 			slog.Info(fmt.Sprintf("Migrating %s...", pv.version))
 			mi := &dbdriver.MigrationInfo{
-				InstanceID:            nil,
-				CreatorID:             api.SystemBotID,
-				ReleaseVersion:        serverVersion,
-				UseSemanticVersion:    true,
-				Version:               pv.version.String(),
-				SemanticVersionSuffix: common.DefaultMigrationVersion(),
-				Namespace:             databaseName,
-				Database:              databaseName,
-				Environment:           "", /* unused in execute migration */
-				Source:                dbdriver.LIBRARY,
-				Type:                  dbdriver.Migrate,
-				Description:           fmt.Sprintf("Migrate version %s server version %s with files %s.", pv.version, serverVersion, pv.filename),
-				Force:                 true,
+				InstanceID:     nil,
+				CreatorID:      api.SystemBotID,
+				ReleaseVersion: serverVersion,
+				Version:        model.Version{Semantic: true, Version: pv.version.String(), Suffix: time.Now().Format("20060102150405")},
+				Namespace:      databaseName,
+				Database:       databaseName,
+				Environment:    "", /* unused in execute migration */
+				Source:         dbdriver.LIBRARY,
+				Type:           dbdriver.Migrate,
+				Description:    fmt.Sprintf("Migrate version %s server version %s with files %s.", pv.version, serverVersion, pv.filename),
+				Force:          true,
 			}
 			if _, _, err := utils.ExecuteMigrationDefault(ctx, ctx, storeInstance, metadataDriver, mi, string(buf), nil, dbdriver.ExecuteOptions{}); err != nil {
 				return err
@@ -428,19 +420,17 @@ func migrateDev(ctx context.Context, storeInstance *store.Store, metadataDriver 
 		slog.Info(fmt.Sprintf("Migrating dev %s...", m.filename))
 		// We expect to use semantic versioning for dev environment too because getLatestVersion() always expect to get the latest version in semantic format.
 		mi := &dbdriver.MigrationInfo{
-			InstanceID:            nil,
-			CreatorID:             api.SystemBotID,
-			ReleaseVersion:        serverVersion,
-			UseSemanticVersion:    true,
-			Version:               cutoffSchemaVersion.String(),
-			SemanticVersionSuffix: fmt.Sprintf("dev%s", m.version),
-			Namespace:             databaseName,
-			Database:              databaseName,
-			Environment:           "", /* unused in execute migration */
-			Source:                dbdriver.LIBRARY,
-			Type:                  dbdriver.Migrate,
-			Description:           fmt.Sprintf("Migrate version %s server version %s with files %s.", m.version, serverVersion, m.filename),
-			Force:                 true,
+			InstanceID:     nil,
+			CreatorID:      api.SystemBotID,
+			ReleaseVersion: serverVersion,
+			Version:        model.Version{Semantic: true, Version: cutoffSchemaVersion.String(), Suffix: fmt.Sprintf("dev%s", m.version)},
+			Namespace:      databaseName,
+			Database:       databaseName,
+			Environment:    "", /* unused in execute migration */
+			Source:         dbdriver.LIBRARY,
+			Type:           dbdriver.Migrate,
+			Description:    fmt.Sprintf("Migrate version %s server version %s with files %s.", m.version, serverVersion, m.filename),
+			Force:          true,
 		}
 		if _, _, err := utils.ExecuteMigrationDefault(ctx, ctx, storeInstance, metadataDriver, mi, m.statement, nil, dbdriver.ExecuteOptions{}); err != nil {
 			return err

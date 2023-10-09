@@ -22,8 +22,8 @@ import (
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -359,7 +359,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	}
 	setClassificationAndUserCommentFromComment(databaseMetadata)
 
-	var patchSchemaVersion *string
+	var patchSchemaVersion *model.Version
 	if force {
 		// When there are too many databases, this might have performance issue and will
 		// cause frontend timeout since we set a 30s limit (INSTANCE_OPERATION_TIMEOUT).
@@ -438,18 +438,8 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		latestSchema := string(rawDump)
 		if len(list) > 0 {
 			if list[0].Schema != latestSchema {
-				_, version, _, err := util.FromStoredVersion(list[0].Version)
-				if err != nil {
-					slog.Error("failed to convert stored version",
-						slog.String("instance", instance.ResourceID),
-						slog.String("database", database.DatabaseName),
-						slog.String("version", list[0].Version),
-						log.BBError(err))
-
-					return nil
-				}
 				anomalyPayload := api.AnomalyDatabaseSchemaDriftPayload{
-					Version: version,
+					Version: list[0].Version.Version,
 					Expect:  list[0].Schema,
 					Actual:  latestSchema,
 				}
