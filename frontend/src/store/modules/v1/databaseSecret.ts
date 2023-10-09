@@ -1,3 +1,4 @@
+import { Status } from "nice-grpc-common";
 import { defineStore } from "pinia";
 import { reactive } from "vue";
 import { databaseServiceClient } from "@/grpcweb";
@@ -12,9 +13,14 @@ export const useDatabaseSecretStore = defineStore("database-secret", () => {
   };
 
   const fetchSecretList = async (parent: string) => {
-    const res = await databaseServiceClient.listSecrets({
-      parent,
-    });
+    const res = await databaseServiceClient.listSecrets(
+      {
+        parent,
+      },
+      {
+        ignoredCodes: [Status.NOT_FOUND, Status.PERMISSION_DENIED],
+      }
+    );
     secretMapByDatabase.set(parent, res.secrets);
     return res.secrets;
   };

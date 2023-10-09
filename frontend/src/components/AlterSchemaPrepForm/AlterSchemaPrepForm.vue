@@ -143,6 +143,7 @@
                 <YAxisRadioGroup
                   v-else
                   v-model:label="state.label"
+                  :database-list="databaseList"
                   class="text-sm m-px"
                 />
               </template>

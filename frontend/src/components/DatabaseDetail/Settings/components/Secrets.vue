@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4">
+  <div class="space-y-4" v-bind="$attrs">
     <div class="flex items-center">
       <div class="flex-1">
         <div class="flex items-center">

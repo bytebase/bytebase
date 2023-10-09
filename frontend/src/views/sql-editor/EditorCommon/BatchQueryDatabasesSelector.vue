@@ -82,7 +82,7 @@
 </template>
 
 <script lang="ts" setup>
-import { isEqual, upperFirst } from "lodash-es";
+import { isEqual } from "lodash-es";
 import {
   NCheckboxGroup,
   NCheckbox,
@@ -99,6 +99,7 @@ import {
   useDatabaseV1Store,
   useTabStore,
 } from "@/store/modules";
+import { displayLabelKey } from "@/utils";
 
 interface LocalState {
   showFeatureModal: boolean;
@@ -200,10 +201,7 @@ const unmatchedDatabases = computed(() => {
 });
 
 const getFormattedLabelKey = (labelKey: string) => {
-  if (labelKey.startsWith("bb.")) {
-    return upperFirst(labelKey.substring(3));
-  }
-  return labelKey;
+  return displayLabelKey(labelKey);
 };
 
 watch(selectedLabelsValue, () => {
