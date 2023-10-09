@@ -1,6 +1,6 @@
 <template>
-  <div class="flex flex-col">
-    <div class="sm:col-span-2 sm:col-start-1 border-b mb-7 pb-7">
+  <div class="flex flex-col divide-y gap-y-7">
+    <div>
       <p class="text-lg font-medium leading-7 text-main">
         {{ $t("common.environment") }}
       </p>
@@ -14,7 +14,8 @@
         @select-environment-id="handleSelectEnvironmentUID"
       />
     </div>
-    <Secrets :database="database" />
+    <Labels :database="database" class="pt-5" />
+    <Secrets :database="database" class="pt-5" />
   </div>
 </template>
 
@@ -23,6 +24,7 @@ import { cloneDeep } from "lodash-es";
 import { computed } from "vue";
 import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
 import { type ComposedDatabase } from "@/types";
+import Labels from "./components/Labels.vue";
 import Secrets from "./components/Secrets.vue";
 
 const props = defineProps<{

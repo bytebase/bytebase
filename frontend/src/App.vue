@@ -1,10 +1,5 @@
 <template>
-  <NConfigProvider
-    :key="key"
-    :locale="generalLang"
-    :date-locale="dateLang"
-    :theme-overrides="themeOverrides"
-  >
+  <CustomThemeProvider>
     <Watermark />
 
     <NDialogProvider>
@@ -22,11 +17,11 @@
         </KBarWrapper>
       </BBModalStack>
     </NDialogProvider>
-  </NConfigProvider>
+  </CustomThemeProvider>
 </template>
 
 <script lang="ts" setup>
-import { NConfigProvider, NDialogProvider } from "naive-ui";
+import { NDialogProvider } from "naive-ui";
 import { ServerError } from "nice-grpc-common";
 import { ClientError, Status } from "nice-grpc-web";
 import { reactive, watchEffect, onErrorCaptured, watch } from "vue";
@@ -34,8 +29,7 @@ import { useRoute, useRouter } from "vue-router";
 import HelpDrawer from "@/components/HelpDrawer";
 import Watermark from "@/components/misc/Watermark.vue";
 import { RouteMapList } from "@/types";
-import { themeOverrides, dateLang, generalLang } from "../naive-ui.config";
-import { provideAppRootContext } from "./AppRootContext";
+import CustomThemeProvider from "./CustomThemeProvider.vue";
 import BBModalStack from "./bbkit/BBModalStack.vue";
 import { BBNotificationItem } from "./bbkit/types";
 import KBarWrapper from "./components/KBar/KBarWrapper.vue";
@@ -64,7 +58,6 @@ interface LocalState {
   RouteMapList: RouteMapList | null;
 }
 
-const { key } = provideAppRootContext();
 const authStore = useAuthStore();
 const notificationStore = useNotificationStore();
 const route = useRoute();

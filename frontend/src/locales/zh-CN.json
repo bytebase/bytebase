@@ -265,7 +265,8 @@
     "go-to-configure": "去配置",
     "updated-at-by": "由 {user} 更新于 {time}",
     "created-at-by": "由 {user} 创建于 {time}",
-    "filter-by-name": "按名称过滤"
+    "filter-by-name": "按名称过滤",
+    "tenant": "租户"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -1952,7 +1953,8 @@
     "label": {
       "key": "Key",
       "values": "值",
-      "value-placeholder": "标签值…"
+      "value-placeholder": "标签值…",
+      "key-placeholder": "标签 key..."
     }
   },
   "sql-editor": {
@@ -2143,7 +2145,9 @@
       "value-duplicated": "值重复了",
       "max-length-exceeded": "长度不能超过 {len} 字符",
       "max-label-count-exceeded": "不能多于 {count} 个标签",
-      "cannot-edit-reserved-label": "不能编辑预留标签 \"{key}\""
+      "cannot-edit-reserved-label": "不能编辑预留标签 \"{key}\"",
+      "max-value-length-exceeded": "值长的度不能超过 {length} 字符",
+      "key-format": "仅允许使用字母和数字 ([a-z0-9A-Z])、连字符 (-)、下划线 (_) 和点 (.)。\n并且必须以字母和数字开头和结尾。"
     },
     "placeholder": {
       "select-key": "选择 Key…",
@@ -2156,7 +2160,8 @@
     "db-name-template-tips": "使用模版来约束数据库命名。例如：您的数据库 db1 是按照地域分割为 US，Asia，Europe 并且您希望它们的名字是 db1__US, db1__ASIA, db1__EU，那么模版可以指定为 {placeholder}。{link}。",
     "confirm-change": "您确定要修改 '{label}' 吗？",
     "parsed-from-template": "从 {name} 中依据模板 {template} 解析得出",
-    "cannot-transfer-template-not-match": "数据库 '{name}' 无法转移到这个项目，因为它的名称不符合模板 {template}。"
+    "cannot-transfer-template-not-match": "数据库 '{name}' 无法转移到这个项目，因为它的名称不符合模板 {template}。",
+    "add-label": "添加标签"
   },
   "oauth": {
     "unknown-event": "未知的事件类型，认证失败"

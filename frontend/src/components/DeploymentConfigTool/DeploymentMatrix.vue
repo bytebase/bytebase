@@ -15,7 +15,11 @@
 
     <template v-else>
       <div class="flex justify-end items-center py-0.5 space-x-2">
-        <YAxisRadioGroup v-model:label="state.label" class="text-sm" />
+        <YAxisRadioGroup
+          v-model:label="state.label"
+          :database-list="databaseList"
+          class="text-sm"
+        />
         <BBTableSearch
           v-if="showSearchBox"
           class="w-60"
