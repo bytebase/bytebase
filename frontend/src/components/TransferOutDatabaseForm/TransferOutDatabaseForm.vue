@@ -103,10 +103,13 @@ import {
   DatabaseTreeOption,
   flattenTreeOptions,
   mapTreeOptions,
+  getDatabaseTreeValue,
+  isDatabaseTreeValue,
 } from "./common";
 
 const props = defineProps<{
   projectId: string;
+  selectedDatabaseUidList?: string[];
 }>();
 
 const emit = defineEmits<{
@@ -132,14 +135,14 @@ const databaseList = computed(() => {
   return databaseStore.databaseListByProject(project.name);
 });
 
-const selectedValueList = ref<string[]>([]);
+const selectedValueList = ref<string[]>(
+  (props.selectedDatabaseUidList ?? []).map(getDatabaseTreeValue)
+);
 const selectedDatabaseList = computed(() => {
-  return selectedValueList.value
-    .filter((value) => value.startsWith("database-"))
-    .map((value) => {
-      const uid = value.split("-").pop()!;
-      return databaseStore.getDatabaseByUID(uid);
-    });
+  return selectedValueList.value.filter(isDatabaseTreeValue).map((value) => {
+    const uid = value.split("-").pop()!;
+    return databaseStore.getDatabaseByUID(uid);
+  });
 });
 const targetProjectId = ref<string>();
 const targetProject = computed(() => {
@@ -194,7 +197,7 @@ const renderSourceList: TransferRenderSourceList = ({ onCheck, pattern }) => {
     checkedKeys: selectedValueList.value,
     showIrrelevantNodes: false,
     onUpdateCheckedKeys: (checkedKeys: string[]) => {
-      onCheck(checkedKeys.filter((value) => value.startsWith("database-")));
+      onCheck(checkedKeys.filter(isDatabaseTreeValue));
     },
   });
 };
@@ -228,7 +231,7 @@ const renderTargetList: TransferRenderSourceList = ({ onCheck }) => {
     },
     checkedKeys: targetCheckedKeys.value,
     onUpdateCheckedKeys: (checkedKeys: string[]) => {
-      onCheck(checkedKeys.filter((value) => value.startsWith("database-")));
+      onCheck(checkedKeys.filter(isDatabaseTreeValue));
     },
   });
 };

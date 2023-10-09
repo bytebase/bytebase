@@ -944,7 +944,6 @@
     "issue-name": "Nombre de la incidencia",
     "grant-request": {
       "export-rows": "número máximo de filas",
-      "export-format": "formato de exportación",
       "expire-days": "días de caducidad",
       "expired-at": "tiempo de caducidad",
       "all-databases": "todas las bases de datos",
@@ -1049,7 +1048,10 @@
     "last-successful-sync": "Última sincronización exitosa",
     "sync-status": "Estado de sincronización",
     "failed-to-sync-schema-for-database-database-value-name": "Error al sincronizar el esquema para la base de datos '{0}'.",
-    "successfully-synced-schema-for-database-database-value-name": "Esquema sincronizado correctamente para la base de datos '{0}'."
+    "successfully-synced-schema-for-database-database-value-name": "Esquema sincronizado correctamente para la base de datos '{0}'.",
+    "start-to-sync-schema": "Start to sync schame",
+    "failed-to-sync-schema": "No se pudo sincronizar el esquema",
+    "successfully-synced-schema": "Esquema sincronizado correctamente"
   },
   "instance": {
     "select": "Seleccionar instancia",
@@ -1140,6 +1142,7 @@
     "type-or-paste-credentials": "Escriba o pegue las CREDENCIALES",
     "type-or-paste-credentials-write-only": "Escriba o pegue las CREDENCIALES - solo escritura",
     "password-write-only": "SU_DB_PWD - solo escritura",
+    "secret-manager-tip": "También puede especificar un punto final de gestión de secreto externo",
     "test-connection": "Probar conexión",
     "ignore-and-create": "Ignorar y crear",
     "add-a-postgresql-sample-instance": "Agregue una instancia de muestra de PostgreSQL en su lugar",
@@ -2049,6 +2052,9 @@
     },
     "filter-by-name": "Filtrar por nombre",
     "batch-query": {
+      "batch": "Lote",
+      "database-labels": "Etiquetas de {database}",
+      "database-has-no-label": "{database} no tiene etiquetas",
       "description": "Consulta por lotes bases de datos adicionales con los mismos valores de etiqueta."
     }
   },

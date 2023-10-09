@@ -945,7 +945,6 @@
     "issue-name": "Issue name",
     "grant-request": {
       "export-rows": "Max export rows",
-      "export-format": "Export format",
       "expire-days": "Expire days",
       "expired-at": "Expired at",
       "all-databases": "All",
@@ -1050,7 +1049,10 @@
     "last-successful-sync": "Last successful sync",
     "sync-status": "Sync status",
     "failed-to-sync-schema-for-database-database-value-name": "Failed to sync schema for database '{0}'.",
-    "successfully-synced-schema-for-database-database-value-name": "Successfully synced schema for database '{0}'."
+    "successfully-synced-schema-for-database-database-value-name": "Successfully synced schema for database '{0}'.",
+    "start-to-sync-schema": "Start to sync schame",
+    "failed-to-sync-schema": "Failed to sync schema",
+    "successfully-synced-schema": "Successfully synced schema"
   },
   "instance": {
     "select": "Select instance",
@@ -1141,6 +1143,7 @@
     "type-or-paste-credentials": "Type or paste CREDENTIALS",
     "type-or-paste-credentials-write-only": "Type or paste CREDENTIALS - write only",
     "password-write-only": "YOUR_DB_PWD - write only",
+    "secret-manager-tip": "You can also specify external secret manage endpoint",
     "test-connection": "Test Connection",
     "ignore-and-create": "Ignore and create",
     "add-a-postgresql-sample-instance": "Add a PostgreSQL sample instance instead",
@@ -2053,7 +2056,10 @@
     },
     "filter-by-name": "Filter by name",
     "batch-query": {
-      "description": "Batch query additional databases with the same label values."
+      "batch": "Batch",
+      "database-labels": "{database} labels",
+      "database-has-no-label": "{database} has no label",
+      "description": "Batch query {count} additional databases with the same label values."
     }
   },
   "schema-editor": {

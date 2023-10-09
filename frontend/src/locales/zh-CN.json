@@ -942,7 +942,6 @@
     "issue-name": "工单名称",
     "grant-request": {
       "export-rows": "最大导出行数",
-      "export-format": "导出格式",
       "expire-days": "过期天数",
       "expired-at": "过期时间",
       "all-databases": "所有数据库",
@@ -1047,7 +1046,10 @@
     "last-successful-sync": "上次成功同步于",
     "sync-status": "同步状态",
     "failed-to-sync-schema-for-database-database-value-name": "为数据库'{0}'同步 schema 失败。",
-    "successfully-synced-schema-for-database-database-value-name": "成功为数据库'{0}'同步 schema 。"
+    "successfully-synced-schema-for-database-database-value-name": "成功为数据库'{0}'同步 schema 。",
+    "start-to-sync-schema": "开始同步 schema",
+    "failed-to-sync-schema": "同步 schema 失败",
+    "successfully-synced-schema": "Schema 同步完成"
   },
   "instance": {
     "select": "选择实例",
@@ -1137,6 +1139,7 @@
     "type-or-paste-credentials": "输入或粘贴 CREDENTIALS",
     "type-or-paste-credentials-write-only": "输入或粘贴 CREDENTIALS - 仅写入",
     "password-write-only": "YOUR_DB_PWD - 仅写入",
+    "secret-manager-tip": "您也可以指定外部的密码管理服务 endpoint",
     "test-connection": "测试连接",
     "ignore-and-create": "忽略并创建",
     "add-a-postgresql-sample-instance": "添加一个 PostgreSQL 样本实例",
@@ -2048,6 +2051,9 @@
     },
     "filter-by-name": "根据名称过滤",
     "batch-query": {
+      "batch": "批量",
+      "database-labels": "{database} 标签",
+      "database-has-no-label": "{database} 没有标签",
       "description": "批量查询具有相同标签值的其他数据库。"
     }
   },
