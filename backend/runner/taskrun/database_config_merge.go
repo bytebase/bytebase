@@ -2,8 +2,8 @@ package taskrun
 
 import (
 	"reflect"
+	"sort"
 
-	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/proto"
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -46,8 +46,8 @@ func mergeDatabaseConfig(target, baseline, current *storepb.DatabaseConfig) *sto
 	for _, v := range currentMap {
 		result.SchemaConfigs = append(result.SchemaConfigs, v)
 	}
-	slices.SortFunc(result.SchemaConfigs, func(a, b *storepb.SchemaConfig) bool {
-		return a.Name < b.Name
+	sort.Slice(result.SchemaConfigs, func(i, j int) bool {
+		return result.SchemaConfigs[i].Name < result.SchemaConfigs[j].Name
 	})
 	return result
 }
@@ -87,8 +87,8 @@ func mergeSchemaConfig(target, baseline, current *storepb.SchemaConfig) *storepb
 	for _, v := range currentMap {
 		result.TableConfigs = append(result.TableConfigs, v)
 	}
-	slices.SortFunc(result.TableConfigs, func(a, b *storepb.TableConfig) bool {
-		return a.Name < b.Name
+	sort.Slice(result.TableConfigs, func(i, j int) bool {
+		return result.TableConfigs[i].Name < result.TableConfigs[j].Name
 	})
 	return result
 }
@@ -128,8 +128,8 @@ func mergeTableConfig(target, baseline, current *storepb.TableConfig) *storepb.T
 	for _, v := range currentMap {
 		result.ColumnConfigs = append(result.ColumnConfigs, v)
 	}
-	slices.SortFunc(result.ColumnConfigs, func(a, b *storepb.ColumnConfig) bool {
-		return a.Name < b.Name
+	sort.Slice(result.ColumnConfigs, func(i, j int) bool {
+		return result.ColumnConfigs[i].Name < result.ColumnConfigs[j].Name
 	})
 	return result
 }
