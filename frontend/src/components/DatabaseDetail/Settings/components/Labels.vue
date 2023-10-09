@@ -18,12 +18,9 @@
         class="max-w-[30rem]"
       />
     </div>
-    <div
-      v-if="allowAdmin"
-      class="flex flex-row justify-end items-center gap-x-3"
-    >
+    <div class="flex flex-row justify-end items-center gap-x-3">
       <template v-if="state.mode === 'view'">
-        <NButton @click="beginEdit">
+        <NButton :disabled="!allowAdmin" @click="beginEdit">
           {{ $t("common.edit") }}
         </NButton>
       </template>
