@@ -47,14 +47,6 @@
     </div>
     <div class="w-full flex flex-col justify-start items-start">
       <span class="flex items-center textlabel mb-2">
-        {{ $t("issue.grant-request.export-format") }}
-      </span>
-      <div class="flex flex-row justify-start items-start">
-        {{ state.exportFormat }}
-      </div>
-    </div>
-    <div class="w-full flex flex-col justify-start items-start">
-      <span class="flex items-center textlabel mb-2">
         {{ $t("issue.grant-request.expired-at") }}
       </span>
       <div>
@@ -76,7 +68,6 @@ import DatabaseResourceTable from "./DatabaseResourceTable.vue";
 
 interface LocalState {
   maxRowCount: number;
-  exportFormat: "CSV" | "JSON";
   statement: string;
   expiredAt: string;
 }
@@ -84,7 +75,6 @@ interface LocalState {
 const { issue } = useIssueContext();
 const state = reactive<LocalState>({
   maxRowCount: 1000,
-  exportFormat: "CSV",
   statement: "",
   expiredAt: "",
 });
@@ -121,9 +111,6 @@ onMounted(async () => {
   }
   if (conditionExpression.rowLimit !== undefined) {
     state.maxRowCount = conditionExpression.rowLimit;
-  }
-  if (conditionExpression.exportFormat !== undefined) {
-    state.exportFormat = conditionExpression.exportFormat as "CSV" | "JSON";
   }
 });
 </script>
