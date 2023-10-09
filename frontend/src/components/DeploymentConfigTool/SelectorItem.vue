@@ -79,7 +79,7 @@ const keys = computed(() => {
   );
 });
 const allowMultipleValues = computed(() => {
-  return props.selector.key !== "bb.environment";
+  return props.selector.key !== "environment";
 });
 const values = computed(() => {
   if (!props.selector.key) return [];

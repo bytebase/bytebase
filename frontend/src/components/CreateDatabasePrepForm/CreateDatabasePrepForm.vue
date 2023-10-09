@@ -208,7 +208,7 @@
 import { isEmpty } from "lodash-es";
 import { NInput } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
-import { computed, reactive, PropType, watchEffect, ref, toRef } from "vue";
+import { computed, reactive, PropType, ref, toRef } from "vue";
 import { useRouter } from "vue-router";
 import InstanceRoleSelect from "@/components/InstanceRoleSelect.vue";
 import MemberSelect from "@/components/MemberSelect.vue";
@@ -548,20 +548,6 @@ const createV1 = async () => {
 const create = async () => {
   await createV1();
 };
-
-// update `state.labelList` when selected Environment changed
-watchEffect(() => {
-  const envId = state.environmentId;
-  const { labels } = state;
-  const key = "bb.environment";
-  if (envId) {
-    const env = environmentV1Store.getEnvironmentByUID(envId);
-    const resourceId = extractEnvironmentResourceName(env.name);
-    labels[key] = resourceId;
-  } else {
-    delete labels[key];
-  }
-});
 
 defineExpose({
   allowCreate,
