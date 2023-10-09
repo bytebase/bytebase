@@ -150,7 +150,8 @@
         "anomaly-detection-advanced-tooltip": "Básico + Detección de desviación de esquema",
         "archiving": "Archivado",
         "disallow-signup": "Deshabilitar el registro de autoservicio",
-        "announcement-banner": "Anuncio"
+        "announcement-banner": "Anuncio",
+        "external-secret-manager": "Administrador de secretos externo"
       }
     },
     "bespoke": {

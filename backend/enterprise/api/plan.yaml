@@ -50,6 +50,7 @@ categoryList:
       - disallow-signup
       - anomaly-detection
       - announcement-banner
+      - external-secret-manager
   - type: bespoke
     featureList:
       - support
@@ -286,6 +287,7 @@ planList:
       - type: audit-log
       - type: disallow-signup
       - type: announcement-banner
+      - type: external-secret-manager
       # Bespoke
       - type: support
         content: support-sla

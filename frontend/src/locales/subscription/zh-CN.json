@@ -150,7 +150,8 @@
         "anomaly-detection-advanced-tooltip": "基础版功能 + Schema 偏差检测",
         "archiving": "归档",
         "disallow-signup": "禁用自助注册",
-        "announcement-banner": "公告"
+        "announcement-banner": "公告",
+        "external-secret-manager": "外部密码管理服务"
       }
     },
     "bespoke": {
