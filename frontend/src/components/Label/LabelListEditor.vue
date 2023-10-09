@@ -10,7 +10,7 @@
         :kv="kv"
         :index="i"
         :readonly="readonly"
-        :errors="errorsForKV(kv.key)"
+        :errors="errorsForKV(i)"
         @update-key="updateKey(i, $event)"
         @update-value="updateValue(i, $event)"
         @remove="handleRemove(i)"
@@ -54,15 +54,12 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-const errorMap = computed(() => {
-  const map: Record<
-    string,
-    {
-      key: string[];
-      value: string[];
-    }
-  > = {};
-  for (const kv of props.kvList) {
+const errorList = computed(() => {
+  const { kvList } = props;
+  const list: { key: string[]; value: string[] }[] = [];
+  for (let i = 0; i < kvList.length; i++) {
+    const kv = kvList[i];
+
     const { key, value } = kv;
     const errors = {
       key: [] as string[],
@@ -70,8 +67,13 @@ const errorMap = computed(() => {
     };
     if (!key) {
       errors.key.push(t("label.error.key-necessary"));
-    } else if (!validateLabelKey(key)) {
-      errors.key.push(t("label.error.key-format"));
+    } else {
+      if (!validateLabelKey(key)) {
+        errors.key.push(t("label.error.key-format"));
+      }
+      if (kvList.filter((kv) => kv.key === key).length > 1) {
+        errors.key.push(t("label.error.key-duplicated"));
+      }
     }
     if (!value) {
       if (!isPresetLabel(key)) {
@@ -84,30 +86,29 @@ const errorMap = computed(() => {
         })
       );
     }
-
-    map[key] = errors;
+    list.push(errors);
   }
 
-  return map;
+  return list;
 });
 
-const errorsForKV = (key: string) => {
+const errorsForKV = (index: number) => {
   if (!props.showErrors) {
     return { key: [], value: [] };
   }
-  return errorMap.value[key] ?? { key: [], value: [] };
+  return errorList.value[index] ?? { key: [], value: [] };
 };
 
-const flattenErrorsForKV = (key: string, value: string) => {
-  const errors = errorsForKV(key);
+const flattenErrorsForKV = (index: number) => {
+  const errors = errorsForKV(index);
   return [...errors.key, ...errors.value];
 };
 
 const flattenErrors = computed(() => {
   const flattenErrors: { key: string; errors: string[] }[] = [];
-  props.kvList.forEach((kv) => {
-    const { key, value } = kv;
-    const errors = flattenErrorsForKV(key, value);
+  props.kvList.forEach((kv, i) => {
+    const { key } = kv;
+    const errors = flattenErrorsForKV(i);
     if (errors.length > 0) {
       flattenErrors.push({ key, errors });
     }
@@ -147,7 +148,7 @@ const handleAdd = () => {
 };
 
 defineExpose({
-  errorMap,
+  errorList,
   flattenErrors,
 });
 </script>
