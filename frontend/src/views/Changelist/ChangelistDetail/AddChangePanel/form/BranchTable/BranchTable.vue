@@ -40,7 +40,7 @@
       <!-- eslint-disable-next-line vue/no-v-html -->
       <div class="bb-grid-cell" v-html="renderTitle(branch)"></div>
       <div class="bb-grid-cell">
-        <DatabaseInfo :database="databaseForBranch(branch)" :link="false" />
+        <BranchBaseline :branch="branch" />
       </div>
       <div class="bb-grid-cell">
         <i18n-t keypath="common.updated-at-by">
@@ -60,11 +60,11 @@ import { NCheckbox } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGrid, BBGridColumn, BBGridRow } from "@/bbkit";
-import DatabaseInfo from "@/components/DatabaseInfo.vue";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
-import { useDatabaseV1Store, useUserStore } from "@/store";
+import { useUserStore } from "@/store";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import { extractUserResourceName, getHighlightHTMLByRegExp } from "@/utils";
+import BranchBaseline from "./BranchBaseline.vue";
 
 const props = defineProps<{
   selected: string[];
@@ -151,10 +151,6 @@ const renderTitle = (item: SchemaDesign) => {
     escape(keyword),
     false /* !caseSensitive */
   );
-};
-
-const databaseForBranch = (branch: SchemaDesign) => {
-  return useDatabaseV1Store().getDatabaseByName(branch.baselineDatabase);
 };
 
 const getUser = (name: string) => {
