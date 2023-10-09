@@ -13,7 +13,7 @@
       <LabelListEditor
         ref="labelListEditorRef"
         v-model:kv-list="state.kvList"
-        :readonly="!allowAdmin"
+        :readonly="state.mode === 'view'"
         :show-errors="dirty"
         class="max-w-[30rem]"
       />
@@ -22,18 +22,24 @@
       v-if="allowAdmin"
       class="flex flex-row justify-end items-center gap-x-3"
     >
-      <NButton v-if="dirty" @click="handleCancel">
-        {{ $t("common.cancel") }}
-      </NButton>
-      <NButton
-        v-if="dirty"
-        :disabled="!allowSave || state.isUpdating"
-        :loading="state.isUpdating"
-        type="primary"
-        @click="handleSave"
-      >
-        {{ $t("common.save") }}
-      </NButton>
+      <template v-if="state.mode === 'view'">
+        <NButton @click="beginEdit">
+          {{ $t("common.edit") }}
+        </NButton>
+      </template>
+      <template v-if="state.mode === 'edit'">
+        <NButton @click="handleCancel">
+          {{ $t("common.cancel") }}
+        </NButton>
+        <NButton
+          :disabled="!allowSave || state.isUpdating"
+          :loading="state.isUpdating"
+          type="primary"
+          @click="handleSave"
+        >
+          {{ $t("common.save") }}
+        </NButton>
+      </template>
     </div>
   </div>
 </template>
@@ -61,6 +67,7 @@ import {
 
 type LocalState = {
   kvList: { key: string; value: string }[];
+  mode: "view" | "edit";
   isUpdating: boolean;
 };
 
@@ -73,6 +80,7 @@ const labelListEditorRef = ref<InstanceType<typeof LabelListEditor>>();
 const me = useCurrentUserV1();
 const state = reactive<LocalState>({
   kvList: [],
+  mode: "view",
   isUpdating: false,
 });
 
@@ -108,24 +116,19 @@ const dirty = computed(() => {
   return !isEqual(original, local);
 });
 
-watch(
-  () => props.database.labels,
-  () => {
-    state.kvList = convert();
-  },
-  {
-    immediate: true,
-    deep: true,
-  }
-);
-
 const allowSave = computed(() => {
+  if (!dirty.value) return false;
   const errors = labelListEditorRef.value?.flattenErrors ?? [];
   return errors.length === 0;
 });
 
+const beginEdit = () => {
+  state.mode = "edit";
+};
+
 const handleCancel = () => {
   state.kvList = convert();
+  state.mode = "view";
 };
 
 const handleSave = async () => {
@@ -149,8 +152,28 @@ const handleSave = async () => {
       style: "SUCCESS",
       title: t("common.updated"),
     });
+    state.mode = "view";
   } finally {
     state.isUpdating = false;
   }
 };
+
+watch(
+  allowAdmin,
+  () => {
+    state.mode = "view";
+  },
+  { immediate: true }
+);
+
+watch(
+  () => props.database.labels,
+  () => {
+    state.kvList = convert();
+  },
+  {
+    immediate: true,
+    deep: true,
+  }
+);
 </script>
