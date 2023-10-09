@@ -1,5 +1,10 @@
 <template>
   <div class="space-y-2">
+    <DatabaseOperations
+      v-if="selectedDatabases.length > 0"
+      :databases="selectedDatabases"
+      @dismiss="state.selectedDatabaseIds.clear()"
+    />
     <div
       class="text-lg font-medium leading-7 text-main flex items-center justify-between"
     >
@@ -33,8 +38,37 @@
       <DatabaseV1Table
         mode="PROJECT"
         table-class="border"
+        :show-selection-column="true"
         :database-list="filteredDatabaseList"
-      />
+      >
+        <template #selection-all="{ databaseList: selectedDatabaseList }">
+          <input
+            v-if="selectedDatabaseList.length > 0"
+            type="checkbox"
+            class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+            v-bind="getAllSelectionState(selectedDatabaseList as ComposedDatabase[])"
+            @input="
+              toggleDatabasesSelection(
+                selectedDatabaseList as ComposedDatabase[],
+                ($event.target as HTMLInputElement).checked
+              )
+            "
+          />
+        </template>
+        <template #selection="{ database }">
+          <input
+            type="checkbox"
+            class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+            :checked="isDatabaseSelected(database as ComposedDatabase)"
+            @click.stop="
+              toggleDatabasesSelection(
+                [database as ComposedDatabase],
+                ($event.target as HTMLInputElement).checked
+              )
+            "
+          />
+        </template>
+      </DatabaseV1Table>
     </template>
     <div v-else class="text-center textinfolabel">
       <i18n-t keypath="project.overview.no-db-prompt" tag="p">
@@ -77,6 +111,7 @@ interface LocalState {
   environment: string;
   instance: string;
   keyword: string;
+  selectedDatabaseIds: Set<string>;
 }
 
 const props = defineProps({
@@ -93,6 +128,7 @@ const state = reactive<LocalState>({
   environment: UNKNOWN_ENVIRONMENT_NAME,
   instance: String(UNKNOWN_ID),
   keyword: "",
+  selectedDatabaseIds: new Set(),
 });
 const policyList = ref<Policy[]>([]);
 
@@ -145,5 +181,46 @@ const filterInstance = (instance: ComposedInstance) => {
 
 const environment = computed(() => {
   return environmentV1Store.getEnvironmentByName(state.environment);
+});
+
+const getAllSelectionState = (
+  databaseList: ComposedDatabase[]
+): { checked: boolean; indeterminate: boolean } => {
+  const checked = databaseList.every((db) =>
+    state.selectedDatabaseIds.has(db.uid)
+  );
+  const indeterminate =
+    !checked &&
+    databaseList.some((db) => state.selectedDatabaseIds.has(db.uid));
+
+  return {
+    checked,
+    indeterminate,
+  };
+};
+
+const toggleDatabasesSelection = (
+  databaseList: ComposedDatabase[],
+  on: boolean
+): void => {
+  if (on) {
+    databaseList.forEach((db) => {
+      state.selectedDatabaseIds.add(db.uid);
+    });
+  } else {
+    databaseList.forEach((db) => {
+      state.selectedDatabaseIds.delete(db.uid);
+    });
+  }
+};
+
+const isDatabaseSelected = (database: ComposedDatabase): boolean => {
+  return state.selectedDatabaseIds.has((database as ComposedDatabase).uid);
+};
+
+const selectedDatabases = computed((): ComposedDatabase[] => {
+  return filteredDatabaseList.value.filter((db) =>
+    state.selectedDatabaseIds.has(db.uid)
+  );
 });
 </script>
