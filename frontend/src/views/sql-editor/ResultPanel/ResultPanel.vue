@@ -1,17 +1,24 @@
 <template>
   <div
-    class="absolute inset-0 flex flex-col justify-center items-center z-10"
+    class="absolute inset-0 flex flex-col justify-start items-start z-10"
     :class="loading && 'bg-white/80 dark:bg-black/80'"
   >
     <template v-if="loading">
-      <BBSpin />
-      {{ $t("sql-editor.loading-data") }}
+      <div class="w-full h-full flex flex-col justify-center items-center">
+        <BBSpin />
+        {{ $t("sql-editor.loading-data") }}
+      </div>
     </template>
     <template v-else-if="!selectedResultSet">
-      {{ $t("sql-editor.table-empty-placeholder") }}
+      <div class="w-full h-full flex flex-col justify-center items-center">
+        <span>{{ $t("sql-editor.table-empty-placeholder") }}</span>
+      </div>
     </template>
     <template v-else>
-      <div class="w-full flex flex-row justify-start items-center p-2 gap-2">
+      <div
+        v-if="databases.length > 1"
+        class="w-full flex flex-row justify-start items-center p-2 pb-0 gap-2 shrink-0"
+      >
         <NTooltip
           v-for="database in databases"
           :key="database.name"
@@ -43,7 +50,7 @@
         </NTooltip>
       </div>
       <ResultViewV1
-        class="w-full h-full"
+        class="w-full h-auto grow"
         :execute-params="executeParams"
         :result-set="selectedResultSet"
       />
