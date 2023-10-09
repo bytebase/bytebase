@@ -99,7 +99,7 @@ const toApprovalFlow = () => {
 </script>
 
 <style lang="postcss" scoped>
-.bb-rule-select ::v-deep .n-base-selection-input:focus {
+.bb-rule-select :deep(.n-base-selection-input:focus) {
   @apply !ring-0;
 }
 </style>

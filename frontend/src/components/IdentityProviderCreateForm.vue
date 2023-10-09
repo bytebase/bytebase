@@ -833,7 +833,7 @@ import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { cloneDeep, head, isEqual } from "lodash-es";
 import { NRadioGroup, NRadio, NTooltip } from "naive-ui";
 import { ClientError, Status } from "nice-grpc-common";
-import { computed, reactive, defineProps, ref, onMounted, watch } from "vue";
+import { computed, reactive, ref, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
