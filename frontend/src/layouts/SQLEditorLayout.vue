@@ -26,7 +26,6 @@
 <script lang="ts" setup>
 import { useLocalStorage } from "@vueuse/core";
 import { computed, onMounted } from "vue";
-import { useRoute } from "vue-router";
 import BannersWrapper from "@/components/BannersWrapper.vue";
 import ProvideSQLEditorContext from "@/components/ProvideSQLEditorContext.vue";
 import {
@@ -38,23 +37,23 @@ import { SQLEditorMode } from "@/types";
 
 const actuatorStore = useActuatorV1Store();
 const sqlEditorStore = useSQLEditorStore();
-const route = useRoute();
 
 const showBanners = computed(() => {
   return sqlEditorStore.mode === "BUNDLED";
 });
 
 onMounted(() => {
-  let mode = route.query.mode as SQLEditorMode;
-  const storage = useLocalStorage<SQLEditorMode>(
+  const searchParams = new URLSearchParams(window.location.search);
+  let mode = (searchParams.get("mode") || "BUNDLED") as SQLEditorMode;
+  const cachedMode = useLocalStorage<SQLEditorMode>(
     "bb.sql-editor.mode",
     "BUNDLED"
   );
   if (mode != "BUNDLED" && mode != "STANDALONE") {
-    mode = storage.value;
+    mode = cachedMode.value;
   }
 
-  storage.value = mode;
+  cachedMode.value = mode;
   sqlEditorStore.setSQLEditorState({
     mode,
   });
