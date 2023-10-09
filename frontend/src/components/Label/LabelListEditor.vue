@@ -33,7 +33,11 @@ import { cloneDeep } from "lodash-es";
 import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { validateLabelKey, MAX_LABEL_VALUE_LENGTH } from "@/utils";
+import {
+  validateLabelKey,
+  MAX_LABEL_VALUE_LENGTH,
+  isPresetLabel,
+} from "@/utils";
 import LabelEditorRow from "./LabelEditorRow.vue";
 
 export type KV = { key: string; value: string };
@@ -70,7 +74,9 @@ const errorMap = computed(() => {
       errors.key.push(t("label.error.key-format"));
     }
     if (!value) {
-      errors.value.push(t("label.error.value-necessary"));
+      if (!isPresetLabel(key)) {
+        errors.value.push(t("label.error.value-necessary"));
+      }
     } else if (value.length > MAX_LABEL_VALUE_LENGTH) {
       errors.value.push(
         t("label.error.max-value-length-exceeded", {

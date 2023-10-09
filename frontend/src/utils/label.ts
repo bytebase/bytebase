@@ -124,12 +124,15 @@ export const convertLabelsToKVList = (
 };
 
 export const convertKVListToLabels = (
-  list: { key: string; value: string }[]
+  list: { key: string; value: string }[],
+  omitEmpty = true // true to omit empty values in the returned kv object
 ) => {
   const labels: Record<string, string> = {};
-  list.forEach((kv) => {
-    labels[kv.key] = kv.value;
-  });
+  for (const kv of list) {
+    const { key, value } = kv;
+    if (!value && omitEmpty) continue;
+    labels[key] = value;
+  }
   return labels;
 };
 
