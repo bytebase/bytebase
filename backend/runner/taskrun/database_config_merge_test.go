@@ -330,18 +330,6 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 								},
 							},
 							{
-								Name: "table2",
-								ColumnConfigs: []*storepb.ColumnConfig{
-									{
-										Name:           "b",
-										SemanticTypeId: "id_b",
-									},
-									{
-										Name: "a",
-									},
-								},
-							},
-							{
 								Name: "table3",
 								ColumnConfigs: []*storepb.ColumnConfig{
 									{
