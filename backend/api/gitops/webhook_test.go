@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -209,7 +210,7 @@ func TestGetFileInfo(t *testing.T) {
 		assert.Equal(t, fileTypeMigration, fileType)
 
 		want := &db.MigrationInfo{
-			Version:     "0001",
+			Version:     model.Version{Version: "0001"},
 			Namespace:   "db",
 			Database:    "db",
 			Source:      db.VCS,
@@ -241,7 +242,7 @@ func TestGetFileInfo(t *testing.T) {
 		assert.Equal(t, fileTypeMigration, fileType)
 
 		want := &db.MigrationInfo{
-			Version:     "0001",
+			Version:     model.Version{Version: "0001"},
 			Namespace:   "db",
 			Database:    "db",
 			Source:      db.VCS,
@@ -276,7 +277,7 @@ func TestGetFileInfo(t *testing.T) {
 		assert.Equal(t, fileTypeMigration, fileType)
 
 		want := &db.MigrationInfo{
-			Version:     "0001",
+			Version:     model.Version{Version: "0001"},
 			Namespace:   "db",
 			Database:    "db",
 			Source:      db.VCS,

@@ -14,6 +14,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 // NewDataUpdateExecutor creates a data update (DML) task executor.
@@ -49,5 +50,6 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 	if err != nil {
 		return true, nil, err
 	}
-	return runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.activityManager, exec.license, exec.stateCfg, exec.profile, task, db.Data, statement, payload.SchemaVersion, &payload.SheetID)
+	version := model.Version{Version: payload.SchemaVersion}
+	return runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.activityManager, exec.license, exec.stateCfg, exec.profile, task, db.Data, statement, version, &payload.SheetID)
 }

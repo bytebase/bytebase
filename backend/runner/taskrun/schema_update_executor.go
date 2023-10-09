@@ -17,6 +17,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 // NewSchemaUpdateExecutor creates a schema update (DDL) task executor.
@@ -64,7 +65,8 @@ func (exec *SchemaUpdateExecutor) RunOnce(ctx context.Context, driverCtx context
 		return true, nil, err
 	}
 
-	terminated, result, err := runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.activityManager, exec.license, exec.stateCfg, exec.profile, task, db.Migrate, statement, payload.SchemaVersion, &payload.SheetID)
+	version := model.Version{Version: payload.SchemaVersion}
+	terminated, result, err := runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.activityManager, exec.license, exec.stateCfg, exec.profile, task, db.Migrate, statement, version, &payload.SheetID)
 	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 		slog.Error("failed to sync database schema",
 			slog.String("instanceName", instance.ResourceID),
