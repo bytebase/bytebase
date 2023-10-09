@@ -1875,7 +1875,7 @@ func convertToDatabase(database *store.DatabaseMessage) *v1pb.Database {
 		Environment:          environment,
 		EffectiveEnvironment: effectiveEnvironment,
 		SchemaVersion:        database.SchemaVersion.Version,
-		Labels:               database.GetEffectiveLabels(),
+		Labels:               database.Metadata.Labels,
 	}
 }
 
