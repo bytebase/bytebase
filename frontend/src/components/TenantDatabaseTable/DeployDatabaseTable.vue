@@ -106,14 +106,15 @@
 import { groupBy } from "lodash-es";
 import { NPopover } from "naive-ui";
 import { computed, withDefaults } from "vue";
+import type { ComposedDatabase, LabelKeyType } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { DeploymentConfig } from "@/types/proto/v1/project_service";
-import type { ComposedDatabase, LabelKeyType } from "../../types";
 import {
   getLabelValuesFromDatabaseV1List,
   getPipelineFromDeploymentScheduleV1,
   displayLabelKey,
-} from "../../utils";
+  getSemanticLabelValue,
+} from "@/utils";
 import { DeploymentStage } from "../DeploymentConfigTool";
 import DatabaseMatrixItem from "./DatabaseMatrixItem.vue";
 
@@ -148,7 +149,9 @@ const xAxisValueList = computed(() => {
 
 const databaseGroupList = computed(() => {
   const key = props.label;
-  const dict = groupBy(props.databaseList, (db) => db.labels[key] ?? "");
+  const dict = groupBy(props.databaseList, (db) =>
+    getSemanticLabelValue(db, key)
+  );
   const rows = yAxisValueList.value.map((labelValue) => {
     const databaseList = dict[labelValue] || [];
     return {

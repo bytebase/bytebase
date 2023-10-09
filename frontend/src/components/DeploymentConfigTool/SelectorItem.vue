@@ -33,21 +33,17 @@
 
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
-import { orderBy, uniq } from "lodash-es";
 import { computed, PropType, watch } from "vue";
+import { ComposedDatabase } from "@/types";
 import {
   LabelSelectorRequirement,
   OperatorType,
 } from "@/types/proto/v1/project_service";
-import { ComposedDatabase } from "../../types";
 import {
   displayLabelKey,
+  getAvailableLabelKeyList,
   getLabelValuesFromDatabaseV1List,
-  isPresetLabel,
-  isReservedLabel,
-  PRESET_LABEL_KEYS,
-  RESERVED_LABEL_KEYS,
-} from "../../utils";
+} from "@/utils";
 import LabelSelect from "./LabelSelect.vue";
 
 const OPERATORS: OperatorType[] = [
@@ -75,20 +71,11 @@ defineEmits<{
 }>();
 
 const keys = computed(() => {
-  const keys = uniq(props.databaseList.flatMap((db) => Object.keys(db.labels)));
-  [...RESERVED_LABEL_KEYS, ...PRESET_LABEL_KEYS].forEach((key) => {
-    if (!keys.includes(key)) {
-      keys.push(key);
-    }
-  });
-  return orderBy(
-    keys,
-    [
-      (key) => (isReservedLabel(key) ? -1 : 1),
-      (key) => (isPresetLabel(key) ? -1 : 1),
-      (key) => key,
-    ],
-    ["asc", "asc", "asc"]
+  return getAvailableLabelKeyList(
+    props.databaseList,
+    true /* withReserved */,
+    true /* withPreset */,
+    true /* sort */
   );
 });
 const allowMultipleValues = computed(() => {

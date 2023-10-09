@@ -18,21 +18,13 @@
 </template>
 
 <script lang="ts" setup>
-import { orderBy, uniq } from "lodash-es";
 import { computed, withDefaults } from "vue";
-import { Database } from "@/types/proto/v1/database_service";
-import { LabelKeyType } from "../../types";
-import {
-  displayLabelKey,
-  isPresetLabel,
-  isReservedLabel,
-  PRESET_LABEL_KEYS,
-  RESERVED_LABEL_KEYS,
-} from "../../utils";
+import { ComposedDatabase, LabelKeyType } from "@/types";
+import { displayLabelKey, getAvailableLabelKeyList } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
-    databaseList: Database[];
+    databaseList: ComposedDatabase[];
     label: LabelKeyType;
     excludedKeyList?: LabelKeyType[];
   }>(),
@@ -46,20 +38,11 @@ const emit = defineEmits<{
 }>();
 
 const labelKeyList = computed(() => {
-  const keys = uniq(props.databaseList.flatMap((db) => Object.keys(db.labels)));
-  [...RESERVED_LABEL_KEYS, ...PRESET_LABEL_KEYS].forEach((key) => {
-    if (!keys.includes(key)) {
-      keys.push(key);
-    }
-  });
-  return orderBy(
-    keys,
-    [
-      (key) => (isReservedLabel(key) ? -1 : 1),
-      (key) => (isPresetLabel(key) ? -1 : 1),
-      (key) => key,
-    ],
-    ["asc", "asc", "asc"]
+  return getAvailableLabelKeyList(
+    props.databaseList,
+    true /* withReserved */,
+    true /* withPreset */,
+    true /* sort */
   ).filter((key) => !props.excludedKeyList.includes(key));
 });
 

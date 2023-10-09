@@ -1,4 +1,13 @@
-import { capitalize, orderBy } from "lodash-es";
+import { capitalize, orderBy, uniq } from "lodash-es";
+import { useEnvironmentV1Store } from "@/store";
+import { ComposedDatabase } from "@/types";
+import {
+  LabelSelector,
+  LabelSelectorRequirement,
+  OperatorType,
+  Schedule,
+} from "@/types/proto/v1/project_service";
+import { extractEnvironmentResourceName } from "./v1";
 
 export const MAX_LABEL_VALUE_LENGTH = 63;
 
@@ -56,6 +65,37 @@ export const isPresetLabel = (key: string) => {
   return PRESET_LABEL_KEYS.includes(key);
 };
 
+export const getAvailableLabelKeyList = (
+  databaseList: ComposedDatabase[],
+  withReserved: boolean,
+  withPreset: boolean,
+  sort = true
+) => {
+  const keys = uniq(databaseList.flatMap((db) => Object.keys(db.labels)));
+  if (withReserved) {
+    RESERVED_LABEL_KEYS.forEach((key) => {
+      if (!keys.includes(key)) keys.push(key);
+    });
+  }
+  if (withPreset) {
+    PRESET_LABEL_KEYS.forEach((key) => {
+      if (!keys.includes(key)) keys.push(key);
+    });
+  }
+  if (sort) {
+    return orderBy(
+      keys,
+      [
+        (key) => (isReservedLabel(key) ? -1 : 1),
+        (key) => (isPresetLabel(key) ? -1 : 1),
+        (key) => key,
+      ],
+      ["asc", "asc", "asc"]
+    );
+  }
+  return keys;
+};
+
 export const convertLabelsToKVList = (
   labels: Record<string, string>,
   sort = true
@@ -103,4 +143,98 @@ export const displayLabelKey = (key: string) => {
     return capitalize(word);
   }
   return key;
+};
+
+export const getPipelineFromDeploymentScheduleV1 = (
+  databaseList: ComposedDatabase[],
+  schedule: Schedule | undefined
+): ComposedDatabase[][] => {
+  const stages: ComposedDatabase[][] = [];
+
+  const collectedIds = new Set<string>();
+  schedule?.deployments.forEach((deployment) => {
+    const dbs: ComposedDatabase[] = [];
+    databaseList.forEach((db) => {
+      if (collectedIds.has(db.uid)) return;
+      if (isDatabaseMatchesSelectorV1(db, deployment.spec?.labelSelector)) {
+        dbs.push(db);
+        collectedIds.add(db.uid);
+      }
+    });
+    stages.push(dbs);
+  });
+
+  return stages;
+};
+
+export const getLabelValuesFromDatabaseV1List = (
+  key: string,
+  databaseList: ComposedDatabase[],
+  withEmptyValue = false
+): string[] => {
+  if (key === "bb.environment") {
+    const environmentList = useEnvironmentV1Store().getEnvironmentList();
+    return environmentList.map((env) =>
+      extractEnvironmentResourceName(env.name)
+    );
+  }
+
+  const valueList = databaseList.flatMap((db) => {
+    if (key in db.labels) {
+      return getSemanticLabelValue(db, key);
+    }
+    return [];
+  });
+  // Select all distinct database label values of {{key}}
+  const distinctValueList = uniq(valueList);
+
+  if (withEmptyValue) {
+    // plus one more "<empty value>" if needed
+    distinctValueList.push("");
+  }
+
+  return distinctValueList;
+};
+
+export const isDatabaseMatchesSelectorV1 = (
+  database: ComposedDatabase,
+  selector: LabelSelector | undefined
+): boolean => {
+  const rules = selector?.matchExpressions ?? [];
+  return rules.every((rule) => {
+    switch (rule.operator) {
+      case OperatorType.OPERATOR_TYPE_IN:
+        return checkLabelIn(database, rule);
+      case OperatorType.OPERATOR_TYPE_EXISTS:
+        return checkLabelExists(database, rule);
+      default:
+        // unknown operators are taken as mismatch
+        console.warn(`known operator "${rule.operator}"`);
+        return false;
+    }
+  });
+};
+
+export const getSemanticLabelValue = (db: ComposedDatabase, key: string) => {
+  if (key === "bb.environment") {
+    return extractEnvironmentResourceName(db.effectiveEnvironment);
+  }
+  return db.labels[key];
+};
+
+const checkLabelIn = (
+  db: ComposedDatabase,
+  rule: LabelSelectorRequirement
+): boolean => {
+  const value = getSemanticLabelValue(db, rule.key);
+  if (!value) return false;
+
+  return rule.values.includes(value);
+};
+
+const checkLabelExists = (
+  db: ComposedDatabase,
+  rule: LabelSelectorRequirement
+): boolean => {
+  return !!getSemanticLabelValue(db, rule.key);
 };
