@@ -14,6 +14,7 @@ import (
 	mysql "github.com/bytebase/mysql-parser"
 
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	pgSchemaEngine "github.com/bytebase/bytebase/backend/plugin/schema-engine/pg"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -1310,11 +1311,13 @@ func checkDatabaseMetadata(engine v1pb.Engine, metadata *v1pb.DatabaseMetadata) 
 		referencedColumns   []string
 	}
 	fkMap := make(map[string][]*fkMetadata)
-	if engine != v1pb.Engine_MYSQL && engine != v1pb.Engine_TIDB {
-		return errors.Errorf("only mysql and tidb are supported")
+	switch engine {
+	case v1pb.Engine_MYSQL, v1pb.Engine_TIDB, v1pb.Engine_POSTGRES:
+	default:
+		return errors.Errorf("unsupported engine for check database metadata: %v", engine)
 	}
 	for _, schema := range metadata.Schemas {
-		if schema.Name != "" {
+		if (engine == v1pb.Engine_MYSQL || engine == v1pb.Engine_TIDB) && schema.Name != "" {
 			return errors.Errorf("schema name should be empty for MySQL and TiDB")
 		}
 		tableNameMap := make(map[string]bool)
@@ -1423,6 +1426,10 @@ func checkDatabaseMetadata(engine v1pb.Engine, metadata *v1pb.DatabaseMetadata) 
 					}
 				}
 				if !hasIndex {
+					if engine == v1pb.Engine_POSTGRES {
+						// PostgreSQL does not support indexes currently, so we just skip this check.
+						continue
+					}
 					return errors.Errorf("missing index for foreign key %s for table %s in the referenced table '%s'", fk.name, fk.tableName, fk.referencedTableName)
 				}
 			}
@@ -1445,6 +1452,8 @@ func checkColumnType(engine v1pb.Engine, tp string) bool {
 		return checkMySQLColumnType(tp)
 	case v1pb.Engine_TIDB:
 		return checkTiDBColumnType(tp)
+	case v1pb.Engine_POSTGRES:
+		return checkPostgreSQLColumnType(tp)
 	default:
 		return false
 	}
@@ -1452,5 +1461,10 @@ func checkColumnType(engine v1pb.Engine, tp string) bool {
 
 func checkMySQLColumnType(tp string) bool {
 	_, err := mysqlparser.ParseMySQL(fmt.Sprintf("CREATE TABLE t (a %s NOT NULL)", tp))
+	return err == nil
+}
+
+func checkPostgreSQLColumnType(tp string) bool {
+	_, err := pgrawparser.Parse(pgrawparser.ParseContext{}, fmt.Sprintf("CREATE TABLE t (a %s NOT NULL)", tp))
 	return err == nil
 }
