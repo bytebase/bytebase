@@ -1954,7 +1954,8 @@
     "label": {
       "key": "Clave",
       "values": "Valores",
-      "value-placeholder": "Valor de etiqueta..."
+      "value-placeholder": "Valor de etiqueta...",
+      "key-placeholder": "Clave de etiqueta..."
     }
   },
   "sql-editor": {
@@ -2144,7 +2145,9 @@
       "value-duplicated": "Valores duplicados",
       "max-length-exceeded": "La longitud no puede superar {len} caracteres",
       "max-label-count-exceeded": "No se pueden exceder las {count} etiquetas",
-      "cannot-edit-reserved-label": "No se puede editar la etiqueta reservada \"{key}\""
+      "cannot-edit-reserved-label": "No se puede editar la etiqueta reservada \"{key}\"",
+      "max-value-length-exceeded": "La longitud del valor no puede exceder {longitud} caracteres",
+      "key-format": "Sólo se permiten caracteres alfanuméricos ([a-z0-9A-Z]), guiones (-), guiones bajos (_) y puntos (.). \nY debe comenzar y terminar con caracteres alfanuméricos."
     },
     "placeholder": {
       "select-key": "Seleccionar clave...",
@@ -2157,7 +2160,8 @@
     "db-name-template-tips": "Especifique una plantilla para aplicar la denominación de la base de datos. Por ejemplo, si su base de datos db1 está dividida geográficamente en EE. UU., Asia y Europa y desea aplicar nombres como db1__US, db1__ASIA, db1__EU, entonces la plantilla podría ser {placeholder}. {link}.",
     "confirm-change": "¿Estás seguro de cambiar '{label}'?",
     "parsed-from-template": "Analizado desde {name} por la plantilla {template}.",
-    "cannot-transfer-template-not-match": "La base de datos '{name}' no puede ser transferida a este proyecto, ya que su nombre no coincide con la plantilla {template}."
+    "cannot-transfer-template-not-match": "La base de datos '{name}' no puede ser transferida a este proyecto, ya que su nombre no coincide con la plantilla {template}.",
+    "add-label": "Agregar etiqueta"
   },
   "oauth": {
     "unknown-event": "Tipo de evento inesperado, OAuth falló."

@@ -6,8 +6,8 @@
     v-bind="$attrs"
   >
     <div class="flex flex-row items-center space-x-1">
-      <label for="instance" class="textlabel capitalize">
-        {{ hidePrefix(item.label) }}
+      <label for="instance" class="textlabel">
+        {{ displayLabelKey(item.label) }}
         <span v-if="item.required" class="text-red-600">*</span>
       </label>
     </div>
@@ -34,6 +34,7 @@ import {
   validateLabelsWithTemplate,
   parseLabelListInTemplate,
   PRESET_LABEL_KEYS,
+  displayLabelKey,
 } from "@/utils";
 
 const props = defineProps<{
