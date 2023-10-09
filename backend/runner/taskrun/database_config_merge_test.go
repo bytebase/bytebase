@@ -38,6 +38,7 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 									{
 										Name:           "b",
 										SemanticTypeId: "id_b",
+										Labels:         map[string]string{"hello": "world"},
 									},
 								},
 							},
@@ -99,6 +100,7 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 									{
 										Name:           "b",
 										SemanticTypeId: "id_b",
+										Labels:         map[string]string{"hello": "world"},
 									},
 								},
 							},
@@ -201,6 +203,7 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 										// Modify the semantic type id to id_b.
 										Name:           "a",
 										SemanticTypeId: "id_b",
+										Labels:         map[string]string{"hello": "world"},
 									},
 									{
 										// Do not change.
@@ -254,6 +257,7 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 									{
 										Name:           "a",
 										SemanticTypeId: "id_a",
+										Labels:         map[string]string{"world": "hello"},
 									},
 									{
 										Name:           "b",
@@ -318,6 +322,7 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 									{
 										Name:           "a",
 										SemanticTypeId: "id_b",
+										Labels:         map[string]string{"hello": "world"},
 									},
 									{
 										Name:           "b",
