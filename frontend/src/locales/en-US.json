@@ -945,7 +945,6 @@
     "issue-name": "Issue name",
     "grant-request": {
       "export-rows": "Max export rows",
-      "export-format": "Export format",
       "expire-days": "Expire days",
       "expired-at": "Expired at",
       "all-databases": "All",
