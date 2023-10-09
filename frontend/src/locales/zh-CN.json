@@ -1046,7 +1046,10 @@
     "last-successful-sync": "上次成功同步于",
     "sync-status": "同步状态",
     "failed-to-sync-schema-for-database-database-value-name": "为数据库'{0}'同步 schema 失败。",
-    "successfully-synced-schema-for-database-database-value-name": "成功为数据库'{0}'同步 schema 。"
+    "successfully-synced-schema-for-database-database-value-name": "成功为数据库'{0}'同步 schema 。",
+    "start-to-sync-schema": "开始同步 schema",
+    "failed-to-sync-schema": "同步 schema 失败",
+    "successfully-synced-schema": "Schema 同步完成"
   },
   "instance": {
     "select": "选择实例",
