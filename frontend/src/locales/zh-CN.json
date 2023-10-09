@@ -942,7 +942,6 @@
     "issue-name": "工单名称",
     "grant-request": {
       "export-rows": "最大导出行数",
-      "export-format": "导出格式",
       "expire-days": "过期天数",
       "expired-at": "过期时间",
       "all-databases": "所有数据库",
