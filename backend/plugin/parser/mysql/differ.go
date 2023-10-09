@@ -1259,12 +1259,7 @@ func writeDropColumnStatement(buf *strings.Builder, column *columnDef) error {
 }
 
 func sortAndWriteAddColumnList(buf *strings.Builder, columns []*columnDef) error {
-	// sort.Slice(columns, func(i, j int) bool {
-	// 	c1 := fmt.Sprintf("%s.%s", columns[i].tableName, columns[i].name)
-	// 	c2 := fmt.Sprintf("%s.%s", columns[j].tableName, columns[j].name)
-	// 	return c1 < c2
-	// })
-
+	// we do not sort the columns here for maintaining the relative position between columns;
 	for _, column := range columns {
 		if err := writeAddColumnStatement(buf, column); err != nil {
 			return err
