@@ -27,15 +27,20 @@ const database = computed(() => {
   return useDatabaseV1Store().getDatabaseByName(props.branch.baselineDatabase);
 });
 
-const baselineVersion = computed(() => {
+const changeHistory = computed(() => {
   const { branch } = props;
-  const changeHistory =
-    branch.baselineChangeHistoryId &&
-    branch.baselineChangeHistoryId !== String(UNKNOWN_ID)
-      ? useChangeHistoryStore().getChangeHistoryByName(
-          `${database.value.name}/changeHistories/${branch.baselineChangeHistoryId}`
-        )
-      : undefined;
-  return changeHistory?.version ?? "Previously latest schema";
+  const { baselineChangeHistoryId } = branch;
+  if (
+    !baselineChangeHistoryId ||
+    baselineChangeHistoryId === String(UNKNOWN_ID)
+  ) {
+    return undefined;
+  }
+  const name = `${database.value.name}/changeHistories/${branch.baselineChangeHistoryId}`;
+  return useChangeHistoryStore().getChangeHistoryByName(name);
+});
+
+const baselineVersion = computed(() => {
+  return changeHistory.value?.version ?? "Previously latest schema";
 });
 </script>
