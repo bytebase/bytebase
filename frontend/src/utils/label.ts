@@ -222,7 +222,7 @@ export const getSemanticLabelValue = (db: ComposedDatabase, key: string) => {
   if (key === "bb.environment") {
     return extractEnvironmentResourceName(db.effectiveEnvironment);
   }
-  return db.labels[key];
+  return db.labels[key] ?? "";
 };
 
 const checkLabelIn = (
