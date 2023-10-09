@@ -34,7 +34,7 @@ interface ProjectSelectOption extends SelectOption {
 
 const props = withDefaults(
   defineProps<{
-    project: string | undefined; // UNKNOWN_ID(-1) to "ALL"
+    project?: string | undefined; // UNKNOWN_ID(-1) to "ALL"
     allowedProjectRoleList?: string[]; // Empty array([]) to "ALL"
     allowedProjectTenantModeList?: TenantMode[];
     allowedProjectWorkflowTypeList?: Workflow[];

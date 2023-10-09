@@ -44,6 +44,7 @@
             :show-environment-column="showEnvironmentColumn"
             :show-tenant-icon="showTenantIcon"
             :show-instance-column="showInstanceColumn"
+            :show-labels-column="showLabelsColumn"
             :allow-query="allowQuery(database as ComposedDatabase)"
             @goto-sql-editor-failed="
               handleGotoSQLEditorFailed(database as ComposedDatabase)
@@ -65,6 +66,7 @@
             :show-environment-column="showEnvironmentColumn"
             :show-tenant-icon="showTenantIcon"
             :show-instance-column="showInstanceColumn"
+            :show-labels-column="showLabelsColumn"
             :allow-query="allowQuery(database as ComposedDatabase)"
           >
             <template v-if="showSelectionColumn" #selection>
@@ -135,7 +137,7 @@ import {
   getPaginationRowModel,
   useVueTable,
 } from "@tanstack/vue-table";
-import { has, sortBy } from "lodash-es";
+import { sortBy } from "lodash-es";
 import cloneDeep from "lodash-es/cloneDeep";
 import { NPagination } from "naive-ui";
 import {
@@ -168,6 +170,7 @@ import {
 } from "@/utils";
 import DatabaseGroupTableRow from "./DatabaseGroupTableRow.vue";
 import DatabaseTableRow from "./DatabaseTableRow.vue";
+import { isDatabase } from "./utils";
 
 type Mode =
   | "ALL"
@@ -204,6 +207,7 @@ const props = defineProps({
     default: true,
     type: Boolean,
   },
+
   showSelectionColumn: {
     type: Boolean,
     default: false,
@@ -283,12 +287,6 @@ const mixedDataList = computed(() => {
   });
 });
 
-const isDatabase = (
-  data: ComposedDatabase | ComposedDatabaseGroup
-): boolean => {
-  return has(data, "uid");
-};
-
 const policyList = ref<Policy[]>([]);
 
 const preparePolicyList = () => {
@@ -326,12 +324,17 @@ const columnListMap = computed(() => {
     title: t("common.instance"),
     width: "minmax(auto, 1fr)",
   };
+  const LABELS = {
+    title: t("common.labels"),
+    width: "auto",
+    class: "items-center",
+  };
   return new Map<Mode, (BBGridColumn | undefined)[]>([
-    ["ALL", [NAME, ENVIRONMENT, SCHEMA_VERSION, PROJECT, INSTANCE]],
+    ["ALL", [NAME, ENVIRONMENT, SCHEMA_VERSION, PROJECT, INSTANCE, LABELS]],
     ["ALL_SHORT", [NAME, ENVIRONMENT, SCHEMA_VERSION, PROJECT, INSTANCE]],
     ["ALL_TINY", [NAME, ENVIRONMENT, PROJECT, INSTANCE]],
-    ["INSTANCE", [NAME, ENVIRONMENT, SCHEMA_VERSION, PROJECT]],
-    ["PROJECT", [NAME, ENVIRONMENT, SCHEMA_VERSION, INSTANCE]],
+    ["INSTANCE", [NAME, ENVIRONMENT, SCHEMA_VERSION, PROJECT, LABELS]],
+    ["PROJECT", [NAME, ENVIRONMENT, SCHEMA_VERSION, INSTANCE, LABELS]],
     ["PROJECT_SHORT", [NAME, ENVIRONMENT, SCHEMA_VERSION, INSTANCE]],
   ]);
 });
@@ -346,6 +349,12 @@ const showInstanceColumn = computed(() => {
 
 const showProjectColumn = computed(() => {
   return props.mode != "PROJECT" && props.mode != "PROJECT_SHORT";
+});
+
+const showLabelsColumn = computed(() => {
+  return (
+    props.mode == "PROJECT" || props.mode == "ALL" || props.mode == "INSTANCE"
+  );
 });
 
 const showEnvironmentColumn = computed(() => {

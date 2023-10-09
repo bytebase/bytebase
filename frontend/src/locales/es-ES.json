@@ -1049,7 +1049,10 @@
     "last-successful-sync": "Última sincronización exitosa",
     "sync-status": "Estado de sincronización",
     "failed-to-sync-schema-for-database-database-value-name": "Error al sincronizar el esquema para la base de datos '{0}'.",
-    "successfully-synced-schema-for-database-database-value-name": "Esquema sincronizado correctamente para la base de datos '{0}'."
+    "successfully-synced-schema-for-database-database-value-name": "Esquema sincronizado correctamente para la base de datos '{0}'.",
+    "start-to-sync-schema": "Start to sync schame",
+    "failed-to-sync-schema": "No se pudo sincronizar el esquema",
+    "successfully-synced-schema": "Esquema sincronizado correctamente"
   },
   "instance": {
     "select": "Seleccionar instancia",

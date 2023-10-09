@@ -1050,7 +1050,10 @@
     "last-successful-sync": "Last successful sync",
     "sync-status": "Sync status",
     "failed-to-sync-schema-for-database-database-value-name": "Failed to sync schema for database '{0}'.",
-    "successfully-synced-schema-for-database-database-value-name": "Successfully synced schema for database '{0}'."
+    "successfully-synced-schema-for-database-database-value-name": "Successfully synced schema for database '{0}'.",
+    "start-to-sync-schema": "Start to sync schame",
+    "failed-to-sync-schema": "Failed to sync schema",
+    "successfully-synced-schema": "Successfully synced schema"
   },
   "instance": {
     "select": "Select instance",
