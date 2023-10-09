@@ -1,5 +1,11 @@
 <template>
   <div class="flex flex-col relative">
+    <DatabaseOperations
+      v-if="selectedDatabases.length > 0"
+      class="my-3"
+      :databases="selectedDatabases"
+      @dismiss="state.selectedDatabaseIds.clear()"
+    />
     <div class="px-4 py-2 flex justify-between items-center">
       <EnvironmentTabFilter
         :include-all="true"
@@ -54,7 +60,40 @@
       :database-list="filteredDatabaseList"
       :database-group-list="filteredDatabaseGroupList"
       :show-placeholder="true"
-    />
+      :show-selection-column="true"
+    >
+      <template #selection-all="{ databaseList }">
+        <input
+          v-if="databaseList.length > 0"
+          type="checkbox"
+          class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+          v-bind="getAllSelectionState(databaseList)"
+          @input="
+            toggleDatabasesSelection(
+              databaseList,
+              ($event.target as HTMLInputElement).checked
+            )
+          "
+        />
+      </template>
+      <template #selection="{ database }">
+        <input
+          v-if="isDatabase(database)"
+          type="checkbox"
+          class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+          :checked="isDatabaseSelected(database as ComposedDatabase)"
+          @click.stop="
+            toggleDatabasesSelection(
+              [database],
+              ($event.target as HTMLInputElement).checked
+            )
+          "
+        />
+        <div v-else class="text-control-light cursor-not-allowed ml-auto">
+          -
+        </div>
+      </template>
+    </DatabaseV1Table>
 
     <div
       v-if="state.loading"
@@ -75,6 +114,7 @@ import {
   DatabaseV1Table,
   SearchBox,
 } from "@/components/v2";
+import { isDatabase } from "@/components/v2/Model/DatabaseV1Table/utils";
 import {
   useCurrentUserV1,
   useDBGroupStore,
@@ -108,9 +148,9 @@ import {
 interface LocalState {
   instanceFilter: string;
   searchText: string;
-  databaseV1List: ComposedDatabase[];
   databaseGroupList: ComposedDatabaseGroup[];
   loading: boolean;
+  selectedDatabaseIds: Set<string>;
 }
 
 const route = useRoute();
@@ -122,9 +162,9 @@ const { projectList } = useProjectV1ListByCurrentUser();
 const state = reactive<LocalState>({
   instanceFilter: String(UNKNOWN_ID),
   searchText: "",
-  databaseV1List: [],
   databaseGroupList: [],
   loading: false,
+  selectedDatabaseIds: new Set(),
 });
 
 const currentUserV1 = useCurrentUserV1();
@@ -170,15 +210,18 @@ const prepareDatabaseList = async () => {
   // It will also be called when user logout
   if (currentUserV1.value.name !== UNKNOWN_USER_NAME) {
     state.loading = true;
-    const databaseV1List = await databaseV1Store.searchDatabaseList({
+    await databaseV1Store.searchDatabaseList({
       parent: "instances/-",
     });
-    state.databaseV1List = sortDatabaseV1List(databaseV1List).filter((db) =>
-      projectList.value.map((project) => project.name).includes(db.project)
-    );
     state.loading = false;
   }
 };
+
+const databaseV1List = computed(() => {
+  return sortDatabaseV1List(databaseV1Store.databaseList).filter((db) =>
+    projectList.value.map((project) => project.name).includes(db.project)
+  );
+});
 
 const prepareDatabaseGroupList = async () => {
   if (currentUserV1.value.name !== UNKNOWN_USER_NAME) {
@@ -215,7 +258,7 @@ const changeSearchText = (searchText: string) => {
 };
 
 const filteredDatabaseList = computed(() => {
-  let list = [...state.databaseV1List]
+  let list = databaseV1List.value
     .filter((database) => database.project !== DEFAULT_PROJECT_V1_NAME)
     .filter((database) =>
       isDatabaseV1Accessible(database, currentUserV1.value)
@@ -260,5 +303,54 @@ const filteredDatabaseGroupList = computed(() => {
     );
   }
   return list;
+});
+
+const getAllSelectionState = (
+  databaseList: (ComposedDatabase | ComposedDatabaseGroup)[]
+): { checked: boolean; indeterminate: boolean } => {
+  const filteredDatabases = databaseList.filter((db) =>
+    isDatabase(db)
+  ) as ComposedDatabase[];
+
+  const checked = filteredDatabases.every((db) =>
+    state.selectedDatabaseIds.has(db.uid)
+  );
+  const indeterminate =
+    !checked &&
+    filteredDatabases.some((db) => state.selectedDatabaseIds.has(db.uid));
+
+  return {
+    checked,
+    indeterminate,
+  };
+};
+
+const toggleDatabasesSelection = (
+  databaseList: (ComposedDatabase | ComposedDatabaseGroup)[],
+  on: boolean
+): void => {
+  if (on) {
+    databaseList.forEach((db) => {
+      if (isDatabase(db)) {
+        state.selectedDatabaseIds.add((db as ComposedDatabase).uid);
+      }
+    });
+  } else {
+    databaseList.forEach((db) => {
+      if (isDatabase(db)) {
+        state.selectedDatabaseIds.delete((db as ComposedDatabase).uid);
+      }
+    });
+  }
+};
+
+const isDatabaseSelected = (database: ComposedDatabase): boolean => {
+  return state.selectedDatabaseIds.has((database as ComposedDatabase).uid);
+};
+
+const selectedDatabases = computed((): ComposedDatabase[] => {
+  return filteredDatabaseList.value.filter(
+    (db) => isDatabase(db) && state.selectedDatabaseIds.has(db.uid)
+  );
 });
 </script>
