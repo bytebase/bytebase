@@ -250,7 +250,6 @@ import {
 import {
   extractBackupResourceName,
   extractDatabaseResourceName,
-  extractEnvironmentResourceName,
   hasWorkspacePermissionV1,
   instanceV1HasCollationAndCharacterSet,
   instanceV1HasCreateDatabase,
