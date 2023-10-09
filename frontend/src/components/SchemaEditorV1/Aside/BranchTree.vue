@@ -85,6 +85,7 @@ import { getHighlightHTMLByKeyWords, isDescendantOf } from "@/utils";
 import SchemaNameModal from "../Modals/SchemaNameModal.vue";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import { isTableChanged } from "../utils";
+import { isSchemaChanged } from "../utils/schema";
 
 interface BaseTreeNode extends TreeOption {
   key: string;
@@ -338,6 +339,22 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
   const additionalClassList: string[] = ["select-none"];
 
   if (treeNode.type === "schema") {
+    const schema = schemaList.value.find(
+      (schema) => schema.id === treeNode.schemaId
+    );
+    if (schema) {
+      if (schema.status === "created") {
+        additionalClassList.push("text-green-700");
+      } else if (schema.status === "dropped") {
+        additionalClassList.push("text-red-700 line-through");
+      } else {
+        if (
+          isSchemaChanged(branchSchema.value.branch.name, treeNode.schemaId)
+        ) {
+          additionalClassList.push("text-yellow-700");
+        }
+      }
+    }
     // do nothing
   } else if (treeNode.type === "table") {
     const table = tableList.value.find(
