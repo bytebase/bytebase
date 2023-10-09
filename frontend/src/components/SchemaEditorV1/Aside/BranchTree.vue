@@ -187,19 +187,20 @@ const treeData = computed(() => {
         label: schema.name,
         isLeaf: false,
         schemaId: schema.id,
-      };
-      treeNodeList.push(schemaTreeNode);
-      for (const table of schema.tableList) {
-        const tableTreeNode: TreeNodeForTable = {
+        children: schema.tableList.map((table) => ({
           type: "table",
           key: `t-${schema.id}-${table.id}`,
           label: table.name,
+          children: [],
           isLeaf: true,
           schemaId: schema.id,
           tableId: table.id,
-        };
-        schemaTreeNode.children?.push(tableTreeNode);
+        })),
+      };
+      if (schemaTreeNode.children!.length === 0) {
+        schemaTreeNode.isLeaf = true;
       }
+      treeNodeList.push(schemaTreeNode);
     }
   }
 
@@ -548,6 +549,13 @@ const openTabForTable = (treeNode: TreeNode) => {
       schemaId: treeNode.schemaId,
       tableId: treeNode.tableId,
     });
+  } else if (treeNode.type === "schema") {
+    const index = expandedKeysRef.value.findIndex(
+      (key) => key === treeNode.key
+    );
+    if (index < 0) {
+      expandedKeysRef.value.push(treeNode.key);
+    }
   }
 
   state.shouldRelocateTreeNode = true;
