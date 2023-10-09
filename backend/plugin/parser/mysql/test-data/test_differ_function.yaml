@@ -18,6 +18,7 @@
         RETURN year(date2)-year(date1);
       END;;
     DELIMITER ;
+
 - oldSchema: |
     DELIMITER ;;
     CREATE FUNCTION no_of_years(date1 date) RETURNS int DETERMINISTIC
@@ -30,5 +31,16 @@
   newSchema: |
 
   diff: |+
-    DROP FUNCTION no_of_years;
+    DROP FUNCTION IF EXISTS `no_of_years`;
+
+- oldSchema: |
+    CREATE DEFINER=`root`@`%` FUNCTION `AddOne`(`v` INT) RETURNS int BEGIN   DECLARE a INT;   SET a = v;   SET a = a + 1;   RETURN a; END;
+  newSchema: |
+    CREATE DEFINER=`root`@`%` FUNCTION `AddOne`(`v` INT) RETURNS int BEGIN   DECLARE a INT;   SET a = v;   SET a = a * 1 + 1;   RETURN a; END;
+  diff: |+
+    DROP FUNCTION IF EXISTS `AddOne`;
+
+    DELIMITER ;;
+    CREATE DEFINER=`root`@`%` FUNCTION `AddOne`(`v` INT) RETURNS int BEGIN   DECLARE a INT;   SET a = v;   SET a = a * 1 + 1;   RETURN a; END;;
+    DELIMITER ;
 

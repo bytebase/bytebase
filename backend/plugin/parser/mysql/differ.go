@@ -920,15 +920,7 @@ func sortAndWriteDropFunctionList(buf *strings.Builder, functions []*functionDef
 }
 
 func writeDropFunctionStatement(buf *strings.Builder, function *functionDef) error {
-	if _, err := buf.WriteString("DROP FUNCTION "); err != nil {
-		return err
-	}
-	if function.ifExists {
-		if _, err := buf.WriteString("IF EXISTS "); err != nil {
-			return err
-		}
-	}
-	if _, err := buf.WriteString(function.name + ";\n\n"); err != nil {
+	if _, err := buf.WriteString(fmt.Sprintf("DROP FUNCTION IF EXISTS `%s`;\n\n", function.name)); err != nil {
 		return err
 	}
 
@@ -956,7 +948,7 @@ func writeCreateFunctionStatement(buf *strings.Builder, function *functionDef) e
 		return err
 	}
 
-	if _, err := buf.WriteString(fmt.Sprintf("DELIMITER ;;\n%s\nDELIMITER ;\n", def.String())); err != nil {
+	if _, err := buf.WriteString(fmt.Sprintf("DELIMITER ;;\n%s\nDELIMITER ;\n\n", def.String())); err != nil {
 		return err
 	}
 	return nil
