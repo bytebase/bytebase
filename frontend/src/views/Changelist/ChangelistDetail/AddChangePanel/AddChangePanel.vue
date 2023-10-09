@@ -75,7 +75,9 @@ import { NRadio, NRadioGroup } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { getBaselineMetadataOfBranch } from "@/components/SchemaEditorV1/utils/branch";
 import { Drawer, DrawerContent, ErrorTipsButton } from "@/components/v2";
+import { schemaDesignServiceClient, sqlServiceClient } from "@/grpcweb";
 import {
   pushNotification,
   useChangeHistoryStore,
@@ -157,10 +159,19 @@ const doAddChange = async () => {
         setSheetStatement(sheet, changeHistory?.statement ?? "");
       }
       if (sourceType === "BRANCH") {
+        // For branch changes, use its diff DDL
         const branch = useSchemaDesignStore().getSchemaDesignByName(
           change.source
         );
-        setSheetStatement(sheet, branch.schema);
+        const source = getBaselineMetadataOfBranch(branch);
+        const target = branch.schemaMetadata;
+
+        const { diff } = await schemaDesignServiceClient.diffMetadata({
+          sourceMetadata: source,
+          targetMetadata: target,
+          engine: branch.engine,
+        });
+        setSheetStatement(sheet, diff);
       }
       const created = await localSheetStore.saveLocalSheetToRemote(sheet);
       change.sheet = created.name;
