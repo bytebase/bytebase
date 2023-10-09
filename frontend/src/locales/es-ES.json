@@ -1140,6 +1140,7 @@
     "type-or-paste-credentials": "Escriba o pegue las CREDENCIALES",
     "type-or-paste-credentials-write-only": "Escriba o pegue las CREDENCIALES - solo escritura",
     "password-write-only": "SU_DB_PWD - solo escritura",
+    "secret-manager-tip": "También puede especificar un punto final de gestión de secreto externo",
     "test-connection": "Probar conexión",
     "ignore-and-create": "Ignorar y crear",
     "add-a-postgresql-sample-instance": "Agregue una instancia de muestra de PostgreSQL en su lugar",
