@@ -267,7 +267,8 @@
     "go-to-configure": "Configurar",
     "updated-at-by": "Actualizado {time} por {user}",
     "created-at-by": "Creado {time} por {user}",
-    "filter-by-name": "Filtrar por nombre"
+    "filter-by-name": "Filtrar por nombre",
+    "tenant": "Arrendataria"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
