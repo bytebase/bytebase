@@ -45,6 +45,7 @@ const props = withDefaults(
     filter?: (project: Project, index: number) => boolean;
   }>(),
   {
+    project: undefined,
     allowedProjectRoleList: () => [],
     allowedProjectTenantModeList: () => [
       TenantMode.TENANT_MODE_DISABLED,
