@@ -11,6 +11,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -25,7 +26,7 @@ type DatabaseMessage struct {
 	DatabaseName         string
 	SyncState            api.SyncStatus
 	SuccessfulSyncTimeTs int64
-	SchemaVersion        string
+	SchemaVersion        model.Version
 	Secrets              *storepb.Secrets
 	DataShare            bool
 	// ServiceName is the Oracle specific field.
@@ -53,7 +54,7 @@ type UpdateDatabaseMessage struct {
 	ProjectID            *string
 	SyncState            *api.SyncStatus
 	SuccessfulSyncTimeTs *int64
-	SchemaVersion        *string
+	SchemaVersion        *model.Version
 	SourceBackupID       *int
 	Secrets              *storepb.Secrets
 	DataShare            *bool
@@ -265,6 +266,10 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 		}
 		environmentUID = &environment.UID
 	}
+	storedVersion, err := create.SchemaVersion.Marshal()
+	if err != nil {
+		return nil, err
+	}
 
 	secretsString, err := protojson.Marshal(create.Secrets)
 	if err != nil {
@@ -316,7 +321,7 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 		create.DatabaseName,
 		api.OK,
 		create.SuccessfulSyncTimeTs,
-		create.SchemaVersion,
+		storedVersion,
 		secretsString,
 		create.DataShare,
 		create.ServiceName,
@@ -372,7 +377,11 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 		set, args = append(set, fmt.Sprintf("last_successful_sync_ts = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.SchemaVersion; v != nil {
-		set, args = append(set, fmt.Sprintf("schema_version = $%d", len(args)+1)), append(args, *v)
+		storedVersion, err := patch.SchemaVersion.Marshal()
+		if err != nil {
+			return nil, err
+		}
+		set, args = append(set, fmt.Sprintf("schema_version = $%d", len(args)+1)), append(args, storedVersion)
 	}
 	if v := patch.Secrets; v != nil {
 		secretsString, err := protojson.Marshal(v)
@@ -557,7 +566,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 	defer rows.Close()
 	for rows.Next() {
 		databaseMessage := &DatabaseMessage{}
-		var secretsString, metadataString string
+		var storedVersion, secretsString, metadataString string
 		if err := rows.Scan(
 			&databaseMessage.UID,
 			&databaseMessage.ProjectID,
@@ -567,13 +576,20 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			&databaseMessage.DatabaseName,
 			&databaseMessage.SyncState,
 			&databaseMessage.SuccessfulSyncTimeTs,
-			&databaseMessage.SchemaVersion,
+			&storedVersion,
 			&secretsString,
 			&databaseMessage.DataShare,
 			&databaseMessage.ServiceName,
 			&metadataString,
 		); err != nil {
 			return nil, err
+		}
+		version, err := model.NewVersion(storedVersion)
+		if err != nil {
+			// TODO(d): remove this fallback after data backfill.
+			databaseMessage.SchemaVersion = model.Version{Version: storedVersion}
+		} else {
+			databaseMessage.SchemaVersion = version
 		}
 		var secret storepb.Secrets
 		if err := protojson.Unmarshal([]byte(secretsString), &secret); err != nil {

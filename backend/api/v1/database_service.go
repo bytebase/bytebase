@@ -30,7 +30,6 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
@@ -1091,21 +1090,6 @@ func convertToChangeHistories(h []*store.InstanceChangeHistoryMessage) ([]*v1pb.
 }
 
 func convertToChangeHistory(h *store.InstanceChangeHistoryMessage) (*v1pb.ChangeHistory, error) {
-	schemaVersion := h.Version
-	if h.Version != "" {
-		_, version, _, err := util.FromStoredVersion(h.Version)
-		if err != nil {
-			slog.Error("failed to convert stored version for change history",
-				slog.String("instance", h.InstanceID),
-				slog.String("database", h.DatabaseName),
-				slog.String("history", h.UID),
-				slog.String("version", h.Version),
-				log.BBError(err))
-		} else {
-			schemaVersion = version
-		}
-	}
-
 	v1pbHistory := &v1pb.ChangeHistory{
 		Name:              fmt.Sprintf("%s%s/%s%s/%s%v", common.InstanceNamePrefix, h.InstanceID, common.DatabaseIDPrefix, h.DatabaseName, common.ChangeHistoryPrefix, h.UID),
 		Uid:               h.UID,
@@ -1117,7 +1101,7 @@ func convertToChangeHistory(h *store.InstanceChangeHistoryMessage) (*v1pb.Change
 		Source:            convertToChangeHistorySource(h.Source),
 		Type:              convertToChangeHistoryType(h.Type),
 		Status:            convertToChangeHistoryStatus(h.Status),
-		Version:           schemaVersion,
+		Version:           h.Version.Version,
 		Description:       h.Description,
 		Statement:         h.Statement,
 		Schema:            h.Schema,
@@ -1882,15 +1866,6 @@ func convertToDatabase(database *store.DatabaseMessage) *v1pb.Database {
 	if database.EffectiveEnvironmentID != "" {
 		effectiveEnvironment = fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, database.EffectiveEnvironmentID)
 	}
-	schemaVersion := database.SchemaVersion
-	if database.SchemaVersion != "" {
-		_, version, _, err := util.FromStoredVersion(database.SchemaVersion)
-		if err != nil {
-			schemaVersion = database.SchemaVersion
-		} else {
-			schemaVersion = version
-		}
-	}
 	return &v1pb.Database{
 		Name:                 fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName),
 		Uid:                  fmt.Sprintf("%d", database.UID),
@@ -1899,7 +1874,7 @@ func convertToDatabase(database *store.DatabaseMessage) *v1pb.Database {
 		Project:              fmt.Sprintf("%s%s", common.ProjectNamePrefix, database.ProjectID),
 		Environment:          environment,
 		EffectiveEnvironment: effectiveEnvironment,
-		SchemaVersion:        schemaVersion,
+		SchemaVersion:        database.SchemaVersion.Version,
 		Labels:               database.GetEffectiveLabels(),
 	}
 }

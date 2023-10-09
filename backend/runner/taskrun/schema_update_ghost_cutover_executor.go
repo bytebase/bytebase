@@ -23,6 +23,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 	"github.com/bytebase/bytebase/backend/utils"
 )
 
@@ -98,7 +99,8 @@ func (e *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, _ contex
 	sharedGhost := value.(sharedGhostState)
 
 	// not using the rendered statement here because we want to avoid leaking the rendered statement
-	terminated, result, err := cutover(ctx, e.store, e.dbFactory, e.activityManager, e.license, e.profile, task, statement, payload.SheetID, payload.SchemaVersion, postponeFilename, sharedGhost.migrationContext, sharedGhost.errCh)
+	version := model.Version{Version: payload.SchemaVersion}
+	terminated, result, err := cutover(ctx, e.store, e.dbFactory, e.activityManager, e.license, e.profile, task, statement, payload.SheetID, version, postponeFilename, sharedGhost.migrationContext, sharedGhost.errCh)
 	if err := e.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 		slog.Error("failed to sync database schema",
 			slog.String("instanceName", instance.ResourceID),
@@ -110,7 +112,7 @@ func (e *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, _ contex
 	return terminated, result, err
 }
 
-func cutover(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, license enterpriseAPI.LicenseService, profile config.Profile, task *store.TaskMessage, statement string, sheetID int, schemaVersion string, postponeFilename string, migrationContext *base.MigrationContext, errCh <-chan error) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func cutover(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, license enterpriseAPI.LicenseService, profile config.Profile, task *store.TaskMessage, statement string, sheetID int, schemaVersion model.Version, postponeFilename string, migrationContext *base.MigrationContext, errCh <-chan error) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	statement = strings.TrimSpace(statement)
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
