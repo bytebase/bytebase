@@ -275,7 +275,7 @@ func GetDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, d
 		}
 		newMap[api.EnvironmentLabelKey] = database.EffectiveEnvironmentID
 
-		idToLabels[database.UID] = database.Metadata.Labels
+		idToLabels[database.UID] = newMap
 	}
 
 	// idsSeen records database id which is already in a stage.
