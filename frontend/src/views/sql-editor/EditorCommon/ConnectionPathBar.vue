@@ -79,7 +79,6 @@ import { InstanceV1EngineIcon } from "@/components/v2";
 import { useTabStore, useDatabaseV1ByUID, useInstanceV1ByUID } from "@/store";
 import { TabMode, UNKNOWN_ID } from "@/types";
 import { EnvironmentTier } from "@/types/proto/v1/environment_service";
-import { TenantMode } from "@/types/proto/v1/project_service";
 import BatchQueryDatabasesSelector from "./BatchQueryDatabasesSelector.vue";
 import ReadonlyDatasourceHint from "./ReadonlyDatasourceHint.vue";
 
@@ -94,8 +93,6 @@ const { instance: selectedInstance } = useInstanceV1ByUID(
 const { database: selectedDatabaseV1 } = useDatabaseV1ByUID(
   computed(() => String(connection.value.databaseId))
 );
-
-const selectedProject = computed(() => selectedDatabaseV1.value.projectEntity);
 
 const selectedEnvironment = computed(() => {
   return connection.value.databaseId === `${UNKNOWN_ID}`
@@ -113,7 +110,8 @@ const isProductionEnvironment = computed(() => {
 
 const showBatchQuerySelector = computed(() => {
   return (
-    selectedProject.value.tenantMode === TenantMode.TENANT_MODE_ENABLED &&
+    // Only show entry when user selected a database.
+    selectedDatabaseV1.value.uid !== String(UNKNOWN_ID) &&
     // TODO(steven): implement batch query in admin mode.
     currentTab.value.mode !== TabMode.Admin
   );

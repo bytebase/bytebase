@@ -2048,6 +2048,9 @@
     },
     "filter-by-name": "根据名称过滤",
     "batch-query": {
+      "batch": "批量",
+      "database-labels": "{database} 标签",
+      "database-has-no-label": "{database} 没有标签",
       "description": "批量查询具有相同标签值的其他数据库。"
     }
   },
