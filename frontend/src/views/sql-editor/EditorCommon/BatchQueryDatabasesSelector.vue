@@ -10,42 +10,60 @@
         @click="handleTriggerClick"
       >
         <div
-          class="!ml-2 min-w-[1.5rem] h-6 p-1 flex flex-row justify-center items-center gap-1 cursor-pointer rounded hover:opacity-80"
+          class="!ml-2 w-auto h-6 px-2 border border-gray-400 flex flex-row justify-center items-center gap-1 cursor-pointer rounded hover:opacity-80"
           :class="
-            selectedLabelsValue.length > 0 && hasBatchQueryFeature
-              ? 'text-accent bg-blue-50 shadow'
+            matchedDatabases.length > 0 && hasBatchQueryFeature
+              ? 'text-accent bg-blue-50 shadow !border-accent'
               : 'text-gray-600'
           "
         >
-          <Layers class="w-4 h-auto" />
-          <span v-if="selectedLabelsValue.length > 0"
-            >({{ selectedLabelsValue.length }})</span
-          >
+          <span>{{ $t("sql-editor.batch-query.batch") }}</span>
+          <span v-if="matchedDatabases.length > 0">
+            ({{ matchedDatabases.length }})
+          </span>
+          <FeatureBadge feature="bb.feature.batch-query" />
         </div>
-        <FeatureBadge feature="bb.feature.batch-query" />
       </div>
     </template>
-    <div class="w-128">
-      <p class="text-gray-500 mb-1">
-        {{ $t("sql-editor.batch-query.description") }}
+    <div class="w-128 max-h-128 overflow-y-auto p-1 pb-2">
+      <p class="text-gray-500 mb-1 w-full leading-4">
+        <span class="mr-1">{{
+          $t("sql-editor.batch-query.description", {
+            count: matchedDatabases.length,
+          })
+        }}</span>
         <LearnMoreLink
           url="https://www.bytebase.com/docs/sql-editor/batch-query?source=console"
-          class="ml-1 text-sm"
+          class="text-sm"
         />
       </p>
-      <div class="w-full grid grid-cols-3 gap-2 py-1">
-        <div class="col-span-1">
+      <div class="w-full flex flex-col justify-start items-start">
+        <div class="w-full">
+          <p class="font-medium">
+            {{
+              labels.length > 0
+                ? $t("sql-editor.batch-query.database-labels", {
+                    database: selectedDatabase.databaseName,
+                  })
+                : $t("sql-editor.batch-query.database-has-no-label", {
+                    database: selectedDatabase.databaseName,
+                  })
+            }}
+          </p>
           <NCheckboxGroup v-model:value="selectedLabelsValue">
-            <NCheckbox
-              v-for="label in labels"
-              :key="`${label.key}-${label.value}`"
-              :value="`${label.key}-${label.value}`"
-              :label="`${getFormattedLabelKey(label.key)}:${label.value}`"
-            >
-            </NCheckbox>
+            <NSpace class="flex">
+              <NCheckbox
+                v-for="label in labels"
+                :key="`${label.key}-${label.value}`"
+                :value="`${label.key}-${label.value}`"
+                :label="`${getFormattedLabelKey(label.key)}:${label.value}`"
+              >
+              </NCheckbox>
+            </NSpace>
           </NCheckboxGroup>
         </div>
-        <div class="col-span-2">
+        <NDivider class="!my-3" />
+        <div class="w-full">
           <MatchedDatabaseView
             :hide-title="true"
             :matched-database-list="matchedDatabases"
@@ -64,9 +82,14 @@
 </template>
 
 <script lang="ts" setup>
-import { upperFirst } from "lodash-es";
-import { Layers } from "lucide-vue-next";
-import { NCheckboxGroup, NCheckbox, NPopover } from "naive-ui";
+import { isEqual, upperFirst } from "lodash-es";
+import {
+  NCheckboxGroup,
+  NCheckbox,
+  NPopover,
+  NSpace,
+  NDivider,
+} from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import MatchedDatabaseView from "@/components/DatabaseGroup/MatchedDatabaseView.vue";
 import {
@@ -111,17 +134,23 @@ const filteredDatabaseList = computed(() => {
       .filter((db) => db.uid !== selectedDatabase.value.uid)
       // Only show databases that the user has permission to query.
       .filter((db) => currentUserIamPolicy.allowToQueryDatabaseV1(db))
-      // Only show databases that have at least one label.
-      .filter((db) => getFilteredDatabaseLabels(db.labels).length > 0)
+      // Only show databases with same engine.
+      .filter(
+        (db) =>
+          db.instanceEntity.engine ===
+          selectedDatabase.value.instanceEntity.engine
+      )
+      // Only show databases that have at least one same label.
+      .filter((db) =>
+        getFilteredDatabaseLabels(db.labels).some((label) =>
+          labels.value.find((raw) => isEqual(raw, label))
+        )
+      )
   );
 });
 
 const labels = computed(() => {
-  return filteredDatabaseList.value
-    .map((db) => {
-      return getFilteredDatabaseLabels(db.labels);
-    })
-    .flat();
+  return getFilteredDatabaseLabels(selectedDatabase.value.labels);
 });
 
 const handleTriggerClick = () => {
@@ -174,7 +203,7 @@ const getFormattedLabelKey = (labelKey: string) => {
   if (labelKey.startsWith("bb.")) {
     return upperFirst(labelKey.substring(3));
   }
-  return upperFirst(labelKey);
+  return labelKey;
 };
 
 watch(selectedLabelsValue, () => {
