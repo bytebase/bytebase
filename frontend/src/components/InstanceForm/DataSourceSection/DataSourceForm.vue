@@ -7,7 +7,7 @@
       :engine="basicInfo.engine"
       :data-source-type="dataSource.type"
     />
-    <div class="mt-2 sm:col-span-1 sm:col-start-1">
+    <div class="mt-2 sm:col-span-2 sm:col-start-1">
       <label for="username" class="textlabel block">
         {{ $t("common.username") }}
       </label>
@@ -26,7 +26,7 @@
         "
       />
     </div>
-    <div class="mt-2 sm:col-span-1 sm:col-start-1">
+    <div class="mt-2 sm:col-span-2 sm:col-start-1">
       <div class="flex flex-row items-center space-x-2">
         <label for="password" class="textlabel block">
           {{ $t("common.password") }}
@@ -38,6 +38,16 @@
           :disabled="!allowEdit"
           @toggle="toggleUseEmptyPassword"
         />
+      </div>
+      <div class="flex space-x-2 text-sm mb-1">
+        <div class="text-gray-400">
+          {{ $t("instance.secret-manager-tip") }}
+        </div>
+        <LearnMoreLink
+          url="https://www.bytebase.com/docs/get-started/instance/#use-secret-manager?source=console"
+          class="ml-1 text-sm"
+        />
+        <FeatureBadge feature="bb.feature.external-secret-manager" />
       </div>
       <input
         id="password"
@@ -72,7 +82,7 @@
   </template>
 
   <template v-if="showAuthenticationDatabase">
-    <div class="sm:col-span-1 sm:col-start-1">
+    <div class="sm:col-span-2 sm:col-start-1">
       <div class="flex flex-row items-center space-x-2">
         <label for="authenticationDatabase" class="textlabel block">
           {{ $t("instance.authentication-database") }}
@@ -101,7 +111,7 @@
   >
     <div
       v-if="hasReadonlyReplicaHost"
-      class="mt-2 sm:col-span-1 sm:col-start-1"
+      class="mt-2 sm:col-span-2 sm:col-start-1"
     >
       <div class="flex flex-row items-center space-x-2">
         <label for="host" class="textlabel block">
@@ -121,7 +131,7 @@
 
     <div
       v-if="hasReadonlyReplicaPort"
-      class="mt-2 sm:col-span-1 sm:col-start-1"
+      class="mt-2 sm:col-span-2 sm:col-start-1"
     >
       <div class="flex flex-row items-center space-x-2">
         <label for="port" class="textlabel block">
@@ -140,7 +150,7 @@
     </div>
   </template>
 
-  <div v-if="showDatabase" class="mt-2 sm:col-span-1 sm:col-start-1">
+  <div v-if="showDatabase" class="mt-2 sm:col-span-2 sm:col-start-1">
     <label for="database" class="textlabel block">
       {{ $t("common.database") }}
     </label>

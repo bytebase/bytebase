@@ -1137,6 +1137,7 @@
     "type-or-paste-credentials": "输入或粘贴 CREDENTIALS",
     "type-or-paste-credentials-write-only": "输入或粘贴 CREDENTIALS - 仅写入",
     "password-write-only": "YOUR_DB_PWD - 仅写入",
+    "secret-manager-tip": "您也可以指定外部的密码管理服务 endpoint",
     "test-connection": "测试连接",
     "ignore-and-create": "忽略并创建",
     "add-a-postgresql-sample-instance": "添加一个 PostgreSQL 样本实例",
