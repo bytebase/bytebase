@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
@@ -112,7 +113,7 @@ func (t *SchemaTransformer) Normalize(schema string, standard string) (string, e
 			remainingStatement = append(remainingStatement, stmt.Text)
 			continue
 		}
-		if mysqlparser.IsTiDBUnsupportDDLStmt(stmt.Text) {
+		if tidbparser.IsTiDBUnsupportDDLStmt(stmt.Text) {
 			remainingStatement = append(remainingStatement, stmt.Text)
 			continue
 		}
@@ -145,7 +146,7 @@ func (t *SchemaTransformer) Normalize(schema string, standard string) (string, e
 	}
 
 	for _, stmt := range standardList {
-		if mysqlparser.IsTiDBUnsupportDDLStmt(stmt.Text) {
+		if tidbparser.IsTiDBUnsupportDDLStmt(stmt.Text) {
 			// TODO(rebelice): consider the unsupported DDL.
 			continue
 		}
@@ -182,7 +183,7 @@ func (t *SchemaTransformer) Normalize(schema string, standard string) (string, e
 	//   3. missing indexes for existed table are below of this table and as the origin order.
 	//   4. missing tables are below of existed tables and as the origin order.
 	for _, stmt := range standardList {
-		if mysqlparser.IsTiDBUnsupportDDLStmt(stmt.Text) {
+		if tidbparser.IsTiDBUnsupportDDLStmt(stmt.Text) {
 			// TODO(rebelice): consider the unsupported DDL.
 			continue
 		}
@@ -364,7 +365,7 @@ func (*SchemaTransformer) Check(schema string) (int, error) {
 			// So we need to skip the statement if the delimiter is not `;`.
 			continue
 		}
-		if mysqlparser.IsTiDBUnsupportDDLStmt(stmt.Text) {
+		if tidbparser.IsTiDBUnsupportDDLStmt(stmt.Text) {
 			continue
 		}
 		nodeList, _, err := parser.New().Parse(stmt.Text, "", "")
@@ -458,7 +459,7 @@ func (*SchemaTransformer) Transform(schema string) (string, error) {
 			result = append(result, stmt.Text+"\n\n")
 			continue
 		}
-		if mysqlparser.IsTiDBUnsupportDDLStmt(stmt.Text) {
+		if tidbparser.IsTiDBUnsupportDDLStmt(stmt.Text) {
 			result = append(result, stmt.Text+"\n\n")
 			continue
 		}

@@ -1,0 +1,81 @@
+# need to mapping int and integer to same column type.
+- oldSchema: |
+    CREATE TABLE t (
+      a INT,
+      b VARCHAR(20),
+      c BOOLEAN,
+      d bit(2),
+      e JSON
+    );
+  newSchema: |
+    CREATE TABLE t (
+      a INTEGER,
+      b VARCHAR(20),
+      c BOOLEAN,
+      d bit(2),
+      e JSON
+    );
+  diff: ""
+
+# nullable field should show null when has another default value.
+# serial type meaning BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE
+- oldSchema: |
+    create table t1 (
+      a int,
+      b bigint,
+      c serial
+    );
+  newSchema: |
+    create table t1 (
+      a varchar(20),
+      b serial,
+      c bigint,
+      d char(30) DEFAULT "d"
+    );
+  diff: |+
+    ALTER TABLE `t1` ADD COLUMN `d` char(30) NULL DEFAULT "d";
+
+    ALTER TABLE `t1` MODIFY COLUMN `a` varchar(20) DEFAULT NULL;
+
+    ALTER TABLE `t1` MODIFY COLUMN `b` serial DEFAULT NULL;
+
+    ALTER TABLE `t1` MODIFY COLUMN `c` bigint DEFAULT NULL;
+
+# column format error
+- oldSchema: create table public.t1(a int, b int NOT NULL)
+  newSchema: create table public.t1(a int NOT NULL, b int)
+  diff: |+
+    ALTER TABLE "public"."t1"
+        ALTER COLUMN "a" SET NOT NULL;
+
+    ALTER TABLE "public"."t1"
+        ALTER COLUMN "b" DROP NOT NULL;
+
+# handle multi schema, maybe mysql should handle multi database
+- oldSchema: |
+    create table s1.t1(a int);
+    create table s1.t2(a int, b int);
+    create schema s2;
+    create table s2.t3(a int);
+    create table s2.t4(a int);
+  newSchema: |
+    create schema s1;
+    create table s1.t2(a int);
+    create table s1.t3(a int, b int);
+    create schema s2;
+    create table s2.t2(a int);
+    create table s2.t3(a int);
+  diff: |+
+    ALTER TABLE "s1"."t2"
+        DROP COLUMN "b";
+
+    DROP TABLE "s1"."t1", "s2"."t4";
+
+    CREATE TABLE "s1"."t3" (
+        "a" integer,
+        "b" integer
+    );
+
+    CREATE TABLE "s2"."t2" (
+        "a" integer
+    );

@@ -1,0 +1,18 @@
+- oldSchema: |
+    CREATE TABLE t1 (id INT);
+  newSchema: |
+    CREATE TABLE t1 (id INT);
+
+    CREATE VIEW v AS SELECT * FROM t1;
+  diff: |+
+    CREATE VIEW v AS SELECT * FROM t1;
+
+- oldSchema: |
+    CREATE TABLE t1 (id INT);
+
+    CREATE VIEW v AS SELECT * FROM t1;
+  newSchema: |
+    CREATE TABLE t1 (id INT);
+  diff: |+
+    DROP VIEW v;
+

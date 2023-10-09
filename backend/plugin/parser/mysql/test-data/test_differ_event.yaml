@@ -1,0 +1,19 @@
+- oldSchema: |
+
+  newSchema: |
+    DELIMITER ;;
+    CREATE EVENT e_totals ON SCHEDULE AT '2006-02-10 23:59:00' DO INSERT INTO test.totals VALUES(NOW());;
+    DELIMITER ;
+  diff: |+
+    DELIMITER ;;
+    CREATE EVENT e_totals ON SCHEDULE AT '2006-02-10 23:59:00' DO INSERT INTO test.totals VALUES(NOW());;
+    DELIMITER ;
+- oldSchema: |
+    DELIMITER ;;
+    CREATE EVENT e_totals ON SCHEDULE AT '2006-02-10 23:59:00' DO INSERT INTO test.totals VALUES(NOW());;
+    DELIMITER ;
+  newSchema: |
+
+  diff: |+
+    DROP EVENT e_totals;
+

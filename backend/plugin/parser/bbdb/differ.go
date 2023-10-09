@@ -1,4 +1,4 @@
-package mysql
+package bbdb
 
 import (
 	"fmt"
@@ -10,18 +10,13 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	// mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func init() {
 	base.RegisterSchemaDiffFunc(storepb.Engine_MYSQL, SchemaDiff)
 }
-
-const (
-	disableFKCheckStmt string = "SET FOREIGN_KEY_CHECKS=0;\n\n"
-	enableFKCheckStmt  string = "SET FOREIGN_KEY_CHECKS=1;\n"
-)
 
 // SchemaDiffer is the parser for MySQL dialect.
 type SchemaDiffer struct {
@@ -47,16 +42,14 @@ type diffNode struct {
 	// Ignore the case sensitive when comparing the table and view names.
 	ignoreCaseSensitive bool
 
-	dropForeignKeyList        []*foreignKeyDef
-	dropPrimaryKeyList        []*primaryKeyDef
-	createPrimaryKeyList      []*primaryKeyDef
-	dropIndexList             []*indexDef
-	dropViewList              []*viewDef
-	dropTableList             []*tableDef
-	dropCheckConstraintList   []*checkDef
-	addCheckConstraintList    []*checkDef
-	dropIndexConstraintList   []*indexConstraintDef
-	createIndexConstraintList []*indexConstraintDef
+	dropForeignKeyList      []*foreignKeyDef
+	dropPrimaryKeyList      []*primaryKeyDef
+	createPrimaryKeyList    []*primaryKeyDef
+	dropIndexList           []*indexDef
+	dropViewList            []*viewDef
+	dropTableList           []*tableDef
+	dropCheckConstraintList []*checkDef
+	addCheckConstraintList  []*checkDef
 
 	createTableList      []*tableDef
 	alterTableOptionList []*tableOptionDef
@@ -142,7 +135,6 @@ func (diff *diffNode) diffTable(oldTable, newTable *tableDef) {
 	diff.diffColumn(oldTable, newTable)
 	diff.diffIndex(oldTable, newTable)
 	diff.diffPrimaryKey(oldTable, newTable)
-	diff.diffIndexConstraint(oldTable, newTable)
 	diff.diffForeignKey(oldTable, newTable)
 	diff.diffCheckConstraint(oldTable, newTable)
 	diff.diffTableOptions(oldTable, newTable)
@@ -173,7 +165,6 @@ func isCheckConstraintEqual(old, new *checkDef) bool {
 	if old.ctx.GetText() != new.ctx.GetText() {
 		return false
 	}
-
 	return true
 }
 
@@ -184,7 +175,7 @@ func (diff *diffNode) diffTableOptions(oldTable, newTable *tableDef) {
 			switch oldTp {
 			// For table engine, table charset and table collation, if oldTable has but newTable doesn't,
 			// we skip drop them.
-			case "ENGINE", "DEFAULT COLLATE", "DEFAULT CHARACTER SET":
+			case "ENGINE", "CHARSET", "COLLATE":
 				continue
 			}
 			// We should drop the table option if it doesn't exist in the new table options.
@@ -211,22 +202,19 @@ func dropTableOption(oldOption *tableOptionDef) *tableOptionDef {
 		oldOption.alterOption = fmt.Sprintf("ALTER TABLE `%s` ENGINE = InnoDB;", oldOption.tableName)
 	case "SECONDARY_ENGINE_ATTRIBUTE":
 		oldOption.alterOption = fmt.Sprintf("ALTER TABLE `%s` SECONDARY_ENGINE_ATTRIBUTE = InnoDB;", oldOption.tableName)
-	case "DEFAULT CHARACTER SET":
-		oldOption.alterOption = fmt.Sprintf("ALTER TABLE `%s` CHARACTER SET = DEFAULT;", oldOption.tableName)
+	case "DEFAULT CHARSET":
+		oldOption.alterOption = fmt.Sprintf("ALTER TABLE `%s` CHARACTER SET = utf8mb4;", oldOption.tableName)
 	case "DEFAULT COLLATE":
 		oldOption.alterOption = fmt.Sprintf("ALTER TABLE `%s` DEFAULT COLLATE = utf8mb4_general_ci;", oldOption.tableName)
 	case "AUTO_INCREMENT":
 		oldOption.alterOption = fmt.Sprintf("ALTER TABLE `%s` AUTO_INCREMENT = 0;", oldOption.tableName)
 	case "COMMENT":
-		oldOption.alterOption = fmt.Sprintf("ALTER TABLE `%s` COMMENT = '';", oldOption.tableName)
+		oldOption.alterOption = fmt.Sprintf("ALTER TABLE `%s` COMMENT = 0;", oldOption.tableName)
 	case "AVG_ROW_LENGTH":
 		oldOption.alterOption = fmt.Sprintf("ALTER TABLE `%s` AVG_ROW_LENGTH = 0;", oldOption.tableName)
 	case "CHECKSUM":
-		oldOption.alterOption = fmt.Sprintf("ALTER TABLE `%s` CHECKSUM = 0;", oldOption.tableName)
 	case "COMPRESSION":
-		oldOption.alterOption = fmt.Sprintf("ALTER TABLE `%s` COMPRESSION = 'None';", oldOption.tableName)
 	case "CONNECTION":
-		oldOption.alterOption = fmt.Sprintf("ALTER TABLE `%s` CONNECTION = '';", oldOption.tableName)
 	case "PASSWORD":
 	case "KEY_BLOCK_SIZE":
 	case "MAX_ROWS":
@@ -236,18 +224,16 @@ func dropTableOption(oldOption *tableOptionDef) *tableOptionDef {
 	case "DELAY_KEY_WRITE":
 		oldOption.alterOption = fmt.Sprintf("ALTER TABLE `%s` DELAY_KEY_WRITE = 0;", oldOption.tableName)
 	case "ROW_FORMAT":
-		oldOption.alterOption = fmt.Sprintf("ALTER TABLE `%s` ROW_FORMAT = DEFAULT;", oldOption.tableName)
+		oldOption.alterOption = fmt.Sprintf("ALTER TABLE `%s` COMMENT = '';", oldOption.tableName)
 	case "STATS_AUTO_RECALC":
-		oldOption.alterOption = fmt.Sprintf("ALTER TABLE `%s` STATS_AUTO_RECALC = DEFAULT;", oldOption.tableName)
+		oldOption.alterOption = fmt.Sprintf("ALTER TABLE `%s` STATS_AUTO_RECALC = \"DEFAULT\";", oldOption.tableName)
 	case "PACK_KEYS":
-		oldOption.alterOption = fmt.Sprintf("ALTER TABLE `%s` PACK_KEYS = DEFAULT;", oldOption.tableName)
+		oldOption.alterOption = fmt.Sprintf("ALTER TABLE `%s` PACK_KEYS = \"DEFAULT\";", oldOption.tableName)
 	case "TABLESPACE":
 	case "INSERT_METHOD":
-		oldOption.alterOption = fmt.Sprintf("ALTER TABLE `%s` INSERT_METHOD = NO;", oldOption.tableName)
 	case "TABLE_CHECKSUM":
 	case "UNION":
 	case "ENCRYPTION":
-		oldOption.alterOption = fmt.Sprintf("ALTER TABLE `%s` ENCRYPTION = 'N';", oldOption.tableName)
 	}
 	return oldOption
 }
@@ -255,9 +241,6 @@ func dropTableOption(oldOption *tableOptionDef) *tableOptionDef {
 // isTableOptionValEqual compare the two table options value, if they are equal, returns true.
 // Caller need to ensure the two table options are not nil and the type is the same.
 func isTableOptionEqual(oldOption, newOption *tableOptionDef) bool {
-	if oldOption.option == "DEFAULT CHARACTER SET" {
-		return oldOption.ctx.DefaultCharset().CharsetName().GetText() == newOption.ctx.DefaultCharset().CharsetName().GetText()
-	}
 	return oldOption.ctx.GetText() == newOption.ctx.GetText()
 }
 
@@ -268,10 +251,8 @@ func (diff *diffNode) diffPrimaryKey(oldTable, newTable *tableDef) {
 		return
 	} else if oldPrimaryKey != nil && newPrimaryKey == nil {
 		diff.dropPrimaryKeyList = append(diff.dropPrimaryKeyList, oldPrimaryKey)
-		return
 	} else if oldPrimaryKey == nil && newPrimaryKey != nil {
 		diff.createPrimaryKeyList = append(diff.createPrimaryKeyList, newPrimaryKey)
-		return
 	}
 	if !isPrimaryKeyEqual(oldPrimaryKey, newPrimaryKey) {
 		diff.dropPrimaryKeyList = append(diff.dropPrimaryKeyList, oldPrimaryKey)
@@ -304,9 +285,6 @@ func (diff *diffNode) diffForeignKey(oldTable, newTable *tableDef) {
 			continue
 		}
 		diff.addForeignKeyList = append(diff.addForeignKeyList, foreignKey)
-	}
-	for _, foreignKey := range oldTable.foreignKeys {
-		diff.dropForeignKeyList = append(diff.dropForeignKeyList, foreignKey)
 	}
 }
 
@@ -368,13 +346,7 @@ func getTempView(view *viewDef) (*viewDef, error) {
 	// This temporary view will be removed when the actual view is created.
 	// The column properties are unnecessary and not preserved in this temporary view.
 	// because other views only need to reference the column name.
-	algorithm := "UNDEFINED"
-	if view.ctx.ViewReplaceOrAlgorithm() != nil {
-		if algo := view.ctx.ViewReplaceOrAlgorithm().ViewAlgorithm(); algo != nil {
-			algorithm = algo.GetAlgorithm().GetText()
-		}
-	}
-	definer := "CURRENT_USER"
+	definer := "current_user"
 	if view.ctx.DefinerClause() != nil {
 		definer = view.ctx.DefinerClause().GetText()
 	}
@@ -383,41 +355,26 @@ func getTempView(view *viewDef) (*viewDef, error) {
 		if view.ctx.ViewSuid().INVOKER_SYMBOL() != nil {
 			sqlSecurity = "INVOKER"
 		}
-	}
-	var selectClause strings.Builder
-	if _, err := selectClause.WriteString("SELECT SQL_NO_CACHE"); err != nil {
-		return nil, err
-	}
-	for idx, column := range view.columns {
-		if idx > 0 {
-			if _, err := selectClause.WriteString(","); err != nil {
-				return nil, err
-			}
-		}
-		if _, err := selectClause.WriteString(fmt.Sprintf(" 1 AS `%s`", column)); err != nil {
-			return nil, err
-		}
+	} else {
+		return nil, errors.Errorf("view %s has no view suid field", view.name)
 	}
 
-	cols := ""
+	cols, selectExpr := "", ""
 	if view.ctx.ViewTail() != nil {
-		if list := view.ctx.ViewTail().ColumnInternalRefList(); list != nil {
-			cols = list.GetParser().GetTokenStream().GetTextFromRuleContext(list.GetRuleContext())
-		}
-	}
-	var viewSQL string
-	if cols == "" {
-		viewSQL = fmt.Sprintf("CREATE OR REPLACE ALGORITHM=%s DEFINER=%s SQL SECURITY %s VIEW `%s` AS %s;\n\n", algorithm, definer, sqlSecurity, view.name, selectClause.String())
+		cols = view.ctx.ViewTail().ColumnInternalRefList().GetText()
+		selectExpr = view.ctx.ViewTail().ViewSelect().GetText()
 	} else {
-		viewSQL = fmt.Sprintf("CREATE OR REPLACE ALGORITHM=%s DEFINER=%s SQL SECURITY %s VIEW `%s` %s AS %s;\n\n", algorithm, definer, sqlSecurity, view.name, cols, selectClause.String())
+		return nil, errors.Errorf("view %s has no view tail field", view.name)
 	}
+	// add sqlcache opts
+	selectExpr = selectExpr[:6] + "SQL_NO_CACHE" + selectExpr[6:]
 
 	newView := &viewDef{
 		ctx:    view.ctx,
 		name:   view.name,
 		dbName: view.dbName,
 	}
-	newView.tempView = viewSQL
+	newView.tempView = fmt.Sprintf("CREATE OR REPLACE DEFINER=`%s` SQL SECURITY %s VIEW `%s` %s AS %s;\n\n", definer, sqlSecurity, view.name, cols, selectExpr)
 	return newView, nil
 }
 
@@ -587,36 +544,6 @@ func hasColumnsIntersection(a, b []*columnDef) bool {
 	return false
 }
 
-func (diff *diffNode) diffIndexConstraint(oldTable, newTable *tableDef) {
-	// https://stackoverflow.com/questions/887590/does-dropping-a-table-in-mysql-also-drop-the-indexes
-	for indexName, newIndex := range newTable.indexConstraints {
-		if oldIndex, ok := oldTable.indexConstraints[indexName]; ok {
-			if !isIndexConstraintEqual(newIndex, oldIndex) {
-				diff.dropIndexConstraintList = append(diff.dropIndexConstraintList, oldIndex)
-				diff.createIndexConstraintList = append(diff.createIndexConstraintList, newIndex)
-			}
-			delete(oldTable.indexConstraints, indexName)
-			continue
-		}
-		diff.createIndexConstraintList = append(diff.createIndexConstraintList, newIndex)
-	}
-
-	for _, oldIndex := range oldTable.indexConstraints {
-		diff.dropIndexConstraintList = append(diff.dropIndexConstraintList, oldIndex)
-	}
-}
-
-func isIndexConstraintEqual(new, old *indexConstraintDef) bool {
-	if old.name != new.name {
-		return false
-	}
-
-	if old.ctx.GetText() != new.ctx.GetText() {
-		return false
-	}
-	return true
-}
-
 func (diff *diffNode) diffIndex(oldTable, newTable *tableDef) {
 	// https://stackoverflow.com/questions/887590/does-dropping-a-table-in-mysql-also-drop-the-indexes
 	for indexName, newIndex := range newTable.indexes {
@@ -654,8 +581,30 @@ func (*diffNode) isViewEqual(old, new *viewDef) bool {
 
 // isColumnEqual returns true if definitions of two columns with the same name are the same.
 func isColumnEqual(old, new *columnDef) bool {
-	// column name
-	return old.ctx.GetText() == new.ctx.GetText()
+	if !isColumnTypesEqual(old, new) {
+		return false
+	}
+	if !isColumnOptionsEqual(old, new) {
+		return false
+	}
+	return true
+}
+
+func isColumnTypesEqual(old, new *columnDef) bool {
+	return old.tp == new.tp
+}
+
+func isColumnOptionsEqual(old, new *columnDef) bool {
+	if old.nullable != new.nullable {
+		return false
+	}
+	if old.comment != new.comment {
+		return false
+	}
+	if old.defaultValue != new.defaultValue {
+		return false
+	}
+	return true
 }
 
 // isIndexEqual returns true if definitions of two indexes are the same.
@@ -670,6 +619,14 @@ func isIndexEqual(old, new *indexDef) bool {
 	if !strings.EqualFold(old.name, new.name) {
 		return false
 	}
+	if old.tp != new.tp {
+		return false
+	}
+
+	if !isKeyPartEqual(old.keys, new.keys) {
+		return false
+	}
+
 	if old.ctx.GetText() != new.ctx.GetText() {
 		return false
 	}
@@ -718,9 +675,6 @@ func (diff *diffNode) deparse() (string, error) {
 	if err := sortAndWriteDropIndexList(&buf, diff.dropIndexList); err != nil {
 		return "", err
 	}
-	if err := sortAndWriteDropIndexConstraintList(&buf, diff.dropIndexConstraintList); err != nil {
-		return "", err
-	}
 	if err := sortAndWriteDropViewList(&buf, diff.dropViewList); err != nil {
 		return "", err
 	}
@@ -751,12 +705,10 @@ func (diff *diffNode) deparse() (string, error) {
 	if err := sortAndWriteCreateIndexList(&buf, diff.createIndexList); err != nil {
 		return "", err
 	}
-
-	if err := sortAndWriteCreateIndexConstraintList(&buf, diff.createIndexConstraintList); err != nil {
+	if err := sortAndWriteCreatePrimaryIndexList(&buf, diff.createPrimaryKeyList); err != nil {
 		return "", err
 	}
-
-	if err := sortAndWriteCreatePrimaryIndexList(&buf, diff.createPrimaryKeyList); err != nil {
+	if err := sortAndWriteDropPrimaryIndexList(&buf, diff.dropPrimaryKeyList); err != nil {
 		return "", err
 	}
 
@@ -783,12 +735,7 @@ func (diff *diffNode) deparse() (string, error) {
 	if err := sortAndWriteCreateTriggerList(&buf, diff.createTriggerList); err != nil {
 		return "", err
 	}
-
-	text := buf.String()
-	if len(text) > 0 {
-		return fmt.Sprintf("%s%s%s", disableFKCheckStmt, buf.String(), enableFKCheckStmt), nil
-	}
-	return "", nil
+	return buf.String(), nil
 }
 
 func sortAndWriteAlertTableOptionList(buf *strings.Builder, tableOptions []*tableOptionDef) error {
@@ -849,10 +796,10 @@ func sortAndWriteAddCheckConstraintList(buf *strings.Builder, checks []*checkDef
 }
 
 func writeAddCheckConstraintStatement(buf *strings.Builder, check *checkDef) error {
-	if _, err := buf.WriteString(fmt.Sprintf("ALTER TABLE `%s` ADD ", check.tableName)); err != nil {
+	if _, err := buf.WriteString(fmt.Sprintf("ALTER TABLE `%s` ADD CONSTRAINT `%s` ", check.tableName, check.name)); err != nil {
 		return err
 	}
-	if _, err := buf.WriteString(check.ctx.GetParser().GetTokenStream().GetTextFromRuleContext(check.ctx.GetRuleContext())); err != nil {
+	if _, err := buf.WriteString(check.ctx.GetText()); err != nil {
 		return err
 	}
 	if _, err := buf.WriteString(";\n\n"); err != nil {
@@ -877,10 +824,10 @@ func sortAndWriteAddForeignKeyList(buf *strings.Builder, fks []*foreignKeyDef) e
 }
 
 func writeAddForeignKeyStatement(buf *strings.Builder, fk *foreignKeyDef) error {
-	if _, err := buf.WriteString("ALTER TABLE " + fk.tableName + " ADD "); err != nil {
+	if _, err := buf.WriteString("ALTER TABLE " + fk.tableName + " ADD FOREIGN KEY "); err != nil {
 		return err
 	}
-	if _, err := buf.WriteString(fk.ctx.GetParser().GetTokenStream().GetTextFromRuleContext(fk.ctx.GetRuleContext())); err != nil {
+	if _, err := buf.WriteString(fk.ctx.GetText()); err != nil {
 		return err
 	}
 	if _, err := buf.WriteString(";\n\n"); err != nil {
@@ -905,7 +852,18 @@ func sortAndWriteDropForeignKeyList(buf *strings.Builder, fks []*foreignKeyDef) 
 }
 
 func writeDropForeignKeyStatement(buf *strings.Builder, fk *foreignKeyDef) error {
-	if _, err := buf.WriteString(fmt.Sprintf("ALTER TABLE `%s` DROP FOREIGN KEY IF EXISTS `%s`;\n\n", fk.tableName, fk.name)); err != nil {
+	if _, err := buf.WriteString("ALTER TABLE " + fk.tableName + " DROP FOREIGN KEY "); err != nil {
+		return err
+	}
+	if fk.ifExists {
+		if _, err := buf.WriteString("IF EXISTS "); err != nil {
+			return err
+		}
+	}
+	if _, err := buf.WriteString(fk.name); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(";\n\n"); err != nil {
 		return err
 	}
 	return nil
@@ -1141,28 +1099,6 @@ func writeDropIndexStatement(buf *strings.Builder, index *indexDef) error {
 	return nil
 }
 
-func sortAndWriteDropIndexConstraintList(buf *strings.Builder, indexes []*indexConstraintDef) error {
-	sort.Slice(indexes, func(i, j int) bool {
-		c1 := fmt.Sprintf("%s.%s", indexes[i].tableName, indexes[i].name)
-		c2 := fmt.Sprintf("%s.%s", indexes[j].tableName, indexes[j].name)
-		return c1 < c2
-	})
-
-	for _, index := range indexes {
-		if err := writeDropIndexConstraintStatement(buf, index); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func writeDropIndexConstraintStatement(buf *strings.Builder, index *indexConstraintDef) error {
-	if _, err := buf.WriteString(fmt.Sprintf("DROP INDEX IF EXISTS `%s` ON `%s`;\n\n", index.name, index.tableName)); err != nil {
-		return err
-	}
-	return nil
-}
-
 func sortAndWriteDropViewList(buf *strings.Builder, views []*viewDef) error {
 	sort.Slice(views, func(i, j int) bool {
 		return views[i].name < views[j].name
@@ -1214,7 +1150,7 @@ func writeDropTableStatement(buf *strings.Builder, table *tableDef) error {
 
 func sortAndWriteCreateTableList(buf *strings.Builder, ns []*tableDef) error {
 	sort.Slice(ns, func(i, j int) bool {
-		return ns[i].name < ns[j].name
+		return ns[i].id < ns[j].id
 	})
 
 	for _, table := range ns {
@@ -1226,12 +1162,11 @@ func sortAndWriteCreateTableList(buf *strings.Builder, ns []*tableDef) error {
 }
 
 func writeCreateTableStatement(buf *strings.Builder, table *tableDef) error {
-	stmt := fmt.Sprintf("CREATE %s;\n\n", table.ctx.GetParser().GetTokenStream().GetTextFromRuleContext(table.ctx.GetRuleContext()))
-	if stmt[0:12] == "CREATE TABLE" {
-		stmt = stmt[0:12] + " IF NOT EXISTS" + stmt[12:]
+	if _, err := buf.WriteString(fmt.Sprintf("CREATE " + table.ctx.GetParser().GetTokenStream().GetTextFromRuleContext(table.ctx.GetRuleContext()))); err != nil {
+		return err
 	}
 
-	if _, err := buf.WriteString(stmt); err != nil {
+	if _, err := buf.WriteString(";\n\n"); err != nil {
 		return err
 	}
 	return nil
@@ -1260,11 +1195,11 @@ func writeDropColumnStatement(buf *strings.Builder, column *columnDef) error {
 }
 
 func sortAndWriteAddColumnList(buf *strings.Builder, columns []*columnDef) error {
-	// sort.Slice(columns, func(i, j int) bool {
-	// 	c1 := fmt.Sprintf("%s.%s", columns[i].tableName, columns[i].name)
-	// 	c2 := fmt.Sprintf("%s.%s", columns[j].tableName, columns[j].name)
-	// 	return c1 < c2
-	// })
+	sort.Slice(columns, func(i, j int) bool {
+		c1 := fmt.Sprintf("%s.%s", columns[i].tableName, columns[i].name)
+		c2 := fmt.Sprintf("%s.%s", columns[j].tableName, columns[j].name)
+		return c1 < c2
+	})
 
 	for _, column := range columns {
 		if err := writeAddColumnStatement(buf, column); err != nil {
@@ -1278,7 +1213,7 @@ func writeAddColumnStatement(buf *strings.Builder, column *columnDef) error {
 	if _, err := buf.WriteString(fmt.Sprintf("ALTER TABLE `%s` ADD COLUMN IF NOT EXISTS ", column.tableName)); err != nil {
 		return err
 	}
-	if _, err := buf.WriteString(column.ctx.GetParser().GetTokenStream().GetTextFromRuleContext(column.ctx.GetRuleContext())); err != nil {
+	if err := column.toString(buf); err != nil {
 		return err
 	}
 	// TODO: add column position.
@@ -1334,43 +1269,13 @@ func sortAndWriteCreateViewList(buf *strings.Builder, views []*viewDef) error {
 }
 
 func writeCreateViewStatement(buf *strings.Builder, view *viewDef) error {
-	algorithm := "UNDEFINED"
-	if view.ctx.ViewReplaceOrAlgorithm() != nil {
-		if algo := view.ctx.ViewReplaceOrAlgorithm().ViewAlgorithm(); algo != nil {
-			algorithm = algo.GetAlgorithm().GetText()
-		}
+	if _, err := buf.WriteString("CREATE OR REPLACE "); err != nil {
+		return err
 	}
-
-	definer := "CURRENT_USER"
-	if view.ctx.DefinerClause() != nil {
-		definer = view.ctx.DefinerClause().GetText()
+	if _, err := buf.WriteString(view.ctx.GetParser().GetTokenStream().GetTextFromRuleContext(view.ctx.GetRuleContext())); err != nil {
+		return err
 	}
-	sqlSecurity := "DEFINER"
-	if view.ctx.ViewSuid() != nil {
-		if view.ctx.ViewSuid().INVOKER_SYMBOL() != nil {
-			sqlSecurity = "INVOKER"
-		}
-	}
-
-	cols, selectExpr := "", ""
-	if view.ctx.ViewTail() != nil {
-		if list := view.ctx.ViewTail().ColumnInternalRefList(); list != nil {
-			cols = list.GetParser().GetTokenStream().GetTextFromRuleContext(list.GetRuleContext())
-		}
-		if viewSelect := view.ctx.ViewTail().ViewSelect(); viewSelect != nil {
-			selectExpr = viewSelect.GetParser().GetTokenStream().GetTextFromRuleContext(viewSelect.GetRuleContext())
-		}
-	} else {
-		return errors.Errorf("view %s has no select expr", view.name)
-	}
-	var viewSQL string
-	if cols == "" {
-		viewSQL = fmt.Sprintf("CREATE OR REPLACE ALGORITHM=%s DEFINER=%s SQL SECURITY %s VIEW `%s` AS %s;\n\n", algorithm, definer, sqlSecurity, view.name, selectExpr)
-	} else {
-		viewSQL = fmt.Sprintf("CREATE OR REPLACE ALGORITHM=%s DEFINER=%s SQL SECURITY %s VIEW `%s` %s AS %s;\n\n", algorithm, definer, sqlSecurity, view.name, cols, selectExpr)
-	}
-
-	if _, err := buf.WriteString(viewSQL); err != nil {
+	if _, err := buf.WriteString(";\n\n"); err != nil {
 		return err
 	}
 
@@ -1397,14 +1302,13 @@ func writeModifyColumnStatement(buf *strings.Builder, column *columnDef) error {
 		return err
 	}
 
-	if _, err := buf.WriteString("MODIFY COLUMN IF EXISTS "); err != nil {
+	if _, err := buf.WriteString("MODIFY COLUMN IF EXISTS"); err != nil {
 		return err
 	}
-
-	if _, err := buf.WriteString(column.ctx.GetParser().GetTokenStream().GetTextFromRuleContext(column.ctx.GetRuleContext())); err != nil {
+	if err := column.toString(buf); err != nil {
 		return err
 	}
-
+	// TODO: add column position.
 	if _, err := buf.WriteString(";\n\n"); err != nil {
 		return err
 	}
@@ -1439,40 +1343,6 @@ func writeCreateIndexStatement(buf *strings.Builder, index *indexDef) error {
 	return nil
 }
 
-func sortAndWriteCreateIndexConstraintList(buf *strings.Builder, indexes []*indexConstraintDef) error {
-	sort.Slice(indexes, func(i, j int) bool {
-		c1 := fmt.Sprintf("%s.%s", indexes[i].tableName, indexes[i].name)
-		c2 := fmt.Sprintf("%s.%s", indexes[j].tableName, indexes[j].name)
-		return c1 < c2
-	})
-
-	for _, index := range indexes {
-		if err := writeCreateIndexConstraintStatement(buf, index); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func writeCreateIndexConstraintStatement(buf *strings.Builder, index *indexConstraintDef) error {
-	indexType := ""
-	if nameAndType := index.ctx.IndexNameAndType(); nameAndType != nil {
-		indexType = nameAndType.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
-			Start: nameAndType.IndexName().GetStop().GetTokenIndex() + 1,
-			Stop:  nameAndType.GetStop().GetTokenIndex(),
-		})
-	}
-	keyList := index.ctx.KeyListVariants().GetParser().GetTokenStream().GetTextFromRuleContext(index.ctx.KeyListVariants().GetRuleContext())
-	indexOption := index.ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
-		Start: index.ctx.KeyListVariants().GetStop().GetTokenIndex() + 1,
-		Stop:  index.ctx.GetStop().GetTokenIndex(),
-	})
-	if _, err := buf.WriteString(fmt.Sprintf("CREATE INDEX `%s` ON `%s`%s%s%s;\n\n", index.name, index.tableName, keyList, indexType, indexOption)); err != nil {
-		return err
-	}
-	return nil
-}
-
 func sortAndWriteCreatePrimaryIndexList(buf *strings.Builder, primaryKeys []*primaryKeyDef) error {
 	sort.Slice(primaryKeys, func(i, j int) bool {
 		return primaryKeys[i].tableName < primaryKeys[j].tableName
@@ -1487,12 +1357,9 @@ func sortAndWriteCreatePrimaryIndexList(buf *strings.Builder, primaryKeys []*pri
 }
 
 func writeCreatePrimaryIndexStatement(buf *strings.Builder, primary *primaryKeyDef) error {
-	keyList := primary.ctx.KeyListVariants().GetParser().GetTokenStream().GetTextFromRuleContext(primary.ctx.KeyListVariants().GetRuleContext())
-	indexOption := primary.ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
-		Start: primary.ctx.KeyListVariants().GetStop().GetTokenIndex() + 1,
-		Stop:  primary.ctx.GetStop().GetTokenIndex(),
-	})
-	if _, err := buf.WriteString(fmt.Sprintf("ALTER TABLE `%s` ADD PRIMARY KEY %s%s;\n\n", primary.tableName, keyList, indexOption)); err != nil {
+	// todo: add more format
+	cols := strings.Join(primary.columns, ",")
+	if _, err := buf.WriteString(fmt.Sprintf("ALTER TABLE `%s` ADD PRIMARY KEY (%s)", primary.tableName, cols)); err != nil {
 		return err
 	}
 	return nil
@@ -1540,7 +1407,6 @@ type viewDef struct {
 	name     string
 	dbName   string
 	tempView string
-	columns  []string
 	ifExists bool
 }
 
@@ -1588,40 +1454,32 @@ type triggerDef struct {
 }
 
 type tableDef struct {
-	ctx              *mysql.CreateTableContext
-	id               int
-	name             string
-	columns          map[string]*columnDef
-	indexes          map[string]*indexDef
-	indexConstraints map[string]*indexConstraintDef
-	foreignKeys      map[string]*foreignKeyDef
-	checks           map[string]*checkDef
-	tableOptions     map[string]*tableOptionDef
-	primaryKey       *primaryKeyDef
+	ctx          *mysql.CreateTableContext
+	id           int
+	name         string
+	columns      map[string]*columnDef
+	indexes      map[string]*indexDef
+	foreignKeys  map[string]*foreignKeyDef
+	checks       map[string]*checkDef
+	tableOptions map[string]*tableOptionDef
+	primaryKey   *primaryKeyDef
 }
 
 func newTableDef(id int, name string) *tableDef {
 	return &tableDef{
-		id:               id,
-		name:             name,
-		columns:          make(map[string]*columnDef),
-		indexes:          make(map[string]*indexDef),
-		indexConstraints: make(map[string]*indexConstraintDef),
-		foreignKeys:      make(map[string]*foreignKeyDef),
-		checks:           make(map[string]*checkDef),
-		tableOptions:     make(map[string]*tableOptionDef),
+		id:           id,
+		name:         name,
+		columns:      make(map[string]*columnDef),
+		indexes:      make(map[string]*indexDef),
+		foreignKeys:  make(map[string]*foreignKeyDef),
+		checks:       make(map[string]*checkDef),
+		tableOptions: make(map[string]*tableOptionDef),
 	}
 }
 
 type primaryKeyDef struct {
 	ctx       *mysql.TableConstraintDefContext
 	columns   []string
-	tableName string
-}
-
-type indexConstraintDef struct {
-	ctx       *mysql.TableConstraintDefContext
-	name      string
 	tableName string
 }
 
@@ -1633,13 +1491,13 @@ type foreignKeyDef struct {
 	referencedTable   string
 	referencedColumns []string
 	tableName         string
+	ifExists          bool
 }
 
 type checkDef struct {
-	ctx       *mysql.TableConstraintDefContext
+	ctx       *mysql.CheckConstraintContext
 	id        int
 	name      string
-	enforced  bool
 	tableName string
 }
 
@@ -1672,9 +1530,39 @@ type columnDef struct {
 	defaultValue   string
 	comment        string
 	nullable       bool
-	visible        bool
 	tableName      string
 	columnPosition *columnPositionDef
+}
+
+func (c *columnDef) toString(buf *strings.Builder) error {
+	if _, err := buf.WriteString(fmt.Sprintf("`%s` %s", c.name, c.tp)); err != nil {
+		return err
+	}
+	if c.nullable {
+		if c.defaultValue == "" {
+			if _, err := buf.WriteString(" DEFAULT"); err != nil {
+				return err
+			}
+		}
+		if _, err := buf.WriteString(" NULL"); err != nil {
+			return err
+		}
+	} else {
+		if _, err := buf.WriteString(" NOT NULL"); err != nil {
+			return err
+		}
+	}
+	if c.defaultValue != "" {
+		if _, err := buf.WriteString(fmt.Sprintf(" DEFAULT %s", c.defaultValue)); err != nil {
+			return err
+		}
+	}
+	if c.comment != "" {
+		if _, err := buf.WriteString(fmt.Sprintf(" COMMENT '%s'", c.comment)); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type mysqlTransformer struct {
@@ -1682,13 +1570,12 @@ type mysqlTransformer struct {
 
 	db                  *databaseDef
 	currentTable        string
-	currView            string
 	err                 error
 	ignoreCaseSensitive bool
 }
 
 func (diff *diffNode) parseMySQLSchemaStringToSchemDef(schema string) (*databaseDef, error) {
-	list, err := ParseMySQL(schema)
+	list, err := mysqlparser.ParseMySQL(schema)
 	if err != nil {
 		return nil, err
 	}
@@ -1712,7 +1599,7 @@ func (t *mysqlTransformer) EnterCreateTable(ctx *mysql.CreateTableContext) {
 		return
 	}
 
-	databaseName, tableName := NormalizeMySQLTableName(ctx.TableName())
+	databaseName, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
 	if t.ignoreCaseSensitive {
 		tableName = strings.ToLower(tableName)
 	}
@@ -1751,64 +1638,60 @@ func (t *mysqlTransformer) EnterCreateTableOptions(ctx *mysql.CreateTableOptions
 			newTableOption := &tableOptionDef{
 				ctx:         tableOption,
 				tableName:   t.currentTable,
-				alterOption: fmt.Sprintf("ALTER TABLE `%s` %s;", t.currentTable, tableOption.GetParser().GetTokenStream().GetTextFromRuleContext(tableOption.GetRuleContext())),
+				alterOption: fmt.Sprintf("ALTER TABLE `%s` %s", t.currentTable, tableOption.GetText()),
 			}
-
-			switch {
-			case tableOption.ENGINE_SYMBOL() != nil:
+			if tableOption.ENGINE_SYMBOL() != nil {
 				newTableOption.option = "ENGINE"
-			case tableOption.SECONDARY_ENGINE_SYMBOL() != nil:
+			} else if tableOption.SECONDARY_ENGINE_SYMBOL() != nil {
 				newTableOption.option = "SECONDARY_ENGINE"
-			case tableOption.DefaultCharset() != nil:
-				newTableOption.option = "DEFAULT CHARACTER SET"
-			case tableOption.DefaultCollation() != nil:
+			} else if tableOption.DefaultCharset() != nil {
+				newTableOption.option = "DEFAULT CHARSET"
+			} else if tableOption.DefaultCollation() != nil {
 				newTableOption.option = "DEFAULT COLLATE"
-			case tableOption.AUTO_INCREMENT_SYMBOL() != nil:
+			} else if tableOption.AUTO_INCREMENT_SYMBOL() != nil {
 				newTableOption.option = "AUTO_INCREMENT"
-			case tableOption.COMMENT_SYMBOL() != nil:
+			} else if tableOption.COMMENT_SYMBOL() != nil {
 				newTableOption.option = "COMMENT"
-			case tableOption.AVG_ROW_LENGTH_SYMBOL() != nil:
+			} else if tableOption.AVG_ROW_LENGTH_SYMBOL() != nil {
 				newTableOption.option = "AVG_ROW_LENGTH"
-			case tableOption.CHECKSUM_SYMBOL() != nil:
+			} else if tableOption.CHECKSUM_SYMBOL() != nil {
 				newTableOption.option = "CHECKSUM"
-			case tableOption.COMPRESSION_SYMBOL() != nil:
+			} else if tableOption.COMPRESSION_SYMBOL() != nil {
 				newTableOption.option = "COMPRESSION"
-			case tableOption.CONNECTION_SYMBOL() != nil:
+			} else if tableOption.CONNECTION_SYMBOL() != nil {
 				newTableOption.option = "CONNECTION"
-			case tableOption.PASSWORD_SYMBOL() != nil:
+			} else if tableOption.PASSWORD_SYMBOL() != nil {
 				newTableOption.option = "PASSWORD"
-			case tableOption.KEY_BLOCK_SIZE_SYMBOL() != nil:
+			} else if tableOption.KEY_BLOCK_SIZE_SYMBOL() != nil {
 				newTableOption.option = "KEY_BLOCK_SIZE"
-			case tableOption.MAX_ROWS_SYMBOL() != nil:
+			} else if tableOption.MAX_ROWS_SYMBOL() != nil {
 				newTableOption.option = "MAX_ROWS"
-			case tableOption.MIN_ROWS_SYMBOL() != nil:
+			} else if tableOption.MIN_ROWS_SYMBOL() != nil {
 				newTableOption.option = "MIN_ROWS"
-			case tableOption.DELAY_KEY_WRITE_SYMBOL() != nil:
+			} else if tableOption.DELAY_KEY_WRITE_SYMBOL() != nil {
 				newTableOption.option = "DELAY_KEY_WRITE"
-			case tableOption.ROW_FORMAT_SYMBOL() != nil:
+			} else if tableOption.ROW_FORMAT_SYMBOL() != nil {
 				newTableOption.option = "ROW_FORMAT"
-			case tableOption.STATS_PERSISTENT_SYMBOL() != nil:
+			} else if tableOption.STATS_PERSISTENT_SYMBOL() != nil {
 				newTableOption.option = "STATS_PERSISTENT"
-			case tableOption.STATS_AUTO_RECALC_SYMBOL() != nil:
+			} else if tableOption.STATS_AUTO_RECALC_SYMBOL() != nil {
 				newTableOption.option = "STATS_AUTO_RECALC"
-			case tableOption.PACK_KEYS_SYMBOL() != nil:
+			} else if tableOption.PACK_KEYS_SYMBOL() != nil {
 				newTableOption.option = "PACK_KEYS"
-			case tableOption.TABLESPACE_SYMBOL() != nil:
+			} else if tableOption.TABLESPACE_SYMBOL() != nil {
 				newTableOption.option = "TABLESPACE"
-			case tableOption.STORAGE_SYMBOL() != nil:
+			} else if tableOption.STORAGE_SYMBOL() != nil {
 				newTableOption.option = "STORAGE"
-			case tableOption.STATS_SAMPLE_PAGES_SYMBOL() != nil:
+			} else if tableOption.STATS_SAMPLE_PAGES_SYMBOL() != nil {
 				newTableOption.option = "STATS_SAMPLE_PAGES"
-			case tableOption.INSERT_METHOD_SYMBOL() != nil:
+			} else if tableOption.INSERT_METHOD_SYMBOL() != nil {
 				newTableOption.option = "INSERT_METHOD"
-			case tableOption.TABLE_CHECKSUM_SYMBOL() != nil:
+			} else if tableOption.TABLE_CHECKSUM_SYMBOL() != nil {
 				newTableOption.option = "TABLE_CHECKSUM"
-			case tableOption.UNION_SYMBOL() != nil:
+			} else if tableOption.UNION_SYMBOL() != nil {
 				newTableOption.option = "UNION"
-			case tableOption.ENCRYPTION_SYMBOL() != nil:
+			} else if tableOption.ENCRYPTION_SYMBOL() != nil {
 				newTableOption.option = "ENCRYPTION"
-			case tableOption.DATA_SYMBOL() != nil && tableOption.DIRECTORY_SYMBOL() != nil:
-				newTableOption.option = "DATA DIRECTORY"
 			}
 			table := t.db.schemas[""].tables[t.currentTable]
 			table.tableOptions[newTableOption.option] = newTableOption
@@ -1822,11 +1705,11 @@ func (t *mysqlTransformer) EnterTableConstraintDef(ctx *mysql.TableConstraintDef
 		return
 	}
 
-	table := t.db.schemas[""].tables[t.currentTable]
 	if ctx.GetType_() != nil {
 		switch strings.ToUpper(ctx.GetType_().GetText()) {
 		case "PRIMARY":
 			list := extractKeyListVariants(ctx.KeyListVariants())
+			table := t.db.schemas[""].tables[t.currentTable]
 			table.primaryKey = &primaryKeyDef{
 				ctx:       ctx,
 				columns:   list,
@@ -1835,11 +1718,12 @@ func (t *mysqlTransformer) EnterTableConstraintDef(ctx *mysql.TableConstraintDef
 		case "FOREIGN":
 			var name string
 			if ctx.ConstraintName() != nil && ctx.ConstraintName().Identifier() != nil {
-				name = NormalizeMySQLIdentifier(ctx.ConstraintName().Identifier())
+				name = mysqlparser.NormalizeMySQLIdentifier(ctx.ConstraintName().Identifier())
 			} else if ctx.IndexName() != nil {
-				name = NormalizeMySQLIdentifier(ctx.IndexName().Identifier())
+				name = mysqlparser.NormalizeMySQLIdentifier(ctx.IndexName().Identifier())
 			}
 			keys := extractKeyList(ctx.KeyList())
+			table := t.db.schemas[""].tables[t.currentTable]
 			if table.foreignKeys[name] != nil {
 				t.err = errors.New("multiple foreign keys found: " + name)
 				return
@@ -1855,51 +1739,21 @@ func (t *mysqlTransformer) EnterTableConstraintDef(ctx *mysql.TableConstraintDef
 				tableName:         t.currentTable,
 			}
 			table.foreignKeys[name] = fk
-		case "KEY", "INDEX", "UNIQUE":
-			indexName := strings.ToLower(ctx.IndexNameAndType().IndexName().GetText())
-			if indexName != `''` && len(indexName) > 2 {
-				indexName = indexName[1 : len(indexName)-1]
-			}
-			index := &indexConstraintDef{
-				ctx:       ctx,
-				name:      indexName,
-				tableName: t.currentTable,
-			}
-			table.indexConstraints[index.name] = index
-		case "FULLTEXT", "SPATIAL":
-			indexName := strings.ToLower(ctx.IndexName().GetText())
-			if indexName != `''` && len(indexName) > 2 {
-				indexName = indexName[1 : len(indexName)-1]
-			}
-			index := &indexConstraintDef{
-				ctx:       ctx,
-				name:      indexName,
-				tableName: t.currentTable,
-			}
-			table.indexConstraints[index.name] = index
 		}
 	}
 
 	if ctx.CheckConstraint() != nil {
-		if _, ok := ctx.CheckConstraint().(*mysql.CheckConstraintContext); ok {
+		if constraint, ok := ctx.CheckConstraint().(*mysql.CheckConstraintContext); ok {
 			var name string
 			if ctx.ConstraintName() != nil && ctx.ConstraintName().Identifier() != nil {
-				name = NormalizeMySQLIdentifier(ctx.ConstraintName().Identifier())
-			}
-
-			enforced := true
-			if ctx.ConstraintEnforcement() != nil {
-				if ctx.ConstraintEnforcement().NOT_SYMBOL() != nil {
-					enforced = false
-				}
+				name = mysqlparser.NormalizeMySQLIdentifier(ctx.ConstraintName().Identifier())
 			}
 
 			table := t.db.schemas[""].tables[t.currentTable]
 			ck := &checkDef{
-				ctx:       ctx,
+				ctx:       constraint,
 				id:        len(table.checks),
 				name:      name,
-				enforced:  enforced,
 				tableName: t.currentTable,
 			}
 			table.checks[ck.name] = ck
@@ -1909,7 +1763,7 @@ func (t *mysqlTransformer) EnterTableConstraintDef(ctx *mysql.TableConstraintDef
 
 // extract table name and column names.
 func extractReference(ctx mysql.IReferencesContext) (string, []string) {
-	_, table := NormalizeMySQLTableRef(ctx.TableRef())
+	_, table := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
 	if ctx.IdentifierListWithParentheses() != nil {
 		columns := extractIdentifierList(ctx.IdentifierListWithParentheses().IdentifierList())
 		return table, columns
@@ -1921,7 +1775,7 @@ func extractReference(ctx mysql.IReferencesContext) (string, []string) {
 func extractIdentifierList(ctx mysql.IIdentifierListContext) []string {
 	var result []string
 	for _, identifier := range ctx.AllIdentifier() {
-		result = append(result, NormalizeMySQLIdentifier(identifier))
+		result = append(result, mysqlparser.NormalizeMySQLIdentifier(identifier))
 	}
 	return result
 }
@@ -1942,7 +1796,7 @@ func extractKeyListWithExpression(ctx mysql.IKeyListWithExpressionContext) []str
 	var result []string
 	for _, key := range ctx.AllKeyPartOrExpression() {
 		if key.KeyPart() != nil {
-			keyText := NormalizeMySQLIdentifier(key.KeyPart().Identifier())
+			keyText := mysqlparser.NormalizeMySQLIdentifier(key.KeyPart().Identifier())
 			result = append(result, keyText)
 		} else if key.ExprWithParentheses() != nil {
 			keyText := key.GetParser().GetTokenStream().GetTextFromRuleContext(key.ExprWithParentheses())
@@ -1956,7 +1810,7 @@ func extractKeyListWithExpression(ctx mysql.IKeyListWithExpressionContext) []str
 func extractKeyList(ctx mysql.IKeyListContext) []string {
 	var result []string
 	for _, key := range ctx.AllKeyPart() {
-		keyText := NormalizeMySQLIdentifier(key.Identifier())
+		keyText := mysqlparser.NormalizeMySQLIdentifier(key.Identifier())
 		result = append(result, keyText)
 	}
 	return result
@@ -1968,7 +1822,7 @@ func (t *mysqlTransformer) EnterColumnDefinition(ctx *mysql.ColumnDefinitionCont
 		return
 	}
 
-	_, _, columnName := NormalizeMySQLColumnName(ctx.ColumnName())
+	_, _, columnName := mysqlparser.NormalizeMySQLColumnName(ctx.ColumnName())
 	dataType := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.FieldDefinition().DataType())
 	table := t.db.schemas[""].tables[t.currentTable]
 	if _, ok := table.columns[columnName]; ok {
@@ -1983,7 +1837,6 @@ func (t *mysqlTransformer) EnterColumnDefinition(ctx *mysql.ColumnDefinitionCont
 		defaultValue: "",
 		comment:      "",
 		nullable:     true,
-		visible:      true,
 		tableName:    t.currentTable,
 	}
 
@@ -2007,11 +1860,9 @@ func (t *mysqlTransformer) EnterColumnDefinition(ctx *mysql.ColumnDefinitionCont
 			if comment != `''` && len(comment) > 2 {
 				columnState.comment = comment[1 : len(comment)-1]
 			}
-		case attribute.INVISIBLE_SYMBOL() != nil:
-			columnState.visible = false
 		}
 	}
-	// todo: need handle more types.
+	// serial meaning not null.
 	if strings.ToLower(dataType) == "serial" {
 		columnState.nullable = false
 	}
@@ -2030,11 +1881,11 @@ func nextDefaultChannelTokenIndex(tokens antlr.TokenStream, currentIndex int) in
 
 // EnterCreateIndex is called when production createIndex is entered.
 func (t *mysqlTransformer) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
-	_, tableName := NormalizeMySQLTableRef(ctx.CreateIndexTarget().TableRef())
+	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.CreateIndexTarget().TableRef())
 	if t.ignoreCaseSensitive {
 		tableName = strings.ToLower(tableName)
 	}
-	indexName := NormalizeMySQLIdentifier(ctx.IndexName().Identifier())
+	indexName := mysqlparser.NormalizeMySQLIdentifier(ctx.IndexName().Identifier())
 	table, exists := t.db.schemas[""].tables[tableName]
 	if !exists {
 		t.err = errors.Errorf("Try to create index `%s` on table `%s`, but table not found", indexName, tableName)
@@ -2042,10 +1893,6 @@ func (t *mysqlTransformer) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
 	}
 	// Index names are always case insensitive
 	if _, exists := table.indexes[strings.ToLower(indexName)]; exists {
-		t.err = errors.Errorf("Try to create index `%s` on table `%s`, but index already exists", indexName, tableName)
-		return
-	}
-	if _, exists := table.indexConstraints[strings.ToLower(indexName)]; exists {
 		t.err = errors.Errorf("Try to create index `%s` on table `%s`, but index already exists", indexName, tableName)
 		return
 	}
@@ -2073,8 +1920,7 @@ func (t *mysqlTransformer) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
 
 // EnterCreateView is called when production createView is entered.
 func (t *mysqlTransformer) EnterCreateView(ctx *mysql.CreateViewContext) {
-	databaseName, viewName := NormalizeMySQLViewName(ctx.ViewName())
-	t.currView = viewName
+	databaseName, viewName := mysqlparser.NormalizeMySQLViewName(ctx.ViewName())
 	if t.ignoreCaseSensitive {
 		viewName = strings.ToLower(viewName)
 	}
@@ -2094,74 +1940,9 @@ func (t *mysqlTransformer) EnterCreateView(ctx *mysql.CreateViewContext) {
 	}
 }
 
-func (t *mysqlTransformer) ExitCreateView(ctx *mysql.CreateViewContext) {
-	if t.err != nil {
-		return
-	}
-
-	view := t.db.views[t.currView]
-
-	var tableSchemaList []base.TableSchema
-	for _, table := range t.db.schemas[""].tables {
-		var columnList []base.ColumnInfo
-		for _, col := range table.columns {
-			columnInfo := base.ColumnInfo{
-				Name: col.name,
-			}
-			columnList = append(columnList, columnInfo)
-		}
-		tableSchema := base.TableSchema{
-			Name:       table.name,
-			ColumnList: columnList,
-		}
-		tableSchemaList = append(tableSchemaList, tableSchema)
-	}
-	var viewSchemaList []base.ViewSchema
-	for _, view := range t.db.views {
-		viewSchema := base.ViewSchema{
-			Name:       view.name,
-			Definition: fmt.Sprintf("CREATE %s;", view.ctx.GetParser().GetTokenStream().GetTextFromRuleContext(view.ctx.GetRuleContext())),
-		}
-		viewSchemaList = append(viewSchemaList, viewSchema)
-	}
-	schemaList := []base.SchemaSchema{
-		{
-			Name:      "",
-			TableList: tableSchemaList,
-			ViewList:  viewSchemaList,
-		},
-	}
-
-	schemaInfo := &base.SensitiveSchemaInfo{
-		DatabaseList: []base.DatabaseSchema{
-			{
-				Name:       t.db.name,
-				SchemaList: schemaList,
-			},
-		},
-	}
-
-	extractor := &fieldExtractor{
-		currentDatabase: view.dbName,
-		schemaInfo:      schemaInfo,
-	}
-
-	fields, err := extractor.mysqlExtractCreateView(ctx)
-	if err != nil {
-		t.err = err
-		return
-	}
-
-	var result []string
-	for _, field := range fields {
-		result = append(result, field.Name)
-	}
-	view.columns = result
-}
-
 // EnterCreateEvent is called when production createEvent is entered.
 func (t *mysqlTransformer) EnterCreateEvent(ctx *mysql.CreateEventContext) {
-	schemaName, eventName := NormalizeMySQLEventName(ctx.EventName())
+	schemaName, eventName := mysqlparser.NormalizeMySQLEventName(ctx.EventName())
 	if t.ignoreCaseSensitive {
 		eventName = strings.ToLower(eventName)
 	}
@@ -2185,7 +1966,7 @@ func (t *mysqlTransformer) EnterCreateEvent(ctx *mysql.CreateEventContext) {
 
 // EnterCreateTrigger is called when production createTrigger is entered.
 func (t *mysqlTransformer) EnterCreateTrigger(ctx *mysql.CreateTriggerContext) {
-	schemaName, triggerName := NormalizeMySQLTriggerName(ctx.TriggerName())
+	schemaName, triggerName := mysqlparser.NormalizeMySQLTriggerName(ctx.TriggerName())
 	if t.ignoreCaseSensitive {
 		triggerName = strings.ToLower(triggerName)
 	}
@@ -2209,7 +1990,7 @@ func (t *mysqlTransformer) EnterCreateTrigger(ctx *mysql.CreateTriggerContext) {
 
 // EnterCreateFunction is called when production createFunction is entered.
 func (t *mysqlTransformer) EnterCreateFunction(ctx *mysql.CreateFunctionContext) {
-	databaseName, functionName := NormalizeMySQLFunctionName(ctx.FunctionName())
+	databaseName, functionName := mysqlparser.NormalizeMySQLFunctionName(ctx.FunctionName())
 	if t.ignoreCaseSensitive {
 		functionName = strings.ToLower(functionName)
 	}
@@ -2231,7 +2012,7 @@ func (t *mysqlTransformer) EnterCreateFunction(ctx *mysql.CreateFunctionContext)
 
 // EnterCreateProcedure is called when production createProcedure is entered.
 func (t *mysqlTransformer) EnterCreateProcedure(ctx *mysql.CreateProcedureContext) {
-	databaseName, procedureName := NormalizeMySQLProcedureName(ctx.ProcedureName())
+	databaseName, procedureName := mysqlparser.NormalizeMySQLProcedureName(ctx.ProcedureName())
 	if t.ignoreCaseSensitive {
 		procedureName = strings.ToLower(procedureName)
 	}

@@ -14,7 +14,7 @@ import (
 	"github.com/pingcap/tidb/parser/ast"
 	"github.com/pkg/errors"
 
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	"github.com/bytebase/bytebase/backend/resources/mysqlutil"
 )
 
@@ -147,7 +147,7 @@ func (driver *Driver) GenerateRollbackSQL(ctx context.Context, binlogSizeLimit i
 // GetTableColumns parses the schema to get the table columns map.
 // This is used to generate rollback SQL from the binlog events.
 func GetTableColumns(schema string) (map[string][]string, error) {
-	_, supportStmts, err := mysqlparser.ExtractTiDBUnsupportedStmts(schema)
+	_, supportStmts, err := tidbparser.ExtractTiDBUnsupportedStmts(schema)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract TiDB unsupported statements from old statements %q", schema)
 	}

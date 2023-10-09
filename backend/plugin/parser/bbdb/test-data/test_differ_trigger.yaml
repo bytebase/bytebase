@@ -1,0 +1,22 @@
+- oldSchema: |
+
+  newSchema: |
+    DELIMITER ;;
+    CREATE TRIGGER ins_sum BEFORE INSERT ON account
+      FOR EACH ROW SET @sum = @sum + NEW.amount;;
+    DELIMITER ;
+  diff: |+
+    DELIMITER ;;
+    CREATE TRIGGER ins_sum BEFORE INSERT ON account
+      FOR EACH ROW SET @sum = @sum + NEW.amount;;
+    DELIMITER ;
+- oldSchema: |
+    DELIMITER ;;
+    CREATE TRIGGER ins_sum BEFORE INSERT ON account
+      FOR EACH ROW SET @sum = @sum + NEW.amount;;
+    DELIMITER ;
+  newSchema: |
+
+  diff: |+
+    DROP TRIGGER ins_sum;
+

@@ -1,0 +1,39 @@
+- oldSchema: |
+    create table t1(
+      a int,
+      b int,
+      constraint check_a check(a > 1),
+      constraint check_b check(b > 1)
+    );
+  newSchema: |
+    create table t1(
+      a int,
+      b int,
+      constraint check_b check(b > 1),
+      constraint check_a check(a > 1)
+    )
+  diff: ""
+
+- oldSchema: |
+    create table `t1` (
+      `a` INT,
+      `b` INT,
+      CONSTRAINT `check_a` CHECK((`a`>`b`)),
+      CONSTRAINT `check_b` CHECK((`b`>1))
+    );
+  newSchema: |
+    create table `t1` (
+      `a` INT,
+      `b` INT,
+      CONSTRAINT `check_b` CHECK((`b`>`a`)),
+      CONSTRAINT `check_c` CHECK((`a`>1))
+    );
+  diff: |+
+    ALTER TABLE `t1` DROP CHECK `check_a`;
+
+    ALTER TABLE `t1` DROP CHECK `check_b`;
+
+    ALTER TABLE `t1` ADD CONSTRAINT `check_b` CHECK((`b`>`a`));
+
+    ALTER TABLE `t1` ADD CONSTRAINT `check_c` CHECK((`a`>1));
+
