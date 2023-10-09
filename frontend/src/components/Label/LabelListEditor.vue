@@ -148,7 +148,7 @@ const handleAdd = () => {
 };
 
 defineExpose({
-  errorMap: errorList,
+  errorList,
   flattenErrors,
 });
 </script>
