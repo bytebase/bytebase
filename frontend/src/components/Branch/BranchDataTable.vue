@@ -12,8 +12,9 @@
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { NDataTable } from "naive-ui";
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, h } from "vue";
 import { useI18n } from "vue-i18n";
+import BranchBaseline from "@/components/Branch/BranchBaseline.vue";
 import {
   useChangeHistoryStore,
   useDatabaseV1Store,
@@ -149,6 +150,12 @@ const dataTableColumns = computed(() => {
     {
       title: t("schema-designer.baseline-version"),
       key: "baselineVersion",
+      render: (row: BranchRowData) => {
+        return h(BranchBaseline, {
+          branch: row.branch,
+          showInstanceIcon: true,
+        });
+      },
     },
     {
       title: t("common.updated"),
@@ -163,7 +170,7 @@ const rowKey = (row: BranchRowData) => {
 
 const rowProps = (row: BranchRowData) => {
   return {
-    class: "cursor-pointer",
+    class: "cursor-pointer  hover:bg-gray-100",
     onClick: (event: MouseEvent) => {
       const targetElement = event.target as HTMLElement;
       const triggerElement = targetElement.closest(
@@ -189,11 +196,14 @@ const getUpdatedTimeStr = (branch: SchemaDesign) => {
 };
 </script>
 
-<style lang="postcss">
+<style lang="postcss" scoped>
 .n-data-table-expand-trigger {
   @apply !w-5 !h-5 inline-flex justify-center items-center translate-y-0.5 rounded hover:bg-gray-100 hover:shadow;
 }
 .n-data-table-expand-trigger > .n-base-icon {
   @apply !w-5 !h-5 flex flex-row justify-center items-center;
+}
+.n-data-table .n-data-table-td {
+  background-color: transparent !important;
 }
 </style>
