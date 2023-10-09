@@ -1,6 +1,5 @@
 <template>
   <NConfigProvider
-    v-if="initialized"
     :key="key"
     :locale="generalLang"
     :date-locale="dateLang"
@@ -78,30 +77,12 @@ const authStore = useAuthStore();
 const notificationStore = useNotificationStore();
 const route = useRoute();
 const router = useRouter();
-const initialized = ref(false);
 
 const state = reactive<LocalState>({
   notificationList: [],
   prevLoggedIn: authStore.isLoggedIn(),
   helpTimer: undefined,
   RouteMapList: null,
-});
-
-onMounted(() => {
-  const searchParams = new URLSearchParams(window.location.search);
-  let colorAccent = searchParams.get("colorAccent") || "";
-  const cachedColorAccent = useLocalStorage<string>(
-    "bb.theme.color-accent",
-    ""
-  );
-  if (!colorAccent && cachedColorAccent.value) {
-    colorAccent = cachedColorAccent.value;
-  }
-  if (colorAccent) {
-    cachedColorAccent.value = colorAccent;
-    document.documentElement.style.setProperty("--color-accent", colorAccent);
-  }
-  initialized.value = true;
 });
 
 setInterval(() => {
