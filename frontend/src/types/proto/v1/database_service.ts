@@ -233,7 +233,11 @@ export interface DiffSchemaRequest {
    * The resource name of the change history
    * Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
    */
-  changeHistory?: string | undefined;
+  changeHistory?:
+    | string
+    | undefined;
+  /** Format the schema dump into SDL format. */
+  sdlFormat: boolean;
 }
 
 export interface DiffSchemaResponse {
@@ -2266,7 +2270,7 @@ export const GetDatabaseSchemaRequest = {
 };
 
 function createBaseDiffSchemaRequest(): DiffSchemaRequest {
-  return { name: "", schema: undefined, changeHistory: undefined };
+  return { name: "", schema: undefined, changeHistory: undefined, sdlFormat: false };
 }
 
 export const DiffSchemaRequest = {
@@ -2279,6 +2283,9 @@ export const DiffSchemaRequest = {
     }
     if (message.changeHistory !== undefined) {
       writer.uint32(26).string(message.changeHistory);
+    }
+    if (message.sdlFormat === true) {
+      writer.uint32(32).bool(message.sdlFormat);
     }
     return writer;
   },
@@ -2311,6 +2318,13 @@ export const DiffSchemaRequest = {
 
           message.changeHistory = reader.string();
           continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.sdlFormat = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2325,6 +2339,7 @@ export const DiffSchemaRequest = {
       name: isSet(object.name) ? String(object.name) : "",
       schema: isSet(object.schema) ? String(object.schema) : undefined,
       changeHistory: isSet(object.changeHistory) ? String(object.changeHistory) : undefined,
+      sdlFormat: isSet(object.sdlFormat) ? Boolean(object.sdlFormat) : false,
     };
   },
 
@@ -2333,6 +2348,7 @@ export const DiffSchemaRequest = {
     message.name !== undefined && (obj.name = message.name);
     message.schema !== undefined && (obj.schema = message.schema);
     message.changeHistory !== undefined && (obj.changeHistory = message.changeHistory);
+    message.sdlFormat !== undefined && (obj.sdlFormat = message.sdlFormat);
     return obj;
   },
 
@@ -2345,6 +2361,7 @@ export const DiffSchemaRequest = {
     message.name = object.name ?? "";
     message.schema = object.schema ?? undefined;
     message.changeHistory = object.changeHistory ?? undefined;
+    message.sdlFormat = object.sdlFormat ?? false;
     return message;
   },
 };

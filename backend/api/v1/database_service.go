@@ -1003,7 +1003,7 @@ func (s *DatabaseService) getSourceSchema(ctx context.Context, request *v1pb.Dif
 
 	databaseSchema, err := s.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{
 		Name:      fmt.Sprintf("%s/schema", request.Name),
-		SdlFormat: true,
+		SdlFormat: request.SdlFormat,
 	})
 	if err != nil {
 		return "", err
