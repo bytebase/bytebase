@@ -561,6 +561,7 @@ watch(
         const diffResp = await databaseStore.diffSchema({
           name: db.name,
           schema: sourceDatabaseSchema.value,
+          sdlFormat: false,
         });
         const schemaDiff = diffResp.diff ?? "";
         databaseDiffCache[id] = {
