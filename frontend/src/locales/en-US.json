@@ -1957,7 +1957,8 @@
     "label": {
       "key": "Key",
       "values": "Values",
-      "value-placeholder": "Label value..."
+      "value-placeholder": "Label value...",
+      "key-placeholder": "Label key..."
     }
   },
   "sql-editor": {
@@ -2147,7 +2148,9 @@
       "value-duplicated": "Duplicated values",
       "max-length-exceeded": "Length cannot exceed {len} characters",
       "max-label-count-exceeded": "Cannot exceed {count} labels",
-      "cannot-edit-reserved-label": "Cannot edit reserved label \"{key}\""
+      "cannot-edit-reserved-label": "Cannot edit reserved label \"{key}\"",
+      "max-value-length-exceeded": "Value's length cannot exceed {length} characters",
+      "key-format": "Only alphanumeric characters ([a-z0-9A-Z]), hyphens (-), underscores (_) and dots (.) are allowed. And must begin and ends with alphanumeric characters."
     },
     "placeholder": {
       "select-key": "Select key...",
@@ -2160,7 +2163,8 @@
     "db-name-template-tips": "Specify a template to enforce database naming. For example, if your database db1 is geo-splitted into US, Asia, Europe and you want to enforce names as db1__US, db1__ASIA, db1__EU, then the template could be {placeholder}. {link}.",
     "confirm-change": "Are you sure to change '{label}' ?",
     "parsed-from-template": "Parsed from {name} by template {template}.",
-    "cannot-transfer-template-not-match": "Database '{name}' cannot be transferred to this project. Since its name doesn't match the template {template}."
+    "cannot-transfer-template-not-match": "Database '{name}' cannot be transferred to this project. Since its name doesn't match the template {template}.",
+    "add-label": "Add label"
   },
   "oauth": {
     "unknown-event": "Unexpected event type, OAuth failed."

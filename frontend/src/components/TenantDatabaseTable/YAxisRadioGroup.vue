@@ -11,24 +11,28 @@
         :value="key"
         class="capitalize"
       >
-        {{ capitalize(hidePrefix(key)) }}
+        {{ displayLabelKey(key) }}
       </option>
     </select>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { capitalize } from "lodash-es";
+import { orderBy, uniq } from "lodash-es";
 import { computed, withDefaults } from "vue";
+import { Database } from "@/types/proto/v1/database_service";
 import { LabelKeyType } from "../../types";
 import {
-  hidePrefix,
+  displayLabelKey,
+  isPresetLabel,
+  isReservedLabel,
   PRESET_LABEL_KEYS,
   RESERVED_LABEL_KEYS,
 } from "../../utils";
 
 const props = withDefaults(
   defineProps<{
+    databaseList: Database[];
     label: LabelKeyType;
     excludedKeyList?: LabelKeyType[];
   }>(),
@@ -37,14 +41,26 @@ const props = withDefaults(
   }
 );
 
-const LABEL_KEY_LIST = [...RESERVED_LABEL_KEYS, ...PRESET_LABEL_KEYS];
-
 const emit = defineEmits<{
   (event: "update:label", label: LabelKeyType): void;
 }>();
 
 const labelKeyList = computed(() => {
-  return LABEL_KEY_LIST.filter((key) => !props.excludedKeyList.includes(key));
+  const keys = uniq(props.databaseList.flatMap((db) => Object.keys(db.labels)));
+  [...RESERVED_LABEL_KEYS, ...PRESET_LABEL_KEYS].forEach((key) => {
+    if (!keys.includes(key)) {
+      keys.push(key);
+    }
+  });
+  return orderBy(
+    keys,
+    [
+      (key) => (isReservedLabel(key) ? -1 : 1),
+      (key) => (isPresetLabel(key) ? -1 : 1),
+      (key) => key,
+    ],
+    ["asc", "asc", "asc"]
+  ).filter((key) => !props.excludedKeyList.includes(key));
 });
 
 const visible = computed(() => {

@@ -8,8 +8,8 @@
     >
       <template #header>
         <tr>
-          <BBTableHeaderCell compact class="w-1/12 pl-3 pr-2 capitalize">
-            {{ hidePrefix(label) }}
+          <BBTableHeaderCell compact class="w-1/12 pl-3 pr-2 whitespace-nowrap">
+            {{ displayLabelKey(label) }}
           </BBTableHeaderCell>
 
           <BBTableHeaderCell
@@ -110,9 +110,9 @@ import { Environment } from "@/types/proto/v1/environment_service";
 import { DeploymentConfig } from "@/types/proto/v1/project_service";
 import type { ComposedDatabase, LabelKeyType } from "../../types";
 import {
-  hidePrefix,
   getLabelValuesFromDatabaseV1List,
   getPipelineFromDeploymentScheduleV1,
+  displayLabelKey,
 } from "../../utils";
 import { DeploymentStage } from "../DeploymentConfigTool";
 import DatabaseMatrixItem from "./DatabaseMatrixItem.vue";

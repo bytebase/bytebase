@@ -6,7 +6,7 @@
       :options="keys"
       :disabled="!editable"
       :modifier="labelKeyModifier"
-      :capitalize="true"
+      :capitalize="false"
       class="select key"
     />
     <LabelSelect
@@ -33,7 +33,7 @@
 
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
-import { uniq } from "lodash-es";
+import { orderBy, uniq } from "lodash-es";
 import { computed, PropType, watch } from "vue";
 import {
   LabelSelectorRequirement,
@@ -41,8 +41,10 @@ import {
 } from "@/types/proto/v1/project_service";
 import { ComposedDatabase } from "../../types";
 import {
+  displayLabelKey,
   getLabelValuesFromDatabaseV1List,
-  hidePrefix,
+  isPresetLabel,
+  isReservedLabel,
   PRESET_LABEL_KEYS,
   RESERVED_LABEL_KEYS,
 } from "../../utils";
@@ -73,9 +75,21 @@ defineEmits<{
 }>();
 
 const keys = computed(() => {
-  const availableList = [...RESERVED_LABEL_KEYS, ...PRESET_LABEL_KEYS];
-  const allKeys = props.databaseList.flatMap((db) => Object.keys(db.labels));
-  return uniq(allKeys).filter((key) => availableList.includes(key));
+  const keys = uniq(props.databaseList.flatMap((db) => Object.keys(db.labels)));
+  [...RESERVED_LABEL_KEYS, ...PRESET_LABEL_KEYS].forEach((key) => {
+    if (!keys.includes(key)) {
+      keys.push(key);
+    }
+  });
+  return orderBy(
+    keys,
+    [
+      (key) => (isReservedLabel(key) ? -1 : 1),
+      (key) => (isPresetLabel(key) ? -1 : 1),
+      (key) => key,
+    ],
+    ["asc", "asc", "asc"]
+  );
 });
 const allowMultipleValues = computed(() => {
   return props.selector.key !== "bb.environment";
@@ -94,11 +108,7 @@ const resetValues = () => {
 };
 
 const labelKeyModifier = (key: string | number) => {
-  const formattedKey = hidePrefix(key as string);
-  if (formattedKey === "environment") {
-    return "Environment ID";
-  }
-  return formattedKey;
+  return displayLabelKey(key as string);
 };
 
 const operatorToText = (op: string | number) => {

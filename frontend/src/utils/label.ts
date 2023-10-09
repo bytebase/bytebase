@@ -1,3 +1,5 @@
+import { capitalize, orderBy } from "lodash-es";
+
 export const MAX_LABEL_VALUE_LENGTH = 63;
 
 export const RESERVED_LABEL_KEYS = ["bb.environment"];
@@ -34,4 +36,71 @@ export const parseLabelListInTemplate = (template: string): string[] => {
   });
 
   return labelList;
+};
+
+export const validateLabelKey = (key: string) => {
+  if (key.length === 0) return false;
+  if (key.length >= 64) return false;
+  return (
+    key.match(/^[a-z0-9A-Z]/) &&
+    key.match(/[a-z0-9A-Z]$/) &&
+    key.match(/[a-z0-9A-Z-_.]*/)
+  );
+};
+
+export const isReservedLabel = (key: string) => {
+  return RESERVED_LABEL_KEYS.includes(key);
+};
+
+export const isPresetLabel = (key: string) => {
+  return PRESET_LABEL_KEYS.includes(key);
+};
+
+export const convertLabelsToKVList = (
+  labels: Record<string, string>,
+  sort = true
+) => {
+  const list = Object.keys(labels).map((key) => ({
+    key,
+    value: labels[key],
+  }));
+
+  if (sort) {
+    // 1. Preset
+    // 2. Others (lexicographical order)
+    // ...
+    // 3. Hidden
+    return orderBy(
+      list,
+      [
+        (kv) => (isReservedLabel(kv.key) ? 1 : -1),
+        (kv) => (isPresetLabel(kv.key) ? -1 : 1),
+        (kv) => kv.key,
+      ],
+      ["asc", "asc", "asc"]
+    );
+  }
+  return list;
+};
+
+export const convertKVListToLabels = (
+  list: { key: string; value: string }[]
+) => {
+  const labels: Record<string, string> = {};
+  list.forEach((kv) => {
+    labels[kv.key] = kv.value;
+  });
+  return labels;
+};
+
+export const displayLabelKey = (key: string) => {
+  if (key === "bb.environment") {
+    return "Environment ID";
+  }
+
+  if (key.startsWith("bb.")) {
+    const word = key.split("bb.")[1];
+    return capitalize(word);
+  }
+  return key;
 };

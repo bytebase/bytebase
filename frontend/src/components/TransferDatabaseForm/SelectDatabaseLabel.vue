@@ -4,8 +4,8 @@
     class="space-y-4 flex flex-col justify-center items-center"
   >
     <div v-for="key in PRESET_LABEL_KEYS" :key="key" class="w-64">
-      <label class="textlabel capitalize">
-        {{ hidePrefix(key) }}
+      <label class="textlabel">
+        {{ displayLabelKey(key) }}
         <span v-if="isRequiredLabel(key)" style="color: red">*</span>
       </label>
 
@@ -50,6 +50,7 @@ import {
   parseLabelListInTemplate,
   PRESET_LABEL_KEYS,
   PRESET_LABEL_KEY_PLACEHOLDERS,
+  displayLabelKey,
 } from "@/utils";
 import { useProjectV1ByUID } from "@/store";
 import { TenantMode } from "@/types/proto/v1/project_service";

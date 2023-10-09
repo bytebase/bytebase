@@ -1,7 +1,7 @@
 <template>
   <ul
     class="flex flex-col whitespace-nowrap"
-    :class="[errors.length > 1 && bullets && 'list-disc pl-4']"
+    :class="[showBullets && 'list-disc pl-4']"
   >
     <li v-for="(error, i) in errors" :key="i">
       <slot name="prefix" />
@@ -11,13 +11,28 @@
 </template>
 
 <script setup lang="ts">
-withDefaults(
+import { computed } from "vue";
+
+const props = withDefaults(
   defineProps<{
     errors: string[];
-    bullets?: boolean;
+    bullets?: "on-demand" | "always" | "none";
   }>(),
   {
-    bullets: true,
+    bullets: "on-demand",
   }
 );
+
+const showBullets = computed(() => {
+  switch (props.bullets) {
+    case "on-demand":
+      return props.errors.length > 1;
+    case "always":
+      return true;
+    case "none":
+      return false;
+  }
+  console.error("should never reach this line");
+  return false;
+});
 </script>
