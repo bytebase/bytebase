@@ -234,7 +234,11 @@ watch(() => state.changeHistory, prepareFullViewChangeHistory, {
   deep: true,
 });
 
-const allowedEngineTypeList: Engine[] = [Engine.MYSQL, Engine.TIDB];
+const allowedEngineTypeList: Engine[] = [
+  Engine.MYSQL,
+  Engine.TIDB,
+  Engine.POSTGRES,
+];
 const allowedMigrationTypeList: ChangeHistory_Type[] = [
   ChangeHistory_Type.BASELINE,
   ChangeHistory_Type.MIGRATE,
