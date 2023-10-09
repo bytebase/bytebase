@@ -3,6 +3,7 @@
     <RichDatabaseName
       :database="database"
       :show-instance="false"
+      :show-instance-icon="!!showInstanceIcon"
       :show-arrow="false"
       :show-production-environment-icon="false"
       tooltip="instance"
@@ -19,9 +20,15 @@ import { useChangeHistoryStore, useDatabaseV1Store } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 
-const props = defineProps<{
-  branch: SchemaDesign;
-}>();
+const props = withDefaults(
+  defineProps<{
+    branch: SchemaDesign;
+    showInstanceIcon: boolean;
+  }>(),
+  {
+    showInstanceIcon: false,
+  }
+);
 
 const database = computed(() => {
   return useDatabaseV1Store().getDatabaseByName(props.branch.baselineDatabase);
