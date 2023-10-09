@@ -100,7 +100,7 @@
   </div>
 
   <FeatureModal
-    :open="state.requiredFeatureName"
+    :open="!!state.requiredFeatureName"
     :feature="state.requiredFeatureName"
     @cancel="state.requiredFeatureName = undefined"
   />
@@ -113,9 +113,9 @@ import {
   useTabStore,
   useSQLEditorStore,
   useUIStateStore,
-  useWebTerminalStore,
   featureToRef,
   useInstanceV1ByUID,
+  useWebTerminalV1Store,
 } from "@/store";
 import type { ExecuteConfig, ExecuteOption, FeatureType } from "@/types";
 import { TabMode, UNKNOWN_ID } from "@/types";
@@ -142,7 +142,7 @@ const state = reactive<LocalState>({});
 const tabStore = useTabStore();
 const sqlEditorStore = useSQLEditorStore();
 const uiStateStore = useUIStateStore();
-const webTerminalStore = useWebTerminalStore();
+const webTerminalStore = useWebTerminalV1Store();
 const { events } = useSQLEditorContext();
 const containerRef = ref<HTMLDivElement>();
 const { width: containerWidth } = useElementSize(containerRef);
@@ -206,7 +206,10 @@ const showClearScreen = computed(() => {
 });
 
 const queryList = computed(() => {
-  return webTerminalStore.getQueryListByTab(tabStore.currentTab);
+  return (
+    webTerminalStore.getQueryStateByTab(tabStore.currentTab).queryItemList
+      .value || []
+  );
 });
 
 const handleRunQuery = async () => {

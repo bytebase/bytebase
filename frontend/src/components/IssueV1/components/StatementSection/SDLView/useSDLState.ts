@@ -83,6 +83,7 @@ export const useSDLState = () => {
       const { diff } = await databaseStore.diffSchema({
         name: database.name,
         schema: expectedSDL,
+        sdlFormat: true,
       });
       return diff ?? "";
     };

@@ -5,6 +5,8 @@
         c int,
         a int default 1 comment 'abcdefg',
         b varchar(20) default 'NULL' comment '',
+        d varbinary(500),
+        e binary(20),
         primary key (a, b),
         constraint fk1 foreign key (a) references t2 (b)
       );
@@ -43,6 +45,26 @@
                   value: "'NULL'"
                 nullable: true
                 type: varchar(20)
+                characterset: ""
+                collation: ""
+                comment: ""
+                classification: ""
+                usercomment: ""
+              - name: d
+                position: 0
+                default: null
+                nullable: true
+                type: varbinary(500)
+                characterset: ""
+                collation: ""
+                comment: ""
+                classification: ""
+                usercomment: ""
+              - name: e
+                position: 0
+                default: null
+                nullable: true
+                type: binary(20)
                 characterset: ""
                 collation: ""
                 comment: ""

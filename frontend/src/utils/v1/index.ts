@@ -18,4 +18,5 @@ export * from "./sheet";
 export * from "./vcs";
 export * from "./issue";
 export * from "./changeHistory";
+export * from "./changelist";
 export * from "./cel";

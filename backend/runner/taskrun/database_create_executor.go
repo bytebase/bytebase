@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -211,29 +212,36 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		)
 	}
 
+	storedVersion, err := peerSchemaVersion.Marshal()
+	if err != nil {
+		slog.Error("failed to convert database schema version",
+			slog.String("version", peerSchemaVersion.Version),
+			log.BBError(err),
+		)
+	}
 	return true, &api.TaskRunResultPayload{
 		Detail:      fmt.Sprintf("Created database %q", payload.DatabaseName),
 		MigrationID: "",
-		Version:     peerSchemaVersion,
+		Version:     storedVersion,
 	}, nil
 }
 
-func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, driverCtx context.Context, environment *store.EnvironmentMessage, instance *store.InstanceMessage, project *store.ProjectMessage, task *store.TaskMessage, database *store.DatabaseMessage) (string, string, error) {
+func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, driverCtx context.Context, environment *store.EnvironmentMessage, instance *store.InstanceMessage, project *store.ProjectMessage, task *store.TaskMessage, database *store.DatabaseMessage) (model.Version, string, error) {
 	if project.TenantMode != api.TenantModeTenant {
-		return "", "", nil
+		return model.Version{}, "", nil
 	}
 
 	schemaVersion, schema, err := exec.getSchemaFromPeerTenantDatabase(ctx, exec.store, exec.dbFactory, instance, project, database)
 	if err != nil {
-		return "", "", err
+		return model.Version{}, "", err
 	}
 	if schema == "" {
-		return "", "", nil
+		return model.Version{}, "", nil
 	}
 
 	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 	if err != nil {
-		return "", "", err
+		return model.Version{}, "", err
 	}
 	defer driver.Close(ctx)
 
@@ -284,7 +292,7 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 	}
 
 	if _, _, err := utils.ExecuteMigrationDefault(ctx, driverCtx, exec.store, driver, mi, schema, nil, db.ExecuteOptions{}); err != nil {
-		return "", "", err
+		return model.Version{}, "", err
 	}
 	return schemaVersion, schema, nil
 }
@@ -320,13 +328,13 @@ func getConnectionStatement(dbType storepb.Engine, databaseName string) (string,
 // It's used for creating a database in a tenant mode project.
 // When a peer tenant database doesn't exist, we will return an error if there are databases in the project with the same name.
 // Otherwise, we will create a blank database without schema.
-func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, instance *store.InstanceMessage, project *store.ProjectMessage, database *store.DatabaseMessage) (string, string, error) {
+func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, instance *store.InstanceMessage, project *store.ProjectMessage, database *store.DatabaseMessage) (model.Version, string, error) {
 	allDatabases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{
 		ProjectID: &project.ResourceID,
 		Engine:    &instance.Engine,
 	})
 	if err != nil {
-		return "", "", errors.Wrapf(err, "Failed to fetch databases in project ID: %v", project.UID)
+		return model.Version{}, "", errors.Wrapf(err, "Failed to fetch databases in project ID: %v", project.UID)
 	}
 	var databases []*store.DatabaseMessage
 	for _, d := range allDatabases {
@@ -337,43 +345,43 @@ func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Conte
 
 	deploymentConfig, err := stores.GetDeploymentConfigV2(ctx, project.UID)
 	if err != nil {
-		return "", "", errors.Wrapf(err, "Failed to fetch deployment config for project ID: %v", project.UID)
+		return model.Version{}, "", errors.Wrapf(err, "Failed to fetch deployment config for project ID: %v", project.UID)
 	}
 	apiDeploymentConfig, err := deploymentConfig.ToAPIDeploymentConfig()
 	if err != nil {
-		return "", "", errors.Wrapf(err, "Failed to convert deployment config for project ID: %v", project.UID)
+		return model.Version{}, "", errors.Wrapf(err, "Failed to convert deployment config for project ID: %v", project.UID)
 	}
 
 	deploySchedule, err := api.ValidateAndGetDeploymentSchedule(apiDeploymentConfig.Payload)
 	if err != nil {
-		return "", "", errors.Errorf("Failed to get deployment schedule")
+		return model.Version{}, "", errors.Errorf("Failed to get deployment schedule")
 	}
 	matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploySchedule, databases)
 	if err != nil {
-		return "", "", errors.Errorf("Failed to create deployment pipeline")
+		return model.Version{}, "", errors.Errorf("Failed to create deployment pipeline")
 	}
 	similarDB := getPeerTenantDatabase(matrix, instance.EnvironmentID)
 	if similarDB == nil {
-		return "", "", nil
+		return model.Version{}, "", nil
 	}
 	similarDBInstance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &similarDB.InstanceID})
 	if err != nil {
-		return "", "", err
+		return model.Version{}, "", err
 	}
 
 	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, similarDBInstance, similarDB)
 	if err != nil {
-		return "", "", err
+		return model.Version{}, "", err
 	}
 	defer driver.Close(ctx)
 	schemaVersion, err := utils.GetLatestSchemaVersion(ctx, stores, similarDBInstance.UID, similarDB.UID, similarDB.DatabaseName)
 	if err != nil {
-		return "", "", errors.Wrapf(err, "failed to get migration history for database %q", similarDB.DatabaseName)
+		return model.Version{}, "", errors.Wrapf(err, "failed to get migration history for database %q", similarDB.DatabaseName)
 	}
 
 	var schemaBuf bytes.Buffer
 	if _, err := driver.Dump(ctx, &schemaBuf, true /* schemaOnly */); err != nil {
-		return "", "", err
+		return model.Version{}, "", err
 	}
 	return schemaVersion, schemaBuf.String(), nil
 }

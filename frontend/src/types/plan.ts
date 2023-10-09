@@ -19,6 +19,7 @@ export type FeatureType =
   | "bb.feature.audit-log"
   | "bb.feature.issue-advanced-search"
   | "bb.feature.announcement"
+  | "bb.feature.external-secret-manager"
   // Branding
   | "bb.feature.branding"
   // Change Workflow
@@ -52,6 +53,8 @@ export type FeatureType =
   | "bb.feature.sensitive-data"
   | "bb.feature.access-control"
   | "bb.feature.custom-approval"
+  // Efficiency
+  | "bb.feature.batch-query"
   // Collaboration
   | "bb.feature.shared-sql-script"
   // Plugins

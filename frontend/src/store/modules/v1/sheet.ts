@@ -75,7 +75,7 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
   const getSheetByName = (name: string) => {
     return sheetsByName.value.get(name);
   };
-  const fetchSheetByName = async (name: string) => {
+  const fetchSheetByName = async (name: string, raw = false) => {
     const uid = extractSheetUID(name);
     if (uid.startsWith("-") || !uid) {
       return undefined;
@@ -83,6 +83,7 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
     try {
       const sheet = await sheetServiceClient.getSheet({
         name,
+        raw,
       });
 
       setSheetList([sheet]);

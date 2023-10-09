@@ -17,7 +17,6 @@ export * from "./deployment";
 export * from "./string";
 export * from "./tab";
 export * from "./task";
-export * from "./policy";
 export * from "./sheet";
 export * from "./pev2";
 export * from "./web-storage";
@@ -30,5 +29,6 @@ export * from "./id";
 export * from "./workspaceApprovalSetting";
 export * from "./projectIamPolicy";
 export * from "./slowQuery";
+export * from "./resource-composer";
 
 export * from "./v1";

@@ -2764,6 +2764,7 @@ DependentColumn is the metadata for dependent columns.
 | name | [string](#string) |  | The name of the database or change history. Format: database: instances/{instance}/databases/{database} change history: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
 | schema | [string](#string) |  | The target schema. |
 | change_history | [string](#string) |  | The resource name of the change history Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
+| sdl_format | [bool](#bool) |  | Format the schema dump into SDL format. |
 
 
 
@@ -9739,7 +9740,7 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | connection_database | [string](#string) |  | The connection database name to execute the query against. For PostgreSQL, it&#39;s required. For other database engines, it&#39;s optional. Use empty string to execute against without specifying a database. |
 | statement | [string](#string) |  | The SQL statement to execute. |
 | limit | [int32](#int32) |  | The maximum number of rows to return. |
-| timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The timeout for the request. |
+| timeout | [google.protobuf.Duration](#google-protobuf-Duration) | optional | The timeout for the request. |
 
 
 

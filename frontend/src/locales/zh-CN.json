@@ -206,6 +206,7 @@
     "pitr": "PITR",
     "fix": "修复",
     "go-now": "立即前往",
+    "sync": "同步",
     "sync-now": "现在同步",
     "show-help": "查看帮助",
     "success": "成功",
@@ -261,7 +262,10 @@
     "merge": "合并",
     "info": "信息",
     "minutes": "分钟",
-    "go-to-configure": "去配置"
+    "go-to-configure": "去配置",
+    "updated-at-by": "由 {user} 更新于 {time}",
+    "created-at-by": "由 {user} 创建于 {time}",
+    "filter-by-name": "按名称过滤"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -938,7 +942,6 @@
     "issue-name": "工单名称",
     "grant-request": {
       "export-rows": "最大导出行数",
-      "export-format": "导出格式",
       "expire-days": "过期天数",
       "expired-at": "过期时间",
       "all-databases": "所有数据库",
@@ -1043,7 +1046,10 @@
     "last-successful-sync": "上次成功同步于",
     "sync-status": "同步状态",
     "failed-to-sync-schema-for-database-database-value-name": "为数据库'{0}'同步 schema 失败。",
-    "successfully-synced-schema-for-database-database-value-name": "成功为数据库'{0}'同步 schema 。"
+    "successfully-synced-schema-for-database-database-value-name": "成功为数据库'{0}'同步 schema 。",
+    "start-to-sync-schema": "开始同步 schema",
+    "failed-to-sync-schema": "同步 schema 失败",
+    "successfully-synced-schema": "Schema 同步完成"
   },
   "instance": {
     "select": "选择实例",
@@ -1133,6 +1139,7 @@
     "type-or-paste-credentials": "输入或粘贴 CREDENTIALS",
     "type-or-paste-credentials-write-only": "输入或粘贴 CREDENTIALS - 仅写入",
     "password-write-only": "YOUR_DB_PWD - 仅写入",
+    "secret-manager-tip": "您也可以指定外部的密码管理服务 endpoint",
     "test-connection": "测试连接",
     "ignore-and-create": "忽略并创建",
     "add-a-postgresql-sample-instance": "添加一个 PostgreSQL 样本实例",
@@ -1327,6 +1334,7 @@
     "select-branch": "选择一个分支",
     "delete-this-branch": "删除这个分支",
     "table-detail": "表详情",
+    "batch-action-disabled": "无法对来自不同项目的数据库{action}",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "成功将'{0}'转移到项目'{1}'。",
     "database-backup": "数据库备份",
     "backup-name": "备份名称",
@@ -1424,6 +1432,7 @@
     "unassigned-databases": "未分配的数据库",
     "restore-database": "恢复数据库",
     "selected-n-databases": "已选择 {n} 个数据库",
+    "select-databases-from-same-project": "请选择同一个项目下的数据库",
     "sync-schema": {
       "title": "库表同步",
       "description": "Bytebase 支持将一个指定的 Schema 同步到一个或多个目标数据库。",
@@ -1612,7 +1621,6 @@
     "create-modal": {
       "project-name": "@:{'common.project'}@:{'common.name'}",
       "key": "@:common.key",
-      "key-hint": "（请使用大写字母来命名您的项目）",
       "cancel": "@:common.cancel",
       "confirm": "@:common.create",
       "success-prompt": "成功创建 {name}."
@@ -1754,7 +1762,8 @@
       "project-owner": "需要来自项目所有者的 LGTM"
     },
     "successfully-updated-db-name-template": "成功更新数据库名称模板。",
-    "all": "所有项目"
+    "all": "所有项目",
+    "key-hint": "简短且有辨识度的字母数字组合用于识别该项目。"
   },
   "inbox": {
     "mark-all-as-read": "全部标记为已读",
@@ -2040,7 +2049,13 @@
         }
       }
     },
-    "filter-by-name": "根据名称过滤"
+    "filter-by-name": "根据名称过滤",
+    "batch-query": {
+      "batch": "批量",
+      "database-labels": "{database} 标签",
+      "database-has-no-label": "{database} 没有标签",
+      "description": "批量查询具有相同标签值的其他数据库。"
+    }
   },
   "schema-editor": {
     "self": "Schema 编辑器",
@@ -2335,6 +2350,10 @@
         "title": "AI 增强",
         "desc": "AI 增强的 SQL 编辑器和索引建议功能，基于 OpenAI 技术驱动。"
       },
+      "bb-feature-batch-query": {
+        "title": "批量查询",
+        "desc": "在 SQL Editor 中对同构数据库进行批量查询。"
+      },
       "bb-feature-shared-sql-script": {
         "title": "共享 SQL 脚本",
         "desc": "将 SQL 脚本分享给项目成员，或者公开给所有人。"
@@ -2557,7 +2576,8 @@
     "idp": "身份提供商",
     "role": "角色",
     "database-group": "数据库分组",
-    "schema-group": "表分组"
+    "schema-group": "表分组",
+    "changelist": "变更列表"
   },
   "resource-id": {
     "self": "{resource} ID",
@@ -3009,7 +3029,7 @@
     "search-tables": "搜索表",
     "use-tips": "选择需要设计的表",
     "apply-to-database": "应用变更到数据库",
-    "select-database-placeholder": "选择数据库 (仅限 MySQL)",
+    "select-database-placeholder": "选择数据库 (仅限 MySQL，PostgreSQL 和 TiDB)",
     "message": {
       "created-succeed": "分支创建成功",
       "updated-succeed": "分支更新成功",
@@ -3037,5 +3057,45 @@
       "column_name": "字段名称",
       "classification_level": "数据分级"
     }
+  },
+  "changelist": {
+    "self": "变更列表",
+    "changelists": "变更列表",
+    "change-center": "变更中心",
+    "new": "新建变更列表",
+    "name": "变更列表名称",
+    "name-placeholder": "我的变更列表",
+    "error": {
+      "project-is-required": "项目不能为空",
+      "name-is-required": "变更列表名称不能为空",
+      "invalid-resource-id": "无效的资源 ID",
+      "nothing-changed": "无任何改变",
+      "sql-cannot-be-empty": "SQL 不能为空",
+      "select-at-least-one-change": "选择至少一条变更",
+      "select-at-least-one-change-to-export": "至少选择一项要导出的变更",
+      "add-at-least-one-change": "添加至少一项变更",
+      "select-at-least-one-database": "至少选择一个数据库",
+      "you-are-not-allowed-to-perform-this-action": "你无权执行此操作"
+    },
+    "apply-to-database": "应用到数据库",
+    "add-change": {
+      "self": "添加变更",
+      "change-history": {
+        "select-at-least-one-history-below": "请在下方选择至少一条记录"
+      },
+      "branch": {
+        "select-at-least-one-branch-below": "请在下方选择至少一条记录"
+      }
+    },
+    "change-source": {
+      "self": "变更来源",
+      "raw-sql": "SQL 语句",
+      "change-history": {
+        "tables": "表"
+      },
+      "source": "来源"
+    },
+    "confirm-remove-change": "移除这项变更？",
+    "confirm-delete-changelist": "删除变更列表？"
   }
 }

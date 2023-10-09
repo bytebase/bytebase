@@ -33,6 +33,10 @@
     <!-- instance -->
     <span>-</span>
   </div>
+  <div v-if="showLabelsColumn" class="bb-grid-cell">
+    <!-- labels -->
+    <span>-</span>
+  </div>
 </template>
 
 <script lang="ts" setup>
@@ -52,6 +56,7 @@ defineProps<{
   showTenantIcon: boolean;
   showEnvironmentColumn: boolean;
   showInstanceColumn: boolean;
+  showLabelsColumn: boolean;
   allowQuery: boolean;
 }>();
 </script>

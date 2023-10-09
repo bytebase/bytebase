@@ -90,7 +90,7 @@ export interface QueryRequest {
   /** The maximum number of rows to return. */
   limit: number;
   /** The timeout for the request. */
-  timeout: Duration | undefined;
+  timeout?: Duration | undefined;
 }
 
 export interface QueryResponse {

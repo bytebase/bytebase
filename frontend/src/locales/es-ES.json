@@ -206,6 +206,7 @@
     "pitr": "PITR",
     "fix": "Corregir",
     "go-now": "Ir ahora",
+    "sync": "Sincronizar",
     "sync-now": "Sincronizar ahora",
     "show-help": "Mostrar ayuda",
     "success": "Éxito",
@@ -263,7 +264,10 @@
     "merge": "Combinar",
     "info": "Información",
     "minutes": "Minutos",
-    "go-to-configure": "Configurar"
+    "go-to-configure": "Configurar",
+    "updated-at-by": "Actualizado {time} por {user}",
+    "created-at-by": "Creado {time} por {user}",
+    "filter-by-name": "Filtrar por nombre"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -940,7 +944,6 @@
     "issue-name": "Nombre de la incidencia",
     "grant-request": {
       "export-rows": "número máximo de filas",
-      "export-format": "formato de exportación",
       "expire-days": "días de caducidad",
       "expired-at": "tiempo de caducidad",
       "all-databases": "todas las bases de datos",
@@ -1045,7 +1048,10 @@
     "last-successful-sync": "Última sincronización exitosa",
     "sync-status": "Estado de sincronización",
     "failed-to-sync-schema-for-database-database-value-name": "Error al sincronizar el esquema para la base de datos '{0}'.",
-    "successfully-synced-schema-for-database-database-value-name": "Esquema sincronizado correctamente para la base de datos '{0}'."
+    "successfully-synced-schema-for-database-database-value-name": "Esquema sincronizado correctamente para la base de datos '{0}'.",
+    "start-to-sync-schema": "Start to sync schame",
+    "failed-to-sync-schema": "No se pudo sincronizar el esquema",
+    "successfully-synced-schema": "Esquema sincronizado correctamente"
   },
   "instance": {
     "select": "Seleccionar instancia",
@@ -1136,6 +1142,7 @@
     "type-or-paste-credentials": "Escriba o pegue las CREDENCIALES",
     "type-or-paste-credentials-write-only": "Escriba o pegue las CREDENCIALES - solo escritura",
     "password-write-only": "SU_DB_PWD - solo escritura",
+    "secret-manager-tip": "También puede especificar un punto final de gestión de secreto externo",
     "test-connection": "Probar conexión",
     "ignore-and-create": "Ignorar y crear",
     "add-a-postgresql-sample-instance": "Agregue una instancia de muestra de PostgreSQL en su lugar",
@@ -1330,6 +1337,7 @@
     "select-branch": "Seleccione una rama",
     "delete-this-branch": "Eliminar esta rama",
     "table-detail": "Detalle de la tabla",
+    "batch-action-disabled": "No se puede {action} para las bases de datos de diferentes proyectos",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "Se transfirió correctamente '{0}' al proyecto '{1}'.",
     "backup-name": "Nombre de la copia de seguridad",
     "create-backup": "Crear copia de seguridad",
@@ -1426,6 +1434,7 @@
     "unassigned-databases": "Bases de datos no asignadas",
     "restore-database": "Restaurar base de datos",
     "selected-n-databases": "{n} base de datos seleccionada | {n} bases de datos seleccionadas",
+    "select-databases-from-same-project": "Por favor seleccione bases de datos del mismo proyecto",
     "sync-schema": {
       "title": "Sincronizar esquema",
       "description": "Bytebase admite la sincronización de un esquema con una o varias bases de datos de destino",
@@ -1616,7 +1625,6 @@
     "create-modal": {
       "project-name": "@:common.project @:common.name",
       "key": "@:common.key",
-      "key-hint": "(Letras mayúsculas que identifican tu proyecto)",
       "cancel": "@:common.cancel",
       "confirm": "@:common.create",
       "success-prompt": "Proyecto {name} creado exitosamente."
@@ -1758,7 +1766,8 @@
       "project-owner": "Requerir LGTM del propietario del proyecto"
     },
     "successfully-updated-db-name-template": "Plantilla de nombre de base de datos actualizada con éxito.",
-    "all": "Todos los proyectos"
+    "all": "Todos los proyectos",
+    "key-hint": "Letras alfanuméricas descriptivas cortas para identificar este proyecto.."
   },
   "inbox": {
     "mark-all-as-read": "Marcar todo como leído",
@@ -2041,7 +2050,13 @@
         }
       }
     },
-    "filter-by-name": "Filtrar por nombre"
+    "filter-by-name": "Filtrar por nombre",
+    "batch-query": {
+      "batch": "Lote",
+      "database-labels": "Etiquetas de {database}",
+      "database-has-no-label": "{database} no tiene etiquetas",
+      "description": "Consulta por lotes bases de datos adicionales con los mismos valores de etiqueta."
+    }
   },
   "schema-editor": {
     "self": "Editor de esquema",
@@ -2332,6 +2347,10 @@
         "title": "Aumento de AI",
         "desc": "Editor de SQL aumentado con IA y características de asesoramiento de índice impulsadas por OpenAI."
       },
+      "bb-feature-batch-query": {
+        "title": "Consulta por lotes",
+        "desc": "Consulta por lotes bases de datos adicionales con los mismos valores de etiqueta."
+      },
       "bb-feature-shared-sql-script": {
         "title": "Script SQL compartido",
         "desc": "Comparte tus scripts SQL con los compañeros de proyecto o hazlos públicos para todos."
@@ -2557,7 +2576,8 @@
     "idp": "Proveedor de Identidad",
     "role": "Rol",
     "database-group": "grupo de bases de datos",
-    "schema-group": "grupo de mesas"
+    "schema-group": "grupo de mesas",
+    "changelist": "Lista de cambios"
   },
   "resource-id": {
     "self": "ID de {resource}",
@@ -3014,7 +3034,7 @@
     "search-tables": "Buscar tablas",
     "use-tips": "Selecciona las tablas a diseñar",
     "apply-to-database": "Aplicar cambio a la base de datos",
-    "select-database-placeholder": "Seleccionar base de datos (sólo MySQL)",
+    "select-database-placeholder": "Seleccionar base de datos (sólo MySQL, PostgreSQL, TiDB)",
     "message": {
       "created-succeed": "Diseño de esquema creado con éxito",
       "updated-succeed": "Diseño de esquema actualizado con éxito",
@@ -3042,5 +3062,45 @@
       "column_name": "Nombre de columna",
       "classification_level": "Nivel de clasificación"
     }
+  },
+  "changelist": {
+    "self": "Lista de cambios",
+    "changelists": "Listas de cambios",
+    "change-center": "Centro de cambios",
+    "new": "Nueva lista de cambios",
+    "name": "Nombre de la lista de cambios",
+    "name-placeholder": "Mi lista de cambios",
+    "error": {
+      "project-is-required": "Se requiere proyecto",
+      "name-is-required": "El nombre de la lista de cambios es obligatorio",
+      "invalid-resource-id": "ID de recurso no válido",
+      "nothing-changed": "nada ha cambiado",
+      "sql-cannot-be-empty": "Se requiere SQL",
+      "select-at-least-one-change": "Seleccione al menos un cambio",
+      "select-at-least-one-change-to-export": "Seleccione al menos un cambio para exportar",
+      "add-at-least-one-change": "Añade al menos un cambio",
+      "select-at-least-one-database": "Seleccione al menos una base de datos",
+      "you-are-not-allowed-to-perform-this-action": "No tienes permiso para realizar esta acción."
+    },
+    "apply-to-database": "Aplicar a la base de datos",
+    "add-change": {
+      "self": "Agregar cambio",
+      "change-history": {
+        "select-at-least-one-history-below": "Seleccione al menos un historial a continuación"
+      },
+      "branch": {
+        "select-at-least-one-branch-below": "Seleccione al menos una sucursal a continuación"
+      }
+    },
+    "change-source": {
+      "self": "Cambiar fuente",
+      "raw-sql": "SQL sin formato",
+      "change-history": {
+        "tables": "Mesas"
+      },
+      "source": "Fuente"
+    },
+    "confirm-remove-change": "¿Eliminar este cambio?",
+    "confirm-delete-changelist": "¿Eliminar esta lista de cambios?"
   }
 }

@@ -1,13 +1,14 @@
 <template>
   <NConfigProvider
     v-bind="naiveUIConfig"
-    class="relative flex flex-col justify-start items-start p-2 pb-1"
+    class="relative flex flex-col justify-start items-start p-2 pb-1 overflow-y-auto"
     :class="dark && 'dark bg-dark-bg'"
   >
     <template v-if="executeParams && resultSet && !showPlaceholder">
       <template v-if="viewMode === 'SINGLE-RESULT'">
         <SingleResultViewV1
           :params="executeParams"
+          :sql-result-set="resultSet"
           :result="resultSet.results[0]"
           :set-index="0"
         />
@@ -26,6 +27,7 @@
           >
             <SingleResultViewV1
               :params="executeParams"
+              :sql-result-set="resultSet"
               :result="result"
               :set-index="i"
             />
@@ -137,7 +139,7 @@ const viewMode = computed((): ViewMode => {
   if (!resultSet) {
     return "EMPTY";
   }
-  const { results, error } = resultSet;
+  const { results = [], error } = resultSet;
   if (error) {
     return "ERROR";
   }

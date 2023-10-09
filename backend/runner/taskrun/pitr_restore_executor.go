@@ -27,6 +27,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/backuprun"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -173,11 +174,18 @@ func (exec *PITRRestoreExecutor) doBackupRestore(ctx context.Context, stores *st
 		)
 	}
 
+	storedVersion, err := version.Marshal()
+	if err != nil {
+		slog.Error("failed to convert database schema version",
+			slog.String("version", version.Version),
+			log.BBError(err),
+		)
+	}
 	return &api.TaskRunResultPayload{
 		Detail:        fmt.Sprintf("Restored database %q from backup %q", targetDatabase.DatabaseName, backup.Name),
 		MigrationID:   migrationID,
 		ChangeHistory: fmt.Sprintf("instances/%s/databases/%s/changeHistories/%s", instance.ResourceID, targetDatabase.DatabaseName, migrationID),
-		Version:       version,
+		Version:       storedVersion,
 	}, nil
 }
 
@@ -510,18 +518,18 @@ func downloadBackupFileFromCloud(ctx context.Context, s3Client *bbs3.Client, bac
 // all migration history from source database because that might be expensive (e.g. we may use restore to
 // create many ephemeral databases from backup for testing purpose)
 // Returns migration history id and the version on success.
-func createBranchMigrationHistory(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, profile config.Profile, targetInstance *store.InstanceMessage, sourceDatabase, targetDatabase *store.DatabaseMessage, backup *store.BackupMessage, task *store.TaskMessage) (string, string, error) {
+func createBranchMigrationHistory(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, profile config.Profile, targetInstance *store.InstanceMessage, sourceDatabase, targetDatabase *store.DatabaseMessage, backup *store.BackupMessage, task *store.TaskMessage) (string, model.Version, error) {
 	targetInstanceEnvironment, err := stores.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &targetDatabase.EffectiveEnvironmentID})
 	if err != nil {
-		return "", "", err
+		return "", model.Version{}, err
 	}
 	targetDatabaseProject, err := stores.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &targetDatabase.ProjectID})
 	if err != nil {
-		return "", "", err
+		return "", model.Version{}, err
 	}
 	issue, err := stores.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 	if err != nil {
-		return "", "", errors.Wrapf(err, "failed to fetch containing issue when creating the migration history: %v", task.Name)
+		return "", model.Version{}, errors.Wrapf(err, "failed to fetch containing issue when creating the migration history: %v", task.Name)
 	}
 	// Add a branch migration history record.
 	issueID := ""
@@ -534,7 +542,7 @@ func createBranchMigrationHistory(ctx context.Context, stores *store.Store, dbFa
 	}
 	creator, err := stores.GetUserByID(ctx, task.CreatorID)
 	if err != nil {
-		return "", "", err
+		return "", model.Version{}, err
 	}
 
 	// TODO(d): support semantic versioning.
@@ -555,13 +563,13 @@ func createBranchMigrationHistory(ctx context.Context, stores *store.Store, dbFa
 	}
 	targetDriver, err := dbFactory.GetAdminDatabaseDriver(ctx, targetInstance, targetDatabase)
 	if err != nil {
-		return "", "", err
+		return "", model.Version{}, err
 	}
 	defer targetDriver.Close(ctx)
 
 	migrationID, _, err := utils.ExecuteMigrationDefault(ctx, ctx, stores, targetDriver, m, "", nil, db.ExecuteOptions{})
 	if err != nil {
-		return "", "", errors.Wrap(err, "failed to create migration history")
+		return "", model.Version{}, errors.Wrap(err, "failed to create migration history")
 	}
 	return migrationID, m.Version, nil
 }

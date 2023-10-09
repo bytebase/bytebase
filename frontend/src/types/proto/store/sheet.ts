@@ -13,8 +13,12 @@ export interface SheetPayload {
   schemaDesign:
     | SheetPayload_SchemaDesign
     | undefined;
-  /** database_config will be apply to the given database after executing statement, only be used in schema design for now. */
-  databaseConfig: DatabaseConfig | undefined;
+  /** The snapshot of the database config when creating the sheet, be used to compare with the baseline_database_config and apply the diff to the database. */
+  databaseConfig:
+    | DatabaseConfig
+    | undefined;
+  /** The snapshot of the baseline database config when creating the sheet. */
+  baselineDatabaseConfig: DatabaseConfig | undefined;
 }
 
 /** Type of the SheetPayload. */
@@ -123,7 +127,13 @@ export interface SheetPayload_SchemaDesign_Protection {
 }
 
 function createBaseSheetPayload(): SheetPayload {
-  return { type: 0, vcsPayload: undefined, schemaDesign: undefined, databaseConfig: undefined };
+  return {
+    type: 0,
+    vcsPayload: undefined,
+    schemaDesign: undefined,
+    databaseConfig: undefined,
+    baselineDatabaseConfig: undefined,
+  };
 }
 
 export const SheetPayload = {
@@ -139,6 +149,9 @@ export const SheetPayload = {
     }
     if (message.databaseConfig !== undefined) {
       DatabaseConfig.encode(message.databaseConfig, writer.uint32(34).fork()).ldelim();
+    }
+    if (message.baselineDatabaseConfig !== undefined) {
+      DatabaseConfig.encode(message.baselineDatabaseConfig, writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -178,6 +191,13 @@ export const SheetPayload = {
 
           message.databaseConfig = DatabaseConfig.decode(reader, reader.uint32());
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.baselineDatabaseConfig = DatabaseConfig.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -193,6 +213,9 @@ export const SheetPayload = {
       vcsPayload: isSet(object.vcsPayload) ? SheetPayload_VCSPayload.fromJSON(object.vcsPayload) : undefined,
       schemaDesign: isSet(object.schemaDesign) ? SheetPayload_SchemaDesign.fromJSON(object.schemaDesign) : undefined,
       databaseConfig: isSet(object.databaseConfig) ? DatabaseConfig.fromJSON(object.databaseConfig) : undefined,
+      baselineDatabaseConfig: isSet(object.baselineDatabaseConfig)
+        ? DatabaseConfig.fromJSON(object.baselineDatabaseConfig)
+        : undefined,
     };
   },
 
@@ -205,6 +228,9 @@ export const SheetPayload = {
       (obj.schemaDesign = message.schemaDesign ? SheetPayload_SchemaDesign.toJSON(message.schemaDesign) : undefined);
     message.databaseConfig !== undefined &&
       (obj.databaseConfig = message.databaseConfig ? DatabaseConfig.toJSON(message.databaseConfig) : undefined);
+    message.baselineDatabaseConfig !== undefined && (obj.baselineDatabaseConfig = message.baselineDatabaseConfig
+      ? DatabaseConfig.toJSON(message.baselineDatabaseConfig)
+      : undefined);
     return obj;
   },
 
@@ -224,6 +250,10 @@ export const SheetPayload = {
     message.databaseConfig = (object.databaseConfig !== undefined && object.databaseConfig !== null)
       ? DatabaseConfig.fromPartial(object.databaseConfig)
       : undefined;
+    message.baselineDatabaseConfig =
+      (object.baselineDatabaseConfig !== undefined && object.baselineDatabaseConfig !== null)
+        ? DatabaseConfig.fromPartial(object.baselineDatabaseConfig)
+        : undefined;
     return message;
   },
 };

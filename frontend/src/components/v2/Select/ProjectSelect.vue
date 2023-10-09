@@ -34,7 +34,7 @@ interface ProjectSelectOption extends SelectOption {
 
 const props = withDefaults(
   defineProps<{
-    project: string | undefined; // UNKNOWN_ID(-1) to "ALL"
+    project?: string | undefined; // UNKNOWN_ID(-1) to "ALL"
     allowedProjectRoleList?: string[]; // Empty array([]) to "ALL"
     allowedProjectTenantModeList?: TenantMode[];
     allowedProjectWorkflowTypeList?: Workflow[];
@@ -45,6 +45,7 @@ const props = withDefaults(
     filter?: (project: Project, index: number) => boolean;
   }>(),
   {
+    project: undefined,
     allowedProjectRoleList: () => [],
     allowedProjectTenantModeList: () => [
       TenantMode.TENANT_MODE_DISABLED,
@@ -182,7 +183,7 @@ watchEffect(prepare);
 </script>
 
 <style lang="postcss" scoped>
-.bb-project-select ::v-deep .n-base-selection-input:focus {
+.bb-project-select :deep(.n-base-selection-input:focus) {
   @apply !ring-0;
 }
 </style>

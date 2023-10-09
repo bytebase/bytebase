@@ -422,6 +422,11 @@ func prodTemplateSQLReviewPolicyForMySQL() (*v1pb.SQLReviewPolicy, error) {
 				Engine: v1pb.Engine_MYSQL,
 			},
 			{
+				Type:   string(advisor.SchemaRuleColumnDisallowDropInIndex),
+				Level:  v1pb.SQLReviewRuleLevel_ERROR,
+				Engine: v1pb.Engine_MYSQL,
+			},
+			{
 				Type:   string(advisor.SchemaRuleColumnDisallowChangeType),
 				Level:  v1pb.SQLReviewRuleLevel_WARNING,
 				Engine: v1pb.Engine_MYSQL,

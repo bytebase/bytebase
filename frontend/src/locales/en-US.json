@@ -206,6 +206,7 @@
     "pitr": "PITR",
     "fix": "Fix",
     "go-now": "Go now",
+    "sync": "Sync",
     "sync-now": "Sync Now",
     "show-help": "Show help",
     "success": "Succeed",
@@ -263,7 +264,10 @@
     "merge": "Merge",
     "info": "Info",
     "minutes": "Minutes",
-    "go-to-configure": "Configure"
+    "go-to-configure": "Configure",
+    "updated-at-by": "Updated {time} by {user}",
+    "created-at-by": "Created {time} by {user}",
+    "filter-by-name": "Filter by name"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -941,7 +945,6 @@
     "issue-name": "Issue name",
     "grant-request": {
       "export-rows": "Max export rows",
-      "export-format": "Export format",
       "expire-days": "Expire days",
       "expired-at": "Expired at",
       "all-databases": "All",
@@ -1046,7 +1049,10 @@
     "last-successful-sync": "Last successful sync",
     "sync-status": "Sync status",
     "failed-to-sync-schema-for-database-database-value-name": "Failed to sync schema for database '{0}'.",
-    "successfully-synced-schema-for-database-database-value-name": "Successfully synced schema for database '{0}'."
+    "successfully-synced-schema-for-database-database-value-name": "Successfully synced schema for database '{0}'.",
+    "start-to-sync-schema": "Start to sync schame",
+    "failed-to-sync-schema": "Failed to sync schema",
+    "successfully-synced-schema": "Successfully synced schema"
   },
   "instance": {
     "select": "Select instance",
@@ -1137,6 +1143,7 @@
     "type-or-paste-credentials": "Type or paste CREDENTIALS",
     "type-or-paste-credentials-write-only": "Type or paste CREDENTIALS - write only",
     "password-write-only": "YOUR_DB_PWD - write only",
+    "secret-manager-tip": "You can also specify external secret manage endpoint",
     "test-connection": "Test Connection",
     "ignore-and-create": "Ignore and create",
     "add-a-postgresql-sample-instance": "Add a PostgreSQL sample instance instead",
@@ -1331,6 +1338,7 @@
     "select-branch": "Select a branch",
     "delete-this-branch": "Delete this branch",
     "table-detail": "Table detail",
+    "batch-action-disabled": "Can not {action} for the databases from different projects",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "Successfully transferred '{0}' to project '{1}'.",
     "backup-name": "Backup name",
     "create-backup": "Create backup",
@@ -1427,6 +1435,7 @@
     "unassigned-databases": "Unassigned databases",
     "restore-database": "Restore database",
     "selected-n-databases": "{n} database selected | {n} databases selected",
+    "select-databases-from-same-project": "Please select databases from the same project",
     "sync-schema": {
       "title": "Sync Schema",
       "description": "Bytebase supports synchronizing a schema to one or multiple target databases.",
@@ -1617,7 +1626,6 @@
     "create-modal": {
       "project-name": "@:common.project @:common.name",
       "key": "@:common.key",
-      "key-hint": "(Uppercase letters identifying your project)",
       "cancel": "@:common.cancel",
       "confirm": "@:common.create",
       "success-prompt": "Successfully created project {name}."
@@ -1759,7 +1767,8 @@
       "project-owner": "Require LGTM from project owner"
     },
     "successfully-updated-db-name-template": "Successfully updated database name template.",
-    "all": "All projects"
+    "all": "All projects",
+    "key-hint": "Short descriptive alphanumberic letters to identify this project."
   },
   "inbox": {
     "mark-all-as-read": "Mark all as read",
@@ -2045,7 +2054,13 @@
         }
       }
     },
-    "filter-by-name": "Filter by name"
+    "filter-by-name": "Filter by name",
+    "batch-query": {
+      "batch": "Batch",
+      "database-labels": "{database} labels",
+      "database-has-no-label": "{database} has no label",
+      "description": "Batch query {count} additional databases with the same label values."
+    }
   },
   "schema-editor": {
     "self": "Schema Editor",
@@ -2344,6 +2359,10 @@
         "title": "AI Augmentation",
         "desc": "AI augmented SQL Editor and index advisor features powered by OpenAI."
       },
+      "bb-feature-batch-query": {
+        "title": "Batch query",
+        "desc": "Batch query additional databases with the same label values in SQL Editor."
+      },
       "bb-feature-shared-sql-script": {
         "title": "Shared SQL script",
         "desc": "Share your SQL scripts with project teammates or make them public to all."
@@ -2561,7 +2580,8 @@
     "idp": "Identity Provider",
     "role": "Role",
     "database-group": "Database Group",
-    "schema-group": "Table Group"
+    "schema-group": "Table Group",
+    "changelist": "Changelist"
   },
   "resource-id": {
     "self": "{resource} ID",
@@ -3016,7 +3036,7 @@
     "search-tables": "Search tables",
     "use-tips": "Click a table to start.",
     "apply-to-database": "Apply change to database",
-    "select-database-placeholder": "Select a database (MySQL only)",
+    "select-database-placeholder": "Select a database (MySQL, PostgreSQL and TiDB only)",
     "message": {
       "created-succeed": "Branch created successfully",
       "updated-succeed": "Branch updated successfully",
@@ -3044,5 +3064,45 @@
       "column_name": "Column name",
       "classification_level": "Classification level"
     }
+  },
+  "changelist": {
+    "self": "Changelist",
+    "changelists": "Changelists",
+    "change-center": "Change Center",
+    "new": "New Changelist",
+    "name": "Changelist name",
+    "name-placeholder": "My changelist",
+    "error": {
+      "project-is-required": "Project is required",
+      "name-is-required": "Changelist name is required",
+      "invalid-resource-id": "Invalid resource Id",
+      "nothing-changed": "Nothing changed",
+      "sql-cannot-be-empty": "SQL is required",
+      "select-at-least-one-change": "Select at least one change",
+      "select-at-least-one-change-to-export": "Select at least one change to export",
+      "add-at-least-one-change": "Add at least one change",
+      "select-at-least-one-database": "Select at least one database",
+      "you-are-not-allowed-to-perform-this-action": "You are not allowed to perform this action"
+    },
+    "apply-to-database": "Apply to database",
+    "add-change": {
+      "self": "Add Change",
+      "change-history": {
+        "select-at-least-one-history-below": "Select at least one history below"
+      },
+      "branch": {
+        "select-at-least-one-branch-below": "Select at least one branch below"
+      }
+    },
+    "change-source": {
+      "self": "Change source",
+      "raw-sql": "Raw SQL",
+      "change-history": {
+        "tables": "Tables"
+      },
+      "source": "Source"
+    },
+    "confirm-remove-change": "Remove this change?",
+    "confirm-delete-changelist": "Delete this changelist?"
   }
 }

@@ -5,13 +5,13 @@
 
 # $ docker run --init --rm --name bytebase --publish 8080:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase
 
-FROM golang:1.21.1 as backend
+FROM golang:1.21.2 as backend
 ADD go.mod go.sum /
 RUN go mod download
 
 ARG VERSION="development"
 ARG VERSION_SUFFIX=""
-ARG GO_VERSION="1.21.1"
+ARG GO_VERSION="1.21.2"
 ARG GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
 ARG BUILD_USER="unknown"

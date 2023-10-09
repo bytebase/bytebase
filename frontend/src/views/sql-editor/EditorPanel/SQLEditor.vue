@@ -9,6 +9,7 @@
       :language="selectedLanguage"
       :dialect="selectedDialect"
       :readonly="readonly"
+      :advices="advices"
       @change="handleChange"
       @change-selection="handleChangeSelection"
       @save="handleSaveSheet"
@@ -19,6 +20,7 @@
 
 <script lang="ts" setup>
 import { computed, defineEmits, nextTick, ref, watch, watchEffect } from "vue";
+import { AdviceOption } from "@/components/MonacoEditor";
 import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
 import {
   useTabStore,
@@ -61,6 +63,21 @@ const { events: editorEvents } = useSQLEditorContext();
 const editorRef = ref<InstanceType<typeof MonacoEditor>>();
 
 const sqlCode = computed(() => tabStore.currentTab.statement);
+const advices = computed((): AdviceOption[] => {
+  return (
+    Array.from(tabStore.currentTab?.databaseQueryResultMap?.values() || [])
+      .map((result) => result?.advices || [])
+      .flat() ?? []
+  ).map((advice) => ({
+    severity: "ERROR",
+    message: advice.detail,
+    startLineNumber: advice.line,
+    endLineNumber: advice.line,
+    startColumn: advice.column,
+    endColumn: advice.column,
+    source: advice.detail,
+  }));
+});
 const { instance: selectedInstance } = useInstanceV1ByUID(
   computed(() => tabStore.currentTab.connection.instanceId)
 );
@@ -107,6 +124,10 @@ const handleChange = (value: string) => {
   if (value === tabStore.currentTab.statement) {
     return;
   }
+  // Clear old advices when the statement is changed.
+  tabStore.currentTab.databaseQueryResultMap?.forEach((result) => {
+    result.advices = [];
+  });
   tabStore.updateCurrentTab({
     statement: value,
     isSaved: false,

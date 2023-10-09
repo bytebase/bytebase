@@ -27,14 +27,14 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/app/relay"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // GetLatestSchemaVersion gets the latest schema version for a database.
-func GetLatestSchemaVersion(ctx context.Context, stores *store.Store, instanceID int, databaseID int, databaseName string) (string, error) {
+func GetLatestSchemaVersion(ctx context.Context, stores *store.Store, instanceID int, databaseID int, databaseName string) (model.Version, error) {
 	// TODO(d): support semantic versioning.
 	limit := 1
 	history, err := stores.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
@@ -43,13 +43,12 @@ func GetLatestSchemaVersion(ctx context.Context, stores *store.Store, instanceID
 		Limit:      &limit,
 	})
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to get migration history for database %q", databaseName)
+		return model.Version{}, errors.Wrapf(err, "failed to get migration history for database %q", databaseName)
 	}
-	var schemaVersion string
-	if len(history) == 1 {
-		schemaVersion = history[0].Version
+	if len(history) == 0 {
+		return model.Version{}, nil
 	}
-	return schemaVersion, nil
+	return history[0].Version, nil
 }
 
 // DataSourceFromInstanceWithType gets a typed data source from an instance.
@@ -270,7 +269,13 @@ func GetDatabaseMatrixFromDeploymentSchedule(schedule *api.DeploymentSchedule, d
 	databaseMap := make(map[int]*store.DatabaseMessage)
 	for _, database := range databaseList {
 		databaseMap[database.UID] = database
-		idToLabels[database.UID] = database.GetEffectiveLabels()
+		newMap := make(map[string]string)
+		for k, v := range database.Metadata.Labels {
+			newMap[k] = v
+		}
+		newMap[api.EnvironmentLabelKey] = database.EffectiveEnvironmentID
+
+		idToLabels[database.UID] = newMap
 	}
 
 	// idsSeen records database id which is already in a stage.
@@ -470,27 +475,21 @@ func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 
 // BeginMigration checks before executing migration and inserts a migration history record with pending status.
 func BeginMigration(ctx context.Context, stores *store.Store, m *db.MigrationInfo, prevSchema, statement string, sheetID *int) (string, error) {
-	// Convert version to stored version.
-	storedVersion, err := util.ToStoredVersion(m.UseSemanticVersion, m.Version, m.SemanticVersionSuffix)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to convert to stored version")
-	}
 	// Phase 1 - Pre-check before executing migration
 	// Check if the same migration version has already been applied.
 	if list, err := stores.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
 		InstanceID: m.InstanceID,
 		DatabaseID: m.DatabaseID,
-		// TODO(d): support semantic versioning.
-		Version: &storedVersion,
+		Version:    &m.Version,
 	}); err != nil {
 		return "", errors.Wrap(err, "failed to check duplicate version")
 	} else if len(list) > 0 {
 		migrationHistory := list[0]
 		switch migrationHistory.Status {
 		case db.Done:
-			return migrationHistory.UID, common.Errorf(common.MigrationAlreadyApplied, "database %q has already applied version %s", m.Database, m.Version)
+			return migrationHistory.UID, common.Errorf(common.MigrationAlreadyApplied, "database %q has already applied version %s", m.Database, m.Version.Version)
 		case db.Pending:
-			err := errors.Errorf("database %q version %s migration is already in progress", m.Database, m.Version)
+			err := errors.Errorf("database %q version %s migration is already in progress", m.Database, m.Version.Version)
 			slog.Debug(err.Error())
 			// For force migration, we will ignore the existing migration history and continue to migration.
 			if m.Force {
@@ -498,7 +497,7 @@ func BeginMigration(ctx context.Context, stores *store.Store, m *db.MigrationInf
 			}
 			return "", common.Wrap(err, common.MigrationPending)
 		case db.Failed:
-			err := errors.Errorf("database %q version %s migration has failed, please check your database to make sure things are fine and then start a new migration using a new version ", m.Database, m.Version)
+			err := errors.Errorf("database %q version %s migration has failed, please check your database to make sure things are fine and then start a new migration using a new version ", m.Database, m.Version.Version)
 			slog.Debug(err.Error())
 			// For force migration, we will ignore the existing migration history and continue to migration.
 			if m.Force {
@@ -513,7 +512,7 @@ func BeginMigration(ctx context.Context, stores *store.Store, m *db.MigrationInf
 	// Thus we sort of doing a 2-phase commit, where we first write a PENDING migration record, and after migration completes, we then
 	// update the record to DONE together with the updated schema.
 	statementRecord, _ := common.TruncateString(statement, common.MaxSheetSize)
-	insertedID, err := stores.CreatePendingInstanceChangeHistory(ctx, prevSchema, m, storedVersion, statementRecord, sheetID)
+	insertedID, err := stores.CreatePendingInstanceChangeHistory(ctx, prevSchema, m, statementRecord, sheetID)
 	if err != nil {
 		return "", err
 	}
