@@ -26,18 +26,10 @@
 </template>
 
 <script lang="ts" setup>
-import { useLocalStorage } from "@vueuse/core";
 import { NConfigProvider, NDialogProvider } from "naive-ui";
 import { ServerError } from "nice-grpc-common";
 import { ClientError, Status } from "nice-grpc-web";
-import {
-  reactive,
-  watchEffect,
-  onErrorCaptured,
-  watch,
-  onMounted,
-  ref,
-} from "vue";
+import { reactive, watchEffect, onErrorCaptured, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import HelpDrawer from "@/components/HelpDrawer";
 import Watermark from "@/components/misc/Watermark.vue";
