@@ -47,7 +47,6 @@
         {{ $t("slow-query.slow-queries") }}
       </router-link>
       <router-link
-        v-if="isDev"
         to="/changelists"
         class="outline-item group flex items-center px-2 py-1.5 capitalize"
       >
