@@ -1,5 +1,4 @@
 <template>
-  <!-- it is recommended by naive-ui that we leave the local to null when the language is en -->
   <NConfigProvider
     :key="key"
     :locale="generalLang"

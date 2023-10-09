@@ -942,7 +942,6 @@
     "issue-name": "工单名称",
     "grant-request": {
       "export-rows": "最大导出行数",
-      "export-format": "导出格式",
       "expire-days": "过期天数",
       "expired-at": "过期时间",
       "all-databases": "所有数据库",
@@ -2052,6 +2051,9 @@
     },
     "filter-by-name": "根据名称过滤",
     "batch-query": {
+      "batch": "批量",
+      "database-labels": "{database} 标签",
+      "database-has-no-label": "{database} 没有标签",
       "description": "批量查询具有相同标签值的其他数据库。"
     }
   },
@@ -3027,7 +3029,7 @@
     "search-tables": "搜索表",
     "use-tips": "选择需要设计的表",
     "apply-to-database": "应用变更到数据库",
-    "select-database-placeholder": "选择数据库 (仅限 MySQL)",
+    "select-database-placeholder": "选择数据库 (仅限 MySQL，PostgreSQL 和 TiDB)",
     "message": {
       "created-succeed": "分支创建成功",
       "updated-succeed": "分支更新成功",

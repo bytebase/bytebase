@@ -21,7 +21,7 @@
             <template #action>
               <strong>
                 {{
-                  sqlEditorStore.mode === "BUNDLED"
+                  showActionButtons
                     ? isDDL
                       ? $t("database.edit-schema")
                       : $t("database.change-data")
@@ -31,7 +31,7 @@
             </template>
             <template #reaction>
               {{
-                sqlEditorStore.mode === "BUNDLED"
+                showActionButtons
                   ? $t("sql-editor.and-submit-an-issue")
                   : $t("sql-editor.to-enable-admin-mode")
               }}
@@ -43,7 +43,7 @@
 
     <div class="execute-hint-content mt-4 flex justify-between">
       <div
-        v-if="sqlEditorStore.mode === 'BUNDLED'"
+        v-if="showActionButtons"
         class="flex justify-start items-center space-x-2"
       >
         <AdminModeButton @enter="$emit('close')" />
@@ -51,7 +51,7 @@
       <div class="flex flex-1 justify-end items-center space-x-2">
         <NButton @click="handleClose">{{ $t("common.close") }}</NButton>
         <NButton
-          v-if="sqlEditorStore.mode === 'BUNDLED'"
+          v-if="showActionButtons"
           type="primary"
           @click="gotoCreateIssue"
         >
@@ -97,6 +97,8 @@ const isDDL = computed(() => {
   const { data } = parseSQL(sqlStatement.value);
   return data !== null ? isDDLStatement(data, "some") : false;
 });
+
+const showActionButtons = computed(() => sqlEditorStore.mode === "BUNDLED");
 
 const handleClose = () => {
   emit("close");

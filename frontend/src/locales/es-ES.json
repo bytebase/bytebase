@@ -944,7 +944,6 @@
     "issue-name": "Nombre de la incidencia",
     "grant-request": {
       "export-rows": "número máximo de filas",
-      "export-format": "formato de exportación",
       "expire-days": "días de caducidad",
       "expired-at": "tiempo de caducidad",
       "all-databases": "todas las bases de datos",
@@ -2053,6 +2052,9 @@
     },
     "filter-by-name": "Filtrar por nombre",
     "batch-query": {
+      "batch": "Lote",
+      "database-labels": "Etiquetas de {database}",
+      "database-has-no-label": "{database} no tiene etiquetas",
       "description": "Consulta por lotes bases de datos adicionales con los mismos valores de etiqueta."
     }
   },
@@ -3032,7 +3034,7 @@
     "search-tables": "Buscar tablas",
     "use-tips": "Selecciona las tablas a diseñar",
     "apply-to-database": "Aplicar cambio a la base de datos",
-    "select-database-placeholder": "Seleccionar base de datos (sólo MySQL)",
+    "select-database-placeholder": "Seleccionar base de datos (sólo MySQL, PostgreSQL, TiDB)",
     "message": {
       "created-succeed": "Diseño de esquema creado con éxito",
       "updated-succeed": "Diseño de esquema actualizado con éxito",

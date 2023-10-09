@@ -516,8 +516,10 @@ func (s *SchemaDesignService) DeleteSchemaDesign(ctx context.Context, request *v
 }
 
 func (*SchemaDesignService) DiffMetadata(_ context.Context, request *v1pb.DiffMetadataRequest) (*v1pb.DiffMetadataResponse, error) {
-	if request.Engine != v1pb.Engine_MYSQL {
-		return nil, status.Errorf(codes.InvalidArgument, "only MySQL is supported")
+	switch request.Engine {
+	case v1pb.Engine_MYSQL, v1pb.Engine_POSTGRES, v1pb.Engine_TIDB:
+	default:
+		return nil, status.Errorf(codes.InvalidArgument, "unsupported engine: %v", request.Engine)
 	}
 	if request.SourceMetadata == nil || request.TargetMetadata == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "source_metadata and target_metadata are required")

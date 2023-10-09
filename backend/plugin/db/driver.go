@@ -16,6 +16,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -146,7 +147,7 @@ type MigrationInfo struct {
 	CreatorID  int
 
 	ReleaseVersion string
-	Version        string
+	Version        model.Version
 	Namespace      string
 	Database       string
 	Environment    string
@@ -158,14 +159,6 @@ type MigrationInfo struct {
 	IssueID        string
 	// Payload contains JSON-encoded string of VCS push event if the migration is triggered by a VCS push event.
 	Payload *storepb.InstanceChangeHistoryPayload
-	// UseSemanticVersion is whether version is a semantic version.
-	// When UseSemanticVersion is set, version should be set to the format specified in Semantic Versioning 2.0.0 (https://semver.org/).
-	// For example, for setting non-semantic version "hello", the values should be Version = "hello", UseSemanticVersion = false, SemanticVersionSuffix = "".
-	// For setting semantic version "1.2.0", the values should be Version = "1.2.0", UseSemanticVersion = true, SemanticVersionSuffix = "20060102150405" (common.DefaultMigrationVersion).
-	UseSemanticVersion bool
-	// SemanticVersionSuffix should be set to timestamp format of "20060102150405" (common.DefaultMigrationVersion) if UseSemanticVersion is set.
-	// Since stored version should be unique, we have to append a suffix if we allow users to baseline to the same semantic version for fixing schema drift.
-	SemanticVersionSuffix string
 	// Force is used to execute migration disregarding any migration history with PENDING or FAILED status.
 	// This applies to BASELINE and MIGRATE types of migrations because most of these migrations are retry-able.
 	// We don't use force option for DATA type of migrations yet till there's customer needs.
@@ -228,7 +221,7 @@ func ParseMigrationInfo(filePath, filePathTemplate string, allowOmitDatabaseName
 			case "ENV_ID":
 				mi.Environment = matchList[index]
 			case "VERSION":
-				mi.Version = matchList[index]
+				mi.Version = model.Version{Version: matchList[index]}
 			case "DB_NAME":
 				mi.Namespace = matchList[index]
 				mi.Database = matchList[index]
@@ -251,7 +244,7 @@ func ParseMigrationInfo(filePath, filePathTemplate string, allowOmitDatabaseName
 		}
 	}
 
-	if mi.Version == "" {
+	if mi.Version.Version == "" {
 		return nil, errors.Errorf("file path %q does not contain {{VERSION}}, configured file path template %q", filePath, filePathTemplate)
 	}
 	if mi.Namespace == "" && !allowOmitDatabaseName {

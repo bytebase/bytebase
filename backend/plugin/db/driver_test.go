@@ -6,6 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 func TestParseMigrationInfo(t *testing.T) {
@@ -22,7 +24,7 @@ func TestParseMigrationInfo(t *testing.T) {
 			filePath:         "db1##001foo",
 			filePathTemplate: "{{DB_NAME}}##{{VERSION}}",
 			want: &MigrationInfo{
-				Version:     "001foo",
+				Version:     model.Version{Version: "001foo"},
 				Namespace:   "db1",
 				Database:    "db1",
 				Environment: "",
@@ -37,7 +39,7 @@ func TestParseMigrationInfo(t *testing.T) {
 			filePath:         "db foo_+-=_#!$.##1.2.3",
 			filePathTemplate: "{{DB_NAME}}##{{VERSION}}",
 			want: &MigrationInfo{
-				Version:     "1.2.3",
+				Version:     model.Version{Version: "1.2.3"},
 				Namespace:   "db foo_+-=_#!$.",
 				Database:    "db foo_+-=_#!$.",
 				Environment: "",
@@ -52,7 +54,7 @@ func TestParseMigrationInfo(t *testing.T) {
 			filePath:         "bytebase/db1##001foo",
 			filePathTemplate: "bytebase/{{DB_NAME}}##{{VERSION}}",
 			want: &MigrationInfo{
-				Version:     "001foo",
+				Version:     model.Version{Version: "001foo"},
 				Namespace:   "db1",
 				Database:    "db1",
 				Environment: "",
@@ -67,7 +69,7 @@ func TestParseMigrationInfo(t *testing.T) {
 			filePath:         "bytebase/dev/db1##001foo",
 			filePathTemplate: "bytebase/{{ENV_ID}}/{{DB_NAME}}##{{VERSION}}",
 			want: &MigrationInfo{
-				Version:     "001foo",
+				Version:     model.Version{Version: "001foo"},
 				Namespace:   "db1",
 				Database:    "db1",
 				Environment: "dev",
@@ -82,7 +84,7 @@ func TestParseMigrationInfo(t *testing.T) {
 			filePath:         "db1##001foo##create_t1",
 			filePathTemplate: "{{DB_NAME}}##{{VERSION}}##{{DESCRIPTION}}",
 			want: &MigrationInfo{
-				Version:     "001foo",
+				Version:     model.Version{Version: "001foo"},
 				Namespace:   "db1",
 				Database:    "db1",
 				Environment: "",
@@ -97,7 +99,7 @@ func TestParseMigrationInfo(t *testing.T) {
 			filePath:         "db1##001foo##migrate",
 			filePathTemplate: "{{DB_NAME}}##{{VERSION}}##{{TYPE}}",
 			want: &MigrationInfo{
-				Version:     "001foo",
+				Version:     model.Version{Version: "001foo"},
 				Namespace:   "db1",
 				Database:    "db1",
 				Environment: "",
@@ -112,7 +114,7 @@ func TestParseMigrationInfo(t *testing.T) {
 			filePath:         "db1##001foo##ddl",
 			filePathTemplate: "{{DB_NAME}}##{{VERSION}}##{{TYPE}}",
 			want: &MigrationInfo{
-				Version:     "001foo",
+				Version:     model.Version{Version: "001foo"},
 				Namespace:   "db1",
 				Database:    "db1",
 				Environment: "",
@@ -127,7 +129,7 @@ func TestParseMigrationInfo(t *testing.T) {
 			filePath:         "db1##001foo##dml",
 			filePathTemplate: "{{DB_NAME}}##{{VERSION}}##{{TYPE}}",
 			want: &MigrationInfo{
-				Version:     "001foo",
+				Version:     model.Version{Version: "001foo"},
 				Namespace:   "db1",
 				Database:    "db1",
 				Environment: "",
@@ -142,7 +144,7 @@ func TestParseMigrationInfo(t *testing.T) {
 			filePath:         "db_shop1##001foo##data",
 			filePathTemplate: "{{DB_NAME}}##{{VERSION}}##{{TYPE}}",
 			want: &MigrationInfo{
-				Version:     "001foo",
+				Version:     model.Version{Version: "001foo"},
 				Namespace:   "db_shop1",
 				Database:    "db_shop1",
 				Environment: "",
@@ -157,7 +159,7 @@ func TestParseMigrationInfo(t *testing.T) {
 			filePath:         "db_shop1##001foo##data##fix_customer_info",
 			filePathTemplate: "{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}",
 			want: &MigrationInfo{
-				Version:     "001foo",
+				Version:     model.Version{Version: "001foo"},
 				Namespace:   "db_shop1",
 				Database:    "db_shop1",
 				Environment: "",
@@ -172,7 +174,7 @@ func TestParseMigrationInfo(t *testing.T) {
 			filePath:         ".db##20220811.sql",
 			filePathTemplate: ".{{DB_NAME}}##{{VERSION}}.sql",
 			want: &MigrationInfo{
-				Version:     "20220811",
+				Version:     model.Version{Version: "20220811"},
 				Namespace:   "db",
 				Database:    "db",
 				Environment: "",
@@ -187,7 +189,7 @@ func TestParseMigrationInfo(t *testing.T) {
 			filePath:         "db1##001foo##baseline",
 			filePathTemplate: "{{DB_NAME}}##{{VERSION}}##{{TYPE}}",
 			want: &MigrationInfo{
-				Version:     "001foo",
+				Version:     model.Version{Version: "001foo"},
 				Namespace:   "db1",
 				Database:    "db1",
 				Environment: "",
@@ -222,7 +224,7 @@ func TestParseMigrationInfo(t *testing.T) {
 			filePathTemplate:      "{{VERSION}}##{{TYPE}}",
 			allowOmitDatabaseName: true,
 			want: &MigrationInfo{
-				Version:     "001foo",
+				Version:     model.Version{Version: "001foo"},
 				Source:      VCS,
 				Type:        Migrate,
 				Description: "Create  schema migration",

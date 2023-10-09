@@ -24,10 +24,10 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/mysql"
-	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	vcsPlugin "github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -64,7 +64,7 @@ func RunExecutorOnce(ctx context.Context, driverCtx context.Context, exec Execut
 	return exec.RunOnce(ctx, driverCtx, task)
 }
 
-func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.Profile, task *store.TaskMessage, migrationType db.MigrationType, statement, schemaVersion string) (*db.MigrationInfo, error) {
+func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.Profile, task *store.TaskMessage, migrationType db.MigrationType, statement string, schemaVersion model.Version) (*db.MigrationInfo, error) {
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return nil, err
@@ -87,13 +87,12 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.P
 		CreatorID:      task.CreatorID,
 		ReleaseVersion: profile.Version,
 		Type:           migrationType,
-		// TODO(d): support semantic versioning.
-		Version:     schemaVersion,
-		Description: task.Name,
-		Environment: environment.ResourceID,
-		Database:    database.DatabaseName,
-		Namespace:   database.DatabaseName,
-		Payload:     &storepb.InstanceChangeHistoryPayload{},
+		Version:        schemaVersion,
+		Description:    task.Name,
+		Environment:    environment.ResourceID,
+		Database:       database.DatabaseName,
+		Namespace:      database.DatabaseName,
+		Payload:        &storepb.InstanceChangeHistoryPayload{},
 	}
 
 	plans, err := stores.ListPlans(ctx, &store.FindPlanMessage{PipelineID: &task.PipelineID})
@@ -418,18 +417,11 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 		return true, nil, errors.Errorf("failed to find linked repository for database %q", database.DatabaseName)
 	}
 
-	storeVersion, err := util.ToStoredVersion(false, mi.Version, "")
-	if err != nil {
-		slog.Error("Convert to stored version",
-			slog.String("version", mi.Version),
-			log.BBError(err),
-		)
-	}
 	if mi.Type == db.Migrate || mi.Type == db.MigrateSDL {
 		if _, err := stores.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 			InstanceID:    instance.ResourceID,
 			DatabaseName:  database.DatabaseName,
-			SchemaVersion: &storeVersion,
+			SchemaVersion: &mi.Version,
 		}, api.SystemBotID); err != nil {
 			return true, nil, errors.Errorf("failed to update database %q for instance %q", database.DatabaseName, instance.ResourceID)
 		}
@@ -462,7 +454,7 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 
 		vcs, err := stores.GetExternalVersionControlV2(ctx, repo.VCSUID)
 		if err != nil {
-			return true, nil, errors.Errorf("failed to sync schema file %s after applying migration %s to %q", latestSchemaFile, mi.Version, database.DatabaseName)
+			return true, nil, errors.Errorf("failed to sync schema file %s after applying migration %s to %q", latestSchemaFile, mi.Version.Version, database.DatabaseName)
 		}
 		if vcs == nil {
 			return true, nil, errors.Errorf("VCS ID not found: %d", repo.VCSUID)
@@ -508,7 +500,7 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 				Type:         api.ActivityPipelineTaskFileCommit,
 				Level:        api.ActivityInfo,
 				Comment: fmt.Sprintf("Committed the latest schema after applying migration version %s to %q.",
-					mi.Version,
+					mi.Version.Version,
 					mi.Database,
 				),
 				Payload: string(payload),
@@ -560,16 +552,23 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 			log.BBError(err))
 	}
 
-	detail := fmt.Sprintf("Applied migration version %s to database %q.", mi.Version, database.DatabaseName)
+	detail := fmt.Sprintf("Applied migration version %s to database %q.", mi.Version.Version, database.DatabaseName)
 	if mi.Type == db.Baseline {
-		detail = fmt.Sprintf("Established baseline version %s for database %q.", mi.Version, database.DatabaseName)
+		detail = fmt.Sprintf("Established baseline version %s for database %q.", mi.Version.Version, database.DatabaseName)
 	}
 
+	storedVersion, err := mi.Version.Marshal()
+	if err != nil {
+		slog.Error("failed to convert database schema version",
+			slog.String("version", mi.Version.Version),
+			log.BBError(err),
+		)
+	}
 	return true, &api.TaskRunResultPayload{
 		Detail:        detail,
 		MigrationID:   migrationID,
 		ChangeHistory: fmt.Sprintf("instances/%s/databases/%s/changeHistories/%s", instance.ResourceID, database.DatabaseName, migrationID),
-		Version:       mi.Version,
+		Version:       storedVersion,
 	}, nil
 }
 
@@ -636,7 +635,7 @@ func isWriteBack(ctx context.Context, stores *store.Store, license enterpriseAPI
 	return branch, nil
 }
 
-func runMigration(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, license enterpriseAPI.LicenseService, stateCfg *state.State, profile config.Profile, task *store.TaskMessage, migrationType db.MigrationType, statement, schemaVersion string, sheetID *int) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func runMigration(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, license enterpriseAPI.LicenseService, stateCfg *state.State, profile config.Profile, task *store.TaskMessage, migrationType db.MigrationType, statement string, schemaVersion model.Version, sheetID *int) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	mi, err := getMigrationInfo(ctx, store, profile, task, migrationType, statement, schemaVersion)
 	if err != nil {
 		return true, nil, err
@@ -693,7 +692,7 @@ func writeBackLatestSchema(
 	if mi.Type == db.Baseline {
 		commitMessage = fmt.Sprintf("[Bytebase] establish baseline for %q", mi.Database)
 	} else {
-		commitTitle := fmt.Sprintf("[Bytebase] %s latest schema for %q after migration %s", verb, mi.Database, mi.Version)
+		commitTitle := fmt.Sprintf("[Bytebase] %s latest schema for %q after migration %s", verb, mi.Database, mi.Version.Version)
 		commitBody := "THIS COMMIT IS AUTO-GENERATED BY BYTEBASE"
 		if bytebaseURL != "" {
 			commitBody += "\n\n" + bytebaseURL
@@ -752,7 +751,7 @@ func writeBackLatestSchema(
 			schemaFileCommit,
 		)
 		if err != nil {
-			return "", errors.Wrapf(err, "failed to create file after applying migration %s to %q", mi.Version, mi.Database)
+			return "", errors.Wrapf(err, "failed to create file after applying migration %s to %q", mi.Version.Version, mi.Database)
 		}
 	} else {
 		slog.Debug("Update latest schema file",
@@ -776,7 +775,7 @@ func writeBackLatestSchema(
 			schemaFileCommit,
 		)
 		if err != nil {
-			return "", errors.Wrapf(err, "failed to create file after applying migration %s to %q", mi.Version, mi.Database)
+			return "", errors.Wrapf(err, "failed to create file after applying migration %s to %q", mi.Version.Version, mi.Database)
 		}
 	}
 

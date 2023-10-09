@@ -12,7 +12,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
-	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -204,9 +203,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Len(t, histories, 1)
-	_, version, _, err := util.FromStoredVersion(histories[0].Version)
-	require.NoError(t, err)
-	require.Equal(t, version, releaseVersion.String())
+	require.Equal(t, histories[0].Version.Version, releaseVersion.String())
 
 	// Check no migration after passing current version as the release cutoff version.
 	err = migrate(ctx, storeInstance, metadataDriver, releaseVersion, releaseVersion, common.ReleaseModeProd, serverVersion, databaseName)

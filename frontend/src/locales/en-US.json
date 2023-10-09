@@ -945,7 +945,6 @@
     "issue-name": "Issue name",
     "grant-request": {
       "export-rows": "Max export rows",
-      "export-format": "Export format",
       "expire-days": "Expire days",
       "expired-at": "Expired at",
       "all-databases": "All",
@@ -2057,7 +2056,10 @@
     },
     "filter-by-name": "Filter by name",
     "batch-query": {
-      "description": "Batch query additional databases with the same label values."
+      "batch": "Batch",
+      "database-labels": "{database} labels",
+      "database-has-no-label": "{database} has no label",
+      "description": "Batch query {count} additional databases with the same label values."
     }
   },
   "schema-editor": {
@@ -3034,7 +3036,7 @@
     "search-tables": "Search tables",
     "use-tips": "Click a table to start.",
     "apply-to-database": "Apply change to database",
-    "select-database-placeholder": "Select a database (MySQL only)",
+    "select-database-placeholder": "Select a database (MySQL, PostgreSQL and TiDB only)",
     "message": {
       "created-succeed": "Branch created successfully",
       "updated-succeed": "Branch updated successfully",
