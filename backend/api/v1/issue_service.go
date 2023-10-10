@@ -462,7 +462,7 @@ func (s *IssueService) CreateIssue(ctx context.Context, request *v1pb.CreateIssu
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	ok, err := canCreateOrUpdateIssue(ctx, s.store, projectID)
+	ok, err := isUserAtLeastProjectDeveloper(ctx, s.store, projectID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check if the user can create issue, error: %v", err)
 	}
@@ -1138,7 +1138,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 		return nil, err
 	}
 
-	ok, err := canCreateOrUpdateIssue(ctx, s.store, issue.Project.ResourceID)
+	ok, err := isUserAtLeastProjectDeveloper(ctx, s.store, issue.Project.ResourceID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check if the user can create issue, error: %v", err)
 	}
@@ -1740,7 +1740,7 @@ func getUserBelongingProjects(ctx context.Context, s *store.Store, userUID int) 
 	return projectIDs, nil
 }
 
-func canCreateOrUpdateIssue(ctx context.Context, s *store.Store, requestProjectID string) (bool, error) {
+func isUserAtLeastProjectDeveloper(ctx context.Context, s *store.Store, requestProjectID string) (bool, error) {
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	user, err := s.GetUserByID(ctx, principalID)
 	if err != nil {
