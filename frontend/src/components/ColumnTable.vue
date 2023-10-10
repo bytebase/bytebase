@@ -157,6 +157,7 @@
     :show="state.showLabelsDrawer"
     :readonly="!hasEditLabelsPermission"
     :database="database"
+    :column="state.activeColumn.name"
     :labels="getColumnConfig(state.activeColumn.name).labels"
     @dismiss="state.showLabelsDrawer = false"
     @apply="onLabelsApply($event)"

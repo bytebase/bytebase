@@ -1047,6 +1047,7 @@
     "streams": "Streams",
     "tasks": "Tasks",
     "parent": "Parent",
+    "labels-for-resource": "Labels for \"{resource}\"",
     "last-successful-sync": "Last successful sync",
     "sync-status": "Sync status",
     "failed-to-sync-schema-for-database-database-value-name": "Failed to sync schema for database '{0}'.",
