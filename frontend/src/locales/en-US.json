@@ -2062,7 +2062,8 @@
       "database-labels": "{database} labels",
       "database-has-no-label": "{database} has no label",
       "description": "Batch query {count} additional databases with the same label values."
-    }
+    },
+    "executing-query": "Executing query"
   },
   "schema-editor": {
     "self": "Schema Editor",
