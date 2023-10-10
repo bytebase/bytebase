@@ -2222,15 +2222,15 @@ func TestUnconvertStmt(t *testing.T) {
 func TestCommentStmt(t *testing.T) {
 	tests := []testData{
 		{
-			stmt: "COMMENT ON TABLE public.tech_book IS 'This is a comment.'",
+			stmt: "COMMENT ON TABLE public.tech_book IS 'This is a comment with ''.'",
 			want: []ast.Node{&ast.CommentStmt{
 				Type:    ast.ObjectTypeTable,
 				Object:  &ast.TableDef{Schema: "public", Name: "tech_book"},
-				Comment: "This is a comment.",
+				Comment: "This is a comment with '.",
 			}},
 			statementList: []base.SingleSQL{
 				{
-					Text:     "COMMENT ON TABLE public.tech_book IS 'This is a comment.'",
+					Text:     "COMMENT ON TABLE public.tech_book IS 'This is a comment with ''.'",
 					LastLine: 1,
 				},
 			},

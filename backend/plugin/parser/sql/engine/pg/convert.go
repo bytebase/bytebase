@@ -653,7 +653,8 @@ func convert(node *pgquery.Node, statement base.SingleSQL) (res ast.Node, err er
 		return &copyStmt, nil
 	case *pgquery.Node_CommentStmt:
 		commentStmt := ast.CommentStmt{
-			Comment: in.CommentStmt.Comment,
+			// unescape single quote
+			Comment: strings.ReplaceAll(in.CommentStmt.Comment, "''", "'"),
 		}
 
 		switch in.CommentStmt.Objtype {
