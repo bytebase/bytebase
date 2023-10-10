@@ -297,7 +297,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	aclProvider := v1.NewACLInterceptor(s.store, s.secret, s.licenseService, profile.Mode)
 	debugProvider := v1.NewDebugInterceptor(&s.errorRecordRing, &profile, s.metricReporter)
 	onPanic := func(p any) error {
-		stack := stacktrace.TakeStacktrace(20, 5)
+		stack := stacktrace.TakeStacktrace(20 /* n */, 5 /* skip */)
 		// keep a multiline stack
 		slog.Error("v1 server panic error", log.BBError(errors.Errorf("error: %v\n%s", p, stack)))
 		return status.Errorf(codes.Internal, "error: %v\n%s", p, stack)
