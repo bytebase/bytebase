@@ -1045,6 +1045,7 @@
     "streams": "Streams",
     "tasks": "Tareas",
     "parent": "Padre",
+    "labels-for-resource": "Etiquetas para \"{resource}\"",
     "last-successful-sync": "Última sincronización exitosa",
     "sync-status": "Estado de sincronización",
     "failed-to-sync-schema-for-database-database-value-name": "Error al sincronizar el esquema para la base de datos '{0}'.",
