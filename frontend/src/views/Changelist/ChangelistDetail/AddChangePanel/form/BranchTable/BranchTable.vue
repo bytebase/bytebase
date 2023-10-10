@@ -5,7 +5,7 @@
     :data-source="branchList"
     :show-placeholder="true"
     :custom-header="true"
-    class="border-y"
+    class="border"
     @click-row="handleClickRow"
   >
     <template #header>
