@@ -59,7 +59,7 @@ func TestSchemaDiffTable(t *testing.T) {
 	runDifferTest(t, testFile, false /* record */)
 }
 
-func TestSchemaDiffDropColumn(t *testing.T) {
+func TestSchemaDiffColumn(t *testing.T) {
 	testFile := "test_differ_column.yaml"
 	runDifferTest(t, testFile, false /* record */)
 }
