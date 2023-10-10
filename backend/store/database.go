@@ -391,7 +391,7 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 		if err != nil {
 			return nil, err
 		}
-		set, args = append(set, fmt.Sprintf("metadata = metadata || $%d", len(args)+1)), append(args, metadataString)
+		set, args = append(set, fmt.Sprintf("metadata = $%d", len(args)+1)), append(args, metadataString)
 	}
 	args = append(args, instance.UID, patch.DatabaseName)
 
