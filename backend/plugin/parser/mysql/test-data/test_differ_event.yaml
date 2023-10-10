@@ -1,0 +1,29 @@
+- oldSchema: ""
+  newSchema: |
+    DELIMITER ;;
+    CREATE EVENT e_totals ON SCHEDULE AT '2006-02-10 23:59:00' DO INSERT INTO test.totals VALUES(NOW());;
+    DELIMITER ;
+  diff: |+
+    DELIMITER ;;
+    CREATE EVENT e_totals ON SCHEDULE AT '2006-02-10 23:59:00' DO INSERT INTO test.totals VALUES(NOW());;
+    DELIMITER ;
+
+- oldSchema: |
+    DELIMITER ;;
+    CREATE EVENT e_totals ON SCHEDULE AT '2006-02-10 23:59:00' DO INSERT INTO test.totals VALUES(NOW());;
+    DELIMITER ;
+  newSchema: ""
+  diff: |+
+    DROP EVENT IF EXISTS `e_totals`;
+
+- oldSchema: |
+    CREATE EVENT `purge_old_users` ON SCHEDULE EVERY 1 DAY STARTS '2023-07-01 00:00:00' DO  DELETE FROM users WHERE age > 100;
+  newSchema: |
+    CREATE EVENT `purge_old_users` ON SCHEDULE EVERY 1 DAY STARTS '2023-07-01 00:00:00' DO  DELETE FROM users WHERE age > 110;
+  diff: |+
+    DROP EVENT IF EXISTS `purge_old_users`;
+
+    DELIMITER ;;
+    CREATE EVENT `purge_old_users` ON SCHEDULE EVERY 1 DAY STARTS '2023-07-01 00:00:00' DO  DELETE FROM users WHERE age > 110;;
+    DELIMITER ;
+
