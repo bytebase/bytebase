@@ -29,6 +29,11 @@ export interface BatchQueryContext {
   selectedLabels: string[];
 }
 
+export type QueryContext = {
+  beginTimestampMS: number;
+  abortController: AbortController;
+};
+
 export interface TabInfo {
   id: string;
   name: string;
@@ -49,6 +54,8 @@ export interface TabInfo {
   isFreshNew?: boolean;
   // batchQueryContext saves the context of batch query, including the selected labels.
   batchQueryContext?: BatchQueryContext;
+  // queryContext saves the context of a query, including beginTimestampMS and abortController
+  queryContext?: QueryContext;
   // databaseQueryResultMap is used to store the query result of each database.
   // It's used for the case that the user selects multiple databases to query.
   // The key is the databaseName. Format: instances/{instance}/databases/{database}
