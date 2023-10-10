@@ -22,7 +22,6 @@ type ProjectMessage struct {
 	Workflow                   api.ProjectWorkflowType
 	Visibility                 api.ProjectVisibility
 	TenantMode                 api.ProjectTenantMode
-	DBNameTemplate             string
 	SchemaChangeType           api.ProjectSchemaChangeType
 	Webhooks                   []*ProjectWebhookMessage
 	DataClassificationConfigID string
@@ -49,7 +48,6 @@ type UpdateProjectMessage struct {
 	Title                      *string
 	Key                        *string
 	TenantMode                 *api.ProjectTenantMode
-	DBNameTemplate             *string
 	Workflow                   *api.ProjectWorkflowType
 	SchemaChangeType           *api.ProjectSchemaChangeType
 	DataClassificationConfigID *string
@@ -159,7 +157,6 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		Workflow:                   create.Workflow,
 		Visibility:                 create.Visibility,
 		TenantMode:                 create.TenantMode,
-		DBNameTemplate:             create.DBNameTemplate,
 		SchemaChangeType:           create.SchemaChangeType,
 		DataClassificationConfigID: create.DataClassificationConfigID,
 		Setting:                    create.Setting,
@@ -190,7 +187,7 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		create.Workflow,
 		create.Visibility,
 		create.TenantMode,
-		create.DBNameTemplate,
+		"",
 		create.SchemaChangeType,
 		create.DataClassificationConfigID,
 		payload,
@@ -265,9 +262,6 @@ func (s *Store) updateProjectImplV2(ctx context.Context, tx *Tx, patch *UpdatePr
 	if v := patch.TenantMode; v != nil {
 		set, args = append(set, fmt.Sprintf("tenant_mode = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := patch.DBNameTemplate; v != nil {
-		set, args = append(set, fmt.Sprintf("db_name_template = $%d", len(args)+1)), append(args, *v)
-	}
 	if v := patch.Workflow; v != nil {
 		set, args = append(set, fmt.Sprintf("workflow_type = $%d", len(args)+1)), append(args, *v)
 	}
@@ -302,7 +296,6 @@ func (s *Store) updateProjectImplV2(ctx context.Context, tx *Tx, patch *UpdatePr
 			workflow_type,
 			visibility,
 			tenant_mode,
-			db_name_template,
 			schema_change_type,
 			data_classification_config_id,
 			setting,
@@ -317,7 +310,6 @@ func (s *Store) updateProjectImplV2(ctx context.Context, tx *Tx, patch *UpdatePr
 		&project.Workflow,
 		&project.Visibility,
 		&project.TenantMode,
-		&project.DBNameTemplate,
 		&project.SchemaChangeType,
 		&project.DataClassificationConfigID,
 		&payload,
@@ -365,7 +357,6 @@ func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProject
 			workflow_type,
 			visibility,
 			tenant_mode,
-			db_name_template,
 			schema_change_type,
 			data_classification_config_id,
 			setting,
@@ -391,7 +382,6 @@ func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProject
 			&projectMessage.Workflow,
 			&projectMessage.Visibility,
 			&projectMessage.TenantMode,
-			&projectMessage.DBNameTemplate,
 			&projectMessage.SchemaChangeType,
 			&projectMessage.DataClassificationConfigID,
 			&payload,
