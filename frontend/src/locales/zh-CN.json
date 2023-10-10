@@ -1043,6 +1043,7 @@
     "streams": "Streams",
     "tasks": "任务",
     "parent": "母",
+    "labels-for-resource": "\"{resource}\"的标签",
     "last-successful-sync": "上次成功同步于",
     "sync-status": "同步状态",
     "failed-to-sync-schema-for-database-database-value-name": "为数据库'{0}'同步 schema 失败。",

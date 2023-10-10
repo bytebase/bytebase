@@ -1,6 +1,6 @@
 <template>
   <Drawer :show="show" @close="$emit('dismiss')">
-    <DrawerContent :title="$t('common.labels')">
+    <DrawerContent :title="$t('db.labels-for-resource', { resource: column })">
       <LabelListEditor
         ref="labelListEditorRef"
         v-model:kv-list="state.kvList"
@@ -41,6 +41,7 @@ const props = defineProps<{
   show: boolean;
   readonly: boolean;
   database: ComposedDatabase;
+  column: string;
   labels: {
     [key: string]: string;
   };
@@ -65,7 +66,7 @@ const state = reactive<LocalState>({
 const labelListEditorRef = ref<InstanceType<typeof LabelListEditor>>();
 
 const convert = () => {
-  return convertLabelsToKVList(props.database.labels, true /* sort */);
+  return convertLabelsToKVList(props.labels, true /* sort */);
 };
 
 const dirty = computed(() => {
