@@ -107,7 +107,7 @@ const filterByName = (pattern: string, option: SelectOption) => {
 </script>
 
 <style lang="postcss" scoped>
-.bb-project-member-role-select ::v-deep .n-base-selection-input:focus {
+.bb-project-member-role-select :deep(.n-base-selection-input:focus) {
   @apply !ring-0;
 }
 </style>

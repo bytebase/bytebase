@@ -2059,10 +2059,10 @@
     "filter-by-name": "Filter by name",
     "batch-query": {
       "batch": "Batch",
-      "database-labels": "{database} labels",
-      "database-has-no-label": "{database} has no label",
-      "description": "Batch query {count} additional databases with the same label values."
-    }
+      "select-database": "Select database below",
+      "description": "Batch query {count} additional databases under {project}."
+    },
+    "executing-query": "Executing query"
   },
   "schema-editor": {
     "self": "Schema Editor",
@@ -2366,7 +2366,7 @@
       },
       "bb-feature-batch-query": {
         "title": "Batch query",
-        "desc": "Batch query additional databases with the same label values in SQL Editor."
+        "desc": "Batch query additional databases under same project in SQL Editor."
       },
       "bb-feature-shared-sql-script": {
         "title": "Shared SQL script",
