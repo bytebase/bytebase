@@ -100,14 +100,12 @@ func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueReque
 		}
 	}
 
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	role := ctx.Value(common.RoleContextKey).(api.Role)
-	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &issue.Project.ResourceID})
+	ok, err := isUserAtLeastProjectMember(ctx, s.store, issue.Project.ResourceID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get project iam policy, error: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to check if the user can get issue, error: %v", err)
 	}
-	if !isOwnerOrDBA(role) && !isMemberOfProject(principalID, policy) {
-		return nil, status.Error(codes.PermissionDenied, "permission denied")
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied")
 	}
 
 	issueV1, err := convertToIssue(ctx, s.store, issue)
@@ -462,7 +460,7 @@ func (s *IssueService) CreateIssue(ctx context.Context, request *v1pb.CreateIssu
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	ok, err := canCreateOrUpdateIssue(ctx, s.store, projectID)
+	ok, err := isUserAtLeastProjectDeveloper(ctx, s.store, projectID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check if the user can create issue, error: %v", err)
 	}
@@ -1138,9 +1136,9 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 		return nil, err
 	}
 
-	ok, err := canCreateOrUpdateIssue(ctx, s.store, issue.Project.ResourceID)
+	ok, err := isUserAtLeastProjectDeveloper(ctx, s.store, issue.Project.ResourceID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to check if the user can create issue, error: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to check if the user can update issue, error: %v", err)
 	}
 	if !ok {
 		return nil, status.Errorf(codes.PermissionDenied, "permission denied")
@@ -1264,6 +1262,14 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, request *v1p
 		}
 		issueIDs = append(issueIDs, issue.UID)
 		issues = append(issues, issue)
+
+		ok, err := isUserAtLeastProjectDeveloper(ctx, s.store, issue.Project.ResourceID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to check if the user can update issue status, error: %v", err)
+		}
+		if !ok {
+			return nil, status.Errorf(codes.PermissionDenied, "permission denied")
+		}
 	}
 
 	if len(issueIDs) == 0 {
@@ -1330,6 +1336,14 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, request *v1pb.Cre
 		return nil, err
 	}
 
+	ok, err := isUserAtLeastProjectMember(ctx, s.store, issue.Project.ResourceID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check if the user can create issue comment, error: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied")
+	}
+
 	// TODO: migrate to store v2
 	activityCreate := &store.ActivityMessage{
 		CreatorUID:   ctx.Value(common.PrincipalIDContextKey).(int),
@@ -1370,6 +1384,19 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, request *v1pb.Upd
 	if request.UpdateMask.Paths == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask is required")
 	}
+
+	issue, err := s.getIssueMessage(ctx, request.Parent)
+	if err != nil {
+		return nil, err
+	}
+	ok, err := isUserAtLeastProjectMember(ctx, s.store, issue.Project.ResourceID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check if the user can update issue comment, error: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied")
+	}
+
 	activityUID, err := strconv.Atoi(request.IssueComment.Uid)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, `invalid comment id "%s": %v`, request.IssueComment.Uid, err.Error())
@@ -1733,25 +1760,14 @@ func getUserBelongingProjects(ctx context.Context, s *store.Store, userUID int) 
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get project %q iam policy", project.ResourceID)
 		}
-		if isMemberOfProject(userUID, policy) {
+		if isProjectMember(userUID, policy) {
 			projectIDs[project.ResourceID] = true
 		}
 	}
 	return projectIDs, nil
 }
 
-func isMemberOfProject(userUID int, policy *store.IAMPolicyMessage) bool {
-	for _, binding := range policy.Bindings {
-		for _, member := range binding.Members {
-			if member.ID == userUID {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func canCreateOrUpdateIssue(ctx context.Context, s *store.Store, requestProjectID string) (bool, error) {
+func isUserAtLeastProjectDeveloper(ctx context.Context, s *store.Store, requestProjectID string) (bool, error) {
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	user, err := s.GetUserByID(ctx, principalID)
 	if err != nil {
@@ -1768,6 +1784,28 @@ func canCreateOrUpdateIssue(ctx context.Context, s *store.Store, requestProjectI
 	}
 
 	if isProjectOwnerOrDeveloper(principalID, policy) {
+		return true, nil
+	}
+	return false, nil
+}
+
+func isUserAtLeastProjectMember(ctx context.Context, s *store.Store, requestProjectID string) (bool, error) {
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, err := s.GetUserByID(ctx, principalID)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get user %d", principalID)
+	}
+
+	if isOwnerOrDBA(user.Role) {
+		return true, nil
+	}
+
+	policy, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &requestProjectID})
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get project iam policy")
+	}
+
+	if isProjectMember(principalID, policy) {
 		return true, nil
 	}
 	return false, nil
