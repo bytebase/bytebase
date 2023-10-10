@@ -114,8 +114,11 @@ const queryElapsedTime = computed(() => {
 });
 
 const isDatabaseQueryFailed = (database: ComposedDatabase) => {
-  return tabStore.currentTab.databaseQueryResultMap?.get(database.name || "")
-    ?.error;
+  const resultSet = tabStore.currentTab.databaseQueryResultMap?.get(
+    database.name || ""
+  );
+  // If there is any error in the result set, we consider the query failed.
+  return resultSet?.error || resultSet?.results.find((result) => result.error);
 };
 
 const cancelQuery = () => {
