@@ -307,7 +307,7 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 		project.UID,
 		environmentUID,
 		create.DatabaseName,
-		api.OK,
+		create.SyncState,
 		create.SuccessfulSyncTimeTs,
 		storedVersion,
 		secretsString,
@@ -326,7 +326,7 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 	// Invalidate and update the cache.
 	s.databaseCache.Delete(getDatabaseCacheKey(instance.ResourceID, create.DatabaseName))
 	s.databaseIDCache.Delete(databaseUID)
-	return s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: &databaseUID})
+	return s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: &databaseUID, ShowDeleted: true})
 }
 
 // UpdateDatabase updates a database.
