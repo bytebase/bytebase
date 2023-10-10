@@ -1,11 +1,11 @@
-// Package mysql provides the MySQL differ plugin.
-package mysql
+package tidb
 
 import (
 	"bytes"
 	"fmt"
 	"io"
 	"log/slog"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -27,8 +27,7 @@ import (
 )
 
 func init() {
-	base.RegisterSchemaDiffFunc(storepb.Engine_MYSQL, SchemaDiff)
-	base.RegisterSchemaDiffFunc(storepb.Engine_OCEANBASE, SchemaDiff)
+	base.RegisterSchemaDiffFunc(storepb.Engine_TIDB, SchemaDiff)
 }
 
 const (
@@ -583,7 +582,7 @@ func SchemaDiff(oldStmt, newStmt string, ignoreCaseSensitive bool) (string, erro
 }
 
 func classifyStatement(statement string) ([]string, string, error) {
-	unsupported, supported, err := extractTiDBUnsupportedStmts(statement)
+	unsupported, supported, err := ExtractTiDBUnsupportedStmts(statement)
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "failed to extract TiDB unsupported statements from statements %q", statement)
 	}
@@ -594,6 +593,13 @@ func classifyStatement(statement string) ([]string, string, error) {
 		}
 	}
 	return afterFilter, supported, nil
+}
+
+// IsDelimiter returns true if the statement is a delimiter statement.
+func IsDelimiter(stmt string) bool {
+	delimiterRegex := `(?i)^\s*DELIMITER\s+`
+	re := regexp.MustCompile(delimiterRegex)
+	return re.MatchString(stmt)
 }
 
 func writeNodeStatement(w io.Writer, n ast.Node, flags format.RestoreFlags) error {
