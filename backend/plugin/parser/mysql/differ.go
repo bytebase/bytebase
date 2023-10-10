@@ -47,34 +47,36 @@ type diffNode struct {
 	// Ignore the case sensitive when comparing the table and view names.
 	ignoreCaseSensitive bool
 
-	dropForeignKeyList        []*foreignKeyDef
-	dropPrimaryKeyList        []*primaryKeyDef
-	createPrimaryKeyList      []*primaryKeyDef
-	dropIndexList             []*indexDef
-	dropViewList              []*viewDef
-	dropTableList             []*tableDef
-	dropCheckConstraintList   []*checkDef
-	addCheckConstraintList    []*checkDef
-	dropIndexConstraintList   []*indexConstraintDef
-	createIndexConstraintList []*indexConstraintDef
+	dropFunctionList  []*functionDef
+	dropProcedureList []*procedureDef
+	dropEventList     []*eventDef
+	dropTriggerList   []*triggerDef
+
+	dropForeignKeyList      []*foreignKeyDef
+	dropCheckConstraintList []*checkDef
+	dropPrimaryKeyList      []*primaryKeyDef
+	dropIndexList           []*indexDef
+	dropIndexConstraintList []*indexConstraintDef
+	dropViewList            []*viewDef
+	dropTableList           []*tableDef
 
 	createTableList      []*tableDef
 	alterTableOptionList []*tableOptionDef
 	addColumnList        []*columnDef
 	modifyColumnList     []*columnDef
 	dropColumnList       []*columnDef
-	createTempViewList   []*viewDef
-	createIndexList      []*indexDef
-	addForeignKeyList    []*foreignKeyDef
-	createViewList       []*viewDef
 
-	dropEventList       []*eventDef
+	createTempViewList        []*viewDef
+	createIndexList           []*indexDef
+	createIndexConstraintList []*indexConstraintDef
+	createPrimaryKeyList      []*primaryKeyDef
+	addCheckConstraintList    []*checkDef
+	addForeignKeyList         []*foreignKeyDef
+	createViewList            []*viewDef
+
 	createEventList     []*eventDef
-	dropTriggerList     []*triggerDef
 	createTriggerList   []*triggerDef
-	dropFunctionList    []*functionDef
 	createFunctionList  []*functionDef
-	dropProcedureList   []*procedureDef
 	createProcedureList []*procedureDef
 }
 
