@@ -106,7 +106,7 @@ func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueReque
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get project iam policy, error: %v", err)
 	}
-	if !isOwnerOrDBA(role) && !isMemberOfProject(principalID, policy) {
+	if !isOwnerOrDBA(role) && !isProjectMember(principalID, policy) {
 		return nil, status.Error(codes.PermissionDenied, "permission denied")
 	}
 
@@ -1733,22 +1733,11 @@ func getUserBelongingProjects(ctx context.Context, s *store.Store, userUID int) 
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get project %q iam policy", project.ResourceID)
 		}
-		if isMemberOfProject(userUID, policy) {
+		if isProjectMember(userUID, policy) {
 			projectIDs[project.ResourceID] = true
 		}
 	}
 	return projectIDs, nil
-}
-
-func isMemberOfProject(userUID int, policy *store.IAMPolicyMessage) bool {
-	for _, binding := range policy.Bindings {
-		for _, member := range binding.Members {
-			if member.ID == userUID {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 func canCreateOrUpdateIssue(ctx context.Context, s *store.Store, requestProjectID string) (bool, error) {

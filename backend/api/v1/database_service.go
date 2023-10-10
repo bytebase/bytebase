@@ -1492,7 +1492,7 @@ func (s *DatabaseService) checkDatabasePermission(ctx context.Context, projectID
 	}
 
 	if permission == api.ProjectPermissionManageGeneral {
-		if !isProjectMember(policy, principalID) {
+		if !isProjectMember(principalID, policy) {
 			return status.Errorf(codes.PermissionDenied, "permission denied")
 		}
 		return nil
