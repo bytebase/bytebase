@@ -1504,7 +1504,8 @@ type procedureDef struct {
 }
 
 type schemaDef struct {
-	name       string
+	name string
+	// todo: check for duplicate names.
 	tables     map[string]*tableDef
 	views      map[string]*viewDef
 	events     map[string]*eventDef
