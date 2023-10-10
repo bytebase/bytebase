@@ -3021,6 +3021,7 @@
     "save-draft": "Save draft",
     "merge-branch": "Merge branch",
     "delete-branch-after-merged": "Delete branch after merged",
+    "raw-sql-preview": "Raw SQL Preview",
     "diff-editor": {
       "self": "Diff editor",
       "resolve": "Resolve",
