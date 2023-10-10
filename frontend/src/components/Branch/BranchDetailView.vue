@@ -398,14 +398,15 @@ const handleSaveBranch = async () => {
             closeOnEsc: true,
             onNegativeClick: () => {
               // Go to draft branch detail page after merge failed.
-              const [, sheetId] = getProjectAndSchemaDesignSheetId(
+              const [projectName, sheetId] = getProjectAndSchemaDesignSheetId(
                 newBranch.name
               );
               state.isEditing = false;
               router.replace({
                 name: "workspace.branch.detail",
                 params: {
-                  branchSlug: `${newBranch.title}-${sheetId}`,
+                  projectName,
+                  branchName: sheetId,
                 },
               });
             },
@@ -457,12 +458,12 @@ const handleSaveBranch = async () => {
 const handleMergeAfterConflictResolved = (branchName: string) => {
   state.showDiffEditor = false;
   state.isEditing = false;
-  const branch = schemaDesignStore.getSchemaDesignByName(branchName);
-  const [, sheetId] = getProjectAndSchemaDesignSheetId(branchName);
+  const [projectName, sheetId] = getProjectAndSchemaDesignSheetId(branchName);
   router.replace({
     name: "workspace.branch.detail",
     params: {
-      branchSlug: `${branch.title}-${sheetId}`,
+      projectName,
+      branchName: sheetId,
     },
   });
 };

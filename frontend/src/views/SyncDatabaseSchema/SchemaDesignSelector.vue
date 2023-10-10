@@ -154,18 +154,22 @@ const handleCreateBranch = () => {
   const route = router.resolve({
     name: "workspace.branch.detail",
     params: {
-      branchSlug: "new",
+      projectName: "-",
+      branchName: "new",
     },
   });
   window.open(route.href, "_blank");
 };
 
 const handleViewSchemaDesign = (schemaDesign: SchemaDesign) => {
-  const [, sheetId] = getProjectAndSchemaDesignSheetId(schemaDesign.name);
+  const [projectName, sheetId] = getProjectAndSchemaDesignSheetId(
+    schemaDesign.name
+  );
   const route = router.resolve({
     name: "workspace.branch.detail",
     params: {
-      branchSlug: `${schemaDesign.title}-${sheetId}`,
+      projectName,
+      branchName: sheetId,
     },
   });
   window.open(route.href, "_blank");
