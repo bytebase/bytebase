@@ -99,6 +99,17 @@ func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueReque
 			return nil, err
 		}
 	}
+
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	role := ctx.Value(common.RoleContextKey).(api.Role)
+	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &issue.Project.ResourceID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get project iam policy, error: %v", err)
+	}
+	if !isOwnerOrDBA(role) && !isMemberOfProject(principalID, policy) {
+		return nil, status.Error(codes.PermissionDenied, "permission denied")
+	}
+
 	issueV1, err := convertToIssue(ctx, s.store, issue)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
@@ -111,22 +122,14 @@ func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesR
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("page size must be non-negative: %d", request.PageSize))
 	}
 
-	projectID, err := common.GetProjectID(request.Parent)
+	requestProjectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	var projectResourceID *string
-	if projectID != "-" {
-		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-			ResourceID: &projectID,
-		})
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get project, error: %v", err)
-		}
-		if project == nil {
-			return nil, status.Errorf(codes.NotFound, "project not found for id: %v", projectID)
-		}
-		projectResourceID = &project.ResourceID
+
+	projectIDs, err := getProjectIDsFilter(ctx, s.store, requestProjectID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get project id filter, error: %v", err)
 	}
 
 	limit := int(request.PageSize)
@@ -147,9 +150,9 @@ func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesR
 	limitPlusOne := limit + 1
 
 	issueFind := &store.FindIssueMessage{
-		ProjectResourceID: projectResourceID,
-		Limit:             &limitPlusOne,
-		Offset:            &offset,
+		ProjectIDs: projectIDs,
+		Limit:      &limitPlusOne,
+		Offset:     &offset,
 	}
 
 	filters, err := parseFilter(request.Filter)
@@ -243,13 +246,14 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("page size must be non-negative: %d", request.PageSize))
 	}
 
-	projectID, err := common.GetProjectID(request.Parent)
+	requestProjectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	var projectResourceID *string
-	if projectID != "-" {
-		projectResourceID = &projectID
+
+	projectIDs, err := getProjectIDsFilter(ctx, s.store, requestProjectID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get project id filter, error: %v", err)
 	}
 
 	limit := int(request.PageSize)
@@ -270,10 +274,10 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 	limitPlusOne := limit + 1
 
 	issueFind := &store.FindIssueMessage{
-		ProjectResourceID: projectResourceID,
-		Query:             &request.Query,
-		Limit:             &limitPlusOne,
-		Offset:            &offset,
+		ProjectIDs: projectIDs,
+		Query:      &request.Query,
+		Limit:      &limitPlusOne,
+		Offset:     &offset,
 	}
 
 	filters, err := parseFilter(request.Filter)
@@ -1695,4 +1699,63 @@ func convertGrantRequest(ctx context.Context, s *store.Store, v *v1pb.GrantReque
 		Condition:  v.Condition,
 		Expiration: v.Expiration,
 	}, nil
+}
+
+func getUserBelongingProjects(ctx context.Context, s *store.Store, userUID int) (map[string]bool, error) {
+	projects, err := s.ListProjectV2(ctx, &store.FindProjectMessage{})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list projects")
+	}
+
+	projectIDs := map[string]bool{}
+	for _, project := range projects {
+		policy, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get project %q iam policy", project.ResourceID)
+		}
+		if isMemberOfProject(userUID, policy) {
+			projectIDs[project.ResourceID] = true
+		}
+	}
+	return projectIDs, nil
+}
+
+func isMemberOfProject(userUID int, policy *store.IAMPolicyMessage) bool {
+	for _, binding := range policy.Bindings {
+		for _, member := range binding.Members {
+			if member.ID == userUID {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func getProjectIDsFilter(ctx context.Context, s *store.Store, requestProjectID string) (*[]string, error) {
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	role := ctx.Value(common.RoleContextKey).(api.Role)
+
+	if isOwnerOrDBA(role) {
+		if requestProjectID == "-" {
+			return nil, nil
+		}
+		return &[]string{requestProjectID}, nil
+	}
+
+	userBelongingProjectIDs, err := getUserBelongingProjects(ctx, s, principalID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get user belonging projects")
+	}
+
+	if requestProjectID == "-" {
+		var lst []string
+		for id := range userBelongingProjectIDs {
+			lst = append(lst, id)
+		}
+		return &lst, nil
+	}
+	if !userBelongingProjectIDs[requestProjectID] {
+		return &[]string{}, nil
+	}
+	return &[]string{requestProjectID}, nil
 }

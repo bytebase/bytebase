@@ -76,10 +76,10 @@ type UpdateIssueMessage struct {
 
 // FindIssueMessage is the message to find issues.
 type FindIssueMessage struct {
-	UID               *int
-	ProjectResourceID *string
-	PlanUID           *int64
-	PipelineID        *int
+	UID        *int
+	ProjectIDs *[]string
+	PlanUID    *int64
+	PipelineID *int
 	// Find issues where principalID is either creator, assignee or subscriber.
 	PrincipalID *int
 	// To support pagination, we add into creator, assignee and subscriber.
@@ -372,8 +372,8 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	if v := find.PlanUID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.plan_id = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.ProjectResourceID; v != nil {
-		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM project WHERE project.id = issue.project_id AND project.resource_id = $%d)", len(args)+1)), append(args, *v)
+	if v := find.ProjectIDs; v != nil {
+		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM project WHERE project.id = issue.project_id AND project.resource_id = ANY($%d))", len(args)+1)), append(args, *v)
 	}
 	if v := find.InstanceResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task LEFT JOIN instance ON instance.id = task.instance_id WHERE task.pipeline_id = issue.pipeline_id AND instance.resource_id = $%d)", len(args)+1)), append(args, *v)
