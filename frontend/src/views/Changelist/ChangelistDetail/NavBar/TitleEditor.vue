@@ -1,5 +1,5 @@
 <template>
-  <span v-if="!allowEdit" class="text-sm ml-2 py-1 leading-[34px]">
+  <span v-if="!allowEdit" class="text-xl font-bold ml-2 py-1 leading-[34px]">
     {{ state.title }}
   </span>
   <NInput
@@ -9,7 +9,6 @@
     :loading="state.isUpdating"
     :disabled="!allowEdit || state.isUpdating"
     autosize
-    size="medium"
     required
     @focus="state.isEditing = true"
     @blur="onBlur"
@@ -40,8 +39,7 @@ const style = computed(() => {
     cursor: "default",
     minWidth: "10rem",
     "--n-color-disabled": "transparent",
-    "--n-padding-left": "0.5rem",
-    "--n-padding-right": "0.5rem",
+    "--n-font-size": "20px",
   };
   const border = state.isEditing
     ? "1px solid var(--color-control-border)"

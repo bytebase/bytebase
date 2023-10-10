@@ -1,11 +1,7 @@
 <template>
   <div class="flex flex-row items-center justify-between gap-x-4">
-    <div class="flex-1 flex items-center justify-start overflow-hidden">
-      <ProjectV1Name :project="project" />
-      <span class="ml-3 mr-0.5">/</span>
-      <div class="flex-1 p-0.5 overflow-hidden truncate">
-        <TitleEditor />
-      </div>
+    <div class="flex-1 p-0.5 overflow-hidden truncate">
+      <TitleEditor />
     </div>
     <div class="flex items-center justify-end gap-x-3">
       <template v-if="!reorderMode">
