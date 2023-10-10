@@ -2,7 +2,7 @@
   <Drawer :show="show" :close-on-esc="true" @close="$emit('close')">
     <DrawerContent
       :title="title"
-      style="width: 60vw; max-width: calc(100vw - 8rem)"
+      style="width: 75vw; max-width: calc(100vw - 8rem)"
     >
       <SchemaEditorV1
         v-if="editorBindings"
