@@ -3019,6 +3019,7 @@
     "save-draft": "Guardar borrador",
     "merge-branch": "Fusionar rama",
     "delete-branch-after-merged": "Eliminar rama después de la fusión",
+    "raw-sql-preview": "vista previa de sql sin formato",
     "diff-editor": {
       "self": "Editor de diferencias",
       "resolve": "Resolver",

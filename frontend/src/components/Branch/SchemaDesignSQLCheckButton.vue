@@ -5,6 +5,9 @@
     :statement="statement"
     :errors="errors"
     class="justify-end"
+    :button-style="{
+      height: '28px',
+    }"
   >
     <template #result="{ advices, isRunning }">
       <SQLCheckSummary
