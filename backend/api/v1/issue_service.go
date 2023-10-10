@@ -1330,7 +1330,7 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, request *v1pb.Cre
 
 	ok, err := isUserAtLeastProjectMember(ctx, s.store, issue.Project.ResourceID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to check if the user can get issue, error: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to check if the user can create issue comment, error: %v", err)
 	}
 	if !ok {
 		return nil, status.Errorf(codes.PermissionDenied, "permission denied")
@@ -1376,6 +1376,19 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, request *v1pb.Upd
 	if request.UpdateMask.Paths == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask is required")
 	}
+
+	issue, err := s.getIssueMessage(ctx, request.Parent)
+	if err != nil {
+		return nil, err
+	}
+	ok, err := isUserAtLeastProjectMember(ctx, s.store, issue.Project.ResourceID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check if the user can update issue comment, error: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied")
+	}
+
 	activityUID, err := strconv.Atoi(request.IssueComment.Uid)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, `invalid comment id "%s": %v`, request.IssueComment.Uid, err.Error())
