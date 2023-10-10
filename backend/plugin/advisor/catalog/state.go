@@ -30,7 +30,7 @@ func newDatabaseState(d *storepb.DatabaseSchemaMetadata, context *FinderContext)
 		for _, view := range schema.Views {
 			for _, dependentColumn := range view.DependentColumns {
 				if schemaState, exist := database.schemaSet[dependentColumn.Schema]; exist {
-					if tableState, exist := schemaState.tableSet[dependentColumn.Table]; exist {
+					if tableState, exist := schemaState.getTable(dependentColumn.Table); exist {
 						tableState.dependentView[fmt.Sprintf("%q.%q", schema.Name, view.Name)] = true
 						if columnState, exist := tableState.columnSet[dependentColumn.Column]; exist {
 							columnState.dependentView[fmt.Sprintf("%q.%q", schema.Name, view.Name)] = true
@@ -204,7 +204,7 @@ func (d *DatabaseState) FindIndex(find *IndexFind) (string, *IndexState) {
 		if !exists {
 			return "", nil
 		}
-		table, exists := schema.tableSet[find.TableName]
+		table, exists := schema.getTable(find.TableName)
 		if !exists {
 			return "", nil
 		}
@@ -243,7 +243,7 @@ func (d *DatabaseState) FindPrimaryKey(find *PrimaryKeyFind) *IndexState {
 			continue
 		}
 		for _, table := range schema.tableSet {
-			if table.name != find.TableName {
+			if !compareIdentifier(table.name, find.TableName, schema.ctx.IgnoreCaseSensitive) {
 				continue
 			}
 			for _, index := range table.indexSet {
@@ -269,7 +269,7 @@ func (d *DatabaseState) CountColumn(count *ColumnCount) int {
 	if !exists {
 		return 0
 	}
-	table, exists := schema.tableSet[count.TableName]
+	table, exists := schema.getTable(count.TableName)
 	if !exists {
 		return 0
 	}
@@ -295,7 +295,7 @@ func (d *DatabaseState) FindColumn(find *ColumnFind) *ColumnState {
 	if !exists {
 		return nil
 	}
-	table, exists := schema.tableSet[find.TableName]
+	table, exists := schema.getTable(find.TableName)
 	if !exists {
 		return nil
 	}
@@ -318,7 +318,7 @@ func (d *DatabaseState) FindTable(find *TableFind) *TableState {
 	if !exists {
 		return nil
 	}
-	table, exists := schema.tableSet[find.TableName]
+	table, exists := schema.getTable(find.TableName)
 	if !exists {
 		return nil
 	}
@@ -340,7 +340,7 @@ type SchemaState struct {
 }
 
 func (d *SchemaState) Index(tableIndexFind *TableIndexFind) *IndexStateMap {
-	table, exists := d.tableSet[tableIndexFind.TableName]
+	table, exists := d.getTable(tableIndexFind.TableName)
 	if !exists {
 		return nil
 	}
