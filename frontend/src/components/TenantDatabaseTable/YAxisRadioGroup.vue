@@ -11,7 +11,7 @@
         :value="key"
         class="capitalize"
       >
-        {{ displayLabelKey(key) }}
+        {{ displayDeploymentMatchSelectorKey(key) }}
       </option>
     </select>
   </div>
@@ -19,14 +19,17 @@
 
 <script lang="ts" setup>
 import { computed, withDefaults } from "vue";
-import { ComposedDatabase, LabelKeyType } from "@/types";
-import { displayLabelKey, getAvailableLabelKeyList } from "@/utils";
+import { ComposedDatabase } from "@/types";
+import {
+  displayDeploymentMatchSelectorKey,
+  getAvailableDeploymentConfigMatchSelectorKeyList,
+} from "@/utils";
 
 const props = withDefaults(
   defineProps<{
     databaseList: ComposedDatabase[];
-    label: LabelKeyType;
-    excludedKeyList?: LabelKeyType[];
+    label: string;
+    excludedKeyList?: string[];
   }>(),
   {
     excludedKeyList: () => [],
@@ -34,14 +37,13 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  (event: "update:label", label: LabelKeyType): void;
+  (event: "update:label", label: string): void;
 }>();
 
 const labelKeyList = computed(() => {
-  return getAvailableLabelKeyList(
+  return getAvailableDeploymentConfigMatchSelectorKeyList(
     props.databaseList,
-    true /* withReserved */,
-    true /* withPreset */,
+    true /* withVirtualLabelKeys */,
     true /* sort */
   ).filter((key) => !props.excludedKeyList.includes(key));
 });

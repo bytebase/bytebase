@@ -2147,7 +2147,8 @@
       "max-label-count-exceeded": "不能多于 {count} 个标签",
       "cannot-edit-reserved-label": "不能编辑预留标签 \"{key}\"",
       "max-value-length-exceeded": "值长的度不能超过 {length} 字符",
-      "key-format": "仅允许使用字母和数字 ([a-z0-9A-Z])、连字符 (-)、下划线 (_) 和点 (.)。\n并且必须以字母和数字开头和结尾。"
+      "key-format": "仅允许使用字母和数字 ([a-z0-9A-Z])、连字符 (-)、下划线 (_) 和点 (.)。\n并且必须以字母和数字开头和结尾。",
+      "x-is-reserved-key": "\"{key}\" 是系统保留 Key"
     },
     "placeholder": {
       "select-key": "选择 Key…",

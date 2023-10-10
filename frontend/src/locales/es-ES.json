@@ -2147,7 +2147,8 @@
       "max-label-count-exceeded": "No se pueden exceder las {count} etiquetas",
       "cannot-edit-reserved-label": "No se puede editar la etiqueta reservada \"{key}\"",
       "max-value-length-exceeded": "La longitud del valor no puede exceder {longitud} caracteres",
-      "key-format": "Sólo se permiten caracteres alfanuméricos ([a-z0-9A-Z]), guiones (-), guiones bajos (_) y puntos (.). \nY debe comenzar y terminar con caracteres alfanuméricos."
+      "key-format": "Sólo se permiten caracteres alfanuméricos ([a-z0-9A-Z]), guiones (-), guiones bajos (_) y puntos (.). \nY debe comenzar y terminar con caracteres alfanuméricos.",
+      "x-is-reserved-key": "\"{key}\" es una clave reservada del sistema"
     },
     "placeholder": {
       "select-key": "Seleccionar clave...",
