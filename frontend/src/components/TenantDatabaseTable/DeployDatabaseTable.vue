@@ -9,7 +9,7 @@
       <template #header>
         <tr>
           <BBTableHeaderCell compact class="w-1/12 pl-3 pr-2 whitespace-nowrap">
-            {{ displayLabelKey(label) }}
+            {{ displayDeploymentMatchSelectorKey(label) }}
           </BBTableHeaderCell>
 
           <BBTableHeaderCell
@@ -106,13 +106,13 @@
 import { groupBy } from "lodash-es";
 import { NPopover } from "naive-ui";
 import { computed, withDefaults } from "vue";
-import type { ComposedDatabase, LabelKeyType } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { DeploymentConfig } from "@/types/proto/v1/project_service";
 import {
   getLabelValuesFromDatabaseV1List,
   getPipelineFromDeploymentScheduleV1,
-  displayLabelKey,
+  displayDeploymentMatchSelectorKey,
   getSemanticLabelValue,
 } from "@/utils";
 import { DeploymentStage } from "../DeploymentConfigTool";
@@ -121,7 +121,7 @@ import DatabaseMatrixItem from "./DatabaseMatrixItem.vue";
 const props = withDefaults(
   defineProps<{
     databaseList: ComposedDatabase[];
-    label: LabelKeyType;
+    label: string;
     environmentList: Environment[];
     deployment: DeploymentConfig;
     bordered?: boolean;

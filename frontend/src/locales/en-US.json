@@ -2151,7 +2151,8 @@
       "max-label-count-exceeded": "Cannot exceed {count} labels",
       "cannot-edit-reserved-label": "Cannot edit reserved label \"{key}\"",
       "max-value-length-exceeded": "Value's length cannot exceed {length} characters",
-      "key-format": "Only alphanumeric characters ([a-z0-9A-Z]), hyphens (-), underscores (_) and dots (.) are allowed. And must begin and ends with alphanumeric characters."
+      "key-format": "Only alphanumeric characters ([a-z0-9A-Z]), hyphens (-), underscores (_) and dots (.) are allowed. And must begin and ends with alphanumeric characters.",
+      "x-is-reserved-key": "\"{key}\" is a system reserved key"
     },
     "placeholder": {
       "select-key": "Select key...",

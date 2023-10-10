@@ -59,5 +59,3 @@ export type SheetId = IdType;
 // Currently, only issue can be used a container.
 // The type is used by Activity and Message
 export type ContainerId = IssueId;
-
-export type LabelId = IdType;
