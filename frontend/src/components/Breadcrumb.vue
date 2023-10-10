@@ -223,9 +223,16 @@ export default defineComponent({
         });
       }
       if (route.name === "workspace.changelist.detail") {
+        const project = useProjectV1Store().getProjectByName(
+          `projects/${route.params.projectName}`
+        );
+        list.push({
+          name: project.title,
+          path: `/project/${projectV1Slug(project)}`,
+        });
         list.push({
           name: t("changelist.self"),
-          path: `/changelists`,
+          path: `/changelists?project=${project.name}`,
         });
       }
       if (route.name === "workspace.branch.detail") {
