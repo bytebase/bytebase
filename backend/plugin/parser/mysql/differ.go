@@ -15,6 +15,7 @@ import (
 
 func init() {
 	base.RegisterSchemaDiffFunc(storepb.Engine_MYSQL, SchemaDiff)
+	base.RegisterSchemaDiffFunc(storepb.Engine_OCEANBASE, SchemaDiff)
 }
 
 const (
