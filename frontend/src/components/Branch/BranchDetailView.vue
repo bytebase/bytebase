@@ -207,8 +207,9 @@ const project = computed(() => {
 const titleInputStyle = computed(() => {
   const style: CSSProperties = {
     cursor: "default",
+    minWidth: "10rem",
     "--n-color-disabled": "transparent",
-    "--n-font-size": "16px",
+    "--n-font-size": "20px",
   };
   const border = state.isEditingTitle
     ? "1px solid var(--color-control-border)"
