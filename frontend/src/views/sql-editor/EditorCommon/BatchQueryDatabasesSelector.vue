@@ -70,11 +70,13 @@
           <NInput
             v-model:value="state.databaseNameSearch"
             class="!w-36"
+            size="small"
             type="text"
             :placeholder="$t('sql-editor.search-databases')"
           />
         </div>
         <NDataTable
+          size="small"
           :checked-row-keys="selectedDatabaseNames"
           :columns="(dataTableColumns as any)"
           :data="databaseRows"
