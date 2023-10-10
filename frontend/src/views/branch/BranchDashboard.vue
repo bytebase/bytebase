@@ -60,17 +60,21 @@ const handleCreateBranch = () => {
   router.push({
     name: "workspace.branch.detail",
     params: {
-      branchSlug: "new",
+      projectName: "-",
+      branchName: "new",
     },
   });
 };
 
 const handleBranchClick = async (schemaDesign: SchemaDesign) => {
-  const [, sheetId] = getProjectAndSchemaDesignSheetId(schemaDesign.name);
+  const [projectName, sheetId] = getProjectAndSchemaDesignSheetId(
+    schemaDesign.name
+  );
   router.push({
     name: "workspace.branch.detail",
     params: {
-      branchSlug: `${schemaDesign.title}-${sheetId}`,
+      projectName,
+      branchName: sheetId,
     },
   });
 };
