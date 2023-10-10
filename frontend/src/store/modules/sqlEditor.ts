@@ -35,20 +35,26 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
     setIsFetchingQueryHistory(payload: boolean) {
       this.isFetchingQueryHistory = payload;
     },
-    async executeQuery({
-      instanceId,
-      databaseName,
-      statement,
-    }: Pick<QueryInfo, "instanceId" | "databaseName" | "statement">) {
+    async executeQuery(
+      {
+        instanceId,
+        databaseName,
+        statement,
+      }: Pick<QueryInfo, "instanceId" | "databaseName" | "statement">,
+      signal: AbortSignal
+    ) {
       const instance = useInstanceV1Store().getInstanceByUID(
         String(instanceId)
       );
-      const response = await useSQLStore().queryReadonly({
-        name: instance.name,
-        connectionDatabase: databaseName || "",
-        statement,
-        limit: RESULT_ROWS_LIMIT,
-      });
+      const response = await useSQLStore().queryReadonly(
+        {
+          name: instance.name,
+          connectionDatabase: databaseName || "",
+          statement,
+          limit: RESULT_ROWS_LIMIT,
+        },
+        signal
+      );
 
       return response;
     },

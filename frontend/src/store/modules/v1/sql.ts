@@ -41,7 +41,8 @@ const getSqlReviewReports = (err: unknown): Advice[] => {
 
 export const useSQLStore = defineStore("sql", () => {
   const queryReadonly = async (
-    params: QueryRequest
+    params: QueryRequest,
+    signal: AbortSignal
   ): Promise<SQLResultSetV1> => {
     try {
       const response = await sqlServiceClient.query(params, {
@@ -49,6 +50,7 @@ export const useSQLStore = defineStore("sql", () => {
         // errors manually.
         ignoredCodes: [Status.PERMISSION_DENIED],
         silent: true,
+        signal,
       });
 
       return {

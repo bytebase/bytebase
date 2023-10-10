@@ -2057,7 +2057,8 @@
       "database-labels": "{database} 标签",
       "database-has-no-label": "{database} 没有标签",
       "description": "批量查询具有相同标签值的其他数据库。"
-    }
+    },
+    "executing-query": "执行查询"
   },
   "schema-editor": {
     "self": "Schema 编辑器",

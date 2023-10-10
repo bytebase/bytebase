@@ -173,16 +173,38 @@ const useExecuteSQL = () => {
       });
     };
 
+    const abortController = new AbortController();
+    tabStore.updateTab(tab.id, {
+      queryContext: {
+        beginTimestampMS: Date.now(),
+        abortController,
+      },
+    });
     for (const database of batchQueryDatabases) {
       const isUnknownDatabase = database.uid === String(UNKNOWN_ID);
-      try {
-        const sqlResultSet = await sqlEditorStore.executeQuery({
-          instanceId: isUnknownDatabase
-            ? tab.connection.instanceId
-            : database.instanceEntity.uid,
-          databaseName: isUnknownDatabase ? "" : database.databaseName,
-          statement: selectStatement,
+      if (abortController.signal.aborted) {
+        // Once any one of the batch queries is aborted, don't go further
+        // and mock an "Aborted" result for the rest queries.
+        fail(database, {
+          advices: [],
+          allowExport: false,
+          error: "AbortError: The user aborted a request.",
+          results: [],
+          status: Status.ABORTED,
         });
+        continue;
+      }
+      try {
+        const sqlResultSet = await sqlEditorStore.executeQuery(
+          {
+            instanceId: isUnknownDatabase
+              ? tab.connection.instanceId
+              : database.instanceEntity.uid,
+            databaseName: isUnknownDatabase ? "" : database.databaseName,
+            statement: selectStatement,
+          },
+          abortController.signal
+        );
         let adviceStatus: "SUCCESS" | "ERROR" | "WARNING" = "SUCCESS";
         let adviceNotifyMessage = "";
         for (const advice of sqlResultSet.advices) {
