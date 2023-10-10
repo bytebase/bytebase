@@ -132,7 +132,7 @@ const handleSave = async () => {
   if (!allowSave.value) return;
   state.isUpdating = true;
   try {
-    // Won't omit empty `bb.tenant` value.
+    // Won't omit empty `tenant` value.
     // Otherwise the server API won't update the labels field correctly.
     const labels = convertKVListToLabels(state.kvList, false /* !omitEmpty */);
 

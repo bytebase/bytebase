@@ -239,7 +239,7 @@ func (s *Store) getDefaultDeploymentConfigV2(ctx context.Context) (*DeploymentCo
 			Spec: &DeploymentSpec{
 				Selector: &LabelSelector{
 					MatchExpressions: []*LabelSelectorRequirement{
-						{Key: "bb.environment", Operator: InOperatorType, Values: []string{environment.ResourceID}},
+						{Key: "environment", Operator: InOperatorType, Values: []string{environment.ResourceID}},
 					},
 				},
 			},

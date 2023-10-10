@@ -11,13 +11,13 @@ import { extractEnvironmentResourceName } from "./v1";
 
 export const MAX_LABEL_VALUE_LENGTH = 63;
 
-export const RESERVED_LABEL_KEYS = ["bb.environment"];
+export const RESERVED_LABEL_KEYS = ["environment"];
 
-export const PRESET_LABEL_KEYS = ["bb.tenant"];
+export const PRESET_LABEL_KEYS = ["tenant"];
 
 export const PRESET_DB_NAME_TEMPLATE_PLACEHOLDERS = ["DB_NAME", "TENANT"];
 
-export const PRESET_LABEL_KEY_PLACEHOLDERS = [["TENANT", "bb.tenant"]];
+export const PRESET_LABEL_KEY_PLACEHOLDERS = [["TENANT", "tenant"]];
 
 export const hidePrefix = (key: string): string => {
   return key.replace(/^bb\./, "");
@@ -137,7 +137,7 @@ export const convertKVListToLabels = (
 };
 
 export const displayLabelKey = (key: string) => {
-  if (key === "bb.environment") {
+  if (key === "environment") {
     return "Environment ID";
   }
 
@@ -175,7 +175,7 @@ export const getLabelValuesFromDatabaseV1List = (
   databaseList: ComposedDatabase[],
   withEmptyValue = false
 ): string[] => {
-  if (key === "bb.environment") {
+  if (key === "environment") {
     const environmentList = useEnvironmentV1Store().getEnvironmentList();
     return environmentList.map((env) =>
       extractEnvironmentResourceName(env.name)
@@ -219,7 +219,7 @@ export const isDatabaseMatchesSelectorV1 = (
 };
 
 export const getSemanticLabelValue = (db: ComposedDatabase, key: string) => {
-  if (key === "bb.environment") {
+  if (key === "environment") {
     return extractEnvironmentResourceName(db.effectiveEnvironment);
   }
   return db.labels[key] ?? "";
