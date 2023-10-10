@@ -328,19 +328,19 @@ func isForeignKeyEqual(old, new *foreignKeyDef) bool {
 
 func (diff *diffNode) diffView(oldDatabase, newDatabase *databaseDef) error {
 	var tempViewList []*viewDef
-	for _, view := range newDatabase.views {
+	for _, view := range newDatabase.schemas[""].views {
 		viewName := view.name
 		if diff.ignoreCaseSensitive {
 			viewName = strings.ToLower(viewName)
 		}
 
-		oldView, ok := oldDatabase.views[viewName]
+		oldView, ok := oldDatabase.schemas[""].views[viewName]
 		if ok {
 			if !diff.isViewEqual(view, oldView) {
 				diff.createViewList = append(diff.createViewList, view)
 			}
 			// We should delete the view in the oldViewMap, because we will drop the all views in the oldViewMap explicitly at last.
-			delete(oldDatabase.views, viewName)
+			delete(oldDatabase.schemas[""].views, viewName)
 		} else {
 			// We should create the view.
 			// We create the temporary view first and replace it to avoid break the dependency like mysqldump does.
@@ -353,7 +353,7 @@ func (diff *diffNode) diffView(oldDatabase, newDatabase *databaseDef) error {
 		}
 	}
 	diff.createTempViewList = append(diff.createTempViewList, tempViewList...)
-	for _, view := range oldDatabase.views {
+	for _, view := range oldDatabase.schemas[""].views {
 		diff.dropViewList = append(diff.dropViewList, view)
 	}
 	return nil
@@ -421,20 +421,20 @@ func getTempView(view *viewDef) (*viewDef, error) {
 }
 
 func (diff *diffNode) diffFunction(oldDatabase, newDatabase *databaseDef) error {
-	for _, function := range newDatabase.functions {
+	for _, function := range newDatabase.schemas[""].functions {
 		functionName := function.name
 
-		oldFunction, ok := oldDatabase.functions[functionName]
+		oldFunction, ok := oldDatabase.schemas[""].functions[functionName]
 		if ok {
 			if !isFunctionEqual(oldFunction, function) {
 				diff.dropFunctionList = append(diff.dropFunctionList, oldFunction)
 			}
-			delete(oldDatabase.functions, functionName)
+			delete(oldDatabase.schemas[""].functions, functionName)
 		}
 		diff.createFunctionList = append(diff.createFunctionList, function)
 	}
 
-	for _, function := range oldDatabase.functions {
+	for _, function := range oldDatabase.schemas[""].functions {
 		diff.dropFunctionList = append(diff.dropFunctionList, function)
 	}
 	return nil
@@ -445,20 +445,20 @@ func isFunctionEqual(old, new *functionDef) bool {
 }
 
 func (diff *diffNode) diffProcedure(oldDatabase, newDatabase *databaseDef) error {
-	for _, procedure := range newDatabase.procedures {
+	for _, procedure := range newDatabase.schemas[""].procedures {
 		procedureName := procedure.name
 
-		oldProcedure, ok := oldDatabase.procedures[procedureName]
+		oldProcedure, ok := oldDatabase.schemas[""].procedures[procedureName]
 		if ok {
 			if !isProcedureEqual(oldProcedure, procedure) {
 				diff.dropProcedureList = append(diff.dropProcedureList, oldProcedure)
 			}
-			delete(oldDatabase.functions, procedureName)
+			delete(oldDatabase.schemas[""].functions, procedureName)
 		}
 		diff.createProcedureList = append(diff.createProcedureList, procedure)
 	}
 
-	for _, procedure := range oldDatabase.procedures {
+	for _, procedure := range oldDatabase.schemas[""].procedures {
 		diff.dropProcedureList = append(diff.dropProcedureList, procedure)
 	}
 	return nil
@@ -1144,15 +1144,7 @@ func sortAndWriteDropViewList(buf *strings.Builder, views []*viewDef) error {
 }
 
 func writeDropViewStatement(buf *strings.Builder, view *viewDef) error {
-	if _, err := buf.WriteString("DROP VIEW "); err != nil {
-		return err
-	}
-	if view.ifExists {
-		if _, err := buf.WriteString("IF EXISTS "); err != nil {
-			return err
-		}
-	}
-	if _, err := buf.WriteString(view.name + ";\n\n"); err != nil {
+	if _, err := buf.WriteString(fmt.Sprintf("DROP VIEW IF EXISTS `%s`;\n\n", view.name)); err != nil {
 		return err
 	}
 
@@ -1481,19 +1473,13 @@ func writeDropPrimaryIndexStatement(buf *strings.Builder, primary *primaryKeyDef
 }
 
 type databaseDef struct {
-	name       string
-	schemas    map[string]*schemaDef
-	views      map[string]*viewDef
-	functions  map[string]*functionDef
-	procedures map[string]*procedureDef
+	name    string
+	schemas map[string]*schemaDef
 }
 
 func newDatabaseDef() *databaseDef {
 	return &databaseDef{
-		schemas:    make(map[string]*schemaDef),
-		views:      make(map[string]*viewDef),
-		functions:  make(map[string]*functionDef),
-		procedures: make(map[string]*procedureDef),
+		schemas: make(map[string]*schemaDef),
 	}
 }
 
@@ -1503,7 +1489,6 @@ type viewDef struct {
 	dbName   string
 	tempView string
 	columns  []string
-	ifExists bool
 }
 
 type functionDef struct {
@@ -1519,17 +1504,23 @@ type procedureDef struct {
 }
 
 type schemaDef struct {
-	name     string
-	tables   map[string]*tableDef
-	events   map[string]*eventDef
-	triggers map[string]*triggerDef
+	name       string
+	tables     map[string]*tableDef
+	views      map[string]*viewDef
+	events     map[string]*eventDef
+	triggers   map[string]*triggerDef
+	functions  map[string]*functionDef
+	procedures map[string]*procedureDef
 }
 
 func newSchemaDef() *schemaDef {
 	return &schemaDef{
-		tables:   make(map[string]*tableDef),
-		events:   make(map[string]*eventDef),
-		triggers: make(map[string]*triggerDef),
+		tables:     make(map[string]*tableDef),
+		views:      make(map[string]*viewDef),
+		events:     make(map[string]*eventDef),
+		triggers:   make(map[string]*triggerDef),
+		functions:  make(map[string]*functionDef),
+		procedures: make(map[string]*procedureDef),
 	}
 }
 
@@ -2045,7 +2036,7 @@ func (t *mysqlTransformer) EnterCreateView(ctx *mysql.CreateViewContext) {
 		}
 	}
 
-	t.db.views[viewName] = &viewDef{
+	t.db.schemas[""].views[viewName] = &viewDef{
 		ctx:    ctx,
 		name:   viewName,
 		dbName: t.db.name,
@@ -2057,7 +2048,7 @@ func (t *mysqlTransformer) ExitCreateView(ctx *mysql.CreateViewContext) {
 		return
 	}
 
-	view := t.db.views[t.currView]
+	view := t.db.schemas[""].views[t.currView]
 
 	var tableSchemaList []base.TableSchema
 	for _, table := range t.db.schemas[""].tables {
@@ -2075,7 +2066,7 @@ func (t *mysqlTransformer) ExitCreateView(ctx *mysql.CreateViewContext) {
 		tableSchemaList = append(tableSchemaList, tableSchema)
 	}
 	var viewSchemaList []base.ViewSchema
-	for _, view := range t.db.views {
+	for _, view := range t.db.schemas[""].views {
 		viewSchema := base.ViewSchema{
 			Name:       view.name,
 			Definition: fmt.Sprintf("CREATE %s;", view.ctx.GetParser().GetTokenStream().GetTextFromRuleContext(view.ctx.GetRuleContext())),
@@ -2180,7 +2171,7 @@ func (t *mysqlTransformer) EnterCreateFunction(ctx *mysql.CreateFunctionContext)
 		}
 	}
 
-	t.db.functions[functionName] = &functionDef{
+	t.db.schemas[""].functions[functionName] = &functionDef{
 		ctx:    ctx,
 		name:   functionName,
 		dbName: t.db.name,
@@ -2202,7 +2193,7 @@ func (t *mysqlTransformer) EnterCreateProcedure(ctx *mysql.CreateProcedureContex
 		}
 	}
 
-	t.db.procedures[procedureName] = &procedureDef{
+	t.db.schemas[""].procedures[procedureName] = &procedureDef{
 		ctx:    ctx,
 		name:   procedureName,
 		dbName: t.db.name,
