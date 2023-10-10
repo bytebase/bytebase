@@ -623,12 +623,25 @@ func (i *indexState) toString(buf *strings.Builder, schemaName, tableName string
 }
 
 type columnState struct {
-	id           int
-	name         string
-	tp           string
-	defaultValue *string
-	comment      string
-	nullable     bool
+	// ignore means this column is already in the target schema.
+	// But we need the columnState to deal with the comment statement.
+	// So we cannot delete the columnState, instead we set ignore to true.
+	ignore bool
+	// ignoreComment means this column is already in the target schema.
+	ignoreComment bool
+	id            int
+	name          string
+	tp            string
+	defaultValue  *string
+	comment       string
+	nullable      bool
+}
+
+func (c *columnState) commentToString(buf *strings.Builder, schemaName, tableName string) error {
+	if _, err := buf.WriteString(fmt.Sprintf("COMMENT ON COLUMN \"%s\".\"%s\".\"%s\" IS '%s';\n", schemaName, tableName, c.name, escapePostgreSQLString(c.comment))); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *columnState) toString(buf *strings.Builder) error {
@@ -736,6 +749,26 @@ func GetDesignSchema(baselineSchema string, to *v1pb.DatabaseMetadata) (string, 
 			if err := tableState.toString(&listener.result, schema.Name); err != nil {
 				return "", err
 			}
+
+			if _, err := listener.result.WriteString("\n"); err != nil {
+				return "", err
+			}
+
+			for _, column := range table.Columns {
+				columnState, exists := tableState.columns[column.Name]
+				if !exists {
+					continue
+				}
+
+				if column.Comment != "" && !columnState.ignoreComment {
+					if err := columnState.commentToString(&listener.result, schema.Name, table.Name); err != nil {
+						return "", err
+					}
+					if _, err := listener.result.WriteString("\n"); err != nil {
+						return "", err
+					}
+				}
+			}
 		}
 	}
 
@@ -806,6 +839,9 @@ func (g *designSchemaGenerator) ExitCreatestmt(ctx *postgres.CreatestmtContext) 
 
 	var columnList []*columnState
 	for _, column := range g.currentTable.columns {
+		if column.ignore {
+			continue
+		}
 		columnList = append(columnList, column)
 	}
 	sort.Slice(columnList, func(i, j int) bool {
@@ -1108,6 +1144,131 @@ func (g *designSchemaGenerator) EnterTablelikeclause(ctx *postgres.Tablelikeclau
 	}
 }
 
+func (g *designSchemaGenerator) EnterCommentstmt(ctx *postgres.CommentstmtContext) {
+	if g.err != nil {
+		return
+	}
+	if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+		Start: g.lastTokenIndex,
+		Stop:  ctx.GetStart().GetTokenIndex() - 1,
+	})); err != nil {
+		g.err = err
+		return
+	}
+
+	g.lastTokenIndex = skipFollowingSemiIndex(ctx.GetParser().GetTokenStream(), ctx.GetStop().GetTokenIndex()+1)
+	endTokenIndex := g.lastTokenIndex - 1
+
+	if ctx.Object_type_any_name() != nil {
+		if ctx.Object_type_any_name().TABLE() != nil && ctx.Object_type_any_name().FOREIGN() == nil {
+			schemaName, tableName, err := pgparser.NormalizePostgreSQLAnyNameAsTableName(ctx.Any_name())
+			if err != nil {
+				g.err = err
+				return
+			}
+			schema, exists := g.to.schemas[schemaName]
+			if !exists {
+				// Skip not found schema.
+				return
+			}
+			_, exists = schema.tables[tableName]
+			if !exists {
+				// Skip not found table.
+				return
+			}
+		}
+	}
+
+	if ctx.COLUMN() == nil {
+		// Keep other comment statements.
+		if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+			Start: ctx.GetStart().GetTokenIndex(),
+			Stop:  endTokenIndex,
+		})); err != nil {
+			g.err = err
+			return
+		}
+		return
+	}
+
+	schemaName, tableName, columnName, err := pgparser.NormalizePostgreSQLAnyNameAsColumnName(ctx.Any_name())
+	if err != nil {
+		g.err = err
+		return
+	}
+	schema, exists := g.to.schemas[schemaName]
+	if !exists {
+		// Skip not found schema.
+		return
+	}
+	table, exists := schema.tables[tableName]
+	if !exists {
+		// Skip not found table.
+		return
+	}
+	column, exists := table.columns[columnName]
+	if !exists {
+		// Skip not found column.
+		return
+	}
+	equal := false
+	column.ignoreComment = true
+	if ctx.Comment_text().NULL_P() != nil {
+		equal = len(column.comment) == 0
+	} else {
+		if len(column.comment) == 0 {
+			// Skip for empty comment string.
+			return
+		}
+		commentText := ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+			Start: ctx.Comment_text().GetStart().GetTokenIndex(),
+			Stop:  ctx.Comment_text().GetStop().GetTokenIndex(),
+		})
+		if len(commentText) > 2 && commentText[0] == '\'' && commentText[len(commentText)-1] == '\'' {
+			commentText = unescapePostgreSQLString(commentText[1 : len(commentText)-1])
+		}
+
+		equal = commentText == column.comment
+	}
+
+	if equal {
+		if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+			Start: ctx.GetStart().GetTokenIndex(),
+			Stop:  endTokenIndex,
+		})); err != nil {
+			g.err = err
+			return
+		}
+	} else {
+		if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+			Start: ctx.GetStart().GetTokenIndex(),
+			Stop:  ctx.Comment_text().GetStart().GetTokenIndex() - 1,
+		})); err != nil {
+			g.err = err
+			return
+		}
+		if _, err := g.result.WriteString(fmt.Sprintf("'%s'", escapePostgreSQLString(column.comment))); err != nil {
+			g.err = err
+			return
+		}
+		if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+			Start: ctx.Comment_text().GetStop().GetTokenIndex() + 1,
+			Stop:  endTokenIndex,
+		})); err != nil {
+			g.err = err
+			return
+		}
+	}
+}
+
+func escapePostgreSQLString(s string) string {
+	return strings.ReplaceAll(s, "'", "''")
+}
+
+func unescapePostgreSQLString(s string) string {
+	return strings.ReplaceAll(s, "''", "'")
+}
+
 func (g *designSchemaGenerator) EnterColumnDef(ctx *postgres.ColumnDefContext) {
 	if g.err != nil || g.currentTable == nil {
 		return
@@ -1118,7 +1279,7 @@ func (g *designSchemaGenerator) EnterColumnDef(ctx *postgres.ColumnDefContext) {
 	if !exists {
 		return
 	}
-	delete(g.currentTable.columns, columnName)
+	column.ignore = true
 
 	if g.firstElementInTable {
 		g.firstElementInTable = false
