@@ -1,0 +1,36 @@
+- oldSchema: ""
+  newSchema: |
+    DELIMITER ;;
+    CREATE TRIGGER ins_sum BEFORE INSERT ON account
+      FOR EACH ROW SET @sum = @sum + NEW.amount;;
+    DELIMITER ;
+  diff: |+
+    DELIMITER ;;
+    CREATE TRIGGER ins_sum BEFORE INSERT ON account
+      FOR EACH ROW SET @sum = @sum + NEW.amount;;
+    DELIMITER ;
+
+- oldSchema: |
+    DELIMITER ;;
+    CREATE TRIGGER ins_sum BEFORE INSERT ON account
+      FOR EACH ROW SET @sum = @sum + NEW.amount;;
+    DELIMITER ;
+  newSchema: ""
+  diff: |+
+    DROP TRIGGER IF EXISTS `ins_sum`;
+
+- oldSchema: |
+    CREATE TABLE `account`(`acct_num` INT, `amount` DECIMAL(10,2));
+    CREATE DEFINER=`root`@`%` TRIGGER `ins_sum` BEFORE INSERT ON account FOR EACH ROW SET @sum = @sum + NEW.amount;
+  newSchema: |
+    CREATE TABLE `account`(`acct_num` INT, `amount` DECIMAL(10,2), `price` INT);
+    CREATE DEFINER=`root`@`%` TRIGGER `ins_sum` BEFORE INSERT ON account FOR EACH ROW SET @sum = sum + NEW.amount * NEW.price;
+  diff: |+
+    DROP TRIGGER IF EXISTS `ins_sum`;
+
+    ALTER TABLE `account` ADD COLUMN `price` INT AFTER `amount`;
+
+    DELIMITER ;;
+    CREATE DEFINER=`root`@`%` TRIGGER `ins_sum` BEFORE INSERT ON account FOR EACH ROW SET @sum = sum + NEW.amount * NEW.price;;
+    DELIMITER ;
+

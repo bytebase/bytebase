@@ -1,0 +1,485 @@
+# AUTO_INCREMENT
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT AUTO_INCREMENT,
+      PRIMARY KEY(`id`)
+    ) AUTO_INCREMENT = 4;
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT AUTO_INCREMENT,
+      PRIMARY KEY(`id`)
+    ) AUTO_INCREMENT = 10;
+  diff: |+
+    ALTER TABLE `book` AUTO_INCREMENT = 10;
+
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT AUTO_INCREMENT,
+      PRIMARY KEY(`id`)
+    ) AUTO_INCREMENT = 4;
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT AUTO_INCREMENT,
+      PRIMARY KEY(`id`)
+    );
+  diff: |+
+    ALTER TABLE `book` AUTO_INCREMENT = 0;
+
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) AVG_ROW_LENGTH = 1;
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) AVG_ROW_LENGTH = 2;
+  diff: |+
+    ALTER TABLE `book` AUTO_INCREMENT = 2;
+
+# AVG_ROW_LENGTH
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) AVG_ROW_LENGTH = 1;
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    );
+  diff: |+
+    ALTER TABLE `book` AVG_ROW_LENGTH = 0;
+
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) AVG_ROW_LENGTH = 1;
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) AVG_ROW_LENGTH = 2;
+  diff: |+
+    ALTER TABLE `book` AVG_ROW_LENGTH = 2;
+
+# DEFAULT CHARSET
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) DEFAULT CHARACTER SET = utf8;
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) DEFAULT CHARACTER SET = utf8mb4;
+  diff: |+
+    ALTER TABLE `book` DEFAULT CHARACTER SET = utf8mb4;
+
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) DEFAULT CHARSET = utf8;
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) DEFAULT CHARACTER SET = utf8;
+  diff: ""
+
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) DEFAULT CHARSET = utf8;
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    );
+  diff: ""
+
+# DEFAULT COLLATE
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) DEFAULT COLLATE = latin1_swedish_ci;
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) DEFAULT COLLATE = utf8mb4_general_ci;
+  diff: |+
+    ALTER TABLE `book` DEFAULT COLLATE = utf8mb4_general_ci;
+
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) DEFAULT COLLATE = latin1_swedish_ci;
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    );
+  diff:
+
+# CHECKSUM
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) CHECKSUM = 1;
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) CHECKSUM = 0;
+  diff: |+
+    ALTER TABLE `book` CHECKSUM = 0;
+
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) CHECKSUM = 1;
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    );
+  diff: |+
+    ALTER TABLE `book` CHECKSUM = 0;
+
+# COMMENT
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) COMMENT = 'old';
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) COMMENT = 'new';
+  diff: |+
+    ALTER TABLE `book` COMMENT = 'new';
+
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) COMMENT = 'old';
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    );
+  diff: |+
+    ALTER TABLE `book` COMMENT = '';
+
+# COMPRESSION
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) COMPRESSION = 'LZ4';
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) COMPRESSION = 'ZLIB';
+  diff: |+
+    ALTER TABLE `book` COMPRESSION = 'ZLIB';
+
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) COMPRESSION = 'LZ4';
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    );
+  diff: |+
+    ALTER TABLE `book` COMPRESSION = 'None';
+
+# CONNECTION
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) CONNECTION = 'old';
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    );
+  diff: |+
+    ALTER TABLE `book` CONNECTION = '';
+
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) CONNECTION = 'old';
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) CONNECTION = 'new';
+  diff: |+
+    ALTER TABLE `book` CONNECTION = 'new';
+
+# DELAY_KEY_WRITE
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) DELAY_KEY_WRITE = 1;
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) DELAY_KEY_WRITE = 0;
+  diff: |+
+    ALTER TABLE `book` DELAY_KEY_WRITE = 0;
+
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) DELAY_KEY_WRITE = 1;
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    );
+  diff: |+
+    ALTER TABLE `book` DELAY_KEY_WRITE = 0;
+
+# ENCRYPTION
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) ENCRYPTION = 'Y';
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) ENCRYPTION = 'N' ;
+  diff: |+
+    ALTER TABLE `book` ENCRYPTION = 'N';
+
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) ENCRYPTION = 'Y';
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    );
+  diff: |+
+    ALTER TABLE `book` ENCRYPTION = 'N';
+
+# INSERT_METHOD
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) INSERT_METHOD = LAST;
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) INSERT_METHOD = FIRST;
+  diff: |+
+    ALTER TABLE `book` INSERT_METHOD = FIRST;
+
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) INSERT_METHOD = LAST;
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    );
+  diff: |+
+    ALTER TABLE `book` INSERT_METHOD = NO;
+
+# MAX_ROWS
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) MAX_ROWS = 100;
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) MAX_ROWS = 200;
+  diff: |+
+    ALTER TABLE `book` MAX_ROWS = 200;
+
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) MAX_ROWS = 100;
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    );
+  diff: |+
+    ALTER TABLE `book` MAX_ROWS = 0;
+
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) MAX_ROWS = 100;
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    );
+  diff: |+
+    ALTER TABLE `book` MAX_ROWS = 0;
+
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) MAX_ROWS = 100;
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    );
+  diff: |+
+    ALTER TABLE `book` MAX_ROWS = 0;
+
+# MIN_ROWS
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) MIN_ROWS = 100;
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    );
+  diff: |+
+    ALTER TABLE `book` MIN_ROWS = 0;
+
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) MIN_ROWS = 100;
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) MIN_ROWS = 200;
+  diff: |+
+    ALTER TABLE `book` MIN_ROWS = 200;
+
+# PACK_KEYS
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) PACK_KEYS = 1;
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    );
+  diff: |+
+    ALTER TABLE `book` PACK_KEYS = DEFAULT;
+
+# ROW_FORMAT
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) ROW_FORMAT = DYNAMIC;
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) ROW_FORMAT = COMPRESSED;
+  diff: |+
+    ALTER TABLE `book` ROW_FORMAT = COMPRESSED;
+
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) ROW_FORMAT = DYNAMIC;
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    );
+  diff: |+
+    ALTER TABLE `book` ROW_FORMAT = DEFAULT;
+
+# STATS_AUTO_RECALC
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) STATS_AUTO_RECALC = 1;
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) STATS_AUTO_RECALC = 0;
+  diff: |+
+    ALTER TABLE `book` STATS_AUTO_RECALC = 0;
+
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) STATS_AUTO_RECALC = 1;
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    );
+  diff: |+
+    ALTER TABLE `book` STATS_AUTO_RECALC = DEFAULT;
+
+# UNION
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) UNION = (`book2`);
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    ) UNION = (`book2`, `book3`);
+  diff: |+
+    ALTER TABLE `book` UNION = (`book2`, `book3`);
+
+
+
+

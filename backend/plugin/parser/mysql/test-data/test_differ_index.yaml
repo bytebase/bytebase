@@ -1,0 +1,186 @@
+- oldSchema: |
+    CREATE TABLE `t1` (`id` INT);
+  newSchema: |
+    CREATE TABLE `t1` (`id` INT);
+    CREATE INDEX `i1` ON `t1` (`id`);
+  diff: |+
+    CREATE INDEX `i1` ON `t1` (`id`);
+
+- oldSchema: |
+    CREATE TABLE `t1` (`id` INT);
+    CREATE INDEX `i1` ON `t1` (id);
+  newSchema: |
+    CREATE TABLE `t1` (`id` INT);
+  diff: |+
+    DROP INDEX `i1` ON `t1`;
+
+- oldSchema: |
+    CREATE TABLE `t1` (
+      `a` INT NOT NULL,
+      `b` INT NOT NULL,
+      `c` INT NOT NULL
+    );
+    CREATE INDEX `idx1` ON `t1` (`a`, `b`, (`c`+1)) USING BTREE;
+    CREATE INDEX `idx2` ON `t1` (`a`) USING HASH;
+  newSchema: |
+    CREATE TABLE `t1` (
+      `a` INT NOT NULL,
+      `b` INT NOT NULL,
+      `c` INT NOT NULL
+    );
+    CREATE INDEX `idx2` ON `t1` (`a`) USING btree;
+    CREATE INDEX `idx3` ON `t1` (`a`, `b`) USING btree;
+  diff: |+
+    DROP INDEX `idx1` ON `t1`;
+
+    DROP INDEX `idx2` ON `t1`;
+
+    CREATE INDEX `idx2` ON `t1` (`a`) USING btree;
+
+    CREATE INDEX `idx3` ON `t1` (`a`, `b`) USING btree;
+
+- oldSchema: "CREATE TABLE `t1` (\n  `a` char(20),\n  `b` char(20)  \n);\nCREATE INDEX `i1` ON `t1`(`a`) USING BTREE;\nCREATE INDEX `i2` ON `t1`(`a`) USING BTREE;\n"
+  newSchema: "CREATE TABLE `t1` (\n  `a` char(20),\n  `b` char(20)  \n);\nCREATE INDEX `i1` ON `t1`(`a`) USING BTREE;\nCREATE INDEX `i2` ON `t1`(`b`) USING BTREE;\n"
+  diff: |+
+    DROP INDEX `i2` ON `t1`;
+
+    CREATE INDEX `i2` ON `t1`(`b`) USING BTREE;
+
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL, INDEX `book_idx` (`name`) KEY_BLOCK_SIZE=30);
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL, INDEX `book_idx` (`name`) KEY_BLOCK_SIZE=50);
+  diff: |+
+    DROP INDEX `book_idx` ON `book`;
+
+    CREATE INDEX `book_idx` ON `book`(`name`) KEY_BLOCK_SIZE=50;
+
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL, INDEX `book_idx` (`name`) COMMENT 'comment_a');
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL, INDEX `book_idx` (`name`) COMMENT 'comment_b');
+  diff: |+
+    DROP INDEX `book_idx` ON `book`;
+
+    CREATE INDEX `book_idx` ON `book`(`name`) COMMENT 'comment_b';
+
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL, INDEX `book_idx` (`name`) VISIBLE);
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL, INDEX `book_idx` (`name`) INVISIBLE);
+  diff: |+
+    DROP INDEX `book_idx` ON `book`;
+
+    CREATE INDEX `book_idx` ON `book`(`name`) INVISIBLE;
+
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL, FULLTEXT INDEX `book_idx` (`name`) KEY_BLOCK_SIZE=30 COMMENT 'no difference');
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL, FULLTEXT INDEX `book_idx` (`name`) KEY_BLOCK_SIZE=30 COMMENT 'no difference');
+  diff: ""
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY (`name`) KEY_BLOCK_SIZE=30);
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY (`name`) KEY_BLOCK_SIZE=50);
+  diff: |+
+    ALTER TABLE `book` DROP PRIMARY KEY;
+
+    ALTER TABLE `book` ADD PRIMARY KEY (`name`) KEY_BLOCK_SIZE=50;
+
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY (`name`) VISIBLE);
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY (`name`) INVISIBLE);
+  diff: |+
+    ALTER TABLE `book` DROP PRIMARY KEY;
+
+    ALTER TABLE `book` ADD PRIMARY KEY (`name`) INVISIBLE;
+
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY (`name`) KEY_BLOCK_SIZE=30 COMMENT 'no difference');
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY (`name`) KEY_BLOCK_SIZE=30 COMMENT 'no difference');
+  diff: ""
+- oldSchema: |
+    CREATE TABLE `book` (`id` INT, `name` VARCHAR(50) NOT NULL, INDEX `book_idx` USING BTREE (`id`, `name`) COMMENT 'comment_a');
+  newSchema: |
+    CREATE TABLE `book` (`id` INT, `name` VARCHAR(50) NOT NULL, INDEX `book_idx` USING BTREE (`id`) COMMENT 'comment_a');
+  diff: |+
+    DROP INDEX `book_idx` ON `book`;
+
+    CREATE INDEX `book_idx` ON `book`(`id`) USING BTREE COMMENT 'comment_a';
+
+- oldSchema: |
+    CREATE TABLE `book` (`id` INT, `name` VARCHAR(50) NOT NULL, INDEX `book_idx` TYPE BTREE (`id`, `name`) COMMENT 'comment_a');
+  newSchema: |
+    CREATE TABLE `book` (`id` INT, `name` VARCHAR(50) NOT NULL, INDEX `book_idx` TYPE BTREE (`id`) COMMENT 'comment_a');
+  diff: |+
+    DROP INDEX `book_idx` ON `book`;
+
+    CREATE INDEX `book_idx` ON `book`(`id`) TYPE BTREE COMMENT 'comment_a';
+
+- oldSchema: |
+    CREATE TABLE `book` (`id` INT, `name` VARCHAR(50) NOT NULL, INDEX `book_idx` USING BTREE (`id`) COMMENT 'comment_a');
+  newSchema: |
+    CREATE TABLE `book` (`id` INT, `name` VARCHAR(50) NOT NULL, INDEX `book_idx` USING BTREE ((`id` + 1)) COMMENT 'comment_a');
+  diff: |+
+    DROP INDEX `book_idx` ON `book`;
+
+    CREATE INDEX `book_idx` ON `book`((`id` + 1)) USING BTREE COMMENT 'comment_a';
+
+- oldSchema: |
+    CREATE TABLE `book` (`id` INT, `name` VARCHAR(50) NOT NULL, INDEX `book_idx` USING BTREE ((`id` + 1)) COMMENT 'comment_a');
+  newSchema: |
+    CREATE TABLE `book` (`id` INT, `name` VARCHAR(50) NOT NULL, INDEX `book_idx` USING BTREE ((`id` + 2)) COMMENT 'comment_a');
+  diff: |+
+    DROP INDEX `book_idx` ON `book`;
+
+    CREATE INDEX `book_idx` ON `book`((`id` + 2)) USING BTREE COMMENT 'comment_a';
+
+- oldSchema: |
+    CREATE TABLE `book` (`id` INT, `name` VARCHAR(50) NOT NULL, INDEX `book_idx` USING BTREE (`id`, `name`) COMMENT 'comment_a');
+  newSchema: |
+    CREATE TABLE `book` (`id` INT, `name` VARCHAR(50) NOT NULL, INDEX `book_idx` USING BTREE (`id`, `name`) COMMENT 'comment_a');
+  diff: ""
+- oldSchema: |
+    CREATE TABLE `book` (`id` INT, `name` VARCHAR(50) NOT NULL, INDEX `book_idx` USING BTREE ((`id` + 1)) COMMENT 'comment_a');
+  newSchema: |
+    CREATE TABLE `book` (`id` INT, `name` VARCHAR(50) NOT NULL, INDEX `book_idx` USING BTREE ((`id` + 1)) COMMENT 'comment_a');
+  diff: ""
+- oldSchema: |
+    CREATE TABLE `book` (`id` INT, `name` VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY (`id`, `name`) COMMENT 'comment_a');
+  newSchema: |
+    CREATE TABLE `book` (`id` INT, `name` VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY (`name`) COMMENT 'comment_b');
+  diff: |+
+    ALTER TABLE `book` DROP PRIMARY KEY;
+
+    ALTER TABLE `book` ADD PRIMARY KEY (`name`) COMMENT 'comment_b';
+
+- oldSchema: |
+    CREATE TABLE `book` (`id` INT, `name` VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY (`id`) COMMENT 'comment_a');
+  newSchema: |
+    CREATE TABLE `book` (`id` INT, `name` VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY ((`id` + 1)) COMMENT 'comment_b');
+  diff: |+
+    ALTER TABLE `book` DROP PRIMARY KEY;
+
+    ALTER TABLE `book` ADD PRIMARY KEY ((`id` + 1)) COMMENT 'comment_b';
+
+- oldSchema: |
+    CREATE TABLE `book` (`id` INT, `name` VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY ((`id` + 1)) COMMENT 'comment_b');
+  newSchema: |
+    CREATE TABLE `book` (`id` INT, `name` VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY ((`id` + 2)) COMMENT 'comment_b');
+  diff: |+
+    ALTER TABLE `book` DROP PRIMARY KEY;
+
+    ALTER TABLE `book` ADD PRIMARY KEY ((`id` + 2)) COMMENT 'comment_b';
+
+- oldSchema: |
+    CREATE TABLE `book` (`id` INT, `name` VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY (`id`, `name`) COMMENT 'comment_a');
+  newSchema: |
+    CREATE TABLE `book` (`id` INT, `name` VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY (`id`, `name`) COMMENT 'comment_a');
+  diff: ""
+- oldSchema: |
+    CREATE TABLE `book` (`id` INT, `name` VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY ((`id` + 1)) COMMENT 'comment_b');
+  newSchema: |
+    CREATE TABLE `book` (`id` INT, `name` VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY ((`id` + 1)) COMMENT 'comment_b');
+  diff: ""
