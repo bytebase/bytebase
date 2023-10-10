@@ -101,12 +101,7 @@ var (
 		DBNameToken:      true,
 		EnvironmentToken: false,
 	}
-	tenantSchemaPathTemplateTokens     = map[string]bool{}
-	allowedProjectDBNameTemplateTokens = map[string]bool{
-		DBNameToken:   true,
-		LocationToken: true,
-		TenantToken:   true,
-	}
+	tenantSchemaPathTemplateTokens = map[string]bool{}
 )
 
 // ValidateRepositoryFilePathTemplate validates the repository file path template.
@@ -167,28 +162,6 @@ func ValidateRepositorySchemaPathTemplate(schemaPathTemplate string, tenantMode 
 		if _, ok := allowedTokens[token]; !ok {
 			return errors.Errorf("unknown token %s in schema path template", token)
 		}
-	}
-	return nil
-}
-
-// ValidateProjectDBNameTemplate validates the project database name template.
-func ValidateProjectDBNameTemplate(template string) error {
-	if template == "" {
-		return nil
-	}
-	tokens, _ := common.ParseTemplateTokens(template)
-	// Must contain {{DB_NAME}}
-	hasDBName := false
-	for _, token := range tokens {
-		if token == DBNameToken {
-			hasDBName = true
-		}
-		if _, ok := allowedProjectDBNameTemplateTokens[token]; !ok {
-			return errors.Errorf("invalid token %v in database name template", token)
-		}
-	}
-	if !hasDBName {
-		return errors.Errorf("project database name template must include token %v", DBNameToken)
 	}
 	return nil
 }

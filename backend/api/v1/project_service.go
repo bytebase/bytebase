@@ -147,8 +147,6 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 		case "tenant_mode":
 			tenantMode := convertToProjectTenantMode(request.Project.TenantMode)
 			patch.TenantMode = &tenantMode
-		case "db_name_template":
-			patch.DBNameTemplate = &request.Project.DbNameTemplate
 		case "schema_change":
 			schemaChange := convertToProjectSchemaChangeType(request.Project.SchemaChange)
 			patch.SchemaChangeType = &schemaChange
@@ -2670,7 +2668,6 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		Workflow:                   workflow,
 		Visibility:                 visibility,
 		TenantMode:                 tenantMode,
-		DbNameTemplate:             projectMessage.DBNameTemplate,
 		SchemaChange:               schemaChange,
 		Webhooks:                   projectWebhooks,
 		DataClassificationConfigId: projectMessage.DataClassificationConfigID,
@@ -2736,7 +2733,6 @@ func convertToProjectMessage(resourceID string, project *v1pb.Project) (*store.P
 		Workflow:         workflow,
 		Visibility:       visibility,
 		TenantMode:       tenantMode,
-		DBNameTemplate:   project.DbNameTemplate,
 		SchemaChangeType: schemaChange,
 	}, nil
 }
