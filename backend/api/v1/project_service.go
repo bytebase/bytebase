@@ -266,7 +266,7 @@ func (s *ProjectService) SearchProjects(ctx context.Context, _ *v1pb.SearchProje
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, err.Error())
 		}
-		if !isOwnerOrDBA(role) && !isProjectMember(policy, principalID) {
+		if !isOwnerOrDBA(role) && !isProjectMember(principalID, policy) {
 			continue
 		}
 		response.Projects = append(response.Projects, convertToProject(project))
@@ -2946,7 +2946,7 @@ func validateMember(member string) error {
 	return errors.Errorf("invalid user %s", member)
 }
 
-func isProjectMember(policy *store.IAMPolicyMessage, userID int) bool {
+func isProjectMember(userID int, policy *store.IAMPolicyMessage) bool {
 	for _, binding := range policy.Bindings {
 		for _, member := range binding.Members {
 			if member.ID == userID {
