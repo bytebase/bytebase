@@ -3,6 +3,7 @@
       "a" int,
       CONSTRAINT t_a_check CHECK ("a" > 0)
     );
+    COMMENT ON COLUMN public.t.a IS 'this is a comment';
     ALTER TABLE public."t" ADD CONSTRAINT fk_t_a_t2_b FOREIGN KEY ("a") REFERENCES public."t2" ("b");
     CREATE TABLE public."t3" (
       "a" int
@@ -13,6 +14,7 @@
       d int,
       e char(10) NOT NULL DEFAULT 'NULL'
     );
+    COMMENT ON COLUMN public.t4.c IS 'comment with ''; test escape';
     ALTER TABLE public.t4 ADD CONSTRAINT pk_t4_a_c_d PRIMARY KEY (a, c, d);
     ALTER TABLE public.t4 ADD CONSTRAINT fk_t4_a_t2_b FOREIGN KEY (a) REFERENCES public.t2 (b);
   target:
@@ -55,7 +57,7 @@
                   type: varchar(10)
                   characterset: ""
                   collation: ""
-                  comment: this is comment, aha
+                  comment: this is comment', aha
                   classification: ""
                   usercomment: ""
                   effectivemaskinglevel: 0
@@ -77,7 +79,7 @@
                   type: int
                   characterset: ""
                   collation: ""
-                  comment: ""
+                  comment: comment with '; test escape
                   classification: ""
                   usercomment: ""
                   effectivemaskinglevel: 0
@@ -192,14 +194,20 @@
       CONSTRAINT t_a_check CHECK ("a" > 0)
     );
 
+
     CREATE TABLE public.t4 (
       a varchar(10) NOT NULL DEFAULT 'default value',
       c int NOT NULL,
       e int ,
       "b" char(10) NOT NULL
     );
+    COMMENT ON COLUMN public.t4.c IS 'comment with ''; test escape';
     ALTER TABLE public.t4 ADD CONSTRAINT pk_t4_a_c_d PRIMARY KEY ("a", "b", "c");
-    ALTER TABLE public.t4 ADD CONSTRAINT fk_t4_a_t2_b FOREIGN KEY ("b") REFERENCES "public"."t2"("b");CREATE TABLE "public"."t2" (
+    ALTER TABLE public.t4 ADD CONSTRAINT fk_t4_a_t2_b FOREIGN KEY ("b") REFERENCES "public"."t2"("b");
+
+    COMMENT ON COLUMN "public"."t4"."a" IS 'this is comment'', aha';
+
+    CREATE TABLE "public"."t2" (
       "b" int NULL,
       "a" int NULL
     );
@@ -208,4 +216,5 @@
 
     ALTER TABLE ONLY "public"."t2"
         ADD CONSTRAINT "fk_t2_b_t4_b" FOREIGN KEY ("b") REFERENCES "public"."t4"("b");
+
 

@@ -100,8 +100,86 @@ func deparseImpl(context DeparseContext, in ast.Node, buf *strings.Builder) erro
 			return err
 		}
 		return buf.WriteByte(';')
+	case *ast.CommentStmt:
+		if err := deparseComment(context, node, buf); err != nil {
+			return err
+		}
+		return buf.WriteByte(';')
 	}
 	return errors.Errorf("failed to deparse %T", in)
+}
+
+func deparseComment(context DeparseContext, in *ast.CommentStmt, buf *strings.Builder) error {
+	if err := context.WriteIndent(buf, deparseIndentString); err != nil {
+		return err
+	}
+
+	switch in.Type {
+	case ast.ObjectTypeTable:
+		if _, err := buf.WriteString("COMMENT ON TABLE \""); err != nil {
+			return err
+		}
+		tableDef, ok := in.Object.(*ast.TableDef)
+		if !ok {
+			return errors.Errorf("expect *ast.TableDef, but got %T", in.Object)
+		}
+		if tableDef.Schema != "" {
+			if _, err := buf.WriteString(tableDef.Schema); err != nil {
+				return err
+			}
+			if _, err := buf.WriteString("\".\""); err != nil {
+				return err
+			}
+		}
+		if _, err := buf.WriteString(tableDef.Name); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString("\" IS '"); err != nil {
+			return err
+		}
+		escapeComment := strings.ReplaceAll(in.Comment, "'", "''")
+		if _, err := buf.WriteString(escapeComment); err != nil {
+			return err
+		}
+		_, err := buf.WriteString("'")
+		return err
+	case ast.ObjectTypeColumn:
+		if _, err := buf.WriteString("COMMENT ON COLUMN \""); err != nil {
+			return err
+		}
+		columnNameDef, ok := in.Object.(*ast.ColumnNameDef)
+		if !ok {
+			return errors.Errorf("expect *ast.ColumnNameDef, but got %T", in.Object)
+		}
+		if columnNameDef.Table.Schema != "" {
+			if _, err := buf.WriteString(columnNameDef.Table.Schema); err != nil {
+				return err
+			}
+			if _, err := buf.WriteString("\".\""); err != nil {
+				return err
+			}
+		}
+		if _, err := buf.WriteString(columnNameDef.Table.Name); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString("\".\""); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(columnNameDef.ColumnName); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString("\" IS '"); err != nil {
+			return err
+		}
+		escapeComment := strings.ReplaceAll(in.Comment, "'", "''")
+		if _, err := buf.WriteString(escapeComment); err != nil {
+			return err
+		}
+		_, err := buf.WriteString("'")
+		return err
+	default:
+		return errors.Errorf("failed to deparse comment for type %v", in.Type)
+	}
 }
 
 func deparseDropIndex(context DeparseContext, in *ast.DropIndexStmt, buf *strings.Builder) error {
