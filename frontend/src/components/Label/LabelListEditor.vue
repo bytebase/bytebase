@@ -36,7 +36,7 @@ import { useI18n } from "vue-i18n";
 import {
   validateLabelKey,
   MAX_LABEL_VALUE_LENGTH,
-  isPresetLabel,
+  isVirtualLabelKey,
 } from "@/utils";
 import LabelEditorRow from "./LabelEditorRow.vue";
 
@@ -68,6 +68,9 @@ const errorList = computed(() => {
     if (!key) {
       errors.key.push(t("label.error.key-necessary"));
     } else {
+      if (isVirtualLabelKey(key)) {
+        errors.key.push(t("label.error.x-is-reserved-key", { key }));
+      }
       if (!validateLabelKey(key)) {
         errors.key.push(t("label.error.key-format"));
       }
@@ -76,9 +79,7 @@ const errorList = computed(() => {
       }
     }
     if (!value) {
-      if (!isPresetLabel(key)) {
-        errors.value.push(t("label.error.value-necessary"));
-      }
+      errors.value.push(t("label.error.value-necessary"));
     } else if (value.length > MAX_LABEL_VALUE_LENGTH) {
       errors.value.push(
         t("label.error.max-value-length-exceeded", {
