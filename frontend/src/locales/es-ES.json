@@ -2055,9 +2055,8 @@
     "filter-by-name": "Filtrar por nombre",
     "batch-query": {
       "batch": "Lote",
-      "database-labels": "Etiquetas de {database}",
-      "database-has-no-label": "{database} no tiene etiquetas",
-      "description": "Consulta por lotes bases de datos adicionales con los mismos valores de etiqueta."
+      "select-database": "Seleccione la base de datos a continuación",
+      "description": "Consulta por lotes {count} bases de datos adicionales en {project}."
     },
     "executing-query": "Ejecutando consulta"
   },
