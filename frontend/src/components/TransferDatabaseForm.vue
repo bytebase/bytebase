@@ -211,9 +211,7 @@ const parseLabelsIfNeeded = (database: ComposedDatabase) => {
   const match = database.name.match(regex);
   if (!match) return undefined;
 
-  const labels: Record<string, string> = {
-    "bb.environment": database.effectiveEnvironment,
-  };
+  const labels: Record<string, string> = {};
 
   PRESET_LABEL_KEY_PLACEHOLDERS.forEach(([placeholder, key]) => {
     const value = match.groups?.[placeholder];

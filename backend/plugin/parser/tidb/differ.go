@@ -1,4 +1,3 @@
-// Package mysql provides the MySQL differ plugin.
 package tidb
 
 import (
@@ -29,7 +28,6 @@ import (
 
 func init() {
 	base.RegisterSchemaDiffFunc(storepb.Engine_TIDB, SchemaDiff)
-	base.RegisterSchemaDiffFunc(storepb.Engine_OCEANBASE, SchemaDiff)
 }
 
 const (

@@ -375,4 +375,7 @@ message ColumnConfig {
   string name = 1;
 
   string semantic_type_id = 2;
+
+  // The user labels for a column.
+  map<string, string> labels = 3;
 }

@@ -2,11 +2,9 @@ package api
 
 const (
 	// EnvironmentLabelKey is the reserved key for environment.
-	EnvironmentLabelKey string = "bb.environment"
+	EnvironmentLabelKey string = "environment"
 	// TenantLabelKey is the label key for tenant.
-	TenantLabelKey = "bb.tenant"
-	// LocationLabelKey is the label key for location.
-	LocationLabelKey = "bb.location"
+	TenantLabelKey = "tenant"
 
 	// DatabaseLabelSizeMax is the maximum size of database labels.
 	DatabaseLabelSizeMax = 4

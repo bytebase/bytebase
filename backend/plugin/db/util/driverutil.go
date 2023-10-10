@@ -13,7 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -446,59 +445,6 @@ func getStatementWithResultLimit(stmt string, limit int) string {
 
 func getMySQLStatementWithResultLimit(stmt string, limit int) string {
 	return fmt.Sprintf("SELECT * FROM (%s) result LIMIT %d;", stmt, limit)
-}
-
-// NonSemanticPrefix is the prefix for non-semantic version.
-const NonSemanticPrefix = "0000.0000.0000-"
-
-// ToStoredVersion converts semantic or non-semantic version to stored version format.
-// Non-semantic version will have additional "0000.0000.0000-" prefix.
-// Semantic version will add zero padding to MAJOR, MINOR, PATCH version with a timestamp suffix.
-func ToStoredVersion(useSemanticVersion bool, version, semanticVersionSuffix string) (string, error) {
-	if !useSemanticVersion {
-		return fmt.Sprintf("%s%s", NonSemanticPrefix, version), nil
-	}
-	v, err := semver.Make(version)
-	if err != nil {
-		return "", err
-	}
-	major, minor, patch := fmt.Sprintf("%d", v.Major), fmt.Sprintf("%d", v.Minor), fmt.Sprintf("%d", v.Patch)
-	if len(major) > 4 || len(minor) > 4 || len(patch) > 4 {
-		return "", errors.Errorf("invalid version %q, major, minor, patch version should be < 10000", version)
-	}
-	return fmt.Sprintf("%04s.%04s.%04s-%s", major, minor, patch, semanticVersionSuffix), nil
-}
-
-// FromStoredVersion converts stored version to semantic or non-semantic version.
-func FromStoredVersion(storedVersion string) (bool, string, string, error) {
-	if strings.HasPrefix(storedVersion, NonSemanticPrefix) {
-		return false, strings.TrimPrefix(storedVersion, NonSemanticPrefix), "", nil
-	}
-	idx := strings.Index(storedVersion, "-")
-	if idx < 0 {
-		return false, "", "", errors.Errorf("invalid stored version %q, version should contain '-'", storedVersion)
-	}
-	prefix, suffix := storedVersion[:idx], storedVersion[idx+1:]
-	parts := strings.Split(prefix, ".")
-	if len(parts) != 3 {
-		return false, "", "", errors.Errorf("invalid stored version %q, version prefix %q should be in semantic version format", storedVersion, prefix)
-	}
-	major, err := strconv.Atoi(parts[0])
-	if err != nil {
-		return false, "", "", errors.Errorf("invalid stored version %q, version prefix %q should be in semantic version format", storedVersion, prefix)
-	}
-	minor, err := strconv.Atoi(parts[1])
-	if err != nil {
-		return false, "", "", errors.Errorf("invalid stored version %q, version prefix %q should be in semantic version format", storedVersion, prefix)
-	}
-	patch, err := strconv.Atoi(parts[2])
-	if err != nil {
-		return false, "", "", errors.Errorf("invalid stored version %q, version prefix %q should be in semantic version format", storedVersion, prefix)
-	}
-	if major >= 10000 || minor >= 10000 || patch >= 10000 {
-		return false, "", "", errors.Errorf("invalid stored version %q, major, minor, patch version of %q should be < 10000", storedVersion, prefix)
-	}
-	return true, fmt.Sprintf("%d.%d.%d", major, minor, patch), suffix, nil
 }
 
 // IsAffectedRowsStatement returns true if the statement will return the number of affected rows.

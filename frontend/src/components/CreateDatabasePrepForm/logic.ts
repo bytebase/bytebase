@@ -10,7 +10,7 @@ export const useDBNameTemplateInputState = (
     labels: MaybeRef<Record<string, string>>;
   }
 ) => {
-  const TENANT_LABEL_KEY = "bb.tenant";
+  const TENANT_LABEL_KEY = "tenant";
   const TENANT_LABEL_REGEXP_GROUP_NAME = "TENANT";
 
   const tenantValue = computed(() => {
