@@ -1328,6 +1328,14 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, request *v1pb.Cre
 		return nil, err
 	}
 
+	ok, err := isUserAtLeastProjectMember(ctx, s.store, issue.Project.ResourceID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check if the user can get issue, error: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied")
+	}
+
 	// TODO: migrate to store v2
 	activityCreate := &store.ActivityMessage{
 		CreatorUID:   ctx.Value(common.PrincipalIDContextKey).(int),
