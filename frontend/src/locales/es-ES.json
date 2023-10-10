@@ -2354,7 +2354,7 @@
       },
       "bb-feature-batch-query": {
         "title": "Consulta por lotes",
-        "desc": "Consulta por lotes bases de datos adicionales con los mismos valores de etiqueta."
+        "desc": "Consulta por lotes bases de datos adicionales en el mismo proyecto en el Editor SQL."
       },
       "bb-feature-shared-sql-script": {
         "title": "Script SQL compartido",
