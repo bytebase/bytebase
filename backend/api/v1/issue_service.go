@@ -100,14 +100,12 @@ func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueReque
 		}
 	}
 
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	role := ctx.Value(common.RoleContextKey).(api.Role)
-	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &issue.Project.ResourceID})
+	ok, err := isUserAtLeastProjectMember(ctx, s.store, issue.Project.ResourceID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get project iam policy, error: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to check if the user can get issue, error: %v", err)
 	}
-	if !isOwnerOrDBA(role) && !isProjectMember(principalID, policy) {
-		return nil, status.Error(codes.PermissionDenied, "permission denied")
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied")
 	}
 
 	issueV1, err := convertToIssue(ctx, s.store, issue)
@@ -1140,7 +1138,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 
 	ok, err := isUserAtLeastProjectDeveloper(ctx, s.store, issue.Project.ResourceID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to check if the user can create issue, error: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to check if the user can update issue, error: %v", err)
 	}
 	if !ok {
 		return nil, status.Errorf(codes.PermissionDenied, "permission denied")
@@ -1757,6 +1755,28 @@ func isUserAtLeastProjectDeveloper(ctx context.Context, s *store.Store, requestP
 	}
 
 	if isProjectOwnerOrDeveloper(principalID, policy) {
+		return true, nil
+	}
+	return false, nil
+}
+
+func isUserAtLeastProjectMember(ctx context.Context, s *store.Store, requestProjectID string) (bool, error) {
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, err := s.GetUserByID(ctx, principalID)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get user %d", principalID)
+	}
+
+	if isOwnerOrDBA(user.Role) {
+		return true, nil
+	}
+
+	policy, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &requestProjectID})
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get project iam policy")
+	}
+
+	if isProjectMember(principalID, policy) {
 		return true, nil
 	}
 	return false, nil
