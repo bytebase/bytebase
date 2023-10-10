@@ -458,6 +458,18 @@ func (s *IssueService) getUserByIdentifier(ctx context.Context, identifier strin
 
 // CreateIssue creates a issue.
 func (s *IssueService) CreateIssue(ctx context.Context, request *v1pb.CreateIssueRequest) (*v1pb.Issue, error) {
+	projectID, err := common.GetProjectID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	ok, err := canCreateOrUpdateIssue(ctx, s.store, projectID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check if the user can create issue, error: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied")
+	}
+
 	switch request.Issue.Type {
 	case v1pb.Issue_TYPE_UNSPECIFIED:
 		return nil, status.Errorf(codes.InvalidArgument, "issue type is required")
@@ -1126,6 +1138,14 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 		return nil, err
 	}
 
+	ok, err := canCreateOrUpdateIssue(ctx, s.store, issue.Project.ResourceID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check if the user can create issue, error: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied")
+	}
+
 	updateMasks := map[string]bool{}
 
 	patch := &store.UpdateIssueMessage{}
@@ -1729,6 +1749,28 @@ func isMemberOfProject(userUID int, policy *store.IAMPolicyMessage) bool {
 		}
 	}
 	return false
+}
+
+func canCreateOrUpdateIssue(ctx context.Context, s *store.Store, requestProjectID string) (bool, error) {
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, err := s.GetUserByID(ctx, principalID)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get user %d", principalID)
+	}
+
+	if isOwnerOrDBA(user.Role) {
+		return true, nil
+	}
+
+	policy, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &requestProjectID})
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get project iam policy")
+	}
+
+	if isProjectOwnerOrDeveloper(principalID, policy) {
+		return true, nil
+	}
+	return false, nil
 }
 
 func getProjectIDsFilter(ctx context.Context, s *store.Store, requestProjectID string) (*[]string, error) {
