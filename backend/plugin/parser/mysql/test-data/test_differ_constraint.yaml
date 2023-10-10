@@ -135,7 +135,7 @@
 
     CREATE TABLE `employee` (`id` INT, `name` VARCHAR(50) NOT NULL, `department_id` INT, PRIMARY KEY(`department`), FOREIGN KEY fk_2(department_id) REFERENCES department(`id`));
   diff: |+
-    ALTER TABLE `employee` DROP FOREIGN KEY IF EXISTS `employee_ibfk_1`;
+    ALTER TABLE `employee` DROP FOREIGN KEY `employee_ibfk_1`;
 
     ALTER TABLE employee ADD FOREIGN KEY fk_2(department_id) REFERENCES department(`id`);
 
@@ -174,7 +174,7 @@
       CONSTRAINT `employee_ibfk_1` FOREIGN KEY (`department_id`) REFERENCES `department`(`id`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;;
   diff: |+
-    ALTER TABLE `employee` DROP FOREIGN KEY IF EXISTS `employee_ibfk_1`;
+    ALTER TABLE `employee` DROP FOREIGN KEY `employee_ibfk_1`;
 
     DROP INDEX IF EXISTS `id_name_idx` ON `department`;
 
@@ -204,7 +204,7 @@
       CONSTRAINT `employee_ibfk_1` FOREIGN KEY (`manager`) REFERENCES `employee`(`id`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;;
   diff: |+
-    ALTER TABLE `employee` DROP FOREIGN KEY IF EXISTS `employee_ibfk_1`;
+    ALTER TABLE `employee` DROP FOREIGN KEY `employee_ibfk_1`;
 
     ALTER TABLE `employee` ADD COLUMN `manager_id` INT DEFAULT NULL AFTER `leader_id`;
 

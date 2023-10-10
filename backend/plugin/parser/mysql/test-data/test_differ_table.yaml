@@ -149,7 +149,7 @@
       PRIMARY KEY(`id`)
     );
   diff: |+
-    ALTER TABLE `book` DROP FOREIGN KEY IF EXISTS `fk_price_id`;
+    ALTER TABLE `book` DROP FOREIGN KEY `fk_price_id`;
 
     DROP TABLE IF EXISTS `price`;
 

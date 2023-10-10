@@ -907,7 +907,7 @@ func sortAndWriteDropForeignKeyList(buf *strings.Builder, fks []*foreignKeyDef) 
 }
 
 func writeDropForeignKeyStatement(buf *strings.Builder, fk *foreignKeyDef) error {
-	if _, err := buf.WriteString(fmt.Sprintf("ALTER TABLE `%s` DROP FOREIGN KEY IF EXISTS `%s`;\n\n", fk.tableName, fk.name)); err != nil {
+	if _, err := buf.WriteString(fmt.Sprintf("ALTER TABLE `%s` DROP FOREIGN KEY `%s`;\n\n", fk.tableName, fk.name)); err != nil {
 		return err
 	}
 	return nil
@@ -1105,7 +1105,7 @@ func sortAndWriteDropIndexList(buf *strings.Builder, indexes []*indexDef) error 
 }
 
 func writeDropIndexStatement(buf *strings.Builder, index *indexDef) error {
-	if _, err := buf.WriteString(fmt.Sprintf("DROP INDEX IF EXISTS `%s` ON `%s`;\n\n", index.name, index.tableName)); err != nil {
+	if _, err := buf.WriteString(fmt.Sprintf("DROP INDEX `%s` ON `%s`;\n\n", index.name, index.tableName)); err != nil {
 		return err
 	}
 	return nil

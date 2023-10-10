@@ -12,7 +12,7 @@
   newSchema: |
     CREATE TABLE `t1` (`id` INT);
   diff: |+
-    DROP INDEX IF EXISTS `i1` ON `t1`;
+    DROP INDEX `i1` ON `t1`;
 
 - oldSchema: |
     CREATE TABLE `t1` (
@@ -31,9 +31,9 @@
     CREATE INDEX `idx2` ON `t1` (`a`) USING btree;
     CREATE INDEX `idx3` ON `t1` (`a`, `b`) USING btree;
   diff: |+
-    DROP INDEX IF EXISTS `idx1` ON `t1`;
+    DROP INDEX `idx1` ON `t1`;
 
-    DROP INDEX IF EXISTS `idx2` ON `t1`;
+    DROP INDEX `idx2` ON `t1`;
 
     CREATE INDEX `idx2` ON `t1` (`a`) USING btree;
 
@@ -42,7 +42,7 @@
 - oldSchema: "CREATE TABLE `t1` (\n  `a` char(20),\n  `b` char(20)  \n);\nCREATE INDEX `i1` ON `t1`(`a`) USING BTREE;\nCREATE INDEX `i2` ON `t1`(`a`) USING BTREE;\n"
   newSchema: "CREATE TABLE `t1` (\n  `a` char(20),\n  `b` char(20)  \n);\nCREATE INDEX `i1` ON `t1`(`a`) USING BTREE;\nCREATE INDEX `i2` ON `t1`(`b`) USING BTREE;\n"
   diff: |+
-    DROP INDEX IF EXISTS `i2` ON `t1`;
+    DROP INDEX `i2` ON `t1`;
 
     CREATE INDEX `i2` ON `t1`(`b`) USING BTREE;
 
