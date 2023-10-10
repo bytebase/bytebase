@@ -7,7 +7,7 @@
           v-model:value="state.searchKeyword"
           class="!w-36"
           clearable
-          :placeholder="$t('schema-designer.action.filter-by-name')"
+          :placeholder="$t('common.filter-by-name')"
         />
         <NButton type="primary" @click="handleCreateBranch">
           <heroicons-solid:plus class="w-4 h-auto mr-0.5" />

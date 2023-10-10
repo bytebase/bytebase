@@ -865,7 +865,6 @@
         }
       }
     },
-    "filter-issue-by-name": "Filter issue by name",
     "table": {
       "open": "Open",
       "closed": "Closed",
@@ -1323,7 +1322,6 @@
     "no-anomalies-detected": "No anomalies detected",
     "sync-status": "Sync status",
     "last-successful-sync": "Last successful sync",
-    "filter-database-name": "Filter database name",
     "filter-database": "Filter database",
     "database-backup": "database backup",
     "transfer-project": "Transfer Project",
@@ -1617,8 +1615,7 @@
         "content": "Bytebase project is similar to the project concept in other common dev tools.\n\nA project has its own members, and every issue and database always belongs to a single project.\n\nA project can also be configured to link to a repository to enable GitOps workflow.",
         "cancel": "Dismiss",
         "confirm": "Do not show again"
-      },
-      "filter-project-name": "Filter project name"
+      }
     },
     "table": {
       "key": "@:common.key",
@@ -2056,7 +2053,6 @@
         }
       }
     },
-    "filter-by-name": "Filter by name",
     "batch-query": {
       "batch": "Batch",
       "select-database": "Select database below",
@@ -2441,7 +2437,6 @@
     "create-policy": "Create policy",
     "duplicate-policy": "Duplicate SQL Review Policy",
     "configure-policy": "Configure policy",
-    "search-rule-name": "Search rule name",
     "policy-removed": "Successfully removed the review policy.",
     "policy-created": "Successfully created the review policy.",
     "policy-updated": "Successfully updated the review policy.",
@@ -3051,8 +3046,7 @@
     },
     "action": {
       "use-the-existing-branch": "Use the existing branch",
-      "create-new-branch": "Create new branch",
-      "filter-by-name": "Filter by name"
+      "create-new-branch": "Create new branch"
     }
   },
   "cel": {

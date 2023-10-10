@@ -19,7 +19,7 @@
       <BBTableSearch
         ref="searchField"
         class="w-full lg:w-auto"
-        :placeholder="$t('sql-review.search-rule-name')"
+        :placeholder="$t('common.filter-by-name')"
         @change-text="$emit('change-search-text', $event)"
       />
     </div>

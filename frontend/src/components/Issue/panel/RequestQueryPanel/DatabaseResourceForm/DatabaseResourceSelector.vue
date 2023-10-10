@@ -8,7 +8,7 @@
       :render-source-list="renderSourceList"
       :render-target-list="renderTargetList"
       :source-filterable="true"
-      :source-filter-placeholder="$t('database.filter-database-name')"
+      :source-filter-placeholder="$t('common.filter-by-name')"
     />
   </div>
 </template>
