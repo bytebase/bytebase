@@ -500,7 +500,7 @@ func (diff *diffNode) diffTrigger(oldSchema, newSchema *schemaDef) error {
 			if !isTriggerEqual(oldTrigger, trigger) {
 				diff.dropTriggerList = append(diff.dropTriggerList, oldTrigger)
 			}
-			delete(oldSchema.events, triggerName)
+			delete(oldSchema.triggers, triggerName)
 		}
 		diff.createTriggerList = append(diff.createTriggerList, trigger)
 	}
@@ -964,15 +964,7 @@ func sortAndWriteDropProcedureList(buf *strings.Builder, procedures []*procedure
 }
 
 func writeDropProcedureStatement(buf *strings.Builder, procedure *procedureDef) error {
-	if _, err := buf.WriteString("DROP PROCEDURE "); err != nil {
-		return err
-	}
-	if procedure.ifExists {
-		if _, err := buf.WriteString("IF EXISTS "); err != nil {
-			return err
-		}
-	}
-	if _, err := buf.WriteString(procedure.name + ";\n\n"); err != nil {
+	if _, err := buf.WriteString(fmt.Sprintf("DROP PROCEDURE IF EXISTS `%s`;\n\n", procedure.name)); err != nil {
 		return err
 	}
 
@@ -1000,7 +992,7 @@ func writeCreateProcedureStatement(buf *strings.Builder, procedure *procedureDef
 		return err
 	}
 
-	if _, err := buf.WriteString(fmt.Sprintf("DELIMITER ;;\n%s\nDELIMITER ;\n", def.String())); err != nil {
+	if _, err := buf.WriteString(fmt.Sprintf("DELIMITER ;;\n%s\nDELIMITER ;\n\n", def.String())); err != nil {
 		return err
 	}
 	return nil
@@ -1016,15 +1008,7 @@ func sortAndWriteDropEventList(buf *strings.Builder, events []*eventDef) error {
 }
 
 func writeDropEventStatement(buf *strings.Builder, event *eventDef) error {
-	if _, err := buf.WriteString("DROP EVENT "); err != nil {
-		return err
-	}
-	if event.ifExists {
-		if _, err := buf.WriteString("IF EXISTS "); err != nil {
-			return err
-		}
-	}
-	if _, err := buf.WriteString(event.name + ";\n\n"); err != nil {
+	if _, err := buf.WriteString(fmt.Sprintf("DROP EVENT IF EXISTS `%s`;\n\n", event.name)); err != nil {
 		return err
 	}
 
@@ -1052,7 +1036,7 @@ func writeCreateEventStatement(buf *strings.Builder, event *eventDef) error {
 		return err
 	}
 
-	if _, err := buf.WriteString(fmt.Sprintf("DELIMITER ;;\n%s\nDELIMITER ;\n", def.String())); err != nil {
+	if _, err := buf.WriteString(fmt.Sprintf("DELIMITER ;;\n%s\nDELIMITER ;\n\n", def.String())); err != nil {
 		return err
 	}
 	return nil
@@ -1068,15 +1052,7 @@ func sortAndWriteDropTriggerList(buf *strings.Builder, triggers []*triggerDef) e
 }
 
 func writeDropTriggerStatement(buf *strings.Builder, trigger *triggerDef) error {
-	if _, err := buf.WriteString("DROP TRIGGER "); err != nil {
-		return err
-	}
-	if trigger.ifExists {
-		if _, err := buf.WriteString("IF EXISTS "); err != nil {
-			return err
-		}
-	}
-	if _, err := buf.WriteString(trigger.name + ";\n\n"); err != nil {
+	if _, err := buf.WriteString(fmt.Sprintf("DROP TRIGGER IF EXISTS `%s`;\n\n", trigger.name)); err != nil {
 		return err
 	}
 
@@ -1104,7 +1080,7 @@ func writeCreateTriggerStatement(buf *strings.Builder, trigger *triggerDef) erro
 		return err
 	}
 
-	if _, err := buf.WriteString(fmt.Sprintf("DELIMITER ;;\n%s\nDELIMITER ;\n", def.String())); err != nil {
+	if _, err := buf.WriteString(fmt.Sprintf("DELIMITER ;;\n%s\nDELIMITER ;\n\n", def.String())); err != nil {
 		return err
 	}
 	return nil
@@ -1531,17 +1507,15 @@ type viewDef struct {
 }
 
 type functionDef struct {
-	ctx      *mysql.CreateFunctionContext
-	name     string
-	dbName   string
-	ifExists bool
+	ctx    *mysql.CreateFunctionContext
+	name   string
+	dbName string
 }
 
 type procedureDef struct {
-	ctx      *mysql.CreateProcedureContext
-	name     string
-	dbName   string
-	ifExists bool
+	ctx    *mysql.CreateProcedureContext
+	name   string
+	dbName string
 }
 
 type schemaDef struct {
@@ -1563,14 +1537,12 @@ type eventDef struct {
 	ctx        *mysql.CreateEventContext
 	name       string
 	schemaName string
-	ifExists   bool
 }
 
 type triggerDef struct {
 	ctx        *mysql.CreateTriggerContext
 	name       string
 	schemaName string
-	ifExists   bool
 }
 
 type tableDef struct {
