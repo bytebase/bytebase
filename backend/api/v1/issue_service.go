@@ -1262,6 +1262,14 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, request *v1p
 		}
 		issueIDs = append(issueIDs, issue.UID)
 		issues = append(issues, issue)
+
+		ok, err := isUserAtLeastProjectDeveloper(ctx, s.store, issue.Project.ResourceID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to check if the user can update issue status, error: %v", err)
+		}
+		if !ok {
+			return nil, status.Errorf(codes.PermissionDenied, "permission denied")
+		}
 	}
 
 	if len(issueIDs) == 0 {
