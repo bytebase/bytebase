@@ -71,7 +71,7 @@
         <div class="flex flex-row space-x-4 p-0.5">
           <SearchBox
             :value="state.searchText"
-            :placeholder="$t('issue.filter-issue-by-name')"
+            :placeholder="$t('common.filter-by-name')"
             :autofocus="true"
             @update:value="changeSearchText($event)"
           />
