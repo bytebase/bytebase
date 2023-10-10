@@ -13,9 +13,9 @@
           >
 
           <router-link
-            to="/branch"
+            to="/branches"
             class="bar-link px-2 py-1 rounded-md"
-            :class="getRouteLinkClass('/branch')"
+            :class="getRouteLinkClass('/branches')"
             >{{ $t("common.branches") }}</router-link
           >
 
