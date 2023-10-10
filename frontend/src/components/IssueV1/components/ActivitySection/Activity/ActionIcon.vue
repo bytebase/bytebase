@@ -260,7 +260,7 @@ const icon = computed((): ActionIconType => {
 </script>
 
 <style scoped>
-.icon-re-request-review ::v-deep path {
+.icon-re-request-review :deep(path) {
   stroke-width: 3 !important;
 }
 </style>

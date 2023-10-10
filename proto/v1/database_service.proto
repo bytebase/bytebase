@@ -285,6 +285,9 @@ message DiffSchemaRequest {
     // Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
     string change_history = 3;
   }
+
+  // Format the schema dump into SDL format.
+  bool sdl_format = 4;
 }
 
 message DiffSchemaResponse {
@@ -706,6 +709,9 @@ message ColumnConfig {
   string name = 1;
 
   string semantic_type_id = 2;
+
+  // The user labels for a column.
+  map<string, string> labels = 3;
 }
 
 // DatabaseSchema is the metadata for databases.

@@ -178,7 +178,7 @@ watchEffect(async () => {
 const addStage = () => {
   if (!state.deployment) return;
   const rule: LabelSelectorRequirement = {
-    key: "bb.environment",
+    key: "environment",
     operator: OperatorType.OPERATOR_TYPE_IN,
     values: [],
   };

@@ -8,8 +8,8 @@
     >
       <template #header>
         <tr>
-          <BBTableHeaderCell compact class="w-1/12 pl-3 pr-2 capitalize">
-            {{ hidePrefix(label) }}
+          <BBTableHeaderCell compact class="w-1/12 pl-3 pr-2 whitespace-nowrap">
+            {{ displayDeploymentMatchSelectorKey(label) }}
           </BBTableHeaderCell>
 
           <BBTableHeaderCell
@@ -106,21 +106,22 @@
 import { groupBy } from "lodash-es";
 import { NPopover } from "naive-ui";
 import { computed, withDefaults } from "vue";
+import type { ComposedDatabase } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { DeploymentConfig } from "@/types/proto/v1/project_service";
-import type { ComposedDatabase, LabelKeyType } from "../../types";
 import {
-  hidePrefix,
   getLabelValuesFromDatabaseV1List,
   getPipelineFromDeploymentScheduleV1,
-} from "../../utils";
+  displayDeploymentMatchSelectorKey,
+  getSemanticLabelValue,
+} from "@/utils";
 import { DeploymentStage } from "../DeploymentConfigTool";
 import DatabaseMatrixItem from "./DatabaseMatrixItem.vue";
 
 const props = withDefaults(
   defineProps<{
     databaseList: ComposedDatabase[];
-    label: LabelKeyType;
+    label: string;
     environmentList: Environment[];
     deployment: DeploymentConfig;
     bordered?: boolean;
@@ -148,7 +149,9 @@ const xAxisValueList = computed(() => {
 
 const databaseGroupList = computed(() => {
   const key = props.label;
-  const dict = groupBy(props.databaseList, (db) => db.labels[key] ?? "");
+  const dict = groupBy(props.databaseList, (db) =>
+    getSemanticLabelValue(db, key)
+  );
   const rows = yAxisValueList.value.map((labelValue) => {
     const databaseList = dict[labelValue] || [];
     return {

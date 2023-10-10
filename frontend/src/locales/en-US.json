@@ -267,7 +267,8 @@
     "go-to-configure": "Configure",
     "updated-at-by": "Updated {time} by {user}",
     "created-at-by": "Created {time} by {user}",
-    "filter-by-name": "Filter by name"
+    "filter-by-name": "Filter by name",
+    "tenant": "Tenant"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -1957,7 +1958,8 @@
     "label": {
       "key": "Key",
       "values": "Values",
-      "value-placeholder": "Label value..."
+      "value-placeholder": "Label value...",
+      "key-placeholder": "Label key..."
     }
   },
   "sql-editor": {
@@ -2057,10 +2059,10 @@
     "filter-by-name": "Filter by name",
     "batch-query": {
       "batch": "Batch",
-      "database-labels": "{database} labels",
-      "database-has-no-label": "{database} has no label",
-      "description": "Batch query {count} additional databases with the same label values."
-    }
+      "select-database": "Select database below",
+      "description": "Batch query {count} additional databases under {project}."
+    },
+    "executing-query": "Executing query"
   },
   "schema-editor": {
     "self": "Schema Editor",
@@ -2147,7 +2149,10 @@
       "value-duplicated": "Duplicated values",
       "max-length-exceeded": "Length cannot exceed {len} characters",
       "max-label-count-exceeded": "Cannot exceed {count} labels",
-      "cannot-edit-reserved-label": "Cannot edit reserved label \"{key}\""
+      "cannot-edit-reserved-label": "Cannot edit reserved label \"{key}\"",
+      "max-value-length-exceeded": "Value's length cannot exceed {length} characters",
+      "key-format": "Only alphanumeric characters ([a-z0-9A-Z]), hyphens (-), underscores (_) and dots (.) are allowed. And must begin and ends with alphanumeric characters.",
+      "x-is-reserved-key": "\"{key}\" is a system reserved key"
     },
     "placeholder": {
       "select-key": "Select key...",
@@ -2160,7 +2165,8 @@
     "db-name-template-tips": "Specify a template to enforce database naming. For example, if your database db1 is geo-splitted into US, Asia, Europe and you want to enforce names as db1__US, db1__ASIA, db1__EU, then the template could be {placeholder}. {link}.",
     "confirm-change": "Are you sure to change '{label}' ?",
     "parsed-from-template": "Parsed from {name} by template {template}.",
-    "cannot-transfer-template-not-match": "Database '{name}' cannot be transferred to this project. Since its name doesn't match the template {template}."
+    "cannot-transfer-template-not-match": "Database '{name}' cannot be transferred to this project. Since its name doesn't match the template {template}.",
+    "add-label": "Add label"
   },
   "oauth": {
     "unknown-event": "Unexpected event type, OAuth failed."
@@ -2361,7 +2367,7 @@
       },
       "bb-feature-batch-query": {
         "title": "Batch query",
-        "desc": "Batch query additional databases with the same label values in SQL Editor."
+        "desc": "Batch query additional databases under same project in SQL Editor."
       },
       "bb-feature-shared-sql-script": {
         "title": "Shared SQL script",

@@ -28,7 +28,6 @@ import (
 
 func init() {
 	base.RegisterSchemaDiffFunc(storepb.Engine_MYSQL, SchemaDiff)
-	base.RegisterSchemaDiffFunc(storepb.Engine_TIDB, SchemaDiff)
 	base.RegisterSchemaDiffFunc(storepb.Engine_OCEANBASE, SchemaDiff)
 }
 
@@ -584,7 +583,7 @@ func SchemaDiff(oldStmt, newStmt string, ignoreCaseSensitive bool) (string, erro
 }
 
 func classifyStatement(statement string) ([]string, string, error) {
-	unsupported, supported, err := ExtractTiDBUnsupportedStmts(statement)
+	unsupported, supported, err := extractTiDBUnsupportedStmts(statement)
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "failed to extract TiDB unsupported statements from statements %q", statement)
 	}

@@ -1,37 +1,80 @@
+import { orderBy, uniq } from "lodash-es";
+import { useEnvironmentV1Store } from "@/store";
+import { ComposedDatabase } from "@/types";
+import { extractEnvironmentResourceName } from "./v1";
+
 export const MAX_LABEL_VALUE_LENGTH = 63;
 
-export const RESERVED_LABEL_KEYS = ["bb.environment"];
-
-export const PRESET_LABEL_KEYS = ["bb.tenant"];
-
-export const PRESET_DB_NAME_TEMPLATE_PLACEHOLDERS = ["DB_NAME", "TENANT"];
-
-export const PRESET_LABEL_KEY_PLACEHOLDERS = [["TENANT", "bb.tenant"]];
-
-export const hidePrefix = (key: string): string => {
-  return key.replace(/^bb\./, "");
+export const validateLabelKey = (key: string) => {
+  if (key.length === 0) return false;
+  if (key.length >= 64) return false;
+  return (
+    key.match(/^[a-z0-9A-Z]/) &&
+    key.match(/[a-z0-9A-Z]$/) &&
+    key.match(/[a-z0-9A-Z-_.]*/)
+  );
 };
 
-export const validateLabelsWithTemplate = (
+export const convertLabelsToKVList = (
   labels: Record<string, string>,
-  requiredLabelDict: Set<string>
+  sort = true
 ) => {
-  for (const key of requiredLabelDict.values()) {
-    const value = labels[key];
-    if (!value) return false;
+  const list = Object.keys(labels).map((key) => ({
+    key,
+    value: labels[key],
+  }));
+
+  if (sort) {
+    return orderBy(list, (kv) => kv.key, "asc");
   }
-  return true;
+  return list;
 };
 
-export const parseLabelListInTemplate = (template: string): string[] => {
-  const labelList: string[] = [];
+export const convertKVListToLabels = (
+  list: { key: string; value: string }[],
+  omitEmpty = true // true to omit empty values in the returned kv object
+) => {
+  const labels: Record<string, string> = {};
+  for (const kv of list) {
+    const { key, value } = kv;
+    if (!value && omitEmpty) continue;
+    labels[key] = value;
+  }
+  return labels;
+};
 
-  PRESET_LABEL_KEY_PLACEHOLDERS.forEach(([placeholder, labelKey]) => {
-    const pattern = `{{${placeholder}}}`;
-    if (template.includes(pattern)) {
-      labelList.push(labelKey);
+export const getLabelValuesFromDatabaseV1List = (
+  key: string,
+  databaseList: ComposedDatabase[],
+  withEmptyValue = false
+): string[] => {
+  if (key === "environment") {
+    const environmentList = useEnvironmentV1Store().getEnvironmentList();
+    return environmentList.map((env) =>
+      extractEnvironmentResourceName(env.name)
+    );
+  }
+
+  const valueList = databaseList.flatMap((db) => {
+    if (key in db.labels) {
+      return getSemanticLabelValue(db, key);
     }
+    return [];
   });
+  // Select all distinct database label values of {{key}}
+  const distinctValueList = uniq(valueList);
 
-  return labelList;
+  if (withEmptyValue) {
+    // plus one more "<empty value>" if needed
+    distinctValueList.push("");
+  }
+
+  return distinctValueList;
+};
+
+export const getSemanticLabelValue = (db: ComposedDatabase, key: string) => {
+  if (key === "environment") {
+    return extractEnvironmentResourceName(db.effectiveEnvironment);
+  }
+  return db.labels[key] ?? "";
 };

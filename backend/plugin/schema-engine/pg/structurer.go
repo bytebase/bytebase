@@ -110,9 +110,9 @@ func ParseToMetadata(schema string) (*v1pb.DatabaseMetadata, error) {
 						referencedColumns: constraint.Foreign.ColumnList,
 					}
 				}
-
-				schema.tables[stmt.Name.Name] = table
 			}
+
+			schema.tables[stmt.Name.Name] = table
 		case *ast.AlterTableStmt:
 			if stmt.Table.Type == ast.TableTypeView {
 				// Skip view for now.
@@ -169,6 +169,23 @@ func ParseToMetadata(schema string) (*v1pb.DatabaseMetadata, error) {
 						}
 					}
 				}
+			}
+		case *ast.CreateIndexStmt:
+			// Not fully supported yet.
+			// Only for foreign key check now.
+			schema, ok := state.schemas[stmt.Index.Table.Schema]
+			if !ok {
+				continue
+			}
+			table, ok := schema.tables[stmt.Index.Table.Name]
+			if !ok {
+				continue
+			}
+			table.indexes[stmt.Index.Name] = &indexState{
+				id:      len(table.indexes),
+				name:    stmt.Index.Name,
+				primary: false,
+				unique:  stmt.Index.Unique,
 			}
 		case *ast.CommentStmt:
 			switch stmt.Type {
@@ -455,6 +472,7 @@ func (f *foreignKeyState) convertToForeignKeyMetadata() *v1pb.ForeignKeyMetadata
 	return &v1pb.ForeignKeyMetadata{
 		Name:              f.name,
 		Columns:           f.columns,
+		ReferencedSchema:  f.referencedSchema,
 		ReferencedTable:   f.referencedTable,
 		ReferencedColumns: f.referencedColumns,
 	}

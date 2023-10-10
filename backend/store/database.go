@@ -34,18 +34,6 @@ type DatabaseMessage struct {
 	Metadata    *storepb.DatabaseMetadata
 }
 
-// GetEffectiveLabels gets the effective labels for a database.
-func (m *DatabaseMessage) GetEffectiveLabels() map[string]string {
-	ret := make(map[string]string)
-	for k, v := range m.Metadata.Labels {
-		ret[k] = v
-	}
-	// System default environment label.
-	// The value of bb.environment is resource ID of the environment.
-	ret[api.EnvironmentLabelKey] = m.EffectiveEnvironmentID
-	return ret
-}
-
 // UpdateDatabaseMessage is the mssage for updating a database.
 type UpdateDatabaseMessage struct {
 	InstanceID   string
@@ -319,7 +307,7 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 		project.UID,
 		environmentUID,
 		create.DatabaseName,
-		api.OK,
+		create.SyncState,
 		create.SuccessfulSyncTimeTs,
 		storedVersion,
 		secretsString,
@@ -338,7 +326,7 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 	// Invalidate and update the cache.
 	s.databaseCache.Delete(getDatabaseCacheKey(instance.ResourceID, create.DatabaseName))
 	s.databaseIDCache.Delete(databaseUID)
-	return s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: &databaseUID})
+	return s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: &databaseUID, ShowDeleted: true})
 }
 
 // UpdateDatabase updates a database.

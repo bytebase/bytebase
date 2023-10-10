@@ -201,7 +201,7 @@ func TestValidateAndConvertToStoreDeploymentSchedule(t *testing.T) {
 								LabelSelector: &v1pb.LabelSelector{
 									MatchExpressions: []*v1pb.LabelSelectorRequirement{
 										{
-											Key:      "bb.environment",
+											Key:      "environment",
 											Operator: v1pb.OperatorType_OPERATOR_TYPE_IN,
 											Values:   []string{"prod"},
 										},
@@ -227,7 +227,7 @@ func TestValidateAndConvertToStoreDeploymentSchedule(t *testing.T) {
 								Selector: &store.LabelSelector{
 									MatchExpressions: []*store.LabelSelectorRequirement{
 										{
-											Key:      "bb.environment",
+											Key:      "environment",
 											Operator: store.InOperatorType,
 											Values:   []string{"prod"},
 										},
@@ -257,7 +257,7 @@ func TestValidateAndConvertToStoreDeploymentSchedule(t *testing.T) {
 								LabelSelector: &v1pb.LabelSelector{
 									MatchExpressions: []*v1pb.LabelSelectorRequirement{
 										{
-											Key:      "bb.environment",
+											Key:      "environment",
 											Operator: v1pb.OperatorType_OPERATOR_TYPE_IN,
 											Values:   []string{"prod"},
 										},
@@ -287,7 +287,7 @@ func TestValidateAndConvertToStoreDeploymentSchedule(t *testing.T) {
 								LabelSelector: &v1pb.LabelSelector{
 									MatchExpressions: []*v1pb.LabelSelectorRequirement{
 										{
-											Key:      "bb.environment",
+											Key:      "environment",
 											Operator: v1pb.OperatorType_OPERATOR_TYPE_IN,
 											Values:   []string{},
 										},
@@ -337,7 +337,7 @@ func TestValidateAndConvertToStoreDeploymentSchedule(t *testing.T) {
 								LabelSelector: &v1pb.LabelSelector{
 									MatchExpressions: []*v1pb.LabelSelectorRequirement{
 										{
-											Key:      "bb.environment",
+											Key:      "environment",
 											Operator: v1pb.OperatorType_OPERATOR_TYPE_IN,
 											Values:   []string{"prod", "test"},
 										},

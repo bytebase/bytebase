@@ -1,6 +1,6 @@
 <template>
   <div
-    class="w-full h-auto flex-grow flex flex-col justify-start items-start overflow-scroll"
+    class="w-full h-auto flex-grow flex flex-col justify-start items-start overflow-auto"
   >
     <MonacoEditor
       ref="editorRef"

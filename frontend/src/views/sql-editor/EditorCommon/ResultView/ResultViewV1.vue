@@ -25,6 +25,13 @@
             :name="tabName(result, i)"
             class="flex-1 flex flex-col overflow-hidden"
           >
+            <template #tab>
+              <span>{{ tabName(result, i) }}</span>
+              <Info
+                v-if="result.error"
+                class="ml-2 text-yellow-600 w-4 h-auto"
+              />
+            </template>
             <SingleResultViewV1
               :params="executeParams"
               :sql-result-set="resultSet"
@@ -75,6 +82,7 @@
 </template>
 
 <script lang="ts" setup>
+import { Info } from "lucide-vue-next";
 import { darkTheme, NConfigProvider, NTabs, NTabPane } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { computed, PropType, ref, toRef } from "vue";

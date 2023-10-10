@@ -44,7 +44,7 @@ CREATE TRIGGER order_insert_audit
 	}
 	a := require.New(t)
 	for _, test := range tests {
-		gotUnsupport, gotSupport, err := ExtractTiDBUnsupportedStmts(test.stmts)
+		gotUnsupport, gotSupport, err := extractTiDBUnsupportedStmts(test.stmts)
 		if test.wantErr {
 			a.Error(err)
 		} else {

@@ -8,7 +8,7 @@
       class="primary-sidebar h-full"
       pane-style="height: calc(100% - 35px); padding: 0;"
     >
-      <NTabPane name="projects" :tab="$t('common.project')">
+      <NTabPane name="projects" :tab="projectTitle">
         <DatabaseTree
           key="sql-editor-database-tree"
           v-model:search-pattern="searchPattern"
@@ -36,6 +36,7 @@ import { computed, ref, watchEffect } from "vue";
 import { useConnectionTreeStore, useCurrentUserV1 } from "@/store";
 import { ConnectionTreeMode } from "@/types";
 import { hasWorkspacePermissionV1 } from "@/utils";
+import { getCustomProjectTitle } from "@/utils/customTheme";
 import DatabaseTree from "./DatabaseTree.vue";
 
 const currentUserV1 = useCurrentUserV1();
@@ -47,6 +48,10 @@ const databaseTab = ref<"projects" | "instances">(
     ? "instances"
     : "projects"
 );
+
+const projectTitle = computed(() => {
+  return getCustomProjectTitle();
+});
 
 const hasInstanceView = computed((): boolean => {
   return hasWorkspacePermissionV1(

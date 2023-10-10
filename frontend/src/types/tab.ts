@@ -26,8 +26,15 @@ export type TabSheetType =
 export type EditMode = "SQL-EDITOR" | "CHAT-TO-SQL";
 
 export interface BatchQueryContext {
-  selectedLabels: string[];
+  // selectedDatabaseNames is used to store the selected database names.
+  // Format: instances/{instance}/databases/{database}
+  selectedDatabaseNames: string[];
 }
+
+export type QueryContext = {
+  beginTimestampMS: number;
+  abortController: AbortController;
+};
 
 export interface TabInfo {
   id: string;
@@ -49,6 +56,8 @@ export interface TabInfo {
   isFreshNew?: boolean;
   // batchQueryContext saves the context of batch query, including the selected labels.
   batchQueryContext?: BatchQueryContext;
+  // queryContext saves the context of a query, including beginTimestampMS and abortController
+  queryContext?: QueryContext;
   // databaseQueryResultMap is used to store the query result of each database.
   // It's used for the case that the user selects multiple databases to query.
   // The key is the databaseName. Format: instances/{instance}/databases/{database}

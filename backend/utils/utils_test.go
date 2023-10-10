@@ -18,9 +18,9 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 			DatabaseName: "hello",
 			Metadata: &storepb.DatabaseMetadata{
 				Labels: map[string]string{
-					"bb.location":    "us-central1",
-					"bb.tenant":      "bytebase",
-					"bb.environment": "dev",
+					"location":    "us-central1",
+					"tenant":      "bytebase",
+					"environment": "dev",
 				},
 			},
 		},
@@ -29,9 +29,9 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 			DatabaseName: "hello",
 			Metadata: &storepb.DatabaseMetadata{
 				Labels: map[string]string{
-					"bb.location":    "earth",
-					"bb.tenant":      "bytebase",
-					"bb.environment": "dev",
+					"location":    "earth",
+					"tenant":      "bytebase",
+					"environment": "dev",
 				},
 			},
 		},
@@ -40,9 +40,9 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 			DatabaseName: "hello",
 			Metadata: &storepb.DatabaseMetadata{
 				Labels: map[string]string{
-					"bb.location":    "europe-west1",
-					"bb.tenant":      "bytebase",
-					"bb.environment": "dev",
+					"location":    "europe-west1",
+					"tenant":      "bytebase",
+					"environment": "dev",
 				},
 			},
 		},
@@ -51,8 +51,8 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 			DatabaseName: "hello",
 			Metadata: &storepb.DatabaseMetadata{
 				Labels: map[string]string{
-					"bb.location":    "earth",
-					"bb.environment": "dev",
+					"location":    "earth",
+					"environment": "dev",
 				},
 			},
 		},
@@ -61,8 +61,8 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 			DatabaseName: "world",
 			Metadata: &storepb.DatabaseMetadata{
 				Labels: map[string]string{
-					"bb.location":    "earth",
-					"bb.environment": "dev",
+					"location":    "earth",
+					"environment": "dev",
 				},
 			},
 		},
@@ -71,8 +71,8 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 			DatabaseName: "db1_us",
 			Metadata: &storepb.DatabaseMetadata{
 				Labels: map[string]string{
-					"bb.location":    "us",
-					"bb.environment": "dev",
+					"location":    "us",
+					"environment": "dev",
 				},
 			},
 		},
@@ -81,8 +81,8 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 			DatabaseName: "db1_eu",
 			Metadata: &storepb.DatabaseMetadata{
 				Labels: map[string]string{
-					"bb.location":    "eu",
-					"bb.environment": "dev",
+					"location":    "eu",
+					"environment": "dev",
 				},
 			},
 		},
@@ -105,7 +105,7 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 							Selector: &api.LabelSelector{
 								MatchExpressions: []*api.LabelSelectorRequirement{
 									{
-										Key:      "bb.location",
+										Key:      "location",
 										Operator: "In",
 										Values:   []string{"us-central1", "europe-west1"},
 									},
@@ -118,7 +118,7 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 							Selector: &api.LabelSelector{
 								MatchExpressions: []*api.LabelSelectorRequirement{
 									{
-										Key:      "bb.location",
+										Key:      "location",
 										Operator: "Exists",
 										Values:   nil,
 									},
@@ -145,7 +145,7 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 							Selector: &api.LabelSelector{
 								MatchExpressions: []*api.LabelSelectorRequirement{
 									{
-										Key:      "bb.location",
+										Key:      "location",
 										Operator: "In",
 										Values:   []string{"us-central1", "europe-west1"},
 									},
@@ -158,7 +158,7 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 							Selector: &api.LabelSelector{
 								MatchExpressions: []*api.LabelSelectorRequirement{
 									{
-										Key:      "bb.location",
+										Key:      "location",
 										Operator: "In",
 										Values:   []string{"earth"},
 									},
@@ -185,7 +185,7 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 							Selector: &api.LabelSelector{
 								MatchExpressions: []*api.LabelSelectorRequirement{
 									{
-										Key:      "bb.tenant",
+										Key:      "tenant",
 										Operator: "In",
 										Values:   []string{"bytebase"},
 									},
@@ -198,7 +198,7 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 							Selector: &api.LabelSelector{
 								MatchExpressions: []*api.LabelSelectorRequirement{
 									{
-										Key:      "bb.location",
+										Key:      "location",
 										Operator: "In",
 										Values:   []string{"us-central1", "europe-west1"},
 									},
@@ -225,7 +225,7 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 							Selector: &api.LabelSelector{
 								MatchExpressions: []*api.LabelSelectorRequirement{
 									{
-										Key:      "bb.location",
+										Key:      "location",
 										Operator: "In",
 										Values:   []string{"earth"},
 									},
@@ -251,7 +251,7 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 							Selector: &api.LabelSelector{
 								MatchExpressions: []*api.LabelSelectorRequirement{
 									{
-										Key:      "bb.location",
+										Key:      "location",
 										Operator: "In",
 										Values:   []string{"us", "eu"},
 									},

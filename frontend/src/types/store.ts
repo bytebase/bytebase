@@ -15,7 +15,6 @@ import {
 } from "./id";
 import { Instance, MigrationHistory } from "./instance";
 import { Issue } from "./issue";
-import { Label } from "./label";
 import { Notification } from "./notification";
 import { Principal } from "./principal";
 import { Project } from "./project";
@@ -87,10 +86,6 @@ export interface NotificationState {
 
 export interface CommandState {
   commandListById: Map<CommandId, Command[]>;
-}
-
-export interface LabelState {
-  labelList: Label[];
 }
 
 export interface SQLEditorState {
