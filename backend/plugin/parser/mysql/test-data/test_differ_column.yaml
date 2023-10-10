@@ -441,8 +441,7 @@
       `c9` INT,
       `c8` VARCHAR(10),
       `c4` INT,
-      `c2` VARCHAR(10),
-      `c9` INT
+      `c2` VARCHAR(10)
     );
   diff: |+
     ALTER TABLE `book` ADD COLUMN `c9` INT FIRST;
