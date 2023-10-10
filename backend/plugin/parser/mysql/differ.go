@@ -1495,15 +1495,13 @@ type viewDef struct {
 }
 
 type functionDef struct {
-	ctx    *mysql.CreateFunctionContext
-	name   string
-	dbName string
+	ctx  *mysql.CreateFunctionContext
+	name string
 }
 
 type procedureDef struct {
-	ctx    *mysql.CreateProcedureContext
-	name   string
-	dbName string
+	ctx  *mysql.CreateProcedureContext
+	name string
 }
 
 type schemaDef struct {
@@ -1529,15 +1527,13 @@ func newSchemaDef() *schemaDef {
 }
 
 type eventDef struct {
-	ctx        *mysql.CreateEventContext
-	name       string
-	schemaName string
+	ctx  *mysql.CreateEventContext
+	name string
 }
 
 type triggerDef struct {
-	ctx        *mysql.CreateTriggerContext
-	name       string
-	schemaName string
+	ctx  *mysql.CreateTriggerContext
+	name string
 }
 
 type tableDef struct {
@@ -1651,6 +1647,7 @@ func (diff *diffNode) parseMySQLSchemaStringToSchemDef(schema string) (*database
 		ignoreCaseSensitive: diff.ignoreCaseSensitive,
 	}
 	listener.db.schemas[""] = newSchemaDef()
+	listener.db.schemas[""].name = ""
 
 	for _, stmt := range list {
 		antlr.ParseTreeWalkerDefault.Walk(listener, stmt.Tree)
@@ -1667,6 +1664,7 @@ func (t *mysqlTransformer) EnterCreateTable(ctx *mysql.CreateTableContext) {
 
 	databaseName, tableName := NormalizeMySQLTableName(ctx.TableName())
 	if t.ignoreCaseSensitive {
+		databaseName = strings.ToLower(databaseName)
 		tableName = strings.ToLower(tableName)
 	}
 	if databaseName != "" {
@@ -2026,24 +2024,15 @@ func (t *mysqlTransformer) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
 
 // EnterCreateView is called when production createView is entered.
 func (t *mysqlTransformer) EnterCreateView(ctx *mysql.CreateViewContext) {
-	databaseName, viewName := NormalizeMySQLViewName(ctx.ViewName())
+	_, viewName := NormalizeMySQLViewName(ctx.ViewName())
 	t.currView = viewName
 	if t.ignoreCaseSensitive {
 		viewName = strings.ToLower(viewName)
 	}
-	if databaseName != "" {
-		if t.db.name == "" {
-			t.db.name = databaseName
-		} else if t.db.name != databaseName {
-			t.err = errors.New("multiple database names found: " + t.db.name + ", " + databaseName)
-			return
-		}
-	}
 
 	t.db.schemas[""].views[viewName] = &viewDef{
-		ctx:    ctx,
-		name:   viewName,
-		dbName: t.db.name,
+		ctx:  ctx,
+		name: viewName,
 	}
 }
 
@@ -2114,92 +2103,52 @@ func (t *mysqlTransformer) ExitCreateView(ctx *mysql.CreateViewContext) {
 
 // EnterCreateEvent is called when production createEvent is entered.
 func (t *mysqlTransformer) EnterCreateEvent(ctx *mysql.CreateEventContext) {
-	schemaName, eventName := NormalizeMySQLEventName(ctx.EventName())
+	_, eventName := NormalizeMySQLEventName(ctx.EventName())
 	if t.ignoreCaseSensitive {
 		eventName = strings.ToLower(eventName)
 	}
-	if schemaName != "" {
-		if schema, ok := t.db.schemas[schemaName]; !ok {
-			t.db.schemas[schemaName] = &schemaDef{
-				name: schemaName,
-			}
-		} else if schema.name != schemaName {
-			t.err = errors.New("multiple schema names found: " + schema.name + ", " + schemaName)
-			return
-		}
-	}
 
-	t.db.schemas[schemaName].events[eventName] = &eventDef{
-		ctx:        ctx,
-		name:       eventName,
-		schemaName: schemaName,
+	t.db.schemas[""].events[eventName] = &eventDef{
+		ctx:  ctx,
+		name: eventName,
 	}
 }
 
 // EnterCreateTrigger is called when production createTrigger is entered.
 func (t *mysqlTransformer) EnterCreateTrigger(ctx *mysql.CreateTriggerContext) {
-	schemaName, triggerName := NormalizeMySQLTriggerName(ctx.TriggerName())
+	_, triggerName := NormalizeMySQLTriggerName(ctx.TriggerName())
 	if t.ignoreCaseSensitive {
 		triggerName = strings.ToLower(triggerName)
 	}
-	if schemaName != "" {
-		if schema, ok := t.db.schemas[schemaName]; !ok {
-			t.db.schemas[schemaName] = &schemaDef{
-				name: schemaName,
-			}
-		} else if schema.name != schemaName {
-			t.err = errors.New("multiple schema names found: " + schema.name + ", " + schemaName)
-			return
-		}
-	}
 
-	t.db.schemas[schemaName].triggers[triggerName] = &triggerDef{
-		ctx:        ctx,
-		name:       triggerName,
-		schemaName: schemaName,
+	t.db.schemas[""].triggers[triggerName] = &triggerDef{
+		ctx:  ctx,
+		name: triggerName,
 	}
 }
 
 // EnterCreateFunction is called when production createFunction is entered.
 func (t *mysqlTransformer) EnterCreateFunction(ctx *mysql.CreateFunctionContext) {
-	databaseName, functionName := NormalizeMySQLFunctionName(ctx.FunctionName())
+	_, functionName := NormalizeMySQLFunctionName(ctx.FunctionName())
 	if t.ignoreCaseSensitive {
 		functionName = strings.ToLower(functionName)
 	}
-	if databaseName != "" {
-		if t.db.name == "" {
-			t.db.name = databaseName
-		} else if t.db.name != databaseName {
-			t.err = errors.New("multiple database names found: " + t.db.name + ", " + databaseName)
-			return
-		}
-	}
 
 	t.db.schemas[""].functions[functionName] = &functionDef{
-		ctx:    ctx,
-		name:   functionName,
-		dbName: t.db.name,
+		ctx:  ctx,
+		name: functionName,
 	}
 }
 
 // EnterCreateProcedure is called when production createProcedure is entered.
 func (t *mysqlTransformer) EnterCreateProcedure(ctx *mysql.CreateProcedureContext) {
-	databaseName, procedureName := NormalizeMySQLProcedureName(ctx.ProcedureName())
+	_, procedureName := NormalizeMySQLProcedureName(ctx.ProcedureName())
 	if t.ignoreCaseSensitive {
 		procedureName = strings.ToLower(procedureName)
 	}
-	if databaseName != "" {
-		if t.db.name == "" {
-			t.db.name = databaseName
-		} else if t.db.name != databaseName {
-			t.err = errors.New("multiple database names found: " + t.db.name + ", " + databaseName)
-			return
-		}
-	}
 
 	t.db.schemas[""].procedures[procedureName] = &procedureDef{
-		ctx:    ctx,
-		name:   procedureName,
-		dbName: t.db.name,
+		ctx:  ctx,
+		name: procedureName,
 	}
 }
