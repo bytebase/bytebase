@@ -1753,8 +1753,12 @@ func isMemberOfProject(userUID int, policy *store.IAMPolicyMessage) bool {
 
 func canCreateOrUpdateIssue(ctx context.Context, s *store.Store, requestProjectID string) (bool, error) {
 	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	role := ctx.Value(common.RoleContextKey).(api.Role)
-	if isOwnerOrDBA(role) {
+	user, err := s.GetUserByID(ctx, principalID)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get user %d", principalID)
+	}
+
+	if isOwnerOrDBA(user.Role) {
 		return true, nil
 	}
 
