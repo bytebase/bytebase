@@ -25,11 +25,12 @@ interface EnvironmentSelectOption extends SelectOption {
 
 const props = withDefaults(
   defineProps<{
-    environment: string | undefined;
+    environment?: string | undefined;
     includeArchived?: boolean;
     filter?: (environment: Environment, index: number) => boolean;
   }>(),
   {
+    environment: undefined,
     includeArchived: false,
     filter: () => true,
   }

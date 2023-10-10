@@ -13,7 +13,6 @@ export * from "./table";
 export * from "./types";
 export * from "./util";
 export * from "./label";
-export * from "./deployment";
 export * from "./string";
 export * from "./tab";
 export * from "./task";

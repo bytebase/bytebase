@@ -1,4 +1,4 @@
-import { capitalize, orderBy, uniq } from "lodash-es";
+import { orderBy, uniq } from "lodash-es";
 import { useEnvironmentV1Store } from "@/store";
 import { ComposedDatabase } from "@/types";
 import {
@@ -141,10 +141,6 @@ export const displayLabelKey = (key: string) => {
     return "Environment ID";
   }
 
-  if (key.startsWith("bb.")) {
-    const word = key.split("bb.")[1];
-    return capitalize(word);
-  }
   return key;
 };
 

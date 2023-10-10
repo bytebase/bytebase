@@ -31,7 +31,7 @@ interface InstanceSelectOption extends SelectOption {
 
 const props = withDefaults(
   defineProps<{
-    instance: string | undefined;
+    instance?: string | undefined;
     environment?: string;
     allowedEngineList?: readonly Engine[];
     includeAll?: boolean;
@@ -40,6 +40,7 @@ const props = withDefaults(
     filter?: (instance: ComposedInstance, index: number) => boolean;
   }>(),
   {
+    instance: undefined,
     environment: undefined,
     allowedEngineList: () => supportedEngineV1List(),
     includeAll: false,
