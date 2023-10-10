@@ -389,11 +389,10 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 		if err != nil {
 			return nil, err
 		}
-		metadataString := string(metadataBytes)
 		if v.Labels != nil && len(v.Labels) == 0 {
-			set, args = append(set, fmt.Sprintf("metadata = metadata || $%d || $%d", len(args)+1, len(args)+2)), append(args, metadataString, `{"labels": {}}`)
+			set, args = append(set, fmt.Sprintf("metadata = metadata || $%d || $%d", len(args)+1, len(args)+2)), append(args, metadataBytes, `{"labels": {}}`)
 		} else {
-			set, args = append(set, fmt.Sprintf("metadata = metadata || $%d", len(args)+1)), append(args, metadataString)
+			set, args = append(set, fmt.Sprintf("metadata = metadata || $%d", len(args)+1)), append(args, metadataBytes)
 		}
 	}
 	args = append(args, instance.UID, patch.DatabaseName)
