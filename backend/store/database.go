@@ -385,13 +385,16 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 		set, args = append(set, fmt.Sprintf("service_name = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.MetadataUpsert; v != nil {
-		// We will skip writing the system label, environment.
-		delete(v.Labels, api.EnvironmentLabelKey)
-		metadataString, err := protojson.Marshal(v)
+		metadataBytes, err := protojson.Marshal(v)
 		if err != nil {
 			return nil, err
 		}
-		set, args = append(set, fmt.Sprintf("metadata = $%d", len(args)+1)), append(args, metadataString)
+		metadataString := string(metadataBytes)
+		if v.Labels != nil && len(v.Labels) == 0 {
+			set, args = append(set, fmt.Sprintf("metadata = metadata || $%d || $%d", len(args)+1, len(args)+2)), append(args, metadataString, `{"labels": {}}`)
+		} else {
+			set, args = append(set, fmt.Sprintf("metadata = metadata || $%d", len(args)+1)), append(args, metadataString)
+		}
 	}
 	args = append(args, instance.UID, patch.DatabaseName)
 
