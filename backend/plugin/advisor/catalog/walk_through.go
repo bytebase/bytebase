@@ -209,7 +209,8 @@ func (e *WalkThroughError) Error() string {
 func (d *DatabaseState) WalkThrough(stmt string) error {
 	switch d.dbType {
 	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-		return d.mysqlWalkThrough(stmt)
+		err := d.mysqlWalkThrough(stmt)
+		return err
 	case storepb.Engine_POSTGRES:
 		if err := d.pgWalkThrough(stmt); err != nil {
 			if d.ctx.CheckIntegrity {

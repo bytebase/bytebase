@@ -23,12 +23,21 @@ type FinderContext struct {
 
 	// EngineType is the engine type for database engine.
 	EngineType storepb.Engine
+
+	// Ignore case sensitive is the policy for identifier name comparison case-sensitive.
+	// It has different behavior for different database engine.
+	// MySQL:
+	// This controls the following identifier comparisons:
+	// Database, Table
+	IgnoreCaseSensitive bool
 }
 
 // Copy returns the deep copy.
 func (ctx *FinderContext) Copy() *FinderContext {
 	return &FinderContext{
-		CheckIntegrity: ctx.CheckIntegrity,
+		CheckIntegrity:      ctx.CheckIntegrity,
+		EngineType:          ctx.EngineType,
+		IgnoreCaseSensitive: ctx.IgnoreCaseSensitive,
 	}
 }
 
