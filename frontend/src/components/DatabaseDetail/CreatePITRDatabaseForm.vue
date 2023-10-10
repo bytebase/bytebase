@@ -33,23 +33,7 @@
         </template>
       </i18n-t>
     </span>
-    <DatabaseNameTemplateTips
-      v-if="isDbNameTemplateMode"
-      :project="project"
-      :name="state.context.databaseName"
-      :labels="state.context.labels"
-    />
   </div>
-
-  <!-- Providing more dropdowns for required labels as if they are normal required props of DB -->
-  <DatabaseLabelForm
-    v-if="isTenantProject"
-    ref="labelForm"
-    :project="project"
-    :labels="state.context.labels"
-    filter="required"
-  />
-
   <div class="space-y-2">
     <label class="textlabel">
       {{ $t("common.environment") }}
@@ -77,14 +61,6 @@
       @select-instance-id="(id: number) => (state.context.instanceId = String(id))"
     />
   </div>
-
-  <!-- Providing other dropdowns for optional labels as if they are normal optional props of DB -->
-  <DatabaseLabelForm
-    v-if="isTenantProject"
-    :project="project"
-    :labels="state.context.labels"
-    filter="optional"
-  />
 
   <div class="space-y-2">
     <label class="textlabel w-full flex gap-1">
@@ -125,26 +101,9 @@
 
 <script lang="ts" setup>
 import { cloneDeep, isEmpty } from "lodash-es";
-import {
-  computed,
-  onBeforeMount,
-  PropType,
-  reactive,
-  ref,
-  toRef,
-  watch,
-} from "vue";
-import {
-  DatabaseLabelForm,
-  DatabaseNameTemplateTips,
-  useDBNameTemplateInputState,
-} from "@/components/CreateDatabasePrepForm";
+import { computed, onBeforeMount, PropType, reactive, watch } from "vue";
 import { isPITRAvailableOnInstanceV1 } from "@/plugins/pitr";
-import {
-  useDBSchemaV1Store,
-  useProjectV1ByUID,
-  useInstanceV1Store,
-} from "@/store";
+import { useDBSchemaV1Store, useInstanceV1Store } from "@/store";
 import {
   ComposedInstance,
   ComposedDatabase,
@@ -152,7 +111,6 @@ import {
   defaultCollationOfEngineV1,
 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import { TenantMode } from "@/types/proto/v1/project_service";
 import { CreatePITRDatabaseContext } from "./utils";
 
 interface LocalState {
@@ -209,23 +167,8 @@ const state = reactive<LocalState>({
   context: extractLocalContextFromProps(),
 });
 
-const { project } = useProjectV1ByUID(computed(() => state.context.projectId));
-
 const isReservedName = computed(() => {
   return state.context.databaseName.toLowerCase() == "bytebase";
-});
-
-const isTenantProject = computed((): boolean => {
-  return project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED;
-});
-
-// reference to <DatabaseLabelForm /> to call validate()
-const labelForm = ref<InstanceType<typeof DatabaseLabelForm> | null>(null);
-
-const isDbNameTemplateMode = computed((): boolean => {
-  if (project.value.tenantMode !== TenantMode.TENANT_MODE_ENABLED) return false;
-  // true if dbNameTemplate is not empty
-  return !!project.value.dbNameTemplate;
 });
 
 const selectedInstance = computed(() => {
@@ -235,11 +178,6 @@ const selectedInstance = computed(() => {
 const instanceFilter = (instance: ComposedInstance): boolean => {
   return isPITRAvailableOnInstanceV1(instance);
 };
-
-useDBNameTemplateInputState(project, {
-  databaseName: toRef(state.context, "databaseName"),
-  labels: toRef(state.context, "labels"),
-});
 
 // Sync values from props when changes.
 watch([() => props.database, () => props.context], () => {
@@ -259,15 +197,9 @@ watch(
 );
 
 const validate = (): boolean => {
-  // If we are not in template mode, none of labels are required
-  // So we just treat this case as 'yes, valid'
-  const isLabelValid = isDbNameTemplateMode.value
-    ? labelForm.value?.validate()
-    : true;
   return (
     !isEmpty(state.context.databaseName) &&
     !isReservedName.value &&
-    !!isLabelValid &&
     !!state.context.projectId &&
     !!state.context.environmentId &&
     !!state.context.instanceId
