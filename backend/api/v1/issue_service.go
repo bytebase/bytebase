@@ -115,7 +115,8 @@ func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesR
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	var projectResourceID *string
+
+	var projectIDs *[]string
 	if projectID != "-" {
 		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 			ResourceID: &projectID,
@@ -126,7 +127,7 @@ func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesR
 		if project == nil {
 			return nil, status.Errorf(codes.NotFound, "project not found for id: %v", projectID)
 		}
-		projectResourceID = &project.ResourceID
+		projectIDs = &[]string{project.ResourceID}
 	}
 
 	limit := int(request.PageSize)
@@ -147,9 +148,9 @@ func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesR
 	limitPlusOne := limit + 1
 
 	issueFind := &store.FindIssueMessage{
-		ProjectResourceID: projectResourceID,
-		Limit:             &limitPlusOne,
-		Offset:            &offset,
+		ProjectIDs: projectIDs,
+		Limit:      &limitPlusOne,
+		Offset:     &offset,
 	}
 
 	filters, err := parseFilter(request.Filter)
@@ -247,9 +248,9 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	var projectResourceID *string
+	var projectIDs *[]string
 	if projectID != "-" {
-		projectResourceID = &projectID
+		projectIDs = &[]string{projectID}
 	}
 
 	limit := int(request.PageSize)
@@ -270,10 +271,10 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 	limitPlusOne := limit + 1
 
 	issueFind := &store.FindIssueMessage{
-		ProjectResourceID: projectResourceID,
-		Query:             &request.Query,
-		Limit:             &limitPlusOne,
-		Offset:            &offset,
+		ProjectIDs: projectIDs,
+		Query:      &request.Query,
+		Limit:      &limitPlusOne,
+		Offset:     &offset,
 	}
 
 	filters, err := parseFilter(request.Filter)
