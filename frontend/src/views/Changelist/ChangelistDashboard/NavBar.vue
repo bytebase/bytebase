@@ -4,8 +4,12 @@
       <ProjectSelect v-model:project="projectUID" :include-all="true" />
     </div>
     <div class="flex items-center justify-end gap-x-2">
-      <SearchBox v-model:value="filter.keyword" />
+      <SearchBox
+        v-model:value="filter.keyword"
+        :placeholder="$t('common.filter-by-name')"
+      />
       <NButton type="primary" @click="showCreatePanel = true">
+        <heroicons-solid:plus class="w-4 h-auto mr-0.5" />
         {{ $t("changelist.new") }}
       </NButton>
     </div>
