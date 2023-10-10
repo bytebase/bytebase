@@ -177,7 +177,7 @@ func (d *DatabaseState) pgDropTable(tableDef *ast.TableDef, ifExists bool, _ ast
 		return err
 	}
 
-	table, err := schema.getTable(tableDef.Name)
+	table, err := schema.pgGetTable(tableDef.Name)
 	if err != nil {
 		if ifExists {
 			return nil
@@ -283,7 +283,7 @@ func (d *DatabaseState) pgAlterTable(node *ast.AlterTableStmt) *WalkThroughError
 	if err != nil {
 		return err
 	}
-	table, err := schema.getTable(node.Table.Name)
+	table, err := schema.pgGetTable(node.Table.Name)
 	if err != nil {
 		return err
 	}
@@ -1027,7 +1027,7 @@ func (d *DatabaseState) getSchema(schemaName string) (*SchemaState, *WalkThrough
 	return schema, nil
 }
 
-func (s *SchemaState) getTable(tableName string) (*TableState, *WalkThroughError) {
+func (s *SchemaState) pgGetTable(tableName string) (*TableState, *WalkThroughError) {
 	table, exists := s.tableSet[tableName]
 	if !exists {
 		return nil, &WalkThroughError{
