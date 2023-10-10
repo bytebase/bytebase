@@ -5,7 +5,7 @@ export const applyCustomTheme = (theme: string) => {
   const rootElement = document.documentElement;
   if (theme === "lixiang") {
     rootElement.style.setProperty("--color-accent", "#00665f");
-    rootElement.style.setProperty("--color-accent-disabled", "#ecf3f3");
+    rootElement.style.setProperty("--color-accent-disabled", "#b8c3c3");
     rootElement.style.setProperty("--color-accent-hover", "#00554f");
   }
 };
