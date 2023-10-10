@@ -134,7 +134,7 @@ export function filterDatabaseByKeyword(
   if (
     columns.includes("tenant") &&
     db.labels
-      .find((label) => label.key === "bb.tenant")
+      .find((label) => label.key === "tenant")
       ?.value.toLowerCase()
       .includes(keyword)
   ) {

@@ -131,7 +131,7 @@ const useExecuteSQL = () => {
         const matched = batchQueryContext.selectedLabels.find((labelString) => {
           // Filter out the environment label.
           const keys = Object.keys(database.labels).filter((key) => {
-            return key !== "bb.environment";
+            return key !== "environment";
           });
           return keys
             .map((key) => {
