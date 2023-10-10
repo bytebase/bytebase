@@ -44,7 +44,7 @@
             </i18n-t>
           </NTooltip>
           <button
-            v-if="allowAdmin"
+            v-if="hasSensitiveDataPermission"
             class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer"
             @click.prevent="openSensitiveDrawer(column)"
           >
@@ -56,16 +56,18 @@
         <div class="flex items-center">
           {{ getColumnSemanticType(column.name)?.title }}
           <button
-            v-if="allowAdmin && getColumnSemanticType(column.name)"
+            v-if="
+              hasSensitiveDataPermission && getColumnSemanticType(column.name)
+            "
             class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer"
             @click.prevent="onSemanticTypeRemove(column.name)"
           >
             <heroicons-outline:x class="w-4 h-4" />
           </button>
           <button
-            v-if="allowAdmin"
+            v-if="hasSensitiveDataPermission"
             class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer"
-            @click.prevent="state.pendingUpdateColumn = column.name"
+            @click.prevent="openSemanticTypeDrawer(column)"
           >
             <heroicons-outline:pencil class="w-4 h-4" />
           </button>
@@ -107,6 +109,21 @@
       <BBTableCell class="bb-grid-cell">
         {{ column.userComment }}
       </BBTableCell>
+      <BBTableCell class="bb-grid-cell">
+        <div class="flex items-center space-x-1">
+          <LabelsColumn
+            :labels="getColumnConfig(column.name).labels"
+            :show-count="2"
+          />
+          <button
+            v-if="hasEditLabelsPermission"
+            class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer"
+            @click.prevent="openLabelsDrawer(column)"
+          >
+            <heroicons-outline:pencil class="w-4 h-4" />
+          </button>
+        </div>
+      </BBTableCell>
     </template>
   </BBTable>
 
@@ -118,19 +135,31 @@
   />
 
   <SensitiveColumnDrawer
-    :show="!!state.activeColumn"
+    v-if="state.activeColumn"
+    :show="state.showSensitiveDataDrawer"
     :column="{
       maskData: getColumnMasking(state.activeColumn ?? {} as ColumnMetadata),
       database: props.database,
     }"
-    @dismiss="state.activeColumn = undefined"
+    @dismiss="state.showSensitiveDataDrawer = false"
   />
 
   <SemanticTypesDrawer
-    :show="!!state.pendingUpdateColumn"
+    v-if="state.activeColumn"
+    :show="state.showSemanticTypesDrawer"
     :semantic-type-list="semanticTypeList"
-    @dismiss="state.pendingUpdateColumn = undefined"
+    @dismiss="state.showSemanticTypesDrawer = false"
     @apply="onSemanticTypeApply($event)"
+  />
+
+  <LabelEditorDrawer
+    v-if="state.activeColumn"
+    :show="state.showLabelsDrawer"
+    :readonly="!hasEditLabelsPermission"
+    :database="database"
+    :labels="getColumnConfig(state.activeColumn.name).labels"
+    @dismiss="state.showLabelsDrawer = false"
+    @apply="onLabelsApply($event)"
   />
 </template>
 
@@ -157,15 +186,22 @@ import {
   TableMetadata,
   TableConfig,
   SchemaConfig,
+  ColumnConfig,
 } from "@/types/proto/v1/database_service";
 import { MaskData } from "@/types/proto/v1/org_policy_service";
 import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
-import { hasWorkspacePermissionV1, isDev } from "@/utils";
+import {
+  hasWorkspacePermissionV1,
+  hasPermissionInProjectV1,
+  isDev,
+} from "@/utils";
 
 type LocalState = {
   showFeatureModal: boolean;
   activeColumn?: ColumnMetadata;
-  pendingUpdateColumn?: string;
+  showSensitiveDataDrawer: boolean;
+  showSemanticTypesDrawer: boolean;
+  showLabelsDrawer: boolean;
 };
 
 const props = defineProps({
@@ -201,6 +237,9 @@ const props = defineProps({
 const { t } = useI18n();
 const state = reactive<LocalState>({
   showFeatureModal: false,
+  showSensitiveDataDrawer: false,
+  showSemanticTypesDrawer: false,
+  showLabelsDrawer: false,
 });
 const engine = computed(() => {
   return props.database.instanceEntity.engine;
@@ -255,14 +294,16 @@ const tableConfig = computed(() => {
 });
 
 const getColumnConfig = (columnName: string) => {
-  return tableConfig.value.columnConfigs.find(
-    (config) => config.name === columnName
+  return (
+    tableConfig.value.columnConfigs.find(
+      (config) => config.name === columnName
+    ) ?? ColumnConfig.fromPartial({})
   );
 };
 
 const getColumnSemanticType = (columnName: string) => {
   const config = getColumnConfig(columnName);
-  if (!config || !config.semanticTypeId) {
+  if (!config.semanticTypeId) {
     return;
   }
   return semanticTypeList.value.find(
@@ -270,43 +311,54 @@ const getColumnSemanticType = (columnName: string) => {
   );
 };
 
-const onSemanticTypeApply = async (semanticTypeId: string) => {
-  const column = state.pendingUpdateColumn;
+const onLabelsApply = async (labels: { [key: string]: string }) => {
+  const column = state.activeColumn;
   if (!column) {
     return;
   }
   try {
-    await updateSemanticType(column, semanticTypeId);
+    await updateColumnConfig(column.name, { labels });
   } finally {
-    state.pendingUpdateColumn = undefined;
+    state.showLabelsDrawer = false;
+  }
+};
+
+const onSemanticTypeApply = async (semanticTypeId: string) => {
+  const column = state.activeColumn;
+  if (!column) {
+    return;
+  }
+  try {
+    await updateColumnConfig(column.name, { semanticTypeId });
+  } finally {
+    state.showSemanticTypesDrawer = false;
   }
 };
 
 const onSemanticTypeRemove = async (column: string) => {
-  await updateSemanticType(column, "");
+  await updateColumnConfig(column, { semanticTypeId: "" });
 };
 
-const updateSemanticType = async (column: string, semanticTypeId: string) => {
+const updateColumnConfig = async (
+  column: string,
+  config: Partial<ColumnConfig>
+) => {
   const index = tableConfig.value.columnConfigs.findIndex(
     (config) => config.name === column
   );
-  if (index < 0 && !semanticTypeId) {
-    return;
-  }
 
   const pendingUpdateTableConfig = cloneDeep(tableConfig.value);
   if (index < 0) {
-    if (!semanticTypeId) {
-      return;
-    }
-    pendingUpdateTableConfig.columnConfigs.push({
-      name: column,
-      semanticTypeId,
-    });
+    pendingUpdateTableConfig.columnConfigs.push(
+      ColumnConfig.fromPartial({
+        name: column,
+        ...config,
+      })
+    );
   } else {
     pendingUpdateTableConfig.columnConfigs[index] = {
-      name: column,
-      semanticTypeId,
+      ...pendingUpdateTableConfig.columnConfigs[index],
+      ...config,
     };
   }
 
@@ -364,7 +416,7 @@ const showClassificationColumn = computed(() => {
 });
 
 const currentUserV1 = useCurrentUserV1();
-const allowAdmin = computed(() => {
+const hasSensitiveDataPermission = computed(() => {
   if (
     hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-sensitive-data",
@@ -378,6 +430,21 @@ const allowAdmin = computed(() => {
 
   // False otherwise
   return false;
+});
+
+const hasEditLabelsPermission = computed(() => {
+  const project = props.database.projectEntity;
+  return (
+    hasWorkspacePermissionV1(
+      "bb.permission.workspace.manage-label",
+      currentUserV1.value.userRole
+    ) ||
+    hasPermissionInProjectV1(
+      project.iamPolicy,
+      currentUserV1.value,
+      "bb.permission.project.manage-general"
+    )
+  );
 });
 
 const NORMAL_COLUMN_LIST = computed(() => {
@@ -402,6 +469,9 @@ const NORMAL_COLUMN_LIST = computed(() => {
     },
     {
       title: t("database.comment"),
+    },
+    {
+      title: t("common.labels"),
     },
   ];
   if (showSensitiveColumn.value) {
@@ -441,6 +511,9 @@ const POSTGRES_COLUMN_LIST = computed(() => {
     {
       title: t("database.comment"),
     },
+    {
+      title: t("common.labels"),
+    },
   ];
   if (showSensitiveColumn.value) {
     if (isDev()) {
@@ -474,6 +547,9 @@ const CLICKHOUSE_SNOWFLAKE_COLUMN_LIST = computed((): BBTableColumn[] => [
   },
   {
     title: t("database.comment"),
+  },
+  {
+    title: t("common.labels"),
   },
 ]);
 
@@ -519,6 +595,22 @@ const openSensitiveDrawer = (column: ColumnMetadata) => {
     return;
   }
 
+  state.showSensitiveDataDrawer = true;
+  state.activeColumn = column;
+};
+
+const openSemanticTypeDrawer = (column: ColumnMetadata) => {
+  if (!hasSensitiveDataFeature.value || instanceMissingLicense.value) {
+    state.showFeatureModal = true;
+    return;
+  }
+
+  state.showSemanticTypesDrawer = true;
+  state.activeColumn = column;
+};
+
+const openLabelsDrawer = (column: ColumnMetadata) => {
+  state.showLabelsDrawer = true;
   state.activeColumn = column;
 };
 
