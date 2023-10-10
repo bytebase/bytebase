@@ -213,7 +213,7 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, projectUID,
 		instanceUID,
 		projectUID,
 		create.DatabaseName,
-		create.SyncState,
+		api.OK,
 		0,             /* last_successful_sync_ts */
 		"",            /* schema_version */
 		secretsString, /* secrets */
@@ -307,7 +307,7 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 		project.UID,
 		environmentUID,
 		create.DatabaseName,
-		api.OK,
+		create.SyncState,
 		create.SuccessfulSyncTimeTs,
 		storedVersion,
 		secretsString,
