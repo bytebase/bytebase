@@ -266,10 +266,19 @@ func (driver *Driver) getNonSystemDatabaseList(ctx context.Context) ([]string, e
 // isAtlasUnauthorizedError returns true if the error is an Atlas unauthorized error.
 func isAtlasUnauthorizedError(err error) bool {
 	commandError, ok := err.(mongo.CommandError)
-	if ok {
-		return commandError.Name == "AtlasError" && commandError.Code == 8000 && strings.Contains(commandError.Message, "Unauthorized")
+	if !ok {
+		return strings.Contains(err.Error(), "AtlasError: Unauthorized")
 	}
-	return strings.Contains(err.Error(), "AtlasError: Unauthorized")
+	// Atlas M0/M2/M5 shared cluster does not support usersInfo command.
+	if commandError.Name == "AtlasError" && commandError.Code == 8000 && strings.Contains(commandError.Message, "Unauthorized") {
+		return true
+	}
+	// M10/M20/M30 returns the following error.
+	if commandError.Name == "Unauthorized" && commandError.Code == 13 {
+		return true
+	}
+
+	return false
 }
 
 func convertEmptyInterfaceToInt64(value any) (int64, error) {
