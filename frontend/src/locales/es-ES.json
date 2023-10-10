@@ -2058,7 +2058,8 @@
       "database-labels": "Etiquetas de {database}",
       "database-has-no-label": "{database} no tiene etiquetas",
       "description": "Consulta por lotes bases de datos adicionales con los mismos valores de etiqueta."
-    }
+    },
+    "executing-query": "Ejecutando consulta"
   },
   "schema-editor": {
     "self": "Editor de esquema",
