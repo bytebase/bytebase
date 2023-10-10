@@ -2023,6 +2023,7 @@ func convertDatabaseConfig(config *storepb.DatabaseConfig) []*v1pb.SchemaConfig 
 				t.ColumnConfigs = append(t.ColumnConfigs, &v1pb.ColumnConfig{
 					Name:           column.Name,
 					SemanticTypeId: column.SemanticTypeId,
+					Labels:         column.Labels,
 				})
 			}
 			s.TableConfigs = append(s.TableConfigs, t)
@@ -2048,6 +2049,7 @@ func convertV1DatabaseConfig(databaseName string, schemaConfig []*v1pb.SchemaCon
 				t.ColumnConfigs = append(t.ColumnConfigs, &storepb.ColumnConfig{
 					Name:           column.Name,
 					SemanticTypeId: column.SemanticTypeId,
+					Labels:         column.Labels,
 				})
 			}
 			s.TableConfigs = append(s.TableConfigs, t)
