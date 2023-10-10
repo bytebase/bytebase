@@ -4,7 +4,7 @@
       <LabelListEditor
         ref="labelListEditorRef"
         v-model:kv-list="state.kvList"
-        :readonly="readonly || !allowAdmin"
+        :readonly="readonly"
         :show-errors="dirty"
         class="max-w-[30rem]"
       />
@@ -15,7 +15,7 @@
               {{ $t("common.cancel") }}
             </NButton>
             <NButton
-              v-if="allowAdmin"
+              v-if="!readonly"
               :disabled="!allowSave"
               type="primary"
               @click="$emit('apply', convertKVListToLabels(state.kvList))"
@@ -32,15 +32,13 @@
 <script lang="ts" setup>
 import { cloneDeep, isEqual } from "lodash-es";
 import { computed, reactive, watch, ref } from "vue";
+import LabelListEditor from "@/components/Label/LabelListEditor.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { useCurrentUserV1 } from "@/store";
 import { type ComposedDatabase } from "@/types";
 import {
   PRESET_LABEL_KEYS,
   convertKVListToLabels,
   convertLabelsToKVList,
-  hasPermissionInProjectV1,
-  hasWorkspacePermissionV1,
 } from "@/utils";
 
 const props = defineProps<{
@@ -65,26 +63,10 @@ type LocalState = {
   kvList: { key: string; value: string }[];
 };
 
-const me = useCurrentUserV1();
 const state = reactive<LocalState>({
   kvList: [],
 });
 const labelListEditorRef = ref<InstanceType<typeof LabelListEditor>>();
-
-const allowAdmin = computed(() => {
-  const project = props.database.projectEntity;
-  return (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-label",
-      me.value.userRole
-    ) ||
-    hasPermissionInProjectV1(
-      project.iamPolicy,
-      me.value,
-      "bb.permission.project.manage-general"
-    )
-  );
-});
 
 const convert = () => {
   const labels = cloneDeep(props.labels);

@@ -116,6 +116,7 @@
             :show-count="2"
           />
           <button
+            v-if="hasEditLabelsPermission"
             class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer"
             @click.prevent="openLabelsDrawer(column)"
           >
@@ -154,7 +155,7 @@
   <LabelEditorDrawer
     v-if="state.activeColumn"
     :show="state.showLabelsDrawer"
-    :readonly="false"
+    :readonly="!hasEditLabelsPermission"
     :database="database"
     :labels="getColumnConfig(state.activeColumn.name).labels"
     @dismiss="state.showLabelsDrawer = false"
@@ -189,7 +190,11 @@ import {
 } from "@/types/proto/v1/database_service";
 import { MaskData } from "@/types/proto/v1/org_policy_service";
 import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
-import { hasWorkspacePermissionV1, isDev } from "@/utils";
+import {
+  hasWorkspacePermissionV1,
+  hasPermissionInProjectV1,
+  isDev,
+} from "@/utils";
 
 type LocalState = {
   showFeatureModal: boolean;
@@ -298,7 +303,7 @@ const getColumnConfig = (columnName: string) => {
 
 const getColumnSemanticType = (columnName: string) => {
   const config = getColumnConfig(columnName);
-  if (!config || !config.semanticTypeId) {
+  if (!config.semanticTypeId) {
     return;
   }
   return semanticTypeList.value.find(
@@ -425,6 +430,21 @@ const hasSensitiveDataPermission = computed(() => {
 
   // False otherwise
   return false;
+});
+
+const hasEditLabelsPermission = computed(() => {
+  const project = props.database.projectEntity;
+  return (
+    hasWorkspacePermissionV1(
+      "bb.permission.workspace.manage-label",
+      currentUserV1.value.userRole
+    ) ||
+    hasPermissionInProjectV1(
+      project.iamPolicy,
+      currentUserV1.value,
+      "bb.permission.project.manage-general"
+    )
+  );
 });
 
 const NORMAL_COLUMN_LIST = computed(() => {
