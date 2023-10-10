@@ -43,7 +43,7 @@ func NewFinder(database *storepb.DatabaseSchemaMetadata, ctx *FinderContext) *Fi
 	return &Finder{Origin: newDatabaseState(database, ctx), Final: newDatabaseState(database, ctx)}
 }
 
-// NewEmptyFinder creates a finder with empty databse.
+// NewEmptyFinder creates a finder with empty database.
 func NewEmptyFinder(ctx *FinderContext) *Finder {
 	return &Finder{Origin: newDatabaseState(&storepb.DatabaseSchemaMetadata{}, ctx), Final: newDatabaseState(&storepb.DatabaseSchemaMetadata{}, ctx)}
 }
