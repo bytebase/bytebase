@@ -77,6 +77,7 @@ import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
 import {
   databaseNamePrefix,
   getProjectAndSchemaDesignSheetId,
+  projectNamePrefix,
 } from "@/store/modules/v1/common";
 import { UNKNOWN_ID } from "@/types";
 import {
@@ -132,9 +133,13 @@ const state = reactive<LocalState>({
 });
 const refreshId = ref<string>("");
 
-onMounted(() => {
-  if (route.query.projectId) {
-    state.projectId = route.query.projectId as string;
+onMounted(async () => {
+  const projectName = route.params.projectName;
+  if (projectName !== "-") {
+    const project = await projectStore.getOrFetchProjectByName(
+      `${projectNamePrefix}${projectName}`
+    );
+    state.projectId = project.uid;
   }
 });
 
@@ -272,13 +277,14 @@ const handleConfirm = async () => {
   });
 
   // Go to branch detail page after created.
-  const [, sheetId] = getProjectAndSchemaDesignSheetId(
+  const [projectName, sheetId] = getProjectAndSchemaDesignSheetId(
     createdSchemaDesign.name
   );
   router.replace({
     name: "workspace.branch.detail",
     params: {
-      branchSlug: `${createdSchemaDesign.title}-${sheetId}`,
+      projectName,
+      branchName: sheetId,
     },
   });
 };
