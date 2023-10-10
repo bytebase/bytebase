@@ -99,6 +99,17 @@ func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueReque
 			return nil, err
 		}
 	}
+
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	role := ctx.Value(common.RoleContextKey).(api.Role)
+	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &issue.Project.ResourceID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get project iam policy, error: %v", err)
+	}
+	if !isOwnerOrDBA(role) && !isMemberOfProject(principalID, policy) {
+		return nil, status.Error(codes.PermissionDenied, "permission denied")
+	}
+
 	issueV1, err := convertToIssue(ctx, s.store, issue)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
@@ -1696,4 +1707,15 @@ func convertGrantRequest(ctx context.Context, s *store.Store, v *v1pb.GrantReque
 		Condition:  v.Condition,
 		Expiration: v.Expiration,
 	}, nil
+}
+
+func isMemberOfProject(userUID int, policy *store.IAMPolicyMessage) bool {
+	for _, binding := range policy.Bindings {
+		for _, member := range binding.Members {
+			if member.ID == userUID {
+				return true
+			}
+		}
+	}
+	return false
 }
