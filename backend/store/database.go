@@ -213,7 +213,7 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, projectUID,
 		instanceUID,
 		projectUID,
 		create.DatabaseName,
-		api.OK,
+		create.SyncState,
 		0,             /* last_successful_sync_ts */
 		"",            /* schema_version */
 		secretsString, /* secrets */
