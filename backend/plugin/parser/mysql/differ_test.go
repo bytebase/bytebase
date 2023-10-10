@@ -31,15 +31,15 @@ func runDifferTest(t *testing.T, file string, record bool) {
 	for i, test := range tests {
 		diff, err := SchemaDiff(test.OldSchema, test.NewSchema, false /* ignoreCaseSensitive */)
 		require.NoError(t, err)
+		if len(diff) > 0 {
+			require.Equal(t, disableFKCheckStmt, diff[:len(disableFKCheckStmt)])
+			diff = diff[len(disableFKCheckStmt):]
+			require.Equal(t, enableFKCheckStmt, diff[len(diff)-len(enableFKCheckStmt):])
+			diff = diff[:len(diff)-len(enableFKCheckStmt)]
+		}
 		if record {
 			tests[i].Diff = diff
 		} else {
-			if len(diff) > 0 {
-				require.Equal(t, disableFKCheckStmt, diff[:len(disableFKCheckStmt)])
-				diff = diff[len(disableFKCheckStmt):]
-				require.Equal(t, enableFKCheckStmt, diff[len(diff)-len(enableFKCheckStmt):])
-				diff = diff[:len(diff)-len(enableFKCheckStmt)]
-			}
 			require.Equal(t, test.Diff, diff, test.OldSchema)
 		}
 	}

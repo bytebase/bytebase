@@ -1213,7 +1213,7 @@ func sortAndWriteDropColumnList(buf *strings.Builder, columns []*columnDef) erro
 }
 
 func writeDropColumnStatement(buf *strings.Builder, column *columnDef) error {
-	if _, err := buf.WriteString(fmt.Sprintf("ALTER TABLE `%s` DROP COLUMN IF EXISTS `%s`;\n\n", column.tableName, column.name)); err != nil {
+	if _, err := buf.WriteString(fmt.Sprintf("ALTER TABLE `%s` DROP COLUMN `%s`;\n\n", column.tableName, column.name)); err != nil {
 		return err
 	}
 	return nil
@@ -1230,7 +1230,7 @@ func sortAndWriteAddColumnList(buf *strings.Builder, columns []*columnDef) error
 }
 
 func writeAddColumnStatement(buf *strings.Builder, column *columnDef) error {
-	if _, err := buf.WriteString(fmt.Sprintf("ALTER TABLE `%s` ADD COLUMN IF NOT EXISTS ", column.tableName)); err != nil {
+	if _, err := buf.WriteString(fmt.Sprintf("ALTER TABLE `%s` ADD COLUMN ", column.tableName)); err != nil {
 		return err
 	}
 	if _, err := buf.WriteString(column.ctx.GetParser().GetTokenStream().GetTextFromRuleContext(column.ctx.GetRuleContext())); err != nil {
@@ -1352,7 +1352,7 @@ func writeModifyColumnStatement(buf *strings.Builder, column *columnDef) error {
 		return err
 	}
 
-	if _, err := buf.WriteString("MODIFY COLUMN IF EXISTS "); err != nil {
+	if _, err := buf.WriteString("MODIFY COLUMN "); err != nil {
 		return err
 	}
 

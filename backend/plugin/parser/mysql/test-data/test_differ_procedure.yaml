@@ -1,5 +1,4 @@
-- oldSchema: |
-
+- oldSchema: ""
   newSchema: |
     DELIMITER ;;
     CREATE PROCEDURE citycount (IN country CHAR(3), OUT cities INT)
@@ -25,8 +24,7 @@
          WHERE CountryCode = country;
        END;;
     DELIMITER ;
-  newSchema: |
-
+  newSchema: ""
   diff: |+
     DROP PROCEDURE IF EXISTS `citycount`;
 

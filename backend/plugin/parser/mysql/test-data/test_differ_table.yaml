@@ -1,4 +1,3 @@
-# add new table
 - oldSchema: |
     CREATE TABLE `t1` (`id` INT);
   newSchema: |
@@ -133,7 +132,6 @@
       PRIMARY KEY(`id`)
     );
   diff: ""
-
 - oldSchema: |
     CREATE TABLE `book` (
       `id` INT,
@@ -155,5 +153,5 @@
 
     DROP TABLE IF EXISTS `price`;
 
-    ALTER TABLE `book` DROP COLUMN IF EXISTS `price`;
+    ALTER TABLE `book` DROP COLUMN `price`;
 

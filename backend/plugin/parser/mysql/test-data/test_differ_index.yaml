@@ -39,20 +39,8 @@
 
     CREATE INDEX `idx3` ON `t1` (`a`, `b`) USING btree;
 
-- oldSchema: |
-    CREATE TABLE `t1` (
-      `a` char(20),
-      `b` char(20)  
-    );
-    CREATE INDEX `i1` ON `t1`(`a`) USING BTREE;
-    CREATE INDEX `i2` ON `t1`(`a`) USING BTREE;
-  newSchema: |
-    CREATE TABLE `t1` (
-      `a` char(20),
-      `b` char(20)  
-    );
-    CREATE INDEX `i1` ON `t1`(`a`) USING BTREE;
-    CREATE INDEX `i2` ON `t1`(`b`) USING BTREE;
+- oldSchema: "CREATE TABLE `t1` (\n  `a` char(20),\n  `b` char(20)  \n);\nCREATE INDEX `i1` ON `t1`(`a`) USING BTREE;\nCREATE INDEX `i2` ON `t1`(`a`) USING BTREE;\n"
+  newSchema: "CREATE TABLE `t1` (\n  `a` char(20),\n  `b` char(20)  \n);\nCREATE INDEX `i1` ON `t1`(`a`) USING BTREE;\nCREATE INDEX `i2` ON `t1`(`b`) USING BTREE;\n"
   diff: |+
     DROP INDEX IF EXISTS `i2` ON `t1`;
 
@@ -90,7 +78,6 @@
   newSchema: |
     CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL, FULLTEXT INDEX `book_idx` (`name`) KEY_BLOCK_SIZE=30 COMMENT 'no difference');
   diff: ""
-
 - oldSchema: |
     CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY (`name`) KEY_BLOCK_SIZE=30);
   newSchema: |
@@ -114,7 +101,6 @@
   newSchema: |
     CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY (`name`) KEY_BLOCK_SIZE=30 COMMENT 'no difference');
   diff: ""
-
 - oldSchema: |
     CREATE TABLE `book` (`id` INT, `name` VARCHAR(50) NOT NULL, INDEX `book_idx` USING BTREE (`id`, `name`) COMMENT 'comment_a');
   newSchema: |
@@ -156,13 +142,11 @@
   newSchema: |
     CREATE TABLE `book` (`id` INT, `name` VARCHAR(50) NOT NULL, INDEX `book_idx` USING BTREE (`id`, `name`) COMMENT 'comment_a');
   diff: ""
-
 - oldSchema: |
     CREATE TABLE `book` (`id` INT, `name` VARCHAR(50) NOT NULL, INDEX `book_idx` USING BTREE ((`id` + 1)) COMMENT 'comment_a');
   newSchema: |
     CREATE TABLE `book` (`id` INT, `name` VARCHAR(50) NOT NULL, INDEX `book_idx` USING BTREE ((`id` + 1)) COMMENT 'comment_a');
   diff: ""
-
 - oldSchema: |
     CREATE TABLE `book` (`id` INT, `name` VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY (`id`, `name`) COMMENT 'comment_a');
   newSchema: |
@@ -195,7 +179,6 @@
   newSchema: |
     CREATE TABLE `book` (`id` INT, `name` VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY (`id`, `name`) COMMENT 'comment_a');
   diff: ""
-
 - oldSchema: |
     CREATE TABLE `book` (`id` INT, `name` VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY ((`id` + 1)) COMMENT 'comment_b');
   newSchema: |

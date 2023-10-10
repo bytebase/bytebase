@@ -1,5 +1,4 @@
-- oldSchema: |
-
+- oldSchema: ""
   newSchema: |
     DELIMITER ;;
     CREATE FUNCTION no_of_years(date1 date) RETURNS int DETERMINISTIC
@@ -28,8 +27,7 @@
         RETURN year(date2)-year(date1);
       END;;
     DELIMITER ;
-  newSchema: |
-
+  newSchema: ""
   diff: |+
     DROP FUNCTION IF EXISTS `no_of_years`;
 

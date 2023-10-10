@@ -1,5 +1,4 @@
-- oldSchema: |
-
+- oldSchema: ""
   newSchema: |
     DELIMITER ;;
     CREATE TRIGGER ins_sum BEFORE INSERT ON account
@@ -16,8 +15,7 @@
     CREATE TRIGGER ins_sum BEFORE INSERT ON account
       FOR EACH ROW SET @sum = @sum + NEW.amount;;
     DELIMITER ;
-  newSchema: |
-
+  newSchema: ""
   diff: |+
     DROP TRIGGER IF EXISTS `ins_sum`;
 
@@ -30,7 +28,7 @@
   diff: |+
     DROP TRIGGER IF EXISTS `ins_sum`;
 
-    ALTER TABLE `account` ADD COLUMN IF NOT EXISTS `price` INT AFTER `amount`;
+    ALTER TABLE `account` ADD COLUMN `price` INT AFTER `amount`;
 
     DELIMITER ;;
     CREATE DEFINER=`root`@`%` TRIGGER `ins_sum` BEFORE INSERT ON account FOR EACH ROW SET @sum = sum + NEW.amount * NEW.price;;

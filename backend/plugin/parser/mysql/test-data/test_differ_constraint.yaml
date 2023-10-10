@@ -13,7 +13,6 @@
       constraint check_a check(a > 1)
     )
   diff: ""
-
 - oldSchema: |
     create table `t1` (
       `a` INT,
@@ -48,7 +47,6 @@
       CONSTRAINT `t1_chk_1` CHECK((`a`> 0))
     );
   diff: ""
-
 - oldSchema: |
     create table `book` (
       `id` INT,
@@ -208,7 +206,7 @@
   diff: |+
     ALTER TABLE `employee` DROP FOREIGN KEY IF EXISTS `employee_ibfk_1`;
 
-    ALTER TABLE `employee` ADD COLUMN IF NOT EXISTS `manager_id` INT DEFAULT NULL AFTER `leader_id`;
+    ALTER TABLE `employee` ADD COLUMN `manager_id` INT DEFAULT NULL AFTER `leader_id`;
 
     ALTER TABLE employee ADD CONSTRAINT `employee_ibfk_1` FOREIGN KEY (`manager`) REFERENCES `employee`(`id`);
 
@@ -223,7 +221,6 @@
       CONSTRAINT `t1_chk_1` CHECK((`a`> 0))
     );
   diff: ""
-
 - oldSchema: |
     create table `book` (
       `id` INT,
