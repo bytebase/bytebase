@@ -35,11 +35,7 @@ import { computed, reactive, watch, ref } from "vue";
 import LabelListEditor from "@/components/Label/LabelListEditor.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { type ComposedDatabase } from "@/types";
-import {
-  PRESET_LABEL_KEYS,
-  convertKVListToLabels,
-  convertLabelsToKVList,
-} from "@/utils";
+import { convertKVListToLabels, convertLabelsToKVList } from "@/utils";
 
 const props = defineProps<{
   show: boolean;
@@ -70,12 +66,6 @@ const labelListEditorRef = ref<InstanceType<typeof LabelListEditor>>();
 
 const convert = () => {
   const labels = cloneDeep(props.labels);
-  // Pre-fill preset label keys with empty values
-  for (const key of PRESET_LABEL_KEYS) {
-    if (!(key in labels)) {
-      labels[key] = "";
-    }
-  }
   return convertLabelsToKVList(labels, true /* sort */);
 };
 
