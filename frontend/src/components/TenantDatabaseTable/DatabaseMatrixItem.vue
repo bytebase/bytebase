@@ -68,7 +68,7 @@
           class="flex items-center space-y-1"
         >
           <span class="text-left">
-            {{ displayLabelKey(label.key) }}
+            {{ displayDeploymentMatchSelectorKey(label.key) }}
           </span>
           <span
             class="flex-1 h-px mx-2 border-b border-control-border border-dashed"
@@ -83,14 +83,14 @@
 <script lang="ts" setup>
 import { NPopover } from "naive-ui";
 import { computed, PropType } from "vue";
+import { ComposedDatabase } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import { ComposedDatabase } from "../../types";
 import {
   convertLabelsToKVList,
   databaseV1Slug,
-  isReservedLabel,
-  displayLabelKey,
-} from "../../utils";
+  isVirtualLabelKey,
+  displayDeploymentMatchSelectorKey,
+} from "@/utils";
 import { InstanceV1Name } from "../v2";
 
 const props = defineProps({
@@ -102,7 +102,7 @@ const props = defineProps({
 
 const displayLabelList = computed(() => {
   return convertLabelsToKVList(props.database.labels, true /* sort */)
-    .filter((kv) => !isReservedLabel(kv.key))
+    .filter((kv) => !isVirtualLabelKey(kv.key))
     .filter((kv) => kv.value !== "");
 });
 

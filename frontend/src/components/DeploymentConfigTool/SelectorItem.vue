@@ -40,8 +40,8 @@ import {
   OperatorType,
 } from "@/types/proto/v1/project_service";
 import {
-  displayLabelKey,
-  getAvailableLabelKeyList,
+  displayDeploymentMatchSelectorKey,
+  getAvailableDeploymentConfigMatchSelectorKeyList,
   getLabelValuesFromDatabaseV1List,
 } from "@/utils";
 import LabelSelect from "./LabelSelect.vue";
@@ -71,10 +71,9 @@ defineEmits<{
 }>();
 
 const keys = computed(() => {
-  return getAvailableLabelKeyList(
+  return getAvailableDeploymentConfigMatchSelectorKeyList(
     props.databaseList,
-    true /* withReserved */,
-    true /* withPreset */,
+    true /* withVirtualLabelKeys */,
     true /* sort */
   );
 });
@@ -95,7 +94,7 @@ const resetValues = () => {
 };
 
 const labelKeyModifier = (key: string | number) => {
-  return displayLabelKey(key as string);
+  return displayDeploymentMatchSelectorKey(key as string);
 };
 
 const operatorToText = (op: string | number) => {

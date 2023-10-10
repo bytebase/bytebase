@@ -42,7 +42,7 @@
 </template>
 
 <script setup lang="ts">
-import { cloneDeep, isEqual } from "lodash-es";
+import { isEqual } from "lodash-es";
 import { NButton } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -55,7 +55,6 @@ import {
 import { type ComposedDatabase } from "@/types";
 import { Database } from "@/types/proto/v1/database_service";
 import {
-  PRESET_LABEL_KEYS,
   convertKVListToLabels,
   convertLabelsToKVList,
   hasPermissionInProjectV1,
@@ -97,14 +96,7 @@ const allowAdmin = computed(() => {
 });
 
 const convert = () => {
-  const labels = cloneDeep(props.database.labels);
-  // Pre-fill preset label keys with empty values
-  for (const key of PRESET_LABEL_KEYS) {
-    if (!(key in labels)) {
-      labels[key] = "";
-    }
-  }
-  return convertLabelsToKVList(labels, true /* sort */);
+  return convertLabelsToKVList(props.database.labels, true /* sort */);
 };
 
 const dirty = computed(() => {
