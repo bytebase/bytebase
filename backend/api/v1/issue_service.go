@@ -122,23 +122,41 @@ func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesR
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("page size must be non-negative: %d", request.PageSize))
 	}
 
-	projectID, err := common.GetProjectID(request.Parent)
+	requestProjectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	var projectIDs *[]string
-	if projectID != "-" {
-		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-			ResourceID: &projectID,
-		})
+	projectIDs, err := func() (*[]string, error) {
+		principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+		role := ctx.Value(common.RoleContextKey).(api.Role)
+
+		if isOwnerOrDBA(role) {
+			if requestProjectID == "-" {
+				return nil, nil
+			}
+			return &[]string{requestProjectID}, nil
+		}
+
+		userBelongingProjectIDs, err := getUserBelongingProjects(ctx, s.store, principalID)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get project, error: %v", err)
+			return nil, errors.Wrapf(err, "failed to get user belonging projects")
 		}
-		if project == nil {
-			return nil, status.Errorf(codes.NotFound, "project not found for id: %v", projectID)
+
+		if requestProjectID == "-" {
+			var lst []string
+			for id := range userBelongingProjectIDs {
+				lst = append(lst, id)
+			}
+			return &lst, nil
 		}
-		projectIDs = &[]string{project.ResourceID}
+		if !userBelongingProjectIDs[requestProjectID] {
+			return &[]string{}, nil
+		}
+		return &[]string{requestProjectID}, nil
+	}()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get project id filter, error: %v", err)
 	}
 
 	limit := int(request.PageSize)
