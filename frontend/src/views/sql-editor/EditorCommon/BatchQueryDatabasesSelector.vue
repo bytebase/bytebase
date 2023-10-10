@@ -52,7 +52,20 @@
               closable
               @close="() => handleUncheckDatabaseRow(databaseName)"
             >
-              {{ databaseStore.getDatabaseByName(databaseName).databaseName }}
+              <div class="flex flex-row justify-center items-center">
+                <InstanceV1EngineIcon
+                  :instance="
+                    databaseStore.getDatabaseByName(databaseName).instanceEntity
+                  "
+                />
+                <span class="text-sm text-control-light mx-1">
+                  {{
+                    databaseStore.getDatabaseByName(databaseName)
+                      .effectiveEnvironmentEntity.title
+                  }}
+                </span>
+                {{ databaseStore.getDatabaseByName(databaseName).databaseName }}
+              </div>
             </NTag>
           </div>
           <NDivider class="!my-3" />
@@ -93,7 +106,9 @@ import {
   NInput,
 } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
+import { h } from "vue";
 import { useI18n } from "vue-i18n";
+import { InstanceV1EngineIcon } from "@/components/v2";
 import {
   hasFeature,
   useCurrentUserIamPolicy,
@@ -182,7 +197,16 @@ const dataTableColumns = computed(() => {
       title: t("common.instance"),
       key: "instance",
       render(row: DatabaseDataTableRow) {
-        return row.instance.title;
+        return h(
+          "div",
+          { class: "flex flex-row justify-start items-center gap-2" },
+          [
+            h(InstanceV1EngineIcon, {
+              instance: row.instance,
+            }),
+            h("span", {}, [row.instance.environmentEntity.title]),
+          ]
+        );
       },
     },
   ];
