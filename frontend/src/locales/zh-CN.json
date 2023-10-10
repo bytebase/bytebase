@@ -3014,6 +3014,7 @@
     "save-draft": "保存草稿",
     "merge-branch": "合并分支",
     "delete-branch-after-merged": "合并后删除分支",
+    "raw-sql-preview": "原始 SQL 预览",
     "diff-editor": {
       "self": "Diff 编辑器",
       "resolve": "解决",
