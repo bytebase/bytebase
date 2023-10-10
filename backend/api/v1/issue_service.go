@@ -127,34 +127,7 @@ func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesR
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	projectIDs, err := func() (*[]string, error) {
-		principalID := ctx.Value(common.PrincipalIDContextKey).(int)
-		role := ctx.Value(common.RoleContextKey).(api.Role)
-
-		if isOwnerOrDBA(role) {
-			if requestProjectID == "-" {
-				return nil, nil
-			}
-			return &[]string{requestProjectID}, nil
-		}
-
-		userBelongingProjectIDs, err := getUserBelongingProjects(ctx, s.store, principalID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get user belonging projects")
-		}
-
-		if requestProjectID == "-" {
-			var lst []string
-			for id := range userBelongingProjectIDs {
-				lst = append(lst, id)
-			}
-			return &lst, nil
-		}
-		if !userBelongingProjectIDs[requestProjectID] {
-			return &[]string{}, nil
-		}
-		return &[]string{requestProjectID}, nil
-	}()
+	projectIDs, err := getProjectIDsFilter(ctx, s.store, requestProjectID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get project id filter, error: %v", err)
 	}
@@ -278,34 +251,7 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	projectIDs, err := func() (*[]string, error) {
-		principalID := ctx.Value(common.PrincipalIDContextKey).(int)
-		role := ctx.Value(common.RoleContextKey).(api.Role)
-
-		if isOwnerOrDBA(role) {
-			if requestProjectID == "-" {
-				return nil, nil
-			}
-			return &[]string{requestProjectID}, nil
-		}
-
-		userBelongingProjectIDs, err := getUserBelongingProjects(ctx, s.store, principalID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get user belonging projects")
-		}
-
-		if requestProjectID == "-" {
-			var lst []string
-			for id := range userBelongingProjectIDs {
-				lst = append(lst, id)
-			}
-			return &lst, nil
-		}
-		if !userBelongingProjectIDs[requestProjectID] {
-			return &[]string{}, nil
-		}
-		return &[]string{requestProjectID}, nil
-	}()
+	projectIDs, err := getProjectIDsFilter(ctx, s.store, requestProjectID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get project id filter, error: %v", err)
 	}
@@ -1783,4 +1729,33 @@ func isMemberOfProject(userUID int, policy *store.IAMPolicyMessage) bool {
 		}
 	}
 	return false
+}
+
+func getProjectIDsFilter(ctx context.Context, s *store.Store, requestProjectID string) (*[]string, error) {
+	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	role := ctx.Value(common.RoleContextKey).(api.Role)
+
+	if isOwnerOrDBA(role) {
+		if requestProjectID == "-" {
+			return nil, nil
+		}
+		return &[]string{requestProjectID}, nil
+	}
+
+	userBelongingProjectIDs, err := getUserBelongingProjects(ctx, s, principalID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get user belonging projects")
+	}
+
+	if requestProjectID == "-" {
+		var lst []string
+		for id := range userBelongingProjectIDs {
+			lst = append(lst, id)
+		}
+		return &lst, nil
+	}
+	if !userBelongingProjectIDs[requestProjectID] {
+		return &[]string{}, nil
+	}
+	return &[]string{requestProjectID}, nil
 }
