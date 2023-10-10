@@ -163,7 +163,7 @@ const handleTriggerClick = () => {
 const getFilteredDatabaseLabels = (labels: { [key: string]: string }) => {
   // Filter out the environment label.
   const keys = Object.keys(labels).filter((key) => {
-    return key !== "bb.environment";
+    return key !== "environment";
   });
   return keys.map((key) => {
     return {
@@ -178,7 +178,7 @@ const matchedDatabases = computed(() => {
     return selectedLabelsValue.value.find((labelString) => {
       // Filter out the environment label.
       const keys = Object.keys(db.labels).filter((key) => {
-        return key !== "bb.environment";
+        return key !== "environment";
       });
       return keys
         .map((key) => {

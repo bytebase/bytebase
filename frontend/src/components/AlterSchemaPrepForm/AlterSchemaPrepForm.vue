@@ -453,7 +453,7 @@ const state = reactive<LocalState>({
   selectedDatabaseUidListForEnvironment: new Map<string, string[]>(),
   selectedDatabaseIdListForTenantMode: new Set<string>(),
   deployingTenantDatabaseList: [],
-  label: "bb.environment",
+  label: "environment",
   searchText: "",
   databaseSelectedTab: "DATABASE",
   showSchemaLessDatabaseList: false,

@@ -24,7 +24,7 @@ Labels are used as queryable key-value pair annotations for resources such as da
 The labels applied to a resource have the following requirements:
 - Each resource can have multiple labels, up to a maximum of 4. We start with a low number which can be increased later.
 - Each label must be a structured key-value pair.
-- Keys and values cannot be empty, and have a maximum length of 63 characters. Keys should only have alphanumeric characters ([a-z0-9A-Z]) with dashes (-), underscores (_), dots (.). Dots are used for namespace prefixes, e.g. “bb.location”. Namespace prefix is required.
+- Keys and values cannot be empty, and have a maximum length of 63 characters. Keys should only have alphanumeric characters ([a-z0-9A-Z]) with dashes (-), underscores (_), dots (.). Dots are used for namespace prefixes, e.g. “location”. Namespace prefix is required.
 - The key portion of a label must be unique for a resource. However, the same key or key:value label can be applied to different resources so that labels are not unique identifiers for resources.
 - Labels follow the CRUD resource model.
 - Labels keys are defined at workspace level by workspace owners. Project owners are only allowed to use these predefined label keys. We define it at workspace level for convenience and can be expanded later when we have more hierarchical use cases later (environment, project, etc). Note, we don't allow users to define label keys at all at first but provide several predefined label keys. Initially, workspace owners also need to pre-define label values before values are used as database labels, because many labels such as locations need tight controls by DBAs and this can simplify some of the user journeys without re-typing values every single time.
@@ -329,11 +329,11 @@ We have some reserved/built-in keys to simplify the onboarding and be consistent
 
 | Name           | Description                                                        |
 | -------------- | ------------------------------------------------------------------ |
-| bb.location    | The location of a database such as region, zone, datacenter names. |
-| bb.tenant      | The tenant name of a customer.                                     |
-| bb.environment | The environment name mapped from instance environment.            |
+| location    | The location of a database such as region, zone, datacenter names. |
+| tenant      | The tenant name of a customer.                                     |
+| environment | The environment name mapped from instance environment.            |
 
-Note, bb.environment labels are reserved labels mapped from database instances' environments. This label is immutable and always returned from database label listing. It must be present and its value must match exactly with instance environment on setting the database labels. Since tenants are identified by labels in the deployment config, we need an environment labels to identify tenants from different environment in a schema update deployment. If we expose the environment label concept in the deployment config, it should look consistent in the label API.
+Note, environment labels are reserved labels mapped from database instances' environments. This label is immutable and always returned from database label listing. It must be present and its value must match exactly with instance environment on setting the database labels. Since tenants are identified by labels in the deployment config, we need an environment labels to identify tenants from different environment in a schema update deployment. If we expose the environment label concept in the deployment config, it should look consistent in the label API.
 
 
 ### Octopus Tenant SaaS Deployment

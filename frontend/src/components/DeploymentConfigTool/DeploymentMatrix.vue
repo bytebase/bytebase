@@ -60,7 +60,7 @@ const props = withDefaults(
 );
 
 const state = reactive({
-  label: "bb.environment" as LabelKeyType,
+  label: "environment" as LabelKeyType,
   keyword: "",
 });
 

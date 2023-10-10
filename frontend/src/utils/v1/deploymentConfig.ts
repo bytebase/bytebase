@@ -37,7 +37,7 @@ export const validateDeploymentSpecV1 = (
   if (rules.length === 0) {
     return "deployment-config.error.at-least-one-selector";
   }
-  const envRule = rules.find((rule) => rule.key === "bb.environment");
+  const envRule = rules.find((rule) => rule.key === "environment");
   if (!envRule || envRule.operator !== OperatorType.OPERATOR_TYPE_IN) {
     return "deployment-config.error.env-in-selector-required";
   }

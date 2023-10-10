@@ -46,7 +46,7 @@ const mode = computed((): ViewMode => {
   const matches = name.match(regex);
   if (!matches) return "template-mismatch";
   const parsedTenant = matches.groups?.["TENANT"];
-  const tenant = labels["bb.tenant"] ?? "";
+  const tenant = labels["tenant"] ?? "";
   if (parsedTenant && parsedTenant !== tenant) {
     return "value-mismatch";
   }
