@@ -102,7 +102,7 @@
     </div>
 
     <FeatureModal
-      :open="state.requiredFeature"
+      :open="!!state.requiredFeature"
       :feature="state.requiredFeature"
       @cancel="state.requiredFeature = undefined"
     />

@@ -2,11 +2,6 @@
   <div class="max-w-3xl mx-auto space-y-4">
     <div class="divide-y divide-block-border space-y-6">
       <ProjectGeneralSettingPanel :project="project" :allow-edit="allowEdit" />
-      <ProjectDBNameTemplateSettingPanel
-        :project="project"
-        :allow-edit="allowEdit"
-        class="pt-4"
-      />
     </div>
     <ProjectArchiveRestoreButton :project="project" />
   </div>
@@ -16,7 +11,6 @@
 import { PropType } from "vue";
 import { ComposedProject } from "@/types";
 import ProjectArchiveRestoreButton from "./Project/ProjectArchiveRestoreButton.vue";
-import ProjectDBNameTemplateSettingPanel from "./Project/ProjectDBNameTemplateSettingPanel.vue";
 import ProjectGeneralSettingPanel from "./Project/ProjectGeneralSettingPanel.vue";
 
 defineProps({

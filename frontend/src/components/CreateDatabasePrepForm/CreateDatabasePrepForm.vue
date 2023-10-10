@@ -34,12 +34,6 @@
             </template>
           </i18n-t>
         </span>
-        <DatabaseNameTemplateTips
-          v-if="isDbNameTemplateMode"
-          :project="project"
-          :name="state.databaseName"
-          :labels="state.labels"
-        />
       </div>
 
       <div v-if="selectedInstance.engine === Engine.MONGODB" class="w-full">
@@ -67,15 +61,6 @@
           class="mt-1 w-full"
         />
       </div>
-
-      <!-- Providing more dropdowns for required labels as if they are normal required props of DB -->
-      <DatabaseLabelForm
-        v-if="isTenantProject"
-        ref="labelForm"
-        :project="project"
-        :labels="state.labels"
-        filter="required"
-      />
 
       <div class="w-full">
         <label for="environment" class="textlabel">
@@ -128,15 +113,6 @@
           @update:instance-role="selectInstanceRole"
         />
       </div>
-
-      <!-- Providing other dropdowns for optional labels as if they are normal optional props of DB -->
-      <DatabaseLabelForm
-        v-if="isTenantProject"
-        class="w-full"
-        :project="project"
-        :labels="state.labels"
-        filter="optional"
-      />
 
       <template v-if="showCollationAndCharacterSet">
         <div class="w-full">
@@ -208,7 +184,7 @@
 import { isEmpty } from "lodash-es";
 import { NInput } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
-import { computed, reactive, PropType, ref, toRef } from "vue";
+import { computed, reactive, PropType } from "vue";
 import { useRouter } from "vue-router";
 import InstanceRoleSelect from "@/components/InstanceRoleSelect.vue";
 import MemberSelect from "@/components/MemberSelect.vue";
@@ -255,11 +231,6 @@ import {
   instanceV1HasCreateDatabase,
 } from "@/utils";
 import { trySetDefaultAssigneeByEnvironmentAndDeploymentType } from "../IssueV1/logic/initialize/assignee";
-import {
-  DatabaseLabelForm,
-  DatabaseNameTemplateTips,
-  useDBNameTemplateInputState,
-} from "./";
 
 interface LocalState {
   projectId?: string;
@@ -348,31 +319,11 @@ const isTenantProject = computed((): boolean => {
   return project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED;
 });
 
-// reference to <DatabaseLabelForm /> to call validate()
-const labelForm = ref<InstanceType<typeof DatabaseLabelForm> | null>(null);
-
-const isDbNameTemplateMode = computed((): boolean => {
-  if (parseInt(project.value.uid, 10) === UNKNOWN_ID) return false;
-
-  if (project.value.tenantMode !== TenantMode.TENANT_MODE_ENABLED) {
-    return false;
-  }
-
-  // true if dbNameTemplate is not empty
-  return !!project.value.dbNameTemplate;
-});
-
 const allowCreate = computed(() => {
-  // If we are not in template mode, none of labels are required
-  // So we just treat this case as 'yes, valid'
-  const isLabelValid = isDbNameTemplateMode.value
-    ? labelForm.value?.validate()
-    : true;
   return (
     !isEmpty(state.databaseName) &&
     validDatabaseOwnerName.value &&
     !isReservedName.value &&
-    isLabelValid &&
     state.projectId &&
     state.environmentId &&
     state.instanceId &&
@@ -415,11 +366,6 @@ const validDatabaseOwnerName = computed((): boolean => {
   }
 
   return state.instanceRole !== undefined;
-});
-
-useDBNameTemplateInputState(project, {
-  databaseName: toRef(state, "databaseName"),
-  labels: toRef(state, "labels"),
 });
 
 const selectProject = (projectId: string | undefined) => {
@@ -498,9 +444,9 @@ const createV1 = async () => {
     owner,
     backup: "",
   };
-  const spec: Plan_Spec = {
+  const spec = Plan_Spec.fromPartial({
     id: uuidv4(),
-  };
+  });
   specs.push(spec);
 
   const issueCreate = Issue.fromJSON({
