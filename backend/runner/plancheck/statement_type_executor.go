@@ -13,7 +13,6 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
@@ -349,7 +348,7 @@ func (e *StatementTypeExecutor) mysqlSDLTypeCheck(ctx context.Context, newSchema
 
 	var results []*storepb.PlanCheckRunResult_Result
 	for _, stmt := range list {
-		if mysqlparser.IsTiDBUnsupportDDLStmt(stmt.Text) {
+		if tidbparser.IsTiDBUnsupportDDLStmt(stmt.Text) {
 			continue
 		}
 		nodeList, _, err := tidbp.New().Parse(stmt.Text, "", "")

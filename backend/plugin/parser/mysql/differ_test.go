@@ -1,106 +1,100 @@
 package mysql
 
 import (
+	"io"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 )
 
-func TestExtractUnsupportObjNameAndType(t *testing.T) {
-	tests := []struct {
-		stmt     string
-		wantTp   objectType
-		wantName string
-	}{
-		{
-			stmt:     "CREATE DEFINER=`root`@`%` TRIGGER xcytestT \t\nBEFORE \n INSERT ON xcytest FOR EACH ROW\n BEGIN\n\tSET new.code=REPLACE(UUID(), '-', ''); \nEND ;;",
-			wantTp:   trigger,
-			wantName: "xcytestT",
-		},
-		{
-			stmt:     "CREATE DEFINER=`root`@`%` TRIGGER `ins_sum` BEFORE INSERT ON `account` FOR EACH SET @sum=@sum + NEW.price;;",
-			wantTp:   trigger,
-			wantName: "ins_sum",
-		},
-		{
-			stmt:     "create trigger `ins_sum` BEFORE INSERT ON `account` FOR EACH SET @sum=@sum + NEW.price;;",
-			wantTp:   trigger,
-			wantName: "ins_sum",
-		},
-		{
-			stmt: "CREATE DEFINER=`root`@`%` PROCEDURE `citycount` (IN `country` CHAR(3), OUT `cities` INT)\n" +
-				"BEGIN\n" +
-				"	SELECT COUNT(*) INTO cities FROM world.city\n" +
-				"WHERE CountryCode = country;\n" +
-				"END//",
-			wantTp:   procedure,
-			wantName: "citycount",
-		},
-		{
-			stmt: "create procedure `citycount` (IN `country` CHAR(3), OUT `cities` INT)\n" +
-				"BEGIN\n" +
-				"	SELECT COUNT(*) INTO cities FROM world.city\n" +
-				"WHERE CountryCode = country;\n" +
-				"END//",
-			wantTp:   procedure,
-			wantName: "citycount",
-		},
-		{
-			stmt: "CREATE DEFINER=`root`@`%` FUNCTION `hello` (s CHAR(20)) RETURNS CHAR(50) DETERMINISTIC\n" +
-				"RETURN CONCAT('Hello, ',s,'!');",
-			wantTp:   function,
-			wantName: "hello",
-		},
-		{
-			stmt: "create function `hello` (s CHAR(20)) RETURNS CHAR(50) DETERMINISTIC\n" +
-				"RETURN CONCAT('Hello, ',s,'!');",
-			wantTp:   function,
-			wantName: "hello",
-		},
-		{
-			stmt: "CREATE DEFINER=`root`@`%` EVENT `test_event_01` ON SCHEDULE AT CURRENT_TIMESTAMP \n" +
-				"DO\n" +
-				"	INSERT INTO message(message, created_at)\n" +
-				"	VALUES('test event', NOW());",
-			wantTp:   event,
-			wantName: "test_event_01",
-		},
-		{
-			stmt: "create event `test_event_01` ON SCHEDULE AT CURRENT_TIMESTAMP \n" +
-				"DO\n" +
-				"	INSERT INTO message(message, created_at)\n" +
-				"	VALUES('test event', NOW());",
-			wantTp:   event,
-			wantName: "test_event_01",
-		},
-	}
-
-	a := require.New(t)
-	for _, test := range tests {
-		gotName, gotTp, err := extractUnsupportedObjectNameAndType(test.stmt)
-		a.NoError(err)
-		a.Equal(test.wantTp, gotTp)
-		a.Equal(test.wantName, gotName)
-	}
+type DifferTestData struct {
+	OldSchema string `yaml:"oldSchema"`
+	NewSchema string `yaml:"newSchema"`
+	Diff      string `yal:"diff"`
 }
 
-type testCase struct {
-	old  string
-	new  string
-	want string
-}
+func runDifferTest(t *testing.T, file string, record bool) {
+	var tests []DifferTestData
+	filepath := filepath.Join("test-data", file)
+	yamlFile, err := os.Open(filepath)
+	require.NoError(t, err)
+	defer yamlFile.Close()
 
-func testDiffWithoutDisableForeignKeyCheck(t *testing.T, testCases []testCase) {
-	a := require.New(t)
-	for _, test := range testCases {
-		out, err := SchemaDiff(test.old, test.new, true /* ignoreCaseSensitive */)
-		a.NoError(err)
-		if len(out) > 0 {
-			a.Equal(disableFKCheckStmt, out[:len(disableFKCheckStmt)])
-			out = out[len(disableFKCheckStmt):]
-			a.Equal(enableFKCheckStmt, out[len(out)-len(enableFKCheckStmt):])
-			out = out[:len(out)-len(enableFKCheckStmt)]
+	byteValue, err := io.ReadAll(yamlFile)
+	require.NoError(t, err)
+	err = yaml.Unmarshal(byteValue, &tests)
+	require.NoError(t, err)
+
+	for i, test := range tests {
+		diff, err := SchemaDiff(test.OldSchema, test.NewSchema, false /* ignoreCaseSensitive */)
+		require.NoError(t, err)
+		if len(diff) > 0 {
+			require.Equal(t, disableFKCheckStmt, diff[:len(disableFKCheckStmt)])
+			diff = diff[len(disableFKCheckStmt):]
+			require.Equal(t, enableFKCheckStmt, diff[len(diff)-len(enableFKCheckStmt):])
+			diff = diff[:len(diff)-len(enableFKCheckStmt)]
 		}
-		a.Equalf(test.want, out, "old: %s\nnew: %s\n", test.old, test.new)
+		if record {
+			tests[i].Diff = diff
+		} else {
+			require.Equal(t, test.Diff, diff, test.OldSchema)
+		}
 	}
+
+	if record {
+		err := yamlFile.Close()
+		require.NoError(t, err)
+		byteValue, err = yaml.Marshal(tests)
+		require.NoError(t, err)
+		err = os.WriteFile(filepath, byteValue, 0644)
+		require.NoError(t, err)
+	}
+}
+
+func TestSchemaDiffTable(t *testing.T) {
+	testFile := "test_differ_table.yaml"
+	runDifferTest(t, testFile, false /* record */)
+}
+
+func TestSchemaDiffColumn(t *testing.T) {
+	testFile := "test_differ_column.yaml"
+	runDifferTest(t, testFile, false /* record */)
+}
+
+func TestSchemaDiffIndex(t *testing.T) {
+	testFile := "test_differ_index.yaml"
+	runDifferTest(t, testFile, false /* record */)
+}
+
+func TestSchemaDiffView(t *testing.T) {
+	testFile := "test_differ_view.yaml"
+	runDifferTest(t, testFile, false /* record */)
+}
+
+func TestSchemaDiffFunction(t *testing.T) {
+	testFile := "test_differ_function.yaml"
+	runDifferTest(t, testFile, false /* record */)
+}
+
+func TestSchemaDiffProcedure(t *testing.T) {
+	testFile := "test_differ_procedure.yaml"
+	runDifferTest(t, testFile, false /* record */)
+}
+
+func TestSchemaDiffEvent(t *testing.T) {
+	testFile := "test_differ_event.yaml"
+	runDifferTest(t, testFile, false /* record */)
+}
+
+func TestSchemaDiffTrigger(t *testing.T) {
+	testFile := "test_differ_trigger.yaml"
+	runDifferTest(t, testFile, false /* record */)
+}
+
+func TestSchemaDiffConstraint(t *testing.T) {
+	testFile := "test_differ_constraint.yaml"
+	runDifferTest(t, testFile, false /* record */)
 }

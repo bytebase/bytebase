@@ -19,9 +19,9 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
+	tidb "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -417,7 +417,7 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, engine storepb.Engine, d
 		if stmt.Empty {
 			continue
 		}
-		if mysqlparser.IsTiDBUnsupportDDLStmt(stmt.Text) {
+		if tidb.IsTiDBUnsupportDDLStmt(stmt.Text) {
 			continue
 		}
 		root, _, err := p.Parse(stmt.Text, charset, collation)
