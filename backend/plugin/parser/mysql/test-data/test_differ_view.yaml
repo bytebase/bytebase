@@ -63,3 +63,23 @@
 
     CREATE OR REPLACE ALGORITHM=UNDEFINED DEFINER=CURRENT_USER SQL SECURITY DEFINER VIEW `a` AS WITH `cte` AS (SELECT `id`, `name` FROM `book`) SELECT `id`, `name` FROM `cte` UNION SELECT `c`, `d` FROM `e`;
 
+- oldSchema: |
+    CREATE TABLE `book1` (`id` INT);
+    CREATE VIEW `book` AS SELECT * FROM `book1`;
+  newSchema: |
+    CREATE TABLE `book2` (`id` INT);
+    CREATE VIEW `book` AS SELECT * FROM `book2`;
+  diff: |+
+    DROP TABLE IF EXISTS `book1`;
+
+    CREATE TABLE IF NOT EXISTS `book2` (`id` INT);
+
+    CREATE OR REPLACE ALGORITHM=UNDEFINED DEFINER=CURRENT_USER SQL SECURITY DEFINER VIEW `book` AS SELECT * FROM `book2`;
+
+- oldSchema: |
+    CREATE VIEW `order_incomes` AS SELECT `order_id`, `customer_name`, SUM((`ordered_quantity` * `product_price`)) AS `total` FROM `order_details` INNER JOIN `orders` USING (`order_id`) INNER JOIN `customers` USING (`customer_name`) GROUP BY `order_id`;
+  newSchema: |
+    CREATE VIEW order_incomes AS SELECT `order_id`, `customer_name`, SUM((`ordered_quantity` * `product_price`)) + 1 AS `total` FROM `order_details` INNER JOIN `orders` USING (`order_id`) INNER JOIN `customers` USING (`customer_name`) GROUP BY `order_id`;
+  diff: |+
+    CREATE OR REPLACE ALGORITHM=UNDEFINED DEFINER=CURRENT_USER SQL SECURITY DEFINER VIEW `order_incomes` AS SELECT `order_id`, `customer_name`, SUM((`ordered_quantity` * `product_price`)) + 1 AS `total` FROM `order_details` INNER JOIN `orders` USING (`order_id`) INNER JOIN `customers` USING (`customer_name`) GROUP BY `order_id`;
+
