@@ -176,9 +176,9 @@
   diff: |+
     ALTER TABLE `employee` DROP FOREIGN KEY `employee_ibfk_1`;
 
-    DROP INDEX IF EXISTS `id_name_idx` ON `department`;
+    DROP INDEX `id_name_idx` ON `department`;
 
-    DROP INDEX IF EXISTS `department_id_name_idx` ON `employee`;
+    DROP INDEX `department_id_name_idx` ON `employee`;
 
     CREATE INDEX `id_idx` ON `department`(`id`);
 

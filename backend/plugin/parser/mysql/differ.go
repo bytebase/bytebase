@@ -1127,7 +1127,7 @@ func sortAndWriteDropIndexConstraintList(buf *strings.Builder, indexes []*indexC
 }
 
 func writeDropIndexConstraintStatement(buf *strings.Builder, index *indexConstraintDef) error {
-	if _, err := buf.WriteString(fmt.Sprintf("DROP INDEX IF EXISTS `%s` ON `%s`;\n\n", index.name, index.tableName)); err != nil {
+	if _, err := buf.WriteString(fmt.Sprintf("DROP INDEX `%s` ON `%s`;\n\n", index.name, index.tableName)); err != nil {
 		return err
 	}
 	return nil

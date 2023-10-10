@@ -51,7 +51,7 @@
   newSchema: |
     CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL, INDEX `book_idx` (`name`) KEY_BLOCK_SIZE=50);
   diff: |+
-    DROP INDEX IF EXISTS `book_idx` ON `book`;
+    DROP INDEX `book_idx` ON `book`;
 
     CREATE INDEX `book_idx` ON `book`(`name`) KEY_BLOCK_SIZE=50;
 
@@ -60,7 +60,7 @@
   newSchema: |
     CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL, INDEX `book_idx` (`name`) COMMENT 'comment_b');
   diff: |+
-    DROP INDEX IF EXISTS `book_idx` ON `book`;
+    DROP INDEX `book_idx` ON `book`;
 
     CREATE INDEX `book_idx` ON `book`(`name`) COMMENT 'comment_b';
 
@@ -69,7 +69,7 @@
   newSchema: |
     CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL, INDEX `book_idx` (`name`) INVISIBLE);
   diff: |+
-    DROP INDEX IF EXISTS `book_idx` ON `book`;
+    DROP INDEX `book_idx` ON `book`;
 
     CREATE INDEX `book_idx` ON `book`(`name`) INVISIBLE;
 
@@ -106,7 +106,7 @@
   newSchema: |
     CREATE TABLE `book` (`id` INT, `name` VARCHAR(50) NOT NULL, INDEX `book_idx` USING BTREE (`id`) COMMENT 'comment_a');
   diff: |+
-    DROP INDEX IF EXISTS `book_idx` ON `book`;
+    DROP INDEX `book_idx` ON `book`;
 
     CREATE INDEX `book_idx` ON `book`(`id`) USING BTREE COMMENT 'comment_a';
 
@@ -115,7 +115,7 @@
   newSchema: |
     CREATE TABLE `book` (`id` INT, `name` VARCHAR(50) NOT NULL, INDEX `book_idx` TYPE BTREE (`id`) COMMENT 'comment_a');
   diff: |+
-    DROP INDEX IF EXISTS `book_idx` ON `book`;
+    DROP INDEX `book_idx` ON `book`;
 
     CREATE INDEX `book_idx` ON `book`(`id`) TYPE BTREE COMMENT 'comment_a';
 
@@ -124,7 +124,7 @@
   newSchema: |
     CREATE TABLE `book` (`id` INT, `name` VARCHAR(50) NOT NULL, INDEX `book_idx` USING BTREE ((`id` + 1)) COMMENT 'comment_a');
   diff: |+
-    DROP INDEX IF EXISTS `book_idx` ON `book`;
+    DROP INDEX `book_idx` ON `book`;
 
     CREATE INDEX `book_idx` ON `book`((`id` + 1)) USING BTREE COMMENT 'comment_a';
 
@@ -133,7 +133,7 @@
   newSchema: |
     CREATE TABLE `book` (`id` INT, `name` VARCHAR(50) NOT NULL, INDEX `book_idx` USING BTREE ((`id` + 2)) COMMENT 'comment_a');
   diff: |+
-    DROP INDEX IF EXISTS `book_idx` ON `book`;
+    DROP INDEX `book_idx` ON `book`;
 
     CREATE INDEX `book_idx` ON `book`((`id` + 2)) USING BTREE COMMENT 'comment_a';
 
