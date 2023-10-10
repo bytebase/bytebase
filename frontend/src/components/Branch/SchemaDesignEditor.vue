@@ -22,7 +22,7 @@
           "
           @click="handleChangeTab('raw-sql-preview')"
         >
-          {{ $t("schema-editor.raw-sql") }}
+          {{ $t("schema-designer.raw-sql-preview") }}
         </button>
       </div>
       <div v-if="!hideSQLCheckButton" class="flex items-center flex-end">
@@ -49,7 +49,7 @@
         class="w-full h-full pt-2 overflow-y-auto"
       >
         <MonacoEditor
-          class="w-full h-full border rounded-lg overflow-clip"
+          class="w-full h-full border rounded-lg overflow-auto"
           data-label="bb-schema-editor-sql-editor"
           :value="rawSQLPreviewState.value"
           :readonly="true"
