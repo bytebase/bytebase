@@ -25,7 +25,6 @@
 
 <script setup lang="ts">
 import { NButton } from "naive-ui";
-import { ProjectV1Name } from "@/components/v2";
 import { useChangelistDetailContext } from "../context";
 import AddChangeButton from "./AddChangeButton.vue";
 import ApplyToDatabaseButton from "./ApplyToDatabaseButton.vue";
@@ -34,7 +33,7 @@ import ReorderButton from "./ReorderButton.vue";
 import TitleEditor from "./TitleEditor.vue";
 import { useReorderChangelist } from "./reorder";
 
-const { project, reorderMode } = useChangelistDetailContext();
+const { reorderMode } = useChangelistDetailContext();
 
 const {
   begin: beginReorder,
