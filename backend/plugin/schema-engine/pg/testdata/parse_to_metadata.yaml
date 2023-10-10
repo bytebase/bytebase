@@ -12,114 +12,115 @@
   metadata:
     name: ""
     schemas:
-    - name: public
-      tables:
-      - name: t
-        columns:
-        - name: c
-          position: 0
-          default: null
-          nullable: true
-          type: integer
-          characterset: ""
-          collation: ""
-          comment: ""
-          classification: ""
-          usercomment: ""
-          effectivemaskinglevel: 0
-        - name: a
-          position: 0
-          default:
-            value: "1"
-          nullable: true
-          type: integer
-          characterset: ""
-          collation: ""
-          comment: this is a comment
-          classification: ""
-          usercomment: ""
-          effectivemaskinglevel: 0
-        - name: b
-          position: 0
-          default:
-            value: '''NULL'''
-          nullable: true
-          type: character varying(20)
-          characterset: ""
-          collation: ""
-          comment: ""
-          classification: ""
-          usercomment: ""
-          effectivemaskinglevel: 0
-        indexes:
-        - name: t_pk
-          expressions:
-          - a
-          - b
-          type: ""
-          unique: true
-          primary: true
-          visible: true
-          comment: ""
-        engine: ""
-        collation: ""
-        rowcount: 0
-        datasize: 0
-        indexsize: 0
-        datafree: 0
-        createoptions: ""
-        comment: ""
-        classification: ""
-        usercomment: ""
-        foreignkeys:
-        - name: t_fk1
-          columns:
-          - a
-          referencedschema: ""
-          referencedtable: t2
-          referencedcolumns:
-          - b
-          ondelete: ""
-          onupdate: ""
-          matchtype: ""
-      - name: t2
-        columns:
-        - name: b
-          position: 0
-          default:
-            value: "NULL"
-          nullable: false
-          type: integer
-          characterset: ""
-          collation: ""
-          comment: ""
-          classification: ""
-          usercomment: ""
-          effectivemaskinglevel: 0
-        indexes:
-        - name: t2_pk
-          expressions:
-          - b
-          type: ""
-          unique: true
-          primary: true
-          visible: true
-          comment: ""
-        engine: ""
-        collation: ""
-        rowcount: 0
-        datasize: 0
-        indexsize: 0
-        datafree: 0
-        createoptions: ""
-        comment: ""
-        classification: ""
-        usercomment: ""
-        foreignkeys: []
-      views: []
-      functions: []
-      streams: []
-      tasks: []
+        - name: public
+          tables:
+            - name: t
+              columns:
+                - name: c
+                  position: 0
+                  default: null
+                  nullable: true
+                  type: integer
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+                  classification: ""
+                  usercomment: ""
+                  effectivemaskinglevel: 0
+                - name: a
+                  position: 0
+                  default:
+                    value: "1"
+                  nullable: true
+                  type: integer
+                  characterset: ""
+                  collation: ""
+                  comment: this is a comment
+                  classification: ""
+                  usercomment: ""
+                  effectivemaskinglevel: 0
+                - name: b
+                  position: 0
+                  default:
+                    value: '''NULL'''
+                  nullable: true
+                  type: character varying(20)
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+                  classification: ""
+                  usercomment: ""
+                  effectivemaskinglevel: 0
+              indexes:
+                - name: t_pk
+                  expressions:
+                    - a
+                    - b
+                  type: ""
+                  unique: true
+                  primary: true
+                  visible: true
+                  comment: ""
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              classification: ""
+              usercomment: ""
+              foreignkeys:
+                - name: t_fk1
+                  columns:
+                    - a
+                  referencedschema: ""
+                  referencedtable: t2
+                  referencedcolumns:
+                    - b
+                  ondelete: ""
+                  onupdate: ""
+                  matchtype: ""
+            - name: t2
+              columns:
+                - name: b
+                  position: 0
+                  default:
+                    value: "NULL"
+                  nullable: false
+                  type: integer
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+                  classification: ""
+                  usercomment: ""
+                  effectivemaskinglevel: 0
+              indexes:
+                - name: t2_pk
+                  expressions:
+                    - b
+                  type: ""
+                  unique: true
+                  primary: true
+                  visible: true
+                  comment: ""
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              classification: ""
+              usercomment: ""
+              foreignkeys: []
+          views: []
+          functions: []
+          streams: []
+          tasks: []
     characterset: ""
     collation: ""
     extensions: []
+    schemaconfigs: []
