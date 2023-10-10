@@ -9,7 +9,6 @@ import {
   useSQLEditorStore,
   useCurrentUserV1,
   useDatabaseV1Store,
-  useCurrentUserIamPolicy,
 } from "@/store";
 import {
   ComposedDatabase,
@@ -31,7 +30,6 @@ const useExecuteSQL = () => {
   const databaseStore = useDatabaseV1Store();
   const tabStore = useTabStore();
   const sqlEditorStore = useSQLEditorStore();
-  const currentUserIamPolicy = useCurrentUserIamPolicy();
 
   const notify = (
     type: BBNotificationStyle,
@@ -110,43 +108,14 @@ const useExecuteSQL = () => {
     if (
       databaseName &&
       batchQueryContext &&
-      batchQueryContext.selectedLabels.length > 0
+      batchQueryContext.selectedDatabaseNames.length > 0
     ) {
-      const databases = useDatabaseV1Store()
-        .databaseListByProject(selectedDatabase.project)
-        // Don't show the currently selected database.
-        .filter((db) => db.uid !== selectedDatabase.uid)
-        // Only show databases with same engine.
-        .filter(
-          (db) =>
-            db.instanceEntity.engine === selectedDatabase.instanceEntity.engine
-        )
-        // Only show databases that the user has permission to query.
-        .filter((db) => currentUserIamPolicy.allowToQueryDatabaseV1(db));
-
-      for (const database of databases) {
+      for (const databaseName of batchQueryContext.selectedDatabaseNames) {
+        const database = databaseStore.getDatabaseByName(databaseName);
         if (database.name === selectedDatabase.name) {
           continue;
         }
-        const matched = batchQueryContext.selectedLabels.find((labelString) => {
-          // Filter out the environment label.
-          const keys = Object.keys(database.labels).filter((key) => {
-            return key !== "environment";
-          });
-          return keys
-            .map((key) => {
-              return {
-                key,
-                value: database.labels[key],
-              };
-            })
-            .find((label) => {
-              return `${label.key}-${label.value}` === labelString;
-            });
-        });
-        if (matched) {
-          batchQueryDatabases.push(database);
-        }
+        batchQueryDatabases.push(database);
       }
     }
 

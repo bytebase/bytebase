@@ -26,7 +26,9 @@ export type TabSheetType =
 export type EditMode = "SQL-EDITOR" | "CHAT-TO-SQL";
 
 export interface BatchQueryContext {
-  selectedLabels: string[];
+  // selectedDatabaseNames is used to store the selected database names.
+  // Format: instances/{instance}/databases/{database}
+  selectedDatabaseNames: string[];
 }
 
 export type QueryContext = {
