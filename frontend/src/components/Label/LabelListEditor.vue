@@ -33,11 +33,7 @@ import { cloneDeep } from "lodash-es";
 import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  validateLabelKey,
-  MAX_LABEL_VALUE_LENGTH,
-  isVirtualLabelKey,
-} from "@/utils";
+import { MAX_LABEL_VALUE_LENGTH, isVirtualLabelKey } from "@/utils";
 import LabelEditorRow from "./LabelEditorRow.vue";
 
 export type KV = { key: string; value: string };
@@ -70,9 +66,6 @@ const errorList = computed(() => {
     } else {
       if (isVirtualLabelKey(key)) {
         errors.key.push(t("label.error.x-is-reserved-key", { key }));
-      }
-      if (!validateLabelKey(key)) {
-        errors.key.push(t("label.error.key-format"));
       }
       if (kvList.filter((kv) => kv.key === key).length > 1) {
         errors.key.push(t("label.error.key-duplicated"));
