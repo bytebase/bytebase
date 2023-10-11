@@ -39,17 +39,16 @@ import {
   isVirtualLabelKey,
 } from "@/utils";
 import LabelEditorRow from "./LabelEditorRow.vue";
-
-export type KV = { key: string; value: string };
+import { Label } from "./types";
 
 const props = defineProps<{
-  kvList: KV[];
+  kvList: Label[];
   readonly: boolean;
   showErrors: boolean;
 }>();
 
 const emit = defineEmits<{
-  (event: "update:kvList", kvList: KV[]): void;
+  (event: "update:kvList", kvList: Label[]): void;
 }>();
 
 const { t } = useI18n();

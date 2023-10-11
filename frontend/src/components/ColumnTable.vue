@@ -156,9 +156,10 @@
     v-if="state.activeColumn"
     :show="state.showLabelsDrawer"
     :readonly="!hasEditLabelsPermission"
-    :database="database"
-    :column="state.activeColumn.name"
-    :labels="getColumnConfig(state.activeColumn.name).labels"
+    :title="
+      $t('db.labels-for-resource', { resource: `'${state.activeColumn.name}'` })
+    "
+    :labels="[getColumnConfig(state.activeColumn.name).labels]"
     @dismiss="state.showLabelsDrawer = false"
     @apply="onLabelsApply($event)"
   />
@@ -312,13 +313,13 @@ const getColumnSemanticType = (columnName: string) => {
   );
 };
 
-const onLabelsApply = async (labels: { [key: string]: string }) => {
+const onLabelsApply = async (labelsList: { [key: string]: string }[]) => {
   const column = state.activeColumn;
   if (!column) {
     return;
   }
   try {
-    await updateColumnConfig(column.name, { labels });
+    await updateColumnConfig(column.name, { labels: labelsList[0] });
   } finally {
     state.showLabelsDrawer = false;
   }
