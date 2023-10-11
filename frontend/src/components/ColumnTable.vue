@@ -52,7 +52,7 @@
           </button>
         </div>
       </BBTableCell>
-      <BBTableCell v-if="showSensitiveColumn && isDev()" class="bb-grid-cell">
+      <BBTableCell v-if="showSemanticTypeColumn" class="bb-grid-cell">
         <div class="flex items-center">
           {{ getColumnSemanticType(column.name)?.title }}
           <button
@@ -74,12 +74,10 @@
         </div>
       </BBTableCell>
       <BBTableCell v-if="showClassificationColumn" class="bb-grid-cell">
-        <div class="flex items-center">
-          <ClassificationLevelBadge
-            :classification="column.classification"
-            :classification-config="classificationConfig"
-          />
-        </div>
+        <ClassificationLevelBadge
+          :classification="column.classification"
+          :classification-config="classificationConfig"
+        />
       </BBTableCell>
       <BBTableCell class="bb-grid-cell">
         {{ column.type }}
@@ -410,10 +408,14 @@ const showSensitiveColumn = computed(() => {
   );
 });
 
+const showSemanticTypeColumn = computed(() => {
+  return showSensitiveColumn.value && isDev();
+});
+
 const showClassificationColumn = computed(() => {
   return (
-    engine.value === Engine.MYSQL ||
-    (engine.value === Engine.POSTGRES && props.classificationConfig)
+    (engine.value === Engine.MYSQL || engine.value === Engine.POSTGRES) &&
+    props.classificationConfig
   );
 });
 
@@ -476,18 +478,18 @@ const NORMAL_COLUMN_LIST = computed(() => {
       title: t("common.labels"),
     },
   ];
+  if (showSemanticTypeColumn.value) {
+    columnList.splice(1, 0, {
+      title: t("settings.sensitive-data.semantic-types.self"),
+    });
+  }
   if (showSensitiveColumn.value) {
-    if (isDev()) {
-      columnList.splice(1, 0, {
-        title: t("settings.sensitive-data.semantic-types.self"),
-      });
-    }
     columnList.splice(1, 0, {
       title: t("settings.sensitive-data.masking-level.self"),
     });
   }
   if (showClassificationColumn.value) {
-    columnList.splice(showSensitiveColumn.value ? 2 : 1, 0, {
+    columnList.splice(showSemanticTypeColumn.value ? 3 : 2, 0, {
       title: t("database.classification.self"),
     });
   }
@@ -517,18 +519,18 @@ const POSTGRES_COLUMN_LIST = computed(() => {
       title: t("common.labels"),
     },
   ];
+  if (showSemanticTypeColumn.value) {
+    columnList.splice(1, 0, {
+      title: t("settings.sensitive-data.semantic-types.self"),
+    });
+  }
   if (showSensitiveColumn.value) {
-    if (isDev()) {
-      columnList.splice(1, 0, {
-        title: t("settings.sensitive-data.semantic-types.self"),
-      });
-    }
     columnList.splice(1, 0, {
       title: t("settings.sensitive-data.masking-level.self"),
     });
   }
   if (showClassificationColumn.value) {
-    columnList.splice(showSensitiveColumn.value ? 2 : 1, 0, {
+    columnList.splice(showSemanticTypeColumn.value ? 3 : 2, 0, {
       title: t("database.classification.self"),
     });
   }
