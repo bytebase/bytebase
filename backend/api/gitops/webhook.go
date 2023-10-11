@@ -999,7 +999,7 @@ func (s *Service) sqlAdviceForFile(
 		if fileInfo.repoInfo.project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
 			advisorMode = advisor.SyntaxModeSDL
 		}
-		catalog, err := s.store.NewCatalog(ctx, database.UID, instance.Engine, advisorMode)
+		catalog, err := s.store.NewCatalog(ctx, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), advisorMode)
 		if err != nil {
 			return nil, errors.Errorf("Failed to get catalog for database %v with error: %v", database.UID, err)
 		}
