@@ -395,17 +395,23 @@ func (s *Store) BatchSkipTasks(ctx context.Context, taskUIDs []int, comment stri
 	return nil
 }
 
-// ListNotSkippedTasksWithNoTaskRun returns tasks that have no task run.
+// ListNotSkippedTasksWithNoTaskRun returns tasks that
+// 1. have no task runs
+// 2. are not skipped
+// 3. are associated with an open issue or no issue.
 func (s *Store) ListNotSkippedTasksWithNoTaskRun(ctx context.Context) ([]int, error) {
 	rows, err := s.db.db.QueryContext(ctx, `
 	SELECT
 		task.id
 	FROM task
+	LEFT JOIN pipeline ON pipeline.id = task.pipeline_id
+	LEFT JOIN issue ON issue.pipeline_id = pipeline.id
 	LEFT JOIN LATERAL
 		(SELECT 1 AS e FROM task_run WHERE task_run.task_id = task.id LIMIT 1) task_run
 		ON TRUE
 	WHERE task_run.e IS NULL
 	AND COALESCE((task.payload->>'skipped')::BOOLEAN, FALSE) IS FALSE
+	AND COALESCE(issue.status, 'OPEN') = 'OPEN'
 	ORDER BY task.id`)
 	if err != nil {
 		return nil, err
