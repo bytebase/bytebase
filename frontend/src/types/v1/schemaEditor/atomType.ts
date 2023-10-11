@@ -47,6 +47,7 @@ export interface Table {
   primaryKey: PrimaryKey;
   foreignKeyList: ForeignKey[];
   status: Status;
+  classification?: string;
 }
 
 export interface Schema {
@@ -95,6 +96,7 @@ export const convertTableMetadataToTable = (
     },
     foreignKeyList: [],
     status,
+    classification: tableMetadata.classification,
   };
 
   for (const indexMetadata of tableMetadata.indexes) {
