@@ -452,9 +452,24 @@ const hasEditLabelsPermission = computed(() => {
 });
 
 const NORMAL_COLUMN_LIST = computed(() => {
-  const columnList: BBTableColumn[] = [
+  const columnList: {
+    title: string;
+    hide?: boolean;
+  }[] = [
     {
       title: t("common.name"),
+    },
+    {
+      title: t("settings.sensitive-data.masking-level.self"),
+      hide: !showSensitiveColumn.value,
+    },
+    {
+      title: t("settings.sensitive-data.semantic-types.self"),
+      hide: !showSemanticTypeColumn.value,
+    },
+    {
+      title: t("database.classification.self"),
+      hide: !showClassificationColumn.value,
     },
     {
       title: t("common.type"),
@@ -478,27 +493,27 @@ const NORMAL_COLUMN_LIST = computed(() => {
       title: t("common.labels"),
     },
   ];
-  if (showSemanticTypeColumn.value) {
-    columnList.splice(1, 0, {
-      title: t("settings.sensitive-data.semantic-types.self"),
-    });
-  }
-  if (showSensitiveColumn.value) {
-    columnList.splice(1, 0, {
-      title: t("settings.sensitive-data.masking-level.self"),
-    });
-  }
-  if (showClassificationColumn.value) {
-    columnList.splice(showSemanticTypeColumn.value ? 3 : 2, 0, {
-      title: t("database.classification.self"),
-    });
-  }
   return columnList;
 });
 const POSTGRES_COLUMN_LIST = computed(() => {
-  const columnList: BBTableColumn[] = [
+  const columnList: {
+    title: string;
+    hide?: boolean;
+  }[] = [
     {
       title: t("common.name"),
+    },
+    {
+      title: t("settings.sensitive-data.masking-level.self"),
+      hide: !showSensitiveColumn.value,
+    },
+    {
+      title: t("settings.sensitive-data.semantic-types.self"),
+      hide: !showSemanticTypeColumn.value,
+    },
+    {
+      title: t("database.classification.self"),
+      hide: !showClassificationColumn.value,
     },
     {
       title: t("common.type"),
@@ -519,21 +534,6 @@ const POSTGRES_COLUMN_LIST = computed(() => {
       title: t("common.labels"),
     },
   ];
-  if (showSemanticTypeColumn.value) {
-    columnList.splice(1, 0, {
-      title: t("settings.sensitive-data.semantic-types.self"),
-    });
-  }
-  if (showSensitiveColumn.value) {
-    columnList.splice(1, 0, {
-      title: t("settings.sensitive-data.masking-level.self"),
-    });
-  }
-  if (showClassificationColumn.value) {
-    columnList.splice(showSemanticTypeColumn.value ? 3 : 2, 0, {
-      title: t("database.classification.self"),
-    });
-  }
   return columnList;
 });
 const CLICKHOUSE_SNOWFLAKE_COLUMN_LIST = computed((): BBTableColumn[] => [
@@ -557,15 +557,15 @@ const CLICKHOUSE_SNOWFLAKE_COLUMN_LIST = computed((): BBTableColumn[] => [
   },
 ]);
 
-const columnNameList = computed(() => {
+const columnNameList = computed((): BBTableColumn[] => {
   switch (engine.value) {
     case Engine.POSTGRES:
-      return POSTGRES_COLUMN_LIST.value;
+      return POSTGRES_COLUMN_LIST.value.filter((col) => !col.hide);
     case Engine.CLICKHOUSE:
     case Engine.SNOWFLAKE:
       return CLICKHOUSE_SNOWFLAKE_COLUMN_LIST.value;
     default:
-      return NORMAL_COLUMN_LIST.value;
+      return NORMAL_COLUMN_LIST.value.filter((col) => !col.hide);
   }
 });
 
