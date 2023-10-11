@@ -548,6 +548,7 @@ func createBranchMigrationHistory(ctx context.Context, stores *store.Store, dbFa
 	// TODO(d): support semantic versioning.
 	m := &db.MigrationInfo{
 		InstanceID:     &task.InstanceID,
+		IssueIDInt:     &issue.UID,
 		ReleaseVersion: profile.Version,
 		Version:        common.DefaultMigrationVersion(),
 		Namespace:      targetDatabase.DatabaseName,
