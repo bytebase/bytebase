@@ -23,12 +23,21 @@ type FinderContext struct {
 
 	// EngineType is the engine type for database engine.
 	EngineType storepb.Engine
+
+	// Ignore case sensitive is the policy for identifier name comparison case-sensitive.
+	// It has different behavior for different database engine.
+	// MySQL:
+	// This controls the following identifier comparisons:
+	// Database, Table
+	IgnoreCaseSensitive bool
 }
 
 // Copy returns the deep copy.
 func (ctx *FinderContext) Copy() *FinderContext {
 	return &FinderContext{
-		CheckIntegrity: ctx.CheckIntegrity,
+		CheckIntegrity:      ctx.CheckIntegrity,
+		EngineType:          ctx.EngineType,
+		IgnoreCaseSensitive: ctx.IgnoreCaseSensitive,
 	}
 }
 
@@ -43,7 +52,7 @@ func NewFinder(database *storepb.DatabaseSchemaMetadata, ctx *FinderContext) *Fi
 	return &Finder{Origin: newDatabaseState(database, ctx), Final: newDatabaseState(database, ctx)}
 }
 
-// NewEmptyFinder creates a finder with empty databse.
+// NewEmptyFinder creates a finder with empty database.
 func NewEmptyFinder(ctx *FinderContext) *Finder {
 	return &Finder{Origin: newDatabaseState(&storepb.DatabaseSchemaMetadata{}, ctx), Final: newDatabaseState(&storepb.DatabaseSchemaMetadata{}, ctx)}
 }
