@@ -137,7 +137,7 @@ func initializeSchema(ctx context.Context, storeInstance *store.Store, metadataD
 	if _, err := metadataDriver.GetDB().ExecContext(ctx, stmt); err != nil {
 		return err
 	}
-	if err := storeInstance.CreateInstanceChangeHistory(ctx, &store.InstanceChangeHistoryMessage{
+	if err := storeInstance.CreateInstanceChangeHistoryForMigrator(ctx, &store.InstanceChangeHistoryMessage{
 		CreatorID:      api.SystemBotID,
 		InstanceUID:    nil,
 		DatabaseUID:    nil,
