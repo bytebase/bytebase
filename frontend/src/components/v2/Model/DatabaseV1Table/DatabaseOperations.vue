@@ -343,7 +343,7 @@ const actions = computed((): DatabaseAction[] => {
       });
     }
   }
-  if (allowEditLabels) {
+  if (allowEditLabels.value) {
     resp.push({
       icon: h(TagIcon),
       text: t("database.edit-labels"),
