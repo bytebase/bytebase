@@ -141,6 +141,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	// Get migration history.
 	resp, err := ctl.databaseServiceClient.ListChangeHistories(ctx, &v1pb.ListChangeHistoriesRequest{
 		Parent: database.Name,
+		View:   v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL,
 	})
 	a.NoError(err)
 	histories := resp.ChangeHistories
@@ -205,6 +206,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	// Query clone migration history.
 	resp, err = ctl.databaseServiceClient.ListChangeHistories(ctx, &v1pb.ListChangeHistoriesRequest{
 		Parent: cloneDatabase.Name,
+		View:   v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL,
 	})
 	a.NoError(err)
 	histories = resp.ChangeHistories
@@ -580,6 +582,7 @@ func TestVCS(t *testing.T) {
 			// Get migration history.
 			resp, err := ctl.databaseServiceClient.ListChangeHistories(ctx, &v1pb.ListChangeHistoriesRequest{
 				Parent: database.Name,
+				View:   v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL,
 			})
 			a.NoError(err)
 			histories := resp.ChangeHistories
@@ -939,6 +942,7 @@ ALTER TABLE ONLY public.users
 
 			resp, err := ctl.databaseServiceClient.ListChangeHistories(ctx, &v1pb.ListChangeHistoriesRequest{
 				Parent: database.Name,
+				View:   v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL,
 			})
 			a.NoError(err)
 			histories := resp.ChangeHistories
@@ -2390,6 +2394,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 
 			resp, err := ctl.databaseServiceClient.ListChangeHistories(ctx, &v1pb.ListChangeHistoriesRequest{
 				Parent: database.Name,
+				View:   v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL,
 			})
 			a.NoError(err)
 			histories := resp.ChangeHistories
@@ -2424,6 +2429,7 @@ func TestVCS_SDL_MySQL(t *testing.T) {
 			sdlHistory, err := ctl.databaseServiceClient.GetChangeHistory(ctx, &v1pb.GetChangeHistoryRequest{
 				Name:      histories[1].Name,
 				SdlFormat: true,
+				View:      v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL,
 			})
 			a.NoError(err)
 			a.Equal(updatedSDL, sdlHistory.Schema)
