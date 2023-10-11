@@ -143,7 +143,7 @@ type MigrationInfo struct {
 	// InstanceID nil is metadata database.
 	InstanceID *int
 	DatabaseID *int
-	IssueIDInt *int
+	IssueUID   *int
 	CreatorID  int
 
 	ReleaseVersion string
@@ -156,7 +156,6 @@ type MigrationInfo struct {
 	Status         MigrationStatus
 	Description    string
 	Creator        string
-	IssueID        string
 	// Payload contains JSON-encoded string of VCS push event if the migration is triggered by a VCS push event.
 	Payload *storepb.InstanceChangeHistoryPayload
 	// Force is used to execute migration disregarding any migration history with PENDING or FAILED status.

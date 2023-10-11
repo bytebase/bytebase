@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"strconv"
 	"strings"
 	"time"
 
@@ -287,8 +286,7 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 			log.BBError(err),
 		)
 	} else {
-		mi.IssueID = strconv.Itoa(issue.UID)
-		mi.IssueIDInt = &issue.UID
+		mi.IssueUID = &issue.UID
 	}
 
 	if _, _, err := utils.ExecuteMigrationDefault(ctx, driverCtx, exec.store, driver, mi, schema, nil, db.ExecuteOptions{}); err != nil {

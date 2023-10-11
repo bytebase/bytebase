@@ -84,22 +84,16 @@ type UpdateInstanceChangeHistoryMessage struct {
 	Sheet               *int
 }
 
-// CreateInstanceChangeHistory creates instance change history in batch.
-func (s *Store) CreateInstanceChangeHistory(ctx context.Context, create *InstanceChangeHistoryMessage) error {
+// CreateInstanceChangeHistoryForMigrator creates an instance change history for migrator.
+func (s *Store) CreateInstanceChangeHistoryForMigrator(ctx context.Context, create *InstanceChangeHistoryMessage) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	if create.InstanceUID == nil {
-		if _, err := s.createInstanceChangeHistoryImplForMigrator(ctx, tx, create); err != nil {
-			return err
-		}
-	} else {
-		if _, err := s.createInstanceChangeHistoryImpl(ctx, tx, create); err != nil {
-			return err
-		}
+	if _, err := s.createInstanceChangeHistoryImplForMigrator(ctx, tx, create); err != nil {
+		return err
 	}
 	return tx.Commit()
 }
@@ -726,7 +720,7 @@ func (s *Store) CreatePendingInstanceChangeHistory(ctx context.Context, prevSche
 		CreatorID:           m.CreatorID,
 		InstanceUID:         m.InstanceID,
 		DatabaseUID:         m.DatabaseID,
-		IssueUID:            m.IssueIDInt,
+		IssueUID:            m.IssueUID,
 		ReleaseVersion:      m.ReleaseVersion,
 		Sequence:            nextSequence,
 		Source:              m.Source,
