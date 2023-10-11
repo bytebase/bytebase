@@ -157,7 +157,7 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, computed, watch, ref, watchEffect } from "vue";
+import { reactive, computed, watch, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBGridColumn } from "@/bbkit";
@@ -165,7 +165,7 @@ import BatchIssueActionsV1 from "@/components/IssueV1/components/BatchIssueActio
 import CurrentApproverV1 from "@/components/IssueV1/components/CurrentApproverV1.vue";
 import IssueStatusIcon from "@/components/IssueV1/components/IssueStatusIcon.vue";
 import { useElementVisibilityInScrollParent } from "@/composables/useElementVisibilityInScrollParent";
-import { useCurrentUserV1, useRepositoryV1Store, useVCSV1Store } from "@/store";
+import { useCurrentUserV1 } from "@/store";
 import { type ComposedIssue } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { Workflow } from "@/types/proto/v1/project_service";
@@ -246,8 +246,6 @@ const state = reactive<LocalState>({
   selectedIssueIdList: new Set(),
 });
 const currentUserV1 = useCurrentUserV1();
-const repositoryV1Store = useRepositoryV1Store();
-const vcsV1Store = useVCSV1Store();
 
 const tableRef = ref<HTMLDivElement>();
 const isTableInViewport = useElementVisibilityInScrollParent(tableRef);
@@ -266,18 +264,6 @@ const issueTaskStatus = (issue: ComposedIssue) => {
 
   return activeTaskInRollout(issue.rolloutEntity).status;
 };
-
-watchEffect(async () => {
-  props.issueList.forEach(async (issue) => {
-    const repo = await repositoryV1Store.getOrFetchRepositoryByProject(
-      issue.projectEntity.name,
-      true
-    );
-    if (repo) {
-      await vcsV1Store.fetchVCSByUid(repo.vcsUid);
-    }
-  });
-});
 
 const isIssueSelected = (issue: ComposedIssue): boolean => {
   return state.selectedIssueIdList.has(issue.uid);
