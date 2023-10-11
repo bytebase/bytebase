@@ -1642,7 +1642,7 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, envir
 		}
 	}
 
-	catalog, err := s.store.NewCatalog(ctx, database.UID, instance.Engine, advisor.SyntaxModeNormal)
+	catalog, err := s.store.NewCatalog(ctx, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), advisor.SyntaxModeNormal)
 	if err != nil {
 		return advisor.Error, nil, status.Errorf(codes.Internal, "Failed to create a catalog: %v", err)
 	}

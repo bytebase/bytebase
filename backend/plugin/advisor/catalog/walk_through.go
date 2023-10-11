@@ -209,7 +209,8 @@ func (e *WalkThroughError) Error() string {
 func (d *DatabaseState) WalkThrough(stmt string) error {
 	switch d.dbType {
 	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-		return d.mysqlWalkThrough(stmt)
+		err := d.mysqlWalkThrough(stmt)
+		return err
 	case storepb.Engine_POSTGRES:
 		if err := d.pgWalkThrough(stmt); err != nil {
 			if d.ctx.CheckIntegrity {
@@ -250,6 +251,32 @@ func (d *DatabaseState) mysqlWalkThrough(stmt string) error {
 	}
 
 	return nil
+}
+
+// compareIdentifier returns true if the engine will regard the two identifiers as the same one.
+// TODO(zp): It's used for MySQL, we should refactor the package to make it more clear.
+func compareIdentifier(a, b string, ignoreCaseSensitive bool) bool {
+	if ignoreCaseSensitive {
+		return strings.EqualFold(a, b)
+	}
+	return a == b
+}
+
+// isCurrentDatabase returns true if the given database is the current database of the state.
+func (d *DatabaseState) isCurrentDatabase(database string) bool {
+	return compareIdentifier(d.name, database, d.ctx.IgnoreCaseSensitive)
+}
+
+// isTableExists returns true if the given table exists in the database.
+// TODO(zp): It's used for MySQL, we should refactor the package to make it more clear.
+func (s *SchemaState) getTable(table string) (*TableState, bool) {
+	for k, v := range s.tableSet {
+		if compareIdentifier(k, table, s.ctx.IgnoreCaseSensitive) {
+			return v, true
+		}
+	}
+
+	return nil, false
 }
 
 func (d *DatabaseState) changeState(in tidbast.StmtNode) (err *WalkThroughError) {
@@ -300,24 +327,24 @@ func (d *DatabaseState) renameTable(node *tidbast.RenameTableStmt) *WalkThroughE
 		oldTableName := tableToTable.OldTable.Name.O
 		newTableName := tableToTable.NewTable.Name.O
 		if d.theCurrentDatabase(tableToTable) {
-			if oldTableName == newTableName {
+			if compareIdentifier(oldTableName, newTableName, d.ctx.IgnoreCaseSensitive) {
 				return nil
 			}
-			table, exists := schema.tableSet[oldTableName]
+			table, exists := schema.getTable(oldTableName)
 			if !exists {
 				if schema.ctx.CheckIntegrity {
 					return NewTableNotExistsError(oldTableName)
 				}
 				table = schema.createIncompleteTable(oldTableName)
 			}
-			if _, exists := schema.tableSet[newTableName]; exists {
+			if _, exists := schema.getTable(newTableName); exists {
 				return NewTableExistsError(newTableName)
 			}
 			delete(schema.tableSet, table.name)
 			table.name = newTableName
 			schema.tableSet[table.name] = table
 		} else if d.moveToOtherDatabase(tableToTable) {
-			_, exists := schema.tableSet[tableToTable.OldTable.Name.O]
+			_, exists := schema.getTable(tableToTable.OldTable.Name.O)
 			if !exists && schema.ctx.CheckIntegrity {
 				return NewTableNotExistsError(tableToTable.OldTable.Name.O)
 			}
@@ -330,31 +357,31 @@ func (d *DatabaseState) renameTable(node *tidbast.RenameTableStmt) *WalkThroughE
 }
 
 func (d *DatabaseState) targetDatabase(node *tidbast.TableToTable) string {
-	if node.OldTable.Schema.O != "" && node.OldTable.Schema.O != d.name {
+	if node.OldTable.Schema.O != "" && !d.isCurrentDatabase(node.OldTable.Schema.O) {
 		return node.OldTable.Schema.O
 	}
 	return node.NewTable.Schema.O
 }
 
 func (d *DatabaseState) moveToOtherDatabase(node *tidbast.TableToTable) bool {
-	if node.OldTable.Schema.O != "" && node.OldTable.Schema.O != d.name {
+	if node.OldTable.Schema.O != "" && !d.isCurrentDatabase(node.OldTable.Schema.O) {
 		return false
 	}
 	return node.OldTable.Schema.O != node.NewTable.Schema.O
 }
 
 func (d *DatabaseState) theCurrentDatabase(node *tidbast.TableToTable) bool {
-	if node.NewTable.Schema.O != "" && node.NewTable.Schema.O != d.name {
+	if node.NewTable.Schema.O != "" && !d.isCurrentDatabase(node.NewTable.Schema.O) {
 		return false
 	}
-	if node.OldTable.Schema.O != "" && node.OldTable.Schema.O != d.name {
+	if node.OldTable.Schema.O != "" && !d.isCurrentDatabase(node.OldTable.Schema.O) {
 		return false
 	}
 	return true
 }
 
 func (d *DatabaseState) dropDatabase(node *tidbast.DropDatabaseStmt) *WalkThroughError {
-	if node.Name.O != d.name {
+	if !d.isCurrentDatabase(node.Name.O) {
 		return NewAccessOtherDatabaseError(d.name, node.Name.O)
 	}
 
@@ -363,7 +390,7 @@ func (d *DatabaseState) dropDatabase(node *tidbast.DropDatabaseStmt) *WalkThroug
 }
 
 func (d *DatabaseState) alterDatabase(node *tidbast.AlterDatabaseStmt) *WalkThroughError {
-	if !node.AlterDefaultDatabase && node.Name.O != d.name {
+	if !node.AlterDefaultDatabase && !d.isCurrentDatabase(node.Name.O) {
 		return NewAccessOtherDatabaseError(d.name, node.Name.O)
 	}
 
@@ -379,7 +406,7 @@ func (d *DatabaseState) alterDatabase(node *tidbast.AlterDatabaseStmt) *WalkThro
 }
 
 func (d *DatabaseState) findTableState(tableName *tidbast.TableName, createIncompleteTable bool) (*TableState, *WalkThroughError) {
-	if tableName.Schema.O != "" && tableName.Schema.O != d.name {
+	if tableName.Schema.O != "" && !d.isCurrentDatabase(tableName.Schema.O) {
 		return nil, NewAccessOtherDatabaseError(d.name, tableName.Schema.O)
 	}
 
@@ -388,7 +415,7 @@ func (d *DatabaseState) findTableState(tableName *tidbast.TableName, createIncom
 		schema = d.createSchema("")
 	}
 
-	table, exists := schema.tableSet[tableName.Name.O]
+	table, exists := schema.getTable(tableName.Name.O)
 	if !exists {
 		if schema.ctx.CheckIntegrity {
 			return nil, NewTableNotExistsError(tableName.Name.O)
@@ -640,7 +667,7 @@ func (s *SchemaState) renameTable(ctx *FinderContext, oldName string, newName st
 		return nil
 	}
 
-	table, exists := s.tableSet[oldName]
+	table, exists := s.getTable(oldName)
 	if !exists {
 		if ctx.CheckIntegrity {
 			return &WalkThroughError{
@@ -651,7 +678,7 @@ func (s *SchemaState) renameTable(ctx *FinderContext, oldName string, newName st
 		table = s.createIncompleteTable(oldName)
 	}
 
-	if _, exists := s.tableSet[newName]; exists {
+	if _, exists := s.getTable(newName); exists {
 		return &WalkThroughError{
 			Type:    ErrorTypeTableExists,
 			Content: fmt.Sprintf("Table `%s` already exists", newName),
@@ -914,7 +941,7 @@ func (d *DatabaseState) dropTable(node *tidbast.DropTableStmt) *WalkThroughError
 	// TODO(rebelice): deal with DROP VIEW statement.
 	if !node.IsView {
 		for _, name := range node.Tables {
-			if name.Schema.O != "" && d.name != name.Schema.O {
+			if name.Schema.O != "" && !d.isCurrentDatabase(name.Schema.O) {
 				return &WalkThroughError{
 					Type:    ErrorTypeAccessOtherDatabase,
 					Content: fmt.Sprintf("Database `%s` is not the current database `%s`", name.Schema.O, d.name),
@@ -926,7 +953,8 @@ func (d *DatabaseState) dropTable(node *tidbast.DropTableStmt) *WalkThroughError
 				schema = d.createSchema("")
 			}
 
-			if _, exists = schema.tableSet[name.Name.O]; !exists {
+			table, exists := schema.getTable(name.Name.O)
+			if !exists {
 				if node.IfExists || !d.ctx.CheckIntegrity {
 					return nil
 				}
@@ -936,7 +964,7 @@ func (d *DatabaseState) dropTable(node *tidbast.DropTableStmt) *WalkThroughError
 				}
 			}
 
-			delete(schema.tableSet, name.Name.O)
+			delete(schema.tableSet, table.name)
 		}
 	}
 	return nil
@@ -956,7 +984,7 @@ func (d *DatabaseState) copyTable(node *tidbast.CreateTableStmt) *WalkThroughErr
 }
 
 func (d *DatabaseState) createTable(node *tidbast.CreateTableStmt) *WalkThroughError {
-	if node.Table.Schema.O != "" && d.name != node.Table.Schema.O {
+	if node.Table.Schema.O != "" && !d.isCurrentDatabase(node.Table.Schema.O) {
 		return &WalkThroughError{
 			Type:    ErrorTypeAccessOtherDatabase,
 			Content: fmt.Sprintf("Database `%s` is not the current database `%s`", node.Table.Schema.O, d.name),
@@ -968,7 +996,7 @@ func (d *DatabaseState) createTable(node *tidbast.CreateTableStmt) *WalkThroughE
 		schema = d.createSchema("")
 	}
 
-	if _, exists = schema.tableSet[node.Table.Name.O]; exists {
+	if _, exists = schema.getTable(node.Table.Name.O); exists {
 		if node.IfNotExists {
 			return nil
 		}
