@@ -862,7 +862,6 @@
         }
       }
     },
-    "filter-issue-by-name": "根据名称过滤",
     "table": {
       "open": "开启中",
       "closed": "已关闭",
@@ -1321,7 +1320,6 @@
     "last-successful-sync": "最后一次成功的同步",
     "no-anomalies-detected": "没有检测到异常",
     "sync-status": "同步状态",
-    "filter-database-name": "过滤数据库名称",
     "filter-database": "过滤数据库",
     "transfer-project": "转移项目",
     "edit-schema": "变更 Schema",
@@ -1617,8 +1615,7 @@
         "content": "在 Bytebase 中，项目的概念与其他常见的的开发工具类似\n\n一个项目会有属于他的协作成员，并且每一个数据库和工单总是归属于某一个项目\n\n同时，一个项目可以关联一个代码仓库，并以此来开启 GitOps 工作流",
         "cancel": "关闭",
         "confirm": "不再出现"
-      },
-      "filter-project-name": "过滤项目名称"
+      }
     },
     "table": {
       "key": "@:common.key",
@@ -2056,7 +2053,6 @@
         }
       }
     },
-    "filter-by-name": "根据名称过滤",
     "batch-query": {
       "batch": "批量",
       "select-database": "选择下面的数据库",
@@ -2442,7 +2438,6 @@
     "create-policy": "创建审核策略",
     "duplicate-policy": "复制审核策略",
     "configure-policy": "配置审核策略",
-    "search-rule-name": "搜索规则名称",
     "policy-removed": "审核策略已删除",
     "policy-created": "审核策略已创建",
     "policy-updated": "审核策略已更新",
@@ -3049,8 +3044,7 @@
     },
     "action": {
       "use-the-existing-branch": "使用已有分支",
-      "create-new-branch": "创建新分支",
-      "filter-by-name": "根据名称过滤"
+      "create-new-branch": "创建新分支"
     }
   },
   "cel": {

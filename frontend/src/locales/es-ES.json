@@ -864,7 +864,6 @@
         }
       }
     },
-    "filter-issue-by-name": "Filtrar problema por nombre",
     "table": {
       "open": "Abierto",
       "closed": "Cerrado",
@@ -1051,7 +1050,7 @@
     "sync-status": "Estado de sincronización",
     "failed-to-sync-schema-for-database-database-value-name": "Error al sincronizar el esquema para la base de datos '{0}'.",
     "successfully-synced-schema-for-database-database-value-name": "Esquema sincronizado correctamente para la base de datos '{0}'.",
-    "start-to-sync-schema": "Start to sync schame",
+    "start-to-sync-schema": "Comenzar a sincronizar el esquema",
     "failed-to-sync-schema": "No se pudo sincronizar el esquema",
     "successfully-synced-schema": "Esquema sincronizado correctamente"
   },
@@ -1323,7 +1322,6 @@
     "no-anomalies-detected": "No se detectaron anomalías",
     "sync-status": "Estado de sincronización",
     "last-successful-sync": "Última sincronización exitosa",
-    "filter-database-name": "Filtrar nombre de base de datos",
     "filter-database": "Filtrar base de datos",
     "database-backup": "copia de seguridad de la base de datos",
     "transfer-project": "Transferir proyecto",
@@ -1621,8 +1619,7 @@
         "content": "El proyecto de Bytebase es similar al concepto de proyecto en otras herramientas de desarrollo comunes.\n\nUn proyecto tiene sus propios miembros, y cada incidencia y base de datos siempre pertenece a un solo proyecto.\n\nUn proyecto también puede configurarse para enlazarlo con un repositorio y habilitar el flujo de trabajo de GitOps.",
         "cancel": "Descartar",
         "confirm": "No volver a mostrar"
-      },
-      "filter-project-name": "Filtrar nombre del proyecto"
+      }
     },
     "table": {
       "key": "@:common.key",
@@ -2057,7 +2054,6 @@
         }
       }
     },
-    "filter-by-name": "Filtrar por nombre",
     "batch-query": {
       "batch": "Lote",
       "select-database": "Seleccione la base de datos a continuación",
@@ -2442,7 +2438,6 @@
     "create-policy": "Crear política",
     "duplicate-policy": "Duplicar política de revisión de SQL",
     "configure-policy": "Configurar política",
-    "search-rule-name": "Buscar nombre de regla",
     "policy-removed": "La política de revisión se eliminó correctamente.",
     "policy-created": "La política de revisión se creó correctamente.",
     "policy-updated": "La política de revisión se actualizó correctamente.",
@@ -3054,8 +3049,7 @@
     },
     "action": {
       "use-the-existing-branch": "Usar la rama existente",
-      "create-new-branch": "Crear nueva rama",
-      "filter-by-name": "Filtrar por nombre"
+      "create-new-branch": "Crear nueva rama"
     }
   },
   "cel": {
