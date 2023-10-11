@@ -2,6 +2,7 @@
   <Drawer :show="show" @close="$emit('dismiss')">
     <DrawerContent :title="title">
       <BBAttention
+        v-if="showWarning"
         class="mb-5"
         :style="'WARN'"
         :title="$t('database.mixed-label-values-warning')"
@@ -149,6 +150,10 @@ const allowSave = computed(() => {
   if (!dirty.value) return false;
   const errors = labelListEditorRef.value?.flattenErrors ?? [];
   return errors.length === 0;
+});
+
+const showWarning = computed(() => {
+  return state.kvList.some((kv) => !!kv.message);
 });
 
 watch(
