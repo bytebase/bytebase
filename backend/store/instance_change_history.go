@@ -55,9 +55,6 @@ type InstanceChangeHistoryMessage struct {
 	IssueProjectID string
 }
 
-// instanceChangeHistoryTruncateLength is the maximum characters of a sheet for displaying.
-const instanceChangeHistoryTruncateLength = 2048
-
 // FindInstanceChangeHistoryMessage is for listing a list of instance change history.
 type FindInstanceChangeHistoryMessage struct {
 	ID              *string
@@ -71,7 +68,8 @@ type FindInstanceChangeHistoryMessage struct {
 	Offset          *int
 
 	// Truncate Statement, Schema, SchemaPrev unless ShowFull.
-	ShowFull bool
+	ShowFull     bool
+	TruncateSize int
 }
 
 // UpdateInstanceChangeHistoryMessage is for updating an instance change history.
@@ -483,15 +481,15 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 
 	statementField := "COALESCE(sheet.statement, instance_change_history.statement)"
 	if !find.ShowFull {
-		statementField = fmt.Sprintf("LEFT(%s, %d)", statementField, instanceChangeHistoryTruncateLength)
+		statementField = fmt.Sprintf("LEFT(%s, %d)", statementField, find.TruncateSize)
 	}
-	schemaField := fmt.Sprintf("LEFT(instance_change_history.schema, %d)", instanceChangeHistoryTruncateLength)
-	if find.ShowFull {
-		schemaField = "instance_change_history.schema"
+	schemaField := "instance_change_history.schema"
+	if !find.ShowFull {
+		schemaField = fmt.Sprintf("LEFT(%s, %d)", schemaField, find.TruncateSize)
 	}
-	schemaPrevField := fmt.Sprintf("LEFT(instance_change_history.schema_prev, %d)", instanceChangeHistoryTruncateLength)
-	if find.ShowFull {
-		schemaPrevField = "instance_change_history.schema_prev"
+	schemaPrevField := "instance_change_history.schema_prev"
+	if !find.ShowFull {
+		schemaPrevField = fmt.Sprintf("LEFT(%s, %d)", schemaPrevField, find.TruncateSize)
 	}
 
 	query := fmt.Sprintf(`
@@ -790,17 +788,17 @@ func (s *Store) ListInstanceChangeHistoryForMigrator(ctx context.Context, find *
 		where, args = append(where, fmt.Sprintf("instance_change_history.version = $%d", len(args)+1)), append(args, storedVersion)
 	}
 
-	statementField := fmt.Sprintf("LEFT(instance_change_history.statement, %d)", instanceChangeHistoryTruncateLength)
-	if find.ShowFull {
-		statementField = "instance_change_history.statement"
+	statementField := "instance_change_history.statement"
+	if !find.ShowFull {
+		statementField = fmt.Sprintf("LEFT(%s, %d)", statementField, find.TruncateSize)
 	}
-	schemaField := fmt.Sprintf("LEFT(instance_change_history.schema, %d)", instanceChangeHistoryTruncateLength)
-	if find.ShowFull {
-		schemaField = "instance_change_history.schema"
+	schemaField := "instance_change_history.schema"
+	if !find.ShowFull {
+		schemaField = fmt.Sprintf("LEFT(%s, %d)", schemaField, find.TruncateSize)
 	}
-	schemaPrevField := fmt.Sprintf("LEFT(instance_change_history.schema_prev, %d)", instanceChangeHistoryTruncateLength)
-	if find.ShowFull {
-		schemaPrevField = "instance_change_history.schema_prev"
+	schemaPrevField := "instance_change_history.schema_prev"
+	if !find.ShowFull {
+		schemaPrevField = fmt.Sprintf("LEFT(%s, %d)", schemaPrevField, find.TruncateSize)
 	}
 
 	query := fmt.Sprintf(`

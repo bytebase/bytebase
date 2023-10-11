@@ -132,6 +132,7 @@ func TestFilterChangeHistoryByResources(t *testing.T) {
 	for _, tt := range tests {
 		resp, err := ctl.databaseServiceClient.ListChangeHistories(ctx, &v1pb.ListChangeHistoriesRequest{
 			Parent: database.Name,
+			View:   v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL,
 			Filter: tt.filter,
 		})
 		a.NoError(err)
