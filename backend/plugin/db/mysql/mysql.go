@@ -154,7 +154,11 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 		}
 		return "", util.FormatErrorWithQuery(err, query)
 	}
-	return version, nil
+	pos := strings.Index(version, "-")
+	if pos == -1 {
+		return version, nil
+	}
+	return version[:pos], nil
 }
 
 // Execute executes a SQL statement.
