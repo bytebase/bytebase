@@ -13,48 +13,34 @@
 import { useTitle } from "@vueuse/core";
 import { computed, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRoute } from "vue-router";
 import BranchCreateView from "@/components/Branch/BranchCreateView.vue";
 import BranchDetailView from "@/components/Branch/BranchDetailView.vue";
 import { useProjectV1Store, useSheetV1Store } from "@/store";
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
 import { getProjectAndSheetId } from "@/store/modules/v1/common";
-import { idFromSlug } from "@/utils";
-
-const props = defineProps({
-  branchSlug: {
-    required: true,
-    type: String,
-  },
-});
 
 const { t } = useI18n();
+const route = useRoute();
 const sheetStore = useSheetV1Store();
 const projectStore = useProjectV1Store();
 const schemaDesignStore = useSchemaDesignStore();
 const initialized = ref(false);
 
-const isCreating = computed(() => props.branchSlug === "new");
+const isCreating = computed(() => route.params.branchName === "new");
 const branchName = computed(() => {
-  const sheetId = idFromSlug(props.branchSlug);
-  const sheet = sheetStore.getSheetByUID(`${sheetId}`);
-  if (!sheet) {
-    return undefined;
-  }
-  const [project] = getProjectAndSheetId(sheet.name);
-  return `projects/${project}/schemaDesigns/${sheetId}`;
+  return `projects/${route.params.projectName}/schemaDesigns/${route.params.branchName}`;
 });
 
 watchEffect(async () => {
   if (!isCreating.value) {
-    const sheetId = idFromSlug(props.branchSlug);
+    const sheetId = (route.params.branchName || "") as string;
     const sheet = await sheetStore.getOrFetchSheetByUID(`${sheetId}`);
     if (sheet) {
       const [projectName] = getProjectAndSheetId(sheet.name);
-      const project = await projectStore.getOrFetchProjectByName(
-        `projects/${projectName}`
-      );
+      await projectStore.getOrFetchProjectByName(`projects/${projectName}`);
       await schemaDesignStore.getOrFetchSchemaDesignByName(
-        `projects/${project}/schemaDesigns/${sheetId}`
+        `projects/${projectName}/schemaDesigns/${sheetId}`
       );
     }
   }

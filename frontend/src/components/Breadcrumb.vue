@@ -71,12 +71,8 @@ import {
   useBookmarkV1Store,
   useProjectV1Store,
   useDatabaseV1Store,
-  useSheetV1Store,
 } from "@/store";
-import {
-  getProjectAndSheetId,
-  projectNamePrefix,
-} from "@/store/modules/v1/common";
+import { projectNamePrefix } from "@/store/modules/v1/common";
 import { RouteMapList } from "@/types";
 import { Bookmark } from "@/types/proto/v1/bookmark_service";
 import { databaseV1Slug, idFromSlug, projectV1Slug } from "../utils";
@@ -98,7 +94,6 @@ export default defineComponent({
     const { t } = useI18n();
     const bookmarkV1Store = useBookmarkV1Store();
     const projectV1Store = useProjectV1Store();
-    const sheetStore = useSheetV1Store();
 
     const documentTitle = useTitle(null, { observe: true });
 
@@ -131,7 +126,6 @@ export default defineComponent({
       const projectWebhookSlug = routeSlug.projectWebhookSlug;
       const instanceSlug = routeSlug.instanceSlug;
       const databaseSlug = routeSlug.databaseSlug;
-      const branchSlug = routeSlug.branchSlug;
       const tableName = routeSlug.tableName;
       const dataSourceSlug = routeSlug.dataSourceSlug;
       const vcsSlug = routeSlug.vcsSlug;
@@ -183,21 +177,6 @@ export default defineComponent({
             path: `/db/${databaseSlug}`,
           });
         }
-      } else if (branchSlug) {
-        const sheetId = idFromSlug(branchSlug);
-        const sheet = sheetStore.getSheetByUID(`${sheetId}`);
-        if (sheet) {
-          const [projectName] = getProjectAndSheetId(sheet.name);
-          const project = projectV1Store.getProjectByName(
-            `${projectNamePrefix}${projectName}`
-          );
-          if (project) {
-            list.push({
-              name: project.title,
-              path: `/project/${projectV1Slug(project)}#branches`,
-            });
-          }
-        }
       } else if (vcsSlug) {
         list.push({
           name: t("common.gitops"),
@@ -244,9 +223,33 @@ export default defineComponent({
         });
       }
       if (route.name === "workspace.changelist.detail") {
+        const project = useProjectV1Store().getProjectByName(
+          `projects/${route.params.projectName}`
+        );
+        list.push({
+          name: project.title,
+          path: `/project/${projectV1Slug(project)}`,
+        });
         list.push({
           name: t("changelist.self"),
-          path: `/changelists`,
+          path: `/changelists?project=${project.name}`,
+        });
+      }
+      if (route.name === "workspace.branch.detail") {
+        if (route.params.branchName !== "new") {
+          const project = projectV1Store.getProjectByName(
+            `${projectNamePrefix}${route.params.projectName}`
+          );
+          if (project) {
+            list.push({
+              name: project.title,
+              path: `/project/${projectV1Slug(project)}#branches`,
+            });
+          }
+        }
+        list.push({
+          name: t("common.branches"),
+          path: `/branches`,
         });
       }
 

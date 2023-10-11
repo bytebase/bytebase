@@ -16,7 +16,7 @@
         </router-link>
         <NInput
           :value="state.searchText"
-          :placeholder="$t('issue.filter-issue-by-name')"
+          :placeholder="$t('common.filter-by-name')"
           :autofocus="true"
           @update:value="changeSearchText($event)"
         />

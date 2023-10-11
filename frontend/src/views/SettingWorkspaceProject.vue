@@ -11,7 +11,7 @@
       <div class="flex justify-end items-center gap-x-2">
         <SearchBox
           :value="state.searchText"
-          :placeholder="$t('project.dashboard.filter-project-name')"
+          :placeholder="$t('common.filter-by-name')"
           :autofocus="true"
           @update:value="changeSearchText($event)"
         />

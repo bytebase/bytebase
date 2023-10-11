@@ -3,7 +3,7 @@
     <DrawerContent
       :title="title"
       class="relative"
-      style="width: 60vw; max-width: calc(100vw - 8rem)"
+      style="width: 75vw; max-width: calc(100vw - 8rem)"
     >
       <template #default>
         <div class="h-full flex flex-col gap-y-4 flex-1 overflow-hidden">

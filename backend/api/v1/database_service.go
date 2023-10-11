@@ -248,8 +248,12 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 			}
 			patch.ProjectID = &project.ResourceID
 		case "labels":
+			labels := request.Database.Labels
+			if labels == nil {
+				labels = map[string]string{}
+			}
 			patch.MetadataUpsert = &storepb.DatabaseMetadata{
-				Labels: request.Database.Labels,
+				Labels: labels,
 			}
 		case "environment":
 			if request.Database.Environment == "" {
@@ -1488,7 +1492,7 @@ func (s *DatabaseService) checkDatabasePermission(ctx context.Context, projectID
 	}
 
 	if permission == api.ProjectPermissionManageGeneral {
-		if !isProjectMember(policy, principalID) {
+		if !isProjectMember(principalID, policy) {
 			return status.Errorf(codes.PermissionDenied, "permission denied")
 		}
 		return nil

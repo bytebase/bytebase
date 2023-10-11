@@ -28,6 +28,7 @@
         :expanded-keys="expandedKeysRef"
         :selected-keys="selectedKeysRef"
         :on-update:expanded-keys="handleExpandedKeysChange"
+        :theme-overrides="{ nodeHeight: '28px' }"
       />
       <NDropdown
         trigger="manual"

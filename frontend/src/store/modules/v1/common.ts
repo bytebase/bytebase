@@ -54,6 +54,12 @@ export const getLogId = (name: string): number => {
   return getNumberId(name, logNamePrefix);
 };
 
+export const getProjectName = (name: string): string => {
+  const tokens = getNameParentTokens(name, [projectNamePrefix]);
+  const projectId = tokens[0];
+  return projectId;
+};
+
 export const getProjectAndSheetId = (name: string): string[] => {
   const tokens = getNameParentTokens(name, [
     projectNamePrefix,

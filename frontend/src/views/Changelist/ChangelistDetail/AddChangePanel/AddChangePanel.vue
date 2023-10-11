@@ -6,7 +6,7 @@
   >
     <DrawerContent
       :title="$t('changelist.add-change.self')"
-      class="w-[75vw] relative"
+      class="w-[80vw] relative"
       style="max-width: calc(100vw - 8rem)"
     >
       <template #default>
@@ -17,13 +17,21 @@
             </div>
             <NRadioGroup v-model:value="changeSource">
               <NRadio value="CHANGE_HISTORY">
-                {{ $t("common.change-history") }}
+                <div class="flex items-center">
+                  <History :size="16" class="mr-1" />
+                  {{ $t("common.change-history") }}
+                </div>
               </NRadio>
               <NRadio value="BRANCH">
-                {{ $t("common.branch") }}
+                <div class="flex items-center">
+                  <GitBranch :size="16" class="mr-1" />{{ $t("common.branch") }}
+                </div>
               </NRadio>
               <NRadio value="RAW_SQL">
-                {{ $t("changelist.change-source.raw-sql") }}
+                <div class="flex items-center">
+                  <File :size="16" class="mr-1" />
+                  {{ $t("changelist.change-source.raw-sql") }}
+                </div>
               </NRadio>
             </NRadioGroup>
           </div>
@@ -71,6 +79,7 @@
 
 <script setup lang="ts">
 import { asyncComputed } from "@vueuse/core";
+import { File, GitBranch, History } from "lucide-vue-next";
 import { NRadio, NRadioGroup } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
 import { computed, ref, watch } from "vue";

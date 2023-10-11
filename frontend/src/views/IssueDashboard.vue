@@ -35,7 +35,7 @@
           </NDatePicker>
           <SearchBox
             :value="state.filterText"
-            :placeholder="$t('issue.filter-issue-by-name')"
+            :placeholder="$t('common.filter-by-name')"
             :autofocus="false"
             @update:value="state.filterText = $event"
           />

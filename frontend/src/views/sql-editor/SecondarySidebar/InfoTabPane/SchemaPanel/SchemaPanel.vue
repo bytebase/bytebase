@@ -4,7 +4,7 @@
       <NInput
         v-model:value="keyword"
         size="small"
-        :placeholder="$t('sql-editor.filter-by-name')"
+        :placeholder="$t('common.filter-by-name')"
         :clearable="true"
       >
         <template #prefix>
