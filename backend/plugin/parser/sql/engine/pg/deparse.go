@@ -1053,6 +1053,10 @@ func deparseColumnConstraint(_ DeparseContext, in *ast.ConstraintDef, buf *strin
 		if _, err := buf.WriteString(in.Expression.Text()); err != nil {
 			return err
 		}
+	case ast.ConstraintTypeGenerated:
+		if _, err := buf.WriteString(fmt.Sprintf("GENERATED ALWAYS AS (%s) STORED", in.Expression.Text())); err != nil {
+			return err
+		}
 	default:
 		return errors.Errorf("failed to deparse column constraint: not support %d", in.Type)
 	}
