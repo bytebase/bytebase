@@ -416,7 +416,11 @@ func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 		if common.ErrorCode(err) == common.MigrationAlreadyApplied {
 			return insertedID, prevSchemaBuf.String(), nil
 		}
-		return "", "", errors.Wrapf(err, "failed to begin migration for issue %s", m.IssueID)
+		msg := "failed to begin migration"
+		if m.IssueUID != nil {
+			msg += fmt.Sprintf(" for issue %d", *m.IssueUID)
+		}
+		return "", "", errors.Wrapf(err, msg)
 	}
 
 	startedNs := time.Now().UnixNano()

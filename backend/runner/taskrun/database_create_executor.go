@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"strconv"
 	"strings"
 	"time"
 
@@ -287,7 +286,6 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 			log.BBError(err),
 		)
 	} else {
-		mi.IssueID = strconv.Itoa(issue.UID)
 		mi.IssueUID = &issue.UID
 	}
 

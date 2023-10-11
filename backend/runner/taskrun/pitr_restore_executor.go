@@ -8,7 +8,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -532,10 +531,6 @@ func createBranchMigrationHistory(ctx context.Context, stores *store.Store, dbFa
 		return "", model.Version{}, errors.Wrapf(err, "failed to fetch containing issue when creating the migration history: %v", task.Name)
 	}
 	// Add a branch migration history record.
-	issueID := ""
-	if issue != nil {
-		issueID = strconv.Itoa(issue.UID)
-	}
 	description := fmt.Sprintf("Restored from backup %q of database %q.", backup.Name, sourceDatabase.DatabaseName)
 	if sourceDatabase.InstanceID != targetDatabase.InstanceID {
 		description = fmt.Sprintf("Restored from backup %q of database %q in instance %q.", backup.Name, sourceDatabase.DatabaseName, sourceDatabase.InstanceID)
@@ -560,7 +555,6 @@ func createBranchMigrationHistory(ctx context.Context, stores *store.Store, dbFa
 		Description:    description,
 		Creator:        creator.Name,
 		CreatorID:      creator.ID,
-		IssueID:        issueID,
 	}
 	targetDriver, err := dbFactory.GetAdminDatabaseDriver(ctx, targetInstance, targetDatabase)
 	if err != nil {

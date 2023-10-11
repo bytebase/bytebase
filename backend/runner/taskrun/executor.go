@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"path/filepath"
 	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/gosimple/slug"
@@ -148,7 +147,6 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.P
 		// Concat issue title and task name as the migration description so that user can see
 		// more context of the migration.
 		mi.Description = fmt.Sprintf("%s - %s", issue.Title, task.Name)
-		mi.IssueID = strconv.Itoa(issue.UID)
 		mi.IssueUID = &issue.UID
 	}
 
