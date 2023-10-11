@@ -163,16 +163,15 @@ export const buildSteps = async (
   );
 
   const steps: Plan_Step[] = [];
-  let index = 0;
   for (let i = 0; i < stageList.length; i++) {
     const step = Plan_Step.fromJSON({});
     const { databases } = stageList[i];
     for (let j = 0; j < databases.length; j++) {
       const db = databases[j];
+      const sqlIndex = databaseUIDList.findIndex((uid) => uid === db.uid);
       const spec = await buildSpecForTarget(db.name, params, sheetUID);
       step.specs.push(spec);
-      maybeSetInitialSQLForSpec(spec, index, params);
-      index++;
+      maybeSetInitialSQLForSpec(spec, sqlIndex, params);
     }
     steps.push(step);
   }

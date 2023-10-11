@@ -506,8 +506,12 @@ const handlePreviewIssue = async () => {
     if (!statementMap) {
       return;
     }
-    const databaseIdList = Array.from(statementMap.keys());
-    const statementList = Array.from(statementMap.values());
+    const databaseIdList: string[] = [];
+    const statementList: string[] = [];
+    for (const [key, val] of statementMap.entries()) {
+      databaseIdList.push(key);
+      statementList.push(val);
+    }
     if (isTenantProject.value) {
       query.sql = statementList.join("\n");
       query.name = generateIssueName(
