@@ -131,6 +131,11 @@ func (*Store) createInstanceChangeHistoryImpl(ctx context.Context, tx *Tx, creat
 		return "", err
 	}
 
+	statement := create.Statement
+	if create.SheetID != nil {
+		statement = ""
+	}
+
 	var uid string
 	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
@@ -145,7 +150,7 @@ func (*Store) createInstanceChangeHistoryImpl(ctx context.Context, tx *Tx, creat
 		create.Status,
 		storedVersion,
 		create.Description,
-		create.Statement,
+		statement,
 		create.Schema,
 		create.SheetID,
 		create.SchemaPrev,
@@ -476,9 +481,9 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 		}
 	}
 
-	statementField := fmt.Sprintf("LEFT(instance_change_history.statement, %d)", instanceChangeHistoryTruncateLength)
-	if find.ShowFull {
-		statementField = "instance_change_history.statement"
+	statementField := "COALESCE(sheet.statement, instance_change_history.statement)"
+	if !find.ShowFull {
+		statementField = fmt.Sprintf("LEFT(%s, %d)", statementField, instanceChangeHistoryTruncateLength)
 	}
 	schemaField := fmt.Sprintf("LEFT(instance_change_history.schema, %d)", instanceChangeHistoryTruncateLength)
 	if find.ShowFull {
@@ -516,6 +521,7 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 			COALESCE(instance.resource_id, ''),
 			COALESCE(db.name, '')
 		FROM instance_change_history
+		LEFT JOIN sheet ON sheet.id = instance_change_history.sheet_id
 		LEFT JOIN instance on instance.id = instance_change_history.instance_id
 		LEFT JOIN db on db.id = instance_change_history.database_id
 		WHERE `+strings.Join(where, " AND ")+` ORDER BY instance_change_history.instance_id, instance_change_history.database_id, instance_change_history.sequence DESC`, statementField, schemaField, schemaPrevField, sheetField)
