@@ -4,14 +4,19 @@
       :title="title"
       style="width: 75vw; max-width: calc(100vw - 8rem)"
     >
-      <SchemaEditorV1
-        v-if="editorBindings"
-        :readonly="true"
-        :project="editorBindings.project"
-        :resource-type="'branch'"
-        :databases="editorBindings.databases"
-        :branches="editorBindings.branches"
-      />
+      <div class="h-full flex flex-col gap-y-2">
+        <div class="w-full flex flex-row justify-between items-center gap-2">
+          <BranchBaseline v-if="branch" :branch="branch" />
+        </div>
+        <SchemaDesignEditor
+          v-if="editorBindings"
+          class="flex-1"
+          :readonly="true"
+          :project="editorBindings.project"
+          :branch="editorBindings.branch"
+          :hide-s-q-l-check-button="true"
+        />
+      </div>
     </DrawerContent>
   </Drawer>
 </template>
@@ -19,10 +24,11 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import SchemaEditorV1 from "@/components/SchemaEditorV1/index.vue";
+import SchemaDesignEditor from "@/components/Branch/SchemaDesignEditor.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useDatabaseV1Store } from "@/store";
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
+import BranchBaseline from "./BranchBaseline.vue";
 
 const props = defineProps<{
   branchName?: string;
@@ -56,9 +62,7 @@ const editorBindings = computed(() => {
   return {
     readonly: true,
     project,
-    resourceType: "branch",
-    databases: [db],
-    branches: [branch.value],
+    branch: branch.value,
   };
 });
 
