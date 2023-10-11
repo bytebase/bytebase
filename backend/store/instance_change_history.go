@@ -55,8 +55,8 @@ type InstanceChangeHistoryMessage struct {
 	IssueProjectID string
 }
 
-// instanceChangeHistoryTruncateLength is the maximum size (1M) of a sheet for displaying.
-const instanceChangeHistoryTruncateLength = 1024 * 1024
+// instanceChangeHistoryTruncateLength is the maximum characters of a sheet for displaying.
+const instanceChangeHistoryTruncateLength = 2048
 
 // FindInstanceChangeHistoryMessage is for listing a list of instance change history.
 type FindInstanceChangeHistoryMessage struct {
