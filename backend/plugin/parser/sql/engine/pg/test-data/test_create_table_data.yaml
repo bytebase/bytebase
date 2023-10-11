@@ -81,3 +81,31 @@
         CONSTRAINT "uk1" UNIQUE ("a", "b")
     )
     PARTITION BY RANGE ("a", "b", (c + 1));
+
+- stmt: |-
+    CREATE TABLE t (
+      a numeric,
+      b numeric,
+      c numeric GENERATED ALWAYS AS (a * b) STORED
+    );
+  want: |-
+    CREATE TABLE "t" (
+        "a" numeric,
+        "b" numeric,
+        "c" numeric GENERATED ALWAYS AS (a * b) STORED
+    );
+
+- stmt: |-
+    CREATE TABLE public.t (
+      action text NOT NULL,
+      action_date timestamp NOT NULL,
+      number smallint GENERATED ALWAYS AS ((date_part('week'::text, ((action_date)::date + '1 day'::interval)))::smallint) STORED,
+      year smallint GENERATED ALWAYS AS ((date_part('year'::text, date_trunc('week'::text, action_date)))::smallint) STORED
+    );
+  want: |-
+    CREATE TABLE "public"."t" (
+        "action" text NOT NULL,
+        "action_date" timestamp NOT NULL,
+        "number" smallint GENERATED ALWAYS AS (date_part('week'::text, action_date::date + '1 day'::interval)::smallint) STORED,
+        "year" smallint GENERATED ALWAYS AS (date_part('year'::text, date_trunc('week'::text, action_date))::smallint) STORED
+    );
