@@ -31,6 +31,7 @@
         :render-prefix="renderPrefix"
         :node-props="nodeProps"
         :virtual-scroll="true"
+        :theme-overrides="{ nodeHeight: '21px' }"
         @load="handleLoadSubTree"
         @update:expanded-keys="updateExpandedKeys"
       />
