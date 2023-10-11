@@ -59,6 +59,19 @@
       @dismiss="state.showTransferOutDatabaseForm = false"
     />
   </Drawer>
+
+  <LabelEditorDrawer
+    :show="state.showLabelEditorDrawer"
+    :readonly="false"
+    :title="
+      $t('db.labels-for-resource', {
+        resource: $t('database.n-databases', { n: databases.length }),
+      })
+    "
+    :labels="databases.map((db) => db.labels)"
+    @dismiss="state.showLabelEditorDrawer = false"
+    @apply="onLabelsApply($event)"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -69,6 +82,7 @@ import PencilIcon from "~icons/heroicons-outline/pencil";
 import PencilAltIcon from "~icons/heroicons-outline/pencil-alt";
 import RefreshIcon from "~icons/heroicons-outline/refresh";
 import SwitchHorizontalIcon from "~icons/heroicons-outline/switch-horizontal";
+import TagIcon from "~icons/heroicons-outline/tag";
 import { Drawer } from "@/components/v2";
 import {
   useCurrentUserV1,
@@ -80,6 +94,7 @@ import {
   pushNotification,
 } from "@/store";
 import { ComposedDatabase, DEFAULT_PROJECT_V1_NAME } from "@/types";
+import { Database } from "@/types/proto/v1/database_service";
 import {
   hasWorkspacePermissionV1,
   hasPermissionInProjectV1,
@@ -101,6 +116,7 @@ interface LocalState {
   loading: boolean;
   showSchemaEditorModal: boolean;
   showTransferOutDatabaseForm: boolean;
+  showLabelEditorDrawer: boolean;
 }
 
 const props = defineProps<{
@@ -115,6 +131,7 @@ const state = reactive<LocalState>({
   loading: false,
   showSchemaEditorModal: false,
   showTransferOutDatabaseForm: false,
+  showLabelEditorDrawer: false,
 });
 const schemaEditorContext = ref<{
   databaseIdList: string[];
@@ -194,6 +211,23 @@ const allowTransferProject = computed(() => {
   return props.databases.every((db) =>
     canEditDatabase(db, "bb.permission.project.transfer-database")
   );
+});
+
+const allowEditLabels = computed(() => {
+  return props.databases.every((db) => {
+    const project = db.projectEntity;
+    return (
+      hasWorkspacePermissionV1(
+        "bb.permission.workspace.manage-label",
+        currentUserV1.value.userRole
+      ) ||
+      hasPermissionInProjectV1(
+        project.iamPolicy,
+        currentUserV1.value,
+        "bb.permission.project.manage-general"
+      )
+    );
+  });
 });
 
 const selectedDatabaseUidList = computed(() => {
@@ -309,6 +343,42 @@ const actions = computed((): DatabaseAction[] => {
       });
     }
   }
+  if (allowEditLabels.value) {
+    resp.push({
+      icon: h(TagIcon),
+      text: t("database.edit-labels"),
+      disabled: false,
+      click: () => (state.showLabelEditorDrawer = true),
+    });
+  }
   return resp;
 });
+
+const onLabelsApply = async (labelsList: { [key: string]: string }[]) => {
+  if (labelsList.length !== props.databases.length) {
+    // This should never happen.
+    return;
+  }
+
+  await Promise.all(
+    props.databases.map(async (database, i) => {
+      const label = labelsList[i];
+      const patch: Database = {
+        ...Database.fromPartial(database),
+        labels: label,
+      };
+      await useDatabaseV1Store().updateDatabase({
+        database: patch,
+        updateMask: ["labels"],
+      });
+    })
+  );
+
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("common.updated"),
+  });
+  state.showLabelEditorDrawer = false;
+};
 </script>

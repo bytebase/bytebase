@@ -1,12 +1,16 @@
 <template>
   <Drawer :show="show" @close="$emit('dismiss')">
-    <DrawerContent :title="$t('db.labels-for-resource', { resource: column })">
+    <DrawerContent :title="title">
+      <BBAttention
+        class="mb-5"
+        :style="'WARN'"
+        :title="$t('database.mixed-label-values-warning')"
+      />
       <LabelListEditor
         ref="labelListEditorRef"
         v-model:kv-list="state.kvList"
         :readonly="readonly"
         :show-errors="dirty"
-        class="max-w-[30rem]"
       />
       <template #footer>
         <div class="w-full flex justify-between items-center">
@@ -18,7 +22,7 @@
               v-if="!readonly"
               :disabled="!allowSave"
               type="primary"
-              @click="$emit('apply', convertKVListToLabels(state.kvList))"
+              @click="$emit('apply', convertKVListToLabelsList())"
             >
               {{ $t("common.save") }}
             </NButton>
@@ -30,21 +34,21 @@
 </template>
 
 <script lang="ts" setup>
-import { isEqual } from "lodash-es";
+import { isEqual, cloneDeep } from "lodash-es";
 import { computed, reactive, watch, ref } from "vue";
-import LabelListEditor from "@/components/Label/LabelListEditor.vue";
+import { useI18n } from "vue-i18n";
+import { LabelListEditor } from "@/components/Label";
+import { Label } from "@/components/Label/types";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { type ComposedDatabase } from "@/types";
-import { convertKVListToLabels, convertLabelsToKVList } from "@/utils";
+import { convertKVListToLabels } from "@/utils";
 
 const props = defineProps<{
   show: boolean;
   readonly: boolean;
-  database: ComposedDatabase;
-  column: string;
+  title: string;
   labels: {
     [key: string]: string;
-  };
+  }[];
 }>();
 defineEmits<{
   (event: "dismiss"): void;
@@ -52,25 +56,91 @@ defineEmits<{
     event: "apply",
     labels: {
       [key: string]: string;
-    }
+    }[]
   ): void;
 }>();
 
 type LocalState = {
-  kvList: { key: string; value: string }[];
+  kvList: Label[];
 };
 
+const { t } = useI18n();
 const state = reactive<LocalState>({
   kvList: [],
 });
 const labelListEditorRef = ref<InstanceType<typeof LabelListEditor>>();
 
-const convert = () => {
-  return convertLabelsToKVList(props.labels, true /* sort */);
+const convertKVListToLabelsList = () => {
+  return props.labels.map((oldLabel) => {
+    const labels = convertKVListToLabels(state.kvList);
+    for (const label of state.kvList) {
+      if (!label.value) {
+        if (oldLabel[label.key]) {
+          labels[label.key] = oldLabel[label.key];
+        }
+      }
+    }
+    return labels;
+  });
+};
+
+const convertLabelsToKVList = () => {
+  interface TmpLabel {
+    [key: string]: {
+      value: string;
+      message?: string;
+      allowEmpty?: boolean;
+    };
+  }
+
+  let tmp: TmpLabel = {};
+  if (props.labels.length > 0) {
+    tmp = Object.entries(props.labels[0]).reduce((resp, [key, value]) => {
+      resp[key] = {
+        value,
+      };
+      return resp;
+    }, {} as TmpLabel);
+  }
+  for (let i = 1; i < props.labels.length; i++) {
+    const label = cloneDeep(props.labels[i]);
+    for (const key of Object.keys(tmp)) {
+      if (!label[key] || label[key] !== tmp[key].value) {
+        tmp[key] = {
+          message: t("database.mixed-values-for-label"),
+          value: "",
+          allowEmpty: true,
+        };
+      }
+      delete label[key];
+    }
+    for (const [key, value] of Object.entries(label)) {
+      if (!tmp[key]) {
+        tmp[key] = {
+          value,
+        };
+      } else if (tmp[key].value !== value) {
+        tmp[key] = {
+          message: t("database.mixed-values-for-label"),
+          value: "",
+          allowEmpty: true,
+        };
+      }
+    }
+  }
+
+  const list: Label[] = Object.entries(tmp).map(([key, obj]) => ({
+    key,
+    value: obj.value,
+    message: obj.message,
+    allowEmpty: obj.allowEmpty,
+  }));
+
+  return list;
 };
 
 const dirty = computed(() => {
-  const original = convert();
+  const original = convertLabelsToKVList();
   const local = state.kvList;
   return !isEqual(original, local);
 });
@@ -84,7 +154,7 @@ const allowSave = computed(() => {
 watch(
   () => props.labels,
   () => {
-    state.kvList = convert();
+    state.kvList = convertLabelsToKVList();
   },
   {
     immediate: true,
