@@ -50,7 +50,7 @@ const (
 	// 10 MB.
 	maximumSQLResultSize = 10 * 1024 * 1024
 	// defaultTimeout is the default timeout for query and admin execution.
-	defaultTimeout = 1 * time.Minute
+	defaultTimeout = 10 * time.Minute
 )
 
 // SQLService is the service for SQL.

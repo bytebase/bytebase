@@ -248,8 +248,12 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 			}
 			patch.ProjectID = &project.ResourceID
 		case "labels":
+			labels := request.Database.Labels
+			if labels == nil {
+				labels = map[string]string{}
+			}
 			patch.MetadataUpsert = &storepb.DatabaseMetadata{
-				Labels: request.Database.Labels,
+				Labels: labels,
 			}
 		case "environment":
 			if request.Database.Environment == "" {
@@ -1003,7 +1007,7 @@ func (s *DatabaseService) getSourceSchema(ctx context.Context, request *v1pb.Dif
 
 	databaseSchema, err := s.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{
 		Name:      fmt.Sprintf("%s/schema", request.Name),
-		SdlFormat: true,
+		SdlFormat: request.SdlFormat,
 	})
 	if err != nil {
 		return "", err
@@ -1488,7 +1492,7 @@ func (s *DatabaseService) checkDatabasePermission(ctx context.Context, projectID
 	}
 
 	if permission == api.ProjectPermissionManageGeneral {
-		if !isProjectMember(policy, principalID) {
+		if !isProjectMember(principalID, policy) {
 			return status.Errorf(codes.PermissionDenied, "permission denied")
 		}
 		return nil
@@ -1875,7 +1879,7 @@ func convertToDatabase(database *store.DatabaseMessage) *v1pb.Database {
 		Environment:          environment,
 		EffectiveEnvironment: effectiveEnvironment,
 		SchemaVersion:        database.SchemaVersion.Version,
-		Labels:               database.GetEffectiveLabels(),
+		Labels:               database.Metadata.Labels,
 	}
 }
 
@@ -2023,6 +2027,7 @@ func convertDatabaseConfig(config *storepb.DatabaseConfig) []*v1pb.SchemaConfig 
 				t.ColumnConfigs = append(t.ColumnConfigs, &v1pb.ColumnConfig{
 					Name:           column.Name,
 					SemanticTypeId: column.SemanticTypeId,
+					Labels:         column.Labels,
 				})
 			}
 			s.TableConfigs = append(s.TableConfigs, t)
@@ -2048,6 +2053,7 @@ func convertV1DatabaseConfig(databaseName string, schemaConfig []*v1pb.SchemaCon
 				t.ColumnConfigs = append(t.ColumnConfigs, &storepb.ColumnConfig{
 					Name:           column.Name,
 					SemanticTypeId: column.SemanticTypeId,
+					Labels:         column.Labels,
 				})
 			}
 			s.TableConfigs = append(s.TableConfigs, t)

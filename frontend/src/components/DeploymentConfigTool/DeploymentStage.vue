@@ -69,13 +69,13 @@
 
 <script lang="ts">
 import { computed, defineComponent, PropType } from "vue";
+import { ComposedDatabase } from "@/types";
 import {
   LabelSelectorRequirement,
   OperatorType,
   ScheduleDeployment,
 } from "@/types/proto/v1/project_service";
-import { PRESET_LABEL_KEYS, RESERVED_LABEL_KEYS } from "@/utils";
-import { ComposedDatabase } from "../../types";
+import { getAvailableDeploymentConfigMatchSelectorKeyList } from "@/utils";
 import SelectorItem from "./SelectorItem.vue";
 
 export default defineComponent({
@@ -114,7 +114,11 @@ export default defineComponent({
   emits: ["remove", "prev", "next"],
   setup(props) {
     const keys = computed(() => {
-      return [...RESERVED_LABEL_KEYS, ...PRESET_LABEL_KEYS];
+      return getAvailableDeploymentConfigMatchSelectorKeyList(
+        props.databaseList,
+        true /* withVirtualLabelKeys */,
+        true /* sort */
+      );
     });
 
     const removeSelector = (selector: LabelSelectorRequirement) => {

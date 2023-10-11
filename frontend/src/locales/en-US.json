@@ -267,7 +267,8 @@
     "go-to-configure": "Configure",
     "updated-at-by": "Updated {time} by {user}",
     "created-at-by": "Created {time} by {user}",
-    "filter-by-name": "Filter by name"
+    "filter-by-name": "Filter by name",
+    "tenant": "Tenant"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -864,7 +865,6 @@
         }
       }
     },
-    "filter-issue-by-name": "Filter issue by name",
     "table": {
       "open": "Open",
       "closed": "Closed",
@@ -1046,11 +1046,12 @@
     "streams": "Streams",
     "tasks": "Tasks",
     "parent": "Parent",
+    "labels-for-resource": "Labels for \"{resource}\"",
     "last-successful-sync": "Last successful sync",
     "sync-status": "Sync status",
     "failed-to-sync-schema-for-database-database-value-name": "Failed to sync schema for database '{0}'.",
     "successfully-synced-schema-for-database-database-value-name": "Successfully synced schema for database '{0}'.",
-    "start-to-sync-schema": "Start to sync schame",
+    "start-to-sync-schema": "Start to sync schema",
     "failed-to-sync-schema": "Failed to sync schema",
     "successfully-synced-schema": "Successfully synced schema"
   },
@@ -1322,7 +1323,6 @@
     "no-anomalies-detected": "No anomalies detected",
     "sync-status": "Sync status",
     "last-successful-sync": "Last successful sync",
-    "filter-database-name": "Filter database name",
     "filter-database": "Filter database",
     "database-backup": "database backup",
     "transfer-project": "Transfer Project",
@@ -1616,8 +1616,7 @@
         "content": "Bytebase project is similar to the project concept in other common dev tools.\n\nA project has its own members, and every issue and database always belongs to a single project.\n\nA project can also be configured to link to a repository to enable GitOps workflow.",
         "cancel": "Dismiss",
         "confirm": "Do not show again"
-      },
-      "filter-project-name": "Filter project name"
+      }
     },
     "table": {
       "key": "@:common.key",
@@ -1957,7 +1956,8 @@
     "label": {
       "key": "Key",
       "values": "Values",
-      "value-placeholder": "Label value..."
+      "value-placeholder": "Label value...",
+      "key-placeholder": "Label key..."
     }
   },
   "sql-editor": {
@@ -2054,13 +2054,12 @@
         }
       }
     },
-    "filter-by-name": "Filter by name",
     "batch-query": {
       "batch": "Batch",
-      "database-labels": "{database} labels",
-      "database-has-no-label": "{database} has no label",
-      "description": "Batch query {count} additional databases with the same label values."
-    }
+      "select-database": "Select database below",
+      "description": "Batch query {count} additional databases under {project}."
+    },
+    "executing-query": "Executing query"
   },
   "schema-editor": {
     "self": "Schema Editor",
@@ -2147,7 +2146,10 @@
       "value-duplicated": "Duplicated values",
       "max-length-exceeded": "Length cannot exceed {len} characters",
       "max-label-count-exceeded": "Cannot exceed {count} labels",
-      "cannot-edit-reserved-label": "Cannot edit reserved label \"{key}\""
+      "cannot-edit-reserved-label": "Cannot edit reserved label \"{key}\"",
+      "max-value-length-exceeded": "Value's length cannot exceed {length} characters",
+      "key-format": "Only alphanumeric characters ([a-z0-9A-Z]), hyphens (-), underscores (_) and dots (.) are allowed. And must begin and ends with alphanumeric characters.",
+      "x-is-reserved-key": "\"{key}\" is a system reserved key"
     },
     "placeholder": {
       "select-key": "Select key...",
@@ -2160,7 +2162,8 @@
     "db-name-template-tips": "Specify a template to enforce database naming. For example, if your database db1 is geo-splitted into US, Asia, Europe and you want to enforce names as db1__US, db1__ASIA, db1__EU, then the template could be {placeholder}. {link}.",
     "confirm-change": "Are you sure to change '{label}' ?",
     "parsed-from-template": "Parsed from {name} by template {template}.",
-    "cannot-transfer-template-not-match": "Database '{name}' cannot be transferred to this project. Since its name doesn't match the template {template}."
+    "cannot-transfer-template-not-match": "Database '{name}' cannot be transferred to this project. Since its name doesn't match the template {template}.",
+    "add-label": "Add label"
   },
   "oauth": {
     "unknown-event": "Unexpected event type, OAuth failed."
@@ -2361,7 +2364,7 @@
       },
       "bb-feature-batch-query": {
         "title": "Batch query",
-        "desc": "Batch query additional databases with the same label values in SQL Editor."
+        "desc": "Batch query additional databases under same project in SQL Editor."
       },
       "bb-feature-shared-sql-script": {
         "title": "Shared SQL script",
@@ -2435,7 +2438,6 @@
     "create-policy": "Create policy",
     "duplicate-policy": "Duplicate SQL Review Policy",
     "configure-policy": "Configure policy",
-    "search-rule-name": "Search rule name",
     "policy-removed": "Successfully removed the review policy.",
     "policy-created": "Successfully created the review policy.",
     "policy-updated": "Successfully updated the review policy.",
@@ -3019,6 +3021,7 @@
     "save-draft": "Save draft",
     "merge-branch": "Merge branch",
     "delete-branch-after-merged": "Delete branch after merged",
+    "raw-sql-preview": "Raw SQL Preview",
     "diff-editor": {
       "self": "Diff editor",
       "resolve": "Resolve",
@@ -3045,8 +3048,7 @@
     },
     "action": {
       "use-the-existing-branch": "Use the existing branch",
-      "create-new-branch": "Create new branch",
-      "filter-by-name": "Filter by name"
+      "create-new-branch": "Create new branch"
     }
   },
   "cel": {

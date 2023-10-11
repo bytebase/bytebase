@@ -11,40 +11,41 @@
         :value="key"
         class="capitalize"
       >
-        {{ capitalize(hidePrefix(key)) }}
+        {{ displayDeploymentMatchSelectorKey(key) }}
       </option>
     </select>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { capitalize } from "lodash-es";
 import { computed, withDefaults } from "vue";
-import { LabelKeyType } from "../../types";
+import { ComposedDatabase } from "@/types";
 import {
-  hidePrefix,
-  PRESET_LABEL_KEYS,
-  RESERVED_LABEL_KEYS,
-} from "../../utils";
+  displayDeploymentMatchSelectorKey,
+  getAvailableDeploymentConfigMatchSelectorKeyList,
+} from "@/utils";
 
 const props = withDefaults(
   defineProps<{
-    label: LabelKeyType;
-    excludedKeyList?: LabelKeyType[];
+    databaseList: ComposedDatabase[];
+    label: string;
+    excludedKeyList?: string[];
   }>(),
   {
     excludedKeyList: () => [],
   }
 );
 
-const LABEL_KEY_LIST = [...RESERVED_LABEL_KEYS, ...PRESET_LABEL_KEYS];
-
 const emit = defineEmits<{
-  (event: "update:label", label: LabelKeyType): void;
+  (event: "update:label", label: string): void;
 }>();
 
 const labelKeyList = computed(() => {
-  return LABEL_KEY_LIST.filter((key) => !props.excludedKeyList.includes(key));
+  return getAvailableDeploymentConfigMatchSelectorKeyList(
+    props.databaseList,
+    true /* withVirtualLabelKeys */,
+    true /* sort */
+  ).filter((key) => !props.excludedKeyList.includes(key));
 });
 
 const visible = computed(() => {

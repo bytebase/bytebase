@@ -36,6 +36,7 @@
         :node-props="nodeProps"
         :expanded-keys="expandedKeysRef"
         :selected-keys="selectedKeysRef"
+        :theme-overrides="{ nodeHeight: '28px' }"
       />
       <NDropdown
         trigger="manual"
@@ -85,6 +86,7 @@ import { getHighlightHTMLByKeyWords, isDescendantOf } from "@/utils";
 import SchemaNameModal from "../Modals/SchemaNameModal.vue";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import { isTableChanged } from "../utils";
+import { isSchemaChanged } from "../utils/schema";
 
 interface BaseTreeNode extends TreeOption {
   key: string;
@@ -187,19 +189,20 @@ const treeData = computed(() => {
         label: schema.name,
         isLeaf: false,
         schemaId: schema.id,
-      };
-      treeNodeList.push(schemaTreeNode);
-      for (const table of schema.tableList) {
-        const tableTreeNode: TreeNodeForTable = {
+        children: schema.tableList.map((table) => ({
           type: "table",
           key: `t-${schema.id}-${table.id}`,
           label: table.name,
+          children: [],
           isLeaf: true,
           schemaId: schema.id,
           tableId: table.id,
-        };
-        schemaTreeNode.children?.push(tableTreeNode);
+        })),
+      };
+      if (schemaTreeNode.children!.length === 0) {
+        schemaTreeNode.isLeaf = true;
       }
+      treeNodeList.push(schemaTreeNode);
     }
   }
 
@@ -337,6 +340,22 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
   const additionalClassList: string[] = ["select-none"];
 
   if (treeNode.type === "schema") {
+    const schema = schemaList.value.find(
+      (schema) => schema.id === treeNode.schemaId
+    );
+    if (schema) {
+      if (schema.status === "created") {
+        additionalClassList.push("text-green-700");
+      } else if (schema.status === "dropped") {
+        additionalClassList.push("text-red-700 line-through");
+      } else {
+        if (
+          isSchemaChanged(branchSchema.value.branch.name, treeNode.schemaId)
+        ) {
+          additionalClassList.push("text-yellow-700");
+        }
+      }
+    }
     // do nothing
   } else if (treeNode.type === "table") {
     const table = tableList.value.find(
@@ -548,6 +567,13 @@ const openTabForTable = (treeNode: TreeNode) => {
       schemaId: treeNode.schemaId,
       tableId: treeNode.tableId,
     });
+  } else if (treeNode.type === "schema") {
+    const index = expandedKeysRef.value.findIndex(
+      (key) => key === treeNode.key
+    );
+    if (index < 0) {
+      expandedKeysRef.value.push(treeNode.key);
+    }
   }
 
   state.shouldRelocateTreeNode = true;

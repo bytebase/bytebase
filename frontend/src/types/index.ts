@@ -28,7 +28,6 @@ export * from "./sql";
 export * from "./sqlAdvice";
 export * from "./store";
 export * from "./vcs";
-export * from "./label";
 export * from "./sqlEditor";
 export * from "./connectionTree";
 export * from "./tab";

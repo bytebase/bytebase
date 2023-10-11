@@ -15,7 +15,11 @@
 
     <template v-else>
       <div class="flex justify-end items-center py-0.5 space-x-2">
-        <YAxisRadioGroup v-model:label="state.label" class="text-sm" />
+        <YAxisRadioGroup
+          v-model:label="state.label"
+          :database-list="databaseList"
+          class="text-sm"
+        />
         <BBTableSearch
           v-if="showSearchBox"
           class="w-60"
@@ -37,7 +41,7 @@
 
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
-import { ComposedDatabase, LabelKeyType } from "@/types";
+import { ComposedDatabase } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { DeploymentConfig } from "@/types/proto/v1/project_service";
 import { filterDatabaseV1ByKeyword } from "@/utils";
@@ -56,7 +60,7 @@ const props = withDefaults(
 );
 
 const state = reactive({
-  label: "bb.environment" as LabelKeyType,
+  label: "environment",
   keyword: "",
 });
 

@@ -81,18 +81,6 @@
               <span class="mr-1">{{ $t("schema-diagram.self") }}</span>
               <SchemaDiagramIcon />
             </dd>
-            <DatabaseLabelProps
-              :labels="database.labels"
-              :database="database"
-              :allow-edit="allowEditDatabaseLabels"
-              @update:labels="updateLabels"
-            >
-              <template #label="{ label }">
-                <span class="textlabel capitalize">
-                  {{ hidePrefix(label) }}&nbsp;-&nbsp;
-                </span>
-              </template>
-            </DatabaseLabelProps>
           </dl>
         </div>
         <div
@@ -256,7 +244,6 @@ import {
   DatabaseSettingsPanel,
   SQLEditorButtonV1,
 } from "@/components/DatabaseDetail";
-import { DatabaseLabelProps } from "@/components/DatabaseLabels";
 import DatabaseOverviewPanel from "@/components/DatabaseOverviewPanel.vue";
 import DatabaseSlowQueryPanel from "@/components/DatabaseSlowQueryPanel.vue";
 import { SchemaDiagram, SchemaDiagramIcon } from "@/components/SchemaDiagram";
@@ -273,7 +260,6 @@ import {
   useCurrentUserV1,
   useDatabaseV1Store,
   useDBSchemaV1Store,
-  useGracefulRequest,
   useEnvironmentV1Store,
 } from "@/store";
 import {
@@ -287,7 +273,6 @@ import { TenantMode } from "@/types/proto/v1/project_service";
 import {
   idFromSlug,
   hasWorkspacePermissionV1,
-  hidePrefix,
   allowGhostMigrationV1,
   isPITRDatabaseV1,
   isArchivedDatabaseV1,
@@ -489,11 +474,6 @@ const allowAlterSchema = computed(() => {
   );
 });
 
-const allowEditDatabaseLabels = computed((): boolean => {
-  // only allowed to edit database labels when allowAdmin
-  return allowAdmin.value;
-});
-
 const availableDatabaseTabItemList = computed(() => {
   const db = database.value;
   return databaseTabItemList.value.filter((item) => {
@@ -592,17 +572,6 @@ const createMigration = async (
       issueSlug: "new",
     },
     query,
-  });
-};
-
-const updateLabels = (labels: Record<string, string>) => {
-  useGracefulRequest(async () => {
-    const databasePatch = { ...database.value };
-    databasePatch.labels = labels;
-    await databaseV1Store.updateDatabase({
-      database: databasePatch,
-      updateMask: ["labels"],
-    });
   });
 };
 

@@ -67,8 +67,8 @@
           :key="label.key"
           class="flex items-center space-y-1"
         >
-          <span class="capitalize text-left">
-            {{ hidePrefix(label.key) }}
+          <span class="text-left">
+            {{ displayDeploymentMatchSelectorKey(label.key) }}
           </span>
           <span
             class="flex-1 h-px mx-2 border-b border-control-border border-dashed"
@@ -83,9 +83,14 @@
 <script lang="ts" setup>
 import { NPopover } from "naive-ui";
 import { computed, PropType } from "vue";
+import { ComposedDatabase } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import { ComposedDatabase } from "../../types";
-import { databaseV1Slug, hidePrefix, PRESET_LABEL_KEYS } from "../../utils";
+import {
+  convertLabelsToKVList,
+  databaseV1Slug,
+  isVirtualLabelKey,
+  displayDeploymentMatchSelectorKey,
+} from "@/utils";
 import { InstanceV1Name } from "../v2";
 
 const props = defineProps({
@@ -96,16 +101,9 @@ const props = defineProps({
 });
 
 const displayLabelList = computed(() => {
-  return Object.keys(props.database.labels)
-    .map((key) => {
-      const value = props.database.labels[key];
-      return { key, value };
-    })
-    .filter((kv) => {
-      if (!kv.value) return false;
-      if (!PRESET_LABEL_KEYS.includes(kv.key)) return false;
-      return true;
-    });
+  return convertLabelsToKVList(props.database.labels, true /* sort */)
+    .filter((kv) => !isVirtualLabelKey(kv.key))
+    .filter((kv) => kv.value !== "");
 });
 
 const databaseDetailUrl = computed((): string => {

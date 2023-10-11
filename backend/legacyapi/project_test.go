@@ -151,41 +151,6 @@ func TestValidateRepositorySchemaPathTemplate(t *testing.T) {
 	}
 }
 
-func TestValidateProjectDBNameTemplate(t *testing.T) {
-	tests := []struct {
-		name     string
-		template string
-		errPart  string
-	}{
-		{
-			"location",
-			"{{DB_NAME}}_hello_{{LOCATION}}",
-			"",
-		}, {
-			"tenant",
-			"{{DB_NAME}}_{{TENANT}}.sql",
-			"",
-		}, {
-			"InvalidToken",
-			"{{DB_NAME}}_{{TYPE}}",
-			"invalid token {{TYPE}}",
-		}, {
-			"DatabaseNameTokenNotExists",
-			"{{TENANT}}",
-			"must include token {{DB_NAME}}",
-		},
-	}
-
-	for _, test := range tests {
-		err := ValidateProjectDBNameTemplate(test.template)
-		if test.errPart == "" {
-			require.NoError(t, err)
-		} else {
-			require.Contains(t, err.Error(), test.errPart)
-		}
-	}
-}
-
 func TestFormatTemplate(t *testing.T) {
 	tests := []struct {
 		name     string

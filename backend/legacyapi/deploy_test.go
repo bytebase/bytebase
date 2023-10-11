@@ -15,7 +15,7 @@ func TestGetDeploymentSchedule(t *testing.T) {
 	}{
 		{
 			"complexDeployments",
-			`{"deployments":[{"name":"deployment1","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"In","values":["us-central1","europe-west1"]}]}}},{"name":"deployment2","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"Exists"}]}}}]}`,
+			`{"deployments":[{"name":"deployment1","spec":{"selector":{"matchExpressions":[{"key":"environment","operator":"In","values":["prod"]},{"key":"location","operator":"In","values":["us-central1","europe-west1"]}]}}},{"name":"deployment2","spec":{"selector":{"matchExpressions":[{"key":"environment","operator":"In","values":["prod"]},{"key":"location","operator":"Exists"}]}}}]}`,
 			&DeploymentSchedule{
 				Deployments: []*Deployment{
 					{
@@ -24,7 +24,7 @@ func TestGetDeploymentSchedule(t *testing.T) {
 							Selector: &LabelSelector{
 								MatchExpressions: []*LabelSelectorRequirement{
 									{
-										Key:      "bb.environment",
+										Key:      "environment",
 										Operator: "In",
 										Values:   []string{"prod"},
 									}, {
@@ -42,7 +42,7 @@ func TestGetDeploymentSchedule(t *testing.T) {
 							Selector: &LabelSelector{
 								MatchExpressions: []*LabelSelectorRequirement{
 									{
-										Key:      "bb.environment",
+										Key:      "environment",
 										Operator: "In",
 										Values:   []string{"prod"},
 									}, {
@@ -59,7 +59,7 @@ func TestGetDeploymentSchedule(t *testing.T) {
 			"",
 		}, {
 			"invalidPayload",
-			`{"unmatchdeployments":[{"name":"deployment1","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"In","values":["us-central1","europe-west1"]}]}}},{"name":"deployment2","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"Exists"}]}}}]}`,
+			`{"unmatchdeployments":[{"name":"deployment1","spec":{"selector":{"matchExpressions":[{"key":"environment","operator":"In","values":["prod"]},{"key":"location","operator":"In","values":["us-central1","europe-west1"]}]}}},{"name":"deployment2","spec":{"selector":{"matchExpressions":[{"key":"environment","operator":"In","values":["prod"]},{"key":"location","operator":"Exists"}]}}}]}`,
 			&DeploymentSchedule{},
 			"",
 		}, {
@@ -69,17 +69,17 @@ func TestGetDeploymentSchedule(t *testing.T) {
 			"unexpected end of JSON input",
 		}, {
 			"inOperatorWithNoValue",
-			`{"deployments":[{"name":"deployment1","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"In"}]}}}]}`,
+			`{"deployments":[{"name":"deployment1","spec":{"selector":{"matchExpressions":[{"key":"environment","operator":"In","values":["prod"]},{"key":"location","operator":"In"}]}}}]}`,
 			nil,
 			"operator should have at least one value",
 		}, {
 			"existsOperatorWithValues",
-			`{"deployments":[{"name":"deployment1","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"Exists","values":["us-central1","europe-west1"]}]}}}]}`,
+			`{"deployments":[{"name":"deployment1","spec":{"selector":{"matchExpressions":[{"key":"environment","operator":"In","values":["prod"]},{"key":"location","operator":"Exists","values":["us-central1","europe-west1"]}]}}}]}`,
 			nil,
 			"operator shouldn't have values",
 		}, {
 			"invalidOperator",
-			`{"deployments":[{"name":"deployment1","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod"]},{"key":"location","operator":"invalid"}]}}}]}`,
+			`{"deployments":[{"name":"deployment1","spec":{"selector":{"matchExpressions":[{"key":"environment","operator":"In","values":["prod"]},{"key":"location","operator":"invalid"}]}}}]}`,
 			nil,
 			"has invalid operator",
 		}, {
@@ -89,12 +89,12 @@ func TestGetDeploymentSchedule(t *testing.T) {
 			"label",
 		}, {
 			"environmentExistsOperator",
-			`{"deployments":[{"name":"deployment1","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"Exists"},{"key":"location","operator":"In","values":["us-central1","europe-west1"]}]}}}]}`,
+			`{"deployments":[{"name":"deployment1","spec":{"selector":{"matchExpressions":[{"key":"environment","operator":"Exists"},{"key":"location","operator":"In","values":["us-central1","europe-west1"]}]}}}]}`,
 			nil,
 			"should must use operator",
 		}, {
 			"environmentMultiValues",
-			`{"deployments":[{"name":"deployment1","spec":{"selector":{"matchExpressions":[{"key":"bb.environment","operator":"In","values":["prod", "dev"]},{"key":"location","operator":"In","values":["us-central1","europe-west1"]}]}}}]}`,
+			`{"deployments":[{"name":"deployment1","spec":{"selector":{"matchExpressions":[{"key":"environment","operator":"In","values":["prod", "dev"]},{"key":"location","operator":"In","values":["us-central1","europe-west1"]}]}}}]}`,
 			nil,
 			"should must use operator",
 		},

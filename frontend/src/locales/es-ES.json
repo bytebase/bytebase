@@ -267,7 +267,8 @@
     "go-to-configure": "Configurar",
     "updated-at-by": "Actualizado {time} por {user}",
     "created-at-by": "Creado {time} por {user}",
-    "filter-by-name": "Filtrar por nombre"
+    "filter-by-name": "Filtrar por nombre",
+    "tenant": "Arrendataria"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -863,7 +864,6 @@
         }
       }
     },
-    "filter-issue-by-name": "Filtrar problema por nombre",
     "table": {
       "open": "Abierto",
       "closed": "Cerrado",
@@ -1045,11 +1045,12 @@
     "streams": "Streams",
     "tasks": "Tareas",
     "parent": "Padre",
+    "labels-for-resource": "Etiquetas para \"{resource}\"",
     "last-successful-sync": "Última sincronización exitosa",
     "sync-status": "Estado de sincronización",
     "failed-to-sync-schema-for-database-database-value-name": "Error al sincronizar el esquema para la base de datos '{0}'.",
     "successfully-synced-schema-for-database-database-value-name": "Esquema sincronizado correctamente para la base de datos '{0}'.",
-    "start-to-sync-schema": "Start to sync schame",
+    "start-to-sync-schema": "Comenzar a sincronizar el esquema",
     "failed-to-sync-schema": "No se pudo sincronizar el esquema",
     "successfully-synced-schema": "Esquema sincronizado correctamente"
   },
@@ -1321,7 +1322,6 @@
     "no-anomalies-detected": "No se detectaron anomalías",
     "sync-status": "Estado de sincronización",
     "last-successful-sync": "Última sincronización exitosa",
-    "filter-database-name": "Filtrar nombre de base de datos",
     "filter-database": "Filtrar base de datos",
     "database-backup": "copia de seguridad de la base de datos",
     "transfer-project": "Transferir proyecto",
@@ -1615,8 +1615,7 @@
         "content": "El proyecto de Bytebase es similar al concepto de proyecto en otras herramientas de desarrollo comunes.\n\nUn proyecto tiene sus propios miembros, y cada incidencia y base de datos siempre pertenece a un solo proyecto.\n\nUn proyecto también puede configurarse para enlazarlo con un repositorio y habilitar el flujo de trabajo de GitOps.",
         "cancel": "Descartar",
         "confirm": "No volver a mostrar"
-      },
-      "filter-project-name": "Filtrar nombre del proyecto"
+      }
     },
     "table": {
       "key": "@:common.key",
@@ -1953,7 +1952,8 @@
     "label": {
       "key": "Clave",
       "values": "Valores",
-      "value-placeholder": "Valor de etiqueta..."
+      "value-placeholder": "Valor de etiqueta...",
+      "key-placeholder": "Clave de etiqueta..."
     }
   },
   "sql-editor": {
@@ -2050,13 +2050,12 @@
         }
       }
     },
-    "filter-by-name": "Filtrar por nombre",
     "batch-query": {
       "batch": "Lote",
-      "database-labels": "Etiquetas de {database}",
-      "database-has-no-label": "{database} no tiene etiquetas",
-      "description": "Consulta por lotes bases de datos adicionales con los mismos valores de etiqueta."
-    }
+      "select-database": "Seleccione la base de datos a continuación",
+      "description": "Consulta por lotes {count} bases de datos adicionales en {project}."
+    },
+    "executing-query": "Ejecutando consulta"
   },
   "schema-editor": {
     "self": "Editor de esquema",
@@ -2143,7 +2142,10 @@
       "value-duplicated": "Valores duplicados",
       "max-length-exceeded": "La longitud no puede superar {len} caracteres",
       "max-label-count-exceeded": "No se pueden exceder las {count} etiquetas",
-      "cannot-edit-reserved-label": "No se puede editar la etiqueta reservada \"{key}\""
+      "cannot-edit-reserved-label": "No se puede editar la etiqueta reservada \"{key}\"",
+      "max-value-length-exceeded": "La longitud del valor no puede exceder {longitud} caracteres",
+      "key-format": "Sólo se permiten caracteres alfanuméricos ([a-z0-9A-Z]), guiones (-), guiones bajos (_) y puntos (.). \nY debe comenzar y terminar con caracteres alfanuméricos.",
+      "x-is-reserved-key": "\"{key}\" es una clave reservada del sistema"
     },
     "placeholder": {
       "select-key": "Seleccionar clave...",
@@ -2156,7 +2158,8 @@
     "db-name-template-tips": "Especifique una plantilla para aplicar la denominación de la base de datos. Por ejemplo, si su base de datos db1 está dividida geográficamente en EE. UU., Asia y Europa y desea aplicar nombres como db1__US, db1__ASIA, db1__EU, entonces la plantilla podría ser {placeholder}. {link}.",
     "confirm-change": "¿Estás seguro de cambiar '{label}'?",
     "parsed-from-template": "Analizado desde {name} por la plantilla {template}.",
-    "cannot-transfer-template-not-match": "La base de datos '{name}' no puede ser transferida a este proyecto, ya que su nombre no coincide con la plantilla {template}."
+    "cannot-transfer-template-not-match": "La base de datos '{name}' no puede ser transferida a este proyecto, ya que su nombre no coincide con la plantilla {template}.",
+    "add-label": "Agregar etiqueta"
   },
   "oauth": {
     "unknown-event": "Tipo de evento inesperado, OAuth falló."
@@ -2349,7 +2352,7 @@
       },
       "bb-feature-batch-query": {
         "title": "Consulta por lotes",
-        "desc": "Consulta por lotes bases de datos adicionales con los mismos valores de etiqueta."
+        "desc": "Consulta por lotes bases de datos adicionales en el mismo proyecto en el Editor SQL."
       },
       "bb-feature-shared-sql-script": {
         "title": "Script SQL compartido",
@@ -2431,7 +2434,6 @@
     "create-policy": "Crear política",
     "duplicate-policy": "Duplicar política de revisión de SQL",
     "configure-policy": "Configurar política",
-    "search-rule-name": "Buscar nombre de regla",
     "policy-removed": "La política de revisión se eliminó correctamente.",
     "policy-created": "La política de revisión se creó correctamente.",
     "policy-updated": "La política de revisión se actualizó correctamente.",
@@ -3017,6 +3019,7 @@
     "save-draft": "Guardar borrador",
     "merge-branch": "Fusionar rama",
     "delete-branch-after-merged": "Eliminar rama después de la fusión",
+    "raw-sql-preview": "vista previa de sql sin formato",
     "diff-editor": {
       "self": "Editor de diferencias",
       "resolve": "Resolver",
@@ -3043,8 +3046,7 @@
     },
     "action": {
       "use-the-existing-branch": "Usar la rama existente",
-      "create-new-branch": "Crear nueva rama",
-      "filter-by-name": "Filtrar por nombre"
+      "create-new-branch": "Crear nueva rama"
     }
   },
   "cel": {

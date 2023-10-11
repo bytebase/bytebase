@@ -421,6 +421,13 @@ export interface ColumnConfig {
   /** The name is the name of a column. */
   name: string;
   semanticTypeId: string;
+  /** The user labels for a column. */
+  labels: { [key: string]: string };
+}
+
+export interface ColumnConfig_LabelsEntry {
+  key: string;
+  value: string;
 }
 
 function createBaseDatabaseMetadata(): DatabaseMetadata {
@@ -2760,7 +2767,7 @@ export const TableConfig = {
 };
 
 function createBaseColumnConfig(): ColumnConfig {
-  return { name: "", semanticTypeId: "" };
+  return { name: "", semanticTypeId: "", labels: {} };
 }
 
 export const ColumnConfig = {
@@ -2771,6 +2778,9 @@ export const ColumnConfig = {
     if (message.semanticTypeId !== "") {
       writer.uint32(18).string(message.semanticTypeId);
     }
+    Object.entries(message.labels).forEach(([key, value]) => {
+      ColumnConfig_LabelsEntry.encode({ key: key as any, value }, writer.uint32(26).fork()).ldelim();
+    });
     return writer;
   },
 
@@ -2795,6 +2805,16 @@ export const ColumnConfig = {
 
           message.semanticTypeId = reader.string();
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          const entry3 = ColumnConfig_LabelsEntry.decode(reader, reader.uint32());
+          if (entry3.value !== undefined) {
+            message.labels[entry3.key] = entry3.value;
+          }
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2808,6 +2828,12 @@ export const ColumnConfig = {
     return {
       name: isSet(object.name) ? String(object.name) : "",
       semanticTypeId: isSet(object.semanticTypeId) ? String(object.semanticTypeId) : "",
+      labels: isObject(object.labels)
+        ? Object.entries(object.labels).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+          acc[key] = String(value);
+          return acc;
+        }, {})
+        : {},
     };
   },
 
@@ -2815,6 +2841,12 @@ export const ColumnConfig = {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.semanticTypeId !== undefined && (obj.semanticTypeId = message.semanticTypeId);
+    obj.labels = {};
+    if (message.labels) {
+      Object.entries(message.labels).forEach(([k, v]) => {
+        obj.labels[k] = v;
+      });
+    }
     return obj;
   },
 
@@ -2826,6 +2858,80 @@ export const ColumnConfig = {
     const message = createBaseColumnConfig();
     message.name = object.name ?? "";
     message.semanticTypeId = object.semanticTypeId ?? "";
+    message.labels = Object.entries(object.labels ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = String(value);
+      }
+      return acc;
+    }, {});
+    return message;
+  },
+};
+
+function createBaseColumnConfig_LabelsEntry(): ColumnConfig_LabelsEntry {
+  return { key: "", value: "" };
+}
+
+export const ColumnConfig_LabelsEntry = {
+  encode(message: ColumnConfig_LabelsEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ColumnConfig_LabelsEntry {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseColumnConfig_LabelsEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ColumnConfig_LabelsEntry {
+    return { key: isSet(object.key) ? String(object.key) : "", value: isSet(object.value) ? String(object.value) : "" };
+  },
+
+  toJSON(message: ColumnConfig_LabelsEntry): unknown {
+    const obj: any = {};
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value);
+    return obj;
+  },
+
+  create(base?: DeepPartial<ColumnConfig_LabelsEntry>): ColumnConfig_LabelsEntry {
+    return ColumnConfig_LabelsEntry.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<ColumnConfig_LabelsEntry>): ColumnConfig_LabelsEntry {
+    const message = createBaseColumnConfig_LabelsEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
     return message;
   },
 };

@@ -31,7 +31,7 @@ interface InstanceSelectOption extends SelectOption {
 
 const props = withDefaults(
   defineProps<{
-    instance: string | undefined;
+    instance?: string | undefined;
     environment?: string;
     allowedEngineList?: readonly Engine[];
     includeAll?: boolean;
@@ -40,6 +40,7 @@ const props = withDefaults(
     filter?: (instance: ComposedInstance, index: number) => boolean;
   }>(),
   {
+    instance: undefined,
     environment: undefined,
     allowedEngineList: () => supportedEngineV1List(),
     includeAll: false,
@@ -154,13 +155,11 @@ watch([() => props.instance, combinedInstanceList], resetInvalidSelection, {
 
 <style lang="postcss" scoped>
 .bb-instance-select
-  ::v-deep
-  .n-base-selection--active
-  .bb-instance-select--engine-icon {
+  :deep(.n-base-selection--active .bb-instance-select--engine-icon) {
   opacity: 0.3;
 }
 
-.bb-instance-select ::v-deep .n-base-selection-input:focus {
+.bb-instance-select :deep(.n-base-selection-input:focus) {
   @apply !ring-0;
 }
 </style>

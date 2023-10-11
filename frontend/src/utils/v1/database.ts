@@ -303,7 +303,7 @@ export function filterDatabaseV1ByKeyword(
   }
 
   if (columns.includes("tenant")) {
-    const tenantValue = db.labels["bb.tenant"] ?? "";
+    const tenantValue = db.labels["tenant"] ?? "";
     if (tenantValue.toLowerCase().includes(keyword)) {
       return true;
     }

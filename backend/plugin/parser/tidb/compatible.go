@@ -1,4 +1,4 @@
-package mysql
+package tidb
 
 import (
 	"bytes"
@@ -7,7 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 // ExtractTiDBUnsupportedStmts returns a list of unsupported statements in TiDB extracted from the `stmts`,
@@ -16,7 +16,7 @@ func ExtractTiDBUnsupportedStmts(stmts string) ([]string, string, error) {
 	var unsupportStmts []string
 	var supportedStmts bytes.Buffer
 	// We use our bb tokenizer to help us split the multi-statements into statement list.
-	singleSQLs, err := SplitSQL(stmts)
+	singleSQLs, err := mysqlparser.SplitSQL(stmts)
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "cannot split multi sql %q via bytebase parser", stmts)
 	}
@@ -34,7 +34,7 @@ func ExtractTiDBUnsupportedStmts(stmts string) ([]string, string, error) {
 
 // isTiDBUnsupportStmt returns true if this statement is unsupported in TiDB.
 func isTiDBUnsupportStmt(stmt string) bool {
-	if _, err := tidbparser.ParseTiDB(stmt, "", ""); err != nil {
+	if _, err := ParseTiDB(stmt, "", ""); err != nil {
 		return true
 	}
 	return false

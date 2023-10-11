@@ -44,25 +44,7 @@
     />
   </div>
   <div v-if="showLabelsColumn" class="bb-grid-cell">
-    <NTooltip :disabled="Object.keys(database.labels).length <= 1">
-      <template #trigger>
-        <div class="flex items-center space-x-1">
-          <div
-            v-for="[key, label] in Object.entries(database.labels).slice(0, 1)"
-            :key="key"
-            class="rounded-lg bg-gray-100 py-1 px-2 text-sm"
-          >
-            {{ `${key}:${label}` }}
-          </div>
-          <span v-if="Object.keys(database.labels).length > 1">...</span>
-        </div>
-      </template>
-      <div class="text-sm flex flex-col space-y-1">
-        <div v-for="[key, label] in Object.entries(database.labels)" :key="key">
-          {{ `${key}:${label}` }}
-        </div>
-      </div>
-    </NTooltip>
+    <LabelsColumn :labels="database.labels" :show-count="1" placeholder="-" />
   </div>
 </template>
 

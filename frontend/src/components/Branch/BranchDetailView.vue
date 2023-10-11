@@ -74,21 +74,14 @@
           </div>
         </div>
       </div>
-      <div class="flex-1 flex flex-row justify-end gap-2">
-        <SchemaDesignSQLCheckButton
-          class="justify-end"
-          :schema-design="schemaDesign"
-        />
-      </div>
     </div>
 
     <div class="w-full h-[32rem]">
-      <SchemaEditorV1
+      <SchemaDesignEditor
         :key="schemaEditorKey"
-        :readonly="!state.isEditing"
         :project="project"
-        :resource-type="'branch'"
-        :branches="[schemaDesign]"
+        :readonly="!state.isEditing"
+        :branch="schemaDesign"
       />
     </div>
     <!-- Don't show delete button in view mode. -->
@@ -119,7 +112,6 @@ import { CSSProperties, computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
-import SchemaEditorV1 from "@/components/SchemaEditorV1/index.vue";
 import {
   pushNotification,
   useChangeHistoryStore,
@@ -136,7 +128,7 @@ import {
 import { provideSQLCheckContext } from "../SQLCheck";
 import { getBaselineMetadataOfBranch } from "../SchemaEditorV1/utils/branch";
 import MergeBranchPanel from "./MergeBranchPanel.vue";
-import SchemaDesignSQLCheckButton from "./SchemaDesignSQLCheckButton.vue";
+import SchemaDesignEditor from "./SchemaDesignEditor.vue";
 import {
   generateForkedBranchName,
   mergeSchemaEditToMetadata,
@@ -215,8 +207,9 @@ const project = computed(() => {
 const titleInputStyle = computed(() => {
   const style: CSSProperties = {
     cursor: "default",
+    minWidth: "10rem",
     "--n-color-disabled": "transparent",
-    "--n-font-size": "16px",
+    "--n-font-size": "20px",
   };
   const border = state.isEditingTitle
     ? "1px solid var(--color-control-border)"
@@ -398,14 +391,15 @@ const handleSaveBranch = async () => {
             closeOnEsc: true,
             onNegativeClick: () => {
               // Go to draft branch detail page after merge failed.
-              const [, sheetId] = getProjectAndSchemaDesignSheetId(
+              const [projectName, sheetId] = getProjectAndSchemaDesignSheetId(
                 newBranch.name
               );
               state.isEditing = false;
               router.replace({
                 name: "workspace.branch.detail",
                 params: {
-                  branchSlug: `${newBranch.title}-${sheetId}`,
+                  projectName,
+                  branchName: sheetId,
                 },
               });
             },
@@ -457,12 +451,12 @@ const handleSaveBranch = async () => {
 const handleMergeAfterConflictResolved = (branchName: string) => {
   state.showDiffEditor = false;
   state.isEditing = false;
-  const branch = schemaDesignStore.getSchemaDesignByName(branchName);
-  const [, sheetId] = getProjectAndSchemaDesignSheetId(branchName);
+  const [projectName, sheetId] = getProjectAndSchemaDesignSheetId(branchName);
   router.replace({
     name: "workspace.branch.detail",
     params: {
-      branchSlug: `${branch.title}-${sheetId}`,
+      projectName,
+      branchName: sheetId,
     },
   });
 };

@@ -1,5 +1,6 @@
 import Emittery from "emittery";
-import { InjectionKey, Ref, inject, provide, ref } from "vue";
+import { InjectionKey, Ref, inject, provide, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 
 export type ChangelistDashboardFilter = {
   project: string;
@@ -25,6 +26,9 @@ export const useChangelistDashboardContext = () => {
 };
 
 export const provideChangelistDashboardContext = () => {
+  const route = useRoute();
+  const router = useRouter();
+
   const context: ChangelistDashboardContext = {
     filter: ref({
       project: "projects/-",
@@ -33,6 +37,40 @@ export const provideChangelistDashboardContext = () => {
     showCreatePanel: ref(false),
     events: new Emittery(),
   };
+
+  watch(
+    () => route.query.project as string,
+    (project) => {
+      if (project) {
+        context.filter.value.project = project;
+      } else {
+        context.filter.value.project = "projects/-";
+      }
+    },
+    { immediate: true }
+  );
+
+  watch(
+    () => context.filter.value.project,
+    (project) => {
+      const projectInQuery = (route.query.project as string) ?? "";
+      const projectParam = project === "projects/-" ? "" : project;
+      const query = {
+        ...route.query,
+        project: projectParam,
+      };
+      if (query.project === "") {
+        delete (query as any)["project"];
+      }
+      if (projectInQuery !== projectParam) {
+        router.replace({
+          ...route,
+          query,
+        });
+      }
+    },
+    { immediate: true }
+  );
 
   provide(KEY, context);
 

@@ -446,13 +446,14 @@ const handleViewBranch = () => {
     return;
   }
 
-  const [, sheetId] = getProjectAndSchemaDesignSheetId(
+  const [projectName, sheetId] = getProjectAndSchemaDesignSheetId(
     selectedSchemaDesign.value.name
   );
   const route = router.resolve({
     name: "workspace.branch.detail",
     params: {
-      branchSlug: `${selectedSchemaDesign.value.title}-${sheetId}`,
+      projectName,
+      branchName: sheetId,
     },
   });
   window.open(route.href, "_blank");
@@ -561,6 +562,7 @@ watch(
         const diffResp = await databaseStore.diffSchema({
           name: db.name,
           schema: sourceDatabaseSchema.value,
+          sdlFormat: false,
         });
         const schemaDiff = diffResp.diff ?? "";
         databaseDiffCache[id] = {

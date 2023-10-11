@@ -5,7 +5,7 @@
     :data-source="branchList"
     :show-placeholder="true"
     :custom-header="true"
-    class="border-y"
+    class="border"
     @click-row="handleClickRow"
   >
     <template #header>
@@ -60,11 +60,11 @@ import { NCheckbox } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGrid, BBGridColumn, BBGridRow } from "@/bbkit";
+import BranchBaseline from "@/components/Branch/BranchBaseline.vue";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { useUserStore } from "@/store";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import { extractUserResourceName, getHighlightHTMLByRegExp } from "@/utils";
-import BranchBaseline from "./BranchBaseline.vue";
 
 const props = defineProps<{
   selected: string[];

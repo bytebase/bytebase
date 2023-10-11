@@ -133,6 +133,7 @@ import {
   TaskRun,
   TaskRun_Status,
 } from "@/types/proto/v1/rollout_service";
+import { ErrorList } from "../common";
 import CommonDrawer from "./CommonDrawer.vue";
 
 type LocalState = {

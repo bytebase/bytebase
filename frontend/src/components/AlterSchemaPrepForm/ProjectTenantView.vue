@@ -55,7 +55,7 @@
 import { computed, watchEffect } from "vue";
 import { RouterLink } from "vue-router";
 import { useDeploymentConfigV1ByProject } from "@/store";
-import type { ComposedDatabase, LabelKeyType } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { Project } from "@/types/proto/v1/project_service";
 import { getPipelineFromDeploymentScheduleV1, projectV1Slug } from "@/utils";
@@ -64,7 +64,7 @@ import { DeployDatabaseTable } from "../TenantDatabaseTable";
 export type ProjectTenantViewState = {
   selectedDatabaseIdListForTenantMode: Set<string>;
   deployingTenantDatabaseList: string[];
-  label: LabelKeyType;
+  label: string;
 };
 
 const props = defineProps<{

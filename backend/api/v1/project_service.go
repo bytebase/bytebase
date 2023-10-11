@@ -147,8 +147,6 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 		case "tenant_mode":
 			tenantMode := convertToProjectTenantMode(request.Project.TenantMode)
 			patch.TenantMode = &tenantMode
-		case "db_name_template":
-			patch.DBNameTemplate = &request.Project.DbNameTemplate
 		case "schema_change":
 			schemaChange := convertToProjectSchemaChangeType(request.Project.SchemaChange)
 			patch.SchemaChangeType = &schemaChange
@@ -209,7 +207,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, request *v1pb.Delete
 		// We don't close the issues because they might be open still.
 	} else {
 		// Return the open issue error first because that's more important than transferring out databases.
-		openIssues, err := s.store.ListIssueV2(ctx, &store.FindIssueMessage{ProjectResourceID: &project.ResourceID, StatusList: []api.IssueStatus{api.IssueOpen}})
+		openIssues, err := s.store.ListIssueV2(ctx, &store.FindIssueMessage{ProjectIDs: &[]string{project.ResourceID}, StatusList: []api.IssueStatus{api.IssueOpen}})
 		if err != nil {
 			return nil, err
 		}
@@ -268,7 +266,7 @@ func (s *ProjectService) SearchProjects(ctx context.Context, _ *v1pb.SearchProje
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, err.Error())
 		}
-		if !isOwnerOrDBA(role) && !isProjectMember(policy, principalID) {
+		if !isOwnerOrDBA(role) && !isProjectMember(principalID, policy) {
 			continue
 		}
 		response.Projects = append(response.Projects, convertToProject(project))
@@ -2670,7 +2668,6 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		Workflow:                   workflow,
 		Visibility:                 visibility,
 		TenantMode:                 tenantMode,
-		DbNameTemplate:             projectMessage.DBNameTemplate,
 		SchemaChange:               schemaChange,
 		Webhooks:                   projectWebhooks,
 		DataClassificationConfigId: projectMessage.DataClassificationConfigID,
@@ -2736,7 +2733,6 @@ func convertToProjectMessage(resourceID string, project *v1pb.Project) (*store.P
 		Workflow:         workflow,
 		Visibility:       visibility,
 		TenantMode:       tenantMode,
-		DBNameTemplate:   project.DbNameTemplate,
 		SchemaChangeType: schemaChange,
 	}, nil
 }
@@ -2950,7 +2946,7 @@ func validateMember(member string) error {
 	return errors.Errorf("invalid user %s", member)
 }
 
-func isProjectMember(policy *store.IAMPolicyMessage, userID int) bool {
+func isProjectMember(userID int, policy *store.IAMPolicyMessage) bool {
 	for _, binding := range policy.Bindings {
 		for _, member := range binding.Members {
 			if member.ID == userID {

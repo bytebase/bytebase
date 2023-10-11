@@ -40,13 +40,24 @@ func ParsePostgreSQL(sql string) (antlr.Tree, error) {
 	return tree, nil
 }
 
-// NormalizePostgreSQLQualifiedNameAsTableName normalizes the given qualified name as table name.
-func NormalizePostgreSQLQualifiedNameAsTableName(ctx parser.IQualified_nameContext) (string, string, error) {
+// NormalizePostgreSQLAnyName normalizes the given any name.
+func NormalizePostgreSQLAnyName(ctx parser.IAny_nameContext) []string {
 	if ctx == nil {
-		return "", "", nil
+		return nil
 	}
 
-	list := NormalizePostgreSQLQualifiedName(ctx)
+	var result []string
+	result = append(result, NormalizePostgreSQLColid(ctx.Colid()))
+	if ctx.Attrs() != nil {
+		for _, item := range ctx.Attrs().AllAttr_name() {
+			result = append(result, normalizePostgreSQLAttrName(item))
+		}
+	}
+
+	return result
+}
+
+func normalizePostgreSQLStringListAsTableName(list []string) (string, string, error) {
 	switch len(list) {
 	case 2:
 		return list[0], list[1], nil
@@ -55,8 +66,48 @@ func NormalizePostgreSQLQualifiedNameAsTableName(ctx parser.IQualified_nameConte
 	case 0:
 		return "", "", nil
 	default:
-		return "", "", errors.Errorf("Invalid table name: %s", ctx.GetText())
+		return "", "", errors.Errorf("Invalid table name: %v", list)
 	}
+}
+
+// NormalizePostgreSQLAnyNameAsTableName normalizes the given any name as table name.
+func NormalizePostgreSQLAnyNameAsTableName(ctx parser.IAny_nameContext) (string, string, error) {
+	if ctx == nil {
+		return "", "", nil
+	}
+
+	list := NormalizePostgreSQLAnyName(ctx)
+	return normalizePostgreSQLStringListAsTableName(list)
+}
+
+// NormalizePostgreSQLAnyNameAsColumnName normalizes the given any name as column name.
+func NormalizePostgreSQLAnyNameAsColumnName(ctx parser.IAny_nameContext) (string, string, string, error) {
+	if ctx == nil {
+		return "", "", "", nil
+	}
+
+	list := NormalizePostgreSQLAnyName(ctx)
+
+	switch len(list) {
+	case 3:
+		return list[0], list[1], list[2], nil
+	case 2:
+		return "", list[0], list[1], nil
+	case 1:
+		return "", "", list[0], nil
+	default:
+		return "", "", "", errors.Errorf("Invalid column name: %v", list)
+	}
+}
+
+// NormalizePostgreSQLQualifiedNameAsTableName normalizes the given qualified name as table name.
+func NormalizePostgreSQLQualifiedNameAsTableName(ctx parser.IQualified_nameContext) (string, string, error) {
+	if ctx == nil {
+		return "", "", nil
+	}
+
+	list := NormalizePostgreSQLQualifiedName(ctx)
+	return normalizePostgreSQLStringListAsTableName(list)
 }
 
 // ParsePostgreSQLStatement parses the given SQL and returns the AST tree.

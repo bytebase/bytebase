@@ -76,6 +76,8 @@ func TestDeparse(t *testing.T) {
 		"test_trigger_data.yaml",
 		// Type
 		"test_type_data.yaml",
+		// Comment
+		"test_comment_data.yaml",
 	}
 	for _, test := range testFileList {
 		runDeparseTest(t, test, false /* record */)

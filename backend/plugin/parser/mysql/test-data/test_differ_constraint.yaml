@@ -1,0 +1,242 @@
+- oldSchema: |
+    create table t1(
+      a int,
+      b int,
+      constraint check_a check(a > 1),
+      constraint check_b check(b > 1)
+    );
+  newSchema: |
+    create table t1(
+      a int,
+      b int,
+      constraint check_b check(b > 1),
+      constraint check_a check(a > 1)
+    )
+  diff: ""
+- oldSchema: |
+    create table `t1` (
+      `a` INT,
+      `b` INT,
+      CONSTRAINT `check_a` CHECK((`a`>`b`)),
+      CONSTRAINT `check_b` CHECK((`b`>1))
+    );
+  newSchema: |
+    create table `t1` (
+      `a` INT,
+      `b` INT,
+      CONSTRAINT `check_b` CHECK((`b`>`a`)),
+      CONSTRAINT `check_c` CHECK((`a`>1))
+    );
+  diff: |+
+    ALTER TABLE `t1` DROP CHECK `check_a`;
+
+    ALTER TABLE `t1` DROP CHECK `check_b`;
+
+    ALTER TABLE `t1` ADD CONSTRAINT `check_b` CHECK((`b`>`a`));
+
+    ALTER TABLE `t1` ADD CONSTRAINT `check_c` CHECK((`a`>1));
+
+- oldSchema: |
+    create table `book` (
+      `a` INT,
+      CONSTRAINT `t1_chk_1` CHECK((`a`> 0))
+    );
+  newSchema: |
+    create table `book` (
+      `a` INT,
+      CONSTRAINT `t1_chk_1` CHECK((`a`> 0))
+    );
+  diff: ""
+- oldSchema: |
+    create table `book` (
+      `id` INT,
+      `price` INT,
+      PRIMARY KEY(`id`),
+      CONSTRAINT `check_price` CHECK((price > 0))
+    );
+  newSchema: |
+    create table `book` (
+      `id` INT,
+      `price` INT,
+      PRIMARY KEY(`id`),
+      CONSTRAINT `check_price` CHECK((price > 1))
+    );
+  diff: |+
+    ALTER TABLE `book` DROP CHECK `check_price`;
+
+    ALTER TABLE `book` ADD CONSTRAINT `check_price` CHECK((price > 1));
+
+- oldSchema: |
+    create table `book` (
+      `id` INT,
+      `price` INT,
+      PRIMARY KEY(`id`),
+      CONSTRAINT `check_price` CHECK((price > 0))
+    );
+  newSchema: |
+    create table `book` (
+      `id` INT,
+      `price` INT,
+      PRIMARY KEY(`id`),
+      CONSTRAINT `check_price` CHECK((price > 1)) NOT ENFORCED
+    );
+  diff: |+
+    ALTER TABLE `book` DROP CHECK `check_price`;
+
+    ALTER TABLE `book` ADD CONSTRAINT `check_price` CHECK((price > 1)) NOT ENFORCED;
+
+- oldSchema: |
+    create table `book` (
+      `id` INT,
+      `price` INT,
+      PRIMARY KEY(`id`),
+      CONSTRAINT `check_price` CHECK((price > 0))
+    );
+  newSchema: |
+    create table `book` (
+      `id` INT,
+      `price` INT,
+      PRIMARY KEY(`id`),
+      CONSTRAINT `check_price` CHECK((price > 0)) NOT ENFORCED
+    );
+  diff: |+
+    ALTER TABLE `book` DROP CHECK `check_price`;
+
+    ALTER TABLE `book` ADD CONSTRAINT `check_price` CHECK((price > 0)) NOT ENFORCED;
+
+- oldSchema: |
+    create table `book` (
+      `id` INT,
+      `price` INT,
+      PRIMARY KEY(`id`),
+      CONSTRAINT `check_price` CHECK((`price` > 0)),
+      CONSTRAINT `check_price2` CHECK((`price` > 1))
+    );
+  newSchema: |
+    create table `book` (
+      `id` INT,
+      `price` INT,
+      PRIMARY KEY(`id`),
+      CONSTRAINT `check_price` CHECK((price > 0)) NOT ENFORCED
+    );
+  diff: |+
+    ALTER TABLE `book` DROP CHECK `check_price`;
+
+    ALTER TABLE `book` DROP CHECK `check_price2`;
+
+    ALTER TABLE `book` ADD CONSTRAINT `check_price` CHECK((price > 0)) NOT ENFORCED;
+
+- oldSchema: |
+    CREATE TABLE `department` (`id` INT, `name` VARCHAR(50) NOT NULL, PRIMARY KEY(`department`));
+
+    CREATE TABLE `employee` (`id` INT, `name` VARCHAR(50) NOT NULL, `department_id` INT, PRIMARY KEY(`department`), FOREIGN KEY employee_ibfk_1(department_id) REFERENCES department(`id`));
+  newSchema: |
+    CREATE TABLE `department` (`id` INT, `name` VARCHAR(50) NOT NULL, PRIMARY KEY(`department`));
+
+    CREATE TABLE `employee` (`id` INT, `name` VARCHAR(50) NOT NULL, `department_id` INT, PRIMARY KEY(`department`), FOREIGN KEY fk_2(department_id) REFERENCES department(`id`));
+  diff: |+
+    ALTER TABLE `employee` DROP FOREIGN KEY `employee_ibfk_1`;
+
+    ALTER TABLE employee ADD FOREIGN KEY fk_2(department_id) REFERENCES department(`id`);
+
+- oldSchema: |
+    CREATE TABLE `department` (
+      `id` INT NOT NULL,
+      `name` VARCHAR(50) NOT NULL,
+      PRIMARY KEY(`id`),
+      KEY `id_name_idx` (`id`, `name`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    CREATE TABLE `employee` (
+      `id` INT NOT NULL,
+      `name` VARCHAR(50) NOT NULL,
+      `department_id` INT DEFAULT NULL,
+      `department_name` VARCHAR(50) DEFAULT NULL,
+      PRIMARY KEY(`department`),
+      KEY `department_id_name_idx` (`department_id`, `department_name`),
+      CONSTRAINT `employee_ibfk_1` FOREIGN KEY (`department_id`, `department_name`) REFERENCES `department`(`id`, `name`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;;
+  newSchema: |
+    CREATE TABLE `department` (
+      `id` INT NOT NULL,
+      `name` VARCHAR(50) NOT NULL,
+      PRIMARY KEY(`id`),
+      KEY `id_idx` (`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    CREATE TABLE `employee` (
+      `id` INT NOT NULL,
+      `name` VARCHAR(50) NOT NULL,
+      `department_id` INT DEFAULT NULL,
+      `department_name` VARCHAR(50) DEFAULT NULL,
+      PRIMARY KEY(`department`),
+      KEY `department_id_idx` (`department_id`),
+      CONSTRAINT `employee_ibfk_1` FOREIGN KEY (`department_id`) REFERENCES `department`(`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;;
+  diff: |+
+    ALTER TABLE `employee` DROP FOREIGN KEY `employee_ibfk_1`;
+
+    DROP INDEX `id_name_idx` ON `department`;
+
+    DROP INDEX `department_id_name_idx` ON `employee`;
+
+    CREATE INDEX `id_idx` ON `department`(`id`);
+
+    CREATE INDEX `department_id_idx` ON `employee`(`department_id`);
+
+    ALTER TABLE employee ADD CONSTRAINT `employee_ibfk_1` FOREIGN KEY (`department_id`) REFERENCES `department`(`id`);
+
+- oldSchema: |
+    CREATE TABLE `employee` (
+      `id` INT NOT NULL,
+      `name` VARCHAR(50) NOT NULL,
+      `leader_id` INT DEFAULT NULL,
+      PRIMARY KEY(`id`),
+      CONSTRAINT `employee_ibfk_1` FOREIGN KEY (`leader_id`) REFERENCES `employee`(`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;;
+  newSchema: |
+    CREATE TABLE `employee` (
+      `id` INT NOT NULL,
+      `name` VARCHAR(50) NOT NULL,
+      `leader_id` INT DEFAULT NULL,
+      `manager_id` INT DEFAULT NULL,
+      PRIMARY KEY(`id`),
+      CONSTRAINT `employee_ibfk_1` FOREIGN KEY (`manager`) REFERENCES `employee`(`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;;
+  diff: |+
+    ALTER TABLE `employee` DROP FOREIGN KEY `employee_ibfk_1`;
+
+    ALTER TABLE `employee` ADD COLUMN `manager_id` INT DEFAULT NULL AFTER `leader_id`;
+
+    ALTER TABLE employee ADD CONSTRAINT `employee_ibfk_1` FOREIGN KEY (`manager`) REFERENCES `employee`(`id`);
+
+- oldSchema: |
+    create table `book` (
+      `a` INT,
+      CONSTRAINT `t1_chk_1` CHECK((`a`> 0))
+    );
+  newSchema: |
+    create table `book` (
+      `a` INT,
+      CONSTRAINT `t1_chk_1` CHECK((`a`> 0))
+    );
+  diff: ""
+- oldSchema: |
+    create table `book` (
+      `id` INT,
+      `price` INT,
+      PRIMARY KEY(`id`),
+      CONSTRAINT `check_price` CHECK((price > 0))
+    );
+  newSchema: |
+    create table `book` (
+      `id` INT,
+      `price` INT,
+      PRIMARY KEY(`id`),
+      CONSTRAINT `check_price` CHECK((price > 1))
+    );
+  diff: |+
+    ALTER TABLE `book` DROP CHECK `check_price`;
+
+    ALTER TABLE `book` ADD CONSTRAINT `check_price` CHECK((price > 1));
+

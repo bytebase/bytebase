@@ -1,0 +1,85 @@
+- oldSchema: |
+    CREATE VIEW `a` AS SELECT 1 AS id, 1 AS name;
+    CREATE VIEW `a` AS SELECT `id`, `name` FROM `book`;
+  newSchema: |
+    CREATE VIEW `a` AS SELECT 1 AS id;
+    CREATE VIEW `a` AS SELECT `id` FROM `book`;
+  diff: |+
+    CREATE OR REPLACE ALGORITHM=UNDEFINED DEFINER=CURRENT_USER SQL SECURITY DEFINER VIEW `a` AS SELECT `id` FROM `book`;
+
+- oldSchema: |
+    CREATE TABLE `book` (`id` INT, `name` VARCHAR(25));
+    CREATE VIEW `a` AS SELECT `id`, `name` FROM `book`;
+  newSchema: |
+    CREATE TABLE `book` (`id` INT, `name` VARCHAR(25));
+    CREATE VIEW `a` AS SELECT `id` FROM `book`;
+    CREATE VIEW `b` AS SELECT `id` FROM `a`;
+  diff: |+
+    CREATE OR REPLACE ALGORITHM=UNDEFINED DEFINER=CURRENT_USER SQL SECURITY DEFINER VIEW `b` AS SELECT SQL_NO_CACHE 1 AS `id`;
+
+    CREATE OR REPLACE ALGORITHM=UNDEFINED DEFINER=CURRENT_USER SQL SECURITY DEFINER VIEW `a` AS SELECT `id` FROM `book`;
+
+    CREATE OR REPLACE ALGORITHM=UNDEFINED DEFINER=CURRENT_USER SQL SECURITY DEFINER VIEW `b` AS SELECT `id` FROM `a`;
+
+- oldSchema: |
+    CREATE TABLE `book` (`id` INT, `name` VARCHAR(25));
+    CREATE VIEW `a` AS SELECT `id`, `name` FROM `book`;
+  newSchema: |
+    CREATE TABLE `book` (`id` INT, `name` VARCHAR(25));
+    CREATE VIEW `a` AS SELECT `id` AS `a_id` FROM `book`;
+    CREATE VIEW `b` AS SELECT `id` AS `b_id` FROM `a`;
+  diff: |+
+    CREATE OR REPLACE ALGORITHM=UNDEFINED DEFINER=CURRENT_USER SQL SECURITY DEFINER VIEW `b` AS SELECT SQL_NO_CACHE 1 AS `b_id`;
+
+    CREATE OR REPLACE ALGORITHM=UNDEFINED DEFINER=CURRENT_USER SQL SECURITY DEFINER VIEW `a` AS SELECT `id` AS `a_id` FROM `book`;
+
+    CREATE OR REPLACE ALGORITHM=UNDEFINED DEFINER=CURRENT_USER SQL SECURITY DEFINER VIEW `b` AS SELECT `id` AS `b_id` FROM `a`;
+
+- oldSchema: |
+    CREATE TABLE `book` (`id` INT, `name` VARCHAR(25));
+    CREATE VIEW `a` AS SELECT `id` FROM `book`;
+  newSchema: |
+    CREATE TABLE `book` (`id` INT, `name` VARCHAR(25));
+    CREATE VIEW `a` AS SELECT * FROM `book`;
+    CREATE VIEW `b` AS SELECT * FROM `a`;
+  diff: |+
+    CREATE OR REPLACE ALGORITHM=UNDEFINED DEFINER=CURRENT_USER SQL SECURITY DEFINER VIEW `b` AS SELECT SQL_NO_CACHE 1 AS `id`, 1 AS `name`;
+
+    CREATE OR REPLACE ALGORITHM=UNDEFINED DEFINER=CURRENT_USER SQL SECURITY DEFINER VIEW `a` AS SELECT * FROM `book`;
+
+    CREATE OR REPLACE ALGORITHM=UNDEFINED DEFINER=CURRENT_USER SQL SECURITY DEFINER VIEW `b` AS SELECT * FROM `a`;
+
+- oldSchema: ""
+  newSchema: |
+    CREATE TABLE `book` (`id` INT, `name` VARCHAR(25));
+    CREATE TABLE `e` (`c` INT, `d` INT);
+    CREATE VIEW `a` AS WITH `cte` AS (SELECT `id`, `name` FROM `book`) SELECT `id`, `name` FROM `cte` UNION SELECT `c`, `d` FROM `e`;
+  diff: |+
+    CREATE TABLE IF NOT EXISTS `book` (`id` INT, `name` VARCHAR(25));
+
+    CREATE TABLE IF NOT EXISTS `e` (`c` INT, `d` INT);
+
+    CREATE OR REPLACE ALGORITHM=UNDEFINED DEFINER=CURRENT_USER SQL SECURITY DEFINER VIEW `a` AS SELECT SQL_NO_CACHE 1 AS `id`, 1 AS `name`;
+
+    CREATE OR REPLACE ALGORITHM=UNDEFINED DEFINER=CURRENT_USER SQL SECURITY DEFINER VIEW `a` AS WITH `cte` AS (SELECT `id`, `name` FROM `book`) SELECT `id`, `name` FROM `cte` UNION SELECT `c`, `d` FROM `e`;
+
+- oldSchema: |
+    CREATE TABLE `book1` (`id` INT);
+    CREATE VIEW `book` AS SELECT * FROM `book1`;
+  newSchema: |
+    CREATE TABLE `book2` (`id` INT);
+    CREATE VIEW `book` AS SELECT * FROM `book2`;
+  diff: |+
+    DROP TABLE IF EXISTS `book1`;
+
+    CREATE TABLE IF NOT EXISTS `book2` (`id` INT);
+
+    CREATE OR REPLACE ALGORITHM=UNDEFINED DEFINER=CURRENT_USER SQL SECURITY DEFINER VIEW `book` AS SELECT * FROM `book2`;
+
+- oldSchema: |
+    CREATE VIEW `order_incomes` AS SELECT `order_id`, `customer_name`, SUM((`ordered_quantity` * `product_price`)) AS `total` FROM `order_details` INNER JOIN `orders` USING (`order_id`) INNER JOIN `customers` USING (`customer_name`) GROUP BY `order_id`;
+  newSchema: |
+    CREATE VIEW order_incomes AS SELECT `order_id`, `customer_name`, SUM((`ordered_quantity` * `product_price`)) + 1 AS `total` FROM `order_details` INNER JOIN `orders` USING (`order_id`) INNER JOIN `customers` USING (`customer_name`) GROUP BY `order_id`;
+  diff: |+
+    CREATE OR REPLACE ALGORITHM=UNDEFINED DEFINER=CURRENT_USER SQL SECURITY DEFINER VIEW `order_incomes` AS SELECT `order_id`, `customer_name`, SUM((`ordered_quantity` * `product_price`)) + 1 AS `total` FROM `order_details` INNER JOIN `orders` USING (`order_id`) INNER JOIN `customers` USING (`customer_name`) GROUP BY `order_id`;
+

@@ -34,18 +34,6 @@ type DatabaseMessage struct {
 	Metadata    *storepb.DatabaseMetadata
 }
 
-// GetEffectiveLabels gets the effective labels for a database.
-func (m *DatabaseMessage) GetEffectiveLabels() map[string]string {
-	ret := make(map[string]string)
-	for k, v := range m.Metadata.Labels {
-		ret[k] = v
-	}
-	// System default environment label.
-	// The value of bb.environment is resource ID of the environment.
-	ret[api.EnvironmentLabelKey] = m.EffectiveEnvironmentID
-	return ret
-}
-
 // UpdateDatabaseMessage is the mssage for updating a database.
 type UpdateDatabaseMessage struct {
 	InstanceID   string
@@ -319,7 +307,7 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 		project.UID,
 		environmentUID,
 		create.DatabaseName,
-		api.OK,
+		create.SyncState,
 		create.SuccessfulSyncTimeTs,
 		storedVersion,
 		secretsString,
@@ -338,7 +326,7 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 	// Invalidate and update the cache.
 	s.databaseCache.Delete(getDatabaseCacheKey(instance.ResourceID, create.DatabaseName))
 	s.databaseIDCache.Delete(databaseUID)
-	return s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: &databaseUID})
+	return s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: &databaseUID, ShowDeleted: true})
 }
 
 // UpdateDatabase updates a database.
@@ -397,13 +385,15 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 		set, args = append(set, fmt.Sprintf("service_name = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.MetadataUpsert; v != nil {
-		// We will skip writing the system label, environment.
-		delete(v.Labels, api.EnvironmentLabelKey)
-		metadataString, err := protojson.Marshal(v)
+		metadataBytes, err := protojson.Marshal(v)
 		if err != nil {
 			return nil, err
 		}
-		set, args = append(set, fmt.Sprintf("metadata = metadata || $%d", len(args)+1)), append(args, metadataString)
+		if v.Labels != nil && len(v.Labels) == 0 {
+			set, args = append(set, fmt.Sprintf("metadata = metadata || $%d || $%d", len(args)+1, len(args)+2)), append(args, metadataBytes, `{"labels": {}}`)
+		} else {
+			set, args = append(set, fmt.Sprintf("metadata = metadata || $%d", len(args)+1)), append(args, metadataBytes)
+		}
 	}
 	args = append(args, instance.UID, patch.DatabaseName)
 

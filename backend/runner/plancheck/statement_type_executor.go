@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	tidbparser "github.com/pingcap/tidb/parser"
+	tidbp "github.com/pingcap/tidb/parser"
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pkg/errors"
 
@@ -13,9 +13,9 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
+	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	runnerutils "github.com/bytebase/bytebase/backend/runner/utils"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -348,10 +348,10 @@ func (e *StatementTypeExecutor) mysqlSDLTypeCheck(ctx context.Context, newSchema
 
 	var results []*storepb.PlanCheckRunResult_Result
 	for _, stmt := range list {
-		if mysqlparser.IsTiDBUnsupportDDLStmt(stmt.Text) {
+		if tidbparser.IsTiDBUnsupportDDLStmt(stmt.Text) {
 			continue
 		}
-		nodeList, _, err := tidbparser.New().Parse(stmt.Text, "", "")
+		nodeList, _, err := tidbp.New().Parse(stmt.Text, "", "")
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to parse schema %q", stmt.Text)
 		}
@@ -483,7 +483,7 @@ func mysqlCreateAndDropDatabaseCheck(nodeList []tidbast.StmtNode) []*storepb.Pla
 func mysqlStatementTypeCheck(statement string, charset string, collation string, changeType storepb.PlanCheckRunConfig_ChangeDatabaseType) ([]*storepb.PlanCheckRunResult_Result, error) {
 	// Due to the limitation of TiDB parser, we should split the multi-statement into single statements, and extract
 	// the TiDB unsupported statements, otherwise, the parser will panic or return the error.
-	unsupportStmt, supportStmt, err := mysqlparser.ExtractTiDBUnsupportedStmts(statement)
+	unsupportStmt, supportStmt, err := tidbparser.ExtractTiDBUnsupportedStmts(statement)
 	if err != nil {
 		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{
@@ -506,7 +506,7 @@ func mysqlStatementTypeCheck(statement string, charset string, collation string,
 	// But we should ban the DELIMITER statement because go-sql-driver doesn't support it.
 	hasUnsupportDDL := len(unsupportStmt) > 0
 
-	p := tidbparser.New()
+	p := tidbp.New()
 	// To support MySQL8 window function syntax.
 	// See https://github.com/bytebase/bytebase/issues/175.
 	p.EnableWindowFunc(true)

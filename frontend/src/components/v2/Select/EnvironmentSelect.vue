@@ -25,11 +25,12 @@ interface EnvironmentSelectOption extends SelectOption {
 
 const props = withDefaults(
   defineProps<{
-    environment: string | undefined;
+    environment?: string | undefined;
     includeArchived?: boolean;
     filter?: (environment: Environment, index: number) => boolean;
   }>(),
   {
+    environment: undefined,
     includeArchived: false,
     filter: () => true,
   }
@@ -92,7 +93,7 @@ watchEffect(prepare);
 </script>
 
 <style lang="postcss" scoped>
-.bb-environment-select ::v-deep .n-base-selection-input:focus {
+.bb-environment-select :deep(.n-base-selection-input:focus) {
   @apply !ring-0;
 }
 </style>

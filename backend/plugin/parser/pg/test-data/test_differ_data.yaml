@@ -449,3 +449,43 @@
         "a" integer
     );
 
+- oldSchema: |-
+    create table "public"."t1" ("a" int);
+    comment on table "public"."t1" is 'comment with ''; test escape';
+    create table "public"."t2" ("a" int);
+    comment on table "public"."t2" is 'comment with ''; test escape';
+    create table "public"."t3" ("a" int);
+    create table "public"."t4" ("a" int);
+    comment on table "public"."t4" is 'comment with ''; test escape';
+  newSchema: |-
+    create table "public"."t1" ("a" int);
+    create table "public"."t2" ("a" int);
+    comment on table "public"."t2" is 'comment with ''; test escape';
+    create table "public"."t3" ("a" int);
+    comment on table "public"."t3" is 'comment with ''; test escape';
+    create table "public"."t4" ("a" int);
+    comment on table "public"."t4" is 'comment with ''; test escape for t4';
+  diff: |+
+    COMMENT ON TABLE "public"."t3" IS 'comment with ''; test escape';
+
+    COMMENT ON TABLE "public"."t4" IS 'comment with ''; test escape for t4';
+
+    COMMENT ON TABLE "public"."t1" IS '';
+
+- oldSchema: |-
+    create table "public"."t1" ("a" int, b int, c int, d int);
+    comment on column public.t1.a is 'comment with ''; test escape';
+    comment on column public.t1.b is 'comment with ''; test escape for b';
+    comment on column public.t1.d is 'comment with ''; test escape';
+  newSchema: |-
+    create table "public"."t1" ("a" int, b int, c int, d int);
+    comment on column public.t1.c is 'comment with ''; test escape for c';
+    comment on column public.t1.b is 'comment with ''; test escape for b';
+    comment on column public.t1.d is 'comment with ''; test escape for d';
+  diff: |+
+    COMMENT ON COLUMN "public"."t1"."c" IS 'comment with ''; test escape for c';
+
+    COMMENT ON COLUMN "public"."t1"."d" IS 'comment with ''; test escape for d';
+
+    COMMENT ON COLUMN "public"."t1"."a" IS '';
+

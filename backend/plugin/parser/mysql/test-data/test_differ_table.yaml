@@ -1,0 +1,157 @@
+- oldSchema: |
+    CREATE TABLE `t1` (`id` INT);
+  newSchema: |
+    CREATE TABLE `t2` (`id` INT);
+  diff: |+
+    DROP TABLE IF EXISTS `t1`;
+
+    CREATE TABLE IF NOT EXISTS `t2` (`id` INT);
+
+- oldSchema: |
+    CREATE TABLE `t1` (
+      `id` INT PRIMARY KEY,
+      `username` VARCHAR(55) NOT NULL
+    );
+  newSchema: |
+    CREATE TABLE `t2` (`id` INT);
+    CREATE TABLE `t1` (
+      `id` INT PRIMARY KEY,
+      `username` VARCHAR(55) NOT NULL
+    );
+  diff: |+
+    CREATE TABLE IF NOT EXISTS `t2` (`id` INT);
+
+- oldSchema: |
+    CREATE TABLE `projects` (`id` INT);
+  newSchema: |
+    CREATE TABLE `users` (
+      `id` INT NOT NULL,
+      `username` VARCHAR(25) NOT NULL,
+      PRIMARY KEY (`id`)
+    );
+    CREATE TABLE `projects` (`id` INT);
+
+    CREATE TABLE `repositories` (
+      `id` INT NOT NULL,
+      PRIMARY KEY (`id`)
+    );
+  diff: |+
+    CREATE TABLE IF NOT EXISTS `repositories` (
+      `id` INT NOT NULL,
+      PRIMARY KEY (`id`)
+    );
+
+    CREATE TABLE IF NOT EXISTS `users` (
+      `id` INT NOT NULL,
+      `username` VARCHAR(25) NOT NULL,
+      PRIMARY KEY (`id`)
+    );
+
+- oldSchema: |
+    CREATE TABLE `t1` (
+      `a` int,
+      `b` int,
+      `c` int
+    );
+    CREATE INDEX `idx_t1_a` ON `t1`(`a`);
+  newSchema: ""
+  diff: |+
+    DROP TABLE IF EXISTS `t1`;
+
+- oldSchema: |
+    CREATE TABLE `t1` (
+      `id` INT
+    );
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      `price` INT,
+      PRIMARY KEY(`id`)
+    );
+    CREATE TABLE `author` (
+      `id` INT,
+      `name` VARCHAR(255),
+      PRIMARY KEY(`id`)
+    );
+  diff: |+
+    DROP TABLE IF EXISTS `t1`;
+
+    CREATE TABLE IF NOT EXISTS `author` (
+      `id` INT,
+      `name` VARCHAR(255),
+      PRIMARY KEY(`id`)
+    );
+
+    CREATE TABLE IF NOT EXISTS `book` (
+      `id` INT,
+      `price` INT,
+      PRIMARY KEY(`id`)
+    );
+
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      `price` INT,
+      PRIMARY KEY(`id`)
+    );;
+  newSchema: |
+    CREATE TABLE `author` (
+      `id` INT,
+      `name` VARCHAR(255),
+      PRIMARY KEY(`id`)
+    );
+  diff: |+
+    DROP TABLE IF EXISTS `book`;
+
+    CREATE TABLE IF NOT EXISTS `author` (
+      `id` INT,
+      `name` VARCHAR(255),
+      PRIMARY KEY(`id`)
+    );
+
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      `price` INT,
+      PRIMARY KEY(`id`)
+    );
+    CREATE TABLE `author` (
+      `id` INT,
+      `name` VARCHAR(255),
+      PRIMARY KEY(`id`)
+    );
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      `price` INT,
+      PRIMARY KEY(`id`)
+    );
+    CREATE TABLE `author` (
+      `id` INT,
+      `name` VARCHAR(255),
+      PRIMARY KEY(`id`)
+    );
+  diff: ""
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      `price` INT,
+      PRIMARY KEY(`id`),
+      CONSTRAINT `fk_price_id` FOREIGN KEY (`price`) REFERENCES price(`id`)
+    );
+    CREATE TABLE `price` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    );
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT,
+      PRIMARY KEY(`id`)
+    );
+  diff: |+
+    ALTER TABLE `book` DROP FOREIGN KEY `fk_price_id`;
+
+    DROP TABLE IF EXISTS `price`;
+
+    ALTER TABLE `book` DROP COLUMN `price`;
+

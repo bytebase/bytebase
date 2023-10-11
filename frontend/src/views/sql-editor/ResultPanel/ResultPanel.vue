@@ -4,13 +4,27 @@
     :class="loading && 'bg-white/80 dark:bg-black/80'"
   >
     <template v-if="loading">
-      <div class="w-full h-full flex flex-col justify-center items-center">
-        <BBSpin />
-        {{ $t("sql-editor.loading-data") }}
+      <div
+        class="w-full h-full flex flex-col justify-center items-center text-sm gap-y-1"
+      >
+        <div class="flex flex-row gap-x-1">
+          <BBSpin />
+          <span>{{ $t("sql-editor.executing-query") }}</span>
+          <span>-</span>
+          <!-- use mono font to prevent the UI jitters frequently -->
+          <span class="font-mono">{{ queryElapsedTime }}</span>
+        </div>
+        <div>
+          <NButton size="small" @click="cancelQuery">
+            {{ $t("common.cancel") }}
+          </NButton>
+        </div>
       </div>
     </template>
     <template v-else-if="!selectedResultSet">
-      <div class="w-full h-full flex flex-col justify-center items-center">
+      <div
+        class="w-full h-full flex flex-col justify-center items-center text-sm"
+      >
         <span>{{ $t("sql-editor.table-empty-placeholder") }}</span>
       </div>
     </template>
@@ -59,6 +73,7 @@
 </template>
 
 <script lang="ts" setup>
+import { useTimestamp } from "@vueuse/core";
 import { head } from "lodash-es";
 import { Info } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
@@ -86,10 +101,31 @@ const selectedResultSet = computed(() => {
 });
 const executeParams = computed(() => tabStore.currentTab.executeParams);
 const loading = computed(() => tabStore.currentTab.isExecutingSQL);
+const currentTimestampMS = useTimestamp();
+const queryElapsedTime = computed(() => {
+  if (!loading.value) return "";
+  const tab = tabStore.currentTab;
+  const { isExecutingSQL, queryContext } = tab;
+  if (!isExecutingSQL) return "";
+  if (!queryContext) return;
+  const beginMS = queryContext.beginTimestampMS;
+  const elapsedMS = currentTimestampMS.value - beginMS;
+  return `${(elapsedMS / 1000).toFixed(1)}s`;
+});
 
 const isDatabaseQueryFailed = (database: ComposedDatabase) => {
-  return tabStore.currentTab.databaseQueryResultMap?.get(database.name || "")
-    ?.error;
+  const resultSet = tabStore.currentTab.databaseQueryResultMap?.get(
+    database.name || ""
+  );
+  // If there is any error in the result set, we consider the query failed.
+  return resultSet?.error || resultSet?.results.find((result) => result.error);
+};
+
+const cancelQuery = () => {
+  const { queryContext } = tabStore.currentTab;
+  if (!queryContext) return;
+  const { abortController } = queryContext;
+  abortController?.abort();
 };
 
 // Auto select the first database when the databases are ready.
