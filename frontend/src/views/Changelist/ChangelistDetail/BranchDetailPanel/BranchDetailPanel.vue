@@ -14,6 +14,7 @@
           :readonly="true"
           :project="editorBindings.project"
           :branch="editorBindings.branch"
+          :hide-s-q-l-check-button="true"
         />
       </div>
     </DrawerContent>
