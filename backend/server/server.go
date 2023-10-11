@@ -52,8 +52,6 @@ import (
 )
 
 const (
-	// internalAPIPrefix is the API prefix for Bytebase internal, used by the UX.
-	internalAPIPrefix = "/api"
 	// webhookAPIPrefix is the API prefix for Bytebase webhook.
 	webhookAPIPrefix       = "/hook"
 	maxStacksize           = 1024 * 10240
@@ -347,8 +345,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	webhookGroup := s.e.Group(webhookAPIPrefix)
 	gitOpsService := gitops.NewService(s.store, s.dbFactory, s.activityManager, s.stateCfg, s.licenseService, rolloutService, issueService)
 	gitOpsService.RegisterWebhookRoutes(webhookGroup)
-	apiGroup := s.e.Group(internalAPIPrefix)
-	s.registerDatabaseRoutes(apiGroup)
 
 	reflection.Register(s.grpcServer)
 

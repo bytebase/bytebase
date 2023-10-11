@@ -8,11 +8,7 @@ import { schemaDesignServiceClient } from "@/grpcweb";
 import { t } from "@/plugins/i18n";
 import { useDBSchemaV1Store, useSchemaEditorV1Store } from "@/store";
 import { ComposedDatabase } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
-import {
-  getDatabaseEditListWithSchemaEditor,
-  postDatabaseEdit,
-} from "../utils";
+import { getDatabaseEditListWithSchemaEditor } from "../utils";
 
 export const useSchemaEditorSQLCheck = (params: {
   selectedTab: Ref<"raw-sql" | "schema-editor">;
@@ -53,73 +49,41 @@ export const useSchemaEditorSQLCheck = (params: {
         statement: "",
       };
     }
-    const databaseEdit = databaseEditList[0];
     const db = database.value;
-    // Use `SchemaDesignService.DiffMetadata` for MySQL as we only support MySQL for now.
-    if (db.instanceEntity.engine === Engine.MYSQL) {
-      const databaseSchema = schemaEditorV1Store.resourceMap["database"].get(
-        db.name
-      );
-      if (!databaseSchema) {
-        return { errors: [], statement: "" };
-      }
-      const metadata = await dbSchemaV1Store.getOrFetchDatabaseMetadata(
-        db.name,
-        false /* !skipCache */,
-        true /* silent */
-      );
-      const mergedMetadata = mergeSchemaEditToMetadata(
-        databaseSchema.schemaList,
-        cloneDeep(metadata)
-      );
-      const validationMessages = validateDatabaseMetadata(mergedMetadata);
-      if (validationMessages.length > 0) {
-        return {
-          errors: validationMessages,
-          statement: "",
-        };
-      }
-      try {
-        const { diff } = await schemaDesignServiceClient.diffMetadata(
-          {
-            sourceMetadata: metadata,
-            targetMetadata: mergedMetadata,
-            engine: db.instanceEntity.engine,
-          },
-          {
-            silent: true,
-          }
-        );
-        if (diff.length === 0) {
-          return {
-            errors: [t("schema-editor.nothing-changed")],
-            statement: "",
-          };
+    const databaseSchema = schemaEditorV1Store.resourceMap["database"].get(
+      db.name
+    );
+    if (!databaseSchema) {
+      return { errors: [], statement: "" };
+    }
+    const metadata = await dbSchemaV1Store.getOrFetchDatabaseMetadata(
+      db.name,
+      false /* !skipCache */,
+      true /* silent */
+    );
+    const mergedMetadata = mergeSchemaEditToMetadata(
+      databaseSchema.schemaList,
+      cloneDeep(metadata)
+    );
+    const validationMessages = validateDatabaseMetadata(mergedMetadata);
+    if (validationMessages.length > 0) {
+      return {
+        errors: validationMessages,
+        statement: "",
+      };
+    }
+    try {
+      const { diff } = await schemaDesignServiceClient.diffMetadata(
+        {
+          sourceMetadata: metadata,
+          targetMetadata: mergedMetadata,
+          engine: db.instanceEntity.engine,
+        },
+        {
+          silent: true,
         }
-        return {
-          errors: [],
-          statement: diff,
-        };
-      } catch {
-        return {
-          errors: [t("schema-editor.message.invalid-schema")],
-          statement: "",
-        };
-      }
-    } else {
-      // Use legacy `DatabaseEdit` for non-MySQL databases.
-      const databaseEditResult = await postDatabaseEdit(
-        databaseEdit,
-        true /* silent */
       );
-      if (databaseEditResult.validateResultList.length > 0) {
-        return {
-          errors: databaseEditResult.validateResultList.map((v) => v.message),
-          statement: "",
-        };
-      }
-      const { statement } = databaseEditResult;
-      if (statement.length === 0) {
+      if (diff.length === 0) {
         return {
           errors: [t("schema-editor.nothing-changed")],
           statement: "",
@@ -127,7 +91,12 @@ export const useSchemaEditorSQLCheck = (params: {
       }
       return {
         errors: [],
-        statement,
+        statement: diff,
+      };
+    } catch {
+      return {
+        errors: [t("schema-editor.message.invalid-schema")],
+        statement: "",
       };
     }
   };
