@@ -52,18 +52,21 @@
   </BBTable>
   <BBModal
     v-if="schemaDriftDetail"
-    class="!max-w-[calc(100%-40px)] overflow-auto"
+    class="overflow-auto"
     :title="`'${schemaDriftDetail.database.databaseName}' schema drift - ${schemaDriftDetail.payload?.recordVersion} vs Actual`"
     @close="dismissModal"
   >
-    <div class="space-y-4">
+    <div
+      class="space-y-4 flex flex-col overflow-hidden"
+      style="width: calc(100vw - 10rem); height: calc(100vh - 12rem)"
+    >
       <DiffEditor
-        class="h-[64rem] max-h-full border rounded-md overflow-clip"
+        class="flex-1 w-full border rounded-md overflow-clip"
         :original="schemaDriftDetail.payload?.expectedSchema"
         :value="schemaDriftDetail.payload?.actualSchema"
         :readonly="true"
       />
-      <div class="flex justify-end px-4">
+      <div class="flex justify-end">
         <button type="button" class="btn-primary" @click.prevent="dismissModal">
           {{ $t("common.close") }}
         </button>

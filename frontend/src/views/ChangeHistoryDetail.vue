@@ -245,14 +245,17 @@
         </i18n-t>
       </template>
 
-      <div class="space-y-4">
-        <code-diff
-          class="w-full"
-          :old-string="previousHistory.schema"
-          :new-string="changeHistory.schema"
-          output-format="side-by-side"
+      <div
+        class="space-y-4 flex flex-col overflow-hidden"
+        style="width: calc(100vw - 10rem); height: calc(100vh - 12rem)"
+      >
+        <DiffEditor
+          class="flex-1 w-full border rounded-md overflow-clip"
+          :original="previousHistory.schema"
+          :value="changeHistory.schema"
+          :readonly="true"
         />
-        <div class="flex justify-end px-4">
+        <div class="flex justify-end">
           <button
             type="button"
             class="btn-primary"
