@@ -327,7 +327,7 @@ func (d *DatabaseState) renameTable(node *tidbast.RenameTableStmt) *WalkThroughE
 		oldTableName := tableToTable.OldTable.Name.O
 		newTableName := tableToTable.NewTable.Name.O
 		if d.theCurrentDatabase(tableToTable) {
-			if oldTableName == newTableName {
+			if compareIdentifier(oldTableName, newTableName, d.ctx.IgnoreCaseSensitive) {
 				return nil
 			}
 			table, exists := schema.getTable(oldTableName)
@@ -357,24 +357,24 @@ func (d *DatabaseState) renameTable(node *tidbast.RenameTableStmt) *WalkThroughE
 }
 
 func (d *DatabaseState) targetDatabase(node *tidbast.TableToTable) string {
-	if node.OldTable.Schema.O != "" && d.isCurrentDatabase(node.OldTable.Schema.O) {
+	if node.OldTable.Schema.O != "" && !d.isCurrentDatabase(node.OldTable.Schema.O) {
 		return node.OldTable.Schema.O
 	}
 	return node.NewTable.Schema.O
 }
 
 func (d *DatabaseState) moveToOtherDatabase(node *tidbast.TableToTable) bool {
-	if node.OldTable.Schema.O != "" && d.isCurrentDatabase(node.OldTable.Schema.O) {
+	if node.OldTable.Schema.O != "" && !d.isCurrentDatabase(node.OldTable.Schema.O) {
 		return false
 	}
 	return node.OldTable.Schema.O != node.NewTable.Schema.O
 }
 
 func (d *DatabaseState) theCurrentDatabase(node *tidbast.TableToTable) bool {
-	if node.NewTable.Schema.O != "" && d.isCurrentDatabase(node.OldTable.Schema.O) {
+	if node.NewTable.Schema.O != "" && !d.isCurrentDatabase(node.NewTable.Schema.O) {
 		return false
 	}
-	if node.OldTable.Schema.O != "" && d.isCurrentDatabase(node.OldTable.Schema.O) {
+	if node.OldTable.Schema.O != "" && !d.isCurrentDatabase(node.OldTable.Schema.O) {
 		return false
 	}
 	return true
@@ -984,7 +984,7 @@ func (d *DatabaseState) copyTable(node *tidbast.CreateTableStmt) *WalkThroughErr
 }
 
 func (d *DatabaseState) createTable(node *tidbast.CreateTableStmt) *WalkThroughError {
-	if node.Table.Schema.O != "" && d.isCurrentDatabase(node.Table.Schema.O) {
+	if node.Table.Schema.O != "" && !d.isCurrentDatabase(node.Table.Schema.O) {
 		return &WalkThroughError{
 			Type:    ErrorTypeAccessOtherDatabase,
 			Content: fmt.Sprintf("Database `%s` is not the current database `%s`", node.Table.Schema.O, d.name),
