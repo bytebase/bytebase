@@ -243,13 +243,6 @@ const instanceEngine = computed(() => {
   return database.value.instanceEntity.engine;
 });
 
-const tableClassification = computed(() => {
-  if (!table.value?.classification) {
-    return;
-  }
-  return props.classificationConfig?.classification[table.value.classification];
-});
-
 const allowQuery = computed(() => {
   if (
     database.value.project === EMPTY_PROJECT_NAME ||

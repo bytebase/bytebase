@@ -489,7 +489,7 @@ const NORMAL_COLUMN_LIST = computed(() => {
     });
   }
   if (showClassificationColumn.value) {
-    columnList.splice(showSemanticTypeColumn ? 3 : 2, 0, {
+    columnList.splice(showSemanticTypeColumn.value ? 3 : 2, 0, {
       title: t("database.classification.self"),
     });
   }
@@ -530,7 +530,7 @@ const POSTGRES_COLUMN_LIST = computed(() => {
     });
   }
   if (showClassificationColumn.value) {
-    columnList.splice(showSemanticTypeColumn ? 3 : 2, 0, {
+    columnList.splice(showSemanticTypeColumn.value ? 3 : 2, 0, {
       title: t("database.classification.self"),
     });
   }
