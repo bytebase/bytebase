@@ -853,10 +853,11 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 	limitPlusOne := limit + 1
 
 	find := &store.FindInstanceChangeHistoryMessage{
-		InstanceID: &instance.UID,
-		DatabaseID: &database.UID,
-		Limit:      &limitPlusOne,
-		Offset:     &offset,
+		InstanceID:   &instance.UID,
+		DatabaseID:   &database.UID,
+		Limit:        &limitPlusOne,
+		Offset:       &offset,
+		TruncateSize: 512,
 	}
 	if request.View == v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL {
 		find.ShowFull = true
@@ -926,9 +927,10 @@ func (s *DatabaseService) GetChangeHistory(ctx context.Context, request *v1pb.Ge
 	}
 
 	find := &store.FindInstanceChangeHistoryMessage{
-		InstanceID: &instance.UID,
-		DatabaseID: &database.UID,
-		ID:         &changeHistoryIDStr,
+		InstanceID:   &instance.UID,
+		DatabaseID:   &database.UID,
+		ID:           &changeHistoryIDStr,
+		TruncateSize: 1024 * 1024,
 	}
 	if request.View == v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL {
 		find.ShowFull = true

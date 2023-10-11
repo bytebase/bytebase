@@ -110,6 +110,7 @@ DROP SCHEMA "schema_a";
 
 	resp, err := ctl.databaseServiceClient.ListChangeHistories(ctx, &v1pb.ListChangeHistoriesRequest{
 		Parent: database.Name,
+		View:   v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL,
 	})
 	a.NoError(err)
 	histories := resp.ChangeHistories
