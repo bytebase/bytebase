@@ -131,6 +131,11 @@ func (*Store) createInstanceChangeHistoryImpl(ctx context.Context, tx *Tx, creat
 		return "", err
 	}
 
+	statement := create.Statement
+	if create.SheetID != nil {
+		statement = ""
+	}
+
 	var uid string
 	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
@@ -145,7 +150,7 @@ func (*Store) createInstanceChangeHistoryImpl(ctx context.Context, tx *Tx, creat
 		create.Status,
 		storedVersion,
 		create.Description,
-		create.Statement,
+		statement,
 		create.Schema,
 		create.SheetID,
 		create.SchemaPrev,
