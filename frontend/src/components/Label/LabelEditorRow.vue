@@ -1,5 +1,5 @@
 <template>
-  <div class="contents text-sm">
+  <div class="contents text-sm space-x-2">
     <div class="flex flex-col">
       <span class="text-xs font-medium mb-1"> Key {{ index + 1 }} </span>
       <span v-if="readonly" class="leading-[34px]">
@@ -15,7 +15,7 @@
     </div>
     <div class="flex flex-col">
       <span class="text-xs font-medium mb-1"> Value {{ index + 1 }} </span>
-      <div class="flex items-center">
+      <div class="flex items-center space-x-2">
         <span v-if="readonly" class="leading-[34px]">
           <template v-if="kv.value">{{ kv.value }}</template>
           <span v-else class="text-control-placeholder">
@@ -33,7 +33,7 @@
           quaternary
           size="small"
           style="--n-padding: 0 6px"
-          :class="[readonly ? 'invisible' : 'visible']"
+          :class="['ml-1', readonly ? 'invisible' : 'visible']"
           @click="$emit('remove')"
         >
           <template #icon>
@@ -43,6 +43,7 @@
       </div>
       <div v-if="kv.message" class="textinfolabel">{{ kv.message }}</div>
     </div>
+    <div />
   </div>
   <div v-if="combinedErrors.length > 0" class="text-xs text-error col-span-3">
     <ErrorList :errors="combinedErrors" bullets="always" />

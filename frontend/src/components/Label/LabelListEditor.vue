@@ -71,7 +71,9 @@ const errorList = computed(() => {
       }
     }
     if (!value) {
-      errors.value.push(t("label.error.value-necessary"));
+      if (!kv.allowEmpty) {
+        errors.value.push(t("label.error.value-necessary"));
+      }
     } else if (value.length > MAX_LABEL_VALUE_LENGTH) {
       errors.value.push(
         t("label.error.max-value-length-exceeded", {

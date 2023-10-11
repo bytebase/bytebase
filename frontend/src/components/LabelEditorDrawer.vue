@@ -76,7 +76,7 @@ const convertKVListToLabelsList = () => {
     for (const label of state.kvList) {
       if (!label.value) {
         if (oldLabel[label.key]) {
-          labels[label.value] = oldLabel[label.key];
+          labels[label.key] = oldLabel[label.key];
         }
       }
     }
@@ -89,6 +89,7 @@ const convertLabelsToKVList = () => {
     [key: string]: {
       value: string;
       message?: string;
+      allowEmpty?: boolean;
     };
   }
 
@@ -108,6 +109,7 @@ const convertLabelsToKVList = () => {
         tmp[key] = {
           message: t("database.mixed-values-for-label"),
           value: "",
+          allowEmpty: true,
         };
       }
       delete label[key];
@@ -121,6 +123,7 @@ const convertLabelsToKVList = () => {
         tmp[key] = {
           message: t("database.mixed-values-for-label"),
           value: "",
+          allowEmpty: true,
         };
       }
     }
@@ -130,6 +133,7 @@ const convertLabelsToKVList = () => {
     key,
     value: obj.value,
     message: obj.message,
+    allowEmpty: obj.allowEmpty,
   }));
 
   return list;
