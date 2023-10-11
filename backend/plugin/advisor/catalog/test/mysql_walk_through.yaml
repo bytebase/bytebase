@@ -2,7 +2,7 @@
   want: null
   err:
     type: 407
-    content: '[types:1292]Incorrect datetime value: '''''
+    content: "[types:1292]Incorrect datetime value: ''"
     line: 1
     payload: null
 - statement: |-
@@ -14,7 +14,7 @@
     content: BLOB, TEXT, GEOMETRY or JSON column `a` can't have a default value
     line: 2
     payload: null
-- statement: '      CREATE TABLE t(a TEXT DEFAULT ''1'')'
+- statement: "      CREATE TABLE t(a TEXT DEFAULT '1')"
   want: null
   err:
     type: 407
@@ -30,28 +30,28 @@
     content: Invalid default value for column `a`
     line: 2
     payload: null
-- statement: '      CREATE TABLE t(a INT NOT NULL DEFAULT NULL)'
+- statement: "      CREATE TABLE t(a INT NOT NULL DEFAULT NULL)"
   want: null
   err:
     type: 406
     content: Invalid default value for column `a`
     line: 1
     payload: null
-- statement: '      CREATE TABLE t(a int ON UPDATE NOW())'
+- statement: "      CREATE TABLE t(a int ON UPDATE NOW())"
   want: null
   err:
     type: 405
     content: Column `a` use ON UPDATE but is not DATETIME or TIMESTAMP
     line: 1
     payload: null
-- statement: '      CREATE TABLE t(a int auto_increment, b int auto_increment);'
+- statement: "      CREATE TABLE t(a int auto_increment, b int auto_increment);"
   want: null
   err:
     type: 404
     content: There can be only one auto column for table `t`
     line: 1
     payload: null
-- statement: '      CREATE TABLE t as select * from t1;'
+- statement: "      CREATE TABLE t as select * from t1;"
   want: null
   err:
     type: 303
@@ -113,12 +113,12 @@
   want:
     name: test
     schemas:
-        - name: ""
-          tables: []
-          views: []
-          functions: []
-          streams: []
-          tasks: []
+      - name: ""
+        tables: []
+        views: []
+        functions: []
+        streams: []
+        tasks: []
     characterset: utf8mb4
     collation: utf8mb4_polish_ci
     extensions: []
@@ -140,226 +140,226 @@
   want:
     name: test
     schemas:
-        - name: ""
-          tables:
-            - name: t
-              columns:
-                - name: a
-                  position: 1
-                  default:
-                    value: "1"
-                  nullable: false
-                  type: int(11)
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                - name: b
-                  position: 2
-                  default: null
-                  nullable: false
-                  type: varchar(200)
-                  characterset: utf8mb4
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                - name: c
-                  position: 3
-                  default: null
-                  nullable: true
-                  type: int(11)
-                  characterset: ""
-                  collation: ""
-                  comment: This is a comment
-                  classification: ""
-                  usercomment: ""
-                - name: d
-                  position: 4
-                  default: null
-                  nullable: true
-                  type: varchar(10)
-                  characterset: ""
-                  collation: utf8mb4_polish_ci
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-              indexes:
-                - name: PRIMARY
-                  expressions:
-                    - a
-                  type: BTREE
-                  unique: true
-                  primary: true
-                  visible: true
-                  comment: ""
-                - name: b
-                  expressions:
-                    - b
-                  type: BTREE
-                  unique: true
-                  primary: false
-                  visible: true
-                  comment: ""
-                - name: b_2
-                  expressions:
-                    - b
-                    - a
-                  type: BTREE
-                  unique: false
-                  primary: false
-                  visible: true
-                  comment: ""
-                - name: b_3
-                  expressions:
-                    - b
-                    - c
-                    - d
-                  type: BTREE
-                  unique: true
-                  primary: false
-                  visible: true
-                  comment: ""
-                - name: b_4
-                  expressions:
-                    - b
-                    - d
-                  type: FULLTEXT
-                  unique: false
-                  primary: false
-                  visible: false
-                  comment: ""
-                - name: idx_a
-                  expressions:
-                    - a
-                  type: BTREE
-                  unique: false
-                  primary: false
-                  visible: true
-                  comment: ""
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              classification: ""
-              usercomment: ""
-              foreignkeys: []
-            - name: t_copy
-              columns:
-                - name: a
-                  position: 1
-                  default:
-                    value: "1"
-                  nullable: false
-                  type: int(11)
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                - name: b
-                  position: 2
-                  default: null
-                  nullable: false
-                  type: varchar(200)
-                  characterset: utf8mb4
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                - name: c
-                  position: 3
-                  default: null
-                  nullable: true
-                  type: int(11)
-                  characterset: ""
-                  collation: ""
-                  comment: This is a comment
-                  classification: ""
-                  usercomment: ""
-                - name: d
-                  position: 4
-                  default: null
-                  nullable: true
-                  type: varchar(10)
-                  characterset: ""
-                  collation: utf8mb4_polish_ci
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-              indexes:
-                - name: PRIMARY
-                  expressions:
-                    - a
-                  type: BTREE
-                  unique: true
-                  primary: true
-                  visible: true
-                  comment: ""
-                - name: b
-                  expressions:
-                    - b
-                  type: BTREE
-                  unique: true
-                  primary: false
-                  visible: true
-                  comment: ""
-                - name: b_2
-                  expressions:
-                    - b
-                    - a
-                  type: BTREE
-                  unique: false
-                  primary: false
-                  visible: true
-                  comment: ""
-                - name: b_3
-                  expressions:
-                    - b
-                    - c
-                    - d
-                  type: BTREE
-                  unique: true
-                  primary: false
-                  visible: true
-                  comment: ""
-                - name: b_4
-                  expressions:
-                    - b
-                    - d
-                  type: FULLTEXT
-                  unique: false
-                  primary: false
-                  visible: false
-                  comment: ""
-                - name: idx_a
-                  expressions:
-                    - a
-                  type: BTREE
-                  unique: false
-                  primary: false
-                  visible: true
-                  comment: ""
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              classification: ""
-              usercomment: ""
-              foreignkeys: []
-          views: []
-          functions: []
-          streams: []
-          tasks: []
+      - name: ""
+        tables:
+          - name: t
+            columns:
+              - name: a
+                position: 1
+                default:
+                  value: "1"
+                nullable: false
+                type: int(11)
+                characterset: ""
+                collation: ""
+                comment: ""
+                classification: ""
+                usercomment: ""
+              - name: b
+                position: 2
+                default: null
+                nullable: false
+                type: varchar(200)
+                characterset: utf8mb4
+                collation: ""
+                comment: ""
+                classification: ""
+                usercomment: ""
+              - name: c
+                position: 3
+                default: null
+                nullable: true
+                type: int(11)
+                characterset: ""
+                collation: ""
+                comment: This is a comment
+                classification: ""
+                usercomment: ""
+              - name: d
+                position: 4
+                default: null
+                nullable: true
+                type: varchar(10)
+                characterset: ""
+                collation: utf8mb4_polish_ci
+                comment: ""
+                classification: ""
+                usercomment: ""
+            indexes:
+              - name: PRIMARY
+                expressions:
+                  - a
+                type: BTREE
+                unique: true
+                primary: true
+                visible: true
+                comment: ""
+              - name: b
+                expressions:
+                  - b
+                type: BTREE
+                unique: true
+                primary: false
+                visible: true
+                comment: ""
+              - name: b_2
+                expressions:
+                  - b
+                  - a
+                type: BTREE
+                unique: false
+                primary: false
+                visible: true
+                comment: ""
+              - name: b_3
+                expressions:
+                  - b
+                  - c
+                  - d
+                type: BTREE
+                unique: true
+                primary: false
+                visible: true
+                comment: ""
+              - name: b_4
+                expressions:
+                  - b
+                  - d
+                type: FULLTEXT
+                unique: false
+                primary: false
+                visible: false
+                comment: ""
+              - name: idx_a
+                expressions:
+                  - a
+                type: BTREE
+                unique: false
+                primary: false
+                visible: true
+                comment: ""
+            engine: ""
+            collation: ""
+            rowcount: 0
+            datasize: 0
+            indexsize: 0
+            datafree: 0
+            createoptions: ""
+            comment: ""
+            classification: ""
+            usercomment: ""
+            foreignkeys: []
+          - name: t_copy
+            columns:
+              - name: a
+                position: 1
+                default:
+                  value: "1"
+                nullable: false
+                type: int(11)
+                characterset: ""
+                collation: ""
+                comment: ""
+                classification: ""
+                usercomment: ""
+              - name: b
+                position: 2
+                default: null
+                nullable: false
+                type: varchar(200)
+                characterset: utf8mb4
+                collation: ""
+                comment: ""
+                classification: ""
+                usercomment: ""
+              - name: c
+                position: 3
+                default: null
+                nullable: true
+                type: int(11)
+                characterset: ""
+                collation: ""
+                comment: This is a comment
+                classification: ""
+                usercomment: ""
+              - name: d
+                position: 4
+                default: null
+                nullable: true
+                type: varchar(10)
+                characterset: ""
+                collation: utf8mb4_polish_ci
+                comment: ""
+                classification: ""
+                usercomment: ""
+            indexes:
+              - name: PRIMARY
+                expressions:
+                  - a
+                type: BTREE
+                unique: true
+                primary: true
+                visible: true
+                comment: ""
+              - name: b
+                expressions:
+                  - b
+                type: BTREE
+                unique: true
+                primary: false
+                visible: true
+                comment: ""
+              - name: b_2
+                expressions:
+                  - b
+                  - a
+                type: BTREE
+                unique: false
+                primary: false
+                visible: true
+                comment: ""
+              - name: b_3
+                expressions:
+                  - b
+                  - c
+                  - d
+                type: BTREE
+                unique: true
+                primary: false
+                visible: true
+                comment: ""
+              - name: b_4
+                expressions:
+                  - b
+                  - d
+                type: FULLTEXT
+                unique: false
+                primary: false
+                visible: false
+                comment: ""
+              - name: idx_a
+                expressions:
+                  - a
+                type: BTREE
+                unique: false
+                primary: false
+                visible: true
+                comment: ""
+            engine: ""
+            collation: ""
+            rowcount: 0
+            datasize: 0
+            indexsize: 0
+            datafree: 0
+            createoptions: ""
+            comment: ""
+            classification: ""
+            usercomment: ""
+            foreignkeys: []
+        views: []
+        functions: []
+        streams: []
+        tasks: []
     characterset: ""
     collation: ""
     extensions: []
@@ -380,119 +380,119 @@
   want:
     name: test
     schemas:
-        - name: ""
-          tables:
-            - name: t
-              columns:
-                - name: a
-                  position: 1
-                  default:
-                    value: "1"
-                  nullable: false
-                  type: int(11)
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                - name: b
-                  position: 2
-                  default: null
-                  nullable: false
-                  type: varchar(200)
-                  characterset: utf8mb4
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                - name: c
-                  position: 3
-                  default: null
-                  nullable: true
-                  type: int(11)
-                  characterset: ""
-                  collation: ""
-                  comment: This is a comment
-                  classification: ""
-                  usercomment: ""
-                - name: d
-                  position: 4
-                  default: null
-                  nullable: true
-                  type: varchar(10)
-                  characterset: ""
-                  collation: utf8mb4_polish_ci
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-              indexes:
-                - name: PRIMARY
-                  expressions:
-                    - a
-                  type: BTREE
-                  unique: true
-                  primary: true
-                  visible: true
-                  comment: ""
-                - name: b
-                  expressions:
-                    - b
-                  type: BTREE
-                  unique: true
-                  primary: false
-                  visible: true
-                  comment: ""
-                - name: b_2
-                  expressions:
-                    - b
-                    - a
-                  type: BTREE
-                  unique: false
-                  primary: false
-                  visible: true
-                  comment: ""
-                - name: b_3
-                  expressions:
-                    - b
-                    - c
-                    - d
-                  type: BTREE
-                  unique: true
-                  primary: false
-                  visible: true
-                  comment: ""
-                - name: b_4
-                  expressions:
-                    - b
-                    - d
-                  type: FULLTEXT
-                  unique: false
-                  primary: false
-                  visible: false
-                  comment: ""
-                - name: idx_a
-                  expressions:
-                    - a
-                  type: BTREE
-                  unique: false
-                  primary: false
-                  visible: true
-                  comment: ""
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              classification: ""
-              usercomment: ""
-              foreignkeys: []
-          views: []
-          functions: []
-          streams: []
-          tasks: []
+      - name: ""
+        tables:
+          - name: t
+            columns:
+              - name: a
+                position: 1
+                default:
+                  value: "1"
+                nullable: false
+                type: int(11)
+                characterset: ""
+                collation: ""
+                comment: ""
+                classification: ""
+                usercomment: ""
+              - name: b
+                position: 2
+                default: null
+                nullable: false
+                type: varchar(200)
+                characterset: utf8mb4
+                collation: ""
+                comment: ""
+                classification: ""
+                usercomment: ""
+              - name: c
+                position: 3
+                default: null
+                nullable: true
+                type: int(11)
+                characterset: ""
+                collation: ""
+                comment: This is a comment
+                classification: ""
+                usercomment: ""
+              - name: d
+                position: 4
+                default: null
+                nullable: true
+                type: varchar(10)
+                characterset: ""
+                collation: utf8mb4_polish_ci
+                comment: ""
+                classification: ""
+                usercomment: ""
+            indexes:
+              - name: PRIMARY
+                expressions:
+                  - a
+                type: BTREE
+                unique: true
+                primary: true
+                visible: true
+                comment: ""
+              - name: b
+                expressions:
+                  - b
+                type: BTREE
+                unique: true
+                primary: false
+                visible: true
+                comment: ""
+              - name: b_2
+                expressions:
+                  - b
+                  - a
+                type: BTREE
+                unique: false
+                primary: false
+                visible: true
+                comment: ""
+              - name: b_3
+                expressions:
+                  - b
+                  - c
+                  - d
+                type: BTREE
+                unique: true
+                primary: false
+                visible: true
+                comment: ""
+              - name: b_4
+                expressions:
+                  - b
+                  - d
+                type: FULLTEXT
+                unique: false
+                primary: false
+                visible: false
+                comment: ""
+              - name: idx_a
+                expressions:
+                  - a
+                type: BTREE
+                unique: false
+                primary: false
+                visible: true
+                comment: ""
+            engine: ""
+            collation: ""
+            rowcount: 0
+            datasize: 0
+            indexsize: 0
+            datafree: 0
+            createoptions: ""
+            comment: ""
+            classification: ""
+            usercomment: ""
+            foreignkeys: []
+        views: []
+        functions: []
+        streams: []
+        tasks: []
     characterset: ""
     collation: ""
     extensions: []
@@ -508,55 +508,55 @@
   want:
     name: test
     schemas:
-        - name: ""
-          tables:
-            - name: t
-              columns:
-                - name: a
-                  position: 1
-                  default: null
-                  nullable: false
-                  type: int(11)
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                - name: b
-                  position: 2
-                  default: null
-                  nullable: false
-                  type: int(11)
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-              indexes:
-                - name: PRIMARY
-                  expressions:
-                    - a
-                    - b
-                  type: BTREE
-                  unique: true
-                  primary: true
-                  visible: true
-                  comment: ""
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              classification: ""
-              usercomment: ""
-              foreignkeys: []
-          views: []
-          functions: []
-          streams: []
-          tasks: []
+      - name: ""
+        tables:
+          - name: t
+            columns:
+              - name: a
+                position: 1
+                default: null
+                nullable: false
+                type: int(11)
+                characterset: ""
+                collation: ""
+                comment: ""
+                classification: ""
+                usercomment: ""
+              - name: b
+                position: 2
+                default: null
+                nullable: false
+                type: int(11)
+                characterset: ""
+                collation: ""
+                comment: ""
+                classification: ""
+                usercomment: ""
+            indexes:
+              - name: PRIMARY
+                expressions:
+                  - a
+                  - b
+                type: BTREE
+                unique: true
+                primary: true
+                visible: true
+                comment: ""
+            engine: ""
+            collation: ""
+            rowcount: 0
+            datasize: 0
+            indexsize: 0
+            datafree: 0
+            createoptions: ""
+            comment: ""
+            classification: ""
+            usercomment: ""
+            foreignkeys: []
+        views: []
+        functions: []
+        streams: []
+        tasks: []
     characterset: ""
     collation: ""
     extensions: []
@@ -570,19 +570,19 @@
   want:
     name: test
     schemas:
-        - name: ""
-          tables: []
-          views: []
-          functions: []
-          streams: []
-          tasks: []
+      - name: ""
+        tables: []
+        views: []
+        functions: []
+        streams: []
+        tasks: []
     characterset: ""
     collation: ""
     extensions: []
     datashare: false
     servicename: ""
   err: null
-- statement: '      DROP TABLE t1, t2'
+- statement: "      DROP TABLE t1, t2"
   want: null
   err:
     type: 302
@@ -595,12 +595,12 @@
   want:
     name: test
     schemas:
-        - name: ""
-          tables: []
-          views: []
-          functions: []
-          streams: []
-          tasks: []
+      - name: ""
+        tables: []
+        views: []
+        functions: []
+        streams: []
+        tasks: []
     characterset: ""
     collation: ""
     extensions: []
@@ -613,36 +613,36 @@
   want:
     name: test
     schemas:
-        - name: ""
-          tables:
-            - name: t1
-              columns:
-                - name: a
-                  position: 1
-                  default: null
-                  nullable: true
-                  type: int(11)
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-              indexes: []
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              classification: ""
-              usercomment: ""
-              foreignkeys: []
-          views: []
-          functions: []
-          streams: []
-          tasks: []
+      - name: ""
+        tables:
+          - name: t1
+            columns:
+              - name: a
+                position: 1
+                default: null
+                nullable: true
+                type: int(11)
+                characterset: ""
+                collation: ""
+                comment: ""
+                classification: ""
+                usercomment: ""
+            indexes: []
+            engine: ""
+            collation: ""
+            rowcount: 0
+            datasize: 0
+            indexsize: 0
+            datafree: 0
+            createoptions: ""
+            comment: ""
+            classification: ""
+            usercomment: ""
+            foreignkeys: []
+        views: []
+        functions: []
+        streams: []
+        tasks: []
     characterset: ""
     collation: ""
     extensions: []
@@ -687,119 +687,119 @@
   want:
     name: test
     schemas:
-        - name: ""
-          tables:
-            - name: t_copy
-              columns:
-                - name: b
-                  position: 1
-                  default: null
-                  nullable: true
-                  type: varchar(20)
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                - name: a_copy
-                  position: 2
-                  default: null
-                  nullable: false
-                  type: int(11)
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                - name: a1
-                  position: 3
-                  default: null
-                  nullable: true
-                  type: int(11)
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                - name: d_copy
-                  position: 4
-                  default: null
-                  nullable: true
-                  type: varchar(10)
-                  characterset: ""
-                  collation: utf8mb4_polish_ci
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                - name: e
-                  position: 5
-                  default: null
-                  nullable: true
-                  type: int(11)
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-              indexes:
-                - name: b_3
-                  expressions:
-                    - b
-                    - d_copy
-                  type: BTREE
-                  unique: true
-                  primary: false
-                  visible: false
-                  comment: ""
-                - name: b_4
-                  expressions:
-                    - b
-                    - d_copy
-                  type: FULLTEXT
-                  unique: false
-                  primary: false
-                  visible: false
-                  comment: ""
-                - name: idx_a
-                  expressions:
-                    - a_copy
-                  type: BTREE
-                  unique: false
-                  primary: false
-                  visible: true
-                  comment: ""
-                - name: idx_a_b
-                  expressions:
-                    - a_copy
-                    - b
-                  type: BTREE
-                  unique: false
-                  primary: false
-                  visible: true
-                  comment: ""
-                - name: idx_b
-                  expressions:
-                    - b
-                  type: BTREE
-                  unique: true
-                  primary: false
-                  visible: true
-                  comment: ""
-              engine: INNODB
-              collation: utf8mb4_0900_ai_ci
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: This is a table comment
-              classification: ""
-              usercomment: ""
-              foreignkeys: []
-          views: []
-          functions: []
-          streams: []
-          tasks: []
+      - name: ""
+        tables:
+          - name: t_copy
+            columns:
+              - name: b
+                position: 1
+                default: null
+                nullable: true
+                type: varchar(20)
+                characterset: ""
+                collation: ""
+                comment: ""
+                classification: ""
+                usercomment: ""
+              - name: a_copy
+                position: 2
+                default: null
+                nullable: false
+                type: int(11)
+                characterset: ""
+                collation: ""
+                comment: ""
+                classification: ""
+                usercomment: ""
+              - name: a1
+                position: 3
+                default: null
+                nullable: true
+                type: int(11)
+                characterset: ""
+                collation: ""
+                comment: ""
+                classification: ""
+                usercomment: ""
+              - name: d_copy
+                position: 4
+                default: null
+                nullable: true
+                type: varchar(10)
+                characterset: ""
+                collation: utf8mb4_polish_ci
+                comment: ""
+                classification: ""
+                usercomment: ""
+              - name: e
+                position: 5
+                default: null
+                nullable: true
+                type: int(11)
+                characterset: ""
+                collation: ""
+                comment: ""
+                classification: ""
+                usercomment: ""
+            indexes:
+              - name: b_3
+                expressions:
+                  - b
+                  - d_copy
+                type: BTREE
+                unique: true
+                primary: false
+                visible: false
+                comment: ""
+              - name: b_4
+                expressions:
+                  - b
+                  - d_copy
+                type: FULLTEXT
+                unique: false
+                primary: false
+                visible: false
+                comment: ""
+              - name: idx_a
+                expressions:
+                  - a_copy
+                type: BTREE
+                unique: false
+                primary: false
+                visible: true
+                comment: ""
+              - name: idx_a_b
+                expressions:
+                  - a_copy
+                  - b
+                type: BTREE
+                unique: false
+                primary: false
+                visible: true
+                comment: ""
+              - name: idx_b
+                expressions:
+                  - b
+                type: BTREE
+                unique: true
+                primary: false
+                visible: true
+                comment: ""
+            engine: INNODB
+            collation: utf8mb4_0900_ai_ci
+            rowcount: 0
+            datasize: 0
+            indexsize: 0
+            datafree: 0
+            createoptions: ""
+            comment: This is a table comment
+            classification: ""
+            usercomment: ""
+            foreignkeys: []
+        views: []
+        functions: []
+        streams: []
+        tasks: []
     characterset: ""
     collation: ""
     extensions: []
@@ -820,119 +820,119 @@
   want:
     name: test
     schemas:
-        - name: ""
-          tables:
-            - name: t
-              columns:
-                - name: a
-                  position: 1
-                  default:
-                    value: "1"
-                  nullable: false
-                  type: int(11)
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                - name: b
-                  position: 2
-                  default: null
-                  nullable: false
-                  type: varchar(200)
-                  characterset: utf8mb4
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                - name: c
-                  position: 3
-                  default: null
-                  nullable: true
-                  type: int(11)
-                  characterset: ""
-                  collation: ""
-                  comment: This is a comment
-                  classification: ""
-                  usercomment: ""
-                - name: d
-                  position: 4
-                  default: null
-                  nullable: true
-                  type: varchar(10)
-                  characterset: ""
-                  collation: utf8mb4_polish_ci
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-              indexes:
-                - name: PRIMARY
-                  expressions:
-                    - a
-                  type: BTREE
-                  unique: true
-                  primary: true
-                  visible: true
-                  comment: ""
-                - name: b
-                  expressions:
-                    - b
-                  type: BTREE
-                  unique: true
-                  primary: false
-                  visible: true
-                  comment: ""
-                - name: b_2
-                  expressions:
-                    - b
-                    - a
-                  type: BTREE
-                  unique: false
-                  primary: false
-                  visible: true
-                  comment: ""
-                - name: b_3
-                  expressions:
-                    - b
-                    - c
-                    - d
-                  type: BTREE
-                  unique: true
-                  primary: false
-                  visible: true
-                  comment: ""
-                - name: b_4
-                  expressions:
-                    - b
-                    - d
-                  type: FULLTEXT
-                  unique: false
-                  primary: false
-                  visible: false
-                  comment: ""
-                - name: idx_a
-                  expressions:
-                    - a
-                  type: BTREE
-                  unique: false
-                  primary: false
-                  visible: true
-                  comment: ""
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              classification: ""
-              usercomment: ""
-              foreignkeys: []
-          views: []
-          functions: []
-          streams: []
-          tasks: []
+      - name: ""
+        tables:
+          - name: t
+            columns:
+              - name: a
+                position: 1
+                default:
+                  value: "1"
+                nullable: false
+                type: int(11)
+                characterset: ""
+                collation: ""
+                comment: ""
+                classification: ""
+                usercomment: ""
+              - name: b
+                position: 2
+                default: null
+                nullable: false
+                type: varchar(200)
+                characterset: utf8mb4
+                collation: ""
+                comment: ""
+                classification: ""
+                usercomment: ""
+              - name: c
+                position: 3
+                default: null
+                nullable: true
+                type: int(11)
+                characterset: ""
+                collation: ""
+                comment: This is a comment
+                classification: ""
+                usercomment: ""
+              - name: d
+                position: 4
+                default: null
+                nullable: true
+                type: varchar(10)
+                characterset: ""
+                collation: utf8mb4_polish_ci
+                comment: ""
+                classification: ""
+                usercomment: ""
+            indexes:
+              - name: PRIMARY
+                expressions:
+                  - a
+                type: BTREE
+                unique: true
+                primary: true
+                visible: true
+                comment: ""
+              - name: b
+                expressions:
+                  - b
+                type: BTREE
+                unique: true
+                primary: false
+                visible: true
+                comment: ""
+              - name: b_2
+                expressions:
+                  - b
+                  - a
+                type: BTREE
+                unique: false
+                primary: false
+                visible: true
+                comment: ""
+              - name: b_3
+                expressions:
+                  - b
+                  - c
+                  - d
+                type: BTREE
+                unique: true
+                primary: false
+                visible: true
+                comment: ""
+              - name: b_4
+                expressions:
+                  - b
+                  - d
+                type: FULLTEXT
+                unique: false
+                primary: false
+                visible: false
+                comment: ""
+              - name: idx_a
+                expressions:
+                  - a
+                type: BTREE
+                unique: false
+                primary: false
+                visible: true
+                comment: ""
+            engine: ""
+            collation: ""
+            rowcount: 0
+            datasize: 0
+            indexsize: 0
+            datafree: 0
+            createoptions: ""
+            comment: ""
+            classification: ""
+            usercomment: ""
+            foreignkeys: []
+        views: []
+        functions: []
+        streams: []
+        tasks: []
     characterset: ""
     collation: ""
     extensions: []
@@ -948,55 +948,55 @@
   want:
     name: test
     schemas:
-        - name: ""
-          tables:
-            - name: t
-              columns:
-                - name: a
-                  position: 1
-                  default:
-                    value: "1"
-                  nullable: false
-                  type: int(11)
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                - name: b
-                  position: 2
-                  default: null
-                  nullable: false
-                  type: varchar(200)
-                  characterset: utf8mb4
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-              indexes:
-                - name: PRIMARY
-                  expressions:
-                    - a
-                  type: BTREE
-                  unique: true
-                  primary: true
-                  visible: true
-                  comment: ""
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              classification: ""
-              usercomment: ""
-              foreignkeys: []
-          views: []
-          functions: []
-          streams: []
-          tasks: []
+      - name: ""
+        tables:
+          - name: t
+            columns:
+              - name: a
+                position: 1
+                default:
+                  value: "1"
+                nullable: false
+                type: int(11)
+                characterset: ""
+                collation: ""
+                comment: ""
+                classification: ""
+                usercomment: ""
+              - name: b
+                position: 2
+                default: null
+                nullable: false
+                type: varchar(200)
+                characterset: utf8mb4
+                collation: ""
+                comment: ""
+                classification: ""
+                usercomment: ""
+            indexes:
+              - name: PRIMARY
+                expressions:
+                  - a
+                type: BTREE
+                unique: true
+                primary: true
+                visible: true
+                comment: ""
+            engine: ""
+            collation: ""
+            rowcount: 0
+            datasize: 0
+            indexsize: 0
+            datafree: 0
+            createoptions: ""
+            comment: ""
+            classification: ""
+            usercomment: ""
+            foreignkeys: []
+        views: []
+        functions: []
+        streams: []
+        tasks: []
     characterset: ""
     collation: ""
     extensions: []
