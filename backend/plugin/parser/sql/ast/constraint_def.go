@@ -26,7 +26,7 @@ const (
 	ConstraintTypeExclusion
 	// ConstraintTypeDefault is the default constraint.
 	ConstraintTypeDefault
-	// ConstraintTypegenerated is the generated constraint.
+	// ConstraintTypeGenerated is the generated constraint.
 	ConstraintTypeGenerated
 )
 
