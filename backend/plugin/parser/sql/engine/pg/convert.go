@@ -1504,7 +1504,7 @@ func convertConstraint(in *pgquery.Node_Constraint) (*ast.ConstraintDef, error) 
 		}
 	case ast.ConstraintTypePrimaryUsingIndex, ast.ConstraintTypeUniqueUsingIndex:
 		cons.IndexName = in.Constraint.Indexname
-	case ast.ConstraintTypeCheck, ast.ConstraintTypeDefault:
+	case ast.ConstraintTypeCheck, ast.ConstraintTypeDefault, ast.ConstraintTypeGenerated:
 		expression, _, _, err := convertExpressionNode(in.Constraint.RawExpr)
 		if err != nil {
 			return nil, err
@@ -1594,6 +1594,8 @@ func convertConstraintType(in pgquery.ConstrType, usingIndex bool) ast.Constrain
 		return ast.ConstraintTypeDefault
 	case pgquery.ConstrType_CONSTR_EXCLUSION:
 		return ast.ConstraintTypeExclusion
+	case pgquery.ConstrType_CONSTR_GENERATED:
+		return ast.ConstraintTypeGenerated
 	}
 	return ast.ConstraintTypeUndefined
 }
