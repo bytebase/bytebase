@@ -36,6 +36,7 @@
         :node-props="nodeProps"
         :expanded-keys="expandedKeysRef"
         :selected-keys="selectedKeysRef"
+        :theme-overrides="{ nodeHeight: '28px' }"
       />
       <NDropdown
         trigger="manual"
