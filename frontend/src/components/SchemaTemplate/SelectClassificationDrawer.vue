@@ -22,6 +22,7 @@
           :render-label="renderLabel"
           :node-props="nodeProps"
           :virtual-scroll="true"
+          :theme-overrides="{ nodeHeight: '21px' }"
         />
       </div>
 
