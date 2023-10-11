@@ -8,11 +8,17 @@
   >
     <template #item="{ item }: { item: SchemaTemplateSetting_TableTemplate }">
       <div class="bb-grid-cell">
-        {{ item.category }}
+        {{ item.category || "-" }}
       </div>
       <div class="bb-grid-cell flex justify-start items-center">
         <EngineIcon :engine="item.engine" custom-class="ml-0 mr-1" />
         {{ item.table?.name }}
+      </div>
+      <div v-if="classificationConfig" class="bb-grid-cell flex gap-x-1">
+        <ClassificationLevelBadge
+          :classification="item.table?.classification"
+          :classification-config="classificationConfig"
+        />
       </div>
       <div class="bb-grid-cell">
         {{ item.table?.comment }}
@@ -55,6 +61,7 @@ import {
   SchemaTemplateSetting,
   SchemaTemplateSetting_TableTemplate,
 } from "@/types/proto/v1/setting_service";
+import { classificationConfig } from "./utils";
 
 const props = defineProps<{
   engine?: Engine;
@@ -71,7 +78,7 @@ const { t } = useI18n();
 const settingStore = useSettingV1Store();
 
 const columnList = computed((): BBGridColumn[] => {
-  return [
+  const list = [
     {
       title: t("schema-template.form.category"),
       width: "15rem",
@@ -93,6 +100,14 @@ const columnList = computed((): BBGridColumn[] => {
       class: "capitalize",
     },
   ];
+  if (classificationConfig.value) {
+    list.splice(2, 0, {
+      title: t("schema-template.classification.self"),
+      width: "auto",
+      class: "capitalize",
+    });
+  }
+  return list;
 });
 
 const clickRow = (template: SchemaTemplateSetting_TableTemplate) => {

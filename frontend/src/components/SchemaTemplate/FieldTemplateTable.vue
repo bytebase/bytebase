@@ -8,7 +8,7 @@
   >
     <template #item="{ item }: { item: SchemaTemplateSetting_FieldTemplate }">
       <div class="bb-grid-cell">
-        {{ item.category }}
+        {{ item.category || "-" }}
       </div>
       <div class="bb-grid-cell flex justify-start items-center">
         <EngineIcon :engine="item.engine" custom-class="ml-0 mr-1" />
