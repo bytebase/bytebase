@@ -3,8 +3,9 @@ package log
 import (
 	"log/slog"
 	"os"
-	"runtime/debug"
 	"strings"
+
+	"github.com/bytebase/bytebase/backend/common/stacktrace"
 )
 
 var GLogLevel *slog.LevelVar
@@ -47,7 +48,8 @@ func BBError(err error) slog.Attr {
 }
 
 func BBStack(key string) slog.Attr {
-	return slog.Any(key, debug.Stack())
+	stack := stacktrace.TakeStacktrace(20 /* n */, 3 /* skip */)
+	return slog.Any(key, stack)
 }
 
 func BBStrings(key string, ss []string) slog.Attr {
