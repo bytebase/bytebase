@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"strconv"
 	"time"
 
 	"github.com/gosimple/slug"
@@ -136,6 +135,7 @@ func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbf
 	slog.Debug("Appending new migration history record")
 	m := &db.MigrationInfo{
 		InstanceID:     &task.InstanceID,
+		IssueUID:       &issue.UID,
 		ReleaseVersion: profile.Version,
 		Version:        common.DefaultMigrationVersion(),
 		Namespace:      database.DatabaseName,
@@ -148,7 +148,6 @@ func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbf
 		Description:    fmt.Sprintf("PITR: restoring database %s", database.DatabaseName),
 		Creator:        creator.Name,
 		CreatorID:      creator.ID,
-		IssueID:        strconv.Itoa(issue.UID),
 	}
 
 	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
