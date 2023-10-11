@@ -48,7 +48,7 @@ func BBError(err error) slog.Attr {
 }
 
 func BBStack(key string) slog.Attr {
-	stack := stacktrace.TakeStacktrace(20, 3)
+	stack := stacktrace.TakeStacktrace(20 /* n */, 3 /* skip */)
 	return slog.Any(key, stack)
 }
 
