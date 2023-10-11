@@ -6,9 +6,7 @@ import (
 	"database/sql"
 	_ "embed"
 	"fmt"
-	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"path"
 	"strings"
@@ -521,46 +519,6 @@ func (*controller) provisionSQLiteInstance(rootDir, name string) (string, error)
 	}
 
 	return p, nil
-}
-
-// post sends a POST client request.
-func (ctl *controller) post(shortURL string, body io.Reader) (io.ReadCloser, error) {
-	url := fmt.Sprintf("%s%s", ctl.apiURL, shortURL)
-	return ctl.request("POST", url, body, nil, map[string]string{
-		"Cookie": ctl.cookie,
-	})
-}
-
-func (ctl *controller) request(method, fullURL string, body io.Reader, params, header map[string]string) (io.ReadCloser, error) {
-	req, err := http.NewRequest(method, fullURL, body)
-	if err != nil {
-		return nil, errors.Wrapf(err, "fail to create a new %s request(%q)", method, fullURL)
-	}
-
-	for k, v := range header {
-		req.Header.Set(k, v)
-	}
-
-	q := url.Values{}
-	for k, v := range params {
-		q.Add(k, v)
-	}
-	if len(q) > 0 {
-		req.URL.RawQuery = q.Encode()
-	}
-
-	resp, err := ctl.client.Do(req)
-	if err != nil {
-		return nil, errors.Wrapf(err, "fail to send a %s request(%q)", method, fullURL)
-	}
-	if resp.StatusCode != http.StatusOK {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to read http response body")
-		}
-		return nil, errors.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
-	}
-	return resp.Body, nil
 }
 
 // signupAndLogin will signup and login as user demo@example.com.
