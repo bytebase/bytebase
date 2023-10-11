@@ -95,12 +95,16 @@
                   </dd>
                 </div>
 
-                <div v-if="tableClassification" class="col-span-1">
+                <div v-if="classificationConfig" class="col-span-1">
                   <dt class="text-sm text-control-light">
                     {{ $t("database.classification.self") }}
                   </dt>
                   <dd class="mt-1 text-lg sm:text-xl font-semibold">
-                    {{ tableClassification.title }}
+                    <ClassificationLevelBadge
+                      :classification="table.classification"
+                      :classification-config="classificationConfig"
+                      placeholder="-"
+                    />
                   </dd>
                 </div>
 
@@ -198,13 +202,13 @@ import {
   useCurrentUserV1,
   useDatabaseV1Store,
   useDBSchemaV1Store,
-  useSettingV1Store,
 } from "@/store";
 import { usePolicyByParentAndType } from "@/store/modules/v1/policy";
 import { DEFAULT_PROJECT_V1_NAME, EMPTY_PROJECT_NAME } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { TableMetadata } from "@/types/proto/v1/database_service";
 import { PolicyType, MaskData } from "@/types/proto/v1/org_policy_service";
+import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import {
   bytesToString,
   hasWorkspacePermissionV1,
@@ -221,6 +225,7 @@ const props = defineProps<{
   databaseName: string;
   schemaName: string;
   tableName: string;
+  classificationConfig?: DataClassificationSetting_DataClassificationConfig;
 }>();
 
 defineEmits(["dismiss"]);
@@ -229,7 +234,6 @@ const router = useRouter();
 const databaseV1Store = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const currentUserV1 = useCurrentUserV1();
-const settingStore = useSettingV1Store();
 const table = ref<TableMetadata>();
 
 const database = computed(() => {
@@ -239,17 +243,11 @@ const instanceEngine = computed(() => {
   return database.value.instanceEntity.engine;
 });
 
-const classificationConfig = computed(() => {
-  return settingStore.getProjectClassification(
-    database.value.projectEntity.dataClassificationConfigId
-  );
-});
-
 const tableClassification = computed(() => {
   if (!table.value?.classification) {
     return;
   }
-  return classificationConfig.value?.classification[table.value.classification];
+  return props.classificationConfig?.classification[table.value.classification];
 });
 
 const allowQuery = computed(() => {
