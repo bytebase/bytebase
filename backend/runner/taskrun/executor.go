@@ -149,7 +149,7 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.P
 		// more context of the migration.
 		mi.Description = fmt.Sprintf("%s - %s", issue.Title, task.Name)
 		mi.IssueID = strconv.Itoa(issue.UID)
-		mi.IssueIDInt = &issue.UID
+		mi.IssueUID = &issue.UID
 	}
 
 	mi.Source = db.UI

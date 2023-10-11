@@ -720,7 +720,7 @@ func (s *Store) CreatePendingInstanceChangeHistory(ctx context.Context, prevSche
 		CreatorID:           m.CreatorID,
 		InstanceUID:         m.InstanceID,
 		DatabaseUID:         m.DatabaseID,
-		IssueUID:            m.IssueIDInt,
+		IssueUID:            m.IssueUID,
 		ReleaseVersion:      m.ReleaseVersion,
 		Sequence:            nextSequence,
 		Source:              m.Source,

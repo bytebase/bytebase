@@ -136,7 +136,7 @@ func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbf
 	slog.Debug("Appending new migration history record")
 	m := &db.MigrationInfo{
 		InstanceID:     &task.InstanceID,
-		IssueIDInt:     &issue.UID,
+		IssueUID:       &issue.UID,
 		ReleaseVersion: profile.Version,
 		Version:        common.DefaultMigrationVersion(),
 		Namespace:      database.DatabaseName,
