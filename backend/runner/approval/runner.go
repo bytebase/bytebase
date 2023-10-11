@@ -481,18 +481,6 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 						"affected_rows": math.MaxInt32,
 					}
 
-					res, _, err := prg.Eval(args)
-					if err != nil {
-						return 0, err
-					}
-					val, err := res.ConvertToNative(reflect.TypeOf(false))
-					if err != nil {
-						return 0, errors.Wrap(err, "expect bool result")
-					}
-					if boolVal, ok := val.(bool); ok && boolVal {
-						return risk.Level, nil
-					}
-
 					if run, ok := latestPlanCheckRun[Key{
 						InstanceUID:  instance.UID,
 						DatabaseName: databaseName,
@@ -518,6 +506,20 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 								}
 							}
 						}
+					}
+
+					args["sql_type"] = "UNKNOWN"
+					args["affected_rows"] = math.MaxInt32
+					res, _, err := prg.Eval(args)
+					if err != nil {
+						return 0, err
+					}
+					val, err := res.ConvertToNative(reflect.TypeOf(false))
+					if err != nil {
+						return 0, errors.Wrap(err, "expect bool result")
+					}
+					if boolVal, ok := val.(bool); ok && boolVal {
+						return risk.Level, nil
 					}
 				}
 				return 0, nil
