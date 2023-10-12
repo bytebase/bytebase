@@ -2451,6 +2451,7 @@ The type of target.
 | engine | [Engine](#bytebase-store-Engine) |  |  |
 | category | [string](#string) |  |  |
 | table | [TableMetadata](#bytebase-store-TableMetadata) |  |  |
+| config | [TableConfig](#bytebase-store-TableConfig) |  |  |
 
 
 

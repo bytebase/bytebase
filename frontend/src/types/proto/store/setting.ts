@@ -5,7 +5,7 @@ import { Duration } from "../google/protobuf/duration";
 import { Expr } from "../google/type/expr";
 import { ApprovalTemplate } from "./approval";
 import { Engine, engineFromJSON, engineToJSON } from "./common";
-import { ColumnConfig, ColumnMetadata, TableMetadata } from "./database";
+import { ColumnConfig, ColumnMetadata, TableConfig, TableMetadata } from "./database";
 
 export const protobufPackage = "bytebase.store";
 
@@ -263,6 +263,7 @@ export interface SchemaTemplateSetting_TableTemplate {
   engine: Engine;
   category: string;
   table: TableMetadata | undefined;
+  config: TableConfig | undefined;
 }
 
 export interface DataClassificationSetting {
@@ -1429,7 +1430,7 @@ export const SchemaTemplateSetting_ColumnType = {
 };
 
 function createBaseSchemaTemplateSetting_TableTemplate(): SchemaTemplateSetting_TableTemplate {
-  return { id: "", engine: 0, category: "", table: undefined };
+  return { id: "", engine: 0, category: "", table: undefined, config: undefined };
 }
 
 export const SchemaTemplateSetting_TableTemplate = {
@@ -1445,6 +1446,9 @@ export const SchemaTemplateSetting_TableTemplate = {
     }
     if (message.table !== undefined) {
       TableMetadata.encode(message.table, writer.uint32(34).fork()).ldelim();
+    }
+    if (message.config !== undefined) {
+      TableConfig.encode(message.config, writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -1484,6 +1488,13 @@ export const SchemaTemplateSetting_TableTemplate = {
 
           message.table = TableMetadata.decode(reader, reader.uint32());
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.config = TableConfig.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1499,6 +1510,7 @@ export const SchemaTemplateSetting_TableTemplate = {
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
       category: isSet(object.category) ? String(object.category) : "",
       table: isSet(object.table) ? TableMetadata.fromJSON(object.table) : undefined,
+      config: isSet(object.config) ? TableConfig.fromJSON(object.config) : undefined,
     };
   },
 
@@ -1508,6 +1520,7 @@ export const SchemaTemplateSetting_TableTemplate = {
     message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
     message.category !== undefined && (obj.category = message.category);
     message.table !== undefined && (obj.table = message.table ? TableMetadata.toJSON(message.table) : undefined);
+    message.config !== undefined && (obj.config = message.config ? TableConfig.toJSON(message.config) : undefined);
     return obj;
   },
 
@@ -1522,6 +1535,9 @@ export const SchemaTemplateSetting_TableTemplate = {
     message.category = object.category ?? "";
     message.table = (object.table !== undefined && object.table !== null)
       ? TableMetadata.fromPartial(object.table)
+      : undefined;
+    message.config = (object.config !== undefined && object.config !== null)
+      ? TableConfig.fromPartial(object.config)
       : undefined;
     return message;
   },

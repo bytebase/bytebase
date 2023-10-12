@@ -281,6 +281,8 @@ message SchemaTemplateSetting {
     string category = 3;
 
     TableMetadata table = 4;
+
+    TableConfig config = 5;
   }
 
   repeated TableTemplate table_templates = 3;

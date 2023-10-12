@@ -9049,6 +9049,7 @@ If we need to support the custom masking algorithm, we need to define the payloa
 | engine | [Engine](#bytebase-v1-Engine) |  |  |
 | category | [string](#string) |  |  |
 | table | [TableMetadata](#bytebase-v1-TableMetadata) |  |  |
+| config | [TableConfig](#bytebase-v1-TableConfig) |  |  |
 
 
 
