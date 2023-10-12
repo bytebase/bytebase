@@ -67,7 +67,10 @@ import { engineList } from "@/components/SchemaTemplate/utils";
 import { Drawer } from "@/components/v2";
 import { useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
-import { ColumnMetadata } from "@/types/proto/v1/database_service";
+import {
+  ColumnMetadata,
+  ColumnConfig,
+} from "@/types/proto/v1/database_service";
 import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
 
 interface LocalState {
@@ -100,6 +103,7 @@ const initialTemplate = () => ({
     characterSet: "",
     collation: "",
   }),
+  config: ColumnConfig.fromPartial({}),
 });
 
 const state = reactive<LocalState>({

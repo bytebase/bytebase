@@ -215,7 +215,7 @@ import { transformTableEditToMetadata } from "@/components/Branch/utils";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
-import { ColumnMetadata } from "@/types/proto/v1/database_service";
+import { ColumnMetadata, TableConfig } from "@/types/proto/v1/database_service";
 import {
   SchemaTemplateSetting,
   SchemaTemplateSetting_FieldTemplate,
@@ -299,6 +299,7 @@ const onSumbit = async () => {
     engine: state.engine,
     category: state.category,
     table: transformTableEditToMetadata(state.table),
+    config: TableConfig.fromPartial({}),
   };
   const setting = await settingStore.fetchSettingByName(
     "bb.workspace.schema-template"

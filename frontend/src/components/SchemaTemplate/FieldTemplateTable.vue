@@ -29,6 +29,9 @@
       <div class="bb-grid-cell">
         {{ item.column?.comment }}
       </div>
+      <div class="bb-grid-cell">
+        <LabelsColumn :labels="item.config?.labels ?? {}" :show-count="2" />
+      </div>
       <div class="bb-grid-cell flex items-center justify-start gap-x-2">
         <button
           class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
@@ -84,16 +87,22 @@ const { t } = useI18n();
 const settingStore = useSettingV1Store();
 
 const columnList = computed((): BBGridColumn[] => {
-  const list = [
+  return [
     {
       title: t("schema-template.form.category"),
-      width: "15rem",
+      width: "7rem",
       class: "capitalize",
     },
     {
       title: t("schema-template.form.column-name"),
       width: "auto",
       class: "capitalize",
+    },
+    {
+      title: t("schema-template.classification.self"),
+      width: "auto",
+      class: "capitalize",
+      hide: !classificationConfig.value,
     },
     {
       title: t("schema-template.form.column-type"),
@@ -111,20 +120,16 @@ const columnList = computed((): BBGridColumn[] => {
       class: "capitalize",
     },
     {
+      title: t("common.labels"),
+      width: "auto",
+      class: "capitalize",
+    },
+    {
       title: t("common.operations"),
       width: "5rem",
       class: "capitalize",
     },
-  ];
-  if (classificationConfig.value) {
-    list.splice(2, 0, {
-      title: t("schema-template.classification.self"),
-      width: "auto",
-      class: "capitalize",
-    });
-  }
-
-  return list;
+  ].filter((col) => !col.hide);
 });
 
 const clickRow = (template: SchemaTemplateSetting_FieldTemplate) => {

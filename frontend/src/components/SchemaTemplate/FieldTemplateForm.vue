@@ -208,6 +208,15 @@
           </div>
         </div>
       </div>
+      <div class="space-y-6 pt-6">
+        <LabelListEditor
+          ref="labelListEditorRef"
+          v-model:kv-list="state.kvList"
+          :readonly="!!readonly"
+          :show-errors="dirty"
+          class="max-w-[30rem]"
+        />
+      </div>
     </div>
 
     <template #footer>
@@ -240,10 +249,11 @@
 
 <script lang="ts" setup>
 import { isEqual, cloneDeep } from "lodash-es";
-import { computed, reactive } from "vue";
+import { computed, reactive, watch } from "vue";
 import { DrawerContent } from "@/components/v2";
 import { useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
+import { ColumnConfig } from "@/types/proto/v1/database_service";
 import {
   SchemaTemplateSetting,
   SchemaTemplateSetting_FieldTemplate,
@@ -252,6 +262,8 @@ import {
   getDataTypeSuggestionList,
   engineNameV1,
   useWorkspacePermissionV1,
+  convertKVListToLabels,
+  convertLabelsToKVList,
 } from "@/utils";
 import {
   engineList,
@@ -270,6 +282,7 @@ const emit = defineEmits(["dismiss"]);
 
 interface LocalState extends SchemaTemplateSetting_FieldTemplate {
   showClassificationDrawer: boolean;
+  kvList: { key: string; value: string }[];
 }
 
 const state = reactive<LocalState>({
@@ -278,6 +291,8 @@ const state = reactive<LocalState>({
   category: props.template.category,
   column: Object.assign({}, props.template.column),
   showClassificationDrawer: false,
+  config: Object.assign({}, props.template.config),
+  kvList: [],
 });
 const settingStore = useSettingV1Store();
 const allowEdit = computed(() => {
@@ -285,6 +300,30 @@ const allowEdit = computed(() => {
     useWorkspacePermissionV1("bb.permission.workspace.manage-general").value &&
     !props.readonly
   );
+});
+
+const convert = () => {
+  return convertLabelsToKVList(
+    props.template.config?.labels ?? {},
+    true /* sort */
+  );
+};
+
+watch(
+  () => props.template.config?.labels,
+  () => {
+    state.kvList = convert();
+  },
+  {
+    immediate: true,
+    deep: true,
+  }
+);
+
+const dirty = computed(() => {
+  const original = convert();
+  const local = state.kvList;
+  return !isEqual(original, local);
 });
 
 const dataTypeOptions = computed(() => {
@@ -334,7 +373,13 @@ const sumbitDisabled = computed(() => {
 });
 
 const sumbit = async () => {
-  const template = state;
+  const template = SchemaTemplateSetting_FieldTemplate.fromJSON({
+    ...state,
+    config: ColumnConfig.fromJSON({
+      ...(state.config ?? {}),
+      labels: convertKVListToLabels(state.kvList, false /* !omitEmpty */),
+    }),
+  });
   const setting = await settingStore.fetchSettingByName(
     "bb.workspace.schema-template"
   );
