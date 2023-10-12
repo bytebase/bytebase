@@ -126,7 +126,7 @@ const columnList = computed((): BBGridColumn[] => {
     },
     {
       title: t("common.operations"),
-      width: "5rem",
+      width: "6rem",
       class: "capitalize",
     },
   ].filter((col) => !col.hide);
