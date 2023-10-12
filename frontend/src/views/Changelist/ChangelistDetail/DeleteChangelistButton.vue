@@ -14,7 +14,7 @@
               <heroicons:trash />
             </template>
             <template #default>
-              {{ $t("common.delete") }}
+              {{ $t("changelist.delete-this-changelist") }}
             </template>
           </NButton>
         </template>
