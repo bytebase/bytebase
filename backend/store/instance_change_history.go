@@ -55,9 +55,6 @@ type InstanceChangeHistoryMessage struct {
 	IssueProjectID string
 }
 
-// instanceChangeHistoryTruncateLength is the maximum size (1M) of a sheet for displaying.
-const instanceChangeHistoryTruncateLength = 1024 * 1024
-
 // FindInstanceChangeHistoryMessage is for listing a list of instance change history.
 type FindInstanceChangeHistoryMessage struct {
 	ID              *string
@@ -71,7 +68,8 @@ type FindInstanceChangeHistoryMessage struct {
 	Offset          *int
 
 	// Truncate Statement, Schema, SchemaPrev unless ShowFull.
-	ShowFull bool
+	ShowFull     bool
+	TruncateSize int
 }
 
 // UpdateInstanceChangeHistoryMessage is for updating an instance change history.
@@ -84,22 +82,16 @@ type UpdateInstanceChangeHistoryMessage struct {
 	Sheet               *int
 }
 
-// CreateInstanceChangeHistory creates instance change history in batch.
-func (s *Store) CreateInstanceChangeHistory(ctx context.Context, create *InstanceChangeHistoryMessage) error {
+// CreateInstanceChangeHistoryForMigrator creates an instance change history for migrator.
+func (s *Store) CreateInstanceChangeHistoryForMigrator(ctx context.Context, create *InstanceChangeHistoryMessage) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	if create.InstanceUID == nil {
-		if _, err := s.createInstanceChangeHistoryImplForMigrator(ctx, tx, create); err != nil {
-			return err
-		}
-	} else {
-		if _, err := s.createInstanceChangeHistoryImpl(ctx, tx, create); err != nil {
-			return err
-		}
+	if _, err := s.createInstanceChangeHistoryImplForMigrator(ctx, tx, create); err != nil {
+		return err
 	}
 	return tx.Commit()
 }
@@ -137,6 +129,11 @@ func (*Store) createInstanceChangeHistoryImpl(ctx context.Context, tx *Tx, creat
 		return "", err
 	}
 
+	statement := create.Statement
+	if create.SheetID != nil {
+		statement = ""
+	}
+
 	var uid string
 	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
@@ -151,7 +148,7 @@ func (*Store) createInstanceChangeHistoryImpl(ctx context.Context, tx *Tx, creat
 		create.Status,
 		storedVersion,
 		create.Description,
-		create.Statement,
+		statement,
 		create.Schema,
 		create.SheetID,
 		create.SchemaPrev,
@@ -482,17 +479,17 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 		}
 	}
 
-	statementField := fmt.Sprintf("LEFT(instance_change_history.statement, %d)", instanceChangeHistoryTruncateLength)
-	if find.ShowFull {
-		statementField = "instance_change_history.statement"
+	statementField := "COALESCE(sheet.statement, instance_change_history.statement)"
+	if !find.ShowFull {
+		statementField = fmt.Sprintf("LEFT(%s, %d)", statementField, find.TruncateSize)
 	}
-	schemaField := fmt.Sprintf("LEFT(instance_change_history.schema, %d)", instanceChangeHistoryTruncateLength)
-	if find.ShowFull {
-		schemaField = "instance_change_history.schema"
+	schemaField := "instance_change_history.schema"
+	if !find.ShowFull {
+		schemaField = fmt.Sprintf("LEFT(%s, %d)", schemaField, find.TruncateSize)
 	}
-	schemaPrevField := fmt.Sprintf("LEFT(instance_change_history.schema_prev, %d)", instanceChangeHistoryTruncateLength)
-	if find.ShowFull {
-		schemaPrevField = "instance_change_history.schema_prev"
+	schemaPrevField := "instance_change_history.schema_prev"
+	if !find.ShowFull {
+		schemaPrevField = fmt.Sprintf("LEFT(%s, %d)", schemaPrevField, find.TruncateSize)
 	}
 
 	query := fmt.Sprintf(`
@@ -522,6 +519,7 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 			COALESCE(instance.resource_id, ''),
 			COALESCE(db.name, '')
 		FROM instance_change_history
+		LEFT JOIN sheet ON sheet.id = instance_change_history.sheet_id
 		LEFT JOIN instance on instance.id = instance_change_history.instance_id
 		LEFT JOIN db on db.id = instance_change_history.database_id
 		WHERE `+strings.Join(where, " AND ")+` ORDER BY instance_change_history.instance_id, instance_change_history.database_id, instance_change_history.sequence DESC`, statementField, schemaField, schemaPrevField, sheetField)
@@ -726,7 +724,7 @@ func (s *Store) CreatePendingInstanceChangeHistory(ctx context.Context, prevSche
 		CreatorID:           m.CreatorID,
 		InstanceUID:         m.InstanceID,
 		DatabaseUID:         m.DatabaseID,
-		IssueUID:            m.IssueIDInt,
+		IssueUID:            m.IssueUID,
 		ReleaseVersion:      m.ReleaseVersion,
 		Sequence:            nextSequence,
 		Source:              m.Source,
@@ -790,17 +788,17 @@ func (s *Store) ListInstanceChangeHistoryForMigrator(ctx context.Context, find *
 		where, args = append(where, fmt.Sprintf("instance_change_history.version = $%d", len(args)+1)), append(args, storedVersion)
 	}
 
-	statementField := fmt.Sprintf("LEFT(instance_change_history.statement, %d)", instanceChangeHistoryTruncateLength)
-	if find.ShowFull {
-		statementField = "instance_change_history.statement"
+	statementField := "instance_change_history.statement"
+	if !find.ShowFull {
+		statementField = fmt.Sprintf("LEFT(%s, %d)", statementField, find.TruncateSize)
 	}
-	schemaField := fmt.Sprintf("LEFT(instance_change_history.schema, %d)", instanceChangeHistoryTruncateLength)
-	if find.ShowFull {
-		schemaField = "instance_change_history.schema"
+	schemaField := "instance_change_history.schema"
+	if !find.ShowFull {
+		schemaField = fmt.Sprintf("LEFT(%s, %d)", schemaField, find.TruncateSize)
 	}
-	schemaPrevField := fmt.Sprintf("LEFT(instance_change_history.schema_prev, %d)", instanceChangeHistoryTruncateLength)
-	if find.ShowFull {
-		schemaPrevField = "instance_change_history.schema_prev"
+	schemaPrevField := "instance_change_history.schema_prev"
+	if !find.ShowFull {
+		schemaPrevField = fmt.Sprintf("LEFT(%s, %d)", schemaPrevField, find.TruncateSize)
 	}
 
 	query := fmt.Sprintf(`

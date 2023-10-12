@@ -3,6 +3,8 @@ import { reactive } from "vue";
 import { databaseServiceClient } from "@/grpcweb";
 import {
   ChangeHistory,
+  ChangeHistoryView,
+  ChangeHistory_Type,
   GetChangeHistoryRequest,
   ListChangeHistoriesRequest,
 } from "@/types/proto/v1/database_service";
@@ -64,6 +66,44 @@ export const useChangeHistoryStore = defineStore("changeHistory_v1", () => {
   const getChangeHistoryByName = (name: string) => {
     return changeHistoryMapByName.get(name);
   };
+  const exportChangeHistoryFullStatementByName = async (
+    name: string
+  ): Promise<{
+    changeHistory: ChangeHistory | undefined;
+    type: "MIGRATE" | "BASELINE" | "UNSUPPORTED";
+    statement: string;
+  }> => {
+    const changeHistory = await databaseServiceClient.getChangeHistory({
+      name,
+      view: ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL,
+    });
+    if (changeHistory) {
+      if (
+        changeHistory.type === ChangeHistory_Type.MIGRATE ||
+        changeHistory.type === ChangeHistory_Type.MIGRATE_SDL ||
+        changeHistory.type === ChangeHistory_Type.MIGRATE_GHOST ||
+        changeHistory.type === ChangeHistory_Type.BRANCH ||
+        changeHistory.type === ChangeHistory_Type.DATA
+      ) {
+        return {
+          changeHistory,
+          type: "MIGRATE",
+          statement: changeHistory.statement,
+        };
+      } else if (changeHistory.type === ChangeHistory_Type.BASELINE) {
+        return {
+          changeHistory,
+          type: "BASELINE",
+          statement: changeHistory.schema,
+        };
+      }
+    }
+    return {
+      changeHistory,
+      type: "UNSUPPORTED",
+      statement: "",
+    };
+  };
 
   return {
     fetchChangeHistoryList,
@@ -72,5 +112,6 @@ export const useChangeHistoryStore = defineStore("changeHistory_v1", () => {
     fetchChangeHistory,
     getOrFetchChangeHistoryByName,
     getChangeHistoryByName,
+    exportChangeHistoryFullStatementByName,
   };
 });

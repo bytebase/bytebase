@@ -162,10 +162,11 @@ const doAddChange = async () => {
       const sheet = localSheetStore.getOrCreateSheetByName(change.sheet);
       const sourceType = getChangelistChangeSourceType(change);
       if (sourceType === "CHANGE_HISTORY") {
-        const changeHistory = useChangeHistoryStore().getChangeHistoryByName(
-          change.source
-        );
-        setSheetStatement(sheet, changeHistory?.statement ?? "");
+        const { statement } =
+          await useChangeHistoryStore().exportChangeHistoryFullStatementByName(
+            change.source
+          );
+        setSheetStatement(sheet, statement);
       }
       if (sourceType === "BRANCH") {
         // For branch changes, use its diff DDL

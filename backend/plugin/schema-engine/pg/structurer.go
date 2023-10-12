@@ -773,11 +773,13 @@ func GetDesignSchema(baselineSchema string, to *v1pb.DatabaseMetadata) (string, 
 	if !ok {
 		return "", errors.Errorf("failed to convert to RootContext")
 	}
-	if _, err := listener.result.WriteString(root.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
-		Start: listener.lastTokenIndex,
-		Stop:  root.GetStop().GetTokenIndex(),
-	})); err != nil {
-		return "", err
+	if root.GetStop() != nil {
+		if _, err := listener.result.WriteString(root.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+			Start: listener.lastTokenIndex,
+			Stop:  root.GetStop().GetTokenIndex(),
+		})); err != nil {
+			return "", err
+		}
 	}
 
 	// Follow the order of the input schema.

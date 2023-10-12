@@ -27,6 +27,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/config"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -65,15 +66,17 @@ type DatabaseService struct {
 	backupRunner   *backuprun.Runner
 	schemaSyncer   *schemasync.Syncer
 	licenseService enterpriseAPI.LicenseService
+	profile        *config.Profile
 }
 
 // NewDatabaseService creates a new DatabaseService.
-func NewDatabaseService(store *store.Store, br *backuprun.Runner, schemaSyncer *schemasync.Syncer, licenseService enterpriseAPI.LicenseService) *DatabaseService {
+func NewDatabaseService(store *store.Store, br *backuprun.Runner, schemaSyncer *schemasync.Syncer, licenseService enterpriseAPI.LicenseService, profile *config.Profile) *DatabaseService {
 	return &DatabaseService{
 		store:          store,
 		backupRunner:   br,
 		schemaSyncer:   schemaSyncer,
 		licenseService: licenseService,
+		profile:        profile,
 	}
 }
 
@@ -852,11 +855,16 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 	}
 	limitPlusOne := limit + 1
 
+	truncateSize := 512
+	if s.profile.Mode == common.ReleaseModeDev {
+		truncateSize = 4
+	}
 	find := &store.FindInstanceChangeHistoryMessage{
-		InstanceID: &instance.UID,
-		DatabaseID: &database.UID,
-		Limit:      &limitPlusOne,
-		Offset:     &offset,
+		InstanceID:   &instance.UID,
+		DatabaseID:   &database.UID,
+		Limit:        &limitPlusOne,
+		Offset:       &offset,
+		TruncateSize: truncateSize,
 	}
 	if request.View == v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL {
 		find.ShowFull = true
@@ -925,10 +933,15 @@ func (s *DatabaseService) GetChangeHistory(ctx context.Context, request *v1pb.Ge
 		return nil, err
 	}
 
+	truncateSize := 4 * 1024 * 1024
+	if s.profile.Mode == common.ReleaseModeDev {
+		truncateSize = 64
+	}
 	find := &store.FindInstanceChangeHistoryMessage{
-		InstanceID: &instance.UID,
-		DatabaseID: &database.UID,
-		ID:         &changeHistoryIDStr,
+		InstanceID:   &instance.UID,
+		DatabaseID:   &database.UID,
+		ID:           &changeHistoryIDStr,
+		TruncateSize: truncateSize,
 	}
 	if request.View == v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL {
 		find.ShowFull = true

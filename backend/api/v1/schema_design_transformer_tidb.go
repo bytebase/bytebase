@@ -514,12 +514,12 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 								return in, true
 							}
 						}
-					} else if stateColumn.defaultValue != nil {
-						if _, err := g.columnDefine.WriteString("DEFAULT"); err != nil {
+					} else if stateColumn.hasDefault {
+						if _, err := g.columnDefine.WriteString(" DEFAUL"); err != nil {
 							g.err = err
 							return in, true
 						}
-						if _, err := g.columnDefine.WriteString(stateColumn.defaultValue.toString()); err != nil {
+						if _, err := g.columnDefine.WriteString(" " + stateColumn.defaultValue.toString()); err != nil {
 							g.err = err
 							return in, true
 						}
@@ -538,11 +538,11 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 							}
 						}
 					} else if stateColumn.comment != "" {
-						if _, err := g.columnDefine.WriteString("COMMENT" + " "); err != nil {
+						if _, err := g.columnDefine.WriteString(" COMMENT"); err != nil {
 							g.err = err
 							return in, true
 						}
-						if _, err := g.columnDefine.WriteString(fmt.Sprintf("'%s'", stateColumn.comment)); err != nil {
+						if _, err := g.columnDefine.WriteString(fmt.Sprintf(" '%s'", stateColumn.comment)); err != nil {
 							g.err = err
 							return in, true
 						}

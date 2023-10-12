@@ -245,14 +245,17 @@
         </i18n-t>
       </template>
 
-      <div class="space-y-4">
-        <code-diff
-          class="w-full"
-          :old-string="previousHistory.schema"
-          :new-string="changeHistory.schema"
-          output-format="side-by-side"
+      <div
+        class="space-y-4 flex flex-col overflow-hidden"
+        style="width: calc(100vw - 10rem); height: calc(100vh - 12rem)"
+      >
+        <DiffEditor
+          class="flex-1 w-full border rounded-md overflow-clip"
+          :original="previousHistory.schema"
+          :value="changeHistory.schema"
+          :readonly="true"
         />
-        <div class="flex justify-end px-4">
+        <div class="flex justify-end">
           <button
             type="button"
             class="btn-primary"
@@ -352,22 +355,17 @@ const showSchemaSnapshot = computed(() => {
 });
 
 watch(
-  changeHistoryParent,
-  async (parent) => {
-    const database = await databaseStore.getOrFetchDatabaseByName(parent);
+  () => [changeHistoryParent.value, changeHistoryName.value],
+  async () => {
+    const database = await databaseStore.getOrFetchDatabaseByName(
+      changeHistoryParent.value
+    );
     await dbSchemaStore.getOrFetchDatabaseMetadata(database.name);
     await changeHistoryStore.fetchChangeHistoryList({
-      parent,
+      parent: changeHistoryParent.value,
     });
-  },
-  { immediate: true }
-);
-
-watch(
-  changeHistoryName,
-  async (name) => {
     await changeHistoryStore.fetchChangeHistory({
-      name,
+      name: changeHistoryName.value,
     });
   },
   { immediate: true }
@@ -412,7 +410,8 @@ const prevChangeHistoryList = computed(() => {
 // changeHistory is the latest migration NOW.
 const changeHistory = computed((): ChangeHistory | undefined => {
   if (prevChangeHistoryList.value.length > 0) {
-    return prevChangeHistoryList.value[0];
+    const prev = prevChangeHistoryList.value[0];
+    return changeHistoryStore.getChangeHistoryByName(prev.name) || prev;
   }
   return changeHistoryStore.getChangeHistoryByName(changeHistoryName.value)!;
 });

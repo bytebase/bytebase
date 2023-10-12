@@ -52,7 +52,7 @@
           </button>
         </div>
       </BBTableCell>
-      <BBTableCell v-if="showSensitiveColumn && isDev()" class="bb-grid-cell">
+      <BBTableCell v-if="showSemanticTypeColumn" class="bb-grid-cell">
         <div class="flex items-center">
           {{ getColumnSemanticType(column.name)?.title }}
           <button
@@ -74,12 +74,10 @@
         </div>
       </BBTableCell>
       <BBTableCell v-if="showClassificationColumn" class="bb-grid-cell">
-        <div class="flex items-center">
-          <ClassificationLevelBadge
-            :classification="column.classification"
-            :classification-config="classificationConfig"
-          />
-        </div>
+        <ClassificationLevelBadge
+          :classification="column.classification"
+          :classification-config="classificationConfig"
+        />
       </BBTableCell>
       <BBTableCell class="bb-grid-cell">
         {{ column.type }}
@@ -410,10 +408,14 @@ const showSensitiveColumn = computed(() => {
   );
 });
 
+const showSemanticTypeColumn = computed(() => {
+  return showSensitiveColumn.value && isDev();
+});
+
 const showClassificationColumn = computed(() => {
   return (
-    engine.value === Engine.MYSQL ||
-    (engine.value === Engine.POSTGRES && props.classificationConfig)
+    (engine.value === Engine.MYSQL || engine.value === Engine.POSTGRES) &&
+    props.classificationConfig
   );
 });
 
@@ -450,9 +452,24 @@ const hasEditLabelsPermission = computed(() => {
 });
 
 const NORMAL_COLUMN_LIST = computed(() => {
-  const columnList: BBTableColumn[] = [
+  const columnList: {
+    title: string;
+    hide?: boolean;
+  }[] = [
     {
       title: t("common.name"),
+    },
+    {
+      title: t("settings.sensitive-data.masking-level.self"),
+      hide: !showSensitiveColumn.value,
+    },
+    {
+      title: t("settings.sensitive-data.semantic-types.self"),
+      hide: !showSemanticTypeColumn.value,
+    },
+    {
+      title: t("database.classification.self"),
+      hide: !showClassificationColumn.value,
     },
     {
       title: t("common.type"),
@@ -476,27 +493,27 @@ const NORMAL_COLUMN_LIST = computed(() => {
       title: t("common.labels"),
     },
   ];
-  if (showSensitiveColumn.value) {
-    if (isDev()) {
-      columnList.splice(1, 0, {
-        title: t("settings.sensitive-data.semantic-types.self"),
-      });
-    }
-    columnList.splice(1, 0, {
-      title: t("settings.sensitive-data.masking-level.self"),
-    });
-  }
-  if (showClassificationColumn.value) {
-    columnList.splice(showSensitiveColumn.value ? 2 : 1, 0, {
-      title: t("database.classification.self"),
-    });
-  }
   return columnList;
 });
 const POSTGRES_COLUMN_LIST = computed(() => {
-  const columnList: BBTableColumn[] = [
+  const columnList: {
+    title: string;
+    hide?: boolean;
+  }[] = [
     {
       title: t("common.name"),
+    },
+    {
+      title: t("settings.sensitive-data.masking-level.self"),
+      hide: !showSensitiveColumn.value,
+    },
+    {
+      title: t("settings.sensitive-data.semantic-types.self"),
+      hide: !showSemanticTypeColumn.value,
+    },
+    {
+      title: t("database.classification.self"),
+      hide: !showClassificationColumn.value,
     },
     {
       title: t("common.type"),
@@ -517,21 +534,6 @@ const POSTGRES_COLUMN_LIST = computed(() => {
       title: t("common.labels"),
     },
   ];
-  if (showSensitiveColumn.value) {
-    if (isDev()) {
-      columnList.splice(1, 0, {
-        title: t("settings.sensitive-data.semantic-types.self"),
-      });
-    }
-    columnList.splice(1, 0, {
-      title: t("settings.sensitive-data.masking-level.self"),
-    });
-  }
-  if (showClassificationColumn.value) {
-    columnList.splice(showSensitiveColumn.value ? 2 : 1, 0, {
-      title: t("database.classification.self"),
-    });
-  }
   return columnList;
 });
 const CLICKHOUSE_SNOWFLAKE_COLUMN_LIST = computed((): BBTableColumn[] => [
@@ -555,15 +557,15 @@ const CLICKHOUSE_SNOWFLAKE_COLUMN_LIST = computed((): BBTableColumn[] => [
   },
 ]);
 
-const columnNameList = computed(() => {
+const columnNameList = computed((): BBTableColumn[] => {
   switch (engine.value) {
     case Engine.POSTGRES:
-      return POSTGRES_COLUMN_LIST.value;
+      return POSTGRES_COLUMN_LIST.value.filter((col) => !col.hide);
     case Engine.CLICKHOUSE:
     case Engine.SNOWFLAKE:
       return CLICKHOUSE_SNOWFLAKE_COLUMN_LIST.value;
     default:
-      return NORMAL_COLUMN_LIST.value;
+      return NORMAL_COLUMN_LIST.value.filter((col) => !col.hide);
   }
 });
 

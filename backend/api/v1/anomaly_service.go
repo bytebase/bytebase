@@ -47,7 +47,10 @@ func NewAnomalyService(store *store.Store) *AnomalyService {
 func (s *AnomalyService) SearchAnomalies(ctx context.Context, request *v1pb.SearchAnomaliesRequest) (*v1pb.
 	SearchAnomaliesResponse, error,
 ) {
-	var find store.ListAnomalyMessage
+	rowStatus := api.Normal
+	find := &store.ListAnomalyMessage{
+		RowStatus: &rowStatus,
+	}
 	if request.Filter != "" {
 		// We only support filter by type and resource now.
 		types, err := getEBNFTokens(request.Filter, typeFilterKey)
@@ -105,7 +108,7 @@ func (s *AnomalyService) SearchAnomalies(ctx context.Context, request *v1pb.Sear
 		}
 	}
 
-	anomalies, err := s.store.ListAnomalyV2(ctx, &find)
+	anomalies, err := s.store.ListAnomalyV2(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}

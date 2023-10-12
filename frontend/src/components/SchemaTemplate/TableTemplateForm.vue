@@ -72,6 +72,33 @@
             </template>
           </div>
         </div>
+
+        <div v-if="classificationConfig" class="sm:col-span-2 sm:col-start-1">
+          <label for="column-name" class="textlabel">
+            {{ $t("schema-template.classification.self") }}
+          </label>
+          <div class="flex items-center gap-x-2 mt-1">
+            <ClassificationLevelBadge
+              :classification="state.table?.classification"
+              :classification-config="classificationConfig"
+            />
+            <div v-if="allowEdit" class="flex">
+              <button
+                v-if="state.table?.classification"
+                class="w-6 h-6 p-1 hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
+                @click.prevent="state.table!.classification = ''"
+              >
+                <heroicons-outline:x class="w-4 h-4" />
+              </button>
+              <button
+                class="w-6 h-6 p-1 hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
+                @click.prevent="state.showClassificationDrawer = true"
+              >
+                <heroicons-outline:pencil class="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="space-y-6 pt-6">
         <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4">
@@ -171,6 +198,14 @@
       </div>
     </DrawerContent>
   </Drawer>
+
+  <SelectClassificationDrawer
+    v-if="classificationConfig"
+    :show="state.showClassificationDrawer"
+    :classification-config="classificationConfig"
+    @dismiss="state.showClassificationDrawer = false"
+    @select="onClassificationSelect"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -342,5 +377,13 @@ const handleApplyColumnTemplate = (
   const column = convertColumnMetadataToColumn(template.column, "created");
   state.table.columnList.push(column);
   state.showFieldTemplateDrawer = false;
+};
+
+const onClassificationSelect = (id: string) => {
+  if (!state.table) {
+    return;
+  }
+  state.table.classification = id;
+  state.showClassificationDrawer = false;
 };
 </script>

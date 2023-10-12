@@ -1,7 +1,5 @@
-import axios from "axios";
-import { useSilentRequest } from "@/plugins/silent-request";
 import { useSchemaEditorV1Store } from "@/store";
-import { DatabaseEdit, DatabaseEditResult } from "@/types";
+import { DatabaseEdit } from "@/types";
 import {
   checkHasSchemaChanges,
   diffSchema,
@@ -44,22 +42,4 @@ export const getDatabaseEditListWithSchemaEditor = () => {
     }
   }
   return databaseEditList;
-};
-
-export const postDatabaseEdit = async (
-  databaseEdit: DatabaseEdit,
-  silent = false
-) => {
-  const request = () => {
-    const post = () =>
-      axios.post(`/api/database/${databaseEdit.databaseId}/edit`, databaseEdit);
-    if (silent) {
-      return useSilentRequest(post);
-    }
-    return post();
-  };
-
-  const resData = (await request()).data;
-  const databaseEditResult = resData.data.attributes as DatabaseEditResult;
-  return databaseEditResult;
 };

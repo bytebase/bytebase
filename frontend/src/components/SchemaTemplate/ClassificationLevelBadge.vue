@@ -1,5 +1,5 @@
 <template>
-  {{ columnClassification?.title }}
+  {{ columnClassification?.title ?? placeholder }}
   <span v-if="level" :class="['px-1 py-0.5 rounded text-xs', levelColor]">
     {{ level.title }}
   </span>
@@ -12,6 +12,7 @@ import { DataClassificationSetting_DataClassificationConfig } from "@/types/prot
 const props = defineProps<{
   classification?: string;
   classificationConfig?: DataClassificationSetting_DataClassificationConfig;
+  placeholder?: string;
 }>();
 
 const bgColorList = [

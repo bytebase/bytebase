@@ -271,6 +271,7 @@ export const transformTableEditToMetadata = (
     columns: [],
     indexes: [],
     foreignKeys: [],
+    classification: tableEdit.classification,
   });
 
   for (const column of tableEdit.columnList) {

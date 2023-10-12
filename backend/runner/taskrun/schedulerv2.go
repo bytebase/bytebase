@@ -99,7 +99,24 @@ func (s *SchedulerV2) runOnce(ctx context.Context) {
 }
 
 func (s *SchedulerV2) scheduleAutoRolloutTasks(ctx context.Context) error {
-	taskIDs, err := s.store.ListNotSkippedTasksWithNoTaskRun(ctx)
+	environments, err := s.store.ListEnvironmentV2(ctx, &store.FindEnvironmentMessage{ShowDeleted: true})
+	if err != nil {
+		return errors.Wrapf(err, "failed to list environments")
+	}
+
+	var autoRolloutEnvironmentIDs []int
+	for _, environment := range environments {
+		policy, err := s.store.GetPipelineApprovalPolicy(ctx, environment.UID)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get approval policy for environment ID %d", environment.UID)
+		}
+		if policy.Value != api.PipelineApprovalValueManualNever {
+			continue
+		}
+		autoRolloutEnvironmentIDs = append(autoRolloutEnvironmentIDs, environment.UID)
+	}
+
+	taskIDs, err := s.store.ListTasksToAutoRollout(ctx, autoRolloutEnvironmentIDs)
 	if err != nil {
 		return errors.Wrapf(err, "failed to list tasks with zero task run")
 	}
@@ -122,28 +139,6 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 		return err
 	}
 	if instance.Deleted {
-		return nil
-	}
-	// TODO(p0ny): support create database with environment override.
-	environmentID := instance.EnvironmentID
-	if task.DatabaseID != nil {
-		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
-		if err != nil {
-			return err
-		}
-		if database != nil {
-			environmentID = database.EffectiveEnvironmentID
-		}
-	}
-	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &environmentID})
-	if err != nil {
-		return err
-	}
-	policy, err := s.store.GetPipelineApprovalPolicy(ctx, environment.UID)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get approval policy for environment ID %d", environment.UID)
-	}
-	if policy.Value != api.PipelineApprovalValueManualNever {
 		return nil
 	}
 
