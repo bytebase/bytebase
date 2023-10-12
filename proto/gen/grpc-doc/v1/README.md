@@ -524,6 +524,7 @@
     - [UpdateSchemaDesignRequest](#bytebase-v1-UpdateSchemaDesignRequest)
   
     - [SchemaDesign.Type](#bytebase-v1-SchemaDesign-Type)
+    - [SchemaDesignView](#bytebase-v1-SchemaDesignView)
   
     - [SchemaDesignService](#bytebase-v1-SchemaDesignService)
   
@@ -8306,6 +8307,7 @@ Type is the database change type.
 | page_token | [string](#string) |  | A page token, received from a previous `ListSchemaDesigns` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListSchemaDesigns` must match the call that provided the page token. |
+| view | [SchemaDesignView](#bytebase-v1-SchemaDesignView) |  |  |
 
 
 
@@ -8451,6 +8453,19 @@ The schema design&#39;s `name` field is used to identify the schema design to up
 | TYPE_UNSPECIFIED | 0 |  |
 | MAIN_BRANCH | 1 | Main branch type is the main version of schema design. And only allow to be updated/merged with personal drafts. |
 | PERSONAL_DRAFT | 2 | Personal draft type is a copy of the main branch type schema designs. |
+
+
+
+<a name="bytebase-v1-SchemaDesignView"></a>
+
+### SchemaDesignView
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SCHEMA_DESIGN_VIEW_UNSPECIFIED | 0 | The default / unset value. The API will default to the BASIC view. |
+| SCHEMA_DESIGN_VIEW_BASIC | 1 | Exclude schema, baseline_schema. |
+| SCHEMA_DESIGN_VIEW_FULL | 2 | Include everything. |
 
 
  
