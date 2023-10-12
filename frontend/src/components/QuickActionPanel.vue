@@ -158,7 +158,7 @@
           <h3
             class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
           >
-            {{ $t("quick-action.request-query") }}
+            {{ $t("quick-action.request-query-permission") }}
           </h3>
         </div>
 
@@ -175,7 +175,7 @@
           <h3
             class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
           >
-            {{ $t("quick-action.request-export") }}
+            {{ $t("quick-action.request-export-permission") }}
           </h3>
         </div>
       </template>
