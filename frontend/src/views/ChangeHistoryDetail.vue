@@ -355,22 +355,17 @@ const showSchemaSnapshot = computed(() => {
 });
 
 watch(
-  changeHistoryParent,
-  async (parent) => {
-    const database = await databaseStore.getOrFetchDatabaseByName(parent);
+  () => [changeHistoryParent.value, changeHistoryName.value],
+  async () => {
+    const database = await databaseStore.getOrFetchDatabaseByName(
+      changeHistoryParent.value
+    );
     await dbSchemaStore.getOrFetchDatabaseMetadata(database.name);
     await changeHistoryStore.fetchChangeHistoryList({
-      parent,
+      parent: changeHistoryParent.value,
     });
-  },
-  { immediate: true }
-);
-
-watch(
-  changeHistoryName,
-  async (name) => {
     await changeHistoryStore.fetchChangeHistory({
-      name,
+      name: changeHistoryName.value,
     });
   },
   { immediate: true }
@@ -415,7 +410,8 @@ const prevChangeHistoryList = computed(() => {
 // changeHistory is the latest migration NOW.
 const changeHistory = computed((): ChangeHistory | undefined => {
   if (prevChangeHistoryList.value.length > 0) {
-    return prevChangeHistoryList.value[0];
+    const prev = prevChangeHistoryList.value[0];
+    return changeHistoryStore.getChangeHistoryByName(prev.name) || prev;
   }
   return changeHistoryStore.getChangeHistoryByName(changeHistoryName.value)!;
 });
