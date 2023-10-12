@@ -6,4 +6,6 @@ title: What is 'Issue' ?
 
 #### Learn more
 
-- [Use UI Workflow](https://www.bytebase.com/docs/get-started/step-by-step/change-schema)
+- [Your first database change](https://www.bytebase.com/docs/get-started/step-by-step/change-schema)
+- [Batch change](https://www.bytebase.com/docs/change-database/batch-change/)
+- [GitOps workflow](https://www.bytebase.com/docs/get-started/step-by-step/change-schema)
