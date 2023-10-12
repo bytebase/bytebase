@@ -1147,6 +1147,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 	updateMasks := map[string]bool{}
 
 	patch := &store.UpdateIssueMessage{}
+	var activityCreates []*store.ActivityMessage
 	for _, path := range request.UpdateMask.Paths {
 		updateMasks[path] = true
 		switch path {
@@ -1193,8 +1194,44 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 		case "title":
 			patch.Title = &request.Issue.Title
 
+			payload := &api.ActivityIssueFieldUpdatePayload{
+				FieldID:   api.IssueFieldName,
+				OldValue:  issue.Title,
+				NewValue:  request.Issue.Title,
+				IssueName: issue.Title,
+			}
+			activityPayload, err := json.Marshal(payload)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to marshal activity payload, error: %v", err)
+			}
+			activityCreates = append(activityCreates, &store.ActivityMessage{
+				CreatorUID:   principalID,
+				ContainerUID: issue.UID,
+				Type:         api.ActivityIssueFieldUpdate,
+				Level:        api.ActivityInfo,
+				Payload:      string(activityPayload),
+			})
+
 		case "description":
 			patch.Description = &request.Issue.Description
+
+			payload := &api.ActivityIssueFieldUpdatePayload{
+				FieldID:   api.IssueFieldDescription,
+				OldValue:  issue.Description,
+				NewValue:  request.Issue.Description,
+				IssueName: issue.Title,
+			}
+			activityPayload, err := json.Marshal(payload)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to marshal activity payload, error: %v", err)
+			}
+			activityCreates = append(activityCreates, &store.ActivityMessage{
+				CreatorUID:   principalID,
+				ContainerUID: issue.UID,
+				Type:         api.ActivityIssueFieldUpdate,
+				Level:        api.ActivityInfo,
+				Payload:      string(activityPayload),
+			})
 
 		case "subscribers":
 			var subscribers []*store.UserMessage
@@ -1227,6 +1264,24 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 				return nil, status.Errorf(codes.NotFound, "user %v not found", request.Issue.Assignee)
 			}
 			patch.Assignee = user
+
+			payload := &api.ActivityIssueFieldUpdatePayload{
+				FieldID:   api.IssueFieldAssignee,
+				OldValue:  strconv.Itoa(issue.Assignee.ID),
+				NewValue:  strconv.Itoa(user.ID),
+				IssueName: issue.Title,
+			}
+			activityPayload, err := json.Marshal(payload)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to marshal activity payload, error: %v", err)
+			}
+			activityCreates = append(activityCreates, &store.ActivityMessage{
+				CreatorUID:   principalID,
+				ContainerUID: issue.UID,
+				Type:         api.ActivityIssueFieldUpdate,
+				Level:        api.ActivityInfo,
+				Payload:      string(activityPayload),
+			})
 		}
 	}
 
@@ -1237,6 +1292,12 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 
 	if updateMasks["approval_finding_done"] {
 		s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
+	}
+
+	for _, create := range activityCreates {
+		if _, err := s.activityManager.CreateActivity(ctx, create, &activity.Metadata{Issue: issue}); err != nil {
+			slog.Warn("failed to create issue field update activity", "issue_id", issue.UID, log.BBError(err))
+		}
 	}
 
 	issueV1, err := convertToIssue(ctx, s.store, issue)
