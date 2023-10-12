@@ -20,6 +20,37 @@
   target:
     name: ""
     schemas:
+        - name: s1
+          tables:
+            - name: t
+              columns:
+                - name: a
+                  position: 0
+                  default: null
+                  nullable: false
+                  type: int
+                  characterset: ""
+                  collation: ""
+                  comment: ""
+                  classification: ""
+                  usercomment: ""
+                  effectivemaskinglevel: 0
+              indexes: []
+              engine: ""
+              collation: ""
+              rowcount: 0
+              datasize: 0
+              indexsize: 0
+              datafree: 0
+              createoptions: ""
+              comment: ""
+              classification: ""
+              usercomment: ""
+              foreignkeys: []
+          views: []
+          functions: []
+          streams: []
+          tasks: []
         - name: public
           tables:
             - name: t
@@ -204,6 +235,13 @@
     COMMENT ON COLUMN public.t4.c IS 'comment with ''; test escape';
     ALTER TABLE public.t4 ADD CONSTRAINT pk_t4_a_c_d PRIMARY KEY ("a", "b", "c");
     ALTER TABLE public.t4 ADD CONSTRAINT fk_t4_a_t2_b FOREIGN KEY ("b") REFERENCES "public"."t2"("b");
+    CREATE SCHEMA "s1";
+
+    CREATE TABLE "s1"."t" (
+      "a" int NOT NULL
+    );
+
+
 
     COMMENT ON COLUMN "public"."t4"."a" IS 'this is comment'', aha';
 
