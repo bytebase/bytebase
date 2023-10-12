@@ -270,35 +270,31 @@ const fullScopes = computed((): SearchScope[] => {
         },
       ],
     },
+    {
+      id: "creator",
+      title: t("issue.advanced-search.scope.creator.title"),
+      description: t("issue.advanced-search.scope.creator.description"),
+      options: principalSearchOptions.value,
+    },
+    {
+      id: "assignee",
+      title: t("issue.advanced-search.scope.assignee.title"),
+      description: t("issue.advanced-search.scope.assignee.description"),
+      options: principalSearchOptions.value,
+    },
+    {
+      id: "subscriber",
+      title: t("issue.advanced-search.scope.subscriber.title"),
+      description: t("issue.advanced-search.scope.subscriber.description"),
+      options: principalSearchOptions.value,
+    },
+    {
+      id: "principal",
+      title: t("issue.advanced-search.scope.principal.title"),
+      description: t("issue.advanced-search.scope.principal.description"),
+      options: principalSearchOptions.value,
+    },
   ];
-  if (hasPermission.value) {
-    scopes.push(
-      {
-        id: "creator",
-        title: t("issue.advanced-search.scope.creator.title"),
-        description: t("issue.advanced-search.scope.creator.description"),
-        options: principalSearchOptions.value,
-      },
-      {
-        id: "assignee",
-        title: t("issue.advanced-search.scope.assignee.title"),
-        description: t("issue.advanced-search.scope.assignee.description"),
-        options: principalSearchOptions.value,
-      },
-      {
-        id: "subscriber",
-        title: t("issue.advanced-search.scope.subscriber.title"),
-        description: t("issue.advanced-search.scope.subscriber.description"),
-        options: principalSearchOptions.value,
-      },
-      {
-        id: "principal",
-        title: t("issue.advanced-search.scope.principal.title"),
-        description: t("issue.advanced-search.scope.principal.description"),
-        options: principalSearchOptions.value,
-      }
-    );
-  }
   return scopes;
 });
 
