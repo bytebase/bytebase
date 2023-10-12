@@ -257,6 +257,8 @@ message SchemaTemplateSetting {
     string category = 3;
 
     ColumnMetadata column = 4;
+
+    ColumnConfig config = 5;
   }
 
   repeated FieldTemplate field_templates = 1;

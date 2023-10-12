@@ -2432,6 +2432,7 @@ The type of target.
 | engine | [Engine](#bytebase-store-Engine) |  |  |
 | category | [string](#string) |  |  |
 | column | [ColumnMetadata](#bytebase-store-ColumnMetadata) |  |  |
+| config | [ColumnConfig](#bytebase-store-ColumnConfig) |  |  |
 
 
 
