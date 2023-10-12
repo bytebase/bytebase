@@ -3103,6 +3103,7 @@
       "source": "来源"
     },
     "confirm-remove-change": "移除这项变更？",
+    "delete-this-changelist": "删除这个变更列表",
     "confirm-delete-changelist": "删除变更列表？"
   }
 }
