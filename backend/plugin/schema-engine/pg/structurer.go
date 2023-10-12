@@ -259,9 +259,23 @@ func (s *databaseState) convertToDatabaseMetadata() *v1pb.DatabaseMetadata {
 }
 
 type schemaState struct {
-	id     int
+	id int
+	// ignore means CREATE SCHEMA statement for this schema is already in the target schema info.
+	// But we need the schemaState to deal with the other objects.
+	// So we cannot delete the schemaState, instead we set ignore to true.
+	ignore bool
 	name   string
 	tables map[string]*tableState
+}
+
+func (s *schemaState) printCreateSchema(buf *strings.Builder) error {
+	if s.ignore || s.name == "public" {
+		return nil
+	}
+
+	_, err := buf.WriteString(fmt.Sprintf("\nCREATE SCHEMA \"%s\";\n\n", s.name))
+
+	return err
 }
 
 func newSchemaState(id int, name string) *schemaState {
@@ -742,6 +756,9 @@ func GetDesignSchema(baselineSchema string, to *v1pb.DatabaseMetadata) (string, 
 		if !exists {
 			continue
 		}
+		if err := schemaState.printCreateSchema(&listener.result); err != nil {
+			return "", err
+		}
 		// Follow the order of the input table.
 		for _, table := range schema.Tables {
 			tableState, exists := schemaState.tables[table.Name]
@@ -1140,6 +1157,44 @@ func (g *designSchemaGenerator) EnterTablelikeclause(ctx *postgres.Tablelikeclau
 	if _, err := g.tableConstraints.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 		Start: ctx.GetStart().GetTokenIndex(),
 		Stop:  ctx.GetStop().GetTokenIndex(),
+	})); err != nil {
+		g.err = err
+		return
+	}
+}
+
+func (g *designSchemaGenerator) EnterCreateschemastmt(ctx *postgres.CreateschemastmtContext) {
+	if g.err != nil {
+		return
+	}
+	if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+		Start: g.lastTokenIndex,
+		Stop:  ctx.GetStart().GetTokenIndex() - 1,
+	})); err != nil {
+		g.err = err
+		return
+	}
+
+	g.lastTokenIndex = skipFollowingSemiIndex(ctx.GetParser().GetTokenStream(), ctx.GetStop().GetTokenIndex()+1)
+	endTokenIndex := g.lastTokenIndex - 1
+
+	var schemaName string
+	if ctx.Colid() != nil {
+		schemaName = pgparser.NormalizePostgreSQLColid(ctx.Colid())
+	} else if ctx.Optschemaname() != nil && ctx.Optschemaname().Colid() != nil {
+		schemaName = pgparser.NormalizePostgreSQLColid(ctx.Optschemaname().Colid())
+	}
+
+	schema, exists := g.to.schemas[schemaName]
+	if !exists {
+		// Skip not found schema.
+		return
+	}
+
+	schema.ignore = true
+	if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+		Start: ctx.GetStart().GetTokenIndex(),
+		Stop:  endTokenIndex,
 	})); err != nil {
 		g.err = err
 		return
