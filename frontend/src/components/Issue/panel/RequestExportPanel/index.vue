@@ -6,7 +6,7 @@
     @update:show="(show: boolean) => !show && $emit('close')"
   >
     <NDrawerContent
-      :title="$t('quick-action.request-export')"
+      :title="$t('quick-action.request-export-permission')"
       :closable="true"
       class="w-[50rem] max-w-[100vw] relative"
     >
