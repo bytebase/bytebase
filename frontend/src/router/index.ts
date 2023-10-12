@@ -12,7 +12,6 @@ import DashboardLayout from "@/layouts/DashboardLayout.vue";
 import DatabaseLayout from "@/layouts/DatabaseLayout.vue";
 import InstanceLayout from "@/layouts/InstanceLayout.vue";
 import SQLEditorLayout from "@/layouts/SQLEditorLayout.vue";
-import SheetDashboardLayout from "@/layouts/SheetDashboardLayout.vue";
 import SplashLayout from "@/layouts/SplashLayout.vue";
 import { useConversationStore } from "@/plugins/ai/store";
 import { t } from "@/plugins/i18n";
@@ -1050,37 +1049,6 @@ const routes: Array<RouteRecordRaw> = [
         meta: { title: () => "Bytebase SQL Editor" },
         component: () => import("../views/sql-editor/SQLEditorPage.vue"),
         props: true,
-      },
-    ],
-  },
-  {
-    path: "/sheets",
-    name: "sheets",
-    component: SheetDashboardLayout,
-    children: [
-      {
-        path: "",
-        name: "sheets.dashboard",
-        meta: { title: () => "Sheets" },
-        component: () => import("../views/SheetDashboard.vue"),
-      },
-      {
-        path: "my",
-        name: "sheets.my",
-        meta: { title: () => "Sheets" },
-        component: () => import("../views/SheetDashboard.vue"),
-      },
-      {
-        path: "shared",
-        name: "sheets.shared",
-        meta: { title: () => "Sheets" },
-        component: () => import("../views/SheetDashboard.vue"),
-      },
-      {
-        path: "starred",
-        name: "sheets.starred",
-        meta: { title: () => "Sheets" },
-        component: () => import("../views/SheetDashboard.vue"),
       },
     ],
   },
