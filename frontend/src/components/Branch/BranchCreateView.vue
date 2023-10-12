@@ -95,6 +95,7 @@ import {
   Sheet_Type,
   Sheet_Visibility,
 } from "@/types/proto/v1/sheet_service";
+import { extractChangeHistoryUID } from "@/utils";
 import BaselineSchemaSelector from "./BaselineSchemaSelector.vue";
 import { mergeSchemaEditToMetadata, validateBranchName } from "./utils";
 
@@ -155,26 +156,40 @@ watch(
   }
 );
 
+const prepareFullChangeHistorySchema = async (changeHistory: ChangeHistory) => {
+  // While a database has no change histories, the state.baselineSchema.changeHistory
+  // is a mock ChangeHistory entity with uid = -1
+  // so we should use the changeHistory it self and need not to fetch the
+  // full view of a real ChangeHistory entity.
+  const uid = extractChangeHistoryUID(changeHistory.name);
+  if (uid === String(UNKNOWN_ID)) {
+    return changeHistory.schema;
+  }
+
+  const changeHistoryWithFullView =
+    await useChangeHistoryStore().fetchChangeHistory({
+      name: changeHistory.name,
+      view: ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL,
+    });
+  return changeHistoryWithFullView?.schema ?? changeHistory.schema;
+};
+
 const prepareSchemaDesign = async () => {
   const changeHistory = state.baselineSchema.changeHistory;
   if (changeHistory && state.baselineSchema.databaseId) {
     const database = databaseStore.getDatabaseByUID(
       state.baselineSchema.databaseId
     );
-    const changeHistoryWithFullView =
-      await useChangeHistoryStore().fetchChangeHistory({
-        name: changeHistory.name,
-        view: ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL,
-      });
+    const fullSchema = await prepareFullChangeHistorySchema(changeHistory);
     const baselineMetadata = await schemaDesignStore.parseSchemaString(
-      changeHistoryWithFullView.schema,
+      fullSchema,
       database.instanceEntity.engine
     );
     return SchemaDesign.fromPartial({
       engine: database.instanceEntity.engine,
-      baselineSchema: changeHistoryWithFullView.schema,
+      baselineSchema: fullSchema,
       baselineSchemaMetadata: baselineMetadata,
-      schema: changeHistoryWithFullView.schema,
+      schema: fullSchema,
       schemaMetadata: baselineMetadata,
     });
   }
