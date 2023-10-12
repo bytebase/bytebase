@@ -23,6 +23,10 @@ func transformDatabaseMetadataToSchemaString(engine v1pb.Engine, database *v1pb.
 	switch engine {
 	case v1pb.Engine_MYSQL:
 		return getMySQLDesignSchema("", database)
+	case v1pb.Engine_TIDB:
+		return getTiDBDesignSchema("", database)
+	case v1pb.Engine_POSTGRES:
+		return pgSchemaEngine.GetDesignSchema("", database)
 	default:
 		return "", status.Errorf(codes.InvalidArgument, fmt.Sprintf("unsupported engine: %v", engine))
 	}

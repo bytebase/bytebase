@@ -27,16 +27,12 @@
     </template>
     <div class="w-128 max-h-128 overflow-y-auto p-1 pb-2">
       <p class="text-gray-500 mb-1 w-full leading-4">
-        <span class="mr-1">{{
+        {{
           $t("sql-editor.batch-query.description", {
             count: selectedDatabaseNames.length,
             project: project.title,
           })
-        }}</span>
-        <LearnMoreLink
-          url="https://www.bytebase.com/docs/sql-editor/batch-query?source=console"
-          class="text-sm"
-        />
+        }}
       </p>
       <div class="w-full flex flex-col justify-start items-start">
         <template v-if="databases.length > 0">
@@ -74,11 +70,13 @@
           <NInput
             v-model:value="state.databaseNameSearch"
             class="!w-36"
+            size="small"
             type="text"
             :placeholder="$t('sql-editor.search-databases')"
           />
         </div>
         <NDataTable
+          size="small"
           :checked-row-keys="selectedDatabaseNames"
           :columns="(dataTableColumns as any)"
           :data="databaseRows"

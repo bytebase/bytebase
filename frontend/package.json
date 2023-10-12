@@ -49,7 +49,7 @@
     "maz-ui": "^3.17.0",
     "monaco-editor": "0.34.1",
     "monaco-languageclient": "4.0.1",
-    "naive-ui": "2.34.4",
+    "naive-ui": "2.35.0",
     "nice-grpc-common": "^2.0.2",
     "nice-grpc-error-details": "^0.2.2",
     "nice-grpc-web": "^3.3.1",

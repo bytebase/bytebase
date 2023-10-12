@@ -19,8 +19,10 @@ import (
 
 type testData struct {
 	Statement string
-	Want      *storepb.DatabaseSchemaMetadata
-	Err       *WalkThroughError
+	// Use custom yaml tag to avoid generate field name `ignorecasesensitive`.
+	IgnoreCaseSensitive bool `yaml:"ignore_case_sensitive"`
+	Want                *storepb.DatabaseSchemaMetadata
+	Err                 *WalkThroughError
 }
 
 func TestMySQLWalkThrough(t *testing.T) {
@@ -124,9 +126,9 @@ func runWalkThroughTest(t *testing.T, file string, engineType storepb.Engine, or
 	for i, test := range tests {
 		var state *DatabaseState
 		if originDatabase != nil {
-			state = newDatabaseState(originDatabase, &FinderContext{CheckIntegrity: true, EngineType: engineType})
+			state = newDatabaseState(originDatabase, &FinderContext{CheckIntegrity: true, EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
 		} else {
-			finder := NewEmptyFinder(&FinderContext{CheckIntegrity: false, EngineType: engineType})
+			finder := NewEmptyFinder(&FinderContext{CheckIntegrity: false, EngineType: engineType, IgnoreCaseSensitive: test.IgnoreCaseSensitive})
 			state = finder.Origin
 		}
 

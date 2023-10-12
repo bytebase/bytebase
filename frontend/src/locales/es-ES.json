@@ -864,7 +864,6 @@
         }
       }
     },
-    "filter-issue-by-name": "Filtrar problema por nombre",
     "table": {
       "open": "Abierto",
       "closed": "Cerrado",
@@ -1018,8 +1017,9 @@
     "unassigned-db-hint": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas no están asignadas al principio y deben transferirse a un proyecto antes de que puedan usarse.",
     "transfer-out-db": "Transferir base de datos",
     "transfer-out-db-title": "Transferir la base de datos",
-    "request-export": "Solicitar exportación",
-    "request-query": "Solicitar consulta"
+    "request-export-permission": "Solicitar exportación",
+    "request-query-permission": "Solicitar consulta",
+    "request-query-data": "Solicitar consulta"
   },
   "create-db": {
     "new-database-name": "Nuevo nombre de la base de datos",
@@ -1046,11 +1046,12 @@
     "streams": "Streams",
     "tasks": "Tareas",
     "parent": "Padre",
+    "labels-for-resource": "Etiquetas para {resource}",
     "last-successful-sync": "Última sincronización exitosa",
     "sync-status": "Estado de sincronización",
     "failed-to-sync-schema-for-database-database-value-name": "Error al sincronizar el esquema para la base de datos '{0}'.",
     "successfully-synced-schema-for-database-database-value-name": "Esquema sincronizado correctamente para la base de datos '{0}'.",
-    "start-to-sync-schema": "Start to sync schame",
+    "start-to-sync-schema": "Comenzar a sincronizar el esquema",
     "failed-to-sync-schema": "No se pudo sincronizar el esquema",
     "successfully-synced-schema": "Esquema sincronizado correctamente"
   },
@@ -1322,12 +1323,14 @@
     "no-anomalies-detected": "No se detectaron anomalías",
     "sync-status": "Estado de sincronización",
     "last-successful-sync": "Última sincronización exitosa",
-    "filter-database-name": "Filtrar nombre de base de datos",
     "filter-database": "Filtrar base de datos",
     "database-backup": "copia de seguridad de la base de datos",
     "transfer-project": "Transferir proyecto",
     "edit-schema": "Modificar esquema",
     "edit-schema-in-vcs": "Modificar esquema en VCS",
+    "edit-labels": "Editar etiquetas",
+    "mixed-values-for-label": "Esta etiqueta seleccionada tiene valores mixtos.",
+    "mixed-label-values-warning": "Algunos de los recursos seleccionados tienen valores mixtos para la misma clave",
     "change-data": "Cambiar datos",
     "change-data-in-vcs": "Cambiar datos en VCS",
     "branch": "Rama",
@@ -1435,6 +1438,7 @@
     "unassigned-databases": "Bases de datos no asignadas",
     "restore-database": "Restaurar base de datos",
     "selected-n-databases": "{n} base de datos seleccionada | {n} bases de datos seleccionadas",
+    "n-databases": "{n} base de datos | {n} bases de datos",
     "select-databases-from-same-project": "Por favor seleccione bases de datos del mismo proyecto",
     "sync-schema": {
       "title": "Sincronizar esquema",
@@ -1616,8 +1620,7 @@
         "content": "El proyecto de Bytebase es similar al concepto de proyecto en otras herramientas de desarrollo comunes.\n\nUn proyecto tiene sus propios miembros, y cada incidencia y base de datos siempre pertenece a un solo proyecto.\n\nUn proyecto también puede configurarse para enlazarlo con un repositorio y habilitar el flujo de trabajo de GitOps.",
         "cancel": "Descartar",
         "confirm": "No volver a mostrar"
-      },
-      "filter-project-name": "Filtrar nombre del proyecto"
+      }
     },
     "table": {
       "key": "@:common.key",
@@ -2032,7 +2035,7 @@
     "run-selected": "Ejecutar selección",
     "clear-screen": "Limpiar pantalla",
     "query-time": "Tiempo de consulta",
-    "request-query": "Solicitar consulta",
+    "request-query-permission": "Solicitar consulta",
     "connection-lost": "Conexión perdida. \nIntentará volver a conectarse al ejecutar la siguiente consulta.",
     "sheet": {
       "choose-sheet": "Elegir hoja",
@@ -2052,7 +2055,6 @@
         }
       }
     },
-    "filter-by-name": "Filtrar por nombre",
     "batch-query": {
       "batch": "Lote",
       "select-database": "Seleccione la base de datos a continuación",
@@ -2437,7 +2439,6 @@
     "create-policy": "Crear política",
     "duplicate-policy": "Duplicar política de revisión de SQL",
     "configure-policy": "Configurar política",
-    "search-rule-name": "Buscar nombre de regla",
     "policy-removed": "La política de revisión se eliminó correctamente.",
     "policy-created": "La política de revisión se creó correctamente.",
     "policy-updated": "La política de revisión se actualizó correctamente.",
@@ -3023,6 +3024,7 @@
     "save-draft": "Guardar borrador",
     "merge-branch": "Fusionar rama",
     "delete-branch-after-merged": "Eliminar rama después de la fusión",
+    "raw-sql-preview": "vista previa de sql sin formato",
     "diff-editor": {
       "self": "Editor de diferencias",
       "resolve": "Resolver",
@@ -3049,8 +3051,7 @@
     },
     "action": {
       "use-the-existing-branch": "Usar la rama existente",
-      "create-new-branch": "Crear nueva rama",
-      "filter-by-name": "Filtrar por nombre"
+      "create-new-branch": "Crear nueva rama"
     }
   },
   "cel": {
@@ -3107,6 +3108,7 @@
       "source": "Fuente"
     },
     "confirm-remove-change": "¿Eliminar este cambio?",
+    "delete-this-changelist": "Eliminar esta lista de cambios",
     "confirm-delete-changelist": "¿Eliminar esta lista de cambios?"
   }
 }

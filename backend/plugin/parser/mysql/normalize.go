@@ -94,3 +94,46 @@ func NormalizeMySQLIdentifierList(ctx parser.IIdentifierListContext) []string {
 	}
 	return result
 }
+
+// NormalizeMySQLTableRef normalizes the given view name.
+func NormalizeMySQLViewName(ctx parser.IViewNameContext) (string, string) {
+	if ctx.QualifiedIdentifier() != nil {
+		return normalizeMySQLQualifiedIdentifier(ctx.QualifiedIdentifier())
+	}
+	if ctx.DotIdentifier() != nil {
+		return "", NormalizeMySQLIdentifier(ctx.DotIdentifier().Identifier())
+	}
+	return "", ""
+}
+
+// NormalizeMySQLTableRef normalizes the given event name.
+func NormalizeMySQLEventName(ctx parser.IEventNameContext) (string, string) {
+	if ctx.QualifiedIdentifier() != nil {
+		return normalizeMySQLQualifiedIdentifier(ctx.QualifiedIdentifier())
+	}
+	return "", ""
+}
+
+// NormalizeMySQLTableRef normalizes the given trigger name.
+func NormalizeMySQLTriggerName(ctx parser.ITriggerNameContext) (string, string) {
+	if ctx.QualifiedIdentifier() != nil {
+		return normalizeMySQLQualifiedIdentifier(ctx.QualifiedIdentifier())
+	}
+	return "", ""
+}
+
+// NormalizeMySQLTableRef normalizes the given function name.
+func NormalizeMySQLFunctionName(ctx parser.IFunctionNameContext) (string, string) {
+	if ctx.QualifiedIdentifier() != nil {
+		return normalizeMySQLQualifiedIdentifier(ctx.QualifiedIdentifier())
+	}
+	return "", ""
+}
+
+// NormalizeMySQLTableRef normalizes the given function name.
+func NormalizeMySQLProcedureName(ctx parser.IProcedureNameContext) (string, string) {
+	if ctx.QualifiedIdentifier() != nil {
+		return normalizeMySQLQualifiedIdentifier(ctx.QualifiedIdentifier())
+	}
+	return "", ""
+}

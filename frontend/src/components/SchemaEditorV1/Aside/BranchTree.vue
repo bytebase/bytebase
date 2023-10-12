@@ -36,6 +36,7 @@
         :node-props="nodeProps"
         :expanded-keys="expandedKeysRef"
         :selected-keys="selectedKeysRef"
+        :theme-overrides="{ nodeHeight: '28px' }"
       />
       <NDropdown
         trigger="manual"
@@ -525,8 +526,8 @@ const handleShowDropdown = (e: MouseEvent, treeNode: TreeNode) => {
 };
 
 const handleCreateTable = () => {
-  if (engine.value === Engine.MYSQL) {
-    const schema = schemaList.value[0];
+  const schema = schemaList.value[0];
+  if (schema) {
     state.tableNameModalContext = {
       parentName: branchSchema.value.branch.name,
       schemaId: schema.id,

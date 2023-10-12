@@ -33,23 +33,18 @@ import { cloneDeep } from "lodash-es";
 import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  validateLabelKey,
-  MAX_LABEL_VALUE_LENGTH,
-  isVirtualLabelKey,
-} from "@/utils";
+import { MAX_LABEL_VALUE_LENGTH, isVirtualLabelKey } from "@/utils";
 import LabelEditorRow from "./LabelEditorRow.vue";
-
-export type KV = { key: string; value: string };
+import { Label } from "./types";
 
 const props = defineProps<{
-  kvList: KV[];
+  kvList: Label[];
   readonly: boolean;
   showErrors: boolean;
 }>();
 
 const emit = defineEmits<{
-  (event: "update:kvList", kvList: KV[]): void;
+  (event: "update:kvList", kvList: Label[]): void;
 }>();
 
 const { t } = useI18n();
@@ -71,15 +66,14 @@ const errorList = computed(() => {
       if (isVirtualLabelKey(key)) {
         errors.key.push(t("label.error.x-is-reserved-key", { key }));
       }
-      if (!validateLabelKey(key)) {
-        errors.key.push(t("label.error.key-format"));
-      }
       if (kvList.filter((kv) => kv.key === key).length > 1) {
         errors.key.push(t("label.error.key-duplicated"));
       }
     }
     if (!value) {
-      errors.value.push(t("label.error.value-necessary"));
+      if (!kv.allowEmpty) {
+        errors.value.push(t("label.error.value-necessary"));
+      }
     } else if (value.length > MAX_LABEL_VALUE_LENGTH) {
       errors.value.push(
         t("label.error.max-value-length-exceeded", {

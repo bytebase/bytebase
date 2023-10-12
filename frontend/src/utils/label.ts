@@ -5,16 +5,6 @@ import { extractEnvironmentResourceName } from "./v1";
 
 export const MAX_LABEL_VALUE_LENGTH = 63;
 
-export const validateLabelKey = (key: string) => {
-  if (key.length === 0) return false;
-  if (key.length >= 64) return false;
-  return (
-    key.match(/^[a-z0-9A-Z]/) &&
-    key.match(/[a-z0-9A-Z]$/) &&
-    key.match(/[a-z0-9A-Z-_.]*/)
-  );
-};
-
 export const convertLabelsToKVList = (
   labels: Record<string, string>,
   sort = true

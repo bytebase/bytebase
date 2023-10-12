@@ -54,6 +54,7 @@ type diffNode struct {
 	createTriggerList              []ast.Node
 	createConstraintExceptFkList   []ast.Node
 	createForeignKeyList           []ast.Node
+	setCommentList                 []ast.Node
 }
 
 type schemaMap map[string]*schemaInfo
@@ -93,20 +94,24 @@ func newSchemaInfo(id int, createSchema *ast.CreateSchemaStmt) *schemaInfo {
 }
 
 type tableInfo struct {
-	id            int
-	existsInNew   bool
-	createTable   *ast.CreateTableStmt
-	constraintMap constraintMap
-	triggerMap    triggerMap
+	id               int
+	existsInNew      bool
+	createTable      *ast.CreateTableStmt
+	constraintMap    constraintMap
+	triggerMap       triggerMap
+	comment          string
+	columnCommentMap map[string]string
 }
 
 func newTableInfo(id int, createTable *ast.CreateTableStmt) *tableInfo {
 	return &tableInfo{
-		id:            id,
-		existsInNew:   false,
-		createTable:   createTable,
-		constraintMap: make(constraintMap),
-		triggerMap:    make(triggerMap),
+		id:               id,
+		existsInNew:      false,
+		createTable:      createTable,
+		constraintMap:    make(constraintMap),
+		triggerMap:       make(triggerMap),
+		comment:          "",
+		columnCommentMap: make(map[string]string),
 	}
 }
 
@@ -407,6 +412,96 @@ func (m schemaMap) getType(schemaName string, typeName string) *typeInfo {
 	return schema.typeMap[typeName]
 }
 
+func (m schemaMap) addComment(comment *ast.CommentStmt) error {
+	switch comment.Type {
+	case ast.ObjectTypeTable:
+		tableDef, ok := comment.Object.(*ast.TableDef)
+		if !ok {
+			return errors.Errorf("failed to add comment: expect table def, but found %v", comment.Object)
+		}
+		schema, exists := m[tableDef.Schema]
+		if !exists {
+			return errors.Errorf("failed to add comment: schema %s not found", tableDef.Schema)
+		}
+		table, exists := schema.tableMap[tableDef.Name]
+		if !exists {
+			return errors.Errorf("failed to add comment: table %s not found", tableDef.Name)
+		}
+		table.comment = comment.Comment
+		return nil
+	case ast.ObjectTypeColumn:
+		columnNameDef, ok := comment.Object.(*ast.ColumnNameDef)
+		if !ok {
+			return errors.Errorf("failed to add comment: expect column name def, but found %v", comment.Object)
+		}
+		schema, exists := m[columnNameDef.Table.Schema]
+		if !exists {
+			return errors.Errorf("failed to add comment: schema %s not found", columnNameDef.Table.Schema)
+		}
+		table, exists := schema.tableMap[columnNameDef.Table.Name]
+		if !exists {
+			return errors.Errorf("failed to add comment: table %s not found", columnNameDef.Table.Name)
+		}
+		table.columnCommentMap[columnNameDef.ColumnName] = comment.Comment
+		return nil
+	default:
+		// We only support table and column comment.
+		return nil
+	}
+}
+
+func (m schemaMap) getTableComment(schemaName string, tableName string) string {
+	schema, exists := m[schemaName]
+	if !exists {
+		return ""
+	}
+	table, exists := schema.tableMap[tableName]
+	if !exists {
+		return ""
+	}
+	return table.comment
+}
+
+func (m schemaMap) removeTableComment(schemaName string, tableName string) {
+	schema, exists := m[schemaName]
+	if !exists {
+		return
+	}
+	table, exists := schema.tableMap[tableName]
+	if !exists {
+		return
+	}
+	table.comment = ""
+}
+
+func (m schemaMap) getColumnComment(schemaName string, tableName string, columnName string) string {
+	schema, exists := m[schemaName]
+	if !exists {
+		return ""
+	}
+	table, exists := schema.tableMap[tableName]
+	if !exists {
+		return ""
+	}
+	columnComment, exists := table.columnCommentMap[columnName]
+	if !exists {
+		return ""
+	}
+	return columnComment
+}
+
+func (m schemaMap) removeColumnComment(schemaName string, tableName string, columnName string) {
+	schema, exists := m[schemaName]
+	if !exists {
+		return
+	}
+	table, exists := schema.tableMap[tableName]
+	if !exists {
+		return
+	}
+	delete(table.columnCommentMap, columnName)
+}
+
 func onlySetOwnedBy(sequence *ast.AlterSequenceStmt) bool {
 	return sequence.Type == nil &&
 		sequence.IncrementBy == nil &&
@@ -614,6 +709,10 @@ func SchemaDiff(oldStmt, newStmt string, _ bool) (string, error) {
 			if err := oldSchemaMap.addType(i, stmt); err != nil {
 				return "", err
 			}
+		case *ast.CommentStmt:
+			if err := oldSchemaMap.addComment(stmt); err != nil {
+				return "", err
+			}
 			// TODO(rebelice): add default back here
 		}
 	}
@@ -641,7 +740,7 @@ func SchemaDiff(oldStmt, newStmt string, _ bool) (string, error) {
 			}
 			oldTable.existsInNew = true
 			// Modify the table.
-			if err := diff.modifyTable(oldTable.createTable, stmt); err != nil {
+			if err := diff.modifyTable(oldTable, stmt); err != nil {
 				return "", err
 			}
 		case *ast.CreateSchemaStmt:
@@ -809,6 +908,33 @@ func SchemaDiff(oldStmt, newStmt string, _ bool) (string, error) {
 			if err := diff.modifyType(oldType.createType, stmt); err != nil {
 				return "", err
 			}
+		case *ast.CommentStmt:
+			switch stmt.Type {
+			case ast.ObjectTypeTable:
+				tableDef, ok := stmt.Object.(*ast.TableDef)
+				if !ok {
+					return "", errors.Errorf("failed to add comment: expect table def, but found %v", stmt.Object)
+				}
+				oldComment := oldSchemaMap.getTableComment(tableDef.Schema, tableDef.Name)
+				// Set the table comment.
+				if oldComment == "" || oldComment != stmt.Comment {
+					diff.setCommentList = append(diff.setCommentList, stmt)
+				}
+				oldSchemaMap.removeTableComment(tableDef.Schema, tableDef.Name)
+			case ast.ObjectTypeColumn:
+				columnNameDef, ok := stmt.Object.(*ast.ColumnNameDef)
+				if !ok {
+					return "", errors.Errorf("failed to add comment: expect column name def, but found %v", stmt.Object)
+				}
+				oldComment := oldSchemaMap.getColumnComment(columnNameDef.Table.Schema, columnNameDef.Table.Name, columnNameDef.ColumnName)
+				// Set the column comment.
+				if oldComment == "" || oldComment != stmt.Comment {
+					diff.setCommentList = append(diff.setCommentList, stmt)
+				}
+				oldSchemaMap.removeColumnComment(columnNameDef.Table.Schema, columnNameDef.Table.Name, columnNameDef.ColumnName)
+			default:
+				// We only support table and column comment.
+			}
 		}
 	}
 
@@ -921,10 +1047,14 @@ func (diff *diffNode) dropObject(oldSchemaMap schemaMap) error {
 	// Drop the remaining old type.
 	diff.dropTypeStmt(oldSchemaMap)
 
+	// Drop the remaining old comment.
+	diff.dropComment(oldSchemaMap)
+
 	return nil
 }
 
-func (diff *diffNode) modifyTableByColumn(oldTable *ast.CreateTableStmt, newTable *ast.CreateTableStmt) error {
+func (diff *diffNode) modifyTableByColumn(oldTableInfo *tableInfo, newTable *ast.CreateTableStmt) error {
+	oldTable := oldTableInfo.createTable
 	tableName := oldTable.Name
 	addColumn := &ast.AlterTableStmt{
 		Table: tableName,
@@ -957,6 +1087,8 @@ func (diff *diffNode) modifyTableByColumn(oldTable *ast.CreateTableStmt, newTabl
 
 	for _, oldColumn := range oldTable.ColumnList {
 		if _, exists := oldColumnMap[oldColumn.ColumnName]; exists {
+			// No need to drop comment for the column, because we will drop the column.
+			delete(oldTableInfo.columnCommentMap, oldColumn.ColumnName)
 			dropColumn.AlterItemList = append(dropColumn.AlterItemList, &ast.DropColumnStmt{
 				Table:      tableName,
 				ColumnName: oldColumn.ColumnName,
@@ -1013,12 +1145,12 @@ func (diff *diffNode) modifyTableByConstraint(oldTable *ast.CreateTableStmt, new
 	return nil
 }
 
-func (diff *diffNode) modifyTable(oldTable *ast.CreateTableStmt, newTable *ast.CreateTableStmt) error {
+func (diff *diffNode) modifyTable(oldTable *tableInfo, newTable *ast.CreateTableStmt) error {
 	if err := diff.modifyTableByColumn(oldTable, newTable); err != nil {
 		return err
 	}
 
-	return diff.modifyTableByConstraint(oldTable, newTable)
+	return diff.modifyTableByConstraint(oldTable.createTable, newTable)
 }
 
 func isEqualConstraint(oldConstraint *ast.ConstraintDef, newConstraint *ast.ConstraintDef) (bool, error) {
@@ -1565,6 +1697,9 @@ func (diff *diffNode) deparse() (string, error) {
 	if err := printStmtSlice(&buf, diff.createForeignKeyList); err != nil {
 		return "", err
 	}
+	if err := printStmtSlice(&buf, diff.setCommentList); err != nil {
+		return "", err
+	}
 
 	return buf.String(), nil
 }
@@ -1692,6 +1827,60 @@ func dropFunction(m schemaMap) *ast.DropFunctionStmt {
 		functionDefList = append(functionDefList, function.createFunction.Function)
 	}
 	return &ast.DropFunctionStmt{FunctionList: functionDefList}
+}
+
+func (diff *diffNode) dropComment(m schemaMap) {
+	var tables []*tableInfo
+	for _, schema := range m {
+		for _, table := range schema.tableMap {
+			if !table.existsInNew {
+				// no need to drop, because the comments are dropped when drop table
+				continue
+			}
+			tables = append(tables, table)
+		}
+	}
+	if len(tables) == 0 {
+		return
+	}
+	sort.Slice(tables, func(i, j int) bool {
+		return tables[i].id < tables[j].id
+	})
+
+	for _, table := range tables {
+		if table.comment != "" {
+			diff.setCommentList = append(diff.setCommentList, &ast.CommentStmt{
+				Comment: "",
+				Object:  &ast.TableDef{Schema: table.createTable.Name.Schema, Name: table.createTable.Name.Name},
+				Type:    ast.ObjectTypeTable,
+			})
+		}
+
+		type commentInfo struct {
+			column  string
+			comment string
+		}
+		var columnCommentList []commentInfo
+		for k, v := range table.columnCommentMap {
+			columnCommentList = append(columnCommentList, commentInfo{
+				column:  k,
+				comment: v,
+			})
+		}
+		sort.Slice(columnCommentList, func(i, j int) bool {
+			return columnCommentList[i].column < columnCommentList[j].column
+		})
+		for _, columnComment := range columnCommentList {
+			diff.setCommentList = append(diff.setCommentList, &ast.CommentStmt{
+				Comment: "",
+				Object: &ast.ColumnNameDef{
+					Table:      &ast.TableDef{Schema: table.createTable.Name.Schema, Name: table.createTable.Name.Name},
+					ColumnName: columnComment.column,
+				},
+				Type: ast.ObjectTypeColumn,
+			})
+		}
+	}
 }
 
 func (diff *diffNode) dropTypeStmt(m schemaMap) {

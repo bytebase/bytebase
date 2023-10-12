@@ -446,13 +446,14 @@ const handleViewBranch = () => {
     return;
   }
 
-  const [, sheetId] = getProjectAndSchemaDesignSheetId(
+  const [projectName, sheetId] = getProjectAndSchemaDesignSheetId(
     selectedSchemaDesign.value.name
   );
   const route = router.resolve({
     name: "workspace.branch.detail",
     params: {
-      branchSlug: `${selectedSchemaDesign.value.title}-${sheetId}`,
+      projectName,
+      branchName: sheetId,
     },
   });
   window.open(route.href, "_blank");

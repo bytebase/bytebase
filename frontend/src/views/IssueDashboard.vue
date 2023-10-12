@@ -35,7 +35,7 @@
           </NDatePicker>
           <SearchBox
             :value="state.filterText"
-            :placeholder="$t('issue.filter-issue-by-name')"
+            :placeholder="$t('common.filter-by-name')"
             :autofocus="false"
             @update:value="state.filterText = $event"
           />
@@ -344,7 +344,7 @@ const issueFilter = computed((): IssueFilter => {
     }
   }
 
-  const filter: IssueFilter = {
+  return {
     query,
     instance: getValueFromIssueFilter(instanceNamePrefix, "instance"),
     database,
@@ -356,16 +356,10 @@ const issueFilter = computed((): IssueFilter => {
       ? selectedTimeRange.value[1]
       : undefined,
     type: typeScope?.value,
+    principal: getValueFromIssueFilter(userNamePrefix, "principal"),
+    creator: getValueFromIssueFilter(userNamePrefix, "creator"),
+    assignee: getValueFromIssueFilter(userNamePrefix, "assignee"),
+    subscriber: getValueFromIssueFilter(userNamePrefix, "subscriber"),
   };
-
-  if (!hasPermission.value) {
-    filter.principal = `${userNamePrefix}${currentUserV1.value.email}`;
-  } else {
-    filter.principal = getValueFromIssueFilter(userNamePrefix, "principal");
-    filter.creator = getValueFromIssueFilter(userNamePrefix, "creator");
-    filter.assignee = getValueFromIssueFilter(userNamePrefix, "assignee");
-    filter.subscriber = getValueFromIssueFilter(userNamePrefix, "subscriber");
-  }
-  return filter;
 });
 </script>

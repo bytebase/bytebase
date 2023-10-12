@@ -653,7 +653,8 @@ func convert(node *pgquery.Node, statement base.SingleSQL) (res ast.Node, err er
 		return &copyStmt, nil
 	case *pgquery.Node_CommentStmt:
 		commentStmt := ast.CommentStmt{
-			Comment: in.CommentStmt.Comment,
+			// unescape single quote
+			Comment: strings.ReplaceAll(in.CommentStmt.Comment, "''", "'"),
 		}
 
 		switch in.CommentStmt.Objtype {
@@ -1503,7 +1504,7 @@ func convertConstraint(in *pgquery.Node_Constraint) (*ast.ConstraintDef, error) 
 		}
 	case ast.ConstraintTypePrimaryUsingIndex, ast.ConstraintTypeUniqueUsingIndex:
 		cons.IndexName = in.Constraint.Indexname
-	case ast.ConstraintTypeCheck, ast.ConstraintTypeDefault:
+	case ast.ConstraintTypeCheck, ast.ConstraintTypeDefault, ast.ConstraintTypeGenerated:
 		expression, _, _, err := convertExpressionNode(in.Constraint.RawExpr)
 		if err != nil {
 			return nil, err
@@ -1593,6 +1594,8 @@ func convertConstraintType(in pgquery.ConstrType, usingIndex bool) ast.Constrain
 		return ast.ConstraintTypeDefault
 	case pgquery.ConstrType_CONSTR_EXCLUSION:
 		return ast.ConstraintTypeExclusion
+	case pgquery.ConstrType_CONSTR_GENERATED:
+		return ast.ConstraintTypeGenerated
 	}
 	return ast.ConstraintTypeUndefined
 }

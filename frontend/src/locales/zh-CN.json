@@ -862,7 +862,6 @@
         }
       }
     },
-    "filter-issue-by-name": "根据名称过滤",
     "table": {
       "open": "开启中",
       "closed": "已关闭",
@@ -1016,8 +1015,9 @@
     "unassigned-db-hint": "Bytebase 会定期同步实例的 Schema。新同步的数据库起先是未分配的状态。需要把数据库转移到项目后，才能使用。",
     "transfer-out-db": "转出数据库",
     "transfer-out-db-title": "转出数据库",
-    "request-query": "申请查询权限",
-    "request-export": "申请导出数据"
+    "request-query-permission": "申请查询权限",
+    "request-export-permission": "申请导出权限",
+    "request-export-data": "申请导出数据"
   },
   "create-db": {
     "new-database-name": "新数据库名称",
@@ -1044,6 +1044,7 @@
     "streams": "Streams",
     "tasks": "任务",
     "parent": "母",
+    "labels-for-resource": "{resource}的标签",
     "last-successful-sync": "上次成功同步于",
     "sync-status": "同步状态",
     "failed-to-sync-schema-for-database-database-value-name": "为数据库'{0}'同步 schema 失败。",
@@ -1320,11 +1321,13 @@
     "last-successful-sync": "最后一次成功的同步",
     "no-anomalies-detected": "没有检测到异常",
     "sync-status": "同步状态",
-    "filter-database-name": "过滤数据库名称",
     "filter-database": "过滤数据库",
     "transfer-project": "转移项目",
     "edit-schema": "变更 Schema",
     "edit-schema-in-vcs": "变更 Schema (VCS)",
+    "edit-labels": "编辑标签",
+    "mixed-values-for-label": "该标签拥有不同的值",
+    "mixed-label-values-warning": "某些标签拥有不同的值，编辑标签将会批量应用",
     "change-data": "变更数据",
     "change-data-in-vcs": "变更数据 (VCS)",
     "branch": "分支",
@@ -1433,6 +1436,7 @@
     "unassigned-databases": "未分配的数据库",
     "restore-database": "恢复数据库",
     "selected-n-databases": "已选择 {n} 个数据库",
+    "n-databases": "{n} 个数据库",
     "select-databases-from-same-project": "请选择同一个项目下的数据库",
     "sync-schema": {
       "title": "库表同步",
@@ -1612,8 +1616,7 @@
         "content": "在 Bytebase 中，项目的概念与其他常见的的开发工具类似\n\n一个项目会有属于他的协作成员，并且每一个数据库和工单总是归属于某一个项目\n\n同时，一个项目可以关联一个代码仓库，并以此来开启 GitOps 工作流",
         "cancel": "关闭",
         "confirm": "不再出现"
-      },
-      "filter-project-name": "过滤项目名称"
+      }
     },
     "table": {
       "key": "@:common.key",
@@ -2031,7 +2034,7 @@
     "run-selected": "运行选中的语句",
     "clear-screen": "清屏",
     "query-time": "查询时间",
-    "request-query": "申请查询权限",
+    "request-query-permission": "申请查询权限",
     "connection-lost": "连接丢失。下一次执行查询时将尝试重新连接。",
     "sheet": {
       "choose-sheet": "选择工作表",
@@ -2051,7 +2054,6 @@
         }
       }
     },
-    "filter-by-name": "根据名称过滤",
     "batch-query": {
       "batch": "批量",
       "select-database": "选择下面的数据库",
@@ -2437,7 +2439,6 @@
     "create-policy": "创建审核策略",
     "duplicate-policy": "复制审核策略",
     "configure-policy": "配置审核策略",
-    "search-rule-name": "搜索规则名称",
     "policy-removed": "审核策略已删除",
     "policy-created": "审核策略已创建",
     "policy-updated": "审核策略已更新",
@@ -3018,6 +3019,7 @@
     "save-draft": "保存草稿",
     "merge-branch": "合并分支",
     "delete-branch-after-merged": "合并后删除分支",
+    "raw-sql-preview": "原始 SQL 预览",
     "diff-editor": {
       "self": "Diff 编辑器",
       "resolve": "解决",
@@ -3044,8 +3046,7 @@
     },
     "action": {
       "use-the-existing-branch": "使用已有分支",
-      "create-new-branch": "创建新分支",
-      "filter-by-name": "根据名称过滤"
+      "create-new-branch": "创建新分支"
     }
   },
   "cel": {
@@ -3102,6 +3103,7 @@
       "source": "来源"
     },
     "confirm-remove-change": "移除这项变更？",
+    "delete-this-changelist": "删除这个变更列表",
     "confirm-delete-changelist": "删除变更列表？"
   }
 }

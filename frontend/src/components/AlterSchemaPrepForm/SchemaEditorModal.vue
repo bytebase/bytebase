@@ -169,7 +169,7 @@ import {
 } from "../SchemaEditorV1/utils";
 import GhostDialog from "./GhostDialog.vue";
 import SchemaEditorSQLCheckButton from "./SchemaEditorSQLCheckButton/SchemaEditorSQLCheckButton.vue";
-import { getDatabaseEditListWithSchemaEditor, postDatabaseEdit } from "./utils";
+import { getDatabaseEditListWithSchemaEditor } from "./utils";
 
 const MAX_UPLOAD_FILE_SIZE_MB = 1;
 
@@ -323,57 +323,36 @@ const fetchDatabaseEditStatementMapWithSchemaEditor = async () => {
       const database = databaseV1Store.getDatabaseByUID(
         String(databaseEdit.databaseId)
       );
-      // Use `SchemaDesignService.DiffMetadata` for MySQL as we only support MySQL for now.
-      if (database.instanceEntity.engine === Engine.MYSQL) {
-        const databaseSchema = schemaEditorV1Store.resourceMap["database"].get(
-          database.name
-        );
-        if (!databaseSchema) {
-          continue;
-        }
-
-        const metadata = await dbSchemaV1Store.getOrFetchDatabaseMetadata(
-          database.name
-        );
-        const mergedMetadata = mergeSchemaEditToMetadata(
-          databaseSchema.schemaList,
-          cloneDeep(metadata)
-        );
-        const validationMessages = validateDatabaseMetadata(mergedMetadata);
-        if (validationMessages.length > 0) {
-          pushNotification({
-            module: "bytebase",
-            style: "WARN",
-            title: "Invalid schema structure",
-            description: validationMessages.join("\n"),
-          });
-          return;
-        }
-        const { diff } = await schemaDesignServiceClient.diffMetadata({
-          sourceMetadata: metadata,
-          targetMetadata: mergedMetadata,
-          engine: database.instanceEntity.engine,
-        });
-        databaseEditMap.set(database.uid, diff);
-      } else {
-        // Use legacy `DatabaseEdit` for non-MySQL databases.
-        const databaseEditResult = await postDatabaseEdit(databaseEdit);
-        if (databaseEditResult.validateResultList.length > 0) {
-          notificationStore.pushNotification({
-            module: "bytebase",
-            style: "CRITICAL",
-            title: "Invalid request",
-            description: databaseEditResult.validateResultList
-              .map((result) => result.message)
-              .join("\n"),
-          });
-          return;
-        }
-        databaseEditMap.set(
-          String(databaseEdit.databaseId),
-          databaseEditResult.statement
-        );
+      const databaseSchema = schemaEditorV1Store.resourceMap["database"].get(
+        database.name
+      );
+      if (!databaseSchema) {
+        continue;
       }
+
+      const metadata = await dbSchemaV1Store.getOrFetchDatabaseMetadata(
+        database.name
+      );
+      const mergedMetadata = mergeSchemaEditToMetadata(
+        databaseSchema.schemaList,
+        cloneDeep(metadata)
+      );
+      const validationMessages = validateDatabaseMetadata(mergedMetadata);
+      if (validationMessages.length > 0) {
+        pushNotification({
+          module: "bytebase",
+          style: "WARN",
+          title: "Invalid schema structure",
+          description: validationMessages.join("\n"),
+        });
+        return;
+      }
+      const { diff } = await schemaDesignServiceClient.diffMetadata({
+        sourceMetadata: metadata,
+        targetMetadata: mergedMetadata,
+        engine: database.instanceEntity.engine,
+      });
+      databaseEditMap.set(database.uid, diff);
     }
   }
   return databaseEditMap;
@@ -506,8 +485,12 @@ const handlePreviewIssue = async () => {
     if (!statementMap) {
       return;
     }
-    const databaseIdList = Array.from(statementMap.keys());
-    const statementList = Array.from(statementMap.values());
+    const databaseIdList: string[] = [];
+    const statementList: string[] = [];
+    for (const [key, val] of statementMap.entries()) {
+      databaseIdList.push(key);
+      statementList.push(val);
+    }
     if (isTenantProject.value) {
       query.sql = statementList.join("\n");
       query.name = generateIssueName(

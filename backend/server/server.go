@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
-	"runtime"
 	"sync"
 	"time"
 
@@ -25,6 +24,7 @@ import (
 	v1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/common/stacktrace"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
@@ -52,8 +52,6 @@ import (
 )
 
 const (
-	// internalAPIPrefix is the API prefix for Bytebase internal, used by the UX.
-	internalAPIPrefix = "/api"
 	// webhookAPIPrefix is the API prefix for Bytebase webhook.
 	webhookAPIPrefix       = "/hook"
 	maxStacksize           = 1024 * 10240
@@ -297,8 +295,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	aclProvider := v1.NewACLInterceptor(s.store, s.secret, s.licenseService, profile.Mode)
 	debugProvider := v1.NewDebugInterceptor(&s.errorRecordRing, &profile, s.metricReporter)
 	onPanic := func(p any) error {
-		stack := make([]byte, maxStacksize)
-		stack = stack[:runtime.Stack(stack, true)]
+		stack := stacktrace.TakeStacktrace(20 /* n */, 5 /* skip */)
 		// keep a multiline stack
 		slog.Error("v1 server panic error", log.BBError(errors.Errorf("error: %v\n%s", p, stack)))
 		return status.Errorf(codes.Internal, "error: %v\n%s", p, stack)
@@ -348,8 +345,6 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	webhookGroup := s.e.Group(webhookAPIPrefix)
 	gitOpsService := gitops.NewService(s.store, s.dbFactory, s.activityManager, s.stateCfg, s.licenseService, rolloutService, issueService)
 	gitOpsService.RegisterWebhookRoutes(webhookGroup)
-	apiGroup := s.e.Group(internalAPIPrefix)
-	s.registerDatabaseRoutes(apiGroup)
 
 	reflection.Register(s.grpcServer)
 

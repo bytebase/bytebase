@@ -125,15 +125,22 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 	if instance.Engine == storepb.Engine_ORACLE {
 		return nil, nil, errors.Errorf("creating Oracle database is not supported")
 	}
-	environment, err := s.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &instance.EnvironmentID})
+
+	dbEnvironmentID := strings.TrimPrefix(c.Environment, common.EnvironmentNamePrefix)
+	// Fallback to instance.EnvironmentID if user-set environment is not present.
+	environmentID := instance.EnvironmentID
+	if dbEnvironmentID != "" {
+		environmentID = dbEnvironmentID
+	}
+
+	environment, err := s.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &environmentID})
 	if err != nil {
 		return nil, nil, err
 	}
 	if environment == nil {
-		return nil, nil, errors.Errorf("environment ID not found %v", instance.EnvironmentID)
+		return nil, nil, errors.Errorf("environment ID not found %v", environmentID)
 	}
-
-	if err := registerEnvironmentID(environment.ResourceID); err != nil {
+	if err := registerEnvironmentID(environmentID); err != nil {
 		return nil, nil, err
 	}
 
@@ -223,7 +230,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			CharacterSet:  c.CharacterSet,
 			TableName:     c.Table,
 			Collation:     c.Collation,
-			EnvironmentID: strings.TrimPrefix(c.Environment, common.EnvironmentNamePrefix),
+			EnvironmentID: dbEnvironmentID,
 			Labels:        labelsJSON,
 			DatabaseName:  databaseName,
 			SheetID:       sheet.UID,

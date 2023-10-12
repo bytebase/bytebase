@@ -40,6 +40,7 @@ import {
   useDatabaseV1Store,
   useChangeHistoryStore,
   useChangelistStore,
+  useSchemaDesignStore,
 } from "@/store";
 import {
   DEFAULT_PROJECT_ID,
@@ -270,6 +271,31 @@ const routes: Array<RouteRecordRaw> = [
               content: true,
               leftSidebar: true,
             },
+          },
+          {
+            path: "branches",
+            name: "workspace.branch.dashboard",
+            meta: {
+              title: () => t("common.branches"),
+            },
+            components: {
+              content: () => import("../views/branch/BranchDashboard.vue"),
+              leftSidebar: DashboardSidebar,
+            },
+            props: { content: true, leftSidebar: true },
+          },
+          {
+            path: "/projects/:projectName/branches/:branchName",
+            name: "workspace.branch.detail",
+            meta: {
+              allowBookmark: true,
+              overrideTitle: true,
+            },
+            components: {
+              content: () => import("../views/branch/BranchDetail.vue"),
+              leftSidebar: DashboardSidebar,
+            },
+            props: { content: true },
           },
           {
             path: "sync-schema",
@@ -995,31 +1021,6 @@ const routes: Array<RouteRecordRaw> = [
               },
             ],
           },
-          {
-            path: "branch",
-            name: "workspace.branch",
-            meta: {
-              title: () => t("common.branches"),
-            },
-            components: {
-              content: () => import("../views/branch/BranchDashboard.vue"),
-              leftSidebar: DashboardSidebar,
-            },
-            props: { content: true, leftSidebar: true },
-          },
-          {
-            path: "branch/:branchSlug",
-            name: "workspace.branch.detail",
-            meta: {
-              allowBookmark: true,
-              overrideTitle: true,
-            },
-            components: {
-              content: () => import("../views/branch/BranchDetail.vue"),
-              leftSidebar: DashboardSidebar,
-            },
-            props: { content: true },
-          },
         ],
       },
     ],
@@ -1332,7 +1333,7 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.database" ||
     to.name === "workspace.archive" ||
     to.name === "workspace.issue" ||
-    to.name === "workspace.branch" ||
+    to.name === "workspace.branch.dashboard" ||
     to.name === "workspace.environment" ||
     to.name === "sql-editor.home" ||
     to.name?.toString().startsWith("workspace.database-group") ||
@@ -1381,7 +1382,6 @@ router.beforeEach((to, from, next) => {
   const projectSlug = routerSlug.projectSlug;
   const projectWebhookSlug = routerSlug.projectWebhookSlug;
   const issueSlug = routerSlug.issueSlug;
-  const branchSlug = routerSlug.branchSlug;
   const instanceSlug = routerSlug.instanceSlug;
   const databaseSlug = routerSlug.databaseSlug;
   const dataSourceSlug = routerSlug.dataSourceSlug;
@@ -1469,17 +1469,18 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  if (branchSlug) {
-    if (branchSlug === "new") {
+  if (to.name === "workspace.branch.detail") {
+    if (to.params.branchName === "new") {
       next();
       return;
     }
 
     // Prepare the data for the branch detail page.
-    useSheetV1Store()
-      .getOrFetchSheetByUID(String(idFromSlug(branchSlug)))
-      .then((sheet) => {
-        if (sheet) {
+    const name = `projects/${to.params.projectName}/schemaDesigns/${to.params.branchName}`;
+    useSchemaDesignStore()
+      .getOrFetchSchemaDesignByName(name)
+      .then((branch) => {
+        if (branch) {
           next();
         } else {
           next({

@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col gap-y-2">
     <div v-if="!readonly" class="flex justify-end">
-      <UploadProgressButton size="tiny" :upload="handleUploadFile">
+      <UploadProgressButton :upload="handleUploadFile">
         {{ $t("issue.upload-sql") }}
       </UploadProgressButton>
     </div>

@@ -1,7 +1,7 @@
 <template>
-  <div class="contents text-sm">
+  <div class="contents text-sm space-x-2">
     <div class="flex flex-col">
-      <span class="text-xs font-medium"> Key {{ index + 1 }} </span>
+      <span class="text-xs font-medium mb-1"> Key {{ index + 1 }} </span>
       <span v-if="readonly" class="leading-[34px]">
         {{ kv.key }}
       </span>
@@ -14,34 +14,36 @@
       />
     </div>
     <div class="flex flex-col">
-      <span class="text-xs font-medium"> Value {{ index + 1 }} </span>
-      <span v-if="readonly" class="leading-[34px]">
-        <template v-if="kv.value">{{ kv.value }}</template>
-        <span v-else class="text-control-placeholder">
-          {{ $t("label.empty-label-value") }}
+      <span class="text-xs font-medium mb-1"> Value {{ index + 1 }} </span>
+      <div class="flex items-center space-x-2">
+        <span v-if="readonly" class="leading-[34px]">
+          <template v-if="kv.value">{{ kv.value }}</template>
+          <span v-else class="text-control-placeholder">
+            {{ $t("label.empty-label-value") }}
+          </span>
         </span>
-      </span>
-      <NInput
-        v-else
-        :value="kv.value"
-        :placeholder="$t('setting.label.value-placeholder')"
-        :status="errors.value.length > 0 ? 'error' : undefined"
-        @update:value="$emit('update-value', $event)"
-      />
+        <NInput
+          v-else
+          :value="kv.value"
+          :placeholder="$t('setting.label.value-placeholder')"
+          :status="errors.value.length > 0 ? 'error' : undefined"
+          @update:value="$emit('update-value', $event)"
+        />
+        <NButton
+          quaternary
+          size="small"
+          style="--n-padding: 0 6px"
+          :class="['ml-1', readonly ? 'invisible' : 'visible']"
+          @click="$emit('remove')"
+        >
+          <template #icon>
+            <heroicons:trash />
+          </template>
+        </NButton>
+      </div>
+      <div v-if="kv.message" class="textinfolabel">{{ kv.message }}</div>
     </div>
-    <div class="flex flex-row self-stretch items-center pt-4">
-      <NButton
-        quaternary
-        size="small"
-        style="--n-padding: 0 6px"
-        :class="[readonly ? 'invisible' : 'visible']"
-        @click="$emit('remove')"
-      >
-        <template #icon>
-          <heroicons:trash />
-        </template>
-      </NButton>
-    </div>
+    <div />
   </div>
   <div v-if="combinedErrors.length > 0" class="text-xs text-error col-span-3">
     <ErrorList :errors="combinedErrors" bullets="always" />
@@ -52,9 +54,10 @@
 import { NButton, NInput } from "naive-ui";
 import { computed } from "vue";
 import ErrorList from "../misc/ErrorList.vue";
+import { Label } from "./types";
 
 const props = defineProps<{
-  kv: { key: string; value: string };
+  kv: Label;
   index: number;
   readonly: boolean;
   errors: {

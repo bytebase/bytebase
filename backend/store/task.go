@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"math"
+	"sort"
 	"strings"
 
 	"github.com/jackc/pgtype"
@@ -395,36 +397,69 @@ func (s *Store) BatchSkipTasks(ctx context.Context, taskUIDs []int, comment stri
 	return nil
 }
 
-// ListNotSkippedTasksWithNoTaskRun returns tasks that have no task run.
-func (s *Store) ListNotSkippedTasksWithNoTaskRun(ctx context.Context) ([]int, error) {
+// ListTasksToAutoRollout returns tasks that
+// 1. have no task runs
+// 2. are not skipped
+// 3. are associated with an open issue or no issue
+// 4. are in an environment that has auto rollout enabled
+// 5. are in the stage that is the first among the selected stages in the pipeline.
+func (s *Store) ListTasksToAutoRollout(ctx context.Context, environmentIDs []int) ([]int, error) {
 	rows, err := s.db.db.QueryContext(ctx, `
 	SELECT
+		task.pipeline_id,
+		task.stage_id,
 		task.id
 	FROM task
+	LEFT JOIN stage ON stage.id = task.stage_id
+	LEFT JOIN pipeline ON pipeline.id = task.pipeline_id
+	LEFT JOIN issue ON issue.pipeline_id = pipeline.id
 	LEFT JOIN LATERAL
 		(SELECT 1 AS e FROM task_run WHERE task_run.task_id = task.id LIMIT 1) task_run
 		ON TRUE
 	WHERE task_run.e IS NULL
 	AND COALESCE((task.payload->>'skipped')::BOOLEAN, FALSE) IS FALSE
-	ORDER BY task.id`)
+	AND COALESCE(issue.status, 'OPEN') = 'OPEN'
+	AND stage.environment_id = ANY($1)
+	`, environmentIDs)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var ids []int
-
+	pipelineStageTasks := map[int]map[int][]int{}
 	for rows.Next() {
-		var id int
-		if err := rows.Scan(&id); err != nil {
+		var pipeline, stage, task int
+		if err := rows.Scan(&pipeline, &stage, &task); err != nil {
 			return nil, err
 		}
-		ids = append(ids, id)
+
+		if _, ok := pipelineStageTasks[pipeline]; !ok {
+			pipelineStageTasks[pipeline] = map[int][]int{}
+		}
+		pipelineStageTasks[pipeline][stage] = append(pipelineStageTasks[pipeline][stage], task)
 	}
 
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
+
+	var ids []int
+	for pipeline := range pipelineStageTasks {
+		minStage := math.MaxInt32
+		for stage := range pipelineStageTasks[pipeline] {
+			if stage < minStage {
+				minStage = stage
+			}
+		}
+		if minStage == math.MaxInt32 {
+			continue
+		}
+		ids = append(ids, pipelineStageTasks[pipeline][minStage]...)
+	}
+
+	sort.Slice(ids, func(i, j int) bool {
+		return ids[i] < ids[j]
+	})
 
 	return ids, nil
 }

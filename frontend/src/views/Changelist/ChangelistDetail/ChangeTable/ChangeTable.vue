@@ -5,7 +5,7 @@
     :show-placeholder="true"
     :custom-header="true"
     :row-clickable="true"
-    class="border-y"
+    class="border"
     @click-row="handleClickRow"
   >
     <template #header>

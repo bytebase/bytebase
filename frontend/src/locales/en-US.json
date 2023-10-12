@@ -865,7 +865,6 @@
         }
       }
     },
-    "filter-issue-by-name": "Filter issue by name",
     "table": {
       "open": "Open",
       "closed": "Closed",
@@ -1019,8 +1018,9 @@
     "unassigned-db-hint": "Bytebase periodically syncs the instance schema. Newly synced databases are unassigned at first, and they need to be transferred to a project before they can be used.",
     "transfer-out-db": "Transfer out DB",
     "transfer-out-db-title": "Transfer out database",
-    "request-query": "Request Query",
-    "request-export": "Request Export"
+    "request-query-permission": "Request Query",
+    "request-export-permission": "Request Export",
+    "request-export-data": "Request Export"
   },
   "create-db": {
     "new-database-name": "New database name",
@@ -1047,11 +1047,12 @@
     "streams": "Streams",
     "tasks": "Tasks",
     "parent": "Parent",
+    "labels-for-resource": "Labels for {resource}",
     "last-successful-sync": "Last successful sync",
     "sync-status": "Sync status",
     "failed-to-sync-schema-for-database-database-value-name": "Failed to sync schema for database '{0}'.",
     "successfully-synced-schema-for-database-database-value-name": "Successfully synced schema for database '{0}'.",
-    "start-to-sync-schema": "Start to sync schame",
+    "start-to-sync-schema": "Start to sync schema",
     "failed-to-sync-schema": "Failed to sync schema",
     "successfully-synced-schema": "Successfully synced schema"
   },
@@ -1323,12 +1324,14 @@
     "no-anomalies-detected": "No anomalies detected",
     "sync-status": "Sync status",
     "last-successful-sync": "Last successful sync",
-    "filter-database-name": "Filter database name",
     "filter-database": "Filter database",
     "database-backup": "database backup",
     "transfer-project": "Transfer Project",
     "edit-schema": "Edit Schema",
     "edit-schema-in-vcs": "Edit Schema in VCS",
+    "edit-labels": "Edit Labels",
+    "mixed-values-for-label": "This selected label have mixed values",
+    "mixed-label-values-warning": "Some of the selected resources have mixed values for the same key",
     "change-data": "Change Data",
     "change-data-in-vcs": "Change Data in VCS",
     "branch": "Branch",
@@ -1436,6 +1439,7 @@
     "unassigned-databases": "Unassigned databases",
     "restore-database": "Restore database",
     "selected-n-databases": "{n} database selected | {n} databases selected",
+    "n-databases": "{n} database | {n} databases",
     "select-databases-from-same-project": "Please select databases from the same project",
     "sync-schema": {
       "title": "Sync Schema",
@@ -1617,8 +1621,7 @@
         "content": "Bytebase project is similar to the project concept in other common dev tools.\n\nA project has its own members, and every issue and database always belongs to a single project.\n\nA project can also be configured to link to a repository to enable GitOps workflow.",
         "cancel": "Dismiss",
         "confirm": "Do not show again"
-      },
-      "filter-project-name": "Filter project name"
+      }
     },
     "table": {
       "key": "@:common.key",
@@ -2036,7 +2039,7 @@
     "run-selected": "Run selected",
     "clear-screen": "Clear screen",
     "query-time": "Query time",
-    "request-query": "Request Query",
+    "request-query-permission": "Request Query",
     "connection-lost": "Connection lost. Will try to reconnect when executing next query.",
     "sheet": {
       "choose-sheet": "Choose Sheet",
@@ -2056,7 +2059,6 @@
         }
       }
     },
-    "filter-by-name": "Filter by name",
     "batch-query": {
       "batch": "Batch",
       "select-database": "Select database below",
@@ -2441,7 +2443,6 @@
     "create-policy": "Create policy",
     "duplicate-policy": "Duplicate SQL Review Policy",
     "configure-policy": "Configure policy",
-    "search-rule-name": "Search rule name",
     "policy-removed": "Successfully removed the review policy.",
     "policy-created": "Successfully created the review policy.",
     "policy-updated": "Successfully updated the review policy.",
@@ -3025,6 +3026,7 @@
     "save-draft": "Save draft",
     "merge-branch": "Merge branch",
     "delete-branch-after-merged": "Delete branch after merged",
+    "raw-sql-preview": "Raw SQL Preview",
     "diff-editor": {
       "self": "Diff editor",
       "resolve": "Resolve",
@@ -3051,8 +3053,7 @@
     },
     "action": {
       "use-the-existing-branch": "Use the existing branch",
-      "create-new-branch": "Create new branch",
-      "filter-by-name": "Filter by name"
+      "create-new-branch": "Create new branch"
     }
   },
   "cel": {
@@ -3109,6 +3110,7 @@
       "source": "Source"
     },
     "confirm-remove-change": "Remove this change?",
+    "delete-this-changelist": "Delete this changelist",
     "confirm-delete-changelist": "Delete this changelist?"
   }
 }

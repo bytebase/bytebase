@@ -1,0 +1,55 @@
+- oldSchema: ""
+  newSchema: |
+    DELIMITER ;;
+    CREATE PROCEDURE citycount (IN country CHAR(3), OUT cities INT)
+       BEGIN
+         SELECT COUNT(*) INTO cities FROM world.city
+         WHERE CountryCode = country;
+       END;;
+    DELIMITER ;
+  diff: |+
+    DELIMITER ;;
+    CREATE PROCEDURE citycount (IN country CHAR(3), OUT cities INT)
+       BEGIN
+         SELECT COUNT(*) INTO cities FROM world.city
+         WHERE CountryCode = country;
+       END;;
+    DELIMITER ;
+
+- oldSchema: |
+    DELIMITER ;;
+    CREATE PROCEDURE citycount (IN country CHAR(3), OUT cities INT)
+       BEGIN
+         SELECT COUNT(*) INTO cities FROM world.city
+         WHERE CountryCode = country;
+       END;;
+    DELIMITER ;
+  newSchema: ""
+  diff: |+
+    DROP PROCEDURE IF EXISTS `citycount`;
+
+- oldSchema: |
+    CREATE DEFINER=`admin`@`localhost` PROCEDURE `account_count`()
+      SQL SECURITY INVOKER
+      BEGIN
+        SELECT 'Number of accounts:', COUNT(*) FROM mysql.user;
+      END;
+  newSchema: |
+    CREATE DEFINER=`admin`@`localhost` PROCEDURE `account_count`()
+      SQL SECURITY INVOKER
+      BEGIN
+        SELECT 'Number of accounts:', (COUNT(*)-1) FROM mysql.user;
+      END ;
+  diff: |+
+    DROP PROCEDURE IF EXISTS `account_count`;
+
+    DROP PROCEDURE IF EXISTS `account_count`;
+
+    DELIMITER ;;
+    CREATE DEFINER=`admin`@`localhost` PROCEDURE `account_count`()
+      SQL SECURITY INVOKER
+      BEGIN
+        SELECT 'Number of accounts:', (COUNT(*)-1) FROM mysql.user;
+      END;;
+    DELIMITER ;
+

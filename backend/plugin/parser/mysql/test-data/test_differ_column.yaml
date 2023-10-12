@@ -1,0 +1,483 @@
+- oldSchema: |
+    CREATE TABLE `t1` (`id` INT, `name` VARCHAR(55));
+  newSchema: |
+    CREATE TABLE `t1` (`id` INT);
+  diff: |+
+    ALTER TABLE `t1` DROP COLUMN `name`;
+
+- oldSchema: |
+    CREATE TABLE `t1` (`id` INT);
+  newSchema: |
+    CREATE TABLE `t1` (`id` INT, `name` VARCHAR(55));
+  diff: |+
+    ALTER TABLE `t1` ADD COLUMN `name` VARCHAR(55) AFTER `id`;
+
+- oldSchema: |
+    CREATE TABLE `t1` (`id` INT, `name` VARCHAR(55));
+  newSchema: |
+    CREATE TABLE `t1` (`id` INT, `name` INT);
+  diff: |+
+    ALTER TABLE `t1` MODIFY COLUMN `name` INT;
+
+- oldSchema: |
+    CREATE TABLE `t1` (
+      `a` int,
+      `b` char(20),
+      `c` int
+    );
+  newSchema: |
+    CREATE TABLE `t1` ( `a` int);
+  diff: |+
+    ALTER TABLE `t1` DROP COLUMN `b`;
+
+    ALTER TABLE `t1` DROP COLUMN `c`;
+
+- oldSchema: |
+    CREATE TABLE `t1` (`a` int);
+  newSchema: |
+    CREATE TABLE `t1` (
+      `a` int,
+      `b` char(20),
+      `c` int
+    );
+  diff: |+
+    ALTER TABLE `t1` ADD COLUMN `b` char(20) AFTER `a`;
+
+    ALTER TABLE `t1` ADD COLUMN `c` int AFTER `b`;
+
+- oldSchema: |
+    CREATE TABLE `t` (
+      `a` int,
+      `b` varchar(220),
+      `c` date,
+      `d` bit(4),
+      `e` json,
+      `f` bit(2)
+    );
+  newSchema: |
+    CREATE TABLE t (
+      `a` integer,
+      `b` varchar(20),
+      `c` boolean,
+      `d` bit(2),
+      `e` json,
+      `f` bit(4)
+    );
+  diff: |+
+    ALTER TABLE `t` MODIFY COLUMN `a` integer;
+
+    ALTER TABLE `t` MODIFY COLUMN `b` varchar(20);
+
+    ALTER TABLE `t` MODIFY COLUMN `c` boolean;
+
+    ALTER TABLE `t` MODIFY COLUMN `d` bit(2);
+
+    ALTER TABLE `t` MODIFY COLUMN `f` bit(4);
+
+- oldSchema: |
+    CREATE TABLE `book` (`id` INT, PRIMARY KEY(`id`));
+  newSchema: |
+    CREATE TABLE `book` (`id` INT, `price` INT, PRIMARY KEY(`id`));
+  diff: |+
+    ALTER TABLE `book` ADD COLUMN `price` INT AFTER `id`;
+
+- oldSchema: |
+    CREATE TABLE `book` (`id` INT, PRIMARY KEY(`id`));
+  newSchema: |
+    CREATE TABLE `book` (`id` INT, `price` INT, `code` VARCHAR(50), PRIMARY KEY(`id`));
+  diff: |+
+    ALTER TABLE `book` ADD COLUMN `price` INT AFTER `id`;
+
+    ALTER TABLE `book` ADD COLUMN `code` VARCHAR(50) AFTER `price`;
+
+- oldSchema: |
+    CREATE TABLE `book1` (`id` INT, PRIMARY KEY(`id`));
+  newSchema: |
+    CREATE TABLE `book` (`id` INT, `price` INT, `code` VARCHAR(50), PRIMARY KEY(`id`));
+  diff: |+
+    DROP TABLE IF EXISTS `book1`;
+
+    CREATE TABLE IF NOT EXISTS `book` (`id` INT, `price` INT, `code` VARCHAR(50), PRIMARY KEY(`id`));
+
+- oldSchema: |
+    CREATE TABLE `book` (`id` INT, `price` INT, `code` VARCHAR(50), PRIMARY KEY(`id`));
+  newSchema: |
+    CREATE TABLE `book` (`id` INT);
+  diff: |+
+    ALTER TABLE `book` DROP PRIMARY KEY;
+
+    ALTER TABLE `book` DROP COLUMN `code`;
+
+    ALTER TABLE `book` DROP COLUMN `price`;
+
+- oldSchema: |
+    CREATE TABLE `book` (`id` INT);
+  newSchema: |
+    CREATE TABLE `book` (`id` VARCHAR(50));
+  diff: |+
+    ALTER TABLE `book` MODIFY COLUMN `id` VARCHAR(50);
+
+- oldSchema: |
+    CREATE TABLE `book` (`id` INT, `a` VARCHAR(50));
+  newSchema: |
+    CREATE TABLE `book` (`id` INT, `a` VARCHAR(50));
+  diff: ""
+- oldSchema: |
+    CREATE TABLE `book` (`id` INT, `a` VARCHAR(50));
+  newSchema: |
+    CREATE TABLE `book` (`id` VARCHAR(50), `a` INT);
+  diff: |+
+    ALTER TABLE `book` MODIFY COLUMN `a` INT;
+
+    ALTER TABLE `book` MODIFY COLUMN `id` VARCHAR(50);
+
+- oldSchema: |
+    CREATE TABLE `book` (`id` INT COLUMN_FORMAT FIXED, PRIMARY KEY(`id`)) ;
+  newSchema: |
+    CREATE TABLE `book` (`id` INT COLUMN_FORMAT DYNAMIC, PRIMARY KEY(`id`)) ;
+  diff: |+
+    ALTER TABLE `book` MODIFY COLUMN `id` INT COLUMN_FORMAT DYNAMIC;
+
+- oldSchema: |
+    CREATE TABLE `book` (`id` INT NOT NULL);
+  newSchema: |
+    CREATE TABLE `book` (`id` INT NULL);
+  diff: |+
+    ALTER TABLE `book` MODIFY COLUMN `id` INT NULL;
+
+- oldSchema: |
+    CREATE TABLE `book` (`id` INT NOT NULL);
+  newSchema: |
+    CREATE TABLE `book` (`id` INT);
+  diff: |+
+    ALTER TABLE `book` MODIFY COLUMN `id` INT;
+
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL DEFAULT 'Harry Potter');
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NULL DEFAULT 'Harry Potter');
+  diff: |+
+    ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) NULL DEFAULT 'Harry Potter';
+
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL DEFAULT 'Harry Potter');
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) DEFAULT 'Harry Potter');
+  diff: |+
+    ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) DEFAULT 'Harry Potter';
+
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NULL);
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NULL);
+  diff: ""
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL);
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL);
+  diff: ""
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL COMMENT 'Author Name');
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL COMMENT 'Book Name');
+  diff: |+
+    ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) NOT NULL COMMENT 'Book Name';
+
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) COMMENT 'Author Name');
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) COMMENT 'Book Name');
+  diff: |+
+    ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) COMMENT 'Book Name';
+
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL);
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL COMMENT 'Book Name');
+  diff: |+
+    ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) NOT NULL COMMENT 'Book Name';
+
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL COMMENT 'Book Name');
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL COMMENT 'Book Name');
+  diff: ""
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL DEFAULT 'Harry Potter');
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL);
+  diff: |+
+    ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) NOT NULL;
+
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL);
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL DEFAULT 'Harry Potter');
+  diff: |+
+    ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) NOT NULL DEFAULT 'Harry Potter';
+
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL DEFAULT "Holmes");
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL DEFAULT 'Harry Potter');
+  diff: |+
+    ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) NOT NULL DEFAULT 'Harry Potter';
+
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL COMMENT 'Holmes');
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL COMMENT 'Holmes');
+  diff: ""
+- oldSchema: |
+    CREATE TABLE `book` (`id` INT NOT NULL DEFAULT 0);
+  newSchema: |
+    CREATE TABLE `book` (`id` INT NULL);
+  diff: |+
+    ALTER TABLE `book` MODIFY COLUMN `id` INT NULL;
+
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) COMMENT 'Author Name' NOT NULL);
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) COMMENT 'Book Name' NOT NULL);
+  diff: |+
+    ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) COMMENT 'Book Name' NOT NULL;
+
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) COMMENT 'Author Name' NOT NULL);
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) COMMENT 'Book Name' NOT NULL);
+  diff: |+
+    ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) COMMENT 'Book Name' NOT NULL;
+
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) COMMENT 'Author Name' NOT NULL);
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) COMMENT 'AUTHOR NAME' NOT NULL);
+  diff: |+
+    ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) COMMENT 'AUTHOR NAME' NOT NULL;
+
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL);
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) COMMENT 'AUTHOR NAME' NOT NULL);
+  diff: |+
+    ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) COMMENT 'AUTHOR NAME' NOT NULL;
+
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) COMMENT 'AUTHOR NAME' NOT NULL);
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL);
+  diff: |+
+    ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) NOT NULL;
+
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) COMMENT 'AUTHOR NAME' NOT NULL);
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) COMMENT 'AUTHOR NAME' NOT NULL);
+  diff: ""
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL);
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL);
+  diff: ""
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) DEFAULT 'Harry Potter' NOT NULL);
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL);
+  diff: |+
+    ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) NOT NULL;
+
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL);
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) DEFAULT 'Harry Potter' NOT NULL);
+  diff: |+
+    ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) DEFAULT 'Harry Potter' NOT NULL;
+
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) DEFAULT 'Holmes' NOT NULL);
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) DEFAULT 'Harry Potter' NOT NULL);
+  diff: |+
+    ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) DEFAULT 'Harry Potter' NOT NULL;
+
+- oldSchema: |
+    CREATE TABLE `book` (`id` INT DEFAULT 0 NOT NULL);
+  newSchema: |
+    CREATE TABLE `book` (`id` INT NOT NULL);
+  diff: |+
+    ALTER TABLE `book` MODIFY COLUMN `id` INT NOT NULL;
+
+- oldSchema: |
+    CREATE TABLE `book` (`id` INT DEFAULT 0 NOT NULL);
+  newSchema: |
+    CREATE TABLE `book` (`id` INT DEFAULT 1 NOT NULL);
+  diff: |+
+    ALTER TABLE `book` MODIFY COLUMN `id` INT DEFAULT 1 NOT NULL;
+
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) DEFAULT 'Holmes' NOT NULL);
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) DEFAULT 'Holmes' NOT NULL);
+  diff: ""
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL);
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) NOT NULL);
+  diff: ""
+- oldSchema: |
+    CREATE TABLE `action` (
+      `action_id` smallint(5) unsigned NOT NULL AUTO_INCREMENT,
+      `last_update` timestamp not null default current_timestamp
+    );
+  newSchema: |
+    CREATE TABLE `action` (
+      `action_id` smallint(5) unsigned NOT NULL AUTO_INCREMENT,
+      `last_update` timestamp not null default current_timestamp(1)
+    );
+  diff: |+
+    ALTER TABLE `action` MODIFY COLUMN `last_update` timestamp not null default current_timestamp(1);
+
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) COLLATE utf8mb4_bin DEFAULT 'Harry Potter' NOT NULL);
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) COLLATE utf8mb4_polish_ci DEFAULT 'Harry Potter' NOT NULL);
+  diff: |+
+    ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) COLLATE utf8mb4_polish_ci DEFAULT 'Harry Potter' NOT NULL;
+
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) DEFAULT 'Harry Potter' NOT NULL);
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) COLLATE utf8mb4_polish_ci DEFAULT 'Harry Potter' NOT NULL);
+  diff: |+
+    ALTER TABLE `book` MODIFY COLUMN `name` VARCHAR(50) COLLATE utf8mb4_polish_ci DEFAULT 'Harry Potter' NOT NULL;
+
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) DEFAULT 'Harry Potter' NOT NULL);
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) DEFAULT 'Harry Potter' NOT NULL);
+  diff: ""
+- oldSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) COLLATE utf8mb4_bin DEFAULT 'Harry Potter' NOT NULL);
+  newSchema: |
+    CREATE TABLE `book` (`name` VARCHAR(50) COLLATE utf8mb4_bin DEFAULT 'Harry Potter' NOT NULL);
+  diff: ""
+- oldSchema: |
+    CREATE TABLE `book` (`id` INT PRIMARY KEY);
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT PRIMARY KEY,
+      `name` VARCHAR(50) NOT NULL,
+      `author` VARCHAR(50) NOT NULL
+    );
+  diff: |+
+    ALTER TABLE `book` ADD COLUMN `name` VARCHAR(50) NOT NULL AFTER `id`;
+
+    ALTER TABLE `book` ADD COLUMN `author` VARCHAR(50) NOT NULL AFTER `name`;
+
+- oldSchema: |
+    CREATE TABLE `book` (`author` VARCHAR(50) NOT NULL);
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT PRIMARY KEY,
+      `name` VARCHAR(50) NOT NULL,
+      `author` VARCHAR(50) NOT NULL
+    );
+  diff: |+
+    ALTER TABLE `book` ADD COLUMN `id` INT PRIMARY KEY FIRST;
+
+    ALTER TABLE `book` ADD COLUMN `name` VARCHAR(50) NOT NULL AFTER `id`;
+
+- oldSchema: |
+    CREATE TABLE `book` (
+      `id` INT PRIMARY KEY,
+      `author` VARCHAR(50) NOT NULL
+    );
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT PRIMARY KEY,
+      `name` VARCHAR(50) NOT NULL,
+      `author` VARCHAR(50) NOT NULL
+    );
+  diff: |+
+    ALTER TABLE `book` ADD COLUMN `name` VARCHAR(50) NOT NULL AFTER `id`;
+
+- oldSchema: |
+    CREATE TABLE `book` (
+      `author` VARCHAR(50) NOT NULL,
+      `id` INT PRIMARY KEY,
+      `name` VARCHAR(50) NOT NULL
+    );
+  newSchema: |
+    CREATE TABLE `book` (
+      `id` INT PRIMARY KEY,
+      `name` VARCHAR(50) NOT NULL,
+      `author` VARCHAR(50) NOT NULL
+    );
+  diff: ""
+- oldSchema: |
+    CREATE TABLE `book` (
+      `name` VARCHAR(50) NOT NULL
+    );
+  newSchema: |
+    CREATE TABLE `book` (
+      `author` VARCHAR(50) NOT NULL
+    );
+  diff: |+
+    ALTER TABLE `book` ADD COLUMN `author` VARCHAR(50) NOT NULL FIRST;
+
+    ALTER TABLE `book` DROP COLUMN `name`;
+
+- oldSchema: |
+    CREATE TABLE `book` (
+      `c1` INT,
+      `c2` INT,
+      `c3` INT,
+      `c4` INT,
+      `c8` INT
+    );
+  newSchema: |
+    CREATE TABLE `book` (
+      `c9` INT,
+      `c8` VARCHAR(10),
+      `c4` INT,
+      `c2` VARCHAR(10)
+    );
+  diff: |+
+    ALTER TABLE `book` ADD COLUMN `c9` INT FIRST;
+
+    ALTER TABLE `book` MODIFY COLUMN `c2` VARCHAR(10);
+
+    ALTER TABLE `book` MODIFY COLUMN `c8` VARCHAR(10);
+
+    ALTER TABLE `book` DROP COLUMN `c1`;
+
+    ALTER TABLE `book` DROP COLUMN `c3`;
+
+- oldSchema: |
+    CREATE TABLE `book` (
+      `c1` INT,
+      `c2` INT,
+      `c3` INT,
+      `c4` INT,
+      `c5` INT
+    );
+  newSchema: |
+    CREATE TABLE `book` (
+      `c6` INT,
+      `c2` INT,
+      `c3` INT,
+      `c7` INT,
+      `c8` INT,
+      `c4` INT,
+      `c5` INT
+    );
+  diff: |+
+    ALTER TABLE `book` ADD COLUMN `c6` INT FIRST;
+
+    ALTER TABLE `book` ADD COLUMN `c7` INT AFTER `c3`;
+
+    ALTER TABLE `book` ADD COLUMN `c8` INT AFTER `c7`;
+
+    ALTER TABLE `book` DROP COLUMN `c1`;
+
