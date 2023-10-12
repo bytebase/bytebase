@@ -526,7 +526,7 @@ const handleShowDropdown = (e: MouseEvent, treeNode: TreeNode) => {
 };
 
 const handleCreateTable = () => {
-  if (engine.value === Engine.MYSQL) {
+  if (engine.value === Engine.MYSQL || engine.value === Engine.TIDB) {
     const schema = schemaList.value[0];
     state.tableNameModalContext = {
       parentName: branchSchema.value.branch.name,
