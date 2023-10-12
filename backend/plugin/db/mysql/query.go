@@ -15,13 +15,11 @@ import (
 
 func (driver *Driver) getStatementWithResultLimit(stmt string, limit int) (string, error) {
 	switch driver.dbType {
-	case storepb.Engine_MYSQL, storepb.Engine_MARIADB:
-		// MySQL 5.7 doesn't support WITH clause.
-		return fmt.Sprintf("SELECT * FROM (%s) result LIMIT %d;", stmt, limit), nil
 	case storepb.Engine_TIDB:
 		return getStatementWithResultLimitForTiDB(stmt, limit)
 	default:
-		return "", errors.Errorf("unsupported database type %s", driver.dbType)
+		// MySQL 5.7 doesn't support WITH clause.
+		return fmt.Sprintf("SELECT * FROM (%s) result LIMIT %d;", stmt, limit), nil
 	}
 }
 
