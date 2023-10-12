@@ -40,11 +40,10 @@
         </div>
         <div
           v-if="classificationConfig"
-          class="bb-grid-cell flex items-center gap-x-2 ml-3 text-sm"
+          class="bb-grid-cell flex items-center gap-x-2 text-sm column-cell"
           :class="getColumnClassList(column, row)"
         >
           <ClassificationLevelBadge
-            v-if="column.classification"
             :classification="column.classification"
             :classification-config="classificationConfig"
           />
