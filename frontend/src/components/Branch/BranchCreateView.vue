@@ -68,6 +68,7 @@ import { useRoute, useRouter } from "vue-router";
 import SchemaEditorV1 from "@/components/SchemaEditorV1/index.vue";
 import {
   pushNotification,
+  useChangeHistoryStore,
   useDatabaseV1Store,
   useProjectV1Store,
   useSchemaEditorV1Store,
@@ -82,6 +83,7 @@ import {
 import { UNKNOWN_ID } from "@/types";
 import {
   ChangeHistory,
+  ChangeHistoryView,
   DatabaseMetadata,
 } from "@/types/proto/v1/database_service";
 import {
@@ -159,15 +161,20 @@ const prepareSchemaDesign = async () => {
     const database = databaseStore.getDatabaseByUID(
       state.baselineSchema.databaseId
     );
+    const changeHistoryWithFullView =
+      await useChangeHistoryStore().fetchChangeHistory({
+        name: changeHistory.name,
+        view: ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL,
+      });
     const baselineMetadata = await schemaDesignStore.parseSchemaString(
-      changeHistory.schema,
+      changeHistoryWithFullView.schema,
       database.instanceEntity.engine
     );
     return SchemaDesign.fromPartial({
       engine: database.instanceEntity.engine,
-      baselineSchema: changeHistory.schema,
+      baselineSchema: changeHistoryWithFullView.schema,
       baselineSchemaMetadata: baselineMetadata,
-      schema: changeHistory.schema,
+      schema: changeHistoryWithFullView.schema,
       schemaMetadata: baselineMetadata,
     });
   }
