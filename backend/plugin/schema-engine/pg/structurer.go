@@ -628,8 +628,8 @@ type defaultValue interface {
 type defaultValueNull struct {
 }
 
-func (d *defaultValueNull) isDefaultValue() {}
-func (d *defaultValueNull) toString() string {
+func (*defaultValueNull) isDefaultValue() {}
+func (*defaultValueNull) toString() string {
 	return "NULL"
 }
 
@@ -637,7 +637,7 @@ type defaultValueString struct {
 	value string
 }
 
-func (d *defaultValueString) isDefaultValue() {}
+func (*defaultValueString) isDefaultValue() {}
 func (d *defaultValueString) toString() string {
 	return fmt.Sprintf("'%s'", strings.ReplaceAll(d.value, "'", "''"))
 }
@@ -646,7 +646,7 @@ type defaultValueExpression struct {
 	value string
 }
 
-func (d *defaultValueExpression) isDefaultValue() {}
+func (*defaultValueExpression) isDefaultValue() {}
 func (d *defaultValueExpression) toString() string {
 	return d.value
 }

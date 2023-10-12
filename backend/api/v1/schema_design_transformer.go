@@ -22,10 +22,6 @@ func transformDatabaseMetadataToSchemaString(engine v1pb.Engine, database *v1pb.
 	switch engine {
 	case v1pb.Engine_MYSQL:
 		return getMySQLDesignSchema("", database)
-	case v1pb.Engine_TIDB:
-		return getTiDBDesignSchema("", database)
-	case v1pb.Engine_POSTGRES:
-		return pgSchemaEngine.GetDesignSchema("", database)
 	default:
 		return "", status.Errorf(codes.InvalidArgument, fmt.Sprintf("unsupported engine: %v", engine))
 	}
@@ -462,8 +458,8 @@ type defaultValue interface {
 type defaultValueNull struct {
 }
 
-func (d *defaultValueNull) isDefaultValue() {}
-func (d *defaultValueNull) toString() string {
+func (*defaultValueNull) isDefaultValue() {}
+func (*defaultValueNull) toString() string {
 	return "NULL"
 }
 
@@ -471,7 +467,7 @@ type defaultValueString struct {
 	value string
 }
 
-func (d *defaultValueString) isDefaultValue() {}
+func (*defaultValueString) isDefaultValue() {}
 func (d *defaultValueString) toString() string {
 	return fmt.Sprintf("'%s'", strings.ReplaceAll(d.value, "'", "''"))
 }
@@ -480,7 +476,7 @@ type defaultValueExpression struct {
 	value string
 }
 
-func (d *defaultValueExpression) isDefaultValue() {}
+func (*defaultValueExpression) isDefaultValue() {}
 func (d *defaultValueExpression) toString() string {
 	return d.value
 }
@@ -552,7 +548,6 @@ func convertToColumnState(id int, column *v1pb.ColumnMetadata) *columnState {
 		comment:    column.Comment,
 	}
 	if column.HasDefault {
-		result.hasDefault = true
 		switch value := column.Default.(type) {
 		case *v1pb.ColumnMetadata_DefaultNull:
 			result.defaultValue = &defaultValueNull{}
