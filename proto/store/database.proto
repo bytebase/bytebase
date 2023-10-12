@@ -189,30 +189,35 @@ message ColumnMetadata {
   // The position is the position in columns.
   int32 position = 2;
 
-  // The default is the default of a column. Use google.protobuf.StringValue to distinguish between an empty string default value or no default.
-  google.protobuf.StringValue default = 3;
+  // The default_value is the default value of a column.
+  oneof default_value {
+    // The default is the default of a column. Use google.protobuf.StringValue to distinguish between an empty string default value or no default.
+    google.protobuf.StringValue default = 3;
+    bool default_null = 4;
+    string default_expression = 5;
+  }
 
   // The nullable is the nullable of a column.
-  bool nullable = 4;
+  bool nullable = 6;
 
   // The type is the type of a column.
-  string type = 5;
+  string type = 7;
 
   // The character_set is the character_set of a column.
-  string character_set = 6;
+  string character_set = 8;
 
   // The collation is the collation of a column.
-  string collation = 7;
+  string collation = 9;
 
   // The comment is the comment of a column.
   // classification and user_comment is parsed from the comment.
-  string comment = 8;
+  string comment = 10;
 
   // The classification is the classification of a table parsed from the comment.
-  string classification = 9;
+  string classification = 11;
 
   // The user_comment is the user comment of a table parsed from the comment.
-  string user_comment = 10;
+  string user_comment = 12;
 }
 
 // ViewMetadata is the metadata for views.

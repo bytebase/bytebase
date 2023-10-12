@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -110,7 +108,8 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			return nil, err
 		}
 		if defaultStr.Valid {
-			column.Default = &wrapperspb.StringValue{Value: defaultStr.String}
+			// TODO: use correct default type
+			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: defaultStr.String}
 		}
 		columnMap[tableName] = append(columnMap[tableName], column)
 	}

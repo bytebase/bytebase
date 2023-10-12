@@ -9,8 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
 	"github.com/pkg/errors"
 	"github.com/snowflakedb/gosnowflake"
 
@@ -388,7 +386,8 @@ func (driver *Driver) getTableSchema(ctx context.Context, database string) (map[
 			return nil, nil, err
 		}
 		if defaultStr.Valid {
-			column.Default = &wrapperspb.StringValue{Value: defaultStr.String}
+			// TODO: use correct default type
+			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: defaultStr.String}
 		}
 		isNullBool, err := util.ConvertYesNo(nullable)
 		if err != nil {

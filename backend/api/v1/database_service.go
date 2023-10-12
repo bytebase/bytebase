@@ -1908,10 +1908,10 @@ func convertDatabaseMetadata(database *store.DatabaseMessage, metadata *storepb.
 				UserComment:    table.UserComment,
 			}
 			for _, column := range table.Columns {
-				t.Columns = append(t.Columns, &v1pb.ColumnMetadata{
+				columnMetadata := &v1pb.ColumnMetadata{
 					Name:           column.Name,
 					Position:       column.Position,
-					Default:        column.Default,
+					HasDefault:     column.DefaultValue != nil,
 					Nullable:       column.Nullable,
 					Type:           column.Type,
 					CharacterSet:   column.CharacterSet,
@@ -1919,7 +1919,22 @@ func convertDatabaseMetadata(database *store.DatabaseMessage, metadata *storepb.
 					Comment:        column.Comment,
 					Classification: column.Classification,
 					UserComment:    column.UserComment,
-				})
+				}
+				if columnMetadata.HasDefault {
+					switch value := column.DefaultValue.(type) {
+					case *storepb.ColumnMetadata_Default:
+						if value.Default == nil {
+							columnMetadata.Default = &v1pb.ColumnMetadata_DefaultNull{DefaultNull: true}
+						} else {
+							columnMetadata.Default = &v1pb.ColumnMetadata_DefaultString{DefaultString: value.Default.Value}
+						}
+					case *storepb.ColumnMetadata_DefaultNull:
+						columnMetadata.Default = &v1pb.ColumnMetadata_DefaultNull{DefaultNull: true}
+					case *storepb.ColumnMetadata_DefaultExpression:
+						columnMetadata.Default = &v1pb.ColumnMetadata_DefaultExpression{DefaultExpression: value.DefaultExpression}
+					}
+				}
+				t.Columns = append(t.Columns, columnMetadata)
 			}
 			for _, index := range table.Indexes {
 				t.Indexes = append(t.Indexes, &v1pb.IndexMetadata{

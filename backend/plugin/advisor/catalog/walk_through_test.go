@@ -291,7 +291,7 @@ func (t *TableState) convertToColumnMetadataList() []*storepb.ColumnMetadata {
 		}
 
 		if column.defaultValue != nil {
-			columnMeta.Default = &wrapperspb.StringValue{Value: *column.defaultValue}
+			columnMeta.DefaultValue = &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: *column.defaultValue}}
 		}
 
 		if column.characterSet != nil {

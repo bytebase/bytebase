@@ -9,7 +9,6 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mysql "github.com/bytebase/mysql-parser"
 
@@ -451,11 +450,43 @@ func (i *indexState) toString(buf *strings.Builder) error {
 	return nil
 }
 
+type defaultValue interface {
+	isDefaultValue()
+	toString() string
+}
+
+type defaultValueNull struct {
+}
+
+func (d *defaultValueNull) isDefaultValue() {}
+func (d *defaultValueNull) toString() string {
+	return "NULL"
+}
+
+type defaultValueString struct {
+	value string
+}
+
+func (d *defaultValueString) isDefaultValue() {}
+func (d *defaultValueString) toString() string {
+	return fmt.Sprintf("'%s'", strings.ReplaceAll(d.value, "'", "''"))
+}
+
+type defaultValueExpression struct {
+	value string
+}
+
+func (d *defaultValueExpression) isDefaultValue() {}
+func (d *defaultValueExpression) toString() string {
+	return d.value
+}
+
 type columnState struct {
 	id           int
 	name         string
 	tp           string
-	defaultValue *string
+	hasDefault   bool
+	defaultValue defaultValue
 	comment      string
 	nullable     bool
 }
@@ -473,8 +504,8 @@ func (c *columnState) toString(buf *strings.Builder) error {
 			return err
 		}
 	}
-	if c.defaultValue != nil {
-		if _, err := buf.WriteString(fmt.Sprintf(" DEFAULT %s", *c.defaultValue)); err != nil {
+	if c.hasDefault {
+		if _, err := buf.WriteString(fmt.Sprintf(" DEFAULT %s", c.defaultValue.toString())); err != nil {
 			return err
 		}
 	}
@@ -488,27 +519,44 @@ func (c *columnState) toString(buf *strings.Builder) error {
 
 func (c *columnState) convertToColumnMetadata() *v1pb.ColumnMetadata {
 	result := &v1pb.ColumnMetadata{
-		Name:     c.name,
-		Type:     c.tp,
-		Nullable: c.nullable,
-		Comment:  c.comment,
+		Name:       c.name,
+		Type:       c.tp,
+		HasDefault: c.hasDefault,
+		Nullable:   c.nullable,
+		Comment:    c.comment,
 	}
-	if c.defaultValue != nil {
-		result.Default = &wrapperspb.StringValue{Value: *c.defaultValue}
+	if c.hasDefault {
+		switch value := c.defaultValue.(type) {
+		case *defaultValueNull:
+			result.Default = &v1pb.ColumnMetadata_DefaultNull{DefaultNull: true}
+		case *defaultValueString:
+			result.Default = &v1pb.ColumnMetadata_DefaultString{DefaultString: value.value}
+		case *defaultValueExpression:
+			result.Default = &v1pb.ColumnMetadata_DefaultExpression{DefaultExpression: value.value}
+		}
 	}
 	return result
 }
 
 func convertToColumnState(id int, column *v1pb.ColumnMetadata) *columnState {
 	result := &columnState{
-		id:       id,
-		name:     column.Name,
-		tp:       column.Type,
-		nullable: column.Nullable,
-		comment:  column.Comment,
+		id:         id,
+		name:       column.Name,
+		tp:         column.Type,
+		hasDefault: column.HasDefault,
+		nullable:   column.Nullable,
+		comment:    column.Comment,
 	}
-	if column.Default != nil {
-		result.defaultValue = &column.Default.Value
+	if column.HasDefault {
+		result.hasDefault = true
+		switch value := column.Default.(type) {
+		case *v1pb.ColumnMetadata_DefaultNull:
+			result.defaultValue = &defaultValueNull{}
+		case *v1pb.ColumnMetadata_DefaultString:
+			result.defaultValue = &defaultValueString{value: value.DefaultString}
+		case *v1pb.ColumnMetadata_DefaultExpression:
+			result.defaultValue = &defaultValueExpression{value: value.DefaultExpression}
+		}
 	}
 	return result
 }
@@ -654,6 +702,7 @@ func (t *mysqlTransformer) EnterColumnDefinition(ctx *mysql.ColumnDefinitionCont
 		id:           len(table.columns),
 		name:         columnName,
 		tp:           dataType,
+		hasDefault:   false,
 		defaultValue: nil,
 		comment:      "",
 		nullable:     true,
@@ -669,7 +718,17 @@ func (t *mysqlTransformer) EnterColumnDefinition(ctx *mysql.ColumnDefinitionCont
 				Start: defaultValueStart,
 				Stop:  attribute.GetStop().GetTokenIndex(),
 			})
-			columnState.defaultValue = &defaultValue
+			columnState.hasDefault = true
+			switch {
+			case strings.EqualFold(defaultValue, "NULL"):
+				columnState.defaultValue = &defaultValueNull{}
+			case strings.HasPrefix(defaultValue, "'") && strings.HasSuffix(defaultValue, "'"):
+				columnState.defaultValue = &defaultValueString{value: strings.ReplaceAll(defaultValue[1:len(defaultValue)-1], "''", "'")}
+			case strings.HasPrefix(defaultValue, "\"") && strings.HasSuffix(defaultValue, "\""):
+				columnState.defaultValue = &defaultValueString{value: strings.ReplaceAll(defaultValue[1:len(defaultValue)-1], "\"\"", "\"")}
+			default:
+				columnState.defaultValue = &defaultValueExpression{value: defaultValue}
+			}
 		case attribute.COMMENT_SYMBOL() != nil:
 			commentStart := nextDefaultChannelTokenIndex(ctx.GetParser().GetTokenStream(), attribute.COMMENT_SYMBOL().GetSymbol().GetTokenIndex())
 			comment := attribute.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
@@ -976,9 +1035,9 @@ func extractNewAttrs(column *columnState, attrs []mysql.IColumnAttributeContext)
 			order: columnAttrOrder["NULL"],
 		})
 	}
-	if !defaultExists && column.defaultValue != nil {
+	if !defaultExists && column.hasDefault {
 		result = append(result, columnAttr{
-			text:  "DEFAULT " + *column.defaultValue,
+			text:  "DEFAULT " + column.defaultValue.toString(),
 			order: columnAttrOrder["DEFAULT"],
 		})
 	}
@@ -1214,11 +1273,22 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 			}
 		case attribute.DEFAULT_SYMBOL() != nil && attribute.SERIAL_SYMBOL() == nil:
 			defaultValueStart := nextDefaultChannelTokenIndex(attribute.GetParser().GetTokenStream(), attribute.DEFAULT_SYMBOL().GetSymbol().GetTokenIndex())
-			defaultValue := attribute.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+			defaultValueText := attribute.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 				Start: defaultValueStart,
 				Stop:  attribute.GetStop().GetTokenIndex(),
 			})
-			if column.defaultValue != nil && *column.defaultValue == defaultValue {
+			var defaultValue defaultValue
+			switch {
+			case strings.EqualFold(defaultValueText, "NULL"):
+				defaultValue = &defaultValueNull{}
+			case strings.HasPrefix(defaultValueText, "'") && strings.HasSuffix(defaultValueText, "'"):
+				defaultValue = &defaultValueString{value: strings.ReplaceAll(defaultValueText[1:len(defaultValueText)-1], "''", "'")}
+			case strings.HasPrefix(defaultValueText, "\"") && strings.HasSuffix(defaultValueText, "\""):
+				defaultValue = &defaultValueString{value: strings.ReplaceAll(defaultValueText[1:len(defaultValueText)-1], "\"\"", "\"")}
+			default:
+				defaultValue = &defaultValueExpression{value: defaultValueText}
+			}
+			if column.hasDefault && column.defaultValue.toString() == defaultValue.toString() {
 				if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 					Start: startPos,
 					Stop:  attribute.GetStop().GetTokenIndex(),
@@ -1226,7 +1296,7 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 					g.err = err
 					return
 				}
-			} else if column.defaultValue != nil {
+			} else if column.hasDefault {
 				if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 					Start: startPos,
 					Stop:  defaultValueStart - 1,
@@ -1234,7 +1304,7 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 					g.err = err
 					return
 				}
-				if _, err := g.columnDefine.WriteString(*column.defaultValue); err != nil {
+				if _, err := g.columnDefine.WriteString(column.defaultValue.toString()); err != nil {
 					g.err = err
 					return
 				}

@@ -757,6 +757,8 @@ ColumnMetadata is the metadata for columns.
 | name | [string](#string) |  | The name is the name of a column. |
 | position | [int32](#int32) |  | The position is the position in columns. |
 | default | [google.protobuf.StringValue](#google-protobuf-StringValue) |  | The default is the default of a column. Use google.protobuf.StringValue to distinguish between an empty string default value or no default. |
+| default_null | [bool](#bool) |  |  |
+| default_expression | [string](#string) |  |  |
 | nullable | [bool](#bool) |  | The nullable is the nullable of a column. |
 | type | [string](#string) |  | The type is the type of a column. |
 | character_set | [string](#string) |  | The character_set is the character_set of a column. |
