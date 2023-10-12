@@ -81,78 +81,121 @@
     <!-- List view -->
     <template v-if="state.selectedSubtab === 'table-list'">
       <!-- table list -->
-      <div
-        class="w-full h-auto grid auto-rows-auto border-y relative overflow-y-auto"
+      <BBGrid
+        class="border"
+        :column-list="tableHeaderList"
+        :data-source="shownTableList"
+        :custom-header="true"
+        :row-clickable="false"
       >
-        <!-- table header -->
-        <div
-          class="sticky top-0 z-10 grid grid-cols-[repeat(6,_minmax(0,_1fr))_32px] w-full border-b text-sm leading-6 select-none bg-gray-50 text-gray-400"
-        >
-          <span
-            v-for="header in tableHeaderList"
-            :key="header.key"
-            class="table-header-item-container"
-            >{{ header.label }}</span
-          >
-          <span></span>
-        </div>
-        <!-- table body -->
-        <div class="w-full">
-          <div
-            v-for="(table, index) in shownTableList"
-            :key="`${index}-${table.name}`"
-            class="grid grid-cols-[repeat(6,_minmax(0,_1fr))_32px] text-sm even:bg-gray-50"
-            :class="
-              isDroppedTable(table) && 'text-red-700 !bg-red-50 opacity-70'
-            "
-          >
-            <div class="table-body-item-container">
-              <NEllipsis
-                class="w-full cursor-pointer leading-6 my-2 hover:text-accent"
-              >
-                <span @click="handleTableItemClick(table)">
-                  {{ table.name }}
-                </span>
-              </NEllipsis>
-            </div>
-            <div class="table-body-item-container">
-              {{ table.rowCount }}
-            </div>
-            <div class="table-body-item-container">
-              {{ bytesToString(table.dataSize) }}
-            </div>
-            <div class="table-body-item-container">
-              {{ table.engine }}
-            </div>
-            <div class="table-body-item-container">
-              {{ table.collation }}
-            </div>
-            <div class="table-body-item-container">
-              {{ table.comment }}
-            </div>
-            <div class="w-full flex justify-start items-center">
-              <NTooltip v-if="!isDroppedTable(table)" trigger="hover" to="body">
-                <template #trigger>
-                  <heroicons:trash
-                    class="w-[14px] h-auto text-gray-500 cursor-pointer hover:opacity-80"
-                    @click="handleDropTable(table)"
-                  />
-                </template>
-                <span>{{ $t("schema-editor.actions.drop-table") }}</span>
-              </NTooltip>
-              <NTooltip v-else trigger="hover" to="body">
-                <template #trigger>
-                  <heroicons:arrow-uturn-left
-                    class="w-[14px] h-auto text-gray-500 cursor-pointer hover:opacity-80"
-                    @click="handleRestoreTable(table)"
-                  />
-                </template>
-                <span>{{ $t("schema-editor.actions.restore") }}</span>
-              </NTooltip>
+        <template #header>
+          <div role="table-row" class="bb-grid-row bb-grid-header-row group">
+            <div
+              v-for="(header, index) in tableHeaderList"
+              :key="index"
+              role="table-cell"
+              class="bb-grid-header-cell"
+            >
+              {{ header.title }}
             </div>
           </div>
-        </div>
-      </div>
+        </template>
+        <template #item="{ item: table, row }: { item: Table, row: number }">
+          <div
+            class="bb-grid-cell table-item-cell"
+            :class="getTableClassList(table, row)"
+          >
+            <NEllipsis
+              class="w-full cursor-pointer leading-6 my-2 hover:text-accent"
+            >
+              <span @click="handleTableItemClick(table)">
+                {{ table.name }}
+              </span>
+            </NEllipsis>
+          </div>
+          <div
+            v-if="supportClassification"
+            class="bb-grid-cell table-item-cell flex items-center gap-x-2 text-sm"
+            :class="getTableClassList(table, row)"
+          >
+            <ClassificationLevelBadge
+              :classification="table.classification"
+              :classification-config="classificationConfig"
+            />
+            <div
+              v-if="!editorStore.readonly && !disableChangeTable(table)"
+              class="flex"
+            >
+              <button
+                v-if="table.classification"
+                class="w-4 h-4 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer"
+                @click.prevent="table.classification = ''"
+              >
+                <heroicons-outline:x class="w-3 h-3" />
+              </button>
+              <button
+                class="w-4 h-4 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer"
+                @click.prevent="showClassificationDrawer(table)"
+              >
+                <heroicons-outline:pencil class="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+          <div
+            class="bb-grid-cell table-item-cell"
+            :class="getTableClassList(table, row)"
+          >
+            {{ table.rowCount }}
+          </div>
+          <div
+            class="bb-grid-cell table-item-cell"
+            :class="getTableClassList(table, row)"
+          >
+            {{ bytesToString(table.dataSize) }}
+          </div>
+          <div
+            class="bb-grid-cell table-item-cell"
+            :class="getTableClassList(table, row)"
+          >
+            {{ table.engine }}
+          </div>
+          <div
+            class="bb-grid-cell table-item-cell"
+            :class="getTableClassList(table, row)"
+          >
+            {{ table.collation }}
+          </div>
+          <div
+            class="bb-grid-cell table-item-cell"
+            :class="getTableClassList(table, row)"
+          >
+            {{ table.userComment }}
+          </div>
+          <div
+            class="bb-grid-cell table-item-cell !px-0.5 flex justify-start items-center"
+            :class="getTableClassList(table, row)"
+          >
+            <NTooltip v-if="!isDroppedTable(table)" trigger="hover" to="body">
+              <template #trigger>
+                <heroicons:trash
+                  class="w-4 h-auto text-gray-500 cursor-pointer hover:opacity-80"
+                  @click="handleDropTable(table)"
+                />
+              </template>
+              <span>{{ $t("schema-editor.actions.drop-table") }}</span>
+            </NTooltip>
+            <NTooltip v-else trigger="hover" to="body">
+              <template #trigger>
+                <heroicons:arrow-uturn-left
+                  class="w-4 h-auto text-gray-500 cursor-pointer hover:opacity-80"
+                  @click="handleRestoreTable(table)"
+                />
+              </template>
+              <span>{{ $t("schema-editor.actions.restore") }}</span>
+            </NTooltip>
+          </div>
+        </template>
+      </BBGrid>
     </template>
     <template v-else-if="state.selectedSubtab === 'schema-diagram'">
       <SchemaDiagram
@@ -192,6 +235,14 @@
     </DrawerContent>
   </Drawer>
 
+  <SelectClassificationDrawer
+    v-if="classificationConfig"
+    :show="state.showClassificationDrawer"
+    :classification-config="classificationConfig"
+    @dismiss="state.showClassificationDrawer = false"
+    @select="onClassificationSelect"
+  />
+
   <FeatureModal
     feature="bb.feature.schema-template"
     :open="state.showFeatureModal"
@@ -211,6 +262,7 @@ import {
   hasFeature,
   generateUniqueTabId,
   useDatabaseV1Store,
+  useSettingV1Store,
   useSchemaEditorV1Store,
 } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
@@ -227,9 +279,10 @@ import {
   SchemaEditorTabType,
   convertTableMetadataToTable,
 } from "@/types/v1/schemaEditor";
-import { bytesToString } from "@/utils";
+import { bytesToString, isDev } from "@/utils";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import TableNameModal from "../Modals/TableNameModal.vue";
+import { isTableChanged } from "../utils";
 import { useMetadataForDiagram } from "../utils/useMetadataForDiagram";
 
 type SubtabType = "table-list" | "schema-diagram";
@@ -241,15 +294,18 @@ interface LocalState {
   statement: string;
   showFeatureModal: boolean;
   showSchemaTemplateDrawer: boolean;
+  showClassificationDrawer: boolean;
   tableNameModalContext?: {
     parentName: string;
     schemaId: string;
     tableName: string | undefined;
   };
+  activeTableId?: string;
 }
 
 const { t } = useI18n();
 const editorStore = useSchemaEditorV1Store();
+const settingStore = useSettingV1Store();
 const searchPattern = ref("");
 const currentTab = computed(() => editorStore.currentTab as DatabaseTabContext);
 const state = reactive<LocalState>({
@@ -259,6 +315,7 @@ const state = reactive<LocalState>({
   statement: "",
   showFeatureModal: false,
   showSchemaTemplateDrawer: false,
+  showClassificationDrawer: false,
 });
 const databaseSchema = computed(() => {
   return editorStore.resourceMap["database"].get(
@@ -286,6 +343,57 @@ const shownTableList = computed(() => {
     table.name.includes(searchPattern.value.trim())
   );
 });
+const classificationConfig = computed(() => {
+  if (!editorStore.project.dataClassificationConfigId) {
+    return;
+  }
+  return settingStore.getProjectClassification(
+    editorStore.project.dataClassificationConfigId
+  );
+});
+const disableChangeTable = (table: Table): boolean => {
+  return (
+    selectedSchema.value?.status === "dropped" || table.status === "dropped"
+  );
+};
+
+const getTableClassList = (table: Table, index: number): string[] => {
+  const classList = [];
+  if (table.status === "dropped") {
+    classList.push("text-red-700 !bg-red-50 opacity-70");
+  } else if (table.status === "created") {
+    classList.push("text-green-700 !bg-green-50");
+  } else if (
+    isTableChanged(
+      currentTab.value.parentName,
+      state.selectedSchemaId,
+      table.id
+    )
+  ) {
+    classList.push("text-yellow-700 !bg-yellow-50");
+  }
+  if (index % 2 === 1) {
+    classList.push("bg-gray-50");
+  }
+  return classList;
+};
+
+const showClassificationDrawer = (table: Table) => {
+  state.activeTableId = table.id;
+  state.showClassificationDrawer = true;
+};
+
+const onClassificationSelect = (classificationId: string) => {
+  state.showClassificationDrawer = false;
+  const table = tableList.value.find(
+    (table) => table.id === state.activeTableId
+  );
+  if (!table) {
+    return;
+  }
+  table.classification = classificationId;
+  state.activeTableId = undefined;
+};
 
 const shouldShowSchemaSelector = computed(() => {
   return databaseEngine.value === Engine.POSTGRES;
@@ -313,33 +421,53 @@ const schemaSelectorOptionList = computed(() => {
   return optionList;
 });
 
+const supportClassification = computed(() => {
+  return classificationConfig.value && isDev();
+});
+
 const tableHeaderList = computed(() => {
   return [
     {
       key: "name",
-      label: t("schema-editor.database.name"),
+      title: t("schema-editor.database.name"),
+      width: "minmax(auto, 1fr)",
+    },
+    {
+      key: "classification",
+      title: t("schema-editor.column.classification"),
+      hide: !supportClassification.value,
+      width: "minmax(auto, 2fr)",
     },
     {
       key: "raw-count",
-      label: t("schema-editor.database.row-count"),
+      title: t("schema-editor.database.row-count"),
+      width: "minmax(auto, 0.7fr)",
     },
     {
       key: "data-size",
-      label: t("schema-editor.database.data-size"),
+      title: t("schema-editor.database.data-size"),
+      width: "minmax(auto, 0.7fr)",
     },
     {
       key: "engine",
-      label: t("schema-editor.database.engine"),
+      title: t("schema-editor.database.engine"),
+      width: "minmax(auto, 1fr)",
     },
     {
       key: "collation",
-      label: t("schema-editor.database.collation"),
+      title: t("schema-editor.database.collation"),
+      width: "minmax(auto, 1fr)",
     },
     {
       key: "comment",
-      label: t("schema-editor.database.comment"),
+      title: t("schema-editor.database.comment"),
+      width: "minmax(auto, 1fr)",
     },
-  ];
+    {
+      title: "",
+      width: "30px",
+    },
+  ].filter((header) => !header.hide);
 });
 
 watch(
@@ -480,10 +608,7 @@ const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
 </script>
 
 <style scoped>
-.table-header-item-container {
-  @apply py-2 px-3;
-}
-.table-body-item-container {
-  @apply w-full h-10 box-border p-px pl-3 pr-4 relative truncate leading-10;
+.table-item-cell {
+  @apply !py-0.5;
 }
 </style>

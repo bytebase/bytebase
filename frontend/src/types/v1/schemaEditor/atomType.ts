@@ -43,6 +43,7 @@ export interface Table {
   rowCount: number;
   dataSize: number;
   comment: string;
+  userComment: string;
   columnList: Column[];
   primaryKey: PrimaryKey;
   foreignKeyList: ForeignKey[];
@@ -87,6 +88,7 @@ export const convertTableMetadataToTable = (
     rowCount: tableMetadata.rowCount,
     dataSize: tableMetadata.dataSize,
     comment: tableMetadata.comment,
+    userComment: tableMetadata.userComment,
     columnList: tableMetadata.columns.map((column) =>
       convertColumnMetadataToColumn(column, status)
     ),

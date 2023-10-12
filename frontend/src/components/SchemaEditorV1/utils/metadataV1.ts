@@ -218,6 +218,9 @@ const transformSchemaEditToMetadata = (schemaEdit: Schema): SchemaMetadata => {
       columns: [],
       indexes: [],
       foreignKeys: [],
+      comment: table.comment,
+      userComment: table.userComment,
+      classification: table.classification,
     });
 
     for (const column of table.columnList) {
@@ -265,6 +268,9 @@ const transformTableEditToMetadata = (tableEdit: Table): TableMetadata => {
     columns: [],
     indexes: [],
     foreignKeys: [],
+    comment: tableEdit.comment,
+    userComment: tableEdit.userComment,
+    classification: tableEdit.classification,
   });
 
   for (const column of tableEdit.columnList) {
