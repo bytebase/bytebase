@@ -74,7 +74,7 @@
           @export="handleExportBtnClick"
         />
         <NButton v-else @click="state.showRequestExportPanel = true">
-          {{ $t("quick-action.request-export") }}
+          {{ $t("quick-action.request-export-data") }}
         </NButton>
       </div>
     </div>

@@ -1017,8 +1017,9 @@
     "unassigned-db-hint": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas no están asignadas al principio y deben transferirse a un proyecto antes de que puedan usarse.",
     "transfer-out-db": "Transferir base de datos",
     "transfer-out-db-title": "Transferir la base de datos",
-    "request-export": "Solicitar exportación",
-    "request-query": "Solicitar consulta"
+    "request-export-permission": "Solicitar exportación",
+    "request-query-permission": "Solicitar consulta",
+    "request-query-data": "Solicitar consulta"
   },
   "create-db": {
     "new-database-name": "Nuevo nombre de la base de datos",
@@ -2034,7 +2035,7 @@
     "run-selected": "Ejecutar selección",
     "clear-screen": "Limpiar pantalla",
     "query-time": "Tiempo de consulta",
-    "request-query": "Solicitar consulta",
+    "request-query-permission": "Solicitar consulta",
     "connection-lost": "Conexión perdida. \nIntentará volver a conectarse al ejecutar la siguiente consulta.",
     "sheet": {
       "choose-sheet": "Elegir hoja",
@@ -3107,6 +3108,7 @@
       "source": "Fuente"
     },
     "confirm-remove-change": "¿Eliminar este cambio?",
+    "delete-this-changelist": "Eliminar esta lista de cambios",
     "confirm-delete-changelist": "¿Eliminar esta lista de cambios?"
   }
 }

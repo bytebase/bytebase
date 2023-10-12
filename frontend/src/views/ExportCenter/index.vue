@@ -36,7 +36,7 @@
             feature="bb.feature.access-control"
             custom-class="mr-2"
           />
-          {{ $t("quick-action.request-export") }}
+          {{ $t("quick-action.request-export-data") }}
         </NButton>
       </div>
     </div>
