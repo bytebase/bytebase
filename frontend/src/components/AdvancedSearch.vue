@@ -72,7 +72,6 @@ import {
   DatabaseV1Name,
 } from "@/components/v2";
 import {
-  useCurrentUserV1,
   useProjectV1ListByCurrentUser,
   useInstanceV1List,
   useSearchDatabaseV1List,
@@ -89,7 +88,6 @@ import {
   environmentV1Name,
   extractProjectResourceName,
   extractInstanceResourceName,
-  hasWorkspacePermissionV1,
 } from "@/utils";
 
 export type SearchScopeId =
@@ -165,7 +163,6 @@ const state = reactive<LocalState>({
 const inputRef = ref<InstanceType<typeof NInput>>();
 const userStore = useUserStore();
 const databaseV1Store = useDatabaseV1Store();
-const currentUserV1 = useCurrentUserV1();
 
 watch(
   () => state.showSearchScopes,
@@ -190,13 +187,6 @@ const principalSearchOptions = computed(() => {
       ]),
     };
   });
-});
-
-const hasPermission = computed(() => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-issue",
-    currentUserV1.value.userRole
-  );
 });
 
 // fullScopes provides full search scopes and options.
@@ -270,35 +260,31 @@ const fullScopes = computed((): SearchScope[] => {
         },
       ],
     },
+    {
+      id: "creator",
+      title: t("issue.advanced-search.scope.creator.title"),
+      description: t("issue.advanced-search.scope.creator.description"),
+      options: principalSearchOptions.value,
+    },
+    {
+      id: "assignee",
+      title: t("issue.advanced-search.scope.assignee.title"),
+      description: t("issue.advanced-search.scope.assignee.description"),
+      options: principalSearchOptions.value,
+    },
+    {
+      id: "subscriber",
+      title: t("issue.advanced-search.scope.subscriber.title"),
+      description: t("issue.advanced-search.scope.subscriber.description"),
+      options: principalSearchOptions.value,
+    },
+    {
+      id: "principal",
+      title: t("issue.advanced-search.scope.principal.title"),
+      description: t("issue.advanced-search.scope.principal.description"),
+      options: principalSearchOptions.value,
+    },
   ];
-  if (hasPermission.value) {
-    scopes.push(
-      {
-        id: "creator",
-        title: t("issue.advanced-search.scope.creator.title"),
-        description: t("issue.advanced-search.scope.creator.description"),
-        options: principalSearchOptions.value,
-      },
-      {
-        id: "assignee",
-        title: t("issue.advanced-search.scope.assignee.title"),
-        description: t("issue.advanced-search.scope.assignee.description"),
-        options: principalSearchOptions.value,
-      },
-      {
-        id: "subscriber",
-        title: t("issue.advanced-search.scope.subscriber.title"),
-        description: t("issue.advanced-search.scope.subscriber.description"),
-        options: principalSearchOptions.value,
-      },
-      {
-        id: "principal",
-        title: t("issue.advanced-search.scope.principal.title"),
-        description: t("issue.advanced-search.scope.principal.description"),
-        options: principalSearchOptions.value,
-      }
-    );
-  }
   return scopes;
 });
 
