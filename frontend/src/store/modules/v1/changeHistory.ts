@@ -26,7 +26,6 @@ export const useChangeHistoryStore = defineStore("changeHistory_v1", () => {
     historyList: ChangeHistory[]
   ) => {
     changeHistoryListMapByDatabase.set(parent, historyList);
-    await upsertChangeHistoryMap(historyList);
   };
 
   const fetchChangeHistoryList = async (
