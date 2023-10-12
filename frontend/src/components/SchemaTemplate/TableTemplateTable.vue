@@ -78,7 +78,7 @@ const { t } = useI18n();
 const settingStore = useSettingV1Store();
 
 const columnList = computed((): BBGridColumn[] => {
-  const list = [
+  return [
     {
       title: t("schema-template.form.category"),
       width: "15rem",
@@ -90,6 +90,12 @@ const columnList = computed((): BBGridColumn[] => {
       class: "capitalize",
     },
     {
+      title: t("schema-template.classification.self"),
+      width: "auto",
+      class: "capitalize",
+      hide: !classificationConfig.value,
+    },
+    {
       title: t("schema-template.form.comment"),
       width: "auto",
       class: "capitalize",
@@ -99,15 +105,7 @@ const columnList = computed((): BBGridColumn[] => {
       width: "5rem",
       class: "capitalize",
     },
-  ];
-  if (classificationConfig.value) {
-    list.splice(2, 0, {
-      title: t("schema-template.classification.self"),
-      width: "auto",
-      class: "capitalize",
-    });
-  }
-  return list;
+  ].filter((col) => !col.hide);
 });
 
 const clickRow = (template: SchemaTemplateSetting_TableTemplate) => {
