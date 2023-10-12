@@ -91,7 +91,7 @@
 <script lang="ts" setup>
 import { head, isNull, isUndefined } from "lodash-es";
 import { NEllipsis } from "naive-ui";
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, onMounted, reactive, watch } from "vue";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import {
   useChangeHistoryStore,
@@ -103,7 +103,6 @@ import { UNKNOWN_ID } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import {
   ChangeHistory,
-  ChangeHistoryView,
   ChangeHistory_Type,
 } from "@/types/proto/v1/database_service";
 import { instanceV1Name } from "@/utils";
@@ -134,7 +133,6 @@ const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const changeHistoryStore = useChangeHistoryStore();
 const environmentStore = useEnvironmentV1Store();
-const fullViewChangeHistoryCache = ref<Map<string, ChangeHistory>>(new Map());
 
 const database = computed(() => {
   const databaseId = state.databaseId;
@@ -209,30 +207,6 @@ watch(
     }
   }
 );
-
-const prepareFullViewChangeHistory = async () => {
-  const changeHistory = state.changeHistory;
-  if (!changeHistory || changeHistory.uid === String(UNKNOWN_ID)) {
-    return;
-  }
-
-  const cache = fullViewChangeHistoryCache.value.get(changeHistory.name);
-  if (!cache) {
-    const fullViewChangeHistory = await changeHistoryStore.fetchChangeHistory({
-      name: changeHistory.name,
-      view: ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL,
-    });
-    fullViewChangeHistoryCache.value.set(
-      fullViewChangeHistory.name,
-      fullViewChangeHistory
-    );
-  }
-};
-
-watch(() => state.changeHistory, prepareFullViewChangeHistory, {
-  immediate: true,
-  deep: true,
-});
 
 const allowedEngineTypeList: Engine[] = [
   Engine.MYSQL,
