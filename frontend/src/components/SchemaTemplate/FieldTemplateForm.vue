@@ -208,7 +208,10 @@
           </div>
         </div>
       </div>
-      <div class="space-y-6 pt-6">
+      <div class="space-y-1 pt-6">
+        <label for="category" class="textlabel">
+          {{ $t("common.labels") }}
+        </label>
         <LabelListEditor
           ref="labelListEditorRef"
           v-model:kv-list="state.kvList"
