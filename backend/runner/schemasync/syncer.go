@@ -425,6 +425,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		list, err := s.store.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
 			InstanceID: &instance.UID,
 			DatabaseID: &database.UID,
+			ShowFull:   true,
 			Limit:      &limit,
 		})
 		if err != nil {
