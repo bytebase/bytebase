@@ -299,10 +299,15 @@ const classificationConfig = computed(() => {
 });
 
 const columnHeaderList = computed(() => {
-  const list = [
+  return [
     {
       title: t("schema-editor.column.name"),
       width: "6rem",
+    },
+    {
+      title: t("schema-editor.column.classification"),
+      width: "minmax(auto, 1.5fr)",
+      hide: !classificationConfig.value,
     },
     {
       title: t("schema-editor.column.type"),
@@ -324,25 +329,16 @@ const columnHeaderList = computed(() => {
       title: t("schema-editor.column.primary"),
       width: "80px",
     },
-  ];
-  if (classificationConfig.value) {
-    list.splice(1, 0, {
-      title: t("schema-editor.column.classification"),
-      width: "minmax(auto, 1.5fr)",
-    });
-  }
-  if (props.showForeignKey) {
-    list.push({
+    {
       title: t("schema-editor.column.foreign-key"),
       width: "minmax(auto, 7rem)",
-    });
-  }
-  list.push({
-    title: "",
-    width: "30px",
-  });
-
-  return list;
+      hide: !props.showForeignKey,
+    },
+    {
+      title: "",
+      width: "30px",
+    },
+  ].filter((header) => !header.hide);
 });
 
 const getColumnClassList = (column: Column, index: number): string[] => {
