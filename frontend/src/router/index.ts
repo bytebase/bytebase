@@ -12,7 +12,6 @@ import DashboardLayout from "@/layouts/DashboardLayout.vue";
 import DatabaseLayout from "@/layouts/DatabaseLayout.vue";
 import InstanceLayout from "@/layouts/InstanceLayout.vue";
 import SQLEditorLayout from "@/layouts/SQLEditorLayout.vue";
-import SheetDashboardLayout from "@/layouts/SheetDashboardLayout.vue";
 import SplashLayout from "@/layouts/SplashLayout.vue";
 import { useConversationStore } from "@/plugins/ai/store";
 import { t } from "@/plugins/i18n";
