@@ -49,8 +49,7 @@ const { isExpired, isTrialing, currentPlan, existTrialLicense } =
   storeToRefs(subscriptionStore);
 
 const shouldShowDemoBanner = computed(() => {
-  // Only show demo banner if it's the default demo (as opposed to the feature demo).
-  return actuatorStore.serverInfo?.demoName == "default";
+  return actuatorStore.serverInfo?.demoName != "";
 });
 
 // For now, debug mode is a global setting and will affect all users.
