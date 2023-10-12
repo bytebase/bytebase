@@ -126,7 +126,13 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		return nil, nil, errors.Errorf("creating Oracle database is not supported")
 	}
 
-	environmentID := strings.TrimPrefix(c.Environment, common.EnvironmentNamePrefix)
+	dbEnvironmentID := strings.TrimPrefix(c.Environment, common.EnvironmentNamePrefix)
+	// Fallback to instance.EnvironmentID if user-set environment is not present.
+	environmentID := instance.EnvironmentID
+	if dbEnvironmentID != "" {
+		environmentID = dbEnvironmentID
+	}
+
 	environment, err := s.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &environmentID})
 	if err != nil {
 		return nil, nil, err
@@ -224,7 +230,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			CharacterSet:  c.CharacterSet,
 			TableName:     c.Table,
 			Collation:     c.Collation,
-			EnvironmentID: environmentID,
+			EnvironmentID: dbEnvironmentID,
 			Labels:        labelsJSON,
 			DatabaseName:  databaseName,
 			SheetID:       sheet.UID,
