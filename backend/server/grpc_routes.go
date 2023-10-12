@@ -67,7 +67,7 @@ func configureGrpcRouters(
 		dbFactory,
 		schemaSyncer))
 	v1pb.RegisterProjectServiceServer(grpcServer, v1.NewProjectService(stores, activityManager, licenseService))
-	v1pb.RegisterDatabaseServiceServer(grpcServer, v1.NewDatabaseService(stores, backupRunner, schemaSyncer, licenseService))
+	v1pb.RegisterDatabaseServiceServer(grpcServer, v1.NewDatabaseService(stores, backupRunner, schemaSyncer, licenseService, profile))
 	v1pb.RegisterInstanceRoleServiceServer(grpcServer, v1.NewInstanceRoleService(stores, dbFactory))
 	v1pb.RegisterOrgPolicyServiceServer(grpcServer, v1.NewOrgPolicyService(stores, licenseService))
 	v1pb.RegisterIdentityProviderServiceServer(grpcServer, v1.NewIdentityProviderService(stores, licenseService))
