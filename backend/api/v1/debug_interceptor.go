@@ -44,6 +44,15 @@ func (in *DebugInterceptor) DebugInterceptor(ctx context.Context, request any, s
 	resp, err := handler(ctx, request)
 	in.debugInterceptorDo(ctx, serverInfo.FullMethod, err, startTime)
 
+	// Truncate error message to 1024 characters.
+	st, _ := status.FromError(err)
+	if msg, truncated := common.TruncateString(st.Message(), 1024); truncated {
+		slog.Info("Truncated error message", slog.String("fullMethod", serverInfo.FullMethod), slog.String("original error message", st.Message()))
+		stp := st.Proto()
+		stp.Message = "[TRUNCATED] " + msg
+		err = status.FromProto(stp).Err()
+	}
+
 	return resp, err
 }
 
