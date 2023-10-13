@@ -57,13 +57,13 @@ func TestParseToMetadata(t *testing.T) {
 
 type getSchemaDesignTest struct {
 	Baseline string
-	Target   *v1pb.DatabaseMetadata
+	Target   string
 	Result   string
 }
 
 func TestGetSchemaDesign(t *testing.T) {
 	const (
-		record = true
+		record = false
 	)
 	var (
 		filepath = "testdata/get_design_schema.yaml"
@@ -80,7 +80,9 @@ func TestGetSchemaDesign(t *testing.T) {
 	a.NoError(yaml.Unmarshal(byteValue, &tests))
 
 	for i, t := range tests {
-		result, err := GetDesignSchema(t.Baseline, t.Target)
+		targetSchema := &v1pb.DatabaseMetadata{}
+		a.NoError(protojson.Unmarshal([]byte(t.Target), targetSchema))
+		result, err := GetDesignSchema(t.Baseline, targetSchema)
 		a.NoError(err)
 		if record {
 			tests[i].Result = result
