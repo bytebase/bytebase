@@ -8,6 +8,51 @@ import { DatabaseMetadata } from "./database_service";
 
 export const protobufPackage = "bytebase.v1";
 
+export enum SchemaDesignView {
+  /**
+   * SCHEMA_DESIGN_VIEW_UNSPECIFIED - The default / unset value.
+   * The API will default to the BASIC view.
+   */
+  SCHEMA_DESIGN_VIEW_UNSPECIFIED = 0,
+  /** SCHEMA_DESIGN_VIEW_BASIC - Exclude schema, baseline_schema. */
+  SCHEMA_DESIGN_VIEW_BASIC = 1,
+  /** SCHEMA_DESIGN_VIEW_FULL - Include everything. */
+  SCHEMA_DESIGN_VIEW_FULL = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function schemaDesignViewFromJSON(object: any): SchemaDesignView {
+  switch (object) {
+    case 0:
+    case "SCHEMA_DESIGN_VIEW_UNSPECIFIED":
+      return SchemaDesignView.SCHEMA_DESIGN_VIEW_UNSPECIFIED;
+    case 1:
+    case "SCHEMA_DESIGN_VIEW_BASIC":
+      return SchemaDesignView.SCHEMA_DESIGN_VIEW_BASIC;
+    case 2:
+    case "SCHEMA_DESIGN_VIEW_FULL":
+      return SchemaDesignView.SCHEMA_DESIGN_VIEW_FULL;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return SchemaDesignView.UNRECOGNIZED;
+  }
+}
+
+export function schemaDesignViewToJSON(object: SchemaDesignView): string {
+  switch (object) {
+    case SchemaDesignView.SCHEMA_DESIGN_VIEW_UNSPECIFIED:
+      return "SCHEMA_DESIGN_VIEW_UNSPECIFIED";
+    case SchemaDesignView.SCHEMA_DESIGN_VIEW_BASIC:
+      return "SCHEMA_DESIGN_VIEW_BASIC";
+    case SchemaDesignView.SCHEMA_DESIGN_VIEW_FULL:
+      return "SCHEMA_DESIGN_VIEW_FULL";
+    case SchemaDesignView.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export interface SchemaDesign {
   /**
    * The name of the schema design.
@@ -149,6 +194,7 @@ export interface ListSchemaDesignsRequest {
    * the call that provided the page token.
    */
   pageToken: string;
+  view: SchemaDesignView;
 }
 
 export interface ListSchemaDesignsResponse {
@@ -647,7 +693,7 @@ export const GetSchemaDesignRequest = {
 };
 
 function createBaseListSchemaDesignsRequest(): ListSchemaDesignsRequest {
-  return { parent: "", filter: "", pageSize: 0, pageToken: "" };
+  return { parent: "", filter: "", pageSize: 0, pageToken: "", view: 0 };
 }
 
 export const ListSchemaDesignsRequest = {
@@ -663,6 +709,9 @@ export const ListSchemaDesignsRequest = {
     }
     if (message.pageToken !== "") {
       writer.uint32(34).string(message.pageToken);
+    }
+    if (message.view !== 0) {
+      writer.uint32(40).int32(message.view);
     }
     return writer;
   },
@@ -702,6 +751,13 @@ export const ListSchemaDesignsRequest = {
 
           message.pageToken = reader.string();
           continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.view = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -717,6 +773,7 @@ export const ListSchemaDesignsRequest = {
       filter: isSet(object.filter) ? String(object.filter) : "",
       pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
+      view: isSet(object.view) ? schemaDesignViewFromJSON(object.view) : 0,
     };
   },
 
@@ -726,6 +783,7 @@ export const ListSchemaDesignsRequest = {
     message.filter !== undefined && (obj.filter = message.filter);
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    message.view !== undefined && (obj.view = schemaDesignViewToJSON(message.view));
     return obj;
   },
 
@@ -739,6 +797,7 @@ export const ListSchemaDesignsRequest = {
     message.filter = object.filter ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
+    message.view = object.view ?? 0;
     return message;
   },
 };
