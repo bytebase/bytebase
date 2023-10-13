@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"gopkg.in/yaml.v3"
 
@@ -21,7 +22,7 @@ type testData struct {
 	Statement string
 	// Use custom yaml tag to avoid generate field name `ignorecasesensitive`.
 	IgnoreCaseSensitive bool `yaml:"ignore_case_sensitive"`
-	Want                *storepb.DatabaseSchemaMetadata
+	Want                string
 	Err                 *WalkThroughError
 }
 
@@ -158,9 +159,9 @@ func runWalkThroughTest(t *testing.T, file string, engineType storepb.Engine, or
 		require.NoError(t, err, test.Statement)
 
 		if record {
-			tests[i].Want = state.convertToDatabaseMetadata()
+			tests[i].Want = protojson.Format(state.convertToDatabaseMetadata())
 		} else {
-			require.Equal(t, test.Want, state.convertToDatabaseMetadata(), test.Statement)
+			require.Equal(t, test.Want, protojson.Format(state.convertToDatabaseMetadata()), test.Statement)
 		}
 	}
 

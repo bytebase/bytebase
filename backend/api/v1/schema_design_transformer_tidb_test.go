@@ -6,7 +6,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
 	"gopkg.in/yaml.v3"
+
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func TestTiDBTransformSchemaString(t *testing.T) {
@@ -31,9 +34,9 @@ func TestTiDBTransformSchemaString(t *testing.T) {
 		result, err := transformSchemaStringToDatabaseMetadata(t.Engine, t.Schema)
 		a.NoError(err)
 		if record {
-			tests[i].Metadata = result
+			tests[i].Metadata = protojson.Format(result)
 		} else {
-			a.Equal(t.Metadata, result)
+			a.Equal(t.Metadata, protojson.Format(result))
 		}
 	}
 
@@ -64,7 +67,9 @@ func TestTiDBGetDesignSchema(t *testing.T) {
 	a.NoError(yaml.Unmarshal(byteValue, &tests))
 
 	for i, t := range tests {
-		result, err := getDesignSchema(t.Engine, t.Baseline, t.Target)
+		targetMeta := &v1pb.DatabaseMetadata{}
+		a.NoError(protojson.Unmarshal([]byte(t.Target), targetMeta))
+		result, err := getDesignSchema(t.Engine, t.Baseline, targetMeta)
 		a.NoError(err)
 		if record {
 			tests[i].Result = result
@@ -100,7 +105,9 @@ func TestTiDBCheckDatabaseMetadata(t *testing.T) {
 	a.NoError(yaml.Unmarshal(byteValue, &tests))
 
 	for i, t := range tests {
-		err := checkDatabaseMetadata(t.Engine, t.Metadata)
+		meta := &v1pb.DatabaseMetadata{}
+		a.NoError(protojson.Unmarshal([]byte(t.Metadata), meta))
+		err := checkDatabaseMetadata(t.Engine, meta)
 		if record {
 			if err != nil {
 				tests[i].Err = err.Error()
