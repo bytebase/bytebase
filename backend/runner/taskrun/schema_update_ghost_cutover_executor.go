@@ -53,7 +53,7 @@ type SchemaUpdateGhostCutoverExecutor struct {
 
 // RunOnce will run SchemaUpdateGhostCutover task once.
 // TODO: support cancellation.
-func (e *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage) (bool, *api.TaskRunResultPayload, error) {
+func (e *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage, _ int) (bool, *api.TaskRunResultPayload, error) {
 	if len(task.BlockedBy) != 1 {
 		return true, nil, errors.Errorf("failed to find task dag for ToTask %v", task.ID)
 	}

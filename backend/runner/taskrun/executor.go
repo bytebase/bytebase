@@ -42,11 +42,11 @@ type Executor interface {
 	// 2. If err is non-nil, then the detail field will be ignored since info is provided in the err.
 	// driverCtx is used by the database driver so that we can cancel the query
 	// while have the ability to cleanup migration history etc.
-	RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage) (terminated bool, result *api.TaskRunResultPayload, err error)
+	RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (terminated bool, result *api.TaskRunResultPayload, err error)
 }
 
 // RunExecutorOnce wraps a TaskExecutor.RunOnce call with panic recovery.
-func RunExecutorOnce(ctx context.Context, driverCtx context.Context, exec Executor, task *store.TaskMessage) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func RunExecutorOnce(ctx context.Context, driverCtx context.Context, exec Executor, task *store.TaskMessage, taskRunUID int) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			panicErr, ok := r.(error)
@@ -60,7 +60,7 @@ func RunExecutorOnce(ctx context.Context, driverCtx context.Context, exec Execut
 		}
 	}()
 
-	return exec.RunOnce(ctx, driverCtx, task)
+	return exec.RunOnce(ctx, driverCtx, task, taskRunUID)
 }
 
 func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.Profile, task *store.TaskMessage, migrationType db.MigrationType, statement string, schemaVersion model.Version) (*db.MigrationInfo, error) {

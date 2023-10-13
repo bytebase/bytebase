@@ -362,7 +362,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 	driverCtx, cancel := context.WithCancel(ctx)
 	s.stateCfg.RunningTaskRunsCancelFunc.Store(taskRun.ID, cancel)
 
-	done, result, err := RunExecutorOnce(ctx, driverCtx, executor, task)
+	done, result, err := RunExecutorOnce(ctx, driverCtx, executor, task, taskRun.ID)
 
 	if !done && err != nil {
 		slog.Debug("Encountered transient error running task, will retry",

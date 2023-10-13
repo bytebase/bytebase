@@ -51,7 +51,7 @@ type PITRCutoverExecutor struct {
 
 // RunOnce will run the PITR cutover task executor once.
 // TODO: support cancellation.
-func (exec *PITRCutoverExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *PITRCutoverExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage, _ int) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	slog.Info("Run PITR cutover task", slog.String("task", task.Name))
 	issue, err := exec.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 	if err != nil {

@@ -38,7 +38,7 @@ type SchemaUpdateGhostSyncExecutor struct {
 
 // RunOnce will run SchemaUpdateGhostSync task once.
 // TODO: support cancellation.
-func (exec *SchemaUpdateGhostSyncExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *SchemaUpdateGhostSyncExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage, _ int) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	payload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema update gh-ost sync payload")

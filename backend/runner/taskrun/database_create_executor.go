@@ -48,7 +48,7 @@ var cannotCreateDatabase = map[storepb.Engine]bool{
 }
 
 // RunOnce will run the database create task executor once.
-func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	payload := &api.TaskDatabaseCreatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid create database payload")

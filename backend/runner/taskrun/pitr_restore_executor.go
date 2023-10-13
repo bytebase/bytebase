@@ -55,7 +55,7 @@ type PITRRestoreExecutor struct {
 
 // RunOnce will run the PITR restore task executor once.
 // TODO: support cancellation.
-func (exec *PITRRestoreExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *PITRRestoreExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage, _ int) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	slog.Info("Run PITR restore task", slog.String("task", task.Name))
 	payload := api.TaskDatabasePITRRestorePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {

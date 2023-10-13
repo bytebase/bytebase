@@ -45,7 +45,7 @@ type SchemaBaselineExecutor struct {
 }
 
 // RunOnce will run the schema update (DDL) task executor once.
-func (exec *SchemaBaselineExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage) (bool, *api.TaskRunResultPayload, error) {
+func (exec *SchemaBaselineExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, _ int) (bool, *api.TaskRunResultPayload, error) {
 	payload := &api.TaskDatabaseSchemaBaselinePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema baseline payload")
