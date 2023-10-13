@@ -53,7 +53,7 @@ func (s *SchemaDesignService) GetSchemaDesign(ctx context.Context, request *v1pb
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	schemaDesign, err := s.convertSheetToSchemaDesign(ctx, sheet)
+	schemaDesign, err := s.convertSheetToSchemaDesign(ctx, sheet, v1pb.SchemaDesignView_SCHEMA_DESIGN_VIEW_FULL)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +90,7 @@ func (s *SchemaDesignService) ListSchemaDesigns(ctx context.Context, request *v1
 
 	schemaDesigns := make([]*v1pb.SchemaDesign, 0)
 	for _, sheet := range sheets {
-		schemaDesign, err := s.convertSheetToSchemaDesign(ctx, sheet)
+		schemaDesign, err := s.convertSheetToSchemaDesign(ctx, sheet, request.View)
 		if err != nil {
 			return nil, err
 		}
@@ -221,7 +221,7 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to create sheet: %v", err))
 	}
-	schemaDesign, err = s.convertSheetToSchemaDesign(ctx, sheet)
+	schemaDesign, err = s.convertSheetToSchemaDesign(ctx, sheet, v1pb.SchemaDesignView_SCHEMA_DESIGN_VIEW_FULL)
 	if err != nil {
 		return nil, err
 	}
@@ -343,7 +343,7 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to update sheet: %v", err))
 	}
-	schemaDesign, err = s.convertSheetToSchemaDesign(ctx, sheet)
+	schemaDesign, err = s.convertSheetToSchemaDesign(ctx, sheet, v1pb.SchemaDesignView_SCHEMA_DESIGN_VIEW_FULL)
 	if err != nil {
 		return nil, err
 	}
@@ -368,7 +368,7 @@ func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
 	}
-	schemaDesign, err := s.convertSheetToSchemaDesign(ctx, sheet)
+	schemaDesign, err := s.convertSheetToSchemaDesign(ctx, sheet, v1pb.SchemaDesignView_SCHEMA_DESIGN_VIEW_FULL)
 	if err != nil {
 		return nil, err
 	}
@@ -391,7 +391,7 @@ func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get target sheet: %v", err))
 	}
-	targetSchemaDesign, err := s.convertSheetToSchemaDesign(ctx, targetSheet)
+	targetSchemaDesign, err := s.convertSheetToSchemaDesign(ctx, targetSheet, v1pb.SchemaDesignView_SCHEMA_DESIGN_VIEW_FULL)
 	if err != nil {
 		return nil, err
 	}
@@ -433,7 +433,7 @@ func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to update main branch schema design: %v", err))
 	}
-	targetSchemaDesign, err = s.convertSheetToSchemaDesign(ctx, targetSheet)
+	targetSchemaDesign, err = s.convertSheetToSchemaDesign(ctx, targetSheet, v1pb.SchemaDesignView_SCHEMA_DESIGN_VIEW_FULL)
 	if err != nil {
 		return nil, err
 	}
@@ -471,7 +471,7 @@ func (s *SchemaDesignService) DeleteSchemaDesign(ctx context.Context, request *v
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
 	}
-	schemaDesign, err := s.convertSheetToSchemaDesign(ctx, sheet)
+	schemaDesign, err := s.convertSheetToSchemaDesign(ctx, sheet, v1pb.SchemaDesignView_SCHEMA_DESIGN_VIEW_FULL)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to convert sheet to schema design: %v", err))
 	}
@@ -572,7 +572,7 @@ func (s *SchemaDesignService) getSheet(ctx context.Context, find *store.FindShee
 	return sheet, nil
 }
 
-func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sheet *store.SheetMessage) (*v1pb.SchemaDesign, error) {
+func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sheet *store.SheetMessage, view v1pb.SchemaDesignView) (*v1pb.SchemaDesign, error) {
 	if sheet.Payload.Type != storepb.SheetPayload_SCHEMA_DESIGN || sheet.Payload.SchemaDesign == nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("unwanted sheet type: %v", sheet.Payload.Type))
 	}
@@ -614,6 +614,30 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 	}
 
 	engine := v1pb.Engine(sheet.Payload.SchemaDesign.Engine)
+	schemaDesignType := v1pb.SchemaDesign_Type(sheet.Payload.SchemaDesign.Type)
+	name := fmt.Sprintf("%s%s/%s%v", common.ProjectNamePrefix, project.ResourceID, common.SchemaDesignPrefix, sheet.UID)
+
+	if view == v1pb.SchemaDesignView_SCHEMA_DESIGN_VIEW_BASIC || view == v1pb.SchemaDesignView_SCHEMA_DESIGN_VIEW_UNSPECIFIED {
+		return &v1pb.SchemaDesign{
+			Name:                   name,
+			Title:                  sheet.Name,
+			Schema:                 "",
+			SchemaMetadata:         nil,
+			BaselineSchema:         "",
+			BaselineSchemaMetadata: nil,
+			BaselineSheetName:      "",
+			Engine:                 engine,
+			BaselineDatabase:       fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
+			Type:                   schemaDesignType,
+			Etag:                   "",
+			Protection:             convertProtectionFromStore(sheet.Payload.SchemaDesign.Protection),
+			Creator:                common.FormatUserEmail(creator.Email),
+			Updater:                common.FormatUserEmail(updater.Email),
+			CreateTime:             timestamppb.New(sheet.CreatedTime),
+			UpdateTime:             timestamppb.New(sheet.UpdatedTime),
+		}, nil
+	}
+
 	schema := sheet.Statement
 	schemaMetadata, err := transformSchemaStringToDatabaseMetadata(engine, schema)
 	if err != nil {
@@ -621,7 +645,6 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 	}
 
 	baselineSchema, baselineSheetName := "", ""
-	schemaDesignType := v1pb.SchemaDesign_Type(sheet.Payload.SchemaDesign.Type)
 	// For backward compatibility, we default to MAIN_BRANCH if the type is not specified.
 	if schemaDesignType == v1pb.SchemaDesign_TYPE_UNSPECIFIED {
 		schemaDesignType = v1pb.SchemaDesign_MAIN_BRANCH
@@ -659,7 +682,6 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
 	}
 
-	name := fmt.Sprintf("%s%s/%s%v", common.ProjectNamePrefix, project.ResourceID, common.SchemaDesignPrefix, sheet.UID)
 	schemaDesign := &v1pb.SchemaDesign{
 		Name:                   name,
 		Title:                  sheet.Name,
@@ -673,8 +695,8 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 		Type:                   schemaDesignType,
 		Etag:                   generateEtag([]byte(schema)),
 		Protection:             convertProtectionFromStore(sheet.Payload.SchemaDesign.Protection),
-		Creator:                fmt.Sprintf("users/%s", creator.Email),
-		Updater:                fmt.Sprintf("users/%s", updater.Email),
+		Creator:                common.FormatUserEmail(creator.Email),
+		Updater:                common.FormatUserEmail(updater.Email),
 		CreateTime:             timestamppb.New(sheet.CreatedTime),
 		UpdateTime:             timestamppb.New(sheet.UpdatedTime),
 	}
