@@ -695,5 +695,11 @@ message TaskRun {
   string change_history = 10;
   string schema_version = 11;
 
-  string progress = 12;
+  enum ExecutionStatus {
+    EXECUTION_STATUS_UNSPECIFIED = 0;
+    PRE_EXECUTING = 1;
+    EXECUTING = 2;
+    POST_EXECUTING = 3;
+  }
+  ExecutionStatus execution_status = 12;
 }
