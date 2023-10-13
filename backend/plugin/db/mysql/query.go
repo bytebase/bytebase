@@ -60,7 +60,7 @@ func getStatementWithResultLimitForTiDB(singleStatement string, limitCount int) 
 	return "", nil
 }
 
-// singleStatemtn must be a selectStatement for mysql.
+// singleStatement must be a selectStatement for mysql.
 func getStatementWithResultLimitForMySQL(singleStatement string, limitCount int) (string, error) {
 	list, err := mysqlparser.ParseMySQL(singleStatement)
 	if err != nil {
