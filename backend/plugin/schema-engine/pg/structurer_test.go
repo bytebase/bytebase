@@ -1,12 +1,10 @@
 package pg
 
 import (
-	"encoding/json"
 	"io"
 	"os"
 	"testing"
 
-	yamlhelper "github.com/ghodss/yaml"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
 	"gopkg.in/yaml.v3"
@@ -18,7 +16,7 @@ import (
 
 type parseToMetadataTest struct {
 	Schema   string
-	Metadata *v1pb.DatabaseMetadata
+	Metadata string
 }
 
 func TestParseToMetadata(t *testing.T) {
@@ -35,50 +33,21 @@ func TestParseToMetadata(t *testing.T) {
 
 	tests := []parseToMetadataTest{}
 	byteValue, err := io.ReadAll(yamlFile)
+	a.NoError(err)
 	a.NoError(yamlFile.Close())
-	a.NoError(err)
-	jsonBytes, err := yamlhelper.YAMLToJSON(byteValue)
-	a.NoError(err)
-
-	type tempItem struct {
-		Schema   string
-		Metadata any
-	}
-
-	var temp []tempItem
-	a.NoError(json.Unmarshal(jsonBytes, &temp))
-	for _, item := range temp {
-		test := parseToMetadataTest{
-			Schema:   item.Schema,
-			Metadata: &v1pb.DatabaseMetadata{},
-		}
-		bytes, err := json.Marshal(item.Metadata)
-		a.NoError(err)
-		a.NoError(protojson.Unmarshal(bytes, test.Metadata))
-		tests = append(tests, test)
-	}
-
-	// a.NoError(protojson.Unmarshal(jsonBytes, tests))
-	// a.NoError(yaml.Unmarshal(byteValue, &tests))
+	a.NoError(yaml.Unmarshal(byteValue, &tests))
 
 	for i, t := range tests {
 		result, err := ParseToMetadata(t.Schema)
 		a.NoError(err)
 		if record {
-			tests[i].Metadata = result
+			tests[i].Metadata = protojson.Format(result)
 		} else {
-			a.Equal(t.Metadata, result)
+			a.Equal(t.Metadata, protojson.Format(result))
 		}
 	}
 
 	if record {
-		// var out []tempItem
-		// for _, t := range tests {
-		// 	jsonBytes, err := protojson.Marshal(t.Metadata)
-		// 	a.NoError(err)
-		// 	out = append(out, tempItem{)
-		// }
-
 		byteValue, err := yaml.Marshal(tests)
 		a.NoError(err)
 		err = os.WriteFile(filepath, byteValue, 0644)
