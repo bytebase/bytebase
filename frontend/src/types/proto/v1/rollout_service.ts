@@ -1035,6 +1035,7 @@ export interface TaskRun {
    */
   changeHistory: string;
   schemaVersion: string;
+  progress: string;
 }
 
 export enum TaskRun_Status {
@@ -5058,6 +5059,7 @@ function createBaseTaskRun(): TaskRun {
     detail: "",
     changeHistory: "",
     schemaVersion: "",
+    progress: "",
   };
 }
 
@@ -5095,6 +5097,9 @@ export const TaskRun = {
     }
     if (message.schemaVersion !== "") {
       writer.uint32(90).string(message.schemaVersion);
+    }
+    if (message.progress !== "") {
+      writer.uint32(98).string(message.progress);
     }
     return writer;
   },
@@ -5183,6 +5188,13 @@ export const TaskRun = {
 
           message.schemaVersion = reader.string();
           continue;
+        case 12:
+          if (tag !== 98) {
+            break;
+          }
+
+          message.progress = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5205,6 +5217,7 @@ export const TaskRun = {
       detail: isSet(object.detail) ? String(object.detail) : "",
       changeHistory: isSet(object.changeHistory) ? String(object.changeHistory) : "",
       schemaVersion: isSet(object.schemaVersion) ? String(object.schemaVersion) : "",
+      progress: isSet(object.progress) ? String(object.progress) : "",
     };
   },
 
@@ -5221,6 +5234,7 @@ export const TaskRun = {
     message.detail !== undefined && (obj.detail = message.detail);
     message.changeHistory !== undefined && (obj.changeHistory = message.changeHistory);
     message.schemaVersion !== undefined && (obj.schemaVersion = message.schemaVersion);
+    message.progress !== undefined && (obj.progress = message.progress);
     return obj;
   },
 
@@ -5241,6 +5255,7 @@ export const TaskRun = {
     message.detail = object.detail ?? "";
     message.changeHistory = object.changeHistory ?? "";
     message.schemaVersion = object.schemaVersion ?? "";
+    message.progress = object.progress ?? "";
     return message;
   },
 };

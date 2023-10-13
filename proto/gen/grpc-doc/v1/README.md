@@ -8018,6 +8018,7 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | detail | [string](#string) |  | Below are the results of a task run. |
 | change_history | [string](#string) |  | The resource name of the change history Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
 | schema_version | [string](#string) |  |  |
+| progress | [string](#string) |  |  |
 
 
 
