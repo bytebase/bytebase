@@ -20,6 +20,7 @@ import {
   useEnvironmentV1Store,
   useUserStore,
 } from "@/store";
+import { useSQLEditorTreeStore } from "@/store/modules/sqlEditorTree";
 import { usePolicyV1Store } from "@/store/modules/v1/policy";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import {
@@ -60,6 +61,7 @@ const databaseStore = useDatabaseV1Store();
 const policyV1Store = usePolicyV1Store();
 const sqlEditorStore = useSQLEditorStore();
 const connectionTreeStore = useConnectionTreeStore();
+const treeStore = useSQLEditorTreeStore();
 const tabStore = useTabStore();
 const sheetV1Store = useSheetV1Store();
 
@@ -72,6 +74,11 @@ const prepareAccessControlPolicy = async () => {
   await policyV1Store.fetchPolicies({
     resourceType: PolicyResourceType.ENVIRONMENT,
     policyType: PolicyType.DISABLE_COPY_DATA,
+  });
+
+  treeStore.accessControlPolicyList = await policyV1Store.fetchPolicies({
+    policyType: PolicyType.WORKSPACE_IAM,
+    resourceType: PolicyResourceType.WORKSPACE,
   });
 };
 
@@ -94,11 +101,17 @@ const prepareAccessibleDatabaseList = async () => {
       isDatabaseV1Queryable(db, currentUserV1.value)
   );
   connectionTreeStore.tree.databaseList = databaseList;
+
+  treeStore.databaseList = databaseList;
 };
 
 const connectionTreeCache: Record<"instance" | "project", ConnectionAtom[]> = {
   project: [],
   instance: [],
+};
+
+const initializeTree = async () => {
+  treeStore.buildTree();
 };
 
 const initializeConnectionTree = async () => {
@@ -416,6 +429,7 @@ onMounted(async () => {
   await useUserStore().fetchUserList();
 
   if (connectionTreeStore.tree.state === ConnectionTreeState.UNSET) {
+    treeStore.state = "LOADING";
     connectionTreeStore.tree.state = ConnectionTreeState.LOADING;
     // Initialize project list state for iam policy.
     await useProjectV1Store().fetchProjectList(true /* include archived */);
@@ -428,6 +442,9 @@ onMounted(async () => {
     await prepareAccessibleDatabaseList();
     await initializeConnectionTree();
     connectionTreeStore.tree.state = ConnectionTreeState.LOADED;
+
+    await initializeTree();
+    treeStore.state = "READY";
   }
 
   watch(() => connectionTreeStore.tree.mode, switchConnectionTree, {
