@@ -1035,6 +1035,7 @@ export interface TaskRun {
    */
   changeHistory: string;
   schemaVersion: string;
+  executionStatus: TaskRun_ExecutionStatus;
 }
 
 export enum TaskRun_Status {
@@ -1089,6 +1090,51 @@ export function taskRun_StatusToJSON(object: TaskRun_Status): string {
     case TaskRun_Status.CANCELED:
       return "CANCELED";
     case TaskRun_Status.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export enum TaskRun_ExecutionStatus {
+  EXECUTION_STATUS_UNSPECIFIED = 0,
+  PRE_EXECUTING = 1,
+  EXECUTING = 2,
+  POST_EXECUTING = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function taskRun_ExecutionStatusFromJSON(object: any): TaskRun_ExecutionStatus {
+  switch (object) {
+    case 0:
+    case "EXECUTION_STATUS_UNSPECIFIED":
+      return TaskRun_ExecutionStatus.EXECUTION_STATUS_UNSPECIFIED;
+    case 1:
+    case "PRE_EXECUTING":
+      return TaskRun_ExecutionStatus.PRE_EXECUTING;
+    case 2:
+    case "EXECUTING":
+      return TaskRun_ExecutionStatus.EXECUTING;
+    case 3:
+    case "POST_EXECUTING":
+      return TaskRun_ExecutionStatus.POST_EXECUTING;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return TaskRun_ExecutionStatus.UNRECOGNIZED;
+  }
+}
+
+export function taskRun_ExecutionStatusToJSON(object: TaskRun_ExecutionStatus): string {
+  switch (object) {
+    case TaskRun_ExecutionStatus.EXECUTION_STATUS_UNSPECIFIED:
+      return "EXECUTION_STATUS_UNSPECIFIED";
+    case TaskRun_ExecutionStatus.PRE_EXECUTING:
+      return "PRE_EXECUTING";
+    case TaskRun_ExecutionStatus.EXECUTING:
+      return "EXECUTING";
+    case TaskRun_ExecutionStatus.POST_EXECUTING:
+      return "POST_EXECUTING";
+    case TaskRun_ExecutionStatus.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
@@ -5058,6 +5104,7 @@ function createBaseTaskRun(): TaskRun {
     detail: "",
     changeHistory: "",
     schemaVersion: "",
+    executionStatus: 0,
   };
 }
 
@@ -5095,6 +5142,9 @@ export const TaskRun = {
     }
     if (message.schemaVersion !== "") {
       writer.uint32(90).string(message.schemaVersion);
+    }
+    if (message.executionStatus !== 0) {
+      writer.uint32(96).int32(message.executionStatus);
     }
     return writer;
   },
@@ -5183,6 +5233,13 @@ export const TaskRun = {
 
           message.schemaVersion = reader.string();
           continue;
+        case 12:
+          if (tag !== 96) {
+            break;
+          }
+
+          message.executionStatus = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5205,6 +5262,7 @@ export const TaskRun = {
       detail: isSet(object.detail) ? String(object.detail) : "",
       changeHistory: isSet(object.changeHistory) ? String(object.changeHistory) : "",
       schemaVersion: isSet(object.schemaVersion) ? String(object.schemaVersion) : "",
+      executionStatus: isSet(object.executionStatus) ? taskRun_ExecutionStatusFromJSON(object.executionStatus) : 0,
     };
   },
 
@@ -5221,6 +5279,8 @@ export const TaskRun = {
     message.detail !== undefined && (obj.detail = message.detail);
     message.changeHistory !== undefined && (obj.changeHistory = message.changeHistory);
     message.schemaVersion !== undefined && (obj.schemaVersion = message.schemaVersion);
+    message.executionStatus !== undefined &&
+      (obj.executionStatus = taskRun_ExecutionStatusToJSON(message.executionStatus));
     return obj;
   },
 
@@ -5241,6 +5301,7 @@ export const TaskRun = {
     message.detail = object.detail ?? "";
     message.changeHistory = object.changeHistory ?? "";
     message.schemaVersion = object.schemaVersion ?? "";
+    message.executionStatus = object.executionStatus ?? 0;
     return message;
   },
 };
