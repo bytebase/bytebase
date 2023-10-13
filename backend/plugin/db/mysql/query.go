@@ -22,6 +22,7 @@ func (driver *Driver) getStatementWithResultLimit(stmt string, limit int) (strin
 	case storepb.Engine_TIDB:
 		return getStatementWithResultLimitForTiDB(stmt, limit)
 	default:
+		// MySQL 5.7 doesn't support WITH clause.
 		return getStatementWithResultLimitForMySQL(stmt, limit)
 	}
 }
@@ -95,11 +96,19 @@ func (r *mysqlRewriter) EnterQueryExpression(ctx *mysql.QueryExpressionContext) 
 		return
 	}
 	r.outerMostQuery = false
-	limitClause := ctx.LimitClause()
-	if limitClause != nil {
+	if ctx.LimitClause() != nil {
 		// limit clause already exists.
 		return
 	}
 
-	r.rewriter.InsertAfterDefault(ctx.GetStop().GetTokenIndex(), fmt.Sprintf(" LIMIT %d", r.limitCount))
+	if ctx.OrderClause() != nil {
+		r.rewriter.InsertAfterDefault(ctx.OrderClause().GetStop().GetTokenIndex(), fmt.Sprintf(" LIMIT %d", r.limitCount))
+	} else {
+		switch {
+		case ctx.QueryExpressionBody() != nil:
+			r.rewriter.InsertAfterDefault(ctx.QueryExpressionBody().GetStop().GetTokenIndex(), fmt.Sprintf(" LIMIT %d", r.limitCount))
+		case ctx.QueryExpressionParens() != nil:
+			r.rewriter.InsertAfterDefault(ctx.QueryExpressionParens().GetStop().GetTokenIndex(), fmt.Sprintf(" LIMIT %d", r.limitCount))
+		}
+	}
 }

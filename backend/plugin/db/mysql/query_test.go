@@ -91,6 +91,16 @@ func TestGetStatementWithResultLimitOfMySQL(t *testing.T) {
 		// 	count: 20,
 		// 	want:  "SELECT firstName FROM employees EXCEPT SELECT contactFirstName FROM customers LIMIT 10;",
 		// },
+		{
+			stmt:  "SELECT col1, col2 FROM table1 PROCEDURE ANALYSE(10, 2000);",
+			count: 10,
+			want:  "SELECT col1, col2 FROM table1 LIMIT 10 PROCEDURE ANALYSE(10, 2000);",
+		},
+		{
+			stmt:  "SELECT col1, col2 FROM table1 ORDER BY col1;",
+			count: 10,
+			want:  "SELECT col1, col2 FROM table1 ORDER BY col1 LIMIT 10;",
+		},
 	}
 
 	for _, tc := range testCases {
