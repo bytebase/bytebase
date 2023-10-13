@@ -13,7 +13,7 @@
       <button
         v-if="!readonly"
         class="text-gray-400 hover:text-gray-500 disabled:cursor-not-allowed"
-        @click="handleCreateTable"
+        @click="handleCreateSchemaOrTable"
       >
         <heroicons-outline:plus class="w-4 h-auto" />
       </button>
@@ -22,20 +22,20 @@
       class="schema-designer-database-tree pb-2 overflow-y-auto h-full text-sm"
     >
       <NTree
-        ref="treeRef"
         :key="treeKeyRef"
+        ref="treeRef"
+        block-line
         virtual-scroll
         style="height: 100%"
-        :block-line="true"
         :data="treeData"
         :pattern="searchPattern"
-        :show-irrelevant-nodes="false"
         :render-prefix="renderPrefix"
         :render-label="renderLabel"
         :render-suffix="renderSuffix"
         :node-props="nodeProps"
         :expanded-keys="expandedKeysRef"
         :selected-keys="selectedKeysRef"
+        :on-update:expanded-keys="handleExpandedKeysChange"
         :theme-overrides="{ nodeHeight: '28px' }"
       />
       <NDropdown
@@ -224,16 +224,24 @@ const contextMenuOptions = computed(() => {
         return [];
       }
 
-      options.push({
-        key: "create-table",
-        label: t("schema-editor.actions.create-table"),
-        disabled: readonly.value,
-      });
-      options.push({
-        key: "drop-schema",
-        label: t("schema-editor.actions.drop-schema"),
-        disabled: readonly.value,
-      });
+      const isDropped = schema.status === "dropped";
+      if (isDropped) {
+        options.push({
+          key: "restore",
+          label: t("schema-editor.actions.restore"),
+        });
+      } else {
+        options.push({
+          key: "create-table",
+          label: t("schema-editor.actions.create-table"),
+          disabled: readonly.value,
+        });
+        options.push({
+          key: "drop",
+          label: t("schema-editor.actions.drop-schema"),
+          disabled: readonly.value,
+        });
+      }
     }
     return options;
   } else if (treeNode.type === "table") {
@@ -525,12 +533,18 @@ const handleShowDropdown = (e: MouseEvent, treeNode: TreeNode) => {
   selectedKeysRef.value = [treeNode.key];
 };
 
-const handleCreateTable = () => {
-  const schema = schemaList.value[0];
-  if (schema) {
-    state.tableNameModalContext = {
+const handleCreateSchemaOrTable = () => {
+  if (engine.value === Engine.MYSQL || engine.value === Engine.TIDB) {
+    const schema = schemaList.value[0];
+    if (schema) {
+      state.tableNameModalContext = {
+        parentName: branchSchema.value.branch.name,
+        schemaId: schema.id,
+      };
+    }
+  } else if (engine.value === Engine.POSTGRES) {
+    state.schemaNameModalContext = {
       parentName: branchSchema.value.branch.name,
-      schemaId: schema.id,
     };
   }
 };
@@ -591,6 +605,20 @@ const handleContextMenuDropdownSelect = async (key: string) => {
         parentName: branchSchema.value.branch.name,
         schemaId: treeNode.schemaId,
       };
+    } else if (key === "drop") {
+      schemaEditorV1Store.dropSchema(
+        branchSchema.value.branch.name,
+        treeNode.schemaId
+      );
+    } else if (key === "restore") {
+      const schema = schemaEditorV1Store.getSchema(
+        branchSchema.value.branch.name,
+        treeNode.schemaId
+      );
+      if (!schema) {
+        return;
+      }
+      schema.status = "normal";
     }
   } else if (treeNode.type === "table") {
     if (key === "rename") {
@@ -628,6 +656,10 @@ const handleDropdownClickoutside = (e: MouseEvent) => {
     selectedKeysRef.value = [];
     contextMenu.showDropdown = false;
   }
+};
+
+const handleExpandedKeysChange = (expandedKeys: string[]) => {
+  expandedKeysRef.value = expandedKeys;
 };
 </script>
 
