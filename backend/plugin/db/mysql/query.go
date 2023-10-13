@@ -22,7 +22,6 @@ func (driver *Driver) getStatementWithResultLimit(stmt string, limit int) (strin
 	case storepb.Engine_TIDB:
 		return getStatementWithResultLimitForTiDB(stmt, limit)
 	default:
-		// MySQL 5.7 doesn't support WITH clause.
 		return getStatementWithResultLimitForMySQL(stmt, limit)
 	}
 }
