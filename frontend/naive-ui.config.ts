@@ -5,10 +5,8 @@ import {
   NLocale,
   NDateLocale,
 } from "naive-ui";
-
-import { curLocale } from "./src/plugins/i18n";
-
 import { computed } from "vue";
+import { curLocale } from "./src/plugins/i18n";
 
 const callVar = (css: string) => {
   return getComputedStyle(document.documentElement).getPropertyValue(css);
