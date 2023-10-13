@@ -23,6 +23,16 @@ func TestGetStatementWithResultLimitOfTiDB(t *testing.T) {
 			want:  "WITH `a` AS (SELECT * FROM `t`) SELECT * FROM `a` LIMIT 10",
 		},
 		{
+			stmt:  "SELECT * FROM t1 UNION SELECT * FROM t2;",
+			count: 10,
+			want:  "SELECT * FROM `t1` UNION SELECT * FROM `t2` LIMIT 10",
+		},
+		{
+			stmt:  "SELECT * FROM t1 INTERSECT SELECT * FROM t2;",
+			count: 10,
+			want:  "SELECT * FROM `t1` INTERSECT SELECT * FROM `t2` LIMIT 10",
+		},
+		{
 			stmt: "SELECT * FROM t LIMIT 5;",
 			// If the statement already has limit clause, we will return the original statement.
 			count: 10,

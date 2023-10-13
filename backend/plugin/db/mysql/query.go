@@ -53,6 +53,26 @@ func getStatementWithResultLimitForTiDB(singleStatement string, limitCount int) 
 				return "", err
 			}
 			return buffer.String(), nil
+		case *tidbast.SetOprStmt:
+			limit := &tidbast.Limit{
+				Count: tidbast.NewValueExpr(int64(limitCount), "", ""),
+			}
+			if stmt.Limit != nil {
+				limit = stmt.Limit
+				if stmt.Limit.Count != nil {
+					// If the statement already has limit clause, we will return the original statement.
+					return singleStatement, nil
+				}
+				stmt.Limit.Count = tidbast.NewValueExpr(int64(limitCount), "", "")
+			}
+			stmt.Limit = limit
+			var buffer strings.Builder
+			ctx := format.NewRestoreCtx(format.DefaultRestoreFlags, &buffer)
+			if err := stmt.Restore(ctx); err != nil {
+				return "", err
+			}
+			return buffer.String(), nil
+
 		default:
 			continue
 		}
