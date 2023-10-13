@@ -69,6 +69,7 @@ func ParseToMetadata(schema string) (*v1pb.DatabaseMetadata, error) {
 						columnState.nullable = false
 					case ast.ConstraintTypeDefault:
 						defaultText := constraint.Expression.Text()
+						columnState.hasDefault = true
 						columnState.defaultValue = &defaultValueExpression{value: defaultText}
 					}
 				}
@@ -134,6 +135,7 @@ func ParseToMetadata(schema string) (*v1pb.DatabaseMetadata, error) {
 					}
 					defaultText := item.Expression.Text()
 					column.defaultValue = &defaultValueExpression{value: defaultText}
+					column.hasDefault = true
 				case *ast.AddConstraintStmt:
 					switch item.Constraint.Type {
 					case ast.ConstraintTypePrimary:
@@ -1398,7 +1400,7 @@ func (g *designSchemaGenerator) EnterColumnDef(ctx *postgres.ColumnDefContext) {
 		needOneSpace = true
 	}
 
-	if column.defaultValue != nil && !defaultExists(ctx.Colquallist()) {
+	if column.hasDefault && !defaultExists(ctx.Colquallist()) {
 		if needOneSpace {
 			if _, err := g.columnDefine.WriteString(" "); err != nil {
 				g.err = err
@@ -1464,7 +1466,7 @@ func (g *designSchemaGenerator) EnterColumnDef(ctx *postgres.ColumnDefContext) {
 					g.err = err
 					return
 				}
-			} else if column.defaultValue != nil {
+			} else if column.hasDefault {
 				if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(
 					antlr.Interval{
 						Start: startPos,
