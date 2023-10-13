@@ -20,234 +20,149 @@
       `id` int(11) NOT NULL COMMENT 'ID',
       PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
-  target:
-    name: ""
-    schemas:
-        - name: ""
-          tables:
-            - name: users
-              columns:
-                - name: id
-                  position: 0
-                  default: null
-                  nullable: false
-                  type: int
-                  characterset: ""
-                  collation: ""
-                  comment: ID
-                  classification: ""
-                  usercomment: ""
-                  effectivemaskinglevel: 0
-                - name: age
-                  position: 0
-                  default: null
-                  nullable: true
-                  type: varbinary(500)
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                  effectivemaskinglevel: 0
-                - name: name
-                  position: 0
-                  default: null
-                  nullable: true
-                  type: binary(10)
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                  effectivemaskinglevel: 0
-              indexes:
-                - name: PRIMARY
-                  expressions:
-                    - id
-                  type: ""
-                  unique: true
-                  primary: true
-                  visible: true
-                  comment: ""
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              classification: ""
-              usercomment: ""
-              foreignkeys: []
-            - name: t
-              columns:
-                - name: a
-                  position: 0
-                  default: null
-                  nullable: false
-                  type: int
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                  effectivemaskinglevel: 0
-              indexes: []
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              classification: ""
-              usercomment: ""
-              foreignkeys: []
-            - name: t4
-              columns:
-                - name: a
-                  position: 0
-                  default:
-                    value: '''default value'''
-                  nullable: false
-                  type: varchar(10)
-                  characterset: ""
-                  collation: ""
-                  comment: this is comment, aha
-                  classification: ""
-                  usercomment: ""
-                  effectivemaskinglevel: 0
-                - name: b
-                  position: 0
-                  default: null
-                  nullable: false
-                  type: char(10)
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                  effectivemaskinglevel: 0
-                - name: c
-                  position: 0
-                  default:
-                    value: "1"
-                  nullable: false
-                  type: int
-                  characterset: ""
-                  collation: ""
-                  comment: col_b
-                  classification: ""
-                  usercomment: ""
-                  effectivemaskinglevel: 0
-                - name: e
-                  position: 0
-                  default:
-                    value: "1"
-                  nullable: true
-                  type: int
-                  characterset: ""
-                  collation: ""
-                  comment: col_e
-                  classification: ""
-                  usercomment: ""
-                  effectivemaskinglevel: 0
-              indexes:
-                - name: PRIMARY
-                  expressions:
-                    - a
-                    - b
-                    - c
-                  type: ""
-                  unique: true
-                  primary: true
-                  visible: true
-                  comment: ""
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              classification: ""
-              usercomment: ""
-              foreignkeys:
-                - name: fk1
-                  columns:
-                    - b
-                  referencedschema: ""
-                  referencedtable: t2
-                  referencedcolumns:
-                    - b
-                  ondelete: ""
-                  onupdate: ""
-                  matchtype: ""
-            - name: t2
-              columns:
-                - name: b
-                  position: 0
-                  default: null
-                  nullable: true
-                  type: int
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                  effectivemaskinglevel: 0
-                - name: a
-                  position: 0
-                  default: null
-                  nullable: true
-                  type: int
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                  effectivemaskinglevel: 0
-              indexes:
-                - name: PRIMARY
-                  expressions:
-                    - b
-                  type: ""
-                  unique: true
-                  primary: true
-                  visible: true
-                  comment: ""
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              classification: ""
-              usercomment: ""
-              foreignkeys:
-                - name: fk1
-                  columns:
-                    - b
-                  referencedschema: ""
-                  referencedtable: t4
-                  referencedcolumns:
-                    - b
-                  ondelete: ""
-                  onupdate: ""
-                  matchtype: ""
-          views: []
-          functions: []
-          streams: []
-          tasks: []
-    characterset: ""
-    collation: ""
-    extensions: []
-    schemaconfigs: []
+  target: |-
+    {
+      "schemas":  [
+        {
+          "tables":  [
+            {
+              "name":  "users",
+              "columns":  [
+                {
+                  "name":  "id",
+                  "type":  "int",
+                  "comment":  "ID"
+                },
+                {
+                  "name":  "age",
+                  "nullable":  true,
+                  "type":  "varbinary(500)"
+                },
+                {
+                  "name":  "name",
+                  "nullable":  true,
+                  "type":  "binary(10)"
+                }
+              ],
+              "indexes":  [
+                {
+                  "name":  "PRIMARY",
+                  "expressions":  [
+                    "id"
+                  ],
+                  "unique":  true,
+                  "primary":  true,
+                  "visible":  true
+                }
+              ]
+            },
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a",
+                  "type":  "int"
+                }
+              ]
+            },
+            {
+              "name":  "t4",
+              "columns":  [
+                {
+                  "name":  "a",
+                  "type":  "varchar(10)",
+                  "hasDefault":  true,
+                  "defaultString":  "default value",
+                  "comment":  "this is comment, aha"
+                },
+                {
+                  "name":  "b",
+                  "type":  "char(10)"
+                },
+                {
+                  "name":  "c",
+                  "type":  "int",
+                  "hasDefault":  true,
+                  "defaultExpression":  "1",
+                  "comment":  "col_b"
+                },
+                {
+                  "name":  "e",
+                  "nullable":  true,
+                  "type":  "int",
+                  "hasDefault":  true,
+                  "defaultExpression":  "1",
+                  "comment":  "col_e"
+                }
+              ],
+              "indexes":  [
+                {
+                  "name":  "PRIMARY",
+                  "expressions":  [
+                    "a",
+                    "b",
+                    "c"
+                  ],
+                  "unique":  true,
+                  "primary":  true,
+                  "visible":  true
+                }
+              ],
+              "foreignKeys":  [
+                {
+                  "name":  "fk1",
+                  "columns":  [
+                    "b"
+                  ],
+                  "referencedTable":  "t2",
+                  "referencedColumns":  [
+                    "b"
+                  ]
+                }
+              ]
+            },
+            {
+              "name":  "t2",
+              "columns":  [
+                {
+                  "name":  "b",
+                  "nullable":  true,
+                  "type":  "int"
+                },
+                {
+                  "name":  "a",
+                  "nullable":  true,
+                  "type":  "int"
+                }
+              ],
+              "indexes":  [
+                {
+                  "name":  "PRIMARY",
+                  "expressions":  [
+                    "b"
+                  ],
+                  "unique":  true,
+                  "primary":  true,
+                  "visible":  true
+                }
+              ],
+              "foreignKeys":  [
+                {
+                  "name":  "fk1",
+                  "columns":  [
+                    "b"
+                  ],
+                  "referencedTable":  "t4",
+                  "referencedColumns":  [
+                    "b"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
   result: |
     CREATE TABLE `t` (
       `a` int NOT NULL

@@ -260,7 +260,9 @@ export interface ColumnMetadata {
   /** The position is the position in columns. */
   position: number;
   /** The default is the default of a column. Use google.protobuf.StringValue to distinguish between an empty string default value or no default. */
-  default:
+  default?: string | undefined;
+  defaultNull?: boolean | undefined;
+  defaultExpression?:
     | string
     | undefined;
   /** The nullable is the nullable of a column. */
@@ -1476,6 +1478,8 @@ function createBaseColumnMetadata(): ColumnMetadata {
     name: "",
     position: 0,
     default: undefined,
+    defaultNull: undefined,
+    defaultExpression: undefined,
     nullable: false,
     type: "",
     characterSet: "",
@@ -1497,26 +1501,32 @@ export const ColumnMetadata = {
     if (message.default !== undefined) {
       StringValue.encode({ value: message.default! }, writer.uint32(26).fork()).ldelim();
     }
+    if (message.defaultNull !== undefined) {
+      writer.uint32(32).bool(message.defaultNull);
+    }
+    if (message.defaultExpression !== undefined) {
+      writer.uint32(42).string(message.defaultExpression);
+    }
     if (message.nullable === true) {
-      writer.uint32(32).bool(message.nullable);
+      writer.uint32(48).bool(message.nullable);
     }
     if (message.type !== "") {
-      writer.uint32(42).string(message.type);
+      writer.uint32(58).string(message.type);
     }
     if (message.characterSet !== "") {
-      writer.uint32(50).string(message.characterSet);
+      writer.uint32(66).string(message.characterSet);
     }
     if (message.collation !== "") {
-      writer.uint32(58).string(message.collation);
+      writer.uint32(74).string(message.collation);
     }
     if (message.comment !== "") {
-      writer.uint32(66).string(message.comment);
+      writer.uint32(82).string(message.comment);
     }
     if (message.classification !== "") {
-      writer.uint32(74).string(message.classification);
+      writer.uint32(90).string(message.classification);
     }
     if (message.userComment !== "") {
-      writer.uint32(82).string(message.userComment);
+      writer.uint32(98).string(message.userComment);
     }
     return writer;
   },
@@ -1554,45 +1564,59 @@ export const ColumnMetadata = {
             break;
           }
 
-          message.nullable = reader.bool();
+          message.defaultNull = reader.bool();
           continue;
         case 5:
           if (tag !== 42) {
             break;
           }
 
-          message.type = reader.string();
+          message.defaultExpression = reader.string();
           continue;
         case 6:
-          if (tag !== 50) {
+          if (tag !== 48) {
             break;
           }
 
-          message.characterSet = reader.string();
+          message.nullable = reader.bool();
           continue;
         case 7:
           if (tag !== 58) {
             break;
           }
 
-          message.collation = reader.string();
+          message.type = reader.string();
           continue;
         case 8:
           if (tag !== 66) {
             break;
           }
 
-          message.comment = reader.string();
+          message.characterSet = reader.string();
           continue;
         case 9:
           if (tag !== 74) {
             break;
           }
 
-          message.classification = reader.string();
+          message.collation = reader.string();
           continue;
         case 10:
           if (tag !== 82) {
+            break;
+          }
+
+          message.comment = reader.string();
+          continue;
+        case 11:
+          if (tag !== 90) {
+            break;
+          }
+
+          message.classification = reader.string();
+          continue;
+        case 12:
+          if (tag !== 98) {
             break;
           }
 
@@ -1612,6 +1636,8 @@ export const ColumnMetadata = {
       name: isSet(object.name) ? String(object.name) : "",
       position: isSet(object.position) ? Number(object.position) : 0,
       default: isSet(object.default) ? String(object.default) : undefined,
+      defaultNull: isSet(object.defaultNull) ? Boolean(object.defaultNull) : undefined,
+      defaultExpression: isSet(object.defaultExpression) ? String(object.defaultExpression) : undefined,
       nullable: isSet(object.nullable) ? Boolean(object.nullable) : false,
       type: isSet(object.type) ? String(object.type) : "",
       characterSet: isSet(object.characterSet) ? String(object.characterSet) : "",
@@ -1627,6 +1653,8 @@ export const ColumnMetadata = {
     message.name !== undefined && (obj.name = message.name);
     message.position !== undefined && (obj.position = Math.round(message.position));
     message.default !== undefined && (obj.default = message.default);
+    message.defaultNull !== undefined && (obj.defaultNull = message.defaultNull);
+    message.defaultExpression !== undefined && (obj.defaultExpression = message.defaultExpression);
     message.nullable !== undefined && (obj.nullable = message.nullable);
     message.type !== undefined && (obj.type = message.type);
     message.characterSet !== undefined && (obj.characterSet = message.characterSet);
@@ -1646,6 +1674,8 @@ export const ColumnMetadata = {
     message.name = object.name ?? "";
     message.position = object.position ?? 0;
     message.default = object.default ?? undefined;
+    message.defaultNull = object.defaultNull ?? undefined;
+    message.defaultExpression = object.defaultExpression ?? undefined;
     message.nullable = object.nullable ?? false;
     message.type = object.type ?? "";
     message.characterSet = object.characterSet ?? "";

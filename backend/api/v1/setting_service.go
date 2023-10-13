@@ -742,8 +742,15 @@ func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTempl
 
 func convertToAddColumnContext(column *v1pb.ColumnMetadata) *api.AddColumnContext {
 	var defaultVal string
-	if column.Default != nil {
-		defaultVal = column.Default.Value
+	if column.HasDefault {
+		switch value := column.Default.(type) {
+		case *v1pb.ColumnMetadata_DefaultNull:
+			defaultVal = "NULL"
+		case *v1pb.ColumnMetadata_DefaultString:
+			defaultVal = fmt.Sprintf("'%s'", strings.ReplaceAll(value.DefaultString, "'", "''"))
+		case *v1pb.ColumnMetadata_DefaultExpression:
+			defaultVal = value.DefaultExpression
+		}
 	}
 
 	return &api.AddColumnContext{
