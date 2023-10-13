@@ -1,191 +1,118 @@
 - statement: CREATE TABLE t(a int, b int);
-  want:
-    name: postgres
-    schemas:
-        - name: public
-          tables:
-            - name: t
-              columns:
-                - name: a
-                  position: 1
-                  default: null
-                  nullable: true
-                  type: integer
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                - name: b
-                  position: 2
-                  default: null
-                  nullable: true
-                  type: integer
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-              indexes: []
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              classification: ""
-              usercomment: ""
-              foreignkeys: []
-            - name: test
-              columns:
-                - name: id
-                  position: 1
-                  default: null
-                  nullable: false
-                  type: int
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                - name: name
-                  position: 2
-                  default: null
-                  nullable: true
-                  type: varchar(20)
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-              indexes: []
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              classification: ""
-              usercomment: ""
-              foreignkeys: []
-          views: []
-          functions: []
-          streams: []
-          tasks: []
-    characterset: ""
-    collation: ""
-    extensions: []
-    datashare: false
-    servicename: ""
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name": "postgres",
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "a",
+                  "position": 1,
+                  "nullable": true,
+                  "type": "integer"
+                },
+                {
+                  "name": "b",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ]
+            },
+            {
+              "name": "test",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "type": "int"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "varchar(20)"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
   err: null
 - statement: |-
     CREATE TABLE public.t(a int, "B" int);
     CREATE INDEX ON t(a, "B");
     CREATE UNIQUE INDEX ON t(a, "B");
-  want:
-    name: postgres
-    schemas:
-        - name: public
-          tables:
-            - name: t
-              columns:
-                - name: a
-                  position: 1
-                  default: null
-                  nullable: true
-                  type: integer
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                - name: B
-                  position: 2
-                  default: null
-                  nullable: true
-                  type: integer
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-              indexes:
-                - name: t_a_B_idx
-                  expressions:
-                    - a
-                    - B
-                  type: btree
-                  unique: false
-                  primary: false
-                  visible: false
-                  comment: ""
-                - name: t_a_B_idx1
-                  expressions:
-                    - a
-                    - B
-                  type: btree
-                  unique: true
-                  primary: false
-                  visible: false
-                  comment: ""
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              classification: ""
-              usercomment: ""
-              foreignkeys: []
-            - name: test
-              columns:
-                - name: id
-                  position: 1
-                  default: null
-                  nullable: false
-                  type: int
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                - name: name
-                  position: 2
-                  default: null
-                  nullable: true
-                  type: varchar(20)
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-              indexes: []
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              classification: ""
-              usercomment: ""
-              foreignkeys: []
-          views: []
-          functions: []
-          streams: []
-          tasks: []
-    characterset: ""
-    collation: ""
-    extensions: []
-    datashare: false
-    servicename: ""
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name": "postgres",
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "a",
+                  "position": 1,
+                  "nullable": true,
+                  "type": "integer"
+                },
+                {
+                  "name": "B",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "t_a_B_idx",
+                  "expressions": [
+                    "a",
+                    "B"
+                  ],
+                  "type": "btree"
+                },
+                {
+                  "name": "t_a_B_idx1",
+                  "expressions": [
+                    "a",
+                    "B"
+                  ],
+                  "type": "btree",
+                  "unique": true
+                }
+              ]
+            },
+            {
+              "name": "test",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "type": "int"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "varchar(20)"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
   err: null
 - statement: |-
     CREATE TABLE public.t(
@@ -195,134 +122,94 @@
       UNIQUE (a, b, c),
       CONSTRAINT uk_a_b UNIQUE (a, b)
     )
-  want:
-    name: postgres
-    schemas:
-        - name: public
-          tables:
-            - name: t
-              columns:
-                - name: a
-                  position: 1
-                  default: null
-                  nullable: false
-                  type: integer
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                - name: b
-                  position: 2
-                  default:
-                    value: "1"
-                  nullable: false
-                  type: integer
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                - name: c
-                  position: 3
-                  default: null
-                  nullable: true
-                  type: integer
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-              indexes:
-                - name: t_a_b_c_idx
-                  expressions:
-                    - a
-                    - b
-                    - c
-                  type: btree
-                  unique: true
-                  primary: false
-                  visible: false
-                  comment: ""
-                - name: t_c_idx
-                  expressions:
-                    - c
-                  type: btree
-                  unique: true
-                  primary: false
-                  visible: false
-                  comment: ""
-                - name: t_pkey
-                  expressions:
-                    - a
-                  type: btree
-                  unique: true
-                  primary: true
-                  visible: false
-                  comment: ""
-                - name: uk_a_b
-                  expressions:
-                    - a
-                    - b
-                  type: btree
-                  unique: true
-                  primary: false
-                  visible: false
-                  comment: ""
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              classification: ""
-              usercomment: ""
-              foreignkeys: []
-            - name: test
-              columns:
-                - name: id
-                  position: 1
-                  default: null
-                  nullable: false
-                  type: int
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                - name: name
-                  position: 2
-                  default: null
-                  nullable: true
-                  type: varchar(20)
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-              indexes: []
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              classification: ""
-              usercomment: ""
-              foreignkeys: []
-          views: []
-          functions: []
-          streams: []
-          tasks: []
-    characterset: ""
-    collation: ""
-    extensions: []
-    datashare: false
-    servicename: ""
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name": "postgres",
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "a",
+                  "position": 1,
+                  "type": "integer"
+                },
+                {
+                  "name": "b",
+                  "position": 2,
+                  "default": "1",
+                  "type": "integer"
+                },
+                {
+                  "name": "c",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "t_a_b_c_idx",
+                  "expressions": [
+                    "a",
+                    "b",
+                    "c"
+                  ],
+                  "type": "btree",
+                  "unique": true
+                },
+                {
+                  "name": "t_c_idx",
+                  "expressions": [
+                    "c"
+                  ],
+                  "type": "btree",
+                  "unique": true
+                },
+                {
+                  "name": "t_pkey",
+                  "expressions": [
+                    "a"
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true
+                },
+                {
+                  "name": "uk_a_b",
+                  "expressions": [
+                    "a",
+                    "b"
+                  ],
+                  "type": "btree",
+                  "unique": true
+                }
+              ]
+            },
+            {
+              "name": "test",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "type": "int"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "varchar(20)"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
   err: null
 - statement: |-
     CREATE TABLE public.t(
@@ -344,142 +231,101 @@
     alter table t1 add constraint uk_d unique (d);
     alter table t1 add constraint ukk_d unique (d);
     alter table t1 drop constraint ukk_d;
-  want:
-    name: postgres
-    schemas:
-        - name: public
-          tables:
-            - name: t1
-              columns:
-                - name: a1
-                  position: 1
-                  default:
-                    value: "1"
-                  nullable: false
-                  type: integer
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                - name: b
-                  position: 2
-                  default: null
-                  nullable: false
-                  type: bigint
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                - name: d
-                  position: 4
-                  default: null
-                  nullable: false
-                  type: integer
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-              indexes:
-                - name: t_a_b_c_idx
-                  expressions:
-                    - a1
-                    - b
-                    - c
-                  type: btree
-                  unique: true
-                  primary: false
-                  visible: false
-                  comment: ""
-                - name: t_c_idx
-                  expressions:
-                    - c
-                  type: btree
-                  unique: true
-                  primary: false
-                  visible: false
-                  comment: ""
-                - name: t_pkey
-                  expressions:
-                    - a1
-                  type: btree
-                  unique: true
-                  primary: true
-                  visible: false
-                  comment: ""
-                - name: uk_d
-                  expressions:
-                    - d
-                  type: btree
-                  unique: true
-                  primary: false
-                  visible: false
-                  comment: ""
-                - name: ukk_a_b
-                  expressions:
-                    - a1
-                    - b
-                  type: btree
-                  unique: true
-                  primary: false
-                  visible: false
-                  comment: ""
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              classification: ""
-              usercomment: ""
-              foreignkeys: []
-            - name: test
-              columns:
-                - name: id
-                  position: 1
-                  default: null
-                  nullable: false
-                  type: int
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                - name: name
-                  position: 2
-                  default: null
-                  nullable: true
-                  type: varchar(20)
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-              indexes: []
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              classification: ""
-              usercomment: ""
-              foreignkeys: []
-          views: []
-          functions: []
-          streams: []
-          tasks: []
-    characterset: ""
-    collation: ""
-    extensions: []
-    datashare: false
-    servicename: ""
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name": "postgres",
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "t1",
+              "columns": [
+                {
+                  "name": "a1",
+                  "position": 1,
+                  "default": "1",
+                  "type": "integer"
+                },
+                {
+                  "name": "b",
+                  "position": 2,
+                  "type": "bigint"
+                },
+                {
+                  "name": "d",
+                  "position": 4,
+                  "type": "integer"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "t_a_b_c_idx",
+                  "expressions": [
+                    "a1",
+                    "b",
+                    "c"
+                  ],
+                  "type": "btree",
+                  "unique": true
+                },
+                {
+                  "name": "t_c_idx",
+                  "expressions": [
+                    "c"
+                  ],
+                  "type": "btree",
+                  "unique": true
+                },
+                {
+                  "name": "t_pkey",
+                  "expressions": [
+                    "a1"
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true
+                },
+                {
+                  "name": "uk_d",
+                  "expressions": [
+                    "d"
+                  ],
+                  "type": "btree",
+                  "unique": true
+                },
+                {
+                  "name": "ukk_a_b",
+                  "expressions": [
+                    "a1",
+                    "b"
+                  ],
+                  "type": "btree",
+                  "unique": true
+                }
+              ]
+            },
+            {
+              "name": "test",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "type": "int"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "varchar(20)"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
   err: null
 - statement: |-
     CREATE TABLE public.t(
@@ -490,134 +336,94 @@
       CONSTRAINT uk_a_b UNIQUE (a, b)
     );
     alter index uk_a_b rename to ukk_a_b;
-  want:
-    name: postgres
-    schemas:
-        - name: public
-          tables:
-            - name: t
-              columns:
-                - name: a
-                  position: 1
-                  default: null
-                  nullable: false
-                  type: integer
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                - name: b
-                  position: 2
-                  default:
-                    value: "1"
-                  nullable: false
-                  type: integer
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                - name: c
-                  position: 3
-                  default: null
-                  nullable: true
-                  type: integer
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-              indexes:
-                - name: t_a_b_c_idx
-                  expressions:
-                    - a
-                    - b
-                    - c
-                  type: btree
-                  unique: true
-                  primary: false
-                  visible: false
-                  comment: ""
-                - name: t_c_idx
-                  expressions:
-                    - c
-                  type: btree
-                  unique: true
-                  primary: false
-                  visible: false
-                  comment: ""
-                - name: t_pkey
-                  expressions:
-                    - a
-                  type: btree
-                  unique: true
-                  primary: true
-                  visible: false
-                  comment: ""
-                - name: ukk_a_b
-                  expressions:
-                    - a
-                    - b
-                  type: btree
-                  unique: true
-                  primary: false
-                  visible: false
-                  comment: ""
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              classification: ""
-              usercomment: ""
-              foreignkeys: []
-            - name: test
-              columns:
-                - name: id
-                  position: 1
-                  default: null
-                  nullable: false
-                  type: int
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                - name: name
-                  position: 2
-                  default: null
-                  nullable: true
-                  type: varchar(20)
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-              indexes: []
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              classification: ""
-              usercomment: ""
-              foreignkeys: []
-          views: []
-          functions: []
-          streams: []
-          tasks: []
-    characterset: ""
-    collation: ""
-    extensions: []
-    datashare: false
-    servicename: ""
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name": "postgres",
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "a",
+                  "position": 1,
+                  "type": "integer"
+                },
+                {
+                  "name": "b",
+                  "position": 2,
+                  "default": "1",
+                  "type": "integer"
+                },
+                {
+                  "name": "c",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "t_a_b_c_idx",
+                  "expressions": [
+                    "a",
+                    "b",
+                    "c"
+                  ],
+                  "type": "btree",
+                  "unique": true
+                },
+                {
+                  "name": "t_c_idx",
+                  "expressions": [
+                    "c"
+                  ],
+                  "type": "btree",
+                  "unique": true
+                },
+                {
+                  "name": "t_pkey",
+                  "expressions": [
+                    "a"
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true
+                },
+                {
+                  "name": "ukk_a_b",
+                  "expressions": [
+                    "a",
+                    "b"
+                  ],
+                  "type": "btree",
+                  "unique": true
+                }
+              ]
+            },
+            {
+              "name": "test",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "type": "int"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "varchar(20)"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
   err: null
 - statement: |-
     CREATE TABLE public.t(
@@ -628,125 +434,85 @@
       CONSTRAINT uk_a_b UNIQUE (a, b)
     );
     drop index uk_a_b;
-  want:
-    name: postgres
-    schemas:
-        - name: public
-          tables:
-            - name: t
-              columns:
-                - name: a
-                  position: 1
-                  default: null
-                  nullable: false
-                  type: integer
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                - name: b
-                  position: 2
-                  default:
-                    value: "1"
-                  nullable: false
-                  type: integer
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                - name: c
-                  position: 3
-                  default: null
-                  nullable: true
-                  type: integer
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-              indexes:
-                - name: t_a_b_c_idx
-                  expressions:
-                    - a
-                    - b
-                    - c
-                  type: btree
-                  unique: true
-                  primary: false
-                  visible: false
-                  comment: ""
-                - name: t_c_idx
-                  expressions:
-                    - c
-                  type: btree
-                  unique: true
-                  primary: false
-                  visible: false
-                  comment: ""
-                - name: t_pkey
-                  expressions:
-                    - a
-                  type: btree
-                  unique: true
-                  primary: true
-                  visible: false
-                  comment: ""
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              classification: ""
-              usercomment: ""
-              foreignkeys: []
-            - name: test
-              columns:
-                - name: id
-                  position: 1
-                  default: null
-                  nullable: false
-                  type: int
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                - name: name
-                  position: 2
-                  default: null
-                  nullable: true
-                  type: varchar(20)
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-              indexes: []
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              classification: ""
-              usercomment: ""
-              foreignkeys: []
-          views: []
-          functions: []
-          streams: []
-          tasks: []
-    characterset: ""
-    collation: ""
-    extensions: []
-    datashare: false
-    servicename: ""
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name": "postgres",
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "a",
+                  "position": 1,
+                  "type": "integer"
+                },
+                {
+                  "name": "b",
+                  "position": 2,
+                  "default": "1",
+                  "type": "integer"
+                },
+                {
+                  "name": "c",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "t_a_b_c_idx",
+                  "expressions": [
+                    "a",
+                    "b",
+                    "c"
+                  ],
+                  "type": "btree",
+                  "unique": true
+                },
+                {
+                  "name": "t_c_idx",
+                  "expressions": [
+                    "c"
+                  ],
+                  "type": "btree",
+                  "unique": true
+                },
+                {
+                  "name": "t_pkey",
+                  "expressions": [
+                    "a"
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true
+                }
+              ]
+            },
+            {
+              "name": "test",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "type": "int"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "varchar(20)"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
   err: null
 - statement: |-
     CREATE TABLE public.t(
@@ -757,54 +523,34 @@
       CONSTRAINT uk_a_b UNIQUE (a, b)
     );
     drop table t;
-  want:
-    name: postgres
-    schemas:
-        - name: public
-          tables:
-            - name: test
-              columns:
-                - name: id
-                  position: 1
-                  default: null
-                  nullable: false
-                  type: int
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                - name: name
-                  position: 2
-                  default: null
-                  nullable: true
-                  type: varchar(20)
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-              indexes: []
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              classification: ""
-              usercomment: ""
-              foreignkeys: []
-          views: []
-          functions: []
-          streams: []
-          tasks: []
-    characterset: ""
-    collation: ""
-    extensions: []
-    datashare: false
-    servicename: ""
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name": "postgres",
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "test",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "type": "int"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "varchar(20)"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
   err: null
 - statement: |-
     CREATE TABLE public.t(
@@ -815,17 +561,15 @@
       CONSTRAINT uk_a_b UNIQUE (a, b)
     );
     drop schema public;
-  want:
-    name: postgres
-    schemas: []
-    characterset: ""
-    collation: ""
-    extensions: []
-    datashare: false
-    servicename: ""
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name": "postgres"
+    }
   err: null
 - statement: ALTER TABLE test DROP COLUMN id;
-  want: null
+  ignore_case_sensitive: false
+  want: ""
   err:
     type: 408
     content: 'Cannot drop column "id" in table "public"."test", it''s referenced by view: "public"."v1"'
@@ -833,7 +577,8 @@
     payload:
         - '"public"."v1"'
 - statement: ALTER TABLE test ALTER COLUMN id TYPE varchar(20);
-  want: null
+  ignore_case_sensitive: false
+  want: ""
   err:
     type: 408
     content: 'Cannot alter type of column "id" in table "public"."test", it''s referenced by view: "public"."v1"'
@@ -841,7 +586,8 @@
     payload:
         - '"public"."v1"'
 - statement: DROP TABLE test;
-  want: null
+  ignore_case_sensitive: false
+  want: ""
   err:
     type: 304
     content: 'Cannot drop table "public"."test", it''s referenced by view: "public"."v1"'
@@ -851,95 +597,60 @@
 - statement: |-
     DROP VIEW v1;
     ALTER TABLE test DROP COLUMN id;
-  want:
-    name: postgres
-    schemas:
-        - name: public
-          tables:
-            - name: test
-              columns:
-                - name: name
-                  position: 2
-                  default: null
-                  nullable: true
-                  type: varchar(20)
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-              indexes: []
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              classification: ""
-              usercomment: ""
-              foreignkeys: []
-          views: []
-          functions: []
-          streams: []
-          tasks: []
-    characterset: ""
-    collation: ""
-    extensions: []
-    datashare: false
-    servicename: ""
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name": "postgres",
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "test",
+              "columns": [
+                {
+                  "name": "name",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "varchar(20)"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
   err: null
 - statement: |-
     create view v1 as select * from t;
     alter view v1 rename to this_is_view_del;
     drop view this_is_view_del;
-  want:
-    name: postgres
-    schemas:
-        - name: public
-          tables:
-            - name: test
-              columns:
-                - name: id
-                  position: 1
-                  default: null
-                  nullable: false
-                  type: int
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                - name: name
-                  position: 2
-                  default: null
-                  nullable: true
-                  type: varchar(20)
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-              indexes: []
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              classification: ""
-              usercomment: ""
-              foreignkeys: []
-          views: []
-          functions: []
-          streams: []
-          tasks: []
-    characterset: ""
-    collation: ""
-    extensions: []
-    datashare: false
-    servicename: ""
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name": "postgres",
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "test",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "type": "int"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "varchar(20)"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
   err: null

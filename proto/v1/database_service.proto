@@ -9,7 +9,6 @@ import "google/protobuf/duration.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
-import "google/protobuf/wrappers.proto";
 import "v1/common.proto";
 import "v1/vcs.proto";
 
@@ -477,34 +476,40 @@ message ColumnMetadata {
   // The position is the position in columns.
   int32 position = 2;
 
-  // The default is the default of a column. Use google.protobuf.StringValue to distinguish between an empty string default value or no default.
-  google.protobuf.StringValue default = 3;
+  bool has_default = 3;
+
+  // The default is the default value of a column.
+  oneof default {
+    bool default_null = 4;
+    string default_string = 5;
+    string default_expression = 6;
+  }
 
   // The nullable is the nullable of a column.
-  bool nullable = 4;
+  bool nullable = 7;
 
   // The type is the type of a column.
-  string type = 5;
+  string type = 8;
 
   // The character_set is the character_set of a column.
-  string character_set = 6;
+  string character_set = 9;
 
   // The collation is the collation of a column.
-  string collation = 7;
+  string collation = 10;
 
   // The comment is the comment of a column.
   // classification and user_comment is parsed from the comment.
-  string comment = 8;
+  string comment = 11;
 
   // The classification is the classification of a column parsed from the comment.
-  string classification = 9;
+  string classification = 12;
 
   // The user_comment is the user comment of a column parsed from the comment.
-  string user_comment = 10;
+  string user_comment = 13;
 
   // The effective_masking_level is the effective masking level of the column, evaluate from the
   // column masking data and global masking rules.
-  MaskingLevel effective_masking_level = 11;
+  MaskingLevel effective_masking_level = 14;
 }
 
 // ViewMetadata is the metadata for views.

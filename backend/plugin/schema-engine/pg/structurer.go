@@ -5,8 +5,6 @@ import (
 	"sort"
 	"strings"
 
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
@@ -71,7 +69,8 @@ func ParseToMetadata(schema string) (*v1pb.DatabaseMetadata, error) {
 						columnState.nullable = false
 					case ast.ConstraintTypeDefault:
 						defaultText := constraint.Expression.Text()
-						columnState.defaultValue = &defaultText
+						columnState.hasDefault = true
+						columnState.defaultValue = &defaultValueExpression{value: defaultText}
 					}
 				}
 
@@ -135,7 +134,8 @@ func ParseToMetadata(schema string) (*v1pb.DatabaseMetadata, error) {
 						return nil, errors.Errorf("column %q not found in table %q.%q", item.ColumnName, stmt.Table.Schema, stmt.Table.Name)
 					}
 					defaultText := item.Expression.Text()
-					column.defaultValue = &defaultText
+					column.defaultValue = &defaultValueExpression{value: defaultText}
+					column.hasDefault = true
 				case *ast.AddConstraintStmt:
 					switch item.Constraint.Type {
 					case ast.ConstraintTypePrimary:
@@ -636,6 +636,37 @@ func (i *indexState) toString(buf *strings.Builder, schemaName, tableName string
 	return nil
 }
 
+type defaultValue interface {
+	isDefaultValue()
+	toString() string
+}
+
+type defaultValueNull struct {
+}
+
+func (*defaultValueNull) isDefaultValue() {}
+func (*defaultValueNull) toString() string {
+	return "NULL"
+}
+
+type defaultValueString struct {
+	value string
+}
+
+func (*defaultValueString) isDefaultValue() {}
+func (d *defaultValueString) toString() string {
+	return fmt.Sprintf("'%s'", strings.ReplaceAll(d.value, "'", "''"))
+}
+
+type defaultValueExpression struct {
+	value string
+}
+
+func (*defaultValueExpression) isDefaultValue() {}
+func (d *defaultValueExpression) toString() string {
+	return d.value
+}
+
 type columnState struct {
 	// ignore means this column is already in the target schema.
 	// But we need the columnState to deal with the comment statement.
@@ -646,7 +677,8 @@ type columnState struct {
 	id            int
 	name          string
 	tp            string
-	defaultValue  *string
+	hasDefault    bool
+	defaultValue  defaultValue
 	comment       string
 	nullable      bool
 }
@@ -671,8 +703,8 @@ func (c *columnState) toString(buf *strings.Builder) error {
 			return err
 		}
 	}
-	if c.defaultValue != nil {
-		if _, err := buf.WriteString(fmt.Sprintf(" DEFAULT %s", *c.defaultValue)); err != nil {
+	if c.hasDefault {
+		if _, err := buf.WriteString(fmt.Sprintf(" DEFAULT %s", c.defaultValue.toString())); err != nil {
 			return err
 		}
 	}
@@ -681,27 +713,43 @@ func (c *columnState) toString(buf *strings.Builder) error {
 
 func (c *columnState) convertToColumnMetadata() *v1pb.ColumnMetadata {
 	result := &v1pb.ColumnMetadata{
-		Name:     c.name,
-		Type:     c.tp,
-		Nullable: c.nullable,
-		Comment:  c.comment,
+		Name:       c.name,
+		Type:       c.tp,
+		Nullable:   c.nullable,
+		Comment:    c.comment,
+		HasDefault: c.hasDefault,
 	}
-	if c.defaultValue != nil {
-		result.Default = &wrapperspb.StringValue{Value: *c.defaultValue}
+	if c.hasDefault {
+		switch value := c.defaultValue.(type) {
+		case *defaultValueNull:
+			result.Default = &v1pb.ColumnMetadata_DefaultNull{DefaultNull: true}
+		case *defaultValueString:
+			result.Default = &v1pb.ColumnMetadata_DefaultString{DefaultString: value.value}
+		case *defaultValueExpression:
+			result.Default = &v1pb.ColumnMetadata_DefaultExpression{DefaultExpression: value.value}
+		}
 	}
 	return result
 }
 
 func convertToColumnState(id int, column *v1pb.ColumnMetadata) *columnState {
 	result := &columnState{
-		id:       id,
-		name:     column.Name,
-		tp:       column.Type,
-		nullable: column.Nullable,
-		comment:  column.Comment,
+		id:         id,
+		name:       column.Name,
+		tp:         column.Type,
+		hasDefault: column.HasDefault,
+		nullable:   column.Nullable,
+		comment:    column.Comment,
 	}
-	if column.Default != nil {
-		result.defaultValue = &column.Default.Value
+	if column.HasDefault {
+		switch value := column.Default.(type) {
+		case *v1pb.ColumnMetadata_DefaultNull:
+			result.defaultValue = &defaultValueNull{}
+		case *v1pb.ColumnMetadata_DefaultString:
+			result.defaultValue = &defaultValueString{value: value.DefaultString}
+		case *v1pb.ColumnMetadata_DefaultExpression:
+			result.defaultValue = &defaultValueExpression{value: value.DefaultExpression}
+		}
 	}
 	return result
 }
@@ -1407,14 +1455,14 @@ func (g *designSchemaGenerator) EnterColumnDef(ctx *postgres.ColumnDefContext) {
 		needOneSpace = true
 	}
 
-	if column.defaultValue != nil && !defaultExists(ctx.Colquallist()) {
+	if column.hasDefault && !defaultExists(ctx.Colquallist()) {
 		if needOneSpace {
 			if _, err := g.columnDefine.WriteString(" "); err != nil {
 				g.err = err
 				return
 			}
 		}
-		if _, err := g.columnDefine.WriteString(fmt.Sprintf("DEFAULT %s", *column.defaultValue)); err != nil {
+		if _, err := g.columnDefine.WriteString(fmt.Sprintf("DEFAULT %s", column.defaultValue.toString())); err != nil {
 			g.err = err
 			return
 		}
@@ -1463,7 +1511,7 @@ func (g *designSchemaGenerator) EnterColumnDef(ctx *postgres.ColumnDefContext) {
 				Start: constraint.B_expr().GetStart().GetTokenIndex(),
 				Stop:  constraint.B_expr().GetStop().GetTokenIndex(),
 			})
-			if column.defaultValue != nil && *column.defaultValue == defaultValue {
+			if column.hasDefault && column.defaultValue.toString() == defaultValue {
 				if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(
 					antlr.Interval{
 						Start: startPos,
@@ -1473,7 +1521,7 @@ func (g *designSchemaGenerator) EnterColumnDef(ctx *postgres.ColumnDefContext) {
 					g.err = err
 					return
 				}
-			} else if column.defaultValue != nil {
+			} else if column.hasDefault {
 				if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(
 					antlr.Interval{
 						Start: startPos,
@@ -1483,7 +1531,7 @@ func (g *designSchemaGenerator) EnterColumnDef(ctx *postgres.ColumnDefContext) {
 					g.err = err
 					return
 				}
-				if _, err := g.columnDefine.WriteString(*column.defaultValue); err != nil {
+				if _, err := g.columnDefine.WriteString(column.defaultValue.toString()); err != nil {
 					g.err = err
 					return
 				}

@@ -230,7 +230,8 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			COLUMN_TYPE,
 			IFNULL(CHARACTER_SET_NAME, ''),
 			IFNULL(COLLATION_NAME, ''),
-			COLUMN_COMMENT
+			COLUMN_COMMENT,
+			EXTRA
 		FROM information_schema.COLUMNS
 		WHERE TABLE_SCHEMA = ?
 		ORDER BY TABLE_NAME, ORDINAL_POSITION`
@@ -241,7 +242,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	defer columnRows.Close()
 	for columnRows.Next() {
 		column := &storepb.ColumnMetadata{}
-		var tableName, nullable string
+		var tableName, nullable, extra string
 		var defaultStr sql.NullString
 		if err := columnRows.Scan(
 			&tableName,
@@ -253,11 +254,16 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			&column.CharacterSet,
 			&column.Collation,
 			&column.Comment,
+			&extra,
 		); err != nil {
 			return nil, err
 		}
 		if defaultStr.Valid {
-			column.Default = &wrapperspb.StringValue{Value: defaultStr.String}
+			if strings.Contains(extra, "DEFAULT_GENERATED") {
+				column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: fmt.Sprintf("(%s)", defaultStr.String)}
+			} else {
+				column.DefaultValue = &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: defaultStr.String}}
+			}
 		}
 		isNullBool, err := util.ConvertYesNo(nullable)
 		if err != nil {

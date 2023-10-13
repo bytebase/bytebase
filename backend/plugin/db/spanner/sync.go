@@ -10,7 +10,6 @@ import (
 	"google.golang.org/api/iterator"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/pkg/errors"
 
@@ -200,7 +199,8 @@ func getColumn(ctx context.Context, tx *spanner.ReadOnlyTransaction) (map[db.Tab
 		}
 		column.Position = int32(position)
 		if defaultStr.Valid {
-			column.Default = &wrapperspb.StringValue{Value: defaultStr.StringVal}
+			// TODO: use correct default type
+			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: defaultStr.StringVal}
 		}
 		key := db.TableKey{Schema: schemaName, Table: tableName}
 		columnsMap[key] = append(columnsMap[key], column)

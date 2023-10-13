@@ -1,110 +1,62 @@
 - statement: CREATE INDEX idx_a on t(a)
-  want:
-    name: ""
-    schemas:
-        - name: ""
-          tables:
-            - name: t
-              columns: []
-              indexes:
-                - name: idx_a
-                  expressions:
-                    - a
-                  type: BTREE
-                  unique: false
-                  primary: false
-                  visible: true
-                  comment: ""
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              classification: ""
-              usercomment: ""
-              foreignkeys: []
-          views: []
-          functions: []
-          streams: []
-          tasks: []
-    characterset: ""
-    collation: ""
-    extensions: []
-    datashare: false
-    servicename: ""
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "t",
+              "indexes": [
+                {
+                  "name": "idx_a",
+                  "expressions": [
+                    "a"
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
   err: null
 - statement: ALTER TABLE t RENAME COLUMN a TO a_copy
-  want:
-    name: ""
-    schemas:
-        - name: ""
-          tables:
-            - name: t
-              columns:
-                - name: a_copy
-                  position: 0
-                  default: null
-                  nullable: false
-                  type: ""
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-              indexes: []
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              classification: ""
-              usercomment: ""
-              foreignkeys: []
-          views: []
-          functions: []
-          streams: []
-          tasks: []
-    characterset: ""
-    collation: ""
-    extensions: []
-    datashare: false
-    servicename: ""
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "a_copy"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
   err: null
 - statement: ALTER TABLE t RENAME TO t1
-  want:
-    name: ""
-    schemas:
-        - name: ""
-          tables:
-            - name: t1
-              columns: []
-              indexes: []
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              classification: ""
-              usercomment: ""
-              foreignkeys: []
-          views: []
-          functions: []
-          streams: []
-          tasks: []
-    characterset: ""
-    collation: ""
-    extensions: []
-    datashare: false
-    servicename: ""
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "t1"
+            }
+          ]
+        }
+      ]
+    }
   err: null
 - statement: |-
     ALTER TABLE t ADD PRIMARY KEY (a);
@@ -113,86 +65,76 @@
     CREATE INDEX b_2 on t(b, a);
     CREATE UNIQUE INDEX b_3 on t(b, c, d);
     CREATE FULLTEXT INDEX b_4 on t(b, d) WITH PARSER ngram INVISIBLE;
-  want:
-    name: ""
-    schemas:
-        - name: ""
-          tables:
-            - name: t
-              columns: []
-              indexes:
-                - name: PRIMARY
-                  expressions:
-                    - a
-                  type: BTREE
-                  unique: true
-                  primary: true
-                  visible: true
-                  comment: ""
-                - name: b
-                  expressions:
-                    - b
-                  type: BTREE
-                  unique: true
-                  primary: false
-                  visible: true
-                  comment: ""
-                - name: b_2
-                  expressions:
-                    - b
-                    - a
-                  type: BTREE
-                  unique: false
-                  primary: false
-                  visible: true
-                  comment: ""
-                - name: b_3
-                  expressions:
-                    - b
-                    - c
-                    - d
-                  type: BTREE
-                  unique: true
-                  primary: false
-                  visible: true
-                  comment: ""
-                - name: b_4
-                  expressions:
-                    - b
-                    - d
-                  type: FULLTEXT
-                  unique: false
-                  primary: false
-                  visible: false
-                  comment: ""
-                - name: idx_a
-                  expressions:
-                    - a
-                  type: BTREE
-                  unique: false
-                  primary: false
-                  visible: true
-                  comment: ""
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              classification: ""
-              usercomment: ""
-              foreignkeys: []
-          views: []
-          functions: []
-          streams: []
-          tasks: []
-    characterset: ""
-    collation: ""
-    extensions: []
-    datashare: false
-    servicename: ""
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "t",
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "a"
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "b",
+                  "expressions": [
+                    "b"
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
+                },
+                {
+                  "name": "b_2",
+                  "expressions": [
+                    "b",
+                    "a"
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "b_3",
+                  "expressions": [
+                    "b",
+                    "c",
+                    "d"
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
+                },
+                {
+                  "name": "b_4",
+                  "expressions": [
+                    "b",
+                    "d"
+                  ],
+                  "type": "FULLTEXT"
+                },
+                {
+                  "name": "idx_a",
+                  "expressions": [
+                    "a"
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
   err: null
 - statement: |-
     CREATE TABLE t(
@@ -205,157 +147,120 @@
       UNIQUE (b, c, d),
       FULLTEXT (b, d) WITH PARSER ngram INVISIBLE
     )
-  want:
-    name: ""
-    schemas:
-        - name: ""
-          tables:
-            - name: t
-              columns:
-                - name: a
-                  position: 1
-                  default:
-                    value: "1"
-                  nullable: false
-                  type: int(11)
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                - name: b
-                  position: 2
-                  default: null
-                  nullable: false
-                  type: varchar(200)
-                  characterset: utf8mb4
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                - name: c
-                  position: 3
-                  default: null
-                  nullable: true
-                  type: int(11)
-                  characterset: ""
-                  collation: ""
-                  comment: This is a comment
-                  classification: ""
-                  usercomment: ""
-                - name: d
-                  position: 4
-                  default: null
-                  nullable: true
-                  type: varchar(10)
-                  characterset: ""
-                  collation: utf8mb4_polish_ci
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-              indexes:
-                - name: PRIMARY
-                  expressions:
-                    - a
-                  type: BTREE
-                  unique: true
-                  primary: true
-                  visible: true
-                  comment: ""
-                - name: b
-                  expressions:
-                    - b
-                  type: BTREE
-                  unique: true
-                  primary: false
-                  visible: true
-                  comment: ""
-                - name: b_2
-                  expressions:
-                    - b
-                    - a
-                  type: BTREE
-                  unique: false
-                  primary: false
-                  visible: true
-                  comment: ""
-                - name: b_3
-                  expressions:
-                    - b
-                    - c
-                    - d
-                  type: BTREE
-                  unique: true
-                  primary: false
-                  visible: true
-                  comment: ""
-                - name: b_4
-                  expressions:
-                    - b
-                    - d
-                  type: FULLTEXT
-                  unique: false
-                  primary: false
-                  visible: false
-                  comment: ""
-                - name: idx_a
-                  expressions:
-                    - a
-                  type: BTREE
-                  unique: false
-                  primary: false
-                  visible: true
-                  comment: ""
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              classification: ""
-              usercomment: ""
-              foreignkeys: []
-          views: []
-          functions: []
-          streams: []
-          tasks: []
-    characterset: ""
-    collation: ""
-    extensions: []
-    datashare: false
-    servicename: ""
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "a",
+                  "position": 1,
+                  "default": "1",
+                  "type": "int(11)"
+                },
+                {
+                  "name": "b",
+                  "position": 2,
+                  "type": "varchar(200)",
+                  "characterSet": "utf8mb4"
+                },
+                {
+                  "name": "c",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "int(11)",
+                  "comment": "This is a comment"
+                },
+                {
+                  "name": "d",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "varchar(10)",
+                  "collation": "utf8mb4_polish_ci"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "a"
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "b",
+                  "expressions": [
+                    "b"
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
+                },
+                {
+                  "name": "b_2",
+                  "expressions": [
+                    "b",
+                    "a"
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "b_3",
+                  "expressions": [
+                    "b",
+                    "c",
+                    "d"
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
+                },
+                {
+                  "name": "b_4",
+                  "expressions": [
+                    "b",
+                    "d"
+                  ],
+                  "type": "FULLTEXT"
+                },
+                {
+                  "name": "idx_a",
+                  "expressions": [
+                    "a"
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
   err: null
 - statement: DROP TABLE t1, t2
-  want:
-    name: ""
-    schemas:
-        - name: ""
-          tables: []
-          views: []
-          functions: []
-          streams: []
-          tasks: []
-    characterset: ""
-    collation: ""
-    extensions: []
-    datashare: false
-    servicename: ""
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "schemas": [
+        {}
+      ]
+    }
   err: null
 - statement: INSERT INTO test values (1)
-  want:
-    name: ""
-    schemas:
-        - name: ""
-          tables: []
-          views: []
-          functions: []
-          streams: []
-          tasks: []
-    characterset: ""
-    collation: ""
-    extensions: []
-    datashare: false
-    servicename: ""
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "schemas": [
+        {}
+      ]
+    }
   err: null
