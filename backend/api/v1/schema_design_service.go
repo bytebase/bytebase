@@ -49,6 +49,8 @@ func (s *SchemaDesignService) GetSchemaDesign(ctx context.Context, request *v1pb
 	sheet, err := s.getSheet(ctx, &store.FindSheetMessage{
 		UID:         &sheetUID,
 		PayloadType: &schemaDesignSheetType,
+
+		LoadFull: true,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -71,6 +73,10 @@ func (s *SchemaDesignService) ListSchemaDesigns(ctx context.Context, request *v1
 	sheetFind := &store.FindSheetMessage{
 		PayloadType: &schemaDesignSheetType,
 	}
+	if request.View == v1pb.SchemaDesignView_SCHEMA_DESIGN_VIEW_FULL {
+		sheetFind.LoadFull = true
+	}
+
 	if projectID != "-" {
 		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 			ResourceID: &projectID,
@@ -296,7 +302,8 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 	}
 
 	sheet, err := s.getSheet(ctx, &store.FindSheetMessage{
-		UID: &sheetUID,
+		UID:      &sheetUID,
+		LoadFull: true,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
@@ -364,6 +371,7 @@ func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1
 	sheet, err := s.getSheet(ctx, &store.FindSheetMessage{
 		UID:         &sheetUID,
 		PayloadType: &schemaDesignSheetType,
+		LoadFull:    true,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
@@ -387,6 +395,7 @@ func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1
 	targetSheet, err := s.getSheet(ctx, &store.FindSheetMessage{
 		UID:         &targetSheetUID,
 		PayloadType: &schemaDesignSheetType,
+		LoadFull:    true,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get target sheet: %v", err))
@@ -466,7 +475,8 @@ func (s *SchemaDesignService) DeleteSchemaDesign(ctx context.Context, request *v
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s, must be positive integer", sheetID))
 	}
 	sheet, err := s.getSheet(ctx, &store.FindSheetMessage{
-		UID: &sheetUID,
+		UID:      &sheetUID,
+		LoadFull: true,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
@@ -655,7 +665,8 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s, must be positive integer", sheet.Payload.SchemaDesign.BaselineSheetId))
 		}
 		baselineSheet, err := s.getSheet(ctx, &store.FindSheetMessage{
-			UID: &sheetUID,
+			UID:      &sheetUID,
+			LoadFull: true,
 		})
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
