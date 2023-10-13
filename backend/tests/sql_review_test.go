@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"testing"
+	"time"
 
 	// Import pg driver.
 	// init() in pgx will register it's pgx driver.
@@ -481,6 +482,8 @@ func createIssueAndReturnSQLReviewResult(ctx context.Context, a *require.Asserti
 		a.NoError(err)
 		err = ctl.waitRollout(ctx, issue.Name, rollout.Name)
 		a.NoError(err)
+		// Wait some time till written data becomes consistent.
+		time.Sleep(5 * time.Second)
 	}
 
 	return result.Results
