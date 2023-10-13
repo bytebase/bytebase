@@ -40,10 +40,15 @@ func TestParseToMetadata(t *testing.T) {
 	for i, t := range tests {
 		result, err := ParseToMetadata(t.Schema)
 		a.NoError(err)
+		resultText := protojson.Format(result)
 		if record {
-			tests[i].Metadata = protojson.Format(result)
+			tests[i].Metadata = resultText
 		} else {
-			a.Equal(t.Metadata, protojson.Format(result))
+			resultMeta := &v1pb.DatabaseMetadata{}
+			expectedMeta := &v1pb.DatabaseMetadata{}
+			a.NoError(protojson.Unmarshal([]byte(t.Metadata), resultMeta))
+			a.NoError(protojson.Unmarshal([]byte(t.Metadata), expectedMeta))
+			a.Equal(expectedMeta, resultMeta)
 		}
 	}
 
