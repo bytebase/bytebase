@@ -68,7 +68,8 @@ func getStatementWithResultLimitForMySQL(singleStatement string, limitCount int)
 	}
 
 	listener := &mysqlRewriter{
-		limitCount: limitCount,
+		limitCount:     limitCount,
+		outerMostQuery: true,
 	}
 
 	for _, stmt := range list {
@@ -84,12 +85,17 @@ func getStatementWithResultLimitForMySQL(singleStatement string, limitCount int)
 type mysqlRewriter struct {
 	*mysql.BaseMySQLParserListener
 
-	rewriter   antlr.TokenStreamRewriter
-	err        error
-	limitCount int
+	rewriter       antlr.TokenStreamRewriter
+	err            error
+	outerMostQuery bool
+	limitCount     int
 }
 
 func (r *mysqlRewriter) EnterQueryExpression(ctx *mysql.QueryExpressionContext) {
+	if !r.outerMostQuery {
+		return
+	}
+	r.outerMostQuery = false
 	limitClause := ctx.LimitClause()
 	if limitClause != nil {
 		// limit clause already exists.
