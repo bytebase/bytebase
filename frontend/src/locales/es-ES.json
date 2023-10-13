@@ -313,8 +313,8 @@
       "sql-type": "Tipo de SQL",
       "summary-report": "Informe resumido"
     },
-    "rollout-time": "Tiempo de lanzamiento",
-    "earliest-allowed-time-hint": "'@:{'task.rollout-time'}' especifica el tiempo de ejecución esperado para esta tarea. Si este campo no está especificado, la tarea se ejecutará una vez que haya pasado todos los demás criterios de filtrado.",
+    "rollout-time": "Tiempo de implementación",
+    "earliest-allowed-time-hint": "El tiempo de implementación es cuando deseas que una tarea se ejecute; si no se especifica, se ejecuta cuando se cumplen todos los criterios.",
     "earliest-allowed-time-unset": "No establecido",
     "comment": "Comentario",
     "invoker": "Convocador",

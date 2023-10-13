@@ -314,7 +314,7 @@
       "summary-report": "Summary report"
     },
     "rollout-time": "Rollout time",
-    "earliest-allowed-time-hint": "'@:{'task.rollout-time'}' specifies the expected execution timing for this task. If this field is not specified, the task will be executed once it has passed all other gating criteria.",
+    "earliest-allowed-time-hint": "@:{'task.rollout-time'} is when you want a task to run; if unspecified, it runs when all criteria are met.",
     "earliest-allowed-time-unset": "Unset",
     "comment": "Comment",
     "invoker": "Invoker",
