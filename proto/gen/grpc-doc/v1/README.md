@@ -504,6 +504,7 @@
     - [Task.DatabaseDataUpdate.RollbackSqlStatus](#bytebase-v1-Task-DatabaseDataUpdate-RollbackSqlStatus)
     - [Task.Status](#bytebase-v1-Task-Status)
     - [Task.Type](#bytebase-v1-Task-Type)
+    - [TaskRun.ExecutionStatus](#bytebase-v1-TaskRun-ExecutionStatus)
     - [TaskRun.Status](#bytebase-v1-TaskRun-Status)
   
     - [RolloutService](#bytebase-v1-RolloutService)
@@ -8018,6 +8019,7 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | detail | [string](#string) |  | Below are the results of a task run. |
 | change_history | [string](#string) |  | The resource name of the change history Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
 | schema_version | [string](#string) |  |  |
+| execution_status | [TaskRun.ExecutionStatus](#bytebase-v1-TaskRun-ExecutionStatus) |  |  |
 
 
 
@@ -8160,6 +8162,20 @@ Type is the database change type.
 | DATABASE_BACKUP | 9 | use payload DatabaseBackup |
 | DATABASE_RESTORE_RESTORE | 10 | use payload DatabaseRestoreRestore |
 | DATABASE_RESTORE_CUTOVER | 11 | use payload nil |
+
+
+
+<a name="bytebase-v1-TaskRun-ExecutionStatus"></a>
+
+### TaskRun.ExecutionStatus
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| EXECUTION_STATUS_UNSPECIFIED | 0 |  |
+| PRE_EXECUTING | 1 |  |
+| EXECUTING | 2 |  |
+| POST_EXECUTING | 3 |  |
 
 
 
