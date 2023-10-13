@@ -13,10 +13,9 @@
 import { useLocalStorage } from "@vueuse/core";
 import { NConfigProvider } from "naive-ui";
 import { watch } from "vue";
-import { nextTick } from "vue";
 import { useRoute } from "vue-router";
 import { themeOverrides, dateLang, generalLang } from "../naive-ui.config";
-import { provideAppRootContext, restartAppRoot } from "./AppRootContext";
+import { provideAppRootContext } from "./AppRootContext";
 import { useLanguage } from "./composables/useLanguage";
 import { applyCustomTheme } from "./utils/customTheme";
 
@@ -30,18 +29,14 @@ watch(
   () => {
     const searchParams = new URLSearchParams(window.location.search);
     // Initial custom theme.
-    let customTheme = searchParams.get("customTheme") || "";
-    if (!customTheme && customTheme !== cachedCustomTheme.value) {
-      customTheme = cachedCustomTheme.value;
-    }
+    const customTheme =
+      searchParams.get("customTheme") || cachedCustomTheme.value;
     if (customTheme) {
-      cachedCustomTheme.value = customTheme;
       applyCustomTheme(customTheme);
-      // If custom theme is applied, we need to restart the app root to make sure
-      // the theme is applied to root variables.
-      nextTick(() => {
-        restartAppRoot();
-      });
+      if (customTheme !== cachedCustomTheme.value) {
+        // Save custom theme to local storage.
+        cachedCustomTheme.value = customTheme;
+      }
     }
     // Initial custom language.
     const lang = searchParams.get("lang") || "";
