@@ -9,118 +9,84 @@
       );
     create table public.t2(b int NOT NULL default NULL, constraint t2_pk primary key (b));
     comment on column public.t.a is 'this is a comment';
-  metadata:
-    name: ""
-    schemas:
-        - name: public
-          tables:
-            - name: t
-              columns:
-                - name: c
-                  position: 0
-                  default: null
-                  nullable: true
-                  type: integer
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                  effectivemaskinglevel: 0
-                - name: a
-                  position: 0
-                  default:
-                    value: "1"
-                  nullable: true
-                  type: integer
-                  characterset: ""
-                  collation: ""
-                  comment: this is a comment
-                  classification: ""
-                  usercomment: ""
-                  effectivemaskinglevel: 0
-                - name: b
-                  position: 0
-                  default:
-                    value: '''NULL'''
-                  nullable: true
-                  type: character varying(20)
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                  effectivemaskinglevel: 0
-              indexes:
-                - name: t_pk
-                  expressions:
-                    - a
-                    - b
-                  type: ""
-                  unique: true
-                  primary: true
-                  visible: true
-                  comment: ""
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              classification: ""
-              usercomment: ""
-              foreignkeys:
-                - name: t_fk1
-                  columns:
-                    - a
-                  referencedschema: ""
-                  referencedtable: t2
-                  referencedcolumns:
-                    - b
-                  ondelete: ""
-                  onupdate: ""
-                  matchtype: ""
-            - name: t2
-              columns:
-                - name: b
-                  position: 0
-                  default:
-                    value: "NULL"
-                  nullable: false
-                  type: integer
-                  characterset: ""
-                  collation: ""
-                  comment: ""
-                  classification: ""
-                  usercomment: ""
-                  effectivemaskinglevel: 0
-              indexes:
-                - name: t2_pk
-                  expressions:
-                    - b
-                  type: ""
-                  unique: true
-                  primary: true
-                  visible: true
-                  comment: ""
-              engine: ""
-              collation: ""
-              rowcount: 0
-              datasize: 0
-              indexsize: 0
-              datafree: 0
-              createoptions: ""
-              comment: ""
-              classification: ""
-              usercomment: ""
-              foreignkeys: []
-          views: []
-          functions: []
-          streams: []
-          tasks: []
-    characterset: ""
-    collation: ""
-    extensions: []
-    schemaconfigs: []
+  metadata: |-
+    {
+      "schemas":  [
+        {
+          "name":  "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "c",
+                  "nullable":  true,
+                  "type":  "integer"
+                },
+                {
+                  "name":  "a",
+                  "hasDefault":  true,
+                  "defaultExpression":  "1",
+                  "nullable":  true,
+                  "type":  "integer",
+                  "comment":  "this is a comment"
+                },
+                {
+                  "name":  "b",
+                  "hasDefault":  true,
+                  "defaultExpression":  "'NULL'",
+                  "nullable":  true,
+                  "type":  "character varying(20)"
+                }
+              ],
+              "indexes":  [
+                {
+                  "name":  "t_pk",
+                  "expressions":  [
+                    "a",
+                    "b"
+                  ],
+                  "unique":  true,
+                  "primary":  true,
+                  "visible":  true
+                }
+              ],
+              "foreignKeys":  [
+                {
+                  "name":  "t_fk1",
+                  "columns":  [
+                    "a"
+                  ],
+                  "referencedTable":  "t2",
+                  "referencedColumns":  [
+                    "b"
+                  ]
+                }
+              ]
+            },
+            {
+              "name":  "t2",
+              "columns":  [
+                {
+                  "name":  "b",
+                  "hasDefault":  true,
+                  "defaultExpression":  "NULL",
+                  "type":  "integer"
+                }
+              ],
+              "indexes":  [
+                {
+                  "name":  "t2_pk",
+                  "expressions":  [
+                    "b"
+                  ],
+                  "unique":  true,
+                  "primary":  true,
+                  "visible":  true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }

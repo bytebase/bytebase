@@ -91,12 +91,25 @@ func (t *tidbTransformer) Enter(in tidbast.Node) (tidbast.Node, bool) {
 				return in, true
 			}
 			columnState := &columnState{
-				id:           len(table.columns),
-				name:         columnName,
-				tp:           dataType,
-				defaultValue: defaultValue,
-				comment:      comment,
-				nullable:     tidbColumnCanNull(column),
+				id:       len(table.columns),
+				name:     columnName,
+				tp:       dataType,
+				comment:  comment,
+				nullable: tidbColumnCanNull(column),
+			}
+
+			if defaultValue == nil {
+				columnState.hasDefault = false
+			} else {
+				columnState.hasDefault = true
+				switch {
+				case strings.EqualFold(*defaultValue, "NULL"):
+					columnState.defaultValue = &defaultValueNull{}
+				case strings.HasPrefix(*defaultValue, "'") && strings.HasSuffix(*defaultValue, "'"):
+					columnState.defaultValue = &defaultValueString{value: strings.ReplaceAll((*defaultValue)[1:len(*defaultValue)-1], "''", "'")}
+				default:
+					columnState.defaultValue = &defaultValueExpression{value: *defaultValue}
+				}
 			}
 
 			table.columns[columnName] = columnState
@@ -480,24 +493,33 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 						}
 					}
 				case tidbast.ColumnOptionDefaultValue:
-					defaultValue, err := columnDefaultValue(column)
+					defaultValueText, err := columnDefaultValue(column)
 					if err != nil {
 						g.err = err
 						return in, true
 					}
-					if stateColumn.defaultValue != nil && *stateColumn.defaultValue == *defaultValue {
+					var defaultValue defaultValue
+					switch {
+					case strings.EqualFold(*defaultValueText, "NULL"):
+						defaultValue = &defaultValueNull{}
+					case strings.HasPrefix(*defaultValueText, "'") && strings.HasSuffix(*defaultValueText, "'"):
+						defaultValue = &defaultValueString{value: strings.ReplaceAll((*defaultValueText)[1:len(*defaultValueText)-1], "''", "'")}
+					default:
+						defaultValue = &defaultValueExpression{value: *defaultValueText}
+					}
+					if stateColumn.hasDefault && stateColumn.defaultValue.toString() == defaultValue.toString() {
 						if defaultStr, err := tidbRestoreNodeDefault(option); err == nil {
 							if _, err := g.columnDefine.WriteString(" " + defaultStr); err != nil {
 								g.err = err
 								return in, true
 							}
 						}
-					} else if stateColumn.defaultValue != nil {
+					} else if stateColumn.hasDefault {
 						if _, err := g.columnDefine.WriteString(" DEFAUL"); err != nil {
 							g.err = err
 							return in, true
 						}
-						if _, err := g.columnDefine.WriteString(" " + *stateColumn.defaultValue); err != nil {
+						if _, err := g.columnDefine.WriteString(" " + stateColumn.defaultValue.toString()); err != nil {
 							g.err = err
 							return in, true
 						}
@@ -805,9 +827,9 @@ func tidbExtractNewAttrs(column *columnState, options []*tidbast.ColumnOption) [
 			order: columnAttrOrder["NULL"],
 		})
 	}
-	if !defaultExists && column.defaultValue != nil {
+	if !defaultExists && column.hasDefault {
 		result = append(result, columnAttr{
-			text:  "DEFAULT " + *column.defaultValue,
+			text:  "DEFAULT " + column.defaultValue.toString(),
 			order: columnAttrOrder["DEFAULT"],
 		})
 	}
