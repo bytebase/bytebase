@@ -65,6 +65,17 @@ service SchemaDesignService {
   }
 }
 
+enum SchemaDesignView {
+  // The default / unset value.
+  // The API will default to the BASIC view.
+  SCHEMA_DESIGN_VIEW_UNSPECIFIED = 0;
+
+  // Exclude schema, baseline_schema.
+  SCHEMA_DESIGN_VIEW_BASIC = 1;
+  // Include everything.
+  SCHEMA_DESIGN_VIEW_FULL = 2;
+}
+
 message SchemaDesign {
   // The name of the schema design.
   // Format: projects/{project}/schemaDesigns/{schemaDesign}
@@ -163,6 +174,8 @@ message ListSchemaDesignsRequest {
   // When paginating, all other parameters provided to `ListSchemaDesigns` must match
   // the call that provided the page token.
   string page_token = 4;
+
+  SchemaDesignView view = 5;
 }
 
 message ListSchemaDesignsResponse {
