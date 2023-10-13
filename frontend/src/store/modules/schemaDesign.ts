@@ -7,6 +7,7 @@ import {
   MergeSchemaDesignRequest,
   SchemaDesign,
   SchemaDesign_Type,
+  SchemaDesignView,
 } from "@/types/proto/v1/schema_design_service";
 import {
   getProjectAndSchemaDesignSheetId,
@@ -28,6 +29,7 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
     const { schemaDesigns } = await schemaDesignServiceClient.listSchemaDesigns(
       {
         parent: "projects/-",
+        view: SchemaDesignView.SCHEMA_DESIGN_VIEW_FULL,
       }
     );
     // Clear the cache and re-populate it.
@@ -97,7 +99,7 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
   const fetchSchemaDesignByName = async (name: string, silent = false) => {
     const schemaDesign = await schemaDesignServiceClient.getSchemaDesign(
       {
-        name,
+        name: name,
       },
       {
         silent,
