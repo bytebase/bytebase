@@ -6,6 +6,8 @@ import {
   mergeDiffResults,
 } from "@/utils/schemaEditor/diffSchema";
 
+// getDatabaseEditListWithSchemaEditor will calculate the diff between the origin schema and the current schema
+// and return a list of DatabaseEdit. The DatabaseEdit will be only used to check if the schema has changes.
 export const getDatabaseEditListWithSchemaEditor = () => {
   const schemaEditorV1Store = useSchemaEditorV1Store();
 
@@ -18,10 +20,6 @@ export const getDatabaseEditListWithSchemaEditor = () => {
       const originSchema = databaseSchema.originSchemaList.find(
         (originSchema) => originSchema.id === schema.id
       );
-      if (!originSchema) {
-        continue;
-      }
-
       const diffSchemaResult = diffSchema(database.name, originSchema, schema);
       if (checkHasSchemaChanges(diffSchemaResult)) {
         const index = databaseEditList.findIndex(
