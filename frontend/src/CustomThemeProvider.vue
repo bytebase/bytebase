@@ -1,6 +1,5 @@
 <template>
   <NConfigProvider
-    v-if="initialized"
     :key="key"
     :locale="generalLang"
     :date-locale="dateLang"
@@ -13,33 +12,40 @@
 <script lang="ts" setup>
 import { useLocalStorage } from "@vueuse/core";
 import { NConfigProvider } from "naive-ui";
-import { onMounted, ref } from "vue";
+import { watch } from "vue";
+import { useRoute } from "vue-router";
 import { themeOverrides, dateLang, generalLang } from "../naive-ui.config";
 import { provideAppRootContext } from "./AppRootContext";
 import { useLanguage } from "./composables/useLanguage";
 import { applyCustomTheme } from "./utils/customTheme";
 
+const route = useRoute();
 const { key } = provideAppRootContext();
 const { setLocale } = useLanguage();
-const initialized = ref(false);
+const cachedCustomTheme = useLocalStorage<string>("bb.custom-theme", "");
 
-onMounted(() => {
-  const searchParams = new URLSearchParams(window.location.search);
-  // Initial custom theme.
-  let customTheme = searchParams.get("customTheme") || "";
-  const cachedCustomTheme = useLocalStorage<string>("bb.custom-theme", "");
-  if (!customTheme && cachedCustomTheme.value) {
-    customTheme = cachedCustomTheme.value;
+watch(
+  () => route.fullPath,
+  () => {
+    const searchParams = new URLSearchParams(window.location.search);
+    // Initial custom theme.
+    const customTheme =
+      searchParams.get("customTheme") || cachedCustomTheme.value;
+    if (customTheme) {
+      applyCustomTheme(customTheme);
+      if (customTheme !== cachedCustomTheme.value) {
+        // Save custom theme to local storage.
+        cachedCustomTheme.value = customTheme;
+      }
+    }
+    // Initial custom language.
+    const lang = searchParams.get("lang") || "";
+    if (lang) {
+      setLocale(lang);
+    }
+  },
+  {
+    immediate: true,
   }
-  if (customTheme) {
-    cachedCustomTheme.value = customTheme;
-    applyCustomTheme(customTheme);
-  }
-  // Initial custom language.
-  const lang = searchParams.get("lang") || "";
-  if (lang) {
-    setLocale(lang);
-  }
-  initialized.value = true;
-});
+);
 </script>

@@ -2434,6 +2434,7 @@ The type of target.
 | engine | [Engine](#bytebase-store-Engine) |  |  |
 | category | [string](#string) |  |  |
 | column | [ColumnMetadata](#bytebase-store-ColumnMetadata) |  |  |
+| config | [ColumnConfig](#bytebase-store-ColumnConfig) |  |  |
 
 
 
@@ -2452,6 +2453,7 @@ The type of target.
 | engine | [Engine](#bytebase-store-Engine) |  |  |
 | category | [string](#string) |  |  |
 | table | [TableMetadata](#bytebase-store-TableMetadata) |  |  |
+| config | [TableConfig](#bytebase-store-TableConfig) |  |  |
 
 
 

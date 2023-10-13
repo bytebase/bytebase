@@ -8,6 +8,7 @@ import {
   GetChangeHistoryRequest,
   ListChangeHistoriesRequest,
 } from "@/types/proto/v1/database_service";
+import { extractDatabaseResourceName } from "@/utils";
 
 export const useChangeHistoryStore = defineStore("changeHistory_v1", () => {
   const changeHistoryMapByName = reactive(new Map<string, ChangeHistory>());
@@ -26,7 +27,6 @@ export const useChangeHistoryStore = defineStore("changeHistory_v1", () => {
     historyList: ChangeHistory[]
   ) => {
     changeHistoryListMapByDatabase.set(parent, historyList);
-    await upsertChangeHistoryMap(historyList);
   };
 
   const fetchChangeHistoryList = async (
@@ -64,7 +64,15 @@ export const useChangeHistoryStore = defineStore("changeHistory_v1", () => {
     return await fetchChangeHistory({ name });
   };
   const getChangeHistoryByName = (name: string) => {
-    return changeHistoryMapByName.get(name);
+    const detail = changeHistoryMapByName.get(name);
+    if (detail) {
+      return detail;
+    }
+    const { full: parent } = extractDatabaseResourceName(name);
+    const brief = changeHistoryListMapByDatabase
+      .get(parent)
+      ?.find((ch) => ch.name === name);
+    return brief;
   };
   const exportChangeHistoryFullStatementByName = async (
     name: string
