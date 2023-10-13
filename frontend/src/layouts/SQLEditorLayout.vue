@@ -44,7 +44,7 @@ const showBanners = computed(() => {
 
 onMounted(() => {
   const searchParams = new URLSearchParams(window.location.search);
-  let mode = (searchParams.get("mode") || "BUNDLED") as SQLEditorMode;
+  let mode = searchParams.get("mode") as SQLEditorMode;
   const cachedMode = useLocalStorage<SQLEditorMode>(
     "bb.sql-editor.mode",
     "BUNDLED"
