@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	currentPGVersion = "14"
+	currentVersion = "14"
 )
 
 // Install will extract the postgres and utility tar in resourceDir.
@@ -34,10 +34,10 @@ func Install(resourceDir string) (string, error) {
 	tarName := pkgNamePrefix + ".txz"
 
 	var pgBaseDir string
-	if currentPGVersion == "14" {
+	if currentVersion == "14" {
 		pgBaseDir = path.Join(resourceDir, pkgNamePrefix)
 	} else {
-		pgBaseDir = path.Join(resourceDir, fmt.Sprintf("%s%s", pkgNamePrefix, currentPGVersion))
+		pgBaseDir = path.Join(resourceDir, fmt.Sprintf("%s-%s", pkgNamePrefix, currentVersion))
 	}
 	needInstall := false
 	if _, err := os.Stat(pgBaseDir); err != nil {
@@ -50,7 +50,7 @@ func Install(resourceDir string) (string, error) {
 	if needInstall {
 		slog.Info("Installing PostgreSQL utilities...")
 		// The ordering below made Postgres installation atomic.
-		tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s%s", pkgNamePrefix, currentPGVersion))
+		tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s%s", pkgNamePrefix, currentVersion))
 		if err := installInDir(tarName, tmpDir); err != nil {
 			return "", err
 		}
