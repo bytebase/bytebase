@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	currentPGVersion = "14"
+	currentPGVersion = "16"
 )
 
 // Install will extract the postgres and utility tar in resourceDir.
