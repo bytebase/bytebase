@@ -18,16 +18,16 @@ const (
 
 // SetupTestInstance installs and starts a postgresql instance for testing,
 // returns the stop function.
-func SetupTestInstance(pgDirDir, pgDataDir string, port int) func() {
-	if err := InitDB(pgDirDir, pgDataDir, TestPgUser); err != nil {
+func SetupTestInstance(pgBinDir, pgDataDir string, port int) func() {
+	if err := InitDB(pgBinDir, pgDataDir, TestPgUser); err != nil {
 		panic(err)
 	}
-	if err := startForTest(port, pgDirDir, pgDataDir); err != nil {
+	if err := startForTest(port, pgBinDir, pgDataDir); err != nil {
 		panic(err)
 	}
 
 	stopFn := func() {
-		if err := Stop(pgDirDir, pgDataDir); err != nil {
+		if err := Stop(pgBinDir, pgDataDir); err != nil {
 			panic(err)
 		}
 		if err := os.RemoveAll(pgDataDir); err != nil {

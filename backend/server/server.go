@@ -22,7 +22,6 @@ import (
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/api/gitops"
 	v1 "github.com/bytebase/bytebase/backend/api/v1"
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/common/stacktrace"
 	"github.com/bytebase/bytebase/backend/component/activity"
@@ -86,8 +85,6 @@ type Server struct {
 	startedTs       int64
 	secret          string
 	errorRecordRing api.ErrorRecordRing
-	// Embedded PG data.
-	embeddedPGDataDir string
 
 	// Stubs.
 	rolloutService *v1.RolloutService
@@ -99,6 +96,8 @@ type Server struct {
 	mongoBinDir string
 	// Postgres utility binaries
 	pgBinDir string
+	// PG server stoppers.
+	stopper []func()
 
 	s3Client *bbs3.Client
 
@@ -156,37 +155,13 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return nil, err
 	}
 
-	// Start a Postgres sample server. This is used for onboarding users without requiring them to
-	// configure an external instance.
-	if profile.SampleDatabasePort != 0 {
-		slog.Info("-----Sample Postgres Instance BEGIN-----")
-		sampleDataDir := common.GetPostgresSampleDataDir(profile.DataDir, "test")
-		slog.Info(fmt.Sprintf("Start test sample database sampleDatabasePort=%d sampleDataDir=%s", profile.SampleDatabasePort, sampleDataDir))
-		if err := postgres.StartSampleInstance(ctx, s.pgBinDir, sampleDataDir, profile.SampleDatabasePort, profile.Mode); err != nil {
-			slog.Error("failed to init test sample instance", log.BBError(err))
-		}
-		sampleDataDir = common.GetPostgresSampleDataDir(profile.DataDir, "prod")
-		slog.Info(fmt.Sprintf("Start prod sample database sampleDatabasePort=%d sampleDataDir=%s", profile.SampleDatabasePort+1, sampleDataDir))
-		if err := postgres.StartSampleInstance(ctx, s.pgBinDir, sampleDataDir, profile.SampleDatabasePort+1, profile.Mode); err != nil {
-			slog.Error("failed to init prod sample instance", log.BBError(err))
-		}
-		slog.Info("-----Sample Postgres Instance END-----")
-	}
-
 	var connCfg dbdriver.ConnectionConfig
 	if profile.UseEmbedDB() {
-		s.embeddedPGDataDir = common.GetPostgresDataDir(profile.DataDir, profile.DemoName)
-		slog.Info("-----Embedded Postgres BEGIN-----")
-		slog.Info(fmt.Sprintf("Start embedded Postgres datastorePort=%d pgDataDir=%s", profile.DatastorePort, s.embeddedPGDataDir))
-		if err := postgres.InitDB(s.pgBinDir, s.embeddedPGDataDir, profile.PgUser); err != nil {
+		stopper, err := postgres.StartMetadataInstance(s.pgBinDir, profile.DataDir, profile.PgUser, profile.DemoName, profile.DatastorePort, profile.Mode)
+		if err != nil {
 			return nil, err
 		}
-		serverLog := profile.Mode == common.ReleaseModeDev
-		if err := postgres.Start(profile.DatastorePort, s.pgBinDir, s.embeddedPGDataDir, serverLog); err != nil {
-			return nil, err
-		}
-		slog.Info("-----Embedded Postgres END-----")
-
+		s.stopper = append(s.stopper, stopper)
 		connCfg = store.GetEmbeddedConnectionConfig(profile.DatastorePort, profile.PgUser)
 	} else {
 		cfg, err := store.GetConnectionConfig(profile.PgURL)
@@ -196,6 +171,22 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		connCfg = cfg
 	}
 	connCfg.ReadOnly = profile.Readonly
+
+	// Start Postgres sample servers. It is used for onboarding users without requiring them to
+	// configure an external instance.
+	if profile.SampleDatabasePort != 0 {
+		slog.Info("-----Sample Postgres Instance BEGIN-----")
+		for i, v := range []string{"test", "prod"} {
+			slog.Info(fmt.Sprintf("Start %q sample database sampleDatabasePort=%d", v, profile.SampleDatabasePort))
+			stopper, err := postgres.StartSampleInstance(ctx, s.pgBinDir, profile.DataDir, v, profile.SampleDatabasePort+i, profile.Mode)
+			if err != nil {
+				slog.Error("failed to init sample instance", log.BBError(err))
+				continue
+			}
+			s.stopper = append(s.stopper, stopper)
+		}
+		slog.Info("-----Sample Postgres Instance END-----")
+	}
 
 	// Connect to the instance that stores bytebase's own metadata.
 	storeDB := store.NewDB(connCfg, s.pgBinDir, profile.DemoName, profile.Readonly, profile.Version, profile.Mode)
@@ -455,24 +446,10 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		}
 	}
 
-	// Shutdown postgres sample instance.
-	if s.profile.SampleDatabasePort != 0 {
-		if err := postgres.Stop(s.pgBinDir, common.GetPostgresSampleDataDir(s.profile.DataDir, "test")); err != nil {
-			slog.Error("Failed to stop test postgres sample instance", log.BBError(err))
-		}
-		if err := postgres.Stop(s.pgBinDir, common.GetPostgresSampleDataDir(s.profile.DataDir, "prod")); err != nil {
-			slog.Error("Failed to stop prod postgres sample instance", log.BBError(err))
-		}
+	// Shutdown postgres instances.
+	for _, stopper := range s.stopper {
+		stopper()
 	}
-
-	// Shutdown postgres server if embed.
-	slog.Info("Stopping PostgreSQL...")
-	if s.embeddedPGDataDir != "" {
-		if err := postgres.Stop(s.pgBinDir, s.embeddedPGDataDir); err != nil {
-			return err
-		}
-	}
-	slog.Info("Bytebase stopped properly.")
 
 	return nil
 }
