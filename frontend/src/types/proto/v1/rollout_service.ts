@@ -1036,6 +1036,8 @@ export interface TaskRun {
   changeHistory: string;
   schemaVersion: string;
   executionStatus: TaskRun_ExecutionStatus;
+  /** Last execution status update timestamp. */
+  executionStatusUpdateTime: Date | undefined;
 }
 
 export enum TaskRun_Status {
@@ -5105,6 +5107,7 @@ function createBaseTaskRun(): TaskRun {
     changeHistory: "",
     schemaVersion: "",
     executionStatus: 0,
+    executionStatusUpdateTime: undefined,
   };
 }
 
@@ -5145,6 +5148,9 @@ export const TaskRun = {
     }
     if (message.executionStatus !== 0) {
       writer.uint32(96).int32(message.executionStatus);
+    }
+    if (message.executionStatusUpdateTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.executionStatusUpdateTime), writer.uint32(106).fork()).ldelim();
     }
     return writer;
   },
@@ -5240,6 +5246,13 @@ export const TaskRun = {
 
           message.executionStatus = reader.int32() as any;
           continue;
+        case 13:
+          if (tag !== 106) {
+            break;
+          }
+
+          message.executionStatusUpdateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5263,6 +5276,9 @@ export const TaskRun = {
       changeHistory: isSet(object.changeHistory) ? String(object.changeHistory) : "",
       schemaVersion: isSet(object.schemaVersion) ? String(object.schemaVersion) : "",
       executionStatus: isSet(object.executionStatus) ? taskRun_ExecutionStatusFromJSON(object.executionStatus) : 0,
+      executionStatusUpdateTime: isSet(object.executionStatusUpdateTime)
+        ? fromJsonTimestamp(object.executionStatusUpdateTime)
+        : undefined,
     };
   },
 
@@ -5281,6 +5297,8 @@ export const TaskRun = {
     message.schemaVersion !== undefined && (obj.schemaVersion = message.schemaVersion);
     message.executionStatus !== undefined &&
       (obj.executionStatus = taskRun_ExecutionStatusToJSON(message.executionStatus));
+    message.executionStatusUpdateTime !== undefined &&
+      (obj.executionStatusUpdateTime = message.executionStatusUpdateTime.toISOString());
     return obj;
   },
 
@@ -5302,6 +5320,7 @@ export const TaskRun = {
     message.changeHistory = object.changeHistory ?? "";
     message.schemaVersion = object.schemaVersion ?? "";
     message.executionStatus = object.executionStatus ?? 0;
+    message.executionStatusUpdateTime = object.executionStatusUpdateTime ?? undefined;
     return message;
   },
 };
