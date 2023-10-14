@@ -130,8 +130,8 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 
 	// Create a PostgreSQL instance.
 	pgPort := getTestPort()
-	pgStopInstance := postgres.SetupTestInstance(t, pgPort, resourceDir)
-	defer pgStopInstance()
+	stopInstance := postgres.SetupTestInstance(pgBinDir, t.TempDir(), pgPort)
+	defer stopInstance()
 
 	mysqlInstance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),
