@@ -23,6 +23,7 @@ https://github.com/zonkyio/embedded-postgres-binaries
 ./gradlew clean install -Pversion=16.0.0 -PpgVersion=16.0 -ParchName=amd64
 ./gradlew clean install -Pversion=16.0.0 -PpgVersion=16.0 -ParchName=arm64v8
 
+Darwin should bring in "lib/libpq*".
 
 ## MySQL/mysqlutil
 
