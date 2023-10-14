@@ -81,29 +81,11 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	/*
-		stopInstance := postgres.SetupTestInstance(m, pgPort, pgBinDir)
-		defer stopInstance()
-	*/
-
-	externalPgDataDir := dir
-	if err := postgres.InitDB(pgBinDir, externalPgDataDir, postgres.TestPgUser); err != nil {
-		log.Fatal(err)
-	}
-	if err = postgres.Start(externalPgPort, pgBinDir, externalPgDataDir, true /* serverLog */); err != nil {
-		log.Fatal(err)
-	}
+	stopInstance := postgres.SetupTestInstance(pgBinDir, dir, externalPgPort)
 
 	code := m.Run()
 
-	// Graceful shutdown.
-	if err := postgres.Stop(pgBinDir, externalPgDataDir); err != nil {
-		log.Fatal(err)
-	}
-	if err := os.RemoveAll(externalPgDataDir); err != nil {
-		log.Fatal(err)
-	}
+	stopInstance()
 
 	os.Exit(code)
 }
