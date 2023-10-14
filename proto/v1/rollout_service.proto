@@ -702,4 +702,6 @@ message TaskRun {
     POST_EXECUTING = 3;
   }
   ExecutionStatus execution_status = 12;
+  // Last execution status update timestamp.
+  google.protobuf.Timestamp execution_status_update_time = 13;
 }
