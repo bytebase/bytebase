@@ -87,7 +87,7 @@ type Server struct {
 	secret          string
 	errorRecordRing api.ErrorRecordRing
 	// Embedded PG data.
-	embededPGDataDir string
+	embeddedPGDataDir string
 
 	// Stubs.
 	rolloutService *v1.RolloutService
@@ -175,14 +175,14 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	var connCfg dbdriver.ConnectionConfig
 	if profile.UseEmbedDB() {
-		s.embededPGDataDir = common.GetPostgresDataDir(profile.DataDir, profile.DemoName)
+		s.embeddedPGDataDir = common.GetPostgresDataDir(profile.DataDir, profile.DemoName)
 		slog.Info("-----Embedded Postgres BEGIN-----")
-		slog.Info(fmt.Sprintf("Start embedded Postgres datastorePort=%d pgDataDir=%s", profile.DatastorePort, s.embededPGDataDir))
-		if err := postgres.InitDB(s.pgBinDir, s.embededPGDataDir, profile.PgUser); err != nil {
+		slog.Info(fmt.Sprintf("Start embedded Postgres datastorePort=%d pgDataDir=%s", profile.DatastorePort, s.embeddedPGDataDir))
+		if err := postgres.InitDB(s.pgBinDir, s.embeddedPGDataDir, profile.PgUser); err != nil {
 			return nil, err
 		}
 		serverLog := profile.Mode == common.ReleaseModeDev
-		if err := postgres.Start(profile.DatastorePort, s.pgBinDir, s.embededPGDataDir, serverLog); err != nil {
+		if err := postgres.Start(profile.DatastorePort, s.pgBinDir, s.embeddedPGDataDir, serverLog); err != nil {
 			return nil, err
 		}
 		slog.Info("-----Embedded Postgres END-----")
@@ -467,7 +467,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 
 	// Shutdown postgres server if embed.
 	slog.Info("Stopping PostgreSQL...")
-	if err := postgres.Stop(s.pgBinDir, s.embededPGDataDir); err != nil {
+	if err := postgres.Stop(s.pgBinDir, s.embeddedPGDataDir); err != nil {
 		return err
 	}
 	slog.Info("Bytebase stopped properly.")
