@@ -27,25 +27,19 @@ const (
 // Install will extract the postgres and utility tar in resourceDir.
 // Returns the bin directory on success.
 func Install(resourceDir string) (string, error) {
-	var tarName string
-	switch {
-	case runtime.GOOS == "darwin" && runtime.GOARCH == "amd64":
-		tarName = "postgres-darwin-amd64.txz"
-	case runtime.GOOS == "darwin" && runtime.GOARCH == "arm64":
-		tarName = "postgres-darwin-arm64.txz"
-	case runtime.GOOS == "linux" && runtime.GOARCH == "amd64":
-		tarName = "postgres-linux-amd64.txz"
-	case runtime.GOOS == "linux" && runtime.GOARCH == "arm64":
-		tarName = "postgres-linux-arm64.txz"
-	default:
-		return "", errors.Errorf("unsupported combination of OS %q and ARCH %q", runtime.GOOS, runtime.GOARCH)
+	pkgNamePrefix, err := getTarName()
+	if err != nil {
+		return "", err
 	}
+	tarName := pkgNamePrefix + ".txz"
 
-	version := strings.TrimSuffix(tarName, ".txz")
-	pgBaseDir := path.Join(resourceDir, version)
-	pgBinDir := path.Join(pgBaseDir, "bin")
+	var pgBaseDir string
+	if currentPGVersion == "14" {
+		pgBaseDir = path.Join(resourceDir, pkgNamePrefix)
+	} else {
+		pgBaseDir = path.Join(resourceDir, fmt.Sprintf("%s%s", pkgNamePrefix, currentPGVersion))
+	}
 	needInstall := false
-
 	if _, err := os.Stat(pgBaseDir); err != nil {
 		if !os.IsNotExist(err) {
 			return "", errors.Wrapf(err, "failed to check postgres binary base directory path %q", pgBaseDir)
@@ -56,7 +50,7 @@ func Install(resourceDir string) (string, error) {
 	if needInstall {
 		slog.Info("Installing PostgreSQL utilities...")
 		// The ordering below made Postgres installation atomic.
-		tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s", version))
+		tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s%s", pkgNamePrefix, currentPGVersion))
 		if err := installInDir(tarName, tmpDir); err != nil {
 			return "", err
 		}
@@ -66,7 +60,23 @@ func Install(resourceDir string) (string, error) {
 		}
 	}
 
+	pgBinDir := path.Join(pgBaseDir, "bin")
 	return pgBinDir, nil
+}
+
+func getTarName() (string, error) {
+	switch {
+	case runtime.GOOS == "darwin" && runtime.GOARCH == "amd64":
+		return "postgres-darwin-amd64", nil
+	case runtime.GOOS == "darwin" && runtime.GOARCH == "arm64":
+		return "postgres-darwin-arm64", nil
+	case runtime.GOOS == "linux" && runtime.GOARCH == "amd64":
+		return "postgres-linux-amd64", nil
+	case runtime.GOOS == "linux" && runtime.GOARCH == "arm64":
+		return "postgres-linux-arm64", nil
+	default:
+		return "", errors.Errorf("unsupported combination of OS %q and ARCH %q", runtime.GOOS, runtime.GOARCH)
+	}
 }
 
 // start starts a postgres database instance.
@@ -208,7 +218,7 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 	return nil
 }
 
-func getPGVersion(pgDataPath string) (string, error) {
+func getVersion(pgDataPath string) (string, error) {
 	versionPath := filepath.Join(pgDataPath, "PG_VERSION")
 	data, err := os.ReadFile(versionPath)
 	if err != nil {
@@ -217,7 +227,7 @@ func getPGVersion(pgDataPath string) (string, error) {
 		}
 		return "", errors.Wrapf(err, "failed to check postgres version in data directory path %q", versionPath)
 	}
-	return string(data), nil
+	return strings.TrimRight(string(data), "\n"), nil
 }
 
 func shouldSwitchUser() (int, int, bool, error) {
