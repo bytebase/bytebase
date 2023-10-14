@@ -57,7 +57,7 @@ func upgradePostgres(dataDir, resourceDir, pgBinDir, pgDataDir, pgUser string, p
 	if version == "" {
 		return nil
 	}
-	if version == currentPGVersion {
+	if version == currentVersion {
 		return nil
 	}
 

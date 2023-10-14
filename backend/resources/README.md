@@ -16,6 +16,14 @@ darwin/amd64 used for MacOS amd64: https://repo1.maven.org/maven2/io/zonky/test/
 
 darwin/arm64v8 used for MacOS arm64v8: https://repo1.maven.org/maven2/io/zonky/test/postgres/embedded-postgres-binaries-darwin-arm64v8/14.2.0/embedded-postgres-binaries-darwin-arm64v8-14.2.0.jar
 
+### Embeded Postgres binary
+
+https://github.com/zonkyio/embedded-postgres-binaries
+
+./gradlew clean install -Pversion=16.0.0 -PpgVersion=16.0 -ParchName=amd64
+./gradlew clean install -Pversion=16.0.0 -PpgVersion=16.0 -ParchName=arm64v8
+
+Darwin should bring in "lib/libpq*".
 
 ## MySQL/mysqlutil
 
