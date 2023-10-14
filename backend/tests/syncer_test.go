@@ -90,9 +90,9 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 					{
 						Name: "VW",
 						Definition: strings.Join([]string{
-							` SELECT "TFK".a,`,
-							`    "TFK".b,`,
-							`    "TFK".c`,
+							` SELECT a,`,
+							`    b,`,
+							`    c`,
 							`   FROM "TFK";`},
 							"\n"),
 						DependentColumns: []*v1pb.DependentColumn{
