@@ -12,7 +12,6 @@ import (
 	"regexp"
 	"sort"
 	"strconv"
-	"strings"
 
 	"github.com/pkg/errors"
 	"golang.org/x/exp/slog"
@@ -47,8 +46,8 @@ func StartSampleInstance(ctx context.Context, pgBinDir, dataDir, sampleName stri
 	if err != nil {
 		return nil, err
 	}
-	if !strings.HasPrefix(v, currentPGVersion) {
-		slog.Warn("delete sample postgres with different version", slog.String("old", v), slog.String("new", currentPGVersion))
+	if v != currentVersion {
+		slog.Warn("delete sample postgres with different version", slog.String("old", v), slog.String("new", currentVersion))
 		err := os.RemoveAll(pgDataDir)
 		if err != nil {
 			return nil, err
