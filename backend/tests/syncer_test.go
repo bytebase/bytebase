@@ -172,7 +172,7 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 
 	// Create a PostgreSQL instance.
 	pgPort := getTestPort()
-	stopInstance := postgres.SetupTestInstance(t, pgPort, resourceDir)
+	stopInstance := postgres.SetupTestInstance(pgBinDir, t.TempDir(), pgPort)
 	defer stopInstance()
 
 	pgDB, err := sql.Open("pgx", fmt.Sprintf("host=/tmp port=%d user=root database=postgres", pgPort))
