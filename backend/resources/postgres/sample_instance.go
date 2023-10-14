@@ -43,7 +43,7 @@ const (
 func StartSampleInstance(ctx context.Context, pgBinDir, dataDir, sampleName string, port int, mode common.ReleaseMode) (func(), error) {
 	pgDataDir := path.Join(dataDir, "pgdata-sample", sampleName)
 
-	v, err := getPGVersion(pgDataDir)
+	v, err := getVersion(pgDataDir)
 	if err != nil {
 		return nil, err
 	}
