@@ -74,7 +74,7 @@ import {
   Task_Status,
   task_StatusToJSON,
 } from "@/types/proto/v1/rollout_service";
-import { extractUserResourceName } from "@/utils";
+import { extractUserResourceName, hasWorkspacePermissionV1 } from "@/utils";
 import { ErrorList } from "../../common";
 
 dayjs.extend(isSameOrAfter);
@@ -118,9 +118,27 @@ const disallowEditReasons = computed(() => {
     return errors;
   }
 
+  let hasPermission = false;
+  // Super users are always allowed change the rollout time.
   if (
-    extractUserResourceName(issue.value.creator) !== currentUser.value.email
+    hasWorkspacePermissionV1(
+      "bb.permission.workspace.manage-issue",
+      currentUser.value.userRole
+    )
   ) {
+    hasPermission = true;
+  }
+  // Issue creator is allowed to change the rollout time.
+  if (extractUserResourceName(issue.value.creator) == currentUser.value.email) {
+    hasPermission = true;
+  }
+  // Issue assignee is allowed to change the rollout time.
+  if (
+    extractUserResourceName(issue.value.assignee) == currentUser.value.email
+  ) {
+    hasPermission = true;
+  }
+  if (!hasPermission) {
     errors.push(t("issue.you-are-not-allowed-to-change-this-value"));
   }
 
