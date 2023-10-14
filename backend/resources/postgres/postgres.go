@@ -44,7 +44,8 @@ const (
 	// SampleUser is the user name for the sample database.
 	SampleUser = "bbsample"
 	// SampleDatabase is the sample database name.
-	SampleDatabase = "employee"
+	SampleDatabase   = "employee"
+	currentPGVersion = "14"
 )
 
 // Install will extract the postgres and utility tar in resourceDir.
@@ -229,6 +230,18 @@ func InitDB(pgBinDir, pgDataDir, pgUser string) error {
 	slog.Info("-----Postgres initdb END-----")
 
 	return nil
+}
+
+func getPGVersion(pgDataPath string) (string, error) {
+	versionPath := filepath.Join(pgDataPath, "PG_VERSION")
+	data, err := os.ReadFile(versionPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", nil
+		}
+		return "", errors.Wrapf(err, "failed to check postgres version in data directory path %q", versionPath)
+	}
+	return string(data), nil
 }
 
 func shouldSwitchUser() (int, int, bool, error) {
@@ -419,6 +432,16 @@ func prepareDemoDatabase(ctx context.Context, pgUser, host, port, database strin
 
 // StartSampleInstance starts a postgres sample instance.
 func StartSampleInstance(ctx context.Context, pgBinDir, pgDataDir string, port int, mode common.ReleaseMode) error {
+	v, err := getPGVersion(pgDataDir)
+	if err != nil {
+		return err
+	}
+	if v != currentPGVersion {
+		err := os.RemoveAll(pgDataDir)
+		if err != nil {
+			return err
+		}
+	}
 	if err := InitDB(pgBinDir, pgDataDir, SampleUser); err != nil {
 		return errors.Wrapf(err, "failed to init sample instance")
 	}
