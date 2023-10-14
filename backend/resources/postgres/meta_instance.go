@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -14,9 +15,9 @@ import (
 )
 
 // StartMetadataInstance starts the metadata instance.
-func StartMetadataInstance(resourceDir, pgBinDir, dataDir, pgUser, demoName string, port int, mode common.ReleaseMode) (func(), error) {
+func StartMetadataInstance(dataDir, resourceDir, pgBinDir, pgUser, demoName string, port int, mode common.ReleaseMode) (func(), error) {
 	pgDataDir := getPostgresDataDir(dataDir, demoName)
-	if err := upgradePostgres(resourceDir, pgBinDir, pgDataDir, pgUser, port); err != nil {
+	if err := upgradePostgres(dataDir, resourceDir, pgBinDir, pgDataDir, pgUser, port); err != nil {
 		return nil, err
 	}
 	slog.Info("-----Embedded Postgres BEGIN-----")
@@ -48,12 +49,15 @@ func getPostgresDataDir(dataDir string, demoName string) string {
 	return path.Join(dataDir, "pgdata")
 }
 
-func upgradePostgres(resourceDir, pgBinDir, pgDataDir, pgUser string, port int) error {
+func upgradePostgres(dataDir, resourceDir, pgBinDir, pgDataDir, pgUser string, port int) error {
 	version, err := getVersion(pgDataDir)
 	if err != nil {
 		return err
 	}
 	if version == "" {
+		return nil
+	}
+	if version == currentPGVersion {
 		return nil
 	}
 
@@ -67,8 +71,8 @@ func upgradePostgres(resourceDir, pgBinDir, pgDataDir, pgUser string, port int) 
 	if err := start(port, previousBinDir, pgDataDir, true /* serverLog */); err != nil {
 		return err
 	}
-	dumpFilePath := path.Join(resourceDir, "meta.sql")
-	cmd := exec.Command(filepath.Join(previousBinDir, "pg_dump"), "--clean", "-U", pgUser, "-h", common.GetPostgresSocketDir(), "-p", fmt.Sprintf("%d", port), pgUser)
+	dumpFilePath := path.Join(dataDir, "meta.sql")
+	cmd := exec.Command(filepath.Join(previousBinDir, "pg_dump"), "-U", pgUser, "-h", common.GetPostgresSocketDir(), "-p", fmt.Sprintf("%d", port), pgUser)
 	dumpFile, err := os.Create(dumpFilePath)
 	if err != nil {
 		return err
@@ -84,10 +88,11 @@ func upgradePostgres(resourceDir, pgBinDir, pgDataDir, pgUser string, port int) 
 	if err := stop(previousBinDir, pgDataDir); err != nil {
 		return err
 	}
-	if err := os.RemoveAll(pgDataDir); err != nil {
+	slog.Info("finished metadata SQL dump")
+	if err := os.Rename(pgDataDir, path.Join(dataDir, fmt.Sprintf("pgdata-%d", time.Now().Unix()))); err != nil {
 		return err
 	}
-	slog.Info("finished metadata SQL dump")
+	slog.Info("renamed old pgdata directory")
 
 	if err := initDB(pgBinDir, pgDataDir, pgUser); err != nil {
 		return err
@@ -95,14 +100,23 @@ func upgradePostgres(resourceDir, pgBinDir, pgDataDir, pgUser string, port int) 
 	if err := start(port, pgBinDir, pgDataDir, true /* serverLog */); err != nil {
 		return err
 	}
+	createDatabaseSQL := fmt.Sprintf("CREATE DATABASE %s;", pgUser)
+	cmd = exec.Command(filepath.Join(previousBinDir, "psql"), "-U", pgUser, "-h", common.GetPostgresSocketDir(), "-p", fmt.Sprintf("%d", port), "postgres", "-c", createDatabaseSQL)
+	if err := cmd.Run(); err != nil {
+		return err
+	}
 	cmd = exec.Command(filepath.Join(previousBinDir, "psql"), "-U", pgUser, "-h", common.GetPostgresSocketDir(), "-p", fmt.Sprintf("%d", port), pgUser, "-f", dumpFilePath)
 	if err := cmd.Run(); err != nil {
 		return err
 	}
-
 	if err := stop(pgBinDir, pgDataDir); err != nil {
 		return err
 	}
+
+	if err := os.Remove(dumpFilePath); err != nil {
+		return err
+	}
+	slog.Info("deleted metadata SQL dump")
 
 	slog.Info("finished pg version upgrade")
 	return nil
