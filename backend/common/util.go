@@ -78,22 +78,6 @@ func HasPrefixes(src string, prefixes ...string) bool {
 	return false
 }
 
-// GetPostgresDataDir returns the postgres data directory of Bytebase.
-func GetPostgresDataDir(dataDir string, demoName string) string {
-	// If demo is specified, we will use demo specific directory to store the demo data. Because
-	// we reset the demo data when starting Bytebase and this can prevent accidentally removing the
-	// production data.
-	if demoName != "" {
-		return path.Join(dataDir, "pgdata-demo", demoName)
-	}
-	return path.Join(dataDir, "pgdata")
-}
-
-// GetPostgresSampleDataDir returns the data directory of postgres sample instance.
-func GetPostgresSampleDataDir(dataDir string, subDir string) string {
-	return path.Join(dataDir, "pgdata-sample", subDir)
-}
-
 // GetPostgresSocketDir returns the postgres socket directory of Bytebase.
 func GetPostgresSocketDir() string {
 	return "/tmp"
