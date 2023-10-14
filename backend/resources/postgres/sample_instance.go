@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 	"golang.org/x/exp/slog"
@@ -36,6 +38,49 @@ const (
 	// SampleDatabase is the sample database name.
 	SampleDatabase = "employee"
 )
+
+// StartSampleInstance starts a postgres sample instance.
+func StartSampleInstance(ctx context.Context, pgBinDir, dataDir, sampleName string, port int, mode common.ReleaseMode) (func(), error) {
+	pgDataDir := path.Join(dataDir, "pgdata-sample", sampleName)
+
+	v, err := getPGVersion(pgDataDir)
+	if err != nil {
+		return nil, err
+	}
+	if !strings.HasPrefix(v, currentPGVersion) {
+		slog.Warn("delete sample postgres with different version", slog.String("old", v), slog.String("new", currentPGVersion))
+		err := os.RemoveAll(pgDataDir)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if err := InitDB(pgBinDir, pgDataDir, SampleUser); err != nil {
+		return nil, errors.Wrapf(err, "failed to init sample instance")
+	}
+
+	if err := turnOnPGStateStatements(pgDataDir); err != nil {
+		slog.Warn("Failed to turn on pg_stat_statements", log.BBError(err))
+	}
+
+	if err := Start(port, pgBinDir, pgDataDir, mode == common.ReleaseModeDev /* serverLog */); err != nil {
+		return nil, errors.Wrapf(err, "failed to start sample instance")
+	}
+
+	host := common.GetPostgresSocketDir()
+	if err := prepareSampleDatabaseIfNeeded(ctx, SampleUser, host, strconv.Itoa(port), SampleDatabase); err != nil {
+		return nil, errors.Wrapf(err, "failed to prepare sample database")
+	}
+
+	if err := createPGStatStatementsExtension(ctx, SampleUser, host, strconv.Itoa(port), SampleDatabase); err != nil {
+		slog.Warn("Failed to create pg_stat_statements extension", log.BBError(err))
+	}
+
+	return func() {
+		if err := Stop(pgBinDir, pgDataDir); err != nil {
+			panic(err)
+		}
+	}, nil
+}
 
 // Verify by pinging the sample database. As long as we encounter error, we will regard it as need
 // to create sample database. This might not be 100% accurate since it could be connection issue.
@@ -142,42 +187,6 @@ func prepareDemoDatabase(ctx context.Context, pgUser, host, port, database strin
 	// Create the sample database.
 	if _, err := driver.Execute(ctx, fmt.Sprintf("CREATE DATABASE %s", database), true, db.ExecuteOptions{}); err != nil {
 		return errors.Wrapf(err, "failed to create sample database")
-	}
-
-	return nil
-}
-
-// StartSampleInstance starts a postgres sample instance.
-func StartSampleInstance(ctx context.Context, pgBinDir, pgDataDir string, port int, mode common.ReleaseMode) error {
-	v, err := getPGVersion(pgDataDir)
-	if err != nil {
-		return err
-	}
-	if v != currentPGVersion {
-		err := os.RemoveAll(pgDataDir)
-		if err != nil {
-			return err
-		}
-	}
-	if err := InitDB(pgBinDir, pgDataDir, SampleUser); err != nil {
-		return errors.Wrapf(err, "failed to init sample instance")
-	}
-
-	if err := turnOnPGStateStatements(pgDataDir); err != nil {
-		slog.Warn("Failed to turn on pg_stat_statements", log.BBError(err))
-	}
-
-	if err := Start(port, pgBinDir, pgDataDir, mode == common.ReleaseModeDev /* serverLog */); err != nil {
-		return errors.Wrapf(err, "failed to start sample instance")
-	}
-
-	host := common.GetPostgresSocketDir()
-	if err := prepareSampleDatabaseIfNeeded(ctx, SampleUser, host, strconv.Itoa(port), SampleDatabase); err != nil {
-		return errors.Wrapf(err, "failed to prepare sample database")
-	}
-
-	if err := createPGStatStatementsExtension(ctx, SampleUser, host, strconv.Itoa(port), SampleDatabase); err != nil {
-		slog.Warn("Failed to create pg_stat_statements extension", log.BBError(err))
 	}
 
 	return nil
