@@ -467,8 +467,10 @@ func (s *Server) Shutdown(ctx context.Context) error {
 
 	// Shutdown postgres server if embed.
 	slog.Info("Stopping PostgreSQL...")
-	if err := postgres.Stop(s.pgBinDir, s.embeddedPGDataDir); err != nil {
-		return err
+	if s.embeddedPGDataDir != "" {
+		if err := postgres.Stop(s.pgBinDir, s.embeddedPGDataDir); err != nil {
+			return err
+		}
 	}
 	slog.Info("Bytebase stopped properly.")
 
