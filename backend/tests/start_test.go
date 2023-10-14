@@ -58,17 +58,13 @@ func TestServerRestart(t *testing.T) {
 	startStopServer(ctx, a, ctl, dataDir)
 }
 
-var (
-	mysqlBinDir string
-)
-
 func TestMain(m *testing.M) {
 	resourceDir = os.TempDir()
 	dir, err := postgres.Install(resourceDir)
 	if err != nil {
 		log.Fatal(err)
 	}
-	externalPgBinDir = dir
+	pgBinDir = dir
 	if _, err := mysqlutil.Install(resourceDir); err != nil {
 		log.Fatal(err)
 	}
@@ -85,18 +81,24 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	externalPgDataDir = dir
-	if err := postgres.InitDB(externalPgBinDir, externalPgDataDir, externalPgUser); err != nil {
+
+	/*
+		stopInstance := postgres.SetupTestInstance(m, pgPort, pgBinDir)
+		defer stopInstance()
+	*/
+
+	externalPgDataDir := dir
+	if err := postgres.InitDB(pgBinDir, externalPgDataDir, postgres.TestPgUser); err != nil {
 		log.Fatal(err)
 	}
-	if err = postgres.Start(externalPgPort, externalPgBinDir, externalPgDataDir, true /* serverLog */); err != nil {
+	if err = postgres.Start(externalPgPort, pgBinDir, externalPgDataDir, true /* serverLog */); err != nil {
 		log.Fatal(err)
 	}
 
 	code := m.Run()
 
 	// Graceful shutdown.
-	if err := postgres.Stop(externalPgBinDir, externalPgDataDir); err != nil {
+	if err := postgres.Stop(pgBinDir, externalPgDataDir); err != nil {
 		log.Fatal(err)
 	}
 	if err := os.RemoveAll(externalPgDataDir); err != nil {

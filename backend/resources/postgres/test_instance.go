@@ -5,35 +5,33 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"testing"
 
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 )
 
+const (
+	// Shared external PG server variables.
+	TestPgUser = "root"
+)
+
 // SetupTestInstance installs and starts a postgresql instance for testing,
 // returns the stop function.
-func SetupTestInstance(t *testing.T, port int, resourceDir string) func() {
-	dataDir := t.TempDir()
-	t.Log("Installing PostgreSQL...")
-	binDir, err := Install(resourceDir)
-	if err != nil {
-		t.Fatal(err)
+func SetupTestInstance(pgDirDir, pgDataDir string, port int) func() {
+	if err := InitDB(pgDirDir, pgDataDir, TestPgUser); err != nil {
+		panic(err)
 	}
-	t.Log("InitDB...")
-	if err := InitDB(binDir, dataDir, "root"); err != nil {
-		t.Fatal(err)
-	}
-	t.Log("Starting PostgreSQL...")
-	if err := startForTest(port, binDir, dataDir); err != nil {
-		t.Fatal(err)
+	if err := startForTest(port, pgDirDir, pgDataDir); err != nil {
+		panic(err)
 	}
 
 	stopFn := func() {
-		t.Log("Stopping PostgreSQL...")
-		if err := Stop(binDir, dataDir); err != nil {
-			t.Fatal(err)
+		if err := Stop(pgDirDir, pgDataDir); err != nil {
+			panic(err)
+		}
+		if err := os.RemoveAll(pgDataDir); err != nil {
+			panic(err)
 		}
 	}
 

@@ -30,6 +30,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	componentConfig "github.com/bytebase/bytebase/backend/component/config"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/server"
 	"github.com/bytebase/bytebase/backend/tests/fake"
 )
@@ -196,15 +197,14 @@ var (
 	mu       sync.Mutex
 	nextPort = time.Now().Second()*200 + 5010
 
-	// Shared external PG server variables.
-	externalPgUser     = "bbexternal"
-	externalPgPort     = time.Now().Second()*200 + 5000
-	externalPgBinDir   string
-	externalPgDataDir  string
+	externalPgPort = time.Now().Second()*200 + 5000
+
 	nextDatabaseNumber = 20210113
 
 	// resourceDir is the shared resource directory.
 	resourceDir string
+	pgBinDir    string
+	mysqlBinDir string
 )
 
 func getTestPort() int {
@@ -238,7 +238,7 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *co
 		return nil, err
 	}
 
-	pgMainURL := fmt.Sprintf("postgresql://%s@:%d/%s?host=%s", externalPgUser, externalPgPort, "postgres", common.GetPostgresSocketDir())
+	pgMainURL := fmt.Sprintf("postgresql://%s@:%d/%s?host=%s", postgres.TestPgUser, externalPgPort, "postgres", common.GetPostgresSocketDir())
 	db, err := sql.Open("pgx", pgMainURL)
 	if err != nil {
 		return nil, err
@@ -249,9 +249,9 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *co
 		return nil, err
 	}
 
-	pgURL := fmt.Sprintf("postgresql://%s@:%d/%s?host=%s", externalPgUser, externalPgPort, databaseName, common.GetPostgresSocketDir())
+	pgURL := fmt.Sprintf("postgresql://%s@:%d/%s?host=%s", postgres.TestPgUser, externalPgPort, databaseName, common.GetPostgresSocketDir())
 	serverPort := getTestPort()
-	profile := getTestProfileWithExternalPg(config.dataDir, resourceDir, serverPort, externalPgUser, pgURL, config.skipOnboardingData)
+	profile := getTestProfileWithExternalPg(config.dataDir, resourceDir, serverPort, postgres.TestPgUser, pgURL, config.skipOnboardingData)
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {
 		return nil, err

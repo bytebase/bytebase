@@ -733,7 +733,7 @@ func TestVCS_SDL_POSTGRES(t *testing.T) {
 
 			// Create a PostgreSQL instance.
 			pgPort := getTestPort()
-			stopInstance := postgres.SetupTestInstance(t, pgPort, resourceDir)
+			stopInstance := postgres.SetupTestInstance(pgBinDir, t.TempDir(), pgPort)
 			defer stopInstance()
 
 			pgDB, err := sql.Open("pgx", fmt.Sprintf("host=/tmp port=%d user=root database=postgres", pgPort))
@@ -1410,7 +1410,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 			}()
 			// Create a PostgreSQL instance.
 			pgPort := getTestPort()
-			stopInstance := postgres.SetupTestInstance(t, pgPort, resourceDir)
+			stopInstance := postgres.SetupTestInstance(pgBinDir, t.TempDir(), pgPort)
 			defer stopInstance()
 
 			pgDB, err := sql.Open("pgx", fmt.Sprintf("host=/tmp port=%d user=root database=postgres", pgPort))
@@ -1916,7 +1916,7 @@ CREATE TABLE public.book (
 			dbPort := getTestPort()
 			switch test.dbType {
 			case storepb.Engine_POSTGRES:
-				stopInstance := postgres.SetupTestInstance(t, dbPort, resourceDir)
+				stopInstance := postgres.SetupTestInstance(pgBinDir, t.TempDir(), dbPort)
 				defer stopInstance()
 			case storepb.Engine_MYSQL:
 				stopInstance := mysql.SetupTestInstance(t, dbPort, mysqlBinDir)
