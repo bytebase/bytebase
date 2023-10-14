@@ -34,9 +34,9 @@ func TestTiDBTransformSchemaString(t *testing.T) {
 		result, err := transformSchemaStringToDatabaseMetadata(t.Engine, t.Schema)
 		a.NoError(err)
 		if record {
-			tests[i].Metadata = protojson.Format(result)
+			tests[i].Metadata = protojson.MarshalOptions{Multiline: true, Indent: "  "}.Format(result)
 		} else {
-			a.Equal(t.Metadata, protojson.Format(result))
+			a.Equal(t.Metadata, protojson.MarshalOptions{Multiline: true, Indent: "  "}.Format(result))
 		}
 	}
 

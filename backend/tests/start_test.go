@@ -17,11 +17,10 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func startStopServer(ctx context.Context, a *require.Assertions, ctl *controller, dataDir string, readOnly bool) {
+func startStopServer(ctx context.Context, a *require.Assertions, ctl *controller, dataDir string) {
 	ctx, err := ctl.StartServer(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
-		readOnly:           readOnly,
 	})
 	a.NoError(err)
 
@@ -53,10 +52,10 @@ func TestServerRestart(t *testing.T) {
 	a.NoError(err)
 
 	// Start server in readonly mode
-	startStopServer(ctx, a, ctl, dataDir, true /* readOnly */)
+	startStopServer(ctx, a, ctl, dataDir)
 
 	// Start server in non-readonly mode
-	startStopServer(ctx, a, ctl, dataDir, false /* readOnly */)
+	startStopServer(ctx, a, ctl, dataDir)
 }
 
 var (
