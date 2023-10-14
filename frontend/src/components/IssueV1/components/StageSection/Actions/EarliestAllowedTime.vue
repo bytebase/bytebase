@@ -118,7 +118,7 @@ const disallowEditReasons = computed(() => {
     return errors;
   }
 
-  let hasPermission = false;
+  let allow = false;
   // Super users are always allowed change the rollout time.
   if (
     hasWorkspacePermissionV1(
@@ -126,19 +126,19 @@ const disallowEditReasons = computed(() => {
       currentUser.value.userRole
     )
   ) {
-    hasPermission = true;
+    allow = true;
   }
   // Issue creator is allowed to change the rollout time.
   if (extractUserResourceName(issue.value.creator) == currentUser.value.email) {
-    hasPermission = true;
+    allow = true;
   }
   // Issue assignee is allowed to change the rollout time.
   if (
     extractUserResourceName(issue.value.assignee) == currentUser.value.email
   ) {
-    hasPermission = true;
+    allow = true;
   }
-  if (!hasPermission) {
+  if (!allow) {
     errors.push(t("issue.you-are-not-allowed-to-change-this-value"));
   }
 
