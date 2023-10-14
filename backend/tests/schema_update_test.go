@@ -639,6 +639,349 @@ func TestVCS(t *testing.T) {
 	}
 }
 
+func TestVCS_SDL_POSTGRES(t *testing.T) {
+	// TODO(rebelice): remove skip when support PostgreSQL SDL.
+	t.Skip()
+	tests := []struct {
+		name                string
+		vcsProviderCreator  fake.VCSProviderCreator
+		vcsType             v1pb.ExternalVersionControl_Type
+		externalID          string
+		repositoryFullPath  string
+		newWebhookPushEvent func(added, modified []string, beforeSHA, afterSHA string) any
+	}{
+		{
+			name:               "GitLab",
+			vcsProviderCreator: fake.NewGitLab,
+			vcsType:            v1pb.ExternalVersionControl_GITLAB,
+			externalID:         "121",
+			repositoryFullPath: "test/schemaUpdate",
+			newWebhookPushEvent: func(added, modified []string, beforeSHA, afterSHA string) any {
+				return gitlab.WebhookPushEvent{
+					ObjectKind: gitlab.WebhookPush,
+					Ref:        "refs/heads/feature/foo",
+					Before:     beforeSHA,
+					After:      afterSHA,
+					Project: gitlab.WebhookProject{
+						ID: 121,
+					},
+					CommitList: []gitlab.WebhookCommit{
+						{
+							Timestamp:    "2021-01-13T13:14:00Z",
+							AddedList:    added,
+							ModifiedList: modified,
+						},
+					},
+				}
+			},
+		},
+		{
+			name:               "GitHub",
+			vcsProviderCreator: fake.NewGitHub,
+			vcsType:            v1pb.ExternalVersionControl_GITHUB,
+			externalID:         "octocat/Hello-World",
+			repositoryFullPath: "octocat/Hello-World",
+			newWebhookPushEvent: func(added, modified []string, beforeSHA, afterSHA string) any {
+				return github.WebhookPushEvent{
+					Ref:    "refs/heads/feature/foo",
+					Before: beforeSHA,
+					After:  afterSHA,
+					Repository: github.WebhookRepository{
+						ID:       211,
+						FullName: "octocat/Hello-World",
+						HTMLURL:  "https://github.com/octocat/Hello-World",
+					},
+					Sender: github.WebhookSender{
+						Login: "fake_github_author",
+					},
+					Commits: []github.WebhookCommit{
+						{
+							ID:        "fake_github_commit_id",
+							Distinct:  true,
+							Message:   "Fake GitHub commit message",
+							Timestamp: time.Now(),
+							URL:       "https://api.github.com/octocat/Hello-World/commits/fake_github_commit_id",
+							Author: github.WebhookCommitAuthor{
+								Name:  "fake_github_author",
+								Email: "fake_github_author@localhost",
+							},
+							Added:    added,
+							Modified: modified,
+						},
+					},
+				}
+			},
+		},
+	}
+	for _, test := range tests {
+		// Fix the problem that closure in a for loop will always use the last element.
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			a := require.New(t)
+			ctx := context.Background()
+			ctl := &controller{}
+			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
+				dataDir:            t.TempDir(),
+				vcsProviderCreator: test.vcsProviderCreator,
+			})
+			a.NoError(err)
+			defer func() {
+				_ = ctl.Close(ctx)
+			}()
+
+			// Create a PostgreSQL instance.
+			pgPort := getTestPort()
+			stopInstance := postgres.SetupTestInstance(pgBinDir, t.TempDir(), pgPort)
+			defer stopInstance()
+
+			pgDB, err := sql.Open("pgx", fmt.Sprintf("host=/tmp port=%d user=root database=postgres", pgPort))
+			a.NoError(err)
+			defer func() {
+				_ = pgDB.Close()
+			}()
+
+			err = pgDB.Ping()
+			a.NoError(err)
+
+			const databaseName = "testVCSSchemaUpdate"
+			_, err = pgDB.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %v", databaseName))
+			a.NoError(err)
+			_, err = pgDB.Exec("CREATE USER bytebase WITH ENCRYPTED PASSWORD 'bytebase'")
+			a.NoError(err)
+			_, err = pgDB.Exec("ALTER USER bytebase WITH SUPERUSER")
+			a.NoError(err)
+
+			// Create a table in the database
+			schemaFileContent := `CREATE TABLE projects (id serial PRIMARY KEY);`
+			_, err = pgDB.Exec(schemaFileContent)
+			a.NoError(err)
+
+			// Create a VCS
+			evcs, err := ctl.evcsClient.CreateExternalVersionControl(ctx, &v1pb.CreateExternalVersionControlRequest{
+				ExternalVersionControl: &v1pb.ExternalVersionControl{
+					Title:         t.Name(),
+					Type:          test.vcsType,
+					Url:           ctl.vcsURL,
+					ApiUrl:        ctl.vcsProvider.APIURL(ctl.vcsURL),
+					ApplicationId: "testApplicationID",
+					Secret:        "testApplicationSecret",
+				},
+			})
+			a.NoError(err)
+			// Create a repository
+			ctl.vcsProvider.CreateRepository(test.externalID)
+			// Create the branch
+			err = ctl.vcsProvider.CreateBranch(test.externalID, "feature/foo")
+			a.NoError(err)
+
+			_, err = ctl.projectServiceClient.UpdateProjectGitOpsInfo(ctx, &v1pb.UpdateProjectGitOpsInfoRequest{
+				ProjectGitopsInfo: &v1pb.ProjectGitOpsInfo{
+					Name:               fmt.Sprintf("%s/gitOpsInfo", ctl.project.Name),
+					VcsUid:             strings.TrimPrefix(evcs.Name, "externalVersionControls/"),
+					Title:              "Test Repository",
+					FullPath:           test.repositoryFullPath,
+					WebUrl:             fmt.Sprintf("%s/%s", ctl.vcsURL, test.repositoryFullPath),
+					BranchFilter:       "feature/foo",
+					BaseDirectory:      baseDirectory,
+					FilePathTemplate:   "{{ENV_ID}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql",
+					SchemaPathTemplate: "{{ENV_ID}}/.{{DB_NAME}}##LATEST.sql",
+					ExternalId:         test.externalID,
+					AccessToken:        "accessToken1",
+					RefreshToken:       "refreshToken1",
+				},
+				AllowMissing: true,
+			})
+			a.NoError(err)
+
+			instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
+				InstanceId: generateRandomString("instance", 10),
+				Instance: &v1pb.Instance{
+					Title:       "pgInstance",
+					Engine:      v1pb.Engine_POSTGRES,
+					Environment: "environments/prod",
+					Activation:  true,
+					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "bytebase", Password: "bytebase"}},
+				},
+			})
+			a.NoError(err)
+
+			// Create an issue that creates a database
+			err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, "bytebase", nil /* labelMap */)
+			a.NoError(err)
+
+			database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName)})
+			a.NoError(err)
+
+			// Simulate Git commits for schema update to create a new table "users".
+			schemaFile := fmt.Sprintf("bbtest/prod/.%s##LATEST.sql", databaseName)
+			schemaFileContent += "\nCREATE TABLE users (id serial PRIMARY KEY);"
+			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{
+				schemaFile: schemaFileContent,
+			})
+			a.NoError(err)
+			err = ctl.vcsProvider.AddCommitsDiff(test.externalID, "1", "2", []vcs.FileDiff{
+				{Path: schemaFile, Type: vcs.FileDiffTypeAdded},
+			})
+			a.NoError(err)
+			payload, err := json.Marshal(test.newWebhookPushEvent(nil /* added */, []string{schemaFile}, "1", "2"))
+			a.NoError(err)
+			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
+			a.NoError(err)
+
+			// Get schema update issue
+			issue, err := ctl.getLastOpenIssue(ctx, ctl.project)
+			a.NoError(err)
+			err = ctl.waitRollout(ctx, issue.Name, issue.Rollout)
+			a.NoError(err)
+			a.Equal("[testVCSSchemaUpdate] Alter schema", issue.Title)
+			a.Equal("Apply schema diff by file prod/.testVCSSchemaUpdate##LATEST.sql", issue.Description)
+			err = ctl.closeIssue(ctx, ctl.project, issue.Name)
+			a.NoError(err)
+
+			// Simulate Git commits for data update to the table "users".
+			const dataFile = "bbtest/prod/testVCSSchemaUpdate##ver2##data##insert_data.sql"
+			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{
+				dataFile: `INSERT INTO users (id) VALUES (1);`,
+			})
+			a.NoError(err)
+			err = ctl.vcsProvider.AddCommitsDiff(test.externalID, "2", "3", []vcs.FileDiff{
+				{Path: dataFile, Type: vcs.FileDiffTypeAdded},
+			})
+			a.NoError(err)
+			payload, err = json.Marshal(test.newWebhookPushEvent([]string{dataFile}, nil /* modified */, "2", "3"))
+			a.NoError(err)
+			err = ctl.vcsProvider.SendWebhookPush(test.externalID, payload)
+			a.NoError(err)
+
+			// Get data update issue
+			issue, err = ctl.getLastOpenIssue(ctx, ctl.project)
+			a.NoError(err)
+			err = ctl.waitRollout(ctx, issue.Name, issue.Rollout)
+			a.NoError(err)
+			a.Equal("[testVCSSchemaUpdate] Change data", issue.Name)
+			a.Equal("By VCS files:\n\nprod/testVCSSchemaUpdate##ver2##data##insert_data.sql\n", issue.Description)
+			err = ctl.closeIssue(ctx, ctl.project, issue.Name)
+			a.NoError(err)
+
+			// Get migration history
+			const initialSchema = `
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+`
+			const updatedSchema = `
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.projects (
+    id integer NOT NULL
+);
+
+CREATE SEQUENCE public.projects_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.projects_id_seq OWNED BY public.projects.id;
+
+CREATE TABLE public.users (
+    id integer NOT NULL
+);
+
+CREATE SEQUENCE public.users_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
+
+ALTER TABLE ONLY public.projects ALTER COLUMN id SET DEFAULT nextval('public.projects_id_seq'::regclass);
+
+ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_id_seq'::regclass);
+
+ALTER TABLE ONLY public.projects
+    ADD CONSTRAINT projects_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+`
+
+			// Query list of tables
+			dbMetadata, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/schema", database.Name)})
+			a.NoError(err)
+			a.Equal(updatedSchema, dbMetadata.Schema)
+
+			resp, err := ctl.databaseServiceClient.ListChangeHistories(ctx, &v1pb.ListChangeHistoriesRequest{
+				Parent: database.Name,
+				View:   v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL,
+			})
+			a.NoError(err)
+			histories := resp.ChangeHistories
+			wantHistories := []*v1pb.ChangeHistory{
+				{
+					Type:       v1pb.ChangeHistory_DATA,
+					Status:     v1pb.ChangeHistory_DONE,
+					Schema:     updatedSchema,
+					PrevSchema: updatedSchema,
+				},
+				{
+					Type:       v1pb.ChangeHistory_MIGRATE_SDL,
+					Status:     v1pb.ChangeHistory_DONE,
+					Schema:     updatedSchema,
+					PrevSchema: initialSchema,
+				},
+				{
+					Type:       v1pb.ChangeHistory_MIGRATE,
+					Status:     v1pb.ChangeHistory_DONE,
+					Schema:     initialSchema,
+					PrevSchema: "",
+				},
+			}
+			a.Equal(len(wantHistories), len(histories))
+			for i, history := range histories {
+				got := &v1pb.ChangeHistory{
+					Type:       history.Type,
+					Status:     history.Status,
+					Schema:     history.Schema,
+					PrevSchema: history.PrevSchema,
+				}
+				want := wantHistories[i]
+				a.True(proto.Equal(got, want))
+				a.NotEqual(history.Version, "")
+			}
+		})
+	}
+}
+
 func TestWildcardInVCSFilePathTemplate(t *testing.T) {
 	branchFilter := "feature/foo"
 	dbName := "db1"
@@ -1065,7 +1408,27 @@ func TestVCS_SQL_Review(t *testing.T) {
 			defer func() {
 				_ = ctl.Close(ctx)
 			}()
-			databaseName := "testVCSSQLReview" + test.name
+			// Create a PostgreSQL instance.
+			pgPort := getTestPort()
+			stopInstance := postgres.SetupTestInstance(pgBinDir, t.TempDir(), pgPort)
+			defer stopInstance()
+
+			pgDB, err := sql.Open("pgx", fmt.Sprintf("host=/tmp port=%d user=root database=postgres", pgPort))
+			a.NoError(err)
+			defer func() {
+				_ = pgDB.Close()
+			}()
+
+			err = pgDB.Ping()
+			a.NoError(err)
+
+			const databaseName = "testVCSSchemaUpdate"
+			_, err = pgDB.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %v", databaseName))
+			a.NoError(err)
+			_, err = pgDB.Exec("CREATE USER bytebase WITH ENCRYPTED PASSWORD 'bytebase'")
+			a.NoError(err)
+			_, err = pgDB.Exec("ALTER USER bytebase WITH SUPERUSER")
+			a.NoError(err)
 
 			// Create a VCS.
 			evcs, err := ctl.evcsClient.CreateExternalVersionControl(ctx, &v1pb.CreateExternalVersionControlRequest{
@@ -1087,13 +1450,13 @@ func TestVCS_SQL_Review(t *testing.T) {
 					Engine:      v1pb.Engine_POSTGRES,
 					Environment: "environments/prod",
 					Activation:  true,
-					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(externalPgPort), Username: postgres.TestPgUser, Password: ""}},
+					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "bytebase", Password: "bytebase"}},
 				},
 			})
 			a.NoError(err)
 
 			// Create an issue that creates a database.
-			err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, databaseName, postgres.TestPgUser, nil)
+			err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, databaseName, "bytebase", nil)
 			a.NoError(err)
 
 			// Create a repository.
@@ -1138,7 +1501,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 
 			// Simulate Git commits and pull request for SQL review.
 			prID := rand.Int()
-			gitFile := fmt.Sprintf("bbtest/prod/%s##ver3##migrate##create_table_book.sql", databaseName)
+			gitFile := "bbtest/prod/testVCSSchemaUpdate##ver3##migrate##create_table_book.sql"
 			fileContent := "CREATE TABLE book (id serial PRIMARY KEY, name TEXT);"
 			err = ctl.vcsProvider.AddFiles(test.externalID, map[string]string{gitFile: fileContent})
 			a.NoError(err)
@@ -1414,7 +1777,6 @@ func TestGetLatestSchema(t *testing.T) {
 	tests := []struct {
 		name                 string
 		dbType               storepb.Engine
-		user                 string
 		instanceID           string
 		databaseName         string
 		ddl                  string
@@ -1425,7 +1787,6 @@ func TestGetLatestSchema(t *testing.T) {
 		{
 			name:         "MySQL",
 			dbType:       storepb.Engine_MYSQL,
-			user:         "root",
 			instanceID:   "latest-schema-mysql",
 			databaseName: "latestSchema",
 			ddl:          `CREATE TABLE book(id INT, name TEXT);`,
@@ -1483,7 +1844,6 @@ func TestGetLatestSchema(t *testing.T) {
 		{
 			name:         "PostgreSQL",
 			dbType:       storepb.Engine_POSTGRES,
-			user:         postgres.TestPgUser,
 			instanceID:   "latest-schema-postgres",
 			databaseName: "latestSchema",
 			ddl:          `CREATE TABLE book(id INT, name TEXT);`,
@@ -1556,6 +1916,8 @@ CREATE TABLE public.book (
 			dbPort := getTestPort()
 			switch test.dbType {
 			case storepb.Engine_POSTGRES:
+				stopInstance := postgres.SetupTestInstance(pgBinDir, t.TempDir(), dbPort)
+				defer stopInstance()
 			case storepb.Engine_MYSQL:
 				stopInstance := mysql.SetupTestInstance(t, dbPort, mysqlBinDir)
 				defer stopInstance()
@@ -1574,7 +1936,7 @@ CREATE TABLE public.book (
 						Engine:      v1pb.Engine_POSTGRES,
 						Environment: environment.Name,
 						Activation:  true,
-						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(externalPgPort), Username: postgres.TestPgUser}},
+						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(dbPort), Username: "root"}},
 					},
 				})
 			case storepb.Engine_MYSQL:
@@ -1593,7 +1955,7 @@ CREATE TABLE public.book (
 			}
 			a.NoError(err)
 
-			err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, test.databaseName, test.user, nil /* labelMap */)
+			err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, test.databaseName, "root", nil /* labelMap */)
 			a.NoError(err)
 
 			database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{

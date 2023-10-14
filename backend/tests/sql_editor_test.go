@@ -20,7 +20,7 @@ import (
 
 func TestAdminQueryAffectedRows(t *testing.T) {
 	tests := []struct {
-		name              string
+		databaseName      string
 		dbType            storepb.Engine
 		prepareStatements string
 		query             string
@@ -28,7 +28,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 		affectedRows      []*v1pb.QueryResult
 	}{
 		{
-			name:              "Test1",
+			databaseName:      "Test1",
 			dbType:            storepb.Engine_MYSQL,
 			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY);",
 			query:             "INSERT INTO tbl VALUES(1);",
@@ -48,7 +48,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 			},
 		},
 		{
-			name:              "Test2",
+			databaseName:      "Test2",
 			dbType:            storepb.Engine_MYSQL,
 			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY);",
 			query:             "INSERT INTO tbl VALUES(1); DELETE FROM tbl WHERE id = 1;",
@@ -80,7 +80,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 			},
 		},
 		{
-			name:              "Test3",
+			databaseName:      "Test3",
 			dbType:            storepb.Engine_POSTGRES,
 			prepareStatements: "CREATE TABLE public.tbl(id INT PRIMARY KEY);",
 			query:             "INSERT INTO tbl VALUES(1),(2);",
@@ -100,7 +100,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 			},
 		},
 		{
-			name:              "Test4",
+			databaseName:      "Test4",
 			dbType:            storepb.Engine_POSTGRES,
 			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY);",
 			query:             "ALTER TABLE tbl ADD COLUMN name VARCHAR(255);",
@@ -128,6 +128,11 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 	mysqlStopInstance := resourcemysql.SetupTestInstance(t, mysqlPort, mysqlBinDir)
 	defer mysqlStopInstance()
 
+	// Create a PostgreSQL instance.
+	pgPort := getTestPort()
+	stopInstance := postgres.SetupTestInstance(pgBinDir, t.TempDir(), pgPort)
+	defer stopInstance()
+
 	mysqlInstance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),
 		Instance: &v1pb.Instance{
@@ -147,7 +152,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 			Engine:      v1pb.Engine_POSTGRES,
 			Environment: "environments/prod",
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(externalPgPort), Username: postgres.TestPgUser}},
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "root"}},
 		},
 	})
 	a.NoError(err)
@@ -164,12 +169,11 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 		default:
 			a.FailNow("unsupported db type")
 		}
-		databaseName := "testAdminQueryAffectedRows" + tt.name
-		err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, databaseOwner, nil)
+		err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, tt.databaseName, databaseOwner, nil)
 		a.NoError(err)
 
 		database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
-			Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
+			Name: fmt.Sprintf("%s/databases/%s", instance.Name, tt.databaseName),
 		})
 		a.NoError(err)
 
@@ -188,7 +192,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 		err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
 		a.NoError(err)
 
-		results, err := ctl.adminQuery(ctx, instance, databaseName, tt.query)
+		results, err := ctl.adminQuery(ctx, instance, tt.databaseName, tt.query)
 		a.NoError(err)
 
 		a.Equal(len(tt.affectedRows), len(results))
