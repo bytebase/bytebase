@@ -69,9 +69,9 @@ func Install(resourceDir string) (string, error) {
 	return pgBinDir, nil
 }
 
-// Start starts a postgres database instance.
+// start starts a postgres database instance.
 // If port is 0, then it will choose a random unused port.
-func Start(port int, binDir, dataDir string, serverLog bool) (err error) {
+func start(port int, binDir, dataDir string, serverLog bool) (err error) {
 	pgbin := filepath.Join(binDir, "pg_ctl")
 
 	// See -p -k -h option definitions in the link below.
@@ -104,8 +104,8 @@ func Start(port int, binDir, dataDir string, serverLog bool) (err error) {
 	return nil
 }
 
-// Stop stops a postgres instance, outputs to stdout and stderr.
-func Stop(pgBinDir, pgDataDir string) error {
+// stop stops a postgres instance, outputs to stdout and stderr.
+func stop(pgBinDir, pgDataDir string) error {
 	pgbin := filepath.Join(pgBinDir, "pg_ctl")
 	p := exec.Command(pgbin, "stop", "-w",
 		"-D", pgDataDir)
@@ -126,8 +126,8 @@ func Stop(pgBinDir, pgDataDir string) error {
 	return p.Run()
 }
 
-// InitDB inits a postgres database if not yet.
-func InitDB(pgBinDir, pgDataDir, pgUser string) error {
+// initDB inits a postgres database if not yet.
+func initDB(pgBinDir, pgDataDir, pgUser string) error {
 	versionPath := filepath.Join(pgDataDir, "PG_VERSION")
 	_, err := os.Stat(versionPath)
 	if err != nil && !os.IsNotExist(err) {
