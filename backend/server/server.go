@@ -157,7 +157,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	var connCfg dbdriver.ConnectionConfig
 	if profile.UseEmbedDB() {
-		stopper, err := postgres.StartMetadataInstance(s.pgBinDir, profile.DataDir, profile.PgUser, profile.DemoName, profile.DatastorePort, profile.Mode)
+		stopper, err := postgres.StartMetadataInstance(profile.DataDir, profile.ResourceDir, s.pgBinDir, profile.PgUser, profile.DemoName, profile.DatastorePort, profile.Mode)
 		if err != nil {
 			return nil, err
 		}
