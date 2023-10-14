@@ -2,7 +2,6 @@ package store
 
 import (
 	"fmt"
-	"log/slog"
 	"net"
 	"net/url"
 
@@ -10,94 +9,33 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/resources/postgres"
 )
 
-// MetadataDB abstracts the underlying Postgres instance.
-type MetadataDB struct {
-	mode common.ReleaseMode
-	// Dir to store Postgres and utility binaries.
-	binDir   string
-	demoName string
-
-	embed bool
-
-	// Only for external pg
-	pgURL string
-	// Only for embed postgres
-	pgUser    string
-	pgDataDir string
-	pgStarted bool
-}
-
-// NewMetadataDBWithEmbedPg install postgres in `pgDataDir` returns an instance of MetadataDB.
-func NewMetadataDBWithEmbedPg(pgUser, pgDataDir, binDir, demoName string, mode common.ReleaseMode) *MetadataDB {
-	return &MetadataDB{
-		mode:      mode,
-		binDir:    binDir,
-		demoName:  demoName,
-		embed:     true,
-		pgUser:    pgUser,
-		pgDataDir: pgDataDir,
-	}
-}
-
-// NewMetadataDBWithExternalPg constructs a new MetadataDB instance pointing to an external Postgres instance.
-func NewMetadataDBWithExternalPg(pgURL, binDir, demoName string, mode common.ReleaseMode) *MetadataDB {
-	return &MetadataDB{
-		mode:     mode,
-		binDir:   binDir,
-		demoName: demoName,
-		embed:    false,
-		pgURL:    pgURL,
-	}
-}
-
-// Connect connects to the underlying Postgres instance.
-func (m *MetadataDB) Connect(datastorePort int, readonly bool, version string) (*DB, error) {
-	if m.embed {
-		return m.connectEmbed(datastorePort, m.pgUser, readonly, m.demoName, version, m.mode)
-	}
-	return m.connectExternal(readonly, version)
-}
-
-// connectEmbed starts the embed postgres server and returns an instance of store.DB.
-func (m *MetadataDB) connectEmbed(datastorePort int, pgUser string, readonly bool, demoName, version string, mode common.ReleaseMode) (*DB, error) {
-	serverLog := mode == common.ReleaseModeDev
-	if err := postgres.Start(datastorePort, m.binDir, m.pgDataDir, serverLog); err != nil {
-		return nil, err
-	}
-	// mark pgStarted if start successfully, used in Close()
-	m.pgStarted = true
-
+// GetEmbeddedConnectionConfig gets the embedded connection config.
+func GetEmbeddedConnectionConfig(datastorePort int, pgUser string) dbdriver.ConnectionConfig {
 	// Even when Postgres opens Unix domain socket only for connection, it still requires a port as ID to differentiate different Postgres instances.
-	connCfg := dbdriver.ConnectionConfig{
+	return dbdriver.ConnectionConfig{
 		Username:    pgUser,
 		Password:    "",
 		Host:        common.GetPostgresSocketDir(),
 		Port:        fmt.Sprintf("%d", datastorePort),
 		StrictUseDb: false,
 	}
-	db := NewDB(connCfg, m.binDir, demoName, readonly, version, mode)
-	return db, nil
 }
 
-// connectExternal returns an instance of store.DB.
-func (m *MetadataDB) connectExternal(readonly bool, version string) (*DB, error) {
-	u, err := url.Parse(m.pgURL)
+// GetConnectionConfig gets connection config from pgURL.
+func GetConnectionConfig(pgURL string) (dbdriver.ConnectionConfig, error) {
+	u, err := url.Parse(pgURL)
 	if err != nil {
-		return nil, err
+		return dbdriver.ConnectionConfig{}, err
 	}
-
 	q := u.Query()
-
-	slog.Info("Establishing external PostgreSQL connection...", slog.String("pgURL", u.Redacted()))
 
 	// Though the official libpq adopts postgresql:// (https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING)
 	// Several popular services such as render.com, supabase use postgres://.
 	// So we allow both schemes. The underlying pgx driver also supports both format.
 	if u.Scheme != "postgresql" && u.Scheme != "postgres" {
-		return nil, errors.Errorf("invalid connection protocol: %s", u.Scheme)
+		return dbdriver.ConnectionConfig{}, errors.Errorf("invalid connection protocol: %s", u.Scheme)
 	}
 
 	connCfg := dbdriver.ConnectionConfig{
@@ -108,11 +46,9 @@ func (m *MetadataDB) connectExternal(readonly bool, version string) (*DB, error)
 		connCfg.Username = u.User.Username()
 		connCfg.Password, _ = u.User.Password()
 	}
-
 	if connCfg.Username == "" {
-		return nil, errors.Errorf("missing user in the --pg connection string")
+		return dbdriver.ConnectionConfig{}, errors.Errorf("missing user in the --pg connection string")
 	}
-
 	if host, port, err := net.SplitHostPort(u.Host); err != nil {
 		connCfg.Host = u.Host
 	} else {
@@ -127,7 +63,7 @@ func (m *MetadataDB) connectExternal(readonly bool, version string) (*DB, error)
 		hostInQuery := q.Get("host")
 		if hostInQuery != "" && host != "" {
 			// In this case, it is impossible to decide whether to use socket or tcp.
-			return nil, errors.Errorf("please only using socket or host instead of both")
+			return dbdriver.ConnectionConfig{}, errors.Errorf("please only using socket or host instead of both")
 		}
 		connCfg.Host = host
 		if hostInQuery != "" {
@@ -135,13 +71,11 @@ func (m *MetadataDB) connectExternal(readonly bool, version string) (*DB, error)
 		}
 		connCfg.Port = port
 	}
-
 	if connCfg.Port == "" {
 		connCfg.Port = "5432"
 	}
-
 	if u.Path == "" {
-		return nil, errors.Errorf("missing database in the --pg connection string")
+		return dbdriver.ConnectionConfig{}, errors.Errorf("missing database in the --pg connection string")
 	}
 	connCfg.Database = u.Path[1:]
 
@@ -150,21 +84,5 @@ func (m *MetadataDB) connectExternal(readonly bool, version string) (*DB, error)
 		SslKey:  q.Get("sslkey"),
 		SslCert: q.Get("sslcert"),
 	}
-
-	db := NewDB(connCfg, m.binDir, m.demoName, readonly, version, m.mode)
-	return db, nil
-}
-
-// Close will stop postgres server if using embed postgres.
-func (m *MetadataDB) Close() error {
-	if !m.pgStarted {
-		return nil
-	}
-
-	slog.Info("Stopping PostgreSQL...")
-	if err := postgres.Stop(m.binDir, m.pgDataDir); err != nil {
-		return err
-	}
-	m.pgStarted = false
-	return nil
+	return connCfg, nil
 }

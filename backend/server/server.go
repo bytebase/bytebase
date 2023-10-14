@@ -33,6 +33,7 @@ import (
 	enterpriseService "github.com/bytebase/bytebase/backend/enterprise/service"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/migrator"
+	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
 	bbs3 "github.com/bytebase/bytebase/backend/plugin/storage/s3"
 	"github.com/bytebase/bytebase/backend/resources/mongoutil"
 	"github.com/bytebase/bytebase/backend/resources/mysqlutil"
@@ -80,12 +81,13 @@ type Server struct {
 	profile         config.Profile
 	e               *echo.Echo
 	grpcServer      *grpc.Server
-	metaDB          *store.MetadataDB
 	store           *store.Store
 	dbFactory       *dbfactory.DBFactory
 	startedTs       int64
 	secret          string
 	errorRecordRing api.ErrorRecordRing
+	// Embedded PG data.
+	embeddedPGDataDir string
 
 	// Stubs.
 	rolloutService *v1.RolloutService
@@ -171,26 +173,32 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		slog.Info("-----Sample Postgres Instance END-----")
 	}
 
-	// New MetadataDB instance.
+	var connCfg dbdriver.ConnectionConfig
 	if profile.UseEmbedDB() {
-		pgDataDir := common.GetPostgresDataDir(profile.DataDir, profile.DemoName)
+		s.embeddedPGDataDir = common.GetPostgresDataDir(profile.DataDir, profile.DemoName)
 		slog.Info("-----Embedded Postgres BEGIN-----")
-		slog.Info(fmt.Sprintf("Start embedded Postgres datastorePort=%d pgDataDir=%s", profile.DatastorePort, pgDataDir))
-		if err := postgres.InitDB(s.pgBinDir, pgDataDir, profile.PgUser); err != nil {
+		slog.Info(fmt.Sprintf("Start embedded Postgres datastorePort=%d pgDataDir=%s", profile.DatastorePort, s.embeddedPGDataDir))
+		if err := postgres.InitDB(s.pgBinDir, s.embeddedPGDataDir, profile.PgUser); err != nil {
 			return nil, err
 		}
-		s.metaDB = store.NewMetadataDBWithEmbedPg(profile.PgUser, pgDataDir, s.pgBinDir, profile.DemoName, profile.Mode)
+		serverLog := profile.Mode == common.ReleaseModeDev
+		if err := postgres.Start(profile.DatastorePort, s.pgBinDir, s.embeddedPGDataDir, serverLog); err != nil {
+			return nil, err
+		}
 		slog.Info("-----Embedded Postgres END-----")
+
+		connCfg = store.GetEmbeddedConnectionConfig(profile.DatastorePort, profile.PgUser)
 	} else {
-		s.metaDB = store.NewMetadataDBWithExternalPg(profile.PgURL, s.pgBinDir, profile.DemoName, profile.Mode)
+		cfg, err := store.GetConnectionConfig(profile.PgURL)
+		if err != nil {
+			return nil, err
+		}
+		connCfg = cfg
 	}
+	connCfg.ReadOnly = profile.Readonly
 
 	// Connect to the instance that stores bytebase's own metadata.
-	storeDB, err := s.metaDB.Connect(profile.DatastorePort, profile.Readonly, profile.Version)
-	if err != nil {
-		return nil, errors.Wrap(err, "cannot connect metadb")
-	}
-
+	storeDB := store.NewDB(connCfg, s.pgBinDir, profile.DemoName, profile.Readonly, profile.Version, profile.Mode)
 	if err := storeDB.Open(ctx); err != nil {
 		// return s so that caller can call s.Close() to shut down the postgres server if embedded.
 		return nil, errors.Wrap(err, "cannot open metadb")
@@ -458,10 +466,13 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	}
 
 	// Shutdown postgres server if embed.
-	if s.metaDB != nil {
-		s.metaDB.Close()
+	slog.Info("Stopping PostgreSQL...")
+	if s.embeddedPGDataDir != "" {
+		if err := postgres.Stop(s.pgBinDir, s.embeddedPGDataDir); err != nil {
+			return err
+		}
 	}
-	slog.Info("Bytebase stopped properly")
+	slog.Info("Bytebase stopped properly.")
 
 	return nil
 }
