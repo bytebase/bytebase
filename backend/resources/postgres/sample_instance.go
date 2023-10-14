@@ -54,7 +54,7 @@ func StartSampleInstance(ctx context.Context, pgBinDir, dataDir, sampleName stri
 			return nil, err
 		}
 	}
-	if err := InitDB(pgBinDir, pgDataDir, SampleUser); err != nil {
+	if err := initDB(pgBinDir, pgDataDir, SampleUser); err != nil {
 		return nil, errors.Wrapf(err, "failed to init sample instance")
 	}
 
@@ -62,7 +62,7 @@ func StartSampleInstance(ctx context.Context, pgBinDir, dataDir, sampleName stri
 		slog.Warn("Failed to turn on pg_stat_statements", log.BBError(err))
 	}
 
-	if err := Start(port, pgBinDir, pgDataDir, mode == common.ReleaseModeDev /* serverLog */); err != nil {
+	if err := start(port, pgBinDir, pgDataDir, mode == common.ReleaseModeDev /* serverLog */); err != nil {
 		return nil, errors.Wrapf(err, "failed to start sample instance")
 	}
 
@@ -76,7 +76,7 @@ func StartSampleInstance(ctx context.Context, pgBinDir, dataDir, sampleName stri
 	}
 
 	return func() {
-		if err := Stop(pgBinDir, pgDataDir); err != nil {
+		if err := stop(pgBinDir, pgDataDir); err != nil {
 			panic(err)
 		}
 	}, nil

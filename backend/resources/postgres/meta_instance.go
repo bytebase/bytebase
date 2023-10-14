@@ -13,17 +13,17 @@ func StartMetadataInstance(pgBinDir, dataDir, pgUser, demoName string, port int,
 	pgDataDir := getPostgresDataDir(dataDir, demoName)
 	slog.Info("-----Embedded Postgres BEGIN-----")
 	slog.Info(fmt.Sprintf("Start embedded Postgres datastorePort=%d pgDataDir=%s", port, pgDataDir))
-	if err := InitDB(pgBinDir, pgDataDir, pgUser); err != nil {
+	if err := initDB(pgBinDir, pgDataDir, pgUser); err != nil {
 		return nil, err
 	}
 	serverLog := mode == common.ReleaseModeDev
-	if err := Start(port, pgBinDir, pgDataDir, serverLog); err != nil {
+	if err := start(port, pgBinDir, pgDataDir, serverLog); err != nil {
 		return nil, err
 	}
 	slog.Info("-----Embedded Postgres END-----")
 
 	return func() {
-		if err := Stop(pgBinDir, pgDataDir); err != nil {
+		if err := stop(pgBinDir, pgDataDir); err != nil {
 			panic(err)
 		}
 	}, nil
