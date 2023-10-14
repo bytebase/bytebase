@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	currentVersion = "14"
+	currentVersion = "16"
 )
 
 // Install will extract the postgres and utility tar in resourceDir.
@@ -89,7 +89,7 @@ func start(port int, binDir, dataDir string, serverLog bool) (err error) {
 	// We also set max_connections to 500 for tests.
 	p := exec.Command(pgbin, "start", "-w",
 		"-D", dataDir,
-		"-o", fmt.Sprintf(`-p %d -k %s -N 500 -h "" -c stats_temp_directory=/tmp`, port, common.GetPostgresSocketDir()))
+		"-o", fmt.Sprintf(`-p %d -k %s -N 500 -h ""`, port, common.GetPostgresSocketDir()))
 
 	uid, _, sameUser, err := shouldSwitchUser()
 	if err != nil {
