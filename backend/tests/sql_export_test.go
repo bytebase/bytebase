@@ -21,7 +21,7 @@ import (
 
 func TestSQLExport(t *testing.T) {
 	tests := []struct {
-		databaseName      string
+		name              string
 		dbType            storepb.Engine
 		prepareStatements string
 		query             string
@@ -31,12 +31,12 @@ func TestSQLExport(t *testing.T) {
 		affectedRows      []*v1pb.QueryResult
 	}{
 		{
-			databaseName:      "Test1",
+			name:              "Test1",
 			dbType:            storepb.Engine_MYSQL,
 			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY, name VARCHAR(64), gender BIT(1), height BIT(8));",
-			query:             "INSERT INTO Test1.tbl (id, name, gender, height) VALUES(1, 'Alice', B'0', B'01111111');",
+			query:             "INSERT INTO testSQLExportTest1.tbl (id, name, gender, height) VALUES(1, 'Alice', B'0', B'01111111');",
 			reset:             "DELETE FROM tbl;",
-			export:            "SELECT * FROM Test1.tbl;",
+			export:            "SELECT * FROM testSQLExportTest1.tbl;",
 			affectedRows: []*v1pb.QueryResult{
 				{
 					ColumnNames:     []string{"Affected Rows"},
@@ -52,7 +52,7 @@ func TestSQLExport(t *testing.T) {
 			},
 		},
 		{
-			databaseName:      "Test2",
+			name:              "Test2",
 			dbType:            storepb.Engine_POSTGRES,
 			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY, name VARCHAR(64), gender BIT(1), height BIT(8));",
 			query:             "INSERT INTO tbl (id, name, gender, height) VALUES(1, 'Alice', B'0', B'01111111');",
@@ -90,11 +90,6 @@ func TestSQLExport(t *testing.T) {
 	mysqlStopInstance := resourcemysql.SetupTestInstance(t, mysqlPort, mysqlBinDir)
 	defer mysqlStopInstance()
 
-	// Create a PostgreSQL instance.
-	pgPort := getTestPort()
-	stopInstance := postgres.SetupTestInstance(pgBinDir, t.TempDir(), pgPort)
-	defer stopInstance()
-
 	mysqlInstance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),
 		Instance: &v1pb.Instance{
@@ -114,7 +109,7 @@ func TestSQLExport(t *testing.T) {
 			Engine:      v1pb.Engine_POSTGRES,
 			Environment: "environments/prod",
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "root"}},
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(externalPgPort), Username: postgres.TestPgUser}},
 		},
 	})
 	a.NoError(err)
@@ -131,11 +126,12 @@ func TestSQLExport(t *testing.T) {
 		default:
 			a.FailNow("unsupported db type")
 		}
-		err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, tt.databaseName, databaseOwner, nil)
+		databaseName := "testSQLExport" + tt.name
+		err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, databaseOwner, nil)
 		a.NoError(err)
 
 		database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
-			Name: fmt.Sprintf("%s/databases/%s", instance.Name, tt.databaseName),
+			Name: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
 		})
 		a.NoError(err)
 
@@ -154,7 +150,7 @@ func TestSQLExport(t *testing.T) {
 		err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
 		a.NoError(err)
 
-		for _, databaseNameQuery := range []string{tt.databaseName, ""} {
+		for _, databaseNameQuery := range []string{databaseName, ""} {
 			if databaseNameQuery == "" && tt.dbType != storepb.Engine_MYSQL {
 				// not supporting to query SQL when databaseName of PostgreSQL is empty
 				continue
@@ -163,7 +159,7 @@ func TestSQLExport(t *testing.T) {
 			statement := tt.query
 			results, err := ctl.adminQuery(ctx, instance, databaseNameQuery, statement)
 			a.NoError(err)
-			checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
+			checkResults(a, databaseName, statement, tt.affectedRows, results)
 
 			export, err := ctl.sqlServiceClient.Export(ctx, &v1pb.ExportRequest{
 				Admin:              true,
@@ -176,19 +172,19 @@ func TestSQLExport(t *testing.T) {
 			a.NoError(err)
 
 			statement = tt.reset
-			results, err = ctl.adminQuery(ctx, instance, tt.databaseName, statement)
+			results, err = ctl.adminQuery(ctx, instance, databaseName, statement)
 			a.NoError(err)
-			checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
+			checkResults(a, databaseName, statement, tt.affectedRows, results)
 
 			statement = string(export.Content)
-			results, err = ctl.adminQuery(ctx, instance, tt.databaseName, statement)
+			results, err = ctl.adminQuery(ctx, instance, databaseName, statement)
 			a.NoError(err)
-			checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
+			checkResults(a, databaseName, statement, tt.affectedRows, results)
 
 			statement = tt.reset
-			results, err = ctl.adminQuery(ctx, instance, tt.databaseName, statement)
+			results, err = ctl.adminQuery(ctx, instance, databaseName, statement)
 			a.NoError(err)
-			checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
+			checkResults(a, databaseName, statement, tt.affectedRows, results)
 		}
 	}
 }

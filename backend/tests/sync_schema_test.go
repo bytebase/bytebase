@@ -2,7 +2,6 @@ package tests
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strconv"
 	"testing"
@@ -16,8 +15,8 @@ import (
 )
 
 func TestSyncSchema(t *testing.T) {
-	databaseName := "sync_schema"
-	newDatabaseName := "sync_schema_new"
+	databaseName := "testSyncSchema"
+	newDatabaseName := "testSyncSchemaNew"
 	const (
 		createSchema = `
 			create schema schema_a;
@@ -53,25 +52,6 @@ DROP SCHEMA "schema_a";
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
-	// Create a PostgreSQL instance.
-	pgPort := getTestPort()
-	stopInstance := postgres.SetupTestInstance(pgBinDir, t.TempDir(), pgPort)
-	defer stopInstance()
-
-	pgDB, err := sql.Open("pgx", fmt.Sprintf("host=/tmp port=%d user=root database=postgres", pgPort))
-	a.NoError(err)
-	defer pgDB.Close()
-
-	err = pgDB.Ping()
-	a.NoError(err)
-
-	_, err = pgDB.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %v", databaseName))
-	a.NoError(err)
-	_, err = pgDB.Exec("CREATE USER bytebase WITH ENCRYPTED PASSWORD 'bytebase'")
-	a.NoError(err)
-	_, err = pgDB.Exec("ALTER USER bytebase WITH SUPERUSER")
-	a.NoError(err)
-
 	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),
 		Instance: &v1pb.Instance{
@@ -79,12 +59,12 @@ DROP SCHEMA "schema_a";
 			Engine:      v1pb.Engine_POSTGRES,
 			Environment: "environments/prod",
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "bytebase", Password: "bytebase"}},
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(externalPgPort), Username: postgres.TestPgUser, Password: ""}},
 		},
 	})
 	a.NoError(err)
 
-	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, "bytebase", nil)
+	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, postgres.TestPgUser, nil)
 	a.NoError(err)
 
 	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
@@ -118,7 +98,7 @@ DROP SCHEMA "schema_a";
 	a.Equal(1, len(histories))
 	latest := histories[0]
 
-	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, newDatabaseName, "bytebase", nil)
+	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, newDatabaseName, postgres.TestPgUser, nil)
 	a.NoError(err)
 
 	newDatabase, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
