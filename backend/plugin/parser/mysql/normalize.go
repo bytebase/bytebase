@@ -130,7 +130,7 @@ func NormalizeMySQLFunctionName(ctx parser.IFunctionNameContext) (string, string
 	return "", ""
 }
 
-// NormalizeMySQLProcedureName normalizes the given function name.
+// NormalizeMySQLProcedureName normalizes the given procedure name.
 func NormalizeMySQLProcedureName(ctx parser.IProcedureNameContext) (string, string) {
 	if ctx.QualifiedIdentifier() != nil {
 		return normalizeMySQLQualifiedIdentifier(ctx.QualifiedIdentifier())
