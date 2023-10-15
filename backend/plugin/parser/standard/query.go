@@ -1,10 +1,9 @@
 package standard
 
 import (
+	"log/slog"
 	"regexp"
 	"strings"
-
-	"golang.org/x/exp/slog"
 
 	"github.com/pkg/errors"
 
