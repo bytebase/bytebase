@@ -13,7 +13,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.87
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.40.0
 	github.com/blang/semver/v4 v4.0.0
-	github.com/bytebase/mysql-parser v0.0.0-20230612050356-4592d9ba30da
+	github.com/bytebase/mysql-parser v0.0.0-20231013095254-61b0903123c6
 	github.com/bytebase/plsql-parser v0.0.0-20230706061841-c93470b91bee
 	github.com/bytebase/postgresql-parser v0.0.0-20230926094140-aa337757cdd0
 	github.com/bytebase/snowsql-parser v0.0.0-20230706111031-cafd8faa2dc9
