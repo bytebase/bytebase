@@ -95,7 +95,7 @@ func NormalizeMySQLIdentifierList(ctx parser.IIdentifierListContext) []string {
 	return result
 }
 
-// NormalizeMySQLTableRef normalizes the given view name.
+// NormalizeMySQLViewName normalizes the given view name.
 func NormalizeMySQLViewName(ctx parser.IViewNameContext) (string, string) {
 	if ctx.QualifiedIdentifier() != nil {
 		return normalizeMySQLQualifiedIdentifier(ctx.QualifiedIdentifier())
@@ -106,7 +106,7 @@ func NormalizeMySQLViewName(ctx parser.IViewNameContext) (string, string) {
 	return "", ""
 }
 
-// NormalizeMySQLTableRef normalizes the given event name.
+// NormalizeMySQLEventName normalizes the given event name.
 func NormalizeMySQLEventName(ctx parser.IEventNameContext) (string, string) {
 	if ctx.QualifiedIdentifier() != nil {
 		return normalizeMySQLQualifiedIdentifier(ctx.QualifiedIdentifier())
@@ -114,7 +114,7 @@ func NormalizeMySQLEventName(ctx parser.IEventNameContext) (string, string) {
 	return "", ""
 }
 
-// NormalizeMySQLTableRef normalizes the given trigger name.
+// NormalizeMySQLTriggerName normalizes the given trigger name.
 func NormalizeMySQLTriggerName(ctx parser.ITriggerNameContext) (string, string) {
 	if ctx.QualifiedIdentifier() != nil {
 		return normalizeMySQLQualifiedIdentifier(ctx.QualifiedIdentifier())
@@ -122,7 +122,7 @@ func NormalizeMySQLTriggerName(ctx parser.ITriggerNameContext) (string, string) 
 	return "", ""
 }
 
-// NormalizeMySQLTableRef normalizes the given function name.
+// NormalizeMySQLFunctionName normalizes the given function name.
 func NormalizeMySQLFunctionName(ctx parser.IFunctionNameContext) (string, string) {
 	if ctx.QualifiedIdentifier() != nil {
 		return normalizeMySQLQualifiedIdentifier(ctx.QualifiedIdentifier())
@@ -130,7 +130,7 @@ func NormalizeMySQLFunctionName(ctx parser.IFunctionNameContext) (string, string
 	return "", ""
 }
 
-// NormalizeMySQLTableRef normalizes the given function name.
+// NormalizeMySQLProcedureName normalizes the given procedure name.
 func NormalizeMySQLProcedureName(ctx parser.IProcedureNameContext) (string, string) {
 	if ctx.QualifiedIdentifier() != nil {
 		return normalizeMySQLQualifiedIdentifier(ctx.QualifiedIdentifier())
