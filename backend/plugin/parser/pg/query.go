@@ -2,12 +2,12 @@ package pg
 
 import (
 	"encoding/json"
+	"log/slog"
 	"regexp"
 	"sort"
 	"strings"
 
 	pgquery "github.com/pganalyze/pg_query_go/v4"
-	"golang.org/x/exp/slog"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
