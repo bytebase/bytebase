@@ -6,8 +6,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/testing/protocmp"
 	"gopkg.in/yaml.v3"
 
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -87,7 +89,11 @@ func TestTransformSchemaString(t *testing.T) {
 		if record {
 			tests[i].Metadata = protojson.MarshalOptions{Multiline: true, Indent: "  "}.Format(result)
 		} else {
-			a.Equal(t.Metadata, protojson.MarshalOptions{Multiline: true, Indent: "  "}.Format(result))
+			want := &v1pb.DatabaseMetadata{}
+			err = protojson.Unmarshal([]byte(t.Metadata), want)
+			a.NoError(err)
+			diff := cmp.Diff(want, result, protocmp.Transform())
+			a.Equal("", diff)
 		}
 	}
 

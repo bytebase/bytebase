@@ -7,8 +7,10 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"gopkg.in/yaml.v3"
 
@@ -161,7 +163,12 @@ func runWalkThroughTest(t *testing.T, file string, engineType storepb.Engine, or
 		if record {
 			tests[i].Want = protojson.Format(state.convertToDatabaseMetadata())
 		} else {
-			require.Equal(t, test.Want, protojson.Format(state.convertToDatabaseMetadata()), test.Statement)
+			want := &storepb.DatabaseSchemaMetadata{}
+			err = protojson.Unmarshal([]byte(test.Want), want)
+			require.NoError(t, err)
+			result := state.convertToDatabaseMetadata()
+			diff := cmp.Diff(want, result, protocmp.Transform())
+			require.Equal(t, "", diff, test.Statement)
 		}
 	}
 
