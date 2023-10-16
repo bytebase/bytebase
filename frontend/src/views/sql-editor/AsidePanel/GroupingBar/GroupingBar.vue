@@ -1,12 +1,12 @@
 <template>
-  <div class="flex flex-row items-start min-h-[34px] pt-0.5">
+  <div class="flex flex-row items-start min-h-[34px] pt-0.5 bg-gray-50">
     <div class="flex-1">
       <NTabs
         v-if="viewMode === 'PRESET'"
         :value="factorList[0].factor"
         type="segment"
         size="small"
-        class="primary-sidebar h-full"
+        class="grouping-bar--tabs"
         @update:value="selectPresetFactor"
       >
         <NTab name="project">{{ $t("common.project") }}</NTab>
@@ -100,3 +100,9 @@ const selectPresetFactor = (factor: "project" | "instance") => {
   treeStore.buildTree();
 };
 </script>
+
+<style lang="postcss" scoped>
+.grouping-bar--tabs :deep(.n-tabs-rail) {
+  @apply !bg-transparent;
+}
+</style>

@@ -1,6 +1,6 @@
 <template>
   <div
-    class="border px-2 relative rounded-sm group"
+    class="border px-2 relative rounded-sm group bg-white"
     :class="
       clickable ? 'cursor-pointer hover:bg-gray-100' : 'cursor-not-allowed'
     "
