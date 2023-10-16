@@ -96,21 +96,18 @@
           :class="getColumnClassList(column, row)"
         >
           <input
-            v-model="column.default"
-            :disabled="readonly || disableAlterColumn(column)"
-            :placeholder="
-              column.default === undefined || !column.nullable
-                ? 'EMPTY'
-                : 'NULL'
-            "
             class="column-field-input !pr-8"
             type="text"
+            :value="getColumnDefaultDisplayString(column)"
+            :disabled="readonly || disableAlterColumn(column)"
+            :placeholder="getColumnDefaultValuePlaceholder(column)"
+            @change="(e) => handleColumnDefaultInputChange(e, column)"
           />
           <NDropdown
             trigger="click"
             :disabled="readonly || disableAlterColumn(column)"
-            :options="dataDefaultOptions"
-            @select="(defaultString:string) => handleColumnDefaultFieldChange(column, defaultString)"
+            :options="getColumnDefaultValueOptions(column)"
+            @select="(key: string) => handleColumnDefaultFieldChange(column, key)"
           >
             <button class="absolute right-5">
               <heroicons-solid:chevron-up-down
@@ -216,6 +213,13 @@
     </template>
   </BBGrid>
 
+  <ColumnDefaultValueExpressionModal
+    v-if="editColumnDefaultValueExpressionContext"
+    :expression="editColumnDefaultValueExpressionContext.defaultExpression"
+    @close="editColumnDefaultValueExpressionContext = undefined"
+    @update:expression="handleSelectedColumnDefaultValueExpressionChange"
+  />
+
   <SelectClassificationDrawer
     v-if="classificationConfig"
     :show="state.pendingUpdateColumn !== undefined"
@@ -228,13 +232,19 @@
 <script lang="ts" setup>
 import { flatten } from "lodash-es";
 import { NDropdown } from "naive-ui";
-import { computed, reactive, watchEffect } from "vue";
+import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBCheckbox } from "@/bbkit";
 import { useSettingV1Store } from "@/store/modules";
 import { Engine } from "@/types/proto/v1/common";
 import { Table, Column, ForeignKey } from "@/types/v1/schemaEditor";
 import { getDataTypeSuggestionList } from "@/utils";
+import ColumnDefaultValueExpressionModal from "../Modals/ColumnDefaultValueExpressionModal.vue";
+import {
+  DefaultValueOption,
+  getColumnTypeDefaultValueOptions,
+  getDefaultValueByKey,
+} from "../utils/columnDefaultValue";
 
 interface LocalState {
   pendingUpdateColumn?: Column;
@@ -279,17 +289,7 @@ const state = reactive<LocalState>({});
 
 const { t } = useI18n();
 const settingStore = useSettingV1Store();
-
-const dataDefaultOptions = [
-  {
-    label: "NULL",
-    key: "NULL",
-  },
-  {
-    label: "EMPTY",
-    key: "EMPTY",
-  },
-];
+const editColumnDefaultValueExpressionContext = ref<Column>();
 
 const classificationConfig = computed(() => {
   if (!props.classificationConfigId) {
@@ -340,6 +340,40 @@ const columnHeaderList = computed(() => {
     },
   ].filter((header) => !header.hide);
 });
+
+const getColumnDefaultDisplayString = (column: Column) => {
+  if (!column.hasDefault || column.defaultNull) {
+    return undefined;
+  }
+  return column.defaultString || column.defaultExpression || "";
+};
+
+const getColumnDefaultValuePlaceholder = (column: Column): string => {
+  if (!column.hasDefault) {
+    return "No default";
+  }
+  if (column.defaultNull) {
+    return "Null";
+  }
+  if (column.defaultString !== undefined) {
+    return column.defaultString || "Empty string";
+  }
+  if (column.defaultExpression !== undefined) {
+    return column.defaultExpression || "Empty expression";
+  }
+  return "";
+};
+
+const getColumnDefaultValueOptions = (column: Column): DefaultValueOption[] => {
+  return getColumnTypeDefaultValueOptions(props.engine, column.type).map(
+    (option) => {
+      return {
+        ...option,
+        label: t(`schema-editor.default.${option.key}`),
+      };
+    }
+  );
+};
 
 const getColumnClassList = (column: Column, index: number): string[] => {
   const classList = props.getColumnItemComputedClassList(column);
@@ -400,15 +434,48 @@ const isDroppedColumn = (column: Column): boolean => {
   return column.status === "dropped";
 };
 
-const handleColumnDefaultFieldChange = (
-  column: Column,
-  defaultString: string
-) => {
-  if (defaultString === "NULL" && column.nullable) {
-    column.default = "NULL";
-  } else if (defaultString === "EMPTY") {
-    column.default = undefined;
+const handleColumnDefaultInputChange = (event: Event, column: Column) => {
+  const value = (event.target as HTMLInputElement).value;
+  column.hasDefault = true;
+  column.defaultNull = undefined;
+  if (column.defaultString !== undefined) {
+    column.defaultString = value;
   }
+  // By default, user input is treated as expression.
+  column.defaultExpression = value;
+};
+
+const handleColumnDefaultFieldChange = (column: Column, key: string) => {
+  if (key === "expression") {
+    editColumnDefaultValueExpressionContext.value = column;
+    return;
+  }
+
+  const defaultValue = getDefaultValueByKey(key);
+  if (!defaultValue) {
+    return;
+  }
+
+  column.hasDefault = defaultValue.hasDefault;
+  column.defaultNull = defaultValue.defaultNull;
+  column.defaultString = defaultValue.defaultString;
+  column.defaultExpression = defaultValue.defaultExpression;
+  if (column.hasDefault && column.defaultNull) {
+    column.nullable = true;
+  }
+};
+
+const handleSelectedColumnDefaultValueExpressionChange = (
+  expression: string
+) => {
+  const column = editColumnDefaultValueExpressionContext.value;
+  if (!column) {
+    return;
+  }
+  column.hasDefault = true;
+  column.defaultNull = undefined;
+  column.defaultString = undefined;
+  column.defaultExpression = expression;
 };
 
 const onClassificationSelect = (classificationId: string) => {
@@ -418,16 +485,6 @@ const onClassificationSelect = (classificationId: string) => {
   state.pendingUpdateColumn.classification = classificationId;
   state.pendingUpdateColumn = undefined;
 };
-
-watchEffect(() => {
-  shownColumnList.value.forEach((column) => {
-    if (column.default === "NULL") {
-      column.default = column.nullable ? "NULL" : undefined;
-    } else if (column.default === "") {
-      column.default = undefined;
-    }
-  });
-});
 </script>
 
 <style scoped>
