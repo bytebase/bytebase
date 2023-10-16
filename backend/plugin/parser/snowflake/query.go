@@ -17,9 +17,12 @@ func init() {
 
 // ExtractResourceList extracts the list of resources from the SELECT statement, and normalizes the object names with the NON-EMPTY currentNormalizedDatabase and currentNormalizedSchema.
 func ExtractResourceList(currentDatabase string, currentSchema string, selectStatement string) ([]base.SchemaResource, error) {
-	tree, err := ParseSnowSQL(selectStatement)
+	parseResult, err := ParseSnowSQL(selectStatement)
 	if err != nil {
 		return nil, err
+	}
+	if parseResult == nil {
+		return nil, nil
 	}
 
 	l := &resourceExtractListener{
@@ -29,7 +32,7 @@ func ExtractResourceList(currentDatabase string, currentSchema string, selectSta
 	}
 
 	var result []base.SchemaResource
-	antlr.ParseTreeWalkerDefault.Walk(l, tree)
+	antlr.ParseTreeWalkerDefault.Walk(l, parseResult.Tree)
 	for _, resource := range l.resourceMap {
 		result = append(result, resource)
 	}
