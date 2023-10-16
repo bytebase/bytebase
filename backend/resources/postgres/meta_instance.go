@@ -101,11 +101,11 @@ func upgradePostgres(dataDir, resourceDir, pgBinDir, pgDataDir, pgUser string, p
 		return err
 	}
 	createDatabaseSQL := fmt.Sprintf("CREATE DATABASE %s;", pgUser)
-	cmd = exec.Command(filepath.Join(previousBinDir, "psql"), "-U", pgUser, "-h", common.GetPostgresSocketDir(), "-p", fmt.Sprintf("%d", port), "postgres", "-c", createDatabaseSQL)
+	cmd = exec.Command(filepath.Join(pgBinDir, "psql"), "-U", pgUser, "-h", common.GetPostgresSocketDir(), "-p", fmt.Sprintf("%d", port), "postgres", "-c", createDatabaseSQL)
 	if err := cmd.Run(); err != nil {
 		return err
 	}
-	cmd = exec.Command(filepath.Join(previousBinDir, "psql"), "-U", pgUser, "-h", common.GetPostgresSocketDir(), "-p", fmt.Sprintf("%d", port), pgUser, "-f", dumpFilePath)
+	cmd = exec.Command(filepath.Join(pgBinDir, "psql"), "-U", pgUser, "-h", common.GetPostgresSocketDir(), "-p", fmt.Sprintf("%d", port), pgUser, "-f", dumpFilePath)
 	if err := cmd.Run(); err != nil {
 		return err
 	}
