@@ -1,42 +1,73 @@
-import {
-  useConnectionTreeStore,
-  useDatabaseV1Store,
-  useDBSchemaV1Store,
-} from "@/store";
-import { ConnectionAtom } from "@/types";
+import { useDBSchemaV1Store } from "@/store";
+import { mapTreeNodeByType } from "@/store/modules/sqlEditorTree";
+import { ComposedDatabase, SQLEditorTreeNode } from "@/types";
+import { SchemaMetadata } from "@/types/proto/v1/database_service";
 
-export const fetchDatabaseSubTree = async (atom: ConnectionAtom) => {
-  const uid = atom.id;
-  const db = useDatabaseV1Store().getDatabaseByUID(uid);
-  const databaseMetadata =
-    await useDBSchemaV1Store().getOrFetchDatabaseMetadata(db.name);
-  const { schemas } = databaseMetadata;
-  if (schemas.length === 0) {
-    // Empty database
-    atom.children = [];
-    return;
+const createDummyTableNode = (
+  parent: SQLEditorTreeNode,
+  error: unknown | undefined = undefined
+) => {
+  return mapTreeNodeByType(
+    "dummy",
+    {
+      type: "table",
+      error,
+    },
+    parent,
+    {
+      disabled: true,
+    }
+  );
+};
+
+const mapTableNodes = (
+  database: ComposedDatabase,
+  schema: SchemaMetadata,
+  parent: SQLEditorTreeNode
+) => {
+  const children = schema.tables.map((table) =>
+    mapTreeNodeByType("table", { database, schema, table }, parent)
+  );
+  if (children.length === 0) {
+    return [createDummyTableNode(parent)];
   }
+  return children;
+};
 
-  if (schemas.length === 1 && schemas[0].name === "") {
-    // A single schema database, should render tables directly as a database
-    // node's children
-    atom.children = schemas[0].tables.map((table) =>
-      useConnectionTreeStore().mapAtom(table, "table", atom)
-    );
-    return;
-  } else {
-    // Multiple schema database
-    atom.children = schemas.map((schema) => {
-      const schemaNode = useConnectionTreeStore().mapAtom(
-        schema,
-        "schema",
-        atom
-      );
-      schemaNode.children = schema.tables.map((table) =>
-        useConnectionTreeStore().mapAtom(table, "table", schemaNode)
-      );
-      return schemaNode;
-    });
-    return;
+export const fetchDatabaseSubTree = async (
+  node: SQLEditorTreeNode<"database">
+) => {
+  try {
+    const database = node.meta.target;
+    const databaseMetadata =
+      await useDBSchemaV1Store().getOrFetchDatabaseMetadata(database.name);
+    const { schemas } = databaseMetadata;
+    if (schemas.length === 0) {
+      // Empty database
+      node.children = [createDummyTableNode(node)];
+      return;
+    }
+
+    if (schemas.length === 1 && schemas[0].name === "") {
+      const schema = schemas[0];
+      // A single schema database, should render tables directly as a database
+      // node's children
+      node.children = mapTableNodes(database, schema, node);
+      return;
+    } else {
+      // Multiple schema database
+      node.children = schemas.map((schema) => {
+        const schemaNode = mapTreeNodeByType(
+          "schema",
+          { database, schema },
+          node
+        );
+        schemaNode.children = mapTableNodes(database, schema, schemaNode);
+        return schemaNode;
+      });
+      return;
+    }
+  } catch (error) {
+    node.children = [createDummyTableNode(node, error)];
   }
 };
