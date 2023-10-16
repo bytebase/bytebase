@@ -352,6 +352,8 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 
 func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRunMessage, task *store.TaskMessage, executor Executor) {
 	defer func() {
+		s.stateCfg.TaskRunExecutionStatuses.Delete(taskRun.ID)
+
 		s.stateCfg.RunningTaskRuns.Delete(taskRun.ID)
 		s.stateCfg.RunningTaskRunsCancelFunc.Delete(taskRun.ID)
 		s.stateCfg.Lock()
