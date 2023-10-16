@@ -89,6 +89,12 @@ const toggleDisabled = (factor: StatefulFactor, index: number) => {
 
 const remove = (factor: StatefulFactor, index: number) => {
   factorList.value.splice(index, 1);
+  if (factorList.value.length === 0) {
+    factorList.value.push({
+      factor: "project",
+      disabled: false,
+    });
+  }
   treeStore.buildTree();
 };
 
