@@ -138,6 +138,7 @@ const handleConfirmButtonClick = async () => {
       parentName: props.parentName,
       schemaId: props.schemaId,
       tableId: tableEdit.id,
+      name: state.tableName,
     });
   } else {
     const table = schema.tableList.find((table) => table.id === props.tableId);
