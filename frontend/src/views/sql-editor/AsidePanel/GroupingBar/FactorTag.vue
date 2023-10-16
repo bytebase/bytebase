@@ -1,20 +1,24 @@
 <template>
   <div
-    class="border px-2 relative rounded-sm group bg-white"
-    :class="
-      clickable ? 'cursor-pointer hover:bg-gray-100' : 'cursor-not-allowed'
-    "
+    class="border px-2 relative rounded-sm group bg-white text-control"
+    :class="[
+      clickable ? 'cursor-pointer hover:bg-gray-100' : 'cursor-not-allowed',
+      factor.disabled ? 'opacity-50' : '',
+    ]"
     @click.stop="handleClick"
   >
-    <span class="leading-6" :class="factor.disabled && 'line-through'">
+    <span
+      class="leading-6 hover:line-through"
+      :class="factor.disabled && 'line-through'"
+    >
       {{ readableSQLEditorTreeFactor(factor.factor) }}
     </span>
     <button
       v-if="allowRemove"
-      class="hidden group-hover:flex bg-gray-100 absolute rounded-full top-0 right-0 hover:bg-gray-300 z-10 translate-x-[50%] translate-y-[-50%] w-3 h-3 items-center justify-center"
+      class="hidden group-hover:flex bg-gray-100 absolute rounded-full top-0 right-0 hover:bg-gray-300 z-10 translate-x-[50%] translate-y-[-40%] w-4 h-4 items-center justify-center"
       @click.stop="$emit('remove')"
     >
-      <heroicons:x-mark class="w-2.5 h-2.5" />
+      <heroicons:x-mark class="w-3.5 h-3.5" />
     </button>
   </div>
 </template>

@@ -2151,7 +2151,7 @@
     "select-reference-column": "Select a column to reference to"
   },
   "label": {
-    "empty-label-value": "<Empty Value>",
+    "empty-label-value": "Empty",
     "no-label": "No labels",
     "error": {
       "key-necessary": "Key is required",

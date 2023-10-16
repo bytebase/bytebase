@@ -2147,7 +2147,7 @@
     "select-reference-column": "选择外键的列"
   },
   "label": {
-    "empty-label-value": "<空值>",
+    "empty-label-value": "空",
     "no-label": "没有标签",
     "error": {
       "key-necessary": "需要指定 Key",
