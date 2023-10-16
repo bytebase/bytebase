@@ -26,6 +26,7 @@
           @update:instance="onInstanceSelect($event)"
         />
         <DatabaseSelect
+          :include-all="true"
           :project="state.selectedProjectUid"
           :instance="state.selectedInstanceUid"
           :database="state.selectedDatabaseUid"

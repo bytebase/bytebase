@@ -4,7 +4,7 @@ import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { Engine, engineFromJSON, engineToJSON } from "./common";
-import { DatabaseMetadata } from "./database_service";
+import { DatabaseConfig, DatabaseMetadata } from "./database_service";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -114,7 +114,15 @@ export interface SchemaDesign {
     | Date
     | undefined;
   /** The timestamp when the schema design was last updated. */
-  updateTime: Date | undefined;
+  updateTime:
+    | Date
+    | undefined;
+  /** The snapshot of the database config when creating the sheet, be used to compare with the baseline_database_config and apply the diff to the database. */
+  databaseConfig?:
+    | DatabaseConfig
+    | undefined;
+  /** The snapshot of the baseline database config when creating the sheet. */
+  baselineDatabaseConfig?: DatabaseConfig | undefined;
 }
 
 export enum SchemaDesign_Type {
@@ -300,6 +308,8 @@ function createBaseSchemaDesign(): SchemaDesign {
     updater: "",
     createTime: undefined,
     updateTime: undefined,
+    databaseConfig: undefined,
+    baselineDatabaseConfig: undefined,
   };
 }
 
@@ -355,6 +365,12 @@ export const SchemaDesign = {
     }
     if (message.updateTime !== undefined) {
       Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(138).fork()).ldelim();
+    }
+    if (message.databaseConfig !== undefined) {
+      DatabaseConfig.encode(message.databaseConfig, writer.uint32(146).fork()).ldelim();
+    }
+    if (message.baselineDatabaseConfig !== undefined) {
+      DatabaseConfig.encode(message.baselineDatabaseConfig, writer.uint32(154).fork()).ldelim();
     }
     return writer;
   },
@@ -485,6 +501,20 @@ export const SchemaDesign = {
 
           message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
+        case 18:
+          if (tag !== 146) {
+            break;
+          }
+
+          message.databaseConfig = DatabaseConfig.decode(reader, reader.uint32());
+          continue;
+        case 19:
+          if (tag !== 154) {
+            break;
+          }
+
+          message.baselineDatabaseConfig = DatabaseConfig.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -517,6 +547,10 @@ export const SchemaDesign = {
       updater: isSet(object.updater) ? String(object.updater) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
+      databaseConfig: isSet(object.databaseConfig) ? DatabaseConfig.fromJSON(object.databaseConfig) : undefined,
+      baselineDatabaseConfig: isSet(object.baselineDatabaseConfig)
+        ? DatabaseConfig.fromJSON(object.baselineDatabaseConfig)
+        : undefined,
     };
   },
 
@@ -543,6 +577,11 @@ export const SchemaDesign = {
     message.updater !== undefined && (obj.updater = message.updater);
     message.createTime !== undefined && (obj.createTime = message.createTime.toISOString());
     message.updateTime !== undefined && (obj.updateTime = message.updateTime.toISOString());
+    message.databaseConfig !== undefined &&
+      (obj.databaseConfig = message.databaseConfig ? DatabaseConfig.toJSON(message.databaseConfig) : undefined);
+    message.baselineDatabaseConfig !== undefined && (obj.baselineDatabaseConfig = message.baselineDatabaseConfig
+      ? DatabaseConfig.toJSON(message.baselineDatabaseConfig)
+      : undefined);
     return obj;
   },
 
@@ -576,6 +615,13 @@ export const SchemaDesign = {
     message.updater = object.updater ?? "";
     message.createTime = object.createTime ?? undefined;
     message.updateTime = object.updateTime ?? undefined;
+    message.databaseConfig = (object.databaseConfig !== undefined && object.databaseConfig !== null)
+      ? DatabaseConfig.fromPartial(object.databaseConfig)
+      : undefined;
+    message.baselineDatabaseConfig =
+      (object.baselineDatabaseConfig !== undefined && object.baselineDatabaseConfig !== null)
+        ? DatabaseConfig.fromPartial(object.baselineDatabaseConfig)
+        : undefined;
     return message;
   },
 };

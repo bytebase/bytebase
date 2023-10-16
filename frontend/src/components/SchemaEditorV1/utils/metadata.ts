@@ -1,5 +1,6 @@
 import { cloneDeep, isEqual, uniq } from "lodash-es";
 import {
+  SchemaConfig,
   ColumnMetadata,
   DatabaseMetadata,
   ForeignKeyMetadata,
@@ -204,6 +205,10 @@ export const mergeSchemaEditToMetadata = (
       }
     }
   }
+
+  metadata.schemaConfigs = schemaEdits
+    .filter((schema) => !!schema.config)
+    .map((schema) => schema.config) as SchemaConfig[];
 
   return metadata;
 };

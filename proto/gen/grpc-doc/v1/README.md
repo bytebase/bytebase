@@ -149,6 +149,7 @@
     - [CreateBackupRequest](#bytebase-v1-CreateBackupRequest)
     - [Database](#bytebase-v1-Database)
     - [Database.LabelsEntry](#bytebase-v1-Database-LabelsEntry)
+    - [DatabaseConfig](#bytebase-v1-DatabaseConfig)
     - [DatabaseMetadata](#bytebase-v1-DatabaseMetadata)
     - [DatabaseSchema](#bytebase-v1-DatabaseSchema)
     - [DeleteSecretRequest](#bytebase-v1-DeleteSecretRequest)
@@ -2701,6 +2702,22 @@ CreateBackupRequest is the request message for CreateBackup.
 | ----- | ---- | ----- | ----------- |
 | key | [string](#string) |  |  |
 | value | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DatabaseConfig"></a>
+
+### DatabaseConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| schema_configs | [SchemaConfig](#bytebase-v1-SchemaConfig) | repeated | The schema_configs is the list of configs for schemas in a database. |
 
 
 
@@ -8422,6 +8439,8 @@ When paginating, all other parameters provided to `ListSchemaDesigns` must match
 | updater | [string](#string) |  | The updater of the schema design. Format: users/{email} |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the schema design was created. |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the schema design was last updated. |
+| database_config | [DatabaseConfig](#bytebase-v1-DatabaseConfig) | optional | The snapshot of the database config when creating the sheet, be used to compare with the baseline_database_config and apply the diff to the database. |
+| baseline_database_config | [DatabaseConfig](#bytebase-v1-DatabaseConfig) | optional | The snapshot of the baseline database config when creating the sheet. |
 
 
 

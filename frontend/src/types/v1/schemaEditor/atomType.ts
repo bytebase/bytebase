@@ -4,6 +4,7 @@ import {
   SchemaMetadata,
   TableMetadata,
   ColumnMetadata,
+  SchemaConfig,
 } from "../../proto/v1/database_service";
 
 type Status = "normal" | "created" | "dropped";
@@ -57,6 +58,7 @@ export interface Schema {
   name: string;
   tableList: Table[];
   status: Status;
+  config?: SchemaConfig;
 }
 
 export const convertColumnMetadataToColumn = (
@@ -121,7 +123,8 @@ export const convertTableMetadataToTable = (
 
 export const convertSchemaMetadataToSchema = (
   schemaMetadata: SchemaMetadata,
-  status: Status = "normal"
+  status: Status = "normal",
+  schemaConfigList: SchemaConfig[] = []
 ): Schema => {
   const tableList: Table[] = [];
 
@@ -140,15 +143,19 @@ export const convertSchemaMetadataToSchema = (
     name: schemaMetadata.name,
     tableList: tableList,
     status,
+    config: schemaConfigList.find(
+      (config) => config.name === schemaMetadata.name
+    ),
   };
 };
 
 export const convertSchemaMetadataList = (
-  schemaMetadataList: SchemaMetadata[]
+  schemaMetadataList: SchemaMetadata[],
+  schemaConfigList: SchemaConfig[] = []
 ): Schema[] => {
   // Compose all tables of each schema.
   const schemaList: Schema[] = schemaMetadataList.map((schemaMetadata) =>
-    convertSchemaMetadataToSchema(schemaMetadata)
+    convertSchemaMetadataToSchema(schemaMetadata, "normal", schemaConfigList)
   );
 
   // Build foreign keys for schema and referenced schema.

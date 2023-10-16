@@ -363,6 +363,14 @@ const handleSaveBranch = async () => {
   if (!isEqual(mergedMetadata, schemaDesign.value.schemaMetadata)) {
     updateMask.push("metadata");
   }
+  if (
+    !isEqual(
+      mergedMetadata.schemaConfigs,
+      schemaDesign.value.databaseConfig?.schemaConfigs
+    )
+  ) {
+    updateMask.push("database_config");
+  }
   if (updateMask.length !== 0) {
     if (schemaDesign.value.type === SchemaDesign_Type.MAIN_BRANCH) {
       const branchName = generateForkedBranchName(schemaDesign.value);

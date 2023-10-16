@@ -7,6 +7,7 @@ import {
   IndexMetadata,
   SchemaMetadata,
   TableMetadata,
+  SchemaConfig,
 } from "@/types/proto/v1/database_service";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import {
@@ -205,6 +206,10 @@ export const mergeSchemaEditToMetadata = (
       }
     }
   }
+
+  metadata.schemaConfigs = schemaEdits
+    .filter((schema) => !!schema.config)
+    .map((schema) => schema.config) as SchemaConfig[];
 
   return metadata;
 };
