@@ -392,10 +392,7 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 			return nil, err
 		}
 
-		payload := new(storepb.SchemaTemplateSetting)
-		if err := convertV1PbToStorePb(schemaTemplateSetting, payload); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
-		}
+		payload := convertV1SchemaTemplateSetting(schemaTemplateSetting)
 		bytes, err := protojson.Marshal(payload)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to marshal external approval setting, error: %v", err)
@@ -608,8 +605,8 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 			},
 		}, nil
 	case api.SettingSchemaTemplate:
-		v1Value := new(v1pb.SchemaTemplateSetting)
-		if err := protojson.Unmarshal([]byte(setting.Value), v1Value); err != nil {
+		value := new(storepb.SchemaTemplateSetting)
+		if err := protojson.Unmarshal([]byte(setting.Value), value); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
 		}
 
@@ -617,7 +614,7 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 			Name: settingName,
 			Value: &v1pb.Value{
 				Value: &v1pb.Value_SchemaTemplateSettingValue{
-					SchemaTemplateSettingValue: v1Value,
+					SchemaTemplateSettingValue: convertSchemaTemplateSetting(value),
 				},
 			},
 		}, nil
@@ -686,10 +683,11 @@ func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTempl
 		settingValue = oldStoreSetting.Value
 	}
 
-	v1Value := new(v1pb.SchemaTemplateSetting)
-	if err := protojson.Unmarshal([]byte(settingValue), v1Value); err != nil {
+	value := new(storepb.SchemaTemplateSetting)
+	if err := protojson.Unmarshal([]byte(settingValue), value); err != nil {
 		return status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", settingName, err)
 	}
+	v1Value := convertSchemaTemplateSetting(value)
 
 	// validate the changed field template.
 	oldFieldTemplateMap := map[string]*v1pb.SchemaTemplateSetting_FieldTemplate{}
@@ -1046,4 +1044,66 @@ func stripSensitiveData(setting *v1pb.Setting) (*v1pb.Setting, error) {
 	default:
 	}
 	return setting, nil
+}
+
+func convertSchemaTemplateSetting(template *storepb.SchemaTemplateSetting) *v1pb.SchemaTemplateSetting {
+	v1Setting := new(v1pb.SchemaTemplateSetting)
+	for _, v := range template.ColumnTypes {
+		v1Setting.ColumnTypes = append(v1Setting.ColumnTypes, &v1pb.SchemaTemplateSetting_ColumnType{
+			Engine:  convertToEngine(v.Engine),
+			Enabled: v.Enabled,
+			Types:   v.Types,
+		})
+	}
+	for _, v := range template.FieldTemplates {
+		v1Setting.FieldTemplates = append(v1Setting.FieldTemplates, &v1pb.SchemaTemplateSetting_FieldTemplate{
+			Id:       v.Id,
+			Engine:   convertToEngine(v.Engine),
+			Category: v.Category,
+			Column:   convertColumnMetadata(v.Column),
+			Config:   convertColumnConfig(v.Config),
+		})
+	}
+	for _, v := range template.TableTemplates {
+		v1Setting.TableTemplates = append(v1Setting.TableTemplates, &v1pb.SchemaTemplateSetting_TableTemplate{
+			Id:       v.Id,
+			Engine:   convertToEngine(v.Engine),
+			Category: v.Category,
+			Table:    convertTableMetadata(v.Table),
+			Config:   convertTableConfig(v.Config),
+		})
+	}
+
+	return nil
+}
+
+func convertV1SchemaTemplateSetting(template *v1pb.SchemaTemplateSetting) *storepb.SchemaTemplateSetting {
+	v1Setting := new(storepb.SchemaTemplateSetting)
+	for _, v := range template.ColumnTypes {
+		v1Setting.ColumnTypes = append(v1Setting.ColumnTypes, &storepb.SchemaTemplateSetting_ColumnType{
+			Engine:  convertEngine(v.Engine),
+			Enabled: v.Enabled,
+			Types:   v.Types,
+		})
+	}
+	for _, v := range template.FieldTemplates {
+		v1Setting.FieldTemplates = append(v1Setting.FieldTemplates, &storepb.SchemaTemplateSetting_FieldTemplate{
+			Id:       v.Id,
+			Engine:   convertEngine(v.Engine),
+			Category: v.Category,
+			Column:   convertV1ColumnMetadata(v.Column),
+			Config:   convertV1ColumnConfig(v.Config),
+		})
+	}
+	for _, v := range template.TableTemplates {
+		v1Setting.TableTemplates = append(v1Setting.TableTemplates, &storepb.SchemaTemplateSetting_TableTemplate{
+			Id:       v.Id,
+			Engine:   convertEngine(v.Engine),
+			Category: v.Category,
+			Table:    convertV1TableMetadata(v.Table),
+			Config:   convertV1TableConfig(v.Config),
+		})
+	}
+
+	return nil
 }
