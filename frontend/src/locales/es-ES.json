@@ -2147,7 +2147,7 @@
     "select-reference-column": "Seleccionar una columna de referencia"
   },
   "label": {
-    "empty-label-value": "<Valor Vacío>",
+    "empty-label-value": "Valor",
     "no-label": "Sin etiquetas",
     "error": {
       "key-necessary": "Se requiere una clave",
