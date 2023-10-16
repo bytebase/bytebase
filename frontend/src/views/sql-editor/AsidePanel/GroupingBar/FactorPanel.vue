@@ -26,7 +26,6 @@ import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useSQLEditorTreeStore } from "@/store/modules/sqlEditorTree";
 import { SQLEditorTreeFactor as Factor } from "@/types";
-import { keyBy } from "@/utils";
 import FactorItem from "./FactorItem.vue";
 
 const treeStore = useSQLEditorTreeStore();
@@ -40,27 +39,25 @@ const labelFactors = computed(() => {
   );
 });
 
-const availableFactors = computed(() => {
-  return [...PRESET_FACTORS, ...labelFactors.value];
-});
-
 const toggle = (factor: Factor, on: boolean) => {
-  const checkedSet = keyBy(cloneDeep(factorList.value), (sf) => sf.factor);
-  if (on) {
-    checkedSet.set(factor, { factor, disabled: false });
+  const updatedList = cloneDeep(factorList.value);
+  const index = updatedList.findIndex((sf) => sf.factor === factor);
+  if (index >= 0) {
+    if (on) return; // no duplicated factors
+    updatedList.splice(index, 1);
   } else {
-    checkedSet.delete(factor);
+    if (!on) return; // nothing to remove
+    updatedList.push({
+      factor,
+      disabled: false,
+    });
   }
-  const updatedSet = availableFactors.value.filter((factor) =>
-    checkedSet.has(factor)
-  );
-
-  const updatedList = updatedSet.map((factor) => checkedSet.get(factor)!);
   if (updatedList.every((sf) => sf.disabled)) {
     // When all left factors are disabled
     // Enforce the first one to enable
     updatedList[0].disabled = false;
   }
+
   factorList.value = updatedList;
   treeStore.buildTree();
 };
