@@ -15,9 +15,9 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { useConnectionTreeStore, useCurrentUserV1 } from "@/store";
+import { useCurrentUserV1, useSQLEditorTreeStore } from "@/store";
 import type { Database } from "@/types";
-import { ConnectionTreeMode, DEFAULT_PROJECT_ID, UNKNOWN_ID } from "@/types";
+import { DEFAULT_PROJECT_ID, UNKNOWN_ID } from "@/types";
 import { connectionSlug, hasWorkspacePermissionV1 } from "@/utils";
 
 const props = withDefaults(
@@ -79,7 +79,12 @@ const gotoSQLEditor = () => {
     }
     // Set the default sidebar view of SQL Editor to "INSTANCE"
     // since unassigned databases won't be listed in "PROJECT" view.
-    useConnectionTreeStore().tree.mode = ConnectionTreeMode.INSTANCE;
+    useSQLEditorTreeStore().factorList = [
+      {
+        factor: "instance",
+        disabled: false,
+      },
+    ];
   }
   const url = `/sql-editor/${connectionSlug(database.instance, database)}`;
   window.open(url);

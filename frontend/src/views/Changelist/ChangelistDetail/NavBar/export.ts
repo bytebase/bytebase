@@ -29,6 +29,7 @@ const zipFileForChangeHistory = async (
   const name = change.source;
   const { changeHistory, type, statement } =
     await useChangeHistoryStore().exportChangeHistoryFullStatementByName(name);
+  console.log("export", change, changeHistory, type, statement.length);
   if (changeHistory) {
     if (changeHistory.status !== ChangeHistory_Status.DONE) {
       return;

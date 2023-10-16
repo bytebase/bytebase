@@ -26,7 +26,6 @@ import {
   useLegacyInstanceStore,
   useRouterStore,
   useDBSchemaV1Store,
-  useConnectionTreeStore,
   useOnboardingStateStore,
   useTabStore,
   useIdentityProviderStore,
@@ -40,6 +39,7 @@ import {
   useChangeHistoryStore,
   useChangelistStore,
   useSchemaDesignStore,
+  useSQLEditorTreeStore,
 } from "@/store";
 import {
   DEFAULT_PROJECT_ID,
@@ -1584,13 +1584,13 @@ router.beforeEach((to, from, next) => {
     const databaseId = idFromSlug(databaseSlug);
     if (Number.isNaN(databaseId)) {
       // Connected to instance
-      useConnectionTreeStore()
+      useSQLEditorTreeStore()
         .fetchConnectionByInstanceId(String(instanceId))
         .then(() => next())
         .catch(() => next());
     } else {
       // Connected to db
-      useConnectionTreeStore()
+      useSQLEditorTreeStore()
         .fetchConnectionByInstanceIdAndDatabaseId(
           String(instanceId),
           String(databaseId)
