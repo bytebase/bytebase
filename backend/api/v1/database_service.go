@@ -24,6 +24,7 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -1907,72 +1908,7 @@ func convertDatabaseMetadata(database *store.DatabaseMessage, metadata *storepb.
 			Name: schema.Name,
 		}
 		for _, table := range schema.Tables {
-			t := &v1pb.TableMetadata{
-				Name:           table.Name,
-				Engine:         table.Engine,
-				Collation:      table.Collation,
-				RowCount:       table.RowCount,
-				DataSize:       table.DataSize,
-				IndexSize:      table.IndexSize,
-				DataFree:       table.DataFree,
-				CreateOptions:  table.CreateOptions,
-				Comment:        table.Comment,
-				Classification: table.Classification,
-				UserComment:    table.UserComment,
-			}
-			for _, column := range table.Columns {
-				columnMetadata := &v1pb.ColumnMetadata{
-					Name:           column.Name,
-					Position:       column.Position,
-					HasDefault:     column.DefaultValue != nil,
-					Nullable:       column.Nullable,
-					Type:           column.Type,
-					CharacterSet:   column.CharacterSet,
-					Collation:      column.Collation,
-					Comment:        column.Comment,
-					Classification: column.Classification,
-					UserComment:    column.UserComment,
-				}
-				if columnMetadata.HasDefault {
-					switch value := column.DefaultValue.(type) {
-					case *storepb.ColumnMetadata_Default:
-						if value.Default == nil {
-							columnMetadata.Default = &v1pb.ColumnMetadata_DefaultNull{DefaultNull: true}
-						} else {
-							columnMetadata.Default = &v1pb.ColumnMetadata_DefaultString{DefaultString: value.Default.Value}
-						}
-					case *storepb.ColumnMetadata_DefaultNull:
-						columnMetadata.Default = &v1pb.ColumnMetadata_DefaultNull{DefaultNull: true}
-					case *storepb.ColumnMetadata_DefaultExpression:
-						columnMetadata.Default = &v1pb.ColumnMetadata_DefaultExpression{DefaultExpression: value.DefaultExpression}
-					}
-				}
-				t.Columns = append(t.Columns, columnMetadata)
-			}
-			for _, index := range table.Indexes {
-				t.Indexes = append(t.Indexes, &v1pb.IndexMetadata{
-					Name:        index.Name,
-					Expressions: index.Expressions,
-					Type:        index.Type,
-					Unique:      index.Unique,
-					Primary:     index.Primary,
-					Visible:     index.Visible,
-					Comment:     index.Comment,
-				})
-			}
-			for _, foreignKey := range table.ForeignKeys {
-				t.ForeignKeys = append(t.ForeignKeys, &v1pb.ForeignKeyMetadata{
-					Name:              foreignKey.Name,
-					Columns:           foreignKey.Columns,
-					ReferencedSchema:  foreignKey.ReferencedSchema,
-					ReferencedTable:   foreignKey.ReferencedTable,
-					ReferencedColumns: foreignKey.ReferencedColumns,
-					OnDelete:          foreignKey.OnDelete,
-					OnUpdate:          foreignKey.OnUpdate,
-					MatchType:         foreignKey.MatchType,
-				})
-			}
-			s.Tables = append(s.Tables, t)
+			s.Tables = append(s.Tables, convertTableMetadata(table))
 		}
 		for _, view := range schema.Views {
 			var dependentColumnList []*v1pb.DependentColumn
@@ -2048,21 +1984,29 @@ func convertDatabaseConfig(config *storepb.DatabaseConfig) []*v1pb.SchemaConfig 
 			Name: schema.Name,
 		}
 		for _, table := range schema.TableConfigs {
-			t := &v1pb.TableConfig{
-				Name: table.Name,
-			}
-			for _, column := range table.ColumnConfigs {
-				t.ColumnConfigs = append(t.ColumnConfigs, &v1pb.ColumnConfig{
-					Name:           column.Name,
-					SemanticTypeId: column.SemanticTypeId,
-					Labels:         column.Labels,
-				})
-			}
-			s.TableConfigs = append(s.TableConfigs, t)
+			s.TableConfigs = append(s.TableConfigs, convertTableConfig(table))
 		}
 		schemaConfigs = append(schemaConfigs, s)
 	}
 	return schemaConfigs
+}
+
+func convertTableConfig(table *storepb.TableConfig) *v1pb.TableConfig {
+	t := &v1pb.TableConfig{
+		Name: table.Name,
+	}
+	for _, column := range table.ColumnConfigs {
+		t.ColumnConfigs = append(t.ColumnConfigs, convertColumnConfig(column))
+	}
+	return t
+}
+
+func convertColumnConfig(column *storepb.ColumnConfig) *v1pb.ColumnConfig {
+	return &v1pb.ColumnConfig{
+		Name:           column.Name,
+		SemanticTypeId: column.SemanticTypeId,
+		Labels:         column.Labels,
+	}
 }
 
 func convertV1DatabaseConfig(databaseName string, schemaConfig []*v1pb.SchemaConfig) *storepb.DatabaseConfig {
@@ -2089,6 +2033,24 @@ func convertV1DatabaseConfig(databaseName string, schemaConfig []*v1pb.SchemaCon
 		m.SchemaConfigs = append(m.SchemaConfigs, s)
 	}
 	return m
+}
+
+func convertV1TableConfig(table *v1pb.TableConfig) *storepb.TableConfig {
+	t := &storepb.TableConfig{
+		Name: table.Name,
+	}
+	for _, column := range table.ColumnConfigs {
+		t.ColumnConfigs = append(t.ColumnConfigs, convertV1ColumnConfig(column))
+	}
+	return t
+}
+
+func convertV1ColumnConfig(column *v1pb.ColumnConfig) *storepb.ColumnConfig {
+	return &storepb.ColumnConfig{
+		Name:           column.Name,
+		SemanticTypeId: column.SemanticTypeId,
+		Labels:         column.Labels,
+	}
 }
 
 func (s *DatabaseService) createTransferProjectActivity(ctx context.Context, newProject *store.ProjectMessage, updaterID int, databases ...*store.DatabaseMessage) error {
@@ -2666,4 +2628,146 @@ func getOpenAIResponse(ctx context.Context, messages []openai.ChatCompletionMess
 		return nil, status.Errorf(codes.Internal, "Failed to get index advice, error %v", retErr)
 	}
 	return &result, nil
+}
+
+func convertTableMetadata(table *storepb.TableMetadata) *v1pb.TableMetadata {
+	t := &v1pb.TableMetadata{
+		Name:           table.Name,
+		Engine:         table.Engine,
+		Collation:      table.Collation,
+		RowCount:       table.RowCount,
+		DataSize:       table.DataSize,
+		IndexSize:      table.IndexSize,
+		DataFree:       table.DataFree,
+		CreateOptions:  table.CreateOptions,
+		Comment:        table.Comment,
+		Classification: table.Classification,
+		UserComment:    table.UserComment,
+	}
+	for _, column := range table.Columns {
+		t.Columns = append(t.Columns, convertColumnMetadata(column))
+	}
+	for _, index := range table.Indexes {
+		t.Indexes = append(t.Indexes, &v1pb.IndexMetadata{
+			Name:        index.Name,
+			Expressions: index.Expressions,
+			Type:        index.Type,
+			Unique:      index.Unique,
+			Primary:     index.Primary,
+			Visible:     index.Visible,
+			Comment:     index.Comment,
+		})
+	}
+	for _, foreignKey := range table.ForeignKeys {
+		t.ForeignKeys = append(t.ForeignKeys, &v1pb.ForeignKeyMetadata{
+			Name:              foreignKey.Name,
+			Columns:           foreignKey.Columns,
+			ReferencedSchema:  foreignKey.ReferencedSchema,
+			ReferencedTable:   foreignKey.ReferencedTable,
+			ReferencedColumns: foreignKey.ReferencedColumns,
+			OnDelete:          foreignKey.OnDelete,
+			OnUpdate:          foreignKey.OnUpdate,
+			MatchType:         foreignKey.MatchType,
+		})
+	}
+	return t
+}
+
+func convertColumnMetadata(column *storepb.ColumnMetadata) *v1pb.ColumnMetadata {
+	metadata := &v1pb.ColumnMetadata{
+		Name:           column.Name,
+		Position:       column.Position,
+		HasDefault:     column.DefaultValue != nil,
+		Nullable:       column.Nullable,
+		Type:           column.Type,
+		CharacterSet:   column.CharacterSet,
+		Collation:      column.Collation,
+		Comment:        column.Comment,
+		Classification: column.Classification,
+		UserComment:    column.UserComment,
+	}
+	if metadata.HasDefault {
+		switch value := column.DefaultValue.(type) {
+		case *storepb.ColumnMetadata_Default:
+			if value.Default == nil {
+				metadata.Default = &v1pb.ColumnMetadata_DefaultNull{DefaultNull: true}
+			} else {
+				metadata.Default = &v1pb.ColumnMetadata_DefaultString{DefaultString: value.Default.Value}
+			}
+		case *storepb.ColumnMetadata_DefaultNull:
+			metadata.Default = &v1pb.ColumnMetadata_DefaultNull{DefaultNull: true}
+		case *storepb.ColumnMetadata_DefaultExpression:
+			metadata.Default = &v1pb.ColumnMetadata_DefaultExpression{DefaultExpression: value.DefaultExpression}
+		}
+	}
+	return metadata
+}
+
+func convertV1TableMetadata(table *v1pb.TableMetadata) *storepb.TableMetadata {
+	t := &storepb.TableMetadata{
+		Name:           table.Name,
+		Engine:         table.Engine,
+		Collation:      table.Collation,
+		RowCount:       table.RowCount,
+		DataSize:       table.DataSize,
+		IndexSize:      table.IndexSize,
+		DataFree:       table.DataFree,
+		CreateOptions:  table.CreateOptions,
+		Comment:        table.Comment,
+		Classification: table.Classification,
+		UserComment:    table.UserComment,
+	}
+	for _, column := range table.Columns {
+		t.Columns = append(t.Columns, convertV1ColumnMetadata(column))
+	}
+	for _, index := range table.Indexes {
+		t.Indexes = append(t.Indexes, &storepb.IndexMetadata{
+			Name:        index.Name,
+			Expressions: index.Expressions,
+			Type:        index.Type,
+			Unique:      index.Unique,
+			Primary:     index.Primary,
+			Visible:     index.Visible,
+			Comment:     index.Comment,
+		})
+	}
+	for _, foreignKey := range table.ForeignKeys {
+		t.ForeignKeys = append(t.ForeignKeys, &storepb.ForeignKeyMetadata{
+			Name:              foreignKey.Name,
+			Columns:           foreignKey.Columns,
+			ReferencedSchema:  foreignKey.ReferencedSchema,
+			ReferencedTable:   foreignKey.ReferencedTable,
+			ReferencedColumns: foreignKey.ReferencedColumns,
+			OnDelete:          foreignKey.OnDelete,
+			OnUpdate:          foreignKey.OnUpdate,
+			MatchType:         foreignKey.MatchType,
+		})
+	}
+	return t
+}
+
+func convertV1ColumnMetadata(column *v1pb.ColumnMetadata) *storepb.ColumnMetadata {
+	metadata := &storepb.ColumnMetadata{
+		Name:           column.Name,
+		Position:       column.Position,
+		Nullable:       column.Nullable,
+		Type:           column.Type,
+		CharacterSet:   column.CharacterSet,
+		Collation:      column.Collation,
+		Comment:        column.Comment,
+		Classification: column.Classification,
+		UserComment:    column.UserComment,
+	}
+
+	if column.HasDefault {
+		switch value := column.Default.(type) {
+		case *v1pb.ColumnMetadata_DefaultString:
+			metadata.DefaultValue = &storepb.ColumnMetadata_Default{Default: wrapperspb.String(value.DefaultString)}
+		case *v1pb.ColumnMetadata_DefaultNull:
+			metadata.DefaultValue = &storepb.ColumnMetadata_DefaultNull{DefaultNull: true}
+		case *v1pb.ColumnMetadata_DefaultExpression:
+			metadata.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: value.DefaultExpression}
+		}
+	}
+	return metadata
 }
