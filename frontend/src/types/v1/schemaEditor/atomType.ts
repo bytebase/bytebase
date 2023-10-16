@@ -8,17 +8,19 @@ import {
 
 type Status = "normal" | "created" | "dropped";
 
-export interface Column {
+export interface ColumnDefaultValue {
+  hasDefault: boolean;
+  defaultNull?: boolean;
+  defaultString?: string;
+  defaultExpression?: string;
+}
+export interface Column extends ColumnDefaultValue {
   id: string;
   name: string;
   type: string;
   nullable: boolean;
   comment: string;
   userComment: string;
-  hasDefault: boolean;
-  defaultNull?: boolean;
-  defaultString?: string;
-  defaultExpression?: string;
   status: Status;
   classification?: string;
 }
