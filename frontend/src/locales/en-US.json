@@ -2119,6 +2119,14 @@
       "foreign-key": "Foreign Key",
       "classification": "Classification"
     },
+    "default": {
+      "no-default": "No default",
+      "empty-string": "Empty string",
+      "expression": "Expression",
+      "zero": "0",
+      "true": "True",
+      "false": "False"
+    },
     "nothing-changed": "Nothing changed",
     "message": {
       "invalid-schema-name": "Invalid schema name",
