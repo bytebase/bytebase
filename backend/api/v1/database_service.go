@@ -1992,6 +1992,9 @@ func convertDatabaseConfig(config *storepb.DatabaseConfig) []*v1pb.SchemaConfig 
 }
 
 func convertTableConfig(table *storepb.TableConfig) *v1pb.TableConfig {
+	if table == nil {
+		return nil
+	}
 	t := &v1pb.TableConfig{
 		Name: table.Name,
 	}
@@ -2002,6 +2005,9 @@ func convertTableConfig(table *storepb.TableConfig) *v1pb.TableConfig {
 }
 
 func convertColumnConfig(column *storepb.ColumnConfig) *v1pb.ColumnConfig {
+	if column == nil {
+		return nil
+	}
 	return &v1pb.ColumnConfig{
 		Name:           column.Name,
 		SemanticTypeId: column.SemanticTypeId,
@@ -2631,6 +2637,9 @@ func getOpenAIResponse(ctx context.Context, messages []openai.ChatCompletionMess
 }
 
 func convertTableMetadata(table *storepb.TableMetadata) *v1pb.TableMetadata {
+	if table == nil {
+		return nil
+	}
 	t := &v1pb.TableMetadata{
 		Name:           table.Name,
 		Engine:         table.Engine,
@@ -2674,6 +2683,9 @@ func convertTableMetadata(table *storepb.TableMetadata) *v1pb.TableMetadata {
 }
 
 func convertColumnMetadata(column *storepb.ColumnMetadata) *v1pb.ColumnMetadata {
+	if column == nil {
+		return nil
+	}
 	metadata := &v1pb.ColumnMetadata{
 		Name:           column.Name,
 		Position:       column.Position,
