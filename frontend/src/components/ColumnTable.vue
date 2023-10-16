@@ -83,7 +83,7 @@
         {{ column.type }}
       </BBTableCell>
       <BBTableCell class="bb-grid-cell">
-        {{ column.default }}
+        {{ getColumnDefaultValuePlaceholder(column) }}
       </BBTableCell>
       <BBTableCell class="bb-grid-cell">
         {{ column.nullable }}
@@ -168,6 +168,7 @@ import { cloneDeep } from "lodash-es";
 import { computed, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBTableColumn } from "@/bbkit/types";
+import { getColumnDefaultValuePlaceholder } from "@/components/SchemaEditorV1/utils/columnDefaultValue";
 import {
   useCurrentUserV1,
   useDBSchemaV1Store,

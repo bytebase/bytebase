@@ -1,4 +1,6 @@
+import { useI18n } from "vue-i18n";
 import { Engine } from "@/types/proto/v1/common";
+import { ColumnDefaultValue } from "@/types/v1/schemaEditor";
 
 interface DefaultValue {
   hasDefault: boolean;
@@ -109,4 +111,42 @@ export const getDefaultValueByKey = (key: string) => {
     BOOLEAN_FALSE_OPTION,
   ];
   return options.find((option) => option.key === key)?.value;
+};
+
+export const getColumnDefaultDisplayString = (column: ColumnDefaultValue) => {
+  if (!column.hasDefault || column.defaultNull) {
+    return undefined;
+  }
+  return column.defaultString || column.defaultExpression || "";
+};
+
+export const getColumnDefaultValuePlaceholder = (
+  column: ColumnDefaultValue
+): string => {
+  if (!column.hasDefault) {
+    return "No default";
+  }
+  if (column.defaultNull) {
+    return "Null";
+  }
+  if (column.defaultString !== undefined) {
+    return column.defaultString || "Empty string";
+  }
+  if (column.defaultExpression !== undefined) {
+    return column.defaultExpression || "Empty expression";
+  }
+  return "";
+};
+
+export const getColumnDefaultValueOptions = (
+  engine: Engine,
+  columnType: string
+): DefaultValueOption[] => {
+  const { t } = useI18n();
+  return getColumnTypeDefaultValueOptions(engine, columnType).map((option) => {
+    return {
+      ...option,
+      label: t(`schema-editor.default.${option.key}`),
+    };
+  });
 };
