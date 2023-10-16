@@ -440,6 +440,7 @@ const handleColumnDefaultInputChange = (event: Event, column: Column) => {
   column.defaultNull = undefined;
   if (column.defaultString !== undefined) {
     column.defaultString = value;
+    return;
   }
   // By default, user input is treated as expression.
   column.defaultExpression = value;
