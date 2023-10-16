@@ -462,22 +462,26 @@ func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 			renderedStatement = RenderStatement(statement, materials)
 		}
 
-		stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
-			state.TaskRunExecutionStatus{
-				ExecutionStatus: v1pb.TaskRun_EXECUTING,
-				UpdateTime:      time.Now(),
-			})
+		if stateCfg != nil {
+			stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
+				state.TaskRunExecutionStatus{
+					ExecutionStatus: v1pb.TaskRun_EXECUTING,
+					UpdateTime:      time.Now(),
+				})
+		}
 
 		if err := execFunc(driverCtx, renderedStatement); err != nil {
 			return "", "", err
 		}
 	}
 
-	stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
-		state.TaskRunExecutionStatus{
-			ExecutionStatus: v1pb.TaskRun_POST_EXECUTING,
-			UpdateTime:      time.Now(),
-		})
+	if stateCfg != nil {
+		stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
+			state.TaskRunExecutionStatus{
+				ExecutionStatus: v1pb.TaskRun_POST_EXECUTING,
+				UpdateTime:      time.Now(),
+			})
+	}
 
 	// Phase 4 - Dump the schema after migration
 	var afterSchemaBuf bytes.Buffer
