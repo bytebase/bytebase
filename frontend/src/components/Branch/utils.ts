@@ -92,7 +92,10 @@ export const mergeSchemaEditToMetadata = (
               column.comment = columnEdit.comment;
               column.userComment = columnEdit.userComment;
               column.classification = columnEdit.classification ?? "";
-              column.default = columnEdit.default;
+              column.hasDefault = columnEdit.hasDefault;
+              column.defaultNull = columnEdit.defaultNull;
+              column.defaultString = columnEdit.defaultString;
+              column.defaultExpression = columnEdit.defaultExpression;
             }
           }
           for (const column of table.columns) {
@@ -229,7 +232,10 @@ const transformSchemaEditToMetadata = (schemaEdit: Schema): SchemaMetadata => {
           name: column.name,
           type: column.type,
           nullable: column.nullable,
-          default: column.default,
+          hasDefault: column.hasDefault,
+          defaultNull: column.defaultNull,
+          defaultString: column.defaultString,
+          defaultExpression: column.defaultExpression,
           comment: column.comment,
           userComment: column.userComment,
           classification: column.classification,
@@ -280,7 +286,10 @@ export const transformTableEditToMetadata = (
         name: column.name,
         type: column.type,
         nullable: column.nullable,
-        default: column.default,
+        hasDefault: column.hasDefault,
+        defaultNull: column.defaultNull,
+        defaultString: column.defaultString,
+        defaultExpression: column.defaultExpression,
         comment: column.comment,
         userComment: column.userComment,
         classification: column.classification,
@@ -315,7 +324,10 @@ const transformColumnEditToMetadata = (columnEdit: Column): ColumnMetadata => {
     name: columnEdit.name,
     type: columnEdit.type,
     nullable: columnEdit.nullable,
-    default: columnEdit.default,
+    hasDefault: columnEdit.hasDefault,
+    defaultNull: columnEdit.defaultNull,
+    defaultString: columnEdit.defaultString,
+    defaultExpression: columnEdit.defaultExpression,
     comment: columnEdit.comment,
     userComment: columnEdit.userComment,
     classification: columnEdit.classification,
@@ -363,7 +375,10 @@ export const rebuildEditableSchemas = (
         editableColumn.comment = column.comment;
         editableColumn.userComment = column.userComment;
         editableColumn.classification = column.classification;
-        editableColumn.default = column.default;
+        editableColumn.hasDefault = column.hasDefault;
+        editableColumn.defaultNull = column.defaultNull;
+        editableColumn.defaultString = column.defaultString;
+        editableColumn.defaultExpression = column.defaultExpression;
       }
 
       for (const column of table.columns) {
