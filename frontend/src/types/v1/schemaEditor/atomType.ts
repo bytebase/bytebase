@@ -61,7 +61,7 @@ export interface Schema {
   name: string;
   tableList: Table[];
   status: Status;
-  config?: SchemaConfig;
+  config: SchemaConfig;
 }
 
 export const convertColumnMetadataToColumn = (
@@ -149,15 +149,15 @@ export const convertSchemaMetadataToSchema = (
     name: schemaMetadata.name,
     tableList: tableList,
     status,
-    config: schemaConfigList.find(
-      (config) => config.name === schemaMetadata.name
-    ),
+    config:
+      schemaConfigList.find((config) => config.name === schemaMetadata.name) ??
+      SchemaConfig.fromPartial({}),
   };
 };
 
 export const convertSchemaMetadataList = (
   schemaMetadataList: SchemaMetadata[],
-  schemaConfigList: SchemaConfig[] = []
+  schemaConfigList: SchemaConfig[]
 ): Schema[] => {
   // Compose all tables of each schema.
   const schemaList: Schema[] = schemaMetadataList.map((schemaMetadata) =>

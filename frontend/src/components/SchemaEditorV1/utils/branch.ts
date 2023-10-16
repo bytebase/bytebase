@@ -8,18 +8,21 @@ import {
   BranchSchema,
   convertSchemaMetadataList,
 } from "@/types/v1/schemaEditor";
-import { rebuildEditableSchemas } from "./metadataV1";
+import { rebuildEditableSchemas } from "./metadata";
 
 export const convertBranchToBranchSchema = (
   branch: SchemaDesign
 ): BranchSchema => {
   const baselineMetadata = getBaselineMetadataOfBranch(branch);
   const originalSchemas = convertSchemaMetadataList(
-    baselineMetadata.schemas || []
+    baselineMetadata.schemas || [],
+    baselineMetadata.schemaConfigs || []
   );
+
   const editableSchemas = rebuildEditableSchemas(
     originalSchemas,
-    branch.schemaMetadata?.schemas || []
+    branch.schemaMetadata?.schemas || [],
+    branch.schemaMetadata?.schemaConfigs || []
   );
 
   return {

@@ -221,11 +221,19 @@
   />
 
   <SelectClassificationDrawer
-    v-if="classificationConfig"
-    :show="state.pendingUpdateColumn !== undefined"
+    v-if="classificationConfig && state.pendingUpdateColumn"
+    :show="state.showClassificationDrawer"
     :classification-config="classificationConfig"
-    @dismiss="state.pendingUpdateColumn = undefined"
+    @dismiss="state.showClassificationDrawer = false"
     @select="onClassificationSelect"
+  />
+
+  <SemanticTypesDrawer
+    v-if="state.pendingUpdateColumn"
+    :show="state.showSemanticTypesDrawer"
+    :semantic-type-list="semanticTypeList"
+    @dismiss="state.showSemanticTypesDrawer = false"
+    @apply="onSemanticTypeApply($event)"
   />
 </template>
 
@@ -248,6 +256,8 @@ import {
 
 interface LocalState {
   pendingUpdateColumn?: Column;
+  showClassificationDrawer: boolean;
+  showSemanticTypesDrawer: boolean;
 }
 
 const props = withDefaults(
@@ -285,7 +295,10 @@ defineEmits<{
   (event: "onPrimaryKeySet", column: Column, isPrimaryKey: boolean): void;
 }>();
 
-const state = reactive<LocalState>({});
+const state = reactive<LocalState>({
+  showClassificationDrawer: false,
+  showSemanticTypesDrawer: false,
+});
 
 const { t } = useI18n();
 const settingStore = useSettingV1Store();
@@ -296,6 +309,13 @@ const classificationConfig = computed(() => {
     return;
   }
   return settingStore.getProjectClassification(props.classificationConfigId);
+});
+
+const semanticTypeList = computed(() => {
+  return (
+    settingStore.getSettingByName("bb.workspace.semantic-types")?.value
+      ?.semanticTypesSettingValue?.types ?? []
+  );
 });
 
 const columnHeaderList = computed(() => {
@@ -480,11 +500,23 @@ const handleSelectedColumnDefaultValueExpressionChange = (
 };
 
 const onClassificationSelect = (classificationId: string) => {
+  state.showClassificationDrawer = false;
   if (!state.pendingUpdateColumn) {
     return;
   }
   state.pendingUpdateColumn.classification = classificationId;
-  state.pendingUpdateColumn = undefined;
+};
+
+const onSemanticTypeApply = async (semanticTypeId: string) => {
+  state.showSemanticTypesDrawer = false;
+  if (!state.pendingUpdateColumn) {
+    return;
+  }
+  try {
+    // await updateColumnConfig(column.name, { semanticTypeId });
+  } finally {
+    state.showSemanticTypesDrawer = false;
+  }
 };
 </script>
 

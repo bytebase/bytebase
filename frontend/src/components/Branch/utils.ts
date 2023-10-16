@@ -7,7 +7,6 @@ import {
   IndexMetadata,
   SchemaMetadata,
   TableMetadata,
-  SchemaConfig,
 } from "@/types/proto/v1/database_service";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import {
@@ -210,9 +209,7 @@ export const mergeSchemaEditToMetadata = (
     }
   }
 
-  metadata.schemaConfigs = schemaEdits
-    .filter((schema) => !!schema.config)
-    .map((schema) => schema.config) as SchemaConfig[];
+  metadata.schemaConfigs = schemaEdits.map((schema) => schema.config);
 
   return metadata;
 };
@@ -337,167 +334,6 @@ const transformColumnEditToMetadata = (columnEdit: Column): ColumnMetadata => {
     userComment: columnEdit.userComment,
     classification: columnEdit.classification,
   });
-};
-
-export const rebuildEditableSchemas = (
-  originalSchemas: Schema[],
-  schemas: SchemaMetadata[]
-): Schema[] => {
-  const editableSchemas = cloneDeep(originalSchemas);
-
-  for (const editableSchema of editableSchemas) {
-    const schema = schemas.find(
-      (schema) => schema.name === editableSchema.name
-    );
-    if (!schema) {
-      editableSchema.status = "dropped";
-      continue;
-    }
-
-    for (const editableTable of editableSchema.tableList) {
-      const table = schema.tables.find(
-        (table) => table.name === editableTable.name
-      );
-      if (!table) {
-        editableTable.status = "dropped";
-        continue;
-      }
-
-      for (const editableColumn of editableTable.columnList) {
-        const column = table.columns.find(
-          (column) => column.name === editableColumn.name
-        );
-        if (!column) {
-          editableColumn.status = "dropped";
-          continue;
-        }
-        if (isEqual(transformColumnEditToMetadata(editableColumn), column)) {
-          continue;
-        }
-
-        editableColumn.type = column.type;
-        editableColumn.nullable = column.nullable;
-        editableColumn.comment = column.comment;
-        editableColumn.userComment = column.userComment;
-        editableColumn.classification = column.classification;
-        editableColumn.hasDefault = column.hasDefault;
-        editableColumn.defaultNull = column.defaultNull;
-        editableColumn.defaultString = column.defaultString;
-        editableColumn.defaultExpression = column.defaultExpression;
-      }
-
-      for (const column of table.columns) {
-        const editableColumn = editableTable.columnList.find(
-          (item) => item.name === column.name
-        );
-        if (!editableColumn) {
-          const newColumn = convertColumnMetadataToColumn(column, "created");
-          editableTable.columnList.push(newColumn);
-        }
-      }
-
-      // Rebuild primary key from primary index.
-      const primaryIndex = table.indexes.find(
-        (index) => index.primary === true
-      );
-      if (primaryIndex) {
-        editableTable.primaryKey.name = primaryIndex.name;
-        for (const columnName of primaryIndex.expressions) {
-          const column = editableTable.columnList.find(
-            (column) => column.name === columnName
-          );
-          if (column) {
-            editableTable.primaryKey.columnIdList.push(column.id);
-          }
-        }
-        editableTable.primaryKey.columnIdList = uniq(
-          editableTable.primaryKey.columnIdList
-        );
-      }
-    }
-
-    for (const table of schema.tables) {
-      const editableTable = editableSchema.tableList.find(
-        (item) => item.name === table.name
-      );
-      if (!editableTable) {
-        const newTable = convertTableMetadataToTable(table, "created");
-        editableSchema.tableList.push(newTable);
-      }
-    }
-  }
-
-  for (const schema of schemas) {
-    const editableSchema = editableSchemas.find(
-      (item) => item.name === schema.name
-    );
-    if (!editableSchema) {
-      const newSchema = convertSchemaMetadataToSchema(schema, "created");
-      editableSchemas.push(newSchema);
-    }
-  }
-
-  // Build foreign keys for schema and referenced schema.
-  for (const schema of schemas) {
-    const editableSchema = editableSchemas.find(
-      (schema) => schema.name === schema.name
-    );
-    if (!editableSchema) {
-      continue;
-    }
-
-    for (const table of schema.tables) {
-      const editableTable = editableSchema.tableList.find(
-        (item) => item.name === table.name
-      );
-      if (!editableTable) {
-        continue;
-      }
-
-      const foreignKeyList: ForeignKey[] = [];
-      for (const foreignKeyMetadata of table.foreignKeys) {
-        const referencedSchema = editableSchemas.find(
-          (schema) => schema.name === foreignKeyMetadata.referencedSchema
-        );
-        const referencedTable = referencedSchema?.tableList.find(
-          (table) => table.name === foreignKeyMetadata.referencedTable
-        );
-        if (!referencedSchema || !referencedTable) {
-          continue;
-        }
-
-        const fk: ForeignKey = {
-          name: foreignKeyMetadata.name,
-          tableId: editableTable.id,
-          columnIdList: [],
-          referencedSchemaId: referencedSchema.id,
-          referencedTableId: referencedTable.id,
-          referencedColumnIdList: [],
-        };
-        for (const columnName of foreignKeyMetadata.columns) {
-          const column = editableTable.columnList.find(
-            (column) => column.name === columnName
-          );
-          if (column) {
-            fk.columnIdList.push(column.id);
-          }
-        }
-        for (const referencedColumnName of foreignKeyMetadata.referencedColumns) {
-          const referencedColumn = referencedTable.columnList.find(
-            (column) => column.name === referencedColumnName
-          );
-          if (referencedColumn) {
-            fk.referencedColumnIdList.push(referencedColumn.id);
-          }
-        }
-
-        foreignKeyList.push(fk);
-      }
-      editableTable.foreignKeyList = foreignKeyList;
-    }
-  }
-
-  return editableSchemas;
 };
 
 export const validateDatabaseMetadata = (

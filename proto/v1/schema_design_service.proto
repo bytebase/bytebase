@@ -146,12 +146,6 @@ message SchemaDesign {
 
   // The timestamp when the schema design was last updated.
   google.protobuf.Timestamp update_time = 17 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The snapshot of the database config when creating the sheet, be used to compare with the baseline_database_config and apply the diff to the database.
-  optional DatabaseConfig database_config = 18;
-
-  // The snapshot of the baseline database config when creating the sheet.
-  optional DatabaseConfig baseline_database_config = 19;
 }
 
 message GetSchemaDesignRequest {

@@ -1,12 +1,12 @@
 import { cloneDeep, isEqual, uniq } from "lodash-es";
 import {
-  SchemaConfig,
   ColumnMetadata,
   DatabaseMetadata,
   ForeignKeyMetadata,
   IndexMetadata,
   SchemaMetadata,
   TableMetadata,
+  SchemaConfig,
 } from "@/types/proto/v1/database_service";
 import {
   Column,
@@ -209,9 +209,7 @@ export const mergeSchemaEditToMetadata = (
     }
   }
 
-  metadata.schemaConfigs = schemaEdits
-    .filter((schema) => !!schema.config)
-    .map((schema) => schema.config) as SchemaConfig[];
+  metadata.schemaConfigs = schemaEdits.map((schema) => schema.config);
 
   return metadata;
 };
@@ -336,7 +334,8 @@ const transformColumnEditToMetadata = (columnEdit: Column): ColumnMetadata => {
 
 export const rebuildEditableSchemas = (
   originalSchemas: Schema[],
-  schemas: SchemaMetadata[]
+  schemas: SchemaMetadata[],
+  schemaConfigList: SchemaConfig[]
 ): Schema[] => {
   const editableSchemas = cloneDeep(originalSchemas);
 
@@ -348,6 +347,9 @@ export const rebuildEditableSchemas = (
       editableSchema.status = "dropped";
       continue;
     }
+    editableSchema.config =
+      schemaConfigList.find((config) => config.name === editableSchema.name) ??
+      SchemaConfig.fromPartial({});
 
     for (const editableTable of editableSchema.tableList) {
       const table = schema.tables.find(
