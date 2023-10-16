@@ -208,6 +208,7 @@ const treeData = computed(() => {
 
   return treeNodeList;
 });
+
 const contextMenuOptions = computed(() => {
   const treeNode = contextMenu.treeNode;
   if (isUndefined(treeNode)) {
@@ -580,6 +581,7 @@ const openTabForTable = (treeNode: TreeNode) => {
       parentName: branchSchema.value.branch.name,
       schemaId: treeNode.schemaId,
       tableId: treeNode.tableId,
+      name: treeNode.label,
     });
   } else if (treeNode.type === "schema") {
     const index = expandedKeysRef.value.findIndex(
@@ -588,6 +590,12 @@ const openTabForTable = (treeNode: TreeNode) => {
     if (index < 0) {
       expandedKeysRef.value.push(treeNode.key);
     }
+    schemaEditorV1Store.addTab({
+      id: generateUniqueTabId(),
+      type: SchemaEditorTabType.TabForDatabase,
+      parentName: branchSchema.value.branch.name,
+      name: treeNode.label,
+    });
   }
 
   state.shouldRelocateTreeNode = true;
