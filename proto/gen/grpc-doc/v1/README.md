@@ -8024,6 +8024,7 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | schema_version | [string](#string) |  |  |
 | execution_status | [TaskRun.ExecutionStatus](#bytebase-v1-TaskRun-ExecutionStatus) |  |  |
 | execution_status_update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Last execution status update timestamp. |
+| start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 
 
 

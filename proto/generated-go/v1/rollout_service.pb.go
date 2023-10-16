@@ -2322,6 +2322,7 @@ type TaskRun struct {
 	ExecutionStatus TaskRun_ExecutionStatus `protobuf:"varint,12,opt,name=execution_status,json=executionStatus,proto3,enum=bytebase.v1.TaskRun_ExecutionStatus" json:"execution_status,omitempty"`
 	// Last execution status update timestamp.
 	ExecutionStatusUpdateTime *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=execution_status_update_time,json=executionStatusUpdateTime,proto3" json:"execution_status_update_time,omitempty"`
+	StartTime                 *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
 }
 
 func (x *TaskRun) Reset() {
@@ -2443,6 +2444,13 @@ func (x *TaskRun) GetExecutionStatus() TaskRun_ExecutionStatus {
 func (x *TaskRun) GetExecutionStatusUpdateTime() *timestamppb.Timestamp {
 	if x != nil {
 		return x.ExecutionStatusUpdateTime
+	}
+	return nil
+}
+
+func (x *TaskRun) GetStartTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.StartTime
 	}
 	return nil
 }
@@ -4233,7 +4241,7 @@ var file_v1_rollout_service_proto_rawDesc = []byte{
 	0x45, 0x53, 0x54, 0x4f, 0x52, 0x45, 0x5f, 0x52, 0x45, 0x53, 0x54, 0x4f, 0x52, 0x45, 0x10, 0x0a,
 	0x12, 0x1c, 0x0a, 0x18, 0x44, 0x41, 0x54, 0x41, 0x42, 0x41, 0x53, 0x45, 0x5f, 0x52, 0x45, 0x53,
 	0x54, 0x4f, 0x52, 0x45, 0x5f, 0x43, 0x55, 0x54, 0x4f, 0x56, 0x45, 0x52, 0x10, 0x0b, 0x42, 0x09,
-	0x0a, 0x07, 0x70, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x22, 0x96, 0x06, 0x0a, 0x07, 0x54, 0x61,
+	0x0a, 0x07, 0x70, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x22, 0xd6, 0x06, 0x0a, 0x07, 0x54, 0x61,
 	0x73, 0x6b, 0x52, 0x75, 0x6e, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20,
 	0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x15, 0x0a, 0x03, 0x75, 0x69, 0x64,
 	0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x42, 0x03, 0xe0, 0x41, 0x03, 0x52, 0x03, 0x75, 0x69, 0x64,
@@ -4270,7 +4278,11 @@ var file_v1_rollout_service_proto_rawDesc = []byte{
 	0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62,
 	0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x19, 0x65, 0x78,
 	0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x55, 0x70, 0x64,
-	0x61, 0x74, 0x65, 0x54, 0x69, 0x6d, 0x65, 0x22, 0x5e, 0x0a, 0x06, 0x53, 0x74, 0x61, 0x74, 0x75,
+	0x61, 0x74, 0x65, 0x54, 0x69, 0x6d, 0x65, 0x12, 0x3e, 0x0a, 0x0a, 0x73, 0x74, 0x61, 0x72, 0x74,
+	0x5f, 0x74, 0x69, 0x6d, 0x65, 0x18, 0x0e, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f,
+	0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69,
+	0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x42, 0x03, 0xe0, 0x41, 0x03, 0x52, 0x09, 0x73, 0x74,
+	0x61, 0x72, 0x74, 0x54, 0x69, 0x6d, 0x65, 0x22, 0x5e, 0x0a, 0x06, 0x53, 0x74, 0x61, 0x74, 0x75,
 	0x73, 0x12, 0x16, 0x0a, 0x12, 0x53, 0x54, 0x41, 0x54, 0x55, 0x53, 0x5f, 0x55, 0x4e, 0x53, 0x50,
 	0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x0b, 0x0a, 0x07, 0x50, 0x45, 0x4e,
 	0x44, 0x49, 0x4e, 0x47, 0x10, 0x01, 0x12, 0x0b, 0x0a, 0x07, 0x52, 0x55, 0x4e, 0x4e, 0x49, 0x4e,
@@ -4505,54 +4517,55 @@ var file_v1_rollout_service_proto_depIdxs = []int32{
 	7,  // 24: bytebase.v1.TaskRun.status:type_name -> bytebase.v1.TaskRun.Status
 	8,  // 25: bytebase.v1.TaskRun.execution_status:type_name -> bytebase.v1.TaskRun.ExecutionStatus
 	53, // 26: bytebase.v1.TaskRun.execution_status_update_time:type_name -> google.protobuf.Timestamp
-	36, // 27: bytebase.v1.Plan.Step.specs:type_name -> bytebase.v1.Plan.Spec
-	53, // 28: bytebase.v1.Plan.Spec.earliest_allowed_time:type_name -> google.protobuf.Timestamp
-	37, // 29: bytebase.v1.Plan.Spec.create_database_config:type_name -> bytebase.v1.Plan.CreateDatabaseConfig
-	38, // 30: bytebase.v1.Plan.Spec.change_database_config:type_name -> bytebase.v1.Plan.ChangeDatabaseConfig
-	39, // 31: bytebase.v1.Plan.Spec.restore_database_config:type_name -> bytebase.v1.Plan.RestoreDatabaseConfig
-	40, // 32: bytebase.v1.Plan.CreateDatabaseConfig.labels:type_name -> bytebase.v1.Plan.CreateDatabaseConfig.LabelsEntry
-	0,  // 33: bytebase.v1.Plan.ChangeDatabaseConfig.type:type_name -> bytebase.v1.Plan.ChangeDatabaseConfig.Type
-	41, // 34: bytebase.v1.Plan.ChangeDatabaseConfig.rollback_detail:type_name -> bytebase.v1.Plan.ChangeDatabaseConfig.RollbackDetail
-	37, // 35: bytebase.v1.Plan.RestoreDatabaseConfig.create_database_config:type_name -> bytebase.v1.Plan.CreateDatabaseConfig
-	53, // 36: bytebase.v1.Plan.RestoreDatabaseConfig.point_in_time:type_name -> google.protobuf.Timestamp
-	3,  // 37: bytebase.v1.PlanCheckRun.Result.status:type_name -> bytebase.v1.PlanCheckRun.Result.Status
-	43, // 38: bytebase.v1.PlanCheckRun.Result.sql_summary_report:type_name -> bytebase.v1.PlanCheckRun.Result.SqlSummaryReport
-	44, // 39: bytebase.v1.PlanCheckRun.Result.sql_review_report:type_name -> bytebase.v1.PlanCheckRun.Result.SqlReviewReport
-	54, // 40: bytebase.v1.PlanCheckRun.Result.SqlSummaryReport.changed_resources:type_name -> bytebase.v1.ChangedResources
-	51, // 41: bytebase.v1.Task.DatabaseCreate.labels:type_name -> bytebase.v1.Task.DatabaseCreate.LabelsEntry
-	6,  // 42: bytebase.v1.Task.DatabaseDataUpdate.rollback_sql_status:type_name -> bytebase.v1.Task.DatabaseDataUpdate.RollbackSqlStatus
-	53, // 43: bytebase.v1.Task.DatabaseRestoreRestore.point_in_time:type_name -> google.protobuf.Timestamp
-	9,  // 44: bytebase.v1.RolloutService.GetPlan:input_type -> bytebase.v1.GetPlanRequest
-	10, // 45: bytebase.v1.RolloutService.ListPlans:input_type -> bytebase.v1.ListPlansRequest
-	12, // 46: bytebase.v1.RolloutService.CreatePlan:input_type -> bytebase.v1.CreatePlanRequest
-	13, // 47: bytebase.v1.RolloutService.UpdatePlan:input_type -> bytebase.v1.UpdatePlanRequest
-	26, // 48: bytebase.v1.RolloutService.GetRollout:input_type -> bytebase.v1.GetRolloutRequest
-	27, // 49: bytebase.v1.RolloutService.CreateRollout:input_type -> bytebase.v1.CreateRolloutRequest
-	28, // 50: bytebase.v1.RolloutService.PreviewRollout:input_type -> bytebase.v1.PreviewRolloutRequest
-	29, // 51: bytebase.v1.RolloutService.ListTaskRuns:input_type -> bytebase.v1.ListTaskRunsRequest
-	15, // 52: bytebase.v1.RolloutService.ListPlanCheckRuns:input_type -> bytebase.v1.ListPlanCheckRunsRequest
-	17, // 53: bytebase.v1.RolloutService.RunPlanChecks:input_type -> bytebase.v1.RunPlanChecksRequest
-	19, // 54: bytebase.v1.RolloutService.BatchRunTasks:input_type -> bytebase.v1.BatchRunTasksRequest
-	21, // 55: bytebase.v1.RolloutService.BatchSkipTasks:input_type -> bytebase.v1.BatchSkipTasksRequest
-	23, // 56: bytebase.v1.RolloutService.BatchCancelTaskRuns:input_type -> bytebase.v1.BatchCancelTaskRunsRequest
-	14, // 57: bytebase.v1.RolloutService.GetPlan:output_type -> bytebase.v1.Plan
-	11, // 58: bytebase.v1.RolloutService.ListPlans:output_type -> bytebase.v1.ListPlansResponse
-	14, // 59: bytebase.v1.RolloutService.CreatePlan:output_type -> bytebase.v1.Plan
-	14, // 60: bytebase.v1.RolloutService.UpdatePlan:output_type -> bytebase.v1.Plan
-	31, // 61: bytebase.v1.RolloutService.GetRollout:output_type -> bytebase.v1.Rollout
-	31, // 62: bytebase.v1.RolloutService.CreateRollout:output_type -> bytebase.v1.Rollout
-	31, // 63: bytebase.v1.RolloutService.PreviewRollout:output_type -> bytebase.v1.Rollout
-	30, // 64: bytebase.v1.RolloutService.ListTaskRuns:output_type -> bytebase.v1.ListTaskRunsResponse
-	16, // 65: bytebase.v1.RolloutService.ListPlanCheckRuns:output_type -> bytebase.v1.ListPlanCheckRunsResponse
-	18, // 66: bytebase.v1.RolloutService.RunPlanChecks:output_type -> bytebase.v1.RunPlanChecksResponse
-	20, // 67: bytebase.v1.RolloutService.BatchRunTasks:output_type -> bytebase.v1.BatchRunTasksResponse
-	22, // 68: bytebase.v1.RolloutService.BatchSkipTasks:output_type -> bytebase.v1.BatchSkipTasksResponse
-	24, // 69: bytebase.v1.RolloutService.BatchCancelTaskRuns:output_type -> bytebase.v1.BatchCancelTaskRunsResponse
-	57, // [57:70] is the sub-list for method output_type
-	44, // [44:57] is the sub-list for method input_type
-	44, // [44:44] is the sub-list for extension type_name
-	44, // [44:44] is the sub-list for extension extendee
-	0,  // [0:44] is the sub-list for field type_name
+	53, // 27: bytebase.v1.TaskRun.start_time:type_name -> google.protobuf.Timestamp
+	36, // 28: bytebase.v1.Plan.Step.specs:type_name -> bytebase.v1.Plan.Spec
+	53, // 29: bytebase.v1.Plan.Spec.earliest_allowed_time:type_name -> google.protobuf.Timestamp
+	37, // 30: bytebase.v1.Plan.Spec.create_database_config:type_name -> bytebase.v1.Plan.CreateDatabaseConfig
+	38, // 31: bytebase.v1.Plan.Spec.change_database_config:type_name -> bytebase.v1.Plan.ChangeDatabaseConfig
+	39, // 32: bytebase.v1.Plan.Spec.restore_database_config:type_name -> bytebase.v1.Plan.RestoreDatabaseConfig
+	40, // 33: bytebase.v1.Plan.CreateDatabaseConfig.labels:type_name -> bytebase.v1.Plan.CreateDatabaseConfig.LabelsEntry
+	0,  // 34: bytebase.v1.Plan.ChangeDatabaseConfig.type:type_name -> bytebase.v1.Plan.ChangeDatabaseConfig.Type
+	41, // 35: bytebase.v1.Plan.ChangeDatabaseConfig.rollback_detail:type_name -> bytebase.v1.Plan.ChangeDatabaseConfig.RollbackDetail
+	37, // 36: bytebase.v1.Plan.RestoreDatabaseConfig.create_database_config:type_name -> bytebase.v1.Plan.CreateDatabaseConfig
+	53, // 37: bytebase.v1.Plan.RestoreDatabaseConfig.point_in_time:type_name -> google.protobuf.Timestamp
+	3,  // 38: bytebase.v1.PlanCheckRun.Result.status:type_name -> bytebase.v1.PlanCheckRun.Result.Status
+	43, // 39: bytebase.v1.PlanCheckRun.Result.sql_summary_report:type_name -> bytebase.v1.PlanCheckRun.Result.SqlSummaryReport
+	44, // 40: bytebase.v1.PlanCheckRun.Result.sql_review_report:type_name -> bytebase.v1.PlanCheckRun.Result.SqlReviewReport
+	54, // 41: bytebase.v1.PlanCheckRun.Result.SqlSummaryReport.changed_resources:type_name -> bytebase.v1.ChangedResources
+	51, // 42: bytebase.v1.Task.DatabaseCreate.labels:type_name -> bytebase.v1.Task.DatabaseCreate.LabelsEntry
+	6,  // 43: bytebase.v1.Task.DatabaseDataUpdate.rollback_sql_status:type_name -> bytebase.v1.Task.DatabaseDataUpdate.RollbackSqlStatus
+	53, // 44: bytebase.v1.Task.DatabaseRestoreRestore.point_in_time:type_name -> google.protobuf.Timestamp
+	9,  // 45: bytebase.v1.RolloutService.GetPlan:input_type -> bytebase.v1.GetPlanRequest
+	10, // 46: bytebase.v1.RolloutService.ListPlans:input_type -> bytebase.v1.ListPlansRequest
+	12, // 47: bytebase.v1.RolloutService.CreatePlan:input_type -> bytebase.v1.CreatePlanRequest
+	13, // 48: bytebase.v1.RolloutService.UpdatePlan:input_type -> bytebase.v1.UpdatePlanRequest
+	26, // 49: bytebase.v1.RolloutService.GetRollout:input_type -> bytebase.v1.GetRolloutRequest
+	27, // 50: bytebase.v1.RolloutService.CreateRollout:input_type -> bytebase.v1.CreateRolloutRequest
+	28, // 51: bytebase.v1.RolloutService.PreviewRollout:input_type -> bytebase.v1.PreviewRolloutRequest
+	29, // 52: bytebase.v1.RolloutService.ListTaskRuns:input_type -> bytebase.v1.ListTaskRunsRequest
+	15, // 53: bytebase.v1.RolloutService.ListPlanCheckRuns:input_type -> bytebase.v1.ListPlanCheckRunsRequest
+	17, // 54: bytebase.v1.RolloutService.RunPlanChecks:input_type -> bytebase.v1.RunPlanChecksRequest
+	19, // 55: bytebase.v1.RolloutService.BatchRunTasks:input_type -> bytebase.v1.BatchRunTasksRequest
+	21, // 56: bytebase.v1.RolloutService.BatchSkipTasks:input_type -> bytebase.v1.BatchSkipTasksRequest
+	23, // 57: bytebase.v1.RolloutService.BatchCancelTaskRuns:input_type -> bytebase.v1.BatchCancelTaskRunsRequest
+	14, // 58: bytebase.v1.RolloutService.GetPlan:output_type -> bytebase.v1.Plan
+	11, // 59: bytebase.v1.RolloutService.ListPlans:output_type -> bytebase.v1.ListPlansResponse
+	14, // 60: bytebase.v1.RolloutService.CreatePlan:output_type -> bytebase.v1.Plan
+	14, // 61: bytebase.v1.RolloutService.UpdatePlan:output_type -> bytebase.v1.Plan
+	31, // 62: bytebase.v1.RolloutService.GetRollout:output_type -> bytebase.v1.Rollout
+	31, // 63: bytebase.v1.RolloutService.CreateRollout:output_type -> bytebase.v1.Rollout
+	31, // 64: bytebase.v1.RolloutService.PreviewRollout:output_type -> bytebase.v1.Rollout
+	30, // 65: bytebase.v1.RolloutService.ListTaskRuns:output_type -> bytebase.v1.ListTaskRunsResponse
+	16, // 66: bytebase.v1.RolloutService.ListPlanCheckRuns:output_type -> bytebase.v1.ListPlanCheckRunsResponse
+	18, // 67: bytebase.v1.RolloutService.RunPlanChecks:output_type -> bytebase.v1.RunPlanChecksResponse
+	20, // 68: bytebase.v1.RolloutService.BatchRunTasks:output_type -> bytebase.v1.BatchRunTasksResponse
+	22, // 69: bytebase.v1.RolloutService.BatchSkipTasks:output_type -> bytebase.v1.BatchSkipTasksResponse
+	24, // 70: bytebase.v1.RolloutService.BatchCancelTaskRuns:output_type -> bytebase.v1.BatchCancelTaskRunsResponse
+	58, // [58:71] is the sub-list for method output_type
+	45, // [45:58] is the sub-list for method input_type
+	45, // [45:45] is the sub-list for extension type_name
+	45, // [45:45] is the sub-list for extension extendee
+	0,  // [0:45] is the sub-list for field type_name
 }
 
 func init() { file_v1_rollout_service_proto_init() }
