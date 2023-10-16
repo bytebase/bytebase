@@ -28,6 +28,7 @@ func validateQuery(statement string) (bool, error) {
 	for _, stmt := range stmtList {
 		switch stmt := stmt.(type) {
 		case *tidbast.SelectStmt:
+		case *tidbast.SetOprStmt:
 		case *tidbast.ExplainStmt:
 			// Disable DESC command.
 			if _, ok := stmt.Stmt.(*tidbast.ShowStmt); ok {

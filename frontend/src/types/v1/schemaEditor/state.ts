@@ -26,7 +26,9 @@ export interface TableTabContext {
   tableId: string;
 }
 
-export type TabContext = DatabaseTabContext | TableTabContext;
+export type TabContext = {
+  name?: string;
+} & (DatabaseTabContext | TableTabContext);
 
 export interface DatabaseSchema {
   database: ComposedDatabase;

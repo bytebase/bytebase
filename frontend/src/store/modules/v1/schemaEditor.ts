@@ -11,6 +11,8 @@ import {
   SchemaEditorTabType,
   TableTabContext,
 } from "@/types/v1/schemaEditor";
+import { Schema } from "@/types/v1/schemaEditor/atomType";
+import { useDatabaseV1Store } from "./database";
 
 export const generateUniqueTabId = () => {
   return uniqueId();
@@ -49,6 +51,32 @@ export const useSchemaEditorV1Store = defineStore("SchemaEditorV1", {
     databaseList(): ComposedDatabase[] {
       return Array.from(this.resourceMap["database"].values()).map(
         (databaseSchema) => databaseSchema.database
+      );
+    },
+    currentDatabase(): ComposedDatabase | undefined {
+      if (!this.currentTab) {
+        return;
+      }
+      if (this.resourceType === "branch") {
+        const baselineDatabase = this.resourceMap.branch.get(
+          this.currentTab.parentName
+        )?.branch.baselineDatabase;
+        if (!baselineDatabase) {
+          return;
+        }
+        return useDatabaseV1Store().getDatabaseByName(baselineDatabase);
+      } else {
+        return this.resourceMap.database.get(this.currentTab.parentName)
+          ?.database;
+      }
+    },
+    currentSchemaList(): Schema[] {
+      if (!this.currentTab) {
+        return [] as Schema[];
+      }
+      return (
+        this.resourceMap[this.resourceType].get(this.currentTab.parentName)
+          ?.schemaList ?? []
       );
     },
   },

@@ -25,18 +25,6 @@
           </NButton>
         </div>
       </div>
-      <div class="flex justify-end items-center">
-        <NInput
-          v-model:value="searchPattern"
-          class="!w-48"
-          size="small"
-          :placeholder="$t('schema-editor.search-column')"
-        >
-          <template #prefix>
-            <heroicons-outline:search class="w-4 h-auto text-gray-300" />
-          </template>
-        </NInput>
-      </div>
     </div>
 
     <TableColumnEditor
@@ -47,7 +35,7 @@
       :foreign-key-list="foreignKeyList"
       :classification-config-id="project.dataClassificationConfigId"
       :disable-change-table="disableChangeTable"
-      :filter-column="(column: Column) => column.name.includes(searchPattern.trim())"
+      :filter-column="(column: Column) => column.name.includes(props.searchPattern.trim())"
       :disable-alter-column="disableAlterColumn"
       :get-referenced-foreign-key-name="getReferencedForeignKeyName"
       :get-column-item-computed-class-list="getColumnItemComputedClassList"
@@ -116,6 +104,15 @@ import EditColumnForeignKeyModal from "../Modals/EditColumnForeignKeyModal.vue";
 import { isColumnChanged } from "../utils";
 import TableColumnEditor from "./TableColumnEditor.vue";
 
+const props = withDefaults(
+  defineProps<{
+    searchPattern: string;
+  }>(),
+  {
+    searchPattern: "",
+  }
+);
+
 interface LocalState {
   showEditColumnForeignKeyModal: boolean;
   showSchemaTemplateDrawer: boolean;
@@ -161,7 +158,6 @@ const foreignKeyList = computed(() => {
   ) as ForeignKey[];
 });
 
-const searchPattern = ref("");
 const editForeignKeyColumn = ref<Column>();
 
 const isDroppedSchema = computed(() => {
@@ -325,6 +321,7 @@ const gotoForeignKeyReferencedTable = (column: Column) => {
     parentName: currentTab.value.parentName,
     schemaId: referencedSchema.id,
     tableId: referencedTable.id,
+    name: referencedTable.name,
   });
 
   nextTick(() => {

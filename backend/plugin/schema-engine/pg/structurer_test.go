@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
 	"gopkg.in/yaml.v3"
 
 	// Import PostgreSQL parser.
@@ -15,12 +16,12 @@ import (
 
 type parseToMetadataTest struct {
 	Schema   string
-	Metadata *v1pb.DatabaseMetadata
+	Metadata string
 }
 
 func TestParseToMetadata(t *testing.T) {
 	const (
-		record = true
+		record = false
 	)
 	var (
 		filepath = "testdata/parse_to_metadata.yaml"
@@ -32,17 +33,22 @@ func TestParseToMetadata(t *testing.T) {
 
 	tests := []parseToMetadataTest{}
 	byteValue, err := io.ReadAll(yamlFile)
-	a.NoError(yamlFile.Close())
 	a.NoError(err)
+	a.NoError(yamlFile.Close())
 	a.NoError(yaml.Unmarshal(byteValue, &tests))
 
 	for i, t := range tests {
 		result, err := ParseToMetadata(t.Schema)
 		a.NoError(err)
+		resultText := protojson.Format(result)
 		if record {
-			tests[i].Metadata = result
+			tests[i].Metadata = resultText
 		} else {
-			a.Equal(t.Metadata, result)
+			resultMeta := &v1pb.DatabaseMetadata{}
+			expectedMeta := &v1pb.DatabaseMetadata{}
+			a.NoError(protojson.Unmarshal([]byte(t.Metadata), resultMeta))
+			a.NoError(protojson.Unmarshal([]byte(t.Metadata), expectedMeta))
+			a.Equal(expectedMeta, resultMeta)
 		}
 	}
 
@@ -56,7 +62,7 @@ func TestParseToMetadata(t *testing.T) {
 
 type getSchemaDesignTest struct {
 	Baseline string
-	Target   *v1pb.DatabaseMetadata
+	Target   string
 	Result   string
 }
 
@@ -79,7 +85,9 @@ func TestGetSchemaDesign(t *testing.T) {
 	a.NoError(yaml.Unmarshal(byteValue, &tests))
 
 	for i, t := range tests {
-		result, err := GetDesignSchema(t.Baseline, t.Target)
+		targetSchema := &v1pb.DatabaseMetadata{}
+		a.NoError(protojson.Unmarshal([]byte(t.Target), targetSchema))
+		result, err := GetDesignSchema(t.Baseline, targetSchema)
 		a.NoError(err)
 		if record {
 			tests[i].Result = result

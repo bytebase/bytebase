@@ -455,7 +455,7 @@ func mssqlSyntaxCheck(statement string) (any, []Advice) {
 }
 
 func snowflakeSyntaxCheck(statement string) (any, []Advice) {
-	tree, err := snowsqlparser.ParseSnowSQL(statement + ";")
+	result, err := snowsqlparser.ParseSnowSQL(statement + ";")
 	if err != nil {
 		if syntaxErr, ok := err.(*base.SyntaxError); ok {
 			return nil, []Advice{
@@ -479,8 +479,11 @@ func snowflakeSyntaxCheck(statement string) (any, []Advice) {
 			},
 		}
 	}
+	if result == nil {
+		return nil, nil
+	}
 
-	return tree, nil
+	return result.Tree, nil
 }
 
 func oracleSyntaxCheck(statement string) (any, []Advice) {

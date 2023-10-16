@@ -7,7 +7,10 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"gopkg.in/yaml.v3"
 
@@ -21,7 +24,7 @@ type testData struct {
 	Statement string
 	// Use custom yaml tag to avoid generate field name `ignorecasesensitive`.
 	IgnoreCaseSensitive bool `yaml:"ignore_case_sensitive"`
-	Want                *storepb.DatabaseSchemaMetadata
+	Want                string
 	Err                 *WalkThroughError
 }
 
@@ -158,9 +161,14 @@ func runWalkThroughTest(t *testing.T, file string, engineType storepb.Engine, or
 		require.NoError(t, err, test.Statement)
 
 		if record {
-			tests[i].Want = state.convertToDatabaseMetadata()
+			tests[i].Want = protojson.Format(state.convertToDatabaseMetadata())
 		} else {
-			require.Equal(t, test.Want, state.convertToDatabaseMetadata(), test.Statement)
+			want := &storepb.DatabaseSchemaMetadata{}
+			err = protojson.Unmarshal([]byte(test.Want), want)
+			require.NoError(t, err)
+			result := state.convertToDatabaseMetadata()
+			diff := cmp.Diff(want, result, protocmp.Transform())
+			require.Equal(t, "", diff, test.Statement)
 		}
 	}
 
@@ -291,7 +299,7 @@ func (t *TableState) convertToColumnMetadataList() []*storepb.ColumnMetadata {
 		}
 
 		if column.defaultValue != nil {
-			columnMeta.Default = &wrapperspb.StringValue{Value: *column.defaultValue}
+			columnMeta.DefaultValue = &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: *column.defaultValue}}
 		}
 
 		if column.characterSet != nil {

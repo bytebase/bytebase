@@ -26,13 +26,13 @@ COPY ./backend/enterprise/api/plan.yaml ./src/types/
 # Build frontend
 RUN pnpm "${RELEASE}-docker"
 
-FROM golang:1.21.2 as backend
+FROM golang:1.21.3 as backend
 ADD go.mod go.sum /
 RUN go mod download
 
 ARG VERSION="development"
 ARG VERSION_SUFFIX=""
-ARG GO_VERSION="1.21.2"
+ARG GO_VERSION="1.21.3"
 ARG GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
 ARG BUILD_USER="unknown"

@@ -694,4 +694,16 @@ message TaskRun {
   // Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
   string change_history = 10;
   string schema_version = 11;
+
+  enum ExecutionStatus {
+    EXECUTION_STATUS_UNSPECIFIED = 0;
+    PRE_EXECUTING = 1;
+    EXECUTING = 2;
+    POST_EXECUTING = 3;
+  }
+  ExecutionStatus execution_status = 12;
+  // Last execution status update timestamp.
+  google.protobuf.Timestamp execution_status_update_time = 13;
+
+  google.protobuf.Timestamp start_time = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

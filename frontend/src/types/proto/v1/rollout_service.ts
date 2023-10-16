@@ -1035,6 +1035,10 @@ export interface TaskRun {
    */
   changeHistory: string;
   schemaVersion: string;
+  executionStatus: TaskRun_ExecutionStatus;
+  /** Last execution status update timestamp. */
+  executionStatusUpdateTime: Date | undefined;
+  startTime: Date | undefined;
 }
 
 export enum TaskRun_Status {
@@ -1089,6 +1093,51 @@ export function taskRun_StatusToJSON(object: TaskRun_Status): string {
     case TaskRun_Status.CANCELED:
       return "CANCELED";
     case TaskRun_Status.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export enum TaskRun_ExecutionStatus {
+  EXECUTION_STATUS_UNSPECIFIED = 0,
+  PRE_EXECUTING = 1,
+  EXECUTING = 2,
+  POST_EXECUTING = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function taskRun_ExecutionStatusFromJSON(object: any): TaskRun_ExecutionStatus {
+  switch (object) {
+    case 0:
+    case "EXECUTION_STATUS_UNSPECIFIED":
+      return TaskRun_ExecutionStatus.EXECUTION_STATUS_UNSPECIFIED;
+    case 1:
+    case "PRE_EXECUTING":
+      return TaskRun_ExecutionStatus.PRE_EXECUTING;
+    case 2:
+    case "EXECUTING":
+      return TaskRun_ExecutionStatus.EXECUTING;
+    case 3:
+    case "POST_EXECUTING":
+      return TaskRun_ExecutionStatus.POST_EXECUTING;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return TaskRun_ExecutionStatus.UNRECOGNIZED;
+  }
+}
+
+export function taskRun_ExecutionStatusToJSON(object: TaskRun_ExecutionStatus): string {
+  switch (object) {
+    case TaskRun_ExecutionStatus.EXECUTION_STATUS_UNSPECIFIED:
+      return "EXECUTION_STATUS_UNSPECIFIED";
+    case TaskRun_ExecutionStatus.PRE_EXECUTING:
+      return "PRE_EXECUTING";
+    case TaskRun_ExecutionStatus.EXECUTING:
+      return "EXECUTING";
+    case TaskRun_ExecutionStatus.POST_EXECUTING:
+      return "POST_EXECUTING";
+    case TaskRun_ExecutionStatus.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
@@ -5058,6 +5107,9 @@ function createBaseTaskRun(): TaskRun {
     detail: "",
     changeHistory: "",
     schemaVersion: "",
+    executionStatus: 0,
+    executionStatusUpdateTime: undefined,
+    startTime: undefined,
   };
 }
 
@@ -5095,6 +5147,15 @@ export const TaskRun = {
     }
     if (message.schemaVersion !== "") {
       writer.uint32(90).string(message.schemaVersion);
+    }
+    if (message.executionStatus !== 0) {
+      writer.uint32(96).int32(message.executionStatus);
+    }
+    if (message.executionStatusUpdateTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.executionStatusUpdateTime), writer.uint32(106).fork()).ldelim();
+    }
+    if (message.startTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.startTime), writer.uint32(114).fork()).ldelim();
     }
     return writer;
   },
@@ -5183,6 +5244,27 @@ export const TaskRun = {
 
           message.schemaVersion = reader.string();
           continue;
+        case 12:
+          if (tag !== 96) {
+            break;
+          }
+
+          message.executionStatus = reader.int32() as any;
+          continue;
+        case 13:
+          if (tag !== 106) {
+            break;
+          }
+
+          message.executionStatusUpdateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 14:
+          if (tag !== 114) {
+            break;
+          }
+
+          message.startTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5205,6 +5287,11 @@ export const TaskRun = {
       detail: isSet(object.detail) ? String(object.detail) : "",
       changeHistory: isSet(object.changeHistory) ? String(object.changeHistory) : "",
       schemaVersion: isSet(object.schemaVersion) ? String(object.schemaVersion) : "",
+      executionStatus: isSet(object.executionStatus) ? taskRun_ExecutionStatusFromJSON(object.executionStatus) : 0,
+      executionStatusUpdateTime: isSet(object.executionStatusUpdateTime)
+        ? fromJsonTimestamp(object.executionStatusUpdateTime)
+        : undefined,
+      startTime: isSet(object.startTime) ? fromJsonTimestamp(object.startTime) : undefined,
     };
   },
 
@@ -5221,6 +5308,11 @@ export const TaskRun = {
     message.detail !== undefined && (obj.detail = message.detail);
     message.changeHistory !== undefined && (obj.changeHistory = message.changeHistory);
     message.schemaVersion !== undefined && (obj.schemaVersion = message.schemaVersion);
+    message.executionStatus !== undefined &&
+      (obj.executionStatus = taskRun_ExecutionStatusToJSON(message.executionStatus));
+    message.executionStatusUpdateTime !== undefined &&
+      (obj.executionStatusUpdateTime = message.executionStatusUpdateTime.toISOString());
+    message.startTime !== undefined && (obj.startTime = message.startTime.toISOString());
     return obj;
   },
 
@@ -5241,6 +5333,9 @@ export const TaskRun = {
     message.detail = object.detail ?? "";
     message.changeHistory = object.changeHistory ?? "";
     message.schemaVersion = object.schemaVersion ?? "";
+    message.executionStatus = object.executionStatus ?? 0;
+    message.executionStatusUpdateTime = object.executionStatusUpdateTime ?? undefined;
+    message.startTime = object.startTime ?? undefined;
     return message;
   },
 };

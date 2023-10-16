@@ -19,6 +19,7 @@
               />
             </div>
             <button
+              v-if="!readonly"
               class="flex flex-row justify-center items-center border px-3 py-1 leading-6 rounded text-sm hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
               :disabled="!allowCreateTable"
               @click="handleCreateNewTable"
@@ -27,6 +28,7 @@
               {{ $t("schema-editor.actions.create-table") }}
             </button>
             <button
+              v-if="!readonly"
               class="flex flex-row justify-center items-center border px-3 py-1 leading-6 rounded text-sm hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
               :disabled="!allowCreateTable"
               @click="state.showSchemaTemplateDrawer = true"
@@ -39,16 +41,6 @@
         </div>
       </div>
       <div class="flex justify-end items-center">
-        <NInput
-          v-if="state.selectedSubtab === 'table-list'"
-          v-model:value="searchPattern"
-          class="!w-48 mr-3"
-          :placeholder="$t('schema-editor.search-table')"
-        >
-          <template #prefix>
-            <heroicons-outline:search class="w-4 h-auto text-gray-300" />
-          </template>
-        </NInput>
         <div
           class="flex flex-row justify-end items-center bg-gray-100 p-1 rounded"
         >
@@ -122,10 +114,7 @@
               :classification="table.classification"
               :classification-config="classificationConfig"
             />
-            <div
-              v-if="!editorStore.readonly && !disableChangeTable(table)"
-              class="flex"
-            >
+            <div v-if="!readonly && !disableChangeTable(table)" class="flex">
               <button
                 v-if="table.classification"
                 class="w-4 h-4 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer"
@@ -172,6 +161,7 @@
             {{ table.userComment }}
           </div>
           <div
+            v-if="!readonly"
             class="bb-grid-cell table-item-cell !px-0.5 flex justify-start items-center"
             :class="getTableClassList(table, row)"
           >
@@ -254,14 +244,13 @@
 import { head } from "lodash-es";
 import { NEllipsis, NTooltip } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
-import { computed, nextTick, reactive, ref, watch } from "vue";
+import { computed, nextTick, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { SchemaDiagram, SchemaDiagramIcon } from "@/components/SchemaDiagram";
 import { Drawer, DrawerContent } from "@/components/v2";
 import {
   hasFeature,
   generateUniqueTabId,
-  useDatabaseV1Store,
   useSettingV1Store,
   useSchemaEditorV1Store,
 } from "@/store";
@@ -272,6 +261,7 @@ import {
   TableMetadata,
 } from "@/types/proto/v1/database_service";
 import { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
+import { emptyDatabase } from "@/types/v1/database";
 import {
   Table,
   DatabaseTabContext,
@@ -284,6 +274,15 @@ import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import { isTableChanged } from "../utils";
 import { useMetadataForDiagram } from "../utils/useMetadataForDiagram";
+
+const props = withDefaults(
+  defineProps<{
+    searchPattern: string;
+  }>(),
+  {
+    searchPattern: "",
+  }
+);
 
 type SubtabType = "table-list" | "schema-diagram";
 
@@ -306,8 +305,9 @@ interface LocalState {
 const { t } = useI18n();
 const editorStore = useSchemaEditorV1Store();
 const settingStore = useSettingV1Store();
-const searchPattern = ref("");
-const currentTab = computed(() => editorStore.currentTab as DatabaseTabContext);
+const currentTab = computed(
+  () => (editorStore.currentTab || {}) as DatabaseTabContext
+);
 const state = reactive<LocalState>({
   selectedSubtab: "table-list",
   selectedSchemaId: "",
@@ -317,18 +317,21 @@ const state = reactive<LocalState>({
   showSchemaTemplateDrawer: false,
   showClassificationDrawer: false,
 });
-const databaseSchema = computed(() => {
-  return editorStore.resourceMap["database"].get(
-    currentTab.value.parentName
-  ) as DatabaseSchema;
-});
-const database = computed(() => databaseSchema.value.database);
-const databaseV1 = computed(() => {
-  return useDatabaseV1Store().getDatabaseByUID(database.value.uid);
-});
-const databaseEngine = computed(() => database.value.instanceEntity.engine);
+const databaseV1 = computed(
+  () => editorStore.currentDatabase ?? emptyDatabase()
+);
+const readonly = computed(() => editorStore.readonly);
+
+const databaseEngine = computed(() => databaseV1.value?.instanceEntity.engine);
 const schemaList = computed(() => {
-  return databaseSchema.value.schemaList;
+  return editorStore.currentSchemaList;
+});
+const databaseSchema = computed((): DatabaseSchema => {
+  return {
+    database: databaseV1.value,
+    schemaList: schemaList.value,
+    originSchemaList: [],
+  };
 });
 const selectedSchema = computed(() => {
   return schemaList.value.find(
@@ -340,7 +343,7 @@ const tableList = computed(() => {
 });
 const shownTableList = computed(() => {
   return tableList.value.filter((table) =>
-    table.name.includes(searchPattern.value.trim())
+    table.name.includes(props.searchPattern.trim())
   );
 });
 const classificationConfig = computed(() => {
@@ -466,6 +469,7 @@ const tableHeaderList = computed(() => {
     {
       title: "",
       width: "30px",
+      hide: readonly.value,
     },
   ].filter((header) => !header.hide);
 });
@@ -504,7 +508,7 @@ const handleCreateNewTable = () => {
   );
   if (selectedSchema) {
     state.tableNameModalContext = {
-      parentName: database.value.name,
+      parentName: currentTab.value.parentName,
       schemaId: selectedSchema.id,
       tableName: undefined,
     };
@@ -515,19 +519,24 @@ const handleTableItemClick = (table: Table) => {
   editorStore.addTab({
     id: generateUniqueTabId(),
     type: SchemaEditorTabType.TabForTable,
-    parentName: database.value.name,
+    parentName: currentTab.value.parentName,
     schemaId: state.selectedSchemaId,
     tableId: table.id,
+    name: table.name,
   });
 };
 
 const handleDropTable = (table: Table) => {
-  editorStore.dropTable(database.value.uid, state.selectedSchemaId, table.id);
+  editorStore.dropTable(
+    currentTab.value.parentName,
+    state.selectedSchemaId,
+    table.id
+  );
 };
 
 const handleRestoreTable = (table: Table) => {
   editorStore.restoreTable(
-    database.value.uid,
+    currentTab.value.parentName,
     state.selectedSchemaId,
     table.id
   );
@@ -599,9 +608,10 @@ const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
     editorStore.addTab({
       id: generateUniqueTabId(),
       type: SchemaEditorTabType.TabForTable,
-      parentName: database.value.name,
+      parentName: currentTab.value.parentName,
       schemaId: state.selectedSchemaId,
       tableId: tableEdit.id,
+      name: template.table.name,
     });
   }
 };

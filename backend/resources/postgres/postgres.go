@@ -2,13 +2,6 @@
 package postgres
 
 import (
-	"bufio"
-	"embed"
-	"io/fs"
-	"regexp"
-	"sort"
-
-	"context"
 	"fmt"
 	"log/slog"
 	"os"
@@ -20,55 +13,33 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
-	"testing"
 
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/resources/utils"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// Sample data is from https://github.com/bytebase/employee-sample-database/tree/main/postgres/dataset_small
-//
-//go:embed sample
-var sampleFS embed.FS
-
 const (
-	// TestSampleInstanceResourceID is the resource id for the test sample database.
-	TestSampleInstanceResourceID = "test-sample-instance"
-	// ProdSampleInstanceResourceID is the resource id for the prod sample database.
-	ProdSampleInstanceResourceID = "prod-sample-instance"
-	// SampleUser is the user name for the sample database.
-	SampleUser = "bbsample"
-	// SampleDatabase is the sample database name.
-	SampleDatabase = "employee"
+	currentVersion = "16"
 )
 
 // Install will extract the postgres and utility tar in resourceDir.
 // Returns the bin directory on success.
 func Install(resourceDir string) (string, error) {
-	var tarName string
-	switch {
-	case runtime.GOOS == "darwin" && runtime.GOARCH == "amd64":
-		tarName = "postgres-darwin-amd64.txz"
-	case runtime.GOOS == "darwin" && runtime.GOARCH == "arm64":
-		tarName = "postgres-darwin-arm64.txz"
-	case runtime.GOOS == "linux" && runtime.GOARCH == "amd64":
-		tarName = "postgres-linux-amd64.txz"
-	case runtime.GOOS == "linux" && runtime.GOARCH == "arm64":
-		tarName = "postgres-linux-arm64.txz"
-	default:
-		return "", errors.Errorf("unsupported combination of OS %q and ARCH %q", runtime.GOOS, runtime.GOARCH)
+	pkgNamePrefix, err := getTarName()
+	if err != nil {
+		return "", err
 	}
+	tarName := pkgNamePrefix + ".txz"
 
-	version := strings.TrimSuffix(tarName, ".txz")
-	pgBaseDir := path.Join(resourceDir, version)
-	pgBinDir := path.Join(pgBaseDir, "bin")
+	var pgBaseDir string
+	if currentVersion == "14" {
+		pgBaseDir = path.Join(resourceDir, pkgNamePrefix)
+	} else {
+		pgBaseDir = path.Join(resourceDir, fmt.Sprintf("%s-%s", pkgNamePrefix, currentVersion))
+	}
 	needInstall := false
-
 	if _, err := os.Stat(pgBaseDir); err != nil {
 		if !os.IsNotExist(err) {
 			return "", errors.Wrapf(err, "failed to check postgres binary base directory path %q", pgBaseDir)
@@ -79,7 +50,7 @@ func Install(resourceDir string) (string, error) {
 	if needInstall {
 		slog.Info("Installing PostgreSQL utilities...")
 		// The ordering below made Postgres installation atomic.
-		tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s", version))
+		tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s%s", pkgNamePrefix, currentVersion))
 		if err := installInDir(tarName, tmpDir); err != nil {
 			return "", err
 		}
@@ -89,12 +60,28 @@ func Install(resourceDir string) (string, error) {
 		}
 	}
 
+	pgBinDir := path.Join(pgBaseDir, "bin")
 	return pgBinDir, nil
 }
 
-// Start starts a postgres database instance.
+func getTarName() (string, error) {
+	switch {
+	case runtime.GOOS == "darwin" && runtime.GOARCH == "amd64":
+		return "postgres-darwin-amd64", nil
+	case runtime.GOOS == "darwin" && runtime.GOARCH == "arm64":
+		return "postgres-darwin-arm64", nil
+	case runtime.GOOS == "linux" && runtime.GOARCH == "amd64":
+		return "postgres-linux-amd64", nil
+	case runtime.GOOS == "linux" && runtime.GOARCH == "arm64":
+		return "postgres-linux-arm64", nil
+	default:
+		return "", errors.Errorf("unsupported combination of OS %q and ARCH %q", runtime.GOOS, runtime.GOARCH)
+	}
+}
+
+// start starts a postgres database instance.
 // If port is 0, then it will choose a random unused port.
-func Start(port int, binDir, dataDir string, serverLog bool) (err error) {
+func start(port int, binDir, dataDir string, serverLog bool) (err error) {
 	pgbin := filepath.Join(binDir, "pg_ctl")
 
 	// See -p -k -h option definitions in the link below.
@@ -102,7 +89,7 @@ func Start(port int, binDir, dataDir string, serverLog bool) (err error) {
 	// We also set max_connections to 500 for tests.
 	p := exec.Command(pgbin, "start", "-w",
 		"-D", dataDir,
-		"-o", fmt.Sprintf(`-p %d -k %s -N 500 -h "" -c stats_temp_directory=/tmp`, port, common.GetPostgresSocketDir()))
+		"-o", fmt.Sprintf(`-p %d -k %s -N 500 -h ""`, port, common.GetPostgresSocketDir()))
 
 	uid, _, sameUser, err := shouldSwitchUser()
 	if err != nil {
@@ -127,8 +114,8 @@ func Start(port int, binDir, dataDir string, serverLog bool) (err error) {
 	return nil
 }
 
-// Stop stops a postgres instance, outputs to stdout and stderr.
-func Stop(pgBinDir, pgDataDir string) error {
+// stop stops a postgres instance, outputs to stdout and stderr.
+func stop(pgBinDir, pgDataDir string) error {
 	pgbin := filepath.Join(pgBinDir, "pg_ctl")
 	p := exec.Command(pgbin, "stop", "-w",
 		"-D", pgDataDir)
@@ -149,8 +136,8 @@ func Stop(pgBinDir, pgDataDir string) error {
 	return p.Run()
 }
 
-// InitDB inits a postgres database if not yet.
-func InitDB(pgBinDir, pgDataDir, pgUser string) error {
+// initDB inits a postgres database if not yet.
+func initDB(pgBinDir, pgDataDir, pgUser string) error {
 	versionPath := filepath.Join(pgDataDir, "PG_VERSION")
 	_, err := os.Stat(versionPath)
 	if err != nil && !os.IsNotExist(err) {
@@ -231,6 +218,18 @@ func InitDB(pgBinDir, pgDataDir, pgUser string) error {
 	return nil
 }
 
+func getVersion(pgDataPath string) (string, error) {
+	versionPath := filepath.Join(pgDataPath, "PG_VERSION")
+	data, err := os.ReadFile(versionPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", nil
+		}
+		return "", errors.Wrapf(err, "failed to check postgres version in data directory path %q", versionPath)
+	}
+	return strings.TrimRight(string(data), "\n"), nil
+}
+
 func shouldSwitchUser() (int, int, bool, error) {
 	sameUser := true
 	bytebaseUser, err := user.Current()
@@ -256,266 +255,6 @@ func shouldSwitchUser() (int, int, bool, error) {
 		return 0, 0, false, err
 	}
 	return int(uid), int(gid), sameUser, nil
-}
-
-// StartForTest starts a postgres instance on localhost given port, outputs to stdout and stderr.
-// If port is 0, then it will choose a random unused port.
-func StartForTest(port int, pgBinDir, pgDataDir string) (err error) {
-	pgbin := filepath.Join(pgBinDir, "pg_ctl")
-
-	// See -p -k -h option definitions in the link below.
-	// https://www.postgresql.org/docs/current/app-postgres.html
-	p := exec.Command(pgbin, "start", "-w",
-		"-D", pgDataDir,
-		"-o", fmt.Sprintf(`-p %d -k %s`, port, common.GetPostgresSocketDir()))
-
-	// Suppress log spam
-	p.Stdout = nil
-	p.Stderr = os.Stderr
-	if err := p.Run(); err != nil {
-		return errors.Wrapf(err, "failed to start postgres %q", p.String())
-	}
-
-	return nil
-}
-
-// SetupTestInstance installs and starts a postgresql instance for testing,
-// returns the stop function.
-func SetupTestInstance(t *testing.T, port int, resourceDir string) func() {
-	dataDir := t.TempDir()
-	t.Log("Installing PostgreSQL...")
-	binDir, err := Install(resourceDir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log("InitDB...")
-	if err := InitDB(binDir, dataDir, "root"); err != nil {
-		t.Fatal(err)
-	}
-	t.Log("Starting PostgreSQL...")
-	if err := StartForTest(port, binDir, dataDir); err != nil {
-		t.Fatal(err)
-	}
-
-	stopFn := func() {
-		t.Log("Stopping PostgreSQL...")
-		if err := Stop(binDir, dataDir); err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	return stopFn
-}
-
-// Verify by pinging the sample database. As long as we encounter error, we will regard it as need
-// to create sample database. This might not be 100% accurate since it could be connection issue.
-// But if it's the connection issue, the following code will catch that anyway.
-func needSetupSampleDatabase(ctx context.Context, pgUser, port, database string) bool {
-	driver, err := db.Open(
-		ctx,
-		storepb.Engine_POSTGRES,
-		db.DriverConfig{},
-		db.ConnectionConfig{
-			Username: pgUser,
-			Password: "",
-			Host:     common.GetPostgresSocketDir(),
-			Port:     port,
-			Database: database,
-		},
-		db.ConnectionContext{},
-	)
-	if err != nil {
-		return true
-	}
-	defer driver.Close(ctx)
-
-	if err := driver.Ping(ctx); err != nil {
-		return true
-	}
-	return false
-}
-
-// prepareSampleDatabaseIfNeeded creates sample database if needed.
-func prepareSampleDatabaseIfNeeded(ctx context.Context, pgUser, host, port, database string) error {
-	if !needSetupSampleDatabase(ctx, pgUser, port, database) {
-		return nil
-	}
-
-	// Connect the default postgres database created by initdb.
-	if err := prepareDemoDatabase(ctx, pgUser, host, port, database); err != nil {
-		return err
-	}
-
-	// Connect the just created sample database to load data.
-	driver, err := db.Open(
-		ctx,
-		storepb.Engine_POSTGRES,
-		db.DriverConfig{},
-		db.ConnectionConfig{
-			Username: pgUser,
-			Password: "",
-			Host:     host,
-			Port:     port,
-			Database: database,
-		},
-		db.ConnectionContext{},
-	)
-	if err != nil {
-		return errors.Wrapf(err, "failed to connect sample database")
-	}
-	defer driver.Close(ctx)
-
-	// Load sample data
-	names, err := fs.Glob(sampleFS, "sample/*.sql")
-	if err != nil {
-		return err
-	}
-
-	sort.Strings(names)
-
-	for _, name := range names {
-		if buf, err := fs.ReadFile(sampleFS, name); err != nil {
-			return errors.Wrapf(err, fmt.Sprintf("failed to read sample database data: %s", name))
-		} else if _, err := driver.Execute(ctx, string(buf), false, db.ExecuteOptions{}); err != nil {
-			return errors.Wrapf(err, fmt.Sprintf("failed to load sample database data: %s", name))
-		}
-	}
-
-	// Drop the default postgres database, this is to present a cleaner database list to the user.
-	if _, err := driver.Execute(ctx, "DROP DATABASE postgres", true, db.ExecuteOptions{}); err != nil {
-		return errors.Wrapf(err, "failed to drop default postgres database")
-	}
-
-	return nil
-}
-
-func prepareDemoDatabase(ctx context.Context, pgUser, host, port, database string) error {
-	// Connect the default postgres database created by initdb.
-	driver, err := db.Open(
-		ctx,
-		storepb.Engine_POSTGRES,
-		db.DriverConfig{},
-		db.ConnectionConfig{
-			Username: pgUser,
-			Password: "",
-			Host:     host,
-			Port:     port,
-			Database: "postgres",
-		},
-		db.ConnectionContext{},
-	)
-	if err != nil {
-		return errors.Wrapf(err, "failed to connect sample instance")
-	}
-	defer driver.Close(ctx)
-
-	// Create the sample database.
-	if _, err := driver.Execute(ctx, fmt.Sprintf("CREATE DATABASE %s", database), true, db.ExecuteOptions{}); err != nil {
-		return errors.Wrapf(err, "failed to create sample database")
-	}
-
-	return nil
-}
-
-// StartSampleInstance starts a postgres sample instance.
-func StartSampleInstance(ctx context.Context, pgBinDir, pgDataDir string, port int, mode common.ReleaseMode) error {
-	if err := InitDB(pgBinDir, pgDataDir, SampleUser); err != nil {
-		return errors.Wrapf(err, "failed to init sample instance")
-	}
-
-	if err := turnOnPGStateStatements(pgDataDir); err != nil {
-		slog.Warn("Failed to turn on pg_stat_statements", log.BBError(err))
-	}
-
-	if err := Start(port, pgBinDir, pgDataDir, mode == common.ReleaseModeDev /* serverLog */); err != nil {
-		return errors.Wrapf(err, "failed to start sample instance")
-	}
-
-	host := common.GetPostgresSocketDir()
-	if err := prepareSampleDatabaseIfNeeded(ctx, SampleUser, host, strconv.Itoa(port), SampleDatabase); err != nil {
-		return errors.Wrapf(err, "failed to prepare sample database")
-	}
-
-	if err := createPGStatStatementsExtension(ctx, SampleUser, host, strconv.Itoa(port), SampleDatabase); err != nil {
-		slog.Warn("Failed to create pg_stat_statements extension", log.BBError(err))
-	}
-
-	return nil
-}
-
-func createPGStatStatementsExtension(ctx context.Context, pgUser, host, port, database string) error {
-	driver, err := db.Open(
-		ctx,
-		storepb.Engine_POSTGRES,
-		db.DriverConfig{},
-		db.ConnectionConfig{
-			Username: pgUser,
-			Password: "",
-			Host:     host,
-			Port:     port,
-			Database: database,
-		},
-		db.ConnectionContext{},
-	)
-	if err != nil {
-		return errors.Wrapf(err, "failed to connect sample database")
-	}
-	defer driver.Close(ctx)
-
-	if _, err := driver.Execute(ctx, "CREATE EXTENSION IF NOT EXISTS pg_stat_statements;", false, db.ExecuteOptions{}); err != nil {
-		return errors.Wrapf(err, "failed to create pg_stat_statements extension")
-	}
-	slog.Info("Successfully created pg_stat_statements extension")
-	return nil
-}
-
-// turnOnPGStateStatements turns on pg_stat_statements extension.
-// Only works for sample PostgreSQL.
-func turnOnPGStateStatements(pgDataDir string) error {
-	// Enable pg_stat_statements extension
-	// Add shared_preload_libraries = 'pg_stat_statements' to postgresql.conf
-	pgConfig := filepath.Join(pgDataDir, "postgresql.conf")
-
-	// Check config in postgresql.conf
-	configFile, err := os.OpenFile(pgConfig, os.O_APPEND|os.O_RDWR, 0600)
-	if err != nil {
-		return errors.Wrapf(err, "failed to open postgresql.conf file")
-	}
-	defer configFile.Close()
-
-	scanner := bufio.NewScanner(configFile)
-	shardPreloadLibrariesReg := regexp.MustCompile(`^\s*shared_preload_libraries\s*=\s*'pg_stat_statements'`)
-	pgStatStatementsTrackReg := regexp.MustCompile(`^\s*pg_stat_statements.track\s*=`)
-	shardPreloadLibraries := false
-	pgStatStatementsTrack := false
-	for scanner.Scan() {
-		line := scanner.Text()
-		if !shardPreloadLibraries && shardPreloadLibrariesReg.MatchString(line) {
-			shardPreloadLibraries = true
-		}
-
-		if !pgStatStatementsTrack && pgStatStatementsTrackReg.MatchString(line) {
-			pgStatStatementsTrack = true
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		return errors.Wrapf(err, "failed to scan postgresql.conf file")
-	}
-
-	if !shardPreloadLibraries {
-		if _, err := configFile.WriteString("\nshared_preload_libraries = 'pg_stat_statements'\n"); err != nil {
-			return errors.Wrapf(err, "failed to write shared_preload_libraries = 'pg_stat_statements' to postgresql.conf file")
-		}
-	}
-
-	if !pgStatStatementsTrack {
-		if _, err := configFile.WriteString("\npg_stat_statements.track = all\n"); err != nil {
-			return errors.Wrapf(err, "failed to write pg_stat_statements.track = all to postgresql.conf file")
-		}
-	}
-
-	slog.Info("Successfully added pg_stat_statements to postgresql.conf file")
-	return nil
 }
 
 func installInDir(tarName string, dir string) error {

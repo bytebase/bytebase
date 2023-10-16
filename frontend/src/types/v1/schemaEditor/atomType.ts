@@ -15,7 +15,10 @@ export interface Column {
   nullable: boolean;
   comment: string;
   userComment: string;
-  default?: string;
+  hasDefault: boolean;
+  defaultNull?: boolean;
+  defaultString?: string;
+  defaultExpression?: string;
   status: Status;
   classification?: string;
 }
@@ -70,7 +73,10 @@ export const convertColumnMetadataToColumn = (
     nullable: columnMetadata.nullable,
     comment: columnMetadata.comment,
     userComment: columnMetadata.userComment,
-    default: columnMetadata.default,
+    hasDefault: columnMetadata.hasDefault,
+    defaultNull: columnMetadata.defaultNull,
+    defaultString: columnMetadata.defaultString,
+    defaultExpression: columnMetadata.defaultExpression,
     classification: columnMetadata.classification,
     status,
   };

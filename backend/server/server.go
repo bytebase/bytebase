@@ -22,7 +22,6 @@ import (
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/api/gitops"
 	v1 "github.com/bytebase/bytebase/backend/api/v1"
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/common/stacktrace"
 	"github.com/bytebase/bytebase/backend/component/activity"
@@ -33,6 +32,7 @@ import (
 	enterpriseService "github.com/bytebase/bytebase/backend/enterprise/service"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/migrator"
+	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
 	bbs3 "github.com/bytebase/bytebase/backend/plugin/storage/s3"
 	"github.com/bytebase/bytebase/backend/resources/mongoutil"
 	"github.com/bytebase/bytebase/backend/resources/mysqlutil"
@@ -80,7 +80,6 @@ type Server struct {
 	profile         config.Profile
 	e               *echo.Echo
 	grpcServer      *grpc.Server
-	metaDB          *store.MetadataDB
 	store           *store.Store
 	dbFactory       *dbfactory.DBFactory
 	startedTs       int64
@@ -97,6 +96,8 @@ type Server struct {
 	mongoBinDir string
 	// Postgres utility binaries
 	pgBinDir string
+	// PG server stoppers.
+	stopper []func()
 
 	s3Client *bbs3.Client
 
@@ -154,43 +155,41 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		return nil, err
 	}
 
-	// Start a Postgres sample server. This is used for onboarding users without requiring them to
+	var connCfg dbdriver.ConnectionConfig
+	if profile.UseEmbedDB() {
+		stopper, err := postgres.StartMetadataInstance(profile.DataDir, profile.ResourceDir, s.pgBinDir, profile.PgUser, profile.DemoName, profile.DatastorePort, profile.Mode)
+		if err != nil {
+			return nil, err
+		}
+		s.stopper = append(s.stopper, stopper)
+		connCfg = store.GetEmbeddedConnectionConfig(profile.DatastorePort, profile.PgUser)
+	} else {
+		cfg, err := store.GetConnectionConfig(profile.PgURL)
+		if err != nil {
+			return nil, err
+		}
+		connCfg = cfg
+	}
+	connCfg.ReadOnly = profile.Readonly
+
+	// Start Postgres sample servers. It is used for onboarding users without requiring them to
 	// configure an external instance.
 	if profile.SampleDatabasePort != 0 {
 		slog.Info("-----Sample Postgres Instance BEGIN-----")
-		sampleDataDir := common.GetPostgresSampleDataDir(profile.DataDir, "test")
-		slog.Info(fmt.Sprintf("Start test sample database sampleDatabasePort=%d sampleDataDir=%s", profile.SampleDatabasePort, sampleDataDir))
-		if err := postgres.StartSampleInstance(ctx, s.pgBinDir, sampleDataDir, profile.SampleDatabasePort, profile.Mode); err != nil {
-			slog.Error("failed to init test sample instance", log.BBError(err))
-		}
-		sampleDataDir = common.GetPostgresSampleDataDir(profile.DataDir, "prod")
-		slog.Info(fmt.Sprintf("Start prod sample database sampleDatabasePort=%d sampleDataDir=%s", profile.SampleDatabasePort+1, sampleDataDir))
-		if err := postgres.StartSampleInstance(ctx, s.pgBinDir, sampleDataDir, profile.SampleDatabasePort+1, profile.Mode); err != nil {
-			slog.Error("failed to init prod sample instance", log.BBError(err))
+		for i, v := range []string{"test", "prod"} {
+			slog.Info(fmt.Sprintf("Start %q sample database sampleDatabasePort=%d", v, profile.SampleDatabasePort))
+			stopper, err := postgres.StartSampleInstance(ctx, s.pgBinDir, profile.DataDir, v, profile.SampleDatabasePort+i, profile.Mode)
+			if err != nil {
+				slog.Error("failed to init sample instance", log.BBError(err))
+				continue
+			}
+			s.stopper = append(s.stopper, stopper)
 		}
 		slog.Info("-----Sample Postgres Instance END-----")
 	}
 
-	// New MetadataDB instance.
-	if profile.UseEmbedDB() {
-		pgDataDir := common.GetPostgresDataDir(profile.DataDir, profile.DemoName)
-		slog.Info("-----Embedded Postgres BEGIN-----")
-		slog.Info(fmt.Sprintf("Start embedded Postgres datastorePort=%d pgDataDir=%s", profile.DatastorePort, pgDataDir))
-		if err := postgres.InitDB(s.pgBinDir, pgDataDir, profile.PgUser); err != nil {
-			return nil, err
-		}
-		s.metaDB = store.NewMetadataDBWithEmbedPg(profile.PgUser, pgDataDir, s.pgBinDir, profile.DemoName, profile.Mode)
-		slog.Info("-----Embedded Postgres END-----")
-	} else {
-		s.metaDB = store.NewMetadataDBWithExternalPg(profile.PgURL, s.pgBinDir, profile.DemoName, profile.Mode)
-	}
-
 	// Connect to the instance that stores bytebase's own metadata.
-	storeDB, err := s.metaDB.Connect(profile.DatastorePort, profile.Readonly, profile.Version)
-	if err != nil {
-		return nil, errors.Wrap(err, "cannot connect metadb")
-	}
-
+	storeDB := store.NewDB(connCfg, s.pgBinDir, profile.DemoName, profile.Readonly, profile.Version, profile.Mode)
 	if err := storeDB.Open(ctx); err != nil {
 		// return s so that caller can call s.Close() to shut down the postgres server if embedded.
 		return nil, errors.Wrap(err, "cannot open metadb")
@@ -261,16 +260,16 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 		s.taskSchedulerV2 = taskrun.NewSchedulerV2(storeInstance, s.stateCfg, s.activityManager)
 		s.taskSchedulerV2.Register(api.TaskGeneral, taskrun.NewDefaultExecutor())
-		s.taskSchedulerV2.Register(api.TaskDatabaseCreate, taskrun.NewDatabaseCreateExecutor(storeInstance, s.dbFactory, s.schemaSyncer, profile))
+		s.taskSchedulerV2.Register(api.TaskDatabaseCreate, taskrun.NewDatabaseCreateExecutor(storeInstance, s.dbFactory, s.schemaSyncer, s.stateCfg, profile))
 		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaBaseline, taskrun.NewSchemaBaselineExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdate, taskrun.NewSchemaUpdateExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateSDL, taskrun.NewSchemaUpdateSDLExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 		s.taskSchedulerV2.Register(api.TaskDatabaseDataUpdate, taskrun.NewDataUpdateExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, profile))
-		s.taskSchedulerV2.Register(api.TaskDatabaseBackup, taskrun.NewDatabaseBackupExecutor(storeInstance, s.dbFactory, s.s3Client, profile))
+		s.taskSchedulerV2.Register(api.TaskDatabaseBackup, taskrun.NewDatabaseBackupExecutor(storeInstance, s.dbFactory, s.s3Client, s.stateCfg, profile))
 		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhostSync, taskrun.NewSchemaUpdateGhostSyncExecutor(storeInstance, s.stateCfg, s.secret))
 		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhostCutover, taskrun.NewSchemaUpdateGhostCutoverExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 		s.taskSchedulerV2.Register(api.TaskDatabaseRestorePITRRestore, taskrun.NewPITRRestoreExecutor(storeInstance, s.dbFactory, s.s3Client, s.schemaSyncer, s.stateCfg, profile))
-		s.taskSchedulerV2.Register(api.TaskDatabaseRestorePITRCutover, taskrun.NewPITRCutoverExecutor(storeInstance, s.dbFactory, s.schemaSyncer, s.backupRunner, s.activityManager, profile))
+		s.taskSchedulerV2.Register(api.TaskDatabaseRestorePITRCutover, taskrun.NewPITRCutoverExecutor(storeInstance, s.dbFactory, s.schemaSyncer, s.stateCfg, s.backupRunner, s.activityManager, profile))
 
 		s.planCheckScheduler = plancheck.NewScheduler(storeInstance, s.licenseService, s.stateCfg)
 		databaseConnectExecutor := plancheck.NewDatabaseConnectExecutor(storeInstance, s.dbFactory)
@@ -447,21 +446,10 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		}
 	}
 
-	// Shutdown postgres sample instance.
-	if s.profile.SampleDatabasePort != 0 {
-		if err := postgres.Stop(s.pgBinDir, common.GetPostgresSampleDataDir(s.profile.DataDir, "test")); err != nil {
-			slog.Error("Failed to stop test postgres sample instance", log.BBError(err))
-		}
-		if err := postgres.Stop(s.pgBinDir, common.GetPostgresSampleDataDir(s.profile.DataDir, "prod")); err != nil {
-			slog.Error("Failed to stop prod postgres sample instance", log.BBError(err))
-		}
+	// Shutdown postgres instances.
+	for _, stopper := range s.stopper {
+		stopper()
 	}
-
-	// Shutdown postgres server if embed.
-	if s.metaDB != nil {
-		s.metaDB.Close()
-	}
-	slog.Info("Bytebase stopped properly")
 
 	return nil
 }

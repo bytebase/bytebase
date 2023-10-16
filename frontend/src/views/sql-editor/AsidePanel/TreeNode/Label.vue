@@ -1,41 +1,50 @@
 <template>
-  <!-- eslint-disable-next-line vue/no-v-html -->
-  <span :id="id" class="truncate" v-html="html" />
+  <template v-if="type === 'project'">
+    <ProjectNode :node="node" :factors="factors" :keyword="keyword" />
+  </template>
+  <template v-if="type === 'instance'">
+    <InstanceNode :node="node" :factors="factors" :keyword="keyword" />
+  </template>
+  <template v-if="type === 'environment'">
+    <EnvironmentNode :node="node" :factors="factors" :keyword="keyword" />
+  </template>
+  <template v-if="type === 'database'">
+    <DatabaseNode :node="node" :factors="factors" :keyword="keyword" />
+  </template>
+  <template v-if="type === 'schema'">
+    <SchemaNode :node="node" :factors="factors" :keyword="keyword" />
+  </template>
+  <template v-if="type === 'table'">
+    <TableNode :node="node" :factors="factors" :keyword="keyword" />
+  </template>
+  <template v-if="type === 'label'">
+    <LabelNode :node="node" :factors="factors" :keyword="keyword" />
+  </template>
+  <template v-if="type === 'dummy'">
+    <DummyNode :node="node" :factors="factors" :keyword="keyword" />
+  </template>
 </template>
 
 <script lang="ts" setup>
-import { escape } from "lodash-es";
 import { computed } from "vue";
-import { useI18n } from "vue-i18n";
-import { ConnectionAtom, DEFAULT_PROJECT_ID } from "@/types";
-import { getHighlightHTMLByRegExp } from "@/utils";
+import {
+  SQLEditorTreeNode as TreeNode,
+  SQLEditorTreeFactor as Factor,
+} from "@/types";
+import DatabaseNode from "./DatabaseNode.vue";
+import DummyNode from "./DummyNode.vue";
+import EnvironmentNode from "./EnvironmentNode.vue";
+import InstanceNode from "./InstanceNode.vue";
+import LabelNode from "./LabelNode.vue";
+import ProjectNode from "./ProjectNode.vue";
+import SchemaNode from "./SchemaNode.vue";
+import TableNode from "./TableNode.vue";
 
 const props = defineProps<{
-  atom: ConnectionAtom;
+  node: TreeNode;
+  factors: Factor[];
   keyword: string;
 }>();
-const { t } = useI18n();
 
-// render an unique id for every node
-// for auto scroll to the node when tab switches
-const id = computed(() => {
-  const { atom } = props;
-  return `tree-node-label-${atom.type}-${atom.id}`;
-});
-
-const text = computed(() => {
-  const { atom } = props;
-  if (atom.type === "project" && atom.id === String(DEFAULT_PROJECT_ID)) {
-    return t("database.unassigned-databases");
-  }
-  return atom.label;
-});
-
-const html = computed(() => {
-  return getHighlightHTMLByRegExp(
-    escape(text.value),
-    escape(props.keyword.trim()),
-    false /* !caseSensitive */
-  );
-});
+const type = computed(() => props.node.meta.type);
 </script>

@@ -138,24 +138,22 @@ func TestGetPatchVersions(t *testing.T) {
 }
 
 var (
-	pgUser        = "test"
 	pgPort        = 6000
 	serverVersion = "server-version"
 )
 
 func TestMigrationCompatibility(t *testing.T) {
 	pgDir := t.TempDir()
+
 	pgBinDir, err := postgres.Install(path.Join(pgDir, "resource"))
-	pgDataDir := path.Join(pgDir, "data")
 	require.NoError(t, err)
-	err = postgres.InitDB(pgBinDir, pgDataDir, pgUser)
-	require.NoError(t, err)
-	err = postgres.Start(pgPort, pgBinDir, pgDataDir, false /* serverLog */)
-	require.NoError(t, err)
+
+	stopInstance := postgres.SetupTestInstance(pgBinDir, t.TempDir(), pgPort)
+	defer stopInstance()
 
 	ctx := context.Background()
 	connCfg := dbdriver.ConnectionConfig{
-		Username: pgUser,
+		Username: postgres.TestPgUser,
 		Password: "",
 		Host:     common.GetPostgresSocketDir(),
 		Port:     fmt.Sprintf("%d", pgPort),
@@ -228,13 +226,10 @@ func TestMigrationCompatibility(t *testing.T) {
 	require.NoError(t, err)
 	// The extra one is for the initial schema setup.
 	require.Len(t, histories, len(devMigrations)+1)
-
-	err = postgres.Stop(pgBinDir, pgDataDir)
-	require.NoError(t, err)
 }
 
 func TestGetCutoffVersion(t *testing.T) {
 	releaseVersion, err := getProdCutoffVersion()
 	require.NoError(t, err)
-	require.Equal(t, semver.MustParse("2.9.4"), releaseVersion)
+	require.Equal(t, semver.MustParse("2.10.0"), releaseVersion)
 }

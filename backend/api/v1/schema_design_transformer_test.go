@@ -6,7 +6,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/testing/protocmp"
 	"gopkg.in/yaml.v3"
 
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -14,7 +17,7 @@ import (
 
 type deparseTest struct {
 	Engine   v1pb.Engine
-	Metadata *v1pb.DatabaseMetadata
+	Metadata string
 	Schema   string
 }
 
@@ -37,7 +40,9 @@ func TestDeparseSchemaString(t *testing.T) {
 	a.NoError(yaml.Unmarshal(byteValue, &tests))
 
 	for i, t := range tests {
-		result, err := transformDatabaseMetadataToSchemaString(t.Engine, t.Metadata)
+		metadata := &v1pb.DatabaseMetadata{}
+		a.NoError(protojson.Unmarshal([]byte(t.Metadata), metadata))
+		result, err := transformDatabaseMetadataToSchemaString(t.Engine, metadata)
 		a.NoError(err)
 		if record {
 			tests[i].Schema = strings.TrimSpace(result)
@@ -57,7 +62,7 @@ func TestDeparseSchemaString(t *testing.T) {
 type transformTest struct {
 	Engine   v1pb.Engine
 	Schema   string
-	Metadata *v1pb.DatabaseMetadata
+	Metadata string
 }
 
 func TestTransformSchemaString(t *testing.T) {
@@ -82,9 +87,13 @@ func TestTransformSchemaString(t *testing.T) {
 		result, err := transformSchemaStringToDatabaseMetadata(t.Engine, t.Schema)
 		a.NoError(err)
 		if record {
-			tests[i].Metadata = result
+			tests[i].Metadata = protojson.MarshalOptions{Multiline: true, Indent: "  "}.Format(result)
 		} else {
-			a.Equal(t.Metadata, result)
+			want := &v1pb.DatabaseMetadata{}
+			err = protojson.Unmarshal([]byte(t.Metadata), want)
+			a.NoError(err)
+			diff := cmp.Diff(want, result, protocmp.Transform())
+			a.Equal("", diff)
 		}
 	}
 
@@ -99,7 +108,7 @@ func TestTransformSchemaString(t *testing.T) {
 type designTest struct {
 	Engine   v1pb.Engine
 	Baseline string
-	Target   *v1pb.DatabaseMetadata
+	Target   string
 	Result   string
 }
 
@@ -122,7 +131,9 @@ func TestGetDesignSchema(t *testing.T) {
 	a.NoError(yaml.Unmarshal(byteValue, &tests))
 
 	for i, t := range tests {
-		result, err := getDesignSchema(t.Engine, t.Baseline, t.Target)
+		targetMeta := &v1pb.DatabaseMetadata{}
+		a.NoError(protojson.Unmarshal([]byte(t.Target), targetMeta))
+		result, err := getDesignSchema(t.Engine, t.Baseline, targetMeta)
 		a.NoError(err)
 		if record {
 			tests[i].Result = result
@@ -141,7 +152,7 @@ func TestGetDesignSchema(t *testing.T) {
 
 type checkTest struct {
 	Engine   v1pb.Engine
-	Metadata *v1pb.DatabaseMetadata
+	Metadata string
 	Err      string
 }
 
@@ -164,7 +175,9 @@ func TestCheckDatabaseMetadata(t *testing.T) {
 	a.NoError(yaml.Unmarshal(byteValue, &tests))
 
 	for i, t := range tests {
-		err := checkDatabaseMetadata(t.Engine, t.Metadata)
+		meta := &v1pb.DatabaseMetadata{}
+		a.NoError(protojson.Unmarshal([]byte(t.Metadata), meta))
+		err := checkDatabaseMetadata(t.Engine, meta)
 		if record {
 			if err != nil {
 				tests[i].Err = err.Error()

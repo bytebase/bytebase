@@ -17,11 +17,10 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func startStopServer(ctx context.Context, a *require.Assertions, ctl *controller, dataDir string, readOnly bool) {
+func startStopServer(ctx context.Context, a *require.Assertions, ctl *controller, dataDir string) {
 	ctx, err := ctl.StartServer(ctx, &config{
 		dataDir:            dataDir,
 		vcsProviderCreator: fake.NewGitLab,
-		readOnly:           readOnly,
 	})
 	a.NoError(err)
 
@@ -53,15 +52,11 @@ func TestServerRestart(t *testing.T) {
 	a.NoError(err)
 
 	// Start server in readonly mode
-	startStopServer(ctx, a, ctl, dataDir, true /* readOnly */)
+	startStopServer(ctx, a, ctl, dataDir)
 
 	// Start server in non-readonly mode
-	startStopServer(ctx, a, ctl, dataDir, false /* readOnly */)
+	startStopServer(ctx, a, ctl, dataDir)
 }
-
-var (
-	mysqlBinDir string
-)
 
 func TestMain(m *testing.M) {
 	resourceDir = os.TempDir()
@@ -69,7 +64,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	externalPgBinDir = dir
+	pgBinDir = dir
 	if _, err := mysqlutil.Install(resourceDir); err != nil {
 		log.Fatal(err)
 	}
@@ -86,23 +81,11 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	externalPgDataDir = dir
-	if err := postgres.InitDB(externalPgBinDir, externalPgDataDir, externalPgUser); err != nil {
-		log.Fatal(err)
-	}
-	if err = postgres.Start(externalPgPort, externalPgBinDir, externalPgDataDir, true /* serverLog */); err != nil {
-		log.Fatal(err)
-	}
+	stopInstance := postgres.SetupTestInstance(pgBinDir, dir, externalPgPort)
 
 	code := m.Run()
 
-	// Graceful shutdown.
-	if err := postgres.Stop(externalPgBinDir, externalPgDataDir); err != nil {
-		log.Fatal(err)
-	}
-	if err := os.RemoveAll(externalPgDataDir); err != nil {
-		log.Fatal(err)
-	}
+	stopInstance()
 
 	os.Exit(code)
 }

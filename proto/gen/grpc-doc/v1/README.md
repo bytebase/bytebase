@@ -504,6 +504,7 @@
     - [Task.DatabaseDataUpdate.RollbackSqlStatus](#bytebase-v1-Task-DatabaseDataUpdate-RollbackSqlStatus)
     - [Task.Status](#bytebase-v1-Task-Status)
     - [Task.Type](#bytebase-v1-Task-Type)
+    - [TaskRun.ExecutionStatus](#bytebase-v1-TaskRun-ExecutionStatus)
     - [TaskRun.Status](#bytebase-v1-TaskRun-Status)
   
     - [RolloutService](#bytebase-v1-RolloutService)
@@ -524,6 +525,7 @@
     - [UpdateSchemaDesignRequest](#bytebase-v1-UpdateSchemaDesignRequest)
   
     - [SchemaDesign.Type](#bytebase-v1-SchemaDesign-Type)
+    - [SchemaDesignView](#bytebase-v1-SchemaDesignView)
   
     - [SchemaDesignService](#bytebase-v1-SchemaDesignService)
   
@@ -2632,7 +2634,10 @@ ColumnMetadata is the metadata for columns.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of a column. |
 | position | [int32](#int32) |  | The position is the position in columns. |
-| default | [google.protobuf.StringValue](#google-protobuf-StringValue) |  | The default is the default of a column. Use google.protobuf.StringValue to distinguish between an empty string default value or no default. |
+| has_default | [bool](#bool) |  |  |
+| default_null | [bool](#bool) |  |  |
+| default_string | [string](#string) |  |  |
+| default_expression | [string](#string) |  |  |
 | nullable | [bool](#bool) |  | The nullable is the nullable of a column. |
 | type | [string](#string) |  | The type is the type of a column. |
 | character_set | [string](#string) |  | The character_set is the character_set of a column. |
@@ -8017,6 +8022,9 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | detail | [string](#string) |  | Below are the results of a task run. |
 | change_history | [string](#string) |  | The resource name of the change history Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
 | schema_version | [string](#string) |  |  |
+| execution_status | [TaskRun.ExecutionStatus](#bytebase-v1-TaskRun-ExecutionStatus) |  |  |
+| execution_status_update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Last execution status update timestamp. |
+| start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 
 
 
@@ -8159,6 +8167,20 @@ Type is the database change type.
 | DATABASE_BACKUP | 9 | use payload DatabaseBackup |
 | DATABASE_RESTORE_RESTORE | 10 | use payload DatabaseRestoreRestore |
 | DATABASE_RESTORE_CUTOVER | 11 | use payload nil |
+
+
+
+<a name="bytebase-v1-TaskRun-ExecutionStatus"></a>
+
+### TaskRun.ExecutionStatus
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| EXECUTION_STATUS_UNSPECIFIED | 0 |  |
+| PRE_EXECUTING | 1 |  |
+| EXECUTING | 2 |  |
+| POST_EXECUTING | 3 |  |
 
 
 
@@ -8306,6 +8328,7 @@ Type is the database change type.
 | page_token | [string](#string) |  | A page token, received from a previous `ListSchemaDesigns` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListSchemaDesigns` must match the call that provided the page token. |
+| view | [SchemaDesignView](#bytebase-v1-SchemaDesignView) |  |  |
 
 
 
@@ -8451,6 +8474,19 @@ The schema design&#39;s `name` field is used to identify the schema design to up
 | TYPE_UNSPECIFIED | 0 |  |
 | MAIN_BRANCH | 1 | Main branch type is the main version of schema design. And only allow to be updated/merged with personal drafts. |
 | PERSONAL_DRAFT | 2 | Personal draft type is a copy of the main branch type schema designs. |
+
+
+
+<a name="bytebase-v1-SchemaDesignView"></a>
+
+### SchemaDesignView
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SCHEMA_DESIGN_VIEW_UNSPECIFIED | 0 | The default / unset value. The API will default to the BASIC view. |
+| SCHEMA_DESIGN_VIEW_BASIC | 1 | Exclude schema, baseline_schema. |
+| SCHEMA_DESIGN_VIEW_FULL | 2 | Include everything. |
 
 
  

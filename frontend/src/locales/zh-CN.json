@@ -312,7 +312,7 @@
       "summary-report": "概要报告"
     },
     "rollout-time": "指定发布时间",
-    "earliest-allowed-time-hint": "'@:{'task.rollout-time'}' 指定了该任务最早允许执行的时间。如果该字段没有被指定，则任务会在满足其他条件后立即执行。",
+    "earliest-allowed-time-hint": "'@:{'task.rollout-time'}' 是您希望任务运行的时间；如果未指定，任务会在满足条件后立即执行。",
     "comment": "评论",
     "invoker": "执行者",
     "started": "开始于",
@@ -380,8 +380,8 @@
     "trial-expires": "您的{plan}试用将在 {days} 天后过期",
     "trial-expired": "您的{plan}试用将在已过期",
     "extend-trial": "申请延长试用",
-    "deploy": "部署到本地",
-    "cloud": "注册云服务",
+    "deploy": "本地部署",
+    "cloud": "云服务",
     "request-demo": "和我们的产品专家预约 30 分钟产品演示",
     "debug": "Debug 模式已开启，您可以通过右上角头像下拉框关闭 Debug。",
     "readonly": "Bytebase 处于只读模式。您仍然可以查看控制台，但任何尝试更改的请求都会失败。",
@@ -2059,7 +2059,8 @@
       "select-database": "选择下面的数据库",
       "description": "批量查询 {project} 下的 {count} 个数据库。"
     },
-    "executing-query": "执行查询"
+    "executing-query": "执行查询",
+    "grouping": "分组"
   },
   "schema-editor": {
     "self": "Schema 编辑器",
@@ -2113,6 +2114,14 @@
       "primary": "主键",
       "foreign-key": "外键",
       "classification": "分类分级"
+    },
+    "default": {
+      "no-default": "无默认值",
+      "empty-string": "空字符串",
+      "expression": "表达式",
+      "zero": "0",
+      "true": "True",
+      "false": "False"
     },
     "nothing-changed": "无任何改动",
     "message": {

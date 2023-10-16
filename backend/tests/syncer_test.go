@@ -90,9 +90,9 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 					{
 						Name: "VW",
 						Definition: strings.Join([]string{
-							` SELECT "TFK".a,`,
-							`    "TFK".b,`,
-							`    "TFK".c`,
+							` SELECT a,`,
+							`    b,`,
+							`    c`,
 							`   FROM "TFK";`},
 							"\n"),
 						DependentColumns: []*v1pb.DependentColumn{
@@ -172,7 +172,7 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 
 	// Create a PostgreSQL instance.
 	pgPort := getTestPort()
-	stopInstance := postgres.SetupTestInstance(t, pgPort, resourceDir)
+	stopInstance := postgres.SetupTestInstance(pgBinDir, t.TempDir(), pgPort)
 	defer stopInstance()
 
 	pgDB, err := sql.Open("pgx", fmt.Sprintf("host=/tmp port=%d user=root database=postgres", pgPort))

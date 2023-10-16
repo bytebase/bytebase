@@ -1,10 +1,9 @@
 package standard
 
 import (
+	"log/slog"
 	"regexp"
 	"strings"
-
-	"golang.org/x/exp/slog"
 
 	"github.com/pkg/errors"
 
@@ -20,6 +19,7 @@ func init() {
 	base.RegisterQueryValidator(storepb.Engine_SQLITE, ValidateSQLForEditor)
 	base.RegisterQueryValidator(storepb.Engine_SPANNER, ValidateSQLForEditor)
 	base.RegisterQueryValidator(storepb.Engine_MSSQL, ValidateSQLForEditor)
+
 	base.RegisterExtractResourceListFunc(storepb.Engine_CLICKHOUSE, ExtractResourceList)
 	base.RegisterExtractResourceListFunc(storepb.Engine_SQLITE, ExtractResourceList)
 	base.RegisterExtractResourceListFunc(storepb.Engine_SPANNER, ExtractResourceList)
