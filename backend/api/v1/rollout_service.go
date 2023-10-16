@@ -394,7 +394,7 @@ func (s *RolloutService) ListTaskRuns(ctx context.Context, request *v1pb.ListTas
 	}
 
 	return &v1pb.ListTaskRunsResponse{
-		TaskRuns:      convertToTaskRuns(taskRuns),
+		TaskRuns:      convertToTaskRuns(s.stateCfg, taskRuns),
 		NextPageToken: "",
 	}, nil
 }

@@ -12,6 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -428,10 +429,10 @@ func convertToPlanCheckRunResultStatus(status storepb.PlanCheckRunResult_Result_
 	return v1pb.PlanCheckRun_Result_STATUS_UNSPECIFIED
 }
 
-func convertToTaskRuns(taskRuns []*store.TaskRunMessage) []*v1pb.TaskRun {
+func convertToTaskRuns(stateCfg *state.State, taskRuns []*store.TaskRunMessage) []*v1pb.TaskRun {
 	var taskRunsV1 []*v1pb.TaskRun
 	for _, taskRun := range taskRuns {
-		taskRunsV1 = append(taskRunsV1, convertToTaskRun(taskRun))
+		taskRunsV1 = append(taskRunsV1, convertToTaskRun(stateCfg, taskRun))
 	}
 	return taskRunsV1
 }
@@ -455,8 +456,8 @@ func convertToTaskRunStatus(status api.TaskRunStatus) v1pb.TaskRun_Status {
 	}
 }
 
-func convertToTaskRun(taskRun *store.TaskRunMessage) *v1pb.TaskRun {
-	return &v1pb.TaskRun{
+func convertToTaskRun(stateCfg *state.State, taskRun *store.TaskRunMessage) *v1pb.TaskRun {
+	t := &v1pb.TaskRun{
 		Name:          fmt.Sprintf("%s%s/%s%d/%s%d/%s%d/%s%d", common.ProjectNamePrefix, taskRun.ProjectID, common.RolloutPrefix, taskRun.PipelineUID, common.StagePrefix, taskRun.StageUID, common.TaskPrefix, taskRun.TaskUID, common.TaskRunPrefix, taskRun.ID),
 		Uid:           fmt.Sprintf("%d", taskRun.ID),
 		Creator:       fmt.Sprintf("users/%s", taskRun.Creator.Email),
@@ -469,6 +470,14 @@ func convertToTaskRun(taskRun *store.TaskRunMessage) *v1pb.TaskRun {
 		ChangeHistory: taskRun.ResultProto.ChangeHistory,
 		SchemaVersion: taskRun.ResultProto.Version,
 	}
+
+	if v, ok := stateCfg.TaskRunExecutionStatuses.Load(taskRun.ID); ok {
+		s := v.(state.TaskRunExecutionStatus)
+		t.ExecutionStatus = s.ExecutionStatus
+		t.ExecutionStatusUpdateTime = timestamppb.New(s.UpdateTime)
+	}
+
+	return t
 }
 
 func convertToRollout(ctx context.Context, s *store.Store, project *store.ProjectMessage, rollout *store.PipelineMessage) (*v1pb.Rollout, error) {

@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
@@ -14,11 +15,13 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	bbs3 "github.com/bytebase/bytebase/backend/plugin/storage/s3"
 	"github.com/bytebase/bytebase/backend/runner/backuprun"
 	"github.com/bytebase/bytebase/backend/store"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 const (
@@ -27,11 +30,12 @@ const (
 )
 
 // NewDatabaseBackupExecutor creates a new database backup task executor.
-func NewDatabaseBackupExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, profile config.Profile) Executor {
+func NewDatabaseBackupExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, stateCfg *state.State, profile config.Profile) Executor {
 	return &DatabaseBackupExecutor{
 		store:     store,
 		dbFactory: dbFactory,
 		s3Client:  s3Client,
+		stateCfg:  stateCfg,
 		profile:   profile,
 	}
 }
@@ -41,12 +45,19 @@ type DatabaseBackupExecutor struct {
 	store     *store.Store
 	dbFactory *dbfactory.DBFactory
 	s3Client  *bbs3.Client
+	stateCfg  *state.State
 	profile   config.Profile
 }
 
 // RunOnce will run database backup once.
 // TODO: support cancellation.
-func (exec *DatabaseBackupExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *DatabaseBackupExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage, taskRunUID int) (terminated bool, result *api.TaskRunResultPayload, err error) {
+	exec.stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
+		state.TaskRunExecutionStatus{
+			ExecutionStatus: v1pb.TaskRun_PRE_EXECUTING,
+			UpdateTime:      time.Now(),
+		})
+
 	payload := &api.TaskDatabaseBackupPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database backup payload")
@@ -80,8 +91,22 @@ func (exec *DatabaseBackupExecutor) RunOnce(ctx context.Context, _ context.Conte
 			return true, nil, errors.Errorf("the available file system space %dMB is less than the minimal threshold %dMB", availableBytes/1024/1024, minAvailableFSBytes/1024/1024)
 		}
 	}
+
+	exec.stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
+		state.TaskRunExecutionStatus{
+			ExecutionStatus: v1pb.TaskRun_EXECUTING,
+			UpdateTime:      time.Now(),
+		})
+
 	slog.Debug("Start database backup.", slog.String("instance", instance.Title), slog.String("database", database.DatabaseName), slog.String("backup", backup.Name))
 	backupPayload, backupErr := exec.backupDatabase(ctx, exec.dbFactory, exec.s3Client, exec.profile, instance, database, backup)
+
+	exec.stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
+		state.TaskRunExecutionStatus{
+			ExecutionStatus: v1pb.TaskRun_POST_EXECUTING,
+			UpdateTime:      time.Now(),
+		})
+
 	backupStatus := string(api.BackupStatusDone)
 	comment := ""
 	if backupErr != nil {
