@@ -21,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import { cloneDeep, uniq } from "lodash-es";
+import { cloneDeep, orderBy, uniq } from "lodash-es";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useSQLEditorTreeStore } from "@/store/modules/sqlEditorTree";
@@ -34,8 +34,12 @@ const { databaseList, factorList } = storeToRefs(treeStore);
 const PRESET_FACTORS: Factor[] = ["project", "instance", "environment"];
 
 const labelFactors = computed(() => {
-  return uniq(databaseList.value.flatMap((db) => Object.keys(db.labels))).map(
-    (key) => `label:${key}` as Factor
+  return orderBy(
+    uniq(databaseList.value.flatMap((db) => Object.keys(db.labels))).map(
+      (key) => `label:${key}` as Factor
+    ),
+    [(key) => key],
+    ["asc"] // lexicographical order
   );
 });
 
