@@ -40,7 +40,7 @@
         </div>
       </div>
     </div>
-    <div v-if="currentTab" class="hidden lg:block -mt-0.5">
+    <div v-if="currentTab" class="hidden lg:block p-1">
       <NInput
         v-if="currentTab.type === SchemaEditorTabType.TabForDatabase"
         v-model:value="searchPattern"
