@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
@@ -21,14 +22,16 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // NewDatabaseCreateExecutor creates a database create task executor.
-func NewDatabaseCreateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, profile config.Profile) Executor {
+func NewDatabaseCreateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, stateCfg *state.State, profile config.Profile) Executor {
 	return &DatabaseCreateExecutor{
 		store:        store,
 		dbFactory:    dbFactory,
 		schemaSyncer: schemaSyncer,
+		stateCfg:     stateCfg,
 		profile:      profile,
 	}
 }
@@ -38,6 +41,7 @@ type DatabaseCreateExecutor struct {
 	store        *store.Store
 	dbFactory    *dbfactory.DBFactory
 	schemaSyncer *schemasync.Syncer
+	stateCfg     *state.State
 	profile      config.Profile
 }
 
@@ -48,7 +52,13 @@ var cannotCreateDatabase = map[storepb.Engine]bool{
 }
 
 // RunOnce will run the database create task executor once.
-func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (terminated bool, result *api.TaskRunResultPayload, err error) {
+	exec.stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
+		state.TaskRunExecutionStatus{
+			ExecutionStatus: v1pb.TaskRun_PRE_EXECUTING,
+			UpdateTime:      time.Now(),
+		})
+
 	payload := &api.TaskDatabaseCreatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid create database payload")
@@ -142,9 +152,22 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		}
 	}
 	defer defaultDBDriver.Close(ctx)
+
+	exec.stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
+		state.TaskRunExecutionStatus{
+			ExecutionStatus: v1pb.TaskRun_EXECUTING,
+			UpdateTime:      time.Now(),
+		})
+
 	if _, err := defaultDBDriver.Execute(driverCtx, statement, true /* createDatabase */, db.ExecuteOptions{}); err != nil {
 		return true, nil, err
 	}
+
+	exec.stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
+		state.TaskRunExecutionStatus{
+			ExecutionStatus: v1pb.TaskRun_POST_EXECUTING,
+			UpdateTime:      time.Now(),
+		})
 
 	environmentID := instance.EnvironmentID
 	if payload.EnvironmentID != "" {
@@ -155,7 +178,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		return true, nil, err
 	}
 	// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
-	peerSchemaVersion, peerSchema, err := exec.createInitialSchema(ctx, driverCtx, environment, instance, project, task, database)
+	peerSchemaVersion, peerSchema, err := exec.createInitialSchema(ctx, driverCtx, environment, instance, project, task, taskRunUID, database)
 	if err != nil {
 		return true, nil, err
 	}
@@ -225,7 +248,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 	}, nil
 }
 
-func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, driverCtx context.Context, environment *store.EnvironmentMessage, instance *store.InstanceMessage, project *store.ProjectMessage, task *store.TaskMessage, database *store.DatabaseMessage) (model.Version, string, error) {
+func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, driverCtx context.Context, environment *store.EnvironmentMessage, instance *store.InstanceMessage, project *store.ProjectMessage, task *store.TaskMessage, taskRunUID int, database *store.DatabaseMessage) (model.Version, string, error) {
 	if project.TenantMode != api.TenantModeTenant {
 		return model.Version{}, "", nil
 	}
@@ -289,7 +312,7 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 		mi.IssueUID = &issue.UID
 	}
 
-	if _, _, err := utils.ExecuteMigrationDefault(ctx, driverCtx, exec.store, driver, mi, schema, nil, db.ExecuteOptions{}); err != nil {
+	if _, _, err := utils.ExecuteMigrationDefault(ctx, driverCtx, exec.store, exec.stateCfg, taskRunUID, driver, mi, schema, nil, db.ExecuteOptions{}); err != nil {
 		return model.Version{}, "", err
 	}
 	return schemaVersion, schema, nil

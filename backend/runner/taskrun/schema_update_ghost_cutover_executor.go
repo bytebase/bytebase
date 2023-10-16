@@ -25,6 +25,7 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
 	"github.com/bytebase/bytebase/backend/utils"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // NewSchemaUpdateGhostCutoverExecutor creates a schema update (gh-ost) cutover task executor.
@@ -53,7 +54,13 @@ type SchemaUpdateGhostCutoverExecutor struct {
 
 // RunOnce will run SchemaUpdateGhostCutover task once.
 // TODO: support cancellation.
-func (e *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage) (bool, *api.TaskRunResultPayload, error) {
+func (e *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage, taskRunUID int) (bool, *api.TaskRunResultPayload, error) {
+	e.stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
+		state.TaskRunExecutionStatus{
+			ExecutionStatus: v1pb.TaskRun_PRE_EXECUTING,
+			UpdateTime:      time.Now(),
+		})
+
 	if len(task.BlockedBy) != 1 {
 		return true, nil, errors.Errorf("failed to find task dag for ToTask %v", task.ID)
 	}
@@ -100,7 +107,7 @@ func (e *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, _ contex
 
 	// not using the rendered statement here because we want to avoid leaking the rendered statement
 	version := model.Version{Version: payload.SchemaVersion}
-	terminated, result, err := cutover(ctx, e.store, e.dbFactory, e.activityManager, e.license, e.profile, task, statement, payload.SheetID, version, postponeFilename, sharedGhost.migrationContext, sharedGhost.errCh)
+	terminated, result, err := cutover(ctx, e.store, e.dbFactory, e.activityManager, e.stateCfg, e.license, e.profile, task, taskRunUID, statement, payload.SheetID, version, postponeFilename, sharedGhost.migrationContext, sharedGhost.errCh)
 	if err := e.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 		slog.Error("failed to sync database schema",
 			slog.String("instanceName", instance.ResourceID),
@@ -112,7 +119,7 @@ func (e *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, _ contex
 	return terminated, result, err
 }
 
-func cutover(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, license enterpriseAPI.LicenseService, profile config.Profile, task *store.TaskMessage, statement string, sheetID int, schemaVersion model.Version, postponeFilename string, migrationContext *base.MigrationContext, errCh <-chan error) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func cutover(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, stateCfg *state.State, license enterpriseAPI.LicenseService, profile config.Profile, task *store.TaskMessage, taskRunUID int, statement string, sheetID int, schemaVersion model.Version, postponeFilename string, migrationContext *base.MigrationContext, errCh <-chan error) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	statement = strings.TrimSpace(statement)
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
@@ -148,7 +155,7 @@ func cutover(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFa
 		return true, nil, err
 	}
 	defer driver.Close(ctx)
-	migrationID, schema, err := utils.ExecuteMigrationWithFunc(ctx, ctx, stores, driver, mi, statement, &sheetID, execFunc)
+	migrationID, schema, err := utils.ExecuteMigrationWithFunc(ctx, ctx, stores, stateCfg, taskRunUID, driver, mi, statement, &sheetID, execFunc)
 	if err != nil {
 		return true, nil, err
 	}

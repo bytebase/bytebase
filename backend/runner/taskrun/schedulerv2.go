@@ -352,6 +352,8 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 
 func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRunMessage, task *store.TaskMessage, executor Executor) {
 	defer func() {
+		s.stateCfg.TaskRunExecutionStatuses.Delete(taskRun.ID)
+
 		s.stateCfg.RunningTaskRuns.Delete(taskRun.ID)
 		s.stateCfg.RunningTaskRunsCancelFunc.Delete(taskRun.ID)
 		s.stateCfg.Lock()
@@ -362,7 +364,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 	driverCtx, cancel := context.WithCancel(ctx)
 	s.stateCfg.RunningTaskRunsCancelFunc.Store(taskRun.ID, cancel)
 
-	done, result, err := RunExecutorOnce(ctx, driverCtx, executor, task)
+	done, result, err := RunExecutorOnce(ctx, driverCtx, executor, task, taskRun.ID)
 
 	if !done && err != nil {
 		slog.Debug("Encountered transient error running task, will retry",

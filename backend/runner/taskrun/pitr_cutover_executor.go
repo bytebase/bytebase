@@ -16,6 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/mysql"
@@ -25,14 +26,16 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // NewPITRCutoverExecutor creates a PITR cutover task executor.
-func NewPITRCutoverExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, backupRunner *backuprun.Runner, activityManager *activity.Manager, profile config.Profile) Executor {
+func NewPITRCutoverExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, stateCfg *state.State, backupRunner *backuprun.Runner, activityManager *activity.Manager, profile config.Profile) Executor {
 	return &PITRCutoverExecutor{
 		store:           store,
 		dbFactory:       dbFactory,
 		schemaSyncer:    schemaSyncer,
+		stateCfg:        stateCfg,
 		backupRunner:    backupRunner,
 		activityManager: activityManager,
 		profile:         profile,
@@ -44,6 +47,7 @@ type PITRCutoverExecutor struct {
 	store           *store.Store
 	dbFactory       *dbfactory.DBFactory
 	schemaSyncer    *schemasync.Syncer
+	stateCfg        *state.State
 	backupRunner    *backuprun.Runner
 	activityManager *activity.Manager
 	profile         config.Profile
@@ -51,7 +55,13 @@ type PITRCutoverExecutor struct {
 
 // RunOnce will run the PITR cutover task executor once.
 // TODO: support cancellation.
-func (exec *PITRCutoverExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *PITRCutoverExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage, taskRunUID int) (terminated bool, result *api.TaskRunResultPayload, err error) {
+	exec.stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
+		state.TaskRunExecutionStatus{
+			ExecutionStatus: v1pb.TaskRun_EXECUTING,
+			UpdateTime:      time.Now(),
+		})
+
 	slog.Info("Run PITR cutover task", slog.String("task", task.Name))
 	issue, err := exec.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 	if err != nil {
@@ -71,7 +81,7 @@ func (exec *PITRCutoverExecutor) RunOnce(ctx context.Context, _ context.Context,
 	}
 
 	// Currently api.TaskDatabasePITRCutoverPayload is empty, so we do not need to unmarshal from task.Payload.
-	terminated, result, err = exec.pitrCutover(ctx, exec.dbFactory, exec.backupRunner, exec.schemaSyncer, exec.profile, task, database, issue)
+	terminated, result, err = exec.pitrCutover(ctx, exec.dbFactory, exec.backupRunner, exec.schemaSyncer, exec.profile, task, taskRunUID, database, issue)
 	if err != nil {
 		return terminated, result, err
 	}
@@ -107,7 +117,7 @@ func (exec *PITRCutoverExecutor) RunOnce(ctx context.Context, _ context.Context,
 // 1. Swap the current and PITR database.
 // 2. Create a backup with type PITR. The backup is scheduled asynchronously.
 // We must check the possible failed/ongoing PITR type backup in the recovery process.
-func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbfactory.DBFactory, backupRunner *backuprun.Runner, schemaSyncer *schemasync.Syncer, profile config.Profile, task *store.TaskMessage, database *store.DatabaseMessage, issue *store.IssueMessage) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbfactory.DBFactory, backupRunner *backuprun.Runner, schemaSyncer *schemasync.Syncer, profile config.Profile, task *store.TaskMessage, taskRunUID int, database *store.DatabaseMessage, issue *store.IssueMessage) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return true, nil, err
@@ -156,7 +166,7 @@ func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbf
 	}
 	defer driver.Close(ctx)
 
-	if _, _, err := utils.ExecuteMigrationDefault(ctx, ctx, exec.store, driver, m, "" /* pitr cutover */, nil, db.ExecuteOptions{}); err != nil {
+	if _, _, err := utils.ExecuteMigrationDefault(ctx, ctx, exec.store, exec.stateCfg, taskRunUID, driver, m, "" /* pitr cutover */, nil, db.ExecuteOptions{}); err != nil {
 		slog.Error("Failed to add migration history record", log.BBError(err))
 		return true, nil, errors.Wrap(err, "failed to add migration history record")
 	}
