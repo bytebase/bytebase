@@ -1,6 +1,7 @@
 <template>
+  <template v-if="!keyword.trim()">{{ text }}</template>
   <!-- eslint-disable-next-line vue/no-v-html -->
-  <span v-html="html" />
+  <span v-else v-html="html" />
 </template>
 
 <script lang="ts" setup>
