@@ -29,7 +29,7 @@ export * from "./sqlAdvice";
 export * from "./store";
 export * from "./vcs";
 export * from "./sqlEditor";
-export * from "./connectionTree";
+export * from "./sqlEditorTree";
 export * from "./tab";
 export * from "./sheet";
 export * from "./sqlReview";

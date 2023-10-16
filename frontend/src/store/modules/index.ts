@@ -14,7 +14,7 @@ export * from "./project";
 export * from "./router";
 export * from "./stage";
 export * from "./sqlEditor";
-export * from "./connectionTree";
+export * from "./sqlEditorTree";
 export * from "./tab";
 export * from "./task";
 export * from "./uistate";
