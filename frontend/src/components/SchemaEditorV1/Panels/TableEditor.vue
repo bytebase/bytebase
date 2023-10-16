@@ -321,6 +321,7 @@ const gotoForeignKeyReferencedTable = (column: Column) => {
     parentName: currentTab.value.parentName,
     schemaId: referencedSchema.id,
     tableId: referencedTable.id,
+    name: referencedTable.name,
   });
 
   nextTick(() => {

@@ -135,6 +135,9 @@ const getTabComputedClassList = (tab: TabContext) => {
 };
 
 const getTabName = (tab: TabContext) => {
+  if (tab.name) {
+    return tab.name;
+  }
   if (tab.type === SchemaEditorTabType.TabForDatabase) {
     const database = schemaEditorV1Store.databaseList.find(
       (database) => database.name === tab.parentName
