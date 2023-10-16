@@ -41,16 +41,6 @@
         </div>
       </div>
       <div class="flex justify-end items-center">
-        <NInput
-          v-if="state.selectedSubtab === 'table-list'"
-          v-model:value="searchPattern"
-          class="!w-48 mr-3"
-          :placeholder="$t('schema-editor.search-table')"
-        >
-          <template #prefix>
-            <heroicons-outline:search class="w-4 h-auto text-gray-300" />
-          </template>
-        </NInput>
         <div
           class="flex flex-row justify-end items-center bg-gray-100 p-1 rounded"
         >
@@ -254,7 +244,7 @@
 import { head } from "lodash-es";
 import { NEllipsis, NTooltip } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
-import { computed, nextTick, reactive, ref, watch } from "vue";
+import { computed, nextTick, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { SchemaDiagram, SchemaDiagramIcon } from "@/components/SchemaDiagram";
 import { Drawer, DrawerContent } from "@/components/v2";
@@ -285,6 +275,15 @@ import TableNameModal from "../Modals/TableNameModal.vue";
 import { isTableChanged } from "../utils";
 import { useMetadataForDiagram } from "../utils/useMetadataForDiagram";
 
+const props = withDefaults(
+  defineProps<{
+    searchPattern: string;
+  }>(),
+  {
+    searchPattern: "",
+  }
+);
+
 type SubtabType = "table-list" | "schema-diagram";
 
 interface LocalState {
@@ -306,7 +305,6 @@ interface LocalState {
 const { t } = useI18n();
 const editorStore = useSchemaEditorV1Store();
 const settingStore = useSettingV1Store();
-const searchPattern = ref("");
 const currentTab = computed(
   () => (editorStore.currentTab || {}) as DatabaseTabContext
 );
@@ -345,7 +343,7 @@ const tableList = computed(() => {
 });
 const shownTableList = computed(() => {
   return tableList.value.filter((table) =>
-    table.name.includes(searchPattern.value.trim())
+    table.name.includes(props.searchPattern.trim())
   );
 });
 const classificationConfig = computed(() => {

@@ -21,10 +21,9 @@
 <script lang="ts" setup>
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
-import { useConnectionTreeStore, useCurrentUserV1 } from "@/store";
+import { useCurrentUserV1, useSQLEditorTreeStore } from "@/store";
 import {
   ComposedDatabase,
-  ConnectionTreeMode,
   DEFAULT_PROJECT_V1_NAME,
   UNKNOWN_PROJECT_NAME,
 } from "@/types";
@@ -93,7 +92,12 @@ const gotoSQLEditor = () => {
     }
     // Set the default sidebar view of SQL Editor to "INSTANCE"
     // since unassigned databases won't be listed in "PROJECT" view.
-    useConnectionTreeStore().tree.mode = ConnectionTreeMode.INSTANCE;
+    useSQLEditorTreeStore().factorList = [
+      {
+        factor: "instance",
+        disabled: false,
+      },
+    ];
   }
   const url = `/sql-editor/${connectionV1Slug(
     database.instanceEntity,
