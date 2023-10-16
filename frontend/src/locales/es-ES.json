@@ -2115,6 +2115,14 @@
       "foreign-key": "Clave foránea",
       "classification": "Clasificación"
     },
+    "default": {
+      "no-default": "Sin valor predeterminado",
+      "empty-string": "Cadena vacía",
+      "expression": "Expresión",
+      "zero": "0",
+      "true": "True",
+      "false": "False"
+    },
     "nothing-changed": "Nada ha cambiado",
     "message": {
       "invalid-schema-name": "Nombre de esquema inválido",
