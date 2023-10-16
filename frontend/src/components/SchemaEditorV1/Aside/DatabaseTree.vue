@@ -689,6 +689,7 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
             id: generateUniqueTabId(),
             type: SchemaEditorTabType.TabForDatabase,
             parentName: treeNode.database,
+            name: treeNode.label,
           });
         } else if (treeNode.type === "schema") {
           const index = expandedKeysRef.value.findIndex(
@@ -704,6 +705,7 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
             parentName: treeNode.database,
             schemaId: treeNode.schemaId,
             tableId: treeNode.tableId,
+            name: treeNode.label,
           });
         }
 
