@@ -8,8 +8,11 @@
     @click.stop="handleClick"
   >
     <span
-      class="leading-6 hover:line-through"
-      :class="factor.disabled && 'line-through'"
+      class="leading-6"
+      :class="[
+        factor.disabled && 'line-through',
+        allowDisable && 'hover:line-through',
+      ]"
     >
       {{ readableSQLEditorTreeFactor(factor.factor) }}
     </span>
@@ -48,18 +51,15 @@ const allowDisable = computed(() => {
 });
 
 const allowRemove = computed(() => {
-  if (factorList.value.length <= 1) {
-    // Disallow to remove the only one factor
-    return false;
-  }
   const { factor } = props;
-  if (!factor.disabled) {
-    if (filteredFactorList.value.length <= 1) {
-      // Disallow to remove the only one enabled factor
-      return false;
-    }
+  // Always allow to remove the disabled factor
+  if (factor.disabled) {
+    return true;
   }
-  return true;
+
+  // Otherwise, we only allow to remove the enabled factor if this is the only factor
+  // or there exists other enabled factors
+  return factorList.value.length === 1 || filteredFactorList.value.length >= 2;
 });
 
 const clickable = computed(() => {
