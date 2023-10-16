@@ -2064,7 +2064,8 @@
       "select-database": "Select database below",
       "description": "Batch query {count} additional databases under {project}."
     },
-    "executing-query": "Executing query"
+    "executing-query": "Executing query",
+    "grouping": "Grouping"
   },
   "schema-editor": {
     "self": "Schema Editor",

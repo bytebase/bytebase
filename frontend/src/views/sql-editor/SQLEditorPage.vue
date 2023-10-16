@@ -6,7 +6,6 @@
     >
       <Pane v-if="windowWidth >= 800" size="20">
         <AsidePanel />
-        <AsidePanelNew />
       </Pane>
       <template v-else>
         <teleport to="body">
@@ -35,7 +34,6 @@
             placement="left"
           >
             <AsidePanel />
-            <AsidePanelNew />
           </NDrawer>
         </teleport>
       </template>
@@ -168,7 +166,6 @@ import {
   isDatabaseV1Queryable,
 } from "@/utils";
 import AsidePanel from "./AsidePanel/AsidePanel.vue";
-import AsidePanelNew from "./AsidePanel/AsidePanelNew.vue";
 import AdminModeButton from "./EditorCommon/AdminModeButton.vue";
 import EditorPanel from "./EditorPanel/EditorPanel.vue";
 import ResultPanel from "./ResultPanel";

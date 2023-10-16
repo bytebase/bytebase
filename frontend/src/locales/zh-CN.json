@@ -2059,7 +2059,8 @@
       "select-database": "选择下面的数据库",
       "description": "批量查询 {project} 下的 {count} 个数据库。"
     },
-    "executing-query": "执行查询"
+    "executing-query": "执行查询",
+    "grouping": "分组"
   },
   "schema-editor": {
     "self": "Schema 编辑器",

@@ -2060,7 +2060,8 @@
       "select-database": "Seleccione la base de datos a continuación",
       "description": "Consulta por lotes {count} bases de datos adicionales en {project}."
     },
-    "executing-query": "Ejecutando consulta"
+    "executing-query": "Ejecutando consulta",
+    "grouping": "Agrupamiento"
   },
   "schema-editor": {
     "self": "Editor de esquema",

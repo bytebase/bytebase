@@ -3,7 +3,6 @@
 </template>
 
 <script lang="ts" setup>
-import { uniqBy } from "lodash-es";
 import { onMounted, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
@@ -11,7 +10,6 @@ import {
   useSQLEditorStore,
   useTabStore,
   pushNotification,
-  useConnectionTreeStore,
   useProjectV1Store,
   useCurrentUserV1,
   useSheetV1Store,
@@ -23,16 +21,8 @@ import {
 import { useSQLEditorTreeStore } from "@/store/modules/sqlEditorTree";
 import { usePolicyV1Store } from "@/store/modules/v1/policy";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import {
-  Connection,
-  ConnectionAtom,
-  ConnectionTreeMode,
-  CoreTabInfo,
-  DEFAULT_PROJECT_V1_NAME,
-  TabMode,
-  UNKNOWN_USER_NAME,
-} from "@/types";
-import { ConnectionTreeState, UNKNOWN_ID } from "@/types";
+import { Connection, CoreTabInfo, TabMode, UNKNOWN_USER_NAME } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import {
   PolicyType,
@@ -48,7 +38,6 @@ import {
   isDatabaseV1Queryable,
   getSuggestedTabNameFromConnection,
   isSimilarTab,
-  hasWorkspacePermissionV1,
 } from "@/utils";
 
 const route = useRoute();
@@ -60,25 +49,18 @@ const instanceStore = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
 const policyV1Store = usePolicyV1Store();
 const sqlEditorStore = useSQLEditorStore();
-const connectionTreeStore = useConnectionTreeStore();
 const treeStore = useSQLEditorTreeStore();
 const tabStore = useTabStore();
 const sheetV1Store = useSheetV1Store();
 
 const prepareAccessControlPolicy = async () => {
-  connectionTreeStore.accessControlPolicyList =
-    await policyV1Store.fetchPolicies({
-      policyType: PolicyType.WORKSPACE_IAM,
-      resourceType: PolicyResourceType.WORKSPACE,
-    });
-  await policyV1Store.fetchPolicies({
-    resourceType: PolicyResourceType.ENVIRONMENT,
-    policyType: PolicyType.DISABLE_COPY_DATA,
-  });
-
   treeStore.accessControlPolicyList = await policyV1Store.fetchPolicies({
     policyType: PolicyType.WORKSPACE_IAM,
     resourceType: PolicyResourceType.WORKSPACE,
+  });
+  await policyV1Store.fetchPolicies({
+    resourceType: PolicyResourceType.ENVIRONMENT,
+    policyType: PolicyType.DISABLE_COPY_DATA,
   });
 };
 
@@ -100,129 +82,12 @@ const prepareAccessibleDatabaseList = async () => {
       db.syncState === State.ACTIVE &&
       isDatabaseV1Queryable(db, currentUserV1.value)
   );
-  connectionTreeStore.tree.databaseList = databaseList;
 
   treeStore.databaseList = databaseList;
 };
 
-const connectionTreeCache: Record<"instance" | "project", ConnectionAtom[]> = {
-  project: [],
-  instance: [],
-};
-
 const initializeTree = async () => {
   treeStore.buildTree();
-};
-
-const initializeConnectionTree = async () => {
-  const build = (mode: ConnectionTreeMode): ConnectionAtom[] => {
-    if (mode === ConnectionTreeMode.INSTANCE) {
-      const { databaseList } = connectionTreeStore.tree;
-      const instanceList = uniqBy(
-        databaseList.map((db) => db.instanceEntity),
-        (instance) => instance.uid
-      );
-      const tree = instanceList.map((instance) => {
-        const node = connectionTreeStore.mapAtom(
-          instance,
-          "instance",
-          undefined /* ROOT */
-        );
-        return node;
-      });
-
-      for (const instance of instanceList) {
-        const instanceItem = tree.find(
-          (item: ConnectionAtom) => item.id === instance.uid
-        )!;
-
-        instanceItem.children = databaseList
-          .filter((db) => db.instanceEntity.uid === instance.uid)
-          .map((db) => {
-            const node = connectionTreeStore.mapAtom(
-              db,
-              "database",
-              instanceItem
-            );
-            node.disabled = !isDatabaseV1Queryable(db, currentUserV1.value);
-            if (node.disabled) {
-              // If a database node is not accessible
-              // it's not expandable either.
-              node.isLeaf = true;
-            }
-            return node;
-          });
-      }
-      return tree;
-    } else {
-      const databaseList = connectionTreeStore.tree.databaseList.filter(
-        (db) => {
-          return db.project !== DEFAULT_PROJECT_V1_NAME;
-        }
-      );
-      const projectList = uniqBy(
-        databaseList.map((db) => db.projectEntity),
-        (project) => project.uid
-      );
-
-      const projectAtomList = projectList.map((project) => {
-        const node = connectionTreeStore.mapAtom(
-          project,
-          "project",
-          undefined /* ROOT */
-        );
-        return node;
-      });
-
-      projectAtomList.forEach((projectAtom) => {
-        projectAtom.children = databaseList
-          .filter((db) => db.projectEntity.uid === projectAtom.id)
-          .map((db) => {
-            const node = connectionTreeStore.mapAtom(
-              db,
-              "database",
-              projectAtom
-            );
-            node.disabled = !isDatabaseV1Queryable(db, currentUserV1.value);
-            if (node.disabled) {
-              // If a database node is not accessible
-              // it's not expandable either.
-              node.isLeaf = true;
-            }
-            return node;
-          });
-      });
-
-      return projectAtomList;
-    }
-  };
-
-  connectionTreeCache.instance = build(ConnectionTreeMode.INSTANCE);
-  connectionTreeCache.project = build(ConnectionTreeMode.PROJECT);
-
-  if (connectionTreeStore.tree.mode === ConnectionTreeMode.INSTANCE) {
-    if (
-      !hasWorkspacePermissionV1(
-        "bb.permission.workspace.manage-database",
-        currentUserV1.value.userRole
-      )
-    ) {
-      connectionTreeStore.tree.mode = ConnectionTreeMode.PROJECT;
-      return;
-    }
-  }
-  // Won't fetch tableList for every database here.
-  // Will fetch them asynchronously only when a database node opens.
-};
-
-const switchConnectionTree = () => {
-  const tree = connectionTreeStore.tree;
-  const mode = tree.mode;
-  if (mode === ConnectionTreeMode.INSTANCE) {
-    tree.data = connectionTreeCache.instance;
-  } else {
-    tree.data = connectionTreeCache.project;
-  }
 };
 
 const prepareSheet = async () => {
@@ -329,17 +194,16 @@ const prepareConnectionSlug = async () => {
 
   if (Number.isNaN(databaseId)) {
     // connected to instance
-    const connection = await connectionTreeStore.fetchConnectionByInstanceId(
+    const connection = await treeStore.fetchConnectionByInstanceId(
       String(instanceId)
     );
     connect(connection);
   } else {
     // connected to db
-    const connection =
-      await connectionTreeStore.fetchConnectionByInstanceIdAndDatabaseId(
-        String(instanceId),
-        String(databaseId)
-      );
+    const connection = await treeStore.fetchConnectionByInstanceIdAndDatabaseId(
+      String(instanceId),
+      String(databaseId)
+    );
     connect(connection);
   }
   return true;
@@ -428,9 +292,9 @@ const syncURLWithConnection = () => {
 onMounted(async () => {
   await useUserStore().fetchUserList();
 
-  if (connectionTreeStore.tree.state === ConnectionTreeState.UNSET) {
+  if (treeStore.state === "UNSET") {
     treeStore.state = "LOADING";
-    connectionTreeStore.tree.state = ConnectionTreeState.LOADING;
+
     // Initialize project list state for iam policy.
     await useProjectV1Store().fetchProjectList(true /* include archived */);
     // Initialize environment list for composing.
@@ -440,25 +304,17 @@ onMounted(async () => {
     await usePolicyV1Store().getOrFetchPolicyByName("policies/WORKSPACE_IAM");
     await prepareAccessControlPolicy();
     await prepareAccessibleDatabaseList();
-    await initializeConnectionTree();
-    connectionTreeStore.tree.state = ConnectionTreeState.LOADED;
 
     await initializeTree();
     treeStore.state = "READY";
   }
-
-  watch(() => connectionTreeStore.tree.mode, switchConnectionTree, {
-    immediate: true,
-  });
 
   watch(
     () => currentUserV1.value.name,
     (name) => {
       if (name === UNKNOWN_USER_NAME) {
         // Cleanup when user signed out
-        connectionTreeStore.tree.data = [];
-        connectionTreeStore.tree.state = ConnectionTreeState.UNSET;
-
+        treeStore.cleanup();
         tabStore.reset();
       }
     }

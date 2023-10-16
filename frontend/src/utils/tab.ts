@@ -5,7 +5,6 @@ import type {
   ComposedDatabase,
   ComposedInstance,
   Connection,
-  ConnectionAtom,
   CoreTabInfo,
   TabInfo,
   TabSheetType,
@@ -106,16 +105,6 @@ export const getSuggestedTabNameFromConnection = (conn: Connection) => {
   }
   parts.push(getDefaultTabName());
   return parts.join(" ");
-};
-
-export const instanceOfConnectionAtom = (atom: ConnectionAtom) => {
-  if (atom.type === "instance") {
-    return useInstanceV1Store().getInstanceByUID(atom.id);
-  }
-  if (atom.type === "database") {
-    return useDatabaseV1Store().getDatabaseByUID(atom.id).instanceEntity;
-  }
-  return undefined;
 };
 
 export const isDisconnectedTab = (tab: TabInfo) => {
