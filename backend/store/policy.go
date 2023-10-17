@@ -34,25 +34,29 @@ func (s *Store) GetBackupPlanPolicyByEnvID(ctx context.Context, environmentID in
 	return api.UnmarshalBackupPlanPolicy(policy.Payload)
 }
 
-// GetPipelineApprovalPolicy will get the pipeline approval policy for an environment.
-func (s *Store) GetPipelineApprovalPolicy(ctx context.Context, environmentID int) (*api.PipelineApprovalPolicy, error) {
+func (s *Store) GetRolloutPolicy(ctx context.Context, environmentID int) (*storepb.RolloutPolicy, error) {
 	resourceType := api.PolicyResourceTypeEnvironment
-	pType := api.PolicyTypePipelineApproval
+	pType := api.PolicyTypeRollout
 	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
 		ResourceUID:  &environmentID,
 		Type:         &pType,
 	})
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to get policy")
 	}
 	if policy == nil {
-		return &api.PipelineApprovalPolicy{
-			Value: api.PipelineApprovalValueManualAlways,
+		return &storepb.RolloutPolicy{
+			Automatic: true,
 		}, nil
 	}
 
-	return api.UnmarshalPipelineApprovalPolicy(policy.Payload)
+	p := &storepb.RolloutPolicy{}
+	if err := protojson.Unmarshal([]byte(policy.Payload), p); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal rollout policy")
+	}
+
+	return p, nil
 }
 
 // GetSQLReviewPolicy will get the SQL review policy for an environment.
