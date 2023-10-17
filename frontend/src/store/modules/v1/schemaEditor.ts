@@ -173,6 +173,32 @@ export const useSchemaEditorV1Store = defineStore("SchemaEditorV1", {
 
       return tab;
     },
+    isEmptyColumnConfig(config: ColumnConfig): boolean {
+      return Object.keys(config.labels).length === 0 && !config.semanticTypeId;
+    },
+    removeColumnConfig(schema: Schema, table: string, column: string) {
+      const tableConfig = this.getTableConfig(schema, table);
+      const index = tableConfig.columnConfigs.findIndex(
+        (config) => config.name === column
+      );
+      if (index < 0) {
+        return;
+      }
+
+      const pendingUpdateTableConfig = cloneDeep(tableConfig);
+      pendingUpdateTableConfig.columnConfigs.splice(index, 1);
+      const tableIndex = schema.config.tableConfigs.findIndex(
+        (config) => config.name === table
+      );
+      if (tableIndex < 0) {
+        return;
+      }
+      if (pendingUpdateTableConfig.columnConfigs.length === 0) {
+        schema.config.tableConfigs.splice(tableIndex, 1);
+      } else {
+        schema.config.tableConfigs[tableIndex] = pendingUpdateTableConfig;
+      }
+    },
     updateColumnConfig(
       schema: Schema,
       table: string,
@@ -183,19 +209,27 @@ export const useSchemaEditorV1Store = defineStore("SchemaEditorV1", {
       const index = tableConfig.columnConfigs.findIndex(
         (config) => config.name === column
       );
+      let pendingUpdateColumnConfig = ColumnConfig.fromPartial({
+        ...config,
+        name: column,
+      });
+      if (index >= 0) {
+        pendingUpdateColumnConfig = ColumnConfig.fromPartial({
+          ...tableConfig.columnConfigs[index],
+          ...config,
+        });
+      }
+
+      if (this.isEmptyColumnConfig(pendingUpdateColumnConfig)) {
+        return this.removeColumnConfig(schema, table, column);
+      }
+
       const pendingUpdateTableConfig = cloneDeep(tableConfig);
       if (index < 0) {
-        pendingUpdateTableConfig.columnConfigs.push(
-          ColumnConfig.fromPartial({
-            name: column,
-            ...config,
-          })
-        );
+        pendingUpdateTableConfig.columnConfigs.push(pendingUpdateColumnConfig);
       } else {
-        pendingUpdateTableConfig.columnConfigs[index] = {
-          ...pendingUpdateTableConfig.columnConfigs[index],
-          ...config,
-        };
+        pendingUpdateTableConfig.columnConfigs[index] =
+          pendingUpdateColumnConfig;
       }
 
       const tableIndex = schema.config.tableConfigs.findIndex(

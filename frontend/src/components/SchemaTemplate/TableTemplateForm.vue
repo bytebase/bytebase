@@ -394,7 +394,7 @@ const handleApplyColumnTemplate = (
   state.table.columnList.push(column);
 
   if (template.config) {
-    onColumnConfigUpdate(template.config);
+    onColumnConfigUpdate(column.name, template.config);
   }
 };
 
@@ -406,12 +406,20 @@ const onClassificationSelect = (id: string) => {
   state.showClassificationDrawer = false;
 };
 
-const onColumnConfigUpdate = (config: ColumnConfig) => {
+const onColumnConfigUpdate = (
+  column: string,
+  config: Partial<ColumnConfig>
+) => {
   const index = state.tableConfig.columnConfigs.findIndex(
     (columnConfig) => config.name === columnConfig.name
   );
   if (index < 0) {
-    state.tableConfig.columnConfigs.push(config);
+    state.tableConfig.columnConfigs.push(
+      ColumnConfig.fromPartial({
+        ...config,
+        name: column,
+      })
+    );
   } else {
     state.tableConfig.columnConfigs[index] = {
       ...state.tableConfig.columnConfigs[index],

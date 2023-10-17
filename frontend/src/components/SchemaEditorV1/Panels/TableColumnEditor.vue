@@ -320,7 +320,11 @@ const emit = defineEmits<{
   (event: "onForeignKeyEdit", column: Column): void;
   (event: "onForeignKeyClick", column: Column): void;
   (event: "onPrimaryKeySet", column: Column, isPrimaryKey: boolean): void;
-  (event: "onUpdate:columnConfig", columnConfig: ColumnConfig): void;
+  (
+    event: "onUpdate:columnConfig",
+    column: string,
+    columnConfig: Partial<ColumnConfig>
+  ): void;
 }>();
 
 const state = reactive<LocalState>({
@@ -539,24 +543,13 @@ const onSemanticTypeApply = async (semanticTypeId: string) => {
     return;
   }
 
-  updateColumnConfig(state.pendingUpdateColumn.name, { semanticTypeId });
+  emit("onUpdate:columnConfig", state.pendingUpdateColumn.name, {
+    semanticTypeId,
+  });
 };
 
 const onSemanticTypeRemove = async (column: string) => {
-  updateColumnConfig(column, { semanticTypeId: "" });
-};
-
-const updateColumnConfig = async (
-  column: string,
-  config: Partial<ColumnConfig>
-) => {
-  emit(
-    "onUpdate:columnConfig",
-    ColumnConfig.fromPartial({
-      ...config,
-      name: column,
-    })
-  );
+  emit("onUpdate:columnConfig", column, { semanticTypeId: "" });
 };
 </script>
 

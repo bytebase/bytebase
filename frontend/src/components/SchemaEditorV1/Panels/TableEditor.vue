@@ -167,11 +167,14 @@ const tableConfig = computed(() => {
   return schemaEditorV1Store.getTableConfig(schema.value, table.value.name);
 });
 
-const onColumnConfigUpdate = (config: ColumnConfig) => {
+const onColumnConfigUpdate = (
+  column: string,
+  config: Partial<ColumnConfig>
+) => {
   schemaEditorV1Store.updateColumnConfig(
     schema.value,
     table.value.name,
-    config.name,
+    column,
     config
   );
 };
@@ -393,6 +396,11 @@ const handleDropColumn = (column: Column) => {
         foreignKey.referencedColumnIdList.splice(columnRefIndex, 1);
       }
     }
+    schemaEditorV1Store.removeColumnConfig(
+      schema.value,
+      table.value.name,
+      column.name
+    );
   } else {
     column.status = "dropped";
   }
