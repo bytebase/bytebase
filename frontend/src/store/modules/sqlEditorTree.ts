@@ -24,6 +24,7 @@ import {
   StatefulSQLEditorTreeFactor as StatefulFactor,
   LeafTreeNodeTypes,
   Connection,
+  DEFAULT_PROJECT_V1_NAME,
 } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { Policy } from "@/types/proto/v1/org_policy_service";
@@ -354,8 +355,11 @@ const buildSubTree = (
   // group (project, instance, project, label) nodes
   const nodes: TreeNode[] = [];
   const factor = factorList[factorIndex];
-  const sortedGroups = groupDatabaseListByFactor(databaseList, factor);
-  for (const [value, childrenDatabaseList] of sortedGroups) {
+
+  const groups = groupBy(databaseList, (db) =>
+    getSemanticFactorValue(db, factor)
+  );
+  for (const [value, childrenDatabaseList] of groups) {
     const groupNode = mapGroupNode(factor, value, parent);
     groupNode.children = buildSubTree(
       childrenDatabaseList,
@@ -370,9 +374,29 @@ const buildSubTree = (
 
 const sortNodesIfNeeded = (nodes: TreeNode[], factor: Factor) => {
   if (factor === "environment") {
+    // Sort by environment order DESC. Put production envs to the first.
     return orderBy(
       nodes as TreeNode<"environment">[],
       [(node) => node.meta.target.order],
+      ["desc"]
+    );
+  }
+  if (factor.startsWith("label:")) {
+    // Sort in lexicographical order, and put <empty value> to the last
+    return orderBy(
+      nodes as TreeNode<"label">[],
+      [
+        (node) => (node.meta.target.value ? -1 : 1), // Empty value to the last,
+        (node) => node.meta.target.value, // lexicographical order then
+      ],
+      ["asc", "asc"]
+    );
+  }
+  if (factor === "project") {
+    // Put unassigned project to the last
+    return orderBy(
+      nodes as TreeNode<"project">[],
+      [(node) => (node.meta.target.name === DEFAULT_PROJECT_V1_NAME ? 1 : -1)],
       ["asc"]
     );
   }
@@ -510,26 +534,4 @@ export const resolveOpeningDatabaseListFromTabList = () => {
     }),
     (meta) => meta.target.name
   );
-};
-const groupDatabaseListByFactor = (
-  databaseList: ComposedDatabase[],
-  factor: Factor
-) => {
-  const groups = groupBy(databaseList, (db) =>
-    getSemanticFactorValue(db, factor)
-  );
-  const groupList = Array.from(groups);
-  if (factor.startsWith("label:")) {
-    // Sort in lexicographical order, and put <empty value> to the last
-    return orderBy(
-      groupList,
-      [
-        ([value]) => (value ? -1 : 1), // Empty value to the last,
-        ([value]) => value, // lexicographical order then
-      ],
-      ["asc", "asc"]
-    );
-  }
-
-  return groupList;
 };
