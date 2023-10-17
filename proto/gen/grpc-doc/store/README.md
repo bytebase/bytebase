@@ -132,6 +132,7 @@
     - [MaskingPolicy](#bytebase-store-MaskingPolicy)
     - [MaskingRulePolicy](#bytebase-store-MaskingRulePolicy)
     - [MaskingRulePolicy.MaskingRule](#bytebase-store-MaskingRulePolicy-MaskingRule)
+    - [RolloutPolicy](#bytebase-store-RolloutPolicy)
     - [SQLReviewPolicy](#bytebase-store-SQLReviewPolicy)
     - [SQLReviewRule](#bytebase-store-SQLReviewRule)
   
@@ -2069,6 +2070,24 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | id | [string](#string) |  | A unique identifier for a node in UUID format. |
 | condition | [google.type.Expr](#google-type-Expr) |  |  |
 | masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-RolloutPolicy"></a>
+
+### RolloutPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| automatic | [bool](#bool) |  |  |
+| workspace_roles | [string](#string) | repeated |  |
+| project_roles | [string](#string) | repeated |  |
+| issue_roles | [string](#string) | repeated | roles/LAST_APPROVER roles/CREATOR |
 
 
 
