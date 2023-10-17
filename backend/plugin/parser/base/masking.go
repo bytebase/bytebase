@@ -1,11 +1,13 @@
 package base
 
 import (
+	"cmp"
+
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 const (
-	DefaultMaskingLevel storepb.MaskingLevel = storepb.MaskingLevel_NONE
+	defaultMaskingLevel storepb.MaskingLevel = storepb.MaskingLevel_NONE
 	MaxMaskingLevel     storepb.MaskingLevel = storepb.MaskingLevel_FULL
 )
 
@@ -45,13 +47,13 @@ type TableSchema struct {
 // ColumnInfo is the column info using to extract sensitive fields.
 type ColumnInfo struct {
 	Name              string
-	MaskingAttributes *MaskingAttributes
+	MaskingAttributes MaskingAttributes
 }
 
 // SensitiveField is the struct about SELECT fields.
 type SensitiveField struct {
 	Name              string
-	MaskingAttributes *MaskingAttributes
+	MaskingAttributes MaskingAttributes
 }
 
 // FieldInfo is the masking field info.
@@ -60,7 +62,7 @@ type FieldInfo struct {
 	Table            string
 	Schema           string
 	Database         string
-	MaskingAttrbutes *MaskingAttributes
+	MaskingAttrbutes MaskingAttributes
 }
 
 // MaskingAttributes contain the masking related attributes on the column, likes MaskingLevel.
@@ -68,9 +70,19 @@ type MaskingAttributes struct {
 	MaskingLevel storepb.MaskingLevel
 }
 
-// Transmit transmits the masking attributes to other.
-func (m *MaskingAttributes) Transmit(other *MaskingAttributes) {
-	other.MaskingLevel = m.MaskingLevel
+// TransmittedBy transmits the masking attributes from other to self.
+func (m *MaskingAttributes) TransmittedBy(other MaskingAttributes) (changed bool) {
+	changed = false
+	if cmp.Less(other.MaskingLevel, m.MaskingLevel) {
+		m.MaskingLevel = other.MaskingLevel
+		changed = true
+	}
+	return changed
+}
+
+// IsNeverChangeInTransmission returns true if the masking attributes would not never change in transmission, it can be used to do the quit early optimization.
+func (m *MaskingAttributes) IsNeverChangeInTransmission() bool {
+	return m.MaskingLevel == MaxMaskingLevel
 }
 
 // Clone clones the masking attributes.
@@ -80,13 +92,21 @@ func (m *MaskingAttributes) Clone() *MaskingAttributes {
 	}
 }
 
+// NewEmptyMaskingAttributes creates a new empty masking attributes.
+func NewEmptyMaskingAttributes() MaskingAttributes {
+	return MaskingAttributes{
+		MaskingLevel: defaultMaskingLevel,
+	}
+}
+
 // NewMaskingAttributes creates a new masking attributes.
-func NewMaskingAttributes(lvl storepb.MaskingLevel) *MaskingAttributes {
-	return &MaskingAttributes{
+func NewMaskingAttributes(lvl storepb.MaskingLevel) MaskingAttributes {
+	return MaskingAttributes{
 		MaskingLevel: lvl,
 	}
 }
 
-func NewDefaultMaskingAttributes() *MaskingAttributes {
-	return NewMaskingAttributes(DefaultMaskingLevel)
+// NewDefaultMaskingAttributes creates a new masking attributes with default masking level.
+func NewDefaultMaskingAttributes() MaskingAttributes {
+	return NewMaskingAttributes(defaultMaskingLevel)
 }
