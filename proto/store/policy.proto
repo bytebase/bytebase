@@ -7,6 +7,15 @@ import "store/common.proto";
 
 option go_package = "generated-go/store";
 
+message RolloutPolicy {
+  bool auto = 1;
+  repeated string workspace_roles = 2;
+  repeated string project_roles = 3;
+  // roles/LAST_APPROVER
+  // roles/CREATOR
+  repeated string issue_roles = 4;
+}
+
 message IamPolicy {
   // Collection of binding.
   repeated Binding bindings = 1;
