@@ -1,4 +1,4 @@
-import { cloneDeep } from "lodash-es";
+import { cloneDeep, isEqual } from "lodash-es";
 import { Ref, computed } from "vue";
 import {
   mergeSchemaEditToMetadata,
@@ -8,7 +8,6 @@ import { schemaDesignServiceClient } from "@/grpcweb";
 import { t } from "@/plugins/i18n";
 import { useDBSchemaV1Store, useSchemaEditorV1Store } from "@/store";
 import { ComposedDatabase } from "@/types";
-import { getDatabaseEditListWithSchemaEditor } from "../utils";
 
 export const useSchemaEditorSQLCheck = (params: {
   selectedTab: Ref<"raw-sql" | "schema-editor">;
@@ -34,7 +33,10 @@ export const useSchemaEditorSQLCheck = (params: {
     if (selectedTab.value === "raw-sql") {
       return editStatement.value;
     } else {
-      return JSON.stringify(getDatabaseEditListWithSchemaEditor());
+      const databaseSchema = schemaEditorV1Store.resourceMap["database"].get(
+        database.value.name
+      );
+      return JSON.stringify(databaseSchema);
     }
   });
 
@@ -42,13 +44,6 @@ export const useSchemaEditorSQLCheck = (params: {
     errors: string[];
     statement: string;
   }> => {
-    const databaseEditList = getDatabaseEditListWithSchemaEditor();
-    if (databaseEditList.length !== 1) {
-      return {
-        errors: [t("schema-editor.nothing-changed")],
-        statement: "",
-      };
-    }
     const db = database.value;
     const databaseSchema = schemaEditorV1Store.resourceMap["database"].get(
       db.name
@@ -65,6 +60,12 @@ export const useSchemaEditorSQLCheck = (params: {
       databaseSchema.schemaList,
       cloneDeep(metadata)
     );
+    if (isEqual(metadata, mergedMetadata)) {
+      return {
+        errors: [t("schema-editor.nothing-changed")],
+        statement: "",
+      };
+    }
     const validationMessages = validateDatabaseMetadata(mergedMetadata);
     if (validationMessages.length > 0) {
       return {
@@ -72,6 +73,7 @@ export const useSchemaEditorSQLCheck = (params: {
         statement: "",
       };
     }
+
     try {
       const { diff } = await schemaDesignServiceClient.diffMetadata(
         {
