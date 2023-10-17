@@ -704,7 +704,7 @@ func (s *SchedulerV2) ClearRunningTaskRuns(ctx context.Context) error {
 		for _, taskRun := range runningTaskRuns {
 			taskRunIDs = append(taskRunIDs, taskRun.ID)
 		}
-		if err := s.store.BatchPatchTaskRunStatus(ctx, taskRunIDs, api.TaskRunCanceled, api.SystemBotID); err != nil {
+		if err := s.store.BatchCancelTaskRuns(ctx, taskRunIDs, api.SystemBotID); err != nil {
 			return errors.Wrapf(err, "failed to change task run %v's status to %s", taskRunIDs, api.TaskRunCanceled)
 		}
 	}

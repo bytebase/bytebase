@@ -464,6 +464,7 @@ func convertToTaskRun(stateCfg *state.State, taskRun *store.TaskRunMessage) *v1p
 		Updater:       fmt.Sprintf("users/%s", taskRun.Updater.Email),
 		CreateTime:    timestamppb.New(time.Unix(taskRun.CreatedTs, 0)),
 		UpdateTime:    timestamppb.New(time.Unix(taskRun.UpdatedTs, 0)),
+		StartTime:     timestamppb.New(time.Unix(taskRun.StartedTs, 0)),
 		Title:         taskRun.Name,
 		Status:        convertToTaskRunStatus(taskRun.Status),
 		Detail:        taskRun.ResultProto.Detail,
