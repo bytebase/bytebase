@@ -2,7 +2,6 @@ package snowflake
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
@@ -42,8 +41,7 @@ type snowsqlRewriter struct {
 	limitCount int
 }
 
-func (r *snowsqlRewriter) EnterQuery_statement(ctx *snowsql.Query_statementContext) {
-	log.Printf("query statement: %s\n", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx))
+func (r *snowsqlRewriter) EnterQuery_statement(*snowsql.Query_statementContext) {
 	r.depth++
 }
 
@@ -83,7 +81,6 @@ func (r *snowsqlRewriter) ExitQuery_statement(ctx *snowsql.Query_statementContex
 		return
 	}
 
-	log.Println(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(selectCtx.GetRuleContext()))
 	// append after select_optional_clauses
 	r.rewriter.InsertAfterDefault(selectCtx.Select_optional_clauses().GetStop().GetTokenIndex(), fmt.Sprintf(" LIMIT %d", r.limitCount))
 }
