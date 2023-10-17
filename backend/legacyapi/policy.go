@@ -31,7 +31,10 @@ const (
 	// PolicyTypeWorkspaceIAM is the workspace IAM policy type.
 	PolicyTypeWorkspaceIAM PolicyType = "bb.policy.workspace-iam"
 	// PolicyTypePipelineApproval is the approval policy type.
+	// Deprecated: use PolicyTypeRollout instead.
 	PolicyTypePipelineApproval PolicyType = "bb.policy.pipeline-approval"
+	// PolicyTypeRollout is the rollout policy type.
+	PolicyTypeRollout PolicyType = "bb.policy.rollout"
 	// PolicyTypeBackupPlan is the backup plan policy type.
 	PolicyTypeBackupPlan PolicyType = "bb.policy.backup-plan"
 	// PolicyTypeSQLReview is the sql review policy type.
@@ -90,6 +93,7 @@ var (
 	AllowedResourceTypes = map[PolicyType][]PolicyResourceType{
 		PolicyTypeWorkspaceIAM:     {PolicyResourceTypeWorkspace},
 		PolicyTypePipelineApproval: {PolicyResourceTypeEnvironment},
+		PolicyTypeRollout:          {PolicyResourceTypeEnvironment},
 		PolicyTypeBackupPlan:       {PolicyResourceTypeEnvironment},
 		PolicyTypeSQLReview:        {PolicyResourceTypeEnvironment},
 		PolicyTypeEnvironmentTier:  {PolicyResourceTypeEnvironment},
