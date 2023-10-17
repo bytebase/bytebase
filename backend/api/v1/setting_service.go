@@ -1074,7 +1074,7 @@ func convertSchemaTemplateSetting(template *storepb.SchemaTemplateSetting) *v1pb
 		})
 	}
 
-	return nil
+	return v1Setting
 }
 
 func convertV1SchemaTemplateSetting(template *v1pb.SchemaTemplateSetting) *storepb.SchemaTemplateSetting {
@@ -1105,5 +1105,5 @@ func convertV1SchemaTemplateSetting(template *v1pb.SchemaTemplateSetting) *store
 		})
 	}
 
-	return nil
+	return v1Setting
 }
