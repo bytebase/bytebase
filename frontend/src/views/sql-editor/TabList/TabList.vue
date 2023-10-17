@@ -53,12 +53,13 @@
 <script lang="ts" setup>
 import { useResizeObserver } from "@vueuse/core";
 import { useDialog } from "naive-ui";
+import { storeToRefs } from "pinia";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { ref, reactive, nextTick, computed, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import Draggable from "vuedraggable";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { useSQLEditorStore, useTabStore } from "@/store";
+import { useTabStore, useActuatorV1Store } from "@/store";
 import type { TabInfo } from "@/types";
 import { TabMode } from "@/types";
 import {
@@ -86,6 +87,7 @@ const state = reactive<LocalState>({
   dragging: false,
   hoverTabId: "",
 });
+const { pageMode } = storeToRefs(useActuatorV1Store());
 const { events: sheetEvents } = useSheetContext();
 const tabListRef = ref<InstanceType<typeof Draggable>>();
 const context = provideTabListContext();
@@ -97,7 +99,7 @@ const scrollState = reactive({
 });
 
 const showProfileDropdown = computed(() => {
-  return useSQLEditorStore().mode === "BUNDLED";
+  return pageMode.value === "BUNDLED";
 });
 
 const handleSelectTab = async (tab: TabInfo) => {

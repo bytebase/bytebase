@@ -19,7 +19,6 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
     queryHistoryList: [],
     isFetchingQueryHistory: false,
     isFetchingSheet: false,
-    mode: "BUNDLED",
   }),
 
   actions: {
