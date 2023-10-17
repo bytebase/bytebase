@@ -106,11 +106,11 @@ func (s *SchedulerV2) scheduleAutoRolloutTasks(ctx context.Context) error {
 
 	var autoRolloutEnvironmentIDs []int
 	for _, environment := range environments {
-		policy, err := s.store.GetPipelineApprovalPolicy(ctx, environment.UID)
+		policy, err := s.store.GetRolloutPolicy(ctx, environment.UID)
 		if err != nil {
-			return errors.Wrapf(err, "failed to get approval policy for environment ID %d", environment.UID)
+			return errors.Wrapf(err, "failed to get rollout policy for environment ID %d", environment.UID)
 		}
-		if policy.Value != api.PipelineApprovalValueManualNever {
+		if !policy.Automatic {
 			continue
 		}
 		autoRolloutEnvironmentIDs = append(autoRolloutEnvironmentIDs, environment.UID)
