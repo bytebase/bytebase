@@ -341,6 +341,9 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, tx *Tx, patch *TaskRun
 		}
 		set, args = append(set, fmt.Sprintf("result = $%d", len(args)+1)), append(args, result)
 	}
+	if patch.Status == api.TaskRunRunning {
+		set = append(set, "started_ts = extract(epoch from now())")
+	}
 
 	// Build WHERE clause.
 	where := []string{"TRUE"}
