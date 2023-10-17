@@ -469,18 +469,13 @@ func (*Store) findTaskRunImpl(ctx context.Context, tx *Tx, find *TaskRunFind) ([
 	return taskRuns, nil
 }
 
-// BatchPatchTaskRunStatus updates the status of a list of taskRuns.
-func (s *Store) BatchPatchTaskRunStatus(ctx context.Context, taskRunIDs []int, status api.TaskRunStatus, updaterID int) error {
-	var ids []string
-	for _, id := range taskRunIDs {
-		ids = append(ids, fmt.Sprintf("%d", id))
-	}
-	query := fmt.Sprintf(`
+// BatchCancelTaskRuns updates the status of taskRuns to CANCELED.
+func (s *Store) BatchCancelTaskRuns(ctx context.Context, taskRunIDs []int, updaterID int) error {
+	query := `
 		UPDATE task_run
 		SET status = $1, updater_id = $2
-		WHERE id IN (%s);
-	`, strings.Join(ids, ","))
-	if _, err := s.db.db.ExecContext(ctx, query, status, updaterID); err != nil {
+		WHERE id = ANY($3)`
+	if _, err := s.db.db.ExecContext(ctx, query, api.TaskRunCanceled, updaterID, taskRunIDs); err != nil {
 		return err
 	}
 	return nil
