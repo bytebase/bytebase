@@ -51,7 +51,7 @@ export function sQLReviewRuleLevelToJSON(object: SQLReviewRuleLevel): string {
 }
 
 export interface RolloutPolicy {
-  auto: boolean;
+  automatic: boolean;
   workspaceRoles: string[];
   projectRoles: string[];
   /**
@@ -188,13 +188,13 @@ export interface SQLReviewRule {
 }
 
 function createBaseRolloutPolicy(): RolloutPolicy {
-  return { auto: false, workspaceRoles: [], projectRoles: [], issueRoles: [] };
+  return { automatic: false, workspaceRoles: [], projectRoles: [], issueRoles: [] };
 }
 
 export const RolloutPolicy = {
   encode(message: RolloutPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.auto === true) {
-      writer.uint32(8).bool(message.auto);
+    if (message.automatic === true) {
+      writer.uint32(8).bool(message.automatic);
     }
     for (const v of message.workspaceRoles) {
       writer.uint32(18).string(v!);
@@ -220,7 +220,7 @@ export const RolloutPolicy = {
             break;
           }
 
-          message.auto = reader.bool();
+          message.automatic = reader.bool();
           continue;
         case 2:
           if (tag !== 18) {
@@ -254,7 +254,7 @@ export const RolloutPolicy = {
 
   fromJSON(object: any): RolloutPolicy {
     return {
-      auto: isSet(object.auto) ? Boolean(object.auto) : false,
+      automatic: isSet(object.automatic) ? Boolean(object.automatic) : false,
       workspaceRoles: Array.isArray(object?.workspaceRoles) ? object.workspaceRoles.map((e: any) => String(e)) : [],
       projectRoles: Array.isArray(object?.projectRoles) ? object.projectRoles.map((e: any) => String(e)) : [],
       issueRoles: Array.isArray(object?.issueRoles) ? object.issueRoles.map((e: any) => String(e)) : [],
@@ -263,7 +263,7 @@ export const RolloutPolicy = {
 
   toJSON(message: RolloutPolicy): unknown {
     const obj: any = {};
-    message.auto !== undefined && (obj.auto = message.auto);
+    message.automatic !== undefined && (obj.automatic = message.automatic);
     if (message.workspaceRoles) {
       obj.workspaceRoles = message.workspaceRoles.map((e) => e);
     } else {
@@ -288,7 +288,7 @@ export const RolloutPolicy = {
 
   fromPartial(object: DeepPartial<RolloutPolicy>): RolloutPolicy {
     const message = createBaseRolloutPolicy();
-    message.auto = object.auto ?? false;
+    message.automatic = object.automatic ?? false;
     message.workspaceRoles = object.workspaceRoles?.map((e) => e) || [];
     message.projectRoles = object.projectRoles?.map((e) => e) || [];
     message.issueRoles = object.issueRoles?.map((e) => e) || [];

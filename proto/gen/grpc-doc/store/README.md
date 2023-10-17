@@ -2084,7 +2084,7 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| auto | [bool](#bool) |  |  |
+| automatic | [bool](#bool) |  |  |
 | workspace_roles | [string](#string) | repeated |  |
 | project_roles | [string](#string) | repeated |  |
 | issue_roles | [string](#string) | repeated | roles/LAST_APPROVER roles/CREATOR |
