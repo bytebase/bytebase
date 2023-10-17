@@ -58,13 +58,13 @@ import { storeToRefs } from "pinia";
 import { ref, computed, nextTick, watch, h } from "vue";
 import { useI18n } from "vue-i18n";
 import {
+  useActuatorV1Store,
   useCurrentUserV1,
   useDBSchemaV1Store,
   useDatabaseV1Store,
   useInstanceV1Store,
   useIsLoggedIn,
   useTabStore,
-  useVendersStore,
 } from "@/store";
 import { useSQLEditorTreeStore } from "@/store/modules/sqlEditorTree";
 import type {
@@ -113,7 +113,7 @@ defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { mode } = storeToRefs(useVendersStore());
+const { pageMode } = storeToRefs(useActuatorV1Store());
 const treeStore = useSQLEditorTreeStore();
 const tabStore = useTabStore();
 const databaseStore = useDatabaseV1Store();
@@ -166,7 +166,7 @@ const dropdownOptions = computed((): DropdownOptionWithTreeNode[] => {
         });
       }
     }
-    if (type === "database" && mode.value === "BUNDLED") {
+    if (type === "database" && pageMode.value === "BUNDLED") {
       const database = target as ComposedDatabase;
       if (instanceV1HasAlterSchema(database.instanceEntity)) {
         items.push({

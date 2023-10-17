@@ -28,13 +28,13 @@ import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import BannersWrapper from "@/components/BannersWrapper.vue";
 import ProvideSQLEditorContext from "@/components/ProvideSQLEditorContext.vue";
-import { pushNotification, useActuatorV1Store, useVendersStore } from "@/store";
+import { pushNotification, useActuatorV1Store } from "@/store";
 
 const actuatorStore = useActuatorV1Store();
-const { mode } = storeToRefs(useVendersStore());
+const { pageMode } = storeToRefs(actuatorStore);
 
 const showBanners = computed(() => {
-  return mode.value === "BUNDLED";
+  return pageMode.value === "BUNDLED";
 });
 
 const ping = () => {

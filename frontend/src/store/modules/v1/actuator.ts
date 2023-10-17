@@ -14,7 +14,15 @@ const EXTERNAL_URL_PLACEHOLDER =
 const GITHUB_API_LIST_BYTEBASE_RELEASE =
   "https://api.github.com/repos/bytebase/bytebase/releases";
 
+export type PageMode =
+  // General mode. Console is full-featured and SQL Editor is bundled in the layout.
+  | "BUNDLED"
+  // Vender customized mode. Hide certain parts (e.g., headers, sidebars) and
+  // some features are disabled or hidden.
+  | "STANDALONE";
+
 interface ActuatorState {
+  pageMode: PageMode;
   serverInfo?: ActuatorInfo;
   releaseInfo: RemovableRef<ReleaseInfo>;
   debugLogList: DebugLog[];
@@ -22,6 +30,7 @@ interface ActuatorState {
 
 export const useActuatorV1Store = defineStore("actuator_v1", {
   state: (): ActuatorState => ({
+    pageMode: "BUNDLED",
     serverInfo: undefined,
     releaseInfo: useLocalStorage("bytebase_release", {
       ignoreRemindModalTillNextRelease: false,

@@ -59,7 +59,7 @@ import { ref, reactive, nextTick, computed, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import Draggable from "vuedraggable";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { useTabStore, useVendersStore } from "@/store";
+import { useTabStore, useActuatorV1Store } from "@/store";
 import type { TabInfo } from "@/types";
 import { TabMode } from "@/types";
 import {
@@ -87,7 +87,7 @@ const state = reactive<LocalState>({
   dragging: false,
   hoverTabId: "",
 });
-const { mode } = storeToRefs(useVendersStore());
+const { pageMode } = storeToRefs(useActuatorV1Store());
 const { events: sheetEvents } = useSheetContext();
 const tabListRef = ref<InstanceType<typeof Draggable>>();
 const context = provideTabListContext();
@@ -99,7 +99,7 @@ const scrollState = reactive({
 });
 
 const showProfileDropdown = computed(() => {
-  return mode.value === "BUNDLED";
+  return pageMode.value === "BUNDLED";
 });
 
 const handleSelectTab = async (tab: TabInfo) => {
