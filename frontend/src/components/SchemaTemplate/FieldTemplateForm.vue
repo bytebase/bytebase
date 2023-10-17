@@ -169,15 +169,28 @@
             <label for="default-value" class="textlabel">
               {{ $t("schema-template.form.default-value") }}
             </label>
-            <input
-              v-model="state.column!.default"
-              required
-              name="default-value"
-              type="text"
-              class="textfield mt-1 w-full"
-              :placeholder="getDefaultValue(state.column)"
-              :disabled="!allowEdit"
-            />
+            <div class="flex flex-row items-center relative">
+              <input
+                class="textfield mt-1 w-full"
+                type="text"
+                :value="getColumnDefaultDisplayString(state.column!)"
+                :disabled="!allowEdit"
+                :placeholder="getColumnDefaultValuePlaceholder(state.column!)"
+                @change="(e) => handleColumnDefaultInputChange(e)"
+              />
+              <NDropdown
+                trigger="click"
+                :disabled="!allowEdit"
+                :options="getColumnDefaultValueOptions(state.engine, state.column!.type)"
+                @select="(key: string) => handleColumnDefaultFieldChange(key)"
+              >
+                <button class="absolute right-5">
+                  <heroicons-solid:chevron-up-down
+                    class="w-4 h-auto text-gray-400"
+                  />
+                </button>
+              </NDropdown>
+            </div>
           </div>
 
           <!-- nullable -->
@@ -248,11 +261,25 @@
     @dismiss="state.showClassificationDrawer = false"
     @select="onClassificationSelect"
   />
+
+  <ColumnDefaultValueExpressionModal
+    v-if="state.showColumnDefaultValueExpressionModal"
+    :expression="state.column!.defaultExpression"
+    @close="state.showColumnDefaultValueExpressionModal = false"
+    @update:expression="handleSelectedColumnDefaultValueExpressionChange"
+  />
 </template>
 
 <script lang="ts" setup>
 import { isEqual, cloneDeep } from "lodash-es";
+import { NDropdown } from "naive-ui";
 import { computed, reactive, watch } from "vue";
+import {
+  getColumnDefaultDisplayString,
+  getColumnDefaultValuePlaceholder,
+  getDefaultValueByKey,
+  getColumnDefaultValueOptions,
+} from "@/components/SchemaEditorV1/utils/columnDefaultValue";
 import { DrawerContent } from "@/components/v2";
 import { useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
@@ -268,12 +295,7 @@ import {
   convertKVListToLabels,
   convertLabelsToKVList,
 } from "@/utils";
-import {
-  engineList,
-  getDefaultValue,
-  caregoryList,
-  classificationConfig,
-} from "./utils";
+import { engineList, caregoryList, classificationConfig } from "./utils";
 
 const props = defineProps<{
   create: boolean;
@@ -285,6 +307,7 @@ const emit = defineEmits(["dismiss"]);
 
 interface LocalState extends SchemaTemplateSetting_FieldTemplate {
   showClassificationDrawer: boolean;
+  showColumnDefaultValueExpressionModal: boolean;
   kvList: { key: string; value: string }[];
 }
 
@@ -294,9 +317,11 @@ const state = reactive<LocalState>({
   category: props.template.category,
   column: Object.assign({}, props.template.column),
   showClassificationDrawer: false,
+  showColumnDefaultValueExpressionModal: false,
   config: Object.assign({}, props.template.config),
   kvList: [],
 });
+
 const settingStore = useSettingV1Store();
 const allowEdit = computed(() => {
   return (
@@ -419,5 +444,53 @@ const onClassificationSelect = (id: string) => {
   }
   state.column.classification = id;
   state.showClassificationDrawer = false;
+};
+
+const handleColumnDefaultInputChange = (event: Event) => {
+  const value = (event.target as HTMLInputElement).value;
+  if (!state.column) {
+    return;
+  }
+  state.column.hasDefault = true;
+  state.column.defaultNull = undefined;
+  if (state.column.defaultString !== undefined) {
+    state.column.defaultString = value;
+    return;
+  }
+  // By default, user input is treated as expression.
+  state.column.defaultExpression = value;
+};
+
+const handleColumnDefaultFieldChange = (key: string) => {
+  if (key === "expression") {
+    state.showColumnDefaultValueExpressionModal = true;
+    return;
+  }
+
+  const defaultValue = getDefaultValueByKey(key);
+  if (!defaultValue || !state.column) {
+    return;
+  }
+
+  state.column.hasDefault = defaultValue.hasDefault;
+  state.column.defaultNull = defaultValue.defaultNull;
+  state.column.defaultString = defaultValue.defaultString;
+  state.column.defaultExpression = defaultValue.defaultExpression;
+  if (state.column.hasDefault && state.column.defaultNull) {
+    state.column.nullable = true;
+  }
+};
+
+const handleSelectedColumnDefaultValueExpressionChange = (
+  expression: string
+) => {
+  if (!state.column) {
+    return;
+  }
+  state.column.hasDefault = true;
+  state.column.defaultNull = undefined;
+  state.column.defaultString = undefined;
+  state.column.defaultExpression = expression;
+  state.showColumnDefaultValueExpressionModal = false;
 };
 </script>

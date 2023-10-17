@@ -106,7 +106,7 @@
           <NDropdown
             trigger="click"
             :disabled="readonly || disableAlterColumn(column)"
-            :options="getColumnDefaultValueOptions(column)"
+            :options="getColumnDefaultValueOptions(engine, column.type)"
             @select="(key: string) => handleColumnDefaultFieldChange(column, key)"
           >
             <button class="absolute right-5">
@@ -249,9 +249,10 @@ import { Table, Column, ForeignKey } from "@/types/v1/schemaEditor";
 import { getDataTypeSuggestionList } from "@/utils";
 import ColumnDefaultValueExpressionModal from "../Modals/ColumnDefaultValueExpressionModal.vue";
 import {
-  DefaultValueOption,
-  getColumnTypeDefaultValueOptions,
+  getColumnDefaultDisplayString,
+  getColumnDefaultValuePlaceholder,
   getDefaultValueByKey,
+  getColumnDefaultValueOptions,
 } from "../utils/columnDefaultValue";
 
 interface LocalState {
@@ -360,40 +361,6 @@ const columnHeaderList = computed(() => {
     },
   ].filter((header) => !header.hide);
 });
-
-const getColumnDefaultDisplayString = (column: Column) => {
-  if (!column.hasDefault || column.defaultNull) {
-    return undefined;
-  }
-  return column.defaultString || column.defaultExpression || "";
-};
-
-const getColumnDefaultValuePlaceholder = (column: Column): string => {
-  if (!column.hasDefault) {
-    return "No default";
-  }
-  if (column.defaultNull) {
-    return "Null";
-  }
-  if (column.defaultString !== undefined) {
-    return column.defaultString || "Empty string";
-  }
-  if (column.defaultExpression !== undefined) {
-    return column.defaultExpression || "Empty expression";
-  }
-  return "";
-};
-
-const getColumnDefaultValueOptions = (column: Column): DefaultValueOption[] => {
-  return getColumnTypeDefaultValueOptions(props.engine, column.type).map(
-    (option) => {
-      return {
-        ...option,
-        label: t(`schema-editor.default.${option.key}`),
-      };
-    }
-  );
-};
 
 const getColumnClassList = (column: Column, index: number): string[] => {
   const classList = props.getColumnItemComputedClassList(column);

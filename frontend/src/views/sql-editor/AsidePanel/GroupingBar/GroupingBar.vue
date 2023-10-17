@@ -1,6 +1,6 @@
 <template>
-  <div class="flex flex-row items-start min-h-[34px] pt-0.5 bg-gray-50">
-    <div class="flex-1">
+  <div class="flex flex-row items-start min-h-[34px] pt-0.5 bg-control-bg">
+    <div class="flex-1 mt-0.5">
       <NTabs
         v-if="viewMode === 'PRESET'"
         :value="factorList[0].factor"
@@ -16,10 +16,12 @@
         v-if="viewMode === 'CUSTOM'"
         class="flex flex-row items-start text-sm"
       >
-        <div class="text-control-light p-1 whitespace-nowrap leading-6">
+        <div class="text-control-light ml-2 p-1 whitespace-nowrap mt-0.5">
           {{ $t("sql-editor.grouping") }}
         </div>
-        <div class="flex flex-row items-start flex-wrap p-1 gap-x-2 gap-y-2">
+        <div
+          class="flex flex-row items-start flex-wrap p-1 gap-x-1.5 gap-y-1.5"
+        >
           <FactorTag
             v-for="(factor, i) in factorList"
             :key="i"
@@ -32,7 +34,7 @@
       </div>
     </div>
 
-    <div class="shrink-0 p-1">
+    <div class="shrink-0 mt-0.5 p-1">
       <NPopover
         raw
         :show-arrow="false"
@@ -44,7 +46,7 @@
           <NButton quaternary size="small" style="--n-padding: 0 5px">
             <template #icon>
               <heroicons:adjustments-horizontal
-                class="w-4 h-4"
+                class="w-6 h-6"
                 :class="viewMode === 'CUSTOM' && 'text-accent'"
               />
             </template>
@@ -87,6 +89,12 @@ const toggleDisabled = (factor: StatefulFactor, index: number) => {
 
 const remove = (factor: StatefulFactor, index: number) => {
   factorList.value.splice(index, 1);
+  if (factorList.value.length === 0) {
+    factorList.value.push({
+      factor: "project",
+      disabled: false,
+    });
+  }
   treeStore.buildTree();
 };
 
