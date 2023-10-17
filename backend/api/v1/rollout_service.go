@@ -721,7 +721,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 		}
 	}
 
-	if err := s.store.BatchPatchTaskRunStatus(ctx, taskRunIDs, api.TaskRunCanceled, principalID); err != nil {
+	if err := s.store.BatchCancelTaskRuns(ctx, taskRunIDs, principalID); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to batch patch task run status to canceled, error: %v", err)
 	}
 
