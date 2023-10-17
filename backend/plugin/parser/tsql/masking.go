@@ -79,8 +79,8 @@ func (l *tsqlTSQLSensitiveFieldExtractorListener) EnterDml_clause(ctx *parser.Dm
 
 	for _, field := range result {
 		l.result = append(l.result, base.SensitiveField{
-			Name:         field.Name,
-			MaskingLevel: field.MaskingLevel,
+			Name:              field.Name,
+			MaskingAttributes: field.MaskingAttrbutes,
 		})
 	}
 }
@@ -122,8 +122,8 @@ func (extractor *fieldExtractor) extractTSqlSensitiveFieldsFromSelectStatementSt
 							return nil, errors.Wrapf(err, "the number of columns in the query statement nearly line %d returns %d fields, but %d set operator near line %d returns %d fields", ctx.GetStart().GetLine(), len(fieldsInAnchorClause), i+1, allSQLUnions[i].GetStart().GetLine(), len(right))
 						}
 						for j := range right {
-							if cmp.Less[storepb.MaskingLevel](fieldsInAnchorClause[j].MaskingLevel, right[j].MaskingLevel) {
-								fieldsInAnchorClause[j].MaskingLevel = right[j].MaskingLevel
+							if cmp.Less[storepb.MaskingLevel](fieldsInAnchorClause[j].MaskingAttrbutes, right[j].MaskingAttrbutes) {
+								fieldsInAnchorClause[j].MaskingAttrbutes = right[j].MaskingAttrbutes
 							}
 						}
 					}
@@ -145,8 +145,8 @@ func (extractor *fieldExtractor) extractTSqlSensitiveFieldsFromSelectStatementSt
 				}
 				for i := 0; i < len(fieldsInAnchorClause); i++ {
 					tempCTEOuterSchemaInfo.ColumnList = append(tempCTEOuterSchemaInfo.ColumnList, base.ColumnInfo{
-						Name:         fieldsInAnchorClause[i].Name,
-						MaskingLevel: fieldsInAnchorClause[i].MaskingLevel,
+						Name:              fieldsInAnchorClause[i].Name,
+						MaskingAttributes: fieldsInAnchorClause[i].MaskingAttrbutes,
 					})
 					result = append(result, fieldsInAnchorClause[i])
 				}
@@ -164,10 +164,10 @@ func (extractor *fieldExtractor) extractTSqlSensitiveFieldsFromSelectStatementSt
 						}
 						extractor.cteOuterSchemaInfo = extractor.cteOuterSchemaInfo[:originalSize]
 						for i := 0; i < len(fieldsInRecursiveClause); i++ {
-							if cmp.Less[storepb.MaskingLevel](tempCTEOuterSchemaInfo.ColumnList[i].MaskingLevel, fieldsInRecursiveClause[i].MaskingLevel) {
+							if cmp.Less[storepb.MaskingLevel](tempCTEOuterSchemaInfo.ColumnList[i].MaskingAttributes, fieldsInRecursiveClause[i].MaskingAttrbutes) {
 								change = true
-								tempCTEOuterSchemaInfo.ColumnList[i].MaskingLevel = fieldsInRecursiveClause[i].MaskingLevel
-								result[i].MaskingLevel = fieldsInRecursiveClause[i].MaskingLevel
+								tempCTEOuterSchemaInfo.ColumnList[i].MaskingAttributes = fieldsInRecursiveClause[i].MaskingAttrbutes
+								result[i].MaskingAttrbutes = fieldsInRecursiveClause[i].MaskingAttrbutes
 							}
 						}
 					} else if allQueryExpression := queryExpression.AllQuery_expression(); len(allQueryExpression) > 1 {
@@ -180,10 +180,10 @@ func (extractor *fieldExtractor) extractTSqlSensitiveFieldsFromSelectStatementSt
 						}
 						extractor.cteOuterSchemaInfo = extractor.cteOuterSchemaInfo[:originalSize]
 						for i := 0; i < len(fieldsInRecursiveClause); i++ {
-							if cmp.Less[storepb.MaskingLevel](tempCTEOuterSchemaInfo.ColumnList[i].MaskingLevel, fieldsInRecursiveClause[i].MaskingLevel) {
+							if cmp.Less[storepb.MaskingLevel](tempCTEOuterSchemaInfo.ColumnList[i].MaskingAttributes, fieldsInRecursiveClause[i].MaskingAttrbutes) {
 								change = true
-								tempCTEOuterSchemaInfo.ColumnList[i].MaskingLevel = fieldsInRecursiveClause[i].MaskingLevel
-								result[i].MaskingLevel = fieldsInRecursiveClause[i].MaskingLevel
+								tempCTEOuterSchemaInfo.ColumnList[i].MaskingAttributes = fieldsInRecursiveClause[i].MaskingAttrbutes
+								result[i].MaskingAttrbutes = fieldsInRecursiveClause[i].MaskingAttrbutes
 							}
 						}
 					}
@@ -208,8 +208,8 @@ func (extractor *fieldExtractor) extractTSqlSensitiveFieldsFromSelectStatementSt
 			columnList := make([]base.ColumnInfo, 0, len(result))
 			for _, field := range result {
 				columnList = append(columnList, base.ColumnInfo{
-					Name:         field.Name,
-					MaskingLevel: field.MaskingLevel,
+					Name:              field.Name,
+					MaskingAttributes: field.MaskingAttrbutes,
 				})
 			}
 			extractor.cteOuterSchemaInfo = append(extractor.cteOuterSchemaInfo, base.TableSchema{
@@ -257,8 +257,8 @@ func (extractor *fieldExtractor) extractTSqlSensitiveFieldsFromQueryExpression(c
 					return nil, errors.Wrapf(err, "the number of columns in the query statement nearly line %d returns %d fields, but %d set operator near line %d returns %d fields", ctx.GetStart().GetLine(), len(left), i+1, sqlUnion.GetStart().GetLine(), len(right))
 				}
 				for i := range right {
-					if cmp.Less[storepb.MaskingLevel](left[i].MaskingLevel, right[i].MaskingLevel) {
-						left[i].MaskingLevel = right[i].MaskingLevel
+					if cmp.Less[storepb.MaskingLevel](left[i].MaskingAttrbutes, right[i].MaskingAttrbutes) {
+						left[i].MaskingAttrbutes = right[i].MaskingAttrbutes
 					}
 				}
 			}
@@ -282,8 +282,8 @@ func (extractor *fieldExtractor) extractTSqlSensitiveFieldsFromQueryExpression(c
 				return nil, errors.Wrapf(err, "the number of columns in the query statement nearly line %d returns %d fields, but %d set operator near line %d returns %d fields", ctx.GetStart().GetLine(), len(left), i+1, allQueryExpressions[i].GetStart().GetLine(), len(right))
 			}
 			for i := range right {
-				if cmp.Less[storepb.MaskingLevel](left[i].MaskingLevel, right[i].MaskingLevel) {
-					left[i].MaskingLevel = right[i].MaskingLevel
+				if cmp.Less[storepb.MaskingLevel](left[i].MaskingAttrbutes, right[i].MaskingAttrbutes) {
+					left[i].MaskingAttrbutes = right[i].MaskingAttrbutes
 				}
 			}
 		}
@@ -327,14 +327,14 @@ func (extractor *fieldExtractor) extractTSqlSensitiveFieldsFromQuerySpecificatio
 		} else if selectListElem.Udt_elem() != nil {
 			// TODO(zp): handle the UDT.
 			result = append(result, base.FieldInfo{
-				Name:         fmt.Sprintf("UNSUPPORTED UDT %s", selectListElem.GetText()),
-				MaskingLevel: base.DefaultMaskingLevel,
+				Name:             fmt.Sprintf("UNSUPPORTED UDT %s", selectListElem.GetText()),
+				MaskingAttrbutes: base.NewDefaultMaskingAttributes(),
 			})
 		} else if selectListElem.LOCAL_ID() != nil {
 			// TODO(zp): handle the local variable, SELECT @a=id FROM blog.dbo.t1;
 			result = append(result, base.FieldInfo{
-				Name:         fmt.Sprintf("UNSUPPORTED LOCALID %s", selectListElem.GetText()),
-				MaskingLevel: base.DefaultMaskingLevel,
+				Name:             fmt.Sprintf("UNSUPPORTED LOCALID %s", selectListElem.GetText()),
+				MaskingAttrbutes: base.NewDefaultMaskingAttributes(),
 			})
 		} else if expressionElem := selectListElem.Expression_elem(); expressionElem != nil {
 			columnName, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expressionElem)
@@ -342,8 +342,8 @@ func (extractor *fieldExtractor) extractTSqlSensitiveFieldsFromQuerySpecificatio
 				return nil, errors.Wrapf(err, "failed to check if the expression element is sensitive")
 			}
 			result = append(result, base.FieldInfo{
-				Name:         columnName,
-				MaskingLevel: maskingLevel,
+				Name:             columnName,
+				MaskingAttrbutes: maskingLevel,
 			})
 		}
 	}
@@ -439,10 +439,10 @@ func (extractor *fieldExtractor) extractTSqlSensitiveFieldsFromTableSourceItem(c
 		}
 		for _, column := range tableSchema.ColumnList {
 			result = append(result, base.FieldInfo{
-				Database:     normalizedDatabaseName,
-				Table:        tableSchema.Name,
-				Name:         column.Name,
-				MaskingLevel: column.MaskingLevel,
+				Database:         normalizedDatabaseName,
+				Table:            tableSchema.Name,
+				Name:             column.Name,
+				MaskingAttrbutes: column.MaskingAttributes,
 			})
 		}
 	}
@@ -513,8 +513,8 @@ func (extractor *fieldExtractor) extractTSqlSensitiveFieldsFromDerivedTable(ctx 
 				return nil, errors.Wrapf(err, "the number of columns in the derived table statement nearly line %d returns %d fields, but %d set operator near line %d returns %d fields", ctx.GetStart().GetLine(), len(left), i+1, allSubquery[i].GetStart().GetLine(), len(right))
 			}
 			for i := range right {
-				if cmp.Less[storepb.MaskingLevel](left[i].MaskingLevel, right[i].MaskingLevel) {
-					left[i].MaskingLevel = right[i].MaskingLevel
+				if cmp.Less[storepb.MaskingLevel](left[i].MaskingAttrbutes, right[i].MaskingAttrbutes) {
+					left[i].MaskingAttrbutes = right[i].MaskingAttrbutes
 				}
 			}
 		}
@@ -540,8 +540,8 @@ func (extractor *fieldExtractor) extractTSqlSensitiveFieldsFromTableValueConstru
 				return nil, errors.Wrapf(err, "failed to check if the expression is sensitive")
 			}
 			result = append(result, base.FieldInfo{
-				Name:         columnName,
-				MaskingLevel: maskingLevel,
+				Name:             columnName,
+				MaskingAttrbutes: maskingLevel,
 			})
 		}
 		return result, nil
@@ -797,7 +797,7 @@ func (extractor *fieldExtractor) isIdentifierEqual(a, b string) bool {
 // It is the closure of the expression_elemContext, it will recursively check the sub expression element.
 func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleContext) (string, storepb.MaskingLevel, error) {
 	if ctx == nil {
-		return "", base.DefaultMaskingLevel, nil
+		return "", base.NewDefaultMaskingAttributes(), nil
 	}
 	switch ctx := ctx.(type) {
 	case *parser.Expression_elemContext:
@@ -818,7 +818,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		if ctx.Function_call() != nil {
 			return extractor.evalExpressionElemMaskingLevel(ctx.Function_call())
 		}
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
 				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
@@ -868,7 +868,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		if expression := ctx.Expression(); expression != nil {
 			return extractor.evalExpressionElemMaskingLevel(expression)
 		}
-		return ctx.GetText(), base.DefaultMaskingLevel, nil
+		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
 	case *parser.Bracket_expressionContext:
 		if expression := ctx.Expression(); expression != nil {
 			return extractor.evalExpressionElemMaskingLevel(expression)
@@ -876,9 +876,9 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		if subquery := ctx.Subquery(); subquery != nil {
 			return extractor.evalExpressionElemMaskingLevel(subquery)
 		}
-		return ctx.GetText(), base.DefaultMaskingLevel, nil
+		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
 	case *parser.Case_expressionContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
 				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
@@ -923,7 +923,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.Switch_sectionContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
 				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
@@ -940,7 +940,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.Switch_search_condition_sectionContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		if searchCondition := ctx.Search_condition(); searchCondition != nil {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(searchCondition)
 			if err != nil {
@@ -970,7 +970,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		if predicate := ctx.Predicate(); predicate != nil {
 			return extractor.evalExpressionElemMaskingLevel(predicate)
 		}
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		if allSearchConditions := ctx.AllSearch_condition(); len(allSearchConditions) > 0 {
 			for _, searchCondition := range allSearchConditions {
 				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(searchCondition)
@@ -994,7 +994,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			return extractor.evalExpressionElemMaskingLevel(freeTextPredicate)
 		}
 
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
 				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
@@ -1023,7 +1023,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.Freetext_predicateContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
 				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
@@ -1067,10 +1067,10 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		if err != nil {
 			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the subquery is sensitive")
 		}
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, field := range fieldInfo {
-			if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingLevel) {
-				finalLevel = field.MaskingLevel
+			if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingAttrbutes) {
+				finalLevel = field.MaskingAttrbutes
 			}
 			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
@@ -1078,7 +1078,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.Hierarchyid_callContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
 				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
@@ -1095,13 +1095,13 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.Query_callContext:
-		return ctx.GetText(), base.DefaultMaskingLevel, nil
+		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
 	case *parser.Exist_callContext:
-		return ctx.GetText(), base.DefaultMaskingLevel, nil
+		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
 	case *parser.Modify_callContext:
-		return ctx.GetText(), base.DefaultMaskingLevel, nil
+		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
 	case *parser.Value_callContext:
-		return ctx.GetText(), base.DefaultMaskingLevel, nil
+		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
 	case *parser.Primitive_expressionContext:
 		if ctx.Primitive_constant() != nil {
 			_, sensitive, err := extractor.evalExpressionElemMaskingLevel(ctx.Primitive_constant())
@@ -1112,7 +1112,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		panic("never reach here")
 	case *parser.Primitive_constantContext:
-		return ctx.GetText(), base.DefaultMaskingLevel, nil
+		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
 	case *parser.Function_callContext:
 		// In parser.g4, the function_callContext is defined as:
 		// 	function_call
@@ -1126,7 +1126,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 	case *parser.RANKING_WINDOWED_FUNCContext:
 		return extractor.evalExpressionElemMaskingLevel(ctx.Ranking_windowed_function())
 	case *parser.Ranking_windowed_functionContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		if overClause := ctx.Over_clause(); overClause != nil {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(overClause)
 			if err != nil {
@@ -1153,7 +1153,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.Over_clauseContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression_list_())
 			if err != nil {
@@ -1192,7 +1192,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.Expression_list_Context:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1207,7 +1207,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.Order_by_clauseContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, orderByExpression := range ctx.GetOrder_bys() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(orderByExpression)
 			if err != nil {
@@ -1245,7 +1245,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			return ctx.GetText(), maskingLevel, nil
 		}
 		if windowFrameBounds := ctx.AllWindow_frame_bound(); len(windowFrameBounds) > 0 {
-			finalLevel := base.DefaultMaskingLevel
+			finalLevel := base.NewDefaultMaskingAttributes()
 			for _, windowFrameBound := range windowFrameBounds {
 				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(windowFrameBound)
 				if err != nil {
@@ -1276,13 +1276,13 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		panic("never reach here")
 	case *parser.Window_frame_precedingContext:
-		return ctx.GetText(), base.DefaultMaskingLevel, nil
+		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
 	case *parser.Window_frame_followingContext:
-		return ctx.GetText(), base.DefaultMaskingLevel, nil
+		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
 	case *parser.AGGREGATE_WINDOWED_FUNCContext:
 		return extractor.evalExpressionElemMaskingLevel(ctx.Aggregate_windowed_function())
 	case *parser.Aggregate_windowed_functionContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		if allDistinctExpression := ctx.All_distinct_expression(); allDistinctExpression != nil {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(allDistinctExpression)
 			if err != nil {
@@ -1341,7 +1341,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 	case *parser.ANALYTIC_WINDOWED_FUNCContext:
 		return extractor.evalExpressionElemMaskingLevel(ctx.Analytic_windowed_function())
 	case *parser.Analytic_windowed_functionContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
 				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
@@ -1396,9 +1396,9 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 	case *parser.BUILT_IN_FUNCContext:
 		return extractor.evalExpressionElemMaskingLevel(ctx.Built_in_functions())
 	case *parser.APP_NAMEContext:
-		return ctx.GetText(), base.DefaultMaskingLevel, nil
+		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
 	case *parser.APPLOCK_MODEContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1413,7 +1413,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.APPLOCK_TESTContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1428,7 +1428,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.ASSEMBLYPROPERTYContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1443,7 +1443,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.COL_LENGTHContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1458,7 +1458,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.COL_NAMEContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1473,7 +1473,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.COLUMNPROPERTYContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1488,7 +1488,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.DATABASEPROPERTYEXContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1545,7 +1545,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.FILEGROUPPROPERTYContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1560,7 +1560,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.FILEPROPERTYContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1575,7 +1575,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.FILEPROPERTYEXContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1590,7 +1590,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.FULLTEXTCATALOGPROPERTYContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1611,7 +1611,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.INDEX_COLContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1626,7 +1626,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.INDEXKEY_PROPERTYContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1641,7 +1641,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.INDEXPROPERTYContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1662,7 +1662,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.OBJECT_IDContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1677,7 +1677,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.OBJECT_NAMEContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1692,7 +1692,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.OBJECT_SCHEMA_NAMEContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1707,7 +1707,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.OBJECTPROPERTYContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1722,7 +1722,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.OBJECTPROPERTYEXContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1737,7 +1737,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.PARSENAMEContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1770,7 +1770,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.STATS_DATEContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1797,7 +1797,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.TYPEPROPERTYContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1824,7 +1824,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.CHARINDEXContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1839,7 +1839,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.CONCATContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1854,7 +1854,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.CONCAT_WSContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1869,7 +1869,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.DIFFERENCEContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1884,7 +1884,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.FORMATContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1899,7 +1899,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.LEFTContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1938,7 +1938,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.PATINDEXContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1953,7 +1953,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.QUOTENAMEContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1968,7 +1968,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.REPLACEContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -1983,7 +1983,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.REPLICATEContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2004,7 +2004,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.RIGHTContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2037,7 +2037,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.STRContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2052,7 +2052,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.STRINGAGGContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2067,7 +2067,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.STRING_ESCAPEContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2082,7 +2082,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.STUFFContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2097,7 +2097,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.SUBSTRINGContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2112,7 +2112,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.TRANSLATEContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2127,7 +2127,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.TRIMContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2154,7 +2154,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.BINARY_CHECKSUMContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2169,7 +2169,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.CHECKSUMContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2182,7 +2182,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 				return ctx.GetText(), finalLevel, nil
 			}
 		}
-		return ctx.GetText(), base.DefaultMaskingLevel, nil
+		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
 	case *parser.COMPRESSContext:
 		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
@@ -2196,7 +2196,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.FORMATMESSAGEContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2211,7 +2211,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.ISNULLContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2244,7 +2244,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.CONVERTContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2259,7 +2259,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.COALESCEContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression_list_())
 			if err != nil {
@@ -2316,7 +2316,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.DATE_BUCKETContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2331,7 +2331,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.DATEADDContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2346,7 +2346,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.DATEDIFFContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2361,7 +2361,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.DATEDIFF_BIGContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2376,7 +2376,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.DATEFROMPARTSContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2403,7 +2403,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.DATETIME2FROMPARTSContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2418,7 +2418,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.DATETIMEFROMPARTSContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2433,7 +2433,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.DATETIMEOFFSETFROMPARTSContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2460,7 +2460,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.EOMONTHContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2487,7 +2487,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.SMALLDATETIMEFROMPARTSContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2502,7 +2502,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.SWITCHOFFSETContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2517,7 +2517,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.TIMEFROMPARTSContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2532,7 +2532,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.TODATETIMEOFFSETContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2553,7 +2553,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.NULLIFContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2568,7 +2568,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.PARSEContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2583,7 +2583,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.IIFContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2598,7 +2598,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.ISJSONContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2613,7 +2613,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.JSON_ARRAYContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression_list_())
 			if err != nil {
@@ -2628,7 +2628,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.JSON_VALUEContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2643,7 +2643,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.JSON_QUERYContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2658,7 +2658,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.JSON_MODIFYContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2673,7 +2673,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.JSON_PATH_EXISTSContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2712,7 +2712,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.ATN2Context:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2763,7 +2763,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.LOGContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2784,7 +2784,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.POWERContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2811,7 +2811,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.ROUNDContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2880,7 +2880,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.CERTPRIVATEKEYContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2907,7 +2907,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.HAS_PERMS_BY_NAMEContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2928,7 +2928,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.IS_ROLEMEMBERContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2943,7 +2943,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.IS_SRVROLEMEMBERContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2958,7 +2958,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.LOGINPROPERTYContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2973,7 +2973,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.PERMISSIONSContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -2994,7 +2994,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.PWDCOMPAREContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -3027,7 +3027,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.SUSER_SIDContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
@@ -3054,7 +3054,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), maskingLevel, nil
 	case *parser.SCALAR_FUNCTIONContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
 			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression_list_())
 			if err != nil {
@@ -3081,9 +3081,9 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		return ctx.GetText(), finalLevel, nil
 	case *parser.Scalar_function_nameContext:
-		return ctx.GetText(), base.DefaultMaskingLevel, nil
+		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
 	case *parser.Freetext_functionContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalLevel := base.NewDefaultMaskingAttributes()
 		if allFullColumnName := ctx.AllFull_column_name(); len(allFullColumnName) > 0 {
 			for _, fullColumnName := range allFullColumnName {
 				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(fullColumnName)
@@ -3099,7 +3099,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			}
 		}
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
-			finalLevel := base.DefaultMaskingLevel
+			finalLevel := base.NewDefaultMaskingAttributes()
 			for _, expression := range allExpressions {
 				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
 				if err != nil {
@@ -3119,7 +3119,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		if err != nil {
 			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the full_column_name is sensitive")
 		}
-		return fieldInfo.Name, fieldInfo.MaskingLevel, nil
+		return fieldInfo.Name, fieldInfo.MaskingAttrbutes, nil
 	case *parser.PARTITION_FUNCContext:
 		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Partition_function().Expression())
 		if err != nil {

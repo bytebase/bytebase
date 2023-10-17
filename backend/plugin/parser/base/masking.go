@@ -44,21 +44,49 @@ type TableSchema struct {
 
 // ColumnInfo is the column info using to extract sensitive fields.
 type ColumnInfo struct {
-	Name         string
-	MaskingLevel storepb.MaskingLevel
+	Name              string
+	MaskingAttributes *MaskingAttributes
 }
 
 // SensitiveField is the struct about SELECT fields.
 type SensitiveField struct {
-	Name         string
-	MaskingLevel storepb.MaskingLevel
+	Name              string
+	MaskingAttributes *MaskingAttributes
 }
 
 // FieldInfo is the masking field info.
 type FieldInfo struct {
-	Name         string
-	Table        string
-	Schema       string
-	Database     string
+	Name             string
+	Table            string
+	Schema           string
+	Database         string
+	MaskingAttrbutes *MaskingAttributes
+}
+
+// MaskingAttributes contain the masking related attributes on the column, likes MaskingLevel.
+type MaskingAttributes struct {
 	MaskingLevel storepb.MaskingLevel
+}
+
+// Transmit transmits the masking attributes to other.
+func (m *MaskingAttributes) Transmit(other *MaskingAttributes) {
+	other.MaskingLevel = m.MaskingLevel
+}
+
+// Clone clones the masking attributes.
+func (m *MaskingAttributes) Clone() *MaskingAttributes {
+	return &MaskingAttributes{
+		MaskingLevel: m.MaskingLevel,
+	}
+}
+
+// NewMaskingAttributes creates a new masking attributes.
+func NewMaskingAttributes(lvl storepb.MaskingLevel) *MaskingAttributes {
+	return &MaskingAttributes{
+		MaskingLevel: lvl,
+	}
+}
+
+func NewDefaultMaskingAttributes() *MaskingAttributes {
+	return NewMaskingAttributes(DefaultMaskingLevel)
 }
