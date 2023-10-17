@@ -35,6 +35,7 @@ type TaskRunMessage struct {
 	Updater   *UserMessage
 	UpdatedTs int64
 	ProjectID string
+	StartedTs int64
 }
 
 // FindTaskRunMessage is the message for finding task runs.
@@ -108,6 +109,7 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 			task_run.task_id,
 			task_run.name,
 			task_run.status,
+			task_run.started_ts,
 			task_run.code,
 			task_run.result,
 			task.pipeline_id,
@@ -138,6 +140,7 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 			&taskRun.TaskUID,
 			&taskRun.Name,
 			&taskRun.Status,
+			&taskRun.StartedTs,
 			&taskRun.Code,
 			&taskRun.Result,
 			&taskRun.PipelineUID,
