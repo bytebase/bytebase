@@ -7,6 +7,8 @@ import {
   SchemaMetadata,
   TableMetadata,
   SchemaConfig,
+  ColumnConfig,
+  TableConfig,
 } from "@/types/proto/v1/database_service";
 import {
   Column,
@@ -209,7 +211,18 @@ export const mergeSchemaEditToMetadata = (
     }
   }
 
-  metadata.schemaConfigs = schemaEdits.map((schema) => schema.config);
+  metadata.schemaConfigs = schemaEdits.map((schema) => ({
+    name: schema.name,
+    tableConfigs: schema.tableList.map((table) => ({
+      name: table.name,
+      columnConfigs: table.columnList.map((column) =>
+        ColumnConfig.fromPartial({
+          ...column.config,
+          name: column.name,
+        })
+      ),
+    })),
+  }));
 
   return metadata;
 };
@@ -355,11 +368,11 @@ export const rebuildEditableSchemas = (
       editableSchema.status = "dropped";
       continue;
     }
-    editableSchema.config =
-      schemaConfigList.find((config) => config.name === editableSchema.name) ??
-      SchemaConfig.fromPartial({
-        name: editableSchema.name,
-      });
+
+    const schemaConfig =
+      schemaConfigList.find(
+        (schemaConfig) => schemaConfig.name === editableSchema.name
+      ) ?? SchemaConfig.fromPartial({});
 
     for (const editableTable of editableSchema.tableList) {
       const table = schema.tables.find(
@@ -370,7 +383,17 @@ export const rebuildEditableSchemas = (
         continue;
       }
 
+      const tableConfig =
+        schemaConfig.tableConfigs.find(
+          (tableConfig) => tableConfig.name === editableTable.name
+        ) ?? TableConfig.fromPartial({});
+
       for (const editableColumn of editableTable.columnList) {
+        editableColumn.config =
+          tableConfig.columnConfigs.find(
+            (columnConfig) => columnConfig.name === editableColumn.name
+          ) ?? ColumnConfig.fromPartial({});
+
         const column = table.columns.find(
           (column) => column.name === editableColumn.name
         );
@@ -398,7 +421,13 @@ export const rebuildEditableSchemas = (
           (item) => item.name === column.name
         );
         if (!editableColumn) {
-          const newColumn = convertColumnMetadataToColumn(column, "created");
+          const newColumn = convertColumnMetadataToColumn(
+            column,
+            "created",
+            tableConfig.columnConfigs.find(
+              (columnConfig) => columnConfig.name === column.name
+            )
+          );
           editableTable.columnList.push(newColumn);
         }
       }
@@ -428,7 +457,13 @@ export const rebuildEditableSchemas = (
         (item) => item.name === table.name
       );
       if (!editableTable) {
-        const newTable = convertTableMetadataToTable(table, "created");
+        const newTable = convertTableMetadataToTable(
+          table,
+          "created",
+          schemaConfig.tableConfigs.find(
+            (tableConfig) => tableConfig.name === table.name
+          )
+        );
         editableSchema.tableList.push(newTable);
       }
     }
@@ -439,7 +474,13 @@ export const rebuildEditableSchemas = (
       (item) => item.name === schema.name
     );
     if (!editableSchema) {
-      const newSchema = convertSchemaMetadataToSchema(schema, "created");
+      const newSchema = convertSchemaMetadataToSchema(
+        schema,
+        "created",
+        schemaConfigList.find(
+          (schemaConfig) => schemaConfig.name === schema.name
+        )
+      );
       editableSchemas.push(newSchema);
     }
   }

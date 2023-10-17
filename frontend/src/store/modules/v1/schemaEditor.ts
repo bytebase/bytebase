@@ -1,8 +1,8 @@
-import { isUndefined, uniqueId, cloneDeep } from "lodash-es";
+import { isUndefined, uniqueId } from "lodash-es";
 import { defineStore } from "pinia";
 import { ComposedDatabase, emptyProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import { ColumnConfig, TableConfig } from "@/types/proto/v1/database_service";
+import { ColumnConfig } from "@/types/proto/v1/database_service";
 import {
   BranchSchema,
   DatabaseSchema,
@@ -175,92 +175,6 @@ export const useSchemaEditorV1Store = defineStore("SchemaEditorV1", {
     },
     isEmptyColumnConfig(config: ColumnConfig): boolean {
       return Object.keys(config.labels).length === 0 && !config.semanticTypeId;
-    },
-    removeColumnConfig(schema: Schema, table: string, column: string) {
-      const tableConfig = this.getTableConfig(schema, table);
-      const index = tableConfig.columnConfigs.findIndex(
-        (config) => config.name === column
-      );
-      if (index < 0) {
-        return;
-      }
-
-      const pendingUpdateTableConfig = cloneDeep(tableConfig);
-      pendingUpdateTableConfig.columnConfigs.splice(index, 1);
-      const tableIndex = schema.config.tableConfigs.findIndex(
-        (config) => config.name === table
-      );
-      if (tableIndex < 0) {
-        return;
-      }
-      if (pendingUpdateTableConfig.columnConfigs.length === 0) {
-        schema.config.tableConfigs.splice(tableIndex, 1);
-      } else {
-        schema.config.tableConfigs[tableIndex] = pendingUpdateTableConfig;
-      }
-    },
-    updateColumnConfig(
-      schema: Schema,
-      table: string,
-      column: string,
-      config: Partial<ColumnConfig>
-    ) {
-      const tableConfig = this.getTableConfig(schema, table);
-      const index = tableConfig.columnConfigs.findIndex(
-        (config) => config.name === column
-      );
-      let pendingUpdateColumnConfig = ColumnConfig.fromPartial({
-        ...config,
-        name: column,
-      });
-      if (index >= 0) {
-        pendingUpdateColumnConfig = ColumnConfig.fromPartial({
-          ...tableConfig.columnConfigs[index],
-          ...config,
-        });
-      }
-
-      if (this.isEmptyColumnConfig(pendingUpdateColumnConfig)) {
-        return this.removeColumnConfig(schema, table, column);
-      }
-
-      const pendingUpdateTableConfig = cloneDeep(tableConfig);
-      if (index < 0) {
-        pendingUpdateTableConfig.columnConfigs.push(pendingUpdateColumnConfig);
-      } else {
-        pendingUpdateTableConfig.columnConfigs[index] =
-          pendingUpdateColumnConfig;
-      }
-
-      const tableIndex = schema.config.tableConfigs.findIndex(
-        (config) => config.name === table
-      );
-      if (tableIndex < 0) {
-        schema.config.tableConfigs.push(pendingUpdateTableConfig);
-      } else {
-        schema.config.tableConfigs[tableIndex] = pendingUpdateTableConfig;
-      }
-    },
-    getTableConfig(schame: Schema, table: string): TableConfig {
-      return (
-        schame.config.tableConfigs.find((config) => config.name === table) ??
-        TableConfig.fromPartial({
-          name: table,
-        })
-      );
-    },
-    getColumnConfig(
-      schame: Schema,
-      table: string,
-      column: string
-    ): ColumnConfig {
-      const tableConfig = this.getTableConfig(schame, table);
-      return (
-        tableConfig.columnConfigs.find((config) => config.name === column) ??
-        ColumnConfig.fromPartial({
-          name: column,
-        })
-      );
     },
     getSchema(parentName: string, schemaId: string) {
       return this.resourceMap[this.resourceType]

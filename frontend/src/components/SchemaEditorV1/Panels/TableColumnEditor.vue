@@ -43,12 +43,12 @@
           class="bb-grid-cell flex items-center"
           :class="getColumnClassList(column, row)"
         >
-          {{ getColumnSemanticType(column.name)?.title }}
+          {{ getColumnSemanticType(column)?.title }}
           <button
-            v-if="!readonly && getColumnSemanticType(column.name)"
+            v-if="!readonly && getColumnSemanticType(column)"
             :disabled="disableAlterColumn(column)"
             class="w-4 h-4 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer"
-            @click.prevent="onSemanticTypeRemove(column.name)"
+            @click.prevent="onSemanticTypeRemove(column)"
           >
             <heroicons-outline:x class="w-3 h-3" />
           </button>
@@ -270,7 +270,7 @@ import { useI18n } from "vue-i18n";
 import { BBCheckbox } from "@/bbkit";
 import { useSettingV1Store } from "@/store/modules";
 import { Engine } from "@/types/proto/v1/common";
-import { TableConfig, ColumnConfig } from "@/types/proto/v1/database_service";
+import { ColumnConfig } from "@/types/proto/v1/database_service";
 import { Table, Column, ForeignKey } from "@/types/v1/schemaEditor";
 import { getDataTypeSuggestionList, isDev } from "@/utils";
 import ColumnDefaultValueExpressionModal from "../Modals/ColumnDefaultValueExpressionModal.vue";
@@ -292,7 +292,6 @@ const props = withDefaults(
     readonly: boolean;
     showForeignKey?: boolean;
     table: Table;
-    tableConfig: TableConfig;
     engine: Engine;
     foreignKeyList?: ForeignKey[];
     classificationConfigId?: string;
@@ -314,18 +313,13 @@ const props = withDefaults(
   }
 );
 
-const emit = defineEmits<{
+defineEmits<{
   (event: "onDrop", column: Column): void;
   (event: "onRestore", column: Column): void;
   (event: "onEdit", index: number): void;
   (event: "onForeignKeyEdit", column: Column): void;
   (event: "onForeignKeyClick", column: Column): void;
   (event: "onPrimaryKeySet", column: Column, isPrimaryKey: boolean): void;
-  (
-    event: "onUpdate:columnConfig",
-    column: string,
-    columnConfig: Partial<ColumnConfig>
-  ): void;
 }>();
 
 const state = reactive<LocalState>({
@@ -351,21 +345,12 @@ const semanticTypeList = computed(() => {
   );
 });
 
-const getColumnConfig = (columnName: string) => {
-  return (
-    props.tableConfig.columnConfigs.find(
-      (config) => config.name === columnName
-    ) ?? ColumnConfig.fromPartial({})
-  );
-};
-
-const getColumnSemanticType = (columnName: string) => {
-  const config = getColumnConfig(columnName);
-  if (!config.semanticTypeId) {
+const getColumnSemanticType = (column: Column) => {
+  if (!column.config.semanticTypeId) {
     return;
   }
   return semanticTypeList.value.find(
-    (data) => data.id === config.semanticTypeId
+    (data) => data.id === column.config.semanticTypeId
   );
 };
 
@@ -545,13 +530,17 @@ const onSemanticTypeApply = async (semanticTypeId: string) => {
     return;
   }
 
-  emit("onUpdate:columnConfig", state.pendingUpdateColumn.name, {
+  state.pendingUpdateColumn.config = ColumnConfig.fromPartial({
+    ...state.pendingUpdateColumn.config,
     semanticTypeId,
   });
 };
 
-const onSemanticTypeRemove = async (column: string) => {
-  emit("onUpdate:columnConfig", column, { semanticTypeId: "" });
+const onSemanticTypeRemove = async (column: Column) => {
+  column.config = ColumnConfig.fromPartial({
+    ...column.config,
+    semanticTypeId: "",
+  });
 };
 </script>
 

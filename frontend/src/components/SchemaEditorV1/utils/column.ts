@@ -47,30 +47,8 @@ export const isColumnChanged = (
     ? undefined
     : foreignKey?.referencedColumnIdList[index];
 
-  if (
+  return (
     !isEqual(isPrimaryKey, isPrimaryKeyOrigin) ||
     !isEqual(foreignKeyColumn, originForeignKeyColumn)
-  ) {
-    return true;
-  }
-
-  const originSchema = schemaEditorV1Store.getOriginSchema(
-    parentName,
-    schema.id
   );
-  if (!originSchema) {
-    return true;
-  }
-
-  const columnConfig = schemaEditorV1Store.getColumnConfig(
-    schema,
-    table.name,
-    column.name
-  );
-  const originColumnConfig = schemaEditorV1Store.getColumnConfig(
-    originSchema,
-    table.name,
-    column.name
-  );
-  return !isEqual(columnConfig, originColumnConfig);
 };

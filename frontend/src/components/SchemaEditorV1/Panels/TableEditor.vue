@@ -31,7 +31,6 @@
       :readonly="readonly"
       :show-foreign-key="true"
       :table="table"
-      :table-config="tableConfig"
       :engine="engine"
       :foreign-key-list="foreignKeyList"
       :classification-config-id="project.dataClassificationConfigId"
@@ -45,7 +44,6 @@
       @on-primary-key-set="setColumnPrimaryKey"
       @on-foreign-key-edit="handleEditColumnForeignKey"
       @on-foreign-key-click="gotoForeignKeyReferencedTable"
-      @on-update:column-config="onColumnConfigUpdate"
     />
   </div>
 
@@ -90,10 +88,7 @@ import {
   useSchemaEditorV1Store,
 } from "@/store/modules";
 import { Engine } from "@/types/proto/v1/common";
-import {
-  ColumnMetadata,
-  ColumnConfig,
-} from "@/types/proto/v1/database_service";
+import { ColumnMetadata } from "@/types/proto/v1/database_service";
 import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
 import {
   Column,
@@ -162,22 +157,6 @@ const foreignKeyList = computed(() => {
     (pk) => pk.tableId === currentTab.value.tableId
   ) as ForeignKey[];
 });
-
-const tableConfig = computed(() => {
-  return schemaEditorV1Store.getTableConfig(schema.value, table.value.name);
-});
-
-const onColumnConfigUpdate = (
-  column: string,
-  config: Partial<ColumnConfig>
-) => {
-  schemaEditorV1Store.updateColumnConfig(
-    schema.value,
-    table.value.name,
-    column,
-    config
-  );
-};
 
 const editForeignKeyColumn = ref<Column>();
 
@@ -301,20 +280,12 @@ const handleApplyColumnTemplate = (
   if (template.engine !== engine.value || !template.column) {
     return;
   }
-  const column = convertColumnMetadataToColumn(template.column, "created");
+  const column = convertColumnMetadataToColumn(
+    template.column,
+    "created",
+    template.config
+  );
   table.value.columnList.push(column);
-
-  if (template.config) {
-    schemaEditorV1Store.updateColumnConfig(
-      schema.value,
-      table.value.name,
-      column.name,
-      ColumnConfig.fromPartial({
-        ...template.config,
-        name: column.name,
-      })
-    );
-  }
 };
 
 const gotoForeignKeyReferencedTable = (column: Column) => {
@@ -396,11 +367,6 @@ const handleDropColumn = (column: Column) => {
         foreignKey.referencedColumnIdList.splice(columnRefIndex, 1);
       }
     }
-    schemaEditorV1Store.removeColumnConfig(
-      schema.value,
-      table.value.name,
-      column.name
-    );
   } else {
     column.status = "dropped";
   }

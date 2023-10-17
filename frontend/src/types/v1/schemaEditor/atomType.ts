@@ -3,6 +3,8 @@ import {
   SchemaMetadata,
   TableMetadata,
   ColumnMetadata,
+  ColumnConfig,
+  TableConfig,
   SchemaConfig,
 } from "@/types/proto/v1/database_service";
 import { isGhostTable } from "@/utils";
@@ -24,6 +26,7 @@ export interface Column extends ColumnDefaultValue {
   userComment: string;
   status: Status;
   classification?: string;
+  config: ColumnConfig;
 }
 
 export interface PrimaryKey {
@@ -63,12 +66,12 @@ export interface Schema {
   name: string;
   tableList: Table[];
   status: Status;
-  config: SchemaConfig;
 }
 
 export const convertColumnMetadataToColumn = (
   columnMetadata: ColumnMetadata,
-  status: Status = "normal"
+  status: Status,
+  config: ColumnConfig = ColumnConfig.fromPartial({})
 ): Column => {
   return {
     id: uuidv1(),
@@ -83,12 +86,17 @@ export const convertColumnMetadataToColumn = (
     defaultExpression: columnMetadata.defaultExpression,
     classification: columnMetadata.classification,
     status,
+    config: ColumnConfig.fromPartial({
+      ...config,
+      name: columnMetadata.name,
+    }),
   };
 };
 
 export const convertTableMetadataToTable = (
   tableMetadata: TableMetadata,
-  status: Status = "normal"
+  status: Status,
+  config: TableConfig = TableConfig.fromPartial({})
 ): Table => {
   const table: Table = {
     id: uuidv1(),
@@ -100,7 +108,13 @@ export const convertTableMetadataToTable = (
     comment: tableMetadata.comment,
     userComment: tableMetadata.userComment,
     columnList: tableMetadata.columns.map((column) =>
-      convertColumnMetadataToColumn(column, status)
+      convertColumnMetadataToColumn(
+        column,
+        status,
+        config.columnConfigs.find(
+          (columnConfig) => columnConfig.name === column.name
+        )
+      )
     ),
     primaryKey: {
       name: "",
@@ -131,8 +145,8 @@ export const convertTableMetadataToTable = (
 
 export const convertSchemaMetadataToSchema = (
   schemaMetadata: SchemaMetadata,
-  status: Status = "normal",
-  schemaConfigList: SchemaConfig[] = []
+  status: Status,
+  config: SchemaConfig = SchemaConfig.fromPartial({})
 ): Schema => {
   const tableList: Table[] = [];
 
@@ -142,7 +156,15 @@ export const convertSchemaMetadataToSchema = (
       continue;
     }
 
-    const table = convertTableMetadataToTable(tableMetadata, status);
+    const tableConfig = config.tableConfigs.find(
+      (tableConfig) => tableConfig.name === tableMetadata.name
+    );
+
+    const table = convertTableMetadataToTable(
+      tableMetadata,
+      status,
+      tableConfig
+    );
     tableList.push(table);
   }
 
@@ -151,11 +173,6 @@ export const convertSchemaMetadataToSchema = (
     name: schemaMetadata.name,
     tableList: tableList,
     status,
-    config:
-      schemaConfigList.find((config) => config.name === schemaMetadata.name) ??
-      SchemaConfig.fromPartial({
-        name: schemaMetadata.name,
-      }),
   };
 };
 
@@ -165,7 +182,13 @@ export const convertSchemaMetadataList = (
 ): Schema[] => {
   // Compose all tables of each schema.
   const schemaList: Schema[] = schemaMetadataList.map((schemaMetadata) =>
-    convertSchemaMetadataToSchema(schemaMetadata, "normal", schemaConfigList)
+    convertSchemaMetadataToSchema(
+      schemaMetadata,
+      "normal",
+      schemaConfigList.find(
+        (schemaConfig) => schemaConfig.name === schemaMetadata.name
+      )
+    )
   );
 
   // Build foreign keys for schema and referenced schema.

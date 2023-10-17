@@ -305,6 +305,7 @@
 import { isEqual, cloneDeep } from "lodash-es";
 import { NDropdown } from "naive-ui";
 import { computed, reactive, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   getColumnDefaultDisplayString,
   getColumnDefaultValuePlaceholder,
@@ -312,7 +313,7 @@ import {
   getColumnDefaultValueOptions,
 } from "@/components/SchemaEditorV1/utils/columnDefaultValue";
 import { DrawerContent } from "@/components/v2";
-import { useSettingV1Store } from "@/store";
+import { useSettingV1Store, useNotificationStore } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import {
   ColumnConfig,
@@ -361,7 +362,7 @@ const state = reactive<LocalState>({
   }),
   kvList: [],
 });
-
+const { t } = useI18n();
 const settingStore = useSettingV1Store();
 const allowEdit = computed(() => {
   return (
@@ -491,6 +492,11 @@ const sumbit = async () => {
     value: {
       schemaTemplateSettingValue: settingValue,
     },
+  });
+  useNotificationStore().pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("common.updated"),
   });
   emit("dismiss");
 };

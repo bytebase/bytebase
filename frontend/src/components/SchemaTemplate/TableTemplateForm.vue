@@ -155,12 +155,10 @@
               :readonly="!allowEdit"
               :show-foreign-key="false"
               :table="state.table"
-              :table-config="state.tableConfig"
               :engine="state.engine"
               :classification-config-id="classificationConfig?.id"
               @on-drop="onColumnDrop"
               @on-primary-key-set="setColumnPrimaryKey"
-              @on-update:column-config="onColumnConfigUpdate"
             />
           </div>
         </div>
@@ -213,15 +211,12 @@
 <script lang="ts" setup>
 import { isEqual, cloneDeep } from "lodash-es";
 import { computed, nextTick, reactive } from "vue";
+import { useI18n } from "vue-i18n";
 import { transformTableEditToMetadata } from "@/components/SchemaEditorV1/utils";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { useSettingV1Store } from "@/store";
+import { useSettingV1Store, useNotificationStore } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
-import {
-  ColumnMetadata,
-  ColumnConfig,
-  TableConfig,
-} from "@/types/proto/v1/database_service";
+import { ColumnMetadata, TableConfig } from "@/types/proto/v1/database_service";
 import {
   SchemaTemplateSetting,
   SchemaTemplateSetting_FieldTemplate,
@@ -252,20 +247,21 @@ interface LocalState {
   table: Table;
   showClassificationDrawer: boolean;
   showFieldTemplateDrawer: boolean;
-  tableConfig: TableConfig;
 }
 
 const state = reactive<LocalState>({
   id: props.template.id,
   engine: props.template.engine,
   category: props.template.category,
-  table: convertTableMetadataToTable(Object.assign({}, props.template.table)),
+  table: convertTableMetadataToTable(
+    Object.assign({}, props.template.table),
+    "normal",
+    props.template.config
+  ),
   showClassificationDrawer: false,
   showFieldTemplateDrawer: false,
-  tableConfig: TableConfig.fromPartial({
-    ...(props.template.config ?? {}),
-  }),
 });
+const { t } = useI18n();
 const settingStore = useSettingV1Store();
 const allowEdit = computed(() => {
   return (
@@ -296,7 +292,14 @@ const sumbitDisabled = computed(() => {
   }
   if (
     !props.create &&
-    isEqual(convertTableMetadataToTable(props.template.table!), state.table)
+    isEqual(
+      convertTableMetadataToTable(
+        props.template.table!,
+        "normal",
+        props.template.config
+      ),
+      state.table
+    )
   ) {
     return true;
   }
@@ -310,8 +313,8 @@ const onSumbit = async () => {
     category: state.category,
     table: transformTableEditToMetadata(state.table),
     config: TableConfig.fromPartial({
-      ...state.tableConfig,
-      name: state.table?.name,
+      name: state.table.name,
+      columnConfigs: state.table.columnList.map((col) => col.config),
     }),
   };
   const setting = await settingStore.fetchSettingByName(
@@ -341,6 +344,13 @@ const onSumbit = async () => {
       schemaTemplateSettingValue: settingValue,
     },
   });
+
+  useNotificationStore().pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("common.updated"),
+  });
+
   emit("dismiss");
 };
 
@@ -390,41 +400,16 @@ const handleApplyColumnTemplate = (
   if (template.engine !== state.engine || !template.column) {
     return;
   }
-  const column = convertColumnMetadataToColumn(template.column, "created");
+  const column = convertColumnMetadataToColumn(
+    template.column,
+    "created",
+    template.config
+  );
   state.table.columnList.push(column);
-
-  if (template.config) {
-    onColumnConfigUpdate(column.name, template.config);
-  }
 };
 
 const onClassificationSelect = (id: string) => {
-  if (!state.table) {
-    return;
-  }
   state.table.classification = id;
   state.showClassificationDrawer = false;
-};
-
-const onColumnConfigUpdate = (
-  column: string,
-  config: Partial<ColumnConfig>
-) => {
-  const index = state.tableConfig.columnConfigs.findIndex(
-    (columnConfig) => config.name === columnConfig.name
-  );
-  if (index < 0) {
-    state.tableConfig.columnConfigs.push(
-      ColumnConfig.fromPartial({
-        ...config,
-        name: column,
-      })
-    );
-  } else {
-    state.tableConfig.columnConfigs[index] = {
-      ...state.tableConfig.columnConfigs[index],
-      ...config,
-    };
-  }
 };
 </script>
