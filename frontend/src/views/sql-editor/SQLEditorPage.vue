@@ -153,6 +153,7 @@ import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModa
 import { Drawer, DrawerContent, InstanceV1Name } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
+  useActuatorV1Store,
   useCurrentUserV1,
   useDatabaseV1Store,
   useInstanceV1ByUID,
@@ -195,6 +196,7 @@ const state = reactive<LocalState>({
 
 const tabStore = useTabStore();
 const databaseStore = useDatabaseV1Store();
+const actuatorStore = useActuatorV1Store();
 const sqlEditorStore = useSQLEditorStore();
 const currentUserV1 = useCurrentUserV1();
 // provide context for SQL Editor
@@ -203,7 +205,7 @@ const { events: editorEvents } = provideSQLEditorContext();
 const { showPanel: showSheetPanel } = provideSheetContext();
 const { show: showSecondarySidebar } = provideSecondarySidebarContext();
 
-const showQuickstart = computed(() => sqlEditorStore.mode === "BUNDLED");
+const showQuickstart = computed(() => actuatorStore.pageMode === "BUNDLED");
 
 const isDisconnected = computed(() => tabStore.isDisconnected);
 const isFetchingSheet = computed(() => sqlEditorStore.isFetchingSheet);
