@@ -24,12 +24,15 @@ import { cloneDeep, debounce } from "lodash-es";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { SQLCheckButton, SQLCheckSummary } from "@/components/SQLCheck";
+import {
+  mergeSchemaEditToMetadata,
+  validateDatabaseMetadata,
+} from "@/components/SchemaEditorV1/utils";
 import { schemaDesignServiceClient } from "@/grpcweb";
 import { useDatabaseV1Store, useSchemaEditorV1Store } from "@/store";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import { getBaselineMetadataOfBranch } from "../SchemaEditorV1/utils/branch";
-import { mergeSchemaEditToMetadata, validateDatabaseMetadata } from "./utils";
 
 const props = defineProps<{
   schemaDesign: SchemaDesign;

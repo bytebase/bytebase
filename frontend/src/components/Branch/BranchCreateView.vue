@@ -66,6 +66,7 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import SchemaEditorV1 from "@/components/SchemaEditorV1/index.vue";
+import { mergeSchemaEditToMetadata } from "@/components/SchemaEditorV1/utils";
 import {
   pushNotification,
   useChangeHistoryStore,
@@ -97,7 +98,7 @@ import {
 } from "@/types/proto/v1/sheet_service";
 import { extractChangeHistoryUID } from "@/utils";
 import BaselineSchemaSelector from "./BaselineSchemaSelector.vue";
-import { mergeSchemaEditToMetadata, validateBranchName } from "./utils";
+import { validateBranchName } from "./utils";
 
 interface BaselineSchema {
   // The uid of database.

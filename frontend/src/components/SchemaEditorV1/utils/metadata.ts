@@ -267,7 +267,9 @@ const transformSchemaEditToMetadata = (schemaEdit: Schema): SchemaMetadata => {
   return schemaMetadata;
 };
 
-const transformTableEditToMetadata = (tableEdit: Table): TableMetadata => {
+export const transformTableEditToMetadata = (
+  tableEdit: Table
+): TableMetadata => {
   const tableMetadata = TableMetadata.fromPartial({
     name: tableEdit.name,
     columns: [],

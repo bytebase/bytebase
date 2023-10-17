@@ -8,7 +8,7 @@ import {
   BranchSchema,
   convertSchemaMetadataList,
 } from "@/types/v1/schemaEditor";
-import { rebuildEditableSchemas } from "./metadataV1";
+import { rebuildEditableSchemas } from "./metadata";
 
 export const convertBranchToBranchSchema = (
   branch: SchemaDesign
