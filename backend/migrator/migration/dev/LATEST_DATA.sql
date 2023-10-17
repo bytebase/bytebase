@@ -58,8 +58,8 @@ VALUES
         'ENVIRONMENT',
         101,
         TRUE,
-        'bb.policy.pipeline-approval',
-        '{"value":"MANUAL_APPROVAL_NEVER"}'
+        'bb.policy.rollout',
+        '{"automatic": true}'
     );
 
 INSERT INTO
@@ -81,8 +81,8 @@ VALUES
         'ENVIRONMENT',
         102,
         TRUE,
-        'bb.policy.pipeline-approval',
-        '{"value":"MANUAL_APPROVAL_ALWAYS"}'
+        'bb.policy.rollout',
+        '{"automatic": false, "workspaceRoles": ["roles/OWNER","roles/DBA"]}'
     );
 
 INSERT INTO

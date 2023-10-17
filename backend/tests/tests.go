@@ -273,10 +273,10 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *co
 		if _, err := ctl.orgPolicyServiceClient.CreatePolicy(metaCtx, &v1pb.CreatePolicyRequest{
 			Parent: fmt.Sprintf("environments/%s", environment),
 			Policy: &v1pb.Policy{
-				Type: v1pb.PolicyType_DEPLOYMENT_APPROVAL,
-				Policy: &v1pb.Policy_DeploymentApprovalPolicy{
-					DeploymentApprovalPolicy: &v1pb.DeploymentApprovalPolicy{
-						DefaultStrategy: v1pb.ApprovalStrategy_MANUAL,
+				Type: v1pb.PolicyType_ROLLOUT_POLICY,
+				Policy: &v1pb.Policy_RolloutPolicy{
+					RolloutPolicy: &v1pb.RolloutPolicy{
+						Automatic: false,
 					},
 				},
 			},
