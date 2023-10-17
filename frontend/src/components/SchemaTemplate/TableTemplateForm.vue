@@ -211,7 +211,7 @@
 <script lang="ts" setup>
 import { isEqual, cloneDeep } from "lodash-es";
 import { computed, nextTick, reactive } from "vue";
-import { transformTableEditToMetadata } from "@/components/Branch/utils";
+import { transformTableEditToMetadata } from "@/components/SchemaEditorV1/utils";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
