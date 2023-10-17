@@ -46,18 +46,18 @@
           <button
             v-if="!readonly && getColumnSemanticType(column.name)"
             :disabled="disableAlterColumn(column)"
-            class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer"
+            class="w-4 h-4 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer"
             @click.prevent="onSemanticTypeRemove(column.name)"
           >
-            <heroicons-outline:x class="w-4 h-4" />
+            <heroicons-outline:x class="w-3 h-3" />
           </button>
           <button
             v-if="!readonly"
             :disabled="disableAlterColumn(column)"
-            class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer"
+            class="w-4 h-4 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer"
             @click.prevent="openSemanticTypeDrawer(column)"
           >
-            <heroicons-outline:pencil class="w-4 h-4" />
+            <heroicons-outline:pencil class="w-3 h-3" />
           </button>
         </div>
         <div
@@ -262,7 +262,7 @@
 </template>
 
 <script lang="ts" setup>
-import { flatten, cloneDeep } from "lodash-es";
+import { flatten } from "lodash-es";
 import { NDropdown } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -320,7 +320,7 @@ const emit = defineEmits<{
   (event: "onForeignKeyEdit", column: Column): void;
   (event: "onForeignKeyClick", column: Column): void;
   (event: "onPrimaryKeySet", column: Column, isPrimaryKey: boolean): void;
-  (event: "onUpdate:tableConfig", tableConfig: TableConfig): void;
+  (event: "onUpdate:columnConfig", columnConfig: ColumnConfig): void;
 }>();
 
 const state = reactive<LocalState>({
@@ -372,7 +372,7 @@ const columnHeaderList = computed(() => {
     },
     {
       title: t("settings.sensitive-data.semantic-types.self"),
-      width: "minmax(auto, 0.5fr)",
+      width: "minmax(auto, 0.8fr)",
     },
     {
       title: t("schema-editor.column.classification"),
@@ -550,26 +550,13 @@ const updateColumnConfig = async (
   column: string,
   config: Partial<ColumnConfig>
 ) => {
-  const index = props.tableConfig.columnConfigs.findIndex(
-    (config) => config.name === column
-  );
-
-  const pendingUpdateTableConfig = cloneDeep(props.tableConfig);
-  if (index < 0) {
-    pendingUpdateTableConfig.columnConfigs.push(
-      ColumnConfig.fromPartial({
-        name: column,
-        ...config,
-      })
-    );
-  } else {
-    pendingUpdateTableConfig.columnConfigs[index] = {
-      ...pendingUpdateTableConfig.columnConfigs[index],
+  emit(
+    "onUpdate:columnConfig",
+    ColumnConfig.fromPartial({
       ...config,
-    };
-  }
-
-  emit("onUpdate:tableConfig", pendingUpdateTableConfig);
+      name: column,
+    })
+  );
 };
 </script>
 

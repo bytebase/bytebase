@@ -1,4 +1,4 @@
-import { isUndefined, uniqueId } from "lodash-es";
+import { isUndefined, uniqueId, cloneDeep } from "lodash-es";
 import { defineStore } from "pinia";
 import { ComposedDatabase, emptyProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
@@ -172,6 +172,40 @@ export const useSchemaEditorV1Store = defineStore("SchemaEditorV1", {
       });
 
       return tab;
+    },
+    updateColumnConfig(
+      schema: Schema,
+      table: string,
+      column: string,
+      config: Partial<ColumnConfig>
+    ) {
+      const tableConfig = this.getTableConfig(schema, table);
+      const index = tableConfig.columnConfigs.findIndex(
+        (config) => config.name === column
+      );
+      const pendingUpdateTableConfig = cloneDeep(tableConfig);
+      if (index < 0) {
+        pendingUpdateTableConfig.columnConfigs.push(
+          ColumnConfig.fromPartial({
+            name: column,
+            ...config,
+          })
+        );
+      } else {
+        pendingUpdateTableConfig.columnConfigs[index] = {
+          ...pendingUpdateTableConfig.columnConfigs[index],
+          ...config,
+        };
+      }
+
+      const tableIndex = schema.config.tableConfigs.findIndex(
+        (config) => config.name === table
+      );
+      if (tableIndex < 0) {
+        schema.config.tableConfigs.push(pendingUpdateTableConfig);
+      } else {
+        schema.config.tableConfigs[tableIndex] = pendingUpdateTableConfig;
+      }
     },
     getTableConfig(schame: Schema, table: string): TableConfig {
       return (

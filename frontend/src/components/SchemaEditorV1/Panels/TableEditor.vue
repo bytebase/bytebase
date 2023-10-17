@@ -45,7 +45,7 @@
       @on-primary-key-set="setColumnPrimaryKey"
       @on-foreign-key-edit="handleEditColumnForeignKey"
       @on-foreign-key-click="gotoForeignKeyReferencedTable"
-      @on-update:table-config="onTableConfigUpdate"
+      @on-update:column-config="onColumnConfigUpdate"
     />
   </div>
 
@@ -90,7 +90,10 @@ import {
   useSchemaEditorV1Store,
 } from "@/store/modules";
 import { Engine } from "@/types/proto/v1/common";
-import { ColumnMetadata, TableConfig } from "@/types/proto/v1/database_service";
+import {
+  ColumnMetadata,
+  ColumnConfig,
+} from "@/types/proto/v1/database_service";
 import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
 import {
   Column,
@@ -164,15 +167,13 @@ const tableConfig = computed(() => {
   return schemaEditorV1Store.getTableConfig(schema.value, table.value.name);
 });
 
-const onTableConfigUpdate = (config: TableConfig) => {
-  const tableIndex = schema.value.config.tableConfigs.findIndex(
-    (config) => config.name === table.value.name
+const onColumnConfigUpdate = (config: ColumnConfig) => {
+  schemaEditorV1Store.updateColumnConfig(
+    schema.value,
+    table.value.name,
+    config.name,
+    config
   );
-  if (tableIndex < 0) {
-    schema.value.config.tableConfigs.push(config);
-  } else {
-    schema.value.config.tableConfigs[tableIndex] = config;
-  }
 };
 
 const editForeignKeyColumn = ref<Column>();
@@ -299,6 +300,18 @@ const handleApplyColumnTemplate = (
   }
   const column = convertColumnMetadataToColumn(template.column, "created");
   table.value.columnList.push(column);
+
+  if (template.config) {
+    schemaEditorV1Store.updateColumnConfig(
+      schema.value,
+      table.value.name,
+      column.name,
+      ColumnConfig.fromPartial({
+        ...template.config,
+        name: column.name,
+      })
+    );
+  }
 };
 
 const gotoForeignKeyReferencedTable = (column: Column) => {

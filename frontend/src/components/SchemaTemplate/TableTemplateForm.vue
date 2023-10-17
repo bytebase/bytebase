@@ -160,6 +160,7 @@
               :classification-config-id="classificationConfig?.id"
               @on-drop="onColumnDrop"
               @on-primary-key-set="setColumnPrimaryKey"
+              @on-update:column-config="onColumnConfigUpdate"
             />
           </div>
         </div>
@@ -216,7 +217,11 @@ import { transformTableEditToMetadata } from "@/components/SchemaEditorV1/utils"
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
-import { ColumnMetadata, TableConfig } from "@/types/proto/v1/database_service";
+import {
+  ColumnMetadata,
+  ColumnConfig,
+  TableConfig,
+} from "@/types/proto/v1/database_service";
 import {
   SchemaTemplateSetting,
   SchemaTemplateSetting_FieldTemplate,
@@ -257,20 +262,15 @@ const state = reactive<LocalState>({
   table: convertTableMetadataToTable(Object.assign({}, props.template.table)),
   showClassificationDrawer: false,
   showFieldTemplateDrawer: false,
-  tableConfig: TableConfig.fromPartial({}),
+  tableConfig: TableConfig.fromPartial({
+    ...(props.template.config ?? {}),
+  }),
 });
 const settingStore = useSettingV1Store();
 const allowEdit = computed(() => {
   return (
     useWorkspacePermissionV1("bb.permission.workspace.manage-general").value &&
     !props.readonly
-  );
-});
-
-const semanticTypeList = computed(() => {
-  return (
-    settingStore.getSettingByName("bb.workspace.semantic-types")?.value
-      ?.semanticTypesSettingValue?.types ?? []
   );
 });
 
@@ -309,7 +309,10 @@ const onSumbit = async () => {
     engine: state.engine,
     category: state.category,
     table: transformTableEditToMetadata(state.table),
-    config: TableConfig.fromPartial({}),
+    config: TableConfig.fromPartial({
+      ...state.tableConfig,
+      name: state.table?.name,
+    }),
   };
   const setting = await settingStore.fetchSettingByName(
     "bb.workspace.schema-template"
@@ -382,12 +385,17 @@ const setColumnPrimaryKey = (column: Column, isPrimaryKey: boolean) => {
 const handleApplyColumnTemplate = (
   template: SchemaTemplateSetting_FieldTemplate
 ) => {
+  state.showFieldTemplateDrawer = false;
+
   if (template.engine !== state.engine || !template.column) {
     return;
   }
   const column = convertColumnMetadataToColumn(template.column, "created");
   state.table.columnList.push(column);
-  state.showFieldTemplateDrawer = false;
+
+  if (template.config) {
+    onColumnConfigUpdate(template.config);
+  }
 };
 
 const onClassificationSelect = (id: string) => {
@@ -396,5 +404,19 @@ const onClassificationSelect = (id: string) => {
   }
   state.table.classification = id;
   state.showClassificationDrawer = false;
+};
+
+const onColumnConfigUpdate = (config: ColumnConfig) => {
+  const index = state.tableConfig.columnConfigs.findIndex(
+    (columnConfig) => config.name === columnConfig.name
+  );
+  if (index < 0) {
+    state.tableConfig.columnConfigs.push(config);
+  } else {
+    state.tableConfig.columnConfigs[index] = {
+      ...state.tableConfig.columnConfigs[index],
+      ...config,
+    };
+  }
 };
 </script>
