@@ -19,8 +19,6 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/pg"
 
 	// Editors.
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/edit/mysql"
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/edit/pg"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 
 	// Transformers.
