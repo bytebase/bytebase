@@ -247,7 +247,7 @@ message MaskingAlgorithmSetting {
       }
 
       message PartialMaskingPayload {
-        message RuleGroup {
+        message Rule {
           // regexp is the regular expression used to match the original value,
           // the max bytes of the regexp is 64.
           string regexp = 1;
@@ -255,7 +255,7 @@ message MaskingAlgorithmSetting {
           // max bytes of the string is 16.
           string replace_with = 2;
         }
-        repeated RuleGroup rule_groups = 1;
+        repeated Rule rules = 1;
       }
 
       oneof payload {
