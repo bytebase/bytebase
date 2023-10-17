@@ -1,7 +1,7 @@
 <template>
-  <template v-if="!keyword.trim()">{{ text }}</template>
+  <span v-if="!keyword.trim()" v-bind="$attrs">{{ text }}</span>
   <!-- eslint-disable-next-line vue/no-v-html -->
-  <span v-else v-html="html" />
+  <span v-else v-bind="$attrs" v-html="html" />
 </template>
 
 <script lang="ts" setup>
