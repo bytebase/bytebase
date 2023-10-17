@@ -39,6 +39,7 @@
           />
         </div>
         <div
+          v-if="isDev()"
           class="bb-grid-cell flex items-center"
           :class="getColumnClassList(column, row)"
         >
@@ -271,7 +272,7 @@ import { useSettingV1Store } from "@/store/modules";
 import { Engine } from "@/types/proto/v1/common";
 import { TableConfig, ColumnConfig } from "@/types/proto/v1/database_service";
 import { Table, Column, ForeignKey } from "@/types/v1/schemaEditor";
-import { getDataTypeSuggestionList } from "@/utils";
+import { getDataTypeSuggestionList, isDev } from "@/utils";
 import ColumnDefaultValueExpressionModal from "../Modals/ColumnDefaultValueExpressionModal.vue";
 import {
   getColumnDefaultDisplayString,
@@ -377,6 +378,7 @@ const columnHeaderList = computed(() => {
     {
       title: t("settings.sensitive-data.semantic-types.self"),
       width: "minmax(auto, 0.8fr)",
+      hide: !isDev(),
     },
     {
       title: t("schema-editor.column.classification"),
