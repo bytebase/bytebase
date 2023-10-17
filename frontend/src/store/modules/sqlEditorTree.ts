@@ -354,10 +354,8 @@ const buildSubTree = (
   // group (project, instance, project, label) nodes
   const nodes: TreeNode[] = [];
   const factor = factorList[factorIndex];
-  const groups = groupBy(databaseList, (db) =>
-    getSemanticFactorValue(db, factor)
-  );
-  for (const [value, childrenDatabaseList] of groups) {
+  const sortedGroups = groupDatabaseListByFactor(databaseList, factor);
+  for (const [value, childrenDatabaseList] of sortedGroups) {
     const groupNode = mapGroupNode(factor, value, parent);
     groupNode.children = buildSubTree(
       childrenDatabaseList,
@@ -512,4 +510,26 @@ export const resolveOpeningDatabaseListFromTabList = () => {
     }),
     (meta) => meta.target.name
   );
+};
+const groupDatabaseListByFactor = (
+  databaseList: ComposedDatabase[],
+  factor: Factor
+) => {
+  const groups = groupBy(databaseList, (db) =>
+    getSemanticFactorValue(db, factor)
+  );
+  const groupList = Array.from(groups);
+  if (factor.startsWith("label:")) {
+    // Sort in lexicographical order, and put <empty value> to the last
+    return orderBy(
+      groupList,
+      [
+        ([value]) => (value ? -1 : 1), // Empty value to the last,
+        ([value]) => value, // lexicographical order then
+      ],
+      ["asc", "asc"]
+    );
+  }
+
+  return groupList;
 };
