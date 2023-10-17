@@ -27,7 +27,7 @@
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
-import { useCurrentUserV1, useSQLEditorStore, useTabStore } from "@/store";
+import { useCurrentUserV1, useTabStore, useVendersStore } from "@/store";
 import { ComposedInstance, TabMode, UNKNOWN_ID } from "@/types";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
 import { hasWorkspacePermissionV1, instanceV1Slug } from "@/utils";
@@ -37,7 +37,7 @@ const props = defineProps<{
 }>();
 
 const router = useRouter();
-const { mode } = storeToRefs(useSQLEditorStore());
+const { mode } = storeToRefs(useVendersStore());
 const tabStore = useTabStore();
 const me = useCurrentUserV1();
 

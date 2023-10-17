@@ -158,6 +158,7 @@ import {
   useInstanceV1ByUID,
   useSQLEditorStore,
   useTabStore,
+  useVendersStore,
 } from "@/store";
 import { DatabaseId, TabMode, UNKNOWN_ID } from "@/types";
 import {
@@ -195,6 +196,7 @@ const state = reactive<LocalState>({
 
 const tabStore = useTabStore();
 const databaseStore = useDatabaseV1Store();
+const vendersStore = useVendersStore();
 const sqlEditorStore = useSQLEditorStore();
 const currentUserV1 = useCurrentUserV1();
 // provide context for SQL Editor
@@ -203,7 +205,7 @@ const { events: editorEvents } = provideSQLEditorContext();
 const { showPanel: showSheetPanel } = provideSheetContext();
 const { show: showSecondarySidebar } = provideSecondarySidebarContext();
 
-const showQuickstart = computed(() => sqlEditorStore.mode === "BUNDLED");
+const showQuickstart = computed(() => vendersStore.mode === "BUNDLED");
 
 const isDisconnected = computed(() => tabStore.isDisconnected);
 const isFetchingSheet = computed(() => sqlEditorStore.isFetchingSheet);
