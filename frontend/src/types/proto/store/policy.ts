@@ -50,6 +50,17 @@ export function sQLReviewRuleLevelToJSON(object: SQLReviewRuleLevel): string {
   }
 }
 
+export interface RolloutPolicy {
+  automatic: boolean;
+  workspaceRoles: string[];
+  projectRoles: string[];
+  /**
+   * roles/LAST_APPROVER
+   * roles/CREATOR
+   */
+  issueRoles: string[];
+}
+
 export interface IamPolicy {
   /** Collection of binding. */
   bindings: Binding[];
@@ -175,6 +186,115 @@ export interface SQLReviewRule {
   engine: Engine;
   comment: string;
 }
+
+function createBaseRolloutPolicy(): RolloutPolicy {
+  return { automatic: false, workspaceRoles: [], projectRoles: [], issueRoles: [] };
+}
+
+export const RolloutPolicy = {
+  encode(message: RolloutPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.automatic === true) {
+      writer.uint32(8).bool(message.automatic);
+    }
+    for (const v of message.workspaceRoles) {
+      writer.uint32(18).string(v!);
+    }
+    for (const v of message.projectRoles) {
+      writer.uint32(26).string(v!);
+    }
+    for (const v of message.issueRoles) {
+      writer.uint32(34).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): RolloutPolicy {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRolloutPolicy();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.automatic = reader.bool();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.workspaceRoles.push(reader.string());
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.projectRoles.push(reader.string());
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.issueRoles.push(reader.string());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RolloutPolicy {
+    return {
+      automatic: isSet(object.automatic) ? Boolean(object.automatic) : false,
+      workspaceRoles: Array.isArray(object?.workspaceRoles) ? object.workspaceRoles.map((e: any) => String(e)) : [],
+      projectRoles: Array.isArray(object?.projectRoles) ? object.projectRoles.map((e: any) => String(e)) : [],
+      issueRoles: Array.isArray(object?.issueRoles) ? object.issueRoles.map((e: any) => String(e)) : [],
+    };
+  },
+
+  toJSON(message: RolloutPolicy): unknown {
+    const obj: any = {};
+    message.automatic !== undefined && (obj.automatic = message.automatic);
+    if (message.workspaceRoles) {
+      obj.workspaceRoles = message.workspaceRoles.map((e) => e);
+    } else {
+      obj.workspaceRoles = [];
+    }
+    if (message.projectRoles) {
+      obj.projectRoles = message.projectRoles.map((e) => e);
+    } else {
+      obj.projectRoles = [];
+    }
+    if (message.issueRoles) {
+      obj.issueRoles = message.issueRoles.map((e) => e);
+    } else {
+      obj.issueRoles = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<RolloutPolicy>): RolloutPolicy {
+    return RolloutPolicy.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<RolloutPolicy>): RolloutPolicy {
+    const message = createBaseRolloutPolicy();
+    message.automatic = object.automatic ?? false;
+    message.workspaceRoles = object.workspaceRoles?.map((e) => e) || [];
+    message.projectRoles = object.projectRoles?.map((e) => e) || [];
+    message.issueRoles = object.issueRoles?.map((e) => e) || [];
+    return message;
+  },
+};
 
 function createBaseIamPolicy(): IamPolicy {
   return { bindings: [] };

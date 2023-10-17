@@ -77,7 +77,6 @@
             </label>
             <button
               class="text-sm border px-3 leading-8 flex items-center rounded cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
-              :disabled="!allowSyncSQLFromSchemaEditor"
               @click="handleSyncSQLFromSchemaEditor"
             >
               <heroicons-outline:arrow-path
@@ -137,8 +136,8 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
-import { cloneDeep, head, uniq } from "lodash-es";
-import { computed, onMounted, PropType, reactive, ref, watch } from "vue";
+import { cloneDeep, head, isEqual, uniq } from "lodash-es";
+import { computed, onMounted, PropType, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import ActionConfirmModal from "@/components/SchemaEditorV1/Modals/ActionConfirmModal.vue";
@@ -158,9 +157,9 @@ import {
   unknownProject,
 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
+import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import { allowGhostMigrationV1 } from "@/utils";
-import { validateDatabaseEdit } from "@/utils/schemaEditor/validate";
 import MonacoEditor from "../MonacoEditor";
 import { provideSQLCheckContext } from "../SQLCheck";
 import {
@@ -169,7 +168,6 @@ import {
 } from "../SchemaEditorV1/utils";
 import GhostDialog from "./GhostDialog.vue";
 import SchemaEditorSQLCheckButton from "./SchemaEditorSQLCheckButton/SchemaEditorSQLCheckButton.vue";
-import { getDatabaseEditListWithSchemaEditor } from "./utils";
 
 const MAX_UPLOAD_FILE_SIZE_MB = 1;
 
@@ -211,24 +209,16 @@ const schemaEditorV1Store = useSchemaEditorV1Store();
 const databaseV1Store = useDatabaseV1Store();
 const dbSchemaV1Store = useDBSchemaV1Store();
 const notificationStore = useNotificationStore();
-const statementFromSchemaEditor = ref<string>();
 const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
 const { runSQLCheck } = provideSQLCheckContext();
 
 const allowPreviewIssue = computed(() => {
   if (state.selectedTab === "schema-editor") {
-    const databaseEditList = getDatabaseEditListWithSchemaEditor();
-    return databaseEditList.length !== 0;
+    const databaseMetadataMap = getChangedDatabaseMetadatas();
+    return databaseMetadataMap && databaseMetadataMap.size > 0;
   } else {
     return state.editStatement !== "";
   }
-});
-
-const allowSyncSQLFromSchemaEditor = computed(() => {
-  if (state.selectedTab === "raw-sql") {
-    return statementFromSchemaEditor.value !== state.editStatement;
-  }
-  return false;
 });
 
 const databaseList = computed(() => {
@@ -253,7 +243,13 @@ const isTenantProject = computed(
   () => project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED
 );
 
-onMounted(() => {
+const prepareDatabaseMetadatas = async () => {
+  for (const database of databaseList.value) {
+    await dbSchemaV1Store.getOrFetchDatabaseMetadata(database.name);
+  }
+};
+
+onMounted(async () => {
   if (
     databaseList.value.length === 0 ||
     project.value.name === UNKNOWN_PROJECT_NAME
@@ -266,6 +262,8 @@ onMounted(() => {
     emit("close");
     return;
   }
+
+  await prepareDatabaseMetadatas();
 });
 
 const handleChangeTab = (tab: TabType) => {
@@ -303,59 +301,72 @@ const isUsingGhostMigration = async (databaseList: ComposedDatabase[]) => {
 };
 
 const handleSyncSQLFromSchemaEditor = async () => {
-  if (!allowSyncSQLFromSchemaEditor.value) {
+  const statementMap = await fetchStatementMapWithSchemaEditor();
+  if (!statementMap) {
     return;
   }
-
-  const databaseEditMap = await fetchDatabaseEditStatementMapWithSchemaEditor();
-  if (!databaseEditMap) {
-    return;
-  }
-  state.editStatement = Array.from(databaseEditMap.values()).join("\n");
-  statementFromSchemaEditor.value = state.editStatement;
+  state.editStatement = Array.from(statementMap.values()).join("\n");
 };
 
-const fetchDatabaseEditStatementMapWithSchemaEditor = async () => {
-  const databaseEditList = getDatabaseEditListWithSchemaEditor();
-  const databaseEditMap: Map<string, string> = new Map();
-  if (databaseEditList.length > 0) {
-    for (const databaseEdit of databaseEditList) {
-      const database = databaseV1Store.getDatabaseByUID(
-        String(databaseEdit.databaseId)
-      );
-      const databaseSchema = schemaEditorV1Store.resourceMap["database"].get(
-        database.name
-      );
-      if (!databaseSchema) {
-        continue;
-      }
-
-      const metadata = await dbSchemaV1Store.getOrFetchDatabaseMetadata(
-        database.name
-      );
-      const mergedMetadata = mergeSchemaEditToMetadata(
-        databaseSchema.schemaList,
-        cloneDeep(metadata)
-      );
-      const validationMessages = validateDatabaseMetadata(mergedMetadata);
-      if (validationMessages.length > 0) {
-        pushNotification({
-          module: "bytebase",
-          style: "WARN",
-          title: "Invalid schema structure",
-          description: validationMessages.join("\n"),
-        });
-        return;
-      }
-      const { diff } = await schemaDesignServiceClient.diffMetadata({
-        sourceMetadata: metadata,
-        targetMetadata: mergedMetadata,
-        engine: database.instanceEntity.engine,
-      });
-      databaseEditMap.set(database.uid, diff);
+const getChangedDatabaseMetadatas = () => {
+  const databaseMetadataMap: Map<string, [DatabaseMetadata, DatabaseMetadata]> =
+    new Map();
+  for (const database of databaseList.value) {
+    const databaseSchema = schemaEditorV1Store.resourceMap["database"].get(
+      database.name
+    );
+    if (!databaseSchema) {
+      continue;
     }
+
+    const metadata = dbSchemaV1Store.getDatabaseMetadata(database.name);
+    const mergedMetadata = mergeSchemaEditToMetadata(
+      databaseSchema.schemaList,
+      cloneDeep(metadata)
+    );
+    if (isEqual(metadata, mergedMetadata)) {
+      continue;
+    }
+
+    const validationMessages = validateDatabaseMetadata(mergedMetadata);
+    if (validationMessages.length > 0) {
+      pushNotification({
+        module: "bytebase",
+        style: "WARN",
+        title: "Invalid schema structure",
+        description: validationMessages.join("\n"),
+      });
+      return;
+    }
+
+    databaseMetadataMap.set(database.uid, [metadata, mergedMetadata]);
   }
-  return databaseEditMap;
+  return databaseMetadataMap;
+};
+
+const fetchStatementMapWithSchemaEditor = async () => {
+  const statementMap: Map<string, string> = new Map();
+  const databaseMetadataMap = getChangedDatabaseMetadatas();
+  if (!databaseMetadataMap) {
+    return;
+  }
+
+  for (const [
+    databaseId,
+    [sourceMetadata, targetMetadata],
+  ] of databaseMetadataMap.entries()) {
+    const database = databaseV1Store.getDatabaseByUID(databaseId);
+    if (!database) {
+      continue;
+    }
+    const { diff } = await schemaDesignServiceClient.diffMetadata({
+      sourceMetadata,
+      targetMetadata,
+      engine: database.instanceEntity.engine,
+    });
+    statementMap.set(database.uid, diff);
+  }
+  return statementMap;
 };
 
 const handleUploadFile = (e: Event) => {
@@ -447,41 +458,21 @@ const handlePreviewIssue = async () => {
       !!query.ghost
     );
   } else {
-    const databaseEditList = getDatabaseEditListWithSchemaEditor();
-    const validateResultList = [];
-    let hasOnlyAlterTableChanges = true;
-    for (const databaseEdit of databaseEditList) {
-      validateResultList.push(...validateDatabaseEdit(databaseEdit));
-      if (
-        databaseEdit.createTableList.length > 0 ||
-        databaseEdit.dropTableList.length > 0
-      ) {
-        hasOnlyAlterTableChanges = false;
-      }
-    }
-    if (validateResultList.length > 0) {
-      notificationStore.pushNotification({
-        module: "bytebase",
-        style: "CRITICAL",
-        title: "Invalid request",
-        description: validateResultList
-          .map((result) => result.message)
-          .join("\n"),
-      });
+    // We should show select ghost mode dialog only for altering table statement not create/drop table.
+    // TODO(steven): parse the sql check if there only alter table statement.
+    const actionResult = await isUsingGhostMigration(databaseList.value);
+    if (actionResult === false) {
       return;
     }
-
-    if (hasOnlyAlterTableChanges) {
-      const actionResult = await isUsingGhostMigration(databaseList.value);
-      if (actionResult === false) {
-        return;
-      }
-      if (actionResult === "online") {
-        query.ghost = 1;
-      }
+    if (actionResult === "online") {
+      query.ghost = 1;
     }
+    query.name = generateIssueName(
+      databaseList.value.map((db) => db.databaseName),
+      !!query.ghost
+    );
 
-    const statementMap = await fetchDatabaseEditStatementMapWithSchemaEditor();
+    const statementMap = await fetchStatementMapWithSchemaEditor();
     if (!statementMap) {
       return;
     }
@@ -542,16 +533,6 @@ const generateIssueName = (
   issueNameParts.push(`${datetime} ${tz}`);
   return issueNameParts.join(" ");
 };
-
-watch(
-  () => getDatabaseEditListWithSchemaEditor(),
-  () => {
-    statementFromSchemaEditor.value = undefined;
-  },
-  {
-    deep: true,
-  }
-);
 </script>
 
 <style>

@@ -113,6 +113,10 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
 import {
+  mergeSchemaEditToMetadata,
+  validateDatabaseMetadata,
+} from "@/components/SchemaEditorV1/utils";
+import {
   pushNotification,
   useChangeHistoryStore,
   useDatabaseV1Store,
@@ -129,12 +133,7 @@ import { provideSQLCheckContext } from "../SQLCheck";
 import { getBaselineMetadataOfBranch } from "../SchemaEditorV1/utils/branch";
 import MergeBranchPanel from "./MergeBranchPanel.vue";
 import SchemaDesignEditor from "./SchemaDesignEditor.vue";
-import {
-  generateForkedBranchName,
-  mergeSchemaEditToMetadata,
-  validateDatabaseMetadata,
-  validateBranchName,
-} from "./utils";
+import { generateForkedBranchName, validateBranchName } from "./utils";
 
 interface LocalState {
   schemaDesignTitle: string;

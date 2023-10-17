@@ -1,11 +1,11 @@
 import { v1 as uuidv1 } from "uuid";
-import { isGhostTable } from "@/utils";
 import {
   SchemaMetadata,
   TableMetadata,
   ColumnMetadata,
   SchemaConfig,
-} from "../../proto/v1/database_service";
+} from "@/types/proto/v1/database_service";
+import { isGhostTable } from "@/utils";
 
 type Status = "normal" | "created" | "dropped";
 

@@ -561,6 +561,9 @@ func (*SchemaDesignService) DiffMetadata(_ context.Context, request *v1pb.DiffMe
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid target metadata: %v", err))
 	}
 
+	sanitizeCommentForSchemaMetadata(request.SourceMetadata)
+	sanitizeCommentForSchemaMetadata(request.TargetMetadata)
+
 	sourceSchema, err := transformDatabaseMetadataToSchemaString(request.Engine, request.SourceMetadata)
 	if err != nil {
 		return nil, err
@@ -767,22 +770,19 @@ func convertProtectionFromStore(protection *storepb.SheetPayload_SchemaDesign_Pr
 
 func sanitizeSchemaDesignSchemaMetadata(design *v1pb.SchemaDesign) {
 	if dbSchema := design.GetBaselineSchemaMetadata(); dbSchema != nil {
-		for _, schema := range dbSchema.Schemas {
-			for _, table := range schema.Tables {
-				table.Comment = common.GetCommentFromClassificationAndUserComment(table.Classification, table.UserComment)
-				for _, col := range table.Columns {
-					col.Comment = common.GetCommentFromClassificationAndUserComment(col.Classification, col.UserComment)
-				}
-			}
-		}
+		sanitizeCommentForSchemaMetadata(dbSchema)
 	}
 	if dbSchema := design.GetSchemaMetadata(); dbSchema != nil {
-		for _, schema := range dbSchema.Schemas {
-			for _, table := range schema.Tables {
-				table.Comment = common.GetCommentFromClassificationAndUserComment(table.Classification, table.UserComment)
-				for _, col := range table.Columns {
-					col.Comment = common.GetCommentFromClassificationAndUserComment(col.Classification, col.UserComment)
-				}
+		sanitizeCommentForSchemaMetadata(dbSchema)
+	}
+}
+
+func sanitizeCommentForSchemaMetadata(dbSchema *v1pb.DatabaseMetadata) {
+	for _, schema := range dbSchema.Schemas {
+		for _, table := range schema.Tables {
+			table.Comment = common.GetCommentFromClassificationAndUserComment(table.Classification, table.UserComment)
+			for _, col := range table.Columns {
+				col.Comment = common.GetCommentFromClassificationAndUserComment(col.Classification, col.UserComment)
 			}
 		}
 	}
