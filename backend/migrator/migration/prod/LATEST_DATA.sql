@@ -58,8 +58,8 @@ VALUES
         'ENVIRONMENT',
         101,
         TRUE,
-        'bb.policy.pipeline-approval',
-        '{"value":"MANUAL_APPROVAL_NEVER"}'
+        'bb.policy.rollout',
+        '{"automatic": true}'
     );
 
 INSERT INTO
@@ -81,8 +81,8 @@ VALUES
         'ENVIRONMENT',
         102,
         TRUE,
-        'bb.policy.pipeline-approval',
-        '{"value":"MANUAL_APPROVAL_NEVER"}'
+        'bb.policy.rollout',
+        '{"automatic": true}'
     );
 
 ALTER SEQUENCE policy_id_seq RESTART WITH 103;
