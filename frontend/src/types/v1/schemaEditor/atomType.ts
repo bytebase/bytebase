@@ -71,7 +71,7 @@ export interface Schema {
 export const convertColumnMetadataToColumn = (
   columnMetadata: ColumnMetadata,
   status: Status,
-  config: ColumnConfig = ColumnConfig.fromPartial({})
+  config: ColumnConfig | undefined = undefined
 ): Column => {
   return {
     id: uuidv1(),
@@ -87,7 +87,7 @@ export const convertColumnMetadataToColumn = (
     classification: columnMetadata.classification,
     status,
     config: ColumnConfig.fromPartial({
-      ...config,
+      ...(config ?? {}),
       name: columnMetadata.name,
     }),
   };
