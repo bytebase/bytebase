@@ -23,7 +23,6 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/mail"
-	"github.com/bytebase/bytebase/backend/plugin/parser/sql/edit"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -689,7 +688,7 @@ func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTempl
 	}
 	v1Value := convertSchemaTemplateSetting(value)
 
-	// validate the changed field template.
+	// validate the changed field(column) template.
 	oldFieldTemplateMap := map[string]*v1pb.SchemaTemplateSetting_FieldTemplate{}
 	for _, template := range v1Value.FieldTemplates {
 		oldFieldTemplateMap[template.Id] = template
@@ -699,13 +698,11 @@ func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTempl
 		if ok && cmp.Equal(oldTemplate, template, protocmp.Transform()) {
 			continue
 		}
-		if err := validateDatabaseEdit(template.Engine, &api.CreateTableContext{
-			Name: "validation",
-			Type: "BASE TABLE",
-			AddColumnList: []*api.AddColumnContext{
-				convertToAddColumnContext(template.Column),
-			},
-		}); err != nil {
+		tableMetadata := &v1pb.TableMetadata{
+			Name:    "temp_table",
+			Columns: []*v1pb.ColumnMetadata{template.Column},
+		}
+		if err := validateTableMetadata(template.Engine, tableMetadata); err != nil {
 			return err
 		}
 	}
@@ -720,17 +717,7 @@ func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTempl
 		if ok && cmp.Equal(oldTemplate, template, protocmp.Transform()) {
 			continue
 		}
-
-		createTableContext := &api.CreateTableContext{
-			Name:          template.Table.Name,
-			Comment:       template.Table.Comment,
-			Type:          "BASE TABLE",
-			AddColumnList: []*api.AddColumnContext{},
-		}
-		for _, column := range template.Table.Columns {
-			createTableContext.AddColumnList = append(createTableContext.AddColumnList, convertToAddColumnContext(column))
-		}
-		if err := validateDatabaseEdit(template.Engine, createTableContext); err != nil {
+		if err := validateTableMetadata(template.Engine, template.Table); err != nil {
 			return err
 		}
 	}
@@ -738,46 +725,23 @@ func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTempl
 	return nil
 }
 
-func convertToAddColumnContext(column *v1pb.ColumnMetadata) *api.AddColumnContext {
-	var defaultVal string
-	if column.HasDefault {
-		switch value := column.Default.(type) {
-		case *v1pb.ColumnMetadata_DefaultNull:
-			defaultVal = "NULL"
-		case *v1pb.ColumnMetadata_DefaultString:
-			defaultVal = fmt.Sprintf("'%s'", strings.ReplaceAll(value.DefaultString, "'", "''"))
-		case *v1pb.ColumnMetadata_DefaultExpression:
-			defaultVal = value.DefaultExpression
-		}
+func validateTableMetadata(engine v1pb.Engine, tableMetadata *v1pb.TableMetadata) error {
+	tempSchema := &v1pb.SchemaMetadata{
+		Name:   "",
+		Tables: []*v1pb.TableMetadata{tableMetadata},
 	}
-
-	return &api.AddColumnContext{
-		Name:     column.Name,
-		Type:     column.Type,
-		Default:  &defaultVal,
-		Nullable: column.Nullable,
-		Comment:  column.Comment,
+	if engine == v1pb.Engine_POSTGRES {
+		tempSchema.Name = "temp_schema"
 	}
-}
-
-func validateDatabaseEdit(engine v1pb.Engine, createTableContext *api.CreateTableContext) error {
-	engineType := convertEngine(engine)
-	databaseEdit := &api.DatabaseEdit{
-		DatabaseID: api.UnknownID,
-		CreateTableList: []*api.CreateTableContext{
-			createTableContext,
-		},
+	tempMetadata := &v1pb.DatabaseMetadata{
+		Name:    "temp_database",
+		Schemas: []*v1pb.SchemaMetadata{tempSchema},
 	}
-
-	validateResultList, err := edit.ValidateDatabaseEdit(engineType, databaseEdit)
-	if err != nil {
-		return status.Errorf(codes.Internal, "failed to validate template, error: %v", err)
+	if err := checkDatabaseMetadata(engine, tempMetadata); err != nil {
+		return errors.Wrap(err, "failed to check database metadata")
 	}
-	if len(validateResultList) != 0 {
-		return status.Errorf(codes.InvalidArgument, validateResultList[0].Message)
-	}
-	if _, err := edit.DeparseDatabaseEdit(engineType, databaseEdit); err != nil {
-		return status.Errorf(codes.InvalidArgument, "failed to deparse statement with error: %v", err.Error())
+	if _, err := transformDatabaseMetadataToSchemaString(engine, tempMetadata); err != nil {
+		return errors.Wrap(err, "failed to transform database metadata to schema string")
 	}
 	return nil
 }
