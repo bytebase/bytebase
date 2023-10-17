@@ -1,3 +1,4 @@
+import { useLocalStorage } from "@vueuse/core";
 import axios from "axios";
 import isEmpty from "lodash-es/isEmpty";
 import Long from "long";
@@ -20,6 +21,8 @@ import {
   useActuatorV1Store,
   useAuthStore,
   useSubscriptionV1Store,
+  useVendersStore,
+  PageMode,
 } from "./store";
 import {
   databaseSlug,
@@ -166,6 +169,19 @@ app
 // We need to restore the basic info in order to perform route authentication.
 // Even using the <suspense>, it's still too late, thus we do the fetch here.
 // We use finally because we always want to mount the app regardless of the error.
+const initVenders = () => {
+  const vendersStore = useVendersStore();
+
+  const searchParams = new URLSearchParams(window.location.search);
+  let mode = searchParams.get("mode") as PageMode;
+  const cachedMode = useLocalStorage<PageMode>("bb.page-mode", "BUNDLED");
+  if (mode !== "BUNDLED" && mode !== "STANDALONE") {
+    mode = cachedMode.value;
+  }
+
+  cachedMode.value = mode;
+  vendersStore.mode = mode;
+};
 const initActuator = () => {
   const actuatorStore = useActuatorV1Store();
   return actuatorStore.fetchServerInfo();
@@ -183,6 +199,7 @@ const restoreUser = () => {
   return authStore.restoreUser();
 };
 Promise.all([
+  initVenders(),
   initActuator(),
   initFeatureMatrix(),
   initSubscription(),
