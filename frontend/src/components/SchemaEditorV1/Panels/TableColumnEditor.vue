@@ -39,8 +39,30 @@
           />
         </div>
         <div
+          class="bb-grid-cell flex items-center"
+          :class="getColumnClassList(column, row)"
+        >
+          {{ getColumnSemanticType(column.name)?.title }}
+          <button
+            v-if="!readonly && getColumnSemanticType(column.name)"
+            :disabled="disableAlterColumn(column)"
+            class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer"
+            @click.prevent="onSemanticTypeRemove(column.name)"
+          >
+            <heroicons-outline:x class="w-4 h-4" />
+          </button>
+          <button
+            v-if="!readonly"
+            :disabled="disableAlterColumn(column)"
+            class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer"
+            @click.prevent="openSemanticTypeDrawer(column)"
+          >
+            <heroicons-outline:pencil class="w-4 h-4" />
+          </button>
+        </div>
+        <div
           v-if="classificationConfig"
-          class="bb-grid-cell flex items-center gap-x-2 text-sm column-cell"
+          class="bb-grid-cell flex items-center gap-x-2 text-sm"
           :class="getColumnClassList(column, row)"
         >
           <ClassificationLevelBadge
@@ -57,7 +79,7 @@
             </button>
             <button
               class="w-4 h-4 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer"
-              @click.prevent="state.pendingUpdateColumn = column"
+              @click.prevent="openClassificationDrawer(column)"
             >
               <heroicons-outline:pencil class="w-3 h-3" />
             </button>
@@ -79,6 +101,7 @@
             type="text"
           />
           <NDropdown
+            v-if="!readonly"
             trigger="click"
             :disabled="readonly || disableAlterColumn(column)"
             :options="columnTypeOptions"
@@ -104,6 +127,7 @@
             @change="(e) => handleColumnDefaultInputChange(e, column)"
           />
           <NDropdown
+            v-if="!readonly"
             trigger="click"
             :disabled="readonly || disableAlterColumn(column)"
             :options="getColumnDefaultValueOptions(engine, column.type)"
@@ -238,13 +262,14 @@
 </template>
 
 <script lang="ts" setup>
-import { flatten } from "lodash-es";
+import { flatten, cloneDeep } from "lodash-es";
 import { NDropdown } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBCheckbox } from "@/bbkit";
 import { useSettingV1Store } from "@/store/modules";
 import { Engine } from "@/types/proto/v1/common";
+import { TableConfig, ColumnConfig } from "@/types/proto/v1/database_service";
 import { Table, Column, ForeignKey } from "@/types/v1/schemaEditor";
 import { getDataTypeSuggestionList } from "@/utils";
 import ColumnDefaultValueExpressionModal from "../Modals/ColumnDefaultValueExpressionModal.vue";
@@ -266,6 +291,7 @@ const props = withDefaults(
     readonly: boolean;
     showForeignKey?: boolean;
     table: Table;
+    tableConfig: TableConfig;
     engine: Engine;
     foreignKeyList?: ForeignKey[];
     classificationConfigId?: string;
@@ -287,13 +313,14 @@ const props = withDefaults(
   }
 );
 
-defineEmits<{
+const emit = defineEmits<{
   (event: "onDrop", column: Column): void;
   (event: "onRestore", column: Column): void;
   (event: "onEdit", index: number): void;
   (event: "onForeignKeyEdit", column: Column): void;
   (event: "onForeignKeyClick", column: Column): void;
   (event: "onPrimaryKeySet", column: Column, isPrimaryKey: boolean): void;
+  (event: "onUpdate:tableConfig", tableConfig: TableConfig): void;
 }>();
 
 const state = reactive<LocalState>({
@@ -319,11 +346,33 @@ const semanticTypeList = computed(() => {
   );
 });
 
+const getColumnConfig = (columnName: string) => {
+  return (
+    props.tableConfig.columnConfigs.find(
+      (config) => config.name === columnName
+    ) ?? ColumnConfig.fromPartial({})
+  );
+};
+
+const getColumnSemanticType = (columnName: string) => {
+  const config = getColumnConfig(columnName);
+  if (!config.semanticTypeId) {
+    return;
+  }
+  return semanticTypeList.value.find(
+    (data) => data.id === config.semanticTypeId
+  );
+};
+
 const columnHeaderList = computed(() => {
   return [
     {
       title: t("schema-editor.column.name"),
       width: "6rem",
+    },
+    {
+      title: t("settings.sensitive-data.semantic-types.self"),
+      width: "minmax(auto, 0.5fr)",
     },
     {
       title: t("schema-editor.column.classification"),
@@ -466,6 +515,16 @@ const handleSelectedColumnDefaultValueExpressionChange = (
   column.defaultExpression = expression;
 };
 
+const openClassificationDrawer = (column: Column) => {
+  state.pendingUpdateColumn = column;
+  state.showClassificationDrawer = true;
+};
+
+const openSemanticTypeDrawer = (column: Column) => {
+  state.pendingUpdateColumn = column;
+  state.showSemanticTypesDrawer = true;
+};
+
 const onClassificationSelect = (classificationId: string) => {
   state.showClassificationDrawer = false;
   if (!state.pendingUpdateColumn) {
@@ -479,11 +538,38 @@ const onSemanticTypeApply = async (semanticTypeId: string) => {
   if (!state.pendingUpdateColumn) {
     return;
   }
-  try {
-    // await updateColumnConfig(column.name, { semanticTypeId });
-  } finally {
-    state.showSemanticTypesDrawer = false;
+
+  updateColumnConfig(state.pendingUpdateColumn.name, { semanticTypeId });
+};
+
+const onSemanticTypeRemove = async (column: string) => {
+  updateColumnConfig(column, { semanticTypeId: "" });
+};
+
+const updateColumnConfig = async (
+  column: string,
+  config: Partial<ColumnConfig>
+) => {
+  const index = props.tableConfig.columnConfigs.findIndex(
+    (config) => config.name === column
+  );
+
+  const pendingUpdateTableConfig = cloneDeep(props.tableConfig);
+  if (index < 0) {
+    pendingUpdateTableConfig.columnConfigs.push(
+      ColumnConfig.fromPartial({
+        name: column,
+        ...config,
+      })
+    );
+  } else {
+    pendingUpdateTableConfig.columnConfigs[index] = {
+      ...pendingUpdateTableConfig.columnConfigs[index],
+      ...config,
+    };
   }
+
+  emit("onUpdate:tableConfig", pendingUpdateTableConfig);
 };
 </script>
 

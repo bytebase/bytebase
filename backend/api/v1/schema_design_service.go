@@ -448,10 +448,13 @@ func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1
 	// Head Schema, Baseline of Head Schema, and Target Schema.
 
 	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	targetSheet.Payload.DatabaseConfig = sheet.Payload.DatabaseConfig
+	targetSheet.Payload.BaselineDatabaseConfig = sheet.Payload.BaselineDatabaseConfig
 	sheetUpdate := &store.PatchSheetMessage{
 		UID:       targetSheetUID,
 		UpdaterID: currentPrincipalID,
 		Statement: &mergedTargetSchema,
+		Payload:   targetSheet.Payload,
 	}
 	// Update main branch schema design.
 	targetSheet, err = s.store.PatchSheet(ctx, sheetUpdate)
@@ -669,6 +672,9 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
 	}
+	if databaseConfig := sheet.Payload.DatabaseConfig; databaseConfig != nil {
+		schemaMetadata.SchemaConfigs = convertDatabaseConfig(databaseConfig)
+	}
 
 	baselineSchema, baselineSheetName := "", ""
 	// For backward compatibility, we default to MAIN_BRANCH if the type is not specified.
@@ -707,6 +713,9 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 	baselineSchemaMetadata, err := transformSchemaStringToDatabaseMetadata(engine, baselineSchema)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
+	}
+	if baselineDatabaseConfig := sheet.Payload.BaselineDatabaseConfig; baselineDatabaseConfig != nil {
+		baselineSchemaMetadata.SchemaConfigs = convertDatabaseConfig(baselineDatabaseConfig)
 	}
 
 	schemaDesign := &v1pb.SchemaDesign{

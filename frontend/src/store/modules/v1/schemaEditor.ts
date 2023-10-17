@@ -2,6 +2,7 @@ import { isUndefined, uniqueId } from "lodash-es";
 import { defineStore } from "pinia";
 import { ComposedDatabase, emptyProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
+import { ColumnConfig, TableConfig } from "@/types/proto/v1/database_service";
 import {
   BranchSchema,
   DatabaseSchema,
@@ -171,6 +172,27 @@ export const useSchemaEditorV1Store = defineStore("SchemaEditorV1", {
       });
 
       return tab;
+    },
+    getTableConfig(schame: Schema, table: string): TableConfig {
+      return (
+        schame.config.tableConfigs.find((config) => config.name === table) ??
+        TableConfig.fromPartial({
+          name: table,
+        })
+      );
+    },
+    getColumnConfig(
+      schame: Schema,
+      table: string,
+      column: string
+    ): ColumnConfig {
+      const tableConfig = this.getTableConfig(schame, table);
+      return (
+        tableConfig.columnConfigs.find((config) => config.name === column) ??
+        ColumnConfig.fromPartial({
+          name: column,
+        })
+      );
     },
     getSchema(parentName: string, schemaId: string) {
       return this.resourceMap[this.resourceType]

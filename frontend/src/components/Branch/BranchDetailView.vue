@@ -371,6 +371,7 @@ const handleSaveBranch = async () => {
         ...schemaDesign.value,
         baselineSchema: schemaDesign.value.schema,
         schemaMetadata: mergedMetadata,
+        baselineSchemaMetadata: baselineMetadata,
         title: branchName,
       });
       try {

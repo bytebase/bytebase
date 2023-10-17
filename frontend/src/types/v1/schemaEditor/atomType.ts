@@ -153,7 +153,9 @@ export const convertSchemaMetadataToSchema = (
     status,
     config:
       schemaConfigList.find((config) => config.name === schemaMetadata.name) ??
-      SchemaConfig.fromPartial({}),
+      SchemaConfig.fromPartial({
+        name: schemaMetadata.name,
+      }),
   };
 };
 

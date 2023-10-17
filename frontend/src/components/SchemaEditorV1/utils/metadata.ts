@@ -349,7 +349,9 @@ export const rebuildEditableSchemas = (
     }
     editableSchema.config =
       schemaConfigList.find((config) => config.name === editableSchema.name) ??
-      SchemaConfig.fromPartial({});
+      SchemaConfig.fromPartial({
+        name: editableSchema.name,
+      });
 
     for (const editableTable of editableSchema.tableList) {
       const table = schema.tables.find(

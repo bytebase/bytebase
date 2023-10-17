@@ -90,16 +90,40 @@
             />
           </div>
 
-          <div v-if="classificationConfig" class="sm:col-span-2 sm:col-start-1">
+          <div class="sm:col-span-2 sm:col-start-1">
+            <label for="semantic-types" class="textlabel">
+              {{ $t("settings.sensitive-data.semantic-types.self") }}
+            </label>
+            <div class="flex items-center gap-x-2 mt-3">
+              {{ columnSemanticType?.title }}
+              <div v-if="allowEdit" class="flex items-center">
+                <button
+                  v-if="columnSemanticType"
+                  class="w-6 h-6 p-1 hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
+                  @click.prevent="onSemanticTypeApply('')"
+                >
+                  <heroicons-outline:x class="w-4 h-4" />
+                </button>
+                <button
+                  class="w-6 h-6 p-1 hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
+                  @click.prevent="state.showSemanticTypesDrawer = true"
+                >
+                  <heroicons-outline:pencil class="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="classificationConfig" class="sm:col-span-2">
             <label for="column-name" class="textlabel">
               {{ $t("schema-template.classification.self") }}
             </label>
-            <div class="flex items-center gap-x-2 mt-1">
+            <div class="flex items-center gap-x-2 mt-3">
               <ClassificationLevelBadge
                 :classification="state.column?.classification"
                 :classification-config="classificationConfig"
               />
-              <div v-if="allowEdit" class="flex">
+              <div v-if="allowEdit" class="flex items-center">
                 <button
                   v-if="state.column?.classification"
                   class="w-6 h-6 p-1 hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
@@ -268,6 +292,13 @@
     @close="state.showColumnDefaultValueExpressionModal = false"
     @update:expression="handleSelectedColumnDefaultValueExpressionChange"
   />
+
+  <SemanticTypesDrawer
+    :show="state.showSemanticTypesDrawer"
+    :semantic-type-list="semanticTypeList"
+    @dismiss="state.showSemanticTypesDrawer = false"
+    @apply="onSemanticTypeApply($event)"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -283,7 +314,10 @@ import {
 import { DrawerContent } from "@/components/v2";
 import { useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
-import { ColumnConfig } from "@/types/proto/v1/database_service";
+import {
+  ColumnConfig,
+  ColumnMetadata,
+} from "@/types/proto/v1/database_service";
 import {
   SchemaTemplateSetting,
   SchemaTemplateSetting_FieldTemplate,
@@ -307,6 +341,7 @@ const emit = defineEmits(["dismiss"]);
 
 interface LocalState extends SchemaTemplateSetting_FieldTemplate {
   showClassificationDrawer: boolean;
+  showSemanticTypesDrawer: boolean;
   showColumnDefaultValueExpressionModal: boolean;
   kvList: { key: string; value: string }[];
 }
@@ -315,10 +350,15 @@ const state = reactive<LocalState>({
   id: props.template.id,
   engine: props.template.engine,
   category: props.template.category,
-  column: Object.assign({}, props.template.column),
+  column: ColumnMetadata.fromPartial({
+    ...(props.template.column ?? {}),
+  }),
   showClassificationDrawer: false,
+  showSemanticTypesDrawer: false,
   showColumnDefaultValueExpressionModal: false,
-  config: Object.assign({}, props.template.config),
+  config: ColumnConfig.fromPartial({
+    ...(props.template.config ?? {}),
+  }),
   kvList: [],
 });
 
@@ -327,6 +367,22 @@ const allowEdit = computed(() => {
   return (
     useWorkspacePermissionV1("bb.permission.workspace.manage-general").value &&
     !props.readonly
+  );
+});
+
+const semanticTypeList = computed(() => {
+  return (
+    settingStore.getSettingByName("bb.workspace.semantic-types")?.value
+      ?.semanticTypesSettingValue?.types ?? []
+  );
+});
+
+const columnSemanticType = computed(() => {
+  if (!state.config?.semanticTypeId) {
+    return;
+  }
+  return semanticTypeList.value.find(
+    (data) => data.id === state.config?.semanticTypeId
   );
 });
 
@@ -401,10 +457,11 @@ const sumbitDisabled = computed(() => {
 });
 
 const sumbit = async () => {
-  const template = SchemaTemplateSetting_FieldTemplate.fromJSON({
+  const template = SchemaTemplateSetting_FieldTemplate.fromPartial({
     ...state,
-    config: ColumnConfig.fromJSON({
-      ...(state.config ?? {}),
+    config: ColumnConfig.fromPartial({
+      ...state.config,
+      name: state.column?.name,
       labels: convertKVListToLabels(state.kvList, false /* !omitEmpty */),
     }),
   });
@@ -412,7 +469,7 @@ const sumbit = async () => {
     "bb.workspace.schema-template"
   );
 
-  const settingValue = SchemaTemplateSetting.fromJSON({});
+  const settingValue = SchemaTemplateSetting.fromPartial({});
   if (setting?.value?.schemaTemplateSettingValue) {
     Object.assign(
       settingValue,
@@ -492,5 +549,13 @@ const handleSelectedColumnDefaultValueExpressionChange = (
   state.column.defaultString = undefined;
   state.column.defaultExpression = expression;
   state.showColumnDefaultValueExpressionModal = false;
+};
+
+const onSemanticTypeApply = async (semanticTypeId: string) => {
+  state.showSemanticTypesDrawer = false;
+  state.config = ColumnConfig.fromPartial({
+    ...state.config,
+    semanticTypeId,
+  });
 };
 </script>

@@ -155,6 +155,7 @@
               :readonly="!allowEdit"
               :show-foreign-key="false"
               :table="state.table"
+              :table-config="state.tableConfig"
               :engine="state.engine"
               :classification-config-id="classificationConfig?.id"
               @on-drop="onColumnDrop"
@@ -246,6 +247,7 @@ interface LocalState {
   table: Table;
   showClassificationDrawer: boolean;
   showFieldTemplateDrawer: boolean;
+  tableConfig: TableConfig;
 }
 
 const state = reactive<LocalState>({
@@ -255,12 +257,20 @@ const state = reactive<LocalState>({
   table: convertTableMetadataToTable(Object.assign({}, props.template.table)),
   showClassificationDrawer: false,
   showFieldTemplateDrawer: false,
+  tableConfig: TableConfig.fromPartial({}),
 });
 const settingStore = useSettingV1Store();
 const allowEdit = computed(() => {
   return (
     useWorkspacePermissionV1("bb.permission.workspace.manage-general").value &&
     !props.readonly
+  );
+});
+
+const semanticTypeList = computed(() => {
+  return (
+    settingStore.getSettingByName("bb.workspace.semantic-types")?.value
+      ?.semanticTypesSettingValue?.types ?? []
   );
 });
 

@@ -31,6 +31,7 @@
       :readonly="readonly"
       :show-foreign-key="true"
       :table="table"
+      :table-config="tableConfig"
       :engine="engine"
       :foreign-key-list="foreignKeyList"
       :classification-config-id="project.dataClassificationConfigId"
@@ -44,6 +45,7 @@
       @on-primary-key-set="setColumnPrimaryKey"
       @on-foreign-key-edit="handleEditColumnForeignKey"
       @on-foreign-key-click="gotoForeignKeyReferencedTable"
+      @on-update:table-config="onTableConfigUpdate"
     />
   </div>
 
@@ -88,7 +90,7 @@ import {
   useSchemaEditorV1Store,
 } from "@/store/modules";
 import { Engine } from "@/types/proto/v1/common";
-import { ColumnMetadata } from "@/types/proto/v1/database_service";
+import { ColumnMetadata, TableConfig } from "@/types/proto/v1/database_service";
 import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
 import {
   Column,
@@ -158,6 +160,21 @@ const foreignKeyList = computed(() => {
   ) as ForeignKey[];
 });
 
+const tableConfig = computed(() => {
+  return schemaEditorV1Store.getTableConfig(schema.value, table.value.name);
+});
+
+const onTableConfigUpdate = (config: TableConfig) => {
+  const tableIndex = schema.value.config.tableConfigs.findIndex(
+    (config) => config.name === table.value.name
+  );
+  if (tableIndex < 0) {
+    schema.value.config.tableConfigs.push(config);
+  } else {
+    schema.value.config.tableConfigs[tableIndex] = config;
+  }
+};
+
 const editForeignKeyColumn = ref<Column>();
 
 const isDroppedSchema = computed(() => {
@@ -176,9 +193,9 @@ const getColumnItemComputedClassList = (column: Column) => {
   } else if (
     isColumnChanged(
       currentTab.value.parentName,
-      currentTab.value.schemaId,
-      currentTab.value.tableId,
-      column.id
+      schema.value,
+      table.value,
+      column
     )
   ) {
     return ["text-yellow-700", "!bg-yellow-50"];

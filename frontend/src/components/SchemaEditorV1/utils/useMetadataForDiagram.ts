@@ -56,7 +56,7 @@ const statusOfColumn = (
   if (status === "created" || status === "dropped") {
     return status;
   }
-  if (isColumnChanged(database.name, schema.id, table.id, column.id)) {
+  if (isColumnChanged(database.name, schema, table, column)) {
     return "changed";
   }
 
@@ -115,7 +115,10 @@ export const useMetadataForDiagram = (
           columnMeta.type = column.type;
           columnMeta.nullable = column.nullable;
           columnMeta.comment = column.comment;
-          columnMeta.default = column.default;
+          columnMeta.hasDefault = column.hasDefault;
+          columnMeta.defaultNull = column.defaultNull;
+          columnMeta.defaultString = column.defaultString;
+          columnMeta.defaultExpression = column.defaultExpression;
 
           return columnMeta;
         });

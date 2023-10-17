@@ -17,5 +17,30 @@ export const isTableChanged = (
     schemaId,
     tableId
   );
-  return !isEqual(originTable, editorTable);
+  if (!isEqual(originTable, editorTable)) {
+    return true;
+  }
+
+  if (editorTable && originTable) {
+    const schema = schemaEditorV1Store.getSchema(parentName, schemaId);
+    const originSchema = schemaEditorV1Store.getOriginSchema(
+      parentName,
+      schemaId
+    );
+    if (schema && originSchema) {
+      const tableConfig = schemaEditorV1Store.getTableConfig(
+        schema,
+        editorTable.name
+      );
+      const originTableConfig = schemaEditorV1Store.getTableConfig(
+        originSchema,
+        originTable.name
+      );
+      if (!isEqual(tableConfig, originTableConfig)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 };

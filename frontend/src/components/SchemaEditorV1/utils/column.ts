@@ -1,50 +1,76 @@
 import { isEqual, isUndefined } from "lodash-es";
 import { useSchemaEditorV1Store } from "@/store";
+import { Column, Table, Schema } from "@/types/v1/schemaEditor";
 
 export const isColumnChanged = (
   parentName: string,
-  schemaId: string,
-  tableId: string,
-  columnId: string
+  schema: Schema,
+  table: Table,
+  column: Column
 ): boolean => {
   const schemaEditorV1Store = useSchemaEditorV1Store();
-  const table = schemaEditorV1Store.getTable(parentName, schemaId, tableId);
+
   const originTable = schemaEditorV1Store.getOriginTable(
     parentName,
-    schemaId,
-    tableId
-  );
-  const column = table?.columnList.find((column) => column.id === columnId);
-  const originColumn = originTable?.columnList.find(
-    (column) => column.id === columnId
+    schema.id,
+    table.id
   );
 
-  const isPrimaryKey = table?.primaryKey.columnIdList.includes(columnId);
-  const isPrimaryKeyOrigin =
-    originTable?.primaryKey.columnIdList.includes(columnId);
+  const originColumn = originTable?.columnList.find(
+    (col) => col.id === column.id
+  );
+  if (!isEqual(column, originColumn)) {
+    return true;
+  }
+
+  const isPrimaryKey = table?.primaryKey.columnIdList.includes(column.id);
+  const isPrimaryKeyOrigin = originTable?.primaryKey.columnIdList.includes(
+    column.id
+  );
 
   const originForeignKey = originTable?.foreignKeyList.find(
-    (fk) => fk.tableId === table?.id && fk.columnIdList.includes(columnId)
+    (fk) => fk.tableId === table?.id && fk.columnIdList.includes(column.id)
   );
   const foreignKey = table?.foreignKeyList.find(
-    (fk) => fk.tableId === table?.id && fk.columnIdList.includes(columnId)
+    (fk) => fk.tableId === table?.id && fk.columnIdList.includes(column.id)
   );
   const originIndex = originForeignKey?.columnIdList.findIndex(
-    (column) => column === columnId
+    (colId) => colId === column.id
   );
   const originForeignKeyColumn = isUndefined(originIndex)
     ? undefined
     : originForeignKey?.referencedColumnIdList[originIndex];
   const index = foreignKey?.columnIdList.findIndex(
-    (column) => column === columnId
+    (colId) => colId === column.id
   );
   const foreignKeyColumn = isUndefined(index)
     ? undefined
     : foreignKey?.referencedColumnIdList[index];
 
-  return (
-    !isEqual(column, originColumn) ||
+  if (
     !isEqual(isPrimaryKey, isPrimaryKeyOrigin) ||
     !isEqual(foreignKeyColumn, originForeignKeyColumn)
+  ) {
+    return true;
+  }
+
+  const originSchema = schemaEditorV1Store.getOriginSchema(
+    parentName,
+    schema.id
   );
+  if (!originSchema) {
+    return true;
+  }
+
+  const columnConfig = schemaEditorV1Store.getColumnConfig(
+    schema,
+    table.name,
+    column.name
+  );
+  const originColumnConfig = schemaEditorV1Store.getColumnConfig(
+    originSchema,
+    table.name,
+    column.name
+  );
+  return !isEqual(columnConfig, originColumnConfig);
 };
