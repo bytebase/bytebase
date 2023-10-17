@@ -14,6 +14,7 @@ export enum PolicyType {
   POLICY_TYPE_UNSPECIFIED = 0,
   WORKSPACE_IAM = 1,
   DEPLOYMENT_APPROVAL = 2,
+  ROLLOUT_POLICY = 11,
   BACKUP_PLAN = 3,
   SQL_REVIEW = 4,
   MASKING = 5,
@@ -35,6 +36,9 @@ export function policyTypeFromJSON(object: any): PolicyType {
     case 2:
     case "DEPLOYMENT_APPROVAL":
       return PolicyType.DEPLOYMENT_APPROVAL;
+    case 11:
+    case "ROLLOUT_POLICY":
+      return PolicyType.ROLLOUT_POLICY;
     case 3:
     case "BACKUP_PLAN":
       return PolicyType.BACKUP_PLAN;
@@ -71,6 +75,8 @@ export function policyTypeToJSON(object: PolicyType): string {
       return "WORKSPACE_IAM";
     case PolicyType.DEPLOYMENT_APPROVAL:
       return "DEPLOYMENT_APPROVAL";
+    case PolicyType.ROLLOUT_POLICY:
+      return "ROLLOUT_POLICY";
     case PolicyType.BACKUP_PLAN:
       return "BACKUP_PLAN";
     case PolicyType.SQL_REVIEW:
@@ -429,6 +435,7 @@ export interface Policy {
   type: PolicyType;
   workspaceIamPolicy?: IamPolicy | undefined;
   deploymentApprovalPolicy?: DeploymentApprovalPolicy | undefined;
+  rolloutPolicy?: RolloutPolicy | undefined;
   backupPlanPolicy?: BackupPlanPolicy | undefined;
   maskingPolicy?: MaskingPolicy | undefined;
   sqlReviewPolicy?: SQLReviewPolicy | undefined;
@@ -446,6 +453,17 @@ export interface Policy {
 export interface DeploymentApprovalPolicy {
   defaultStrategy: ApprovalStrategy;
   deploymentApprovalStrategies: DeploymentApprovalStrategy[];
+}
+
+export interface RolloutPolicy {
+  automatic: boolean;
+  workspaceRoles: string[];
+  projectRoles: string[];
+  /**
+   * roles/LAST_APPROVER
+   * roles/CREATOR
+   */
+  issueRoles: string[];
 }
 
 export interface DeploymentApprovalStrategy {
@@ -1043,6 +1061,7 @@ function createBasePolicy(): Policy {
     type: 0,
     workspaceIamPolicy: undefined,
     deploymentApprovalPolicy: undefined,
+    rolloutPolicy: undefined,
     backupPlanPolicy: undefined,
     maskingPolicy: undefined,
     sqlReviewPolicy: undefined,
@@ -1075,6 +1094,9 @@ export const Policy = {
     }
     if (message.deploymentApprovalPolicy !== undefined) {
       DeploymentApprovalPolicy.encode(message.deploymentApprovalPolicy, writer.uint32(58).fork()).ldelim();
+    }
+    if (message.rolloutPolicy !== undefined) {
+      RolloutPolicy.encode(message.rolloutPolicy, writer.uint32(154).fork()).ldelim();
     }
     if (message.backupPlanPolicy !== undefined) {
       BackupPlanPolicy.encode(message.backupPlanPolicy, writer.uint32(66).fork()).ldelim();
@@ -1157,6 +1179,13 @@ export const Policy = {
           }
 
           message.deploymentApprovalPolicy = DeploymentApprovalPolicy.decode(reader, reader.uint32());
+          continue;
+        case 19:
+          if (tag !== 154) {
+            break;
+          }
+
+          message.rolloutPolicy = RolloutPolicy.decode(reader, reader.uint32());
           continue;
         case 8:
           if (tag !== 66) {
@@ -1247,6 +1276,7 @@ export const Policy = {
       deploymentApprovalPolicy: isSet(object.deploymentApprovalPolicy)
         ? DeploymentApprovalPolicy.fromJSON(object.deploymentApprovalPolicy)
         : undefined,
+      rolloutPolicy: isSet(object.rolloutPolicy) ? RolloutPolicy.fromJSON(object.rolloutPolicy) : undefined,
       backupPlanPolicy: isSet(object.backupPlanPolicy) ? BackupPlanPolicy.fromJSON(object.backupPlanPolicy) : undefined,
       maskingPolicy: isSet(object.maskingPolicy) ? MaskingPolicy.fromJSON(object.maskingPolicy) : undefined,
       sqlReviewPolicy: isSet(object.sqlReviewPolicy) ? SQLReviewPolicy.fromJSON(object.sqlReviewPolicy) : undefined,
@@ -1277,6 +1307,8 @@ export const Policy = {
     message.deploymentApprovalPolicy !== undefined && (obj.deploymentApprovalPolicy = message.deploymentApprovalPolicy
       ? DeploymentApprovalPolicy.toJSON(message.deploymentApprovalPolicy)
       : undefined);
+    message.rolloutPolicy !== undefined &&
+      (obj.rolloutPolicy = message.rolloutPolicy ? RolloutPolicy.toJSON(message.rolloutPolicy) : undefined);
     message.backupPlanPolicy !== undefined &&
       (obj.backupPlanPolicy = message.backupPlanPolicy ? BackupPlanPolicy.toJSON(message.backupPlanPolicy) : undefined);
     message.maskingPolicy !== undefined &&
@@ -1317,6 +1349,9 @@ export const Policy = {
       (object.deploymentApprovalPolicy !== undefined && object.deploymentApprovalPolicy !== null)
         ? DeploymentApprovalPolicy.fromPartial(object.deploymentApprovalPolicy)
         : undefined;
+    message.rolloutPolicy = (object.rolloutPolicy !== undefined && object.rolloutPolicy !== null)
+      ? RolloutPolicy.fromPartial(object.rolloutPolicy)
+      : undefined;
     message.backupPlanPolicy = (object.backupPlanPolicy !== undefined && object.backupPlanPolicy !== null)
       ? BackupPlanPolicy.fromPartial(object.backupPlanPolicy)
       : undefined;
@@ -1423,6 +1458,115 @@ export const DeploymentApprovalPolicy = {
     message.defaultStrategy = object.defaultStrategy ?? 0;
     message.deploymentApprovalStrategies =
       object.deploymentApprovalStrategies?.map((e) => DeploymentApprovalStrategy.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseRolloutPolicy(): RolloutPolicy {
+  return { automatic: false, workspaceRoles: [], projectRoles: [], issueRoles: [] };
+}
+
+export const RolloutPolicy = {
+  encode(message: RolloutPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.automatic === true) {
+      writer.uint32(8).bool(message.automatic);
+    }
+    for (const v of message.workspaceRoles) {
+      writer.uint32(18).string(v!);
+    }
+    for (const v of message.projectRoles) {
+      writer.uint32(26).string(v!);
+    }
+    for (const v of message.issueRoles) {
+      writer.uint32(34).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): RolloutPolicy {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRolloutPolicy();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.automatic = reader.bool();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.workspaceRoles.push(reader.string());
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.projectRoles.push(reader.string());
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.issueRoles.push(reader.string());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RolloutPolicy {
+    return {
+      automatic: isSet(object.automatic) ? Boolean(object.automatic) : false,
+      workspaceRoles: Array.isArray(object?.workspaceRoles) ? object.workspaceRoles.map((e: any) => String(e)) : [],
+      projectRoles: Array.isArray(object?.projectRoles) ? object.projectRoles.map((e: any) => String(e)) : [],
+      issueRoles: Array.isArray(object?.issueRoles) ? object.issueRoles.map((e: any) => String(e)) : [],
+    };
+  },
+
+  toJSON(message: RolloutPolicy): unknown {
+    const obj: any = {};
+    message.automatic !== undefined && (obj.automatic = message.automatic);
+    if (message.workspaceRoles) {
+      obj.workspaceRoles = message.workspaceRoles.map((e) => e);
+    } else {
+      obj.workspaceRoles = [];
+    }
+    if (message.projectRoles) {
+      obj.projectRoles = message.projectRoles.map((e) => e);
+    } else {
+      obj.projectRoles = [];
+    }
+    if (message.issueRoles) {
+      obj.issueRoles = message.issueRoles.map((e) => e);
+    } else {
+      obj.issueRoles = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<RolloutPolicy>): RolloutPolicy {
+    return RolloutPolicy.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<RolloutPolicy>): RolloutPolicy {
+    const message = createBaseRolloutPolicy();
+    message.automatic = object.automatic ?? false;
+    message.workspaceRoles = object.workspaceRoles?.map((e) => e) || [];
+    message.projectRoles = object.projectRoles?.map((e) => e) || [];
+    message.issueRoles = object.issueRoles?.map((e) => e) || [];
     return message;
   },
 };

@@ -44,6 +44,7 @@
     - [MaskingRulePolicy](#bytebase-v1-MaskingRulePolicy)
     - [MaskingRulePolicy.MaskingRule](#bytebase-v1-MaskingRulePolicy-MaskingRule)
     - [Policy](#bytebase-v1-Policy)
+    - [RolloutPolicy](#bytebase-v1-RolloutPolicy)
     - [SQLReviewPolicy](#bytebase-v1-SQLReviewPolicy)
     - [SQLReviewRule](#bytebase-v1-SQLReviewRule)
     - [SlowQueryPolicy](#bytebase-v1-SlowQueryPolicy)
@@ -1212,6 +1213,7 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | type | [PolicyType](#bytebase-v1-PolicyType) |  |  |
 | workspace_iam_policy | [IamPolicy](#bytebase-v1-IamPolicy) |  |  |
 | deployment_approval_policy | [DeploymentApprovalPolicy](#bytebase-v1-DeploymentApprovalPolicy) |  |  |
+| rollout_policy | [RolloutPolicy](#bytebase-v1-RolloutPolicy) |  |  |
 | backup_plan_policy | [BackupPlanPolicy](#bytebase-v1-BackupPlanPolicy) |  |  |
 | masking_policy | [MaskingPolicy](#bytebase-v1-MaskingPolicy) |  |  |
 | sql_review_policy | [SQLReviewPolicy](#bytebase-v1-SQLReviewPolicy) |  |  |
@@ -1222,6 +1224,24 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | enforce | [bool](#bool) |  |  |
 | resource_type | [PolicyResourceType](#bytebase-v1-PolicyResourceType) |  | The resource type for the policy. |
 | resource_uid | [string](#string) |  | The system-assigned, unique identifier for the resource. |
+
+
+
+
+
+
+<a name="bytebase-v1-RolloutPolicy"></a>
+
+### RolloutPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| automatic | [bool](#bool) |  |  |
+| workspace_roles | [string](#string) | repeated |  |
+| project_roles | [string](#string) | repeated |  |
+| issue_roles | [string](#string) | repeated | roles/LAST_APPROVER roles/CREATOR |
 
 
 
@@ -1378,6 +1398,7 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 | POLICY_TYPE_UNSPECIFIED | 0 |  |
 | WORKSPACE_IAM | 1 |  |
 | DEPLOYMENT_APPROVAL | 2 |  |
+| ROLLOUT_POLICY | 11 |  |
 | BACKUP_PLAN | 3 |  |
 | SQL_REVIEW | 4 |  |
 | MASKING | 5 |  |
