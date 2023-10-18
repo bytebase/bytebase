@@ -39,7 +39,7 @@ type IssueMessage struct {
 	Type        api.IssueType
 	Description string
 	Assignee    *UserMessage
-	Payload     string
+	Payload     *storepb.IssuePayload
 	Subscribers []*UserMessage
 	PipelineUID *int
 	PlanUID     *int64
@@ -136,8 +136,10 @@ func (s *Store) GetIssueV2(ctx context.Context, find *FindIssueMessage) (*IssueM
 // CreateIssueV2 creates a new issue.
 func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creatorID int) (*IssueMessage, error) {
 	create.Status = api.IssueOpen
-	if create.Payload == "" {
-		create.Payload = "{}"
+
+	payload, err := protojson.Marshal(create.Payload)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to marshal issue payload")
 	}
 	creator, err := s.GetUserByID(ctx, creatorID)
 	if err != nil {
@@ -182,7 +184,7 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 		create.Type,
 		create.Description,
 		create.Assignee.ID,
-		create.Payload,
+		payload,
 		tsVector,
 	).Scan(
 		&create.UID,
@@ -468,7 +470,10 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var issue IssueMessage
+		issue := IssueMessage{
+			Payload: &storepb.IssuePayload{},
+		}
+		var payload []byte
 		var pipelineUID sql.NullInt32
 		var subscriberUIDs pgtype.Int4Array
 		if err := rows.Scan(
@@ -485,7 +490,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			&issue.Type,
 			&issue.Description,
 			&issue.assigneeUID,
-			&issue.Payload,
+			&payload,
 			&subscriberUIDs,
 		); err != nil {
 			return nil, err
@@ -496,6 +501,9 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		if pipelineUID.Valid {
 			v := int(pipelineUID.Int32)
 			issue.PipelineUID = &v
+		}
+		if err := protojson.Unmarshal(payload, issue.Payload); err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal issue payload")
 		}
 		issues = append(issues, &issue)
 	}
