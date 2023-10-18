@@ -1273,7 +1273,8 @@
       "manual-by-project-releaser": "Requiere implementación desde el lanzador del proyecto.",
       "manual-by-issue-creator": "Requerir la implementación por parte del creador del problema.",
       "manual-by-last-approver": "Implementación manual por parte del último aprobador del flujo de aprobación personalizado",
-      "manual-by-fixed-roles": "Implementación manual por roles fijos"
+      "manual-by-fixed-roles": "Implementación manual por roles fijos",
+      "manual-by-fixed-roles-info": "Es necesario hacer clic en el botón \"Implementar\" manualmente desde roles fijos y luego se ejecutará el cambio."
     },
     "backup": {
       "name": "Política de programación de copias de seguridad de la base de datos",

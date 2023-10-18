@@ -68,9 +68,11 @@
           <label class="textlabel">
             {{ $t("policy.rollout.name") }}
           </label>
-          <span v-show="valueChanged('rolloutPolicy')" class="textlabeltip">{{
-            $t("policy.rollout.tip")
-          }}</span>
+          <span
+            v-show="!create && valueChanged('rolloutPolicy')"
+            class="textlabeltip"
+            >{{ $t("policy.rollout.tip") }}</span
+          >
           <div class="mt-1 textinfolabel">
             {{ $t("policy.rollout.info") }}
           </div>
@@ -380,7 +382,7 @@ const sqlReviewPolicy = computed((): SQLReviewPolicy | undefined => {
   return sqlReviewStore.getReviewPolicyByEnvironmentUID(environmentId.value);
 });
 
-const handleEnvironmentNameChange = (event: InputEvent) => {
+const handleEnvironmentNameChange = (event: Event) => {
   state.environment.title = (event.target as HTMLInputElement).value;
 };
 
@@ -544,6 +546,7 @@ const createEnvironment = () => {
       name: resourceIdField.value?.resourceId,
       title: state.environment.title,
     },
+    state.rolloutPolicy,
     state.backupPolicy,
     state.environmentTier
   );

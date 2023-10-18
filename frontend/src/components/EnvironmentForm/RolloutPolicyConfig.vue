@@ -22,8 +22,12 @@
         @update:checked="toggleAllFixedRoles"
       >
         <div class="flex flex-col gap-y-2">
-          <div class="textlabel">
-            {{ $t("policy.rollout.manual-by-fixed-roles") }}
+          <div class="textlabel flex flex-row gap-x-1">
+            <span>{{ $t("policy.rollout.manual-by-fixed-roles") }}</span>
+            <FeatureBadge feature="bb.feature.approval-policy" />
+          </div>
+          <div class="textinfolabel">
+            {{ $t("policy.rollout.manual-by-fixed-roles-info") }}
           </div>
         </div>
       </NCheckbox>
@@ -71,10 +75,9 @@
           toggleIssueRoles($event, [VirtualRoleType.LAST_APPROVER])
         "
       >
-        <div class="flex flex-col gap-y-2">
-          <div class="textlabel">
-            {{ $t("policy.rollout.manual-by-last-approver") }}
-          </div>
+        <div class="textlabel flex flex-row gap-x-1">
+          <span>{{ $t("policy.rollout.manual-by-last-approver") }}</span>
+          <FeatureBadge feature="bb.feature.custom-approval" />
         </div>
       </NCheckbox>
     </div>
@@ -88,6 +91,7 @@ import { ref, watch } from "vue";
 import { computed } from "vue";
 import { PresetRoleType, VirtualRoleType } from "@/types";
 import { Policy, RolloutPolicy } from "@/types/proto/v1/org_policy_service";
+import FeatureBadge from "../FeatureGuard/FeatureBadge.vue";
 
 const props = defineProps<{
   policy: Policy;

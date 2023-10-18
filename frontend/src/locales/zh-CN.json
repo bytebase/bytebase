@@ -1271,7 +1271,8 @@
       "manual-by-project-releaser": "需要项目的发布者发布。",
       "manual-by-issue-creator": "需要工单的创建者发布。",
       "manual-by-last-approver": "自定义审批流的最后一个审批人发布",
-      "manual-by-fixed-roles": "固定角色手工发布"
+      "manual-by-fixed-roles": "固定角色手工发布",
+      "manual-by-fixed-roles-info": "指定固定角色，点击「发布」按钮后，才会执行变更。"
     },
     "backup": {
       "name": "数据库备份策略",
