@@ -82,7 +82,8 @@
       "developer": "Developer",
       "member": "Member",
       "exporter": "Exporter",
-      "querier": "Querier"
+      "querier": "Querier",
+      "releaser": "Releaser"
     },
     "assignee": "Assignee",
     "revert": "Revert",
@@ -2992,7 +2993,10 @@
       "description": "System defined project querier role"
     },
     "select-role": "Select role",
-    "expired-tip": "The role might has been expired."
+    "expired-tip": "The role might has been expired.",
+    "releaser": {
+      "description": "System defined project releaser role"
+    }
   },
   "database-group": {
     "self": "Database Group",

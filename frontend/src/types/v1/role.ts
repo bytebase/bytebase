@@ -3,6 +3,7 @@ export const PresetRoleType = {
   DEVELOPER: "roles/DEVELOPER",
   QUERIER: "roles/QUERIER",
   EXPORTER: "roles/EXPORTER",
+  RELEASER: "roles/RELEASER",
 };
 
 export const PresetRoleTypeList = [
@@ -10,6 +11,7 @@ export const PresetRoleTypeList = [
   PresetRoleType.DEVELOPER,
   PresetRoleType.QUERIER,
   PresetRoleType.EXPORTER,
+  PresetRoleType.RELEASER,
 ];
 
 export const isCustomRole = (role: string) => {
