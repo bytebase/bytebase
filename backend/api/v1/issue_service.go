@@ -649,6 +649,9 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get instance, error: %v", err)
 				}
+				if instance == nil {
+					return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
+				}
 				if err := validateQueryRequest(instance, databaseName, factors.Statement); err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, "invalid statement, error: %v", err)
 				}
