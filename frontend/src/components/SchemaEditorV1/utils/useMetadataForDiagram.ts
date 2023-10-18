@@ -56,7 +56,7 @@ const statusOfColumn = (
   if (status === "created" || status === "dropped") {
     return status;
   }
-  if (isColumnChanged(database.name, schema, table, column)) {
+  if (isColumnChanged(database.name, schema.id, table.id, column.id)) {
     return "changed";
   }
 

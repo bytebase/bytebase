@@ -176,9 +176,9 @@ const getColumnItemComputedClassList = (column: Column) => {
   } else if (
     isColumnChanged(
       currentTab.value.parentName,
-      schema.value,
-      table.value,
-      column
+      currentTab.value.schemaId,
+      currentTab.value.tableId,
+      column.id
     )
   ) {
     return ["text-yellow-700", "!bg-yellow-50"];
