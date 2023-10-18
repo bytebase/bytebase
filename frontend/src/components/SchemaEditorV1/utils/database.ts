@@ -17,23 +17,28 @@ export const fetchSchemaListByDatabaseName = async (
 ) => {
   const schemaEditorV1Store = useSchemaEditorV1Store();
   const database = useDatabaseV1Store().getDatabaseByName(databaseName);
-  const schemaMetadataList = await useDBSchemaV1Store().getOrFetchSchemaList(
-    database.name,
-    skipCache
+  const databaseMetadata =
+    await useDBSchemaV1Store().getOrFetchDatabaseMetadata(
+      database.name,
+      skipCache
+    );
+  const schemaList = convertSchemaMetadataList(
+    databaseMetadata.schemas,
+    databaseMetadata.schemaConfigs
   );
-  const schemaList = convertSchemaMetadataList(schemaMetadataList);
   if (
     schemaList.length === 0 &&
     database.instanceEntity.engine === Engine.MYSQL
   ) {
     schemaList.push(
-      convertSchemaMetadataToSchema(SchemaMetadata.fromPartial({}))
+      convertSchemaMetadataToSchema(SchemaMetadata.fromPartial({}), "normal")
     );
   }
 
   schemaEditorV1Store.resourceMap.database.set(database.name, {
     database,
-    schemaList: schemaList,
+    schemaList,
     originSchemaList: cloneDeep(schemaList),
   });
+  return schemaList;
 };

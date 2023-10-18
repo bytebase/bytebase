@@ -216,7 +216,7 @@
                     target="_blank"
                     class="btn-normal items-center !px-4 !text-base"
                   >
-                    <heroicons-solid:terminal
+                    <heroicons-outline:terminal
                       class="text-accent w-6 h-6 mr-2"
                     />
                     <span class="whitespace-nowrap">{{

@@ -57,22 +57,17 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
     const [projectName, sheetId] = getProjectAndSchemaDesignSheetId(
       schemaDesign.name
     );
-    const baselineSheetName = `${projectNamePrefix}${projectName}/${sheetNamePrefix}${sheetId}`;
-    const createdSchemaDesign =
-      await schemaDesignServiceClient.createSchemaDesign({
-        parent: `${projectNamePrefix}${projectName}`,
-        schemaDesign: {
-          ...schemaDesign,
-          type: SchemaDesign_Type.PERSONAL_DRAFT,
-          baselineSheetName: baselineSheetName,
-          protection: {
-            // For personal draft, allow force pushes by default.
-            allowForcePushes: true,
-          },
-        },
-      });
-    schemaDesignMapByName.set(createdSchemaDesign.name, createdSchemaDesign);
-    return createdSchemaDesign;
+    const projectResourceId = `${projectNamePrefix}${projectName}`;
+    const baselineSheetName = `${projectResourceId}/${sheetNamePrefix}${sheetId}`;
+    return createSchemaDesign(projectResourceId, {
+      ...schemaDesign,
+      type: SchemaDesign_Type.PERSONAL_DRAFT,
+      baselineSheetName: baselineSheetName,
+      protection: {
+        // For personal draft, allow force pushes by default.
+        allowForcePushes: true,
+      },
+    });
   };
 
   const updateSchemaDesign = async (

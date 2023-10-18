@@ -6,6 +6,9 @@ import {
   IndexMetadata,
   SchemaMetadata,
   TableMetadata,
+  SchemaConfig,
+  ColumnConfig,
+  TableConfig,
 } from "@/types/proto/v1/database_service";
 import {
   Column,
@@ -29,12 +32,10 @@ export const mergeSchemaEditToMetadata = (
         (item) => item.name !== schemaEdit.name
       );
       metadata.schemas.push(transformSchemaEditToMetadata(schemaEdit));
-      continue;
     } else if (schemaEdit.status === "dropped") {
       metadata.schemas = metadata.schemas.filter(
         (item) => item.name !== schemaEdit.name
       );
-      continue;
     } else {
       const schema = metadata.schemas.find(
         (item) => item.name === schemaEdit.name
@@ -43,6 +44,7 @@ export const mergeSchemaEditToMetadata = (
         metadata.schemas.push(transformSchemaEditToMetadata(schemaEdit));
         continue;
       }
+
       for (const tableEdit of schemaEdit.tableList) {
         if (tableEdit.status === "created") {
           // Remove table if it exists.
@@ -50,12 +52,10 @@ export const mergeSchemaEditToMetadata = (
             (item) => item.name !== tableEdit.name
           );
           schema.tables.push(transformTableEditToMetadata(tableEdit));
-          continue;
         } else if (tableEdit.status === "dropped") {
           schema.tables = schema.tables.filter(
             (item) => item.name !== tableEdit.name
           );
-          continue;
         } else {
           const table = schema.tables.find(
             (item) => item.name === tableEdit.name
@@ -64,6 +64,7 @@ export const mergeSchemaEditToMetadata = (
             schema.tables.push(transformTableEditToMetadata(tableEdit));
             continue;
           }
+
           for (const columnEdit of tableEdit.columnList) {
             if (columnEdit.status === "created") {
               // Remove column if it exists.
@@ -106,8 +107,12 @@ export const mergeSchemaEditToMetadata = (
               );
             }
           }
+          table.comment = tableEdit.comment;
+          table.userComment = tableEdit.userComment;
+          table.classification = tableEdit.classification || "";
         }
       }
+
       for (const table of schema.tables) {
         const tableEdit = schemaEdit.tableList.find(
           (item) => item.name === table.name
@@ -207,6 +212,23 @@ export const mergeSchemaEditToMetadata = (
       }
     }
   }
+
+  metadata.schemaConfigs = schemaEdits.map((schema) =>
+    SchemaConfig.fromPartial({
+      name: schema.name,
+      tableConfigs: schema.tableList.map((table) =>
+        TableConfig.fromPartial({
+          name: table.name,
+          columnConfigs: table.columnList.map((column) =>
+            ColumnConfig.fromPartial({
+              ...column.config,
+              name: column.name,
+            })
+          ),
+        })
+      ),
+    })
+  );
 
   return metadata;
 };
@@ -339,7 +361,8 @@ const transformColumnEditToMetadata = (columnEdit: Column): ColumnMetadata => {
 
 export const rebuildEditableSchemas = (
   originalSchemas: Schema[],
-  schemas: SchemaMetadata[]
+  schemas: SchemaMetadata[],
+  schemaConfigList: SchemaConfig[]
 ): Schema[] => {
   const editableSchemas = cloneDeep(originalSchemas);
 
@@ -352,6 +375,11 @@ export const rebuildEditableSchemas = (
       continue;
     }
 
+    const schemaConfig =
+      schemaConfigList.find(
+        (schemaConfig) => schemaConfig.name === editableSchema.name
+      ) ?? SchemaConfig.fromPartial({});
+
     for (const editableTable of editableSchema.tableList) {
       const table = schema.tables.find(
         (table) => table.name === editableTable.name
@@ -361,7 +389,17 @@ export const rebuildEditableSchemas = (
         continue;
       }
 
+      const tableConfig =
+        schemaConfig.tableConfigs.find(
+          (tableConfig) => tableConfig.name === editableTable.name
+        ) ?? TableConfig.fromPartial({});
+
       for (const editableColumn of editableTable.columnList) {
+        editableColumn.config =
+          tableConfig.columnConfigs.find(
+            (columnConfig) => columnConfig.name === editableColumn.name
+          ) ?? ColumnConfig.fromPartial({ name: editableColumn.name });
+
         const column = table.columns.find(
           (column) => column.name === editableColumn.name
         );
@@ -389,7 +427,13 @@ export const rebuildEditableSchemas = (
           (item) => item.name === column.name
         );
         if (!editableColumn) {
-          const newColumn = convertColumnMetadataToColumn(column, "created");
+          const newColumn = convertColumnMetadataToColumn(
+            column,
+            "created",
+            tableConfig.columnConfigs.find(
+              (columnConfig) => columnConfig.name === column.name
+            )
+          );
           editableTable.columnList.push(newColumn);
         }
       }
@@ -419,7 +463,13 @@ export const rebuildEditableSchemas = (
         (item) => item.name === table.name
       );
       if (!editableTable) {
-        const newTable = convertTableMetadataToTable(table, "created");
+        const newTable = convertTableMetadataToTable(
+          table,
+          "created",
+          schemaConfig.tableConfigs.find(
+            (tableConfig) => tableConfig.name === table.name
+          )
+        );
         editableSchema.tableList.push(newTable);
       }
     }
@@ -430,7 +480,13 @@ export const rebuildEditableSchemas = (
       (item) => item.name === schema.name
     );
     if (!editableSchema) {
-      const newSchema = convertSchemaMetadataToSchema(schema, "created");
+      const newSchema = convertSchemaMetadataToSchema(
+        schema,
+        "created",
+        schemaConfigList.find(
+          (schemaConfig) => schemaConfig.name === schema.name
+        )
+      );
       editableSchemas.push(newSchema);
     }
   }

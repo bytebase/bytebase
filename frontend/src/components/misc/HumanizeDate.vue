@@ -1,5 +1,8 @@
 <template>
-  <NTooltip trigger="hover">
+  <slot v-if="!date || date.getTime() === 0" name="placeholder">
+    <span v-bind="$attrs">-</span>
+  </slot>
+  <NTooltip v-else trigger="hover">
     <template #trigger>
       <span v-bind="$attrs">{{ humanized }}</span>
     </template>
