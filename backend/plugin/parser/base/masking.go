@@ -73,7 +73,7 @@ type MaskingAttributes struct {
 // TransmittedBy transmits the masking attributes from other to self.
 func (m *MaskingAttributes) TransmittedBy(other MaskingAttributes) (changed bool) {
 	changed = false
-	if cmp.Less(other.MaskingLevel, m.MaskingLevel) {
+	if cmp.Less(m.MaskingLevel, other.MaskingLevel) {
 		m.MaskingLevel = other.MaskingLevel
 		changed = true
 	}
