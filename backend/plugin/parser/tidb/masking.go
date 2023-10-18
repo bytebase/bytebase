@@ -1,7 +1,6 @@
 package tidb
 
 import (
-	"cmp"
 	"strings"
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -152,9 +151,7 @@ func (extractor *fieldExtractor) extractSetOpr(node *tidbast.SetOprStmt) ([]base
 				return nil, errors.Errorf("The used SELECT statements have a different number of columns")
 			}
 			for i := 0; i < len(result); i++ {
-				if cmp.Less[storepb.MaskingLevel](result[i].MaskingAttributes, fieldList[i].MaskingAttributes) {
-					result[i].MaskingAttributes = fieldList[i].MaskingAttributes
-				}
+				result[i].MaskingAttributes.TransmittedBy(fieldList[i].MaskingAttributes)
 			}
 		}
 	}
@@ -265,10 +262,7 @@ func (extractor *fieldExtractor) extractRecursiveCTE(node *tidbast.CommonTableEx
 
 			changed := false
 			for i, field := range fieldList {
-				if cmp.Less[storepb.MaskingLevel](cteInfo.ColumnList[i].MaskingAttributes, field.MaskingAttributes) {
-					changed = true
-					cteInfo.ColumnList[i].MaskingAttributes = field.MaskingAttributes
-				}
+				changed = changed || cteInfo.ColumnList[i].MaskingAttributes.TransmittedBy(field.MaskingAttributes)
 			}
 
 			if !changed {
@@ -393,7 +387,7 @@ func extractFieldName(in *tidbast.SelectField) string {
 	return ""
 }
 
-func (extractor *fieldExtractor) checkFieldMaskingLevel(databaseName string, tableName string, fieldName string) storepb.MaskingLevel {
+func (extractor *fieldExtractor) checkFieldMaskingLevel(databaseName string, tableName string, fieldName string) base.MaskingAttributes {
 	// One sub-query may have multi-outer schemas and the multi-outer schemas can use the same name, such as:
 	//
 	//  select (
@@ -429,7 +423,7 @@ func (extractor *fieldExtractor) checkFieldMaskingLevel(databaseName string, tab
 	return base.NewDefaultMaskingAttributes()
 }
 
-func (extractor *fieldExtractor) extractColumnFromExprNode(in tidbast.ExprNode) (maskingLevel storepb.MaskingLevel, err error) {
+func (extractor *fieldExtractor) extractColumnFromExprNode(in tidbast.ExprNode) (base.MaskingAttributes, error) {
 	if in == nil {
 		return base.NewDefaultMaskingAttributes(), nil
 	}
@@ -470,18 +464,16 @@ func (extractor *fieldExtractor) extractColumnFromExprNode(in tidbast.ExprNode) 
 		}
 		fieldList, err := subqueryExtractor.extractNode(node.Query)
 		if err != nil {
-			return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, err
+			return base.NewDefaultMaskingAttributes(), err
 		}
-		finalLevel := base.NewDefaultMaskingAttributes()
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, field := range fieldList {
-			if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingAttributes) {
-				finalLevel = field.MaskingAttributes
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return finalLevel, nil
+			finalAttributes.TransmittedBy(field.MaskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return finalAttributes, nil
 			}
 		}
-		return finalLevel, nil
+		return finalAttributes, nil
 	case *tidbast.CompareSubqueryExpr:
 		return extractor.extractColumnFromExprNodeList([]tidbast.ExprNode{node.L, node.R})
 	case *tidbast.ExistsSubqueryExpr:
@@ -526,21 +518,19 @@ func (extractor *fieldExtractor) extractColumnFromExprNode(in tidbast.ExprNode) 
 	return base.NewDefaultMaskingAttributes(), nil
 }
 
-func (extractor *fieldExtractor) extractColumnFromExprNodeList(nodeList []tidbast.ExprNode) (maskingLevel storepb.MaskingLevel, err error) {
-	finalLevel := base.NewDefaultMaskingAttributes()
+func (extractor *fieldExtractor) extractColumnFromExprNodeList(nodeList []tidbast.ExprNode) (base.MaskingAttributes, error) {
+	finalAttributes := base.NewDefaultMaskingAttributes()
 	for _, node := range nodeList {
-		maskingLevel, err := extractor.extractColumnFromExprNode(node)
+		maskingAttributes, err := extractor.extractColumnFromExprNode(node)
 		if err != nil {
-			return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, err
+			return base.NewDefaultMaskingAttributes(), err
 		}
-		if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-			finalLevel = maskingLevel
-		}
-		if finalLevel == base.MaxMaskingLevel {
-			return finalLevel, nil
+		finalAttributes.TransmittedBy(maskingAttributes)
+		if finalAttributes.IsNeverChangeInTransmission() {
+			return finalAttributes, nil
 		}
 	}
-	return finalLevel, nil
+	return finalAttributes, nil
 }
 
 func (extractor *fieldExtractor) extractTableSource(node *tidbast.TableSource) ([]base.FieldInfo, error) {
@@ -735,8 +725,8 @@ func mergeJoinField(node *tidbast.Join, leftField []base.FieldInfo, rightField [
 		// Natural Join will merge the same column name field.
 		for _, field := range leftField {
 			// Merge the sensitive attribute for the same column name field.
-			if rField, exists := rightFieldMap[strings.ToLower(field.Name)]; exists && cmp.Less[storepb.MaskingLevel](field.MaskingAttributes, rField.MaskingAttributes) {
-				field.MaskingAttributes = rField.MaskingAttributes
+			if rField, exists := rightFieldMap[strings.ToLower(field.Name)]; exists {
+				field.MaskingAttributes.TransmittedBy(rField.MaskingAttributes)
 			}
 			result = append(result, field)
 		}
@@ -759,8 +749,8 @@ func mergeJoinField(node *tidbast.Join, leftField []base.FieldInfo, rightField [
 				_, existsInUsingMap := usingMap[strings.ToLower(field.Name)]
 				rField, existsInRightField := rightFieldMap[strings.ToLower(field.Name)]
 				// Merge the sensitive attribute for the column name field in USING.
-				if existsInUsingMap && existsInRightField && cmp.Less[storepb.MaskingLevel](field.MaskingAttributes, rField.MaskingAttributes) {
-					field.MaskingAttributes = rField.MaskingAttributes
+				if existsInUsingMap && existsInRightField {
+					field.MaskingAttributes.TransmittedBy(rField.MaskingAttributes)
 				}
 				result = append(result, field)
 			}
