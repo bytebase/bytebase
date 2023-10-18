@@ -1267,7 +1267,13 @@
       "assignee-group": {
         "workspace-owner-or-dba": "Requiere implementación del DBA o del propietario del espacio de trabajo.",
         "project-owner": "Requiere implementación del propietario del proyecto."
-      }
+      },
+      "manual-by-dba-or-workspace-owner": "Requiere implementación del DBA o del propietario del espacio de trabajo.",
+      "manual-by-project-owner": "Requiere implementación del propietario del proyecto.",
+      "manual-by-project-releaser": "Requiere implementación desde el lanzador del proyecto.",
+      "manual-by-issue-creator": "Requerir la implementación por parte del creador del problema.",
+      "manual-by-last-approver": "Implementación manual por parte del último aprobador del flujo de aprobación personalizado",
+      "manual-by-fixed-roles": "Implementación manual por roles fijos"
     },
     "backup": {
       "name": "Política de programación de copias de seguridad de la base de datos",

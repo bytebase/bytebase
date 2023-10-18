@@ -3,9 +3,15 @@
     <ArchiveBanner v-if="state.environment.state == State.DELETED" />
   </div>
   <EnvironmentForm
-    v-if="state.approvalPolicy && state.backupPolicy && state.environmentTier"
+    v-if="
+      state.approvalPolicy &&
+      state.rolloutPolicy &&
+      state.backupPolicy &&
+      state.environmentTier
+    "
     :environment="state.environment"
     :approval-policy="state.approvalPolicy"
+    :rollout-policy="state.rolloutPolicy"
     :backup-policy="state.backupPolicy"
     :environment-tier="state.environmentTier"
     @update="doUpdate"
@@ -67,6 +73,7 @@ import {
   defaultApprovalStrategy,
   getDefaultBackupPlanPolicy,
   getDefaultDeploymentApprovalPolicy,
+  getDefaultRolloutPolicy,
 } from "@/store/modules/v1/policy";
 import { State } from "@/types/proto/v1/common";
 import {
@@ -84,6 +91,7 @@ import { environmentV1Slug, idFromSlug } from "@/utils";
 interface LocalState {
   environment: Environment;
   showArchiveModal: boolean;
+  rolloutPolicy?: PolicyV1;
   approvalPolicy?: PolicyV1;
   backupPolicy?: PolicyV1;
   environmentTier?: EnvironmentTier;
@@ -118,6 +126,20 @@ const state = reactive<LocalState>({
 });
 
 const preparePolicy = () => {
+  policyV1Store
+    .getOrFetchPolicyByParentAndType({
+      parentPath: state.environment.name,
+      policyType: PolicyTypeV1.ROLLOUT_POLICY,
+    })
+    .then((policy) => {
+      state.rolloutPolicy =
+        policy ??
+        getDefaultRolloutPolicy(
+          state.environment.name,
+          PolicyResourceType.ENVIRONMENT
+        );
+    });
+
   policyV1Store
     .getOrFetchPolicyByParentAndType({
       parentPath: state.environment.name,

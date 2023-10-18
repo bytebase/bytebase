@@ -1268,7 +1268,13 @@
       "assignee-group": {
         "workspace-owner-or-dba": "Require rolling out from DBA or workspace owner.",
         "project-owner": "Require rolling out from project owner."
-      }
+      },
+      "manual-by-dba-or-workspace-owner": "Require rolling out from DBA or workspace owner.",
+      "manual-by-project-owner": "Require rolling out from project owner.",
+      "manual-by-project-releaser": "Require rolling out from project releaser.",
+      "manual-by-issue-creator": "Require rolling out from issue creator.",
+      "manual-by-last-approver": "Manual rollout by the last approver from the custom approval flow",
+      "manual-by-fixed-roles": "Manual rollout by fixed roles"
     },
     "backup": {
       "name": "Database backup schedule policy",

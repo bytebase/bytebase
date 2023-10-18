@@ -1265,7 +1265,13 @@
       "assignee-group": {
         "workspace-owner-or-dba": "需要 DBA 或者 Bytebase 实例所有者发布。",
         "project-owner": "需要项目所有者发布。"
-      }
+      },
+      "manual-by-dba-or-workspace-owner": "需要 DBA 或者 Bytebase 实例所有者发布。",
+      "manual-by-project-owner": "需要项目所有者发布。",
+      "manual-by-project-releaser": "需要项目的发布者发布。",
+      "manual-by-issue-creator": "需要工单的创建者发布。",
+      "manual-by-last-approver": "自定义审批流的最后一个审批人发布",
+      "manual-by-fixed-roles": "固定角色手工发布"
     },
     "backup": {
       "name": "数据库备份策略",

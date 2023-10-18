@@ -53,8 +53,9 @@
       :create="true"
       :drawer="true"
       :environment="getEnvironmentCreate()"
-      :approval-policy="(DEFAULT_NEW_APPROVAL_POLICY as any)"
-      :backup-policy="(DEFAULT_NEW_BACKUP_PLAN_POLICY as any)"
+      :approval-policy="DEFAULT_NEW_APPROVAL_POLICY"
+      :rollout-policy="DEFAULT_NEW_ROLLOUT_POLICY"
+      :backup-policy="DEFAULT_NEW_BACKUP_PLAN_POLICY"
       :environment-tier="defaultEnvironmentTier"
       @create="doCreate"
       @cancel="state.showCreateModal = false"
@@ -86,6 +87,7 @@ import {
   defaultApprovalStrategy,
   getDefaultBackupPlanPolicy,
   getDefaultDeploymentApprovalPolicy,
+  getDefaultRolloutPolicy,
 } from "@/store/modules/v1/policy";
 import { emptyEnvironment } from "@/types";
 import {
@@ -103,6 +105,11 @@ import EnvironmentDetail from "../views/EnvironmentDetail.vue";
 
 // The default value should be consistent with the GetDefaultPolicy from the backend.
 const DEFAULT_NEW_APPROVAL_POLICY: Policy = getDefaultDeploymentApprovalPolicy(
+  "",
+  PolicyResourceType.ENVIRONMENT
+);
+
+const DEFAULT_NEW_ROLLOUT_POLICY: Policy = getDefaultRolloutPolicy(
   "",
   PolicyResourceType.ENVIRONMENT
 );
