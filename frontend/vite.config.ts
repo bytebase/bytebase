@@ -1,5 +1,6 @@
 import VueI18nPlugin from "@intlify/unplugin-vue-i18n/vite";
 import yaml from "@rollup/plugin-yaml";
+import react from "@vitejs/plugin-react-swc";
 import vue from "@vitejs/plugin-vue";
 import { CodeInspectorPlugin } from "code-inspector-plugin";
 import { resolve } from "path";
@@ -21,6 +22,7 @@ export default defineConfig(() => {
   return {
     plugins: [
       vue(),
+      react(),
       // https://github.com/intlify/vite-plugin-vue-i18n
       VueI18nPlugin({
         include: [resolve(__dirname, "src/locales/**")],
