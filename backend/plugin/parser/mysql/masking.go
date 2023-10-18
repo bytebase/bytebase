@@ -1350,8 +1350,8 @@ func (extractor *fieldExtractor) mysqlEvalMaskingAttributesInExprList(list []ant
 	finalAttributes := base.NewDefaultMaskingAttributes()
 	var fieldName string
 	var err error
+	var attributes base.MaskingAttributes
 	for _, ctx := range list {
-		attributes := base.NewDefaultMaskingAttributes()
 		fieldName, attributes, err = extractor.mysqlEvalMaskingAttributesInExpr(ctx)
 		if err != nil {
 			return "", base.NewDefaultMaskingAttributes(), err
