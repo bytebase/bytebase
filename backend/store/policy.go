@@ -47,7 +47,7 @@ func (s *Store) GetRolloutPolicy(ctx context.Context, environmentID int) (*store
 	}
 	if policy == nil {
 		return &storepb.RolloutPolicy{
-			Automatic: true,
+			Automatic: false,
 		}, nil
 	}
 
