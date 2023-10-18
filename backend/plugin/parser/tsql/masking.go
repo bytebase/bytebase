@@ -272,7 +272,6 @@ func (extractor *fieldExtractor) extractTSqlSensitiveFieldsFromQueryExpression(c
 			}
 			for i := range right {
 				left[i].MaskingAttributes.TransmittedBy(right[i].MaskingAttributes)
-
 			}
 		}
 		return left, nil
