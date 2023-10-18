@@ -89,6 +89,9 @@ func (s *AnomalyService) SearchAnomalies(ctx context.Context, request *v1pb.Sear
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to get instance %s", insID)
 				}
+				if instance == nil {
+					return nil, status.Errorf(codes.NotFound, "instance %q not found", insID)
+				}
 				database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 					InstanceID:          &insID,
 					DatabaseName:        &dbName,
