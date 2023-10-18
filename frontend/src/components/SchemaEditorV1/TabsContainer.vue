@@ -1,18 +1,18 @@
 <template>
   <div class="flex justify-between items-center">
     <div
-      class="relative flex flex-1 flex-nowrap overflow-hidden overflow bg-gray-100 select-none shrink-0 p-1 rounded"
+      class="relative flex flex-1 flex-nowrap overflow-hidden overflow bg-gray-100 select-none shrink-0 rounded"
     >
       <div
         ref="tabsContainerRef"
-        class="flex flex-nowrap overflow-x-auto max-x-full hide-scrollbar overscroll-none"
+        class="flex flex-nowrap overflow-x-auto max-x-full hide-scrollbar overscroll-none px-1 space-x-1"
       >
         <div
           v-for="tab in tabList"
           ref="tabsContainerRef"
           :key="tab.id"
-          class="relative px-1 pl-2 py-1 rounded w-40 flex flex-row justify-between items-center shrink-0 border border-transparent cursor-pointer"
           :class="[
+            `relative px-1 py-1 my-1 rounded w-40 flex flex-row justify-between items-center shrink-0 border border-transparent cursor-pointer`,
             `tab-${tab.id}`,
             tab.id === currentTab?.id && 'bg-white border-gray-200 shadow',
           ]"
@@ -20,13 +20,17 @@
         >
           <div class="flex flex-row justify-start items-center mr-1">
             <span class="mr-1">
+              <heroicons-outline:circle-stack
+                v-if="tab.type === SchemaEditorTabType.TabForDatabase"
+                class="rounded w-4 h-auto text-gray-400"
+              />
               <heroicons-outline:table-cells
                 v-if="tab.type === SchemaEditorTabType.TabForTable"
                 class="rounded w-4 h-auto text-gray-400"
               />
             </span>
             <NEllipsis
-              class="text-sm w-24"
+              class="text-sm w-20 leading-4"
               :class="getTabComputedClassList(tab)"
               >{{ getTabName(tab) }}</NEllipsis
             >
@@ -40,24 +44,12 @@
         </div>
       </div>
     </div>
-    <div v-if="currentTab" class="hidden lg:block p-1">
+    <div v-if="currentTab" class="pl-2">
       <NInput
-        v-if="currentTab.type === SchemaEditorTabType.TabForDatabase"
         v-model:value="searchPattern"
-        class="!w-48"
-        :placeholder="$t('schema-editor.search-table')"
-        @input="$emit('onTableSearchPattern', $event)"
-      >
-        <template #prefix>
-          <heroicons-outline:search class="w-4 h-auto text-gray-300" />
-        </template>
-      </NInput>
-      <NInput
-        v-if="currentTab.type === SchemaEditorTabType.TabForTable"
-        v-model:value="searchPattern"
-        class="!w-48"
-        :placeholder="$t('schema-editor.search-column')"
-        @input="$emit('onColumnSearchPattern', $event)"
+        class="!w-40"
+        :placeholder="searchBoxPlaceholder"
+        @input="handleSearchBoxInput"
       >
         <template #prefix>
           <heroicons-outline:search class="w-4 h-auto text-gray-300" />
@@ -68,30 +60,47 @@
 </template>
 
 <script lang="ts" setup>
-import { NEllipsis } from "naive-ui";
+import { NEllipsis, NInput } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, nextTick, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { useSchemaEditorV1Store } from "@/store";
 import { SchemaEditorTabType, TabContext } from "@/types/v1/schemaEditor";
 import { isTableChanged } from "./utils";
 
-defineEmits<{
+const emit = defineEmits<{
   (event: "onTableSearchPattern", tableSearchPattern: string): void;
   (event: "onColumnSearchPattern", columnSearchPattern: string): void;
 }>();
 
-const searchPattern = ref("");
-
-const originalTabContext = ref<TabContext | undefined>(undefined);
-
+const { t } = useI18n();
 const schemaEditorV1Store = useSchemaEditorV1Store();
 const tabsContainerRef = ref();
+const searchPattern = ref("");
+const originalTabContext = ref<TabContext | undefined>(undefined);
+
 const tabList = computed(() => {
   return schemaEditorV1Store.tabList;
 });
 const currentTab = computed(() => {
   return schemaEditorV1Store.currentTab;
 });
+
+const searchBoxPlaceholder = computed(() => {
+  return currentTab.value?.type === SchemaEditorTabType.TabForDatabase
+    ? t("schema-editor.search-table")
+    : currentTab.value?.type === SchemaEditorTabType.TabForTable
+    ? t("schema-editor.search-column")
+    : "";
+});
+
+const handleSearchBoxInput = (value: string) => {
+  if (currentTab.value?.type === SchemaEditorTabType.TabForDatabase) {
+    emit("onTableSearchPattern", value);
+  } else if (currentTab.value?.type === SchemaEditorTabType.TabForTable) {
+    emit("onColumnSearchPattern", value);
+  }
+};
 
 watch(
   () => currentTab.value,
@@ -139,6 +148,9 @@ const getTabName = (tab: TabContext) => {
     return tab.name;
   }
   if (tab.type === SchemaEditorTabType.TabForDatabase) {
+    if (schemaEditorV1Store.resourceType === "branch") {
+      return "Tables";
+    }
     const database = schemaEditorV1Store.databaseList.find(
       (database) => database.name === tab.parentName
     );

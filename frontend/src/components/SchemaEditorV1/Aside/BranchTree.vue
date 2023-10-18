@@ -165,45 +165,27 @@ const tableList = computed(() =>
 );
 const treeData = computed(() => {
   const treeNodeList: TreeNode[] = [];
-  if (engine.value === Engine.MYSQL || engine.value === Engine.TIDB) {
-    const schema = schemaList.value[0];
-    if (!schema) {
-      return;
-    }
-    for (const table of tableList.value) {
-      const tableTreeNode: TreeNodeForTable = {
+  for (const schema of schemaList.value) {
+    const schemaTreeNode: TreeNodeForSchema = {
+      type: "schema",
+      key: `s-${schema.id}`,
+      label: schema.name,
+      isLeaf: false,
+      schemaId: schema.id,
+      children: schema.tableList.map((table) => ({
         type: "table",
         key: `t-${schema.id}-${table.id}`,
         label: table.name,
+        children: [],
         isLeaf: true,
         schemaId: schema.id,
         tableId: table.id,
-      };
-      treeNodeList.push(tableTreeNode);
+      })),
+    };
+    if (schemaTreeNode.children!.length === 0) {
+      schemaTreeNode.isLeaf = true;
     }
-  } else {
-    for (const schema of schemaList.value) {
-      const schemaTreeNode: TreeNodeForSchema = {
-        type: "schema",
-        key: `s-${schema.id}`,
-        label: schema.name,
-        isLeaf: false,
-        schemaId: schema.id,
-        children: schema.tableList.map((table) => ({
-          type: "table",
-          key: `t-${schema.id}-${table.id}`,
-          label: table.name,
-          children: [],
-          isLeaf: true,
-          schemaId: schema.id,
-          tableId: table.id,
-        })),
-      };
-      if (schemaTreeNode.children!.length === 0) {
-        schemaTreeNode.isLeaf = true;
-      }
-      treeNodeList.push(schemaTreeNode);
-    }
+    treeNodeList.push(schemaTreeNode);
   }
 
   return treeNodeList;
@@ -347,12 +329,16 @@ const renderPrefix = ({ option }: { option: TreeOption }) => {
 const renderLabel = ({ option }: { option: TreeOption }) => {
   const treeNode = option as TreeNode;
   const additionalClassList: string[] = ["select-none"];
+  let label = treeNode.label;
 
   if (treeNode.type === "schema") {
     const schema = schemaList.value.find(
       (schema) => schema.id === treeNode.schemaId
     );
     if (schema) {
+      if (engine.value !== Engine.POSTGRES) {
+        label = "Tables";
+      }
       if (schema.status === "created") {
         additionalClassList.push("text-green-700");
       } else if (schema.status === "dropped") {
@@ -396,7 +382,7 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
     () => [
       h("span", {
         innerHTML: getHighlightHTMLByKeyWords(
-          escape(treeNode.label),
+          escape(label),
           escape(searchPattern.value)
         ),
       }),
@@ -496,7 +482,7 @@ const renderSuffix = ({ option }: { option: TreeOption }) => {
     }
     return icons;
   }
-  throw new Error(`Unknown tree node type`);
+  return null;
 };
 
 const getOriginalName = (name: string): string => {
