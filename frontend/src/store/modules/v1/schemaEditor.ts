@@ -2,7 +2,6 @@ import { isUndefined, uniqueId } from "lodash-es";
 import { defineStore } from "pinia";
 import { ComposedDatabase, emptyProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import { ColumnConfig } from "@/types/proto/v1/database_service";
 import {
   BranchSchema,
   DatabaseSchema,
