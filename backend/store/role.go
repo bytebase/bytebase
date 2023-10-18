@@ -89,6 +89,12 @@ func (s *Store) ListRoles(ctx context.Context) ([]*RoleMessage, error) {
 		},
 		&RoleMessage{
 			CreatorID:   api.SystemBotID,
+			ResourceID:  api.Releaser.String(),
+			Name:        "Project releaser",
+			Description: "",
+		},
+		&RoleMessage{
+			CreatorID:   api.SystemBotID,
 			ResourceID:  api.Exporter.String(),
 			Name:        "Project exporter",
 			Description: "",
@@ -97,12 +103,6 @@ func (s *Store) ListRoles(ctx context.Context) ([]*RoleMessage, error) {
 			CreatorID:   api.SystemBotID,
 			ResourceID:  api.Querier.String(),
 			Name:        "Project querier",
-			Description: "",
-		},
-		&RoleMessage{
-			CreatorID:   api.SystemBotID,
-			ResourceID:  api.Releaser.String(),
-			Name:        "Project releaser",
 			Description: "",
 		},
 	)
