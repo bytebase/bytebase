@@ -90,7 +90,7 @@
             />
           </div>
 
-          <div class="sm:col-span-2 sm:col-start-1">
+          <div class="sm:col-span-1 sm:col-start-1">
             <label for="semantic-types" class="textlabel">
               {{ $t("settings.sensitive-data.semantic-types.self") }}
             </label>

@@ -173,9 +173,6 @@ export const useSchemaEditorV1Store = defineStore("SchemaEditorV1", {
 
       return tab;
     },
-    isEmptyColumnConfig(config: ColumnConfig): boolean {
-      return Object.keys(config.labels).length === 0 && !config.semanticTypeId;
-    },
     getSchema(parentName: string, schemaId: string) {
       return this.resourceMap[this.resourceType]
         .get(parentName)

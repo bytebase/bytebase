@@ -211,18 +211,22 @@ export const mergeSchemaEditToMetadata = (
     }
   }
 
-  metadata.schemaConfigs = schemaEdits.map((schema) => ({
-    name: schema.name,
-    tableConfigs: schema.tableList.map((table) => ({
-      name: table.name,
-      columnConfigs: table.columnList.map((column) =>
-        ColumnConfig.fromPartial({
-          ...column.config,
-          name: column.name,
+  metadata.schemaConfigs = schemaEdits.map((schema) =>
+    SchemaConfig.fromPartial({
+      name: schema.name,
+      tableConfigs: schema.tableList.map((table) =>
+        TableConfig.fromPartial({
+          name: table.name,
+          columnConfigs: table.columnList.map((column) =>
+            ColumnConfig.fromPartial({
+              ...column.config,
+              name: column.name,
+            })
+          ),
         })
       ),
-    })),
-  }));
+    })
+  );
 
   return metadata;
 };
