@@ -26,6 +26,12 @@ const (
 	Exporter Role = "EXPORTER"
 	// Querier is the QUERIER role.
 	Querier Role = "QUERIER"
+	// Releaser is the RELEASER role.
+	Releaser Role = "RELEASER"
 	// UnknownRole is the unknown role.
 	UnknownRole Role = "UNKNOWN"
 )
+
+func (r Role) String() string {
+	return string(r)
+}
