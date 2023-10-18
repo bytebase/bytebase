@@ -16,6 +16,7 @@ import (
 	go_ora "github.com/sijms/go-ora/v2"
 	"google.golang.org/protobuf/types/known/durationpb"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
@@ -167,16 +168,62 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	return results, nil
 }
 
-func getOracleStatementWithResultLimit(stmt string, limit int) string {
-	return fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", stmt, limit)
+func (driver *Driver) getVersion(ctx context.Context) (string, error) {
+	var fullVersion string
+	query := "SELECT BANNER FROM v$version WHERE BANNER LIKE 'Oracle%'"
+	if err := driver.db.QueryRowContext(ctx, query).Scan(&fullVersion); err != nil {
+		if err == sql.ErrNoRows {
+			return "", common.FormatDBErrorEmptyRowWithQuery(query)
+		}
+		return "", util.FormatErrorWithQuery(err, query)
+	}
+
+	var version, canonicalVersion string
+	tokens := strings.Fields(fullVersion)
+	for _, token := range tokens {
+		if semVersionRegex.MatchString(token) {
+			version = token
+			continue
+		}
+		if canonicalVersionRegex.MatchString(token) {
+			canonicalVersion = token
+			continue
+		}
+	}
+
+	if canonicalVersion != "" {
+		version = fmt.Sprintf("%s (%s)", version, canonicalVersion)
+	}
+	return version, nil
 }
 
-func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+func (driver *Driver) getOracleStatementWithResultLimit(ctx context.Context, stmt string, limit int) (string, error) {
+	version, err := driver.getVersion(ctx)
+	if err != nil {
+		return "", err
+	}
+	switch {
+	case version < "12":
+		return fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", stmt, limit), nil
+	default:
+		res, err := getStatementWithResultLimitFor12c(stmt, limit)
+		if err != nil {
+			return "", err
+		}
+		return res, nil
+	}
+}
+
+func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
 
 	stmt := statement
 	if !strings.HasPrefix(strings.ToUpper(stmt), "EXPLAIN") && queryContext.Limit > 0 {
-		stmt = getOracleStatementWithResultLimit(stmt, queryContext.Limit)
+		var err error
+		stmt, err = driver.getOracleStatementWithResultLimit(ctx, stmt, queryContext.Limit)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if queryContext.ReadOnly {
