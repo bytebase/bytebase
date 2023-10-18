@@ -167,6 +167,7 @@ type tableState struct {
 	columns     map[string]*columnState
 	indexes     map[string]*indexState
 	foreignKeys map[string]*foreignKeyState
+	comment     string
 }
 
 func (t *tableState) removeUnsupportedIndex() {
@@ -243,7 +244,17 @@ func (t *tableState) toString(buf *strings.Builder) error {
 		}
 	}
 
-	if _, err := buf.WriteString("\n);\n"); err != nil {
+	if _, err := buf.WriteString("\n)"); err != nil {
+		return err
+	}
+
+	if t.comment != "" {
+		if _, err := buf.WriteString(fmt.Sprintf(" COMMENT='%s'", t.comment)); err != nil {
+			return err
+		}
+	}
+
+	if _, err := buf.WriteString(";\n"); err != nil {
 		return err
 	}
 	return nil
@@ -261,6 +272,7 @@ func newTableState(id int, name string) *tableState {
 
 func convertToTableState(id int, table *v1pb.TableMetadata) *tableState {
 	state := newTableState(id, table.Name)
+	state.comment = table.Comment
 	for i, column := range table.Columns {
 		state.columns[column.Name] = convertToColumnState(i, column)
 	}

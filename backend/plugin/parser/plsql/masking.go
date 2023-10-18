@@ -1,8 +1,6 @@
 package plsql
 
 import (
-	"cmp"
-
 	"github.com/antlr4-go/antlr/v4"
 	plsql "github.com/bytebase/plsql-parser"
 	"github.com/pkg/errors"
@@ -81,8 +79,8 @@ func (l *selectStatementListener) EnterSelect_statement(ctx *plsql.Select_statem
 
 			for _, field := range fieldList {
 				l.result = append(l.result, base.SensitiveField{
-					Name:         field.Name,
-					MaskingLevel: field.MaskingLevel,
+					Name:              field.Name,
+					MaskingAttributes: field.MaskingAttributes,
 				})
 			}
 		}
@@ -136,8 +134,8 @@ func (extractor *fieldExtractor) plsqlExtractFactoringElement(ctx plsql.IFactori
 		}
 		for _, field := range initialField {
 			cteInfo.ColumnList = append(cteInfo.ColumnList, base.ColumnInfo{
-				Name:         field.Name,
-				MaskingLevel: field.MaskingLevel,
+				Name:              field.Name,
+				MaskingAttributes: field.MaskingAttributes,
 			})
 		}
 
@@ -166,10 +164,7 @@ func (extractor *fieldExtractor) plsqlExtractFactoringElement(ctx plsql.IFactori
 
 			changed := false
 			for i, field := range fieldList {
-				if cmp.Less[storepb.MaskingLevel](cteInfo.ColumnList[i].MaskingLevel, field.MaskingLevel) {
-					changed = true
-					cteInfo.ColumnList[i].MaskingLevel = field.MaskingLevel
-				}
+				changed = changed || cteInfo.ColumnList[i].MaskingAttributes.TransmittedBy(field.MaskingAttributes)
 			}
 
 			if !changed {
@@ -246,8 +241,8 @@ func (extractor *fieldExtractor) plsqlExtractNonRecursiveCTE(ctx plsql.IFactorin
 	}
 	for _, field := range fieldList {
 		result.ColumnList = append(result.ColumnList, base.ColumnInfo{
-			Name:         field.Name,
-			MaskingLevel: field.MaskingLevel,
+			Name:              field.Name,
+			MaskingAttributes: field.MaskingAttributes,
 		})
 	}
 	return result, nil
@@ -308,15 +303,13 @@ func (extractor *fieldExtractor) plsqlExtractSubqueryOperationPart(ctx plsql.ISu
 
 	var result []base.FieldInfo
 	for i, field := range rightField {
-		finalLevel := leftField[i].MaskingLevel
-		if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingLevel) {
-			finalLevel = field.MaskingLevel
-		}
+		finalAttributes := leftField[i].MaskingAttributes
+		finalAttributes.TransmittedBy(field.MaskingAttributes)
 		result = append(result, base.FieldInfo{
-			Name:         leftField[i].Name,
-			Table:        leftField[i].Table,
-			Database:     leftField[i].Database,
-			MaskingLevel: finalLevel,
+			Name:              leftField[i].Name,
+			Table:             leftField[i].Table,
+			Database:          leftField[i].Database,
+			MaskingAttributes: finalAttributes,
 		})
 	}
 
@@ -391,9 +384,9 @@ func (extractor *fieldExtractor) plsqlExtractQueryBlock(ctx plsql.IQuery_blockCo
 					fieldName = element.Expression().GetText()
 				}
 				result = append(result, base.FieldInfo{
-					Database:     extractor.currentDatabase,
-					Name:         fieldName,
-					MaskingLevel: maskingLevel,
+					Database:          extractor.currentDatabase,
+					Name:              fieldName,
+					MaskingAttributes: maskingLevel,
 				})
 			}
 		}
@@ -402,7 +395,7 @@ func (extractor *fieldExtractor) plsqlExtractQueryBlock(ctx plsql.IQuery_blockCo
 	return result, nil
 }
 
-func (extractor *fieldExtractor) plsqlCheckFieldMaskingLevel(schemaName string, tableName string, columnName string) storepb.MaskingLevel {
+func (extractor *fieldExtractor) plsqlCheckFieldMaskingLevel(schemaName string, tableName string, columnName string) base.MaskingAttributes {
 	// One sub-query may have multi-outer schemas and the multi-outer schemas can use the same name, such as:
 	//
 	//  select (
@@ -422,7 +415,7 @@ func (extractor *fieldExtractor) plsqlCheckFieldMaskingLevel(schemaName string, 
 		sameTable := (tableName == field.Table || tableName == "")
 		sameColumn := (columnName == field.Name)
 		if sameSchema && sameTable && sameColumn {
-			return field.MaskingLevel
+			return field.MaskingAttributes
 		}
 	}
 
@@ -431,23 +424,23 @@ func (extractor *fieldExtractor) plsqlCheckFieldMaskingLevel(schemaName string, 
 		sameTable := (tableName == field.Table || tableName == "")
 		sameColumn := (columnName == field.Name)
 		if sameSchema && sameTable && sameColumn {
-			return field.MaskingLevel
+			return field.MaskingAttributes
 		}
 	}
 
-	return base.DefaultMaskingLevel
+	return base.NewDefaultMaskingAttributes()
 }
 
-func (extractor *fieldExtractor) plsqlEvalMaskingLevelInExpression(ctx antlr.ParserRuleContext) (string, storepb.MaskingLevel, error) {
+func (extractor *fieldExtractor) plsqlEvalMaskingLevelInExpression(ctx antlr.ParserRuleContext) (string, base.MaskingAttributes, error) {
 	if ctx == nil {
-		return "", base.DefaultMaskingLevel, nil
+		return "", base.NewDefaultMaskingAttributes(), nil
 	}
 
 	switch rule := ctx.(type) {
 	case plsql.IColumn_nameContext:
 		schemaName, tableName, columnName, err := plsqlNormalizeColumnName(extractor.currentDatabase, rule)
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, err
+			return "", base.NewDefaultMaskingAttributes(), err
 		}
 		return columnName, extractor.plsqlCheckFieldMaskingLevel(schemaName, tableName, columnName), nil
 	case plsql.IIdentifierContext:
@@ -463,11 +456,11 @@ func (extractor *fieldExtractor) plsqlEvalMaskingLevelInExpression(ctx antlr.Par
 		if rule.Variable_name() != nil {
 			return extractor.plsqlEvalMaskingLevelInExpression(rule.Variable_name())
 		}
-		return "", base.DefaultMaskingLevel, nil
+		return "", base.NewDefaultMaskingAttributes(), nil
 	case plsql.IVariable_nameContext:
 		if rule.Bind_variable() != nil {
 			// TODO: handle bind variable
-			return "", base.DefaultMaskingLevel, nil
+			return "", base.NewDefaultMaskingAttributes(), nil
 		}
 		var list []string
 		for _, item := range rule.AllId_expression() {
@@ -481,7 +474,7 @@ func (extractor *fieldExtractor) plsqlEvalMaskingLevelInExpression(ctx antlr.Par
 		case 3:
 			return list[2], extractor.plsqlCheckFieldMaskingLevel(list[0], list[1], list[2]), nil
 		default:
-			return "", base.DefaultMaskingLevel, nil
+			return "", base.NewDefaultMaskingAttributes(), nil
 		}
 	case plsql.IGeneral_elementContext:
 		var list []antlr.ParserRuleContext
@@ -509,7 +502,7 @@ func (extractor *fieldExtractor) plsqlEvalMaskingLevelInExpression(ctx antlr.Par
 		case 3:
 			return list[2], extractor.plsqlCheckFieldMaskingLevel(list[0], list[1], list[2]), nil
 		default:
-			return "", base.DefaultMaskingLevel, nil
+			return "", base.NewDefaultMaskingAttributes(), nil
 		}
 	case plsql.IExpressionContext:
 		if rule.Logical_expression() != nil {
@@ -530,18 +523,16 @@ func (extractor *fieldExtractor) plsqlEvalMaskingLevelInExpression(ctx antlr.Par
 		}
 		fieldList, err := subqueryExtractor.plsqlExtractQueryBlock(rule)
 		if err != nil {
-			return "", base.DefaultMaskingLevel, err
+			return "", base.NewDefaultMaskingAttributes(), err
 		}
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, field := range fieldList {
-			if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingLevel) {
-				finalLevel = field.MaskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return "", finalLevel, nil
+			finalAttributes.TransmittedBy(field.MaskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return "", finalAttributes, nil
 			}
 		}
-		return "", finalLevel, nil
+		return "", finalAttributes, nil
 	case plsql.ISubqueryContext:
 		// For associated subquery, we should set the fromFieldList as the outerSchemaInfo.
 		// So that the subquery can access the outer schema.
@@ -553,18 +544,16 @@ func (extractor *fieldExtractor) plsqlEvalMaskingLevelInExpression(ctx antlr.Par
 		}
 		fieldList, err := subqueryExtractor.plsqlExtractSubquery(rule)
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, err
+			return "", base.NewDefaultMaskingAttributes(), err
 		}
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, field := range fieldList {
-			if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingLevel) {
-				finalLevel = field.MaskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return "", finalLevel, nil
+			finalAttributes.TransmittedBy(field.MaskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return "", finalAttributes, nil
 			}
 		}
-		return "", finalLevel, nil
+		return "", finalAttributes, nil
 	case plsql.ILogical_expressionContext:
 		if rule.Unary_logical_expression() != nil {
 			return extractor.plsqlEvalMaskingLevelInExpression(rule.Unary_logical_expression())
@@ -733,18 +722,16 @@ func (extractor *fieldExtractor) plsqlEvalMaskingLevelInExpression(ctx antlr.Par
 		}
 		fieldList, err := subqueryExtractor.plsqlExtractSelectOnlyStatement(rule)
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, err
+			return "", base.NewDefaultMaskingAttributes(), err
 		}
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, field := range fieldList {
-			if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingLevel) {
-				finalLevel = field.MaskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return "", finalLevel, nil
+			finalAttributes.TransmittedBy(field.MaskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return "", finalAttributes, nil
 			}
 		}
-		return "", finalLevel, nil
+		return "", finalAttributes, nil
 	case plsql.IStandard_functionContext:
 		var list []antlr.ParserRuleContext
 		if rule.String_function() != nil {
@@ -905,7 +892,7 @@ func (extractor *fieldExtractor) plsqlEvalMaskingLevelInExpression(ctx antlr.Par
 		return extractor.plsqlEvalMaskingLevelInExpression(rule.Expression())
 	case plsql.IFunction_argument_modelingContext:
 		// TODO(rebelice): implement standard function with USING
-		return "", base.DefaultMaskingLevel, nil
+		return "", base.NewDefaultMaskingAttributes(), nil
 	case plsql.ITable_elementContext:
 		// handled as column name
 		var str []string
@@ -920,7 +907,7 @@ func (extractor *fieldExtractor) plsqlEvalMaskingLevelInExpression(ctx antlr.Par
 		case 3:
 			return str[2], extractor.plsqlCheckFieldMaskingLevel(str[0], str[1], str[2]), nil
 		default:
-			return "", base.DefaultMaskingLevel, nil
+			return "", base.NewDefaultMaskingAttributes(), nil
 		}
 	case plsql.IFunction_argumentContext:
 		var list []antlr.ParserRuleContext
@@ -974,30 +961,28 @@ func (extractor *fieldExtractor) plsqlEvalMaskingLevelInExpression(ctx antlr.Par
 		return extractor.plsqlEvalMaskingLevelInExpressionList(list)
 	}
 
-	return "", base.DefaultMaskingLevel, nil
+	return "", base.NewDefaultMaskingAttributes(), nil
 }
 
-func (extractor *fieldExtractor) plsqlEvalMaskingLevelInExpressionList(list []antlr.ParserRuleContext) (string, storepb.MaskingLevel, error) {
+func (extractor *fieldExtractor) plsqlEvalMaskingLevelInExpressionList(list []antlr.ParserRuleContext) (string, base.MaskingAttributes, error) {
 	var fieldName string
 	var err error
-	var level storepb.MaskingLevel
-	finalLevel := base.DefaultMaskingLevel
+	var attributes base.MaskingAttributes
+	finalAttributes := base.NewDefaultMaskingAttributes()
 	for _, ctx := range list {
-		fieldName, level, err = extractor.plsqlEvalMaskingLevelInExpression(ctx)
+		fieldName, attributes, err = extractor.plsqlEvalMaskingLevelInExpression(ctx)
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, err
+			return "", base.NewDefaultMaskingAttributes(), err
 		}
 		if len(list) != 1 {
 			fieldName = ""
 		}
-		if cmp.Less[storepb.MaskingLevel](finalLevel, level) {
-			finalLevel = level
-		}
-		if finalLevel == base.MaxMaskingLevel {
-			return fieldName, finalLevel, nil
+		finalAttributes.TransmittedBy(attributes)
+		if finalAttributes.IsNeverChangeInTransmission() {
+			return fieldName, finalAttributes, nil
 		}
 	}
-	return fieldName, finalLevel, nil
+	return fieldName, finalAttributes, nil
 }
 
 func (extractor *fieldExtractor) plsqlExtractFromClause(ctx plsql.IFrom_clauseContext) ([]base.FieldInfo, error) {
@@ -1065,15 +1050,13 @@ func (extractor *fieldExtractor) plsqlMergeJoin(leftField []base.FieldInfo, ctx 
 		// Natural Join will merge the same column name field.
 		for _, field := range leftField {
 			if rField, exists := rightFieldMap[field.Name]; exists {
-				finalLevel := field.MaskingLevel
-				if cmp.Less[storepb.MaskingLevel](finalLevel, rField.MaskingLevel) {
-					finalLevel = rField.MaskingLevel
-				}
+				finalAttributes := field.MaskingAttributes
+				finalAttributes.TransmittedBy(rField.MaskingAttributes)
 				result = append(result, base.FieldInfo{
-					Database:     field.Database,
-					Table:        field.Table,
-					Name:         field.Name,
-					MaskingLevel: finalLevel,
+					Database:          field.Database,
+					Table:             field.Table,
+					Name:              field.Name,
+					MaskingAttributes: finalAttributes,
 				})
 			} else {
 				result = append(result, field)
@@ -1105,15 +1088,13 @@ func (extractor *fieldExtractor) plsqlMergeJoin(leftField []base.FieldInfo, ctx 
 			_, existsInUsingMap := usingMap[field.Name]
 			rField, existsInRightFieldMap := rightFieldMap[field.Name]
 			if existsInUsingMap && existsInRightFieldMap {
-				finalLevel := field.MaskingLevel
-				if cmp.Less[storepb.MaskingLevel](finalLevel, rField.MaskingLevel) {
-					finalLevel = rField.MaskingLevel
-				}
+				finalAttributes := field.MaskingAttributes
+				finalAttributes.TransmittedBy(rField.MaskingAttributes)
 				result = append(result, base.FieldInfo{
-					Database:     field.Database,
-					Table:        field.Table,
-					Name:         field.Name,
-					MaskingLevel: finalLevel,
+					Database:          field.Database,
+					Table:             field.Table,
+					Name:              field.Name,
+					MaskingAttributes: finalAttributes,
 				})
 			} else {
 				result = append(result, field)
@@ -1154,10 +1135,10 @@ func (extractor *fieldExtractor) plsqlExtractTableRefAux(ctx plsql.ITable_ref_au
 	var result []base.FieldInfo
 	for _, field := range list {
 		result = append(result, base.FieldInfo{
-			Database:     field.Database,
-			Table:        alias,
-			Name:         field.Name,
-			MaskingLevel: field.MaskingLevel,
+			Database:          field.Database,
+			Table:             alias,
+			Name:              field.Name,
+			MaskingAttributes: field.MaskingAttributes,
 		})
 	}
 
@@ -1190,10 +1171,10 @@ func (extractor *fieldExtractor) plsqlExtractDmlTableExpressionClause(ctx plsql.
 		var result []base.FieldInfo
 		for _, column := range tableSchema.ColumnList {
 			result = append(result, base.FieldInfo{
-				Database:     schema,
-				Table:        table,
-				Name:         column.Name,
-				MaskingLevel: column.MaskingLevel,
+				Database:          schema,
+				Table:             table,
+				Name:              column.Name,
+				MaskingAttributes: column.MaskingAttributes,
 			})
 		}
 		return result, nil

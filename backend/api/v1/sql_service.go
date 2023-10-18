@@ -1366,8 +1366,8 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 							isEmpty = false
 						}
 						tableSchema.ColumnList = append(tableSchema.ColumnList, base.ColumnInfo{
-							Name:         column.Name,
-							MaskingLevel: maskingLevel,
+							Name:              column.Name,
+							MaskingAttributes: base.NewMaskingAttributes(maskingLevel),
 						})
 					}
 					schemaSchema.TableList = append(schemaSchema.TableList, tableSchema)
@@ -1403,8 +1403,8 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 						isEmpty = false
 					}
 					tableSchema.ColumnList = append(tableSchema.ColumnList, base.ColumnInfo{
-						Name:         column.Name,
-						MaskingLevel: maskingLevel,
+						Name:              column.Name,
+						MaskingAttributes: base.NewMaskingAttributes(maskingLevel),
 					})
 				}
 				schemaSchema.TableList = append(schemaSchema.TableList, tableSchema)
