@@ -17,6 +17,9 @@
         <HumanizeDate :date="taskRun.createTime" />
       </div>
       <div class="bb-grid-cell">
+        <HumanizeDate :date="taskRun.startTime" />
+      </div>
+      <div class="bb-grid-cell">
         {{ humanizeDurationV1(executionDurationOfTaskRun(taskRun)) }}
       </div>
     </template>
@@ -56,6 +59,10 @@ const columnList = computed((): BBGridColumn[] => {
       width: "1fr",
     },
     {
+      title: t("task.created"),
+      width: "auto",
+    },
+    {
       title: t("task.started"),
       width: "auto",
     },
@@ -66,12 +73,17 @@ const columnList = computed((): BBGridColumn[] => {
   ];
 });
 
-const executionDurationOfTaskRun = (taskRun: TaskRun): Duration => {
-  const { createTime, updateTime } = taskRun;
-  if (!createTime || !updateTime) return { seconds: 0, nanos: 0 };
-  const createMS = createTime.getTime();
+const executionDurationOfTaskRun = (taskRun: TaskRun): Duration | undefined => {
+  const { startTime, updateTime } = taskRun;
+  if (!startTime || !updateTime) {
+    return undefined;
+  }
+  if (startTime.getTime() === 0) {
+    return undefined;
+  }
+  const startMS = startTime.getTime();
   const updateMS = updateTime.getTime();
-  const elapsedMS = updateMS - createMS;
+  const elapsedMS = updateMS - startMS;
   return {
     seconds: Math.floor(elapsedMS / 1000),
     nanos: (elapsedMS % 1000) * 1e6,
