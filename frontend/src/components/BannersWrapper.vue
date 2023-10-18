@@ -1,24 +1,27 @@
 <template>
-  <BannerUpgradeSubscription />
-  <template v-if="shouldShowDemoBanner">
-    <BannerDemo />
-  </template>
-  <template v-if="shouldShowDebugBanner">
-    <BannerDebug />
-  </template>
-  <template v-if="shouldShowSubscriptionBanner">
-    <BannerSubscription />
-  </template>
-  <template v-if="shouldShowReadonlyBanner">
-    <div class="bg-info">
-      <div class="text-center py-1 px-3 font-medium text-white truncate">
-        {{ $t("banner.readonly") }}
+  <HideInStandaloneMode>
+    <BannerUpgradeSubscription />
+    <template v-if="shouldShowDemoBanner">
+      <BannerDemo />
+    </template>
+    <template v-if="shouldShowDebugBanner">
+      <BannerDebug />
+    </template>
+    <template v-if="shouldShowSubscriptionBanner">
+      <BannerSubscription />
+    </template>
+    <template v-if="shouldShowReadonlyBanner">
+      <div class="bg-info">
+        <div class="text-center py-1 px-3 font-medium text-white truncate">
+          {{ $t("banner.readonly") }}
+        </div>
       </div>
-    </div>
-  </template>
-  <template v-if="shouldShowExternalUrlBanner">
-    <BannerExternalUrl />
-  </template>
+    </template>
+    <template v-if="shouldShowExternalUrlBanner">
+      <BannerExternalUrl />
+    </template>
+  </HideInStandaloneMode>
+
   <BannerAnnouncement />
 </template>
 
@@ -38,6 +41,7 @@ import BannerDemo from "@/views/BannerDemo.vue";
 import BannerExternalUrl from "@/views/BannerExternalUrl.vue";
 import BannerSubscription from "@/views/BannerSubscription.vue";
 import BannerUpgradeSubscription from "@/views/BannerUpgradeSubscription.vue";
+import HideInStandaloneMode from "./misc/HideInStandaloneMode.vue";
 
 const actuatorStore = useActuatorV1Store();
 const currentUserV1 = useCurrentUserV1();
