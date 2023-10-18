@@ -126,11 +126,7 @@ func (r *Runner) retryFindApprovalTemplate(ctx context.Context) {
 		slog.Error("failed to retry finding approval template", log.BBError(err))
 	}
 	for _, issue := range issues {
-		payload := &storepb.IssuePayload{}
-		if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
-			slog.Error("failed to retry finding approval template", slog.Int("issueID", issue.UID), log.BBError(err))
-			continue
-		}
+		payload := issue.Payload
 		if payload.Approval == nil || !payload.Approval.ApprovalFindingDone {
 			r.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 		}
@@ -138,10 +134,7 @@ func (r *Runner) retryFindApprovalTemplate(ctx context.Context) {
 }
 
 func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.IssueMessage, risks []*store.RiskMessage, approvalSetting *storepb.WorkspaceApprovalSetting) (bool, error) {
-	payload := &storepb.IssuePayload{}
-	if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
-		return false, errors.Wrap(err, "failed to unmarshal issue payload")
-	}
+	payload := issue.Payload
 	if payload.Approval != nil && payload.Approval.ApprovalFindingDone {
 		return true, nil
 	}
@@ -538,10 +531,7 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 }
 
 func getGrantRequestIssueRisk(ctx context.Context, s *store.Store, issue *store.IssueMessage, risks []*store.RiskMessage) (int64, store.RiskSource, bool, error) {
-	payload := &storepb.IssuePayload{}
-	if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
-		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to unmarshal issue payload")
-	}
+	payload := issue.Payload
 	if payload.GrantRequest == nil {
 		return 0, store.RiskSourceUnknown, false, errors.New("grant request payload not found")
 	}

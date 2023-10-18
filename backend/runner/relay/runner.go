@@ -218,10 +218,7 @@ func (r *Runner) approveExternalApprovalNode(ctx context.Context, issueUID int) 
 	if err != nil {
 		return errors.Wrapf(err, "failed to get issue")
 	}
-	payload := &storepb.IssuePayload{}
-	if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
-		return errors.Wrapf(err, "failed to unmarshal issue payload")
-	}
+	payload := issue.Payload
 	if payload.Approval == nil {
 		return errors.Wrapf(err, "issue payload approval is nil")
 	}
@@ -418,11 +415,7 @@ func (r *Runner) approveExternalApprovalNode(ctx context.Context, issueUID int) 
 	}
 	if issue.Type == api.IssueGrantRequest {
 		if err := func() error {
-			payload := &storepb.IssuePayload{}
-			if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
-				return errors.Wrap(err, "failed to unmarshal issue payload")
-			}
-			approved, err := utils.CheckApprovalApproved(payload.Approval)
+			approved, err := utils.CheckApprovalApproved(issue.Payload.Approval)
 			if err != nil {
 				return errors.Wrap(err, "failed to check if the approval is approved")
 			}
@@ -447,10 +440,7 @@ func (r *Runner) rejectExternalApprovalNode(ctx context.Context, issueUID int) e
 	if err != nil {
 		return errors.Wrapf(err, "failed to get issue")
 	}
-	payload := &storepb.IssuePayload{}
-	if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
-		return errors.Wrapf(err, "failed to unmarshal issue payload")
-	}
+	payload := issue.Payload
 	if payload.Approval == nil {
 		return errors.Wrapf(err, "issue payload approval is nil")
 	}
