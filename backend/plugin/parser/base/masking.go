@@ -86,16 +86,9 @@ func (m *MaskingAttributes) IsNeverChangeInTransmission() bool {
 }
 
 // Clone clones the masking attributes.
-func (m *MaskingAttributes) Clone() *MaskingAttributes {
-	return &MaskingAttributes{
-		MaskingLevel: m.MaskingLevel,
-	}
-}
-
-// NewEmptyMaskingAttributes creates a new empty masking attributes.
-func NewEmptyMaskingAttributes() MaskingAttributes {
+func (m *MaskingAttributes) Clone() MaskingAttributes {
 	return MaskingAttributes{
-		MaskingLevel: defaultMaskingLevel,
+		MaskingLevel: m.MaskingLevel,
 	}
 }
 
@@ -109,4 +102,9 @@ func NewMaskingAttributes(lvl storepb.MaskingLevel) MaskingAttributes {
 // NewDefaultMaskingAttributes creates a new masking attributes with default masking level.
 func NewDefaultMaskingAttributes() MaskingAttributes {
 	return NewMaskingAttributes(defaultMaskingLevel)
+}
+
+// NewEmptyMaskingAttributes creates a new masking attributes with empty masking level.
+func NewEmptyMaskingAttributes() MaskingAttributes {
+	return NewMaskingAttributes(storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED)
 }
