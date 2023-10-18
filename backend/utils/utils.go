@@ -607,11 +607,7 @@ func CheckApprovalApproved(approval *storepb.IssuePayloadApproval) (bool, error)
 
 // CheckIssueApproved checks if the issue is approved.
 func CheckIssueApproved(issue *store.IssueMessage) (bool, error) {
-	issuePayload := &storepb.IssuePayload{}
-	if err := protojson.Unmarshal([]byte(issue.Payload), issuePayload); err != nil {
-		return false, errors.Wrap(err, "failed to unmarshal issue payload")
-	}
-	return CheckApprovalApproved(issuePayload.Approval)
+	return CheckApprovalApproved(issue.Payload.Approval)
 }
 
 // HandleIncomingApprovalSteps handles incoming approval steps.

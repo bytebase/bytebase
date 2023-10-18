@@ -47,7 +47,9 @@
 
     <NDivider />
 
-    <div class="w-full flex flex-row justify-between items-center mt-1 gap-4">
+    <div
+      class="w-full flex flex-row justify-between items-center text-sm mt-1 gap-4"
+    >
       <div class="flex flex-row justify-start items-center opacity-80">
         <span class="mr-4 shrink-0"
           >{{ $t("schema-designer.baseline-version") }}:</span
@@ -362,6 +364,7 @@ const handleSaveBranch = async () => {
   if (!isEqual(mergedMetadata, schemaDesign.value.schemaMetadata)) {
     updateMask.push("metadata");
   }
+
   if (updateMask.length !== 0) {
     if (schemaDesign.value.type === SchemaDesign_Type.MAIN_BRANCH) {
       const branchName = generateForkedBranchName(schemaDesign.value);
@@ -369,6 +372,7 @@ const handleSaveBranch = async () => {
         ...schemaDesign.value,
         baselineSchema: schemaDesign.value.schema,
         schemaMetadata: mergedMetadata,
+        baselineSchemaMetadata: baselineMetadata,
         title: branchName,
       });
       try {

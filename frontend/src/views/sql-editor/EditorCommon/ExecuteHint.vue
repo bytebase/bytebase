@@ -64,15 +64,16 @@
 </template>
 
 <script lang="ts" setup>
+import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { parseSQL, isDDLStatement } from "@/components/MonacoEditor/sqlParser";
 import {
   pushNotification,
+  useActuatorV1Store,
   useDatabaseV1Store,
   useTabStore,
-  useSQLEditorStore,
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import AdminModeButton from "./AdminModeButton.vue";
@@ -87,7 +88,7 @@ const DMLIssueTemplate = "bb.issue.database.data.update";
 const router = useRouter();
 const { t } = useI18n();
 const tabStore = useTabStore();
-const sqlEditorStore = useSQLEditorStore();
+const { pageMode } = storeToRefs(useActuatorV1Store());
 
 const sqlStatement = computed(
   () => tabStore.currentTab.selectedStatement || tabStore.currentTab.statement
@@ -98,7 +99,7 @@ const isDDL = computed(() => {
   return data !== null ? isDDLStatement(data, "some") : false;
 });
 
-const showActionButtons = computed(() => sqlEditorStore.mode === "BUNDLED");
+const showActionButtons = computed(() => pageMode.value === "BUNDLED");
 
 const handleClose = () => {
   emit("close");

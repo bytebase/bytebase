@@ -576,11 +576,10 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 		}
 		version, err := model.NewVersion(storedVersion)
 		if err != nil {
-			// TODO(d): remove this fallback after data backfill.
-			databaseMessage.SchemaVersion = model.Version{Version: storedVersion}
-		} else {
-			databaseMessage.SchemaVersion = version
+			return nil, errors.Wrapf(err, "failed to parse schema version %q", storedVersion)
 		}
+		databaseMessage.SchemaVersion = version
+
 		var secret storepb.Secrets
 		if err := protojson.Unmarshal([]byte(secretsString), &secret); err != nil {
 			return nil, err

@@ -275,7 +275,7 @@ const schemaConfig = computed(() => {
     databaseMetadata.value.schemaConfigs.find(
       (config) => config.name === props.schema
     ) ??
-    SchemaConfig.fromJSON({
+    SchemaConfig.fromPartial({
       name: props.schema,
       tableConfigs: [],
     })
@@ -287,7 +287,7 @@ const tableConfig = computed(() => {
     schemaConfig.value.tableConfigs.find(
       (config) => config.name === props.table.name
     ) ??
-    TableConfig.fromJSON({
+    TableConfig.fromPartial({
       name: props.table.name,
       columnConfigs: [],
     })
