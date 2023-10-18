@@ -27,10 +27,11 @@ import {
   KBarSearch,
   defineAction,
 } from "@bytebase/vue-kbar";
+import { storeToRefs } from "pinia";
 import { defineComponent, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { useCurrentUserV1 } from "@/store";
+import { useActuatorV1Store, useCurrentUserV1 } from "@/store";
 import { UNKNOWN_USER_NAME } from "@/types";
 import { useModalStackStatus } from "../../bbkit/BBModalStack.vue";
 import KBarFooter from "./KBarFooter.vue";
@@ -54,10 +55,15 @@ export default defineComponent({
     const { t } = useI18n();
     const router = useRouter();
     const modalStack = useModalStackStatus();
+    const { pageMode } = storeToRefs(useActuatorV1Store());
 
     const placeholder = computed(() => t("kbar.options.placeholder"));
 
     const disabled = computed(() => {
+      if (pageMode.value === "STANDALONE") {
+        return true;
+      }
+
       if (modalStack.value.length > 0) {
         // Disable kbar when any modal dialog is shown
         // We don't want to show modal dialogs and kbar at the same time
