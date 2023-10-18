@@ -156,7 +156,7 @@ func Query(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, statement
 	for i := range columnNames {
 		maskingLevel := storepb.MaskingLevel_NONE
 		if len(fieldList) > i && queryContext.EnableSensitive {
-			maskingLevel = fieldList[i].MaskingLevel
+			maskingLevel = fieldList[i].MaskingAttributes.MaskingLevel
 		}
 		fieldMaskingLevels = append(fieldMaskingLevels, maskingLevel)
 		sensitive := len(fieldList) > i && (maskingLevel == storepb.MaskingLevel_FULL || maskingLevel == storepb.MaskingLevel_PARTIAL)
