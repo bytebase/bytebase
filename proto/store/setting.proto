@@ -242,17 +242,17 @@ message MaskingAlgorithmSetting {
     message MaskingPayload {
       message FullMaskingPayload {
         // replace_with is the string used to replace the original value, the
-        // max bytes of the string is 16.
+        // max length of the string is 16 bytes.
         string replace_with = 1;
       }
 
       message PartialMaskingPayload {
         message Rule {
           // regexp is the regular expression used to match the original value,
-          // the max bytes of the regexp is 64.
+          // the max length of the regexp is 64 bytes.
           string regexp = 1;
           // replace_with is the string used to replace the original value, the
-          // max bytes of the string is 16.
+          // max length of the string is 16 bytes.
           string replace_with = 2;
         }
         repeated Rule rules = 1;
