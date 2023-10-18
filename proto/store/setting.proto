@@ -241,7 +241,7 @@ message MaskingAlgorithmSetting {
     Category category = 4;
 
     message FullMaskingPayload {
-      // replace_with is the string used to replace the original value, the 
+      // replace_with is the string used to replace the original value, the
       // max length of the string is 16 bytes.
       string replace_with = 1;
     }
