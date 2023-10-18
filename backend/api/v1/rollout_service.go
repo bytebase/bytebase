@@ -1224,19 +1224,24 @@ func canUserRunStageTasks(ctx context.Context, s *store.Store, user *store.UserM
 	if err != nil {
 		return false, common.Wrapf(err, common.Internal, "failed to get project %d policy", issue.Project.UID)
 	}
-
-	allowedProjectRoles := map[api.Role]bool{}
-	for _, role := range p.ProjectRoles {
-		allowedProjectRoles[api.Role(strings.TrimPrefix(role, "roles/"))] = true
-	}
+	userProjectRoles := map[api.Role]bool{}
 	for _, binding := range policy.Bindings {
-		if !allowedProjectRoles[binding.Role] {
-			continue
-		}
 		for _, member := range binding.Members {
 			if member.ID == user.ID {
-				return true, nil
+				userProjectRoles[binding.Role] = true
+				break
 			}
+		}
+	}
+
+	if p.Automatic && len(userProjectRoles) > 0 {
+		return true, nil
+	}
+
+	for _, role := range p.ProjectRoles {
+		apiRole := api.Role(strings.TrimPrefix(role, "roles/"))
+		if userProjectRoles[apiRole] {
+			return true, nil
 		}
 	}
 
