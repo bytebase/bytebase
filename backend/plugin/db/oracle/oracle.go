@@ -178,22 +178,15 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 		return "", util.FormatErrorWithQuery(err, query)
 	}
 
-	var version, canonicalVersion string
+	var version string
 	tokens := strings.Fields(fullVersion)
 	for _, token := range tokens {
 		if semVersionRegex.MatchString(token) {
 			version = token
 			continue
 		}
-		if canonicalVersionRegex.MatchString(token) {
-			canonicalVersion = token
-			continue
-		}
 	}
 
-	if canonicalVersion != "" {
-		version = fmt.Sprintf("%s (%s)", version, canonicalVersion)
-	}
 	return version, nil
 }
 
@@ -202,8 +195,18 @@ func (driver *Driver) getOracleStatementWithResultLimit(ctx context.Context, stm
 	if err != nil {
 		return "", err
 	}
+	versionIdx := strings.Index(version, ".")
+	if versionIdx < 0 {
+		return "", errors.New("instance version number is invalid")
+	}
+	version = version[:versionIdx]
+	versionNum, err := strconv.Atoi(version)
+	if err != nil {
+		return "", err
+	}
+	version12 := 12
 	switch {
-	case version < "12":
+	case versionNum < version12:
 		return fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", stmt, limit), nil
 	default:
 		res, err := getStatementWithResultLimitFor12c(stmt, limit)
