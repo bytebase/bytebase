@@ -80,7 +80,7 @@ func (extractor *fieldExtractor) extractSensitiveFields(statement string) ([]bas
 	for _, field := range fieldList {
 		result = append(result, base.SensitiveField{
 			Name:              field.Name,
-			MaskingAttributes: field.MaskingAttrbutes,
+			MaskingAttributes: field.MaskingAttributes,
 		})
 	}
 	return result, nil
@@ -130,8 +130,8 @@ func pgMergeJoinField(node *pgquery.Node_JoinExpr, leftField []base.FieldInfo, r
 		// Natural Join will merge the same column name field.
 		for _, field := range leftField {
 			// Merge the sensitive attribute for the same column name field.
-			if rField, exists := rightFieldMap[field.Name]; exists && cmp.Less[storepb.MaskingLevel](field.MaskingAttrbutes, rField.MaskingAttrbutes) {
-				field.MaskingAttrbutes = rField.MaskingAttrbutes
+			if rField, exists := rightFieldMap[field.Name]; exists && cmp.Less[storepb.MaskingLevel](field.MaskingAttributes, rField.MaskingAttributes) {
+				field.MaskingAttributes = rField.MaskingAttributes
 			}
 			result = append(result, field)
 		}
@@ -161,8 +161,8 @@ func pgMergeJoinField(node *pgquery.Node_JoinExpr, leftField []base.FieldInfo, r
 				_, existsInUsingMap := usingMap[field.Name]
 				rField, existsInRightField := rightFieldMap[field.Name]
 				// Merge the sensitive attribute for the column name field in USING.
-				if existsInUsingMap && existsInRightField && cmp.Less[storepb.MaskingLevel](field.MaskingAttrbutes, rField.MaskingAttrbutes) {
-					field.MaskingAttrbutes = rField.MaskingAttrbutes
+				if existsInUsingMap && existsInRightField && cmp.Less[storepb.MaskingLevel](field.MaskingAttributes, rField.MaskingAttributes) {
+					field.MaskingAttributes = rField.MaskingAttributes
 				}
 				result = append(result, field)
 			}
@@ -204,10 +204,10 @@ func (extractor *fieldExtractor) pgExtractRangeSubselect(node *pgquery.Node_Rang
 				columnName = columnNameList[i]
 			}
 			result = append(result, base.FieldInfo{
-				Schema:           "public",
-				Table:            aliasName,
-				Name:             columnName,
-				MaskingAttrbutes: item.MaskingAttrbutes,
+				Schema:            "public",
+				Table:             aliasName,
+				Name:              columnName,
+				MaskingAttributes: item.MaskingAttributes,
 			})
 		}
 		return result, nil
@@ -240,9 +240,9 @@ func (extractor *fieldExtractor) pgExtractRangeVar(node *pgquery.Node_RangeVar) 
 	if node.RangeVar.Alias == nil {
 		for _, column := range tableSchema.ColumnList {
 			res = append(res, base.FieldInfo{
-				Name:             column.Name,
-				Table:            tableSchema.Name,
-				MaskingAttrbutes: column.MaskingAttributes,
+				Name:              column.Name,
+				Table:             tableSchema.Name,
+				MaskingAttributes: column.MaskingAttributes,
 			})
 		}
 	} else {
@@ -260,10 +260,10 @@ func (extractor *fieldExtractor) pgExtractRangeVar(node *pgquery.Node_RangeVar) 
 				columnName = columnNameList[i]
 			}
 			res = append(res, base.FieldInfo{
-				Schema:           "public",
-				Name:             columnName,
-				Table:            aliasName,
-				MaskingAttrbutes: column.MaskingAttributes,
+				Schema:            "public",
+				Name:              columnName,
+				Table:             aliasName,
+				MaskingAttributes: column.MaskingAttributes,
 			})
 		}
 	}
@@ -331,7 +331,7 @@ func (extractor *fieldExtractor) pgExtractRecursiveCTE(node *pgquery.Node_Common
 		for _, field := range initialField {
 			cteInfo.ColumnList = append(cteInfo.ColumnList, base.ColumnInfo{
 				Name:              field.Name,
-				MaskingAttributes: field.MaskingAttrbutes,
+				MaskingAttributes: field.MaskingAttributes,
 			})
 		}
 
@@ -360,9 +360,9 @@ func (extractor *fieldExtractor) pgExtractRecursiveCTE(node *pgquery.Node_Common
 
 			changed := false
 			for i, field := range fieldList {
-				if cmp.Less[storepb.MaskingLevel](cteInfo.ColumnList[i].MaskingAttributes, field.MaskingAttrbutes) {
+				if cmp.Less[storepb.MaskingLevel](cteInfo.ColumnList[i].MaskingAttributes, field.MaskingAttributes) {
 					changed = true
-					cteInfo.ColumnList[i].MaskingAttributes = field.MaskingAttrbutes
+					cteInfo.ColumnList[i].MaskingAttributes = field.MaskingAttributes
 				}
 			}
 
@@ -406,7 +406,7 @@ func (extractor *fieldExtractor) pgExtractNonRecursiveCTE(node *pgquery.Node_Com
 	for _, field := range fieldList {
 		result.ColumnList = append(result.ColumnList, base.ColumnInfo{
 			Name:              field.Name,
-			MaskingAttributes: field.MaskingAttrbutes,
+			MaskingAttributes: field.MaskingAttributes,
 		})
 	}
 
@@ -458,8 +458,8 @@ func (extractor *fieldExtractor) pgExtractSelect(node *pgquery.Node_SelectStmt) 
 			if len(result) == 0 {
 				for i, item := range maskingLevelList {
 					result = append(result, base.FieldInfo{
-						Name:             fmt.Sprintf("column%d", i+1),
-						MaskingAttrbutes: item,
+						Name:              fmt.Sprintf("column%d", i+1),
+						MaskingAttributes: item,
 					})
 				}
 			}
@@ -483,16 +483,16 @@ func (extractor *fieldExtractor) pgExtractSelect(node *pgquery.Node_SelectStmt) 
 		var result []base.FieldInfo
 		for i, field := range leftField {
 			finalLevel := base.NewDefaultMaskingAttributes()
-			if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingAttrbutes) {
-				finalLevel = field.MaskingAttrbutes
+			if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingAttributes) {
+				finalLevel = field.MaskingAttributes
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, rightField[i].MaskingAttrbutes) {
-				finalLevel = rightField[i].MaskingAttrbutes
+			if cmp.Less[storepb.MaskingLevel](finalLevel, rightField[i].MaskingAttributes) {
+				finalLevel = rightField[i].MaskingAttributes
 			}
 			result = append(result, base.FieldInfo{
-				Name:             field.Name,
-				Table:            field.Table,
-				MaskingAttrbutes: finalLevel,
+				Name:              field.Name,
+				Table:             field.Table,
+				MaskingAttributes: finalLevel,
 			})
 		}
 		return result, nil
@@ -552,8 +552,8 @@ func (extractor *fieldExtractor) pgExtractSelect(node *pgquery.Node_SelectStmt) 
 					columnName = resTarget.ResTarget.Name
 				}
 				result = append(result, base.FieldInfo{
-					Name:             columnName,
-					MaskingAttrbutes: maskingLevel,
+					Name:              columnName,
+					MaskingAttributes: maskingLevel,
 				})
 			}
 		default:
@@ -568,8 +568,8 @@ func (extractor *fieldExtractor) pgExtractSelect(node *pgquery.Node_SelectStmt) 
 				}
 			}
 			result = append(result, base.FieldInfo{
-				Name:             fieldName,
-				MaskingAttrbutes: maskingLevel,
+				Name:              fieldName,
+				MaskingAttributes: maskingLevel,
 			})
 		}
 	}
@@ -752,7 +752,7 @@ func (extractor *fieldExtractor) pgCheckFieldMaskingLevel(schemaName string, tab
 			sameTable := (tableName == field.Table || tableName == "")
 			sameField := (fieldName == field.Name)
 			if sameTable && sameField {
-				return field.MaskingAttrbutes
+				return field.MaskingAttributes
 			}
 		}
 	}
@@ -761,7 +761,7 @@ func (extractor *fieldExtractor) pgCheckFieldMaskingLevel(schemaName string, tab
 		sameTable := (tableName == field.Table || tableName == "")
 		sameField := (fieldName == field.Name)
 		if sameTable && sameField {
-			return field.MaskingAttrbutes
+			return field.MaskingAttributes
 		}
 	}
 
@@ -846,8 +846,8 @@ func (extractor *fieldExtractor) pgExtractColumnRefFromExpressionNode(in *pgquer
 			return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, err
 		}
 		for _, field := range fieldList {
-			if cmp.Less[storepb.MaskingLevel](maskingLevel, field.MaskingAttrbutes) {
-				maskingLevel = field.MaskingAttrbutes
+			if cmp.Less[storepb.MaskingLevel](maskingLevel, field.MaskingAttributes) {
+				maskingLevel = field.MaskingAttributes
 			}
 			if maskingLevel == base.MaxMaskingLevel {
 				return maskingLevel, nil

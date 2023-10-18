@@ -58,11 +58,11 @@ type SensitiveField struct {
 
 // FieldInfo is the masking field info.
 type FieldInfo struct {
-	Name             string
-	Table            string
-	Schema           string
-	Database         string
-	MaskingAttrbutes MaskingAttributes
+	Name              string
+	Table             string
+	Schema            string
+	Database          string
+	MaskingAttributes MaskingAttributes
 }
 
 // MaskingAttributes contain the masking related attributes on the column, likes MaskingLevel.

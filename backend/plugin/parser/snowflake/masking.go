@@ -77,7 +77,7 @@ func (l *snowsqlSnowSensitiveFieldExtractorListener) EnterDml_command(ctx *parse
 	for _, field := range result {
 		l.result = append(l.result, base.SensitiveField{
 			Name:              field.Name,
-			MaskingAttributes: field.MaskingAttrbutes,
+			MaskingAttributes: field.MaskingAttributes,
 		})
 	}
 }
@@ -104,7 +104,7 @@ func (extractor *fieldExtractor) extractSnowsqlSensitiveFieldsQueryStatement(ctx
 				for i := 0; i < len(fieldsInAnchorClause); i++ {
 					tempCTEOuterSchemaInfo.ColumnList = append(tempCTEOuterSchemaInfo.ColumnList, base.ColumnInfo{
 						Name:              fieldsInAnchorClause[i].Name,
-						MaskingAttributes: fieldsInAnchorClause[i].MaskingAttrbutes,
+						MaskingAttributes: fieldsInAnchorClause[i].MaskingAttributes,
 					})
 					result = append(result, fieldsInAnchorClause[i])
 				}
@@ -121,10 +121,10 @@ func (extractor *fieldExtractor) extractSnowsqlSensitiveFieldsQueryStatement(ctx
 					}
 					extractor.cteOuterSchemaInfo = extractor.cteOuterSchemaInfo[:originalSize]
 					for i := 0; i < len(fieldsInRecursiveClause); i++ {
-						if cmp.Less[storepb.MaskingLevel](tempCTEOuterSchemaInfo.ColumnList[i].MaskingAttributes, fieldsInRecursiveClause[i].MaskingAttrbutes) {
+						if cmp.Less[storepb.MaskingLevel](tempCTEOuterSchemaInfo.ColumnList[i].MaskingAttributes, fieldsInRecursiveClause[i].MaskingAttributes) {
 							change = true
-							tempCTEOuterSchemaInfo.ColumnList[i].MaskingAttributes = fieldsInRecursiveClause[i].MaskingAttrbutes
-							result[i].MaskingAttrbutes = fieldsInRecursiveClause[i].MaskingAttrbutes
+							tempCTEOuterSchemaInfo.ColumnList[i].MaskingAttributes = fieldsInRecursiveClause[i].MaskingAttributes
+							result[i].MaskingAttributes = fieldsInRecursiveClause[i].MaskingAttributes
 						}
 					}
 					if !change {
@@ -155,7 +155,7 @@ func (extractor *fieldExtractor) extractSnowsqlSensitiveFieldsQueryStatement(ctx
 			for _, field := range result {
 				columnList = append(columnList, base.ColumnInfo{
 					Name:              field.Name,
-					MaskingAttributes: field.MaskingAttrbutes,
+					MaskingAttributes: field.MaskingAttributes,
 				})
 			}
 			extractor.cteOuterSchemaInfo = append(extractor.cteOuterSchemaInfo, base.TableSchema{
@@ -183,11 +183,11 @@ func (extractor *fieldExtractor) extractSnowsqlSensitiveFieldsQueryStatement(ctx
 			return nil, errors.Wrapf(err, "the number of columns in the query statement nearly line %d returns %d fields, but %d set operator near line %d returns %d fields", selectStatement.GetStart().GetLine(), len(result), i+1, setOperator.GetStart().GetLine(), len(right))
 		}
 		for i := range right {
-			finalLevel := result[i].MaskingAttrbutes
-			if cmp.Less[storepb.MaskingLevel](finalLevel, right[i].MaskingAttrbutes) {
-				finalLevel = right[i].MaskingAttrbutes
+			finalLevel := result[i].MaskingAttributes
+			if cmp.Less[storepb.MaskingLevel](finalLevel, right[i].MaskingAttributes) {
+				finalLevel = right[i].MaskingAttributes
 			}
-			result[i].MaskingAttrbutes = finalLevel
+			result[i].MaskingAttributes = finalLevel
 		}
 	}
 	return result, nil
@@ -270,8 +270,8 @@ func (extractor *fieldExtractor) extractSnowsqlSensitiveFieldsSelectStatement(ct
 					return nil, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 				}
 				result = append(result, base.FieldInfo{
-					Name:             columnName,
-					MaskingAttrbutes: maskingLevel,
+					Name:              columnName,
+					MaskingAttributes: maskingLevel,
 				})
 			} else if v := expressionElem.Predicate(); v != nil {
 				columnName, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(v)
@@ -279,8 +279,8 @@ func (extractor *fieldExtractor) extractSnowsqlSensitiveFieldsSelectStatement(ct
 					return nil, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 				}
 				result = append(result, base.FieldInfo{
-					Name:             columnName,
-					MaskingAttrbutes: maskingLevel,
+					Name:              columnName,
+					MaskingAttributes: maskingLevel,
 				})
 			}
 
@@ -377,14 +377,14 @@ func (extractor *fieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.RuleConte
 		if err != nil {
 			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the column %q is sensitive near line %d", normalizedColumnName, ctx.GetStart().GetLine())
 		}
-		return fieldInfo.Name, fieldInfo.MaskingAttrbutes, nil
+		return fieldInfo.Name, fieldInfo.MaskingAttributes, nil
 	case *parser.Object_nameContext:
 		normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizedObjectName(ctx, extractor.currentDatabase, "PUBLIC")
 		fieldInfo, err := extractor.snowflakeGetField(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, "")
 		if err != nil {
 			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the object %q is sensitive near line %d", normalizedTableName, ctx.GetStart().GetLine())
 		}
-		return fieldInfo.Name, fieldInfo.MaskingAttrbutes, nil
+		return fieldInfo.Name, fieldInfo.MaskingAttributes, nil
 	case *parser.Trim_expressionContext:
 		if v := ctx.Expr(); v != nil {
 			_, maskingLevel, err := extractor.evalSnowSQLExprMaskingLevel(v)
@@ -659,8 +659,8 @@ func (extractor *fieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.RuleConte
 		}
 		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, field := range fields {
-			if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingAttrbutes) {
-				finalLevel = field.MaskingAttrbutes
+			if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingAttributes) {
+				finalLevel = field.MaskingAttributes
 			}
 			if finalLevel == base.MaxMaskingLevel {
 				return ctx.GetText(), finalLevel, nil
@@ -830,7 +830,7 @@ func (extractor *fieldExtractor) evalSnowSQLExprMaskingLevel(ctx antlr.RuleConte
 		if err != nil {
 			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check whether the column %q is sensitive near line %d", normalizedColumnName, ctx.GetStart().GetLine())
 		}
-		return fieldInfo.Name, fieldInfo.MaskingAttrbutes, nil
+		return fieldInfo.Name, fieldInfo.MaskingAttributes, nil
 	}
 	panic("never reach here")
 }
@@ -924,10 +924,10 @@ func (extractor *fieldExtractor) extractSnowsqlSensitiveFieldsJoinClause(ctx par
 		for _, field := range right {
 			if idx, ok := leftMap[field.Name]; !ok {
 				result = append(result, field)
-			} else if cmp.Less[storepb.MaskingLevel](left[idx].MaskingAttrbutes, field.MaskingAttrbutes) {
+			} else if cmp.Less[storepb.MaskingLevel](left[idx].MaskingAttributes, field.MaskingAttributes) {
 				// If the field is in the left part and the right part, we should keep the field in the left part,
 				// and set the sensitive flag to true if the field in the right part is sensitive.
-				result[idx].MaskingAttrbutes = field.MaskingAttrbutes
+				result[idx].MaskingAttributes = field.MaskingAttributes
 			}
 		}
 		return result, nil
@@ -954,10 +954,10 @@ func (extractor *fieldExtractor) extractSnowsqlSensitiveFieldsObjectRef(ctx pars
 		}
 		for _, column := range tableSchema.ColumnList {
 			result = append(result, base.FieldInfo{
-				Database:         normalizedDatabaseName,
-				Table:            tableSchema.Name,
-				Name:             column.Name,
-				MaskingAttrbutes: column.MaskingAttributes,
+				Database:          normalizedDatabaseName,
+				Table:             tableSchema.Name,
+				Name:              column.Name,
+				MaskingAttributes: column.MaskingAttributes,
 			})
 		}
 	}
@@ -1020,8 +1020,8 @@ func (extractor *fieldExtractor) extractSnowsqlSensitiveFieldsObjectRef(ctx pars
 
 			for _, literal := range v.AllLiteral() {
 				result = append(result, base.FieldInfo{
-					Name:             literal.GetText(),
-					MaskingAttrbutes: pivotColumnInOriginalResult.MaskingAttrbutes,
+					Name:              literal.GetText(),
+					MaskingAttributes: pivotColumnInOriginalResult.MaskingAttributes,
 				})
 			}
 		} else if v := ctx.Pivot_unpivot(); v.UNPIVOT() != nil {
@@ -1044,8 +1044,8 @@ func (extractor *fieldExtractor) extractSnowsqlSensitiveFieldsObjectRef(ctx pars
 
 			finalLevel := base.NewDefaultMaskingAttributes()
 			for _, field := range strippedColumnInOriginalResult {
-				if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingAttrbutes) {
-					finalLevel = field.MaskingAttrbutes
+				if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingAttributes) {
+					finalLevel = field.MaskingAttributes
 				}
 				if finalLevel == base.MaxMaskingLevel {
 					break
@@ -1059,11 +1059,11 @@ func (extractor *fieldExtractor) extractSnowsqlSensitiveFieldsObjectRef(ctx pars
 			normalizedNameColumnName := NormalizeSnowSQLObjectNamePart(nameColumnName)
 
 			result = append(result, base.FieldInfo{
-				Name:             normalizedNameColumnName,
-				MaskingAttrbutes: base.NewDefaultMaskingAttributes(),
+				Name:              normalizedNameColumnName,
+				MaskingAttributes: base.NewDefaultMaskingAttributes(),
 			}, base.FieldInfo{
-				Name:             normalizedValueColumnName,
-				MaskingAttrbutes: finalLevel,
+				Name:              normalizedValueColumnName,
+				MaskingAttributes: finalLevel,
 			})
 		}
 	}

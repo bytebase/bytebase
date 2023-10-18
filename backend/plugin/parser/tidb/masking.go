@@ -74,7 +74,7 @@ func (extractor *fieldExtractor) extractSensitiveFields(statement string) ([]bas
 	for _, field := range fieldList {
 		result = append(result, base.SensitiveField{
 			Name:              field.Name,
-			MaskingAttributes: field.MaskingAttrbutes,
+			MaskingAttributes: field.MaskingAttributes,
 		})
 	}
 	return result, nil
@@ -152,8 +152,8 @@ func (extractor *fieldExtractor) extractSetOpr(node *tidbast.SetOprStmt) ([]base
 				return nil, errors.Errorf("The used SELECT statements have a different number of columns")
 			}
 			for i := 0; i < len(result); i++ {
-				if cmp.Less[storepb.MaskingLevel](result[i].MaskingAttrbutes, fieldList[i].MaskingAttrbutes) {
-					result[i].MaskingAttrbutes = fieldList[i].MaskingAttrbutes
+				if cmp.Less[storepb.MaskingLevel](result[i].MaskingAttributes, fieldList[i].MaskingAttributes) {
+					result[i].MaskingAttributes = fieldList[i].MaskingAttributes
 				}
 			}
 		}
@@ -231,7 +231,7 @@ func (extractor *fieldExtractor) extractRecursiveCTE(node *tidbast.CommonTableEx
 		for _, field := range initialField {
 			cteInfo.ColumnList = append(cteInfo.ColumnList, base.ColumnInfo{
 				Name:              field.Name,
-				MaskingAttributes: field.MaskingAttrbutes,
+				MaskingAttributes: field.MaskingAttributes,
 			})
 		}
 
@@ -265,9 +265,9 @@ func (extractor *fieldExtractor) extractRecursiveCTE(node *tidbast.CommonTableEx
 
 			changed := false
 			for i, field := range fieldList {
-				if cmp.Less[storepb.MaskingLevel](cteInfo.ColumnList[i].MaskingAttributes, field.MaskingAttrbutes) {
+				if cmp.Less[storepb.MaskingLevel](cteInfo.ColumnList[i].MaskingAttributes, field.MaskingAttributes) {
 					changed = true
-					cteInfo.ColumnList[i].MaskingAttributes = field.MaskingAttrbutes
+					cteInfo.ColumnList[i].MaskingAttributes = field.MaskingAttributes
 				}
 			}
 
@@ -303,7 +303,7 @@ func (extractor *fieldExtractor) extractNonRecursiveCTE(node *tidbast.CommonTabl
 	for _, field := range fieldList {
 		result.ColumnList = append(result.ColumnList, base.ColumnInfo{
 			Name:              field.Name,
-			MaskingAttributes: field.MaskingAttrbutes,
+			MaskingAttributes: field.MaskingAttributes,
 		})
 	}
 	return result, nil
@@ -367,10 +367,10 @@ func (extractor *fieldExtractor) extractSelect(node *tidbast.SelectStmt) ([]base
 				}
 				fieldName := extractFieldName(field)
 				result = append(result, base.FieldInfo{
-					Database:         "",
-					Table:            "",
-					Name:             fieldName,
-					MaskingAttrbutes: maskingLevel,
+					Database:          "",
+					Table:             "",
+					Name:              fieldName,
+					MaskingAttributes: maskingLevel,
 				})
 			}
 		}
@@ -413,7 +413,7 @@ func (extractor *fieldExtractor) checkFieldMaskingLevel(databaseName string, tab
 		sameTable := (tableName == field.Table || tableName == "")
 		sameField := (fieldName == field.Name)
 		if sameDatabase && sameTable && sameField {
-			return field.MaskingAttrbutes
+			return field.MaskingAttributes
 		}
 	}
 
@@ -422,7 +422,7 @@ func (extractor *fieldExtractor) checkFieldMaskingLevel(databaseName string, tab
 		sameTable := (tableName == field.Table || tableName == "")
 		sameField := (fieldName == field.Name)
 		if sameDatabase && sameTable && sameField {
-			return field.MaskingAttrbutes
+			return field.MaskingAttributes
 		}
 	}
 
@@ -474,8 +474,8 @@ func (extractor *fieldExtractor) extractColumnFromExprNode(in tidbast.ExprNode) 
 		}
 		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, field := range fieldList {
-			if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingAttrbutes) {
-				finalLevel = field.MaskingAttrbutes
+			if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingAttributes) {
+				finalLevel = field.MaskingAttributes
 			}
 			if finalLevel == base.MaxMaskingLevel {
 				return finalLevel, nil
@@ -552,10 +552,10 @@ func (extractor *fieldExtractor) extractTableSource(node *tidbast.TableSource) (
 	if node.AsName.O != "" {
 		for _, field := range fieldList {
 			res = append(res, base.FieldInfo{
-				Name:             field.Name,
-				Table:            node.AsName.O,
-				Database:         field.Database,
-				MaskingAttrbutes: field.MaskingAttrbutes,
+				Name:              field.Name,
+				Table:             node.AsName.O,
+				Database:          field.Database,
+				MaskingAttributes: field.MaskingAttributes,
 			})
 		}
 	} else {
@@ -694,10 +694,10 @@ func (extractor *fieldExtractor) extractTableName(node *tidbast.TableName) ([]ba
 	var res []base.FieldInfo
 	for _, column := range tableSchema.ColumnList {
 		res = append(res, base.FieldInfo{
-			Name:             column.Name,
-			Table:            tableSchema.Name,
-			Database:         databaseName,
-			MaskingAttrbutes: column.MaskingAttributes,
+			Name:              column.Name,
+			Table:             tableSchema.Name,
+			Database:          databaseName,
+			MaskingAttributes: column.MaskingAttributes,
 		})
 	}
 	return res, nil
@@ -735,8 +735,8 @@ func mergeJoinField(node *tidbast.Join, leftField []base.FieldInfo, rightField [
 		// Natural Join will merge the same column name field.
 		for _, field := range leftField {
 			// Merge the sensitive attribute for the same column name field.
-			if rField, exists := rightFieldMap[strings.ToLower(field.Name)]; exists && cmp.Less[storepb.MaskingLevel](field.MaskingAttrbutes, rField.MaskingAttrbutes) {
-				field.MaskingAttrbutes = rField.MaskingAttrbutes
+			if rField, exists := rightFieldMap[strings.ToLower(field.Name)]; exists && cmp.Less[storepb.MaskingLevel](field.MaskingAttributes, rField.MaskingAttributes) {
+				field.MaskingAttributes = rField.MaskingAttributes
 			}
 			result = append(result, field)
 		}
@@ -759,8 +759,8 @@ func mergeJoinField(node *tidbast.Join, leftField []base.FieldInfo, rightField [
 				_, existsInUsingMap := usingMap[strings.ToLower(field.Name)]
 				rField, existsInRightField := rightFieldMap[strings.ToLower(field.Name)]
 				// Merge the sensitive attribute for the column name field in USING.
-				if existsInUsingMap && existsInRightField && cmp.Less[storepb.MaskingLevel](field.MaskingAttrbutes, rField.MaskingAttrbutes) {
-					field.MaskingAttrbutes = rField.MaskingAttrbutes
+				if existsInUsingMap && existsInRightField && cmp.Less[storepb.MaskingLevel](field.MaskingAttributes, rField.MaskingAttributes) {
+					field.MaskingAttributes = rField.MaskingAttributes
 				}
 				result = append(result, field)
 			}

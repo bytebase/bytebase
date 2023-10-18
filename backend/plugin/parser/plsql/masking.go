@@ -82,7 +82,7 @@ func (l *selectStatementListener) EnterSelect_statement(ctx *plsql.Select_statem
 			for _, field := range fieldList {
 				l.result = append(l.result, base.SensitiveField{
 					Name:              field.Name,
-					MaskingAttributes: field.MaskingAttrbutes,
+					MaskingAttributes: field.MaskingAttributes,
 				})
 			}
 		}
@@ -137,7 +137,7 @@ func (extractor *fieldExtractor) plsqlExtractFactoringElement(ctx plsql.IFactori
 		for _, field := range initialField {
 			cteInfo.ColumnList = append(cteInfo.ColumnList, base.ColumnInfo{
 				Name:              field.Name,
-				MaskingAttributes: field.MaskingAttrbutes,
+				MaskingAttributes: field.MaskingAttributes,
 			})
 		}
 
@@ -166,9 +166,9 @@ func (extractor *fieldExtractor) plsqlExtractFactoringElement(ctx plsql.IFactori
 
 			changed := false
 			for i, field := range fieldList {
-				if cmp.Less[storepb.MaskingLevel](cteInfo.ColumnList[i].MaskingAttributes, field.MaskingAttrbutes) {
+				if cmp.Less[storepb.MaskingLevel](cteInfo.ColumnList[i].MaskingAttributes, field.MaskingAttributes) {
 					changed = true
-					cteInfo.ColumnList[i].MaskingAttributes = field.MaskingAttrbutes
+					cteInfo.ColumnList[i].MaskingAttributes = field.MaskingAttributes
 				}
 			}
 
@@ -247,7 +247,7 @@ func (extractor *fieldExtractor) plsqlExtractNonRecursiveCTE(ctx plsql.IFactorin
 	for _, field := range fieldList {
 		result.ColumnList = append(result.ColumnList, base.ColumnInfo{
 			Name:              field.Name,
-			MaskingAttributes: field.MaskingAttrbutes,
+			MaskingAttributes: field.MaskingAttributes,
 		})
 	}
 	return result, nil
@@ -308,15 +308,15 @@ func (extractor *fieldExtractor) plsqlExtractSubqueryOperationPart(ctx plsql.ISu
 
 	var result []base.FieldInfo
 	for i, field := range rightField {
-		finalLevel := leftField[i].MaskingAttrbutes
-		if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingAttrbutes) {
-			finalLevel = field.MaskingAttrbutes
+		finalLevel := leftField[i].MaskingAttributes
+		if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingAttributes) {
+			finalLevel = field.MaskingAttributes
 		}
 		result = append(result, base.FieldInfo{
-			Name:             leftField[i].Name,
-			Table:            leftField[i].Table,
-			Database:         leftField[i].Database,
-			MaskingAttrbutes: finalLevel,
+			Name:              leftField[i].Name,
+			Table:             leftField[i].Table,
+			Database:          leftField[i].Database,
+			MaskingAttributes: finalLevel,
 		})
 	}
 
@@ -391,9 +391,9 @@ func (extractor *fieldExtractor) plsqlExtractQueryBlock(ctx plsql.IQuery_blockCo
 					fieldName = element.Expression().GetText()
 				}
 				result = append(result, base.FieldInfo{
-					Database:         extractor.currentDatabase,
-					Name:             fieldName,
-					MaskingAttrbutes: maskingLevel,
+					Database:          extractor.currentDatabase,
+					Name:              fieldName,
+					MaskingAttributes: maskingLevel,
 				})
 			}
 		}
@@ -422,7 +422,7 @@ func (extractor *fieldExtractor) plsqlCheckFieldMaskingLevel(schemaName string, 
 		sameTable := (tableName == field.Table || tableName == "")
 		sameColumn := (columnName == field.Name)
 		if sameSchema && sameTable && sameColumn {
-			return field.MaskingAttrbutes
+			return field.MaskingAttributes
 		}
 	}
 
@@ -431,7 +431,7 @@ func (extractor *fieldExtractor) plsqlCheckFieldMaskingLevel(schemaName string, 
 		sameTable := (tableName == field.Table || tableName == "")
 		sameColumn := (columnName == field.Name)
 		if sameSchema && sameTable && sameColumn {
-			return field.MaskingAttrbutes
+			return field.MaskingAttributes
 		}
 	}
 
@@ -534,8 +534,8 @@ func (extractor *fieldExtractor) plsqlEvalMaskingLevelInExpression(ctx antlr.Par
 		}
 		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, field := range fieldList {
-			if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingAttrbutes) {
-				finalLevel = field.MaskingAttrbutes
+			if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingAttributes) {
+				finalLevel = field.MaskingAttributes
 			}
 			if finalLevel == base.MaxMaskingLevel {
 				return "", finalLevel, nil
@@ -557,8 +557,8 @@ func (extractor *fieldExtractor) plsqlEvalMaskingLevelInExpression(ctx antlr.Par
 		}
 		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, field := range fieldList {
-			if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingAttrbutes) {
-				finalLevel = field.MaskingAttrbutes
+			if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingAttributes) {
+				finalLevel = field.MaskingAttributes
 			}
 			if finalLevel == base.MaxMaskingLevel {
 				return "", finalLevel, nil
@@ -737,8 +737,8 @@ func (extractor *fieldExtractor) plsqlEvalMaskingLevelInExpression(ctx antlr.Par
 		}
 		finalLevel := base.NewDefaultMaskingAttributes()
 		for _, field := range fieldList {
-			if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingAttrbutes) {
-				finalLevel = field.MaskingAttrbutes
+			if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingAttributes) {
+				finalLevel = field.MaskingAttributes
 			}
 			if finalLevel == base.MaxMaskingLevel {
 				return "", finalLevel, nil
@@ -1065,15 +1065,15 @@ func (extractor *fieldExtractor) plsqlMergeJoin(leftField []base.FieldInfo, ctx 
 		// Natural Join will merge the same column name field.
 		for _, field := range leftField {
 			if rField, exists := rightFieldMap[field.Name]; exists {
-				finalLevel := field.MaskingAttrbutes
-				if cmp.Less[storepb.MaskingLevel](finalLevel, rField.MaskingAttrbutes) {
-					finalLevel = rField.MaskingAttrbutes
+				finalLevel := field.MaskingAttributes
+				if cmp.Less[storepb.MaskingLevel](finalLevel, rField.MaskingAttributes) {
+					finalLevel = rField.MaskingAttributes
 				}
 				result = append(result, base.FieldInfo{
-					Database:         field.Database,
-					Table:            field.Table,
-					Name:             field.Name,
-					MaskingAttrbutes: finalLevel,
+					Database:          field.Database,
+					Table:             field.Table,
+					Name:              field.Name,
+					MaskingAttributes: finalLevel,
 				})
 			} else {
 				result = append(result, field)
@@ -1105,15 +1105,15 @@ func (extractor *fieldExtractor) plsqlMergeJoin(leftField []base.FieldInfo, ctx 
 			_, existsInUsingMap := usingMap[field.Name]
 			rField, existsInRightFieldMap := rightFieldMap[field.Name]
 			if existsInUsingMap && existsInRightFieldMap {
-				finalLevel := field.MaskingAttrbutes
-				if cmp.Less[storepb.MaskingLevel](finalLevel, rField.MaskingAttrbutes) {
-					finalLevel = rField.MaskingAttrbutes
+				finalLevel := field.MaskingAttributes
+				if cmp.Less[storepb.MaskingLevel](finalLevel, rField.MaskingAttributes) {
+					finalLevel = rField.MaskingAttributes
 				}
 				result = append(result, base.FieldInfo{
-					Database:         field.Database,
-					Table:            field.Table,
-					Name:             field.Name,
-					MaskingAttrbutes: finalLevel,
+					Database:          field.Database,
+					Table:             field.Table,
+					Name:              field.Name,
+					MaskingAttributes: finalLevel,
 				})
 			} else {
 				result = append(result, field)
@@ -1154,10 +1154,10 @@ func (extractor *fieldExtractor) plsqlExtractTableRefAux(ctx plsql.ITable_ref_au
 	var result []base.FieldInfo
 	for _, field := range list {
 		result = append(result, base.FieldInfo{
-			Database:         field.Database,
-			Table:            alias,
-			Name:             field.Name,
-			MaskingAttrbutes: field.MaskingAttrbutes,
+			Database:          field.Database,
+			Table:             alias,
+			Name:              field.Name,
+			MaskingAttributes: field.MaskingAttributes,
 		})
 	}
 
@@ -1190,10 +1190,10 @@ func (extractor *fieldExtractor) plsqlExtractDmlTableExpressionClause(ctx plsql.
 		var result []base.FieldInfo
 		for _, column := range tableSchema.ColumnList {
 			result = append(result, base.FieldInfo{
-				Database:         schema,
-				Table:            table,
-				Name:             column.Name,
-				MaskingAttrbutes: column.MaskingAttributes,
+				Database:          schema,
+				Table:             table,
+				Name:              column.Name,
+				MaskingAttributes: column.MaskingAttributes,
 			})
 		}
 		return result, nil
