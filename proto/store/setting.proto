@@ -222,7 +222,7 @@ message SemanticTypesSetting {
 }
 
 message MaskingAlgorithmSetting {
-  message MaskingAlgorithm {
+  message Algorithm {
     // id is the uuid for masking algorithm.
     string id = 1;
     // title is the title for masking algorithm.
@@ -230,46 +230,48 @@ message MaskingAlgorithmSetting {
     // description is the description for masking algorithm.
     string description = 3;
 
-    message HashingPayload {
-      message MD5Payload {
-        // salt is the salt value used in MD5 algorithm.
-        string salt = 1;
-      }
+    enum Category {
+      CATEGORY_UNSPECIFIED = 0;
+      MASKING = 1;
+      HASHING = 2;
+    }
+    // category is the category for masking algorithm, the range of accepted Payload is decided by the category.
+    // MASKING: FullMaskingPayload, RangePartialMaskingPayload
+    // HASHING: MD5Payload
+    Category category = 4;
 
-      oneof payload { MD5Payload md5 = 1; }
+    message FullMaskingPayload {
+      // replace_with is the string used to replace the original value, the 
+      // max length of the string is 16 bytes.
+      string replace_with = 1;
     }
 
-    message MaskingPayload {
-      message FullMaskingPayload {
-        // replace_with is the string used to replace the original value, the
-        // max length of the string is 16 bytes.
-        string replace_with = 1;
+    message RangePartialMaskingPayload {
+      message Rule {
+        // start is the start index of the original value, start from 0 and should be less than stop.
+        int32 start = 1;
+        // stop is the stop index of the original value, should be less than the length of the original value.
+        int32 stop = 2;
+        // OriginalValue[start:stop] would be replaced with replace_with.
+        string replace_with = 3;
       }
+      // We store it as a repeated field to face the fact that the original value may have multiple parts should be masked.
+      // But frontend can be started with a single rule easily.
+      repeated Rule rules = 1;
+    }
 
-      message PartialMaskingPayload {
-        message Rule {
-          // regexp is the regular expression used to match the original value,
-          // the max length of the regexp is 64 bytes.
-          string regexp = 1;
-          // replace_with is the string used to replace the original value, the
-          // max length of the string is 16 bytes.
-          string replace_with = 2;
-        }
-        repeated Rule rules = 1;
-      }
-
-      oneof payload {
-        FullMaskingPayload full_masking = 1;
-        PartialMaskingPayload partial_masking = 2;
-      }
+    message MD5Payload {
+      // salt is the salt value to generate a different hash that with the word alone.
+      string salt = 1;
     }
 
     oneof payload {
-      HashingPayload hashing = 1;
-      MaskingPayload masking = 2;
+      FullMaskingPayload full_masking = 5;
+      RangePartialMaskingPayload range_partial_masking = 6;
+      MD5Payload md5 = 7;
     }
   }
 
   // algorithms is the list of masking algorithms.
-  repeated MaskingAlgorithm algorithms = 1;
+  repeated Algorithm algorithms = 1;
 }
