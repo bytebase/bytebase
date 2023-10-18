@@ -598,7 +598,11 @@ const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
     return;
   }
 
-  const tableEdit = convertTableMetadataToTable(template.table, "created");
+  const tableEdit = convertTableMetadataToTable(
+    template.table,
+    "created",
+    template.config
+  );
 
   const selectedSchema = schemaList.value.find(
     (schema) => schema.id === state.selectedSchemaId

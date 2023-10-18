@@ -39,8 +39,31 @@
           />
         </div>
         <div
+          v-if="isDev()"
+          class="bb-grid-cell flex items-center"
+          :class="getColumnClassList(column, row)"
+        >
+          {{ getColumnSemanticType(column)?.title }}
+          <button
+            v-if="!readonly && getColumnSemanticType(column)"
+            :disabled="disableAlterColumn(column)"
+            class="w-4 h-4 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer"
+            @click.prevent="onSemanticTypeRemove(column)"
+          >
+            <heroicons-outline:x class="w-3 h-3" />
+          </button>
+          <button
+            v-if="!readonly"
+            :disabled="disableAlterColumn(column)"
+            class="w-4 h-4 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer"
+            @click.prevent="openSemanticTypeDrawer(column)"
+          >
+            <heroicons-outline:pencil class="w-3 h-3" />
+          </button>
+        </div>
+        <div
           v-if="classificationConfig"
-          class="bb-grid-cell flex items-center gap-x-2 text-sm column-cell"
+          class="bb-grid-cell flex items-center gap-x-2 text-sm"
           :class="getColumnClassList(column, row)"
         >
           <ClassificationLevelBadge
@@ -57,7 +80,7 @@
             </button>
             <button
               class="w-4 h-4 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer"
-              @click.prevent="state.pendingUpdateColumn = column"
+              @click.prevent="openClassificationDrawer(column)"
             >
               <heroicons-outline:pencil class="w-3 h-3" />
             </button>
@@ -79,6 +102,7 @@
             type="text"
           />
           <NDropdown
+            v-if="!readonly"
             trigger="click"
             :disabled="readonly || disableAlterColumn(column)"
             :options="columnTypeOptions"
@@ -104,6 +128,7 @@
             @change="(e) => handleColumnDefaultInputChange(e, column)"
           />
           <NDropdown
+            v-if="!readonly"
             trigger="click"
             :disabled="readonly || disableAlterColumn(column)"
             :options="getColumnDefaultValueOptions(engine, column.type)"
@@ -221,11 +246,19 @@
   />
 
   <SelectClassificationDrawer
-    v-if="classificationConfig"
-    :show="state.pendingUpdateColumn !== undefined"
+    v-if="classificationConfig && state.pendingUpdateColumn"
+    :show="state.showClassificationDrawer"
     :classification-config="classificationConfig"
-    @dismiss="state.pendingUpdateColumn = undefined"
+    @dismiss="state.showClassificationDrawer = false"
     @select="onClassificationSelect"
+  />
+
+  <SemanticTypesDrawer
+    v-if="state.pendingUpdateColumn"
+    :show="state.showSemanticTypesDrawer"
+    :semantic-type-list="semanticTypeList"
+    @dismiss="state.showSemanticTypesDrawer = false"
+    @apply="onSemanticTypeApply($event)"
   />
 </template>
 
@@ -237,8 +270,9 @@ import { useI18n } from "vue-i18n";
 import { BBCheckbox } from "@/bbkit";
 import { useSettingV1Store } from "@/store/modules";
 import { Engine } from "@/types/proto/v1/common";
+import { ColumnConfig } from "@/types/proto/v1/database_service";
 import { Table, Column, ForeignKey } from "@/types/v1/schemaEditor";
-import { getDataTypeSuggestionList } from "@/utils";
+import { getDataTypeSuggestionList, isDev } from "@/utils";
 import ColumnDefaultValueExpressionModal from "../Modals/ColumnDefaultValueExpressionModal.vue";
 import {
   getColumnDefaultDisplayString,
@@ -249,6 +283,8 @@ import {
 
 interface LocalState {
   pendingUpdateColumn?: Column;
+  showClassificationDrawer: boolean;
+  showSemanticTypesDrawer: boolean;
 }
 
 const props = withDefaults(
@@ -286,7 +322,10 @@ defineEmits<{
   (event: "onPrimaryKeySet", column: Column, isPrimaryKey: boolean): void;
 }>();
 
-const state = reactive<LocalState>({});
+const state = reactive<LocalState>({
+  showClassificationDrawer: false,
+  showSemanticTypesDrawer: false,
+});
 
 const { t } = useI18n();
 const settingStore = useSettingV1Store();
@@ -299,11 +338,32 @@ const classificationConfig = computed(() => {
   return settingStore.getProjectClassification(props.classificationConfigId);
 });
 
+const semanticTypeList = computed(() => {
+  return (
+    settingStore.getSettingByName("bb.workspace.semantic-types")?.value
+      ?.semanticTypesSettingValue?.types ?? []
+  );
+});
+
+const getColumnSemanticType = (column: Column) => {
+  if (!column.config.semanticTypeId) {
+    return;
+  }
+  return semanticTypeList.value.find(
+    (data) => data.id === column.config.semanticTypeId
+  );
+};
+
 const columnHeaderList = computed(() => {
   return [
     {
       title: t("schema-editor.column.name"),
       width: "6rem",
+    },
+    {
+      title: t("settings.sensitive-data.semantic-types.self"),
+      width: "minmax(auto, 0.8fr)",
+      hide: !isDev(),
     },
     {
       title: t("schema-editor.column.classification"),
@@ -446,12 +506,41 @@ const handleSelectedColumnDefaultValueExpressionChange = (
   column.defaultExpression = expression;
 };
 
+const openClassificationDrawer = (column: Column) => {
+  state.pendingUpdateColumn = column;
+  state.showClassificationDrawer = true;
+};
+
+const openSemanticTypeDrawer = (column: Column) => {
+  state.pendingUpdateColumn = column;
+  state.showSemanticTypesDrawer = true;
+};
+
 const onClassificationSelect = (classificationId: string) => {
+  state.showClassificationDrawer = false;
   if (!state.pendingUpdateColumn) {
     return;
   }
   state.pendingUpdateColumn.classification = classificationId;
-  state.pendingUpdateColumn = undefined;
+};
+
+const onSemanticTypeApply = async (semanticTypeId: string) => {
+  state.showSemanticTypesDrawer = false;
+  if (!state.pendingUpdateColumn) {
+    return;
+  }
+
+  state.pendingUpdateColumn.config = ColumnConfig.fromPartial({
+    ...state.pendingUpdateColumn.config,
+    semanticTypeId,
+  });
+};
+
+const onSemanticTypeRemove = async (column: Column) => {
+  column.config = ColumnConfig.fromPartial({
+    ...column.config,
+    semanticTypeId: "",
+  });
 };
 </script>
 
