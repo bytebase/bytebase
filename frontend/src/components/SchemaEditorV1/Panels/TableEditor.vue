@@ -280,7 +280,11 @@ const handleApplyColumnTemplate = (
   if (template.engine !== engine.value || !template.column) {
     return;
   }
-  const column = convertColumnMetadataToColumn(template.column, "created");
+  const column = convertColumnMetadataToColumn(
+    template.column,
+    "created",
+    template.config
+  );
   table.value.columnList.push(column);
 };
 

@@ -15,11 +15,14 @@ export const convertBranchToBranchSchema = (
 ): BranchSchema => {
   const baselineMetadata = getBaselineMetadataOfBranch(branch);
   const originalSchemas = convertSchemaMetadataList(
-    baselineMetadata.schemas || []
+    baselineMetadata.schemas || [],
+    baselineMetadata.schemaConfigs || []
   );
+
   const editableSchemas = rebuildEditableSchemas(
     originalSchemas,
-    branch.schemaMetadata?.schemas || []
+    branch.schemaMetadata?.schemas || [],
+    branch.schemaMetadata?.schemaConfigs || []
   );
 
   return {
