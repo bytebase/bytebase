@@ -1,7 +1,6 @@
 package pg
 
 import (
-	"cmp"
 	"fmt"
 	"regexp"
 
@@ -130,8 +129,8 @@ func pgMergeJoinField(node *pgquery.Node_JoinExpr, leftField []base.FieldInfo, r
 		// Natural Join will merge the same column name field.
 		for _, field := range leftField {
 			// Merge the sensitive attribute for the same column name field.
-			if rField, exists := rightFieldMap[field.Name]; exists && cmp.Less[storepb.MaskingLevel](field.MaskingAttributes, rField.MaskingAttributes) {
-				field.MaskingAttributes = rField.MaskingAttributes
+			if rField, exists := rightFieldMap[field.Name]; exists {
+				field.MaskingAttributes.TransmittedBy(rField.MaskingAttributes)
 			}
 			result = append(result, field)
 		}
@@ -161,8 +160,8 @@ func pgMergeJoinField(node *pgquery.Node_JoinExpr, leftField []base.FieldInfo, r
 				_, existsInUsingMap := usingMap[field.Name]
 				rField, existsInRightField := rightFieldMap[field.Name]
 				// Merge the sensitive attribute for the column name field in USING.
-				if existsInUsingMap && existsInRightField && cmp.Less[storepb.MaskingLevel](field.MaskingAttributes, rField.MaskingAttributes) {
-					field.MaskingAttributes = rField.MaskingAttributes
+				if existsInUsingMap && existsInRightField {
+					field.MaskingAttributes.TransmittedBy(rField.MaskingAttributes)
 				}
 				result = append(result, field)
 			}
@@ -360,10 +359,7 @@ func (extractor *fieldExtractor) pgExtractRecursiveCTE(node *pgquery.Node_Common
 
 			changed := false
 			for i, field := range fieldList {
-				if cmp.Less[storepb.MaskingLevel](cteInfo.ColumnList[i].MaskingAttributes, field.MaskingAttributes) {
-					changed = true
-					cteInfo.ColumnList[i].MaskingAttributes = field.MaskingAttributes
-				}
+				changed = changed || cteInfo.ColumnList[i].MaskingAttributes.TransmittedBy(field.MaskingAttributes)
 			}
 
 			if !changed {
@@ -442,21 +438,20 @@ func (extractor *fieldExtractor) pgExtractSelect(node *pgquery.Node_SelectStmt) 
 	if len(node.SelectStmt.ValuesLists) > 0 {
 		var result []base.FieldInfo
 		for _, row := range node.SelectStmt.ValuesLists {
-			var maskingLevelList []storepb.MaskingLevel
+			var maskingAttributesList []base.MaskingAttributes
 			list, yes := row.Node.(*pgquery.Node_List)
 			if !yes {
 				return nil, errors.Errorf("expect Node_List but found %T", row.Node)
 			}
 			for _, item := range list.List.Items {
-				// TODO(zp): make pgExtractColumnRefFromExpressionNode returns masking level instead of maskingLevel.
 				maskingLevel, err := extractor.pgExtractColumnRefFromExpressionNode(item)
 				if err != nil {
 					return nil, err
 				}
-				maskingLevelList = append(maskingLevelList, maskingLevel)
+				maskingAttributesList = append(maskingAttributesList, maskingLevel)
 			}
 			if len(result) == 0 {
-				for i, item := range maskingLevelList {
+				for i, item := range maskingAttributesList {
 					result = append(result, base.FieldInfo{
 						Name:              fmt.Sprintf("column%d", i+1),
 						MaskingAttributes: item,
@@ -482,17 +477,13 @@ func (extractor *fieldExtractor) pgExtractSelect(node *pgquery.Node_SelectStmt) 
 		}
 		var result []base.FieldInfo
 		for i, field := range leftField {
-			finalLevel := base.NewDefaultMaskingAttributes()
-			if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingAttributes) {
-				finalLevel = field.MaskingAttributes
-			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, rightField[i].MaskingAttributes) {
-				finalLevel = rightField[i].MaskingAttributes
-			}
+			finalAttributes := base.NewDefaultMaskingAttributes()
+			finalAttributes.TransmittedBy(field.MaskingAttributes)
+			finalAttributes.TransmittedBy(rightField[i].MaskingAttributes)
 			result = append(result, base.FieldInfo{
 				Name:              field.Name,
 				Table:             field.Table,
-				MaskingAttributes: finalLevel,
+				MaskingAttributes: finalAttributes,
 			})
 		}
 		return result, nil
@@ -732,7 +723,7 @@ func extractSchemaTableColumnName(columnName *ast.ColumnNameDef) (string, string
 	return columnName.Table.Schema, columnName.Table.Name, columnName.ColumnName
 }
 
-func (extractor *fieldExtractor) pgCheckFieldMaskingLevel(schemaName string, tableName string, fieldName string) storepb.MaskingLevel {
+func (extractor *fieldExtractor) pgCheckFieldMaskingLevel(schemaName string, tableName string, fieldName string) base.MaskingAttributes {
 	// One sub-query may have multi-outer schemas and the multi-outer schemas can use the same name, such as:
 	//
 	//  select (
@@ -768,7 +759,7 @@ func (extractor *fieldExtractor) pgCheckFieldMaskingLevel(schemaName string, tab
 	return base.NewDefaultMaskingAttributes()
 }
 
-func (extractor *fieldExtractor) pgExtractColumnRefFromExpressionNode(in *pgquery.Node) (storepb.MaskingLevel, error) {
+func (extractor *fieldExtractor) pgExtractColumnRefFromExpressionNode(in *pgquery.Node) (base.MaskingAttributes, error) {
 	if in == nil {
 		return base.NewDefaultMaskingAttributes(), nil
 	}
@@ -798,7 +789,7 @@ func (extractor *fieldExtractor) pgExtractColumnRefFromExpressionNode(in *pgquer
 	case *pgquery.Node_ColumnRef:
 		columnNameDef, err := pgrawparser.ConvertNodeListToColumnNameDef(node.ColumnRef.Fields)
 		if err != nil {
-			return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, err
+			return base.NewDefaultMaskingAttributes(), err
 		}
 		return extractor.pgCheckFieldMaskingLevel(extractSchemaTableColumnName(columnNameDef)), nil
 	case *pgquery.Node_AExpr:
@@ -828,9 +819,9 @@ func (extractor *fieldExtractor) pgExtractColumnRefFromExpressionNode(in *pgquer
 	case *pgquery.Node_BoolExpr:
 		return extractor.pgExtractColumnRefFromExpressionNodeList(node.BoolExpr.Args)
 	case *pgquery.Node_SubLink:
-		maskingLevel, err := extractor.pgExtractColumnRefFromExpressionNode(node.SubLink.Testexpr)
+		maskingAttributes, err := extractor.pgExtractColumnRefFromExpressionNode(node.SubLink.Testexpr)
 		if err != nil {
-			return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, err
+			return base.NewDefaultMaskingAttributes(), err
 		}
 		// Subquery in SELECT fields is special.
 		// It can be the non-associated or associated subquery.
@@ -843,17 +834,16 @@ func (extractor *fieldExtractor) pgExtractColumnRefFromExpressionNode(in *pgquer
 		}
 		fieldList, err := subqueryExtractor.pgExtractNode(node.SubLink.Subselect)
 		if err != nil {
-			return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, err
+			return base.NewDefaultMaskingAttributes(), err
 		}
+
 		for _, field := range fieldList {
-			if cmp.Less[storepb.MaskingLevel](maskingLevel, field.MaskingAttributes) {
-				maskingLevel = field.MaskingAttributes
-			}
-			if maskingLevel == base.MaxMaskingLevel {
-				return maskingLevel, nil
+			maskingAttributes.TransmittedBy(field.MaskingAttributes)
+			if maskingAttributes.IsNeverChangeInTransmission() {
+				return maskingAttributes, nil
 			}
 		}
-		return maskingLevel, nil
+		return maskingAttributes, nil
 	case *pgquery.Node_RowExpr:
 		return extractor.pgExtractColumnRefFromExpressionNodeList(node.RowExpr.Args)
 	case *pgquery.Node_CoalesceExpr:
@@ -878,19 +868,17 @@ func (extractor *fieldExtractor) pgExtractColumnRefFromExpressionNode(in *pgquer
 	return base.NewDefaultMaskingAttributes(), nil
 }
 
-func (extractor *fieldExtractor) pgExtractColumnRefFromExpressionNodeList(list []*pgquery.Node) (storepb.MaskingLevel, error) {
-	finalLevel := base.NewDefaultMaskingAttributes()
+func (extractor *fieldExtractor) pgExtractColumnRefFromExpressionNodeList(list []*pgquery.Node) (base.MaskingAttributes, error) {
+	finalAttributes := base.NewDefaultMaskingAttributes()
 	for _, node := range list {
-		maskingLevel, err := extractor.pgExtractColumnRefFromExpressionNode(node)
+		maskingAttributes, err := extractor.pgExtractColumnRefFromExpressionNode(node)
 		if err != nil {
-			return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, err
+			return base.NewDefaultMaskingAttributes(), err
 		}
-		if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-			finalLevel = maskingLevel
-		}
-		if finalLevel == base.MaxMaskingLevel {
-			return finalLevel, nil
+		finalAttributes.TransmittedBy(maskingAttributes)
+		if finalAttributes.IsNeverChangeInTransmission() {
+			return finalAttributes, nil
 		}
 	}
-	return finalLevel, nil
+	return finalAttributes, nil
 }
