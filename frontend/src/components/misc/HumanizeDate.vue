@@ -1,5 +1,5 @@
 <template>
-  <slot v-if="!date" name="placeholder">
+  <slot v-if="!date || date.getTime() === 0" name="placeholder">
     <span v-bind="$attrs">-</span>
   </slot>
   <NTooltip v-else trigger="hover">

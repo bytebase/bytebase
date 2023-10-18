@@ -78,6 +78,9 @@ const executionDurationOfTaskRun = (taskRun: TaskRun): Duration | undefined => {
   if (!startTime || !updateTime) {
     return undefined;
   }
+  if (startTime.getTime() === 0) {
+    return undefined;
+  }
   const startMS = startTime.getTime();
   const updateMS = updateTime.getTime();
   const elapsedMS = updateMS - startMS;
