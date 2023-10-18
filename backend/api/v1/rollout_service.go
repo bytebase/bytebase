@@ -1209,7 +1209,6 @@ func (s *RolloutService) createPipeline(ctx context.Context, project *store.Proj
 }
 
 // canUserRunStageTasks returns if a user can run the tasks in a stage.
-// TODO(p0ny): support roles/LAST_APPROVER.
 func canUserRunStageTasks(ctx context.Context, s *store.Store, user *store.UserMessage, issue *store.IssueMessage, stageEnvironmentID int) (bool, error) {
 	// the workspace owner and DBA roles can always run tasks.
 	if user.Role == api.Owner || user.Role == api.DBA {
@@ -1249,6 +1248,14 @@ func canUserRunStageTasks(ctx context.Context, s *store.Store, user *store.UserM
 		}
 	}
 
+	if lastApproverUID := getLastApproverUID(issue.Payload.GetApproval()); lastApproverUID != nil && *lastApproverUID == user.ID {
+		for _, issueRole := range p.IssueRoles {
+			if issueRole == "roles/LAST_APPROVER" {
+				return true, nil
+			}
+		}
+	}
+
 	return false, nil
 }
 
@@ -1259,4 +1266,21 @@ func canUserCancelStageTaskRun(ctx context.Context, s *store.Store, user *store.
 		return true, nil
 	}
 	return canUserRunStageTasks(ctx, s, user, issue, stageEnvironmentID)
+}
+
+func getLastApproverUID(approval *storepb.IssuePayloadApproval) *int {
+	if approval == nil {
+		return nil
+	}
+	if !approval.ApprovalFindingDone {
+		return nil
+	}
+	if approval.ApprovalFindingError != "" {
+		return nil
+	}
+	if len(approval.Approvers) > 0 {
+		id := int(approval.Approvers[len(approval.Approvers)-1].PrincipalId)
+		return &id
+	}
+	return nil
 }
