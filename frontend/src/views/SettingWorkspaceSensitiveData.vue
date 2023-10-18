@@ -5,33 +5,34 @@
       feature="bb.feature.sensitive-data"
     />
     <FeatureAttention v-else feature="bb.feature.sensitive-data" />
-
-    <BBTab
-      :tab-item-list="tabItemList"
-      :selected-index="state.selectedIndex"
-      reorder-model="NEVER"
-      @select-index="(index: number) => state.selectedIndex = index"
-    >
-      <div class="mt-5">
-        <BBTabPanel :active="state.selectedIndex === 0">
-          <SensitiveColumnView />
-        </BBTabPanel>
-        <BBTabPanel :active="state.selectedIndex === 1">
-          <GlobalMaskingRulesView />
-        </BBTabPanel>
-        <BBTabPanel :active="state.selectedIndex === 2">
-          <SemanticTypesView />
-        </BBTabPanel>
-      </div>
-    </BBTab>
+    <NTabs v-model:value="state.selectedTab" type="line">
+      <NTabPane
+        name="sensitive-column-list"
+        :tab="$t('settings.sensitive-data.sensitive-column-list')"
+      >
+        <SensitiveColumnView />
+      </NTabPane>
+      <NTabPane
+        name="global-masking-rule"
+        :tab="$t('settings.sensitive-data.global-rules.self')"
+      >
+        <GlobalMaskingRulesView />
+      </NTabPane>
+      <NTabPane
+        v-if="isDev()"
+        name="semantic-types"
+        :tab="$t('settings.sensitive-data.semantic-types.self')"
+      >
+        <SemanticTypesView />
+      </NTabPane>
+    </NTabs>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, onMounted } from "vue";
-import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
-import type { BBTabItem } from "@/bbkit/types";
+import { NTabs, NTabPane } from "naive-ui";
+import { reactive, watch } from "vue";
+import { useRouter, useRoute } from "vue-router";
 import {
   SensitiveColumnView,
   GlobalMaskingRulesView,
@@ -41,41 +42,53 @@ import { featureToRef } from "@/store";
 import { isDev } from "@/utils";
 
 interface LocalState {
-  selectedIndex: number;
+  selectedTab:
+    | "sensitive-column-list"
+    | "global-masking-rule"
+    | "semantic-types";
 }
 
-const { t } = useI18n();
 const state = reactive<LocalState>({
-  selectedIndex: 0,
+  selectedTab: "sensitive-column-list",
 });
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
 const router = useRouter();
+const route = useRoute();
 
-const tabItemList = computed((): BBTabItem[] => {
-  const tabList = [
-    {
-      title: t("settings.sensitive-data.sensitive-column-list"),
-      id: "sensitive-column-list",
-    },
-    {
-      title: t("settings.sensitive-data.global-rules.self"),
-      id: "global-masking-rule",
-    },
-  ];
-  if (isDev()) {
-    tabList.push({
-      title: t("settings.sensitive-data.semantic-types.self"),
-      id: "semantic-types",
-    });
+watch(
+  () => route.hash,
+  (hash) => {
+    switch (hash) {
+      case "#semantic-types":
+        state.selectedTab = "semantic-types";
+        break;
+      case "#global-masking-rule":
+        state.selectedTab = "global-masking-rule";
+        break;
+      default:
+        state.selectedTab = "sensitive-column-list";
+        break;
+    }
+  },
+  {
+    immediate: true,
   }
-  return tabList;
-});
+);
 
-onMounted(() => {
-  const hash = router.currentRoute.value.hash.slice(1);
-  const index = tabItemList.value.findIndex((tab) => tab.id === hash);
-  if (index >= 0) {
-    state.selectedIndex = index;
+watch(
+  () => state.selectedTab,
+  (tab) => {
+    switch (tab) {
+      case "global-masking-rule":
+        router.push({ hash: "#global-masking-rule" });
+        break;
+      case "semantic-types":
+        router.push({ hash: "#semantic-types" });
+        break;
+      default:
+        router.push({ hash: "" });
+        break;
+    }
   }
-});
+);
 </script>

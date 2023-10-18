@@ -184,7 +184,12 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 			Engine:     storepb.Engine(schemaDesign.Engine),
 			Protection: convertProtectionToStore(schemaDesign.Protection),
 		},
+		DatabaseConfig: convertV1DatabaseConfig(databaseName, schemaDesign.SchemaMetadata.SchemaConfigs),
 	}
+	if baselineMetadata := schemaDesign.BaselineSchemaMetadata; baselineMetadata != nil {
+		schemaDesignSheetPayload.BaselineDatabaseConfig = convertV1DatabaseConfig(databaseName, baselineMetadata.SchemaConfigs)
+	}
+
 	if schemaDesignType == storepb.SheetPayload_SchemaDesign_MAIN_BRANCH {
 		schemaDesignSheetPayload.SchemaDesign.BaselineSheetId = fmt.Sprintf("%d", baselineSheetUID)
 	} else if schemaDesignType == storepb.SheetPayload_SchemaDesign_PERSONAL_DRAFT {
@@ -314,6 +319,11 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 		UpdaterID: currentPrincipalID,
 	}
 	schemaDesign := request.SchemaDesign
+	_, databaseName, err := common.GetInstanceDatabaseID(schemaDesign.BaselineDatabase)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
 	if slices.Contains(request.UpdateMask.Paths, "title") {
 		sheetUpdate.Name = &schemaDesign.Title
 	}
@@ -327,6 +337,8 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 			return nil, err
 		}
 		sheetUpdate.Statement = &schema
+		sheet.Payload.DatabaseConfig = convertV1DatabaseConfig(databaseName, schemaDesign.SchemaMetadata.SchemaConfigs)
+		sheetUpdate.Payload = sheet.Payload
 	}
 	// Update baseline schema design id for personal draft schema design.
 	if slices.Contains(request.UpdateMask.Paths, "baseline_sheet_name") {
@@ -335,6 +347,10 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
 		sheet.Payload.SchemaDesign.BaselineSheetId = fmt.Sprintf("%d", sheetUID)
+		sheetUpdate.Payload = sheet.Payload
+	}
+	if slices.Contains(request.UpdateMask.Paths, "baseline_schema_metadata") {
+		sheet.Payload.BaselineDatabaseConfig = convertV1DatabaseConfig(databaseName, schemaDesign.BaselineSchemaMetadata.SchemaConfigs)
 		sheetUpdate.Payload = sheet.Payload
 	}
 
@@ -432,10 +448,13 @@ func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1
 	// Head Schema, Baseline of Head Schema, and Target Schema.
 
 	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	targetSheet.Payload.DatabaseConfig = sheet.Payload.DatabaseConfig
+	targetSheet.Payload.BaselineDatabaseConfig = sheet.Payload.BaselineDatabaseConfig
 	sheetUpdate := &store.PatchSheetMessage{
 		UID:       targetSheetUID,
 		UpdaterID: currentPrincipalID,
 		Statement: &mergedTargetSchema,
+		Payload:   targetSheet.Payload,
 	}
 	// Update main branch schema design.
 	targetSheet, err = s.store.PatchSheet(ctx, sheetUpdate)
@@ -656,6 +675,9 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
 	}
+	if databaseConfig := sheet.Payload.DatabaseConfig; databaseConfig != nil {
+		schemaMetadata.SchemaConfigs = convertDatabaseConfig(databaseConfig)
+	}
 
 	baselineSchema, baselineSheetName := "", ""
 	// For backward compatibility, we default to MAIN_BRANCH if the type is not specified.
@@ -694,6 +716,9 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 	baselineSchemaMetadata, err := transformSchemaStringToDatabaseMetadata(engine, baselineSchema)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
+	}
+	if baselineDatabaseConfig := sheet.Payload.BaselineDatabaseConfig; baselineDatabaseConfig != nil {
+		baselineSchemaMetadata.SchemaConfigs = convertDatabaseConfig(baselineDatabaseConfig)
 	}
 
 	schemaDesign := &v1pb.SchemaDesign{

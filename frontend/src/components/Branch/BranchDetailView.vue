@@ -362,6 +362,7 @@ const handleSaveBranch = async () => {
   if (!isEqual(mergedMetadata, schemaDesign.value.schemaMetadata)) {
     updateMask.push("metadata");
   }
+
   if (updateMask.length !== 0) {
     if (schemaDesign.value.type === SchemaDesign_Type.MAIN_BRANCH) {
       const branchName = generateForkedBranchName(schemaDesign.value);
@@ -369,6 +370,7 @@ const handleSaveBranch = async () => {
         ...schemaDesign.value,
         baselineSchema: schemaDesign.value.schema,
         schemaMetadata: mergedMetadata,
+        baselineSchemaMetadata: baselineMetadata,
         title: branchName,
       });
       try {
