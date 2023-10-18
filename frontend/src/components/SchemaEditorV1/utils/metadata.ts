@@ -396,7 +396,7 @@ export const rebuildEditableSchemas = (
         editableColumn.config =
           tableConfig.columnConfigs.find(
             (columnConfig) => columnConfig.name === editableColumn.name
-          ) ?? ColumnConfig.fromPartial({});
+          ) ?? ColumnConfig.fromPartial({ name: editableColumn.name });
 
         const column = table.columns.find(
           (column) => column.name === editableColumn.name
