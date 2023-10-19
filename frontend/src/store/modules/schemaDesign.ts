@@ -106,7 +106,7 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
     }
     const request = schemaDesignServiceClient.getSchemaDesign(
       {
-        name: name,
+        name,
       },
       {
         silent,
@@ -115,6 +115,7 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
     request.then((schemaDesign) => {
       schemaDesignMapByName.set(schemaDesign.name, schemaDesign);
     });
+    getSchemaDesignRequestCacheByName.set(name, request);
     return request;
   };
 
