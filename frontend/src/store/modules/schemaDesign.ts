@@ -49,6 +49,9 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
         parent: projectResourceId,
         schemaDesign,
       });
+    console.debug("baseline schema", schemaDesign.baselineSchema);
+    console.debug("target metadata", schemaDesign.schemaMetadata);
+    console.debug("got schema", createdSchemaDesign.schema);
     schemaDesignMapByName.set(createdSchemaDesign.name, createdSchemaDesign);
     return createdSchemaDesign;
   };

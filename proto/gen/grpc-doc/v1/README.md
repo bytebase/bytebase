@@ -563,14 +563,18 @@
     - [ListSettingsRequest](#bytebase-v1-ListSettingsRequest)
     - [ListSettingsResponse](#bytebase-v1-ListSettingsResponse)
     - [MaskingAlgorithmSetting](#bytebase-v1-MaskingAlgorithmSetting)
-    - [MaskingAlgorithmSetting.MaskingAlgorithm](#bytebase-v1-MaskingAlgorithmSetting-MaskingAlgorithm)
+    - [MaskingAlgorithmSetting.Algorithm](#bytebase-v1-MaskingAlgorithmSetting-Algorithm)
+    - [MaskingAlgorithmSetting.Algorithm.FullMask](#bytebase-v1-MaskingAlgorithmSetting-Algorithm-FullMask)
+    - [MaskingAlgorithmSetting.Algorithm.MD5Mask](#bytebase-v1-MaskingAlgorithmSetting-Algorithm-MD5Mask)
+    - [MaskingAlgorithmSetting.Algorithm.RangeMask](#bytebase-v1-MaskingAlgorithmSetting-Algorithm-RangeMask)
+    - [MaskingAlgorithmSetting.Algorithm.RangeMask.Slice](#bytebase-v1-MaskingAlgorithmSetting-Algorithm-RangeMask-Slice)
     - [SMTPMailDeliverySettingValue](#bytebase-v1-SMTPMailDeliverySettingValue)
     - [SchemaTemplateSetting](#bytebase-v1-SchemaTemplateSetting)
     - [SchemaTemplateSetting.ColumnType](#bytebase-v1-SchemaTemplateSetting-ColumnType)
     - [SchemaTemplateSetting.FieldTemplate](#bytebase-v1-SchemaTemplateSetting-FieldTemplate)
     - [SchemaTemplateSetting.TableTemplate](#bytebase-v1-SchemaTemplateSetting-TableTemplate)
-    - [SemanticTypesSetting](#bytebase-v1-SemanticTypesSetting)
-    - [SemanticTypesSetting.SemanticType](#bytebase-v1-SemanticTypesSetting-SemanticType)
+    - [SemanticTypeSetting](#bytebase-v1-SemanticTypeSetting)
+    - [SemanticTypeSetting.SemanticType](#bytebase-v1-SemanticTypeSetting-SemanticType)
     - [SetSettingRequest](#bytebase-v1-SetSettingRequest)
     - [Setting](#bytebase-v1-Setting)
     - [Value](#bytebase-v1-Value)
@@ -1111,6 +1115,8 @@ When paginating, all other parameters provided to `GetPolicies` must match the c
 | table | [string](#string) |  |  |
 | column | [string](#string) |  |  |
 | masking_level | [MaskingLevel](#bytebase-v1-MaskingLevel) |  |  |
+| full_masking_algorithm_id | [string](#string) |  |  |
+| partial_masking_algorithm_id | [string](#string) |  |  |
 
 
 
@@ -8990,26 +8996,90 @@ When paginating, all other parameters provided to `ListSettings` must match the 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| algorithms | [MaskingAlgorithmSetting.MaskingAlgorithm](#bytebase-v1-MaskingAlgorithmSetting-MaskingAlgorithm) | repeated |  |
+| algorithms | [MaskingAlgorithmSetting.Algorithm](#bytebase-v1-MaskingAlgorithmSetting-Algorithm) | repeated | algorithms is the list of masking algorithms. |
 
 
 
 
 
 
-<a name="bytebase-v1-MaskingAlgorithmSetting-MaskingAlgorithm"></a>
+<a name="bytebase-v1-MaskingAlgorithmSetting-Algorithm"></a>
 
-### MaskingAlgorithmSetting.MaskingAlgorithm
+### MaskingAlgorithmSetting.Algorithm
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | id is the uuid for semantic type. |
-| title | [string](#string) |  | the title of the masking algorithm, it should not be empty. |
-| description | [string](#string) |  | the description of the masking algorithm, it can be empty.
+| id | [string](#string) |  | id is the uuid for masking algorithm. |
+| title | [string](#string) |  | title is the title for masking algorithm. |
+| description | [string](#string) |  | description is the description for masking algorithm. |
+| category | [string](#string) |  | Category is the category for masking algorithm. Currently, it accepts 2 categories only: MASKING and HASHING. The range of accepted Payload is decided by the category. Mask: FullMask, RangeMask Hash: MD5Mask |
+| full_mask | [MaskingAlgorithmSetting.Algorithm.FullMask](#bytebase-v1-MaskingAlgorithmSetting-Algorithm-FullMask) |  |  |
+| range_mask | [MaskingAlgorithmSetting.Algorithm.RangeMask](#bytebase-v1-MaskingAlgorithmSetting-Algorithm-RangeMask) |  |  |
+| md5_mask | [MaskingAlgorithmSetting.Algorithm.MD5Mask](#bytebase-v1-MaskingAlgorithmSetting-Algorithm-MD5Mask) |  |  |
 
-If we need to support the custom masking algorithm, we need to define the payload to store the algorithm likes javascript code, python code, etc. |
+
+
+
+
+
+<a name="bytebase-v1-MaskingAlgorithmSetting-Algorithm-FullMask"></a>
+
+### MaskingAlgorithmSetting.Algorithm.FullMask
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| substitution | [string](#string) |  | substitution is the string used to replace the original value, the max length of the string is 16 bytes. |
+
+
+
+
+
+
+<a name="bytebase-v1-MaskingAlgorithmSetting-Algorithm-MD5Mask"></a>
+
+### MaskingAlgorithmSetting.Algorithm.MD5Mask
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| salt | [string](#string) |  | salt is the salt value to generate a different hash that with the word alone. |
+
+
+
+
+
+
+<a name="bytebase-v1-MaskingAlgorithmSetting-Algorithm-RangeMask"></a>
+
+### MaskingAlgorithmSetting.Algorithm.RangeMask
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| slices | [MaskingAlgorithmSetting.Algorithm.RangeMask.Slice](#bytebase-v1-MaskingAlgorithmSetting-Algorithm-RangeMask-Slice) | repeated | We store it as a repeated field to face the fact that the original value may have multiple parts should be masked. But frontend can be started with a single rule easily. |
+
+
+
+
+
+
+<a name="bytebase-v1-MaskingAlgorithmSetting-Algorithm-RangeMask-Slice"></a>
+
+### MaskingAlgorithmSetting.Algorithm.RangeMask.Slice
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| start | [int32](#int32) |  | start is the start index of the original value, start from 0 and should be less than stop. |
+| end | [int32](#int32) |  | stop is the stop index of the original value, should be less than the length of the original value. |
+| substitution | [string](#string) |  | OriginalValue[start:end) would be replaced with replace_with. |
 
 
 
@@ -9113,24 +9183,24 @@ If we need to support the custom masking algorithm, we need to define the payloa
 
 
 
-<a name="bytebase-v1-SemanticTypesSetting"></a>
+<a name="bytebase-v1-SemanticTypeSetting"></a>
 
-### SemanticTypesSetting
+### SemanticTypeSetting
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| types | [SemanticTypesSetting.SemanticType](#bytebase-v1-SemanticTypesSetting-SemanticType) | repeated |  |
+| types | [SemanticTypeSetting.SemanticType](#bytebase-v1-SemanticTypeSetting-SemanticType) | repeated |  |
 
 
 
 
 
 
-<a name="bytebase-v1-SemanticTypesSetting-SemanticType"></a>
+<a name="bytebase-v1-SemanticTypeSetting-SemanticType"></a>
 
-### SemanticTypesSetting.SemanticType
+### SemanticTypeSetting.SemanticType
 
 
 
@@ -9199,7 +9269,7 @@ The data in setting value.
 | external_approval_setting_value | [ExternalApprovalSetting](#bytebase-v1-ExternalApprovalSetting) |  |  |
 | schema_template_setting_value | [SchemaTemplateSetting](#bytebase-v1-SchemaTemplateSetting) |  |  |
 | data_classification_setting_value | [DataClassificationSetting](#bytebase-v1-DataClassificationSetting) |  |  |
-| semantic_types_setting_value | [SemanticTypesSetting](#bytebase-v1-SemanticTypesSetting) |  |  |
+| semantic_type_setting_value | [SemanticTypeSetting](#bytebase-v1-SemanticTypeSetting) |  |  |
 | masking_algorithm_setting_value | [MaskingAlgorithmSetting](#bytebase-v1-MaskingAlgorithmSetting) |  |  |
 
 

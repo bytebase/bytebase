@@ -145,20 +145,20 @@ func (driver *Driver) GetDB() *sql.DB {
 }
 
 // getVersion gets the version.
-func (driver *Driver) getVersion(ctx context.Context) (string, error) {
+func (driver *Driver) getVersion(ctx context.Context) (string, string, error) {
 	query := "SELECT VERSION()"
 	var version string
 	if err := driver.db.QueryRowContext(ctx, query).Scan(&version); err != nil {
 		if err == sql.ErrNoRows {
-			return "", common.FormatDBErrorEmptyRowWithQuery(query)
+			return "", "", common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return "", util.FormatErrorWithQuery(err, query)
+		return "", "", util.FormatErrorWithQuery(err, query)
 	}
 	pos := strings.Index(version, "-")
 	if pos == -1 {
-		return version, nil
+		return version, "", nil
 	}
-	return version[:pos], nil
+	return version[:pos], version[pos:], nil
 }
 
 // Execute executes a SQL statement.

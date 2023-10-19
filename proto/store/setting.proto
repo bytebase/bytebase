@@ -15,8 +15,10 @@ message WorkspaceProfileSetting {
   // The URL user visits Bytebase.
   //
   // The external URL is used for:
-  // 1. Constructing the correct callback URL when configuring the VCS provider. The callback URL points to the frontend.
-  // 2. Creating the correct webhook endpoint when configuring the project GitOps workflow. The webhook endpoint points to the backend.
+  // 1. Constructing the correct callback URL when configuring the VCS provider.
+  // The callback URL points to the frontend.
+  // 2. Creating the correct webhook endpoint when configuring the project
+  // GitOps workflow. The webhook endpoint points to the backend.
   string external_url = 1;
 
   // Disallow self-service signup, users can only be invited by the owner.
@@ -77,7 +79,8 @@ message WorkspaceApprovalSetting {
 message ExternalApprovalSetting {
   message Node {
     // A unique identifier for a node in UUID format.
-    // We will also include the id in the message sending to the external relay service to identify the node.
+    // We will also include the id in the message sending to the external relay
+    // service to identify the node.
     string id = 1;
     // The title of the node.
     string title = 2;
@@ -110,7 +113,8 @@ message SMTPMailDeliverySetting {
   string key = 5;
   string cert = 6;
 
-  // We support four types of SMTP authentication: NONE, PLAIN, LOGIN, and CRAM-MD5.
+  // We support four types of SMTP authentication: NONE, PLAIN, LOGIN, and
+  // CRAM-MD5.
   enum Authentication {
     AUTHENTICATION_UNSPECIFIED = 0;
     AUTHENTICATION_NONE = 1;
@@ -168,7 +172,8 @@ message SchemaTemplateSetting {
 
 message DataClassificationSetting {
   message DataClassificationConfig {
-    // id is the uuid for classification. Each project can chose one classification config.
+    // id is the uuid for classification. Each project can chose one
+    // classification config.
     string id = 1;
     string title = 2;
 
@@ -197,7 +202,7 @@ message DataClassificationSetting {
   repeated DataClassificationConfig configs = 1;
 }
 
-message SemanticTypesSetting {
+message SemanticTypeSetting {
   message SemanticType {
     // id is the uuid for semantic type.
     string id = 1;
@@ -205,11 +210,64 @@ message SemanticTypesSetting {
     string title = 2;
     // the description of the semantic type, it can be empty.
     string description = 3;
-    // the partial mask algorithm id for the semantic type, if it is empty, should use the default partial mask algorithm.
+    // the partial mask algorithm id for the semantic type, if it is empty,
+    // should use the default partial mask algorithm.
     string partial_mask_algorithm_id = 4;
-    // the full mask algorithm id for the semantic type, if it is empty, should use the default full mask algorithm.
+    // the full mask algorithm id for the semantic type, if it is empty, should
+    // use the default full mask algorithm.
     string full_mask_algorithm_id = 5;
   }
 
   repeated SemanticType types = 1;
+}
+
+message MaskingAlgorithmSetting {
+  message Algorithm {
+    // id is the uuid for masking algorithm.
+    string id = 1;
+    // title is the title for masking algorithm.
+    string title = 2;
+    // description is the description for masking algorithm.
+    string description = 3;
+
+    // Category is the category for masking algorithm. Currently, it accepts 2 categories only: MASKING and HASHING.
+    // The range of accepted Payload is decided by the category.
+    // Mask: FullMask, RangeMask
+    // Hash: MD5Mask
+    string category = 4;
+
+    message FullMask {
+      // substitution is the string used to replace the original value, the
+      // max length of the string is 16 bytes.
+      string substitution = 1;
+    }
+
+    message RangeMask {
+      message Slice {
+        // start is the start index of the original value, start from 0 and should be less than stop.
+        int32 start = 1;
+        // stop is the stop index of the original value, should be less than the length of the original value.
+        int32 end = 2;
+        // OriginalValue[start:end) would be replaced with replace_with.
+        string substitution = 3;
+      }
+      // We store it as a repeated field to face the fact that the original value may have multiple parts should be masked.
+      // But frontend can be started with a single rule easily.
+      repeated Slice slices = 1;
+    }
+
+    message MD5Mask {
+      // salt is the salt value to generate a different hash that with the word alone.
+      string salt = 1;
+    }
+
+    oneof mask {
+      FullMask full_mask = 5;
+      RangeMask range_mask = 6;
+      MD5Mask md5_mask = 7;
+    }
+  }
+
+  // algorithms is the list of masking algorithms.
+  repeated Algorithm algorithms = 1;
 }
