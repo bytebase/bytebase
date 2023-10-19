@@ -131,7 +131,6 @@ import { Drawer, DrawerContent } from "@/components/v2";
 import {
   hasFeature,
   generateUniqueTabId,
-  useSettingV1Store,
   useSchemaEditorV1Store,
 } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
@@ -179,7 +178,6 @@ interface LocalState {
 }
 
 const editorStore = useSchemaEditorV1Store();
-const settingStore = useSettingV1Store();
 const currentTab = computed(() => editorStore.currentTab as DatabaseTabContext);
 const state = reactive<LocalState>({
   selectedSubtab: "table-list",
@@ -215,14 +213,6 @@ const tableList = computed(() => {
 const shownTableList = computed(() => {
   return tableList.value.filter((table) =>
     table.name.includes(props.searchPattern.trim())
-  );
-});
-const classificationConfig = computed(() => {
-  if (!editorStore.project.dataClassificationConfigId) {
-    return;
-  }
-  return settingStore.getProjectClassification(
-    editorStore.project.dataClassificationConfigId
   );
 });
 const shouldShowSchemaSelector = computed(() => {
@@ -270,17 +260,6 @@ watch(
     deep: true,
   }
 );
-
-const onClassificationSelect = (classificationId: string) => {
-  const table = tableList.value.find(
-    (table) => table.id === state.activeTableId
-  );
-  if (!table) {
-    return;
-  }
-  table.classification = classificationId;
-  state.activeTableId = undefined;
-};
 
 const handleChangeTab = (tab: SubtabType) => {
   state.selectedSubtab = tab;
