@@ -3054,6 +3054,7 @@
     "schema-version": "Schema version",
     "personal-draft": "Personal draft",
     "baseline-version": "Baseline",
+    "baseline-version-from-parent": "Baseline from parent branch",
     "new-branch": "New branch",
     "parent-branch": "Parent",
     "save-draft": "Save draft",
