@@ -15,6 +15,7 @@
     </div>
     <BBGrid
       class="border"
+      :ready="schemaDesignListReady"
       :show-placeholder="true"
       :column-list="COLUMN_LIST"
       :data-source="schemaDesignList"
@@ -87,7 +88,8 @@ const router = useRouter();
 const userV1Store = useUserStore();
 const projectV1Store = useProjectV1Store();
 const databaseV1Store = useDatabaseV1Store();
-const { schemaDesignList } = useSchemaDesignList();
+const { schemaDesignList, ready: schemaDesignListReady } =
+  useSchemaDesignList();
 const selectedSchemaDesign = ref<SchemaDesign | undefined>(
   props.selectedSchemaDesign
 );
