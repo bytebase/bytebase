@@ -125,7 +125,7 @@
     :show="state.showClassificationDrawer"
     :classification-config="classificationConfig"
     @dismiss="state.showClassificationDrawer = false"
-    @select="onClassificationSelect"
+    @apply="onClassificationSelect"
   />
 
   <FeatureModal
@@ -234,7 +234,6 @@ const showClassificationDrawer = (table: Table) => {
 };
 
 const onClassificationSelect = (classificationId: string) => {
-  state.showClassificationDrawer = false;
   const table = tableList.value.find(
     (table) => table.id === state.activeTableId
   );

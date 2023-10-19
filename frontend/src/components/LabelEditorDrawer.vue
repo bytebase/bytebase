@@ -23,7 +23,7 @@
               v-if="!readonly"
               :disabled="!allowSave"
               type="primary"
-              @click="$emit('apply', convertKVListToLabelsList())"
+              @click="onSave"
             >
               {{ $t("common.save") }}
             </NButton>
@@ -51,7 +51,7 @@ const props = defineProps<{
     [key: string]: string;
   }[];
 }>();
-defineEmits<{
+const emit = defineEmits<{
   (event: "dismiss"): void;
   (
     event: "apply",
@@ -155,6 +155,11 @@ const allowSave = computed(() => {
 const showWarning = computed(() => {
   return state.kvList.some((kv) => !!kv.message);
 });
+
+const onSave = () => {
+  emit("apply", convertKVListToLabelsList());
+  emit("dismiss");
+};
 
 watch(
   () => props.labels,

@@ -379,6 +379,5 @@ const onLabelsApply = async (labelsList: { [key: string]: string }[]) => {
     style: "SUCCESS",
     title: t("common.updated"),
   });
-  state.showLabelEditorDrawer = false;
 };
 </script>
