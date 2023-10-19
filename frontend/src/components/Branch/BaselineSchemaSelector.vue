@@ -147,9 +147,10 @@ const prepareChangeHistoryList = async () => {
     return;
   }
 
-  return await changeHistoryStore.getOrFetchChangeHistoryListOfDatabase(
-    database.value.name
-  );
+  return await changeHistoryStore.fetchChangeHistoryList({
+    parent: database.value.name,
+    pageSize: 1000,
+  });
 };
 
 watch(
@@ -195,7 +196,9 @@ watch(
       return;
     }
 
-    const list = await prepareChangeHistoryList();
+    const list = (await prepareChangeHistoryList())?.filter(
+      filterChangeHistoryByType
+    );
     if (!list || list.length === 0) {
       // If database has no migration history, we will use its latest schema.
       const schema = await databaseStore.fetchDatabaseSchema(
@@ -225,6 +228,10 @@ const allowedMigrationTypeList: ChangeHistory_Type[] = [
   ChangeHistory_Type.MIGRATE,
   ChangeHistory_Type.BRANCH,
 ];
+
+const filterChangeHistoryByType = (changeHistory: ChangeHistory): boolean => {
+  return allowedMigrationTypeList.includes(changeHistory.type);
+};
 
 const isValidId = (id: any): id is string => {
   if (isNull(id) || isUndefined(id) || String(id) === String(UNKNOWN_ID)) {
@@ -260,9 +267,7 @@ const databaseChangeHistoryList = (databaseId: string) => {
   const database = databaseStore.getDatabaseByUID(databaseId);
   const list = changeHistoryStore
     .changeHistoryListByDatabase(database.name)
-    .filter((changeHistory) =>
-      allowedMigrationTypeList.includes(changeHistory.type)
-    );
+    .filter(filterChangeHistoryByType);
 
   return list;
 };
