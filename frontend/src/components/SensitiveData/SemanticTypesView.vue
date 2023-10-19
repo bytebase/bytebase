@@ -62,7 +62,7 @@ const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
 
 const algorithmList = computed((): SelectOption[] => {
   return (
-    settingStore.getSettingByName("bb.workspace.masking-algorithms")?.value
+    settingStore.getSettingByName("bb.workspace.masking-algorithm")?.value
       ?.maskingAlgorithmSettingValue?.algorithms ?? []
   ).map((algorithm) => ({
     label: algorithm.title,
