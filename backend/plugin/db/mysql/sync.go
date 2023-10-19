@@ -46,7 +46,7 @@ var (
 
 // SyncInstance syncs the instance.
 func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	version, err := driver.getVersion(ctx)
+	version, _, err := driver.getVersion(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +124,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	}
 
 	// Query MySQL version
-	version, err := driver.getVersion(ctx)
+	version, rest, err := driver.getVersion(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +132,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse MySQL version %s to semantic version", version)
 	}
-	atLeastMySQL8_0_13 := semVersion.GE(semver.MustParse("8.0.13"))
+	atLeast8_0_13 := semVersion.GE(semver.MustParse("8.0.13"))
 
 	// Query index info.
 	indexMap := make(map[db.TableKey]map[string]*storepb.IndexMetadata)
@@ -152,7 +152,9 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		ORDER BY TABLE_NAME, INDEX_NAME, SEQ_IN_INDEX`
 	// MySQL 8.0.13 introduced the EXPRESSION column in the INFORMATION_SCHEMA.STATISTICS table.
 	// https://dev.mysql.com/doc/refman/8.0/en/information-schema-statistics-table.html
-	if atLeastMySQL8_0_13 {
+	// MariaDB doesn't have the EXPRESSION column.
+	// https://mariadb.com/docs/server/ref/mdb/information-schema/STATISTICS
+	if atLeast8_0_13 && !strings.Contains(rest, "MariaDB") {
 		indexQuery = `
 			SELECT
 				TABLE_NAME,
