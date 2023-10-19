@@ -1267,12 +1267,14 @@
         "project-owner": "需要项目所有者发布。"
       },
       "manual-by-dba-or-workspace-owner": "需要 DBA 或者 Bytebase 实例所有者发布。",
-      "manual-by-project-owner": "需要项目所有者发布。",
-      "manual-by-project-releaser": "需要项目的发布者发布。",
-      "manual-by-issue-creator": "需要工单的创建者发布。",
+      "manual-by-project-owner": "项目所有者",
+      "manual-by-project-releaser": "项目的发布者",
+      "manual-by-issue-creator": "工单的创建者",
       "manual-by-last-approver": "自定义审批流的最后一个审批人发布",
       "manual-by-fixed-roles": "固定角色手工发布",
-      "manual-by-fixed-roles-info": "指定固定角色，点击「发布」按钮后，才会执行变更。"
+      "manual-by-fixed-roles-info": "允许以下任一选中角色，点击「发布」按钮后，执行变更。",
+      "manual-by-dba": "DBA",
+      "manual-by-workspace-owner": "Bytebase 实例所有者"
     },
     "backup": {
       "name": "数据库备份策略",

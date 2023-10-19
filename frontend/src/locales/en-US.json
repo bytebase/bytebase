@@ -1270,12 +1270,14 @@
         "project-owner": "Require rolling out from project owner."
       },
       "manual-by-dba-or-workspace-owner": "Require rolling out from DBA or workspace owner.",
-      "manual-by-project-owner": "Require rolling out from project owner.",
-      "manual-by-project-releaser": "Require rolling out from project releaser.",
-      "manual-by-issue-creator": "Require rolling out from issue creator.",
+      "manual-by-project-owner": "Project owner",
+      "manual-by-project-releaser": "Project releaser",
+      "manual-by-issue-creator": "Issue creator",
       "manual-by-last-approver": "Manual rollout by the last approver from the custom approval flow",
       "manual-by-fixed-roles": "Manual rollout by fixed roles",
-      "manual-by-fixed-roles-info": "Require clicking \"Rollout\" button manually from fixed roles, and then the change will be executed."
+      "manual-by-fixed-roles-info": "Allow any of the following selected roles to click the \"Rollout\" button, and then the change will be executed.",
+      "manual-by-dba": "DBA",
+      "manual-by-workspace-owner": "Workspace owner"
     },
     "backup": {
       "name": "Database backup schedule policy",

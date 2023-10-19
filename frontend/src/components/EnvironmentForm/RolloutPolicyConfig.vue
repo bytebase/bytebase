@@ -33,16 +33,30 @@
       </NCheckbox>
       <div class="flex flex-col gap-y-2 pl-8">
         <NCheckbox
-          :checked="isDBAOrWorkspaceOwnerChecked"
-          @update:checked="toggleDBAOrWorkspaceOwner"
+          :checked="isWorkspaceOwnerChecked"
+          @update:checked="
+            toggleRoles($event, 'workspace', [VirtualRoleType.OWNER])
+          "
         >
           <div class="textlabel">
-            {{ $t("policy.rollout.manual-by-dba-or-workspace-owner") }}
+            {{ $t("policy.rollout.manual-by-workspace-owner") }}
+          </div>
+        </NCheckbox>
+        <NCheckbox
+          :checked="isDBAChecked"
+          @update:checked="
+            toggleRoles($event, 'workspace', [VirtualRoleType.DBA])
+          "
+        >
+          <div class="textlabel">
+            {{ $t("policy.rollout.manual-by-dba") }}
           </div>
         </NCheckbox>
         <NCheckbox
           :checked="isProjectOwnerChecked"
-          @update:checked="toggleProjectRoles($event, [PresetRoleType.OWNER])"
+          @update:checked="
+            toggleRoles($event, 'project', [PresetRoleType.OWNER])
+          "
         >
           <div class="textlabel">
             {{ $t("policy.rollout.manual-by-project-owner") }}
@@ -51,7 +65,7 @@
         <NCheckbox
           :checked="isProjectReleaserChecked"
           @update:checked="
-            toggleProjectRoles($event, [PresetRoleType.RELEASER])
+            toggleRoles($event, 'project', [PresetRoleType.RELEASER])
           "
         >
           <div class="textlabel">
@@ -60,7 +74,9 @@
         </NCheckbox>
         <NCheckbox
           :checked="isIssueCreatorChecked"
-          @update:checked="toggleIssueRoles($event, [VirtualRoleType.CREATOR])"
+          @update:checked="
+            toggleRoles($event, 'issue', [VirtualRoleType.CREATOR])
+          "
         >
           <div class="textlabel">
             {{ $t("policy.rollout.manual-by-issue-creator") }}
@@ -72,7 +88,7 @@
       <NCheckbox
         :checked="isIssueLastApproverChecked"
         @update:checked="
-          toggleIssueRoles($event, [VirtualRoleType.LAST_APPROVER])
+          toggleRoles($event, 'issue', [VirtualRoleType.LAST_APPROVER])
         "
       >
         <div class="textlabel flex flex-row gap-x-1">
@@ -80,6 +96,9 @@
           <FeatureBadge feature="bb.feature.custom-approval" />
         </div>
       </NCheckbox>
+    </div>
+    <div class="font-mono text-xs">
+      {{ rolloutPolicy }}
     </div>
   </div>
 </template>
@@ -102,12 +121,11 @@ const emit = defineEmits<{
 
 const rolloutPolicy = ref(cloneDeep(props.policy.rolloutPolicy!));
 
-const isDBAOrWorkspaceOwnerChecked = computed(() => {
-  const { workspaceRoles } = rolloutPolicy.value;
-  return (
-    workspaceRoles.includes(VirtualRoleType.OWNER) &&
-    workspaceRoles.includes(VirtualRoleType.DBA)
-  );
+const isDBAChecked = computed(() => {
+  return rolloutPolicy.value.workspaceRoles.includes(VirtualRoleType.DBA);
+});
+const isWorkspaceOwnerChecked = computed(() => {
+  return rolloutPolicy.value.workspaceRoles.includes(VirtualRoleType.OWNER);
 });
 const isProjectOwnerChecked = computed(() => {
   return rolloutPolicy.value.projectRoles.includes(PresetRoleType.OWNER);
@@ -130,10 +148,11 @@ const manualRolloutByFixedRolesCheckStatus = computed(() => {
     };
   }
   const conditions = [
-    isDBAOrWorkspaceOwnerChecked.value,
+    isDBAChecked.value,
+    isWorkspaceOwnerChecked.value,
     isProjectOwnerChecked.value,
     isProjectReleaserChecked.value,
-    isIssueCreatorChecked,
+    isIssueCreatorChecked.value,
   ];
   const checkedCount = conditions.filter((checked) => checked).length;
   const checked = checkedCount === conditions.length;
@@ -167,69 +186,48 @@ const selectAutomaticRollout = (checked: boolean) => {
   );
 };
 const toggleAllFixedRoles = (checked: boolean) => {
+  const rp = rolloutPolicy.value;
+  const set = new Set(rp.issueRoles);
   if (checked) {
+    set.add(VirtualRoleType.CREATOR);
     update(
       RolloutPolicy.fromPartial({
         automatic: false,
         workspaceRoles: [VirtualRoleType.OWNER, VirtualRoleType.DBA],
         projectRoles: [PresetRoleType.OWNER, PresetRoleType.RELEASER],
-        issueRoles: [VirtualRoleType.CREATOR],
+        issueRoles: Array.from(set),
       })
     );
   } else {
-    selectAutomaticRollout(true);
+    set.delete(VirtualRoleType.CREATOR);
+    update(
+      RolloutPolicy.fromPartial({
+        automatic: false,
+        workspaceRoles: [],
+        projectRoles: [],
+        issueRoles: Array.from(set),
+      })
+    );
   }
 };
-const toggleDBAOrWorkspaceOwner = (checked: boolean) => {
+const toggleRoles = (
+  checked: boolean,
+  type: "workspace" | "project" | "issue",
+  roles: string[]
+) => {
   const rp = rolloutPolicy.value;
-  const workspaceRoles = new Set(rp.workspaceRoles);
+  const key = `${type}Roles` as `${typeof type}Roles`;
+  const set = new Set(rp[key]);
   if (checked) {
-    workspaceRoles.add(VirtualRoleType.OWNER);
-    workspaceRoles.add(VirtualRoleType.DBA);
+    roles.forEach((role) => set.add(role));
   } else {
-    workspaceRoles.delete(VirtualRoleType.OWNER);
-    workspaceRoles.delete(VirtualRoleType.DBA);
+    roles.forEach((role) => set.delete(role));
   }
   update(
     RolloutPolicy.fromPartial({
+      ...rp,
       automatic: false,
-      workspaceRoles: Array.from(workspaceRoles),
-      projectRoles: [...rp.projectRoles],
-      issueRoles: [...rp.issueRoles],
-    })
-  );
-};
-const toggleProjectRoles = (checked: boolean, roles: string[]) => {
-  const rp = rolloutPolicy.value;
-  const projectRoles = new Set(rp.projectRoles);
-  if (checked) {
-    roles.forEach((role) => projectRoles.add(role));
-  } else {
-    roles.forEach((role) => projectRoles.delete(role));
-  }
-  update(
-    RolloutPolicy.fromPartial({
-      automatic: false,
-      workspaceRoles: [...rp.workspaceRoles],
-      projectRoles: Array.from(projectRoles),
-      issueRoles: [...rp.issueRoles],
-    })
-  );
-};
-const toggleIssueRoles = (checked: boolean, roles: string[]) => {
-  const rp = rolloutPolicy.value;
-  const issueRoles = new Set(rp.issueRoles);
-  if (checked) {
-    roles.forEach((role) => issueRoles.add(role));
-  } else {
-    roles.forEach((role) => issueRoles.delete(role));
-  }
-  update(
-    RolloutPolicy.fromPartial({
-      automatic: false,
-      workspaceRoles: [...rp.workspaceRoles],
-      projectRoles: [...rp.projectRoles],
-      issueRoles: Array.from(issueRoles),
+      [key]: Array.from(set),
     })
   );
 };
