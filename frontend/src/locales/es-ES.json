@@ -3052,6 +3052,7 @@
     "schema-version": "Versión del esquema",
     "personal-draft": "Borrador personal",
     "baseline-version": "Versión de referencia",
+    "baseline-version-from-parent": "Versión de referencia de la rama principal",
     "new-branch": "Nueva rama",
     "parent-branch": "Rama principal",
     "save-draft": "Guardar borrador",

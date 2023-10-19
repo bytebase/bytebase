@@ -170,7 +170,7 @@ const rowKey = (row: BranchRowData) => {
 
 const rowProps = (row: BranchRowData) => {
   return {
-    class: "cursor-pointer  hover:bg-gray-100",
+    class: "cursor-pointer hover:bg-gray-100",
     onClick: (event: MouseEvent) => {
       const targetElement = event.target as HTMLElement;
       const triggerElement = targetElement.closest(
@@ -198,7 +198,7 @@ const getUpdatedTimeStr = (branch: SchemaDesign) => {
 
 <style lang="postcss">
 .n-data-table-expand-trigger {
-  @apply !w-5 !h-5 inline-flex justify-center items-center translate-y-0.5 rounded hover:bg-gray-100 hover:shadow;
+  @apply !w-5 !h-5 inline-flex justify-center items-center translate-y-0.5 rounded hover:bg-white hover:shadow;
 }
 .n-data-table-expand-trigger > .n-base-icon {
   @apply !w-5 !h-5 flex flex-row justify-center items-center;
