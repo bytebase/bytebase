@@ -298,27 +298,3 @@ export const getDefaultRolloutPolicy = (
     },
   };
 };
-
-export const getDefaultDeploymentApprovalPolicy = (
-  parentPath: string,
-  resourceType: PolicyResourceType
-): Policy => {
-  const name = replacePolicyTypeNameToLowerCase(
-    `${parentPath}/${policyNamePrefix}${policyTypeToJSON(
-      PolicyType.DEPLOYMENT_APPROVAL
-    )}`
-  );
-  return {
-    name,
-    uid: "",
-    resourceUid: "",
-    inheritFromParent: false,
-    type: PolicyType.DEPLOYMENT_APPROVAL,
-    resourceType: resourceType,
-    enforce: true,
-    deploymentApprovalPolicy: {
-      defaultStrategy: defaultApprovalStrategy,
-      deploymentApprovalStrategies: [],
-    },
-  };
-};
