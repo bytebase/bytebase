@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, reactive, ref, watchEffect } from "vue";
+import { reactive, ref, watchEffect } from "vue";
 import { schemaDesignServiceClient } from "@/grpcweb";
 import { Engine } from "@/types/proto/v1/common";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
@@ -17,12 +17,10 @@ import {
 
 export const useSchemaDesignStore = defineStore("schema_design", () => {
   const schemaDesignMapByName = reactive(new Map<string, SchemaDesign>());
-
-  // Getters
-  const schemaDesignList = computed(() => {
-    const list = Array.from(schemaDesignMapByName.values());
-    return list;
-  });
+  const getSchemaDesignRequestCacheByName = new Map<
+    string,
+    Promise<SchemaDesign>
+  >();
 
   // Actions
   const fetchSchemaDesignList = async () => {
@@ -32,11 +30,6 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
         view: SchemaDesignView.SCHEMA_DESIGN_VIEW_FULL,
       }
     );
-    // Clear the cache and re-populate it.
-    schemaDesignMapByName.clear();
-    for (const schemaDesign of schemaDesigns) {
-      schemaDesignMapByName.set(schemaDesign.name, schemaDesign);
-    }
     return schemaDesigns;
   };
 
@@ -94,30 +87,36 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
     schemaDesignMapByName.set(updatedSchemaDesign.name, updatedSchemaDesign);
   };
 
-  const fetchSchemaDesignByName = async (name: string, silent = false) => {
-    const schemaDesign = await schemaDesignServiceClient.getSchemaDesign(
+  const fetchSchemaDesignByName = async (
+    name: string,
+    useCache = true,
+    silent = false
+  ) => {
+    if (useCache) {
+      const cachedEntity = schemaDesignMapByName.get(name);
+      if (cachedEntity) {
+        return cachedEntity;
+      }
+
+      // Avoid making duplicated requests concurrently
+      const cachedRequest = getSchemaDesignRequestCacheByName.get(name);
+      if (cachedRequest) {
+        return cachedRequest;
+      }
+    }
+    const request = schemaDesignServiceClient.getSchemaDesign(
       {
-        name: name,
+        name,
       },
       {
         silent,
       }
     );
-    schemaDesignMapByName.set(schemaDesign.name, schemaDesign);
-    return schemaDesign;
-  };
-
-  const getSchemaDesignByName = (name: string) => {
-    return schemaDesignMapByName.get(name) ?? SchemaDesign.fromPartial({});
-  };
-
-  const getOrFetchSchemaDesignByName = async (name: string, silent = false) => {
-    const cached = schemaDesignMapByName.get(name);
-    if (cached) {
-      return cached;
-    }
-    await fetchSchemaDesignByName(name, silent);
-    return getSchemaDesignByName(name);
+    request.then((schemaDesign) => {
+      schemaDesignMapByName.set(schemaDesign.name, schemaDesign);
+    });
+    getSchemaDesignRequestCacheByName.set(name, request);
+    return request;
   };
 
   const deleteSchemaDesign = async (name: string) => {
@@ -150,15 +149,12 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
   };
 
   return {
-    schemaDesignList,
     fetchSchemaDesignList,
     createSchemaDesign,
     createSchemaDesignDraft,
     updateSchemaDesign,
     mergeSchemaDesign,
     fetchSchemaDesignByName,
-    getOrFetchSchemaDesignByName,
-    getSchemaDesignByName,
     parseSchemaString,
     deleteSchemaDesign,
   };
@@ -167,16 +163,15 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
 export const useSchemaDesignList = () => {
   const store = useSchemaDesignStore();
   const ready = ref(false);
+  const schemaDesignList = ref<SchemaDesign[]>([]);
 
   watchEffect(() => {
     ready.value = false;
-    store.fetchSchemaDesignList().then(() => {
+    schemaDesignList.value = [];
+    store.fetchSchemaDesignList().then((response) => {
       ready.value = true;
+      schemaDesignList.value = response;
     });
-  });
-
-  const schemaDesignList = computed(() => {
-    return store.schemaDesignList;
   });
 
   return { schemaDesignList, ready };

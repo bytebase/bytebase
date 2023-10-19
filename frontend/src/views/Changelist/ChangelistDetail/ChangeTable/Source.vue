@@ -28,6 +28,7 @@
 </template>
 
 <script setup lang="ts">
+import { asyncComputed } from "@vueuse/core";
 import { File, GitBranch, History } from "lucide-vue-next";
 import { computed } from "vue";
 import { useChangeHistoryStore, useSchemaDesignStore } from "@/store";
@@ -47,8 +48,11 @@ const changeHistory = computed(() => {
   return useChangeHistoryStore().getChangeHistoryByName(props.change.source);
 });
 
-const branch = computed(() => {
+const branch = asyncComputed(() => {
   if (type.value !== "BRANCH") return undefined;
-  return useSchemaDesignStore().getSchemaDesignByName(props.change.source);
-});
+  return useSchemaDesignStore().fetchSchemaDesignByName(
+    props.change.source,
+    true /* useCache */
+  );
+}, undefined);
 </script>

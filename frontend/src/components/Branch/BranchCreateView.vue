@@ -186,8 +186,9 @@ watch(
       return;
     }
 
-    const branch = await schemaDesignStore.getOrFetchSchemaDesignByName(
-      state.parentBranchName
+    const branch = await schemaDesignStore.fetchSchemaDesignByName(
+      state.parentBranchName,
+      false /* !useCache */
     );
     const database = await databaseStore.getOrFetchDatabaseByName(
       branch.baselineDatabase
@@ -352,8 +353,9 @@ const handleConfirm = async () => {
       })
     );
   } else {
-    const parentBranch = await schemaDesignStore.getOrFetchSchemaDesignByName(
-      state.parentBranchName
+    const parentBranch = await schemaDesignStore.fetchSchemaDesignByName(
+      state.parentBranchName,
+      false /* useCache */
     );
     createdSchemaDesign = await schemaDesignStore.createSchemaDesignDraft({
       ...parentBranch,
