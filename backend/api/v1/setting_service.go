@@ -70,11 +70,6 @@ var whitelistSettings = []api.SettingName{
 	api.SettingMaskingAlgorithm,
 }
 
-var whitelistAlgorithmCategory = map[string]struct{}{
-	"MASK": {},
-	"HASH": {},
-}
-
 //go:embed mail_templates/testmail/template.html
 //go:embed mail_templates/testmail/statics/logo-full.png
 //go:embed mail_templates/testmail/statics/banner.png
@@ -1100,16 +1095,12 @@ func validateMaskingAlgorithm(algorithm *v1pb.MaskingAlgorithmSetting_Algorithm)
 	if algorithm.Title == "" {
 		return status.Errorf(codes.InvalidArgument, "masking algorithm title cannot be empty: %s", algorithm.Id)
 	}
-	if _, ok := whitelistAlgorithmCategory[algorithm.Category]; !ok {
-		return status.Errorf(codes.InvalidArgument, "invalid masking algorithm category: %s", algorithm.Category)
-	}
-
-	if algorithm.Mask == nil {
-		return nil
-	}
 
 	switch algorithm.Category {
 	case "MASK":
+		if algorithm.Mask == nil {
+			return nil
+		}
 		switch algorithm.Mask.(type) {
 		case *v1pb.MaskingAlgorithmSetting_Algorithm_FullMask_:
 		case *v1pb.MaskingAlgorithmSetting_Algorithm_RangeMask_:
@@ -1117,11 +1108,16 @@ func validateMaskingAlgorithm(algorithm *v1pb.MaskingAlgorithmSetting_Algorithm)
 			return status.Errorf(codes.InvalidArgument, "mismatch masking algorithm category and mask type: %T, %s", algorithm.Mask, algorithm.Category)
 		}
 	case "HASH":
+		if algorithm.Mask == nil {
+			return nil
+		}
 		switch algorithm.Mask.(type) {
 		case *v1pb.MaskingAlgorithmSetting_Algorithm_Md5Mask:
 		default:
 			return status.Errorf(codes.InvalidArgument, "mismatch masking algorithm category and mask type: %T, %s", algorithm.Mask, algorithm.Category)
 		}
+	default:
+		return status.Errorf(codes.InvalidArgument, "invalid masking algorithm category: %s", algorithm.Category)
 	}
 
 	return nil
