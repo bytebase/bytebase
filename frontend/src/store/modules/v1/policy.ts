@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 import { computed, unref, watchEffect } from "vue";
 import { policyServiceClient } from "@/grpcweb";
 import { policyNamePrefix } from "@/store/modules/v1/common";
-import { MaybeRef, UNKNOWN_USER_NAME } from "@/types";
+import { MaybeRef, UNKNOWN_USER_NAME, VirtualRoleType } from "@/types";
 import {
   Policy,
   PolicyType,
@@ -10,6 +10,7 @@ import {
   policyTypeToJSON,
   BackupPlanSchedule,
   ApprovalStrategy,
+  RolloutPolicy,
 } from "@/types/proto/v1/org_policy_service";
 import { useCurrentUserV1 } from "../auth";
 
@@ -273,7 +274,17 @@ export const getDefaultBackupPlanPolicy = (
 
 export const defaultApprovalStrategy = ApprovalStrategy.AUTOMATIC;
 
-export const getDefaultRolloutPolicy = (
+// Default RolloutPolicy payload is somehow strict to prevent auto rollout
+export const getDefaultRolloutPolicyPayload = () => {
+  return RolloutPolicy.fromPartial({
+    automatic: false,
+    issueRoles: [],
+    projectRoles: [],
+    workspaceRoles: [VirtualRoleType.OWNER],
+  });
+};
+
+export const getEmptyRolloutPolicy = (
   parentPath: string,
   resourceType: PolicyResourceType
 ): Policy => {

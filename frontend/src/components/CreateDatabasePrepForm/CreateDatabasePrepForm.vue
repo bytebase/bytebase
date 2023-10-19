@@ -214,7 +214,6 @@ import { INTERNAL_RDS_INSTANCE_USER_LIST } from "@/types/InstanceUser";
 import { UserRole } from "@/types/proto/v1/auth_service";
 import { Engine } from "@/types/proto/v1/common";
 import { Backup } from "@/types/proto/v1/database_service";
-import { DeploymentType } from "@/types/proto/v1/deployment";
 import { InstanceRole } from "@/types/proto/v1/instance_role_service";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
@@ -230,7 +229,7 @@ import {
   instanceV1HasCollationAndCharacterSet,
   instanceV1HasCreateDatabase,
 } from "@/utils";
-import { trySetDefaultAssigneeByEnvironmentAndDeploymentType } from "../IssueV1/logic/initialize/assignee";
+import { trySetDefaultAssigneeByEnvironment } from "../IssueV1/logic/initialize/assignee";
 
 interface LocalState {
   projectId?: string;
@@ -472,12 +471,12 @@ const createV1 = async () => {
   try {
     const planCreate = Plan.fromJSON({
       steps: [{ specs: [spec] }],
+      creator: currentUserV1.value.name,
     });
-    await trySetDefaultAssigneeByEnvironmentAndDeploymentType(
+    await trySetDefaultAssigneeByEnvironment(
       issueCreate,
       project.value,
-      instance.environment,
-      DeploymentType.DATABASE_CREATE
+      environment.name
     );
     const { createdIssue } = await experimentalCreateIssueByPlan(
       project.value,

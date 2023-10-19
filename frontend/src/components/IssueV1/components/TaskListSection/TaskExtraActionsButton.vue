@@ -45,7 +45,8 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
-const { events, isCreating, activeTask, issue } = useIssueContext();
+const { events, isCreating, activeTask, issue, assigneeCandidates } =
+  useIssueContext();
 
 const actionList = computed(() => {
   return getApplicableTaskRolloutActionList(
@@ -60,7 +61,8 @@ const allowUserToSkipTask = asyncComputed(() => {
     issue.value,
     props.task,
     currentUser.value,
-    "SKIP"
+    "SKIP",
+    assigneeCandidates.value
   );
 });
 

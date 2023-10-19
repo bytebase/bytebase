@@ -65,7 +65,7 @@ import {
   usePolicyV1Store,
   defaultBackupSchedule,
   getDefaultBackupPlanPolicy,
-  getDefaultRolloutPolicy,
+  getEmptyRolloutPolicy,
 } from "@/store/modules/v1/policy";
 import { VirtualRoleType } from "@/types";
 import { State } from "@/types/proto/v1/common";
@@ -127,7 +127,7 @@ const preparePolicy = () => {
     .then((policy) => {
       state.rolloutPolicy =
         policy ??
-        getDefaultRolloutPolicy(
+        getEmptyRolloutPolicy(
           state.environment.name,
           PolicyResourceType.ENVIRONMENT
         );
