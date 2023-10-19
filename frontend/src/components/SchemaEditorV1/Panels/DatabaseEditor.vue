@@ -115,14 +115,6 @@
     </DrawerContent>
   </Drawer>
 
-  <SelectClassificationDrawer
-    v-if="classificationConfig"
-    :show="state.showClassificationDrawer"
-    :classification-config="classificationConfig"
-    @dismiss="state.showClassificationDrawer = false"
-    @select="onClassificationSelect"
-  />
-
   <FeatureModal
     feature="bb.feature.schema-template"
     :open="state.showFeatureModal"
@@ -178,7 +170,6 @@ interface LocalState {
   selectedSchemaId: string;
   showFeatureModal: boolean;
   showSchemaTemplateDrawer: boolean;
-  showClassificationDrawer: boolean;
   tableNameModalContext?: {
     parentName: string;
     schemaId: string;
@@ -195,7 +186,6 @@ const state = reactive<LocalState>({
   selectedSchemaId: currentTab.value?.selectedSchemaId ?? "",
   showFeatureModal: false,
   showSchemaTemplateDrawer: false,
-  showClassificationDrawer: false,
 });
 const databaseV1 = computed(
   () => editorStore.currentDatabase ?? emptyDatabase()
@@ -282,7 +272,6 @@ watch(
 );
 
 const onClassificationSelect = (classificationId: string) => {
-  state.showClassificationDrawer = false;
   const table = tableList.value.find(
     (table) => table.id === state.activeTableId
   );
