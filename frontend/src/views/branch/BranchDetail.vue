@@ -1,10 +1,10 @@
 <template>
   <template v-if="data.ready">
     <template v-if="isCreating">
-      <BranchCreateView v-bind="$attrs" />
+      <BranchCreateView />
     </template>
     <template v-else-if="data.branch">
-      <BranchDetailView :branch="data.branch" v-bind="$attrs" />
+      <BranchDetailView :branch="data.branch" />
     </template>
   </template>
 </template>
