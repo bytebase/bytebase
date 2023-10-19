@@ -6,6 +6,7 @@ import { rolloutServiceClient } from "@/grpcweb";
 import { TemplateType } from "@/plugins";
 import {
   useChangelistStore,
+  useCurrentUserV1,
   useDatabaseV1Store,
   useEnvironmentV1Store,
   useProjectV1Store,
@@ -53,6 +54,9 @@ type CreateIssueParams = {
 
 export const createIssueSkeleton = async (route: _RouteLocationBase) => {
   const issue = emptyIssue();
+  const me = useCurrentUserV1();
+  issue.creator = `users/${me.value.email}`;
+  issue.creatorEntity = me.value;
 
   const project = await useProjectV1Store().getOrFetchProjectByUID(
     route.query.project as string

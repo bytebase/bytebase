@@ -5,10 +5,6 @@ import { User } from "@/types/proto/v1/auth_service";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { Task, Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
 import { extractUserResourceName, hasWorkspacePermissionV1 } from "@/utils";
-import {
-  allowUserToBeAssignee,
-  getCurrentRolloutPolicyForTask,
-} from "../assignee";
 
 export type TaskRolloutAction =
   | "ROLLOUT" // NOT_STARTED -> PENDING
@@ -127,18 +123,17 @@ export const taskRolloutActionButtonProps = (
   };
 };
 
-export const allowUserToApplyTaskRolloutAction = async (
+export const allowUserToApplyTaskRolloutAction = (
   issue: ComposedIssue,
   task: Task,
   user: User,
-  action: TaskRolloutAction
+  action: TaskRolloutAction,
+  assigneeCandidates: User[]
 ) => {
   if (extractUserResourceName(issue.assignee) === user.email) {
     return true;
   }
 
-  const project = issue.projectEntity;
-  const rolloutPolicy = await getCurrentRolloutPolicyForTask(issue, task);
   if (
     hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-issue",
@@ -152,13 +147,8 @@ export const allowUserToApplyTaskRolloutAction = async (
   // Otherwise anyone might to be assignee can rollout the issue.
   // if the rollout policy is "auto rollout", anyone in the project is allowed.
   if (
-    allowUserToBeAssignee(
-      user,
-      project,
-      project.iamPolicy,
-      rolloutPolicy.policy,
-      rolloutPolicy.assigneeGroup
-    )
+    assigneeCandidates.findIndex((candidate) => candidate.name === user.name) >=
+    0
   ) {
     return true;
   }

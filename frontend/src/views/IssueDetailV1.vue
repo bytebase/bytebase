@@ -9,7 +9,7 @@
     </div>
   </div>
   <FeatureModal
-    v-if="state.showFeatureModal"
+    :open="state.showFeatureModal"
     feature="bb.feature.multi-tenancy"
     @cancel="state.showFeatureModal = false"
   />
