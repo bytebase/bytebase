@@ -115,14 +115,6 @@
     </DrawerContent>
   </Drawer>
 
-  <SelectClassificationDrawer
-    v-if="classificationConfig"
-    :show="state.showClassificationDrawer"
-    :classification-config="classificationConfig"
-    @dismiss="state.showClassificationDrawer = false"
-    @select="onClassificationSelect"
-  />
-
   <FeatureModal
     feature="bb.feature.schema-template"
     :open="state.showFeatureModal"
@@ -139,7 +131,6 @@ import { Drawer, DrawerContent } from "@/components/v2";
 import {
   hasFeature,
   generateUniqueTabId,
-  useSettingV1Store,
   useSchemaEditorV1Store,
 } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
@@ -178,7 +169,6 @@ interface LocalState {
   selectedSchemaId: string;
   showFeatureModal: boolean;
   showSchemaTemplateDrawer: boolean;
-  showClassificationDrawer: boolean;
   tableNameModalContext?: {
     parentName: string;
     schemaId: string;
@@ -188,14 +178,12 @@ interface LocalState {
 }
 
 const editorStore = useSchemaEditorV1Store();
-const settingStore = useSettingV1Store();
 const currentTab = computed(() => editorStore.currentTab as DatabaseTabContext);
 const state = reactive<LocalState>({
   selectedSubtab: "table-list",
   selectedSchemaId: currentTab.value?.selectedSchemaId ?? "",
   showFeatureModal: false,
   showSchemaTemplateDrawer: false,
-  showClassificationDrawer: false,
 });
 const databaseV1 = computed(
   () => editorStore.currentDatabase ?? emptyDatabase()
@@ -225,14 +213,6 @@ const tableList = computed(() => {
 const shownTableList = computed(() => {
   return tableList.value.filter((table) =>
     table.name.includes(props.searchPattern.trim())
-  );
-});
-const classificationConfig = computed(() => {
-  if (!editorStore.project.dataClassificationConfigId) {
-    return;
-  }
-  return settingStore.getProjectClassification(
-    editorStore.project.dataClassificationConfigId
   );
 });
 const shouldShowSchemaSelector = computed(() => {
@@ -280,18 +260,6 @@ watch(
     deep: true,
   }
 );
-
-const onClassificationSelect = (classificationId: string) => {
-  state.showClassificationDrawer = false;
-  const table = tableList.value.find(
-    (table) => table.id === state.activeTableId
-  );
-  if (!table) {
-    return;
-  }
-  table.classification = classificationId;
-  state.activeTableId = undefined;
-};
 
 const handleChangeTab = (tab: SubtabType) => {
   state.selectedSubtab = tab;

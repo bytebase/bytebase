@@ -317,11 +317,7 @@ const onLabelsApply = async (labelsList: { [key: string]: string }[]) => {
   if (!column) {
     return;
   }
-  try {
-    await updateColumnConfig(column.name, { labels: labelsList[0] });
-  } finally {
-    state.showLabelsDrawer = false;
-  }
+  await updateColumnConfig(column.name, { labels: labelsList[0] });
 };
 
 const onSemanticTypeApply = async (semanticTypeId: string) => {
@@ -329,11 +325,7 @@ const onSemanticTypeApply = async (semanticTypeId: string) => {
   if (!column) {
     return;
   }
-  try {
-    await updateColumnConfig(column.name, { semanticTypeId });
-  } finally {
-    state.showSemanticTypesDrawer = false;
-  }
+  await updateColumnConfig(column.name, { semanticTypeId });
 };
 
 const onSemanticTypeRemove = async (column: string) => {

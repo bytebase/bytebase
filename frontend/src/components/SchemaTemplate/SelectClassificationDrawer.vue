@@ -54,7 +54,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (event: "dismiss"): void;
-  (event: "select", classificationId: string): void;
+  (event: "apply", classificationId: string): void;
 }>();
 
 interface LocalState {
@@ -87,7 +87,8 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
       if (!option.isLeaf || !option.key) {
         return;
       }
-      emit("select", option.key as string);
+      emit("apply", option.key as string);
+      emit("dismiss");
     },
   };
 };
