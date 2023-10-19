@@ -164,8 +164,6 @@ github.com/bytebase/tidb v0.0.0-20230914094316-ec1081216cfb h1:1nY+ntfLWSHpRNnOw
 github.com/bytebase/tidb v0.0.0-20230914094316-ec1081216cfb/go.mod h1:xrVXE+0V54QRGgrD9o+tuZmBDDx8vJpQgrPtRQvodWo=
 github.com/bytebase/tidb/parser v0.0.0-20230914094316-ec1081216cfb h1:5lhmioRkX4lxbGtuwylor9i4p45h7+CT/nBG1vBbG9k=
 github.com/bytebase/tidb/parser v0.0.0-20230914094316-ec1081216cfb/go.mod h1:wjvp+T3/T9XYt0nKqGX3Kc1AKuyUcfno6LTc6b2A6ew=
-github.com/bytebase/tsql-parser v0.0.0-20230717060948-f266bf0280e2 h1:o0jnYa8jLE9kgkDcCw89xIqGUrk+T4ZHjmmHwI8+8mM=
-github.com/bytebase/tsql-parser v0.0.0-20230717060948-f266bf0280e2/go.mod h1:RGdpxRQZHTqMjTKZUKGGZduIXu2lPyboIuWsqV7drX8=
 github.com/bytebase/tsql-parser v0.0.0-20231019070007-fc13b1c3c56d h1:ZONgYtlZ74yUGpBz9r3p7gz1siP8MtqYzrMOPIudYfs=
 github.com/bytebase/tsql-parser v0.0.0-20231019070007-fc13b1c3c56d/go.mod h1:RGdpxRQZHTqMjTKZUKGGZduIXu2lPyboIuWsqV7drX8=
 github.com/casbin/casbin/v2 v2.1.2/go.mod h1:YcPU1XXisHhLzuxH9coDNf2FbKpjGlbCg3n9yuLkIJQ=
