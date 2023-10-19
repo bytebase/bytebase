@@ -106,7 +106,7 @@ message Value {
     ExternalApprovalSetting external_approval_setting_value = 8;
     SchemaTemplateSetting schema_template_setting_value = 9;
     DataClassificationSetting data_classification_setting_value = 10;
-    SemanticTypesSetting semantic_types_setting_value = 11;
+    SemanticTypeSetting semantic_type_setting_value = 11;
     MaskingAlgorithmSetting masking_algorithm_setting_value = 12;
   }
 }
