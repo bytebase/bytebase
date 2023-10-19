@@ -33,7 +33,7 @@ import {
   useCurrentUserV1,
   useSettingV1Store,
 } from "@/store";
-import { SemanticTypesSetting_SemanticType } from "@/types/proto/v1/setting_service";
+import { SemanticTypeSetting_SemanticType } from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV1 } from "@/utils";
 import SemanticTypesTable, {
   SemanticItem,
@@ -92,7 +92,7 @@ const onAdd = () => {
   state.semanticItemList.push({
     mode: "CREATE",
     dirty: false,
-    item: SemanticTypesSetting_SemanticType.fromJSON({
+    item: SemanticTypeSetting_SemanticType.fromJSON({
       id: uuidv4(),
       fullMaskAlgorithmId: defaultAlgorithm,
       partialMaskAlgorithmId: defaultAlgorithm,
