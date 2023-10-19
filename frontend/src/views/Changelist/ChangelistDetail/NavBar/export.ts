@@ -64,8 +64,9 @@ const zipFileForBranch = async (zip: JSZip, change: Change, index: number) => {
   if (!sheet) {
     return;
   }
-  const branch = await useSchemaDesignStore().getOrFetchSchemaDesignByName(
-    change.source
+  const branch = await useSchemaDesignStore().fetchSchemaDesignByName(
+    change.source,
+    false /* !useCache */
   );
   if (!branch) {
     return;

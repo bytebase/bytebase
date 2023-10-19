@@ -72,6 +72,7 @@
 </template>
 
 <script lang="ts" setup>
+import { asyncComputed } from "@vueuse/core";
 import { MoveLeft } from "lucide-vue-next";
 import {
   NButton,
@@ -82,8 +83,7 @@ import {
   useDialog,
 } from "naive-ui";
 import { Status } from "nice-grpc-common";
-import { computed, reactive, ref } from "vue";
-import { watch } from "vue";
+import { reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import DiffEditor from "@/components/MonacoEditor/DiffEditor.vue";
 import { pushNotification, useSheetV1Store } from "@/store";
@@ -123,13 +123,27 @@ const sheetStore = useSheetV1Store();
 const schemaDesignStore = useSchemaDesignStore();
 const targetBranchName = ref<string>(props.targetBranchName || "");
 
-const sourceBranch = computed(() => {
-  return schemaDesignStore.getSchemaDesignByName(props.sourceBranchName || "");
-});
+const sourceBranch = asyncComputed(async () => {
+  const name = props.sourceBranchName;
+  if (name) {
+    return SchemaDesign.fromPartial({});
+  }
+  return await schemaDesignStore.fetchSchemaDesignByName(
+    name,
+    true /* useCache */
+  );
+}, SchemaDesign.fromPartial({}));
 
-const targetBranch = computed(() => {
-  return schemaDesignStore.getSchemaDesignByName(targetBranchName.value);
-});
+const targetBranch = asyncComputed(async () => {
+  const name = props.targetBranchName;
+  if (name) {
+    return SchemaDesign.fromPartial({});
+  }
+  return await schemaDesignStore.fetchSchemaDesignByName(
+    name,
+    true /* useCache */
+  );
+}, SchemaDesign.fromPartial({}));
 
 const targetBranchFilter = (branch: SchemaDesign) => {
   return (
@@ -142,7 +156,10 @@ watch(
   () => targetBranchName.value,
   async () => {
     // Fetching the latest source branch.
-    await schemaDesignStore.fetchSchemaDesignByName(targetBranchName.value);
+    await schemaDesignStore.fetchSchemaDesignByName(
+      targetBranchName.value,
+      false /* !useCache */
+    );
     state.editingSchema = sourceBranch.value.schema;
     state.initialized = true;
   },
@@ -216,7 +233,8 @@ const handleMergeBranch = async () => {
         onPositiveClick: async () => {
           // Fetching the latest target branch.
           await schemaDesignStore.fetchSchemaDesignByName(
-            targetBranchName.value
+            targetBranchName.value,
+            false /* !useCache */
           );
         },
       });

@@ -170,8 +170,9 @@ const doAddChange = async () => {
       }
       if (sourceType === "BRANCH") {
         // For branch changes, use its diff DDL
-        const branch = useSchemaDesignStore().getSchemaDesignByName(
-          change.source
+        const branch = await useSchemaDesignStore().fetchSchemaDesignByName(
+          change.source,
+          false /* !useCache */
         );
         const source = await fetchBaselineMetadataOfBranch(branch);
         const target = branch.schemaMetadata;

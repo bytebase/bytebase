@@ -251,6 +251,7 @@
 
 <script lang="ts" setup>
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
+import { asyncComputed } from "@vueuse/core";
 import { head } from "lodash-es";
 import { NEllipsis } from "naive-ui";
 import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
@@ -331,12 +332,15 @@ const project = computed(() => {
   return useProjectV1Store().getProjectByUID(props.projectId);
 });
 
-const selectedSchemaDesign = computed(() => {
+const selectedSchemaDesign = asyncComputed(() => {
   if (!props.schemaDesignName) {
     return undefined;
   }
-  return schemaDesignStore.getSchemaDesignByName(props.schemaDesignName);
-});
+  return schemaDesignStore.fetchSchemaDesignByName(
+    props.schemaDesignName,
+    true /* useCache */
+  );
+}, undefined);
 const sourceDatabaseSchema = computed(() => {
   if (props.sourceSchemaType === "SCHEMA_HISTORY_VERSION") {
     return props.databaseSourceSchema?.changeHistory.schema || "";

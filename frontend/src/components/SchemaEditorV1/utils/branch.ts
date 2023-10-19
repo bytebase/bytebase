@@ -41,7 +41,8 @@ export const fetchBaselineMetadataOfBranch = async (
     branch.baselineSheetName
   ) {
     const parentBranch = await useSchemaDesignStore().fetchSchemaDesignByName(
-      branch.baselineSheetName
+      branch.baselineSheetName,
+      false /* !useCache */
     );
     return (
       parentBranch.baselineSchemaMetadata || DatabaseMetadata.fromPartial({})

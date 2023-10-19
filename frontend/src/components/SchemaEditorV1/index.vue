@@ -28,6 +28,7 @@ import {
   SchemaDesign,
   SchemaDesign_Type,
 } from "@/types/proto/v1/schema_design_service";
+import { BranchSchema } from "@/types/v1/schemaEditor";
 import Aside from "./Aside/index.vue";
 import Editor from "./Editor.vue";
 import { convertBranchToBranchSchema } from "./utils/branch";
@@ -62,14 +63,23 @@ const prepareBranchContext = async () => {
       branch.baselineSheetName
     ) {
       // Prepare parent branch for personal draft.
-      await schemaDesignStore.getOrFetchSchemaDesignByName(
-        branch.baselineSheetName
+      await schemaDesignStore.fetchSchemaDesignByName(
+        branch.baselineSheetName,
+        true /* useCache */
       );
     }
   }
 };
 
-const initialSchemaEditorState = () => {
+const batchConvertBranchSchemas = async (branches: SchemaDesign[]) => {
+  return await Promise.all(
+    branches.map<Promise<[string, BranchSchema]>>(async (branch) => {
+      return [branch.name, await convertBranchToBranchSchema(branch)];
+    })
+  );
+};
+
+const initialSchemaEditorState = async () => {
   schemaEditorV1Store.setState({
     project: props.project,
     resourceType: props.resourceType,
@@ -101,12 +111,7 @@ const initialSchemaEditorState = () => {
     schemaEditorV1Store.setState({
       resourceMap: {
         database: new Map(),
-        branch: new Map(
-          (props.branches || []).map((branch) => [
-            branch.name,
-            convertBranchToBranchSchema(branch),
-          ])
-        ),
+        branch: new Map(await batchConvertBranchSchemas(props.branches ?? [])),
       },
     });
   }
@@ -117,7 +122,7 @@ onMounted(async () => {
   await settingStore.getOrFetchSettingByName("bb.workspace.schema-template");
   await prepareBranchContext();
 
-  initialSchemaEditorState();
+  await initialSchemaEditorState();
   state.initialized = true;
 });
 
@@ -137,7 +142,7 @@ watch(
 
 watch(
   [() => props.databases, () => props.branches],
-  ([newDatabases, newBranches], [oldDatabases, oldBranches]) => {
+  async ([newDatabases, newBranches], [oldDatabases, oldBranches]) => {
     // Update editor state if needed.
     // * If we update databases/branches, we need to rebuild the editing state.
     // * If we update databases/branches, we need to clear all tabs.
@@ -174,12 +179,7 @@ watch(
         },
         resourceMap: {
           database: new Map(),
-          branch: new Map(
-            (newBranches || []).map((branch) => [
-              branch.name,
-              convertBranchToBranchSchema(branch),
-            ])
-          ),
+          branch: new Map(await batchConvertBranchSchemas(newBranches ?? [])),
         },
       });
     }
