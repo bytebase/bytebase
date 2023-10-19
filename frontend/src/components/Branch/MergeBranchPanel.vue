@@ -58,7 +58,7 @@
             <span>{{ $t("schema-designer.diff-editor.editing-schema") }}</span>
           </div>
         </div>
-        <div class="w-full h-[calc(100%-14rem)] border">
+        <div class="w-full h-[calc(100%-14rem)] border relative">
           <DiffEditor
             v-if="ready"
             :key="state.targetBranchName"
@@ -67,6 +67,12 @@
             :value="state.editingSchema"
             @change="state.editingSchema = $event"
           />
+          <div
+            v-else
+            class="inset-0 absolute flex flex-col justify-center items-center"
+          >
+            <BBSpin />
+          </div>
         </div>
       </div>
     </NDrawerContent>
@@ -85,7 +91,7 @@ import {
   useDialog,
 } from "naive-ui";
 import { Status } from "nice-grpc-common";
-import { computed, reactive, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import DiffEditor from "@/components/MonacoEditor/DiffEditor.vue";
 import { pushNotification, useSheetV1Store } from "@/store";
@@ -123,35 +129,47 @@ const { t } = useI18n();
 const dialog = useDialog();
 const sheetStore = useSheetV1Store();
 const schemaDesignStore = useSchemaDesignStore();
+const isLoadingSourceBranch = ref(false);
+const isLoadingTargetBranch = ref(false);
+const emptyBranch = () => SchemaDesign.fromPartial({});
 
-const sourceBranch = asyncComputed(async () => {
-  const name = props.sourceBranchName;
-  if (!name) {
-    return SchemaDesign.fromPartial({});
+const sourceBranch = asyncComputed(
+  async () => {
+    const name = props.sourceBranchName;
+    if (!name) {
+      return emptyBranch();
+    }
+    return await schemaDesignStore.fetchSchemaDesignByName(
+      name,
+      true /* useCache */
+    );
+  },
+  emptyBranch(),
+  {
+    evaluating: isLoadingSourceBranch,
   }
-  return await schemaDesignStore.fetchSchemaDesignByName(
-    name,
-    true /* useCache */
-  );
-}, SchemaDesign.fromPartial({}));
+);
 
-const targetBranch = asyncComputed(async () => {
-  const name = state.targetBranchName;
-  if (!name) {
-    return SchemaDesign.fromPartial({});
+const targetBranch = asyncComputed(
+  async () => {
+    const name = state.targetBranchName;
+    if (!name) {
+      return emptyBranch();
+    }
+    return await schemaDesignStore.fetchSchemaDesignByName(
+      name,
+      true /* useCache */
+    );
+  },
+  emptyBranch(),
+  {
+    evaluating: isLoadingTargetBranch,
   }
-  return await schemaDesignStore.fetchSchemaDesignByName(
-    name,
-    true /* useCache */
-  );
-}, SchemaDesign.fromPartial({}));
+);
 
 // ready when both source and target branch are loaded
 const ready = computed(() => {
-  return (
-    sourceBranch.value.name === props.sourceBranchName &&
-    targetBranch.value.name === state.targetBranchName
-  );
+  return !isLoadingSourceBranch.value && !isLoadingTargetBranch.value;
 });
 
 const targetBranchFilter = (branch: SchemaDesign) => {
