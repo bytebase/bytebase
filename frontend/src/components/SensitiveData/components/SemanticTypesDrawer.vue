@@ -25,12 +25,12 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { SemanticTypesSetting_SemanticType } from "@/types/proto/v1/setting_service";
+import { SemanticTypeSetting_SemanticType } from "@/types/proto/v1/setting_service";
 import SemanticTypesTable, { SemanticItem } from "./SemanticTypesTable.vue";
 
 const props = defineProps<{
   show: boolean;
-  semanticTypeList: SemanticTypesSetting_SemanticType[];
+  semanticTypeList: SemanticTypeSetting_SemanticType[];
 }>();
 
 const emit = defineEmits<{

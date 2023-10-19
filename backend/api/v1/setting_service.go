@@ -412,12 +412,12 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 		}
 		storeSettingValue = string(bytes)
 	case api.SettingSemanticTypes:
-		storeSemanticTypesSetting := new(storepb.SemanticTypesSetting)
-		if err := convertV1PbToStorePb(request.Setting.Value.GetSemanticTypesSettingValue(), storeSemanticTypesSetting); err != nil {
+		storeSemanticTypeSetting := new(storepb.SemanticTypeSetting)
+		if err := convertV1PbToStorePb(request.Setting.Value.GetSemanticTypeSettingValue(), storeSemanticTypeSetting); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
 		}
 		idMap := make(map[string]any)
-		for _, tp := range storeSemanticTypesSetting.Types {
+		for _, tp := range storeSemanticTypeSetting.Types {
 			if !isValidUUID(tp.Id) {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid semantic type id format: %s", tp.Id)
 			}
@@ -429,7 +429,7 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 			}
 			idMap[tp.Id] = any(nil)
 		}
-		bytes, err := protojson.Marshal(storeSemanticTypesSetting)
+		bytes, err := protojson.Marshal(storeSemanticTypeSetting)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
 		}
@@ -631,15 +631,15 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 			},
 		}, nil
 	case api.SettingSemanticTypes:
-		v1Value := new(v1pb.SemanticTypesSetting)
+		v1Value := new(v1pb.SemanticTypeSetting)
 		if err := protojson.Unmarshal([]byte(setting.Value), v1Value); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
 		}
 		return &v1pb.Setting{
 			Name: settingName,
 			Value: &v1pb.Value{
-				Value: &v1pb.Value_SemanticTypesSettingValue{
-					SemanticTypesSettingValue: v1Value,
+				Value: &v1pb.Value_SemanticTypeSettingValue{
+					SemanticTypeSettingValue: v1Value,
 				},
 			},
 		}, nil
