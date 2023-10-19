@@ -15,6 +15,7 @@
     </div>
     <BBGrid
       class="border"
+      :ready="schemaDesignListReady"
       :show-placeholder="true"
       :column-list="COLUMN_LIST"
       :data-source="schemaDesignList"
@@ -25,22 +26,22 @@
           <NRadio :checked="schemaDesign.name === selectedSchemaDesign?.name" />
         </div>
         <div class="bb-grid-cell">
-          {{ projectV1Name(getFormatedValue(schemaDesign).project) }}
+          {{ projectV1Name(getFormattedValue(schemaDesign).project) }}
         </div>
         <div class="bb-grid-cell">
           <NEllipsis :line-clamp="1">{{ schemaDesign.title }}</NEllipsis>
         </div>
         <div class="bb-grid-cell">
           <NEllipsis :line-clamp="1">{{
-            getFormatedValue(schemaDesign).parentBranch
+            getFormattedValue(schemaDesign).parentBranch
           }}</NEllipsis>
         </div>
         <div class="bb-grid-cell">
-          <DatabaseInfo :database="getFormatedValue(schemaDesign).database" />
+          <DatabaseInfo :database="getFormattedValue(schemaDesign).database" />
         </div>
         <div class="bb-grid-cell">
           <span class="text-gray-400">{{
-            getFormatedValue(schemaDesign).updatedTimeStr
+            getFormattedValue(schemaDesign).updatedTimeStr
           }}</span>
         </div>
 
@@ -66,10 +67,7 @@ import { useRouter } from "vue-router";
 import { BBGridColumn } from "@/bbkit";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
 import { useDatabaseV1Store, useProjectV1Store, useUserStore } from "@/store";
-import {
-  useSchemaDesignList,
-  useSchemaDesignStore,
-} from "@/store/modules/schemaDesign";
+import { useSchemaDesignList } from "@/store/modules/schemaDesign";
 import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
 import {
   SchemaDesign,
@@ -90,8 +88,8 @@ const router = useRouter();
 const userV1Store = useUserStore();
 const projectV1Store = useProjectV1Store();
 const databaseV1Store = useDatabaseV1Store();
-const schemaDesignStore = useSchemaDesignStore();
-const { schemaDesignList } = useSchemaDesignList();
+const { schemaDesignList, ready: schemaDesignListReady } =
+  useSchemaDesignList();
 const selectedSchemaDesign = ref<SchemaDesign | undefined>(
   props.selectedSchemaDesign
 );
@@ -113,13 +111,13 @@ const COLUMN_LIST = computed(() => {
   return columns;
 });
 
-const getFormatedValue = (schemaDesign: SchemaDesign) => {
+const getFormattedValue = (schemaDesign: SchemaDesign) => {
   const [projectName] = getProjectAndSchemaDesignSheetId(schemaDesign.name);
   const project = projectV1Store.getProjectByName(`projects/${projectName}`);
   let parentBranch = "";
   if (schemaDesign.type === SchemaDesign_Type.PERSONAL_DRAFT) {
-    const parentSchemaDesign = schemaDesignStore.getSchemaDesignByName(
-      schemaDesign.baselineSheetName
+    const parentSchemaDesign = schemaDesignList.value.find(
+      (parent) => parent.name === schemaDesign.baselineSheetName
     );
     if (parentSchemaDesign) {
       parentBranch = parentSchemaDesign.title;

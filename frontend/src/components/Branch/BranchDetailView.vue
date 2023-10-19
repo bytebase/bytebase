@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-3 w-full overflow-x-auto px-4 pt-1">
+  <div class="space-y-3 w-full overflow-x-auto px-4 pt-1" v-bind="$attrs">
     <div class="w-full flex flex-row justify-between items-center">
       <div class="w-full flex flex-row justify-start items-center gap-x-2">
         <NInput
@@ -107,6 +107,7 @@
 </template>
 
 <script lang="ts" setup>
+import { asyncComputed } from "@vueuse/core";
 import { cloneDeep, head, isEqual, uniqueId } from "lodash-es";
 import { NButton, NDivider, NInput, NTooltip, useDialog, NTag } from "naive-ui";
 import { Status } from "nice-grpc-common";
@@ -138,7 +139,7 @@ import {
   SchemaDesign_Type,
 } from "@/types/proto/v1/schema_design_service";
 import { provideSQLCheckContext } from "../SQLCheck";
-import { getBaselineMetadataOfBranch } from "../SchemaEditorV1/utils/branch";
+import { fetchBaselineMetadataOfBranch } from "../SchemaEditorV1/utils/branch";
 import MergeBranchPanel from "./MergeBranchPanel.vue";
 import SchemaDesignEditor from "./SchemaDesignEditor.vue";
 import { generateForkedBranchName, validateBranchName } from "./utils";
@@ -152,7 +153,7 @@ interface LocalState {
 
 const props = defineProps<{
   // Should be a schema design name of main branch.
-  schemaDesignName: string;
+  branch: SchemaDesign;
   viewMode?: boolean;
 }>();
 
@@ -177,21 +178,22 @@ const mergeBranchPanelContext = ref<{
 const schemaEditorKey = ref<string>(uniqueId());
 
 const schemaDesign = computed(() => {
-  return schemaDesignStore.getSchemaDesignByName(props.schemaDesignName || "");
+  return props.branch;
 });
 
-const parentBranch = computed(() => {
+const parentBranch = asyncComputed(async () => {
   // Show parent branch when the current branch is a personal draft and it's not the new created one.
   if (
     schemaDesign.value.type === SchemaDesign_Type.PERSONAL_DRAFT &&
     schemaDesign.value.baselineSheetName
   ) {
-    return schemaDesignStore.getSchemaDesignByName(
-      schemaDesign.value.baselineSheetName
+    return await schemaDesignStore.fetchSchemaDesignByName(
+      schemaDesign.value.baselineSheetName,
+      true /* useCache */
     );
   }
   return undefined;
-});
+}, undefined);
 
 const changeHistory = computed(() => {
   const changeHistoryName = `${baselineDatabase.value.name}/changeHistories/${schemaDesign.value.baselineChangeHistoryId}`;
@@ -240,7 +242,7 @@ const prepareBaselineDatabase = async () => {
 };
 
 watch(
-  () => [props.schemaDesignName],
+  () => [props.branch],
   async () => {
     state.schemaDesignTitle = schemaDesign.value.title;
     await prepareBaselineDatabase();
@@ -249,8 +251,9 @@ watch(
       schemaDesign.value.type === SchemaDesign_Type.PERSONAL_DRAFT &&
       schemaDesign.value.baselineSheetName
     ) {
-      await schemaDesignStore.getOrFetchSchemaDesignByName(
-        schemaDesign.value.baselineSheetName
+      await schemaDesignStore.fetchSchemaDesignByName(
+        schemaDesign.value.baselineSheetName,
+        true /* useCache */
       );
     }
   },
@@ -339,7 +342,9 @@ const handleCancelEdit = async () => {
     return;
   }
 
-  const baselineMetadata = getBaselineMetadataOfBranch(branchSchema.branch);
+  const baselineMetadata = await fetchBaselineMetadataOfBranch(
+    branchSchema.branch
+  );
   const mergedMetadata = mergeSchemaEditToMetadata(
     branchSchema.schemaList,
     cloneDeep(baselineMetadata)
@@ -369,7 +374,9 @@ const handleSaveBranch = async () => {
     return;
   }
 
-  const baselineMetadata = getBaselineMetadataOfBranch(branchSchema.branch);
+  const baselineMetadata = await fetchBaselineMetadataOfBranch(
+    branchSchema.branch
+  );
   const mergedMetadata = mergeSchemaEditToMetadata(
     branchSchema.schemaList,
     cloneDeep(baselineMetadata)
@@ -451,7 +458,10 @@ const handleSaveBranch = async () => {
       // Delete the draft after merged.
       await schemaDesignStore.deleteSchemaDesign(newBranch.name);
       // Fetch the latest schema design after merged.
-      await schemaDesignStore.fetchSchemaDesignByName(schemaDesign.value.name);
+      await schemaDesignStore.fetchSchemaDesignByName(
+        schemaDesign.value.name,
+        false /* !useCache */
+      );
     } else {
       await schemaDesignStore.updateSchemaDesign(
         SchemaDesign.fromPartial({
