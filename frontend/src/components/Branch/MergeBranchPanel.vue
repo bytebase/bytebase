@@ -31,9 +31,11 @@
             <BranchSelector
               class="!w-4/5 text-center"
               :clearable="false"
-              :branch="targetBranchName"
+              :branch="state.targetBranchName"
               :filter="targetBranchFilter"
-              @update:branch="(branch) => (targetBranchName = branch || '')"
+              @update:branch="
+                (branch) => (state.targetBranchName = branch ?? '')
+              "
             />
           </div>
           <div class="flex flex-row justify-center">
@@ -58,8 +60,8 @@
         </div>
         <div class="w-full h-[calc(100%-14rem)] border">
           <DiffEditor
-            v-if="state.initialized"
-            :key="targetBranchName"
+            v-if="ready"
+            :key="state.targetBranchName"
             class="h-full"
             :original="targetBranch.schema"
             :value="state.editingSchema"
@@ -83,7 +85,7 @@ import {
   useDialog,
 } from "naive-ui";
 import { Status } from "nice-grpc-common";
-import { reactive, ref, watch } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import DiffEditor from "@/components/MonacoEditor/DiffEditor.vue";
 import { pushNotification, useSheetV1Store } from "@/store";
@@ -97,8 +99,8 @@ import {
 } from "@/types/proto/v1/sheet_service";
 
 interface LocalState {
+  targetBranchName: string;
   editingSchema: string;
-  initialized: boolean;
   deleteBranchAfterMerged: boolean;
 }
 
@@ -113,19 +115,18 @@ const emit = defineEmits<{
 }>();
 
 const state = reactive<LocalState>({
+  targetBranchName: "",
   editingSchema: "",
-  initialized: false,
   deleteBranchAfterMerged: true,
 });
 const { t } = useI18n();
 const dialog = useDialog();
 const sheetStore = useSheetV1Store();
 const schemaDesignStore = useSchemaDesignStore();
-const targetBranchName = ref<string>(props.targetBranchName || "");
 
 const sourceBranch = asyncComputed(async () => {
   const name = props.sourceBranchName;
-  if (name) {
+  if (!name) {
     return SchemaDesign.fromPartial({});
   }
   return await schemaDesignStore.fetchSchemaDesignByName(
@@ -135,8 +136,8 @@ const sourceBranch = asyncComputed(async () => {
 }, SchemaDesign.fromPartial({}));
 
 const targetBranch = asyncComputed(async () => {
-  const name = props.targetBranchName;
-  if (name) {
+  const name = state.targetBranchName;
+  if (!name) {
     return SchemaDesign.fromPartial({});
   }
   return await schemaDesignStore.fetchSchemaDesignByName(
@@ -145,28 +146,20 @@ const targetBranch = asyncComputed(async () => {
   );
 }, SchemaDesign.fromPartial({}));
 
+// ready when both source and target branch are loaded
+const ready = computed(() => {
+  return (
+    sourceBranch.value.name === props.sourceBranchName &&
+    targetBranch.value.name === state.targetBranchName
+  );
+});
+
 const targetBranchFilter = (branch: SchemaDesign) => {
   return (
     branch.name !== props.sourceBranchName &&
     branch.engine === sourceBranch.value.engine
   );
 };
-
-watch(
-  () => targetBranchName.value,
-  async () => {
-    // Fetching the latest source branch.
-    await schemaDesignStore.fetchSchemaDesignByName(
-      targetBranchName.value,
-      false /* !useCache */
-    );
-    state.editingSchema = sourceBranch.value.schema;
-    state.initialized = true;
-  },
-  {
-    immediate: true,
-  }
-);
 
 const handleSaveDraft = async (ignoreNotify?: boolean) => {
   const updateMask = ["schema", "baseline_sheet_name"];
@@ -233,7 +226,7 @@ const handleMergeBranch = async () => {
         onPositiveClick: async () => {
           // Fetching the latest target branch.
           await schemaDesignStore.fetchSchemaDesignByName(
-            targetBranchName.value,
+            state.targetBranchName,
             false /* !useCache */
           );
         },
@@ -255,9 +248,25 @@ const handleMergeBranch = async () => {
     title: t("schema-designer.message.merge-to-main-successfully"),
   });
 
-  emit("merged", targetBranchName.value);
+  emit("merged", state.targetBranchName);
   if (state.deleteBranchAfterMerged) {
     await schemaDesignStore.deleteSchemaDesign(props.sourceBranchName);
   }
 };
+
+watch(
+  [sourceBranch, targetBranch],
+  () => {
+    state.editingSchema = sourceBranch.value.schema;
+  },
+  { immediate: true }
+);
+
+watch(
+  () => props.targetBranchName,
+  () => {
+    state.targetBranchName = props.targetBranchName;
+  },
+  { immediate: true }
+);
 </script>
