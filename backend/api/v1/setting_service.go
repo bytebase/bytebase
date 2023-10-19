@@ -436,25 +436,19 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 		}
 		storeSettingValue = string(bytes)
 	case api.SettingMaskingAlgorithm:
-		storeMaskingAlgorithmSetting := new(storepb.MaskingAlgorithmSetting)
-		if err := convertV1PbToStorePb(request.Setting.Value.GetMaskingAlgorithmSettingValue(), storeMaskingAlgorithmSetting); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
-		}
 		idMap := make(map[string]struct{})
-		for _, algorithm := range storeMaskingAlgorithmSetting.Algorithms {
-			if !isValidUUID(algorithm.Id) {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid masking algorithm id format: %s", algorithm.Id)
-			}
-			if algorithm.Title == "" {
-				return nil, status.Errorf(codes.InvalidArgument, "masking algorithm title cannot be empty: %s", algorithm.Id)
-			}
-			if _, ok := whitelistAlgorithmCategory[algorithm.Category]; !ok {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid masking algorithm category: %s", algorithm.Category)
+		for _, algorithm := range request.Setting.Value.GetMaskingAlgorithmSettingValue().Algorithms {
+			if err := validateMaskingAlgorithm(algorithm); err != nil {
+				return nil, err
 			}
 			if _, ok := idMap[algorithm.Id]; ok {
 				return nil, status.Errorf(codes.InvalidArgument, "duplicate masking algorithm id: %s", algorithm.Id)
 			}
 			idMap[algorithm.Id] = struct{}{}
+		}
+		storeMaskingAlgorithmSetting := new(storepb.MaskingAlgorithmSetting)
+		if err := convertV1PbToStorePb(request.Setting.Value.GetMaskingAlgorithmSettingValue(), storeMaskingAlgorithmSetting); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
 		}
 		bytes, err := protojson.Marshal(storeMaskingAlgorithmSetting)
 		if err != nil {
@@ -1097,4 +1091,38 @@ func convertV1SchemaTemplateSetting(template *v1pb.SchemaTemplateSetting) *store
 	}
 
 	return v1Setting
+}
+
+func validateMaskingAlgorithm(algorithm *v1pb.MaskingAlgorithmSetting_Algorithm) error {
+	if !isValidUUID(algorithm.Id) {
+		return status.Errorf(codes.InvalidArgument, "invalid masking algorithm id format: %s", algorithm.Id)
+	}
+	if algorithm.Title == "" {
+		return status.Errorf(codes.InvalidArgument, "masking algorithm title cannot be empty: %s", algorithm.Id)
+	}
+	if _, ok := whitelistAlgorithmCategory[algorithm.Category]; !ok {
+		return status.Errorf(codes.InvalidArgument, "invalid masking algorithm category: %s", algorithm.Category)
+	}
+
+	if algorithm.Mask == nil {
+		return nil
+	}
+
+	switch algorithm.Category {
+	case "MASK":
+		switch algorithm.Mask.(type) {
+		case *v1pb.MaskingAlgorithmSetting_Algorithm_FullMask_:
+		case *v1pb.MaskingAlgorithmSetting_Algorithm_RangeMask_:
+		default:
+			return status.Errorf(codes.InvalidArgument, "mismatch masking algorithm category and mask type: %T, %s", algorithm.Mask, algorithm.Category)
+		}
+	case "HASH":
+		switch algorithm.Mask.(type) {
+		case *v1pb.MaskingAlgorithmSetting_Algorithm_Md5Mask:
+		default:
+			return status.Errorf(codes.InvalidArgument, "mismatch masking algorithm category and mask type: %T, %s", algorithm.Mask, algorithm.Category)
+		}
+	}
+
+	return nil
 }
