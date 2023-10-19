@@ -22,6 +22,7 @@
 </template>
 
 <script setup lang="ts">
+import { asyncComputed } from "@vueuse/core";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import SchemaDesignEditor from "@/components/Branch/SchemaDesignEditor.vue";
@@ -41,13 +42,16 @@ defineEmits<{
 const { t } = useI18n();
 const title = ref(t("common.branch"));
 
-const branch = computed(() => {
+const branch = asyncComputed(async () => {
   const { branchName } = props;
   if (!branchName) {
     return undefined;
   }
-  return useSchemaDesignStore().getSchemaDesignByName(branchName);
-});
+  return await useSchemaDesignStore().fetchSchemaDesignByName(
+    branchName,
+    true /* useCache */
+  );
+}, undefined);
 
 const editorBindings = computed(() => {
   if (!branch.value) {

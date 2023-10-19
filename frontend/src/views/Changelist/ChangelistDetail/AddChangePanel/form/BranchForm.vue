@@ -13,6 +13,7 @@
         v-for="change in changes"
         :key="change.source"
         :change="change"
+        :branch="branchForChange(change)"
         @click-item="handleClickChange($event)"
         @remove-item="handleRemoveChange($event)"
       />
@@ -58,7 +59,7 @@ import {
 import { UNKNOWN_ID } from "@/types";
 import { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
-import { keyBy, setSheetStatement } from "@/utils";
+import { keyBy } from "@/utils";
 import BranchDetailPanel from "../../BranchDetailPanel";
 import { useChangelistDetailContext } from "../../context";
 import { useAddChangeContext } from "../context";
@@ -126,22 +127,18 @@ const selectedBranchList = computed<string[]>({
     const updatedChanges: Change[] = [];
     for (let i = 0; i < selected.length; i++) {
       const name = selected[i];
-      const branch = useSchemaDesignStore().getSchemaDesignByName(name);
-      if (branch) {
-        const existedChange = existedChangesByBranchName.get(name);
-        if (existedChange) {
-          updatedChanges.push(existedChange);
-        } else {
-          const uid = localSheetStore.nextUID();
-          const sheet = localSheetStore.createLocalSheet(
-            `${project.value.name}/sheets/${uid}`
-          );
-          setSheetStatement(sheet, branch.schema);
-          updatedChanges.push({
-            sheet: sheet.name,
-            source: branch.name,
-          });
-        }
+      const existedChange = existedChangesByBranchName.get(name);
+      if (existedChange) {
+        updatedChanges.push(existedChange);
+      } else {
+        const uid = localSheetStore.nextUID();
+        const sheet = localSheetStore.createLocalSheet(
+          `${project.value.name}/sheets/${uid}`
+        );
+        updatedChanges.push({
+          sheet: sheet.name,
+          source: name,
+        });
       }
     }
     changes.value = updatedChanges;
@@ -155,14 +152,21 @@ const handleRemoveChange = (change: Change) => {
   }
 };
 
-const handleClickChange = (change: Change) => {
+const handleClickChange = async (change: Change) => {
   const branchName = change.source;
-  const branch = useSchemaDesignStore().getSchemaDesignByName(branchName);
+  const branch = await useSchemaDesignStore().fetchSchemaDesignByName(
+    branchName,
+    true /* useCache */
+  );
   const database = useDatabaseV1Store().getDatabaseByName(
     branch.baselineDatabase
   );
   state.databaseUID = database.uid;
   state.detailBranchName = branchName;
+};
+
+const branchForChange = (change: Change) => {
+  return branchList.value.find((br) => br.name === change.source);
 };
 
 // Select the first database automatically

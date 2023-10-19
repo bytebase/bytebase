@@ -61,7 +61,7 @@
 <script lang="ts" setup>
 import { debounce } from "lodash-es";
 import { ButtonProps, NButton, NPopover } from "naive-ui";
-import { CSSProperties, computed, onUnmounted, ref, watch } from "vue";
+import { computed, onUnmounted, ref, watch } from "vue";
 import { onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { sqlServiceClient } from "@/grpcweb";
@@ -69,18 +69,25 @@ import { usePolicyByParentAndType } from "@/store";
 import { ComposedDatabase } from "@/types";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
-import { Defer, defer, useWorkspacePermissionV1 } from "@/utils";
+import { Defer, VueStyle, defer, useWorkspacePermissionV1 } from "@/utils";
 import ErrorList from "../misc/ErrorList.vue";
 import SQLCheckPanel from "./SQLCheckPanel.vue";
 import { useSQLCheckContext } from "./context";
 
-const props = defineProps<{
-  statement: string;
-  database: ComposedDatabase;
-  buttonProps?: ButtonProps;
-  buttonStyle?: string | CSSProperties;
-  errors?: string[];
-}>();
+const props = withDefaults(
+  defineProps<{
+    statement: string;
+    database: ComposedDatabase;
+    buttonProps?: ButtonProps;
+    buttonStyle?: VueStyle;
+    errors?: string[];
+  }>(),
+  {
+    buttonProps: undefined,
+    buttonStyle: undefined,
+    errors: undefined,
+  }
+);
 
 const { t } = useI18n();
 const SKIP_CHECK_THRESHOLD = 500000;
