@@ -485,8 +485,8 @@ export interface MaskingAlgorithmSetting_Algorithm {
   /**
    * Category is the category for masking algorithm. Currently, it accepts 2 categories only: MASKING and HASHING.
    * The range of accepted Payload is decided by the category.
-   * MASKING: FullMaskingPayload, RangePartialMaskingPayload
-   * HASHING: MD5Payload
+   * Mask: FullMask, RangeMask
+   * Hash: MD5Mask
    */
   category: string;
   fullMask?: MaskingAlgorithmSetting_Algorithm_FullMask | undefined;
