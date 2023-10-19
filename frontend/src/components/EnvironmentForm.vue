@@ -68,61 +68,18 @@
           <label class="textlabel">
             {{ $t("policy.rollout.name") }}
           </label>
-          <span v-show="valueChanged('approvalPolicy')" class="textlabeltip">{{
-            $t("policy.rollout.tip")
-          }}</span>
+          <span
+            v-show="!create && valueChanged('rolloutPolicy')"
+            class="textlabeltip"
+            >{{ $t("policy.rollout.tip") }}</span
+          >
           <div class="mt-1 textinfolabel">
             {{ $t("policy.rollout.info") }}
           </div>
-          <div class="mt-4 flex flex-col space-y-4">
-            <div class="flex space-x-4">
-              <input
-                v-model="state.approvalPolicy.deploymentApprovalPolicy!.defaultStrategy"
-                name="manual-approval-never"
-                tabindex="-1"
-                type="radio"
-                class="text-accent disabled:text-accent-disabled focus:ring-accent"
-                :value="ApprovalStrategy.AUTOMATIC"
-                :disabled="!allowEdit"
-              />
-              <div class="-mt-0.5">
-                <div class="textlabel">
-                  {{ $t("policy.rollout.auto") }}
-                </div>
-                <div class="mt-1 textinfolabel">
-                  {{ $t("policy.rollout.auto-info") }}
-                </div>
-              </div>
-            </div>
-
-            <div class="flex space-x-4">
-              <input
-                v-model="state.approvalPolicy.deploymentApprovalPolicy!.defaultStrategy"
-                name="manual-approval-always"
-                tabindex="-1"
-                type="radio"
-                class="text-accent disabled:text-accent-disabled focus:ring-accent"
-                :value="ApprovalStrategy.MANUAL"
-                :disabled="!allowEdit"
-              />
-              <div class="-mt-0.5">
-                <div class="textlabel flex">
-                  {{ $t("policy.rollout.manual") }}
-                  <FeatureBadge feature="bb.feature.approval-policy" />
-                </div>
-                <div class="mt-1 textinfolabel">
-                  {{ $t("policy.rollout.manual-info") }}
-                </div>
-              </div>
-            </div>
-
-            <AssigneeGroupEditor
-              class="ml-8"
-              :policy="state.approvalPolicy"
-              :disabled="!allowEdit"
-              @update="onApprovalGroupUpdate"
-            />
-          </div>
+          <RolloutPolicyConfig
+            v-model:policy="state.rolloutPolicy"
+            class="mt-3"
+          />
         </div>
         <div class="col-span-1 mt-6">
           <label class="textlabel"> {{ $t("policy.backup.name") }} </label>
@@ -325,8 +282,6 @@ import {
   Policy,
   PolicyType,
   BackupPlanSchedule,
-  ApprovalStrategy,
-  DeploymentApprovalStrategy,
 } from "@/types/proto/v1/org_policy_service";
 import {
   extractEnvironmentResourceName,
@@ -334,11 +289,11 @@ import {
   sqlReviewPolicySlug,
 } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
-import AssigneeGroupEditor from "./EnvironmentForm/AssigneeGroupEditor.vue";
+import RolloutPolicyConfig from "./EnvironmentForm/RolloutPolicyConfig.vue";
 
 interface LocalState {
   environment: Environment;
-  approvalPolicy: Policy;
+  rolloutPolicy: Policy;
   backupPolicy: Policy;
   environmentTier: EnvironmentTier;
 }
@@ -354,7 +309,7 @@ const props = defineProps({
     required: true,
     type: Object as PropType<Environment>,
   },
-  approvalPolicy: {
+  rolloutPolicy: {
     required: true,
     type: Object as PropType<Policy>,
   },
@@ -384,7 +339,7 @@ const emit = defineEmits([
 const { t } = useI18n();
 const state = reactive<LocalState>({
   environment: cloneDeep(props.environment),
-  approvalPolicy: cloneDeep(props.approvalPolicy),
+  rolloutPolicy: cloneDeep(props.rolloutPolicy),
   backupPolicy: cloneDeep(props.backupPolicy),
   environmentTier: props.environmentTier,
 });
@@ -427,7 +382,7 @@ const sqlReviewPolicy = computed((): SQLReviewPolicy | undefined => {
   return sqlReviewStore.getReviewPolicyByEnvironmentUID(environmentId.value);
 });
 
-const handleEnvironmentNameChange = (event: InputEvent) => {
+const handleEnvironmentNameChange = (event: Event) => {
   state.environment.title = (event.target as HTMLInputElement).value;
 };
 
@@ -449,20 +404,6 @@ const onSQLReviewPolicyClick = () => {
   }
 };
 
-const onApprovalGroupUpdate = (
-  assigneeGroupList: DeploymentApprovalStrategy[]
-) => {
-  if (!state.approvalPolicy.deploymentApprovalPolicy) {
-    return;
-  }
-  state.approvalPolicy.deploymentApprovalPolicy.deploymentApprovalStrategies =
-    assigneeGroupList;
-  state.approvalPolicy.deploymentApprovalPolicy.defaultStrategy =
-    assigneeGroupList.length === 0
-      ? ApprovalStrategy.AUTOMATIC
-      : ApprovalStrategy.MANUAL;
-};
-
 watch(
   () => props.environment,
   (cur) => {
@@ -471,9 +412,9 @@ watch(
 );
 
 watch(
-  () => props.approvalPolicy,
+  () => props.rolloutPolicy,
   (cur: Policy) => {
-    state.approvalPolicy = cloneDeep(cur);
+    state.rolloutPolicy = cloneDeep(cur);
   }
 );
 
@@ -564,13 +505,18 @@ const allowEditSQLReviewPolicy = computed(() => {
 });
 
 const valueChanged = (
-  field?: "environment" | "approvalPolicy" | "backupPolicy" | "environmentTier"
+  field?:
+    | "environment"
+    | "approvalPolicy"
+    | "rolloutPolicy"
+    | "backupPolicy"
+    | "environmentTier"
 ): boolean => {
   switch (field) {
     case "environment":
       return !isEqual(props.environment, state.environment);
-    case "approvalPolicy":
-      return !isEqual(props.approvalPolicy, state.approvalPolicy);
+    case "rolloutPolicy":
+      return !isEqual(props.rolloutPolicy, state.rolloutPolicy);
     case "backupPolicy":
       return !isEqual(props.backupPolicy, state.backupPolicy);
     case "environmentTier":
@@ -579,7 +525,7 @@ const valueChanged = (
     default:
       return (
         !isEqual(props.environment, state.environment) ||
-        !isEqual(props.approvalPolicy, state.approvalPolicy) ||
+        !isEqual(props.rolloutPolicy, state.rolloutPolicy) ||
         !isEqual(props.backupPolicy, state.backupPolicy) ||
         !isEqual(props.environmentTier, state.environmentTier)
       );
@@ -588,7 +534,7 @@ const valueChanged = (
 
 const revertEnvironment = () => {
   state.environment = cloneDeep(props.environment!);
-  state.approvalPolicy = cloneDeep(props.approvalPolicy!);
+  state.rolloutPolicy = cloneDeep(props.rolloutPolicy!);
   state.backupPolicy = cloneDeep(props.backupPolicy!);
   state.environmentTier = cloneDeep(props.environmentTier!);
 };
@@ -600,7 +546,7 @@ const createEnvironment = () => {
       name: resourceIdField.value?.resourceId,
       title: state.environment.title,
     },
-    state.approvalPolicy,
+    state.rolloutPolicy,
     state.backupPolicy,
     state.environmentTier
   );
@@ -619,12 +565,12 @@ const updateEnvironment = () => {
     emit("update", patchedEnvironment);
   }
 
-  if (!isEqual(props.approvalPolicy, state.approvalPolicy)) {
+  if (!isEqual(props.rolloutPolicy, state.rolloutPolicy)) {
     emit(
       "update-policy",
       state.environment,
-      PolicyType.DEPLOYMENT_APPROVAL,
-      state.approvalPolicy
+      PolicyType.ROLLOUT_POLICY,
+      state.rolloutPolicy
     );
   }
 

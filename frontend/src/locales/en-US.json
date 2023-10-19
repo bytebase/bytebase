@@ -82,7 +82,8 @@
       "developer": "Developer",
       "member": "Member",
       "exporter": "Exporter",
-      "querier": "Querier"
+      "querier": "Querier",
+      "releaser": "Releaser"
     },
     "assignee": "Assignee",
     "revert": "Revert",
@@ -1267,7 +1268,16 @@
       "assignee-group": {
         "workspace-owner-or-dba": "Require rolling out from DBA or workspace owner.",
         "project-owner": "Require rolling out from project owner."
-      }
+      },
+      "manual-by-dba-or-workspace-owner": "Require rolling out from DBA or workspace owner.",
+      "manual-by-project-owner": "Project owner",
+      "manual-by-project-releaser": "Project releaser",
+      "manual-by-issue-creator": "Issue creator",
+      "manual-by-last-approver": "Manual rollout by the last approver from the custom approval flow",
+      "manual-by-fixed-roles": "Manual rollout by fixed roles",
+      "manual-by-fixed-roles-info": "Allow any of the following selected roles to click the \"Rollout\" button, and then the change will be executed.",
+      "manual-by-dba": "DBA",
+      "manual-by-workspace-owner": "Workspace owner"
     },
     "backup": {
       "name": "Database backup schedule policy",
@@ -2992,7 +3002,10 @@
       "description": "System defined project querier role"
     },
     "select-role": "Select role",
-    "expired-tip": "The role might has been expired."
+    "expired-tip": "The role might has been expired.",
+    "releaser": {
+      "description": "System defined project releaser role"
+    }
   },
   "database-group": {
     "self": "Database Group",

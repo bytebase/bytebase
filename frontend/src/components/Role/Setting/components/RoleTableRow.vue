@@ -60,6 +60,9 @@ const description = computed(() => {
   if (role.name === PresetRoleType.QUERIER) {
     return t("role.querier.description");
   }
+  if (role.name === PresetRoleType.RELEASER) {
+    return t("role.releaser.description");
+  }
   return role.description;
 });
 
@@ -76,6 +79,9 @@ const title = computed(() => {
   }
   if (role.name === PresetRoleType.QUERIER) {
     return t("common.role.querier");
+  }
+  if (role.name === PresetRoleType.RELEASER) {
+    return t("common.role.releaser");
   }
   return role.title;
 });
