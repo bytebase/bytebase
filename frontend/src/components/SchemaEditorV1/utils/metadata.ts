@@ -72,12 +72,10 @@ export const mergeSchemaEditToMetadata = (
                 (item) => item.name !== columnEdit.name
               );
               table.columns.push(transformColumnEditToMetadata(columnEdit));
-              continue;
             } else if (columnEdit.status === "dropped") {
               table.columns = table.columns.filter(
                 (item) => item.name !== columnEdit.name
               );
-              continue;
             } else {
               const column = table.columns.find(
                 (item) => item.name === columnEdit.name
@@ -86,6 +84,7 @@ export const mergeSchemaEditToMetadata = (
                 table.columns.push(transformColumnEditToMetadata(columnEdit));
                 continue;
               }
+
               column.type = columnEdit.type;
               column.nullable = columnEdit.nullable;
               column.comment = columnEdit.comment;
@@ -106,6 +105,30 @@ export const mergeSchemaEditToMetadata = (
                 (item) => item.name !== column.name
               );
             }
+          }
+          if (tableEdit.primaryKey.columnIdList.length > 0) {
+            const primaryIndex =
+              table.indexes.find((index) => index.primary) ||
+              IndexMetadata.fromPartial({
+                name: tableEdit.primaryKey.name,
+                primary: true,
+                expressions: [],
+              });
+            for (const columnId of tableEdit.primaryKey.columnIdList) {
+              const column = tableEdit.columnList.find(
+                (column) => column.id === columnId
+              );
+              if (column) {
+                primaryIndex.expressions.push(column.name);
+              }
+            }
+            table.indexes = table.indexes.filter((index) => !index.primary);
+            primaryIndex.expressions = uniq(primaryIndex.expressions);
+            if (primaryIndex.expressions.length > 0) {
+              table.indexes.push(primaryIndex);
+            }
+          } else {
+            table.indexes = table.indexes.filter((index) => !index.primary);
           }
           table.comment = tableEdit.comment;
           table.userComment = tableEdit.userComment;
@@ -240,52 +263,7 @@ const transformSchemaEditToMetadata = (schemaEdit: Schema): SchemaMetadata => {
   });
 
   for (const table of schemaEdit.tableList) {
-    const tableMetadata = TableMetadata.fromPartial({
-      name: table.name,
-      columns: [],
-      indexes: [],
-      foreignKeys: [],
-      comment: table.comment,
-      userComment: table.userComment,
-      classification: table.classification,
-    });
-
-    for (const column of table.columnList) {
-      tableMetadata.columns.push(
-        ColumnMetadata.fromPartial({
-          name: column.name,
-          type: column.type,
-          nullable: column.nullable,
-          hasDefault: column.hasDefault,
-          defaultNull: column.defaultNull,
-          defaultString: column.defaultString,
-          defaultExpression: column.defaultExpression,
-          comment: column.comment,
-          userComment: column.userComment,
-          classification: column.classification,
-        })
-      );
-    }
-
-    if (table.primaryKey.columnIdList.length > 0) {
-      const primaryIndex = IndexMetadata.fromPartial({
-        name: `${table.name}-pk-${randomString(8).toLowerCase()}`,
-        primary: true,
-        expressions: [],
-      });
-      for (const columnId of table.primaryKey.columnIdList) {
-        const column = table.columnList.find(
-          (column) => column.id === columnId
-        );
-        if (column) {
-          primaryIndex.expressions.push(column.name);
-        }
-      }
-      if (primaryIndex.expressions.length > 0) {
-        tableMetadata.indexes.push(primaryIndex);
-      }
-    }
-
+    const tableMetadata = transformTableEditToMetadata(table);
     schemaMetadata.tables.push(tableMetadata);
   }
 
@@ -324,7 +302,7 @@ export const transformTableEditToMetadata = (
 
   if (tableEdit.primaryKey.columnIdList.length > 0) {
     const primaryIndex = IndexMetadata.fromPartial({
-      name: `${tableEdit.name}-pk-${randomString(8).toLowerCase()}`,
+      name: tableEdit.primaryKey.name,
       primary: true,
       expressions: [],
     });
@@ -388,6 +366,10 @@ export const rebuildEditableSchemas = (
         editableTable.status = "dropped";
         continue;
       }
+
+      editableTable.userComment = table.userComment;
+      editableTable.classification = table.classification;
+      editableTable.comment = table.comment;
 
       const tableConfig =
         schemaConfig.tableConfigs.find(
@@ -455,6 +437,11 @@ export const rebuildEditableSchemas = (
         editableTable.primaryKey.columnIdList = uniq(
           editableTable.primaryKey.columnIdList
         );
+      } else {
+        editableTable.primaryKey = {
+          name: "",
+          columnIdList: [],
+        };
       }
     }
 
