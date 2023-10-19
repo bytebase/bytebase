@@ -67,7 +67,7 @@ var whitelistSettings = []api.SettingName{
 	api.SettingSchemaTemplate,
 	api.SettingDataClassification,
 	api.SettingSemanticTypes,
-	api.SettingMaskingAlgorithms,
+	api.SettingMaskingAlgorithm,
 }
 
 //go:embed mail_templates/testmail/template.html
@@ -141,7 +141,7 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 	}
 	apiSettingName := api.SettingName(settingName)
 	// TODO(zp): remove the following hard code when we persist the algorithm setting.
-	if apiSettingName == api.SettingMaskingAlgorithms {
+	if apiSettingName == api.SettingMaskingAlgorithm {
 		return nil, status.Errorf(codes.InvalidArgument, "setting masking algorithm is not available")
 	}
 
@@ -416,7 +416,7 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 		if err := convertV1PbToStorePb(request.Setting.Value.GetSemanticTypeSettingValue(), storeSemanticTypeSetting); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
 		}
-		idMap := make(map[string]any)
+		idMap := make(map[string]struct{})
 		for _, tp := range storeSemanticTypeSetting.Types {
 			if !isValidUUID(tp.Id) {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid semantic type id format: %s", tp.Id)
@@ -427,9 +427,33 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 			if _, ok := idMap[tp.Id]; ok {
 				return nil, status.Errorf(codes.InvalidArgument, "duplicate semantic type id: %s", tp.Id)
 			}
-			idMap[tp.Id] = any(nil)
+			idMap[tp.Id] = struct{}{}
 		}
 		bytes, err := protojson.Marshal(storeSemanticTypeSetting)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
+		}
+		storeSettingValue = string(bytes)
+	case api.SettingMaskingAlgorithm:
+		storeMaskingAlgorithmSetting := new(storepb.MaskingAlgorithmSetting)
+		if err := convertV1PbToStorePb(request.Setting.Value.GetMaskingAlgorithmSettingValue(), storeMaskingAlgorithmSetting); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
+		}
+		idMap := make(map[string]struct{})
+		for _, algorithm := range storeMaskingAlgorithmSetting.Algorithms {
+			if !isValidUUID(algorithm.Id) {
+				return nil, status.Errorf(codes.InvalidArgument, "invalid masking algorithm id format: %s", algorithm.Id)
+			}
+			if algorithm.Title == "" {
+				return nil, status.Errorf(codes.InvalidArgument, "masking algorithm title cannot be empty: %s", algorithm.Id)
+			}
+
+			if _, ok := idMap[algorithm.Id]; ok {
+				return nil, status.Errorf(codes.InvalidArgument, "duplicate masking algorithm id: %s", algorithm.Id)
+			}
+			idMap[algorithm.Id] = struct{}{}
+		}
+		bytes, err := protojson.Marshal(storeMaskingAlgorithmSetting)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
 		}
@@ -643,7 +667,7 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 				},
 			},
 		}, nil
-	case api.SettingMaskingAlgorithms:
+	case api.SettingMaskingAlgorithm:
 		v1Value := new(v1pb.MaskingAlgorithmSetting)
 		if err := protojson.Unmarshal([]byte(setting.Value), v1Value); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
