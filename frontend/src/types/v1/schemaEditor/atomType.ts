@@ -107,6 +107,7 @@ export const convertTableMetadataToTable = (
     dataSize: tableMetadata.dataSize,
     comment: tableMetadata.comment,
     userComment: tableMetadata.userComment,
+    classification: tableMetadata.classification,
     columnList: tableMetadata.columns.map((column) =>
       convertColumnMetadataToColumn(
         column,
@@ -122,7 +123,6 @@ export const convertTableMetadataToTable = (
     },
     foreignKeyList: [],
     status,
-    classification: tableMetadata.classification,
   };
 
   for (const indexMetadata of tableMetadata.indexes) {
