@@ -91,7 +91,7 @@
 <script lang="ts" setup>
 import { head, isNull, isUndefined } from "lodash-es";
 import { NEllipsis } from "naive-ui";
-import { computed, onMounted, reactive, watch } from "vue";
+import { computed, reactive, watch } from "vue";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import {
   useChangeHistoryStore,
@@ -152,20 +152,27 @@ const prepareChangeHistoryList = async () => {
   );
 };
 
-onMounted(async () => {
-  if (props.baselineSchema?.databaseId) {
-    try {
-      const database = await databaseStore.getOrFetchDatabaseByUID(
-        props.baselineSchema.databaseId || ""
-      );
-      state.databaseId = database.uid;
-      state.environmentId = database.effectiveEnvironmentEntity.uid;
-      state.changeHistory = props.baselineSchema.changeHistory;
-    } catch (error) {
-      // do nothing.
+watch(
+  () => props,
+  async () => {
+    if (props.baselineSchema?.databaseId) {
+      try {
+        const database = await databaseStore.getOrFetchDatabaseByUID(
+          props.baselineSchema.databaseId || ""
+        );
+        state.databaseId = database.uid;
+        state.environmentId = database.effectiveEnvironmentEntity.uid;
+        state.changeHistory = props.baselineSchema.changeHistory;
+      } catch (error) {
+        // do nothing.
+      }
     }
+  },
+  {
+    immediate: true,
+    deep: true,
   }
-});
+);
 
 watch(
   () => props.projectId,

@@ -476,7 +476,7 @@ const handleApplySchemaDesignClick = () => {
 const deleteSchemaDesign = async () => {
   await schemaDesignStore.deleteSchemaDesign(schemaDesign.value.name);
   router.replace({
-    name: "workspace.branch",
+    name: "workspace.branch.dashboard",
   });
 };
 </script>
