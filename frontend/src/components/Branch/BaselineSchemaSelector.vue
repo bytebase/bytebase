@@ -149,7 +149,6 @@ const prepareChangeHistoryList = async () => {
 
   return await changeHistoryStore.fetchChangeHistoryList({
     parent: database.value.name,
-    pageSize: 1000,
   });
 };
 
