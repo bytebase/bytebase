@@ -51,6 +51,12 @@ export const useSchemaEditorSQLCheck = (params: {
     if (!databaseSchema) {
       return { errors: [], statement: "" };
     }
+    if (isEqual(databaseSchema.schemaList, databaseSchema.originSchemaList)) {
+      return {
+        errors: [t("schema-editor.nothing-changed")],
+        statement: "",
+      };
+    }
     const metadata = await dbSchemaV1Store.getOrFetchDatabaseMetadata(
       db.name,
       false /* !skipCache */,
