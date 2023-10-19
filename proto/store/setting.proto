@@ -230,45 +230,41 @@ message MaskingAlgorithmSetting {
     // description is the description for masking algorithm.
     string description = 3;
 
-    enum Category {
-      CATEGORY_UNSPECIFIED = 0;
-      MASKING = 1;
-      HASHING = 2;
-    }
-    // category is the category for masking algorithm, the range of accepted Payload is decided by the category.
+    // Category is the category for masking algorithm. Currently, it accepts 2 categories only: MASKING and HASHING.
+    // The range of accepted Payload is decided by the category.
     // MASKING: FullMaskingPayload, RangePartialMaskingPayload
     // HASHING: MD5Payload
-    Category category = 4;
+    string category = 4;
 
-    message FullMaskingPayload {
-      // replace_with is the string used to replace the original value, the
+    message FullMask {
+      // substitution is the string used to replace the original value, the
       // max length of the string is 16 bytes.
-      string replace_with = 1;
+      string substitution = 1;
     }
 
-    message RangePartialMaskingPayload {
-      message Rule {
+    message RangeMask {
+      message Slice {
         // start is the start index of the original value, start from 0 and should be less than stop.
         int32 start = 1;
         // stop is the stop index of the original value, should be less than the length of the original value.
-        int32 stop = 2;
-        // OriginalValue[start:stop] would be replaced with replace_with.
-        string replace_with = 3;
+        int32 end = 2;
+        // OriginalValue[start:end) would be replaced with replace_with.
+        string substitution = 3;
       }
       // We store it as a repeated field to face the fact that the original value may have multiple parts should be masked.
       // But frontend can be started with a single rule easily.
-      repeated Rule rules = 1;
+      repeated Slice slices = 1;
     }
 
-    message MD5Payload {
+    message MD5Mask {
       // salt is the salt value to generate a different hash that with the word alone.
       string salt = 1;
     }
 
     oneof payload {
-      FullMaskingPayload full_masking = 5;
-      RangePartialMaskingPayload range_partial_masking = 6;
-      MD5Payload md5 = 7;
+      FullMask full_mask = 5;
+      RangeMask range_mask = 6;
+      MD5Mask md5_mask = 7;
     }
   }
 
