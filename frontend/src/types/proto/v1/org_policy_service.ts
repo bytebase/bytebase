@@ -494,6 +494,8 @@ export interface MaskData {
   table: string;
   column: string;
   maskingLevel: MaskingLevel;
+  fullMaskingAlgorithmId: string;
+  partialMaskingAlgorithmId: string;
 }
 
 export interface SQLReviewPolicy {
@@ -1902,7 +1904,14 @@ export const MaskingPolicy = {
 };
 
 function createBaseMaskData(): MaskData {
-  return { schema: "", table: "", column: "", maskingLevel: 0 };
+  return {
+    schema: "",
+    table: "",
+    column: "",
+    maskingLevel: 0,
+    fullMaskingAlgorithmId: "",
+    partialMaskingAlgorithmId: "",
+  };
 }
 
 export const MaskData = {
@@ -1918,6 +1927,12 @@ export const MaskData = {
     }
     if (message.maskingLevel !== 0) {
       writer.uint32(32).int32(message.maskingLevel);
+    }
+    if (message.fullMaskingAlgorithmId !== "") {
+      writer.uint32(42).string(message.fullMaskingAlgorithmId);
+    }
+    if (message.partialMaskingAlgorithmId !== "") {
+      writer.uint32(50).string(message.partialMaskingAlgorithmId);
     }
     return writer;
   },
@@ -1957,6 +1972,20 @@ export const MaskData = {
 
           message.maskingLevel = reader.int32() as any;
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.fullMaskingAlgorithmId = reader.string();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.partialMaskingAlgorithmId = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1972,6 +2001,10 @@ export const MaskData = {
       table: isSet(object.table) ? String(object.table) : "",
       column: isSet(object.column) ? String(object.column) : "",
       maskingLevel: isSet(object.maskingLevel) ? maskingLevelFromJSON(object.maskingLevel) : 0,
+      fullMaskingAlgorithmId: isSet(object.fullMaskingAlgorithmId) ? String(object.fullMaskingAlgorithmId) : "",
+      partialMaskingAlgorithmId: isSet(object.partialMaskingAlgorithmId)
+        ? String(object.partialMaskingAlgorithmId)
+        : "",
     };
   },
 
@@ -1981,6 +2014,9 @@ export const MaskData = {
     message.table !== undefined && (obj.table = message.table);
     message.column !== undefined && (obj.column = message.column);
     message.maskingLevel !== undefined && (obj.maskingLevel = maskingLevelToJSON(message.maskingLevel));
+    message.fullMaskingAlgorithmId !== undefined && (obj.fullMaskingAlgorithmId = message.fullMaskingAlgorithmId);
+    message.partialMaskingAlgorithmId !== undefined &&
+      (obj.partialMaskingAlgorithmId = message.partialMaskingAlgorithmId);
     return obj;
   },
 
@@ -1994,6 +2030,8 @@ export const MaskData = {
     message.table = object.table ?? "";
     message.column = object.column ?? "";
     message.maskingLevel = object.maskingLevel ?? 0;
+    message.fullMaskingAlgorithmId = object.fullMaskingAlgorithmId ?? "";
+    message.partialMaskingAlgorithmId = object.partialMaskingAlgorithmId ?? "";
     return message;
   },
 };
