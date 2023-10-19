@@ -97,9 +97,6 @@
         </div>
       </NCheckbox>
     </div>
-    <div class="font-mono text-xs">
-      {{ rolloutPolicy }}
-    </div>
   </div>
 </template>
 
