@@ -82,7 +82,8 @@
       "developer": "开发者",
       "member": "成员",
       "exporter": "数据导出者",
-      "querier": "数据查询者"
+      "querier": "数据查询者",
+      "releaser": "发布者"
     },
     "assignee": "发布人",
     "revert": "恢复",
@@ -1264,7 +1265,16 @@
       "assignee-group": {
         "workspace-owner-or-dba": "需要 DBA 或者 Bytebase 实例所有者发布。",
         "project-owner": "需要项目所有者发布。"
-      }
+      },
+      "manual-by-dba-or-workspace-owner": "需要 DBA 或者 Bytebase 实例所有者发布。",
+      "manual-by-project-owner": "项目所有者",
+      "manual-by-project-releaser": "项目的发布者",
+      "manual-by-issue-creator": "工单的创建者",
+      "manual-by-last-approver": "自定义审批流的最后一个审批人发布",
+      "manual-by-fixed-roles": "固定角色手工发布",
+      "manual-by-fixed-roles-info": "允许以下任一选中角色，点击「发布」按钮后，执行变更。",
+      "manual-by-dba": "DBA",
+      "manual-by-workspace-owner": "Bytebase 实例所有者"
     },
     "backup": {
       "name": "数据库备份策略",
@@ -2985,7 +2995,10 @@
       "description": "系统定义的项目数据查询者角色"
     },
     "select-role": "选择角色",
-    "expired-tip": "该角色可能已经过期。"
+    "expired-tip": "该角色可能已经过期。",
+    "releaser": {
+      "description": "系统定义的项目发布者角色"
+    }
   },
   "database-group": {
     "self": "数据库分组",
