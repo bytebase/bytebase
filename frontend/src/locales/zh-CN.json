@@ -986,7 +986,9 @@
       "back-to-edit": "返回编辑",
       "continue-anyway": "仍然继续",
       "sql-review-violations": "违反的 SQL 审核规则"
-    }
+    },
+    "no-assignee-candidates": "该项目中没有有效的发布人候选人。\n请联系项目所有者。",
+    "allow-any-following-roles-to-be-assignee": "允许以下任何角色作为发布人"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
@@ -1274,7 +1276,15 @@
       "manual-by-fixed-roles": "固定角色手工发布",
       "manual-by-fixed-roles-info": "允许以下任一选中角色，点击「发布」按钮后，执行变更。",
       "manual-by-dba": "DBA",
-      "manual-by-workspace-owner": "Bytebase 实例所有者"
+      "manual-by-workspace-owner": "Bytebase 实例所有者",
+      "role": {
+        "workspace-owner": "Bytebase 实例所有者",
+        "dba": "DBA",
+        "project-owner": "项目所有者",
+        "project-releaser": "项目的发布者",
+        "issue-creator": "工单的创建者",
+        "last-approver": "自定义审批流的最后一个审批人"
+      }
     },
     "backup": {
       "name": "数据库备份策略",

@@ -1,3 +1,4 @@
+import { asyncComputed } from "@vueuse/core";
 import Emittery from "emittery";
 import { first } from "lodash-es";
 import { computed } from "vue";
@@ -16,6 +17,7 @@ import {
   stageV1Slug,
   taskV1Slug,
 } from "@/utils";
+import { assigneeCandidatesForIssue } from "./assignee";
 import { IssueContext, IssueEvents, IssuePhase } from "./context";
 import { extractReviewContext } from "./review";
 import { stageForTask } from "./utils";
@@ -131,6 +133,9 @@ export const useBaseIssueContext = (
     });
   });
 
+  const assigneeCandidates = asyncComputed(async () => {
+    return await assigneeCandidatesForIssue(issue.value);
+  }, []);
   const reviewContext = extractReviewContext(issue);
 
   const phase = computed((): IssuePhase => {
@@ -186,6 +191,7 @@ export const useBaseIssueContext = (
     isTenantMode,
     isLegacyIssue,
     events,
+    assigneeCandidates,
     reviewContext,
     activeStage,
     activeTask,

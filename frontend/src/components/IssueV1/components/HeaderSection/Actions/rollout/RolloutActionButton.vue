@@ -43,7 +43,7 @@ defineEmits<{
 
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
-const { issue, activeTask } = useIssueContext();
+const { issue, activeTask, assigneeCandidates } = useIssueContext();
 
 const errors = asyncComputed(async () => {
   const errors: string[] = [];
@@ -52,7 +52,8 @@ const errors = asyncComputed(async () => {
       issue.value,
       activeTask.value,
       currentUser.value,
-      props.action
+      props.action,
+      assigneeCandidates.value
     ))
   ) {
     errors.push("You are not the assignee of this issue");

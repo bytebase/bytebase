@@ -7,7 +7,7 @@
     :filter="filterByTitle"
     :virtual-scroll="true"
     :render-label="renderLabel"
-    :fallback-option="false"
+    :fallback-option="fallbackOption"
     :placeholder="$t('principal.select')"
     class="bb-user-select"
     style="width: 12rem"
@@ -17,7 +17,7 @@
 
 <script lang="ts" setup>
 import { intersection } from "lodash-es";
-import { NSelect, SelectOption } from "naive-ui";
+import { NSelect, SelectOption, SelectProps } from "naive-ui";
 import { computed, watch, watchEffect, h } from "vue";
 import { useI18n } from "vue-i18n";
 import UserIcon from "~icons/heroicons-outline/user";
@@ -25,7 +25,6 @@ import UserAvatar from "@/components/User/UserAvatar.vue";
 import { useProjectV1Store, useUserStore } from "@/store";
 import {
   PresetRoleType,
-  SYSTEM_BOT_ID,
   SYSTEM_BOT_USER_NAME,
   UNKNOWN_ID,
   UNKNOWN_USER_NAME,
@@ -54,6 +53,7 @@ const props = withDefaults(
     allowedProjectMemberRoleList?: string[];
     autoReset?: boolean;
     filter?: (user: User, index: number) => boolean;
+    fallbackOption?: SelectProps["fallbackOption"];
   }>(),
   {
     multiple: false,
@@ -75,6 +75,7 @@ const props = withDefaults(
     ],
     autoReset: true,
     filter: undefined,
+    fallbackOption: false,
   }
 );
 
@@ -175,7 +176,7 @@ const combinedUserList = computed(() => {
     list = list.filter(props.filter);
   }
 
-  if (props.user === String(SYSTEM_BOT_ID) || props.includeSystemBot) {
+  if (props.includeSystemBot) {
     const systemBotIndex = list.findIndex(
       (user) => user.name === SYSTEM_BOT_USER_NAME
     );
@@ -230,8 +231,12 @@ const renderAvatar = (user: User) => {
 const renderLabel = (option: SelectOption) => {
   const { user } = option as UserSelectOption;
   const avatar = renderAvatar(user);
-  const children = [h("span", {}, user.title)];
-  if (user.name !== UNKNOWN_USER_NAME) {
+  const title =
+    user.name === SYSTEM_BOT_USER_NAME
+      ? t("settings.members.system-bot")
+      : user.title;
+  const children = [h("span", {}, title)];
+  if (user.name !== UNKNOWN_USER_NAME && user.name !== SYSTEM_BOT_USER_NAME) {
     children.push(h("span", { class: "text-gray-400" }, `(${user.email})`));
   }
   return h(
