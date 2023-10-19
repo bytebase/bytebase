@@ -28,11 +28,12 @@
         </div>
         <div class="w-full pr-12 pt-4 pb-6 grid grid-cols-3">
           <div class="flex flex-row justify-end">
-            <NInput
+            <BranchSelector
               class="!w-4/5 text-center"
-              readonly
-              :value="targetBranch.title"
-              size="large"
+              :clearable="false"
+              :branch="targetBranchName"
+              :filter="targetBranchFilter"
+              @update:branch="(branch) => (targetBranchName = branch || '')"
             />
           </div>
           <div class="flex flex-row justify-center">
@@ -58,6 +59,7 @@
         <div class="w-full h-[calc(100%-14rem)] border">
           <DiffEditor
             v-if="state.initialized"
+            :key="targetBranchName"
             class="h-full"
             :original="targetBranch.schema"
             :value="state.editingSchema"
@@ -80,7 +82,8 @@ import {
   useDialog,
 } from "naive-ui";
 import { Status } from "nice-grpc-common";
-import { computed, onMounted, reactive } from "vue";
+import { computed, reactive, ref } from "vue";
+import { watch } from "vue";
 import { useI18n } from "vue-i18n";
 import DiffEditor from "@/components/MonacoEditor/DiffEditor.vue";
 import { pushNotification, useSheetV1Store } from "@/store";
@@ -118,21 +121,35 @@ const { t } = useI18n();
 const dialog = useDialog();
 const sheetStore = useSheetV1Store();
 const schemaDesignStore = useSchemaDesignStore();
+const targetBranchName = ref<string>(props.targetBranchName || "");
 
 const sourceBranch = computed(() => {
   return schemaDesignStore.getSchemaDesignByName(props.sourceBranchName || "");
 });
 
 const targetBranch = computed(() => {
-  return schemaDesignStore.getSchemaDesignByName(props.targetBranchName || "");
+  return schemaDesignStore.getSchemaDesignByName(targetBranchName.value);
 });
 
-onMounted(async () => {
-  // Fetching the latest source branch.
-  await schemaDesignStore.fetchSchemaDesignByName(props.targetBranchName);
-  state.editingSchema = sourceBranch.value.schema;
-  state.initialized = true;
-});
+const targetBranchFilter = (branch: SchemaDesign) => {
+  return (
+    branch.name !== props.sourceBranchName &&
+    branch.engine === sourceBranch.value.engine
+  );
+};
+
+watch(
+  () => targetBranchName.value,
+  async () => {
+    // Fetching the latest source branch.
+    await schemaDesignStore.fetchSchemaDesignByName(targetBranchName.value);
+    state.editingSchema = sourceBranch.value.schema;
+    state.initialized = true;
+  },
+  {
+    immediate: true,
+  }
+);
 
 const handleSaveDraft = async (ignoreNotify?: boolean) => {
   const updateMask = ["schema", "baseline_sheet_name"];
@@ -199,7 +216,7 @@ const handleMergeBranch = async () => {
         onPositiveClick: async () => {
           // Fetching the latest target branch.
           await schemaDesignStore.fetchSchemaDesignByName(
-            props.targetBranchName
+            targetBranchName.value
           );
         },
       });
@@ -220,7 +237,7 @@ const handleMergeBranch = async () => {
     title: t("schema-designer.message.merge-to-main-successfully"),
   });
 
-  emit("merged", props.targetBranchName);
+  emit("merged", targetBranchName.value);
   if (state.deleteBranchAfterMerged) {
     await schemaDesignStore.deleteSchemaDesign(props.sourceBranchName);
   }

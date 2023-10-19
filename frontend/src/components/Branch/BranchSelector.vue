@@ -4,8 +4,8 @@
     :value="branch"
     :options="options"
     :placeholder="$t('database.select-branch')"
-    :clearable="true"
     :filterable="true"
+    :clearable="clearable"
     :filter="filterByName"
     class="bb-branch-select"
     @update:value="$emit('update:branch', $event)"
@@ -27,9 +27,11 @@ const props = withDefaults(
   defineProps<{
     branch?: string | undefined;
     filter?: (branch: SchemaDesign, index: number) => boolean;
+    clearable?: boolean;
   }>(),
   {
     branch: undefined,
+    clearable: true,
     filter: () => true,
   }
 );

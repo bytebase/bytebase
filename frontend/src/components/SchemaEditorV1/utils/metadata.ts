@@ -302,7 +302,7 @@ export const transformTableEditToMetadata = (
 
   if (tableEdit.primaryKey.columnIdList.length > 0) {
     const primaryIndex = IndexMetadata.fromPartial({
-      name: tableEdit.primaryKey.name,
+      name: tableEdit.primaryKey.name || `${tableEdit.name}_pkey`,
       primary: true,
       expressions: [],
     });
