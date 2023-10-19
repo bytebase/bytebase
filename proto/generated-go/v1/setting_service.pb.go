@@ -2323,8 +2323,8 @@ type MaskingAlgorithmSetting_Algorithm struct {
 	Description string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
 	// Category is the category for masking algorithm. Currently, it accepts 2 categories only: MASKING and HASHING.
 	// The range of accepted Payload is decided by the category.
-	// MASKING: FullMaskingPayload, RangePartialMaskingPayload
-	// HASHING: MD5Payload
+	// Mask: FullMask, RangeMask
+	// Hash: MD5Mask
 	Category string `protobuf:"bytes,4,opt,name=category,proto3" json:"category,omitempty"`
 	// Types that are assignable to Mask:
 	//
