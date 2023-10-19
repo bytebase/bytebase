@@ -333,7 +333,7 @@ message DataClassificationSetting {
   repeated DataClassificationConfig configs = 1;
 }
 
-message SemanticTypesSetting {
+message SemanticTypeSetting {
   message SemanticType {
     // id is the uuid for semantic type.
     string id = 1;
