@@ -212,10 +212,6 @@ func (s *Store) ListSettingV2(ctx context.Context, find *FindSettingMessage) ([]
 
 // UpsertSettingV2 upserts the setting by name.
 func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage, principalUID int) (*SettingMessage, error) {
-	if update.Name == api.SettingMaskingAlgorithms {
-		return nil, errors.New("cannot update masking algorithm setting")
-	}
-
 	fields := []string{"creator_id", "updater_id", "name", "value"}
 	updateFields := []string{"value = EXCLUDED.value", "updater_id = EXCLUDED.updater_id"}
 	valuePlaceholders, args := []string{"$1", "$2", "$3", "$4"}, []any{principalUID, principalUID, update.Name, update.Value}
@@ -259,11 +255,6 @@ func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage, 
 
 // CreateSettingIfNotExistV2 creates a new setting only if the named setting doesn't exist.
 func (s *Store) CreateSettingIfNotExistV2(ctx context.Context, create *SettingMessage, principalUID int) (*SettingMessage, bool, error) {
-	// TODO(zp): remove the following hard code when we persist the algorithm setting.
-	if create.Name == api.SettingMaskingAlgorithms {
-		return nil, false, errors.New("cannot create masking algorithm setting")
-	}
-
 	if setting, ok := s.settingCache.Load(create.Name); ok {
 		return setting.(*SettingMessage), false, nil
 	}
@@ -310,11 +301,6 @@ func (s *Store) CreateSettingIfNotExistV2(ctx context.Context, create *SettingMe
 
 // DeleteSettingV2 deletes a setting by the name.
 func (s *Store) DeleteSettingV2(ctx context.Context, name api.SettingName) error {
-	// TODO(zp): remove the following hard code when we persist the algorithm setting.
-	if name == api.SettingMaskingAlgorithms {
-		return errors.New("cannot delete masking algorithm setting")
-	}
-
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to begin transaction")
