@@ -294,7 +294,7 @@ const routes: Array<RouteRecordRaw> = [
               content: () => import("../views/branch/BranchDetail.vue"),
               leftSidebar: DashboardSidebar,
             },
-            props: { content: true },
+            props: { content: false },
           },
           {
             path: "sync-schema",
