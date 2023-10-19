@@ -204,7 +204,7 @@
     :show="state.showClassificationDrawer"
     :classification-config="classificationConfig"
     @dismiss="state.showClassificationDrawer = false"
-    @select="onClassificationSelect"
+    @apply="onClassificationSelect"
   />
 </template>
 
@@ -410,6 +410,5 @@ const handleApplyColumnTemplate = (
 
 const onClassificationSelect = (id: string) => {
   state.table.classification = id;
-  state.showClassificationDrawer = false;
 };
 </script>

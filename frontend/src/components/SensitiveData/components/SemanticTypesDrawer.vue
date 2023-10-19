@@ -6,7 +6,7 @@
           :readonly="true"
           :row-clickable="true"
           :semantic-item-list="semanticItemList"
-          @on-select="$emit('apply', $event)"
+          @on-select="onApply($event)"
         />
       </div>
     </DrawerContent>
@@ -33,7 +33,7 @@ const props = defineProps<{
   semanticTypeList: SemanticTypesSetting_SemanticType[];
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   (event: "dismiss"): void;
   (event: "apply", id: string): void;
 }>();
@@ -47,4 +47,9 @@ const semanticItemList = computed((): SemanticItem[] => {
     };
   });
 });
+
+const onApply = (semanticTypeId: string) => {
+  emit("apply", semanticTypeId);
+  emit("dismiss");
+};
 </script>
