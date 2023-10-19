@@ -84,7 +84,7 @@ import { NRadio, NRadioGroup } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { getBaselineMetadataOfBranch } from "@/components/SchemaEditorV1/utils/branch";
+import { fetchBaselineMetadataOfBranch } from "@/components/SchemaEditorV1/utils/branch";
 import { Drawer, DrawerContent, ErrorTipsButton } from "@/components/v2";
 import { schemaDesignServiceClient } from "@/grpcweb";
 import {
@@ -173,7 +173,7 @@ const doAddChange = async () => {
         const branch = useSchemaDesignStore().getSchemaDesignByName(
           change.source
         );
-        const source = getBaselineMetadataOfBranch(branch);
+        const source = await fetchBaselineMetadataOfBranch(branch);
         const target = branch.schemaMetadata;
 
         const { diff } = await schemaDesignServiceClient.diffMetadata({

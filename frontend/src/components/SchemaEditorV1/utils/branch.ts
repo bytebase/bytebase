@@ -10,10 +10,10 @@ import {
 } from "@/types/v1/schemaEditor";
 import { rebuildEditableSchemas } from "./metadata";
 
-export const convertBranchToBranchSchema = (
+export const convertBranchToBranchSchema = async (
   branch: SchemaDesign
-): BranchSchema => {
-  const baselineMetadata = getBaselineMetadataOfBranch(branch);
+): Promise<BranchSchema> => {
+  const baselineMetadata = await fetchBaselineMetadataOfBranch(branch);
   const originalSchemas = convertSchemaMetadataList(
     baselineMetadata.schemas || [],
     baselineMetadata.schemaConfigs || []
@@ -32,15 +32,15 @@ export const convertBranchToBranchSchema = (
   };
 };
 
-export const getBaselineMetadataOfBranch = (
+export const fetchBaselineMetadataOfBranch = async (
   branch: SchemaDesign
-): DatabaseMetadata => {
+): Promise<DatabaseMetadata> => {
   // For personal branches, we use its parent branch's schema as the original schema in editing state.
   if (
     branch.type === SchemaDesign_Type.PERSONAL_DRAFT &&
     branch.baselineSheetName
   ) {
-    const parentBranch = useSchemaDesignStore().getSchemaDesignByName(
+    const parentBranch = await useSchemaDesignStore().fetchSchemaDesignByName(
       branch.baselineSheetName
     );
     return (

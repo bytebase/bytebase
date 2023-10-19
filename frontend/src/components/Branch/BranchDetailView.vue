@@ -132,7 +132,7 @@ import {
   SchemaDesign_Type,
 } from "@/types/proto/v1/schema_design_service";
 import { provideSQLCheckContext } from "../SQLCheck";
-import { getBaselineMetadataOfBranch } from "../SchemaEditorV1/utils/branch";
+import { fetchBaselineMetadataOfBranch } from "../SchemaEditorV1/utils/branch";
 import MergeBranchPanel from "./MergeBranchPanel.vue";
 import SchemaDesignEditor from "./SchemaDesignEditor.vue";
 import { generateForkedBranchName, validateBranchName } from "./utils";
@@ -316,7 +316,9 @@ const handleCancelEdit = async () => {
     return;
   }
 
-  const baselineMetadata = getBaselineMetadataOfBranch(branchSchema.branch);
+  const baselineMetadata = await fetchBaselineMetadataOfBranch(
+    branchSchema.branch
+  );
   const mergedMetadata = mergeSchemaEditToMetadata(
     branchSchema.schemaList,
     cloneDeep(baselineMetadata)
@@ -346,7 +348,9 @@ const handleSaveBranch = async () => {
     return;
   }
 
-  const baselineMetadata = getBaselineMetadataOfBranch(branchSchema.branch);
+  const baselineMetadata = await fetchBaselineMetadataOfBranch(
+    branchSchema.branch
+  );
   const mergedMetadata = mergeSchemaEditToMetadata(
     branchSchema.schemaList,
     cloneDeep(baselineMetadata)
