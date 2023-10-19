@@ -49,6 +49,8 @@ message MaskData {
   string table = 2;
   string column = 3;
   MaskingLevel masking_level = 4;
+  string full_masking_algorithm_id = 5;
+  string partial_masking_algorithm_id = 6;
 }
 
 // MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
