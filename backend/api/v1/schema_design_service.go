@@ -296,7 +296,7 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	_, sheetID, err := common.GetProjectResourceIDAndSchemaDesignSheetID(request.SchemaDesign.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid schema design name: %v", err))
 	}
 	sheetUID, err := strconv.Atoi(sheetID)
 	if err != nil {
@@ -318,10 +318,13 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 		UID:       sheetUID,
 		UpdaterID: currentPrincipalID,
 	}
-	schemaDesign := request.SchemaDesign
+	schemaDesign, err := s.convertSheetToSchemaDesign(ctx, sheet, v1pb.SchemaDesignView_SCHEMA_DESIGN_VIEW_FULL)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to convert sheet to schema design: %v", err))
+	}
 	_, databaseName, err := common.GetInstanceDatabaseID(schemaDesign.BaselineDatabase)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid baseline database: %v", err))
 	}
 
 	if slices.Contains(request.UpdateMask.Paths, "title") {
@@ -344,7 +347,7 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 	if slices.Contains(request.UpdateMask.Paths, "baseline_sheet_name") {
 		_, sheetUID, err := common.GetProjectResourceIDSheetUID(schemaDesign.BaselineSheetName)
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid baseline sheet name: %v", err))
 		}
 		sheet.Payload.SchemaDesign.BaselineSheetId = fmt.Sprintf("%d", sheetUID)
 		sheetUpdate.Payload = sheet.Payload
@@ -396,16 +399,13 @@ func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1
 	if err != nil {
 		return nil, err
 	}
-	if schemaDesign.Type != v1pb.SchemaDesign_PERSONAL_DRAFT {
-		return nil, status.Errorf(codes.InvalidArgument, "only personal draft schema design can be merged")
-	}
 
 	_, targetSheetID, err := common.GetProjectResourceIDAndSchemaDesignSheetID(request.TargetName)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	targetSheetUID, err := strconv.Atoi(targetSheetID)
-	if err != nil || targetSheetUID <= 0 {
+	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s, must be positive integer", targetSheetID))
 	}
 	targetSheet, err := s.getSheet(ctx, &store.FindSheetMessage{
@@ -419,11 +419,6 @@ func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1
 	targetSchemaDesign, err := s.convertSheetToSchemaDesign(ctx, targetSheet, v1pb.SchemaDesignView_SCHEMA_DESIGN_VIEW_FULL)
 	if err != nil {
 		return nil, err
-	}
-	// Only allow merging to main branch schema design.
-	// Maybe we can support merging to other personal draft schema design in the future.
-	if targetSchemaDesign.Type != v1pb.SchemaDesign_MAIN_BRANCH {
-		return nil, status.Errorf(codes.InvalidArgument, "only main branch schema design can be merged to")
 	}
 
 	baselineEtag := generateEtag([]byte(schemaDesign.BaselineSchema))
