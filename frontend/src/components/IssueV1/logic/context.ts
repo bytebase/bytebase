@@ -2,6 +2,7 @@ import Emittery from "emittery";
 import { useDialog } from "naive-ui";
 import { InjectionKey, Ref, inject, provide } from "vue";
 import { ComposedIssue, ReviewFlow } from "@/types";
+import { User } from "@/types/proto/v1/auth_service";
 import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
 import { Stage, Task } from "@/types/proto/v1/rollout_service";
 import {
@@ -45,6 +46,7 @@ export type IssueContext = {
   isPITRMode: Ref<boolean>;
   isTenantMode: Ref<boolean>;
   isLegacyIssue: Ref<boolean>;
+  assigneeCandidates: Ref<User[]>;
 
   // review status
   reviewContext: ReviewContext;

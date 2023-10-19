@@ -989,7 +989,9 @@
       "back-to-edit": "Back to edit",
       "continue-anyway": "Continue anyway",
       "sql-review-violations": "SQL Review Violations"
-    }
+    },
+    "no-assignee-candidates": "There is no valid assignee candidates in this project. Please contact the project owner.",
+    "allow-any-following-roles-to-be-assignee": "Allow any following roles to be assignee"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
@@ -1277,7 +1279,15 @@
       "manual-by-fixed-roles": "Manual rollout by fixed roles",
       "manual-by-fixed-roles-info": "Allow any of the following selected roles to click the \"Rollout\" button, and then the change will be executed.",
       "manual-by-dba": "DBA",
-      "manual-by-workspace-owner": "Workspace owner"
+      "manual-by-workspace-owner": "Workspace owner",
+      "role": {
+        "workspace-owner": "Workspace owner",
+        "dba": "DBA",
+        "project-owner": "Project owner",
+        "project-releaser": "Project releaser",
+        "issue-creator": "Issue creator",
+        "last-approver": "The last approver from the custom approval flow"
+      }
     },
     "backup": {
       "name": "Database backup schedule policy",

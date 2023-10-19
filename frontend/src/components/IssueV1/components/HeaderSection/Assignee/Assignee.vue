@@ -19,48 +19,62 @@
       <AssigneeAttentionButton v-if="false" />
     </div>
 
-    <NTooltip :disabled="allowChangeAssignee">
+    <NTooltip :disabled="errors.length === 0">
       <template #trigger>
         <UserSelect
           :multiple="false"
           :user="assigneeUID"
-          :disabled="!allowChangeAssignee || isUpdating"
+          :disabled="errors.length > 0 || isUpdating"
           :loading="isUpdating"
           :filter="filterAssignee"
+          :include-system-bot="false"
+          :fallback-option="fallbackUser"
           style="width: 14rem"
           @update:user="changeAssigneeUID"
         />
       </template>
       <template #default>
-        <ErrorList :errors="['You are not allowed to change assignee']" />
+        <ErrorList :errors="errors" class="max-w-[24rem] !whitespace-normal" />
       </template>
     </NTooltip>
   </div>
 </template>
 
 <script setup lang="ts">
+import { asyncComputed } from "@vueuse/core";
 import { NTooltip } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   allowUserToChangeAssignee,
-  allowUserToBeAssignee,
-  useCurrentRolloutPolicyForActiveEnvironment,
+  getCurrentRolloutPolicyForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import { UserSelect } from "@/components/v2";
 import { issueServiceClient } from "@/grpcweb";
 import { pushNotification, useCurrentUserV1, useUserStore } from "@/store";
-import { SYSTEM_BOT_EMAIL, SYSTEM_BOT_ID, UNKNOWN_ID } from "@/types";
+import {
+  PresetRoleType,
+  SYSTEM_BOT_EMAIL,
+  SYSTEM_BOT_ID,
+  SYSTEM_BOT_USER_NAME,
+  UNKNOWN_ID,
+  VirtualRoleType,
+  unknownUser,
+} from "@/types";
 import { User } from "@/types/proto/v1/auth_service";
 import { Issue } from "@/types/proto/v1/issue_service";
-import { extractUserResourceName, extractUserUID } from "@/utils";
+import {
+  activeTaskInRollout,
+  extractUserResourceName,
+  extractUserUID,
+} from "@/utils";
 import { ErrorList } from "../../common";
 import AssigneeAttentionButton from "./AssigneeAttentionButton.vue";
 
 const { t } = useI18n();
 const userStore = useUserStore();
-const { isCreating, issue } = useIssueContext();
+const { isCreating, issue, assigneeCandidates } = useIssueContext();
 const currentUser = useCurrentUserV1();
 const isUpdating = ref(false);
 
@@ -85,9 +99,43 @@ const allowChangeAssignee = computed(() => {
   return allowUserToChangeAssignee(currentUser.value, issue.value);
 });
 
+const errors = asyncComputed(async () => {
+  const errors: string[] = [];
+  if (!allowChangeAssignee.value) {
+    errors.push(t("issue.you-are-not-allowed-to-change-this-value"));
+  } else if (assigneeCandidates.value.length === 0) {
+    errors.push(t("issue.no-assignee-candidates"));
+    const activeOrFirstTask = activeTaskInRollout(issue.value.rolloutEntity);
+    const policy = await getCurrentRolloutPolicyForTask(
+      issue.value,
+      activeOrFirstTask
+    );
+    errors.push(t("issue.allow-any-following-roles-to-be-assignee"));
+    if (policy.workspaceRoles.includes(VirtualRoleType.OWNER)) {
+      errors.push(t("policy.rollout.role.workspace-owner"));
+    }
+    if (policy.workspaceRoles.includes(VirtualRoleType.DBA)) {
+      errors.push(t("policy.rollout.role.dba"));
+    }
+    if (policy.projectRoles.includes(PresetRoleType.OWNER)) {
+      errors.push(t("policy.rollout.role.project-owner"));
+    }
+    if (policy.projectRoles.includes(PresetRoleType.RELEASER)) {
+      errors.push(t("policy.rollout.role.project-releaser"));
+    }
+    if (policy.issueRoles.includes(VirtualRoleType.CREATOR)) {
+      errors.push(t("policy.rollout.role.issue-creator"));
+    }
+    if (policy.issueRoles.includes(VirtualRoleType.LAST_APPROVER)) {
+      errors.push(t("policy.rollout.role.last-approver"));
+    }
+  }
+
+  return errors;
+}, []);
+
 const changeAssigneeUID = async (uid: string | undefined) => {
   if (!uid || uid === String(UNKNOWN_ID)) {
-    issue.value.assignee = "";
     return;
   }
   const assignee = userStore.getUserById(uid);
@@ -117,15 +165,24 @@ const changeAssigneeUID = async (uid: string | undefined) => {
   }
 };
 
-const rollOutPolicy = useCurrentRolloutPolicyForActiveEnvironment();
 const filterAssignee = (user: User): boolean => {
-  const project = issue.value.projectEntity;
-  return allowUserToBeAssignee(
-    user,
-    project,
-    project.iamPolicy,
-    rollOutPolicy.value.policy,
-    rollOutPolicy.value.assigneeGroup
+  return (
+    assigneeCandidates.value.findIndex(
+      (candidate) => candidate.name === user.name
+    ) >= 0
   );
+};
+
+const fallbackUser = (uid: string) => {
+  if (uid === String(SYSTEM_BOT_ID)) {
+    return {
+      user: userStore.getUserByName(SYSTEM_BOT_USER_NAME)!,
+      value: uid,
+    };
+  }
+  return {
+    user: unknownUser(),
+    value: uid,
+  };
 };
 </script>
