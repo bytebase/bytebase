@@ -40,18 +40,21 @@ type fieldExtractor struct {
 }
 
 func (extractor *fieldExtractor) extractSensitiveFields(sql string) ([]base.SensitiveField, error) {
-	tree, err := ParseTSQL(sql)
+	result, err := ParseTSQL(sql)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse snowsql")
 	}
-	if tree == nil {
+	if result == nil {
+		return nil, nil
+	}
+	if result.Tree == nil {
 		return nil, nil
 	}
 
 	listener := &tsqlTSQLSensitiveFieldExtractorListener{
 		extractor: extractor,
 	}
-	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
+	antlr.ParseTreeWalkerDefault.Walk(listener, result.Tree)
 
 	return listener.result, listener.err
 }
