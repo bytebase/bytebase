@@ -70,6 +70,11 @@ var whitelistSettings = []api.SettingName{
 	api.SettingMaskingAlgorithm,
 }
 
+var whitelistAlgorithmCategory = map[string]struct{}{
+	"MASK": {},
+	"HASH": {},
+}
+
 //go:embed mail_templates/testmail/template.html
 //go:embed mail_templates/testmail/statics/logo-full.png
 //go:embed mail_templates/testmail/statics/banner.png
@@ -140,10 +145,6 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 		return nil, status.Errorf(codes.InvalidArgument, "feature %s is unavailable in current mode", settingName)
 	}
 	apiSettingName := api.SettingName(settingName)
-	// TODO(zp): remove the following hard code when we persist the algorithm setting.
-	if apiSettingName == api.SettingMaskingAlgorithm {
-		return nil, status.Errorf(codes.InvalidArgument, "setting masking algorithm is not available")
-	}
 
 	var storeSettingValue string
 	switch apiSettingName {
@@ -447,7 +448,9 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 			if algorithm.Title == "" {
 				return nil, status.Errorf(codes.InvalidArgument, "masking algorithm title cannot be empty: %s", algorithm.Id)
 			}
-
+			if _, ok := whitelistAlgorithmCategory[algorithm.Category]; !ok {
+				return nil, status.Errorf(codes.InvalidArgument, "invalid masking algorithm category: %s", algorithm.Category)
+			}
 			if _, ok := idMap[algorithm.Id]; ok {
 				return nil, status.Errorf(codes.InvalidArgument, "duplicate masking algorithm id: %s", algorithm.Id)
 			}
