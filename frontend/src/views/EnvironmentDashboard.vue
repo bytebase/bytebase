@@ -53,8 +53,8 @@
       :create="true"
       :drawer="true"
       :environment="getEnvironmentCreate()"
-      :approval-policy="(DEFAULT_NEW_APPROVAL_POLICY as any)"
-      :backup-policy="(DEFAULT_NEW_BACKUP_PLAN_POLICY as any)"
+      :rollout-policy="DEFAULT_NEW_ROLLOUT_POLICY"
+      :backup-policy="DEFAULT_NEW_BACKUP_PLAN_POLICY"
       :environment-tier="defaultEnvironmentTier"
       @create="doCreate"
       @cancel="state.showCreateModal = false"
@@ -83,11 +83,10 @@ import {
 import {
   usePolicyV1Store,
   defaultBackupSchedule,
-  defaultApprovalStrategy,
   getDefaultBackupPlanPolicy,
-  getDefaultDeploymentApprovalPolicy,
+  getEmptyRolloutPolicy,
 } from "@/store/modules/v1/policy";
-import { emptyEnvironment } from "@/types";
+import { VirtualRoleType, emptyEnvironment } from "@/types";
 import {
   Environment,
   EnvironmentTier,
@@ -101,8 +100,7 @@ import EnvironmentForm from "../components/EnvironmentForm.vue";
 import { arraySwap, environmentV1Slug } from "../utils";
 import EnvironmentDetail from "../views/EnvironmentDetail.vue";
 
-// The default value should be consistent with the GetDefaultPolicy from the backend.
-const DEFAULT_NEW_APPROVAL_POLICY: Policy = getDefaultDeploymentApprovalPolicy(
+const DEFAULT_NEW_ROLLOUT_POLICY: Policy = getEmptyRolloutPolicy(
   "",
   PolicyResourceType.ENVIRONMENT
 );
@@ -120,6 +118,7 @@ interface LocalState {
   reorder: boolean;
   missingRequiredFeature?:
     | "bb.feature.approval-policy"
+    | "bb.feature.custom-approval"
     | "bb.feature.backup-policy"
     | "bb.feature.environment-tier-policy";
 }
@@ -216,17 +215,22 @@ const createEnvironment = () => {
 
 const doCreate = async (
   newEnvironment: Environment,
-  approvalPolicy: Policy,
+  rolloutPolicy: Policy,
   backupPolicy: Policy,
   environmentTier: EnvironmentTier
 ) => {
-  if (
-    approvalPolicy.deploymentApprovalPolicy?.defaultStrategy !==
-      defaultApprovalStrategy &&
-    !hasFeature("bb.feature.approval-policy")
-  ) {
-    state.missingRequiredFeature = "bb.feature.approval-policy";
-    return;
+  const rp = rolloutPolicy.rolloutPolicy;
+  if (rp?.automatic === false) {
+    if (rp.issueRoles.includes(VirtualRoleType.LAST_APPROVER)) {
+      if (!hasFeature("bb.feature.custom-approval")) {
+        state.missingRequiredFeature = "bb.feature.custom-approval";
+        return;
+      }
+    }
+    if (!hasFeature("bb.feature.approval-policy")) {
+      state.missingRequiredFeature = "bb.feature.approval-policy";
+      return;
+    }
   }
   if (
     backupPolicy.backupPlanPolicy?.schedule !== defaultBackupSchedule &&
@@ -255,7 +259,7 @@ const doCreate = async (
     policyV1Store.upsertPolicy({
       parentPath: environment.name,
       updateMask: ["payload"],
-      policy: approvalPolicy,
+      policy: rolloutPolicy,
     }),
     policyV1Store.upsertPolicy({
       parentPath: environment.name,

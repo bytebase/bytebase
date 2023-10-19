@@ -283,7 +283,7 @@
     :show="state.showClassificationDrawer"
     :classification-config="classificationConfig"
     @dismiss="state.showClassificationDrawer = false"
-    @select="onClassificationSelect"
+    @apply="onClassificationSelect"
   />
 
   <ColumnDefaultValueExpressionModal
@@ -506,7 +506,6 @@ const onClassificationSelect = (id: string) => {
     return;
   }
   state.column.classification = id;
-  state.showClassificationDrawer = false;
 };
 
 const handleColumnDefaultInputChange = (event: Event) => {
@@ -558,7 +557,6 @@ const handleSelectedColumnDefaultValueExpressionChange = (
 };
 
 const onSemanticTypeApply = async (semanticTypeId: string) => {
-  state.showSemanticTypesDrawer = false;
   state.config = ColumnConfig.fromPartial({
     ...state.config,
     semanticTypeId,

@@ -1,32 +1,34 @@
 <template>
   <ArchiveBanner v-if="project.state === State.DELETED" class="py-2" />
-  <h1 class="px-4 py-2 text-xl font-bold leading-6 text-main truncate">
-    <template v-if="isDefaultProject">
-      {{ $t("database.unassigned-databases") }}
-    </template>
-    <template v-else>
-      {{ project.title }}
-    </template>
-    <span
-      v-if="isTenantProject"
-      class="text-sm font-normal px-2 ml-2 rounded whitespace-nowrap inline-flex items-center bg-gray-200"
-    >
-      {{ $t("project.mode.batch") }}
-    </span>
-  </h1>
-  <BBAttention
-    v-if="isDefaultProject"
-    class="mx-6 mb-4"
-    :style="'INFO'"
-    :title="$t('project.overview.info-slot-content')"
-  />
-  <BBTabFilter
-    class="px-3 pb-2 border-b border-block-border"
-    :responsive="false"
-    :tab-item-list="tabItemList"
-    :selected-index="state.selectedIndex"
-    @select-index="selectTab"
-  />
+  <HideInStandaloneMode>
+    <h1 class="px-4 py-2 text-xl font-bold leading-6 text-main truncate">
+      <template v-if="isDefaultProject">
+        {{ $t("database.unassigned-databases") }}
+      </template>
+      <template v-else>
+        {{ project.title }}
+      </template>
+      <span
+        v-if="isTenantProject"
+        class="text-sm font-normal px-2 ml-2 rounded whitespace-nowrap inline-flex items-center bg-gray-200"
+      >
+        {{ $t("project.mode.batch") }}
+      </span>
+    </h1>
+    <BBAttention
+      v-if="isDefaultProject"
+      class="mx-6 mb-4"
+      :style="'INFO'"
+      :title="$t('project.overview.info-slot-content')"
+    />
+    <BBTabFilter
+      class="px-3 pb-2 border-b border-block-border"
+      :responsive="false"
+      :tab-item-list="tabItemList"
+      :selected-index="state.selectedIndex"
+      @select-index="selectTab"
+    />
+  </HideInStandaloneMode>
 
   <div class="py-4 px-6">
     <router-view
@@ -44,6 +46,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBTabFilterItem } from "@/bbkit/types";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
+import HideInStandaloneMode from "@/components/misc/HideInStandaloneMode.vue";
 import {
   useCurrentUserIamPolicy,
   useCurrentUserV1,

@@ -44,22 +44,23 @@
           :class="getColumnClassList(column, row)"
         >
           {{ getColumnSemanticType(column)?.title }}
-          <button
-            v-if="!readonly && getColumnSemanticType(column)"
-            :disabled="disableAlterColumn(column)"
-            class="w-4 h-4 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer"
-            @click.prevent="onSemanticTypeRemove(column)"
-          >
-            <heroicons-outline:x class="w-3 h-3" />
-          </button>
-          <button
-            v-if="!readonly"
-            :disabled="disableAlterColumn(column)"
-            class="w-4 h-4 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer"
-            @click.prevent="openSemanticTypeDrawer(column)"
-          >
-            <heroicons-outline:pencil class="w-3 h-3" />
-          </button>
+          <div v-if="!readonly && !disableChangeTable" class="flex">
+            <button
+              v-if="getColumnSemanticType(column)"
+              :disabled="disableAlterColumn(column)"
+              class="w-4 h-4 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer"
+              @click.prevent="onSemanticTypeRemove(column)"
+            >
+              <heroicons-outline:x class="w-3 h-3" />
+            </button>
+            <button
+              :disabled="disableAlterColumn(column)"
+              class="w-4 h-4 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer"
+              @click.prevent="openSemanticTypeDrawer(column)"
+            >
+              <heroicons-outline:pencil class="w-3 h-3" />
+            </button>
+          </div>
         </div>
         <div
           v-if="classificationConfig"
@@ -204,35 +205,48 @@
           </button>
         </div>
         <div
+          v-if="isDev()"
+          class="bb-grid-cell flex items-center column-cell"
+          :class="getColumnClassList(column, row)"
+        >
+          <LabelsColumn :labels="column.config.labels" :show-count="1" />
+          <button
+            v-if="!readonly && !disableChangeTable"
+            class="w-4 h-4 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer"
+            @click.prevent="openLabelsDrawer(column)"
+          >
+            <heroicons-outline:pencil class="w-3 h-3" />
+          </button>
+        </div>
+        <div
+          v-if="!readonly"
           class="bb-grid-cell flex justify-end items-center"
           :class="getColumnClassList(column, row)"
         >
-          <template v-if="!readonly">
-            <n-tooltip v-if="!isDroppedColumn(column)" trigger="hover">
-              <template #trigger>
-                <button
-                  :disabled="disableChangeTable"
-                  class="text-gray-500 cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
-                  @click="$emit('onDrop', column)"
-                >
-                  <heroicons:trash class="w-4 h-auto" />
-                </button>
-              </template>
-              <span>{{ $t("schema-editor.actions.drop-column") }}</span>
-            </n-tooltip>
-            <n-tooltip v-else trigger="hover">
-              <template #trigger>
-                <button
-                  class="text-gray-500 cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
-                  :disabled="disableChangeTable"
-                  @click="$emit('onRestore', column)"
-                >
-                  <heroicons:arrow-uturn-left class="w-4 h-auto" />
-                </button>
-              </template>
-              <span>{{ $t("schema-editor.actions.restore") }}</span>
-            </n-tooltip>
-          </template>
+          <n-tooltip v-if="!isDroppedColumn(column)" trigger="hover">
+            <template #trigger>
+              <button
+                :disabled="disableChangeTable"
+                class="text-gray-500 cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+                @click="$emit('onDrop', column)"
+              >
+                <heroicons:trash class="w-4 h-auto" />
+              </button>
+            </template>
+            <span>{{ $t("schema-editor.actions.drop-column") }}</span>
+          </n-tooltip>
+          <n-tooltip v-else trigger="hover">
+            <template #trigger>
+              <button
+                class="text-gray-500 cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+                :disabled="disableChangeTable"
+                @click="$emit('onRestore', column)"
+              >
+                <heroicons:arrow-uturn-left class="w-4 h-auto" />
+              </button>
+            </template>
+            <span>{{ $t("schema-editor.actions.restore") }}</span>
+          </n-tooltip>
         </div>
       </div>
     </template>
@@ -250,7 +264,7 @@
     :show="state.showClassificationDrawer"
     :classification-config="classificationConfig"
     @dismiss="state.showClassificationDrawer = false"
-    @select="onClassificationSelect"
+    @apply="onClassificationSelect"
   />
 
   <SemanticTypesDrawer
@@ -259,6 +273,20 @@
     :semantic-type-list="semanticTypeList"
     @dismiss="state.showSemanticTypesDrawer = false"
     @apply="onSemanticTypeApply($event)"
+  />
+
+  <LabelEditorDrawer
+    v-if="state.pendingUpdateColumn"
+    :show="state.showLabelsDrawer"
+    :readonly="false"
+    :title="
+      $t('db.labels-for-resource', {
+        resource: `'${state.pendingUpdateColumn.name}'`,
+      })
+    "
+    :labels="[state.pendingUpdateColumn.config.labels]"
+    @dismiss="state.showLabelsDrawer = false"
+    @apply="onLabelsApply"
   />
 </template>
 
@@ -285,6 +313,7 @@ interface LocalState {
   pendingUpdateColumn?: Column;
   showClassificationDrawer: boolean;
   showSemanticTypesDrawer: boolean;
+  showLabelsDrawer: boolean;
 }
 
 const props = withDefaults(
@@ -325,6 +354,7 @@ defineEmits<{
 const state = reactive<LocalState>({
   showClassificationDrawer: false,
   showSemanticTypesDrawer: false,
+  showLabelsDrawer: false,
 });
 
 const { t } = useI18n();
@@ -396,8 +426,14 @@ const columnHeaderList = computed(() => {
       hide: !props.showForeignKey,
     },
     {
+      title: t("common.labels"),
+      width: "minmax(auto, 1fr)",
+      hide: !isDev(),
+    },
+    {
       title: "",
       width: "30px",
+      hide: props.readonly,
     },
   ].filter((header) => !header.hide);
 });
@@ -516,8 +552,12 @@ const openSemanticTypeDrawer = (column: Column) => {
   state.showSemanticTypesDrawer = true;
 };
 
+const openLabelsDrawer = (column: Column) => {
+  state.pendingUpdateColumn = column;
+  state.showLabelsDrawer = true;
+};
+
 const onClassificationSelect = (classificationId: string) => {
-  state.showClassificationDrawer = false;
   if (!state.pendingUpdateColumn) {
     return;
   }
@@ -525,7 +565,6 @@ const onClassificationSelect = (classificationId: string) => {
 };
 
 const onSemanticTypeApply = async (semanticTypeId: string) => {
-  state.showSemanticTypesDrawer = false;
   if (!state.pendingUpdateColumn) {
     return;
   }
@@ -533,6 +572,16 @@ const onSemanticTypeApply = async (semanticTypeId: string) => {
   state.pendingUpdateColumn.config = ColumnConfig.fromPartial({
     ...state.pendingUpdateColumn.config,
     semanticTypeId,
+  });
+};
+
+const onLabelsApply = (labelsList: { [key: string]: string }[]) => {
+  if (!state.pendingUpdateColumn) {
+    return;
+  }
+  state.pendingUpdateColumn.config = ColumnConfig.fromPartial({
+    ...state.pendingUpdateColumn.config,
+    labels: labelsList[0],
   });
 };
 

@@ -164,11 +164,10 @@ import {
   Backup_BackupState,
   Backup_BackupType,
 } from "@/types/proto/v1/database_service";
-import { DeploymentType } from "@/types/proto/v1/deployment";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import { Plan, Plan_Spec } from "@/types/proto/v1/rollout_service";
 import { extractBackupResourceName } from "@/utils";
-import { trySetDefaultAssigneeByEnvironmentAndDeploymentType } from "../IssueV1/logic/initialize/assignee";
+import { trySetDefaultAssigneeByEnvironment } from "../IssueV1/logic/initialize/assignee";
 
 export type BackupRow = BBGridRow<Backup>;
 
@@ -340,13 +339,13 @@ const doRestoreInPlaceV1 = async () => {
       )}]`,
     ];
 
-    const restoreDatabaseSpec: Plan_Spec = {
+    const restoreDatabaseSpec = Plan_Spec.fromPartial({
       id: uuidv4(),
       restoreDatabaseConfig: {
         backup: backup.name,
         target: database.name, // in-place
       },
-    };
+    });
     const planCreate = Plan.fromJSON({
       steps: [{ specs: [restoreDatabaseSpec] }],
     });
@@ -354,11 +353,10 @@ const doRestoreInPlaceV1 = async () => {
       title: issueNameParts.join(" "),
       type: Issue_Type.DATABASE_CHANGE,
     });
-    await trySetDefaultAssigneeByEnvironmentAndDeploymentType(
+    await trySetDefaultAssigneeByEnvironment(
       issueCreate,
       database.projectEntity,
-      database.instanceEntity.environment,
-      DeploymentType.DATABASE_RESTORE_PITR
+      database.effectiveEnvironment
     );
     const { createdIssue } = await experimentalCreateIssueByPlan(
       database.projectEntity,

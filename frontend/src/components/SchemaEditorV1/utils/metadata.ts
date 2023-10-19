@@ -32,12 +32,10 @@ export const mergeSchemaEditToMetadata = (
         (item) => item.name !== schemaEdit.name
       );
       metadata.schemas.push(transformSchemaEditToMetadata(schemaEdit));
-      continue;
     } else if (schemaEdit.status === "dropped") {
       metadata.schemas = metadata.schemas.filter(
         (item) => item.name !== schemaEdit.name
       );
-      continue;
     } else {
       const schema = metadata.schemas.find(
         (item) => item.name === schemaEdit.name
@@ -46,6 +44,7 @@ export const mergeSchemaEditToMetadata = (
         metadata.schemas.push(transformSchemaEditToMetadata(schemaEdit));
         continue;
       }
+
       for (const tableEdit of schemaEdit.tableList) {
         if (tableEdit.status === "created") {
           // Remove table if it exists.
@@ -53,12 +52,10 @@ export const mergeSchemaEditToMetadata = (
             (item) => item.name !== tableEdit.name
           );
           schema.tables.push(transformTableEditToMetadata(tableEdit));
-          continue;
         } else if (tableEdit.status === "dropped") {
           schema.tables = schema.tables.filter(
             (item) => item.name !== tableEdit.name
           );
-          continue;
         } else {
           const table = schema.tables.find(
             (item) => item.name === tableEdit.name
@@ -67,6 +64,7 @@ export const mergeSchemaEditToMetadata = (
             schema.tables.push(transformTableEditToMetadata(tableEdit));
             continue;
           }
+
           for (const columnEdit of tableEdit.columnList) {
             if (columnEdit.status === "created") {
               // Remove column if it exists.
@@ -109,8 +107,12 @@ export const mergeSchemaEditToMetadata = (
               );
             }
           }
+          table.comment = tableEdit.comment;
+          table.userComment = tableEdit.userComment;
+          table.classification = tableEdit.classification || "";
         }
       }
+
       for (const table of schema.tables) {
         const tableEdit = schemaEdit.tableList.find(
           (item) => item.name === table.name

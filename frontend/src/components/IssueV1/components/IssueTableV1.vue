@@ -324,7 +324,7 @@ const clickIssue = (
   row: number,
   e: MouseEvent
 ) => {
-  const url = `/issue/${issueSlug(issue.name, issue.uid)}`;
+  const url = `/issue/${issueSlug(issue.title, issue.uid)}`;
   if (e.ctrlKey || e.metaKey) {
     window.open(url, "_blank");
   } else {
