@@ -31,7 +31,6 @@ func runLimitTest(t *testing.T, file string, record bool) {
 	for i, tc := range testCases {
 		want, err := getMSSQLStatementWithResultLimit(tc.Stmt, tc.Count)
 		require.NoError(t, err, tc.Stmt)
-		t.Log(want)
 		if record {
 			testCases[i].Want = want
 		} else {

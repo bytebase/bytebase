@@ -228,6 +228,31 @@
     FROM
         sales.customers;
 - stmt: |
+    SELECT TOP 10
+        first_name,
+        last_name
+    FROM
+        sales.staffs
+    UNION ALL
+    SELECT TOP 10
+        first_name,
+        last_name
+    FROM
+        sales.customers;
+  count: 10
+  want: |-
+    SELECT TOP 10
+        first_name,
+        last_name
+    FROM
+        sales.staffs
+    UNION ALL
+    SELECT TOP 10
+        first_name,
+        last_name
+    FROM
+        sales.customers;
+- stmt: |
     WITH cte_sales_amounts (staff, sales, year) AS (
     SELECT
         first_name + ' ' + last_name,

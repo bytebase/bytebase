@@ -63,7 +63,6 @@ func (r *tsqlRewriter) handleSelectStatementDryRun(ctx tsql.ISelect_statementCon
 	if ctx.Query_expression() != nil {
 		if ctx.Query_expression().AllSql_union() != nil && len(ctx.Query_expression().AllSql_union()) > 0 {
 			r.handleSqlunionDryRun(ctx.Query_expression())
-			return
 		}
 		if ctx.Query_expression().Select_order_by_clause() != nil {
 			r.handleSelectOrderByDryRun(ctx.Query_expression().Select_order_by_clause())
@@ -124,6 +123,9 @@ func (r *tsqlRewriter) handleSelectStatement(ctx tsql.ISelect_statementContext) 
 }
 
 func (r *tsqlRewriter) handleSqlunion(ctx tsql.IQuery_expressionContext) {
+	if r.hasTop {
+		return
+	}
 	if ctx.AllSql_union() == nil || len(ctx.AllSql_union()) == 0 {
 		// non-union
 		return
