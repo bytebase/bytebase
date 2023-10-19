@@ -372,7 +372,7 @@ const engine = computed(() => {
       props.databaseSourceSchema!.databaseId
     ).instanceEntity.engine;
   } else if (props.sourceSchemaType === "SCHEMA_DESIGN") {
-    return selectedSchemaDesign.value!.engine;
+    return selectedSchemaDesign.value?.engine ?? Engine.ENGINE_UNSPECIFIED;
   } else if (props.sourceSchemaType === "RAW_SQL") {
     return props.rawSqlState!.engine;
   } else {
