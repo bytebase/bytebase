@@ -25,7 +25,7 @@
           >
             <template v-if="!state.isEditing">
               <NButton @click="handleEdit">{{ $t("common.edit") }}</NButton>
-              <NButton v-if="parentBranch" @click="handleMergeBranch">{{
+              <NButton @click="handleMergeBranch">{{
                 $t("schema-designer.merge-branch")
               }}</NButton>
               <NButton type="primary" @click="handleApplySchemaDesignClick">{{
@@ -107,7 +107,7 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, isEqual, uniqueId } from "lodash-es";
+import { cloneDeep, head, isEqual, uniqueId } from "lodash-es";
 import { NButton, NDivider, NInput, NTooltip, useDialog, NTag } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { CSSProperties, computed, reactive, ref, watch } from "vue";
@@ -124,8 +124,14 @@ import {
   useDatabaseV1Store,
   useSchemaEditorV1Store,
 } from "@/store";
-import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
-import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
+import {
+  useSchemaDesignList,
+  useSchemaDesignStore,
+} from "@/store/modules/schemaDesign";
+import {
+  getProjectAndSchemaDesignSheetId,
+  projectNamePrefix,
+} from "@/store/modules/v1/common";
 import { UNKNOWN_ID } from "@/types";
 import {
   SchemaDesign,
@@ -155,6 +161,7 @@ const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const changeHistoryStore = useChangeHistoryStore();
 const schemaDesignStore = useSchemaDesignStore();
+const { schemaDesignList } = useSchemaDesignList();
 const { runSQLCheck } = provideSQLCheckContext();
 const dialog = useDialog();
 const state = reactive<LocalState>({
@@ -292,13 +299,29 @@ const handleBranchTitleInputBlur = async () => {
 };
 
 const handleMergeBranch = () => {
-  if (!parentBranch.value) {
+  const tempList = schemaDesignList.value.filter((item) => {
+    const [projectName] = getProjectAndSchemaDesignSheetId(item.name);
+    return (
+      `${projectNamePrefix}${projectName}` === project.value.name &&
+      item.engine === schemaDesign.value.engine &&
+      item.name !== schemaDesign.value.name
+    );
+  });
+  const targetBranchName = parentBranch.value
+    ? parentBranch.value.name
+    : head(tempList)?.name;
+  if (!targetBranchName) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: "No branch to merge.",
+    });
     return;
   }
 
   mergeBranchPanelContext.value = {
     sourceBranchName: schemaDesign.value.name,
-    targetBranchName: parentBranch.value.name,
+    targetBranchName: targetBranchName,
   };
   state.showDiffEditor = true;
 };

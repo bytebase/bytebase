@@ -140,10 +140,6 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 		return nil, status.Errorf(codes.InvalidArgument, "feature %s is unavailable in current mode", settingName)
 	}
 	apiSettingName := api.SettingName(settingName)
-	// TODO(zp): remove the following hard code when we persist the algorithm setting.
-	if apiSettingName == api.SettingMaskingAlgorithm {
-		return nil, status.Errorf(codes.InvalidArgument, "setting masking algorithm is not available")
-	}
 
 	var storeSettingValue string
 	switch apiSettingName {
@@ -435,23 +431,19 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 		}
 		storeSettingValue = string(bytes)
 	case api.SettingMaskingAlgorithm:
-		storeMaskingAlgorithmSetting := new(storepb.MaskingAlgorithmSetting)
-		if err := convertV1PbToStorePb(request.Setting.Value.GetMaskingAlgorithmSettingValue(), storeMaskingAlgorithmSetting); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
-		}
 		idMap := make(map[string]struct{})
-		for _, algorithm := range storeMaskingAlgorithmSetting.Algorithms {
-			if !isValidUUID(algorithm.Id) {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid masking algorithm id format: %s", algorithm.Id)
+		for _, algorithm := range request.Setting.Value.GetMaskingAlgorithmSettingValue().Algorithms {
+			if err := validateMaskingAlgorithm(algorithm); err != nil {
+				return nil, err
 			}
-			if algorithm.Title == "" {
-				return nil, status.Errorf(codes.InvalidArgument, "masking algorithm title cannot be empty: %s", algorithm.Id)
-			}
-
 			if _, ok := idMap[algorithm.Id]; ok {
 				return nil, status.Errorf(codes.InvalidArgument, "duplicate masking algorithm id: %s", algorithm.Id)
 			}
 			idMap[algorithm.Id] = struct{}{}
+		}
+		storeMaskingAlgorithmSetting := new(storepb.MaskingAlgorithmSetting)
+		if err := convertV1PbToStorePb(request.Setting.Value.GetMaskingAlgorithmSettingValue(), storeMaskingAlgorithmSetting); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
 		}
 		bytes, err := protojson.Marshal(storeMaskingAlgorithmSetting)
 		if err != nil {
@@ -1094,4 +1086,39 @@ func convertV1SchemaTemplateSetting(template *v1pb.SchemaTemplateSetting) *store
 	}
 
 	return v1Setting
+}
+
+func validateMaskingAlgorithm(algorithm *v1pb.MaskingAlgorithmSetting_Algorithm) error {
+	if !isValidUUID(algorithm.Id) {
+		return status.Errorf(codes.InvalidArgument, "invalid masking algorithm id format: %s", algorithm.Id)
+	}
+	if algorithm.Title == "" {
+		return status.Errorf(codes.InvalidArgument, "masking algorithm title cannot be empty: %s", algorithm.Id)
+	}
+
+	switch algorithm.Category {
+	case "MASK":
+		if algorithm.Mask == nil {
+			return nil
+		}
+		switch algorithm.Mask.(type) {
+		case *v1pb.MaskingAlgorithmSetting_Algorithm_FullMask_:
+		case *v1pb.MaskingAlgorithmSetting_Algorithm_RangeMask_:
+		default:
+			return status.Errorf(codes.InvalidArgument, "mismatch masking algorithm category and mask type: %T, %s", algorithm.Mask, algorithm.Category)
+		}
+	case "HASH":
+		if algorithm.Mask == nil {
+			return nil
+		}
+		switch algorithm.Mask.(type) {
+		case *v1pb.MaskingAlgorithmSetting_Algorithm_Md5Mask:
+		default:
+			return status.Errorf(codes.InvalidArgument, "mismatch masking algorithm category and mask type: %T, %s", algorithm.Mask, algorithm.Category)
+		}
+	default:
+		return status.Errorf(codes.InvalidArgument, "invalid masking algorithm category: %s", algorithm.Category)
+	}
+
+	return nil
 }

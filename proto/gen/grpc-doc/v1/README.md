@@ -9014,7 +9014,7 @@ When paginating, all other parameters provided to `ListSettings` must match the 
 | id | [string](#string) |  | id is the uuid for masking algorithm. |
 | title | [string](#string) |  | title is the title for masking algorithm. |
 | description | [string](#string) |  | description is the description for masking algorithm. |
-| category | [string](#string) |  | Category is the category for masking algorithm. Currently, it accepts 2 categories only: MASKING and HASHING. The range of accepted Payload is decided by the category. MASKING: FullMaskingPayload, RangePartialMaskingPayload HASHING: MD5Payload |
+| category | [string](#string) |  | Category is the category for masking algorithm. Currently, it accepts 2 categories only: MASKING and HASHING. The range of accepted Payload is decided by the category. Mask: FullMask, RangeMask Hash: MD5Mask |
 | full_mask | [MaskingAlgorithmSetting.Algorithm.FullMask](#bytebase-v1-MaskingAlgorithmSetting-Algorithm-FullMask) |  |  |
 | range_mask | [MaskingAlgorithmSetting.Algorithm.RangeMask](#bytebase-v1-MaskingAlgorithmSetting-Algorithm-RangeMask) |  |  |
 | md5_mask | [MaskingAlgorithmSetting.Algorithm.MD5Mask](#bytebase-v1-MaskingAlgorithmSetting-Algorithm-MD5Mask) |  |  |
