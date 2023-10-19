@@ -434,6 +434,30 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
 		}
 		storeSettingValue = string(bytes)
+	case api.SettingMaskingAlgorithms:
+		storeMaskingAlgorithmSetting := new(storepb.MaskingAlgorithmSetting)
+		if err := convertV1PbToStorePb(request.Setting.Value.GetMaskingAlgorithmSettingValue(), storeMaskingAlgorithmSetting); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
+		}
+		idMap := make(map[string]any)
+		for _, algorithm := range storeMaskingAlgorithmSetting.Algorithms {
+			if !isValidUUID(algorithm.Id) {
+				return nil, status.Errorf(codes.InvalidArgument, "invalid masking algorithm id format: %s", algorithm.Id)
+			}
+			if algorithm.Title == "" {
+				return nil, status.Errorf(codes.InvalidArgument, "masking algorithm title cannot be empty: %s", algorithm.Id)
+			}
+
+			if _, ok := idMap[algorithm.Id]; ok {
+				return nil, status.Errorf(codes.InvalidArgument, "duplicate masking algorithm id: %s", algorithm.Id)
+			}
+			idMap[algorithm.Id] = any(nil)
+		}
+		bytes, err := protojson.Marshal(storeMaskingAlgorithmSetting)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
+		}
+		storeSettingValue = string(bytes)
 	default:
 		storeSettingValue = request.Setting.Value.GetStringValue()
 	}

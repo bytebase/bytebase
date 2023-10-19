@@ -14,7 +14,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // FindSettingMessage is the message for finding setting.
@@ -37,23 +36,6 @@ type SettingMessage struct {
 	Description string
 	CreatedTs   int64
 }
-
-var (
-	// Currently, we do not persist the algorithm setting, in order to use it conveniently, we hard code it here.
-	// TODO(zp): remove the following hard code when we persist the algorithm setting.
-	mockAlgorithmSetting = &v1pb.MaskingAlgorithmSetting{
-		Algorithms: []*v1pb.MaskingAlgorithmSetting_Algorithm{
-			{
-				Id:    "substitution",
-				Title: "Substitution algorithm",
-			},
-			{
-				Id:    "hash-md5",
-				Title: "MD5 encryption",
-			},
-		},
-	}
-)
 
 // GetWorkspaceGeneralSetting gets the workspace general setting payload.
 func (s *Store) GetWorkspaceGeneralSetting(ctx context.Context) (*storepb.WorkspaceProfileSetting, error) {
@@ -184,20 +166,6 @@ func (s *Store) GetSettingV2(ctx context.Context, find *FindSettingMessage) (*Se
 		}
 	}
 
-	// TODO(zp): remove the following hard code when we persist the algorithm setting.
-	if find.Name != nil && *find.Name == api.SettingMaskingAlgorithms {
-		value, err := protojson.Marshal(mockAlgorithmSetting)
-		if err != nil {
-			return nil, err
-		}
-		setting := &SettingMessage{
-			Name:        api.SettingMaskingAlgorithms,
-			Value:       string(value),
-			Description: "",
-		}
-		return setting, nil
-	}
-
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to begin transaction")
@@ -235,18 +203,6 @@ func (s *Store) ListSettingV2(ctx context.Context, find *FindSettingMessage) ([]
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrap(err, "failed to commit transaction")
 	}
-
-	// TODO(zp): remove the following hard code when we persist the algorithm setting.
-	value, err := protojson.Marshal(mockAlgorithmSetting)
-	if err != nil {
-		return nil, err
-	}
-	setting := &SettingMessage{
-		Name:        api.SettingMaskingAlgorithms,
-		Value:       string(value),
-		Description: "",
-	}
-	settings = append(settings, setting)
 
 	for _, setting := range settings {
 		s.settingCache.Store(setting.Name, setting)
