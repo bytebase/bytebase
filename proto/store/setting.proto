@@ -261,7 +261,7 @@ message MaskingAlgorithmSetting {
       string salt = 1;
     }
 
-    oneof payload {
+    oneof mask {
       FullMask full_mask = 5;
       RangeMask range_mask = 6;
       MD5Mask md5_mask = 7;
