@@ -273,13 +273,13 @@ export const getDefaultBackupPlanPolicy = (
 
 export const defaultApprovalStrategy = ApprovalStrategy.AUTOMATIC;
 
-export const getDefaultDeploymentApprovalPolicy = (
+export const getDefaultRolloutPolicy = (
   parentPath: string,
   resourceType: PolicyResourceType
 ): Policy => {
   const name = replacePolicyTypeNameToLowerCase(
     `${parentPath}/${policyNamePrefix}${policyTypeToJSON(
-      PolicyType.DEPLOYMENT_APPROVAL
+      PolicyType.ROLLOUT_POLICY
     )}`
   );
   return {
@@ -287,12 +287,14 @@ export const getDefaultDeploymentApprovalPolicy = (
     uid: "",
     resourceUid: "",
     inheritFromParent: false,
-    type: PolicyType.DEPLOYMENT_APPROVAL,
-    resourceType: resourceType,
+    type: PolicyType.ROLLOUT_POLICY,
+    resourceType,
     enforce: true,
-    deploymentApprovalPolicy: {
-      defaultStrategy: defaultApprovalStrategy,
-      deploymentApprovalStrategies: [],
+    rolloutPolicy: {
+      automatic: true,
+      issueRoles: [],
+      projectRoles: [],
+      workspaceRoles: [],
     },
   };
 };
