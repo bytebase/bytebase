@@ -84,7 +84,7 @@ import {
   usePolicyV1Store,
   defaultBackupSchedule,
   getDefaultBackupPlanPolicy,
-  getDefaultRolloutPolicy,
+  getEmptyRolloutPolicy,
 } from "@/store/modules/v1/policy";
 import { VirtualRoleType, emptyEnvironment } from "@/types";
 import {
@@ -100,7 +100,7 @@ import EnvironmentForm from "../components/EnvironmentForm.vue";
 import { arraySwap, environmentV1Slug } from "../utils";
 import EnvironmentDetail from "../views/EnvironmentDetail.vue";
 
-const DEFAULT_NEW_ROLLOUT_POLICY: Policy = getDefaultRolloutPolicy(
+const DEFAULT_NEW_ROLLOUT_POLICY: Policy = getEmptyRolloutPolicy(
   "",
   PolicyResourceType.ENVIRONMENT
 );
