@@ -166,8 +166,8 @@
     - [SchemaTemplateSetting.ColumnType](#bytebase-store-SchemaTemplateSetting-ColumnType)
     - [SchemaTemplateSetting.FieldTemplate](#bytebase-store-SchemaTemplateSetting-FieldTemplate)
     - [SchemaTemplateSetting.TableTemplate](#bytebase-store-SchemaTemplateSetting-TableTemplate)
-    - [SemanticTypesSetting](#bytebase-store-SemanticTypesSetting)
-    - [SemanticTypesSetting.SemanticType](#bytebase-store-SemanticTypesSetting-SemanticType)
+    - [SemanticTypeSetting](#bytebase-store-SemanticTypeSetting)
+    - [SemanticTypeSetting.SemanticType](#bytebase-store-SemanticTypeSetting-SemanticType)
     - [WorkspaceApprovalSetting](#bytebase-store-WorkspaceApprovalSetting)
     - [WorkspaceApprovalSetting.Rule](#bytebase-store-WorkspaceApprovalSetting-Rule)
     - [WorkspaceProfileSetting](#bytebase-store-WorkspaceProfileSetting)
@@ -2585,24 +2585,24 @@ The type of target.
 
 
 
-<a name="bytebase-store-SemanticTypesSetting"></a>
+<a name="bytebase-store-SemanticTypeSetting"></a>
 
-### SemanticTypesSetting
+### SemanticTypeSetting
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| types | [SemanticTypesSetting.SemanticType](#bytebase-store-SemanticTypesSetting-SemanticType) | repeated |  |
+| types | [SemanticTypeSetting.SemanticType](#bytebase-store-SemanticTypeSetting-SemanticType) | repeated |  |
 
 
 
 
 
 
-<a name="bytebase-store-SemanticTypesSetting-SemanticType"></a>
+<a name="bytebase-store-SemanticTypeSetting-SemanticType"></a>
 
-### SemanticTypesSetting.SemanticType
+### SemanticTypeSetting.SemanticType
 
 
 

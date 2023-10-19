@@ -314,11 +314,11 @@ export interface DataClassificationSetting_DataClassificationConfig_Classificati
   value: DataClassificationSetting_DataClassificationConfig_DataClassification | undefined;
 }
 
-export interface SemanticTypesSetting {
-  types: SemanticTypesSetting_SemanticType[];
+export interface SemanticTypeSetting {
+  types: SemanticTypeSetting_SemanticType[];
 }
 
-export interface SemanticTypesSetting_SemanticType {
+export interface SemanticTypeSetting_SemanticType {
   /** id is the uuid for semantic type. */
   id: string;
   /** the title of the semantic type, it should not be empty. */
@@ -2111,22 +2111,22 @@ export const DataClassificationSetting_DataClassificationConfig_ClassificationEn
   },
 };
 
-function createBaseSemanticTypesSetting(): SemanticTypesSetting {
+function createBaseSemanticTypeSetting(): SemanticTypeSetting {
   return { types: [] };
 }
 
-export const SemanticTypesSetting = {
-  encode(message: SemanticTypesSetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const SemanticTypeSetting = {
+  encode(message: SemanticTypeSetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.types) {
-      SemanticTypesSetting_SemanticType.encode(v!, writer.uint32(10).fork()).ldelim();
+      SemanticTypeSetting_SemanticType.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): SemanticTypesSetting {
+  decode(input: _m0.Reader | Uint8Array, length?: number): SemanticTypeSetting {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSemanticTypesSetting();
+    const message = createBaseSemanticTypeSetting();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -2135,7 +2135,7 @@ export const SemanticTypesSetting = {
             break;
           }
 
-          message.types.push(SemanticTypesSetting_SemanticType.decode(reader, reader.uint32()));
+          message.types.push(SemanticTypeSetting_SemanticType.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -2146,41 +2146,41 @@ export const SemanticTypesSetting = {
     return message;
   },
 
-  fromJSON(object: any): SemanticTypesSetting {
+  fromJSON(object: any): SemanticTypeSetting {
     return {
       types: Array.isArray(object?.types)
-        ? object.types.map((e: any) => SemanticTypesSetting_SemanticType.fromJSON(e))
+        ? object.types.map((e: any) => SemanticTypeSetting_SemanticType.fromJSON(e))
         : [],
     };
   },
 
-  toJSON(message: SemanticTypesSetting): unknown {
+  toJSON(message: SemanticTypeSetting): unknown {
     const obj: any = {};
     if (message.types) {
-      obj.types = message.types.map((e) => e ? SemanticTypesSetting_SemanticType.toJSON(e) : undefined);
+      obj.types = message.types.map((e) => e ? SemanticTypeSetting_SemanticType.toJSON(e) : undefined);
     } else {
       obj.types = [];
     }
     return obj;
   },
 
-  create(base?: DeepPartial<SemanticTypesSetting>): SemanticTypesSetting {
-    return SemanticTypesSetting.fromPartial(base ?? {});
+  create(base?: DeepPartial<SemanticTypeSetting>): SemanticTypeSetting {
+    return SemanticTypeSetting.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<SemanticTypesSetting>): SemanticTypesSetting {
-    const message = createBaseSemanticTypesSetting();
-    message.types = object.types?.map((e) => SemanticTypesSetting_SemanticType.fromPartial(e)) || [];
+  fromPartial(object: DeepPartial<SemanticTypeSetting>): SemanticTypeSetting {
+    const message = createBaseSemanticTypeSetting();
+    message.types = object.types?.map((e) => SemanticTypeSetting_SemanticType.fromPartial(e)) || [];
     return message;
   },
 };
 
-function createBaseSemanticTypesSetting_SemanticType(): SemanticTypesSetting_SemanticType {
+function createBaseSemanticTypeSetting_SemanticType(): SemanticTypeSetting_SemanticType {
   return { id: "", title: "", description: "", partialMaskAlgorithmId: "", fullMaskAlgorithmId: "" };
 }
 
-export const SemanticTypesSetting_SemanticType = {
-  encode(message: SemanticTypesSetting_SemanticType, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const SemanticTypeSetting_SemanticType = {
+  encode(message: SemanticTypeSetting_SemanticType, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.id !== "") {
       writer.uint32(10).string(message.id);
     }
@@ -2199,10 +2199,10 @@ export const SemanticTypesSetting_SemanticType = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): SemanticTypesSetting_SemanticType {
+  decode(input: _m0.Reader | Uint8Array, length?: number): SemanticTypeSetting_SemanticType {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSemanticTypesSetting_SemanticType();
+    const message = createBaseSemanticTypeSetting_SemanticType();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -2250,7 +2250,7 @@ export const SemanticTypesSetting_SemanticType = {
     return message;
   },
 
-  fromJSON(object: any): SemanticTypesSetting_SemanticType {
+  fromJSON(object: any): SemanticTypeSetting_SemanticType {
     return {
       id: isSet(object.id) ? String(object.id) : "",
       title: isSet(object.title) ? String(object.title) : "",
@@ -2260,7 +2260,7 @@ export const SemanticTypesSetting_SemanticType = {
     };
   },
 
-  toJSON(message: SemanticTypesSetting_SemanticType): unknown {
+  toJSON(message: SemanticTypeSetting_SemanticType): unknown {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
     message.title !== undefined && (obj.title = message.title);
@@ -2270,12 +2270,12 @@ export const SemanticTypesSetting_SemanticType = {
     return obj;
   },
 
-  create(base?: DeepPartial<SemanticTypesSetting_SemanticType>): SemanticTypesSetting_SemanticType {
-    return SemanticTypesSetting_SemanticType.fromPartial(base ?? {});
+  create(base?: DeepPartial<SemanticTypeSetting_SemanticType>): SemanticTypeSetting_SemanticType {
+    return SemanticTypeSetting_SemanticType.fromPartial(base ?? {});
   },
 
-  fromPartial(object: DeepPartial<SemanticTypesSetting_SemanticType>): SemanticTypesSetting_SemanticType {
-    const message = createBaseSemanticTypesSetting_SemanticType();
+  fromPartial(object: DeepPartial<SemanticTypeSetting_SemanticType>): SemanticTypeSetting_SemanticType {
+    const message = createBaseSemanticTypeSetting_SemanticType();
     message.id = object.id ?? "";
     message.title = object.title ?? "";
     message.description = object.description ?? "";
