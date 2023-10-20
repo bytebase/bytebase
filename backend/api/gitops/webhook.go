@@ -503,8 +503,14 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 		}
 
 		if len(backfillCommits) == 1 && len(backfillCommits[0].AddedList) == 1 && strings.HasSuffix(backfillCommits[0].AddedList[0], azure.SQLReviewPipelineFilePath) {
+			slog.Debug("start to setup pipeline", slog.String("repository", repositoryList[0].repository.ExternalID))
+			// Use workspaceID instead of repo secret as SQL review pipeline token, so that we don't need to re-create the pipeline if users disable then enable the CI.
+			workspaceID, err := s.store.GetWorkspaceID(ctx)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get workspace id with error").SetInternal(err)
+			}
 			// Setup SQL review pipeline and policy.
-			if err := azure.EnableSQLReviewCI(ctx, oauthContext, repositoryList[0].repository.ExternalID, repositoryList[0].repository.BranchFilter, repositoryList[0].repository.WebhookSecretToken); err != nil {
+			if err := azure.EnableSQLReviewCI(ctx, oauthContext, repositoryList[0].repository.Title, repositoryList[0].repository.ExternalID, repositoryList[0].repository.BranchFilter, workspaceID); err != nil {
 				slog.Error("failed to setup pipeline", log.BBError(err), slog.String("repository", repositoryList[0].repository.ExternalID))
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to setup SQL review pipeline").SetInternal(err)
 			}
@@ -596,11 +602,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			}
 
 			// We will use workspace id as token in integration test for skipping the check.
-			if token == workspaceID {
-				return true, nil
-			}
-
-			return token == repo.WebhookSecretToken, nil
+			return token == workspaceID || token == repo.WebhookSecretToken, nil
 		}
 
 		repositoryList, err := s.filterRepository(ctx, c.Param("id"), request.RepositoryID, filter)

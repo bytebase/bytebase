@@ -26,7 +26,7 @@ const (
 	// SQLReviewPipelineFilePath is the SQL review pipeline file path.
 	SQLReviewPipelineFilePath = ".pipelines/pipeline.bytebase-sql-review.yml"
 	// sqlReviewPipelineName is the pipeline name for SQL review.
-	sqlReviewPipelineName = "Bytebase SQL Review"
+	sqlReviewPipelineName = "Bytebase SQL Review Pipeline"
 )
 
 // SetupSQLReviewCI will setup the SQL review CI content with SQL review endpoint.
@@ -98,8 +98,8 @@ type policy struct {
 }
 
 // EnableSQLReviewCI enables the SQL review pipeline and policy.
-func EnableSQLReviewCI(ctx context.Context, oauthCtx common.OauthContext, repositoryID, branch, token string) error {
-	pipeline, err := createSQLReviewPipeline(ctx, oauthCtx, repositoryID, token)
+func EnableSQLReviewCI(ctx context.Context, oauthCtx common.OauthContext, repositoryTitle, repositoryID, branch, token string) error {
+	pipeline, err := createSQLReviewPipeline(ctx, oauthCtx, repositoryTitle, repositoryID, token)
 	if err != nil {
 		return err
 	}
@@ -109,7 +109,7 @@ func EnableSQLReviewCI(ctx context.Context, oauthCtx common.OauthContext, reposi
 // createSQLReviewPipeline creates the SQL Review pipeline.
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/pipelines/pipelines/create?view=azure-devops-rest-7.1
-func createSQLReviewPipeline(ctx context.Context, oauthCtx common.OauthContext, repositoryID, token string) (*pipeline, error) {
+func createSQLReviewPipeline(ctx context.Context, oauthCtx common.OauthContext, repositoryTitle, repositoryID, token string) (*pipeline, error) {
 	parts := strings.Split(repositoryID, "/")
 	if len(parts) != 3 {
 		return nil, errors.Errorf("invalid repository ID %q", repositoryID)
@@ -122,7 +122,7 @@ func createSQLReviewPipeline(ctx context.Context, oauthCtx common.OauthContext, 
 	client := &http.Client{}
 	apiURL := fmt.Sprintf("https://dev.azure.com/%s/%s/_apis/pipelines?%s", url.PathEscape(organizationName), url.PathEscape(projectName), values.Encode())
 	payload := &pipelineCreate{
-		Name: sqlReviewPipelineName,
+		Name: fmt.Sprintf("%s for %s", sqlReviewPipelineName, repositoryTitle),
 		Configuration: &pipelineConfig{
 			Type: "yaml",
 			Path: SQLReviewPipelineFilePath,
