@@ -202,6 +202,7 @@ const handleSaveDraft = async (ignoreNotify?: boolean) => {
     SchemaDesign.fromPartial({
       name: sourceBranch.value.name,
       engine: sourceBranch.value.engine,
+      baselineDatabase: sourceBranch.value.baselineDatabase,
       schema: state.editingSchema,
       baselineSheetName: baselineSheet.name,
     }),

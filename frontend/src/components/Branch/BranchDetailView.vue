@@ -289,6 +289,7 @@ const handleBranchTitleInputBlur = async () => {
       SchemaDesign.fromPartial({
         name: schemaDesign.value.name,
         title: state.schemaDesignTitle,
+        baselineDatabase: schemaDesign.value.baselineDatabase,
       }),
       updateMask
     );
@@ -468,6 +469,7 @@ const handleSaveBranch = async () => {
           name: schemaDesign.value.name,
           title: state.schemaDesignTitle,
           engine: schemaDesign.value.engine,
+          baselineDatabase: schemaDesign.value.baselineDatabase,
           baselineSchema: schemaDesign.value.baselineSchema,
           schemaMetadata: mergedMetadata,
         }),
