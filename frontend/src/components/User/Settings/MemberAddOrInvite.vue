@@ -136,10 +136,8 @@ const state = reactive<LocalState>({
   errorList: [],
 });
 
-for (let i = 0; i < 3; i++) {
-  state.userList.push(emptyUser());
-  state.errorList.push("");
-}
+state.userList.push(emptyUser());
+state.errorList.push("");
 
 const toggleUserServiceAccount = (user: User, index: number, on: boolean) => {
   user.userType = on ? UserType.SERVICE_ACCOUNT : UserType.USER;
