@@ -29,9 +29,10 @@
       }}</span>
       <BranchSelector
         class="!w-60"
+        clearable
         :branch="state.parentBranchName"
         :project="state.projectId"
-        @update:branch="(branch) => (state.parentBranchName = branch)"
+        @update:branch="(branch) => (state.parentBranchName = branch ?? '')"
       />
     </div>
     <NDivider />
@@ -44,8 +45,9 @@
     </div>
     <BaselineSchemaSelector
       :project-id="state.projectId"
-      :baseline-schema="state.baselineSchema"
-      :readonly="!allowToChangeBaseline"
+      :database-id="state.baselineSchema.databaseId"
+      :change-history="state.baselineSchema.changeHistory"
+      :readonly="disallowToChangeBaseline"
       @update="handleBaselineSchemaChange"
     />
     <div class="!mt-6 w-full h-[32rem]">
@@ -160,8 +162,8 @@ const project = computed(() => {
   return project;
 });
 
-const allowToChangeBaseline = computed(() => {
-  return !state.parentBranchName;
+const disallowToChangeBaseline = computed(() => {
+  return !!state.parentBranchName;
 });
 
 onMounted(async () => {
@@ -187,9 +189,13 @@ watch(
 );
 
 watch(
-  () => [state.parentBranchName],
+  () => state.parentBranchName,
   async () => {
     if (!state.parentBranchName) {
+      state.baselineSchema = {};
+      state.schemaDesign = SchemaDesign.fromPartial({
+        type: SchemaDesign_Type.MAIN_BRANCH,
+      });
       return;
     }
 
@@ -276,6 +282,7 @@ const confirmText = computed(() => {
 
 const handleProjectSelect = async (projectId?: string) => {
   state.projectId = projectId;
+  state.parentBranchName = "";
 };
 
 const handleBaselineSchemaChange = async (baselineSchema: BaselineSchema) => {
