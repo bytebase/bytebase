@@ -15,7 +15,11 @@
 <script lang="ts" setup>
 import { NSelect, SelectOption } from "naive-ui";
 import { computed } from "vue";
-import { useSchemaDesignList } from "@/store";
+import { useProjectV1Store, useSchemaDesignList } from "@/store";
+import {
+  getProjectAndSchemaDesignSheetId,
+  projectNamePrefix,
+} from "@/store/modules/v1/common";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 
 interface BranchSelectOption extends SelectOption {
@@ -23,27 +27,31 @@ interface BranchSelectOption extends SelectOption {
   branch: SchemaDesign;
 }
 
-const props = withDefaults(
-  defineProps<{
-    branch?: string | undefined;
-    filter?: (branch: SchemaDesign, index: number) => boolean;
-    clearable?: boolean;
-  }>(),
-  {
-    branch: undefined,
-    clearable: true,
-    filter: () => true,
-  }
-);
+const props = defineProps<{
+  project?: string;
+  branch?: string;
+  clearable?: boolean;
+  filter?: (branch: SchemaDesign, index: number) => boolean;
+}>();
 
 defineEmits<{
   (event: "update:branch", name: string | undefined): void;
 }>();
 
 const { schemaDesignList: branchList } = useSchemaDesignList();
+const projectStore = useProjectV1Store();
 
 const combinedBranchList = computed(() => {
   let list = branchList.value;
+  if (props.project) {
+    const project = projectStore.getProjectByUID(props.project);
+    if (project) {
+      list = list.filter((branch) => {
+        const [projectName] = getProjectAndSchemaDesignSheetId(branch.name);
+        return project.name === `${projectNamePrefix}${projectName}`;
+      });
+    }
+  }
   if (props.filter) {
     list = list.filter(props.filter);
   }
