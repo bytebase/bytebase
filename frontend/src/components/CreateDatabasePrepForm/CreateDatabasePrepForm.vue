@@ -448,8 +448,9 @@ const createV1 = async () => {
   });
   specs.push(spec);
 
-  const issueCreate = Issue.fromJSON({
+  const issueCreate = Issue.fromPartial({
     type: Issue_Type.DATABASE_CHANGE,
+    creator: `users/${currentUserV1.value.email}`,
   });
 
   if (props.backup) {
