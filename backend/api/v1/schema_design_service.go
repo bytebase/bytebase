@@ -318,10 +318,7 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 		UID:       sheetUID,
 		UpdaterID: currentPrincipalID,
 	}
-	schemaDesign, err := s.convertSheetToSchemaDesign(ctx, sheet, v1pb.SchemaDesignView_SCHEMA_DESIGN_VIEW_FULL)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to convert sheet to schema design: %v", err))
-	}
+	schemaDesign := request.SchemaDesign
 	_, databaseName, err := common.GetInstanceDatabaseID(schemaDesign.BaselineDatabase)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid baseline database: %v", err))
