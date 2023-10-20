@@ -12,7 +12,8 @@
         :disabled="props.readonly"
         :selected-id="state.environmentId"
         :select-default="false"
-        @select-environment-id="handleEnvironmentSelect"
+        :environment="state.environmentId"
+        @update:environment="handleEnvironmentSelect"
       />
       <DatabaseSelect
         class="!w-128"
@@ -25,7 +26,10 @@
         :sync-status="'OK'"
         :customize-item="true"
         :placeholder="$t('schema-designer.select-database-placeholder')"
-        @select-database-id="handleDatabaseSelect"
+        :database="state.databaseId"
+        :environment="state.environmentId"
+        :project="projectId"
+        @update:database="handleDatabaseSelect"
       >
         <template #customizeItem="{ database: db }">
           <div class="flex items-center">
@@ -93,6 +97,7 @@ import { head, isNull, isUndefined } from "lodash-es";
 import { NEllipsis } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { InstanceV1EngineIcon } from "@/components/v2";
+import { EnvironmentSelect, DatabaseSelect } from "@/components/v2";
 import {
   useChangeHistoryStore,
   useDBSchemaV1Store,
@@ -239,14 +244,14 @@ const isValidId = (id: any): id is string => {
   return true;
 };
 
-const handleEnvironmentSelect = async (environmentId: string) => {
+const handleEnvironmentSelect = (environmentId?: string) => {
   if (environmentId !== state.environmentId) {
-    state.databaseId = String(UNKNOWN_ID);
+    state.databaseId = undefined;
   }
   state.environmentId = environmentId;
 };
 
-const handleDatabaseSelect = async (databaseId: string) => {
+const handleDatabaseSelect = (databaseId?: string) => {
   if (isValidId(databaseId)) {
     const database = databaseStore.getDatabaseByUID(databaseId);
     if (!database) {
