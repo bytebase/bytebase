@@ -116,12 +116,7 @@ func (t *tidbTransformer) Enter(in tidbast.Node) (tidbast.Node, bool) {
 		}
 		for _, tableOption := range node.Options {
 			if tableOption.Tp == tidbast.TableOptionComment {
-				tableComment, err := tableComment(tableOption)
-				if err != nil {
-					t.err = err
-					return in, true
-				}
-				table.comment = tableComment
+				table.comment = tableComment(tableOption)
 			}
 		}
 
@@ -228,12 +223,8 @@ func columnDefaultValue(column *tidbast.ColumnDef) (*string, error) {
 	return nil, nil
 }
 
-func tableComment(option *tidbast.TableOption) (string, error) {
-	comment, err := tidbRestoreNode(option.Value, tidbformat.RestoreStringWithoutCharset)
-	if err != nil {
-		return "", err
-	}
-	return comment, nil
+func tableComment(option *tidbast.TableOption) string {
+	return option.StrValue
 }
 
 func columnComment(column *tidbast.ColumnDef) (string, error) {
@@ -763,11 +754,7 @@ func (g *tidbDesignSchemaGenerator) Leave(in tidbast.Node) (tidbast.Node, bool) 
 		hasTableComment := false
 		for _, option := range node.Options {
 			if option.Tp == tidbast.TableOptionComment {
-				commentValue, err := tableComment(option)
-				if err != nil {
-					g.err = err
-					return in, true
-				}
+				commentValue := tableComment(option)
 				if g.currentTable.comment == commentValue {
 					if commentStr, err := tidbRestoreNodeDefault(option.Value); err == nil {
 						if _, err := g.result.WriteString(" " + commentStr); err != nil {
