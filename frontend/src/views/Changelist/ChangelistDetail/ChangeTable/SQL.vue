@@ -2,6 +2,8 @@
   <TextOverflowPopover
     :content="statement"
     :max-length="100"
+    :max-popover-content-length="1000"
+    :line-wrap="false"
     content-class="line-clamp-1 flex-1"
     placement="bottom"
   />
