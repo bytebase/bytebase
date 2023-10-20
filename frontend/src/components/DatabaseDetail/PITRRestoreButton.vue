@@ -377,7 +377,7 @@ const onConfirmV1 = async () => {
       restoreDatabaseConfig,
     });
 
-    const planCreate = Plan.fromJSON({
+    const planCreate = Plan.fromPartial({
       steps: [{ specs: [spec] }],
     });
 

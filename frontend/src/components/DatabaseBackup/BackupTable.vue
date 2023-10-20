@@ -351,10 +351,10 @@ const doRestoreInPlaceV1 = async () => {
         target: database.name, // in-place
       },
     });
-    const planCreate = Plan.fromJSON({
+    const planCreate = Plan.fromPartial({
       steps: [{ specs: [restoreDatabaseSpec] }],
     });
-    const issueCreate = Issue.fromJSON({
+    const issueCreate = Issue.fromPartial({
       title: issueNameParts.join(" "),
       type: Issue_Type.DATABASE_CHANGE,
       creator: `users/${me.value.email}`,
