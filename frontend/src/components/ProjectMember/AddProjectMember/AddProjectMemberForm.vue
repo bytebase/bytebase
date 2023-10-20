@@ -65,12 +65,13 @@
 import dayjs from "dayjs";
 import { head } from "lodash-es";
 import { NInputNumber } from "naive-ui";
-import { computed, reactive, watch } from "vue";
+import { computed, onMounted, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import QuerierDatabaseResourceForm from "@/components/Issue/panel/RequestQueryPanel/DatabaseResourceForm/index.vue";
 import ProjectMemberRoleSelect from "@/components/v2/Select/ProjectMemberRoleSelect.vue";
 import { useUserStore } from "@/store";
+import { getUserId } from "@/store/modules/v1/common";
 import { ComposedProject, DatabaseResource, PresetRoleType } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
 import { Binding } from "@/types/proto/v1/iam_policy";
@@ -106,6 +107,21 @@ const state = reactive<LocalState>({
   expireDays: 0,
   // Exporter options.
   maxRowCount: 1000,
+});
+
+onMounted(() => {
+  if (props.binding) {
+    const userUidList = [];
+    for (const member of props.binding.members) {
+      // Member format: user:{email}
+      const user = userStore.getUserByEmail(member.slice(5));
+      if (user) {
+        const userUid = getUserId(user.name);
+        userUidList.push(String(userUid));
+      }
+    }
+    state.userUidList = userUidList;
+  }
 });
 
 const expireDaysOptions = computed(() => {
