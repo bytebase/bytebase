@@ -142,3 +142,32 @@
       CONSTRAINT `fk1` FOREIGN KEY (`b`) REFERENCES `t4` (`b`)
     );
 
+- engine: 2
+  baseline: |-
+    CREATE TABLE `t` (
+      `a` int
+    );
+  target: |-
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "a",
+                  "type": "int"
+                }
+              ],
+              "comment": "this is comment"
+            }
+          ]
+        }
+      ]
+    }
+  # FIXME: table-level comment is not supported.
+  result: |+
+    CREATE TABLE `t` (
+      `a` int NOT NULL
+    );
