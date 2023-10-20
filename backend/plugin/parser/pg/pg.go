@@ -11,9 +11,14 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-// ParsePostgreSQL parses the given SQL and returns the AST tree.
+type ParseResult struct {
+	Tree   antlr.Tree
+	Tokens *antlr.CommonTokenStream
+}
+
+// ParsePostgreSQL parses the given SQL and returns the ParseResult.
 // Use the PostgreSQL parser based on antlr4.
-func ParsePostgreSQL(sql string) (antlr.Tree, error) {
+func ParsePostgreSQL(sql string) (*ParseResult, error) {
 	lexer := parser.NewPostgreSQLLexer(antlr.NewInputStream(sql))
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	p := parser.NewPostgreSQLParser(stream)
@@ -37,7 +42,12 @@ func ParsePostgreSQL(sql string) (antlr.Tree, error) {
 		return nil, parserErrorListener.Err
 	}
 
-	return tree, nil
+	result := &ParseResult{
+		Tree:   tree,
+		Tokens: stream,
+	}
+
+	return result, nil
 }
 
 // NormalizePostgreSQLAnyName normalizes the given any name.
