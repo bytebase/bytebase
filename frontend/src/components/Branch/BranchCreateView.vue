@@ -6,21 +6,20 @@
       </span>
       <ProjectSelect
         class="!w-60 shrink-0"
-        :selected-id="state.projectId"
-        @select-project-id="handleProjectSelect"
+        :project="state.projectId"
+        @update:project="handleProjectSelect"
       />
     </div>
     <div class="w-full flex flex-row justify-start items-center mt-1">
       <span class="flex w-40 items-center text-sm">{{
         $t("database.branch-name")
       }}</span>
-      <BBTextField
-        class="w-60 text-sm"
-        :value="state.schemaDesignTitle"
+      <NInput
+        v-model:value="state.schemaDesignTitle"
+        required
+        type="text"
+        class="!w-60 text-sm"
         :placeholder="'feature/add-billing'"
-        @input="
-          state.schemaDesignTitle = ($event.target as HTMLInputElement).value
-        "
       />
       <span class="ml-8 mr-4 flex items-center text-sm">{{
         $t("schema-designer.parent-branch")
@@ -72,12 +71,13 @@
 
 <script lang="ts" setup>
 import { cloneDeep, uniqueId } from "lodash-es";
-import { NButton, NDivider } from "naive-ui";
+import { NButton, NDivider, NInput } from "naive-ui";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import SchemaEditorV1 from "@/components/SchemaEditorV1/index.vue";
 import { mergeSchemaEditToMetadata } from "@/components/SchemaEditorV1/utils";
+import { ProjectSelect } from "@/components/v2";
 import {
   pushNotification,
   useChangeHistoryStore,
@@ -267,7 +267,7 @@ const confirmText = computed(() => {
   return t("common.create");
 });
 
-const handleProjectSelect = async (projectId: string) => {
+const handleProjectSelect = async (projectId?: string) => {
   state.projectId = projectId;
 };
 
