@@ -59,6 +59,7 @@ import AddProjectMemberForm from "./AddProjectMemberForm.vue";
 
 const props = defineProps<{
   project: ComposedProject;
+  bindings?: Binding[];
 }>();
 
 const emit = defineEmits<{
@@ -71,7 +72,7 @@ interface LocalState {
 
 const { t } = useI18n();
 const state = reactive<LocalState>({
-  bindings: [Binding.fromPartial({})],
+  bindings: props.bindings || [Binding.fromPartial({})],
 });
 const formRefs = ref<InstanceType<typeof AddProjectMemberForm>[]>([]);
 const projectResourceName = computed(() => props.project.name);
