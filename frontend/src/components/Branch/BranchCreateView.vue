@@ -1,6 +1,9 @@
 <template>
-  <div class="space-y-3 w-full overflow-x-auto px-4 pb-8">
-    <div class="w-full flex flex-row justify-start items-center pt-1">
+  <div class="space-y-3 w-full overflow-x-auto px-4 pb-8 pt-4">
+    <div
+      v-if="showProjectSelector"
+      class="w-full flex flex-row justify-start items-center"
+    >
       <span class="flex w-40 items-center shrink-0 text-sm">
         {{ $t("common.project") }}
       </span>
@@ -27,6 +30,7 @@
       <BranchSelector
         class="!w-60"
         :branch="state.parentBranchName"
+        :project="state.projectId"
         @update:branch="(branch) => (state.parentBranchName = branch)"
       />
     </div>
@@ -148,6 +152,7 @@ const state = reactive<LocalState>({
     type: SchemaDesign_Type.MAIN_BRANCH,
   }),
 });
+const showProjectSelector = ref<boolean>(true);
 const refreshId = ref<string>("");
 
 const project = computed(() => {
@@ -166,6 +171,8 @@ onMounted(async () => {
       `${projectNamePrefix}${projectName}`
     );
     state.projectId = project.uid;
+    // When we are creating a branch from a project page, we don't show the project selector.
+    showProjectSelector.value = false;
   }
 });
 
