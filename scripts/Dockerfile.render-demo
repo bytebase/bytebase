@@ -79,7 +79,7 @@ RUN apt-get update && apt-get install -y locales curl psmisc procps libncurses5
 # Generate en_US.UTF-8 locale which is needed to start postgres server.
 # Fix the posgres server issue (invalid value for parameter "lc_messages": "en_US.UTF-8").
 RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen
-RUN echo "export PATH=$PATH:/var/opt/bytebase/resources/postgres-linux-amd64-16/bin:/var/opt/bytebase/resources/postgres-linux-arm64-16/bin" >> /root/.bashrc
+ENV PATH="${PATH}:/var/opt/bytebase/resources/postgres-linux-amd64-16/bin:/var/opt/bytebase/resources/postgres-linux-arm64-16/bin"
 
 # Copy utility scripts, we have
 # - Demo script to launch Bytebase in readonly demo mode
