@@ -12,31 +12,19 @@
         :disabled="props.readonly"
         :selected-id="state.environmentId"
         :select-default="false"
-        @select-environment-id="handleEnvironmentSelect"
+        :environment="state.environmentId"
+        @update:environment="handleEnvironmentSelect"
       />
       <DatabaseSelect
         class="!w-128"
-        :selected-id="state.databaseId ?? String(UNKNOWN_ID)"
-        :mode="'USER'"
-        :disabled="props.readonly"
-        :environment-id="state.environmentId"
-        :project-id="props.projectId"
-        :engine-type-list="allowedEngineTypeList"
-        :sync-status="'OK'"
-        :customize-item="true"
         :placeholder="$t('schema-designer.select-database-placeholder')"
-        @select-database-id="handleDatabaseSelect"
-      >
-        <template #customizeItem="{ database: db }">
-          <div class="flex items-center">
-            <InstanceV1EngineIcon :instance="db.instanceEntity" />
-            <span class="mx-2">{{ db.databaseName }}</span>
-            <span class="text-gray-400">
-              ({{ instanceV1Name(db.instanceEntity) }})
-            </span>
-          </div>
-        </template>
-      </DatabaseSelect>
+        :disabled="props.readonly"
+        :allowed-engine-type-list="allowedEngineTypeList"
+        :environment="state.environmentId"
+        :project="projectId"
+        :database="state.databaseId"
+        @update:database="handleDatabaseSelect"
+      />
     </div>
     <div class="w-full flex flex-row justify-start items-center">
       <span class="flex w-40 items-center shrink-0 text-sm">
@@ -92,7 +80,7 @@
 import { head, isNull, isUndefined } from "lodash-es";
 import { NEllipsis } from "naive-ui";
 import { computed, reactive, watch } from "vue";
-import { InstanceV1EngineIcon } from "@/components/v2";
+import { EnvironmentSelect, DatabaseSelect } from "@/components/v2";
 import {
   useChangeHistoryStore,
   useDBSchemaV1Store,
@@ -105,7 +93,6 @@ import {
   ChangeHistory,
   ChangeHistory_Type,
 } from "@/types/proto/v1/database_service";
-import { instanceV1Name } from "@/utils";
 
 interface BaselineSchema {
   databaseId?: string;
@@ -239,14 +226,14 @@ const isValidId = (id: any): id is string => {
   return true;
 };
 
-const handleEnvironmentSelect = async (environmentId: string) => {
+const handleEnvironmentSelect = (environmentId?: string) => {
   if (environmentId !== state.environmentId) {
-    state.databaseId = String(UNKNOWN_ID);
+    state.databaseId = undefined;
   }
   state.environmentId = environmentId;
 };
 
-const handleDatabaseSelect = async (databaseId: string) => {
+const handleDatabaseSelect = (databaseId?: string) => {
   if (isValidId(databaseId)) {
     const database = databaseStore.getDatabaseByUID(databaseId);
     if (!database) {

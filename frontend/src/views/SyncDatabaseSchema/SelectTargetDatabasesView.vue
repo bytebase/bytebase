@@ -62,10 +62,10 @@
             >{{ project.title }}</a
           >
         </div>
-        <div>
+        <div class="flex flex-row justify-start items-center">
           <span>{{ $t("database.branch") }} - </span>
           <span
-            class="normal-link inline-flex items-center"
+            class="normal-link inline-flex items-center ml-1"
             @click="handleViewBranch"
           >
             <EngineIcon class="mr-1" :engine="engine" />
