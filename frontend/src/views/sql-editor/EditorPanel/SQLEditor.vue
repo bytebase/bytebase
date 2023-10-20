@@ -70,7 +70,7 @@ const advices = computed((): AdviceOption[] => {
       .flat() ?? []
   ).map((advice) => ({
     severity: "ERROR",
-    message: advice.detail,
+    message: advice.content,
     startLineNumber: advice.line,
     endLineNumber: advice.line,
     startColumn: advice.column,
