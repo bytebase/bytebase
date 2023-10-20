@@ -114,6 +114,16 @@ func (t *tidbTransformer) Enter(in tidbast.Node) (tidbast.Node, bool) {
 
 			table.columns[columnName] = columnState
 		}
+		for _, tableOption := range node.Options {
+			if tableOption.Tp == tidbast.TableOptionComment {
+				tableComment, err := tableComment(tableOption)
+				if err != nil {
+					t.err = err
+					return in, true
+				}
+				table.comment = tableComment
+			}
+		}
 
 		// primary and foreign key definition
 		for _, constraint := range node.Constraints {
@@ -218,6 +228,14 @@ func columnDefaultValue(column *tidbast.ColumnDef) (*string, error) {
 	return nil, nil
 }
 
+func tableComment(option *tidbast.TableOption) (string, error) {
+	comment, err := tidbRestoreNode(option.Value, tidbformat.RestoreStringWithoutCharset)
+	if err != nil {
+		return "", err
+	}
+	return comment, nil
+}
+
 func columnComment(column *tidbast.ColumnDef) (string, error) {
 	for _, option := range column.Options {
 		if option.Tp == tidbast.ColumnOptionComment {
@@ -240,6 +258,7 @@ func tidbRestoreNode(node tidbast.Node, flag tidbformat.RestoreFlags) (string, e
 	}
 	return buffer.String(), nil
 }
+
 func tidbRestoreNodeDefault(node tidbast.Node) (string, error) {
 	return tidbRestoreNode(node, tidbformat.DefaultRestoreFlags)
 }
@@ -741,12 +760,49 @@ func (g *tidbDesignSchemaGenerator) Leave(in tidbast.Node) (tidbast.Node, bool) 
 		}
 
 		// Table option.
+		hasTableComment := false
 		for _, option := range node.Options {
-			if optionStr, err := tidbRestoreTableOption(option); err == nil {
-				if _, err := g.result.WriteString(" " + optionStr); err != nil {
+			if option.Tp == tidbast.TableOptionComment {
+				commentValue, err := tableComment(option)
+				if err != nil {
 					g.err = err
 					return in, true
 				}
+				if g.currentTable.comment == commentValue {
+					if commentStr, err := tidbRestoreNodeDefault(option.Value); err == nil {
+						if _, err := g.result.WriteString(" " + commentStr); err != nil {
+							g.err = err
+							return in, true
+						}
+					}
+				} else if g.currentTable.comment != "" {
+					if _, err := g.result.WriteString(" COMMENT"); err != nil {
+						g.err = err
+						return in, true
+					}
+					if _, err := g.result.WriteString(fmt.Sprintf(" '%s'", g.currentTable.comment)); err != nil {
+						g.err = err
+						return in, true
+					}
+				}
+				hasTableComment = true
+			} else {
+				if optionStr, err := tidbRestoreTableOption(option); err == nil {
+					if _, err := g.result.WriteString(" " + optionStr); err != nil {
+						g.err = err
+						return in, true
+					}
+				}
+			}
+		}
+		if !hasTableComment && g.currentTable.comment != "" {
+			if _, err := g.result.WriteString(" COMMENT"); err != nil {
+				g.err = err
+				return in, true
+			}
+			if _, err := g.result.WriteString(fmt.Sprintf(" '%s'", g.currentTable.comment)); err != nil {
+				g.err = err
+				return in, true
 			}
 		}
 
