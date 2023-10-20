@@ -155,7 +155,11 @@ import BBContextMenuButton, {
 } from "@/bbkit/BBContextMenuButton.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { usePITRLogic } from "@/plugins";
-import { experimentalCreateIssueByPlan, useSubscriptionV1Store } from "@/store";
+import {
+  experimentalCreateIssueByPlan,
+  useCurrentUserV1,
+  useSubscriptionV1Store,
+} from "@/store";
 import { ComposedDatabase } from "@/types";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import {
@@ -210,6 +214,7 @@ const state = reactive<LocalState>({
   loading: false,
   showFeatureModal: false,
 });
+const me = useCurrentUserV1();
 
 const createDatabaseForm = ref<InstanceType<typeof CreatePITRDatabaseForm>>();
 
@@ -392,6 +397,7 @@ const onConfirmV1 = async () => {
     const issueCreate = Issue.fromJSON({
       title: issueNameParts.join(" "),
       type: Issue_Type.DATABASE_CHANGE,
+      creator: `users/${me.value.email}`,
     });
     await trySetDefaultAssigneeByEnvironment(
       issueCreate,

@@ -156,7 +156,11 @@ import {
 import EllipsisText from "@/components/EllipsisText.vue";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { experimentalCreateIssueByPlan, useSubscriptionV1Store } from "@/store";
+import {
+  experimentalCreateIssueByPlan,
+  useCurrentUserV1,
+  useSubscriptionV1Store,
+} from "@/store";
 import { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import {
@@ -212,6 +216,7 @@ const state = reactive<LocalState>({
   creatingRestoreIssue: false,
   showFeatureModal: false,
 });
+const me = useCurrentUserV1();
 
 const allowRestoreInPlace = computed((): boolean => {
   return props.database.instanceEntity.engine === Engine.POSTGRES;
@@ -352,6 +357,7 @@ const doRestoreInPlaceV1 = async () => {
     const issueCreate = Issue.fromJSON({
       title: issueNameParts.join(" "),
       type: Issue_Type.DATABASE_CHANGE,
+      creator: `users/${me.value.email}`,
     });
     await trySetDefaultAssigneeByEnvironment(
       issueCreate,
