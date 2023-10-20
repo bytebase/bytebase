@@ -349,7 +349,7 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 		sheet.Payload.SchemaDesign.BaselineSheetId = fmt.Sprintf("%d", sheetUID)
 		sheetUpdate.Payload = sheet.Payload
 	}
-	if slices.Contains(request.UpdateMask.Paths, "baseline_schema_metadata") {
+	if slices.Contains(request.UpdateMask.Paths, "baseline_database_config") {
 		sheet.Payload.BaselineDatabaseConfig = convertV1DatabaseConfig(databaseName, schemaDesign.BaselineSchemaMetadata.SchemaConfigs)
 		sheetUpdate.Payload = sheet.Payload
 	}

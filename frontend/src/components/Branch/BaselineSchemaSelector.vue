@@ -39,8 +39,8 @@
           :disabled="props.readonly"
           :selected-item="state.changeHistory"
           :item-list="
-                  databaseChangeHistoryList(state.databaseId as string)
-                "
+            databaseChangeHistoryList(state.databaseId as string)
+          "
           :placeholder="$t('change-history.select')"
           :show-prefix-item="databaseChangeHistoryList(state.databaseId as string).length > 0"
           @select-item="(changeHistory: ChangeHistory) => handleSchemaVersionSelect(changeHistory)"
@@ -94,14 +94,10 @@ import {
   ChangeHistory_Type,
 } from "@/types/proto/v1/database_service";
 
-interface BaselineSchema {
-  databaseId?: string;
-  changeHistory?: ChangeHistory;
-}
-
 const props = defineProps<{
   projectId?: string;
-  baselineSchema?: BaselineSchema;
+  databaseId?: string;
+  changeHistory?: ChangeHistory;
   readonly?: boolean;
 }>();
 
@@ -140,24 +136,23 @@ const prepareChangeHistoryList = async () => {
 };
 
 watch(
-  () => props,
-  async () => {
-    if (props.baselineSchema?.databaseId) {
+  () => props.databaseId,
+  async (databaseId) => {
+    state.databaseId = databaseId ?? "";
+    if (databaseId) {
       try {
         const database = await databaseStore.getOrFetchDatabaseByUID(
-          props.baselineSchema.databaseId || ""
+          databaseId
         );
         state.databaseId = database.uid;
         state.environmentId = database.effectiveEnvironmentEntity.uid;
-        state.changeHistory = props.baselineSchema.changeHistory;
+        state.changeHistory = props.changeHistory;
       } catch (error) {
         // do nothing.
       }
+    } else {
+      state.changeHistory = undefined;
     }
-  },
-  {
-    immediate: true,
-    deep: true,
   }
 );
 
@@ -168,16 +163,16 @@ watch(
       return;
     }
     if (database.value.projectEntity.uid !== props.projectId) {
-      state.environmentId = undefined;
-      state.databaseId = undefined;
+      state.environmentId = "";
+      state.databaseId = "";
     }
   }
 );
 
 watch(
   () => state.databaseId,
-  async () => {
-    if (!database.value) {
+  async (databaseId) => {
+    if (!database.value || !databaseId) {
       state.changeHistory = undefined;
       return;
     }
@@ -228,9 +223,9 @@ const isValidId = (id: any): id is string => {
 
 const handleEnvironmentSelect = (environmentId?: string) => {
   if (environmentId !== state.environmentId) {
-    state.databaseId = undefined;
+    state.databaseId = "";
   }
-  state.environmentId = environmentId;
+  state.environmentId = environmentId ?? "";
 };
 
 const handleDatabaseSelect = (databaseId?: string) => {
@@ -243,7 +238,7 @@ const handleDatabaseSelect = (databaseId?: string) => {
     const environment = environmentStore.getEnvironmentByName(
       database.effectiveEnvironment
     );
-    state.environmentId = environment?.uid;
+    state.environmentId = environment?.uid ?? "";
     state.databaseId = databaseId;
     dbSchemaStore.getOrFetchDatabaseMetadata(database.name);
   }
