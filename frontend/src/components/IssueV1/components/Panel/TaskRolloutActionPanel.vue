@@ -12,6 +12,17 @@
         class="flex flex-col gap-y-4 h-full overflow-y-hidden px-1"
       >
         <div
+          v-if="stage"
+          class="flex flex-col gap-y-1 shrink overflow-y-hidden justify-start"
+        >
+          <label class="font-medium text-control">
+            {{ $t("common.stage") }}
+          </label>
+          <div class="textinfolabel break-all">
+            {{ stage.title }}
+          </div>
+        </div>
+        <div
           class="flex flex-col gap-y-1 shrink overflow-y-hidden justify-start"
         >
           <label class="font-medium text-control">
@@ -110,7 +121,7 @@
 </template>
 
 <script setup lang="ts">
-import { groupBy, uniqBy } from "lodash-es";
+import { groupBy, head, uniqBy } from "lodash-es";
 import { NButton, NCheckbox, NInput, NTooltip } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -174,6 +185,12 @@ const distinctTaskList = computed(() => {
     const [task, ...similar] = groups[taskName];
     return { task, similar };
   });
+});
+
+const stage = computed(() => {
+  const firstTask = head(props.taskList);
+  if (!firstTask) return undefined;
+  return stageForTask(issue.value, firstTask);
 });
 
 const planCheckRunList = computed(() => {
