@@ -100,7 +100,10 @@ export const useChangelistStore = defineStore("changelist", () => {
       );
     } else if (isBranchChangeSource(change)) {
       composer.collect(source, () =>
-        useSchemaDesignStore().getOrFetchSchemaDesignByName(source)
+        useSchemaDesignStore().fetchSchemaDesignByName(
+          source,
+          true /* useCache */
+        )
       );
     } else {
       // Raw SQL, no need to compose

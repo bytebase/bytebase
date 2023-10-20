@@ -31,9 +31,11 @@
             <BranchSelector
               class="!w-4/5 text-center"
               :clearable="false"
-              :branch="targetBranchName"
+              :branch="state.targetBranchName"
               :filter="targetBranchFilter"
-              @update:branch="(branch) => (targetBranchName = branch || '')"
+              @update:branch="
+                (branch) => (state.targetBranchName = branch ?? '')
+              "
             />
           </div>
           <div class="flex flex-row justify-center">
@@ -56,15 +58,21 @@
             <span>{{ $t("schema-designer.diff-editor.editing-schema") }}</span>
           </div>
         </div>
-        <div class="w-full h-[calc(100%-14rem)] border">
+        <div class="w-full h-[calc(100%-14rem)] border relative">
           <DiffEditor
-            v-if="state.initialized"
-            :key="targetBranchName"
+            v-if="ready"
+            :key="state.targetBranchName"
             class="h-full"
             :original="targetBranch.schema"
             :value="state.editingSchema"
             @change="state.editingSchema = $event"
           />
+          <div
+            v-else
+            class="inset-0 absolute flex flex-col justify-center items-center"
+          >
+            <BBSpin />
+          </div>
         </div>
       </div>
     </NDrawerContent>
@@ -72,6 +80,7 @@
 </template>
 
 <script lang="ts" setup>
+import { asyncComputed } from "@vueuse/core";
 import { MoveLeft } from "lucide-vue-next";
 import {
   NButton,
@@ -82,8 +91,7 @@ import {
   useDialog,
 } from "naive-ui";
 import { Status } from "nice-grpc-common";
-import { computed, reactive, ref } from "vue";
-import { watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import DiffEditor from "@/components/MonacoEditor/DiffEditor.vue";
 import { pushNotification, useSheetV1Store } from "@/store";
@@ -97,8 +105,8 @@ import {
 } from "@/types/proto/v1/sheet_service";
 
 interface LocalState {
+  targetBranchName: string;
   editingSchema: string;
-  initialized: boolean;
   deleteBranchAfterMerged: boolean;
 }
 
@@ -113,22 +121,55 @@ const emit = defineEmits<{
 }>();
 
 const state = reactive<LocalState>({
+  targetBranchName: "",
   editingSchema: "",
-  initialized: false,
   deleteBranchAfterMerged: true,
 });
 const { t } = useI18n();
 const dialog = useDialog();
 const sheetStore = useSheetV1Store();
 const schemaDesignStore = useSchemaDesignStore();
-const targetBranchName = ref<string>(props.targetBranchName || "");
+const isLoadingSourceBranch = ref(false);
+const isLoadingTargetBranch = ref(false);
+const emptyBranch = () => SchemaDesign.fromPartial({});
 
-const sourceBranch = computed(() => {
-  return schemaDesignStore.getSchemaDesignByName(props.sourceBranchName || "");
-});
+const sourceBranch = asyncComputed(
+  async () => {
+    const name = props.sourceBranchName;
+    if (!name) {
+      return emptyBranch();
+    }
+    return await schemaDesignStore.fetchSchemaDesignByName(
+      name,
+      true /* useCache */
+    );
+  },
+  emptyBranch(),
+  {
+    evaluating: isLoadingSourceBranch,
+  }
+);
 
-const targetBranch = computed(() => {
-  return schemaDesignStore.getSchemaDesignByName(targetBranchName.value);
+const targetBranch = asyncComputed(
+  async () => {
+    const name = state.targetBranchName;
+    if (!name) {
+      return emptyBranch();
+    }
+    return await schemaDesignStore.fetchSchemaDesignByName(
+      name,
+      true /* useCache */
+    );
+  },
+  emptyBranch(),
+  {
+    evaluating: isLoadingTargetBranch,
+  }
+);
+
+// ready when both source and target branch are loaded
+const ready = computed(() => {
+  return !isLoadingSourceBranch.value && !isLoadingTargetBranch.value;
 });
 
 const targetBranchFilter = (branch: SchemaDesign) => {
@@ -137,19 +178,6 @@ const targetBranchFilter = (branch: SchemaDesign) => {
     branch.engine === sourceBranch.value.engine
   );
 };
-
-watch(
-  () => targetBranchName.value,
-  async () => {
-    // Fetching the latest source branch.
-    await schemaDesignStore.fetchSchemaDesignByName(targetBranchName.value);
-    state.editingSchema = sourceBranch.value.schema;
-    state.initialized = true;
-  },
-  {
-    immediate: true,
-  }
-);
 
 const handleSaveDraft = async (ignoreNotify?: boolean) => {
   const updateMask = ["schema", "baseline_sheet_name"];
@@ -174,6 +202,7 @@ const handleSaveDraft = async (ignoreNotify?: boolean) => {
     SchemaDesign.fromPartial({
       name: sourceBranch.value.name,
       engine: sourceBranch.value.engine,
+      baselineDatabase: sourceBranch.value.baselineDatabase,
       schema: state.editingSchema,
       baselineSheetName: baselineSheet.name,
     }),
@@ -216,7 +245,8 @@ const handleMergeBranch = async () => {
         onPositiveClick: async () => {
           // Fetching the latest target branch.
           await schemaDesignStore.fetchSchemaDesignByName(
-            targetBranchName.value
+            state.targetBranchName,
+            false /* !useCache */
           );
         },
       });
@@ -237,9 +267,25 @@ const handleMergeBranch = async () => {
     title: t("schema-designer.message.merge-to-main-successfully"),
   });
 
-  emit("merged", targetBranchName.value);
+  emit("merged", state.targetBranchName);
   if (state.deleteBranchAfterMerged) {
     await schemaDesignStore.deleteSchemaDesign(props.sourceBranchName);
   }
 };
+
+watch(
+  [sourceBranch, targetBranch],
+  () => {
+    state.editingSchema = sourceBranch.value.schema;
+  },
+  { immediate: true }
+);
+
+watch(
+  () => props.targetBranchName,
+  () => {
+    state.targetBranchName = props.targetBranchName;
+  },
+  { immediate: true }
+);
 </script>

@@ -196,8 +196,9 @@ onMounted(async () => {
     .schemaDesignName as string;
   if (schemaDesignName) {
     try {
-      const schemaDesign = await schemaDesignStore.getOrFetchSchemaDesignByName(
-        schemaDesignName
+      const schemaDesign = await schemaDesignStore.fetchSchemaDesignByName(
+        schemaDesignName,
+        false /* !useCache */
       );
       if (schemaDesign) {
         state.sourceSchemaType = "SCHEMA_DESIGN";

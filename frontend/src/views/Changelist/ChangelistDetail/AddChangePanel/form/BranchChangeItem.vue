@@ -40,12 +40,12 @@ import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { RichDatabaseName } from "@/components/v2";
 import { useDatabaseV1Store } from "@/store";
-import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
 import { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 
 const props = defineProps<{
   change: Change;
+  branch: SchemaDesign | undefined;
 }>();
 
 defineEmits<{
@@ -54,11 +54,10 @@ defineEmits<{
 }>();
 
 const branch = computed(() => {
-  const name = props.change.source;
   return (
-    useSchemaDesignStore().getSchemaDesignByName(name) ??
+    props.branch ??
     SchemaDesign.fromPartial({
-      name,
+      name: props.change.source,
       title: "<<Unknown Branch>>",
     })
   );
