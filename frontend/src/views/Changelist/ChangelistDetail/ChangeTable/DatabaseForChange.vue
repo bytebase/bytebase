@@ -35,7 +35,10 @@ const database = asyncComputed(async () => {
       source,
       true /* useCache */
     );
-    return useDatabaseV1Store().getDatabaseByName(branch.baselineDatabase);
+
+    return await useDatabaseV1Store().getOrFetchDatabaseByName(
+      branch.baselineDatabase
+    );
   } else {
     // Raw SQL
     return undefined;
