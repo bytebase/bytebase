@@ -10,6 +10,11 @@
       :closable="true"
       class="w-[72rem] max-w-[100vw] relative"
     >
+      <div class="w-full flex flex-row justify-end items-center">
+        <NButton type="primary" @click="state.showAddMemberPanel = true">{{
+          $t("project.members.grant-access")
+        }}</NButton>
+      </div>
       <div v-for="role in roleList" :key="role.role" class="mb-4">
         <template v-if="role.singleBindingList.length > 0">
           <div
@@ -141,6 +146,17 @@
     :binding="editingBinding"
     @close="editingBinding = null"
   />
+
+  <AddProjectMembersPanel
+    v-if="state.showAddMemberPanel"
+    :project="project"
+    :bindings="[
+      Binding.fromPartial({
+        members: [`user:${member.user.email}`],
+      }),
+    ]"
+    @close="state.showAddMemberPanel = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -152,7 +168,7 @@ import {
   NTooltip,
   useDialog,
 } from "naive-ui";
-import { computed, ref, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGrid, BBGridRow } from "@/bbkit";
 import { InstanceV1Name } from "@/components/v2";
@@ -188,6 +204,10 @@ import { ComposedProjectMember, SingleBinding } from "./types";
 
 export type SingleBindingRow = BBGridRow<SingleBinding>;
 
+interface LocalState {
+  showAddMemberPanel: boolean;
+}
+
 const props = defineProps<{
   project: ComposedProject;
   member: ComposedProjectMember;
@@ -205,6 +225,9 @@ const databaseStore = useDatabaseV1Store();
 const projectIamPolicyStore = useProjectIamPolicyStore();
 const projectResourceName = computed(() => props.project.name);
 const { policy: iamPolicy } = useProjectIamPolicy(projectResourceName);
+const state = reactive<LocalState>({
+  showAddMemberPanel: false,
+});
 const roleList = ref<
   {
     role: string;
