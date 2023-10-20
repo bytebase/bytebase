@@ -76,7 +76,7 @@ onMounted(async () => {
     true
   );
   state.semanticItemList = (
-    semanticTypeSetting?.value?.semanticTypesSettingValue?.types ?? []
+    semanticTypeSetting?.value?.semanticTypeSettingValue?.types ?? []
   ).map((semanticType) => {
     return {
       dirty: false,
@@ -113,7 +113,7 @@ const onRemove = async (index: number) => {
   await settingStore.upsertSetting({
     name: "bb.workspace.semantic-types",
     value: {
-      semanticTypesSettingValue: {
+      semanticTypeSettingValue: {
         types: state.semanticItemList.map((data) => data.item),
       },
     },
@@ -137,7 +137,7 @@ const onConfirm = async (index: number) => {
   await settingStore.upsertSetting({
     name: "bb.workspace.semantic-types",
     value: {
-      semanticTypesSettingValue: {
+      semanticTypeSettingValue: {
         types: state.semanticItemList.map((data) => data.item),
       },
     },
@@ -160,7 +160,7 @@ const onCancel = (index: number) => {
       "bb.workspace.semantic-types"
     );
     const origin = (
-      semanticTypeSetting?.value?.semanticTypesSettingValue?.types ?? []
+      semanticTypeSetting?.value?.semanticTypeSettingValue?.types ?? []
     ).find((s) => s.id === item.item.id);
     if (!origin) {
       return;

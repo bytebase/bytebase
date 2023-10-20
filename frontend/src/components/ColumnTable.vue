@@ -262,7 +262,7 @@ const hasSensitiveDataFeature = computed(() => {
 const semanticTypeList = computed(() => {
   return (
     settingV1Store.getSettingByName("bb.workspace.semantic-types")?.value
-      ?.semanticTypesSettingValue?.types ?? []
+      ?.semanticTypeSettingValue?.types ?? []
   );
 });
 
@@ -582,6 +582,8 @@ const getColumnMasking = (column: ColumnMetadata): MaskData => {
       table: props.table.name,
       column: column.name,
       maskingLevel: MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
+      fullMaskingAlgorithmId: "",
+      partialMaskingAlgorithmId: "",
     }
   );
 };

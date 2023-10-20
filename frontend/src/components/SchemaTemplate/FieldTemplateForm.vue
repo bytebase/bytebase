@@ -374,7 +374,7 @@ const allowEdit = computed(() => {
 const semanticTypeList = computed(() => {
   return (
     settingStore.getSettingByName("bb.workspace.semantic-types")?.value
-      ?.semanticTypesSettingValue?.types ?? []
+      ?.semanticTypeSettingValue?.types ?? []
   );
 });
 
