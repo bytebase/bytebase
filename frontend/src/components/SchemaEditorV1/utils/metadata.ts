@@ -110,7 +110,8 @@ export const mergeSchemaEditToMetadata = (
             const primaryIndex =
               table.indexes.find((index) => index.primary) ||
               IndexMetadata.fromPartial({
-                name: tableEdit.primaryKey.name,
+                // TODO: Maybe we should let user to specify the index name.
+                name: tableEdit.primaryKey.name || `pk_${tableEdit.name}`,
                 primary: true,
                 expressions: [],
               });
@@ -302,7 +303,8 @@ export const transformTableEditToMetadata = (
 
   if (tableEdit.primaryKey.columnIdList.length > 0) {
     const primaryIndex = IndexMetadata.fromPartial({
-      name: tableEdit.primaryKey.name || `${tableEdit.name}_pkey`,
+      // TODO: Maybe we should let user to specify the index name.
+      name: tableEdit.primaryKey.name || `pk_${tableEdit.name}`,
       primary: true,
       expressions: [],
     });
