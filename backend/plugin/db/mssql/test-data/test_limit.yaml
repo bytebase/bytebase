@@ -1,0 +1,342 @@
+- stmt: |
+    SELECT 1;
+  count: 10
+  want: SELECT TOP 10 1;
+- stmt: |
+    SELECT id FROM t1;
+  count: 10
+  want: SELECT TOP 10 id FROM t1;
+- stmt: |
+    SELECT TOP 3 id FROM t1;
+  count: 10
+  want: SELECT TOP 3 id FROM t1;
+- stmt: |
+    SELECT id FROM t1 ORDER BY price;
+  count: 10
+  want: SELECT id FROM t1 ORDER BY price OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;
+- stmt: |
+    SELECT name, price
+    FROM toy
+    ORDER BY price
+    OFFSET 0 ROWS FETCH FIRST 5 ROWS ONLY;
+  count: 10
+  want: |-
+    SELECT name, price
+    FROM toy
+    ORDER BY price
+    OFFSET 0 ROWS FETCH FIRST 5 ROWS ONLY;
+- stmt: |
+    SELECT
+        product_name,
+        list_price
+    FROM
+        production.products
+    ORDER BY
+        list_price,
+        product_name;
+  count: 10
+  want: |-
+    SELECT
+        product_name,
+        list_price
+    FROM
+        production.products
+    ORDER BY
+        list_price,
+        product_name OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;
+- stmt: |
+    SELECT
+        product_name,
+        list_price
+    FROM
+        production.products
+    ORDER BY
+        list_price,
+        product_name OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;
+  count: 10
+  want: |-
+    SELECT
+        product_name,
+        list_price
+    FROM
+        production.products
+    ORDER BY
+        list_price,
+        product_name OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;
+- stmt: |
+    SELECT TOP 10
+        product_name,
+        list_price
+    FROM
+        production.products
+    ORDER BY
+        list_price DESC;
+  count: 10
+  want: |-
+    SELECT TOP 10
+        product_name,
+        list_price
+    FROM
+        production.products
+    ORDER BY
+        list_price DESC;
+- stmt: |
+    SELECT
+    product_name,
+    category_name,
+    list_price
+    FROM
+        production.products p
+    INNER JOIN production.categories c
+        ON c.category_id = p.category_id
+    ORDER BY
+        product_name DESC;
+  count: 10
+  want: |-
+    SELECT
+    product_name,
+    category_name,
+    list_price
+    FROM
+        production.products p
+    INNER JOIN production.categories c
+        ON c.category_id = p.category_id
+    ORDER BY
+        product_name DESC OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;
+- stmt: |
+    SELECT
+      order_id,
+      order_date,
+      customer_id
+    FROM
+        sales.orders
+    WHERE
+        customer_id IN (
+            SELECT
+                customer_id
+            FROM
+                sales.customers
+            WHERE
+                city = 'New York'
+        )
+    ORDER BY
+        order_date DESC;
+  count: 10
+  want: |-
+    SELECT
+      order_id,
+      order_date,
+      customer_id
+    FROM
+        sales.orders
+    WHERE
+        customer_id IN (
+            SELECT
+                customer_id
+            FROM
+                sales.customers
+            WHERE
+                city = 'New York'
+        )
+    ORDER BY
+        order_date DESC OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;
+- stmt: |
+    SELECT
+      order_id,
+      order_date,
+      (
+          SELECT
+              MAX (list_price)
+          FROM
+              sales.order_items i
+          WHERE
+              i.order_id = o.order_id
+      ) AS max_list_price
+    FROM
+        sales.orders o
+    order by order_date desc;
+  count: 10
+  want: |-
+    SELECT
+      order_id,
+      order_date,
+      (
+          SELECT
+              MAX (list_price)
+          FROM
+              sales.order_items i
+          WHERE
+              i.order_id = o.order_id
+      ) AS max_list_price
+    FROM
+        sales.orders o
+    order by order_date desc OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;
+- stmt: |
+    SELECT
+      first_name,
+      last_name
+    FROM
+        sales.staffs
+    UNION ALL
+    SELECT
+        first_name,
+        last_name
+    FROM
+        sales.customers
+    ORDER BY
+        first_name,
+        last_name;
+  count: 10
+  want: |-
+    SELECT
+      first_name,
+      last_name
+    FROM
+        sales.staffs
+    UNION ALL
+    SELECT
+        first_name,
+        last_name
+    FROM
+        sales.customers
+    ORDER BY
+        first_name,
+        last_name OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;
+- stmt: |
+    SELECT
+        first_name,
+        last_name
+    FROM
+        sales.staffs
+    UNION ALL
+    SELECT
+        first_name,
+        last_name
+    FROM
+        sales.customers;
+  count: 10
+  want: |-
+    SELECT TOP 10
+        first_name,
+        last_name
+    FROM
+        sales.staffs
+    UNION ALL
+    SELECT TOP 10
+        first_name,
+        last_name
+    FROM
+        sales.customers;
+- stmt: |
+    SELECT TOP 10
+        first_name,
+        last_name
+    FROM
+        sales.staffs
+    UNION ALL
+    SELECT TOP 10
+        first_name,
+        last_name
+    FROM
+        sales.customers;
+  count: 10
+  want: |-
+    SELECT TOP 10
+        first_name,
+        last_name
+    FROM
+        sales.staffs
+    UNION ALL
+    SELECT TOP 10
+        first_name,
+        last_name
+    FROM
+        sales.customers;
+- stmt: |
+    WITH cte_sales_amounts (staff, sales, year) AS (
+    SELECT
+        first_name + ' ' + last_name,
+        SUM(quantity * list_price * (1 - discount)),
+        YEAR(order_date)
+    FROM
+        sales.orders o
+    INNER JOIN sales.order_items i ON i.order_id = o.order_id
+    INNER JOIN sales.staffs s ON s.staff_id = o.staff_id
+    GROUP BY
+        first_name + ' ' + last_name,
+        year(order_date)
+    )
+
+    SELECT
+        staff,
+        sales
+    FROM
+        cte_sales_amounts
+    WHERE
+        year = 2018;
+  count: 10
+  want: |-
+    WITH cte_sales_amounts (staff, sales, year) AS (
+    SELECT
+        first_name + ' ' + last_name,
+        SUM(quantity * list_price * (1 - discount)),
+        YEAR(order_date)
+    FROM
+        sales.orders o
+    INNER JOIN sales.order_items i ON i.order_id = o.order_id
+    INNER JOIN sales.staffs s ON s.staff_id = o.staff_id
+    GROUP BY
+        first_name + ' ' + last_name,
+        year(order_date)
+    )
+
+    SELECT TOP 10
+        staff,
+        sales
+    FROM
+        cte_sales_amounts
+    WHERE
+        year = 2018;
+- stmt: |
+    WITH cte_org AS (
+    SELECT
+        staff_id,
+        first_name,
+        manager_id
+
+    FROM
+        sales.staffs
+    WHERE manager_id IS NULL
+    UNION ALL
+    SELECT
+        e.staff_id,
+        e.first_name,
+        e.manager_id
+    FROM
+        sales.staffs e
+        INNER JOIN cte_org o
+            ON o.staff_id = e.manager_id
+    )
+    SELECT * FROM cte_org;
+  count: 10
+  want: |-
+    WITH cte_org AS (
+    SELECT
+        staff_id,
+        first_name,
+        manager_id
+
+    FROM
+        sales.staffs
+    WHERE manager_id IS NULL
+    UNION ALL
+    SELECT
+        e.staff_id,
+        e.first_name,
+        e.manager_id
+    FROM
+        sales.staffs e
+        INNER JOIN cte_org o
+            ON o.staff_id = e.manager_id
+    )
+    SELECT TOP 10 * FROM cte_org;
