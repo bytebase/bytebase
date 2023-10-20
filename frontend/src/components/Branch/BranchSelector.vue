@@ -8,19 +8,26 @@
     :clearable="clearable"
     :filter="filterByName"
     class="bb-branch-select"
+    :render-label="renderLabel"
     @update:value="$emit('update:branch', $event)"
   />
 </template>
 
 <script lang="ts" setup>
-import { NSelect, SelectOption } from "naive-ui";
-import { computed } from "vue";
-import { useProjectV1Store, useSchemaDesignList } from "@/store";
+import { NSelect, SelectOption, SelectRenderLabel } from "naive-ui";
+import { computed, h } from "vue";
+import {
+  useDatabaseV1Store,
+  useProjectV1Store,
+  useSchemaDesignList,
+} from "@/store";
 import {
   getProjectAndSchemaDesignSheetId,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
+import { UNKNOWN_ID } from "@/types";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
+import { InstanceV1EngineIcon } from "../v2";
 
 interface BranchSelectOption extends SelectOption {
   value: string;
@@ -40,6 +47,7 @@ defineEmits<{
 
 const { schemaDesignList: branchList } = useSchemaDesignList();
 const projectStore = useProjectV1Store();
+const databaseStore = useDatabaseV1Store();
 
 const combinedBranchList = computed(() => {
   let list = branchList.value;
@@ -74,6 +82,32 @@ const filterByName = (pattern: string, option: SelectOption) => {
   return (
     branch.name.toLowerCase().includes(pattern) ||
     branch.title.toLowerCase().includes(pattern)
+  );
+};
+
+const renderLabel: SelectRenderLabel = (option) => {
+  const { branch } = option as BranchSelectOption;
+  if (!branch) {
+    return;
+  }
+
+  const children = [h("div", {}, [branch.title])];
+  const database = databaseStore.getDatabaseByName(branch.baselineDatabase);
+  if (database.uid !== String(UNKNOWN_ID)) {
+    // prefix engine icon
+    children.unshift(
+      h(InstanceV1EngineIcon, {
+        class: "mr-1",
+        instance: database.instanceEntity,
+      })
+    );
+  }
+  return h(
+    "div",
+    {
+      class: "w-full flex flex-row justify-start items-center truncate",
+    },
+    children
   );
 };
 </script>
