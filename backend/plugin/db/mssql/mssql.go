@@ -124,11 +124,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 	return totalRowsAffected, nil
 }
 
-func getMSSQLStatementWithResultLimit(stmt string, limit int) string {
-	// TODO(d): support SELECT 1 (mssql: No column name was specified for column 1 of 'result').
-	return fmt.Sprintf("WITH result AS (%s) SELECT TOP %d * FROM result;", stmt, limit)
-}
-
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	singleSQLs, err := tsqlparser.SplitSQL(statement)
@@ -159,7 +154,11 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 
 	stmt := statement
 	if !strings.HasPrefix(stmt, "EXPLAIN") && queryContext.Limit > 0 {
-		stmt = getMSSQLStatementWithResultLimit(stmt, queryContext.Limit)
+		var err error
+		stmt, err = getMSSQLStatementWithResultLimit(stmt, queryContext.Limit)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if queryContext.ReadOnly {
