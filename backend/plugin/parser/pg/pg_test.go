@@ -25,8 +25,10 @@ func TestPostgreSQLParser(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		tree, err := ParsePostgreSQL(test.statement)
-		_, _ = tree.(*parser.RootContext)
+		res, err := ParsePostgreSQL(test.statement)
+		if res != nil {
+			_, _ = res.Tree.(*parser.RootContext)
+		}
 		if test.errorMessage == "" {
 			require.NoError(t, err)
 		} else {

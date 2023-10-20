@@ -771,9 +771,15 @@ type designSchemaGenerator struct {
 // GetDesignSchema returns the schema string for the design schema.
 func GetDesignSchema(baselineSchema string, to *v1pb.DatabaseMetadata) (string, error) {
 	toState := convertToDatabaseState(to)
-	tree, err := pgparser.ParsePostgreSQL(baselineSchema)
+	parseResult, err := pgparser.ParsePostgreSQL(baselineSchema)
 	if err != nil {
 		return "", err
+	}
+	if parseResult == nil {
+		return "", nil
+	}
+	if parseResult.Tree == nil {
+		return "", nil
 	}
 
 	listener := &designSchemaGenerator{
@@ -781,11 +787,11 @@ func GetDesignSchema(baselineSchema string, to *v1pb.DatabaseMetadata) (string, 
 		to:             toState,
 	}
 
-	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
+	antlr.ParseTreeWalkerDefault.Walk(listener, parseResult.Tree)
 	if listener.err != nil {
 		return "", listener.err
 	}
-	root, ok := tree.(*postgres.RootContext)
+	root, ok := parseResult.Tree.(*postgres.RootContext)
 	if !ok {
 		return "", errors.Errorf("failed to convert to RootContext")
 	}
