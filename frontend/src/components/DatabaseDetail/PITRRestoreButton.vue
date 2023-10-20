@@ -394,7 +394,7 @@ const onConfirmV1 = async () => {
         `before migration version [${lastChangeHistory.value!.version}]`
       );
     }
-    const issueCreate = Issue.fromJSON({
+    const issueCreate = Issue.fromPartial({
       title: issueNameParts.join(" "),
       type: Issue_Type.DATABASE_CHANGE,
       creator: `users/${me.value.email}`,
