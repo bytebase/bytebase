@@ -17,30 +17,14 @@
       />
       <DatabaseSelect
         class="!w-128"
-        :selected-id="state.databaseId ?? String(UNKNOWN_ID)"
-        :mode="'USER'"
-        :disabled="props.readonly"
-        :environment-id="state.environmentId"
-        :project-id="props.projectId"
-        :engine-type-list="allowedEngineTypeList"
-        :sync-status="'OK'"
-        :customize-item="true"
         :placeholder="$t('schema-designer.select-database-placeholder')"
-        :database="state.databaseId"
+        :disabled="props.readonly"
+        :allowed-engine-type-list="allowedEngineTypeList"
         :environment="state.environmentId"
         :project="projectId"
+        :database="state.databaseId"
         @update:database="handleDatabaseSelect"
-      >
-        <template #customizeItem="{ database: db }">
-          <div class="flex items-center">
-            <InstanceV1EngineIcon :instance="db.instanceEntity" />
-            <span class="mx-2">{{ db.databaseName }}</span>
-            <span class="text-gray-400">
-              ({{ instanceV1Name(db.instanceEntity) }})
-            </span>
-          </div>
-        </template>
-      </DatabaseSelect>
+      />
     </div>
     <div class="w-full flex flex-row justify-start items-center">
       <span class="flex w-40 items-center shrink-0 text-sm">
@@ -96,7 +80,6 @@
 import { head, isNull, isUndefined } from "lodash-es";
 import { NEllipsis } from "naive-ui";
 import { computed, reactive, watch } from "vue";
-import { InstanceV1EngineIcon } from "@/components/v2";
 import { EnvironmentSelect, DatabaseSelect } from "@/components/v2";
 import {
   useChangeHistoryStore,
@@ -110,7 +93,6 @@ import {
   ChangeHistory,
   ChangeHistory_Type,
 } from "@/types/proto/v1/database_service";
-import { instanceV1Name } from "@/utils";
 
 interface BaselineSchema {
   databaseId?: string;
