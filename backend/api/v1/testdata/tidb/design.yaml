@@ -4,7 +4,7 @@
       `a` int,
       PRIMARY KEY (`a`),
       CONSTRAINT fk1 FOREIGN KEY (`a`) REFERENCES `t2` (`b`)
-    );
+    ) COMMENT 'hello';
     CREATE TABLE `t3` (
       `a` int
     );
@@ -13,6 +13,7 @@
       `c` int,
       `d` int,
       `e` char(10) NOT NULL DEFAULT 'NULL' comment 'this is comment',
+      `f` int comment 'this is comment',
       PRIMARY KEY (`a`, `c`, `d`),
       CONSTRAINT fk1 FOREIGN KEY (`a`) REFERENCES `t2` (`b`)
     );
@@ -54,7 +55,8 @@
                   "primary":  true,
                   "visible":  true
                 }
-              ]
+              ],
+              "comment": "hello"
             },
             {
               "name":  "t",
@@ -93,6 +95,11 @@
                   "hasDefault":  true,
                   "defaultExpression":  "1",
                   "comment":  "col_e"
+                },
+                {
+                  "name":  "f",
+                  "type":  "int",
+                  "nullable":  true
                 }
               ],
               "indexes":  [
@@ -171,6 +178,7 @@
       `a` varchar(10) NOT NULL DEFAULT 'default value' COMMENT 'this is comment, aha',
       `c` int NOT NULL DEFAULT 1 COMMENT 'col_b',
       `e` int NULL DEFAUL 1 COMMENT 'col_e',
+      `f` int,
       `b` char(10) NOT NULL,
       PRIMARY KEY (`a`, `b`, `c`),
       CONSTRAINT `fk1` FOREIGN KEY (`b`) REFERENCES `t2` (`b`)
@@ -180,7 +188,7 @@
       `age` varbinary(500) NULL,
       `name` binary(10) NULL,
       PRIMARY KEY(`id`) CLUSTERED
-    ) ENGINE = InnoDB DEFAULT CHARACTER SET = UTF8MB4 DEFAULT COLLATE = UTF8MB4_BIN;
+    ) ENGINE = InnoDB DEFAULT CHARACTER SET = UTF8MB4 DEFAULT COLLATE = UTF8MB4_BIN COMMENT 'hello';
 
     CREATE TABLE `t2` (
       `b` int NULL,
