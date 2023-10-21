@@ -1855,7 +1855,7 @@
           "create-oauth-app": "Cree su aplicación OAuth de Bytebase con la siguiente información.",
           "gitlab-application-id-error": "El ID de aplicación debe ser una cadena alfanumérica de 64 caracteres",
           "gitlab-secret-error": "El secreto debe ser una cadena alfanumérica de 64 caracteres",
-          "github-application-id-error": "El ID de aplicación debe ser una cadena alfanumérica de 20 caracteres",
+          "github-application-id-error": "El ID de aplicación debe ser una cadena alfanumérica de 20 caracteres. Asegúrese de que sea una aplicación OAuth en lugar de una aplicación GitHub.",
           "github-secret-error": "El secreto debe ser una cadena alfanumérica de 40 caracteres",
           "bitbucket-application-id-error": "El ID de aplicación debe ser una cadena alfanumérica de 18 caracteres",
           "bitbucket-secret-error": "El secreto debe ser una cadena alfanumérica de 32 caracteres",
