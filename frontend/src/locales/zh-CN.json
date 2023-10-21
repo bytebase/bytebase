@@ -1830,7 +1830,7 @@
           "create-oauth-app": "使用如下信息来创建您的 Bytebase OAuth 应用。",
           "gitlab-application-id-error": "应用 ID 必须是 64 个字母长度",
           "gitlab-secret-error": "Secret 必须是 64 个字母长度",
-          "github-application-id-error": "应用 ID 必须是 20 个字母长度",
+          "github-application-id-error": "应用 ID 必须是 20 个字母长度。请确认这是一个 OAuth 应用而不是 GitHub 应用。",
           "github-secret-error": "Secret 必须是 40 个字母长度",
           "bitbucket-application-id-error": "应用 ID 必须是 18 个字母长度",
           "bitbucket-secret-error": "Secret 必须是 32 个字母长度",
