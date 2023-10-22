@@ -272,7 +272,6 @@ func newTableState(id int, name string) *tableState {
 
 func convertToTableState(id int, table *v1pb.TableMetadata) *tableState {
 	state := newTableState(id, table.Name)
-	state.comment = table.Comment
 	for i, column := range table.Columns {
 		state.columns[column.Name] = convertToColumnState(i, column)
 	}
@@ -282,6 +281,7 @@ func convertToTableState(id int, table *v1pb.TableMetadata) *tableState {
 	for i, fk := range table.ForeignKeys {
 		state.foreignKeys[fk.Name] = convertToForeignKeyState(i, fk)
 	}
+	state.comment = table.Comment
 	return state
 }
 
@@ -327,6 +327,7 @@ func (t *tableState) convertToTableMetadata() *v1pb.TableMetadata {
 		Columns:     columns,
 		Indexes:     indexes,
 		ForeignKeys: fks,
+		Comment:     t.comment,
 	}
 }
 
@@ -597,7 +598,20 @@ func (t *mysqlTransformer) EnterCreateTable(ctx *mysql.CreateTableContext) {
 		return
 	}
 
-	schema.tables[tableName] = newTableState(len(schema.tables), tableName)
+	tableState := newTableState(len(schema.tables), tableName)
+	for _, attribute := range ctx.CreateTableOptions().AllCreateTableOption() {
+		if attribute.COMMENT_SYMBOL() != nil {
+			commentStart := nextDefaultChannelTokenIndex(ctx.GetParser().GetTokenStream(), attribute.COMMENT_SYMBOL().GetSymbol().GetTokenIndex())
+			comment := attribute.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+				Start: commentStart,
+				Stop:  attribute.GetStop().GetTokenIndex(),
+			})
+			if comment != `''` && len(comment) > 2 {
+				tableState.comment = comment[1 : len(comment)-1]
+			}
+		}
+	}
+	schema.tables[tableName] = tableState
 	t.currentTable = tableName
 }
 
@@ -986,6 +1000,8 @@ func (g *mysqlDesignSchemaGenerator) ExitCreateTable(ctx *mysql.CreateTableConte
 		g.err = err
 		return
 	}
+
+	// TODO(rebelice): create table comment.
 
 	if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 		Start: ctx.TableElementList().GetStop().GetTokenIndex() + 1,
