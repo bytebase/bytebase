@@ -430,7 +430,7 @@ func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1
 		if mergedTarget == nil {
 			return nil, status.Errorf(codes.FailedPrecondition, "failed to merge schema design: no change")
 		}
-		mergedTargetSchema, err = getMySQLDesignSchema(targetSchemaDesign.Schema, mergedTarget)
+		mergedTargetSchema, err = getDesignSchema(schemaDesign.Engine, targetSchemaDesign.Schema, mergedTarget)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to convert merged metadata to schema string, %v", err)
 		}
