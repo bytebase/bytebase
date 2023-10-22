@@ -1,38 +1,37 @@
-import { first } from "lodash-es";
+import { first, last, uniqBy } from "lodash-es";
 import { computed, unref } from "vue";
-import { useEnvironmentV1Store } from "@/store";
+import { extractIssueReviewContext } from "@/plugins/issue/logic";
+import { useEnvironmentV1Store, useUserStore } from "@/store";
 import {
   usePolicyByParentAndType,
-  defaultApprovalStrategy,
   usePolicyV1Store,
+  getDefaultRolloutPolicyPayload,
 } from "@/store/modules/v1/policy";
 import {
   ComposedIssue,
   emptyStage,
   emptyTask,
   MaybeRef,
+  PresetRoleType,
+  UNKNOWN_ID,
   unknownEnvironment,
+  VirtualRoleType,
 } from "@/types";
-import { User } from "@/types/proto/v1/auth_service";
-import { DeploymentType } from "@/types/proto/v1/deployment";
-import { IamPolicy } from "@/types/proto/v1/iam_policy";
+import { User, UserRole } from "@/types/proto/v1/auth_service";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
-import {
-  Policy,
-  PolicyType,
-  ApprovalStrategy,
-  ApprovalGroup,
-} from "@/types/proto/v1/org_policy_service";
-import { Project } from "@/types/proto/v1/project_service";
-import { Task, Task_Type } from "@/types/proto/v1/rollout_service";
+import { PolicyType } from "@/types/proto/v1/org_policy_service";
+import { Task } from "@/types/proto/v1/rollout_service";
 import {
   isDatabaseRelatedIssue,
   isOwnerOfProjectV1,
   hasWorkspacePermissionV1,
   extractUserResourceName,
   activeTaskInRollout,
+  memberListInProjectV1,
+  extractUserUID,
 } from "@/utils";
 import { useIssueContext } from "./context";
+import { useWrappedReviewStepsV1 } from "./review";
 import { stageForTask } from "./utils";
 
 export const getCurrentRolloutPolicyForTask = async (
@@ -40,10 +39,7 @@ export const getCurrentRolloutPolicyForTask = async (
   task: Task
 ) => {
   if (!isDatabaseRelatedIssue(issue)) {
-    return {
-      policy: ApprovalStrategy.MANUAL,
-      assigneeGroup: undefined,
-    };
+    return getDefaultRolloutPolicyPayload();
   }
 
   const stage = stageForTask(issue, task);
@@ -52,24 +48,20 @@ export const getCurrentRolloutPolicyForTask = async (
     : undefined;
 
   if (!environment) {
-    return extractRollOutPolicyValue(undefined, task.type);
+    return getDefaultRolloutPolicyPayload();
   }
 
-  const approvalPolicy =
-    await usePolicyV1Store().getOrFetchPolicyByParentAndType({
-      parentPath: environment.name,
-      policyType: PolicyType.DEPLOYMENT_APPROVAL,
-    });
-  return extractRollOutPolicyValue(approvalPolicy, task.type);
+  const policy = await usePolicyV1Store().getOrFetchPolicyByParentAndType({
+    parentPath: environment.name,
+    policyType: PolicyType.ROLLOUT_POLICY,
+  });
+  return policy?.rolloutPolicy ?? getDefaultRolloutPolicyPayload();
 };
 
 export const useCurrentRolloutPolicyForTask = (task: MaybeRef<Task>) => {
   const { issue } = useIssueContext();
   if (!isDatabaseRelatedIssue(issue.value)) {
-    return computed(() => ({
-      policy: ApprovalStrategy.MANUAL,
-      assigneeGroup: undefined,
-    }));
+    return computed(() => getDefaultRolloutPolicyPayload());
   }
 
   const environment = computed(() => {
@@ -81,16 +73,15 @@ export const useCurrentRolloutPolicyForTask = (task: MaybeRef<Task>) => {
     );
   });
 
-  const approvalPolicy = usePolicyByParentAndType(
+  const policy = usePolicyByParentAndType(
     computed(() => ({
       parentPath: environment.value.name,
-      policyType: PolicyType.DEPLOYMENT_APPROVAL,
+      policyType: PolicyType.ROLLOUT_POLICY,
     }))
   );
 
   return computed(() => {
-    const policy = approvalPolicy.value;
-    return extractRollOutPolicyValue(policy, unref(task).type);
+    return policy.value?.rolloutPolicy ?? getDefaultRolloutPolicyPayload();
   });
 };
 
@@ -107,87 +98,6 @@ export const useCurrentRolloutPolicyForActiveEnvironment = () => {
   });
 
   return useCurrentRolloutPolicyForTask(activeTask);
-};
-
-export const extractRollOutPolicyValueByDeploymentType = (
-  policy: Policy | undefined,
-  deploymentType: DeploymentType
-) => {
-  if (!policy || !policy.deploymentApprovalPolicy) {
-    return {
-      policy: defaultApprovalStrategy,
-      assigneeGroup: ApprovalGroup.APPROVAL_GROUP_DBA,
-    };
-  }
-
-  if (
-    policy.deploymentApprovalPolicy.defaultStrategy ===
-    ApprovalStrategy.AUTOMATIC
-  ) {
-    return { policy: ApprovalStrategy.AUTOMATIC };
-  }
-
-  const assigneeGroup =
-    policy.deploymentApprovalPolicy.deploymentApprovalStrategies.find(
-      (group) => group.deploymentType === deploymentType
-    );
-
-  if (
-    !assigneeGroup ||
-    assigneeGroup.approvalGroup === ApprovalGroup.APPROVAL_GROUP_DBA
-  ) {
-    return {
-      policy: ApprovalStrategy.MANUAL,
-      assigneeGroup: ApprovalGroup.APPROVAL_GROUP_DBA,
-    };
-  }
-
-  return {
-    policy: ApprovalStrategy.MANUAL,
-    assigneeGroup: ApprovalGroup.APPROVAL_GROUP_PROJECT_OWNER,
-  };
-};
-
-export const extractRollOutPolicyValue = (
-  policy: Policy | undefined,
-  taskType: Task_Type
-): {
-  policy: ApprovalStrategy;
-  assigneeGroup?: ApprovalGroup;
-} => {
-  const deploymentType = taskTypeToDeploymentType(taskType);
-  return extractRollOutPolicyValueByDeploymentType(policy, deploymentType);
-};
-
-export const allowUserToBeAssignee = (
-  user: User,
-  project: Project,
-  projectIamPolicy: IamPolicy,
-  policy: ApprovalStrategy,
-  assigneeGroup: ApprovalGroup | undefined
-): boolean => {
-  const hasWorkspaceIssueManagementPermission = hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-issue",
-    user.userRole
-  );
-
-  if (policy === ApprovalStrategy.AUTOMATIC) {
-    // DBA / workspace owner
-    return hasWorkspaceIssueManagementPermission;
-  }
-
-  if (assigneeGroup === ApprovalGroup.APPROVAL_GROUP_DBA) {
-    // DBA / workspace owner
-    return hasWorkspaceIssueManagementPermission;
-  }
-
-  if (assigneeGroup === ApprovalGroup.APPROVAL_GROUP_PROJECT_OWNER) {
-    // Project owner
-    return isOwnerOfProjectV1(projectIamPolicy, user);
-  }
-
-  console.assert(false, "should never reach this line");
-  return false;
 };
 
 export const allowUserToChangeAssignee = (user: User, issue: ComposedIssue) => {
@@ -226,47 +136,68 @@ export const allowUserToChangeAssignee = (user: User, issue: ComposedIssue) => {
   return false;
 };
 
-export const allowProjectOwnerToApprove = (
-  policy: Policy,
-  taskType: Task_Type
-): boolean => {
-  const strategy =
-    policy.deploymentApprovalPolicy?.defaultStrategy ?? defaultApprovalStrategy;
-  if (strategy === ApprovalStrategy.AUTOMATIC) {
-    return false;
-  }
-
-  const deploymentType = taskTypeToDeploymentType(taskType);
-  const assigneeGroup = (
-    policy.deploymentApprovalPolicy?.deploymentApprovalStrategies ?? []
-  ).find((group) => group.deploymentType === deploymentType);
-
-  if (!assigneeGroup) {
-    return false;
-  }
-
-  return (
-    assigneeGroup.approvalGroup === ApprovalGroup.APPROVAL_GROUP_PROJECT_OWNER
+export const assigneeCandidatesForIssue = async (issue: ComposedIssue) => {
+  const activeOrFirstTask = activeTaskInRollout(issue.rolloutEntity);
+  const rolloutPolicy = await getCurrentRolloutPolicyForTask(
+    issue,
+    activeOrFirstTask
   );
+  const project = issue.projectEntity;
+  const projectMembers = memberListInProjectV1(project, project.iamPolicy);
+  const workspaceMembers = useUserStore().userList;
+  const { automatic, workspaceRoles, projectRoles, issueRoles } = rolloutPolicy;
+  if (automatic) {
+    // Anyone in the project
+    return projectMembers.map((member) => member.user);
+  }
+
+  const users: User[] = [];
+  if (workspaceRoles.includes(VirtualRoleType.OWNER)) {
+    users.push(
+      ...workspaceMembers.filter((member) => member.userRole === UserRole.OWNER)
+    );
+  }
+  if (workspaceRoles.includes(VirtualRoleType.DBA)) {
+    users.push(
+      ...workspaceMembers.filter((member) => member.userRole === UserRole.DBA)
+    );
+  }
+  if (projectRoles.includes(PresetRoleType.OWNER)) {
+    const owners = projectMembers
+      .filter((member) => member.roleList.includes(PresetRoleType.OWNER))
+      .map((member) => member.user);
+    users.push(...owners);
+  }
+  if (projectRoles.includes(PresetRoleType.RELEASER)) {
+    const releasers = projectMembers
+      .filter((member) => member.roleList.includes(PresetRoleType.RELEASER))
+      .map((member) => member.user);
+    users.push(...releasers);
+  }
+  if (issueRoles.includes(VirtualRoleType.CREATOR)) {
+    const creator = issue.creatorEntity;
+    if (extractUserUID(creator.name) !== String(UNKNOWN_ID)) {
+      users.push(creator);
+    }
+  }
+  if (issueRoles.includes(VirtualRoleType.LAST_APPROVER)) {
+    const lastApprover = lastApproverForIssue(issue);
+    if (lastApprover) {
+      users.push(lastApprover);
+    }
+  }
+
+  return uniqBy(users, (user) => user.name);
 };
 
-export const taskTypeToDeploymentType = (
-  taskType: Task_Type
-): DeploymentType => {
-  switch (taskType) {
-    case Task_Type.DATABASE_CREATE:
-      return DeploymentType.DATABASE_CREATE;
-    case Task_Type.DATABASE_SCHEMA_UPDATE:
-      return DeploymentType.DATABASE_DDL;
-    case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER:
-    case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC:
-      return DeploymentType.DATABASE_DDL_GHOST;
-    case Task_Type.DATABASE_DATA_UPDATE:
-      return DeploymentType.DATABASE_DML;
-    case Task_Type.DATABASE_RESTORE_RESTORE:
-    case Task_Type.DATABASE_RESTORE_CUTOVER:
-      return DeploymentType.DATABASE_RESTORE_PITR;
-    default:
-      return DeploymentType.DEPLOYMENT_TYPE_UNSPECIFIED;
-  }
+const lastApproverForIssue = (issue: ComposedIssue) => {
+  const context = extractIssueReviewContext(computed(() => issue));
+  if (!context.done) return undefined;
+
+  const steps = useWrappedReviewStepsV1(issue, context);
+  const lastStep = last(steps.value);
+  if (!lastStep) return undefined;
+  if (lastStep.status !== "APPROVED") return undefined;
+
+  return lastStep.approver;
 };

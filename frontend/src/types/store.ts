@@ -19,7 +19,6 @@ import { Notification } from "./notification";
 import { Principal } from "./principal";
 import { Project } from "./project";
 import { DatabaseMetadata } from "./proto/store/database";
-import { SQLEditorMode } from "./sqlEditor";
 import { VCS } from "./vcs";
 
 export interface PrincipalState {
@@ -94,7 +93,6 @@ export interface SQLEditorState {
   isFetchingQueryHistory: boolean;
   isFetchingSheet: boolean;
   isShowExecutingHint: boolean;
-  mode: SQLEditorMode;
 }
 
 export interface DebugState {

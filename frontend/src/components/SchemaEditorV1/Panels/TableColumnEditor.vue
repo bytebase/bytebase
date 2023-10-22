@@ -39,8 +39,32 @@
           />
         </div>
         <div
+          v-if="isDev()"
+          class="bb-grid-cell flex items-center"
+          :class="getColumnClassList(column, row)"
+        >
+          {{ getColumnSemanticType(column)?.title }}
+          <div v-if="!readonly && !disableChangeTable" class="flex">
+            <button
+              v-if="getColumnSemanticType(column)"
+              :disabled="disableAlterColumn(column)"
+              class="w-4 h-4 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer"
+              @click.prevent="onSemanticTypeRemove(column)"
+            >
+              <heroicons-outline:x class="w-3 h-3" />
+            </button>
+            <button
+              :disabled="disableAlterColumn(column)"
+              class="w-4 h-4 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer"
+              @click.prevent="openSemanticTypeDrawer(column)"
+            >
+              <heroicons-outline:pencil class="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+        <div
           v-if="classificationConfig"
-          class="bb-grid-cell flex items-center gap-x-2 text-sm column-cell"
+          class="bb-grid-cell flex items-center gap-x-2 text-sm"
           :class="getColumnClassList(column, row)"
         >
           <ClassificationLevelBadge
@@ -57,7 +81,7 @@
             </button>
             <button
               class="w-4 h-4 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer"
-              @click.prevent="state.pendingUpdateColumn = column"
+              @click.prevent="openClassificationDrawer(column)"
             >
               <heroicons-outline:pencil class="w-3 h-3" />
             </button>
@@ -79,6 +103,7 @@
             type="text"
           />
           <NDropdown
+            v-if="!readonly"
             trigger="click"
             :disabled="readonly || disableAlterColumn(column)"
             :options="columnTypeOptions"
@@ -104,9 +129,10 @@
             @change="(e) => handleColumnDefaultInputChange(e, column)"
           />
           <NDropdown
+            v-if="!readonly"
             trigger="click"
             :disabled="readonly || disableAlterColumn(column)"
-            :options="getColumnDefaultValueOptions(column)"
+            :options="getColumnDefaultValueOptions(engine, column.type)"
             @select="(key: string) => handleColumnDefaultFieldChange(column, key)"
           >
             <button class="absolute right-5">
@@ -179,35 +205,48 @@
           </button>
         </div>
         <div
+          v-if="isDev()"
+          class="bb-grid-cell flex items-center column-cell"
+          :class="getColumnClassList(column, row)"
+        >
+          <LabelsColumn :labels="column.config.labels" :show-count="1" />
+          <button
+            v-if="!readonly && !disableChangeTable"
+            class="w-4 h-4 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer"
+            @click.prevent="openLabelsDrawer(column)"
+          >
+            <heroicons-outline:pencil class="w-3 h-3" />
+          </button>
+        </div>
+        <div
+          v-if="!readonly"
           class="bb-grid-cell flex justify-end items-center"
           :class="getColumnClassList(column, row)"
         >
-          <template v-if="!readonly">
-            <n-tooltip v-if="!isDroppedColumn(column)" trigger="hover">
-              <template #trigger>
-                <button
-                  :disabled="disableChangeTable"
-                  class="text-gray-500 cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
-                  @click="$emit('onDrop', column)"
-                >
-                  <heroicons:trash class="w-4 h-auto" />
-                </button>
-              </template>
-              <span>{{ $t("schema-editor.actions.drop-column") }}</span>
-            </n-tooltip>
-            <n-tooltip v-else trigger="hover">
-              <template #trigger>
-                <button
-                  class="text-gray-500 cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
-                  :disabled="disableChangeTable"
-                  @click="$emit('onRestore', column)"
-                >
-                  <heroicons:arrow-uturn-left class="w-4 h-auto" />
-                </button>
-              </template>
-              <span>{{ $t("schema-editor.actions.restore") }}</span>
-            </n-tooltip>
-          </template>
+          <n-tooltip v-if="!isDroppedColumn(column)" trigger="hover">
+            <template #trigger>
+              <button
+                :disabled="disableChangeTable"
+                class="text-gray-500 cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+                @click="$emit('onDrop', column)"
+              >
+                <heroicons:trash class="w-4 h-auto" />
+              </button>
+            </template>
+            <span>{{ $t("schema-editor.actions.drop-column") }}</span>
+          </n-tooltip>
+          <n-tooltip v-else trigger="hover">
+            <template #trigger>
+              <button
+                class="text-gray-500 cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+                :disabled="disableChangeTable"
+                @click="$emit('onRestore', column)"
+              >
+                <heroicons:arrow-uturn-left class="w-4 h-auto" />
+              </button>
+            </template>
+            <span>{{ $t("schema-editor.actions.restore") }}</span>
+          </n-tooltip>
         </div>
       </div>
     </template>
@@ -221,11 +260,33 @@
   />
 
   <SelectClassificationDrawer
-    v-if="classificationConfig"
-    :show="state.pendingUpdateColumn !== undefined"
+    v-if="classificationConfig && state.pendingUpdateColumn"
+    :show="state.showClassificationDrawer"
     :classification-config="classificationConfig"
-    @dismiss="state.pendingUpdateColumn = undefined"
-    @select="onClassificationSelect"
+    @dismiss="state.showClassificationDrawer = false"
+    @apply="onClassificationSelect"
+  />
+
+  <SemanticTypesDrawer
+    v-if="state.pendingUpdateColumn"
+    :show="state.showSemanticTypesDrawer"
+    :semantic-type-list="semanticTypeList"
+    @dismiss="state.showSemanticTypesDrawer = false"
+    @apply="onSemanticTypeApply($event)"
+  />
+
+  <LabelEditorDrawer
+    v-if="state.pendingUpdateColumn"
+    :show="state.showLabelsDrawer"
+    :readonly="false"
+    :title="
+      $t('db.labels-for-resource', {
+        resource: `'${state.pendingUpdateColumn.name}'`,
+      })
+    "
+    :labels="[state.pendingUpdateColumn.config.labels]"
+    @dismiss="state.showLabelsDrawer = false"
+    @apply="onLabelsApply"
   />
 </template>
 
@@ -237,17 +298,22 @@ import { useI18n } from "vue-i18n";
 import { BBCheckbox } from "@/bbkit";
 import { useSettingV1Store } from "@/store/modules";
 import { Engine } from "@/types/proto/v1/common";
+import { ColumnConfig } from "@/types/proto/v1/database_service";
 import { Table, Column, ForeignKey } from "@/types/v1/schemaEditor";
-import { getDataTypeSuggestionList } from "@/utils";
+import { getDataTypeSuggestionList, isDev } from "@/utils";
 import ColumnDefaultValueExpressionModal from "../Modals/ColumnDefaultValueExpressionModal.vue";
 import {
-  DefaultValueOption,
-  getColumnTypeDefaultValueOptions,
+  getColumnDefaultDisplayString,
+  getColumnDefaultValuePlaceholder,
   getDefaultValueByKey,
+  getColumnDefaultValueOptions,
 } from "../utils/columnDefaultValue";
 
 interface LocalState {
   pendingUpdateColumn?: Column;
+  showClassificationDrawer: boolean;
+  showSemanticTypesDrawer: boolean;
+  showLabelsDrawer: boolean;
 }
 
 const props = withDefaults(
@@ -285,7 +351,11 @@ defineEmits<{
   (event: "onPrimaryKeySet", column: Column, isPrimaryKey: boolean): void;
 }>();
 
-const state = reactive<LocalState>({});
+const state = reactive<LocalState>({
+  showClassificationDrawer: false,
+  showSemanticTypesDrawer: false,
+  showLabelsDrawer: false,
+});
 
 const { t } = useI18n();
 const settingStore = useSettingV1Store();
@@ -298,11 +368,32 @@ const classificationConfig = computed(() => {
   return settingStore.getProjectClassification(props.classificationConfigId);
 });
 
+const semanticTypeList = computed(() => {
+  return (
+    settingStore.getSettingByName("bb.workspace.semantic-types")?.value
+      ?.semanticTypeSettingValue?.types ?? []
+  );
+});
+
+const getColumnSemanticType = (column: Column) => {
+  if (!column.config.semanticTypeId) {
+    return;
+  }
+  return semanticTypeList.value.find(
+    (data) => data.id === column.config.semanticTypeId
+  );
+};
+
 const columnHeaderList = computed(() => {
   return [
     {
       title: t("schema-editor.column.name"),
       width: "6rem",
+    },
+    {
+      title: t("settings.sensitive-data.semantic-types.self"),
+      width: "minmax(auto, 0.8fr)",
+      hide: !isDev(),
     },
     {
       title: t("schema-editor.column.classification"),
@@ -335,45 +426,17 @@ const columnHeaderList = computed(() => {
       hide: !props.showForeignKey,
     },
     {
+      title: t("common.labels"),
+      width: "minmax(auto, 1fr)",
+      hide: !isDev(),
+    },
+    {
       title: "",
       width: "30px",
+      hide: props.readonly,
     },
   ].filter((header) => !header.hide);
 });
-
-const getColumnDefaultDisplayString = (column: Column) => {
-  if (!column.hasDefault || column.defaultNull) {
-    return undefined;
-  }
-  return column.defaultString || column.defaultExpression || "";
-};
-
-const getColumnDefaultValuePlaceholder = (column: Column): string => {
-  if (!column.hasDefault) {
-    return "No default";
-  }
-  if (column.defaultNull) {
-    return "Null";
-  }
-  if (column.defaultString !== undefined) {
-    return column.defaultString || "Empty string";
-  }
-  if (column.defaultExpression !== undefined) {
-    return column.defaultExpression || "Empty expression";
-  }
-  return "";
-};
-
-const getColumnDefaultValueOptions = (column: Column): DefaultValueOption[] => {
-  return getColumnTypeDefaultValueOptions(props.engine, column.type).map(
-    (option) => {
-      return {
-        ...option,
-        label: t(`schema-editor.default.${option.key}`),
-      };
-    }
-  );
-};
 
 const getColumnClassList = (column: Column, index: number): string[] => {
   const classList = props.getColumnItemComputedClassList(column);
@@ -479,12 +542,54 @@ const handleSelectedColumnDefaultValueExpressionChange = (
   column.defaultExpression = expression;
 };
 
+const openClassificationDrawer = (column: Column) => {
+  state.pendingUpdateColumn = column;
+  state.showClassificationDrawer = true;
+};
+
+const openSemanticTypeDrawer = (column: Column) => {
+  state.pendingUpdateColumn = column;
+  state.showSemanticTypesDrawer = true;
+};
+
+const openLabelsDrawer = (column: Column) => {
+  state.pendingUpdateColumn = column;
+  state.showLabelsDrawer = true;
+};
+
 const onClassificationSelect = (classificationId: string) => {
   if (!state.pendingUpdateColumn) {
     return;
   }
   state.pendingUpdateColumn.classification = classificationId;
-  state.pendingUpdateColumn = undefined;
+};
+
+const onSemanticTypeApply = async (semanticTypeId: string) => {
+  if (!state.pendingUpdateColumn) {
+    return;
+  }
+
+  state.pendingUpdateColumn.config = ColumnConfig.fromPartial({
+    ...state.pendingUpdateColumn.config,
+    semanticTypeId,
+  });
+};
+
+const onLabelsApply = (labelsList: { [key: string]: string }[]) => {
+  if (!state.pendingUpdateColumn) {
+    return;
+  }
+  state.pendingUpdateColumn.config = ColumnConfig.fromPartial({
+    ...state.pendingUpdateColumn.config,
+    labels: labelsList[0],
+  });
+};
+
+const onSemanticTypeRemove = async (column: Column) => {
+  column.config = ColumnConfig.fromPartial({
+    ...column.config,
+    semanticTypeId: "",
+  });
 };
 </script>
 

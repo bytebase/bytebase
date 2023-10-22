@@ -206,6 +206,7 @@ message Policy {
   oneof policy {
     IamPolicy workspace_iam_policy = 6;
     DeploymentApprovalPolicy deployment_approval_policy = 7;
+    RolloutPolicy rollout_policy = 19;
     BackupPlanPolicy backup_plan_policy = 8;
     MaskingPolicy masking_policy = 9;
     SQLReviewPolicy sql_review_policy = 11;
@@ -230,6 +231,7 @@ enum PolicyType {
   POLICY_TYPE_UNSPECIFIED = 0;
   WORKSPACE_IAM = 1;
   DEPLOYMENT_APPROVAL = 2;
+  ROLLOUT_POLICY = 11;
   BACKUP_PLAN = 3;
   SQL_REVIEW = 4;
   MASKING = 5;
@@ -251,6 +253,15 @@ enum PolicyResourceType {
 message DeploymentApprovalPolicy {
   ApprovalStrategy default_strategy = 1;
   repeated DeploymentApprovalStrategy deployment_approval_strategies = 2;
+}
+
+message RolloutPolicy {
+  bool automatic = 1;
+  repeated string workspace_roles = 2;
+  repeated string project_roles = 3;
+  // roles/LAST_APPROVER
+  // roles/CREATOR
+  repeated string issue_roles = 4;
 }
 
 message DeploymentApprovalStrategy {
@@ -300,6 +311,8 @@ message MaskData {
   string table = 2;
   string column = 3;
   MaskingLevel masking_level = 4;
+  string full_masking_algorithm_id = 5;
+  string partial_masking_algorithm_id = 6;
 }
 
 message SQLReviewPolicy {

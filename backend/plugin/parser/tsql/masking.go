@@ -1,7 +1,6 @@
 package tsql
 
 import (
-	"cmp"
 	"fmt"
 	"unicode"
 
@@ -41,18 +40,21 @@ type fieldExtractor struct {
 }
 
 func (extractor *fieldExtractor) extractSensitiveFields(sql string) ([]base.SensitiveField, error) {
-	tree, err := ParseTSQL(sql)
+	result, err := ParseTSQL(sql)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse snowsql")
 	}
-	if tree == nil {
+	if result == nil {
+		return nil, nil
+	}
+	if result.Tree == nil {
 		return nil, nil
 	}
 
 	listener := &tsqlTSQLSensitiveFieldExtractorListener{
 		extractor: extractor,
 	}
-	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
+	antlr.ParseTreeWalkerDefault.Walk(listener, result.Tree)
 
 	return listener.result, listener.err
 }
@@ -79,8 +81,8 @@ func (l *tsqlTSQLSensitiveFieldExtractorListener) EnterDml_clause(ctx *parser.Dm
 
 	for _, field := range result {
 		l.result = append(l.result, base.SensitiveField{
-			Name:         field.Name,
-			MaskingLevel: field.MaskingLevel,
+			Name:              field.Name,
+			MaskingAttributes: field.MaskingAttributes,
 		})
 	}
 }
@@ -122,9 +124,7 @@ func (extractor *fieldExtractor) extractTSqlSensitiveFieldsFromSelectStatementSt
 							return nil, errors.Wrapf(err, "the number of columns in the query statement nearly line %d returns %d fields, but %d set operator near line %d returns %d fields", ctx.GetStart().GetLine(), len(fieldsInAnchorClause), i+1, allSQLUnions[i].GetStart().GetLine(), len(right))
 						}
 						for j := range right {
-							if cmp.Less[storepb.MaskingLevel](fieldsInAnchorClause[j].MaskingLevel, right[j].MaskingLevel) {
-								fieldsInAnchorClause[j].MaskingLevel = right[j].MaskingLevel
-							}
+							fieldsInAnchorClause[j].MaskingAttributes.TransmittedBy(right[j].MaskingAttributes)
 						}
 					}
 				}
@@ -145,8 +145,8 @@ func (extractor *fieldExtractor) extractTSqlSensitiveFieldsFromSelectStatementSt
 				}
 				for i := 0; i < len(fieldsInAnchorClause); i++ {
 					tempCTEOuterSchemaInfo.ColumnList = append(tempCTEOuterSchemaInfo.ColumnList, base.ColumnInfo{
-						Name:         fieldsInAnchorClause[i].Name,
-						MaskingLevel: fieldsInAnchorClause[i].MaskingLevel,
+						Name:              fieldsInAnchorClause[i].Name,
+						MaskingAttributes: fieldsInAnchorClause[i].MaskingAttributes,
 					})
 					result = append(result, fieldsInAnchorClause[i])
 				}
@@ -164,11 +164,8 @@ func (extractor *fieldExtractor) extractTSqlSensitiveFieldsFromSelectStatementSt
 						}
 						extractor.cteOuterSchemaInfo = extractor.cteOuterSchemaInfo[:originalSize]
 						for i := 0; i < len(fieldsInRecursiveClause); i++ {
-							if cmp.Less[storepb.MaskingLevel](tempCTEOuterSchemaInfo.ColumnList[i].MaskingLevel, fieldsInRecursiveClause[i].MaskingLevel) {
-								change = true
-								tempCTEOuterSchemaInfo.ColumnList[i].MaskingLevel = fieldsInRecursiveClause[i].MaskingLevel
-								result[i].MaskingLevel = fieldsInRecursiveClause[i].MaskingLevel
-							}
+							change = change || tempCTEOuterSchemaInfo.ColumnList[i].MaskingAttributes.TransmittedBy(fieldsInRecursiveClause[i].MaskingAttributes)
+							result[i].MaskingAttributes = tempCTEOuterSchemaInfo.ColumnList[i].MaskingAttributes.Clone()
 						}
 					} else if allQueryExpression := queryExpression.AllQuery_expression(); len(allQueryExpression) > 1 {
 						fieldsInRecursiveClause, err := extractor.extractTSqlSensitiveFieldsFromQueryExpression(allQueryExpression[len(allQueryExpression)-1])
@@ -180,11 +177,8 @@ func (extractor *fieldExtractor) extractTSqlSensitiveFieldsFromSelectStatementSt
 						}
 						extractor.cteOuterSchemaInfo = extractor.cteOuterSchemaInfo[:originalSize]
 						for i := 0; i < len(fieldsInRecursiveClause); i++ {
-							if cmp.Less[storepb.MaskingLevel](tempCTEOuterSchemaInfo.ColumnList[i].MaskingLevel, fieldsInRecursiveClause[i].MaskingLevel) {
-								change = true
-								tempCTEOuterSchemaInfo.ColumnList[i].MaskingLevel = fieldsInRecursiveClause[i].MaskingLevel
-								result[i].MaskingLevel = fieldsInRecursiveClause[i].MaskingLevel
-							}
+							change = change || tempCTEOuterSchemaInfo.ColumnList[i].MaskingAttributes.TransmittedBy(fieldsInRecursiveClause[i].MaskingAttributes)
+							result[i].MaskingAttributes = fieldsInRecursiveClause[i].MaskingAttributes.Clone()
 						}
 					}
 					if !change {
@@ -208,8 +202,8 @@ func (extractor *fieldExtractor) extractTSqlSensitiveFieldsFromSelectStatementSt
 			columnList := make([]base.ColumnInfo, 0, len(result))
 			for _, field := range result {
 				columnList = append(columnList, base.ColumnInfo{
-					Name:         field.Name,
-					MaskingLevel: field.MaskingLevel,
+					Name:              field.Name,
+					MaskingAttributes: field.MaskingAttributes,
 				})
 			}
 			extractor.cteOuterSchemaInfo = append(extractor.cteOuterSchemaInfo, base.TableSchema{
@@ -257,9 +251,7 @@ func (extractor *fieldExtractor) extractTSqlSensitiveFieldsFromQueryExpression(c
 					return nil, errors.Wrapf(err, "the number of columns in the query statement nearly line %d returns %d fields, but %d set operator near line %d returns %d fields", ctx.GetStart().GetLine(), len(left), i+1, sqlUnion.GetStart().GetLine(), len(right))
 				}
 				for i := range right {
-					if cmp.Less[storepb.MaskingLevel](left[i].MaskingLevel, right[i].MaskingLevel) {
-						left[i].MaskingLevel = right[i].MaskingLevel
-					}
+					left[i].MaskingAttributes.TransmittedBy(right[i].MaskingAttributes)
 				}
 			}
 		}
@@ -282,9 +274,7 @@ func (extractor *fieldExtractor) extractTSqlSensitiveFieldsFromQueryExpression(c
 				return nil, errors.Wrapf(err, "the number of columns in the query statement nearly line %d returns %d fields, but %d set operator near line %d returns %d fields", ctx.GetStart().GetLine(), len(left), i+1, allQueryExpressions[i].GetStart().GetLine(), len(right))
 			}
 			for i := range right {
-				if cmp.Less[storepb.MaskingLevel](left[i].MaskingLevel, right[i].MaskingLevel) {
-					left[i].MaskingLevel = right[i].MaskingLevel
-				}
+				left[i].MaskingAttributes.TransmittedBy(right[i].MaskingAttributes)
 			}
 		}
 		return left, nil
@@ -327,23 +317,23 @@ func (extractor *fieldExtractor) extractTSqlSensitiveFieldsFromQuerySpecificatio
 		} else if selectListElem.Udt_elem() != nil {
 			// TODO(zp): handle the UDT.
 			result = append(result, base.FieldInfo{
-				Name:         fmt.Sprintf("UNSUPPORTED UDT %s", selectListElem.GetText()),
-				MaskingLevel: base.DefaultMaskingLevel,
+				Name:              fmt.Sprintf("UNSUPPORTED UDT %s", selectListElem.GetText()),
+				MaskingAttributes: base.NewDefaultMaskingAttributes(),
 			})
 		} else if selectListElem.LOCAL_ID() != nil {
 			// TODO(zp): handle the local variable, SELECT @a=id FROM blog.dbo.t1;
 			result = append(result, base.FieldInfo{
-				Name:         fmt.Sprintf("UNSUPPORTED LOCALID %s", selectListElem.GetText()),
-				MaskingLevel: base.DefaultMaskingLevel,
+				Name:              fmt.Sprintf("UNSUPPORTED LOCALID %s", selectListElem.GetText()),
+				MaskingAttributes: base.NewDefaultMaskingAttributes(),
 			})
 		} else if expressionElem := selectListElem.Expression_elem(); expressionElem != nil {
-			columnName, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expressionElem)
+			columnName, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expressionElem)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to check if the expression element is sensitive")
 			}
 			result = append(result, base.FieldInfo{
-				Name:         columnName,
-				MaskingLevel: maskingLevel,
+				Name:              columnName,
+				MaskingAttributes: maskingAttributes,
 			})
 		}
 	}
@@ -439,10 +429,10 @@ func (extractor *fieldExtractor) extractTSqlSensitiveFieldsFromTableSourceItem(c
 		}
 		for _, column := range tableSchema.ColumnList {
 			result = append(result, base.FieldInfo{
-				Database:     normalizedDatabaseName,
-				Table:        tableSchema.Name,
-				Name:         column.Name,
-				MaskingLevel: column.MaskingLevel,
+				Database:          normalizedDatabaseName,
+				Table:             tableSchema.Name,
+				Name:              column.Name,
+				MaskingAttributes: column.MaskingAttributes,
 			})
 		}
 	}
@@ -513,9 +503,7 @@ func (extractor *fieldExtractor) extractTSqlSensitiveFieldsFromDerivedTable(ctx 
 				return nil, errors.Wrapf(err, "the number of columns in the derived table statement nearly line %d returns %d fields, but %d set operator near line %d returns %d fields", ctx.GetStart().GetLine(), len(left), i+1, allSubquery[i].GetStart().GetLine(), len(right))
 			}
 			for i := range right {
-				if cmp.Less[storepb.MaskingLevel](left[i].MaskingLevel, right[i].MaskingLevel) {
-					left[i].MaskingLevel = right[i].MaskingLevel
-				}
+				left[i].MaskingAttributes.TransmittedBy(right[i].MaskingAttributes)
 			}
 		}
 		return left, nil
@@ -535,13 +523,13 @@ func (extractor *fieldExtractor) extractTSqlSensitiveFieldsFromTableValueConstru
 		expressionList := allExpressionList[0]
 		var result []base.FieldInfo
 		for _, expression := range expressionList.AllExpression() {
-			columnName, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			columnName, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to check if the expression is sensitive")
 			}
 			result = append(result, base.FieldInfo{
-				Name:         columnName,
-				MaskingLevel: maskingLevel,
+				Name:              columnName,
+				MaskingAttributes: maskingAttributes,
 			})
 		}
 		return result, nil
@@ -795,22 +783,22 @@ func (extractor *fieldExtractor) isIdentifierEqual(a, b string) bool {
 
 // evalExpressionElemMaskingLevel returns true if the expression element is sensitive, and returns the column name.
 // It is the closure of the expression_elemContext, it will recursively check the sub expression element.
-func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleContext) (string, storepb.MaskingLevel, error) {
+func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleContext) (string, base.MaskingAttributes, error) {
 	if ctx == nil {
-		return "", base.DefaultMaskingLevel, nil
+		return "", base.NewDefaultMaskingAttributes(), nil
 	}
 	switch ctx := ctx.(type) {
 	case *parser.Expression_elemContext:
-		columName, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		columName, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the expression element is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the expression element is sensitive")
 		}
 		if columnAlias := ctx.Column_alias(); columnAlias != nil {
 			columName = NormalizeTSQLIdentifier(columnAlias.Id_())
 		} else if asColumnAlias := ctx.As_column_alias(); asColumnAlias != nil {
 			columName = NormalizeTSQLIdentifier(asColumnAlias.Column_alias().Id_())
 		}
-		return columName, maskingLevel, nil
+		return columName, maskingAttributes, nil
 	case *parser.ExpressionContext:
 		if ctx.Primitive_expression() != nil {
 			return extractor.evalExpressionElemMaskingLevel(ctx.Primitive_expression())
@@ -818,18 +806,16 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		if ctx.Function_call() != nil {
 			return extractor.evalExpressionElemMaskingLevel(ctx.Function_call())
 		}
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
-				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+				_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 				if err != nil {
-					return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the expression is sensitive")
+					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the expression is sensitive")
 				}
-				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-					finalLevel = maskingLevel
-				}
-				if finalLevel == base.MaxMaskingLevel {
-					return ctx.GetText(), finalLevel, nil
+				finalAttributes.TransmittedBy(maskingAttributes)
+				if finalAttributes.IsNeverChangeInTransmission() {
+					return ctx.GetText(), finalAttributes, nil
 				}
 			}
 		}
@@ -863,12 +849,12 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		if overClause := ctx.Over_clause(); overClause != nil {
 			return extractor.evalExpressionElemMaskingLevel(overClause)
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.Unary_operator_expressionContext:
 		if expression := ctx.Expression(); expression != nil {
 			return extractor.evalExpressionElemMaskingLevel(expression)
 		}
-		return ctx.GetText(), base.DefaultMaskingLevel, nil
+		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
 	case *parser.Bracket_expressionContext:
 		if expression := ctx.Expression(); expression != nil {
 			return extractor.evalExpressionElemMaskingLevel(expression)
@@ -876,116 +862,102 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		if subquery := ctx.Subquery(); subquery != nil {
 			return extractor.evalExpressionElemMaskingLevel(subquery)
 		}
-		return ctx.GetText(), base.DefaultMaskingLevel, nil
+		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
 	case *parser.Case_expressionContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
-				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+				_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 				if err != nil {
-					return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the case_expression is sensitive")
+					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the case_expression is sensitive")
 				}
-				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-					finalLevel = maskingLevel
-				}
-				if finalLevel == base.MaxMaskingLevel {
-					return ctx.GetText(), finalLevel, nil
+				finalAttributes.TransmittedBy(maskingAttributes)
+				if finalAttributes.IsNeverChangeInTransmission() {
+					return ctx.GetText(), finalAttributes, nil
 				}
 			}
 		}
 		if allSwitchSections := ctx.AllSwitch_section(); len(allSwitchSections) > 0 {
 			for _, switchSection := range allSwitchSections {
-				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(switchSection)
+				_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(switchSection)
 				if err != nil {
-					return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the case_expression is sensitive")
+					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the case_expression is sensitive")
 				}
-				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-					finalLevel = maskingLevel
-				}
-				if finalLevel == base.MaxMaskingLevel {
-					return ctx.GetText(), finalLevel, nil
+				finalAttributes.TransmittedBy(maskingAttributes)
+				if finalAttributes.IsNeverChangeInTransmission() {
+					return ctx.GetText(), finalAttributes, nil
 				}
 			}
 		}
 		if allSwitchSearchConditionSections := ctx.AllSwitch_search_condition_section(); len(allSwitchSearchConditionSections) > 0 {
 			for _, switchSearchConditionSection := range allSwitchSearchConditionSections {
-				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(switchSearchConditionSection)
+				_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(switchSearchConditionSection)
 				if err != nil {
-					return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the case_expression is sensitive")
+					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the case_expression is sensitive")
 				}
-				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-					finalLevel = maskingLevel
-				}
-				if finalLevel == base.MaxMaskingLevel {
-					return ctx.GetText(), finalLevel, nil
+				finalAttributes.TransmittedBy(maskingAttributes)
+				if finalAttributes.IsNeverChangeInTransmission() {
+					return ctx.GetText(), finalAttributes, nil
 				}
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.Switch_sectionContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
-				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+				_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 				if err != nil {
-					return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the switch_setion is sensitive")
+					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the switch_setion is sensitive")
 				}
-				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-					finalLevel = maskingLevel
-				}
-				if finalLevel == base.MaxMaskingLevel {
-					return ctx.GetText(), finalLevel, nil
+				finalAttributes.TransmittedBy(maskingAttributes)
+				if finalAttributes.IsNeverChangeInTransmission() {
+					return ctx.GetText(), finalAttributes, nil
 				}
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.Switch_search_condition_sectionContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		if searchCondition := ctx.Search_condition(); searchCondition != nil {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(searchCondition)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(searchCondition)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the switch_search_condition_section is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the switch_search_condition_section is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
 		if expression := ctx.Expression(); expression != nil {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the switch_search_condition_section is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the switch_search_condition_section is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.Search_conditionContext:
 		if predicate := ctx.Predicate(); predicate != nil {
 			return extractor.evalExpressionElemMaskingLevel(predicate)
 		}
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		if allSearchConditions := ctx.AllSearch_condition(); len(allSearchConditions) > 0 {
 			for _, searchCondition := range allSearchConditions {
-				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(searchCondition)
+				_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(searchCondition)
 				if err != nil {
-					return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the search_condition is sensitive")
+					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the search_condition is sensitive")
 				}
-				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-					finalLevel = maskingLevel
-				}
-				if finalLevel == base.MaxMaskingLevel {
-					return ctx.GetText(), finalLevel, nil
+				finalAttributes.TransmittedBy(maskingAttributes)
+				if finalAttributes.IsNeverChangeInTransmission() {
+					return ctx.GetText(), finalAttributes, nil
 				}
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.PredicateContext:
 		if subquery := ctx.Subquery(); subquery != nil {
 			return extractor.evalExpressionElemMaskingLevel(subquery)
@@ -994,65 +966,57 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			return extractor.evalExpressionElemMaskingLevel(freeTextPredicate)
 		}
 
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
-				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+				_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 				if err != nil {
-					return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the predicate is sensitive")
+					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the predicate is sensitive")
 				}
-				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-					finalLevel = maskingLevel
-				}
-				if finalLevel == base.MaxMaskingLevel {
-					return ctx.GetText(), finalLevel, nil
+				finalAttributes.TransmittedBy(maskingAttributes)
+				if finalAttributes.IsNeverChangeInTransmission() {
+					return ctx.GetText(), finalAttributes, nil
 				}
 			}
 		}
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expressionList)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expressionList)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the predicate is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the predicate is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.Freetext_predicateContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
-				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+				_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 				if err != nil {
-					return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the freetext_predicate is sensitive")
+					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the freetext_predicate is sensitive")
 				}
-				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-					finalLevel = maskingLevel
-				}
-				if finalLevel == base.MaxMaskingLevel {
-					return ctx.GetText(), finalLevel, nil
+				finalAttributes.TransmittedBy(maskingAttributes)
+				if finalAttributes.IsNeverChangeInTransmission() {
+					return ctx.GetText(), finalAttributes, nil
 				}
 			}
 		}
 		if allCullColumnName := ctx.AllFull_column_name(); len(allCullColumnName) > 0 {
 			for _, fullColumnName := range allCullColumnName {
-				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(fullColumnName)
+				_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(fullColumnName)
 				if err != nil {
-					return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the freetext_predicate is sensitive")
+					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the freetext_predicate is sensitive")
 				}
-				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-					finalLevel = maskingLevel
-				}
-				if finalLevel == base.MaxMaskingLevel {
-					return ctx.GetText(), finalLevel, nil
+				finalAttributes.TransmittedBy(maskingAttributes)
+				if finalAttributes.IsNeverChangeInTransmission() {
+					return ctx.GetText(), finalAttributes, nil
 				}
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.SubqueryContext:
 		// For subquery, we clone the current extractor, reset the from list, but keep the cte, and then extract the sensitive fields from the subquery
 		cloneExtractor := &fieldExtractor{
@@ -1065,54 +1029,50 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		// but in order to do not block user, we just return isSensitive if there is any sensitive field.
 		// return fieldInfo[0].sensitive, err
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the subquery is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the subquery is sensitive")
 		}
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, field := range fieldInfo {
-			if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingLevel) {
-				finalLevel = field.MaskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(field.MaskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.Hierarchyid_callContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
-				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+				_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 				if err != nil {
-					return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the hierarchyid_call is sensitive")
+					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the hierarchyid_call is sensitive")
 				}
-				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-					finalLevel = maskingLevel
-				}
-				if finalLevel == base.MaxMaskingLevel {
-					return ctx.GetText(), finalLevel, nil
+				finalAttributes.TransmittedBy(maskingAttributes)
+				if finalAttributes.IsNeverChangeInTransmission() {
+					return ctx.GetText(), finalAttributes, nil
 				}
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.Query_callContext:
-		return ctx.GetText(), base.DefaultMaskingLevel, nil
+		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
 	case *parser.Exist_callContext:
-		return ctx.GetText(), base.DefaultMaskingLevel, nil
+		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
 	case *parser.Modify_callContext:
-		return ctx.GetText(), base.DefaultMaskingLevel, nil
+		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
 	case *parser.Value_callContext:
-		return ctx.GetText(), base.DefaultMaskingLevel, nil
+		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
 	case *parser.Primitive_expressionContext:
 		if ctx.Primitive_constant() != nil {
 			_, sensitive, err := extractor.evalExpressionElemMaskingLevel(ctx.Primitive_constant())
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the primitive constant is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the primitive constant is sensitive")
 			}
 			return ctx.GetText(), sensitive, nil
 		}
 		panic("never reach here")
 	case *parser.Primitive_constantContext:
-		return ctx.GetText(), base.DefaultMaskingLevel, nil
+		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
 	case *parser.Function_callContext:
 		// In parser.g4, the function_callContext is defined as:
 		// 	function_call
@@ -1126,2012 +1086,1812 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 	case *parser.RANKING_WINDOWED_FUNCContext:
 		return extractor.evalExpressionElemMaskingLevel(ctx.Ranking_windowed_function())
 	case *parser.Ranking_windowed_functionContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		if overClause := ctx.Over_clause(); overClause != nil {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(overClause)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(overClause)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the ranking_windowed_function is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the ranking_windowed_function is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
 		if expression := ctx.Expression(); expression != nil {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the ranking_windowed_function is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the ranking_windowed_function is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.Over_clauseContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression_list_())
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression_list_())
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the over_clause is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the over_clause is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
 		if orderByClause := ctx.Order_by_clause(); orderByClause != nil {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(orderByClause)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(orderByClause)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the over_clause is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the over_clause is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
 		if rowOrRangeClause := ctx.Row_or_range_clause(); rowOrRangeClause != nil {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(rowOrRangeClause)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(rowOrRangeClause)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the over_clause is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the over_clause is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.Expression_list_Context:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the expression_list is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the expression_list is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.Order_by_clauseContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, orderByExpression := range ctx.GetOrder_bys() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(orderByExpression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(orderByExpression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the order_by_clause is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the order_by_clause is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.Order_by_expressionContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the order_by_expression is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the order_by_expression is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.Row_or_range_clauseContext:
 		if windowFrameExtent := ctx.Window_frame_extent(); windowFrameExtent != nil {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(windowFrameExtent)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(windowFrameExtent)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the row_or_range_clause is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the row_or_range_clause is sensitive")
 			}
-			return ctx.GetText(), maskingLevel, nil
+			return ctx.GetText(), maskingAttributes, nil
 		}
 		panic("never reach here")
 	case *parser.Window_frame_extentContext:
 		if windowFramePreceding := ctx.Window_frame_preceding(); windowFramePreceding != nil {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(windowFramePreceding)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(windowFramePreceding)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the window_frame_extent is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the window_frame_extent is sensitive")
 			}
-			return ctx.GetText(), maskingLevel, nil
+			return ctx.GetText(), maskingAttributes, nil
 		}
 		if windowFrameBounds := ctx.AllWindow_frame_bound(); len(windowFrameBounds) > 0 {
-			finalLevel := base.DefaultMaskingLevel
+			finalAttributes := base.NewDefaultMaskingAttributes()
 			for _, windowFrameBound := range windowFrameBounds {
-				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(windowFrameBound)
+				_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(windowFrameBound)
 				if err != nil {
-					return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the window_frame_extent is sensitive")
+					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the window_frame_extent is sensitive")
 				}
-				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-					finalLevel = maskingLevel
-				}
-				if finalLevel == base.MaxMaskingLevel {
-					return ctx.GetText(), finalLevel, nil
+				finalAttributes.TransmittedBy(maskingAttributes)
+				if finalAttributes.IsNeverChangeInTransmission() {
+					return ctx.GetText(), finalAttributes, nil
 				}
 			}
 		}
 		panic("never reach here")
 	case *parser.Window_frame_boundContext:
 		if preceding := ctx.Window_frame_preceding(); preceding != nil {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(preceding)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(preceding)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the window_frame_bound is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the window_frame_bound is sensitive")
 			}
-			return ctx.GetText(), maskingLevel, nil
+			return ctx.GetText(), maskingAttributes, nil
 		} else if following := ctx.Window_frame_following(); following != nil {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(following)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(following)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the window_frame_bound is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the window_frame_bound is sensitive")
 			}
-			return ctx.GetText(), maskingLevel, nil
+			return ctx.GetText(), maskingAttributes, nil
 		}
 		panic("never reach here")
 	case *parser.Window_frame_precedingContext:
-		return ctx.GetText(), base.DefaultMaskingLevel, nil
+		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
 	case *parser.Window_frame_followingContext:
-		return ctx.GetText(), base.DefaultMaskingLevel, nil
+		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
 	case *parser.AGGREGATE_WINDOWED_FUNCContext:
 		return extractor.evalExpressionElemMaskingLevel(ctx.Aggregate_windowed_function())
 	case *parser.Aggregate_windowed_functionContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		if allDistinctExpression := ctx.All_distinct_expression(); allDistinctExpression != nil {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(allDistinctExpression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(allDistinctExpression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the aggregate_windowed_function is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the aggregate_windowed_function is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
 		if overClause := ctx.Over_clause(); overClause != nil {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(overClause)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(overClause)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the aggregate_windowed_function is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the aggregate_windowed_function is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
 		if expression := ctx.Expression(); expression != nil {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the aggregate_windowed_function is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the aggregate_windowed_function is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expressionList)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expressionList)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the aggregate_windowed_function is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the aggregate_windowed_function is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.All_distinct_expressionContext:
 		_, sensitive, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the all_distinct_expression is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the all_distinct_expression is sensitive")
 		}
 		return ctx.GetText(), sensitive, nil
 	case *parser.ANALYTIC_WINDOWED_FUNCContext:
 		return extractor.evalExpressionElemMaskingLevel(ctx.Analytic_windowed_function())
 	case *parser.Analytic_windowed_functionContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
-				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+				_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 				if err != nil {
-					return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the analytic_windowed_function is sensitive")
+					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the analytic_windowed_function is sensitive")
 				}
-				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-					finalLevel = maskingLevel
-				}
-				if finalLevel == base.MaxMaskingLevel {
-					return ctx.GetText(), finalLevel, nil
+				finalAttributes.TransmittedBy(maskingAttributes)
+				if finalAttributes.IsNeverChangeInTransmission() {
+					return ctx.GetText(), finalAttributes, nil
 				}
 			}
 		}
 		if overClause := ctx.Over_clause(); overClause != nil {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(overClause)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(overClause)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the analytic_windowed_function is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the analytic_windowed_function is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expressionList)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expressionList)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the analytic_windowed_function is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the analytic_windowed_function is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
 		if orderByClause := ctx.Order_by_clause(); orderByClause != nil {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(orderByClause)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(orderByClause)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the analytic_windowed_function is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the analytic_windowed_function is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.BUILT_IN_FUNCContext:
 		return extractor.evalExpressionElemMaskingLevel(ctx.Built_in_functions())
 	case *parser.APP_NAMEContext:
-		return ctx.GetText(), base.DefaultMaskingLevel, nil
+		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
 	case *parser.APPLOCK_MODEContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the applock_mode is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the applock_mode is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.APPLOCK_TESTContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the applock_test is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the applock_test is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.ASSEMBLYPROPERTYContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the assemblyproperty is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the assemblyproperty is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.COL_LENGTHContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the col_length is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the col_length is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.COL_NAMEContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the col_name is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the col_name is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.COLUMNPROPERTYContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the columnproperty is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the columnproperty is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.DATABASEPROPERTYEXContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the databasepropertyex is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the databasepropertyex is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.DB_IDContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the db_id is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the db_id is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.DB_NAMEContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the db_name is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the db_name is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.FILE_IDContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the file_id is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the file_id is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.FILE_IDEXContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the file_idex is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the file_idex is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.FILE_NAMEContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the file_name is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the file_name is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.FILEGROUP_IDContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the filegroup_id is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the filegroup_id is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.FILEGROUP_NAMEContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the filegroup_name is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the filegroup_name is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.FILEGROUPPROPERTYContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the filegroupproperty is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the filegroupproperty is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.FILEPROPERTYContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the fileproperty is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the fileproperty is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.FILEPROPERTYEXContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the filepropertyex is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the filepropertyex is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.FULLTEXTCATALOGPROPERTYContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the fulltextcatalogproperty is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the fulltextcatalogproperty is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.FULLTEXTSERVICEPROPERTYContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the fulltextserviceproperty is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the fulltextserviceproperty is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.INDEX_COLContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the index_col is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the index_col is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.INDEXKEY_PROPERTYContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the indexkey_property is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the indexkey_property is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.INDEXPROPERTYContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the indexproperty is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the indexproperty is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.OBJECT_DEFINITIONContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the object_definition is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the object_definition is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.OBJECT_IDContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the object_id is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the object_id is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.OBJECT_NAMEContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the object_name is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the object_name is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.OBJECT_SCHEMA_NAMEContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the object_schema_name is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the object_schema_name is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.OBJECTPROPERTYContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the objectproperty is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the objectproperty is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.OBJECTPROPERTYEXContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the objectpropertyex is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the objectpropertyex is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.PARSENAMEContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the parsename is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the parsename is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.SCHEMA_IDContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the schema_id is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the schema_id is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.SCHEMA_NAMEContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the schema_name is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the schema_name is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.SERVERPROPERTYContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the serverproperty is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the serverproperty is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.STATS_DATEContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the stats_date is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the stats_date is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.TYPE_IDContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the type_id is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the type_id is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.TYPE_NAMEContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the type_name is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the type_name is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.TYPEPROPERTYContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the typeproperty is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the typeproperty is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.ASCIIContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the ascii is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the ascii is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.CHARContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the char is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the char is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.CHARINDEXContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the charindex is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the charindex is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.CONCATContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the concat is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the concat is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.CONCAT_WSContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the concat_ws is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the concat_ws is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.DIFFERENCEContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the difference is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the difference is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.FORMATContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the format is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the format is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.LEFTContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the left is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the left is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.LENContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the len is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the len is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.LOWERContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the lower is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the lower is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.LTRIMContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the ltrim is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the ltrim is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.NCHARContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the nchar is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the nchar is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.PATINDEXContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the patindex is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the patindex is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.QUOTENAMEContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the quotename is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the quotename is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.REPLACEContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the replace is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the replace is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.REPLICATEContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the replicate is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the replicate is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.REVERSEContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the reverse is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the reverse is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.RIGHTContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the right is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the right is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.RTRIMContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the rtrim is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the rtrim is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.SOUNDEXContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the soundex is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the soundex is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.SPACEContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the space is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the space is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.STRContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the str is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the str is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.STRINGAGGContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the stringagg is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the stringagg is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.STRING_ESCAPEContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the string_escape is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the string_escape is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.STUFFContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the stuff is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the stuff is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.SUBSTRINGContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the substring is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the substring is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.TRANSLATEContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the translate is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the translate is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.TRIMContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the trim is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the trim is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.UNICODEContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the unicode is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the unicode is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.UPPERContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the upper is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the upper is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.BINARY_CHECKSUMContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the binary_checksum is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the binary_checksum is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.CHECKSUMContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the checksum is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the checksum is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), base.DefaultMaskingLevel, nil
+		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
 	case *parser.COMPRESSContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the compress is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the compress is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.DECOMPRESSContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the decompress is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the decompress is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.FORMATMESSAGEContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the formatmessage is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the formatmessage is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.ISNULLContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the isnull is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the isnull is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.ISNUMERICContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the isnumeric is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the isnumeric is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.CASTContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the cast is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the cast is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.TRY_CASTContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the try_cast is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the try_cast is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.CONVERTContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the convert is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the convert is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.COALESCEContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression_list_())
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression_list_())
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the coalesce is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the coalesce is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.CURSOR_STATUSContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the cursor_status is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the cursor_status is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.CERT_IDContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the cert_id is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the cert_id is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.DATALENGTHContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the datalength is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the datalength is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.IDENT_CURRENTContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the  ident_current is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the  ident_current is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.IDENT_INCRContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the  ident_incr is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the  ident_incr is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.IDENT_SEEDContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the  ident_seed is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the  ident_seed is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.SQL_VARIANT_PROPERTYContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the sql_variant_property is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the sql_variant_property is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.DATE_BUCKETContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the date_bucket is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the date_bucket is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.DATEADDContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the dateadd is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the dateadd is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.DATEDIFFContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the datediff is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the datediff is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.DATEDIFF_BIGContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the datediff_big is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the datediff_big is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.DATEFROMPARTSContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the datefromparts is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the datefromparts is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.DATENAMEContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the datename is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the datename is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.DATEPARTContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the datepart is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the datepart is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.DATETIME2FROMPARTSContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the datetime2fromparts is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the datetime2fromparts is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.DATETIMEFROMPARTSContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the datetimefromparts is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the datetimefromparts is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.DATETIMEOFFSETFROMPARTSContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the datetimeoffsetfromparts is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the datetimeoffsetfromparts is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.DATETRUNCContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the datetrunc is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the datetrunc is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.DAYContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the day is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the day is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.EOMONTHContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the eomonth is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the eomonth is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.ISDATEContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the isdate is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the isdate is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.MONTHContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the month is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the month is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.SMALLDATETIMEFROMPARTSContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the smalldatetimefromparts is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the smalldatetimefromparts is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.SWITCHOFFSETContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the switchoffset is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the switchoffset is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.TIMEFROMPARTSContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the timefromparts is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the timefromparts is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.TODATETIMEOFFSETContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the todatetimeoffset is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the todatetimeoffset is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.YEARContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the year is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the year is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.NULLIFContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the nullif is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the nullif is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.PARSEContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the parse is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the parse is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.IIFContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the iif is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the iif is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.ISJSONContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the isjson is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the isjson is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.JSON_ARRAYContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression_list_())
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression_list_())
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the json_array is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the json_array is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.JSON_VALUEContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the json_value is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the json_value is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.JSON_QUERYContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the json_query is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the json_query is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.JSON_MODIFYContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the json_modify is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the json_modify is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.JSON_PATH_EXISTSContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the json_path_exists is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the json_path_exists is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.ABSContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the abs is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the abs is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.ACOSContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the acos is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the acos is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.ASINContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the asin is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the asin is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.ATANContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the atan is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the atan is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.ATN2Context:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the atn2 is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the atn2 is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.CEILINGContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the ceiling is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the ceiling is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.COSContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the cos is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the cos is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.COTContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the cot is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the cot is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.DEGREESContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the degrees is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the degrees is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.EXPContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the exp is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the exp is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.FLOORContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the floor is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the floor is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.LOGContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the log is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the log is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.LOG10Context:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the log10 is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the log10 is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.POWERContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the power is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the power is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.RADIANSContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the radians is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the radians is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.RANDContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the rand is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the rand is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.ROUNDContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the round is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the round is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.MATH_SIGNContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the math_sign is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the math_sign is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.SINContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the sin is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the sin is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.SQRTContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the sqrt is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the sqrt is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.SQUAREContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the square is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the square is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.TANContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the tan is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the tan is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.GREATESTContext:
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression_list_())
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression_list_())
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the greatest is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the greatest is sensitive")
 			}
-			return ctx.GetText(), maskingLevel, nil
+			return ctx.GetText(), maskingAttributes, nil
 		}
 		panic("never reach here")
 	case *parser.LEASTContext:
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression_list_())
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression_list_())
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the least is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the least is sensitive")
 			}
-			return ctx.GetText(), maskingLevel, nil
+			return ctx.GetText(), maskingAttributes, nil
 		}
 		panic("never reach here")
 	case *parser.CERTENCODEDContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the certencoded is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the certencoded is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.CERTPRIVATEKEYContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the certprivatekey is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the certprivatekey is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.DATABASE_PRINCIPAL_IDContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the database_principal_id is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the database_principal_id is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.HAS_DBACCESSContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the has_dbaccess is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the has_dbaccess is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.HAS_PERMS_BY_NAMEContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the has_perms_by_name is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the has_perms_by_name is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.IS_MEMBERContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the is_member is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the is_member is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.IS_ROLEMEMBERContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the is_rolemember is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the is_rolemember is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.IS_SRVROLEMEMBERContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the is_srvrolemember is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the is_srvrolemember is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.LOGINPROPERTYContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the loginproperty is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the loginproperty is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.PERMISSIONSContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the permissions is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the permissions is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.PWDENCRYPTContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the pwdencrypt is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the pwdencrypt is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.PWDCOMPAREContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the pwdcompare is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the pwdcompare is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.SESSIONPROPERTYContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the sessionproperty is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the sessionproperty is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.SUSER_IDContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the suser_id is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the suser_id is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.SUSER_SNAMEContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the suser_sname is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the suser_sname is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.SUSER_SIDContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, expression := range ctx.AllExpression() {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the suser_sid is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the suser_sid is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.USER_IDContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the user_id is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the user_id is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.USER_NAMEContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the user_name is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the user_name is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.SCALAR_FUNCTIONContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression_list_())
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression_list_())
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the scalar_function is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the scalar_function is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
 		if scalarFunctionName := ctx.Scalar_function_name(); scalarFunctionName != nil {
-			_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Scalar_function_name())
+			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Scalar_function_name())
 			if err != nil {
-				return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the scalar_function is sensitive")
+				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the scalar_function is sensitive")
 			}
-			if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-				finalLevel = maskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return ctx.GetText(), finalLevel, nil
+			finalAttributes.TransmittedBy(maskingAttributes)
+			if finalAttributes.IsNeverChangeInTransmission() {
+				return ctx.GetText(), finalAttributes, nil
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.Scalar_function_nameContext:
-		return ctx.GetText(), base.DefaultMaskingLevel, nil
+		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
 	case *parser.Freetext_functionContext:
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		if allFullColumnName := ctx.AllFull_column_name(); len(allFullColumnName) > 0 {
 			for _, fullColumnName := range allFullColumnName {
-				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(fullColumnName)
+				_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(fullColumnName)
 				if err != nil {
-					return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the freetext_function is sensitive")
+					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the freetext_function is sensitive")
 				}
-				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-					finalLevel = maskingLevel
-				}
-				if finalLevel == base.MaxMaskingLevel {
-					return ctx.GetText(), finalLevel, nil
+				finalAttributes.TransmittedBy(maskingAttributes)
+				if finalAttributes.IsNeverChangeInTransmission() {
+					return ctx.GetText(), finalAttributes, nil
 				}
 			}
 		}
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
-			finalLevel := base.DefaultMaskingLevel
+			finalAttributes := base.NewDefaultMaskingAttributes()
 			for _, expression := range allExpressions {
-				_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(expression)
+				_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
 				if err != nil {
-					return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the freetext_function is sensitive")
+					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the freetext_function is sensitive")
 				}
-				if cmp.Less[storepb.MaskingLevel](finalLevel, maskingLevel) {
-					finalLevel = maskingLevel
-				}
-				if finalLevel == base.MaxMaskingLevel {
-					return ctx.GetText(), finalLevel, nil
+				finalAttributes.TransmittedBy(maskingAttributes)
+				if finalAttributes.IsNeverChangeInTransmission() {
+					return ctx.GetText(), finalAttributes, nil
 				}
 			}
 		}
-		return ctx.GetText(), finalLevel, nil
+		return ctx.GetText(), finalAttributes, nil
 	case *parser.Full_column_nameContext:
 		fieldInfo, err := extractor.tsqlIsFullColumnNameSensitive(ctx)
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the full_column_name is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the full_column_name is sensitive")
 		}
-		return fieldInfo.Name, fieldInfo.MaskingLevel, nil
+		return fieldInfo.Name, fieldInfo.MaskingAttributes, nil
 	case *parser.PARTITION_FUNCContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Partition_function().Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Partition_function().Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the partition_function is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the partition_function is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	case *parser.HIERARCHYID_METHODContext:
-		_, maskingLevel, err := extractor.evalExpressionElemMaskingLevel(ctx.Hierarchyid_static_method().Expression())
+		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Hierarchyid_static_method().Expression())
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to check if the hierarchyid_method is sensitive")
+			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the hierarchyid_method is sensitive")
 		}
-		return ctx.GetText(), maskingLevel, nil
+		return ctx.GetText(), maskingAttributes, nil
 	}
 	panic("never reach here")
 }

@@ -20,16 +20,20 @@
 </template>
 
 <script lang="ts" setup>
+import { asyncComputed } from "@vueuse/core";
 import { cloneDeep, debounce } from "lodash-es";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { SQLCheckButton, SQLCheckSummary } from "@/components/SQLCheck";
+import {
+  mergeSchemaEditToMetadata,
+  validateDatabaseMetadata,
+} from "@/components/SchemaEditorV1/utils";
 import { schemaDesignServiceClient } from "@/grpcweb";
 import { useDatabaseV1Store, useSchemaEditorV1Store } from "@/store";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
-import { getBaselineMetadataOfBranch } from "../SchemaEditorV1/utils/branch";
-import { mergeSchemaEditToMetadata, validateDatabaseMetadata } from "./utils";
+import { fetchBaselineMetadataOfBranch } from "../SchemaEditorV1/utils/branch";
 
 const props = defineProps<{
   schemaDesign: SchemaDesign;
@@ -42,27 +46,29 @@ const database = computed(() => {
   return databaseStore.getDatabaseByName(props.schemaDesign.baselineDatabase);
 });
 
-const sourceMetadata = computed(() => {
+const sourceMetadata = asyncComputed(async () => {
   const branch = props.schemaDesign;
 
-  return getBaselineMetadataOfBranch(branch);
-});
+  return await fetchBaselineMetadataOfBranch(branch);
+}, undefined);
 
-const editingMetadata = computed(() => {
+const editingMetadata = asyncComputed(async () => {
   const branchSchema = schemaEditorV1Store.resourceMap["branch"].get(
     props.schemaDesign.name
   );
   if (!branchSchema) {
     return undefined;
   }
-  const baselineMetadata = getBaselineMetadataOfBranch(branchSchema.branch);
+  const baselineMetadata = await fetchBaselineMetadataOfBranch(
+    branchSchema.branch
+  );
   const metadata = mergeSchemaEditToMetadata(
     branchSchema.schemaList,
     cloneDeep(baselineMetadata)
   );
 
   return metadata;
-});
+}, undefined);
 
 const targetMetadata = ref<DatabaseMetadata>();
 const statement = ref("");

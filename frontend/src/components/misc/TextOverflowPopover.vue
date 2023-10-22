@@ -8,31 +8,25 @@
   >
     <highlight-code-block
       v-if="codeMode"
-      :code="content"
+      :code="displayPopoverContent"
       class="whitespace-pre-wrap"
     />
     <div v-else class="whitespace-pre-wrap">
-      {{ content }}
+      {{ displayPopoverContent }}
     </div>
 
     <template #trigger>
-      <span :class="contentClass">
-        {{
-          content.length <= maxLength
-            ? content
-            : content.substring(0, maxLength) + "..."
-        }}
-      </span>
+      <span :class="contentClass">{{ displayContent }}</span>
     </template>
   </NPopover>
 </template>
 
 <script lang="ts" setup>
 import { NPopover, PopoverPlacement } from "naive-ui";
-import { PropType } from "vue";
+import { PropType, computed } from "vue";
 import { VueClass } from "@/utils";
 
-defineProps({
+const props = defineProps({
   content: {
     type: String,
     default: "",
@@ -40,6 +34,10 @@ defineProps({
   maxLength: {
     type: Number,
     default: 100,
+  },
+  maxPopoverContentLength: {
+    type: Number,
+    default: 10000,
   },
   placement: {
     type: String as PropType<PopoverPlacement>,
@@ -53,5 +51,29 @@ defineProps({
     type: Boolean,
     default: true,
   },
+  lineWrap: {
+    type: Boolean,
+    default: true,
+  },
+  lineBreakReplacer: {
+    type: String,
+    default: "",
+  },
+});
+
+const displayContent = computed(() => {
+  const { content, lineWrap, maxLength } = props;
+  if (lineWrap) return content;
+  const displayContent = content.replace(/\n/g, props.lineBreakReplacer);
+  return displayContent.length <= maxLength
+    ? displayContent
+    : displayContent.substring(0, maxLength) + "...";
+});
+
+const displayPopoverContent = computed(() => {
+  const { content, maxPopoverContentLength } = props;
+  return content.length <= maxPopoverContentLength
+    ? content
+    : content.substring(0, maxPopoverContentLength) + "...";
 });
 </script>

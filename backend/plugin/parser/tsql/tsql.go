@@ -12,8 +12,13 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
+type ParseResult struct {
+	Tree   antlr.Tree
+	Tokens *antlr.CommonTokenStream
+}
+
 // ParseTSQL parses the given SQL statement by using antlr4. Returns the AST and token stream if no error.
-func ParseTSQL(statement string) (antlr.Tree, error) {
+func ParseTSQL(statement string) (*ParseResult, error) {
 	statement = strings.TrimRight(statement, " \t\n\r\f;") + "\n;"
 	inputStream := antlr.NewInputStream(statement)
 	lexer := parser.NewTSqlLexer(inputStream)
@@ -41,7 +46,12 @@ func ParseTSQL(statement string) (antlr.Tree, error) {
 		return nil, parserErrorListener.Err
 	}
 
-	return tree, nil
+	result := &ParseResult{
+		Tree:   tree,
+		Tokens: stream,
+	}
+
+	return result, nil
 }
 
 // NormalizeTSQLTableName returns the normalized table name.

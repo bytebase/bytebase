@@ -83,7 +83,7 @@
         {{ column.type }}
       </BBTableCell>
       <BBTableCell class="bb-grid-cell">
-        {{ column.default }}
+        {{ getColumnDefaultValuePlaceholder(column) }}
       </BBTableCell>
       <BBTableCell class="bb-grid-cell">
         {{ column.nullable }}
@@ -168,6 +168,7 @@ import { cloneDeep } from "lodash-es";
 import { computed, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBTableColumn } from "@/bbkit/types";
+import { getColumnDefaultValuePlaceholder } from "@/components/SchemaEditorV1/utils/columnDefaultValue";
 import {
   useCurrentUserV1,
   useDBSchemaV1Store,
@@ -261,7 +262,7 @@ const hasSensitiveDataFeature = computed(() => {
 const semanticTypeList = computed(() => {
   return (
     settingV1Store.getSettingByName("bb.workspace.semantic-types")?.value
-      ?.semanticTypesSettingValue?.types ?? []
+      ?.semanticTypeSettingValue?.types ?? []
   );
 });
 
@@ -274,7 +275,7 @@ const schemaConfig = computed(() => {
     databaseMetadata.value.schemaConfigs.find(
       (config) => config.name === props.schema
     ) ??
-    SchemaConfig.fromJSON({
+    SchemaConfig.fromPartial({
       name: props.schema,
       tableConfigs: [],
     })
@@ -286,7 +287,7 @@ const tableConfig = computed(() => {
     schemaConfig.value.tableConfigs.find(
       (config) => config.name === props.table.name
     ) ??
-    TableConfig.fromJSON({
+    TableConfig.fromPartial({
       name: props.table.name,
       columnConfigs: [],
     })
@@ -316,11 +317,7 @@ const onLabelsApply = async (labelsList: { [key: string]: string }[]) => {
   if (!column) {
     return;
   }
-  try {
-    await updateColumnConfig(column.name, { labels: labelsList[0] });
-  } finally {
-    state.showLabelsDrawer = false;
-  }
+  await updateColumnConfig(column.name, { labels: labelsList[0] });
 };
 
 const onSemanticTypeApply = async (semanticTypeId: string) => {
@@ -328,11 +325,7 @@ const onSemanticTypeApply = async (semanticTypeId: string) => {
   if (!column) {
     return;
   }
-  try {
-    await updateColumnConfig(column.name, { semanticTypeId });
-  } finally {
-    state.showSemanticTypesDrawer = false;
-  }
+  await updateColumnConfig(column.name, { semanticTypeId });
 };
 
 const onSemanticTypeRemove = async (column: string) => {
@@ -589,6 +582,8 @@ const getColumnMasking = (column: ColumnMetadata): MaskData => {
       table: props.table.name,
       column: column.name,
       maskingLevel: MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
+      fullMaskingAlgorithmId: "",
+      partialMaskingAlgorithmId: "",
     }
   );
 };

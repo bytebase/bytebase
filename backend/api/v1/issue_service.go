@@ -552,18 +552,13 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 		Assignee:    assignee,
 	}
 
-	issueCreatePayload := &storepb.IssuePayload{
+	issueCreateMessage.Payload = &storepb.IssuePayload{
 		Approval: &storepb.IssuePayloadApproval{
 			ApprovalFindingDone: false,
 			ApprovalTemplates:   nil,
 			Approvers:           nil,
 		},
 	}
-	issueCreatePayloadBytes, err := protojson.Marshal(issueCreatePayload)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to marshal issue payload, error: %v", err)
-	}
-	issueCreateMessage.Payload = string(issueCreatePayloadBytes)
 
 	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, creatorID)
 	if err != nil {
@@ -654,6 +649,9 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get instance, error: %v", err)
 				}
+				if instance == nil {
+					return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
+				}
 				if err := validateQueryRequest(instance, databaseName, factors.Statement); err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, "invalid statement, error: %v", err)
 				}
@@ -677,7 +675,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 		return nil, status.Errorf(codes.Internal, "failed to convert GrantRequest, error: %v", err)
 	}
 
-	issueCreatePayload := &storepb.IssuePayload{
+	issueCreateMessage.Payload = &storepb.IssuePayload{
 		GrantRequest: convertedGrantRequest,
 		Approval: &storepb.IssuePayloadApproval{
 			ApprovalFindingDone: false,
@@ -685,11 +683,6 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 			Approvers:           nil,
 		},
 	}
-	issueCreatePayloadBytes, err := protojson.Marshal(issueCreatePayload)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to marshal issue payload, error: %v", err)
-	}
-	issueCreateMessage.Payload = string(issueCreatePayloadBytes)
 
 	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, creatorID)
 	if err != nil {
@@ -739,10 +732,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 	if err != nil {
 		return nil, err
 	}
-	payload := &storepb.IssuePayload{}
-	if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to unmarshal issue payload, error: %v", err)
-	}
+	payload := issue.Payload
 	if payload.Approval == nil {
 		return nil, status.Errorf(codes.Internal, "issue payload approval is nil")
 	}
@@ -924,10 +914,7 @@ func (s *IssueService) RejectIssue(ctx context.Context, request *v1pb.RejectIssu
 	if err != nil {
 		return nil, err
 	}
-	payload := &storepb.IssuePayload{}
-	if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to unmarshal issue payload, error: %v", err)
-	}
+	payload := issue.Payload
 	if payload.Approval == nil {
 		return nil, status.Errorf(codes.Internal, "issue payload approval is nil")
 	}
@@ -1025,10 +1012,7 @@ func (s *IssueService) RequestIssue(ctx context.Context, request *v1pb.RequestIs
 	if err != nil {
 		return nil, err
 	}
-	payload := &storepb.IssuePayload{}
-	if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to unmarshal issue payload, error: %v", err)
-	}
+	payload := issue.Payload
 	if payload.Approval == nil {
 		return nil, status.Errorf(codes.Internal, "issue payload approval is nil")
 	}
@@ -1155,10 +1139,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 			if request.Issue.ApprovalFindingDone {
 				return nil, status.Errorf(codes.InvalidArgument, "cannot set approval_finding_done to true")
 			}
-			payload := &storepb.IssuePayload{}
-			if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to unmarshal issue payload, error: %v", err)
-			}
+			payload := issue.Payload
 			if payload.Approval == nil {
 				return nil, status.Errorf(codes.Internal, "issue payload approval is nil")
 			}
@@ -1499,10 +1480,7 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, request *v1pb.Upd
 func (s *IssueService) onIssueApproved(ctx context.Context, issue *store.IssueMessage) {
 	if issue.Type == api.IssueGrantRequest {
 		if err := func() error {
-			payload := &storepb.IssuePayload{}
-			if err := protojson.Unmarshal([]byte(issue.Payload), payload); err != nil {
-				return errors.Wrap(err, "failed to unmarshal issue payload")
-			}
+			payload := issue.Payload
 			approved, err := utils.CheckApprovalApproved(payload.Approval)
 			if err != nil {
 				return errors.Wrap(err, "failed to check if the approval is approved")
@@ -1601,10 +1579,7 @@ func convertToIssues(ctx context.Context, s *store.Store, issues []*store.IssueM
 }
 
 func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessage) (*v1pb.Issue, error) {
-	issuePayload := &storepb.IssuePayload{}
-	if err := protojson.Unmarshal([]byte(issue.Payload), issuePayload); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal issue payload")
-	}
+	issuePayload := issue.Payload
 
 	convertedGrantRequest, err := convertToGrantRequest(ctx, s, issuePayload.GrantRequest)
 	if err != nil {

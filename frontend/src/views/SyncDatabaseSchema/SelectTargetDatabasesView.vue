@@ -62,10 +62,10 @@
             >{{ project.title }}</a
           >
         </div>
-        <div>
+        <div class="flex flex-row justify-start items-center">
           <span>{{ $t("database.branch") }} - </span>
           <span
-            class="normal-link inline-flex items-center"
+            class="normal-link inline-flex items-center ml-1"
             @click="handleViewBranch"
           >
             <EngineIcon class="mr-1" :engine="engine" />
@@ -251,6 +251,7 @@
 
 <script lang="ts" setup>
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
+import { asyncComputed } from "@vueuse/core";
 import { head } from "lodash-es";
 import { NEllipsis } from "naive-ui";
 import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
@@ -331,12 +332,15 @@ const project = computed(() => {
   return useProjectV1Store().getProjectByUID(props.projectId);
 });
 
-const selectedSchemaDesign = computed(() => {
+const selectedSchemaDesign = asyncComputed(() => {
   if (!props.schemaDesignName) {
     return undefined;
   }
-  return schemaDesignStore.getSchemaDesignByName(props.schemaDesignName);
-});
+  return schemaDesignStore.fetchSchemaDesignByName(
+    props.schemaDesignName,
+    true /* useCache */
+  );
+}, undefined);
 const sourceDatabaseSchema = computed(() => {
   if (props.sourceSchemaType === "SCHEMA_HISTORY_VERSION") {
     return props.databaseSourceSchema?.changeHistory.schema || "";
@@ -368,7 +372,7 @@ const engine = computed(() => {
       props.databaseSourceSchema!.databaseId
     ).instanceEntity.engine;
   } else if (props.sourceSchemaType === "SCHEMA_DESIGN") {
-    return selectedSchemaDesign.value!.engine;
+    return selectedSchemaDesign.value?.engine ?? Engine.ENGINE_UNSPECIFIED;
   } else if (props.sourceSchemaType === "RAW_SQL") {
     return props.rawSqlState!.engine;
   } else {

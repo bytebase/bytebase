@@ -156,7 +156,11 @@ import {
 import EllipsisText from "@/components/EllipsisText.vue";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { experimentalCreateIssueByPlan, useSubscriptionV1Store } from "@/store";
+import {
+  experimentalCreateIssueByPlan,
+  useCurrentUserV1,
+  useSubscriptionV1Store,
+} from "@/store";
 import { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import {
@@ -164,11 +168,10 @@ import {
   Backup_BackupState,
   Backup_BackupType,
 } from "@/types/proto/v1/database_service";
-import { DeploymentType } from "@/types/proto/v1/deployment";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import { Plan, Plan_Spec } from "@/types/proto/v1/rollout_service";
 import { extractBackupResourceName } from "@/utils";
-import { trySetDefaultAssigneeByEnvironmentAndDeploymentType } from "../IssueV1/logic/initialize/assignee";
+import { trySetDefaultAssigneeByEnvironment } from "../IssueV1/logic/initialize/assignee";
 
 export type BackupRow = BBGridRow<Backup>;
 
@@ -213,6 +216,7 @@ const state = reactive<LocalState>({
   creatingRestoreIssue: false,
   showFeatureModal: false,
 });
+const me = useCurrentUserV1();
 
 const allowRestoreInPlace = computed((): boolean => {
   return props.database.instanceEntity.engine === Engine.POSTGRES;
@@ -340,25 +344,25 @@ const doRestoreInPlaceV1 = async () => {
       )}]`,
     ];
 
-    const restoreDatabaseSpec: Plan_Spec = {
+    const restoreDatabaseSpec = Plan_Spec.fromPartial({
       id: uuidv4(),
       restoreDatabaseConfig: {
         backup: backup.name,
         target: database.name, // in-place
       },
-    };
-    const planCreate = Plan.fromJSON({
+    });
+    const planCreate = Plan.fromPartial({
       steps: [{ specs: [restoreDatabaseSpec] }],
     });
-    const issueCreate = Issue.fromJSON({
+    const issueCreate = Issue.fromPartial({
       title: issueNameParts.join(" "),
       type: Issue_Type.DATABASE_CHANGE,
+      creator: `users/${me.value.email}`,
     });
-    await trySetDefaultAssigneeByEnvironmentAndDeploymentType(
+    await trySetDefaultAssigneeByEnvironment(
       issueCreate,
       database.projectEntity,
-      database.instanceEntity.environment,
-      DeploymentType.DATABASE_RESTORE_PITR
+      database.effectiveEnvironment
     );
     const { createdIssue } = await experimentalCreateIssueByPlan(
       database.projectEntity,

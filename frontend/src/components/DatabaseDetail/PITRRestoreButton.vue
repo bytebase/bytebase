@@ -155,9 +155,12 @@ import BBContextMenuButton, {
 } from "@/bbkit/BBContextMenuButton.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { usePITRLogic } from "@/plugins";
-import { experimentalCreateIssueByPlan, useSubscriptionV1Store } from "@/store";
+import {
+  experimentalCreateIssueByPlan,
+  useCurrentUserV1,
+  useSubscriptionV1Store,
+} from "@/store";
 import { ComposedDatabase } from "@/types";
-import { DeploymentType } from "@/types/proto/v1/deployment";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import {
   Plan,
@@ -165,7 +168,7 @@ import {
   Plan_Spec,
 } from "@/types/proto/v1/rollout_service";
 import RestoreTargetForm from "../DatabaseBackup/RestoreTargetForm.vue";
-import { trySetDefaultAssigneeByEnvironmentAndDeploymentType } from "../IssueV1/logic/initialize/assignee";
+import { trySetDefaultAssigneeByEnvironment } from "../IssueV1/logic/initialize/assignee";
 import ChangeHistoryBrief from "./ChangeHistoryBrief.vue";
 import CreatePITRDatabaseForm from "./CreatePITRDatabaseForm.vue";
 import { CreatePITRDatabaseContext } from "./utils";
@@ -211,6 +214,7 @@ const state = reactive<LocalState>({
   loading: false,
   showFeatureModal: false,
 });
+const me = useCurrentUserV1();
 
 const createDatabaseForm = ref<InstanceType<typeof CreatePITRDatabaseForm>>();
 
@@ -368,12 +372,12 @@ const onConfirmV1 = async () => {
         labels: { ...database.labels },
       };
     }
-    const spec: Plan_Spec = {
+    const spec = Plan_Spec.fromPartial({
       id: uuidv4(),
       restoreDatabaseConfig,
-    };
+    });
 
-    const planCreate = Plan.fromJSON({
+    const planCreate = Plan.fromPartial({
       steps: [{ specs: [spec] }],
     });
 
@@ -390,15 +394,15 @@ const onConfirmV1 = async () => {
         `before migration version [${lastChangeHistory.value!.version}]`
       );
     }
-    const issueCreate = Issue.fromJSON({
+    const issueCreate = Issue.fromPartial({
       title: issueNameParts.join(" "),
       type: Issue_Type.DATABASE_CHANGE,
+      creator: `users/${me.value.email}`,
     });
-    await trySetDefaultAssigneeByEnvironmentAndDeploymentType(
+    await trySetDefaultAssigneeByEnvironment(
       issueCreate,
       database.projectEntity,
-      database.instanceEntity.environment,
-      DeploymentType.DATABASE_RESTORE_PITR
+      database.effectiveEnvironment
     );
     const { createdIssue } = await experimentalCreateIssueByPlan(
       database.projectEntity,

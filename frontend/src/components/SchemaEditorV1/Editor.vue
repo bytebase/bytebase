@@ -28,13 +28,13 @@ import DatabaseEditor from "./Panels/DatabaseEditor.vue";
 import TableEditor from "./Panels/TableEditor.vue";
 import TabsContainer from "./TabsContainer.vue";
 
-const schemaEditorV1Store = useSchemaEditorV1Store();
-const currentTab = computed(() => schemaEditorV1Store.currentTab);
-
 interface LocalState {
   tableSearchPattern: string;
   columnSearchPattern: string;
 }
+
+const schemaEditorV1Store = useSchemaEditorV1Store();
+const currentTab = computed(() => schemaEditorV1Store.currentTab);
 
 const state = reactive<LocalState>({
   tableSearchPattern: "",
@@ -49,8 +49,8 @@ const handleColumnSearchPattern = (columnSearchPattern: string) => {
   state.columnSearchPattern = columnSearchPattern;
 };
 
-watch([() => state.tableSearchPattern, () => currentTab.value], () => {
-  // state.tableSearchPattern = "";
+watch([() => currentTab.value], () => {
+  state.tableSearchPattern = "";
   state.columnSearchPattern = "";
 });
 </script>

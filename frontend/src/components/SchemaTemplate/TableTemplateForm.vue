@@ -204,16 +204,17 @@
     :show="state.showClassificationDrawer"
     :classification-config="classificationConfig"
     @dismiss="state.showClassificationDrawer = false"
-    @select="onClassificationSelect"
+    @apply="onClassificationSelect"
   />
 </template>
 
 <script lang="ts" setup>
 import { isEqual, cloneDeep } from "lodash-es";
 import { computed, nextTick, reactive } from "vue";
-import { transformTableEditToMetadata } from "@/components/Branch/utils";
+import { useI18n } from "vue-i18n";
+import { transformTableEditToMetadata } from "@/components/SchemaEditorV1/utils";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { useSettingV1Store } from "@/store";
+import { useSettingV1Store, useNotificationStore } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import { ColumnMetadata, TableConfig } from "@/types/proto/v1/database_service";
 import {
@@ -252,10 +253,15 @@ const state = reactive<LocalState>({
   id: props.template.id,
   engine: props.template.engine,
   category: props.template.category,
-  table: convertTableMetadataToTable(Object.assign({}, props.template.table)),
+  table: convertTableMetadataToTable(
+    Object.assign({}, props.template.table),
+    "normal",
+    props.template.config
+  ),
   showClassificationDrawer: false,
   showFieldTemplateDrawer: false,
 });
+const { t } = useI18n();
 const settingStore = useSettingV1Store();
 const allowEdit = computed(() => {
   return (
@@ -286,7 +292,14 @@ const sumbitDisabled = computed(() => {
   }
   if (
     !props.create &&
-    isEqual(convertTableMetadataToTable(props.template.table!), state.table)
+    isEqual(
+      convertTableMetadataToTable(
+        props.template.table!,
+        "normal",
+        props.template.config
+      ),
+      state.table
+    )
   ) {
     return true;
   }
@@ -299,7 +312,10 @@ const onSumbit = async () => {
     engine: state.engine,
     category: state.category,
     table: transformTableEditToMetadata(state.table),
-    config: TableConfig.fromPartial({}),
+    config: TableConfig.fromPartial({
+      name: state.table.name,
+      columnConfigs: state.table.columnList.map((col) => col.config),
+    }),
   };
   const setting = await settingStore.fetchSettingByName(
     "bb.workspace.schema-template"
@@ -328,6 +344,13 @@ const onSumbit = async () => {
       schemaTemplateSettingValue: settingValue,
     },
   });
+
+  useNotificationStore().pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("common.updated"),
+  });
+
   emit("dismiss");
 };
 
@@ -372,19 +395,20 @@ const setColumnPrimaryKey = (column: Column, isPrimaryKey: boolean) => {
 const handleApplyColumnTemplate = (
   template: SchemaTemplateSetting_FieldTemplate
 ) => {
+  state.showFieldTemplateDrawer = false;
+
   if (template.engine !== state.engine || !template.column) {
     return;
   }
-  const column = convertColumnMetadataToColumn(template.column, "created");
+  const column = convertColumnMetadataToColumn(
+    template.column,
+    "created",
+    template.config
+  );
   state.table.columnList.push(column);
-  state.showFieldTemplateDrawer = false;
 };
 
 const onClassificationSelect = (id: string) => {
-  if (!state.table) {
-    return;
-  }
   state.table.classification = id;
-  state.showClassificationDrawer = false;
 };
 </script>

@@ -294,7 +294,7 @@ const routes: Array<RouteRecordRaw> = [
               content: () => import("../views/branch/BranchDetail.vue"),
               leftSidebar: DashboardSidebar,
             },
-            props: { content: true },
+            props: { content: false },
           },
           {
             path: "sync-schema",
@@ -1446,7 +1446,7 @@ router.beforeEach((to, from, next) => {
     // Prepare the data for the branch detail page.
     const name = `projects/${to.params.projectName}/schemaDesigns/${to.params.branchName}`;
     useSchemaDesignStore()
-      .getOrFetchSchemaDesignByName(name)
+      .fetchSchemaDesignByName(name, false /* !useCache */)
       .then((branch) => {
         if (branch) {
           next();

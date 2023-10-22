@@ -61,7 +61,7 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, escape, head, isUndefined } from "lodash-es";
+import { escape, head, isUndefined } from "lodash-es";
 import { TreeOption, NEllipsis, NInput, NDropdown, NTree } from "naive-ui";
 import { computed, onMounted, watch, ref, h, reactive, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
@@ -72,24 +72,17 @@ import EllipsisIcon from "~icons/heroicons-solid/ellipsis-horizontal";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import {
   generateUniqueTabId,
-  useDBSchemaV1Store,
-  useDatabaseV1Store,
   useInstanceV1Store,
   useNotificationStore,
   useSchemaEditorV1Store,
 } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
-import { SchemaMetadata } from "@/types/proto/v1/database_service";
 import { SchemaEditorTabType } from "@/types/v1/schemaEditor";
-import {
-  Schema,
-  Table,
-  convertSchemaMetadataList,
-  convertSchemaMetadataToSchema,
-} from "@/types/v1/schemaEditor";
+import { Schema, Table } from "@/types/v1/schemaEditor";
 import { getHighlightHTMLByKeyWords, isDescendantOf } from "@/utils";
 import SchemaNameModal from "../Modals/SchemaNameModal.vue";
 import TableNameModal from "../Modals/TableNameModal.vue";
+import { fetchSchemaListByDatabaseName } from "../utils/database";
 import { isSchemaChanged } from "../utils/schema";
 import { isTableChanged } from "../utils/table";
 
@@ -603,34 +596,6 @@ const handleShowDropdown = (e: MouseEvent, treeNode: TreeNode) => {
   selectedKeysRef.value = [treeNode.key];
 };
 
-const fetchSchemaListByDatabaseId = async (
-  databaseName: string,
-  skipCache = false
-) => {
-  const database = useDatabaseV1Store().getDatabaseByName(databaseName);
-  const schemaMetadataList = await useDBSchemaV1Store().getOrFetchSchemaList(
-    database.name,
-    skipCache
-  );
-  const schemaList = convertSchemaMetadataList(schemaMetadataList);
-  if (
-    schemaList.length === 0 &&
-    database.instanceEntity.engine === Engine.MYSQL
-  ) {
-    schemaList.push(
-      convertSchemaMetadataToSchema(SchemaMetadata.fromPartial({}))
-    );
-  }
-
-  schemaEditorV1Store.resourceMap["database"].set(database.name, {
-    database,
-    schemaList: schemaList,
-    originSchemaList: cloneDeep(schemaList),
-  });
-
-  return schemaList;
-};
-
 // Dynamic fetching table list when database tree node clicking.
 const loadSubTree = async (option: TreeOption) => {
   const treeNode = option as TreeNode;
@@ -642,7 +607,10 @@ const loadSubTree = async (option: TreeOption) => {
 
     databaseDataLoadedSet.value.add(databaseName);
     try {
-      const schemaList = await fetchSchemaListByDatabaseId(databaseName, true);
+      const schemaList = await fetchSchemaListByDatabaseName(
+        databaseName,
+        true
+      );
       if (schemaList.length === 0) {
         treeNode.children = [];
         treeNode.isLeaf = true;

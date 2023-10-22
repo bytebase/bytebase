@@ -277,17 +277,15 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	return results, nil
 }
 
-func getStatementWithResultLimit(stmt string, limit int) string {
-	// return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, limit)
-	return fmt.Sprintf("SELECT * FROM (%s) LIMIT %d", stmt, limit)
-}
-
 func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
 
 	stmt := statement
 	if !strings.HasPrefix(stmt, "EXPLAIN") && queryContext.Limit > 0 {
-		stmt = getStatementWithResultLimit(stmt, queryContext.Limit)
+		var err error
+		if stmt, err = getStatementWithResultLimit(stmt, queryContext.Limit); err != nil {
+			return nil, err
+		}
 	}
 
 	// Snowflake doesn't support READ ONLY transactions.

@@ -184,7 +184,12 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 			Engine:     storepb.Engine(schemaDesign.Engine),
 			Protection: convertProtectionToStore(schemaDesign.Protection),
 		},
+		DatabaseConfig: convertV1DatabaseConfig(databaseName, schemaDesign.SchemaMetadata.SchemaConfigs),
 	}
+	if baselineMetadata := schemaDesign.BaselineSchemaMetadata; baselineMetadata != nil {
+		schemaDesignSheetPayload.BaselineDatabaseConfig = convertV1DatabaseConfig(databaseName, baselineMetadata.SchemaConfigs)
+	}
+
 	if schemaDesignType == storepb.SheetPayload_SchemaDesign_MAIN_BRANCH {
 		schemaDesignSheetPayload.SchemaDesign.BaselineSheetId = fmt.Sprintf("%d", baselineSheetUID)
 	} else if schemaDesignType == storepb.SheetPayload_SchemaDesign_PERSONAL_DRAFT {
@@ -291,7 +296,7 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
 	_, sheetID, err := common.GetProjectResourceIDAndSchemaDesignSheetID(request.SchemaDesign.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid schema design name: %v", err))
 	}
 	sheetUID, err := strconv.Atoi(sheetID)
 	if err != nil {
@@ -314,6 +319,11 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 		UpdaterID: currentPrincipalID,
 	}
 	schemaDesign := request.SchemaDesign
+	_, databaseName, err := common.GetInstanceDatabaseID(schemaDesign.BaselineDatabase)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid baseline database: %v", err))
+	}
+
 	if slices.Contains(request.UpdateMask.Paths, "title") {
 		sheetUpdate.Name = &schemaDesign.Title
 	}
@@ -327,14 +337,20 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 			return nil, err
 		}
 		sheetUpdate.Statement = &schema
+		sheet.Payload.DatabaseConfig = convertV1DatabaseConfig(databaseName, schemaDesign.SchemaMetadata.SchemaConfigs)
+		sheetUpdate.Payload = sheet.Payload
 	}
 	// Update baseline schema design id for personal draft schema design.
 	if slices.Contains(request.UpdateMask.Paths, "baseline_sheet_name") {
 		_, sheetUID, err := common.GetProjectResourceIDSheetUID(schemaDesign.BaselineSheetName)
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid baseline sheet name: %v", err))
 		}
 		sheet.Payload.SchemaDesign.BaselineSheetId = fmt.Sprintf("%d", sheetUID)
+		sheetUpdate.Payload = sheet.Payload
+	}
+	if slices.Contains(request.UpdateMask.Paths, "baseline_database_config") {
+		sheet.Payload.BaselineDatabaseConfig = convertV1DatabaseConfig(databaseName, schemaDesign.BaselineSchemaMetadata.SchemaConfigs)
 		sheetUpdate.Payload = sheet.Payload
 	}
 
@@ -380,16 +396,13 @@ func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1
 	if err != nil {
 		return nil, err
 	}
-	if schemaDesign.Type != v1pb.SchemaDesign_PERSONAL_DRAFT {
-		return nil, status.Errorf(codes.InvalidArgument, "only personal draft schema design can be merged")
-	}
 
 	_, targetSheetID, err := common.GetProjectResourceIDAndSchemaDesignSheetID(request.TargetName)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	targetSheetUID, err := strconv.Atoi(targetSheetID)
-	if err != nil || targetSheetUID <= 0 {
+	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %s, must be positive integer", targetSheetID))
 	}
 	targetSheet, err := s.getSheet(ctx, &store.FindSheetMessage{
@@ -404,11 +417,6 @@ func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1
 	if err != nil {
 		return nil, err
 	}
-	// Only allow merging to main branch schema design.
-	// Maybe we can support merging to other personal draft schema design in the future.
-	if targetSchemaDesign.Type != v1pb.SchemaDesign_MAIN_BRANCH {
-		return nil, status.Errorf(codes.InvalidArgument, "only main branch schema design can be merged to")
-	}
 
 	baselineEtag := generateEtag([]byte(schemaDesign.BaselineSchema))
 	// Restrict merging only when the target schema design is not updated.
@@ -422,7 +430,7 @@ func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1
 		if mergedTarget == nil {
 			return nil, status.Errorf(codes.FailedPrecondition, "failed to merge schema design: no change")
 		}
-		mergedTargetSchema, err = getMySQLDesignSchema(targetSchemaDesign.Schema, mergedTarget)
+		mergedTargetSchema, err = getDesignSchema(schemaDesign.Engine, targetSchemaDesign.Schema, mergedTarget)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to convert merged metadata to schema string, %v", err)
 		}
@@ -432,10 +440,13 @@ func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1
 	// Head Schema, Baseline of Head Schema, and Target Schema.
 
 	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	targetSheet.Payload.DatabaseConfig = sheet.Payload.DatabaseConfig
+	targetSheet.Payload.BaselineDatabaseConfig = sheet.Payload.BaselineDatabaseConfig
 	sheetUpdate := &store.PatchSheetMessage{
 		UID:       targetSheetUID,
 		UpdaterID: currentPrincipalID,
 		Statement: &mergedTargetSchema,
+		Payload:   targetSheet.Payload,
 	}
 	// Update main branch schema design.
 	targetSheet, err = s.store.PatchSheet(ctx, sheetUpdate)
@@ -541,6 +552,9 @@ func (*SchemaDesignService) DiffMetadata(_ context.Context, request *v1pb.DiffMe
 	if err := checkDatabaseMetadata(request.Engine, request.TargetMetadata); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid target metadata: %v", err))
 	}
+
+	sanitizeCommentForSchemaMetadata(request.SourceMetadata)
+	sanitizeCommentForSchemaMetadata(request.TargetMetadata)
 
 	sourceSchema, err := transformDatabaseMetadataToSchemaString(request.Engine, request.SourceMetadata)
 	if err != nil {
@@ -653,6 +667,9 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
 	}
+	if databaseConfig := sheet.Payload.DatabaseConfig; databaseConfig != nil {
+		schemaMetadata.SchemaConfigs = convertDatabaseConfig(databaseConfig)
+	}
 
 	baselineSchema, baselineSheetName := "", ""
 	// For backward compatibility, we default to MAIN_BRANCH if the type is not specified.
@@ -691,6 +708,9 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 	baselineSchemaMetadata, err := transformSchemaStringToDatabaseMetadata(engine, baselineSchema)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
+	}
+	if baselineDatabaseConfig := sheet.Payload.BaselineDatabaseConfig; baselineDatabaseConfig != nil {
+		baselineSchemaMetadata.SchemaConfigs = convertDatabaseConfig(baselineDatabaseConfig)
 	}
 
 	schemaDesign := &v1pb.SchemaDesign{
@@ -742,22 +762,19 @@ func convertProtectionFromStore(protection *storepb.SheetPayload_SchemaDesign_Pr
 
 func sanitizeSchemaDesignSchemaMetadata(design *v1pb.SchemaDesign) {
 	if dbSchema := design.GetBaselineSchemaMetadata(); dbSchema != nil {
-		for _, schema := range dbSchema.Schemas {
-			for _, table := range schema.Tables {
-				table.Comment = common.GetCommentFromClassificationAndUserComment(table.Classification, table.UserComment)
-				for _, col := range table.Columns {
-					col.Comment = common.GetCommentFromClassificationAndUserComment(col.Classification, col.UserComment)
-				}
-			}
-		}
+		sanitizeCommentForSchemaMetadata(dbSchema)
 	}
 	if dbSchema := design.GetSchemaMetadata(); dbSchema != nil {
-		for _, schema := range dbSchema.Schemas {
-			for _, table := range schema.Tables {
-				table.Comment = common.GetCommentFromClassificationAndUserComment(table.Classification, table.UserComment)
-				for _, col := range table.Columns {
-					col.Comment = common.GetCommentFromClassificationAndUserComment(col.Classification, col.UserComment)
-				}
+		sanitizeCommentForSchemaMetadata(dbSchema)
+	}
+}
+
+func sanitizeCommentForSchemaMetadata(dbSchema *v1pb.DatabaseMetadata) {
+	for _, schema := range dbSchema.Schemas {
+		for _, table := range schema.Tables {
+			table.Comment = common.GetCommentFromClassificationAndUserComment(table.Classification, table.UserComment)
+			for _, col := range table.Columns {
+				col.Comment = common.GetCommentFromClassificationAndUserComment(col.Classification, col.UserComment)
 			}
 		}
 	}

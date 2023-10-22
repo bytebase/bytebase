@@ -82,7 +82,8 @@
       "developer": "开发者",
       "member": "成员",
       "exporter": "数据导出者",
-      "querier": "数据查询者"
+      "querier": "数据查询者",
+      "releaser": "发布者"
     },
     "assignee": "发布人",
     "revert": "恢复",
@@ -372,13 +373,14 @@
     },
     "action-failed-in-current-stage": "{action}当前阶段失败的任务",
     "action-all-tasks-in-current-stage": "{action}当前阶段的所有任务",
-    "cancel-task": "取消任务"
+    "cancel-task": "取消任务",
+    "created": "创建于"
   },
   "banner": {
     "update-license": "更新证书",
     "license-expires": "您的{plan}证书已在 {expireAt} 过期",
     "trial-expires": "您的{plan}试用将在 {days} 天后过期",
-    "trial-expired": "您的{plan}试用将在已过期",
+    "trial-expired": "您的{plan}试用已过期",
     "extend-trial": "申请延长试用",
     "deploy": "本地部署",
     "cloud": "云服务",
@@ -984,7 +986,9 @@
       "back-to-edit": "返回编辑",
       "continue-anyway": "仍然继续",
       "sql-review-violations": "违反的 SQL 审核规则"
-    }
+    },
+    "no-assignee-candidates": "该项目中没有有效的发布人候选人。\n请联系项目所有者。",
+    "allow-any-following-roles-to-be-assignee": "允许以下任何角色作为发布人"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
@@ -1263,6 +1267,23 @@
       "assignee-group": {
         "workspace-owner-or-dba": "需要 DBA 或者 Bytebase 实例所有者发布。",
         "project-owner": "需要项目所有者发布。"
+      },
+      "manual-by-dba-or-workspace-owner": "需要 DBA 或者 Bytebase 实例所有者发布。",
+      "manual-by-project-owner": "项目所有者",
+      "manual-by-project-releaser": "项目的发布者",
+      "manual-by-issue-creator": "工单的创建者",
+      "manual-by-last-approver": "自定义审批流的最后一个审批人发布",
+      "manual-by-fixed-roles": "固定角色手工发布",
+      "manual-by-fixed-roles-info": "允许以下任一选中角色，点击「发布」按钮后，执行变更。",
+      "manual-by-dba": "DBA",
+      "manual-by-workspace-owner": "Bytebase 实例所有者",
+      "role": {
+        "workspace-owner": "Bytebase 实例所有者",
+        "dba": "DBA",
+        "project-owner": "项目所有者",
+        "project-releaser": "项目的发布者",
+        "issue-creator": "工单的创建者",
+        "last-approver": "自定义审批流的最后一个审批人"
       }
     },
     "backup": {
@@ -2147,7 +2168,7 @@
     "select-reference-column": "选择外键的列"
   },
   "label": {
-    "empty-label-value": "<空值>",
+    "empty-label-value": "空",
     "no-label": "没有标签",
     "error": {
       "key-necessary": "需要指定 Key",
@@ -2813,8 +2834,8 @@
       "presets": {
         "owner-dba": "系统定义的流程。先由项目所有者审批，再由 DBA 审批。",
         "owner": "系统定义的流程。只需要项目所有者审批。",
-        "dba": "系统定义的流程。只需要 DBA 审批",
-        "admin": "系统定义的流程。只需要管理员审批",
+        "dba": "系统定义的流程。只需要 DBA 审批。",
+        "admin": "系统定义的流程。只需要管理员审批。",
         "owner-dba-admin": "系统定义的流程。先由项目所有者审批，再由 DBA 审批，最后由管理员审批。"
       },
       "view-approval-flow": "查看审批流",
@@ -2984,7 +3005,10 @@
       "description": "系统定义的项目数据查询者角色"
     },
     "select-role": "选择角色",
-    "expired-tip": "该角色可能已经过期。"
+    "expired-tip": "该角色可能已经过期。",
+    "releaser": {
+      "description": "系统定义的项目发布者角色"
+    }
   },
   "database-group": {
     "self": "数据库分组",
@@ -3023,6 +3047,7 @@
     "schema-version": "Schema 版本",
     "personal-draft": "个人草稿",
     "baseline-version": "基线版本",
+    "baseline-version-from-parent": "父分支基线版本",
     "new-branch": "新建分支",
     "parent-branch": "父分支",
     "save-draft": "保存草稿",

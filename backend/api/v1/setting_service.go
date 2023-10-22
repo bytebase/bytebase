@@ -23,7 +23,6 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/mail"
-	"github.com/bytebase/bytebase/backend/plugin/parser/sql/edit"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -68,7 +67,7 @@ var whitelistSettings = []api.SettingName{
 	api.SettingSchemaTemplate,
 	api.SettingDataClassification,
 	api.SettingSemanticTypes,
-	api.SettingMaskingAlgorithms,
+	api.SettingMaskingAlgorithm,
 }
 
 //go:embed mail_templates/testmail/template.html
@@ -141,10 +140,6 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 		return nil, status.Errorf(codes.InvalidArgument, "feature %s is unavailable in current mode", settingName)
 	}
 	apiSettingName := api.SettingName(settingName)
-	// TODO(zp): remove the following hard code when we persist the algorithm setting.
-	if apiSettingName == api.SettingMaskingAlgorithms {
-		return nil, status.Errorf(codes.InvalidArgument, "setting masking algorithm is not available")
-	}
 
 	var storeSettingValue string
 	switch apiSettingName {
@@ -413,12 +408,12 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 		}
 		storeSettingValue = string(bytes)
 	case api.SettingSemanticTypes:
-		storeSemanticTypesSetting := new(storepb.SemanticTypesSetting)
-		if err := convertV1PbToStorePb(request.Setting.Value.GetSemanticTypesSettingValue(), storeSemanticTypesSetting); err != nil {
+		storeSemanticTypeSetting := new(storepb.SemanticTypeSetting)
+		if err := convertV1PbToStorePb(request.Setting.Value.GetSemanticTypeSettingValue(), storeSemanticTypeSetting); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
 		}
-		idMap := make(map[string]any)
-		for _, tp := range storeSemanticTypesSetting.Types {
+		idMap := make(map[string]struct{})
+		for _, tp := range storeSemanticTypeSetting.Types {
 			if !isValidUUID(tp.Id) {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid semantic type id format: %s", tp.Id)
 			}
@@ -428,9 +423,29 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 			if _, ok := idMap[tp.Id]; ok {
 				return nil, status.Errorf(codes.InvalidArgument, "duplicate semantic type id: %s", tp.Id)
 			}
-			idMap[tp.Id] = any(nil)
+			idMap[tp.Id] = struct{}{}
 		}
-		bytes, err := protojson.Marshal(storeSemanticTypesSetting)
+		bytes, err := protojson.Marshal(storeSemanticTypeSetting)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
+		}
+		storeSettingValue = string(bytes)
+	case api.SettingMaskingAlgorithm:
+		idMap := make(map[string]struct{})
+		for _, algorithm := range request.Setting.Value.GetMaskingAlgorithmSettingValue().Algorithms {
+			if err := validateMaskingAlgorithm(algorithm); err != nil {
+				return nil, err
+			}
+			if _, ok := idMap[algorithm.Id]; ok {
+				return nil, status.Errorf(codes.InvalidArgument, "duplicate masking algorithm id: %s", algorithm.Id)
+			}
+			idMap[algorithm.Id] = struct{}{}
+		}
+		storeMaskingAlgorithmSetting := new(storepb.MaskingAlgorithmSetting)
+		if err := convertV1PbToStorePb(request.Setting.Value.GetMaskingAlgorithmSettingValue(), storeMaskingAlgorithmSetting); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
+		}
+		bytes, err := protojson.Marshal(storeMaskingAlgorithmSetting)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
 		}
@@ -632,19 +647,19 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 			},
 		}, nil
 	case api.SettingSemanticTypes:
-		v1Value := new(v1pb.SemanticTypesSetting)
+		v1Value := new(v1pb.SemanticTypeSetting)
 		if err := protojson.Unmarshal([]byte(setting.Value), v1Value); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
 		}
 		return &v1pb.Setting{
 			Name: settingName,
 			Value: &v1pb.Value{
-				Value: &v1pb.Value_SemanticTypesSettingValue{
-					SemanticTypesSettingValue: v1Value,
+				Value: &v1pb.Value_SemanticTypeSettingValue{
+					SemanticTypeSettingValue: v1Value,
 				},
 			},
 		}, nil
-	case api.SettingMaskingAlgorithms:
+	case api.SettingMaskingAlgorithm:
 		v1Value := new(v1pb.MaskingAlgorithmSetting)
 		if err := protojson.Unmarshal([]byte(setting.Value), v1Value); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
@@ -689,7 +704,7 @@ func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTempl
 	}
 	v1Value := convertSchemaTemplateSetting(value)
 
-	// validate the changed field template.
+	// validate the changed field(column) template.
 	oldFieldTemplateMap := map[string]*v1pb.SchemaTemplateSetting_FieldTemplate{}
 	for _, template := range v1Value.FieldTemplates {
 		oldFieldTemplateMap[template.Id] = template
@@ -699,13 +714,11 @@ func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTempl
 		if ok && cmp.Equal(oldTemplate, template, protocmp.Transform()) {
 			continue
 		}
-		if err := validateDatabaseEdit(template.Engine, &api.CreateTableContext{
-			Name: "validation",
-			Type: "BASE TABLE",
-			AddColumnList: []*api.AddColumnContext{
-				convertToAddColumnContext(template.Column),
-			},
-		}); err != nil {
+		tableMetadata := &v1pb.TableMetadata{
+			Name:    "temp_table",
+			Columns: []*v1pb.ColumnMetadata{template.Column},
+		}
+		if err := validateTableMetadata(template.Engine, tableMetadata); err != nil {
 			return err
 		}
 	}
@@ -720,17 +733,7 @@ func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTempl
 		if ok && cmp.Equal(oldTemplate, template, protocmp.Transform()) {
 			continue
 		}
-
-		createTableContext := &api.CreateTableContext{
-			Name:          template.Table.Name,
-			Comment:       template.Table.Comment,
-			Type:          "BASE TABLE",
-			AddColumnList: []*api.AddColumnContext{},
-		}
-		for _, column := range template.Table.Columns {
-			createTableContext.AddColumnList = append(createTableContext.AddColumnList, convertToAddColumnContext(column))
-		}
-		if err := validateDatabaseEdit(template.Engine, createTableContext); err != nil {
+		if err := validateTableMetadata(template.Engine, template.Table); err != nil {
 			return err
 		}
 	}
@@ -738,46 +741,23 @@ func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTempl
 	return nil
 }
 
-func convertToAddColumnContext(column *v1pb.ColumnMetadata) *api.AddColumnContext {
-	var defaultVal string
-	if column.HasDefault {
-		switch value := column.Default.(type) {
-		case *v1pb.ColumnMetadata_DefaultNull:
-			defaultVal = "NULL"
-		case *v1pb.ColumnMetadata_DefaultString:
-			defaultVal = fmt.Sprintf("'%s'", strings.ReplaceAll(value.DefaultString, "'", "''"))
-		case *v1pb.ColumnMetadata_DefaultExpression:
-			defaultVal = value.DefaultExpression
-		}
+func validateTableMetadata(engine v1pb.Engine, tableMetadata *v1pb.TableMetadata) error {
+	tempSchema := &v1pb.SchemaMetadata{
+		Name:   "",
+		Tables: []*v1pb.TableMetadata{tableMetadata},
 	}
-
-	return &api.AddColumnContext{
-		Name:     column.Name,
-		Type:     column.Type,
-		Default:  &defaultVal,
-		Nullable: column.Nullable,
-		Comment:  column.Comment,
+	if engine == v1pb.Engine_POSTGRES {
+		tempSchema.Name = "temp_schema"
 	}
-}
-
-func validateDatabaseEdit(engine v1pb.Engine, createTableContext *api.CreateTableContext) error {
-	engineType := convertEngine(engine)
-	databaseEdit := &api.DatabaseEdit{
-		DatabaseID: api.UnknownID,
-		CreateTableList: []*api.CreateTableContext{
-			createTableContext,
-		},
+	tempMetadata := &v1pb.DatabaseMetadata{
+		Name:    "temp_database",
+		Schemas: []*v1pb.SchemaMetadata{tempSchema},
 	}
-
-	validateResultList, err := edit.ValidateDatabaseEdit(engineType, databaseEdit)
-	if err != nil {
-		return status.Errorf(codes.Internal, "failed to validate template, error: %v", err)
+	if err := checkDatabaseMetadata(engine, tempMetadata); err != nil {
+		return errors.Wrap(err, "failed to check database metadata")
 	}
-	if len(validateResultList) != 0 {
-		return status.Errorf(codes.InvalidArgument, validateResultList[0].Message)
-	}
-	if _, err := edit.DeparseDatabaseEdit(engineType, databaseEdit); err != nil {
-		return status.Errorf(codes.InvalidArgument, "failed to deparse statement with error: %v", err.Error())
+	if _, err := transformDatabaseMetadataToSchemaString(engine, tempMetadata); err != nil {
+		return errors.Wrap(err, "failed to transform database metadata to schema string")
 	}
 	return nil
 }
@@ -1074,7 +1054,7 @@ func convertSchemaTemplateSetting(template *storepb.SchemaTemplateSetting) *v1pb
 		})
 	}
 
-	return nil
+	return v1Setting
 }
 
 func convertV1SchemaTemplateSetting(template *v1pb.SchemaTemplateSetting) *storepb.SchemaTemplateSetting {
@@ -1103,6 +1083,41 @@ func convertV1SchemaTemplateSetting(template *v1pb.SchemaTemplateSetting) *store
 			Table:    convertV1TableMetadata(v.Table),
 			Config:   convertV1TableConfig(v.Config),
 		})
+	}
+
+	return v1Setting
+}
+
+func validateMaskingAlgorithm(algorithm *v1pb.MaskingAlgorithmSetting_Algorithm) error {
+	if !isValidUUID(algorithm.Id) {
+		return status.Errorf(codes.InvalidArgument, "invalid masking algorithm id format: %s", algorithm.Id)
+	}
+	if algorithm.Title == "" {
+		return status.Errorf(codes.InvalidArgument, "masking algorithm title cannot be empty: %s", algorithm.Id)
+	}
+
+	switch algorithm.Category {
+	case "MASK":
+		if algorithm.Mask == nil {
+			return nil
+		}
+		switch algorithm.Mask.(type) {
+		case *v1pb.MaskingAlgorithmSetting_Algorithm_FullMask_:
+		case *v1pb.MaskingAlgorithmSetting_Algorithm_RangeMask_:
+		default:
+			return status.Errorf(codes.InvalidArgument, "mismatch masking algorithm category and mask type: %T, %s", algorithm.Mask, algorithm.Category)
+		}
+	case "HASH":
+		if algorithm.Mask == nil {
+			return nil
+		}
+		switch algorithm.Mask.(type) {
+		case *v1pb.MaskingAlgorithmSetting_Algorithm_Md5Mask:
+		default:
+			return status.Errorf(codes.InvalidArgument, "mismatch masking algorithm category and mask type: %T, %s", algorithm.Mask, algorithm.Category)
+		}
+	default:
+		return status.Errorf(codes.InvalidArgument, "invalid masking algorithm category: %s", algorithm.Category)
 	}
 
 	return nil

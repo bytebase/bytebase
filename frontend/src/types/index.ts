@@ -34,7 +34,6 @@ export * from "./tab";
 export * from "./sheet";
 export * from "./sqlReview";
 export * from "./utils";
-export * from "./schemaEditor";
 export * from "./externalApproval";
 export * from "./mfa";
 export * from "./risk";

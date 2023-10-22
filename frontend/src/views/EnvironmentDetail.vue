@@ -3,9 +3,9 @@
     <ArchiveBanner v-if="state.environment.state == State.DELETED" />
   </div>
   <EnvironmentForm
-    v-if="state.approvalPolicy && state.backupPolicy && state.environmentTier"
+    v-if="state.rolloutPolicy && state.backupPolicy && state.environmentTier"
     :environment="state.environment"
-    :approval-policy="state.approvalPolicy"
+    :rollout-policy="state.rolloutPolicy"
     :backup-policy="state.backupPolicy"
     :environment-tier="state.environmentTier"
     @update="doUpdate"
@@ -64,10 +64,10 @@ import {
 import {
   usePolicyV1Store,
   defaultBackupSchedule,
-  defaultApprovalStrategy,
   getDefaultBackupPlanPolicy,
-  getDefaultDeploymentApprovalPolicy,
+  getEmptyRolloutPolicy,
 } from "@/store/modules/v1/policy";
+import { VirtualRoleType } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import {
   Environment,
@@ -84,11 +84,12 @@ import { environmentV1Slug, idFromSlug } from "@/utils";
 interface LocalState {
   environment: Environment;
   showArchiveModal: boolean;
-  approvalPolicy?: PolicyV1;
+  rolloutPolicy?: PolicyV1;
   backupPolicy?: PolicyV1;
   environmentTier?: EnvironmentTier;
   missingRequiredFeature?:
     | "bb.feature.approval-policy"
+    | "bb.feature.custom-approval"
     | "bb.feature.backup-policy"
     | "bb.feature.environment-tier-policy";
   showDisableAutoBackupModal: boolean;
@@ -121,12 +122,12 @@ const preparePolicy = () => {
   policyV1Store
     .getOrFetchPolicyByParentAndType({
       parentPath: state.environment.name,
-      policyType: PolicyTypeV1.DEPLOYMENT_APPROVAL,
+      policyType: PolicyTypeV1.ROLLOUT_POLICY,
     })
     .then((policy) => {
-      state.approvalPolicy =
-        policy ||
-        getDefaultDeploymentApprovalPolicy(
+      state.rolloutPolicy =
+        policy ??
+        getEmptyRolloutPolicy(
           state.environment.name,
           PolicyResourceType.ENVIRONMENT
         );
@@ -220,26 +221,29 @@ const updatePolicy = async (
   policyType: PolicyTypeV1,
   policy: PolicyV1
 ) => {
-  switch (policyType) {
-    case PolicyTypeV1.DEPLOYMENT_APPROVAL:
-      if (
-        policy.deploymentApprovalPolicy?.defaultStrategy !=
-          defaultApprovalStrategy &&
-        !hasFeature("bb.feature.approval-policy")
-      ) {
+  if (policyType === PolicyTypeV1.ROLLOUT_POLICY) {
+    const rp = policy.rolloutPolicy;
+    if (rp?.automatic === false) {
+      if (rp.issueRoles.includes(VirtualRoleType.LAST_APPROVER)) {
+        if (!hasFeature("bb.feature.custom-approval")) {
+          state.missingRequiredFeature = "bb.feature.custom-approval";
+          return;
+        }
+      }
+      if (!hasFeature("bb.feature.approval-policy")) {
         state.missingRequiredFeature = "bb.feature.approval-policy";
         return;
       }
-      break;
-    case PolicyTypeV1.BACKUP_PLAN:
-      if (
-        policy.backupPlanPolicy?.schedule != defaultBackupSchedule &&
-        !hasFeature("bb.feature.backup-policy")
-      ) {
-        state.missingRequiredFeature = "bb.feature.backup-policy";
-        return;
-      }
-      break;
+    }
+  }
+  if (policyType === PolicyTypeV1.BACKUP_PLAN) {
+    if (
+      policy.backupPlanPolicy?.schedule != defaultBackupSchedule &&
+      !hasFeature("bb.feature.backup-policy")
+    ) {
+      state.missingRequiredFeature = "bb.feature.backup-policy";
+      return;
+    }
   }
 
   const updatedPolicy = await policyV1Store.upsertPolicy({
@@ -248,8 +252,8 @@ const updatePolicy = async (
     policy,
   });
   switch (policyType) {
-    case PolicyTypeV1.DEPLOYMENT_APPROVAL:
-      state.approvalPolicy = updatedPolicy;
+    case PolicyTypeV1.ROLLOUT_POLICY:
+      state.rolloutPolicy = updatedPolicy;
       break;
     case PolicyTypeV1.BACKUP_PLAN:
       state.backupPolicy = updatedPolicy;

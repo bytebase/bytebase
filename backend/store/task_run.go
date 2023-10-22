@@ -35,6 +35,7 @@ type TaskRunMessage struct {
 	Updater   *UserMessage
 	UpdatedTs int64
 	ProjectID string
+	StartedTs int64
 }
 
 // FindTaskRunMessage is the message for finding task runs.
@@ -108,6 +109,7 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 			task_run.task_id,
 			task_run.name,
 			task_run.status,
+			task_run.started_ts,
 			task_run.code,
 			task_run.result,
 			task.pipeline_id,
@@ -138,6 +140,7 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 			&taskRun.TaskUID,
 			&taskRun.Name,
 			&taskRun.Status,
+			&taskRun.StartedTs,
 			&taskRun.Code,
 			&taskRun.Result,
 			&taskRun.PipelineUID,
@@ -341,6 +344,9 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, tx *Tx, patch *TaskRun
 		}
 		set, args = append(set, fmt.Sprintf("result = $%d", len(args)+1)), append(args, result)
 	}
+	if patch.Status == api.TaskRunRunning {
+		set = append(set, "started_ts = extract(epoch from now())")
+	}
 
 	// Build WHERE clause.
 	where := []string{"TRUE"}
@@ -469,18 +475,13 @@ func (*Store) findTaskRunImpl(ctx context.Context, tx *Tx, find *TaskRunFind) ([
 	return taskRuns, nil
 }
 
-// BatchPatchTaskRunStatus updates the status of a list of taskRuns.
-func (s *Store) BatchPatchTaskRunStatus(ctx context.Context, taskRunIDs []int, status api.TaskRunStatus, updaterID int) error {
-	var ids []string
-	for _, id := range taskRunIDs {
-		ids = append(ids, fmt.Sprintf("%d", id))
-	}
-	query := fmt.Sprintf(`
+// BatchCancelTaskRuns updates the status of taskRuns to CANCELED.
+func (s *Store) BatchCancelTaskRuns(ctx context.Context, taskRunIDs []int, updaterID int) error {
+	query := `
 		UPDATE task_run
 		SET status = $1, updater_id = $2
-		WHERE id IN (%s);
-	`, strings.Join(ids, ","))
-	if _, err := s.db.db.ExecContext(ctx, query, status, updaterID); err != nil {
+		WHERE id = ANY($3)`
+	if _, err := s.db.db.ExecContext(ctx, query, api.TaskRunCanceled, updaterID, taskRunIDs); err != nil {
 		return err
 	}
 	return nil

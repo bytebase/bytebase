@@ -76,7 +76,7 @@ import {
   mergeSchemaEditToMetadata,
   validateDatabaseMetadata,
 } from "../SchemaEditorV1/utils";
-import { getBaselineMetadataOfBranch } from "../SchemaEditorV1/utils/branch";
+import { fetchBaselineMetadataOfBranch } from "../SchemaEditorV1/utils/branch";
 
 type TabType = "schema-editor" | "raw-sql-preview";
 
@@ -118,7 +118,7 @@ const fetchRawSQLPreview = async () => {
     return;
   }
 
-  const sourceMetadata = getBaselineMetadataOfBranch(props.branch);
+  const sourceMetadata = await fetchBaselineMetadataOfBranch(props.branch);
   const branchSchema = schemaEditorV1Store.resourceMap["branch"].get(
     props.branch.name
   );
@@ -126,7 +126,9 @@ const fetchRawSQLPreview = async () => {
     return undefined;
   }
 
-  const baselineMetadata = getBaselineMetadataOfBranch(branchSchema.branch);
+  const baselineMetadata = await fetchBaselineMetadataOfBranch(
+    branchSchema.branch
+  );
   const metadata = mergeSchemaEditToMetadata(
     branchSchema.schemaList,
     cloneDeep(baselineMetadata)

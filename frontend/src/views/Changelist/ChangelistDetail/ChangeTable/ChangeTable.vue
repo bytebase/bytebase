@@ -50,14 +50,7 @@
       </div>
 
       <div class="bb-grid-cell">
-        <RichDatabaseName
-          v-if="databaseForChange(change)"
-          :database="databaseForChange(change)!"
-          :show-instance="false"
-          :show-arrow="false"
-          :show-production-environment-icon="false"
-          tooltip="instance"
-        />
+        <DatabaseForChange :change="change" />
       </div>
       <div class="bb-grid-cell">
         <SQL :change="change" />
@@ -74,15 +67,8 @@ import { NCheckbox } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGrid, BBGridColumn, BBGridRow } from "@/bbkit";
-import { RichDatabaseName } from "@/components/v2";
-import { useDatabaseV1Store } from "@/store";
-import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
 import { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
-import {
-  extractDatabaseResourceName,
-  isBranchChangeSource,
-  isChangeHistoryChangeSource,
-} from "@/utils";
+import DatabaseForChange from "./DatabaseForChange.vue";
 import RemoveChangeButton from "./RemoveChangeButton.vue";
 import ReorderButtons from "./ReorderButtons.vue";
 import SQL from "./SQL.vue";
@@ -154,20 +140,6 @@ const toggleSelect = (change: Change, on: boolean) => {
       set.delete(change);
       emit("update:selected", Array.from(set));
     }
-  }
-};
-
-const databaseForChange = (change: Change) => {
-  const { source } = change;
-  if (isChangeHistoryChangeSource(change)) {
-    const { full: database } = extractDatabaseResourceName(source);
-    return useDatabaseV1Store().getDatabaseByName(database);
-  } else if (isBranchChangeSource(change)) {
-    const branch = useSchemaDesignStore().getSchemaDesignByName(source);
-    return useDatabaseV1Store().getDatabaseByName(branch.baselineDatabase);
-  } else {
-    // Raw SQL
-    return undefined;
   }
 };
 

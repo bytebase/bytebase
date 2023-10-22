@@ -6,7 +6,7 @@
           :readonly="true"
           :row-clickable="true"
           :semantic-item-list="semanticItemList"
-          @on-select="$emit('apply', $event)"
+          @on-select="onApply($event)"
         />
       </div>
     </DrawerContent>
@@ -25,15 +25,15 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { SemanticTypesSetting_SemanticType } from "@/types/proto/v1/setting_service";
+import { SemanticTypeSetting_SemanticType } from "@/types/proto/v1/setting_service";
 import SemanticTypesTable, { SemanticItem } from "./SemanticTypesTable.vue";
 
 const props = defineProps<{
   show: boolean;
-  semanticTypeList: SemanticTypesSetting_SemanticType[];
+  semanticTypeList: SemanticTypeSetting_SemanticType[];
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   (event: "dismiss"): void;
   (event: "apply", id: string): void;
 }>();
@@ -47,4 +47,9 @@ const semanticItemList = computed((): SemanticItem[] => {
     };
   });
 });
+
+const onApply = (semanticTypeId: string) => {
+  emit("apply", semanticTypeId);
+  emit("dismiss");
+};
 </script>

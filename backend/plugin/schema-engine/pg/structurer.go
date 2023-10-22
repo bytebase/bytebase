@@ -210,6 +210,22 @@ func ParseToMetadata(schema string) (*v1pb.DatabaseMetadata, error) {
 					continue
 				}
 				column.comment = stmt.Comment
+			case ast.ObjectTypeTable:
+				tableDef, ok := stmt.Object.(*ast.TableDef)
+				if !ok {
+					return nil, errors.Errorf("failed to convert to TableDef")
+				}
+				schema, ok := state.schemas[tableDef.Schema]
+				if !ok {
+					// Skip unknown schema for comments.
+					continue
+				}
+				table, ok := schema.tables[tableDef.Name]
+				if !ok {
+					// Skip unknown table for comments.
+					continue
+				}
+				table.comment = stmt.Comment
 			default:
 				// Skip other comment types for now.
 			}
@@ -324,6 +340,16 @@ type tableState struct {
 	columns     map[string]*columnState
 	indexes     map[string]*indexState
 	foreignKeys map[string]*foreignKeyState
+	// ignoreComment means this column is already in the target schema.
+	ignoreComment bool
+	comment       string
+}
+
+func (t *tableState) commentToString(buf *strings.Builder, schemaName string) error {
+	if _, err := buf.WriteString(fmt.Sprintf("COMMENT ON TABLE \"%s\".\"%s\" IS '%s';\n", schemaName, t.name, escapePostgreSQLString(t.comment))); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (t *tableState) removeUnsupportedIndex() {
@@ -425,6 +451,7 @@ func convertToTableState(id int, table *v1pb.TableMetadata) *tableState {
 	for i, fk := range table.ForeignKeys {
 		state.foreignKeys[fk.Name] = convertToForeignKeyState(i, fk)
 	}
+	state.comment = table.Comment
 	return state
 }
 
@@ -470,6 +497,7 @@ func (t *tableState) convertToTableMetadata() *v1pb.TableMetadata {
 		Columns:     columns,
 		Indexes:     indexes,
 		ForeignKeys: fks,
+		Comment:     t.comment,
 	}
 }
 
@@ -771,9 +799,15 @@ type designSchemaGenerator struct {
 // GetDesignSchema returns the schema string for the design schema.
 func GetDesignSchema(baselineSchema string, to *v1pb.DatabaseMetadata) (string, error) {
 	toState := convertToDatabaseState(to)
-	tree, err := pgparser.ParsePostgreSQL(baselineSchema)
+	parseResult, err := pgparser.ParsePostgreSQL(baselineSchema)
 	if err != nil {
 		return "", err
+	}
+	if parseResult == nil {
+		return "", nil
+	}
+	if parseResult.Tree == nil {
+		return "", nil
 	}
 
 	listener := &designSchemaGenerator{
@@ -781,11 +815,11 @@ func GetDesignSchema(baselineSchema string, to *v1pb.DatabaseMetadata) (string, 
 		to:             toState,
 	}
 
-	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
+	antlr.ParseTreeWalkerDefault.Walk(listener, parseResult.Tree)
 	if listener.err != nil {
 		return "", listener.err
 	}
-	root, ok := tree.(*postgres.RootContext)
+	root, ok := parseResult.Tree.(*postgres.RootContext)
 	if !ok {
 		return "", errors.Errorf("failed to convert to RootContext")
 	}
@@ -834,6 +868,15 @@ func GetDesignSchema(baselineSchema string, to *v1pb.DatabaseMetadata) (string, 
 					if _, err := listener.result.WriteString("\n"); err != nil {
 						return "", err
 					}
+				}
+			}
+
+			if table.Comment != "" && !tableState.ignoreComment {
+				if err := tableState.commentToString(&listener.result, schema.Name); err != nil {
+					return "", err
+				}
+				if _, err := listener.result.WriteString("\n"); err != nil {
+					return "", err
 				}
 			}
 		}
@@ -1284,7 +1327,141 @@ func (g *designSchemaGenerator) EnterCommentstmt(ctx *postgres.CommentstmtContex
 		}
 	}
 
-	if ctx.COLUMN() == nil {
+	switch {
+	case ctx.COLUMN() != nil:
+		schemaName, tableName, columnName, err := pgparser.NormalizePostgreSQLAnyNameAsColumnName(ctx.Any_name())
+		if err != nil {
+			g.err = err
+			return
+		}
+		schema, exists := g.to.schemas[schemaName]
+		if !exists {
+			// Skip not found schema.
+			return
+		}
+		table, exists := schema.tables[tableName]
+		if !exists {
+			// Skip not found table.
+			return
+		}
+		column, exists := table.columns[columnName]
+		if !exists {
+			// Skip not found column.
+			return
+		}
+		equal := false
+		column.ignoreComment = true
+		if ctx.Comment_text().NULL_P() != nil {
+			equal = len(column.comment) == 0
+		} else {
+			if len(column.comment) == 0 {
+				// Skip for empty comment string.
+				return
+			}
+			commentText := ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+				Start: ctx.Comment_text().GetStart().GetTokenIndex(),
+				Stop:  ctx.Comment_text().GetStop().GetTokenIndex(),
+			})
+			if len(commentText) > 2 && commentText[0] == '\'' && commentText[len(commentText)-1] == '\'' {
+				commentText = unescapePostgreSQLString(commentText[1 : len(commentText)-1])
+			}
+
+			equal = commentText == column.comment
+		}
+
+		if equal {
+			if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+				Start: ctx.GetStart().GetTokenIndex(),
+				Stop:  endTokenIndex,
+			})); err != nil {
+				g.err = err
+				return
+			}
+		} else {
+			if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+				Start: ctx.GetStart().GetTokenIndex(),
+				Stop:  ctx.Comment_text().GetStart().GetTokenIndex() - 1,
+			})); err != nil {
+				g.err = err
+				return
+			}
+			if _, err := g.result.WriteString(fmt.Sprintf("'%s'", escapePostgreSQLString(column.comment))); err != nil {
+				g.err = err
+				return
+			}
+			if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+				Start: ctx.Comment_text().GetStop().GetTokenIndex() + 1,
+				Stop:  endTokenIndex,
+			})); err != nil {
+				g.err = err
+				return
+			}
+		}
+	case ctx.Object_type_any_name().TABLE() != nil:
+		schemaName, tableName, err := pgparser.NormalizePostgreSQLAnyNameAsTableName(ctx.Any_name())
+		if err != nil {
+			g.err = err
+			return
+		}
+		schema, exists := g.to.schemas[schemaName]
+		if !exists {
+			// Skip not found schema.
+			return
+		}
+		table, exists := schema.tables[tableName]
+		if !exists {
+			// Skip not found table.
+			return
+		}
+		equal := false
+		table.ignoreComment = true
+		if ctx.Comment_text().NULL_P() != nil {
+			equal = len(table.comment) == 0
+		} else {
+			if len(table.comment) == 0 {
+				// Skip for empty comment string.
+				return
+			}
+			commentText := ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+				Start: ctx.Comment_text().GetStart().GetTokenIndex(),
+				Stop:  ctx.Comment_text().GetStop().GetTokenIndex(),
+			})
+			if len(commentText) > 2 && commentText[0] == '\'' && commentText[len(commentText)-1] == '\'' {
+				commentText = unescapePostgreSQLString(commentText[1 : len(commentText)-1])
+			}
+
+			equal = commentText == table.comment
+		}
+
+		if equal {
+			if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+				Start: ctx.GetStart().GetTokenIndex(),
+				Stop:  endTokenIndex,
+			})); err != nil {
+				g.err = err
+				return
+			}
+		} else {
+			if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+				Start: ctx.GetStart().GetTokenIndex(),
+				Stop:  ctx.Comment_text().GetStart().GetTokenIndex() - 1,
+			})); err != nil {
+				g.err = err
+				return
+			}
+			if _, err := g.result.WriteString(fmt.Sprintf("'%s'", escapePostgreSQLString(table.comment))); err != nil {
+				g.err = err
+				return
+			}
+			if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+				Start: ctx.Comment_text().GetStop().GetTokenIndex() + 1,
+				Stop:  endTokenIndex,
+			})); err != nil {
+				g.err = err
+				return
+			}
+		}
+	default:
 		// Keep other comment statements.
 		if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 			Start: ctx.GetStart().GetTokenIndex(),
@@ -1294,75 +1471,6 @@ func (g *designSchemaGenerator) EnterCommentstmt(ctx *postgres.CommentstmtContex
 			return
 		}
 		return
-	}
-
-	schemaName, tableName, columnName, err := pgparser.NormalizePostgreSQLAnyNameAsColumnName(ctx.Any_name())
-	if err != nil {
-		g.err = err
-		return
-	}
-	schema, exists := g.to.schemas[schemaName]
-	if !exists {
-		// Skip not found schema.
-		return
-	}
-	table, exists := schema.tables[tableName]
-	if !exists {
-		// Skip not found table.
-		return
-	}
-	column, exists := table.columns[columnName]
-	if !exists {
-		// Skip not found column.
-		return
-	}
-	equal := false
-	column.ignoreComment = true
-	if ctx.Comment_text().NULL_P() != nil {
-		equal = len(column.comment) == 0
-	} else {
-		if len(column.comment) == 0 {
-			// Skip for empty comment string.
-			return
-		}
-		commentText := ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
-			Start: ctx.Comment_text().GetStart().GetTokenIndex(),
-			Stop:  ctx.Comment_text().GetStop().GetTokenIndex(),
-		})
-		if len(commentText) > 2 && commentText[0] == '\'' && commentText[len(commentText)-1] == '\'' {
-			commentText = unescapePostgreSQLString(commentText[1 : len(commentText)-1])
-		}
-
-		equal = commentText == column.comment
-	}
-
-	if equal {
-		if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
-			Start: ctx.GetStart().GetTokenIndex(),
-			Stop:  endTokenIndex,
-		})); err != nil {
-			g.err = err
-			return
-		}
-	} else {
-		if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
-			Start: ctx.GetStart().GetTokenIndex(),
-			Stop:  ctx.Comment_text().GetStart().GetTokenIndex() - 1,
-		})); err != nil {
-			g.err = err
-			return
-		}
-		if _, err := g.result.WriteString(fmt.Sprintf("'%s'", escapePostgreSQLString(column.comment))); err != nil {
-			g.err = err
-			return
-		}
-		if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
-			Start: ctx.Comment_text().GetStop().GetTokenIndex() + 1,
-			Stop:  endTokenIndex,
-		})); err != nil {
-			g.err = err
-			return
-		}
 	}
 }
 

@@ -45,7 +45,7 @@ const (
 	// SettingSemanticTypes is the setting name for semantic types.
 	SettingSemanticTypes SettingName = "bb.workspace.semantic-types"
 	// SettingMaskingAlgorithms is the setting name for masking algorithms.
-	SettingMaskingAlgorithms SettingName = "bb.workspace.masking-algorithms"
+	SettingMaskingAlgorithm SettingName = "bb.workspace.masking-algorithm"
 )
 
 // IMType is the type of IM.

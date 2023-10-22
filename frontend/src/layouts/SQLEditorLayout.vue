@@ -24,39 +24,17 @@
 </template>
 
 <script lang="ts" setup>
-import { useLocalStorage } from "@vueuse/core";
-import { computed, onMounted } from "vue";
+import { storeToRefs } from "pinia";
+import { computed } from "vue";
 import BannersWrapper from "@/components/BannersWrapper.vue";
 import ProvideSQLEditorContext from "@/components/ProvideSQLEditorContext.vue";
-import {
-  pushNotification,
-  useActuatorV1Store,
-  useSQLEditorStore,
-} from "@/store";
-import { SQLEditorMode } from "@/types";
+import { pushNotification, useActuatorV1Store } from "@/store";
 
 const actuatorStore = useActuatorV1Store();
-const sqlEditorStore = useSQLEditorStore();
+const { pageMode } = storeToRefs(actuatorStore);
 
 const showBanners = computed(() => {
-  return sqlEditorStore.mode === "BUNDLED";
-});
-
-onMounted(() => {
-  const searchParams = new URLSearchParams(window.location.search);
-  let mode = searchParams.get("mode") as SQLEditorMode;
-  const cachedMode = useLocalStorage<SQLEditorMode>(
-    "bb.sql-editor.mode",
-    "BUNDLED"
-  );
-  if (mode != "BUNDLED" && mode != "STANDALONE") {
-    mode = cachedMode.value;
-  }
-
-  cachedMode.value = mode;
-  sqlEditorStore.setSQLEditorState({
-    mode,
-  });
+  return pageMode.value === "BUNDLED";
 });
 
 const ping = () => {

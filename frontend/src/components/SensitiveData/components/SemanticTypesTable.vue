@@ -138,14 +138,14 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { BBTableColumn } from "@/bbkit/types";
 import { useSettingV1Store } from "@/store";
-import { SemanticTypesSetting_SemanticType } from "@/types/proto/v1/setting_service";
+import { SemanticTypeSetting_SemanticType } from "@/types/proto/v1/setting_service";
 
 type SemanticItemMode = "NORMAL" | "CREATE" | "EDIT";
 
 export interface SemanticItem {
   mode: SemanticItemMode;
   dirty: boolean;
-  item: SemanticTypesSetting_SemanticType;
+  item: SemanticTypeSetting_SemanticType;
 }
 
 const props = defineProps<{
@@ -203,7 +203,7 @@ const onInput = (index: number, callback: (item: SemanticItem) => void) => {
 
 const algorithmList = computed((): SelectOption[] => {
   return (
-    settingStore.getSettingByName("bb.workspace.masking-algorithms")?.value
+    settingStore.getSettingByName("bb.workspace.masking-algorithm")?.value
       ?.maskingAlgorithmSettingValue?.algorithms ?? []
   ).map((algorithm) => ({
     label: algorithm.title,

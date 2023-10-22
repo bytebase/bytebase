@@ -1,28 +1,17 @@
 package server
 
 import (
-	// This includes the first-class databases including MySQL, Postgres, SQLite, TiDB.
+	// This includes the first-class database, Postgres.
 
 	// Drivers.
-	_ "github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/sqlite"
 
 	// Parsers.
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/pg"
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/standard"
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 
 	// Advisors.
-	_ "github.com/bytebase/bytebase/backend/plugin/advisor/mysql"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/pg"
 
 	// Editors.
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/edit/mysql"
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/edit/pg"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
-
-	// Transformers.
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/transform/mysql"
 )

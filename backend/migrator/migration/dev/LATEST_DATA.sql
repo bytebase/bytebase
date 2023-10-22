@@ -58,54 +58,6 @@ VALUES
         'ENVIRONMENT',
         101,
         TRUE,
-        'bb.policy.pipeline-approval',
-        '{"value":"MANUAL_APPROVAL_NEVER"}'
+        'bb.policy.rollout',
+        '{"automatic": true}'
     );
-
-INSERT INTO
-    policy (
-        id,
-        creator_id,
-        updater_id,
-        resource_type,
-        resource_id,
-        inherit_from_parent,
-        type,
-        payload
-    )
-VALUES
-    (
-        102,
-        1,
-        1,
-        'ENVIRONMENT',
-        102,
-        TRUE,
-        'bb.policy.pipeline-approval',
-        '{"value":"MANUAL_APPROVAL_ALWAYS"}'
-    );
-
-INSERT INTO
-    policy (
-        id,
-        creator_id,
-        updater_id,
-        resource_type,
-        resource_id,
-        inherit_from_parent,
-        type,
-        payload
-    )
-VALUES
-    (
-        103,
-        1,
-        1,
-        'ENVIRONMENT',
-        102,
-        TRUE,
-        'bb.policy.backup-plan',
-        '{"schedule":"WEEKLY"}'
-    );
-
-ALTER SEQUENCE policy_id_seq RESTART WITH 104;

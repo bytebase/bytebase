@@ -82,29 +82,26 @@ LABEL org.opencontainers.image.authors=${BUILD_USER}
 
 # Create user "bytebase" for running Postgres database and server.
 RUN addgroup --gid 113 --system bytebase && adduser --uid 113 --system bytebase && adduser bytebase bytebase
-
 # Directory to store the data, which can be referenced as the mounting point.
 RUN mkdir -p /var/opt/bytebase
-
 # Directory to store the demo data.
 RUN mkdir -p /var/opt/bytebase/pgdata-demo
-
-ENV OPENSSL_CONF /etc/ssl/
+# Our HEALTHCHECK instruction in dockerfile needs curl.
+# Install psmisc to use killall command in demo.sh used by render.com.
+RUN apt-get update && apt-get install -y locales curl psmisc procps libncurses5
+# Generate en_US.UTF-8 locale which is needed to start postgres server.
+# Fix the posgres server issue (invalid value for parameter "lc_messages": "en_US.UTF-8").
+RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen
+ENV PATH="${PATH}:/var/opt/bytebase/resources/postgres-linux-amd64-16/bin:/var/opt/bytebase/resources/postgres-linux-arm64-16/bin"
 
 # Copy utility scripts, we have
 # - Demo script to launch Bytebase in readonly demo mode
 COPY ./scripts /usr/local/bin/
 COPY ./scripts/.psqlrc /root/.psqlrc
-
-# Our HEALTHCHECK instruction in dockerfile needs curl.
-# Install psmisc to use killall command in demo.sh used by render.com.
-RUN apt-get update && apt-get install -y locales curl psmisc postgresql-client procps libncurses5
-# Generate en_US.UTF-8 locale which is needed to start postgres server.
-# Fix the posgres server issue (invalid value for parameter "lc_messages": "en_US.UTF-8").
-RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen
-
 COPY --from=backend /backend-build/bytebase /usr/local/bin/
 COPY --from=backend /etc/ssl/certs /etc/ssl/certs
+
+ENV OPENSSL_CONF /etc/ssl/
 
 CMD ["--port", "80", "--data", "/var/opt/bytebase"]
 

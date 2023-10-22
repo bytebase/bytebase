@@ -1,7 +1,6 @@
 package mysql
 
 import (
-	"cmp"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -87,8 +86,8 @@ func (l *mysqlSensitiveFieldListener) EnterSelectStatement(ctx *mysql.SelectStat
 
 	for _, field := range fieldList {
 		l.result = append(l.result, base.SensitiveField{
-			Name:         field.Name,
-			MaskingLevel: field.MaskingLevel,
+			Name:              field.Name,
+			MaskingAttributes: field.MaskingAttributes,
 		})
 	}
 }
@@ -103,8 +102,8 @@ func (l *mysqlSensitiveFieldListener) EnterCreateView(ctx *mysql.CreateViewConte
 
 	for _, field := range fieldList {
 		l.result = append(l.result, base.SensitiveField{
-			Name:         field.Name,
-			MaskingLevel: field.MaskingLevel,
+			Name:              field.Name,
+			MaskingAttributes: field.MaskingAttributes,
 		})
 	}
 
@@ -243,8 +242,8 @@ func (extractor *fieldExtractor) mysqlExtractRecursiveCTE(ctx mysql.ICommonTable
 		columnList := mysqlExtractColumnInternalRefList(ctx.ColumnInternalRefList())
 		for i := range columnList {
 			l.cteInfo.ColumnList = append(l.cteInfo.ColumnList, base.ColumnInfo{
-				Name:         columnList[i],
-				MaskingLevel: base.DefaultMaskingLevel,
+				Name:              columnList[i],
+				MaskingAttributes: base.NewDefaultMaskingAttributes(),
 			})
 		}
 	}
@@ -357,9 +356,7 @@ func (l *recursiveCTEListener) EnterQueryExpressionBody(ctx *mysql.QueryExpressi
 						return
 					}
 					for i := range initialPart {
-						if cmp.Less[storepb.MaskingLevel](initialPart[i].MaskingLevel, fieldList[i].MaskingLevel) {
-							initialPart[i].MaskingLevel = fieldList[i].MaskingLevel
-						}
+						initialPart[i].MaskingAttributes.TransmittedBy(fieldList[i].MaskingAttributes)
 					}
 				}
 			}
@@ -402,9 +399,7 @@ func (l *recursiveCTEListener) EnterQueryExpressionBody(ctx *mysql.QueryExpressi
 						return
 					}
 					for i := range initialPart {
-						if cmp.Less[storepb.MaskingLevel](initialPart[i].MaskingLevel, fieldList[i].MaskingLevel) {
-							initialPart[i].MaskingLevel = fieldList[i].MaskingLevel
-						}
+						initialPart[i].MaskingAttributes.TransmittedBy(fieldList[i].MaskingAttributes)
 					}
 				}
 			}
@@ -424,8 +419,8 @@ func (l *recursiveCTEListener) EnterQueryExpressionBody(ctx *mysql.QueryExpressi
 	if len(l.cteInfo.ColumnList) == 0 {
 		for _, item := range initialPart {
 			l.cteInfo.ColumnList = append(l.cteInfo.ColumnList, base.ColumnInfo{
-				Name:         item.Name,
-				MaskingLevel: item.MaskingLevel,
+				Name:              item.Name,
+				MaskingAttributes: item.MaskingAttributes,
 			})
 		}
 	} else {
@@ -434,9 +429,7 @@ func (l *recursiveCTEListener) EnterQueryExpressionBody(ctx *mysql.QueryExpressi
 			return
 		}
 		for i := range initialPart {
-			if cmp.Less[storepb.MaskingLevel](l.cteInfo.ColumnList[i].MaskingLevel, initialPart[i].MaskingLevel) {
-				l.cteInfo.ColumnList[i].MaskingLevel = initialPart[i].MaskingLevel
-			}
+			l.cteInfo.ColumnList[i].MaskingAttributes.TransmittedBy(initialPart[i].MaskingAttributes)
 		}
 	}
 
@@ -476,9 +469,7 @@ func (l *recursiveCTEListener) EnterQueryExpressionBody(ctx *mysql.QueryExpressi
 					return
 				}
 				for i := range fieldList {
-					if cmp.Less[storepb.MaskingLevel](fieldList[i].MaskingLevel, itemFields[i].MaskingLevel) {
-						fieldList[i].MaskingLevel = itemFields[i].MaskingLevel
-					}
+					fieldList[i].MaskingAttributes.TransmittedBy(itemFields[i].MaskingAttributes)
 				}
 			}
 		}
@@ -491,10 +482,7 @@ func (l *recursiveCTEListener) EnterQueryExpressionBody(ctx *mysql.QueryExpressi
 
 		changed := false
 		for i, field := range fieldList {
-			if cmp.Less[storepb.MaskingLevel](l.cteInfo.ColumnList[i].MaskingLevel, field.MaskingLevel) {
-				l.cteInfo.ColumnList[i].MaskingLevel = field.MaskingLevel
-				changed = true
-			}
+			changed = changed || l.cteInfo.ColumnList[i].MaskingAttributes.TransmittedBy(field.MaskingAttributes)
 		}
 
 		if !changed {
@@ -540,8 +528,8 @@ func (extractor *fieldExtractor) mysqlExtractNonRecursiveCTE(ctx mysql.ICommonTa
 	}
 	for _, field := range fieldList {
 		result.ColumnList = append(result.ColumnList, base.ColumnInfo{
-			Name:         field.Name,
-			MaskingLevel: field.MaskingLevel,
+			Name:              field.Name,
+			MaskingAttributes: field.MaskingAttributes,
 		})
 	}
 	return result, nil
@@ -568,9 +556,7 @@ func (extractor *fieldExtractor) mysqlExtractQueryExpressionBody(ctx mysql.IQuer
 					return nil, errors.Errorf("MySQL UNION field list should have the same length, but got %d and %d", len(result), len(fieldList))
 				}
 				for i := range result {
-					if cmp.Less[storepb.MaskingLevel](result[i].MaskingLevel, fieldList[i].MaskingLevel) {
-						result[i].MaskingLevel = fieldList[i].MaskingLevel
-					}
+					result[i].MaskingAttributes.TransmittedBy(fieldList[i].MaskingAttributes)
 				}
 			}
 		case *mysql.QueryExpressionParensContext:
@@ -585,9 +571,7 @@ func (extractor *fieldExtractor) mysqlExtractQueryExpressionBody(ctx mysql.IQuer
 					return nil, errors.Errorf("MySQL UNION field list should have the same length, but got %d and %d", len(result), len(fieldList))
 				}
 				for i := range result {
-					if cmp.Less[storepb.MaskingLevel](result[i].MaskingLevel, fieldList[i].MaskingLevel) {
-						result[i].MaskingLevel = fieldList[i].MaskingLevel
-					}
+					result[i].MaskingAttributes.TransmittedBy(fieldList[i].MaskingAttributes)
 				}
 			}
 		default:
@@ -635,19 +619,19 @@ func (extractor *fieldExtractor) mysqlExtractTableValueConstructor(ctx mysql.ITa
 	for _, child := range values.GetChildren() {
 		switch child := child.(type) {
 		case *mysql.ExprContext:
-			_, maskingLevel, err := extractor.mysqlEvalMaskingLevelInExpr(child)
+			_, maskingAttributes, err := extractor.mysqlEvalMaskingAttributesInExpr(child)
 			if err != nil {
 				return nil, err
 			}
 			result = append(result, base.FieldInfo{
-				Name:         child.GetParser().GetTokenStream().GetTextFromRuleContext(child),
-				MaskingLevel: maskingLevel,
+				Name:              child.GetParser().GetTokenStream().GetTextFromRuleContext(child),
+				MaskingAttributes: maskingAttributes,
 			})
 		case antlr.TerminalNode:
 			if child.GetSymbol().GetTokenType() == mysql.MySQLParserDEFAULT_SYMBOL {
 				result = append(result, base.FieldInfo{
-					Name:         "DEFAULT",
-					MaskingLevel: base.DefaultMaskingLevel,
+					Name:              "DEFAULT",
+					MaskingAttributes: base.NewDefaultMaskingAttributes(),
 				})
 			}
 		}
@@ -670,10 +654,10 @@ func (extractor *fieldExtractor) mysqlExtractExplicitTable(ctx mysql.IExplicitTa
 	var res []base.FieldInfo
 	for _, column := range tableSchema.ColumnList {
 		res = append(res, base.FieldInfo{
-			Name:         column.Name,
-			Table:        tableSchema.Name,
-			Database:     databaseName,
-			MaskingLevel: column.MaskingLevel,
+			Name:              column.Name,
+			Table:             tableSchema.Name,
+			Database:          databaseName,
+			MaskingAttributes: column.MaskingAttributes,
 		})
 	}
 
@@ -804,8 +788,8 @@ func (extractor *fieldExtractor) mysqlBuildTableSchemaForView(viewName string, v
 	for _, field := range listener.result {
 		// nolint:gosimple
 		result.ColumnList = append(result.ColumnList, base.ColumnInfo{
-			Name:         field.Name,
-			MaskingLevel: field.MaskingLevel,
+			Name:              field.Name,
+			MaskingAttributes: field.MaskingAttributes,
 		})
 	}
 	return result, nil
@@ -863,7 +847,7 @@ func (extractor *fieldExtractor) mysqlExtractSelectItem(ctx mysql.ISelectItemCon
 	case ctx.TableWild() != nil:
 		return extractor.mysqlExtractTableWild(ctx.TableWild())
 	case ctx.Expr() != nil:
-		fieldName, sensitiveLevel, err := extractor.mysqlEvalMaskingLevelInExpr(ctx.Expr())
+		fieldName, sensitiveLevel, err := extractor.mysqlEvalMaskingAttributesInExpr(ctx.Expr())
 		if err != nil {
 			return nil, err
 		}
@@ -874,8 +858,8 @@ func (extractor *fieldExtractor) mysqlExtractSelectItem(ctx mysql.ISelectItemCon
 		}
 		return []base.FieldInfo{
 			{
-				Name:         fieldName,
-				MaskingLevel: sensitiveLevel,
+				Name:              fieldName,
+				MaskingAttributes: sensitiveLevel,
 			},
 		}, nil
 	}
@@ -1012,8 +996,8 @@ func (extractor *fieldExtractor) mysqlMergeJoin(leftField []base.FieldInfo, join
 			_, existsInUsingMap := usingMap[strings.ToLower(left.Name)]
 			rField, existsInRightField := rightFieldMap[strings.ToLower(left.Name)]
 			// Merge the sensitive attribute for the column in USING.
-			if existsInUsingMap && existsInRightField && cmp.Less[storepb.MaskingLevel](rField.MaskingLevel, left.MaskingLevel) {
-				left.MaskingLevel = rField.MaskingLevel
+			if existsInUsingMap && existsInRightField {
+				left.MaskingAttributes.TransmittedBy(rField.MaskingAttributes)
 			}
 			result = append(result, left)
 		}
@@ -1055,8 +1039,8 @@ func (extractor *fieldExtractor) mysqlMergeJoin(leftField []base.FieldInfo, join
 			_, existsInUsingMap := usingMap[strings.ToLower(left.Name)]
 			rField, existsInRightField := rightFieldMap[strings.ToLower(left.Name)]
 			// Merge the sensitive attribute for the column in USING.
-			if existsInUsingMap && existsInRightField && cmp.Less[storepb.MaskingLevel](rField.MaskingLevel, left.MaskingLevel) {
-				left.MaskingLevel = rField.MaskingLevel
+			if existsInUsingMap && existsInRightField {
+				left.MaskingAttributes.TransmittedBy(rField.MaskingAttributes)
 			}
 			result = append(result, left)
 		}
@@ -1084,8 +1068,8 @@ func (extractor *fieldExtractor) mysqlMergeJoin(leftField []base.FieldInfo, join
 
 		// Natural join will merge the column with the same name.
 		for _, left := range leftField {
-			if rField, exists := rightFieldMap[strings.ToLower(left.Name)]; exists && cmp.Less[storepb.MaskingLevel](left.MaskingLevel, rField.MaskingLevel) {
-				left.MaskingLevel = rField.MaskingLevel
+			if rField, exists := rightFieldMap[strings.ToLower(left.Name)]; exists {
+				left.MaskingAttributes.TransmittedBy(rField.MaskingAttributes)
 			}
 			result = append(result, left)
 		}
@@ -1143,10 +1127,10 @@ func (extractor *fieldExtractor) mysqlExtractSingleTable(ctx mysql.ISingleTableC
 	var result []base.FieldInfo
 	for _, column := range tableSchema.ColumnList {
 		result = append(result, base.FieldInfo{
-			Name:         column.Name,
-			Table:        tableName,
-			Database:     databaseName,
-			MaskingLevel: column.MaskingLevel,
+			Name:              column.Name,
+			Table:             tableName,
+			Database:          databaseName,
+			MaskingAttributes: column.MaskingAttributes,
 		})
 	}
 
@@ -1256,7 +1240,7 @@ func (extractor *fieldExtractor) mysqlExtractTableFunction(ctx mysql.ITableFunct
 		return nil, nil
 	}
 
-	tableName, sensitiveLevel, err := extractor.mysqlEvalMaskingLevelInExpr(ctx.Expr())
+	tableName, sensitiveLevel, err := extractor.mysqlEvalMaskingAttributesInExpr(ctx.Expr())
 	if err != nil {
 		return nil, err
 	}
@@ -1272,9 +1256,9 @@ func (extractor *fieldExtractor) mysqlExtractTableFunction(ctx mysql.ITableFunct
 	var result []base.FieldInfo
 	for _, column := range columnList {
 		result = append(result, base.FieldInfo{
-			Name:         column,
-			Table:        tableName,
-			MaskingLevel: sensitiveLevel,
+			Name:              column,
+			Table:             tableName,
+			MaskingAttributes: sensitiveLevel,
 		})
 	}
 	return result, nil
@@ -1308,10 +1292,12 @@ func mysqlExtractJtColumn(ctx mysql.IJtColumnContext) []string {
 	return []string{}
 }
 
-func (extractor *fieldExtractor) mysqlEvalMaskingLevelInExpr(ctx antlr.ParserRuleContext) (string, storepb.MaskingLevel, error) {
+func (extractor *fieldExtractor) mysqlEvalMaskingAttributesInExpr(ctx antlr.ParserRuleContext) (string, base.MaskingAttributes, error) {
 	if ctx == nil {
-		return "", base.DefaultMaskingLevel, nil
+		return "", base.NewDefaultMaskingAttributes(), nil
 	}
+
+	attributes := base.NewDefaultMaskingAttributes()
 
 	switch ctx := ctx.(type) {
 	case mysql.ISubqueryContext:
@@ -1327,22 +1313,20 @@ func (extractor *fieldExtractor) mysqlEvalMaskingLevelInExpr(ctx antlr.ParserRul
 		}
 		fieldList, err := subqueryExtractor.mysqlExtractSubquery(ctx)
 		if err != nil {
-			return "", storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, err
+			return "", base.NewDefaultMaskingAttributes(), err
 		}
-		finalLevel := base.DefaultMaskingLevel
+		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, field := range fieldList {
-			if cmp.Less[storepb.MaskingLevel](finalLevel, field.MaskingLevel) {
-				finalLevel = field.MaskingLevel
-			}
-			if finalLevel == base.MaxMaskingLevel {
-				return "", finalLevel, nil
+			attributes.TransmittedBy(field.MaskingAttributes)
+			if attributes.IsNeverChangeInTransmission() {
+				return "", attributes, nil
 			}
 		}
-		return "", finalLevel, nil
+		return "", finalAttributes, nil
 	case mysql.IColumnRefContext:
 		databaseName, tableName, fieldName := NormalizeMySQLFieldIdentifier(ctx.FieldIdentifier())
-		level := extractor.mysqlCheckFieldMaskingLevel(databaseName, tableName, fieldName)
-		return fieldName, level, nil
+		maskingAttributes := extractor.mysqlCheckFieldMaskingAttributes(databaseName, tableName, fieldName)
+		return fieldName, maskingAttributes, nil
 	}
 
 	var list []antlr.ParserRuleContext
@@ -1352,40 +1336,38 @@ func (extractor *fieldExtractor) mysqlEvalMaskingLevelInExpr(ctx antlr.ParserRul
 		}
 	}
 
-	fieldName, level, err := extractor.mysqlEvalMaskingLevelInExprList(list)
+	fieldName, maskingAttributes, err := extractor.mysqlEvalMaskingAttributesInExprList(list)
 	if err != nil {
-		return "", base.DefaultMaskingLevel, err
+		return "", base.NewDefaultMaskingAttributes(), err
 	}
 	if len(ctx.GetChildren()) > 1 {
 		fieldName = ""
 	}
-	return fieldName, level, nil
+	return fieldName, maskingAttributes, nil
 }
 
-func (extractor *fieldExtractor) mysqlEvalMaskingLevelInExprList(list []antlr.ParserRuleContext) (string, storepb.MaskingLevel, error) {
-	finalLevel := base.DefaultMaskingLevel
+func (extractor *fieldExtractor) mysqlEvalMaskingAttributesInExprList(list []antlr.ParserRuleContext) (string, base.MaskingAttributes, error) {
+	finalAttributes := base.NewDefaultMaskingAttributes()
 	var fieldName string
 	var err error
+	var attributes base.MaskingAttributes
 	for _, ctx := range list {
-		var level storepb.MaskingLevel
-		fieldName, level, err = extractor.mysqlEvalMaskingLevelInExpr(ctx)
+		fieldName, attributes, err = extractor.mysqlEvalMaskingAttributesInExpr(ctx)
 		if err != nil {
-			return "", base.DefaultMaskingLevel, err
+			return "", base.NewDefaultMaskingAttributes(), err
 		}
 		if len(list) != 1 {
 			fieldName = ""
 		}
-		if cmp.Less[storepb.MaskingLevel](finalLevel, level) {
-			finalLevel = level
-		}
-		if finalLevel == base.MaxMaskingLevel {
-			return fieldName, finalLevel, nil
+		finalAttributes.TransmittedBy(attributes)
+		if finalAttributes.IsNeverChangeInTransmission() {
+			return fieldName, finalAttributes, nil
 		}
 	}
-	return fieldName, finalLevel, nil
+	return fieldName, finalAttributes, nil
 }
 
-func (extractor *fieldExtractor) mysqlCheckFieldMaskingLevel(databaseName string, tableName string, columnName string) storepb.MaskingLevel {
+func (extractor *fieldExtractor) mysqlCheckFieldMaskingAttributes(databaseName string, tableName string, columnName string) base.MaskingAttributes {
 	// One sub-query may have multi-outer schemas and the multi-outer schemas can use the same name, such as:
 	//
 	//  select (
@@ -1416,7 +1398,7 @@ func (extractor *fieldExtractor) mysqlCheckFieldMaskingLevel(databaseName string
 		// Column name in MySQL is NOT case sensitive.
 		sameField = strings.EqualFold(columnName, field.Name)
 		if sameDatabase && sameTable && sameField {
-			return field.MaskingLevel
+			return field.MaskingAttributes
 		}
 	}
 
@@ -1436,8 +1418,8 @@ func (extractor *fieldExtractor) mysqlCheckFieldMaskingLevel(databaseName string
 		// Column name in MySQL is NOT case sensitive.
 		sameField = strings.EqualFold(columnName, field.Name)
 		if sameDatabase && sameTable && sameField {
-			return field.MaskingLevel
+			return field.MaskingAttributes
 		}
 	}
-	return base.DefaultMaskingLevel
+	return base.NewDefaultMaskingAttributes()
 }

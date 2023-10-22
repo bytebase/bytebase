@@ -18,6 +18,7 @@ import (
 	// Parsers.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/standard"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 
 	// Advisors.

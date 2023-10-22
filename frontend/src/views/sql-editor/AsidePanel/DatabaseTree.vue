@@ -54,15 +54,16 @@
 import { useMounted, useThrottleFn } from "@vueuse/core";
 import { head } from "lodash-es";
 import { NTree, NInput, NDropdown, DropdownOption, TreeOption } from "naive-ui";
+import { storeToRefs } from "pinia";
 import { ref, computed, nextTick, watch, h } from "vue";
 import { useI18n } from "vue-i18n";
 import {
+  useActuatorV1Store,
   useCurrentUserV1,
   useDBSchemaV1Store,
   useDatabaseV1Store,
   useInstanceV1Store,
   useIsLoggedIn,
-  useSQLEditorStore,
   useTabStore,
 } from "@/store";
 import { useSQLEditorTreeStore } from "@/store/modules/sqlEditorTree";
@@ -112,7 +113,7 @@ defineEmits<{
 }>();
 
 const { t } = useI18n();
-const sqlEditorStore = useSQLEditorStore();
+const { pageMode } = storeToRefs(useActuatorV1Store());
 const treeStore = useSQLEditorTreeStore();
 const tabStore = useTabStore();
 const databaseStore = useDatabaseV1Store();
@@ -165,7 +166,7 @@ const dropdownOptions = computed((): DropdownOptionWithTreeNode[] => {
         });
       }
     }
-    if (type === "database" && sqlEditorStore.mode === "BUNDLED") {
+    if (type === "database" && pageMode.value === "BUNDLED") {
       const database = target as ComposedDatabase;
       if (instanceV1HasAlterSchema(database.instanceEntity)) {
         items.push({

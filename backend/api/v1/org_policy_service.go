@@ -539,6 +539,13 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (st
 			return "", errors.Wrap(err, "failed to marshal workspace iam policy")
 		}
 		return string(payloadBytes), nil
+	case v1pb.PolicyType_ROLLOUT_POLICY:
+		rolloutPolicy := convertToStorePBRolloutPolicy(policy.GetRolloutPolicy())
+		payloadBytes, err := protojson.Marshal(rolloutPolicy)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to marshal rollout policy")
+		}
+		return string(payloadBytes), nil
 	case v1pb.PolicyType_DEPLOYMENT_APPROVAL:
 		payload, err := convertToPipelineApprovalPolicyPayload(policy.GetDeploymentApprovalPolicy())
 		if err != nil {
@@ -690,6 +697,13 @@ func convertToPolicy(parentPath string, policyMessage *store.PolicyMessage) (*v1
 		payload, err := convertToV1PBWorkspaceIAMPolicy(storepbIAMPolicy)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to convert workspace IAM policy")
+		}
+		policy.Policy = payload
+	case api.PolicyTypeRollout:
+		pType = v1pb.PolicyType_ROLLOUT_POLICY
+		payload, err := convertToV1RolloutPolicyPayload(policyMessage.Payload)
+		if err != nil {
+			return nil, err
 		}
 		policy.Policy = payload
 	case api.PolicyTypePipelineApproval:
@@ -1024,6 +1038,16 @@ func convertToBackupPlanPolicyPayload(policy *v1pb.BackupPlanPolicy) (*api.Backu
 	}, nil
 }
 
+func convertToV1RolloutPolicyPayload(payloadStr string) (*v1pb.Policy_RolloutPolicy, error) {
+	p := &v1pb.RolloutPolicy{}
+	if err := protojson.Unmarshal([]byte(payloadStr), p); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal rollout policy payload")
+	}
+	return &v1pb.Policy_RolloutPolicy{
+		RolloutPolicy: p,
+	}, nil
+}
+
 func convertToV1PBDeploymentApprovalPolicy(payloadStr string) (*v1pb.Policy_DeploymentApprovalPolicy, error) {
 	payload, err := api.UnmarshalPipelineApprovalPolicy(payloadStr)
 	if err != nil {
@@ -1067,6 +1091,15 @@ func convertToV1PBDeploymentApprovalPolicy(payloadStr string) (*v1pb.Policy_Depl
 			DeploymentApprovalStrategies: approvalStrategies,
 		},
 	}, nil
+}
+
+func convertToStorePBRolloutPolicy(policy *v1pb.RolloutPolicy) *storepb.RolloutPolicy {
+	return &storepb.RolloutPolicy{
+		Automatic:      policy.Automatic,
+		WorkspaceRoles: policy.WorkspaceRoles,
+		ProjectRoles:   policy.ProjectRoles,
+		IssueRoles:     policy.IssueRoles,
+	}
 }
 
 func convertToPipelineApprovalPolicyPayload(policy *v1pb.DeploymentApprovalPolicy) (*api.PipelineApprovalPolicy, error) {
@@ -1295,6 +1328,8 @@ func convertPolicyType(pType string) (api.PolicyType, error) {
 		return api.PolicyTypeWorkspaceIAM, nil
 	case v1pb.PolicyType_DEPLOYMENT_APPROVAL.String():
 		return api.PolicyTypePipelineApproval, nil
+	case v1pb.PolicyType_ROLLOUT_POLICY.String():
+		return api.PolicyTypeRollout, nil
 	case v1pb.PolicyType_BACKUP_PLAN.String():
 		return api.PolicyTypeBackupPlan, nil
 	case v1pb.PolicyType_SQL_REVIEW.String():

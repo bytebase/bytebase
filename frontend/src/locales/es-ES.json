@@ -82,7 +82,8 @@
       "developer": "Desarrollador",
       "member": "Miembro",
       "exporter": "exportador",
-      "querier": "querier"
+      "querier": "querier",
+      "releaser": "liberador"
     },
     "assignee": "Asignado",
     "revert": "Revertir",
@@ -374,7 +375,8 @@
     },
     "action-failed-in-current-stage": "{action} tareas fallidas en la etapa actual",
     "action-all-tasks-in-current-stage": "{action} todas las tareas en la etapa actual",
-    "cancel-task": "Cancelar tarea | Cancelar tareas"
+    "cancel-task": "Cancelar tarea | Cancelar tareas",
+    "created": "Creado"
   },
   "banner": {
     "update-license": "Actualizar licencia",
@@ -986,7 +988,9 @@
       "back-to-edit": "Volver a editar",
       "continue-anyway": "De todas maneras, continúe",
       "sql-review-violations": "Infracciones de revisión de SQL"
-    }
+    },
+    "no-assignee-candidates": "No hay candidatos asignados válidos en este proyecto. \nPor favor contacte al propietario del proyecto.",
+    "allow-any-following-roles-to-be-assignee": "Permitir que se asignen los siguientes roles"
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",
@@ -1265,6 +1269,23 @@
       "assignee-group": {
         "workspace-owner-or-dba": "Requiere implementación del DBA o del propietario del espacio de trabajo.",
         "project-owner": "Requiere implementación del propietario del proyecto."
+      },
+      "manual-by-dba-or-workspace-owner": "Requiere implementación del DBA o del propietario del espacio de trabajo.",
+      "manual-by-project-owner": "Dueño del proyecto",
+      "manual-by-project-releaser": "Liberador de proyecto",
+      "manual-by-issue-creator": "Creador del problema",
+      "manual-by-last-approver": "Implementación manual por parte del último aprobador del flujo de aprobación personalizado",
+      "manual-by-fixed-roles": "Implementación manual por roles fijos",
+      "manual-by-fixed-roles-info": "Permita que cualquiera de los siguientes roles seleccionados haga clic en el botón \"Implementar\" y luego se ejecutará el cambio.",
+      "manual-by-dba": "DBA",
+      "manual-by-workspace-owner": "Propietario del espacio de trabajo",
+      "role": {
+        "workspace-owner": "Propietario del espacio de trabajo",
+        "dba": "DBA",
+        "project-owner": "Dueño del proyecto",
+        "project-releaser": "Liberador de proyecto",
+        "issue-creator": "Creador del problema",
+        "last-approver": "El último aprobador del flujo de aprobación personalizado"
       }
     },
     "backup": {
@@ -2147,7 +2168,7 @@
     "select-reference-column": "Seleccionar una columna de referencia"
   },
   "label": {
-    "empty-label-value": "<Valor Vacío>",
+    "empty-label-value": "Valor",
     "no-label": "Sin etiquetas",
     "error": {
       "key-necessary": "Se requiere una clave",
@@ -2988,7 +3009,10 @@
       "description": "Rol de querier del proyecto definido por el sistema"
     },
     "select-role": "Seleccionar rol",
-    "expired-tip": "El papel puede haber expirado."
+    "expired-tip": "El papel puede haber expirado.",
+    "releaser": {
+      "description": "Rol de liberador de proyecto definido por el sistema"
+    }
   },
   "database-group": {
     "self": "Grupo de Bases de Datos",
@@ -3028,6 +3052,7 @@
     "schema-version": "Versión del esquema",
     "personal-draft": "Borrador personal",
     "baseline-version": "Versión de referencia",
+    "baseline-version-from-parent": "Versión de referencia de la rama principal",
     "new-branch": "Nueva rama",
     "parent-branch": "Rama principal",
     "save-draft": "Guardar borrador",

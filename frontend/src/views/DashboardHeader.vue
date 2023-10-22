@@ -118,7 +118,7 @@
           <heroicons-outline:chat-bubble-left-right class="w-4 h-4" />
         </div>
         <a href="/sql-editor" target="_blank">
-          <heroicons-solid:terminal class="w-6 h-6" />
+          <heroicons-outline:terminal class="w-6 h-6" />
         </a>
         <router-link to="/setting/member" exact-active-class="">
           <Settings class="w-6 h-6" />

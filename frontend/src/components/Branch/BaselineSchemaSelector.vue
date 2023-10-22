@@ -12,31 +12,19 @@
         :disabled="props.readonly"
         :selected-id="state.environmentId"
         :select-default="false"
-        @select-environment-id="handleEnvironmentSelect"
+        :environment="state.environmentId"
+        @update:environment="handleEnvironmentSelect"
       />
       <DatabaseSelect
         class="!w-128"
-        :selected-id="state.databaseId ?? String(UNKNOWN_ID)"
-        :mode="'USER'"
-        :disabled="props.readonly"
-        :environment-id="state.environmentId"
-        :project-id="props.projectId"
-        :engine-type-list="allowedEngineTypeList"
-        :sync-status="'OK'"
-        :customize-item="true"
         :placeholder="$t('schema-designer.select-database-placeholder')"
-        @select-database-id="handleDatabaseSelect"
-      >
-        <template #customizeItem="{ database: db }">
-          <div class="flex items-center">
-            <InstanceV1EngineIcon :instance="db.instanceEntity" />
-            <span class="mx-2">{{ db.databaseName }}</span>
-            <span class="text-gray-400">
-              ({{ instanceV1Name(db.instanceEntity) }})
-            </span>
-          </div>
-        </template>
-      </DatabaseSelect>
+        :disabled="props.readonly"
+        :allowed-engine-type-list="allowedEngineTypeList"
+        :environment="state.environmentId"
+        :project="projectId"
+        :database="state.databaseId"
+        @update:database="handleDatabaseSelect"
+      />
     </div>
     <div class="w-full flex flex-row justify-start items-center">
       <span class="flex w-40 items-center shrink-0 text-sm">
@@ -51,8 +39,8 @@
           :disabled="props.readonly"
           :selected-item="state.changeHistory"
           :item-list="
-                  databaseChangeHistoryList(state.databaseId as string)
-                "
+            databaseChangeHistoryList(state.databaseId as string)
+          "
           :placeholder="$t('change-history.select')"
           :show-prefix-item="databaseChangeHistoryList(state.databaseId as string).length > 0"
           @select-item="(changeHistory: ChangeHistory) => handleSchemaVersionSelect(changeHistory)"
@@ -91,8 +79,8 @@
 <script lang="ts" setup>
 import { head, isNull, isUndefined } from "lodash-es";
 import { NEllipsis } from "naive-ui";
-import { computed, onMounted, reactive, watch } from "vue";
-import { InstanceV1EngineIcon } from "@/components/v2";
+import { computed, reactive, watch } from "vue";
+import { EnvironmentSelect, DatabaseSelect } from "@/components/v2";
 import {
   useChangeHistoryStore,
   useDBSchemaV1Store,
@@ -105,16 +93,11 @@ import {
   ChangeHistory,
   ChangeHistory_Type,
 } from "@/types/proto/v1/database_service";
-import { instanceV1Name } from "@/utils";
-
-interface BaselineSchema {
-  databaseId?: string;
-  changeHistory?: ChangeHistory;
-}
 
 const props = defineProps<{
   projectId?: string;
-  baselineSchema?: BaselineSchema;
+  databaseId?: string;
+  changeHistory?: ChangeHistory;
   readonly?: boolean;
 }>();
 
@@ -147,25 +130,31 @@ const prepareChangeHistoryList = async () => {
     return;
   }
 
-  return await changeHistoryStore.getOrFetchChangeHistoryListOfDatabase(
-    database.value.name
-  );
+  return await changeHistoryStore.fetchChangeHistoryList({
+    parent: database.value.name,
+  });
 };
 
-onMounted(async () => {
-  if (props.baselineSchema?.databaseId) {
-    try {
-      const database = await databaseStore.getOrFetchDatabaseByUID(
-        props.baselineSchema.databaseId || ""
-      );
-      state.databaseId = database.uid;
-      state.environmentId = database.effectiveEnvironmentEntity.uid;
-      state.changeHistory = props.baselineSchema.changeHistory;
-    } catch (error) {
-      // do nothing.
+watch(
+  () => props.databaseId,
+  async (databaseId) => {
+    state.databaseId = databaseId ?? "";
+    if (databaseId) {
+      try {
+        const database = await databaseStore.getOrFetchDatabaseByUID(
+          databaseId
+        );
+        state.databaseId = database.uid;
+        state.environmentId = database.effectiveEnvironmentEntity.uid;
+        state.changeHistory = props.changeHistory;
+      } catch (error) {
+        // do nothing.
+      }
+    } else {
+      state.changeHistory = undefined;
     }
   }
-});
+);
 
 watch(
   () => props.projectId,
@@ -174,21 +163,23 @@ watch(
       return;
     }
     if (database.value.projectEntity.uid !== props.projectId) {
-      state.environmentId = undefined;
-      state.databaseId = undefined;
+      state.environmentId = "";
+      state.databaseId = "";
     }
   }
 );
 
 watch(
   () => state.databaseId,
-  async () => {
-    if (!database.value) {
+  async (databaseId) => {
+    if (!database.value || !databaseId) {
       state.changeHistory = undefined;
       return;
     }
 
-    const list = await prepareChangeHistoryList();
+    const list = (await prepareChangeHistoryList())?.filter(
+      filterChangeHistoryByType
+    );
     if (!list || list.length === 0) {
       // If database has no migration history, we will use its latest schema.
       const schema = await databaseStore.fetchDatabaseSchema(
@@ -219,6 +210,10 @@ const allowedMigrationTypeList: ChangeHistory_Type[] = [
   ChangeHistory_Type.BRANCH,
 ];
 
+const filterChangeHistoryByType = (changeHistory: ChangeHistory): boolean => {
+  return allowedMigrationTypeList.includes(changeHistory.type);
+};
+
 const isValidId = (id: any): id is string => {
   if (isNull(id) || isUndefined(id) || String(id) === String(UNKNOWN_ID)) {
     return false;
@@ -226,14 +221,14 @@ const isValidId = (id: any): id is string => {
   return true;
 };
 
-const handleEnvironmentSelect = async (environmentId: string) => {
+const handleEnvironmentSelect = (environmentId?: string) => {
   if (environmentId !== state.environmentId) {
-    state.databaseId = String(UNKNOWN_ID);
+    state.databaseId = "";
   }
-  state.environmentId = environmentId;
+  state.environmentId = environmentId ?? "";
 };
 
-const handleDatabaseSelect = async (databaseId: string) => {
+const handleDatabaseSelect = (databaseId?: string) => {
   if (isValidId(databaseId)) {
     const database = databaseStore.getDatabaseByUID(databaseId);
     if (!database) {
@@ -243,7 +238,7 @@ const handleDatabaseSelect = async (databaseId: string) => {
     const environment = environmentStore.getEnvironmentByName(
       database.effectiveEnvironment
     );
-    state.environmentId = environment?.uid;
+    state.environmentId = environment?.uid ?? "";
     state.databaseId = databaseId;
     dbSchemaStore.getOrFetchDatabaseMetadata(database.name);
   }
@@ -253,9 +248,7 @@ const databaseChangeHistoryList = (databaseId: string) => {
   const database = databaseStore.getDatabaseByUID(databaseId);
   const list = changeHistoryStore
     .changeHistoryListByDatabase(database.name)
-    .filter((changeHistory) =>
-      allowedMigrationTypeList.includes(changeHistory.type)
-    );
+    .filter(filterChangeHistoryByType);
 
   return list;
 };

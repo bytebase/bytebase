@@ -24,7 +24,7 @@
         {{ item.column?.type }}
       </div>
       <div class="bb-grid-cell">
-        {{ getDefaultValue(item.column) }}
+        {{ getColumnDefaultValuePlaceholder(item.column!) }}
       </div>
       <div class="bb-grid-cell">
         {{ item.column?.comment }}
@@ -64,13 +64,14 @@ import { NPopconfirm } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGrid, BBGridColumn } from "@/bbkit";
+import { getColumnDefaultValuePlaceholder } from "@/components/SchemaEditorV1/utils/columnDefaultValue";
 import { useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import {
   SchemaTemplateSetting,
   SchemaTemplateSetting_FieldTemplate,
 } from "@/types/proto/v1/setting_service";
-import { getDefaultValue, classificationConfig } from "./utils";
+import { classificationConfig } from "./utils";
 
 const props = defineProps<{
   engine?: Engine;

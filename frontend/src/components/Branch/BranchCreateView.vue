@@ -1,37 +1,53 @@
 <template>
-  <div class="space-y-3 w-full overflow-x-auto px-4 pb-8">
-    <div class="w-full flex flex-row justify-start items-center pt-1">
+  <div class="space-y-3 w-full overflow-x-auto px-4 pb-8 pt-4">
+    <div
+      v-if="showProjectSelector"
+      class="w-full flex flex-row justify-start items-center"
+    >
       <span class="flex w-40 items-center shrink-0 text-sm">
         {{ $t("common.project") }}
       </span>
       <ProjectSelect
         class="!w-60 shrink-0"
-        :selected-id="state.projectId"
-        @select-project-id="handleProjectSelect"
+        :project="state.projectId"
+        @update:project="handleProjectSelect"
       />
     </div>
     <div class="w-full flex flex-row justify-start items-center mt-1">
       <span class="flex w-40 items-center text-sm">{{
         $t("database.branch-name")
       }}</span>
-      <BBTextField
-        class="w-60 text-sm"
-        :value="state.schemaDesignTitle"
+      <NInput
+        v-model:value="state.schemaDesignTitle"
+        required
+        type="text"
+        class="!w-60 text-sm"
         :placeholder="'feature/add-billing'"
-        @input="
-          state.schemaDesignTitle = ($event.target as HTMLInputElement).value
-        "
+      />
+      <span class="ml-8 mr-4 flex items-center text-sm">{{
+        $t("schema-designer.parent-branch")
+      }}</span>
+      <BranchSelector
+        class="!w-60"
+        clearable
+        :branch="state.parentBranchName"
+        :project="state.projectId"
+        @update:branch="(branch) => (state.parentBranchName = branch ?? '')"
       />
     </div>
     <NDivider />
     <div class="w-full flex flex-row justify-start items-center mt-1">
-      <span class="flex w-40 items-center text-sm font-medium">{{
-        $t("schema-designer.baseline-version")
+      <span class="flex w-full items-center text-sm font-medium">{{
+        state.parentBranchName
+          ? $t("schema-designer.baseline-version-from-parent")
+          : $t("schema-designer.baseline-version")
       }}</span>
     </div>
     <BaselineSchemaSelector
       :project-id="state.projectId"
-      :baseline-schema="state.baselineSchema"
+      :database-id="state.baselineSchema.databaseId"
+      :change-history="state.baselineSchema.changeHistory"
+      :readonly="disallowToChangeBaseline"
       @update="handleBaselineSchemaChange"
     />
     <div class="!mt-6 w-full h-[32rem]">
@@ -61,11 +77,13 @@
 
 <script lang="ts" setup>
 import { cloneDeep, uniqueId } from "lodash-es";
-import { NButton, NDivider } from "naive-ui";
+import { NButton, NDivider, NInput } from "naive-ui";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import SchemaEditorV1 from "@/components/SchemaEditorV1/index.vue";
+import { mergeSchemaEditToMetadata } from "@/components/SchemaEditorV1/utils";
+import { ProjectSelect } from "@/components/v2";
 import {
   pushNotification,
   useChangeHistoryStore,
@@ -97,7 +115,7 @@ import {
 } from "@/types/proto/v1/sheet_service";
 import { extractChangeHistoryUID } from "@/utils";
 import BaselineSchemaSelector from "./BaselineSchemaSelector.vue";
-import { mergeSchemaEditToMetadata, validateBranchName } from "./utils";
+import { validateBranchName } from "./utils";
 
 interface BaselineSchema {
   // The uid of database.
@@ -110,6 +128,7 @@ interface LocalState {
   schemaDesignTitle: string;
   baselineSchema: BaselineSchema;
   schemaDesign: SchemaDesign;
+  parentBranchName?: string;
 }
 
 const props = defineProps({
@@ -125,6 +144,7 @@ const route = useRoute();
 const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
 const schemaDesignStore = useSchemaDesignStore();
+const changeHistoryStore = useChangeHistoryStore();
 const sheetStore = useSheetV1Store();
 const state = reactive<LocalState>({
   schemaDesignTitle: "",
@@ -134,7 +154,17 @@ const state = reactive<LocalState>({
     type: SchemaDesign_Type.MAIN_BRANCH,
   }),
 });
+const showProjectSelector = ref<boolean>(true);
 const refreshId = ref<string>("");
+
+const project = computed(() => {
+  const project = projectStore.getProjectByUID(state.projectId || "");
+  return project;
+});
+
+const disallowToChangeBaseline = computed(() => {
+  return !!state.parentBranchName;
+});
 
 onMounted(async () => {
   const projectName = route.params.projectName;
@@ -143,6 +173,8 @@ onMounted(async () => {
       `${projectNamePrefix}${projectName}`
     );
     state.projectId = project.uid;
+    // When we are creating a branch from a project page, we don't show the project selector.
+    showProjectSelector.value = false;
   }
 });
 
@@ -152,6 +184,43 @@ watch(
     state.schemaDesign.baselineSchema,
   ],
   () => {
+    refreshId.value = uniqueId();
+  }
+);
+
+watch(
+  () => state.parentBranchName,
+  async () => {
+    if (!state.parentBranchName) {
+      state.baselineSchema = {};
+      state.schemaDesign = SchemaDesign.fromPartial({
+        type: SchemaDesign_Type.MAIN_BRANCH,
+      });
+      return;
+    }
+
+    const branch = await schemaDesignStore.fetchSchemaDesignByName(
+      state.parentBranchName,
+      false /* !useCache */
+    );
+    const database = await databaseStore.getOrFetchDatabaseByName(
+      branch.baselineDatabase
+    );
+    state.projectId = database.projectEntity.uid;
+    state.baselineSchema.databaseId = database.uid;
+    if (
+      branch.baselineChangeHistoryId &&
+      branch.baselineChangeHistoryId !== String(UNKNOWN_ID)
+    ) {
+      const changeHistoryName = `${database.name}/changeHistories/${branch.baselineChangeHistoryId}`;
+      state.baselineSchema.changeHistory =
+        await changeHistoryStore.getOrFetchChangeHistoryByName(
+          changeHistoryName
+        );
+    } else {
+      state.baselineSchema.changeHistory = undefined;
+    }
+    state.schemaDesign = branch;
     refreshId.value = uniqueId();
   }
 );
@@ -191,9 +260,12 @@ const prepareSchemaDesign = async () => {
       baselineSchemaMetadata: baselineMetadata,
       schema: fullSchema,
       schemaMetadata: baselineMetadata,
+      type: SchemaDesign_Type.MAIN_BRANCH,
     });
   }
-  return SchemaDesign.fromPartial({});
+  return SchemaDesign.fromPartial({
+    type: SchemaDesign_Type.MAIN_BRANCH,
+  });
 };
 
 const allowConfirm = computed(() => {
@@ -208,11 +280,16 @@ const confirmText = computed(() => {
   return t("common.create");
 });
 
-const handleProjectSelect = async (projectId: string) => {
+const handleProjectSelect = async (projectId?: string) => {
   state.projectId = projectId;
+  state.parentBranchName = "";
 };
 
 const handleBaselineSchemaChange = async (baselineSchema: BaselineSchema) => {
+  if (state.parentBranchName) {
+    return;
+  }
+
   state.baselineSchema = baselineSchema;
   if (
     baselineSchema.databaseId &&
@@ -223,11 +300,6 @@ const handleBaselineSchemaChange = async (baselineSchema: BaselineSchema) => {
   }
   state.schemaDesign = await prepareSchemaDesign();
 };
-
-const project = computed(() => {
-  const project = projectStore.getProjectByUID(state.projectId || "");
-  return project;
-});
 
 const handleConfirm = async () => {
   if (!state.schemaDesign) {
@@ -272,26 +344,38 @@ const handleConfirm = async () => {
     type: Sheet_Type.TYPE_SQL,
   });
 
-  const createdSchemaDesign = await schemaDesignStore.createSchemaDesign(
-    project.value.name,
-    SchemaDesign.fromPartial({
+  let createdSchemaDesign;
+  if (!state.parentBranchName) {
+    createdSchemaDesign = await schemaDesignStore.createSchemaDesign(
+      project.value.name,
+      SchemaDesign.fromPartial({
+        title: state.schemaDesignTitle,
+        // Keep schema empty in frontend. Backend will generate the design schema.
+        schema: "",
+        schemaMetadata: metadata,
+        baselineSchema: state.schemaDesign.baselineSchema,
+        baselineSchemaMetadata: state.schemaDesign.baselineSchemaMetadata,
+        engine: state.schemaDesign.engine,
+        type: SchemaDesign_Type.MAIN_BRANCH,
+        baselineDatabase: baselineDatabase,
+        baselineSheetName: baselineSheet.name,
+        baselineChangeHistoryId: state.baselineSchema.changeHistory?.uid,
+        protection: {
+          // For main branches, we don't allow force pushes by default.
+          allowForcePushes: false,
+        },
+      })
+    );
+  } else {
+    const parentBranch = await schemaDesignStore.fetchSchemaDesignByName(
+      state.parentBranchName,
+      false /* useCache */
+    );
+    createdSchemaDesign = await schemaDesignStore.createSchemaDesignDraft({
+      ...parentBranch,
       title: state.schemaDesignTitle,
-      // Keep schema empty in frontend. Backend will generate the design schema.
-      schema: "",
-      schemaMetadata: metadata,
-      baselineSchema: state.schemaDesign.baselineSchema,
-      baselineSchemaMetadata: state.schemaDesign.baselineSchemaMetadata,
-      engine: state.schemaDesign.engine,
-      type: SchemaDesign_Type.MAIN_BRANCH,
-      baselineDatabase: baselineDatabase,
-      baselineSheetName: baselineSheet.name,
-      baselineChangeHistoryId: state.baselineSchema.changeHistory?.uid,
-      protection: {
-        // For main branches, we don't allow force pushes by default.
-        allowForcePushes: false,
-      },
-    })
-  );
+    });
+  }
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
