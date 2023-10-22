@@ -4,6 +4,7 @@
       CONSTRAINT t_a_check CHECK ("a" > 0)
     );
     COMMENT ON COLUMN public.t.a IS 'this is a comment';
+    COMMENT ON TABLE public.t IS 'hello';
     ALTER TABLE public."t" ADD CONSTRAINT fk_t_a_t2_b FOREIGN KEY ("a") REFERENCES public."t2" ("b");
     CREATE TABLE public."t3" (
       "a" int
@@ -143,7 +144,8 @@
                     "b"
                   ]
                 }
-              ]
+              ],
+              "comment": "hello"
             }
           ]
         }
@@ -154,6 +156,7 @@
       "a" int NOT NULL,
       CONSTRAINT t_a_check CHECK ("a" > 0)
     );
+
 
 
     CREATE TABLE public.t4 (
@@ -185,4 +188,6 @@
     ALTER TABLE ONLY "public"."t2"
         ADD CONSTRAINT "fk_t2_b_t4_b" FOREIGN KEY ("b") REFERENCES "public"."t4"("b");
 
+
+    COMMENT ON TABLE "public"."t2" IS 'hello';
 
