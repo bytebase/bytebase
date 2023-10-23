@@ -20,17 +20,18 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	InstanceService_GetInstance_FullMethodName      = "/bytebase.v1.InstanceService/GetInstance"
-	InstanceService_ListInstances_FullMethodName    = "/bytebase.v1.InstanceService/ListInstances"
-	InstanceService_CreateInstance_FullMethodName   = "/bytebase.v1.InstanceService/CreateInstance"
-	InstanceService_UpdateInstance_FullMethodName   = "/bytebase.v1.InstanceService/UpdateInstance"
-	InstanceService_DeleteInstance_FullMethodName   = "/bytebase.v1.InstanceService/DeleteInstance"
-	InstanceService_UndeleteInstance_FullMethodName = "/bytebase.v1.InstanceService/UndeleteInstance"
-	InstanceService_SyncInstance_FullMethodName     = "/bytebase.v1.InstanceService/SyncInstance"
-	InstanceService_AddDataSource_FullMethodName    = "/bytebase.v1.InstanceService/AddDataSource"
-	InstanceService_RemoveDataSource_FullMethodName = "/bytebase.v1.InstanceService/RemoveDataSource"
-	InstanceService_UpdateDataSource_FullMethodName = "/bytebase.v1.InstanceService/UpdateDataSource"
-	InstanceService_SyncSlowQueries_FullMethodName  = "/bytebase.v1.InstanceService/SyncSlowQueries"
+	InstanceService_GetInstance_FullMethodName       = "/bytebase.v1.InstanceService/GetInstance"
+	InstanceService_ListInstances_FullMethodName     = "/bytebase.v1.InstanceService/ListInstances"
+	InstanceService_CreateInstance_FullMethodName    = "/bytebase.v1.InstanceService/CreateInstance"
+	InstanceService_UpdateInstance_FullMethodName    = "/bytebase.v1.InstanceService/UpdateInstance"
+	InstanceService_DeleteInstance_FullMethodName    = "/bytebase.v1.InstanceService/DeleteInstance"
+	InstanceService_UndeleteInstance_FullMethodName  = "/bytebase.v1.InstanceService/UndeleteInstance"
+	InstanceService_SyncInstance_FullMethodName      = "/bytebase.v1.InstanceService/SyncInstance"
+	InstanceService_BatchSyncInstance_FullMethodName = "/bytebase.v1.InstanceService/BatchSyncInstance"
+	InstanceService_AddDataSource_FullMethodName     = "/bytebase.v1.InstanceService/AddDataSource"
+	InstanceService_RemoveDataSource_FullMethodName  = "/bytebase.v1.InstanceService/RemoveDataSource"
+	InstanceService_UpdateDataSource_FullMethodName  = "/bytebase.v1.InstanceService/UpdateDataSource"
+	InstanceService_SyncSlowQueries_FullMethodName   = "/bytebase.v1.InstanceService/SyncSlowQueries"
 )
 
 // InstanceServiceClient is the client API for InstanceService service.
@@ -44,6 +45,7 @@ type InstanceServiceClient interface {
 	DeleteInstance(ctx context.Context, in *DeleteInstanceRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	UndeleteInstance(ctx context.Context, in *UndeleteInstanceRequest, opts ...grpc.CallOption) (*Instance, error)
 	SyncInstance(ctx context.Context, in *SyncInstanceRequest, opts ...grpc.CallOption) (*SyncInstanceResponse, error)
+	BatchSyncInstance(ctx context.Context, in *BatchSyncInstanceRequest, opts ...grpc.CallOption) (*BatchSyncInstanceResponse, error)
 	AddDataSource(ctx context.Context, in *AddDataSourceRequest, opts ...grpc.CallOption) (*Instance, error)
 	RemoveDataSource(ctx context.Context, in *RemoveDataSourceRequest, opts ...grpc.CallOption) (*Instance, error)
 	UpdateDataSource(ctx context.Context, in *UpdateDataSourceRequest, opts ...grpc.CallOption) (*Instance, error)
@@ -121,6 +123,15 @@ func (c *instanceServiceClient) SyncInstance(ctx context.Context, in *SyncInstan
 	return out, nil
 }
 
+func (c *instanceServiceClient) BatchSyncInstance(ctx context.Context, in *BatchSyncInstanceRequest, opts ...grpc.CallOption) (*BatchSyncInstanceResponse, error) {
+	out := new(BatchSyncInstanceResponse)
+	err := c.cc.Invoke(ctx, InstanceService_BatchSyncInstance_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *instanceServiceClient) AddDataSource(ctx context.Context, in *AddDataSourceRequest, opts ...grpc.CallOption) (*Instance, error) {
 	out := new(Instance)
 	err := c.cc.Invoke(ctx, InstanceService_AddDataSource_FullMethodName, in, out, opts...)
@@ -168,6 +179,7 @@ type InstanceServiceServer interface {
 	DeleteInstance(context.Context, *DeleteInstanceRequest) (*emptypb.Empty, error)
 	UndeleteInstance(context.Context, *UndeleteInstanceRequest) (*Instance, error)
 	SyncInstance(context.Context, *SyncInstanceRequest) (*SyncInstanceResponse, error)
+	BatchSyncInstance(context.Context, *BatchSyncInstanceRequest) (*BatchSyncInstanceResponse, error)
 	AddDataSource(context.Context, *AddDataSourceRequest) (*Instance, error)
 	RemoveDataSource(context.Context, *RemoveDataSourceRequest) (*Instance, error)
 	UpdateDataSource(context.Context, *UpdateDataSourceRequest) (*Instance, error)
@@ -199,6 +211,9 @@ func (UnimplementedInstanceServiceServer) UndeleteInstance(context.Context, *Und
 }
 func (UnimplementedInstanceServiceServer) SyncInstance(context.Context, *SyncInstanceRequest) (*SyncInstanceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SyncInstance not implemented")
+}
+func (UnimplementedInstanceServiceServer) BatchSyncInstance(context.Context, *BatchSyncInstanceRequest) (*BatchSyncInstanceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BatchSyncInstance not implemented")
 }
 func (UnimplementedInstanceServiceServer) AddDataSource(context.Context, *AddDataSourceRequest) (*Instance, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddDataSource not implemented")
@@ -351,6 +366,24 @@ func _InstanceService_SyncInstance_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _InstanceService_BatchSyncInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BatchSyncInstanceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InstanceServiceServer).BatchSyncInstance(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: InstanceService_BatchSyncInstance_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InstanceServiceServer).BatchSyncInstance(ctx, req.(*BatchSyncInstanceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _InstanceService_AddDataSource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AddDataSourceRequest)
 	if err := dec(in); err != nil {
@@ -457,6 +490,10 @@ var InstanceService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SyncInstance",
 			Handler:    _InstanceService_SyncInstance_Handler,
+		},
+		{
+			MethodName: "BatchSyncInstance",
+			Handler:    _InstanceService_BatchSyncInstance_Handler,
 		},
 		{
 			MethodName: "AddDataSource",
