@@ -283,8 +283,10 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 	stmt := statement
 	if !strings.HasPrefix(stmt, "EXPLAIN") && queryContext.Limit > 0 {
 		var err error
-		if stmt, err = getStatementWithResultLimit(stmt, queryContext.Limit); err != nil {
-			return nil, err
+		stmt, err = getStatementWithResultLimit(stmt, queryContext.Limit)
+		if err != nil {
+			slog.Error("fail to add limit clause", "statement", statement, log.BBError(err))
+			stmt = fmt.Sprintf("SELECT * FROM (%s) LIMIT %d", stmt, queryContext.Limit)
 		}
 	}
 
