@@ -109,8 +109,8 @@ func NewDefaultRangeMasker() *DefaultRangeMasker {
 
 // Mask implements Masker.Mask.
 func (*DefaultRangeMasker) Mask(data *MaskData) *v1pb.RowValue {
-	paddingAsterisk := func(T string) string {
-		return fmt.Sprintf("**%s**", T)
+	paddingAsterisk := func(t string) string {
+		return fmt.Sprintf("**%s**", t)
 	}
 	stringValue := ""
 	switch raw := data.Data.(type) {
