@@ -281,13 +281,16 @@ func rowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
 	}
 
 	var columnTypeNames []string
+	var maskers []masker.Masker
 	for _, v := range columnTypes {
 		// DatabaseTypeName returns the database system name of the column type.
 		// refer: https://pkg.go.dev/database/sql#ColumnType.DatabaseTypeName
 		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
+		// We use none masker for admin query.
+		maskers = append(maskers, masker.NewNoneMasker())
 	}
 
-	data, err := readRows(rows, columnTypeNames, nil)
+	data, err := readRows(rows, columnTypeNames, maskers)
 	if err != nil {
 		return nil, err
 	}
