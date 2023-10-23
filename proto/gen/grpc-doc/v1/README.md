@@ -307,6 +307,8 @@
   
 - [v1/instance_service.proto](#v1_instance_service-proto)
     - [AddDataSourceRequest](#bytebase-v1-AddDataSourceRequest)
+    - [BatchSyncInstanceRequest](#bytebase-v1-BatchSyncInstanceRequest)
+    - [BatchSyncInstanceResponse](#bytebase-v1-BatchSyncInstanceResponse)
     - [CreateInstanceRequest](#bytebase-v1-CreateInstanceRequest)
     - [DataSource](#bytebase-v1-DataSource)
     - [DeleteInstanceRequest](#bytebase-v1-DeleteInstanceRequest)
@@ -815,6 +817,7 @@ When paginating, all other parameters provided to `ListDebugLog` must match the 
 | OCEANBASE | 14 |  |
 | DM | 15 |  |
 | RISINGWAVE | 16 |  |
+| OCEANBASE_ORACLE | 17 |  |
 
 
 
@@ -5083,6 +5086,31 @@ The role&#39;s `name` and `instance` field is used to identify the role to updat
 
 
 
+<a name="bytebase-v1-BatchSyncInstanceRequest"></a>
+
+### BatchSyncInstanceRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| requests | [SyncInstanceRequest](#bytebase-v1-SyncInstanceRequest) | repeated | The request message specifying the instances to sync. A maximum of 1000 instances can be synced in a batch. |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchSyncInstanceResponse"></a>
+
+### BatchSyncInstanceResponse
+
+
+
+
+
+
+
 <a name="bytebase-v1-CreateInstanceRequest"></a>
 
 ### CreateInstanceRequest
@@ -5382,6 +5410,7 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 | DeleteInstance | [DeleteInstanceRequest](#bytebase-v1-DeleteInstanceRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 | UndeleteInstance | [UndeleteInstanceRequest](#bytebase-v1-UndeleteInstanceRequest) | [Instance](#bytebase-v1-Instance) |  |
 | SyncInstance | [SyncInstanceRequest](#bytebase-v1-SyncInstanceRequest) | [SyncInstanceResponse](#bytebase-v1-SyncInstanceResponse) |  |
+| BatchSyncInstance | [BatchSyncInstanceRequest](#bytebase-v1-BatchSyncInstanceRequest) | [BatchSyncInstanceResponse](#bytebase-v1-BatchSyncInstanceResponse) |  |
 | AddDataSource | [AddDataSourceRequest](#bytebase-v1-AddDataSourceRequest) | [Instance](#bytebase-v1-Instance) |  |
 | RemoveDataSource | [RemoveDataSourceRequest](#bytebase-v1-RemoveDataSourceRequest) | [Instance](#bytebase-v1-Instance) |  |
 | UpdateDataSource | [UpdateDataSourceRequest](#bytebase-v1-UpdateDataSourceRequest) | [Instance](#bytebase-v1-Instance) |  |

@@ -9,17 +9,17 @@
     <span class="text-yellow-800 text-sm">
       {{ $t("instance.no-read-only-data-source-warn-for-owner-dba") }}
     </span>
-    <button
-      type="button"
-      class="btn-normal ml-4 text-sm"
+    <NButton
+      class="!ml-4 text-sm"
       @click.prevent="$emit('add-readonly-datasource')"
     >
       {{ $t("common.create") }}
-    </button>
+    </NButton>
   </div>
 </template>
 
 <script setup lang="ts">
+import { NButton } from "naive-ui";
 import { useInstanceFormContext } from "../context";
 
 defineEmits<{

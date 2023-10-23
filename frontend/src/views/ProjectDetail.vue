@@ -6,14 +6,7 @@
     <ProjectBranchesPanel id="branches" :project-id="project.uid" />
   </template>
   <template v-if="hash === 'databases'">
-    <ProjectDeploymentConfigPanel
-      v-if="isTenantProject"
-      id="deployment-config"
-      :project="project"
-      :database-list="databaseV1List"
-      :allow-edit="allowEdit"
-    />
-    <ProjectDatabasesPanel v-else :database-list="databaseV1List" />
+    <ProjectDatabasesPanel :database-list="databaseV1List" />
   </template>
   <template v-if="hash === 'database-groups'">
     <ProjectDatabaseGroupPanel :project="project" />
@@ -71,11 +64,9 @@ import {
   useProjectV1Store,
 } from "@/store";
 import { DEFAULT_PROJECT_V1_NAME } from "@/types";
-import { TenantMode } from "@/types/proto/v1/project_service";
 import ProjectActivityPanel from "../components/ProjectActivityPanel.vue";
 import ProjectChangeHistoryPanel from "../components/ProjectChangeHistoryPanel.vue";
 import ProjectDatabasesPanel from "../components/ProjectDatabasesPanel.vue";
-import ProjectDeploymentConfigPanel from "../components/ProjectDeploymentConfigPanel.vue";
 import ProjectMemberPanel from "../components/ProjectMember/ProjectMemberPanel.vue";
 import ProjectOverviewPanel from "../components/ProjectOverviewPanel.vue";
 import ProjectSettingPanel from "../components/ProjectSettingPanel.vue";
@@ -122,9 +113,5 @@ useSearchDatabaseV1List(
 const databaseV1List = computed(() => {
   const list = useDatabaseV1Store().databaseListByProject(project.value.name);
   return sortDatabaseV1List(list);
-});
-
-const isTenantProject = computed(() => {
-  return project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED;
 });
 </script>

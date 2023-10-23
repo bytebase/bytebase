@@ -1,5 +1,5 @@
 <template>
-  <form class="max-w-md space-y-4">
+  <form class="max-w-[60rem] mx-auto space-y-4">
     <p class="text-lg font-medium leading-7 text-main">
       {{ $t("common.general") }}
     </p>
@@ -97,7 +97,7 @@
         :disabled="!allowSave"
         @click.prevent="save"
       >
-        {{ $t("common.save") }}
+        {{ $t("common.update") }}
       </button>
     </div>
 

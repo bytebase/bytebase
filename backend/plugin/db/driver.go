@@ -371,6 +371,8 @@ type QueryContext struct {
 	CurrentDatabase string
 	// ShareDB is for Redshift.
 	ShareDB bool
+	// EngineVersion is only for oracle.
+	EngineVersion string
 }
 
 // DatabaseRoleMessage is the API message for database role.

@@ -13,6 +13,7 @@ import (
 	// Import go-ora Oracle driver.
 	_ "github.com/microsoft/go-mssqldb"
 	_ "github.com/microsoft/go-mssqldb/integratedauth/krb5"
+	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -92,36 +93,26 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 		}
 		return 0, nil
 	}
-	totalRowsAffected := int64(0)
 	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err
 	}
 	defer tx.Rollback()
 
-	f := func(stmt string) error {
-		sqlResult, err := tx.ExecContext(ctx, stmt)
-		if err != nil {
-			return err
-		}
-		rowsAffected, err := sqlResult.RowsAffected()
-		if err != nil {
-			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-			slog.Debug("rowsAffected returns error", log.BBError(err))
-		} else {
-			totalRowsAffected += rowsAffected
-		}
-		return nil
+	sqlResult, err := tx.ExecContext(ctx, statement)
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to execute statement")
 	}
-
-	if _, err := tsqlparser.SplitMultiSQLStream(strings.NewReader(statement), f); err != nil {
-		return 0, err
+	rowsAffected, err := sqlResult.RowsAffected()
+	if err != nil {
+		// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
+		slog.Debug("rowsAffected returns error", log.BBError(err))
 	}
 
 	if err := tx.Commit(); err != nil {
 		return 0, err
 	}
-	return totalRowsAffected, nil
+	return rowsAffected, nil
 }
 
 // QueryConn queries a SQL statement in a given connection.
@@ -157,7 +148,8 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 		var err error
 		stmt, err = getMSSQLStatementWithResultLimit(stmt, queryContext.Limit)
 		if err != nil {
-			return nil, err
+			slog.Error("fail to add limit clause", "statement", statement, log.BBError(err))
+			stmt = fmt.Sprintf("WITH result AS (%s) SELECT TOP %d * FROM result;", stmt, queryContext.Limit)
 		}
 	}
 

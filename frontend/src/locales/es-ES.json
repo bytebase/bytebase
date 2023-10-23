@@ -627,7 +627,8 @@
           "hours": "Horas",
           "days": "Días",
           "config-updated": "La configuración se ha actualizado. Necesita reiniciar Bytebase y volver a iniciar sesión para que surta efecto."
-        }
+        },
+        "confirm-delete-custom-logo": "¿Eliminar el logotipo de marca personalizado?"
       }
     },
     "sensitive-data": {
@@ -1064,6 +1065,7 @@
     "select-database-user": "Seleccionar usuario de base de datos",
     "new-database": "Nueva base de datos",
     "syncing": "Sincronizando...",
+    "selected-n-instances": "{n} instancia seleccionada | {n} instancias seleccionadas",
     "create-migration-schema": "Crear esquema de migración",
     "missing-migration-schema": "Falta el esquema de migración",
     "unable-to-connect-instance-to-check-migration-schema": "No se pudo conectar la instancia para verificar el esquema de migración",

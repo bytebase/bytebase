@@ -17,6 +17,7 @@
 <script lang="ts" setup>
 import { NSelect, SelectOption, SelectRenderLabel } from "naive-ui";
 import { computed, h, watch } from "vue";
+import { useSlots } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   useCurrentUserV1,
@@ -33,6 +34,7 @@ interface DatabaseSelectOption extends SelectOption {
   database: ComposedDatabase;
 }
 
+const slots = useSlots();
 const props = withDefaults(
   defineProps<{
     database?: string;
@@ -123,6 +125,10 @@ const renderLabel: SelectRenderLabel = (option) => {
   const { database } = option as DatabaseSelectOption;
   if (!database) {
     return;
+  }
+
+  if (slots.default) {
+    return slots.default({ database });
   }
 
   const children = [h("div", {}, [database.databaseName])];

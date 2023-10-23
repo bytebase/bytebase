@@ -103,6 +103,11 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
       name: instance.name,
     });
   };
+  const batchSyncInstance = async (instanceNameList: string[]) => {
+    await instanceServiceClient.batchSyncInstance({
+      requests: instanceNameList.map((name) => ({ name })),
+    });
+  };
   const fetchInstanceByName = async (name: string, silent = false) => {
     const instance = await instanceServiceClient.getInstance(
       {
@@ -216,6 +221,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     archiveInstance,
     restoreInstance,
     syncInstance,
+    batchSyncInstance,
     fetchInstanceList,
     fetchInstanceByName,
     getInstanceByName,

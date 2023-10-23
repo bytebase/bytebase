@@ -126,13 +126,13 @@
       </template>
       <div class="mt-2 flex flex-row">
         <span
-          class="flex-1 min-w-0 w-full inline-flex items-center px-3 py-2 border border-r border-control-border bg-gray-50 sm:text-sm whitespace-pre-line"
+          class="flex-1 min-w-0 w-full inline-flex items-center px-3 py-2 border border-r border-control-border bg-gray-50 sm:text-sm whitespace-pre-line rounded-l-[3px]"
         >
           {{ grantStatement(props.engine, props.dataSourceType) }}
         </span>
         <button
           tabindex="-1"
-          class="-ml-px px-2 py-2 border border-gray-300 text-sm font-medium text-control-light disabled:text-gray-300 bg-gray-50 hover:bg-gray-100 disabled:bg-gray-50 focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1 disabled:cursor-not-allowed"
+          class="-ml-px px-2 py-2 border border-gray-300 text-sm font-medium text-control-light disabled:text-gray-300 bg-gray-50 hover:bg-gray-100 disabled:bg-gray-50 focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-1 disabled:cursor-not-allowed rounded-r-[3px]"
           @click.prevent="copyGrantStatement"
         >
           <heroicons-outline:clipboard class="w-6 h-6" />

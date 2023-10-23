@@ -352,9 +352,9 @@ func (s *Store) CountSheetGroupByRowstatusVisibilitySourceAndType(ctx context.Co
 	defer tx.Rollback()
 
 	rows, err := tx.QueryContext(ctx, `
-		SELECT row_status, visibility, source, type, COUNT(*) AS count
+		SELECT row_status, visibility, source, COUNT(*) AS count
 		FROM sheet
-		GROUP BY row_status, visibility, source, type`)
+		GROUP BY row_status, visibility, source`)
 	if err != nil {
 		return nil, err
 	}
