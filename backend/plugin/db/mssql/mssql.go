@@ -148,7 +148,8 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 		var err error
 		stmt, err = getMSSQLStatementWithResultLimit(stmt, queryContext.Limit)
 		if err != nil {
-			return nil, err
+			slog.Error("fail to add limit clause", "statement", statement, log.BBError(err))
+			stmt = fmt.Sprintf("WITH result AS (%s) SELECT TOP %d * FROM result;", stmt, queryContext.Limit)
 		}
 	}
 
