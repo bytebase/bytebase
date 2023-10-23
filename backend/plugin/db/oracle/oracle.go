@@ -30,6 +30,8 @@ var (
 	_ db.Driver = (*Driver)(nil)
 )
 
+const dbVersion12 = 12
+
 func init() {
 	db.Register(storepb.Engine_ORACLE, newDriver)
 }
@@ -40,6 +42,7 @@ type Driver struct {
 	databaseName     string
 	serviceName      string
 	schemaTenantMode bool
+	dbVersion        int
 }
 
 func newDriver(db.DriverConfig) db.Driver {
@@ -191,22 +194,22 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 }
 
 func (driver *Driver) getOracleStatementWithResultLimit(ctx context.Context, stmt string, limit int) (string, error) {
-	version, err := driver.getVersion(ctx)
-	if err != nil {
-		return "", err
+	if driver.dbVersion == 0 {
+		version, err := driver.getVersion(ctx)
+		if err != nil {
+			return "", err
+		}
+		versionIdx := strings.Index(version, ".")
+		if versionIdx < 0 {
+			return "", errors.New("instance version number is invalid")
+		}
+		driver.dbVersion, err = strconv.Atoi(version[:versionIdx])
+		if err != nil {
+			return "", err
+		}
 	}
-	versionIdx := strings.Index(version, ".")
-	if versionIdx < 0 {
-		return "", errors.New("instance version number is invalid")
-	}
-	version = version[:versionIdx]
-	versionNum, err := strconv.Atoi(version)
-	if err != nil {
-		return "", err
-	}
-	version12 := 12
 	switch {
-	case versionNum < version12:
+	case driver.dbVersion < dbVersion12:
 		return fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", stmt, limit), nil
 	default:
 		res, err := getStatementWithResultLimitFor12c(stmt, limit)

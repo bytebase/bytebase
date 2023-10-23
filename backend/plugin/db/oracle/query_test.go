@@ -28,11 +28,11 @@ func runLimitTest(t *testing.T, file string, record bool) {
 	err = yaml.Unmarshal(byteValue, &testCases)
 	require.NoError(t, err)
 
-	for _, tc := range testCases {
+	for i, tc := range testCases {
 		want, err := getStatementWithResultLimitFor12c(tc.Stmt, tc.Count)
 		require.NoError(t, err, tc.Stmt)
 		if record {
-			tc.Want = want
+			testCases[i].Want = want
 		} else {
 			require.Equal(t, tc.Want, want, tc.Stmt)
 		}
