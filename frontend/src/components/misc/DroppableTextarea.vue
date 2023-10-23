@@ -5,9 +5,9 @@
     :class="[state.reading && 'pointer-events-none']"
   >
     <textarea
+      ref="textareaRef"
       v-model="state.value"
-      class="textarea"
-      :class="[rounded && 'rounded-md']"
+      class="textarea rounded-[3px]"
       :placeholder="placeholder"
       v-bind="$attrs"
     />
@@ -16,6 +16,7 @@
       v-if="!state.value"
       class="absolute bottom-2 left-[50%] -translate-x-1/2 flex flex-col items-center justify-center border border-control-border hover:border-control-hover border-dashed text-xs text-control-placeholder hover:text-control-hover p-2 rounded-md"
     >
+      {{ borderRadius }}
       Or drag and drop files here.
       <input
         type="file"
@@ -28,7 +29,9 @@
     <div
       v-if="isOverDropZone || state.reading"
       class="absolute inset-0 pointer-events-none flex flex-col items-center justify-center bg-white/50 border border-accent border-dashed"
-      :class="[rounded && 'rounded-md']"
+      :style="{
+        borderRadius,
+      }"
     >
       <heroicons-outline:arrow-up-tray v-if="isOverDropZone" class="w-8 h-8" />
       <BBSpin v-if="state.reading" />
@@ -44,12 +47,13 @@ export default {
 
 <script lang="ts" setup>
 import { reactive, ref, watch } from "vue";
-import { useDropZone } from "@vueuse/core";
+import { useDropZone, useMutationObserver } from "@vueuse/core";
 import { head } from "lodash-es";
 import { useI18n } from "vue-i18n";
 
 import { pushNotification } from "@/store";
 import { BBSpin } from "@/bbkit";
+import { onMounted } from "vue";
 
 type LocalState = {
   value: string | undefined;
@@ -61,12 +65,10 @@ const props = withDefaults(
     value: string | undefined;
     placeholder?: string;
     maxFileSize?: number; // in MB
-    rounded?: boolean;
   }>(),
   {
     placeholder: undefined,
     maxFileSize: 1,
-    rounded: false,
   }
 );
 
@@ -80,6 +82,9 @@ const state = reactive<LocalState>({
   reading: false,
 });
 const container = ref<HTMLDivElement>();
+const textareaRef = ref<HTMLTextAreaElement>();
+
+const borderRadius = ref("");
 
 watch(
   () => props.value,
@@ -130,4 +135,24 @@ const handleFileChange = (e: Event) => {
 };
 
 const { isOverDropZone } = useDropZone(container, onDrop);
+
+const updateBorderRadius = (textarea: HTMLTextAreaElement) => {
+  borderRadius.value = getComputedStyle(textarea).borderRadius;
+};
+useMutationObserver(
+  textareaRef,
+  (records) => {
+    updateBorderRadius(records[0].target as HTMLTextAreaElement);
+  },
+  {
+    attributeFilter: ["style", "class"],
+    attributes: true,
+  }
+);
+onMounted(() => {
+  const textarea = textareaRef.value;
+  if (textarea) {
+    updateBorderRadius(textarea);
+  }
+});
 </script>

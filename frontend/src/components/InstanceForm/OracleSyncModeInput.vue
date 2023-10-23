@@ -5,34 +5,30 @@
     </label>
     <div class="flex items-center gap-x-6">
       <label class="flex items-center gap-1.5">
-        <input
-          v-model="state.mode"
-          tabindex="-1"
-          type="radio"
-          class="text-accent disabled:text-accent-disabled focus:ring-accent"
-          value="DATABASE"
+        <NRadio
+          :checked="state.mode === 'DATABASE'"
           :disabled="!allowEdit"
-        />
-        <span class="text-sm font-medium text-gray-700">
-          {{ $t("instance.sync-mode.database.self") }}
-        </span>
+          @update:checked="toggleChecked('DATABASE', $event)"
+        >
+          <span class="text-sm font-medium text-gray-700">
+            {{ $t("instance.sync-mode.database.self") }}
+          </span>
+        </NRadio>
       </label>
       <label class="flex items-center gap-1.5">
-        <input
-          v-model="state.mode"
-          tabindex="-1"
-          type="radio"
-          class="text-accent disabled:text-accent-disabled focus:ring-accent"
-          value="SCHEMA"
+        <NRadio
+          :checked="state.mode === 'SCHEMA'"
           :disabled="!allowEdit"
-        />
-        <span class="text-sm font-medium text-gray-700">
-          {{ $t("instance.sync-mode.schema.self") }}
-        </span>
+          @update:checked="toggleChecked('SCHEMA', $event)"
+        >
+          <span class="text-sm font-medium text-gray-700">
+            {{ $t("instance.sync-mode.schema.self") }}
+          </span>
+        </NRadio>
       </label>
     </div>
 
-    <label class="text-xs text-control-light ml-[calc(16px+0.375rem)]">
+    <label class="text-xs text-control-light ml-[1.5rem]">
       <template v-if="state.mode === 'DATABASE'">
         {{ $t("instance.sync-mode.database.description") }}
       </template>
@@ -44,6 +40,7 @@
 </template>
 
 <script lang="ts" setup>
+import { NRadio } from "naive-ui";
 import { reactive, watch } from "vue";
 
 type SyncMode = "SCHEMA" | "DATABASE";
@@ -69,6 +66,11 @@ const guessModeFromSchemaTenantMode = (schemaTenantMode: boolean): SyncMode => {
 const state = reactive<LocalState>({
   mode: guessModeFromSchemaTenantMode(props.schemaTenantMode),
 });
+
+const toggleChecked = (mode: SyncMode, on: boolean) => {
+  if (!on) return;
+  state.mode = mode;
+};
 
 const update = (mode: SyncMode) => {
   emit("update:schemaTenantMode", mode === "SCHEMA" ? true : false);

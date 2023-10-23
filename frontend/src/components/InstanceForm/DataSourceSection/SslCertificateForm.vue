@@ -1,12 +1,12 @@
 <template>
-  <div class="radio-set-row mt-2">
-    <label v-for="type in SslTypes" :key="type" class="radio">
-      <input v-model="state.type" type="radio" class="btn" :value="type" />
-      <span class="label">
-        {{ getSslTypeLabel(type) }}
-      </span>
-    </label>
-  </div>
+  <NRadioGroup
+    v-model:value="state.type"
+    class="!flex flex-row items-center gap-x-4 mt-2"
+  >
+    <NRadio v-for="type in SslTypes" :key="type" :value="type">
+      <span class="textlabel">{{ getSslTypeLabel(type) }}</span>
+    </NRadio>
+  </NRadioGroup>
   <NTabs
     v-if="state.type === 'CA' || state.type === 'CA+KEY+CERT'"
     v-model:value="state.tab"
@@ -53,7 +53,7 @@
 
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
-import { NTabs, NTabPane } from "naive-ui";
+import { NTabs, NTabPane, NRadio, NRadioGroup } from "naive-ui";
 import { PropType, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import DroppableTextarea from "@/components/misc/DroppableTextarea.vue";
