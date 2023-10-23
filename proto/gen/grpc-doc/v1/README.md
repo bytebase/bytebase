@@ -817,6 +817,7 @@ When paginating, all other parameters provided to `ListDebugLog` must match the 
 | OCEANBASE | 14 |  |
 | DM | 15 |  |
 | RISINGWAVE | 16 |  |
+| OCEANBASE_ORACLE | 17 |  |
 
 
 
