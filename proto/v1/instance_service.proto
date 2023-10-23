@@ -60,7 +60,7 @@ service InstanceService {
 
   rpc BatchSyncInstance(BatchSyncInstanceRequest) returns (BatchSyncInstanceResponse) {
     option (google.api.http) = {
-      post: "/v1/instances:batchSyncInstances"
+      post: "/v1/instances:batchSync"
       body: "*"
     };
   }
