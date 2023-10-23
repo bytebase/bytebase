@@ -1,22 +1,24 @@
 <template>
   <div
     ref="container"
-    class="relative"
-    :class="[state.reading && 'pointer-events-none']"
+    class="droppable-textarea"
+    :class="{
+      reading: state.reading,
+      'drop-over': isOverDropZone,
+    }"
   >
-    <textarea
-      ref="textareaRef"
-      v-model="state.value"
-      class="textarea rounded-[3px]"
+    <NInput
+      ref="inputRef"
+      v-model:value="state.value"
       :placeholder="placeholder"
+      type="textarea"
       v-bind="$attrs"
     />
 
     <div
       v-if="!state.value"
-      class="absolute bottom-2 left-[50%] -translate-x-1/2 flex flex-col items-center justify-center border border-control-border hover:border-control-hover border-dashed text-xs text-control-placeholder hover:text-control-hover p-2 rounded-md"
+      class="absolute bottom-2 left-[50%] -translate-x-1/2 flex flex-col items-center justify-center border border-control-border hover:border-accent border-dashed text-xs text-control-placeholder hover:text-accent p-2 rounded-md"
     >
-      {{ borderRadius }}
       Or drag and drop files here.
       <input
         type="file"
@@ -28,12 +30,12 @@
 
     <div
       v-if="isOverDropZone || state.reading"
-      class="absolute inset-0 pointer-events-none flex flex-col items-center justify-center bg-white/50 border border-accent border-dashed"
+      class="absolute inset-0 pointer-events-none flex flex-col items-center justify-center bg-white/50 border border-accent border-dashed text-accent"
       :style="{
         borderRadius,
       }"
     >
-      <heroicons-outline:arrow-up-tray v-if="isOverDropZone" class="w-8 h-8" />
+      <heroicons:arrow-up-tray v-if="isOverDropZone" class="w-8 h-8 color" />
       <BBSpin v-if="state.reading" />
     </div>
   </div>
@@ -46,7 +48,7 @@ export default {
 </script>
 
 <script lang="ts" setup>
-import { reactive, ref, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { useDropZone, useMutationObserver } from "@vueuse/core";
 import { head } from "lodash-es";
 import { useI18n } from "vue-i18n";
@@ -54,6 +56,7 @@ import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
 import { BBSpin } from "@/bbkit";
 import { onMounted } from "vue";
+import { NInput } from "naive-ui";
 
 type LocalState = {
   value: string | undefined;
@@ -82,8 +85,10 @@ const state = reactive<LocalState>({
   reading: false,
 });
 const container = ref<HTMLDivElement>();
-const textareaRef = ref<HTMLTextAreaElement>();
-
+const inputRef = ref<InstanceType<typeof NInput>>();
+const inputWrapperRef = computed(
+  () => inputRef.value?.wrapperElRef as HTMLDivElement | undefined
+);
 const borderRadius = ref("");
 
 watch(
@@ -136,13 +141,13 @@ const handleFileChange = (e: Event) => {
 
 const { isOverDropZone } = useDropZone(container, onDrop);
 
-const updateBorderRadius = (textarea: HTMLTextAreaElement) => {
-  borderRadius.value = getComputedStyle(textarea).borderRadius;
+const updateBorderRadius = (element: HTMLElement) => {
+  borderRadius.value = getComputedStyle(element).borderRadius;
 };
 useMutationObserver(
-  textareaRef,
+  inputWrapperRef,
   (records) => {
-    updateBorderRadius(records[0].target as HTMLTextAreaElement);
+    updateBorderRadius(records[0].target as HTMLElement);
   },
   {
     attributeFilter: ["style", "class"],
@@ -150,9 +155,22 @@ useMutationObserver(
   }
 );
 onMounted(() => {
-  const textarea = textareaRef.value;
-  if (textarea) {
-    updateBorderRadius(textarea);
+  const wrapper = inputWrapperRef.value;
+  if (wrapper) {
+    updateBorderRadius(wrapper);
   }
 });
 </script>
+
+<style lang="postcss" scoped>
+.droppable-textarea {
+  @apply relative;
+}
+.droppable-textarea.reading {
+  @apply pointer-events-none;
+}
+.droppable-textarea.drop-over :deep(.n-input__state-border),
+.droppable-textarea.reading :deep(.n-input__state-border) {
+  border-style: dashed;
+}
+</style>
