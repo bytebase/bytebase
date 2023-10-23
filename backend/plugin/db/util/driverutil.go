@@ -20,6 +20,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/masker"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -301,6 +302,18 @@ func rowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
 		ColumnTypeNames: columnTypeNames,
 		Rows:            data,
 	}, nil
+}
+
+func buildMaskerByLevel(lvl storepb.MaskingLevel) masker.Masker {
+	switch lvl {
+	case storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, storepb.MaskingLevel_NONE:
+		return masker.NewNoneMasker()
+	case storepb.MaskingLevel_PARTIAL:
+		return masker.NewDefaultRangeMasker()
+	case storepb.MaskingLevel_FULL:
+		return masker.NewDefaultFullMasker()
+	}
+	return masker.NewNoneMasker()
 }
 
 func readRows(rows *sql.Rows, columnTypeNames []string, fieldMaskingLevels []storepb.MaskingLevel) ([]*v1pb.QueryRow, error) {
