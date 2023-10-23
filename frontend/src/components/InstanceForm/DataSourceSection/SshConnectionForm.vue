@@ -73,7 +73,8 @@
         </label>
         <DroppableTextarea
           v-model:value="state.value.sshPrivateKey"
-          class="block w-full resize-none whitespace-pre-wrap h-24"
+          :resizable="false"
+          class="w-full h-24 whitespace-pre-wrap"
         />
       </div>
     </div>

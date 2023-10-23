@@ -17,8 +17,9 @@
     </p>
     <DroppableTextarea
       :value="value"
-      class="block w-full resize-none whitespace-pre-wrap h-24"
+      :resizable="false"
       :placeholder="placeholder"
+      class="w-full h-24 whitespace-pre-wrap"
       @update:value="$emit('update:value', $event ?? '')"
     />
   </div>
