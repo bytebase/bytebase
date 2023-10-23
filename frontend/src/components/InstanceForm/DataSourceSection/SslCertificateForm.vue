@@ -20,7 +20,8 @@
     >
       <DroppableTextarea
         v-model:value="state.value.sslCa"
-        class="block w-full resize-none whitespace-pre-wrap h-24"
+        :resizable="false"
+        class="w-full h-24 whitespace-pre-wrap"
         placeholder="Input or drag and drop YOUR_CA_CERTIFICATE"
       />
     </NTabPane>
@@ -32,7 +33,8 @@
     >
       <DroppableTextarea
         v-model:value="state.value.sslKey"
-        class="block w-full resize-none whitespace-pre-wrap h-24"
+        :resizable="false"
+        class="w-full h-24 whitespace-pre-wrap"
         placeholder="Input or drag and drop YOUR_CLIENT_KEY"
       />
     </NTabPane>
@@ -44,7 +46,8 @@
     >
       <DroppableTextarea
         v-model:value="state.value.sslCert"
-        class="block w-full resize-none whitespace-pre-wrap h-24"
+        :resizable="false"
+        class="w-full h-24 whitespace-pre-wrap"
         placeholder="Input or drag and drop YOUR_CLIENT_CERT"
       />
     </NTabPane>
