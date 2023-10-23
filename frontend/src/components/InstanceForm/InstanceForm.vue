@@ -3,35 +3,37 @@
     <div class="space-y-6 divide-y divide-block-border">
       <div class="divide-y divide-block-border w-[850px]">
         <div v-if="isCreating" class="w-full mt-4 mb-6 grid grid-cols-4 gap-2">
-          <template v-for="engine in EngineList" :key="engine">
-            <div
-              class="flex relative justify-start p-2 border border-control-border rounded cursor-pointer hover:bg-control-bg-hover transition-colors"
-              :class="
-                basicInfo.engine === engine && 'font-medium bg-control-bg-hover'
-              "
-              @click.capture="changeInstanceEngine(engine)"
+          <NButton
+            v-for="engine in EngineList"
+            :key="engine"
+            class="instance-engine-button"
+            size="large"
+            ghost
+            :type="basicInfo.engine === engine ? 'primary' : 'default'"
+            @click="changeInstanceEngine(engine)"
+          >
+            <NRadio
+              :checked="basicInfo.engine === engine"
+              size="large"
+              class="btn mr-2 pointer-events-none"
+            />
+            <img
+              v-if="EngineIconPath[engine]"
+              class="w-5 h-auto max-h-[20px] object-contain mr-1"
+              :src="EngineIconPath[engine]"
+            />
+            <p
+              class="text-center text-sm !text-main"
+              :class="basicInfo.engine === engine && 'font-medium'"
             >
-              <div class="flex flex-row justify-start items-center">
-                <NRadio
-                  :checked="basicInfo.engine === engine"
-                  class="btn mr-2"
-                />
-                <img
-                  v-if="EngineIconPath[engine]"
-                  class="w-5 h-auto max-h-[20px] object-contain mr-1"
-                  :src="EngineIconPath[engine]"
-                />
-                <p class="text-center text-sm">
-                  {{ engineNameV1(engine) }}
-                </p>
-                <template v-if="isEngineBeta(engine)">
-                  <BBBetaBadge
-                    class="absolute -top-px -right-px rounded text-xs !bg-gray-500 px-1 !py-0"
-                  />
-                </template>
-              </div>
-            </div>
-          </template>
+              {{ engineNameV1(engine) }}
+            </p>
+            <template v-if="isEngineBeta(engine)">
+              <BBBetaBadge
+                class="absolute -top-1.5 -right-1 rounded text-xs !bg-gray-500 px-1 !py-0 z-10"
+              />
+            </template>
+          </NButton>
         </div>
 
         <!-- Instance Name -->
@@ -1136,3 +1138,9 @@ const changeInstanceActivation = async (on: boolean) => {
   }
 };
 </script>
+
+<style lang="postcss" scoped>
+.instance-engine-button :deep(.n-button__content) {
+  @apply w-full justify-start;
+}
+</style>
