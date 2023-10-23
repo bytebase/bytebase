@@ -24,6 +24,8 @@
     />
     <InstanceV1Table
       v-else-if="state.selectedIndex == INSTANCE_TAB"
+      :allow-selection="false"
+      :can-assign-license="false"
       :instance-list="filteredInstanceList"
     />
     <EnvironmentV1Table
