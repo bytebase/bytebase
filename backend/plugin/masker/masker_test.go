@@ -12,6 +12,14 @@ func TestMiddle_Byte(t *testing.T) {
 		want  []byte
 	}{
 		{
+			input: []byte("12"),
+			want:  []byte("2"),
+		},
+		{
+			input: []byte("123"),
+			want:  []byte("2"),
+		},
+		{
 			input: []byte("12345678"),
 			want:  []byte("3456"),
 		},
