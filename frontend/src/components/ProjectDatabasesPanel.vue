@@ -1,10 +1,5 @@
 <template>
   <div class="space-y-2">
-    <DatabaseOperations
-      v-if="selectedDatabases.length > 0"
-      :databases="selectedDatabases"
-      @dismiss="state.selectedDatabaseIds.clear()"
-    />
     <div
       class="text-lg font-medium leading-7 text-main flex items-center justify-between"
     >
@@ -33,6 +28,12 @@
         />
       </NInputGroup>
     </div>
+
+    <DatabaseOperations
+      v-if="selectedDatabases.length > 0"
+      :databases="selectedDatabases"
+      @dismiss="state.selectedDatabaseIds.clear()"
+    />
 
     <template v-if="databaseList.length > 0">
       <DatabaseV1Table

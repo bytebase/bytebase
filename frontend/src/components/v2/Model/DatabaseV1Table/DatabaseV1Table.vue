@@ -99,7 +99,7 @@
       :page-size="table.getState().pagination.pageSize"
       :show-quick-jumper="true"
       @update-page="handleChangePage"
-      @update-page-size="(ps) => table.setPageSize(ps)"
+      @update-page-size="table.setPageSize($event)"
     />
   </div>
 

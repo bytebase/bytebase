@@ -58,7 +58,9 @@ export type FeatureType =
   // Collaboration
   | "bb.feature.shared-sql-script"
   // Plugins
-  | "bb.feature.plugin.openai";
+  | "bb.feature.plugin.openai"
+  // Instance count limit
+  | "bb.feature.instance-count";
 
 export const instanceLimitFeature = new Set<FeatureType>([
   // Change Workflow
