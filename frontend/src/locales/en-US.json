@@ -628,7 +628,8 @@
         "extra-link": {
           "self": "Link",
           "placeholder": "Input announcement link"
-        }
+        },
+        "confirm-delete-custom-logo": "Delete custom branding logo?"
       }
     },
     "sensitive-data": {

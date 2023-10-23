@@ -626,7 +626,8 @@
         "extra-link": {
           "self": "链接",
           "placeholder": "输入公告链接"
-        }
+        },
+        "confirm-delete-custom-logo": "删除自定义品牌 Logo？"
       }
     },
     "sensitive-data": {
