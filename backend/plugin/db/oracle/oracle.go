@@ -181,7 +181,7 @@ func (*Driver) getOracleStatementWithResultLimit(stmt string, queryContext *db.Q
 	}
 	switch {
 	case versionNumber < dbVersion12:
-		return fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", stmt, queryContext.Limit), nil
+		return getStatementWithResultLimitFor11g(stmt, queryContext.Limit), nil
 	default:
 		res, err := getStatementWithResultLimitFor12c(stmt, queryContext.Limit)
 		if err != nil {
