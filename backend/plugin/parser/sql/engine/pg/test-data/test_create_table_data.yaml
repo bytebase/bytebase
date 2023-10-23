@@ -6,7 +6,7 @@
 - stmt: |-
     CREATE TABLE tech_book(
       a char(20),
-      b character(30) default 'this is default',
+      b character(30) NULL default 'this is default',
       c varchar(330),
       d character varying(400),
       e text
@@ -14,7 +14,7 @@
   want: |-
     CREATE TABLE "tech_book" (
         "a" character(20),
-        "b" character(30) DEFAULT 'this is default',
+        "b" character(30) NULL DEFAULT 'this is default',
         "c" character varying(330),
         "d" character varying(400),
         "e" text
