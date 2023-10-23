@@ -482,8 +482,8 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 		var err error
 		stmt, err = getStatementWithResultLimit(stmt, queryContext.Limit)
 		if err != nil {
-			slog.Warn("fail to add limit clause", log.BBError(err))
-			stmt = statement
+			slog.Error("fail to add limit clause due to parser compatiblity", log.BBError(err))
+			stmt = fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, queryContext.Limit)
 		}
 	}
 
