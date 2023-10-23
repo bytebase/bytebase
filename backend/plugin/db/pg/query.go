@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/antlr4-go/antlr/v4"
-	"github.com/pkg/errors"
 
 	pg "github.com/bytebase/postgresql-parser"
 
@@ -23,9 +22,6 @@ func getStatementWithResultLimit(singleStatement string, limitCount int) (string
 
 	listener.rewriter = *antlr.NewTokenStreamRewriter(result.Tokens)
 	antlr.ParseTreeWalkerDefault.Walk(listener, result.Tree)
-	if listener.err != nil {
-		return "", errors.Wrapf(listener.err, "statement: %s", singleStatement)
-	}
 
 	res := listener.rewriter.GetTextDefault()
 
@@ -36,7 +32,6 @@ type pgRewriter struct {
 	*pg.BasePostgreSQLParserListener
 
 	rewriter   antlr.TokenStreamRewriter
-	err        error
 	limitCount int
 }
 
