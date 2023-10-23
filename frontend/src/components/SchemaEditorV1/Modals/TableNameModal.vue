@@ -47,7 +47,8 @@ import {
   convertTableMetadataToTable,
 } from "@/types/v1/schemaEditor";
 
-const tableNameFieldRegexp = /^\S+$/;
+// Table name must start with a non-space character, end with a non-space character, and can contain space in between.
+const tableNameFieldRegexp = /^\S[\S ]*\S?$/;
 
 interface LocalState {
   tableName: string;
