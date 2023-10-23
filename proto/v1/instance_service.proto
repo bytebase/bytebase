@@ -181,7 +181,7 @@ message SyncInstanceResponse {}
 message BatchSyncInstanceRequest {
   // The request message specifying the instances to sync.
   // A maximum of 1000 instances can be synced in a batch.
-  repeated SyncInstanceRequest requests = 2 [(google.api.field_behavior) = REQUIRED];
+  repeated SyncInstanceRequest requests = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message BatchSyncInstanceResponse {}

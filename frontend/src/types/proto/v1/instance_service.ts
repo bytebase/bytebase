@@ -893,7 +893,7 @@ function createBaseBatchSyncInstanceRequest(): BatchSyncInstanceRequest {
 export const BatchSyncInstanceRequest = {
   encode(message: BatchSyncInstanceRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.requests) {
-      SyncInstanceRequest.encode(v!, writer.uint32(18).fork()).ldelim();
+      SyncInstanceRequest.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
@@ -905,8 +905,8 @@ export const BatchSyncInstanceRequest = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 2:
-          if (tag !== 18) {
+        case 1:
+          if (tag !== 10) {
             break;
           }
 
