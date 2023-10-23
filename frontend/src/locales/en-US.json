@@ -1065,6 +1065,7 @@
     "select-database-user": "Select database user",
     "new-database": "New Database",
     "syncing": "Syncing ...",
+    "selected-n-instances": "{n} instance selected | {n} instances selected",
     "create-migration-schema": "Create migration schema",
     "missing-migration-schema": "Missing migration schema",
     "unable-to-connect-instance-to-check-migration-schema": "Unable to connect instance to check migration schema",
