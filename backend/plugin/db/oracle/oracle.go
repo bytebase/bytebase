@@ -200,7 +200,7 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 		stmt, err = driver.getOracleStatementWithResultLimit(stmt, queryContext)
 		if err != nil {
 			slog.Error("fail to add limit clause", "statement", statement, log.BBError(err))
-			stmt = fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", stmt, queryContext.Limit)
+			stmt = getStatementWithResultLimitFor11g(stmt, queryContext.Limit)
 		}
 	}
 
