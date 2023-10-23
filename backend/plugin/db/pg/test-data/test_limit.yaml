@@ -1,0 +1,276 @@
+# simple without limit
+- stmt: SELECT id FROM t1;
+  count: 10
+  want: SELECT id FROM t1 LIMIT 10;
+
+# simple with limit
+- stmt: SELECT id FROM t1 LIMIT 5;
+  count: 10
+  want: SELECT id FROM t1 LIMIT 5;
+
+# simple with fetch
+- stmt: SELECT id FROM t1 FETCH NEXT 5 ROWS ONLY;
+  count: 10
+  want: SELECT id FROM t1 FETCH NEXT 5 ROWS ONLY;
+
+# for update without limit
+- stmt: SELECT id FROM t1 FOR UPDATE;
+  count: 10
+  want: SELECT id FROM t1 FOR UPDATE LIMIT 10;
+
+# for update with limit
+- stmt: SELECT id FROM t1 FOR UPDATE LIMIT 5;
+  count: 10
+  want: SELECT id FROM t1 FOR UPDATE LIMIT 5;
+
+# for update exists before limit
+- stmt: SELECT id FROM t1 LIMIT 10 FOR UPDATE;
+  count:
+  want: SELECT id FROM t1 LIMIT 10 FOR UPDATE;
+
+# inner join with limit
+- stmt: SELECT t1.id as id1, t2.id as id2 FROM t1 INNER JOIN t2 ON t1.id = t2.id;
+  count: 10
+  want: SELECT t1.id as id1, t2.id as id2 FROM t1 INNER JOIN t2 ON t1.id = t2.id LIMIT 10;
+
+- stmt: SELECT t1.id as id1, t2.id as id2 FROM t1 INNER JOIN t2 ON t1.id = t2.id LIMIT 5;
+  count: 10
+  want: SELECT t1.id as id1, t2.id as id2 FROM t1 INNER JOIN t2 ON t1.id = t2.id LIMIT 5;
+
+- stmt: SELECT t1.id as id1, t2.id as id2 FROM t1 INNER JOIN t2 ON t1.id = t2.id FETCH NEXT 5 ROWS ONLY;
+  count: 10
+  want: SELECT t1.id as id1, t2.id as id2 FROM t1 INNER JOIN t2 ON t1.id = t2.id FETCH NEXT 5 ROWS ONLY;
+# subquery
+- stmt: |
+    SELECT
+      first_name,
+      last_name
+    FROM
+      customer
+    WHERE
+      EXISTS (
+        SELECT
+          1
+        FROM
+          payment
+        WHERE
+          payment.customer_id = customer.customer_id
+    );
+  count: 10
+  want: |
+    SELECT
+      first_name,
+      last_name
+    FROM
+      customer
+    WHERE
+      EXISTS (
+        SELECT
+          1
+        FROM
+          payment
+        WHERE
+          payment.customer_id = customer.customer_id
+    ) LIMIT 10;
+
+- stmt: |
+    SELECT
+      first_name,
+      last_name
+    FROM
+      customer
+    WHERE
+      EXISTS (
+        SELECT
+          1
+        FROM
+          payment
+        WHERE
+          payment.customer_id = customer.customer_id
+    ) LIMIT 5;
+  count: 10
+  want: |
+    SELECT
+      first_name,
+      last_name
+    FROM
+      customer
+    WHERE
+      EXISTS (
+        SELECT
+          1
+        FROM
+          payment
+        WHERE
+          payment.customer_id = customer.customer_id
+    ) LIMIT 5;
+
+- stmt: |
+    SELECT id FROM t1
+    UNION ALL
+    SELECT id FROM t2;
+  count: 10
+  want: |
+    SELECT id FROM t1
+    UNION ALL
+    SELECT id FROM t2 LIMIT 10;
+
+- stmt: |
+    SELECT id FROM t1
+    UNION ALL
+    SELECT id FROM t2 LIMIT 5;
+  count: 10
+  want: |
+    SELECT id FROM t1
+    UNION ALL
+    SELECT id FROM t2 LIMIT 5;
+
+# cte non-recursive
+- stmt: |
+    WITH cte_rental AS (
+      SELECT staff_id,
+          COUNT(rental_id) rental_count
+      FROM   rental
+      GROUP  BY staff_id
+    )
+    SELECT s.staff_id,
+        first_name,
+        last_name,
+        rental_count
+    FROM staff s
+        INNER JOIN cte_rental USING (staff_id);
+  count: 10
+  want: |
+    WITH cte_rental AS (
+      SELECT staff_id,
+          COUNT(rental_id) rental_count
+      FROM   rental
+      GROUP  BY staff_id
+    )
+    SELECT s.staff_id,
+        first_name,
+        last_name,
+        rental_count
+    FROM staff s
+        INNER JOIN cte_rental USING (staff_id) LIMIT 10;
+
+- stmt: |
+    WITH cte_rental AS (
+      SELECT staff_id,
+          COUNT(rental_id) rental_count
+      FROM   rental
+      GROUP  BY staff_id
+    )
+    SELECT s.staff_id,
+        first_name,
+        last_name,
+        rental_count
+    FROM staff s
+        INNER JOIN cte_rental USING (staff_id) LIMIT 5;
+  count: 10
+  want: |
+    WITH cte_rental AS (
+      SELECT staff_id,
+          COUNT(rental_id) rental_count
+      FROM   rental
+      GROUP  BY staff_id
+    )
+    SELECT s.staff_id,
+        first_name,
+        last_name,
+        rental_count
+    FROM staff s
+        INNER JOIN cte_rental USING (staff_id) LIMIT 5;
+
+# cte recursive
+- stmt: |
+    WITH RECURSIVE subordinates AS (
+      SELECT
+        employee_id,
+        manager_id,
+        full_name
+      FROM
+        employees
+      WHERE
+        employee_id = 2
+      UNION
+        SELECT
+          e.employee_id,
+          e.manager_id,
+          e.full_name
+        FROM
+          employees e
+        INNER JOIN subordinates s ON s.employee_id = e.manager_id
+    ) SELECT
+      *
+    FROM
+      subordinates;
+  count: 10
+  want: |
+    WITH RECURSIVE subordinates AS (
+      SELECT
+        employee_id,
+        manager_id,
+        full_name
+      FROM
+        employees
+      WHERE
+        employee_id = 2
+      UNION
+        SELECT
+          e.employee_id,
+          e.manager_id,
+          e.full_name
+        FROM
+          employees e
+        INNER JOIN subordinates s ON s.employee_id = e.manager_id
+    ) SELECT
+      *
+    FROM
+      subordinates LIMIT 10;
+
+- stmt: |
+    WITH RECURSIVE subordinates AS (
+      SELECT
+        employee_id,
+        manager_id,
+        full_name
+      FROM
+        employees
+      WHERE
+        employee_id = 2
+      UNION
+        SELECT
+          e.employee_id,
+          e.manager_id,
+          e.full_name
+        FROM
+          employees e
+        INNER JOIN subordinates s ON s.employee_id = e.manager_id
+    ) SELECT
+      *
+    FROM
+      subordinates LIMIT 5;
+  count: 10
+  want: |
+    WITH RECURSIVE subordinates AS (
+      SELECT
+        employee_id,
+        manager_id,
+        full_name
+      FROM
+        employees
+      WHERE
+        employee_id = 2
+      UNION
+        SELECT
+          e.employee_id,
+          e.manager_id,
+          e.full_name
+        FROM
+          employees e
+        INNER JOIN subordinates s ON s.employee_id = e.manager_id
+    ) SELECT
+      *
+    FROM
+      subordinates LIMIT 5;
