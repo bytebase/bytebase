@@ -28,6 +28,8 @@ const (
 	ConstraintTypeDefault
 	// ConstraintTypeGenerated is the generated constraint.
 	ConstraintTypeGenerated
+	// ConstraintTypeNull is the null constraint.
+	ConstraintTypeNull
 )
 
 // ConstraintDef is struct for constraint definition.
