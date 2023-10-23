@@ -16,7 +16,6 @@ import (
 	go_ora "github.com/sijms/go-ora/v2"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
@@ -42,7 +41,6 @@ type Driver struct {
 	databaseName     string
 	serviceName      string
 	schemaTenantMode bool
-	dbVersion        int
 }
 
 func newDriver(db.DriverConfig) db.Driver {
@@ -171,48 +169,21 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	return results, nil
 }
 
-func (driver *Driver) getVersion(ctx context.Context) (string, error) {
-	var fullVersion string
-	query := "SELECT BANNER FROM v$version WHERE BANNER LIKE 'Oracle%'"
-	if err := driver.db.QueryRowContext(ctx, query).Scan(&fullVersion); err != nil {
-		if err == sql.ErrNoRows {
-			return "", common.FormatDBErrorEmptyRowWithQuery(query)
-		}
-		return "", util.FormatErrorWithQuery(err, query)
+func (*Driver) getOracleStatementWithResultLimit(stmt string, queryContext *db.QueryContext) (string, error) {
+	engineVersion := queryContext.EngineVersion
+	versionIdx := strings.Index(engineVersion, ".")
+	if versionIdx < 0 {
+		return "", errors.New("instance version number is invalid")
 	}
-
-	var version string
-	tokens := strings.Fields(fullVersion)
-	for _, token := range tokens {
-		if semVersionRegex.MatchString(token) {
-			version = token
-			continue
-		}
-	}
-
-	return version, nil
-}
-
-func (driver *Driver) getOracleStatementWithResultLimit(ctx context.Context, stmt string, limit int) (string, error) {
-	if driver.dbVersion == 0 {
-		version, err := driver.getVersion(ctx)
-		if err != nil {
-			return "", err
-		}
-		versionIdx := strings.Index(version, ".")
-		if versionIdx < 0 {
-			return "", errors.New("instance version number is invalid")
-		}
-		driver.dbVersion, err = strconv.Atoi(version[:versionIdx])
-		if err != nil {
-			return "", err
-		}
+	versionNumber, err := strconv.Atoi(engineVersion[:versionIdx])
+	if err != nil {
+		return "", err
 	}
 	switch {
-	case driver.dbVersion < dbVersion12:
-		return fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", stmt, limit), nil
+	case versionNumber < dbVersion12:
+		return fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", stmt, queryContext.Limit), nil
 	default:
-		res, err := getStatementWithResultLimitFor12c(stmt, limit)
+		res, err := getStatementWithResultLimitFor12c(stmt, queryContext.Limit)
 		if err != nil {
 			return "", err
 		}
@@ -226,9 +197,10 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 	stmt := statement
 	if !strings.HasPrefix(strings.ToUpper(stmt), "EXPLAIN") && queryContext.Limit > 0 {
 		var err error
-		stmt, err = driver.getOracleStatementWithResultLimit(ctx, stmt, queryContext.Limit)
+		stmt, err = driver.getOracleStatementWithResultLimit(stmt, queryContext)
 		if err != nil {
-			return nil, err
+			slog.Error("fail to add limit clause", "statement", statement, log.BBError(err))
+			stmt = fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", stmt, queryContext.Limit)
 		}
 	}
 
