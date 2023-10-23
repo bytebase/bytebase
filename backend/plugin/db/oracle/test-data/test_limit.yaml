@@ -1,0 +1,304 @@
+- stmt: |
+    SELECT * FROM "C##TEST"."rownum_order_test" ORDER BY val FETCH NEXT 5 ROWS ONLY
+  count: 5
+  want: SELECT * FROM "C##TEST"."rownum_order_test" ORDER BY val FETCH NEXT 5 ROWS ONLY
+- stmt: |
+    SELECT * FROM "C##TEST"."rownum_order_test" ORDER BY val
+  count: 5
+  want: SELECT * FROM "C##TEST"."rownum_order_test" ORDER BY val FETCH NEXT 5 ROWS ONLY
+- stmt: |
+    SELECT * FROM "C##TEST"."rownum_order_test" ORDER BY val FETCH NEXT 5 ROWS WITH TIES
+  count: 5
+  want: SELECT * FROM "C##TEST"."rownum_order_test" ORDER BY val FETCH NEXT 5 ROWS WITH TIES
+- stmt: |
+    SELECT val
+    FROM  "C##TEST"."rownum_order_test"
+    ORDER BY val
+    OFFSET 4 ROWS FETCH NEXT 4 ROWS ONLY
+  count: 10
+  want: |-
+    SELECT val
+    FROM  "C##TEST"."rownum_order_test"
+    ORDER BY val
+    OFFSET 4 ROWS FETCH NEXT 4 ROWS ONLY
+- stmt: |
+    SELECT name, COUNT( order_id )
+    FROM "C##TEST"."orders"
+    INNER JOIN "C##TEST"."customers" USING(customer_id) WHERE  status = "Shipped"
+    GROUP BY name ORDER BY name
+  count: 10
+  want: |-
+    SELECT name, COUNT( order_id )
+    FROM "C##TEST"."orders"
+    INNER JOIN "C##TEST"."customers" USING(customer_id) WHERE  status = "Shipped"
+    GROUP BY name ORDER BY name FETCH NEXT 10 ROWS ONLY
+- stmt: |
+    SELECT name, COUNT( order_id )
+    FROM "C##TEST"."orders"
+    INNER JOIN "C##TEST"."customers" USING(customer_id) WHERE  status = "Shipped"
+    GROUP BY name ORDER BY name FETCH NEXT 10 ROWS ONLY
+  count: 10
+  want: |-
+    SELECT name, COUNT( order_id )
+    FROM "C##TEST"."orders"
+    INNER JOIN "C##TEST"."customers" USING(customer_id) WHERE  status = "Shipped"
+    GROUP BY name ORDER BY name FETCH NEXT 10 ROWS ONLY
+- stmt: |
+    SELECT
+        a.id id_a,
+        a.color color_a,
+        b.id id_b,
+        b.color color_b
+    FROM
+        "C##TEST"."palette_a" a
+    INNER JOIN "C##TEST"."palette_b" b ON a.color = b.color
+  count: 10
+  want: |-
+    SELECT
+        a.id id_a,
+        a.color color_a,
+        b.id id_b,
+        b.color color_b
+    FROM
+        "C##TEST"."palette_a" a
+    INNER JOIN "C##TEST"."palette_b" b ON a.color = b.color FETCH NEXT 10 ROWS ONLY
+- stmt: |
+    SELECT
+        a.id id_a,
+        a.color color_a,
+        b.id id_b,
+        b.color color_b
+    FROM
+        "C##TEST"."palette_a" a
+    INNER JOIN "C##TEST"."palette_b" b ON a.color = b.color
+  count: 10
+  want: |-
+    SELECT
+        a.id id_a,
+        a.color color_a,
+        b.id id_b,
+        b.color color_b
+    FROM
+        "C##TEST"."palette_a" a
+    INNER JOIN "C##TEST"."palette_b" b ON a.color = b.color FETCH NEXT 10 ROWS ONLY
+- stmt: |
+    SELECT
+        a.id id_a,
+        a.color color_a,
+        b.id id_b,
+        b.color color_b
+    FROM
+        "C##TEST"."palette_a" a
+    INNER JOIN "C##TEST"."palette_b" b ON a.color = b.color FETCH NEXT 10 ROWS ONLY
+  count: 10
+  want: |-
+    SELECT
+        a.id id_a,
+        a.color color_a,
+        b.id id_b,
+        b.color color_b
+    FROM
+        "C##TEST"."palette_a" a
+    INNER JOIN "C##TEST"."palette_b" b ON a.color = b.color FETCH NEXT 10 ROWS ONLY
+- stmt: |
+    SELECT
+        product_id,
+        product_name,
+        list_price
+    FROM
+        "C##TEST"."products"
+    WHERE
+        list_price = (
+            SELECT
+                MAX( list_price )
+            FROM
+                "C##TEST"."products"
+        )
+  count: 10
+  want: |-
+    SELECT
+        product_id,
+        product_name,
+        list_price
+    FROM
+        "C##TEST"."products"
+    WHERE
+        list_price = (
+            SELECT
+                MAX( list_price )
+            FROM
+                "C##TEST"."products"
+        ) FETCH NEXT 10 ROWS ONLY
+- stmt: |
+    SELECT
+        product_id,
+        product_name,
+        list_price
+    FROM
+        "C##TEST"."products"
+    WHERE
+        list_price = (
+            SELECT
+                MAX( list_price )
+            FROM
+                "C##TEST"."products"
+        ) FETCH NEXT 10 ROWS ONLY
+  count: 10
+  want: |-
+    SELECT
+        product_id,
+        product_name,
+        list_price
+    FROM
+        "C##TEST"."products"
+    WHERE
+        list_price = (
+            SELECT
+                MAX( list_price )
+            FROM
+                "C##TEST"."products"
+        ) FETCH NEXT 10 ROWS ONLY
+- stmt: |
+    SELECT
+        product_name,
+        list_price,
+        ROUND(
+            (
+                SELECT
+                    AVG( list_price )
+                FROM
+                    "C##TEST"."products" p1
+                WHERE
+                    p1. category_id = p2.category_id
+            ),
+            2
+        ) avg_list_price
+    FROM
+        "C##TEST"."products" p2
+    ORDER BY
+        product_name
+  count: 10
+  want: |-
+    SELECT
+        product_name,
+        list_price,
+        ROUND(
+            (
+                SELECT
+                    AVG( list_price )
+                FROM
+                    "C##TEST"."products" p1
+                WHERE
+                    p1. category_id = p2.category_id
+            ),
+            2
+        ) avg_list_price
+    FROM
+        "C##TEST"."products" p2
+    ORDER BY
+        product_name FETCH NEXT 10 ROWS ONLY
+- stmt: |
+    SELECT
+        product_name,
+        list_price,
+        ROUND(
+            (
+                SELECT
+                    AVG( list_price )
+                FROM
+                    "C##TEST"."products" p1
+                WHERE
+                    p1. category_id = p2.category_id
+            ),
+            2
+        ) avg_list_price
+    FROM
+        "C##TEST"."products" p2
+    ORDER BY
+        product_name FETCH NEXT 10 ROWS ONLY
+  count: 10
+  want: |-
+    SELECT
+        product_name,
+        list_price,
+        ROUND(
+            (
+                SELECT
+                    AVG( list_price )
+                FROM
+                    "C##TEST"."products" p1
+                WHERE
+                    p1. category_id = p2.category_id
+            ),
+            2
+        ) avg_list_price
+    FROM
+        "C##TEST"."products" p2
+    ORDER BY
+        product_name FETCH NEXT 10 ROWS ONLY
+- stmt: |
+    SELECT
+      first_name,
+      last_name,
+      email,
+      'contact'
+    FROM
+      "C##TEST"."contacts"
+    UNION
+    SELECT
+      first_name,
+      last_name,
+      email,
+      'employee'
+    FROM
+      "C##TEST"."employees"
+  count: 5
+  want: |-
+    SELECT
+      first_name,
+      last_name,
+      email,
+      'contact'
+    FROM
+      "C##TEST"."contacts"
+    UNION
+    SELECT
+      first_name,
+      last_name,
+      email,
+      'employee'
+    FROM
+      "C##TEST"."employees" FETCH NEXT 5 ROWS ONLY
+- stmt: |
+    SELECT
+      first_name,
+      last_name,
+      email,
+      'contact'
+    FROM
+      "C##TEST"."contacts"
+    UNION
+    SELECT
+      first_name,
+      last_name,
+      email,
+      'employee'
+    FROM
+      "C##TEST"."employees" FETCH NEXT 5 ROWS ONLY
+  count: 5
+  want: |-
+    SELECT
+      first_name,
+      last_name,
+      email,
+      'contact'
+    FROM
+      "C##TEST"."contacts"
+    UNION
+    SELECT
+      first_name,
+      last_name,
+      email,
+      'employee'
+    FROM
+      "C##TEST"."employees" FETCH NEXT 5 ROWS ONLY
