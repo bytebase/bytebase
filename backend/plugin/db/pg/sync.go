@@ -403,7 +403,7 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 			column.Type = fmt.Sprintf("%s.%s", udtSchema.String, udtName.String)
 		case "ARRAY":
 			column.Type = udtName.String
-		case "character", "character varying":
+		case "character", "character varying", "bit", "bit varying":
 			column.Type = fmt.Sprintf("%s(%s)", column.Type, characterMaxLength.String)
 		}
 		column.Collation = collation.String
