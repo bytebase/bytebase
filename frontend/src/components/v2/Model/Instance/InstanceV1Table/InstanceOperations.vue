@@ -50,6 +50,11 @@ interface LocalState {
 const props = defineProps<{
   instanceList: ComposedInstance[];
 }>();
+
+defineEmits<{
+  (event: "dismiss"): void;
+}>();
+
 const { t } = useI18n();
 const state = reactive<LocalState>({
   loading: false,
