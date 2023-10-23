@@ -29,6 +29,8 @@ var (
 	_ db.Driver = (*Driver)(nil)
 )
 
+const dbVersion12 = 12
+
 func init() {
 	db.Register(storepb.Engine_ORACLE, newDriver)
 }
@@ -167,16 +169,39 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	return results, nil
 }
 
-func getOracleStatementWithResultLimit(stmt string, limit int) string {
-	return fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", stmt, limit)
+func (*Driver) getOracleStatementWithResultLimit(stmt string, queryContext *db.QueryContext) (string, error) {
+	engineVersion := queryContext.EngineVersion
+	versionIdx := strings.Index(engineVersion, ".")
+	if versionIdx < 0 {
+		return "", errors.New("instance version number is invalid")
+	}
+	versionNumber, err := strconv.Atoi(engineVersion[:versionIdx])
+	if err != nil {
+		return "", err
+	}
+	switch {
+	case versionNumber < dbVersion12:
+		return getStatementWithResultLimitFor11g(stmt, queryContext.Limit), nil
+	default:
+		res, err := getStatementWithResultLimitFor12c(stmt, queryContext.Limit)
+		if err != nil {
+			return "", err
+		}
+		return res, nil
+	}
 }
 
-func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
 
 	stmt := statement
 	if !strings.HasPrefix(strings.ToUpper(stmt), "EXPLAIN") && queryContext.Limit > 0 {
-		stmt = getOracleStatementWithResultLimit(stmt, queryContext.Limit)
+		var err error
+		stmt, err = driver.getOracleStatementWithResultLimit(stmt, queryContext)
+		if err != nil {
+			slog.Error("fail to add limit clause", "statement", statement, log.BBError(err))
+			stmt = getStatementWithResultLimitFor11g(stmt, queryContext.Limit)
+		}
 	}
 
 	if queryContext.ReadOnly {
