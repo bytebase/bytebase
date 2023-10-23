@@ -2,7 +2,7 @@
   <div class="max-w-3xl mx-auto space-y-6 mb-6">
     <div class="divide-y divide-block-border space-y-6">
       <ProjectGeneralSettingPanel :project="project" :allow-edit="allowEdit" />
-      <div class="pt-6" v-if="isTenantProject">
+      <div v-if="isTenantProject" class="pt-6">
         <ProjectDeploymentConfigPanel
           id="deployment-config"
           :project="project"
