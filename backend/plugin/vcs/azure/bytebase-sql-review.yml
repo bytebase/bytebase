@@ -50,5 +50,5 @@ jobs:
           testResultsFiles: "**/bytebase-sql-review.xml"
         displayName: Upload artifacts
       - bash: |
-          if [[ "$STATUS" == "ERROR" ]]; then exit 1; fi
+          if [[ "$STATUS" != "SUCCESS" ]]; then exit 1; fi
         displayName: Check SQL Review Result
