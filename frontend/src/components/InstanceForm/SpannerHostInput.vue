@@ -5,15 +5,12 @@
         {{ $t("instance.project-id") }}
         <span style="color: red">*</span>
       </label>
-      <input
-        v-model="state.projectId"
+      <NInput
+        v-model:value="state.projectId"
         required
-        type="text"
         placeholder="projectId"
-        class="textfield mt-1 w-full"
-        :class="[
-          state.dirty && !isValidProjectId && '!border-error !ring-error',
-        ]"
+        class="mt-1 w-full"
+        :status="state.dirty && !isValidProjectId ? 'error' : undefined"
         :disabled="!allowEdit"
       />
     </div>
@@ -22,15 +19,12 @@
         {{ $t("instance.instance-id") }}
         <span style="color: red">*</span>
       </label>
-      <input
-        v-model="state.instanceId"
+      <NInput
+        v-model:value="state.instanceId"
         required
-        type="text"
         placeholder="instanceId"
-        class="textfield mt-1 w-full"
-        :class="[
-          state.dirty && !isValidInstanceId && '!border-error !ring-error',
-        ]"
+        class="mt-1 w-full"
+        :status="state.dirty && !isValidInstanceId ? 'error' : undefined"
         :disabled="!allowEdit"
       />
     </div>
@@ -42,14 +36,15 @@
         target="_blank"
         class="normal-link inline-flex items-center"
       >
-        {{ $t("common.detailed-guide")
-        }}<heroicons-outline:external-link class="w-4 h-4 ml-1"
-      /></a>
+        {{ $t("common.detailed-guide") }}
+        <heroicons-outline:external-link class="w-4 h-4 ml-1" />
+      </a>
     </p>
   </div>
 </template>
 
 <script lang="ts" setup>
+import { NInput } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 
 type LocalState = {

@@ -1,53 +1,38 @@
 <template>
   <div class="mt-2 sm:col-span-1 sm:col-start-1">
     <div class="flex items-center gap-x-4">
-      <label class="radio">
-        <input
-          v-model="state.mode"
-          tabindex="-1"
-          type="radio"
-          class="text-accent disabled:text-accent-disabled focus:ring-accent"
-          value="ServiceName"
-          :disabled="!allowEdit"
-        />
-        <span class="label">ServiceName</span>
-      </label>
-      <label class="radio">
-        <input
-          v-model="state.mode"
-          tabindex="-1"
-          type="radio"
-          class="text-accent disabled:text-accent-disabled focus:ring-accent"
-          value="SID"
-          :disabled="!allowEdit"
-        />
-        <span class="label">SID</span>
-      </label>
+      <NRadio
+        :checked="state.mode === 'ServiceName'"
+        @update:checked="toggleMode('ServiceName', $event)"
+      >
+        <span class="textlabel">ServiceName</span>
+      </NRadio>
+      <NRadio
+        :checked="state.mode === 'SID'"
+        @update:checked="toggleMode('SID', $event)"
+      >
+        <span class="textlabel">SID</span>
+      </NRadio>
     </div>
-    <div>
-      <input
+    <div class="mt-1">
+      <NInput
         v-if="state.mode === 'ServiceName'"
         :value="state.serviceName"
-        type="text"
-        class="textfield w-full mt-1"
         placeholder="ServiceName"
-        @input="
-          update(($event.target as HTMLInputElement).value, 'ServiceName')
-        "
+        @update:value="update($event, 'ServiceName')"
       />
-      <input
+      <NInput
         v-if="state.mode === 'SID'"
         :value="state.sid"
-        type="text"
-        class="textfield w-full mt-1"
         placeholder="SID"
-        @input="update(($event.target as HTMLInputElement).value, 'SID')"
+        @update:value="update($event, 'SID')"
       />
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
+import { NInput, NRadio } from "naive-ui";
 import { reactive, watch } from "vue";
 
 type Mode = "ServiceName" | "SID";
@@ -88,6 +73,11 @@ const update = (value: string, mode: Mode) => {
     emit("update:serviceName", value);
     emit("update:sid", "");
   }
+};
+
+const toggleMode = (mode: Mode, checked: boolean) => {
+  if (!checked) return;
+  state.mode = mode;
 };
 
 watch(
