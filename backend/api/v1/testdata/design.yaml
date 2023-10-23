@@ -166,8 +166,7 @@
         }
       ]
     }
-  # FIXME: table-level comment is not supported.
-  result: |+
+  result: |
     CREATE TABLE `t` (
       `a` int NOT NULL
-    );
+    ) COMMENT 'this is comment' ;

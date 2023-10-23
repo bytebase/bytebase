@@ -327,6 +327,7 @@ func (t *tableState) convertToTableMetadata() *v1pb.TableMetadata {
 		Columns:     columns,
 		Indexes:     indexes,
 		ForeignKeys: fks,
+		Comment:     t.comment,
 	}
 }
 
@@ -606,6 +607,30 @@ func (t *mysqlTransformer) ExitCreateTable(_ *mysql.CreateTableContext) {
 	t.currentTable = ""
 }
 
+// EnterCreateTableOption is called when production createTableOption is entered.
+func (t *mysqlTransformer) EnterCreateTableOption(ctx *mysql.CreateTableOptionContext) {
+	if t.err != nil || t.currentTable == "" {
+		return
+	}
+
+	if ctx.COMMENT_SYMBOL() != nil {
+		commentString := ctx.TextStringLiteral().GetText()
+		if len(commentString) < 2 {
+			quotes := commentString[0]
+			escape := fmt.Sprintf("%c%c", quotes, quotes)
+			commentString = strings.ReplaceAll(commentString[1:len(commentString)-1], escape, string(quotes))
+		}
+
+		schema := t.state.schemas[""]
+		table, ok := schema.tables[t.currentTable]
+		if !ok {
+			// This should never happen.
+			return
+		}
+		table.comment = commentString
+	}
+}
+
 // EnterTableConstraintDef is called when production tableConstraintDef is entered.
 func (t *mysqlTransformer) EnterTableConstraintDef(ctx *mysql.TableConstraintDefContext) {
 	if t.err != nil || t.currentTable == "" {
@@ -861,9 +886,11 @@ type mysqlDesignSchemaGenerator struct {
 	firstElementInTable bool
 	columnDefine        strings.Builder
 	tableConstraints    strings.Builder
+	tableOptions        strings.Builder
 	err                 error
 
-	lastTokenIndex int
+	lastTokenIndex        int
+	tableOptionTokenIndex int
 }
 
 // EnterCreateTable is called when production createTable is entered.
@@ -987,8 +1014,46 @@ func (g *mysqlDesignSchemaGenerator) ExitCreateTable(ctx *mysql.CreateTableConte
 		return
 	}
 
+	if ctx.CreateTableOptions() != nil {
+		if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+			Start: ctx.TableElementList().GetStop().GetTokenIndex() + 1,
+			Stop:  ctx.CreateTableOptions().GetStart().GetTokenIndex() - 1,
+		})); err != nil {
+			g.err = err
+			return
+		}
+
+		if _, err := g.result.WriteString(g.tableOptions.String()); err != nil {
+			g.err = err
+			return
+		}
+
+		if g.currentTable.comment != "" {
+			if _, err := g.result.WriteString(fmt.Sprintf(" COMMENT '%s'", strings.ReplaceAll(g.currentTable.comment, "'", "''"))); err != nil {
+				g.err = err
+				return
+			}
+		}
+		g.lastTokenIndex = ctx.CreateTableOptions().GetStop().GetTokenIndex() + 1
+	} else {
+		if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+			Start: ctx.TableElementList().GetStop().GetTokenIndex() + 1,
+			Stop:  ctx.CLOSE_PAR_SYMBOL().GetSymbol().GetTokenIndex(),
+		})); err != nil {
+			g.err = err
+			return
+		}
+		if g.currentTable.comment != "" {
+			if _, err := g.result.WriteString(fmt.Sprintf(" COMMENT '%s' ", strings.ReplaceAll(g.currentTable.comment, "'", "''"))); err != nil {
+				g.err = err
+				return
+			}
+		}
+		g.lastTokenIndex = ctx.CLOSE_PAR_SYMBOL().GetSymbol().GetTokenIndex() + 1
+	}
+
 	if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
-		Start: ctx.TableElementList().GetStop().GetTokenIndex() + 1,
+		Start: g.lastTokenIndex,
 		// Write all tokens until the end of the statement.
 		// Because we listen one statement at a time, we can safely use the last token index.
 		Stop: ctx.GetParser().GetTokenStream().Size() - 1,
@@ -1000,6 +1065,85 @@ func (g *mysqlDesignSchemaGenerator) ExitCreateTable(ctx *mysql.CreateTableConte
 	g.currentTable = nil
 	g.firstElementInTable = false
 	g.lastTokenIndex = ctx.GetParser().GetTokenStream().Size() - 1
+}
+
+func (g *mysqlDesignSchemaGenerator) EnterCreateTableOptions(ctx *mysql.CreateTableOptionsContext) {
+	g.tableOptionTokenIndex = ctx.GetStart().GetTokenIndex()
+}
+
+func (g *mysqlDesignSchemaGenerator) ExitCreateTableOptions(ctx *mysql.CreateTableOptionsContext) {
+	if g.err != nil || g.currentTable == nil {
+		return
+	}
+
+	if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+		Start: g.tableOptionTokenIndex,
+		Stop:  ctx.GetStop().GetTokenIndex(),
+	})); err != nil {
+		g.err = err
+		return
+	}
+
+	g.tableOptionTokenIndex = ctx.GetStop().GetTokenIndex() + 1
+}
+
+func (g *mysqlDesignSchemaGenerator) EnterCreateTableOption(ctx *mysql.CreateTableOptionContext) {
+	if g.err != nil || g.currentTable == nil {
+		return
+	}
+
+	if ctx.COMMENT_SYMBOL() != nil {
+		commentString := ctx.TextStringLiteral().GetText()
+		if len(commentString) < 2 {
+			quotes := commentString[0]
+			escape := fmt.Sprintf("%c%c", quotes, quotes)
+			commentString = strings.ReplaceAll(commentString[1:len(commentString)-1], escape, string(quotes))
+		}
+		if g.currentTable.comment == commentString {
+			if _, err := g.tableOptions.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(
+				antlr.Interval{
+					Start: g.tableOptionTokenIndex,
+					Stop:  ctx.GetStop().GetTokenIndex(),
+				},
+			)); err != nil {
+				g.err = err
+				return
+			}
+			g.tableOptionTokenIndex = ctx.GetStop().GetTokenIndex() + 1
+		} else {
+			if _, err := g.tableOptions.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(
+				antlr.Interval{
+					Start: g.tableOptionTokenIndex,
+					Stop:  ctx.GetStart().GetTokenIndex() - 1,
+				},
+			)); err != nil {
+				g.err = err
+				return
+			}
+			g.tableOptionTokenIndex = ctx.GetStop().GetTokenIndex() + 1
+
+			if len(g.currentTable.comment) == 0 {
+				return
+			}
+
+			if _, err := g.tableOptions.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(
+				antlr.Interval{
+					Start: ctx.GetStart().GetTokenIndex(),
+					Stop:  ctx.TextStringLiteral().GetStart().GetTokenIndex() - 1,
+				},
+			)); err != nil {
+				g.err = err
+				return
+			}
+
+			if _, err := g.tableOptions.WriteString(fmt.Sprintf("'%s'", strings.ReplaceAll(g.currentTable.comment, "'", "''"))); err != nil {
+				g.err = err
+				return
+			}
+		}
+		// Reset the comment.
+		g.currentTable.comment = ""
+	}
 }
 
 type columnAttr struct {
