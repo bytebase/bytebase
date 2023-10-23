@@ -482,7 +482,7 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 		var err error
 		stmt, err = getStatementWithResultLimit(stmt, queryContext.Limit)
 		if err != nil {
-			return nil, err
+			stmt = statement
 		}
 	}
 
