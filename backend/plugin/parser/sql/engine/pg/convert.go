@@ -1596,6 +1596,8 @@ func convertConstraintType(in pgquery.ConstrType, usingIndex bool) ast.Constrain
 		return ast.ConstraintTypeExclusion
 	case pgquery.ConstrType_CONSTR_GENERATED:
 		return ast.ConstraintTypeGenerated
+	case pgquery.ConstrType_CONSTR_NULL:
+		return ast.ConstraintTypeNull
 	}
 	return ast.ConstraintTypeUndefined
 }
