@@ -5,17 +5,16 @@
         <div v-if="isCreating" class="w-full mt-4 mb-6 grid grid-cols-4 gap-2">
           <template v-for="engine in EngineList" :key="engine">
             <div
-              class="flex relative justify-start p-2 border rounded cursor-pointer hover:bg-control-bg-hover"
+              class="flex relative justify-start p-2 border border-control-border rounded cursor-pointer hover:bg-control-bg-hover transition-colors"
               :class="
                 basicInfo.engine === engine && 'font-medium bg-control-bg-hover'
               "
               @click.capture="changeInstanceEngine(engine)"
             >
               <div class="flex flex-row justify-start items-center">
-                <input
-                  type="radio"
-                  class="btn mr-2"
+                <NRadio
                   :checked="basicInfo.engine === engine"
+                  class="btn mr-2"
                 />
                 <img
                   v-if="EngineIconPath[engine]"
@@ -49,13 +48,10 @@
                 <span class="ml-1">{{ props.instance.engineVersion }}</span>
               </template>
             </label>
-            <input
-              id="name"
-              v-model="basicInfo.title"
+            <NInput
+              v-model:value="basicInfo.title"
               required
-              name="name"
-              type="text"
-              class="textfield mt-1 w-full"
+              class="mt-1 w-full"
               :disabled="!allowEdit"
             />
           </div>
@@ -74,12 +70,11 @@
                 }}</router-link
               >)
             </label>
-            <BBSwitch
+            <NSwitch
               class="mt-2"
-              :text="false"
               :value="basicInfo.activation"
               :disabled="!basicInfo.activation && availableLicenseCount === 0"
-              @toggle="changeInstanceActivation"
+              @update:value="changeInstanceActivation"
             />
           </div>
 
@@ -103,12 +98,14 @@
               {{ $t("common.environment") }}
             </label>
             <EnvironmentSelect
-              id="environment"
               class="mt-1 w-full"
-              name="environment"
               :disabled="!isCreating"
-              :selected-id="environment.uid"
-              @select-environment-id="handleSelectEnvironmentUID"
+              :environment="
+                environment.uid === String(UNKNOWN_ID)
+                  ? undefined
+                  : environment.uid
+              "
+              @update:environment="handleSelectEnvironmentUID"
             />
           </div>
 
@@ -131,18 +128,15 @@
                   <span class="text-red-600 mr-2">*</span>
                 </template>
               </label>
-              <input
-                id="host"
-                v-model="adminDataSource.host"
+              <NInput
+                v-model:value="adminDataSource.host"
                 required
-                type="text"
-                name="host"
                 :placeholder="
                   basicInfo.engine === Engine.SNOWFLAKE
                     ? $t('instance.your-snowflake-account-name')
                     : $t('instance.sentence.host.snowflake')
                 "
-                class="textfield mt-1 w-full"
+                class="mt-1 w-full"
                 :disabled="!allowEdit"
               />
               <div
@@ -164,16 +158,12 @@
               <label for="port" class="textlabel block">
                 {{ $t("instance.port") }}
               </label>
-              <input
-                id="port"
-                type="text"
-                name="port"
-                class="textfield mt-1 w-full"
-                :value="adminDataSource.port"
+              <NInput
+                v-model:value="adminDataSource.port"
+                class="mt-1 w-full"
                 :placeholder="defaultPort"
                 :disabled="!allowEdit || !allowEditPort"
-                @wheel="(e: WheelEvent) => (e.target as HTMLInputElement).blur()"
-                @input="adminDataSource.port = trimInputValue($event.target)"
+                :allow-input="onlyAllowNumber"
               />
             </div>
           </template>
@@ -188,23 +178,18 @@
             >
               {{ $t("data-source.connection-string-schema") }}
             </label>
-            <label
-              v-for="type in MongoDBConnectionStringSchemaList"
-              :key="type"
-              class="radio h-7"
-            >
-              <input
-                type="radio"
-                class="btn"
-                name="connectionStringSchema"
-                :value="type"
+            <div class="flex flex-col gap-y-1 mt-1">
+              <NRadio
+                v-for="type in MongoDBConnectionStringSchemaList"
+                :key="type"
                 :checked="type === currentMongoDBConnectionSchema"
-                @change="handleMongodbConnectionStringSchemaChange"
-              />
-              <span class="label">
-                {{ type }}
-              </span>
-            </label>
+                @update:checked="
+                  handleMongodbConnectionStringSchemaChange(type, $event)
+                "
+              >
+                <span class="textlabel">{{ type }}</span>
+              </NRadio>
+            </div>
           </div>
 
           <ScanIntervalInput
@@ -233,13 +218,10 @@
               </button>
             </label>
             <template v-if="basicInfo.engine === Engine.SNOWFLAKE">
-              <input
-                id="external-link"
+              <NInput
                 required
-                name="external-link"
-                type="text"
-                class="textfield mt-1 w-full"
-                disabled="true"
+                class="mt-1 w-full"
+                :disabled="true"
                 :value="instanceLink"
               />
             </template>
@@ -247,14 +229,11 @@
               <div class="mt-1 textinfolabel">
                 {{ $t("instance.sentence.console.snowflake") }}
               </div>
-              <input
-                id="external-link"
-                v-model="basicInfo.externalLink"
+              <NInput
+                v-model:value="basicInfo.externalLink"
                 required
-                name="external-link"
-                type="text"
-                :disabled="!allowEdit"
                 class="textfield mt-1 w-full"
+                :disabled="!allowEdit"
                 :placeholder="SnowflakeExtraLinkPlaceHolder"
               />
             </template>
@@ -278,15 +257,14 @@
 
         <div class="mt-6 pt-0 border-none">
           <div class="flex flex-row space-x-2">
-            <button
-              type="button"
-              class="btn-normal whitespace-nowrap flex items-center gap-x-1"
+            <NButton
+              class="whitespace-nowrap flex items-center gap-x-1"
               :disabled="!allowCreate || state.isRequesting || !allowEdit"
               @click.prevent="testConnection(false /* !silent */)"
             >
               <BBSpin v-if="state.isTestingConnection" />
               <span>{{ $t("instance.test-connection") }}</span>
-            </button>
+            </NButton>
           </div>
         </div>
       </div>
@@ -359,7 +337,7 @@
 
 <script lang="ts" setup>
 import { cloneDeep, isEqual, omit } from "lodash-es";
-import { NButton } from "naive-ui";
+import { NButton, NInput, NSwitch } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import {
   computed,
@@ -372,9 +350,12 @@ import {
 } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import EnvironmentSelect from "@/components/EnvironmentSelect.vue";
 import { InstanceArchiveRestoreButton } from "@/components/Instance";
-import { DrawerContent, InstanceV1EngineIcon } from "@/components/v2";
+import {
+  DrawerContent,
+  EnvironmentSelect,
+  InstanceV1EngineIcon,
+} from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { instanceServiceClient } from "@/grpcweb";
 import {
@@ -413,6 +394,7 @@ import {
 } from "@/utils";
 import { extractGrpcErrorMessage, getErrorCode } from "@/utils/grpcweb";
 import DataSourceSection from "./DataSourceSection/DataSourceSection.vue";
+import { onlyAllowNumber } from "./DataSourceSection/common";
 import OracleSyncModeInput from "./OracleSyncModeInput.vue";
 import ScanIntervalInput from "./ScanIntervalInput.vue";
 import SpannerHostInput from "./SpannerHostInput.vue";
@@ -625,8 +607,9 @@ const allowUpdate = computed((): boolean => {
   return true;
 });
 
-const handleSelectEnvironmentUID = (uid: number | string) => {
-  const environment = useEnvironmentV1Store().getEnvironmentByUID(String(uid));
+const handleSelectEnvironmentUID = (uid: string | undefined) => {
+  if (!uid) return;
+  const environment = useEnvironmentV1Store().getEnvironmentByUID(uid);
   basicInfo.value.environment = environment.name;
 };
 
@@ -663,14 +646,14 @@ const changeScanInterval = (duration: Duration | undefined) => {
   basicInfo.value.options.syncInterval = duration;
 };
 
-const trimInputValue = (target: Event["target"]) => {
-  return ((target as HTMLInputElement)?.value ?? "").trim();
-};
-
-const handleMongodbConnectionStringSchemaChange = (event: Event) => {
+const handleMongodbConnectionStringSchemaChange = (
+  type: string,
+  on: boolean
+) => {
+  if (!on) return;
   const ds = editingDataSource.value;
   if (!ds) return;
-  switch ((event.target as HTMLInputElement).value) {
+  switch (type) {
     case MongoDBConnectionStringSchemaList[0]:
       ds.srv = false;
       break;
