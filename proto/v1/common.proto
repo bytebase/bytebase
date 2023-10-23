@@ -28,6 +28,7 @@ enum Engine {
   OCEANBASE = 14;
   DM = 15;
   RISINGWAVE = 16;
+  OCEANBASE_ORACLE = 17;
 }
 
 enum MaskingLevel {
