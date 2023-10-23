@@ -1,9 +1,9 @@
 <template>
-  <form class="max-w-[60rem] mx-auto space-y-4">
+  <form class="max-w-3xl w-full space-y-4 mx-auto">
     <p class="text-lg font-medium leading-7 text-main">
       {{ $t("common.general") }}
     </p>
-    <div class="flex justify-between">
+    <div class="flex justify-start items-start gap-12">
       <dl class="">
         <dt class="text-sm font-medium text-control-light">
           {{ $t("common.name") }} <span class="text-red-600">*</span>

@@ -1749,7 +1749,18 @@
       "schema-change-type": "Tipo de cambio de esquema",
       "select-schema-change-type-ddl": "Imperativo: especifique el cambio con cualquier declaración DDL.",
       "select-schema-change-type-sdl": "Declarativo: especifique el esquema deseado. Utilice únicamente CREAR TABLA/ÍNDICE.",
-      "schema-path-template-sdl-description": "El archivo de esquema describe el esquema completo de la base de datos."
+      "schema-path-template-sdl-description": "El archivo de esquema describe el esquema completo de la base de datos.",
+      "branch-protection-rules": {
+        "self": "Branch protection rules",
+        "add-rule": "Añadir regla",
+        "branch-name-pattern": {
+          "self": "Patrón de nombre de rama",
+          "description": "Soporta comodines como feature/* o *-stable"
+        },
+        "applies-to-n-branches": "Se aplica a {n} ramas",
+        "only-allow-specified-roles-to-create-branch": "Sólo permitir roles especificados para crear rama",
+        "no-protection-rule-configured": "No hay regla de protección configurada"
+      }
     },
     "members": {
       "description": "Los miembros del proyecto determinan el permiso para operar la base de datos y los problemas dentro del proyecto. El propietario del proyecto, el propietario del espacio de trabajo y el DBA del espacio de trabajo tienen permisos completos para el proyecto.",

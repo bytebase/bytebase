@@ -1750,7 +1750,18 @@
       "schema-change-type": "Schema change type",
       "select-schema-change-type-ddl": "Imperative - Specify the change with any DDL statements.",
       "select-schema-change-type-sdl": "Declarative - Specify the desired schema. Only use CREATE TABLE/INDEX.",
-      "schema-path-template-sdl-description": "The schema file describes the database's full schema."
+      "schema-path-template-sdl-description": "The schema file describes the database's full schema.",
+      "branch-protection-rules": {
+        "self": "Branch protection rules",
+        "add-rule": "Add Rule",
+        "branch-name-pattern": {
+          "self": "Branch name pattern",
+          "description": "Support wildcard such as feature/* or *-stable"
+        },
+        "applies-to-n-branches": "Applies to {n} branch | Applies to {n} branches",
+        "only-allow-specified-roles-to-create-branch": "Only allow specified roles to create branch",
+        "no-protection-rule-configured": "No protection rule configured."
+      }
     },
     "members": {
       "description": "Project members determine the permission to operate database and issues inside the proejct. Project Owner, Workspace Owner and Workspace DBA all have full project permissions.",
