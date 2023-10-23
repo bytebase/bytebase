@@ -9,13 +9,11 @@ import (
 	"io"
 	"log/slog"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -151,7 +149,7 @@ func Query(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, statement
 		return nil, errors.Errorf("failed to extract sensitive fields: %q", statement)
 	}
 
-	var fieldMaskingLevels []storepb.MaskingLevel
+	var fieldMasker []masker.Masker
 	var fieldMaskInfo []bool
 	var fieldSensitiveInfo []bool
 	for i := range columnNames {
@@ -159,10 +157,11 @@ func Query(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, statement
 		if len(fieldList) > i && queryContext.EnableSensitive {
 			maskingLevel = fieldList[i].MaskingAttributes.MaskingLevel
 		}
-		fieldMaskingLevels = append(fieldMaskingLevels, maskingLevel)
 		sensitive := maskingLevel == storepb.MaskingLevel_FULL || maskingLevel == storepb.MaskingLevel_PARTIAL
-		fieldMaskInfo = append(fieldMaskInfo, sensitive && queryContext.EnableSensitive)
 		fieldSensitiveInfo = append(fieldSensitiveInfo, sensitive)
+		masker := buildMaskerByLevel(maskingLevel)
+		fieldMasker = append(fieldMasker, masker)
+		fieldMaskInfo = append(fieldMaskInfo, sensitive && queryContext.EnableSensitive)
 	}
 
 	columnTypes, err := rows.ColumnTypes()
@@ -177,7 +176,7 @@ func Query(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, statement
 		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
 	}
 
-	data, err := readRows(rows, columnTypeNames, fieldMaskingLevels)
+	data, err := readRows(rows, columnTypeNames, fieldMasker)
 	if err != nil {
 		return nil, err
 	}
@@ -316,7 +315,7 @@ func buildMaskerByLevel(lvl storepb.MaskingLevel) masker.Masker {
 	return masker.NewNoneMasker()
 }
 
-func readRows(rows *sql.Rows, columnTypeNames []string, fieldMaskingLevels []storepb.MaskingLevel) ([]*v1pb.QueryRow, error) {
+func readRows(rows *sql.Rows, columnTypeNames []string, fieldMasker []masker.Masker) ([]*v1pb.QueryRow, error) {
 	var data []*v1pb.QueryRow
 	if len(columnTypeNames) == 0 {
 		// No rows.
@@ -352,74 +351,10 @@ func readRows(rows *sql.Rows, columnTypeNames []string, fieldMaskingLevels []sto
 
 		var rowData v1pb.QueryRow
 		for i := range columnTypeNames {
-			if len(fieldMaskingLevels) > i && fieldMaskingLevels[i] == storepb.MaskingLevel_FULL {
-				rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: "******"}})
-				continue
-			}
-			if v, ok := (scanArgs[i]).(*sql.NullBool); ok && v.Valid {
-				if len(fieldMaskingLevels) > i && fieldMaskingLevels[i] == storepb.MaskingLevel_PARTIAL {
-					s := fmt.Sprintf("%t", v.Bool)
-					result := getMiddlePartOfString(s)
-					rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: paddingAsterisk(result)}})
-				} else {
-					rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_BoolValue{BoolValue: v.Bool}})
-				}
-				continue
-			}
-			if v, ok := (scanArgs[i]).(*sql.NullString); ok && v.Valid {
-				if wantBytesValue[i] {
-					if len(fieldMaskingLevels) > i && fieldMaskingLevels[i] == storepb.MaskingLevel_PARTIAL {
-						result := getMiddlePartOfString(v.String)
-						rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: paddingAsterisk(result)}})
-					} else {
-						rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_BytesValue{BytesValue: []byte(v.String)}})
-					}
-				} else {
-					if len(fieldMaskingLevels) > i && fieldMaskingLevels[i] == storepb.MaskingLevel_PARTIAL {
-						result := getMiddlePartOfString(v.String)
-						rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: paddingAsterisk(result)}})
-					} else {
-						rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: v.String}})
-					}
-				}
-				continue
-			}
-			if v, ok := (scanArgs[i]).(*sql.NullInt64); ok && v.Valid {
-				if len(fieldMaskingLevels) > i && fieldMaskingLevels[i] == storepb.MaskingLevel_PARTIAL {
-					s := strconv.FormatInt(v.Int64, 10)
-					result := getMiddlePartOfString(s)
-					rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: paddingAsterisk(result)}})
-				} else {
-					rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{Int64Value: v.Int64}})
-				}
-				continue
-			}
-			if v, ok := (scanArgs[i]).(*sql.NullInt32); ok && v.Valid {
-				if len(fieldMaskingLevels) > i && fieldMaskingLevels[i] == storepb.MaskingLevel_PARTIAL {
-					s := strconv.FormatInt(int64(v.Int32), 10)
-					result := getMiddlePartOfString(s)
-					rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: paddingAsterisk(result)}})
-				} else {
-					rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_Int32Value{Int32Value: v.Int32}})
-				}
-				continue
-			}
-			if v, ok := (scanArgs[i]).(*sql.NullFloat64); ok && v.Valid {
-				if len(fieldMaskingLevels) > i && fieldMaskingLevels[i] == storepb.MaskingLevel_PARTIAL {
-					s := strconv.FormatFloat(v.Float64, 'f', -1, 64)
-					result := getMiddlePartOfString(s)
-					rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: paddingAsterisk(result)}})
-				} else {
-					rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_DoubleValue{DoubleValue: v.Float64}})
-				}
-				continue
-			}
-			// If none of them match, set nil to its value.
-			if len(fieldMaskingLevels) > i && fieldMaskingLevels[i] == storepb.MaskingLevel_PARTIAL {
-				rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: "**UL**"}})
-			} else {
-				rowData.Values = append(rowData.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_NullValue{NullValue: structpb.NullValue_NULL_VALUE}})
-			}
+			rowData.Values = append(rowData.Values, fieldMasker[i].Mask(&masker.MaskData{
+				Data:      scanArgs[i],
+				WantBytes: wantBytesValue[i],
+			}))
 		}
 
 		data = append(data, &rowData)
