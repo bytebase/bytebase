@@ -276,6 +276,13 @@ watch(
   () => treeData.value,
   () => {
     treeKeyRef.value = Math.random().toString();
+    const firstChildNode = head(treeData.value);
+    if (firstChildNode) {
+      nextTick(() => {
+        // Auto expand the first tree node.
+        openTabForTreeNode(firstChildNode);
+      });
+    }
   },
   {
     deep: true,
@@ -291,7 +298,12 @@ watch(
       return;
     }
 
-    if (currentTab.value.type === SchemaEditorTabType.TabForTable) {
+    if (currentTab.value.type === SchemaEditorTabType.TabForDatabase) {
+      if (currentTab.value.selectedSchemaId) {
+        const schemaTreeNodeKey = `s-${currentTab.value.selectedSchemaId}`;
+        selectedKeysRef.value = [schemaTreeNodeKey];
+      }
+    } else if (currentTab.value.type === SchemaEditorTabType.TabForTable) {
       const schemaTreeNodeKey = `s-${currentTab.value.schemaId}`;
       if (!expandedKeysRef.value.includes(schemaTreeNodeKey)) {
         expandedKeysRef.value.push(schemaTreeNodeKey);
@@ -468,7 +480,7 @@ const renderSuffix = ({ option }: { option: TreeOption }) => {
       }
 
       schema.tableList.push(newTable);
-      openTabForTable(treeNode);
+      openTabForTreeNode(treeNode);
     },
   });
   if (treeNode.type === "schema") {
@@ -544,7 +556,7 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
       // Check if clicked on the content part.
       // And ignore the fold/unfold arrow.
       if (isDescendantOf(e.target as Element, ".n-tree-node-content")) {
-        openTabForTable(treeNode);
+        openTabForTreeNode(treeNode);
       } else {
         nextTick(() => {
           selectedKeysRef.value = [];
@@ -557,7 +569,7 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
   };
 };
 
-const openTabForTable = (treeNode: TreeNode) => {
+const openTabForTreeNode = (treeNode: TreeNode) => {
   state.shouldRelocateTreeNode = false;
 
   if (treeNode.type === "table") {
@@ -580,6 +592,7 @@ const openTabForTable = (treeNode: TreeNode) => {
       id: generateUniqueTabId(),
       type: SchemaEditorTabType.TabForDatabase,
       parentName: branchSchema.value.branch.name,
+      selectedSchemaId: treeNode.schemaId,
       name: treeNode.label,
     });
   }
