@@ -19,9 +19,6 @@ func getStatementWithResultLimit(singleStatement string, limitCount int) (string
 
 	listener := &pgRewriter{
 		limitCount: limitCount,
-		hasOffset:  false,
-		hasFetch:   false,
-		hasTop:     false,
 	}
 
 	listener.rewriter = *antlr.NewTokenStreamRewriter(result.Tokens)
@@ -41,9 +38,6 @@ type pgRewriter struct {
 	rewriter   antlr.TokenStreamRewriter
 	err        error
 	limitCount int
-	hasOffset  bool
-	hasFetch   bool
-	hasTop     bool
 }
 
 // EnterSelectstmt is called when production selectstmt is entered.
