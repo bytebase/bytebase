@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -12,17 +13,29 @@ import (
 
 	mysql "github.com/bytebase/mysql-parser"
 
+	"github.com/bytebase/bytebase/backend/common/log"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func (driver *Driver) getStatementWithResultLimit(stmt string, limit int) (string, error) {
+func (driver *Driver) getStatementWithResultLimit(stmt string, limit int) string {
 	switch driver.dbType {
 	case storepb.Engine_TIDB:
-		return getStatementWithResultLimitForTiDB(stmt, limit)
+		stmt, err := getStatementWithResultLimitForTiDB(stmt, limit)
+		if err != nil {
+			slog.Error("fail to add limit clause", "statement", stmt, log.BBError(err))
+			stmt = fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, limit)
+		}
+		return stmt
 	default:
-		return getStatementWithResultLimitForMySQL(stmt, limit)
+		stmt, err := getStatementWithResultLimitForMySQL(stmt, limit)
+		if err != nil {
+			slog.Error("fail to add limit clause", "statement", stmt, log.BBError(err))
+			// MySQL 5.7 doesn't support WITH clause.
+			stmt = fmt.Sprintf("SELECT * FROM (%s) result LIMIT %d;", stmt, limit)
+		}
+		return stmt
 	}
 }
 
