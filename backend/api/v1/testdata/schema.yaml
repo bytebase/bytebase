@@ -7,7 +7,7 @@
         b varchar(20) default 'NULL' comment '',
         primary key (a, b),
         constraint fk1 foreign key (a) references t2 (b)
-      );
+      ) COMMENT 'this is comment with '' escaped';
     create table t2(b int NOT NULL default NULL, primary key (b));
   metadata: |-
     {
@@ -51,6 +51,8 @@
                   "visible": true
                 }
               ],
+              "comment": "'this is comment with '' escaped'",
+              "userComment": "'this is comment with '' escaped'",
               "foreignKeys": [
                 {
                   "name": "fk1",
