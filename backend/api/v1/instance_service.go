@@ -518,6 +518,27 @@ func (s *InstanceService) SyncInstance(ctx context.Context, request *v1pb.SyncIn
 	return &v1pb.SyncInstanceResponse{}, nil
 }
 
+// SyncInstance syncs the instance.
+func (s *InstanceService) BatchSyncInstance(ctx context.Context, request *v1pb.BatchSyncInstanceRequest) (*v1pb.BatchSyncInstanceResponse, error) {
+	for _, r := range request.Requests {
+		instance, err := s.getInstanceMessage(ctx, r.Name)
+		if err != nil {
+			return nil, err
+		}
+		if instance.Deleted {
+			return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", r.Name)
+		}
+
+		if err := s.schemaSyncer.SyncInstance(ctx, instance); err != nil {
+			return nil, err
+		}
+		// Sync all databases in the instance asynchronously.
+		s.stateCfg.InstanceDatabaseSyncChan <- instance
+	}
+
+	return &v1pb.BatchSyncInstanceResponse{}, nil
+}
+
 // AddDataSource adds a data source to an instance.
 func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDataSourceRequest) (*v1pb.Instance, error) {
 	if request.DataSource == nil {
