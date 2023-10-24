@@ -3,7 +3,6 @@
     <NavBar />
 
     <ChangeTable
-      v-model:selected="selectedChanges"
       :changes="state.changes"
       :reorder-mode="reorderMode"
       @remove-change="handleRemoveChange($event)"
@@ -64,7 +63,7 @@ import { provideChangelistDetailContext } from "./context";
 
 const { t } = useI18n();
 const route = useRoute();
-const { changelist, reorderMode, selectedChanges, isUpdating, events } =
+const { changelist, reorderMode, isUpdating, events } =
   provideChangelistDetailContext();
 
 const state = reactive({
