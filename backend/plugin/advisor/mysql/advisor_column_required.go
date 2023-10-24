@@ -19,7 +19,6 @@ var (
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLColumnRequirement, &ColumnRequirementAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnRequirement, &ColumnRequirementAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLColumnRequirement, &ColumnRequirementAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLColumnRequirement, &ColumnRequirementAdvisor{})
 }

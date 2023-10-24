@@ -18,7 +18,6 @@ var (
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
 }

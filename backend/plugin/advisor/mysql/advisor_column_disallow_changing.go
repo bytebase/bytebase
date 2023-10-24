@@ -19,7 +19,6 @@ var (
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLColumnDisallowChanging, &ColumnDisallowChangingAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnDisallowChanging, &ColumnDisallowChangingAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLColumnDisallowChanging, &ColumnDisallowChangingAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLColumnDisallowChanging, &ColumnDisallowChangingAdvisor{})
 }
