@@ -23,11 +23,11 @@
       >
         <div class="flex flex-col gap-y-2">
           <div class="textlabel flex flex-row gap-x-1">
-            <span>{{ $t("policy.rollout.manual-by-fixed-roles") }}</span>
+            <span>{{ $t("policy.rollout.manual-by-dedicated-roles") }}</span>
             <FeatureBadge feature="bb.feature.approval-policy" />
           </div>
           <div class="textinfolabel">
-            {{ $t("policy.rollout.manual-by-fixed-roles-info") }}
+            {{ $t("policy.rollout.manual-by-dedicated-roles-info") }}
           </div>
         </div>
       </NCheckbox>
