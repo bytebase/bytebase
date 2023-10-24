@@ -27,12 +27,12 @@ import { useChangelistDetailContext } from "../context";
 import { zipFileForChange } from "./export";
 
 const { t } = useI18n();
-const { changelist, selectedChanges } = useChangelistDetailContext();
+const { changelist } = useChangelistDetailContext();
 const isExporting = ref(false);
 
 const errors = computed(() => {
   const errors: string[] = [];
-  if (selectedChanges.value.length === 0) {
+  if (changelist.value.changes.length === 0) {
     errors.push(t("changelist.error.select-at-least-one-change-to-export"));
   }
   return errors;
@@ -45,7 +45,7 @@ const handleExport = async () => {
 
   isExporting.value = true;
   const zip = new JSZip();
-  const changes = selectedChanges.value;
+  const { changes } = changelist.value;
   for (let i = 0; i < changes.length; i++) {
     await zipFileForChange(zip, changes[i], i);
   }
