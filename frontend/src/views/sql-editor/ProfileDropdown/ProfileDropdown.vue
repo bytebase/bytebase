@@ -31,15 +31,6 @@
         </p>
       </router-link>
       <div class="border-t border-gray-100"></div>
-      <div
-        v-if="!isRelease"
-        class="py-1 menu-item"
-        role="menuitem"
-        @click.prevent="ping"
-      >
-        Ping
-      </div>
-      <div class="border-t border-gray-100"></div>
       <div class="py-1">
         <router-link
           to="/setting"
@@ -131,7 +122,6 @@ import { BBContextMenu, BBSwitch } from "@/bbkit";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import { useLanguage } from "@/composables/useLanguage";
 import {
-  pushNotification,
   useActuatorV1Store,
   useAuthStore,
   useCurrentUserV1,
@@ -196,16 +186,6 @@ const { isDebug } = storeToRefs(actuatorStore);
 const switchDebug = () => {
   actuatorStore.patchDebug({
     debug: !isDebug.value,
-  });
-};
-
-const ping = () => {
-  actuatorStore.fetchServerInfo().then((info) => {
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: JSON.stringify(info, null, 4),
-    });
   });
 };
 
