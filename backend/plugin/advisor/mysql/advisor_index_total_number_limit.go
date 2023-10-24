@@ -21,7 +21,6 @@ var (
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLIndexTotalNumberLimit, &IndexTotalNumberLimitAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLIndexTotalNumberLimit, &IndexTotalNumberLimitAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLIndexTotalNumberLimit, &IndexTotalNumberLimitAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLIndexTotalNumberLimit, &IndexTotalNumberLimitAdvisor{})
 }

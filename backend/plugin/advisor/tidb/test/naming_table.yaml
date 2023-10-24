@@ -19,7 +19,7 @@
     - status: WARN
       code: 301
       title: naming.table
-      content: "`cjnubexocfhqoogdmihudyahmmghviqkzvpixnwvxtxumvuannpwdcbtsgwrvzpde` mismatches table naming convention, its length should be within 64 characters"
+      content: '`cjnubexocfhqoogdmihudyahmmghviqkzvpixnwvxtxumvuannpwdcbtsgwrvzpde` mismatches table naming convention, its length should be within 64 characters'
       line: 2
       details: ""
 - statement: ALTER TABLE tech_book RENAME TO TechBook
