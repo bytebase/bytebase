@@ -1,5 +1,5 @@
 // Package mysql implements the SQL advisor rules for MySQL.
-package tidb
+package mysqlwip
 
 import (
 	"sort"
