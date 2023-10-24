@@ -16,10 +16,9 @@
       </NRadio>
     </div>
     <div class="flex flex-col gap-y-2">
-      <NCheckbox
-        :checked="manualRolloutByFixedRolesCheckStatus.checked"
-        :indeterminate="manualRolloutByFixedRolesCheckStatus.indeterminate"
-        @update:checked="toggleAllFixedRoles"
+      <NRadio
+        :checked="isManualRolloutByDedicatedRolesChecked"
+        @update:checked="toggleAllDedicatedRoles"
       >
         <div class="flex flex-col gap-y-2">
           <div class="textlabel flex flex-row gap-x-1">
@@ -30,12 +29,12 @@
             {{ $t("policy.rollout.manual-by-dedicated-roles-info") }}
           </div>
         </div>
-      </NCheckbox>
+      </NRadio>
       <div class="flex flex-col gap-y-2 pl-8">
         <NCheckbox
           :checked="isWorkspaceOwnerChecked"
           @update:checked="
-            toggleRoles($event, 'workspace', [VirtualRoleType.OWNER])
+            toggleDedicatedRoles($event, 'workspace', [VirtualRoleType.OWNER])
           "
         >
           <div class="textlabel">
@@ -45,7 +44,7 @@
         <NCheckbox
           :checked="isDBAChecked"
           @update:checked="
-            toggleRoles($event, 'workspace', [VirtualRoleType.DBA])
+            toggleDedicatedRoles($event, 'workspace', [VirtualRoleType.DBA])
           "
         >
           <div class="textlabel">
@@ -55,7 +54,7 @@
         <NCheckbox
           :checked="isProjectOwnerChecked"
           @update:checked="
-            toggleRoles($event, 'project', [PresetRoleType.OWNER])
+            toggleDedicatedRoles($event, 'project', [PresetRoleType.OWNER])
           "
         >
           <div class="textlabel">
@@ -65,7 +64,7 @@
         <NCheckbox
           :checked="isProjectReleaserChecked"
           @update:checked="
-            toggleRoles($event, 'project', [PresetRoleType.RELEASER])
+            toggleDedicatedRoles($event, 'project', [PresetRoleType.RELEASER])
           "
         >
           <div class="textlabel">
@@ -75,7 +74,7 @@
         <NCheckbox
           :checked="isIssueCreatorChecked"
           @update:checked="
-            toggleRoles($event, 'issue', [VirtualRoleType.CREATOR])
+            toggleDedicatedRoles($event, 'issue', [VirtualRoleType.CREATOR])
           "
         >
           <div class="textlabel">
@@ -85,23 +84,21 @@
       </div>
     </div>
     <div class="flex flex-col gap-y-2">
-      <NCheckbox
+      <NRadio
         :checked="isIssueLastApproverChecked"
-        @update:checked="
-          toggleRoles($event, 'issue', [VirtualRoleType.LAST_APPROVER])
-        "
+        @update:checked="toggleLastApprover"
       >
         <div class="textlabel flex flex-row gap-x-1">
           <span>{{ $t("policy.rollout.manual-by-last-approver") }}</span>
           <FeatureBadge feature="bb.feature.custom-approval" />
         </div>
-      </NCheckbox>
+      </NRadio>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { cloneDeep } from "lodash-es";
+import { cloneDeep, pull } from "lodash-es";
 import { NCheckbox, NRadio } from "naive-ui";
 import { ref, watch } from "vue";
 import { computed } from "vue";
@@ -136,14 +133,15 @@ const isIssueCreatorChecked = computed(() => {
 const isIssueLastApproverChecked = computed(() => {
   return rolloutPolicy.value.issueRoles.includes(VirtualRoleType.LAST_APPROVER);
 });
-
-const manualRolloutByFixedRolesCheckStatus = computed(() => {
+const isManualRolloutByDedicatedRolesChecked = computed(() => {
   if (rolloutPolicy.value.automatic) {
-    return {
-      checked: false,
-      indeterminate: false,
-    };
+    return false;
   }
+
+  if (isIssueLastApproverChecked.value) {
+    return false;
+  }
+
   const conditions = [
     isDBAChecked.value,
     isWorkspaceOwnerChecked.value,
@@ -151,13 +149,7 @@ const manualRolloutByFixedRolesCheckStatus = computed(() => {
     isProjectReleaserChecked.value,
     isIssueCreatorChecked.value,
   ];
-  const checkedCount = conditions.filter((checked) => checked).length;
-  const checked = checkedCount === conditions.length;
-  const indeterminate = checkedCount > 0 && checkedCount < conditions.length;
-  return {
-    checked,
-    indeterminate,
-  };
+  return conditions.some((checked) => checked);
 });
 
 const update = (rp: RolloutPolicy) => {
@@ -182,32 +174,29 @@ const selectAutomaticRollout = (checked: boolean) => {
     })
   );
 };
-const toggleAllFixedRoles = (checked: boolean) => {
-  const rp = rolloutPolicy.value;
-  const set = new Set(rp.issueRoles);
-  if (checked) {
-    set.add(VirtualRoleType.CREATOR);
-    update(
-      RolloutPolicy.fromPartial({
-        automatic: false,
-        workspaceRoles: [VirtualRoleType.OWNER, VirtualRoleType.DBA],
-        projectRoles: [PresetRoleType.OWNER, PresetRoleType.RELEASER],
-        issueRoles: Array.from(set),
-      })
-    );
-  } else {
-    set.delete(VirtualRoleType.CREATOR);
-    update(
-      RolloutPolicy.fromPartial({
-        automatic: false,
-        workspaceRoles: [],
-        projectRoles: [],
-        issueRoles: Array.from(set),
-      })
-    );
-  }
+const toggleAllDedicatedRoles = (checked: boolean) => {
+  if (!checked) return;
+  update(
+    RolloutPolicy.fromPartial({
+      automatic: false,
+      workspaceRoles: [VirtualRoleType.OWNER, VirtualRoleType.DBA],
+      projectRoles: [PresetRoleType.OWNER, PresetRoleType.RELEASER],
+      issueRoles: [VirtualRoleType.CREATOR],
+    })
+  );
 };
-const toggleRoles = (
+const toggleLastApprover = (checked: boolean) => {
+  if (!checked) return;
+  update(
+    RolloutPolicy.fromPartial({
+      automatic: false,
+      workspaceRoles: [],
+      projectRoles: [],
+      issueRoles: [VirtualRoleType.LAST_APPROVER],
+    })
+  );
+};
+const toggleDedicatedRoles = (
   checked: boolean,
   type: "workspace" | "project" | "issue",
   roles: string[]
@@ -220,13 +209,13 @@ const toggleRoles = (
   } else {
     roles.forEach((role) => set.delete(role));
   }
-  update(
-    RolloutPolicy.fromPartial({
-      ...rp,
-      automatic: false,
-      [key]: Array.from(set),
-    })
-  );
+  const patch = RolloutPolicy.fromPartial({
+    ...rp,
+    automatic: false,
+    [key]: Array.from(set),
+  });
+  pull(patch.issueRoles, VirtualRoleType.LAST_APPROVER);
+  update(patch);
 };
 
 watch(
