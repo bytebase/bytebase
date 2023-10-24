@@ -215,7 +215,7 @@ const { runSQLCheck } = provideSQLCheckContext();
 
 const allowPreviewIssue = computed(() => {
   if (state.selectedTab === "schema-editor") {
-    // Always return true for schema editor to prevent huge calculation for schema editor.
+    // Always return true for schema editor to prevent huge calculation from schema editor.
     return true;
   } else {
     return state.editStatement !== "";
