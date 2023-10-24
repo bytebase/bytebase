@@ -107,6 +107,8 @@ export const mergeSchemaEditToMetadata = (
             }
           }
           if (tableEdit.primaryKey.columnIdList.length > 0) {
+            const hasPrimaryKey =
+              table.indexes.find((index) => index.primary) !== undefined;
             const primaryIndex =
               table.indexes.find((index) => index.primary) ||
               IndexMetadata.fromPartial({
@@ -124,6 +126,9 @@ export const mergeSchemaEditToMetadata = (
               }
             }
             primaryIndex.expressions = uniq(primaryIndex.expressions);
+            if (!hasPrimaryKey) {
+              table.indexes.push(primaryIndex);
+            }
           } else {
             table.indexes = table.indexes.filter((index) => !index.primary);
           }
@@ -437,9 +442,7 @@ export const rebuildEditableSchemas = (
       }
 
       // Rebuild primary key from primary index.
-      const primaryIndex = table.indexes.find(
-        (index) => index.primary === true
-      );
+      const primaryIndex = table.indexes.find((index) => index.primary);
       if (primaryIndex) {
         editableTable.primaryKey.name = primaryIndex.name;
         for (const columnName of primaryIndex.expressions) {
