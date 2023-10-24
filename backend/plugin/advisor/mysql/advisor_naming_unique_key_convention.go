@@ -21,6 +21,7 @@ func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLNamingUKConvention, &NamingUKConventionAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLNamingUKConvention, &NamingUKConventionAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLNamingUKConvention, &NamingUKConventionAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLNamingUKConvention, &NamingUKConventionAdvisor{})
 }
 
 // NamingUKConventionAdvisor is the advisor checking for unique key naming convention.

@@ -22,6 +22,7 @@ func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLCharsetAllowlist, &CharsetAllowlistAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLCharsetAllowlist, &CharsetAllowlistAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLCharsetAllowlist, &CharsetAllowlistAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLCharsetAllowlist, &CharsetAllowlistAdvisor{})
 }
 
 // CharsetAllowlistAdvisor is the advisor checking for charset allowlist.
