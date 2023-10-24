@@ -2082,7 +2082,11 @@ func (s *ProjectService) GetSchemaGroup(ctx context.Context, request *v1pb.GetSc
 
 // GetProjectProtectionRules gets a project protection rules.
 func (s *ProjectService) GetProjectProtectionRules(ctx context.Context, request *v1pb.GetProjectProtectionRulesRequest) (*v1pb.ProtectionRules, error) {
-	projectResourceID, err := common.TrimSuffix(request.Name, common.ProtectionRulesSuffix)
+	projectName, err := common.TrimSuffix(request.Name, common.ProtectionRulesSuffix)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	projectResourceID, err := common.GetProjectID(projectName)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -2108,7 +2112,11 @@ func (s *ProjectService) UpdateProjectProtectionRules(ctx context.Context, reque
 	if request.ProtectionRules == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "protection rules must be set")
 	}
-	projectResourceID, err := common.TrimSuffix(request.ProtectionRules.Name, common.ProtectionRulesSuffix)
+	projectName, err := common.TrimSuffix(request.ProtectionRules.Name, common.ProtectionRulesSuffix)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	projectResourceID, err := common.GetProjectID(projectName)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
