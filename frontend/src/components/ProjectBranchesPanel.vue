@@ -16,7 +16,8 @@
       </div>
     </div>
 
-    <BranchTable
+    <BranchDataTable
+      class="border"
       :branches="filteredBranches"
       :hide-project-column="true"
       :ready="ready"
@@ -30,7 +31,7 @@ import { orderBy } from "lodash-es";
 import { NButton, NInput } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
-import BranchTable from "@/components/Branch/BranchTable.vue";
+import BranchDataTable from "@/components/Branch/BranchDataTable.vue";
 import { useProjectV1Store } from "@/store";
 import { useSchemaDesignList } from "@/store/modules/schemaDesign";
 import {
