@@ -2547,7 +2547,7 @@ Default (empty): Disable automatic backup. |
 | version | [string](#string) |  |  |
 | description | [string](#string) |  |  |
 | statement | [string](#string) |  | The statement is used for preview purpose. |
-| sheet | [string](#string) |  | The name of the sheet resource. Format: projects/{project}/sheets/{sheet} |
+| statement_sheet | [string](#string) |  | The name of the sheet resource. Format: projects/{project}/sheets/{sheet} |
 | schema | [string](#string) |  |  |
 | prev_schema | [string](#string) |  |  |
 | execution_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |

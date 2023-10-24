@@ -1120,7 +1120,7 @@ export interface ChangeHistory {
    * The name of the sheet resource.
    * Format: projects/{project}/sheets/{sheet}
    */
-  sheet: string;
+  statementSheet: string;
   schema: string;
   prevSchema: string;
   executionDuration:
@@ -6613,7 +6613,7 @@ function createBaseChangeHistory(): ChangeHistory {
     version: "",
     description: "",
     statement: "",
-    sheet: "",
+    statementSheet: "",
     schema: "",
     prevSchema: "",
     executionDuration: undefined,
@@ -6664,8 +6664,8 @@ export const ChangeHistory = {
     if (message.statement !== "") {
       writer.uint32(106).string(message.statement);
     }
-    if (message.sheet !== "") {
-      writer.uint32(162).string(message.sheet);
+    if (message.statementSheet !== "") {
+      writer.uint32(162).string(message.statementSheet);
     }
     if (message.schema !== "") {
       writer.uint32(114).string(message.schema);
@@ -6791,7 +6791,7 @@ export const ChangeHistory = {
             break;
           }
 
-          message.sheet = reader.string();
+          message.statementSheet = reader.string();
           continue;
         case 14:
           if (tag !== 114) {
@@ -6859,7 +6859,7 @@ export const ChangeHistory = {
       version: isSet(object.version) ? String(object.version) : "",
       description: isSet(object.description) ? String(object.description) : "",
       statement: isSet(object.statement) ? String(object.statement) : "",
-      sheet: isSet(object.sheet) ? String(object.sheet) : "",
+      statementSheet: isSet(object.statementSheet) ? String(object.statementSheet) : "",
       schema: isSet(object.schema) ? String(object.schema) : "",
       prevSchema: isSet(object.prevSchema) ? String(object.prevSchema) : "",
       executionDuration: isSet(object.executionDuration) ? Duration.fromJSON(object.executionDuration) : undefined,
@@ -6884,7 +6884,7 @@ export const ChangeHistory = {
     message.version !== undefined && (obj.version = message.version);
     message.description !== undefined && (obj.description = message.description);
     message.statement !== undefined && (obj.statement = message.statement);
-    message.sheet !== undefined && (obj.sheet = message.sheet);
+    message.statementSheet !== undefined && (obj.statementSheet = message.statementSheet);
     message.schema !== undefined && (obj.schema = message.schema);
     message.prevSchema !== undefined && (obj.prevSchema = message.prevSchema);
     message.executionDuration !== undefined &&
@@ -6916,7 +6916,7 @@ export const ChangeHistory = {
     message.version = object.version ?? "";
     message.description = object.description ?? "";
     message.statement = object.statement ?? "";
-    message.sheet = object.sheet ?? "";
+    message.statementSheet = object.statementSheet ?? "";
     message.schema = object.schema ?? "";
     message.prevSchema = object.prevSchema ?? "";
     message.executionDuration = (object.executionDuration !== undefined && object.executionDuration !== null)
