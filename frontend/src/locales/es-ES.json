@@ -254,6 +254,7 @@
     },
     "expiration": "Expiración",
     "configure": "Configurar",
+    "groups": "Grupos",
     "database-groups": "Grupo de bases de datos",
     "members": "Miembros",
     "warehouse": "Almacén",

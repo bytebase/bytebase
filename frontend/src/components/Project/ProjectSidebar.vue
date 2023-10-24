@@ -96,6 +96,13 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
           hash: "databases",
         },
         {
+          title: t("common.groups"),
+          hash: "database-groups",
+          hide:
+            isTenantProject.value ||
+            !currentUserIamPolicy.isMemberOfProject(project.value.name),
+        },
+        {
           title: t("common.change-history"),
           hash: "change-history",
           hide:
@@ -108,13 +115,6 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
           hide: !currentUserIamPolicy.isMemberOfProject(project.value.name),
         },
         // TODO: Anomaly
-        {
-          title: t("common.database-groups"),
-          hash: "database-groups",
-          hide:
-            isTenantProject.value ||
-            !currentUserIamPolicy.isMemberOfProject(project.value.name),
-        },
       ],
     },
     {
@@ -138,23 +138,6 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
     // TODO: Changelists
     // TODO: Sync schema
     {
-      title: t("common.manage"),
-      icon: h(Users),
-      hide:
-        isDefaultProject.value ||
-        !currentUserIamPolicy.isMemberOfProject(project.value.name),
-      children: [
-        {
-          title: t("common.members"),
-          hash: "members",
-        },
-        {
-          title: t("common.activities"),
-          hash: "activities",
-        },
-      ],
-    },
-    {
       title: t("settings.sidebar.integration"),
       icon: h(Link),
       hide:
@@ -170,6 +153,23 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
         {
           title: t("common.webhooks"),
           hash: "webhook",
+        },
+      ],
+    },
+    {
+      title: t("common.manage"),
+      icon: h(Users),
+      hide:
+        isDefaultProject.value ||
+        !currentUserIamPolicy.isMemberOfProject(project.value.name),
+      children: [
+        {
+          title: t("common.members"),
+          hash: "members",
+        },
+        {
+          title: t("common.activities"),
+          hash: "activities",
         },
       ],
     },

@@ -252,6 +252,7 @@
     },
     "expiration": "过期时间",
     "configure": "配置",
+    "groups": "分组",
     "database-groups": "数据库分组",
     "members": "成员",
     "warehouse": "仓库",
