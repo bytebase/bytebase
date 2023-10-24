@@ -5,6 +5,12 @@
 proto                        @d-bytebase @ecmadao
 backend/migrator/migration   @d-bytebase @ecmadao
 
+# Database
+backend/plugin/advisor       @rebelice @h3n4l @bytebase/bytebase-dev
+backend/plugin/db            @rebelice @h3n4l @bytebase/bytebase-dev
+backend/plugin/parser        @rebelice @h3n4l @bytebase/bytebase-dev
+backend/plugin/schema-engine @rebelice @h3n4l @bytebase/bytebase-dev
+
 # Backend
 backend                      @d-bytebase @ecmadao @bytebase/bytebase-dev
 go.mod                       @d-bytebase @ecmadao @bytebase/bytebase-dev
