@@ -2,15 +2,6 @@
   <nav class="flex-1 flex flex-col overflow-y-hidden">
     <BytebaseLogo class="w-full px-4 shrink-0" />
     <div class="space-y-1 flex-1 overflow-y-auto px-2 pb-4">
-      <button
-        class="group shrink-0 flex items-center px-2 py-2 text-base leading-5 font-normal rounded-md text-gray-700 hover:opacity-80 focus:outline-none"
-        @click.prevent="goBack"
-      >
-        <heroicons-outline:chevron-left
-          class="mr-1 w-5 h-auto text-gray-500 group-hover:text-gray-500 group-focus:text-gray-600"
-        />
-        {{ $t("common.back") }}
-      </button>
       <div v-for="(item, index) in projectSidebarItemList" :key="index">
         <div
           class="group flex items-center px-2 py-2 text-sm leading-5 font-medium rounded-md text-gray-700"
@@ -47,11 +38,7 @@ import DatabaseIcon from "~icons/heroicons-outline/database";
 import LinkIcon from "~icons/heroicons-outline/link";
 import UserGroupIcon from "~icons/heroicons-outline/user-group";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
-import {
-  useRouterStore,
-  useCurrentUserIamPolicy,
-  useProjectV1Store,
-} from "@/store";
+import { useCurrentUserIamPolicy, useProjectV1Store } from "@/store";
 import { DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import { idFromSlug } from "@/utils";
@@ -73,7 +60,6 @@ interface LocalState {
 }
 
 const { t } = useI18n();
-const routerStore = useRouterStore();
 const route = useRoute();
 const router = useRouter();
 const projectV1Store = useProjectV1Store();
@@ -95,10 +81,6 @@ const isDefaultProject = computed((): boolean => {
 const isTenantProject = computed((): boolean => {
   return project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED;
 });
-
-const goBack = () => {
-  router.push(routerStore.backPath());
-};
 
 const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
   const fullList: ProjectSidebarItem[] = [
