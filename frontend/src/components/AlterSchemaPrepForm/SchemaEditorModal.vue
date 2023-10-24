@@ -163,6 +163,7 @@ import { allowGhostMigrationV1 } from "@/utils";
 import MonacoEditor from "../MonacoEditor";
 import { provideSQLCheckContext } from "../SQLCheck";
 import {
+  initialSchemaConfigToMetadata,
   mergeSchemaEditToMetadata,
   validateDatabaseMetadata,
 } from "../SchemaEditorV1/utils";
@@ -324,7 +325,13 @@ const getChangedDatabaseMetadatas = () => {
       databaseSchema.schemaList,
       cloneDeep(metadata)
     );
-    if (isEqual(metadata, mergedMetadata)) {
+    // Initial an empty schema config to origin metadata to prevent unexpected diff.
+    initialSchemaConfigToMetadata(metadata);
+    if (
+      // If there is no schema change, we don't need to create an issue.
+      databaseSchema.schemaList.length === 0 ||
+      isEqual(metadata, mergedMetadata)
+    ) {
       continue;
     }
 
