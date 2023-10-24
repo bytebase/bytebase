@@ -40,12 +40,12 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 	return driver, nil
 }
 
-func (*Driver) Close(context.Context) error {
-	return errors.New("not implemented")
+func (driver *Driver) Close(context.Context) error {
+	return driver.db.Close()
 }
 
-func (*Driver) Ping(context.Context) error {
-	return errors.New("not implemented")
+func (driver *Driver) Ping(ctx context.Context) error {
+	return driver.db.PingContext(ctx)
 }
 
 func (*Driver) GetType() storepb.Engine {
