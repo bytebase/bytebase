@@ -30,7 +30,6 @@ import HideInStandaloneMode from "@/components/misc/HideInStandaloneMode.vue";
 import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import { DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import { TenantMode } from "@/types/proto/v1/project_service";
 import {
   idFromSlug,
   hasWorkspacePermissionV1,
@@ -57,10 +56,6 @@ const project = computed(() => {
 
 const isDefaultProject = computed((): boolean => {
   return project.value.name === DEFAULT_PROJECT_V1_NAME;
-});
-
-const isTenantProject = computed((): boolean => {
-  return project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED;
 });
 
 const allowEdit = computed(() => {

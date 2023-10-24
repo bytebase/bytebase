@@ -95,6 +95,7 @@ export default defineComponent({
   name: "Breadcrumb",
   components: {
     HelpTriggerIcon,
+    TenantIcon,
   },
   setup() {
     const routerStore = useRouterStore();
