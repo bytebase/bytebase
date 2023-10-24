@@ -1,20 +1,11 @@
 <template>
   <ArchiveBanner v-if="project.state === State.DELETED" class="py-2" />
   <HideInStandaloneMode>
-    <h1 class="px-6 py-2 text-xl font-bold leading-6 text-main truncate">
-      <template v-if="isDefaultProject">
+    <template v-if="isDefaultProject">
+      <h1 class="px-6 py-2 text-xl font-bold leading-6 text-main truncate">
         {{ $t("database.unassigned-databases") }}
-      </template>
-      <template v-else>
-        {{ project.title }}
-      </template>
-      <span
-        v-if="isTenantProject"
-        class="text-sm font-normal px-2 ml-2 rounded whitespace-nowrap inline-flex items-center bg-gray-200"
-      >
-        {{ $t("project.mode.batch") }}
-      </span>
-    </h1>
+      </h1>
+    </template>
     <BBAttention
       v-if="isDefaultProject"
       class="mx-6 mb-4"
@@ -39,7 +30,6 @@ import HideInStandaloneMode from "@/components/misc/HideInStandaloneMode.vue";
 import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import { DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import { TenantMode } from "@/types/proto/v1/project_service";
 import {
   idFromSlug,
   hasWorkspacePermissionV1,
@@ -66,10 +56,6 @@ const project = computed(() => {
 
 const isDefaultProject = computed((): boolean => {
   return project.value.name === DEFAULT_PROJECT_V1_NAME;
-});
-
-const isTenantProject = computed((): boolean => {
-  return project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED;
 });
 
 const allowEdit = computed(() => {
