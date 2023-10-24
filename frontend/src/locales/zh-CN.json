@@ -1746,7 +1746,18 @@
       "schema-change-type": "Schema 变更类型",
       "select-schema-change-type-ddl": "命令式 - 使用任意的 DDL 语句，描述变更命令。",
       "select-schema-change-type-sdl": "声明式 - 仅使用 CREATE TABLE/INDEX，直接描述最终期望的 Schema。",
-      "schema-path-template-sdl-description": "Schema 文件描述了完整的数据库结构。"
+      "schema-path-template-sdl-description": "Schema 文件描述了完整的数据库结构。",
+      "branch-protection-rules": {
+        "self": "分支保护规则",
+        "add-rule": "添加分支",
+        "branch-name-pattern": {
+          "self": "分支名称模式",
+          "description": "支持通配符，如 feature/* 或 *-stable"
+        },
+        "applies-to-n-branches": "应用到了 {n} 个分支",
+        "only-allow-specified-roles-to-create-branch": "只允许指定角色创建分支",
+        "no-protection-rule-configured": "没有配置分支保护规则。"
+      }
     },
     "members": {
       "description": "项目成员角色决定了操作项目中的数据库和工单的权限。项目的所有者，工作空间的所有者和 DBA 都具有项目所有的权限。",

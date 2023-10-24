@@ -13,3 +13,7 @@ export const validateBranchName = (branchName: string): boolean => {
   const regex = /^[a-zA-Z][a-zA-Z0-9-_/]+$/;
   return regex.test(branchName);
 };
+
+export const wildcardToRegex = (wildcard: string): RegExp => {
+  return new RegExp(`^${wildcard.split("*").join(".*")}$`);
+};
