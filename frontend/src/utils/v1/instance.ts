@@ -85,6 +85,7 @@ export const supportedEngineV1List = () => {
     Engine.SPANNER,
     Engine.ORACLE,
     Engine.OCEANBASE,
+    Engine.OCEANBASE_ORACLE,
     Engine.MARIADB,
     Engine.MSSQL,
     Engine.REDSHIFT,
@@ -248,6 +249,8 @@ export const engineNameV1 = (type: Engine): string => {
       return "MariaDB";
     case Engine.OCEANBASE:
       return "OceanBase";
+    case Engine.OCEANBASE_ORACLE:
+      return "OceanBase (Oracle)";
     case Engine.DM:
       return "DM";
     case Engine.RISINGWAVE:
