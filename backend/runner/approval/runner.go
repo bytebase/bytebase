@@ -668,7 +668,7 @@ func getGrantRequestIssueRisk(ctx context.Context, s *store.Store, issue *store.
 					"project_id":     issue.Project.ResourceID,
 					"database_name":  database.DatabaseName,
 					// convert to string type otherwise cel-go will complain that storepb.Engine is not string type.
-					"db_engine":       string(instance.Engine),
+					"db_engine":       instance.Engine.String(),
 					"expiration_days": expirationDays,
 				}
 				res, _, err := prg.Eval(args)
