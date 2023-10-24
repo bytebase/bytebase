@@ -1,6 +1,6 @@
 <template>
-  <template v-if="hash === 'overview'">
-    <ProjectOverviewPanel id="overview" :project="project" />
+  <template v-if="hash === 'issues'">
+    <ProjectIssuesPanel id="issues" :project="project" />
   </template>
   <template v-if="hash === 'branches'">
     <ProjectBranchesPanel id="branches" :project-id="project.uid" />
@@ -20,7 +20,7 @@
   <template v-if="hash === 'slow-query'">
     <ProjectSlowQueryPanel :project="project" />
   </template>
-  <template v-if="hash === 'activity'">
+  <template v-if="hash === 'activities'">
     <ProjectActivityPanel id="activity" :project="project" />
   </template>
   <template v-if="!isDefaultProject && hash === 'gitops'">
@@ -64,11 +64,11 @@ import {
   useProjectV1Store,
 } from "@/store";
 import { DEFAULT_PROJECT_V1_NAME } from "@/types";
+import ProjectIssuesPanel from "../components/Project/ProjectIssuesPanel.vue";
 import ProjectActivityPanel from "../components/ProjectActivityPanel.vue";
 import ProjectChangeHistoryPanel from "../components/ProjectChangeHistoryPanel.vue";
 import ProjectDatabasesPanel from "../components/ProjectDatabasesPanel.vue";
 import ProjectMemberPanel from "../components/ProjectMember/ProjectMemberPanel.vue";
-import ProjectOverviewPanel from "../components/ProjectOverviewPanel.vue";
 import ProjectSettingPanel from "../components/ProjectSettingPanel.vue";
 import ProjectSlowQueryPanel from "../components/ProjectSlowQueryPanel.vue";
 import ProjectVersionControlPanel from "../components/ProjectVersionControlPanel.vue";
