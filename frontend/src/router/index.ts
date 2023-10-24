@@ -703,7 +703,8 @@ const routes: Array<RouteRecordRaw> = [
             path: "project/:projectSlug",
             components: {
               content: () => import("../layouts/ProjectLayout.vue"),
-              leftSidebar: DashboardSidebar,
+              leftSidebar: () =>
+                import("../components/Project/ProjectSidebar.vue"),
             },
             meta: {
               quickActionListByRole: (route) => {
