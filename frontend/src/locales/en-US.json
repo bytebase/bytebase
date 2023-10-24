@@ -2172,7 +2172,8 @@
       "invalid-column-type": "Invalid column type",
       "schema-not-found": "Schema not found",
       "failed-to-fetch-database-schema": "Failed to fetch database schema",
-      "invalid-schema": "Invalid schema"
+      "invalid-schema": "Invalid schema",
+      "cannot-drop-the-last-column": "Cannot drop the last column"
     },
     "confirm-to-close": {
       "title": "Confirm to close",

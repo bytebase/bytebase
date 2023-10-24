@@ -2168,7 +2168,8 @@
       "invalid-column-type": "Tipo de columna inválido",
       "schema-not-found": "Esquema no encontrado",
       "failed-to-fetch-database-schema": "Error al obtener el esquema de la base de datos",
-      "invalid-schema": "Esquema no válido"
+      "invalid-schema": "Esquema no válido",
+      "cannot-drop-the-last-column": "No se puede eliminar la última columna"
     },
     "confirm-to-close": {
       "title": "Confirmar para cerrar",
