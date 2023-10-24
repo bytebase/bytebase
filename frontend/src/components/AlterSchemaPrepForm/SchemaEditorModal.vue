@@ -215,8 +215,8 @@ const { runSQLCheck } = provideSQLCheckContext();
 
 const allowPreviewIssue = computed(() => {
   if (state.selectedTab === "schema-editor") {
-    const databaseMetadataMap = getChangedDatabaseMetadatas();
-    return databaseMetadataMap && databaseMetadataMap.size > 0;
+    // Always return true for schema editor to prevent huge calculation from schema editor.
+    return true;
   } else {
     return state.editStatement !== "";
   }
@@ -332,6 +332,10 @@ const getChangedDatabaseMetadatas = () => {
       databaseSchema.schemaList.length === 0 ||
       isEqual(metadata, mergedMetadata)
     ) {
+      databaseMetadataMap.set(database.uid, [
+        DatabaseMetadata.fromPartial({}),
+        DatabaseMetadata.fromPartial({}),
+      ]);
       continue;
     }
 
@@ -366,6 +370,11 @@ const fetchStatementMapWithSchemaEditor = async () => {
     if (!database) {
       continue;
     }
+    if (isEqual(sourceMetadata, targetMetadata)) {
+      statementMap.set(database.uid, "");
+      continue;
+    }
+
     const { diff } = await schemaDesignServiceClient.diffMetadata({
       sourceMetadata,
       targetMetadata,
