@@ -929,6 +929,7 @@ func (g *mysqlDesignSchemaGenerator) EnterCreateTable(ctx *mysql.CreateTableCont
 	g.firstElementInTable = true
 	g.columnDefine.Reset()
 	g.tableConstraints.Reset()
+	g.tableOptions.Reset()
 
 	delete(schema.tables, tableName)
 	if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
@@ -1076,7 +1077,7 @@ func (g *mysqlDesignSchemaGenerator) ExitCreateTableOptions(ctx *mysql.CreateTab
 		return
 	}
 
-	if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+	if _, err := g.tableOptions.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 		Start: g.tableOptionTokenIndex,
 		Stop:  ctx.GetStop().GetTokenIndex(),
 	})); err != nil {
