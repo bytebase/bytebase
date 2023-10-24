@@ -58,6 +58,7 @@ type DistinctFileItem struct {
 }
 
 // GetDistinctFileList gets the distinct files from push event commits.
+// The caller should ensure the commit list is logically organized.
 func (p PushEvent) GetDistinctFileList() []DistinctFileItem {
 	// Use list instead of map because we need to maintain the relative commit order in the source branch.
 	var distinctFileList []DistinctFileItem
@@ -80,7 +81,14 @@ func (p PushEvent) GetDistinctFileList() []DistinctFileItem {
 				if item.FileName != file.FileName {
 					continue
 				}
-				if file.CreatedTs < commit.CreatedTs {
+				isPreviousCommit := file.CreatedTs >= commit.CreatedTs
+				if isPreviousCommit {
+					// The VCS may reverse the commit order in the commit list, so the index of modified file commit is less than the added file commit.
+					// In this case, we should modified the existing distinctFileList item's ItemType to modified.
+					if item.ItemType == FileItemTypeAdded {
+						distinctFileList[i].ItemType = FileItemTypeAdded
+					}
+				} else {
 					// A file can be added and then modified in a later commit. We should consider the item as added.
 					if file.ItemType == FileItemTypeAdded {
 						item.ItemType = FileItemTypeAdded
