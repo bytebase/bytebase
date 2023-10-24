@@ -17,6 +17,8 @@ export const issueNamePrefix = "issues/";
 export const secretNamePrefix = "secrets/";
 export const schemaDesignNamePrefix = "schemaDesigns/";
 
+export const protectionRulesSuffix = "/protectionRules";
+
 export const getNameParentTokens = (
   name: string,
   tokenPrefixes: string[]

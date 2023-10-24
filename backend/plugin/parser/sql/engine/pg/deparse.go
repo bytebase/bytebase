@@ -1034,6 +1034,10 @@ func deparseColumnConstraint(_ DeparseContext, in *ast.ConstraintDef, buf *strin
 		}
 	}
 	switch in.Type {
+	case ast.ConstraintTypeNull:
+		if _, err := buf.WriteString("NULL"); err != nil {
+			return err
+		}
 	case ast.ConstraintTypeNotNull:
 		if _, err := buf.WriteString("NOT NULL"); err != nil {
 			return err

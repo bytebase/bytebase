@@ -636,6 +636,7 @@ Used internally for obfuscating the page token.
 | OCEANBASE | 14 |  |
 | DM | 15 |  |
 | RISINGWAVE | 16 |  |
+| OCEANBASE_ORACLE | 17 |  |
 
 
 
