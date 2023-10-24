@@ -20,7 +20,7 @@
       <NTree
         ref="treeRef"
         v-model:expanded-keys="treeStore.expandedKeys"
-        block-line
+        :block-line="true"
         :data="treeStore.tree"
         :show-irrelevant-nodes="false"
         :selected-keys="selectedKeys"
@@ -43,6 +43,13 @@
       :show="showDropdown"
       :on-clickoutside="handleClickoutside"
       @select="handleSelect"
+    />
+
+    <DatabaseHoverPanel
+      :database="(hoverNode?.meta.target as ComposedDatabase|undefined)"
+      :x="hoverPanelPosition.x"
+      :y="hoverPanelPosition.y"
+      class="ml-3"
     />
   </div>
   <div v-else class="flex justify-center items-center h-full">
@@ -83,6 +90,7 @@ import {
 } from "@/types";
 import {
   emptyConnection,
+  findAncestor,
   getSuggestedTabNameFromConnection,
   hasWorkspacePermissionV1,
   instanceV1AllowsCrossDatabaseQuery,
@@ -92,8 +100,10 @@ import {
   isSimilarTab,
 } from "@/utils";
 import { useSQLEditorContext } from "../context";
+import DatabaseHoverPanel from "./DatabaseHoverPanel.vue";
 import { Label } from "./TreeNode";
 import { fetchDatabaseSubTree } from "./common";
+import { provideHoverStateContext } from "./hover-state";
 
 type Position = {
   x: number;
@@ -122,6 +132,11 @@ const isLoggedIn = useIsLoggedIn();
 const me = useCurrentUserV1();
 const { selectedDatabaseSchemaByDatabaseName, events: editorEvents } =
   useSQLEditorContext();
+const { node: hoverNode, update: updateHoverNode } = provideHoverStateContext();
+const hoverPanelPosition = ref<Position>({
+  x: 0,
+  y: 0,
+});
 
 const mounted = useMounted();
 const treeRef = ref<InstanceType<typeof NTree>>();
@@ -369,6 +384,30 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         dropdownPosition.value.y = e.clientY;
       });
     },
+    onmouseenter(e: MouseEvent) {
+      if (node.meta.type === "database") {
+        if (hoverNode.value) {
+          updateHoverNode(node, "before", 0 /* overrideDelay */);
+        } else {
+          updateHoverNode(node, "before");
+        }
+        nextTick().then(() => {
+          // Find the node element and put the database panel to the right corner
+          // of the node
+          const wrapper = findAncestor(e.target as HTMLElement, ".n-tree-node");
+          if (!wrapper) {
+            updateHoverNode(undefined, "after", 0 /* overrideDelay */);
+            return;
+          }
+          const bounding = wrapper.getBoundingClientRect();
+          hoverPanelPosition.value.x = bounding.right;
+          hoverPanelPosition.value.y = bounding.top;
+        });
+      }
+    },
+    onmouseleave() {
+      updateHoverNode(undefined, "after");
+    },
     "data-node-type": node.type,
   };
 };
@@ -385,27 +424,6 @@ const handleLoadSubTree = (option: TreeOption) => {
   }
   return Promise.resolve();
 };
-
-// When switching tabs, scroll the matched node into view if needed.
-// const scrollToConnectedNode = (instanceId: string, databaseId: string) => {
-//   if (instanceId === String(UNKNOWN_ID) && databaseId === String(UNKNOWN_ID)) {
-//     return;
-//   }
-//   const tree = treeRef.value;
-//   if (!tree) {
-//     return;
-//   }
-//   const key =
-//     databaseId !== String(UNKNOWN_ID)
-//       ? `database-${databaseId}`
-//       : `instance-${instanceId}`;
-
-//   nextTick(() => {
-//     tree.scrollTo({
-//       key,
-//     });
-//   });
-// };
 
 // Open corresponding tree node when the connection changed.
 watch(
