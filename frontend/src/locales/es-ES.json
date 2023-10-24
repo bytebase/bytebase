@@ -1277,8 +1277,8 @@
       "manual-by-project-releaser": "Liberador de proyecto",
       "manual-by-issue-creator": "Creador del problema",
       "manual-by-last-approver": "Implementación manual por parte del último aprobador del flujo de aprobación personalizado",
-      "manual-by-fixed-roles": "Implementación manual por roles fijos",
-      "manual-by-fixed-roles-info": "Permita que cualquiera de los siguientes roles seleccionados haga clic en el botón \"Implementar\" y luego se ejecutará el cambio.",
+      "manual-by-dedicated-roles": "Implementación manual por roles especializados",
+      "manual-by-dedicated-roles-info": "Permita que cualquiera de los siguientes roles seleccionados haga clic en el botón \"Implementar\" y luego se ejecutará el cambio.",
       "manual-by-dba": "DBA",
       "manual-by-workspace-owner": "Propietario del espacio de trabajo",
       "role": {

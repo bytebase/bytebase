@@ -1275,8 +1275,8 @@
       "manual-by-project-releaser": "项目的发布者",
       "manual-by-issue-creator": "工单的创建者",
       "manual-by-last-approver": "自定义审批流的最后一个审批人发布",
-      "manual-by-fixed-roles": "固定角色手工发布",
-      "manual-by-fixed-roles-info": "允许以下任一选中角色，点击「发布」按钮后，执行变更。",
+      "manual-by-dedicated-roles": "特定角色手工发布",
+      "manual-by-dedicated-roles-info": "允许以下任一选中角色，点击「发布」按钮后，执行变更。",
       "manual-by-dba": "DBA",
       "manual-by-workspace-owner": "Bytebase 实例所有者",
       "role": {
