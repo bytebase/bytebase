@@ -1,0 +1,50 @@
+- statement: ALTER TABLE tech_book CHANGE name f2 TEXT
+  want:
+    - status: WARN
+      code: 111
+      title: schema.backward-compatibility
+      content: |-
+        "ALTER TABLE tech_book CHANGE name f2 TEXT
+        ;" may cause incompatibility with the existing data and code
+      line: 2
+      details: ""
+- statement: ALTER TABLE tech_book MODIFY name TEXT
+  want:
+    - status: WARN
+      code: 111
+      title: schema.backward-compatibility
+      content: |-
+        "ALTER TABLE tech_book MODIFY name TEXT
+        ;" may cause incompatibility with the existing data and code
+      line: 2
+      details: ""
+- statement: ALTER TABLE tech_book MODIFY name TEXT NULL
+  want:
+    - status: WARN
+      code: 111
+      title: schema.backward-compatibility
+      content: |-
+        "ALTER TABLE tech_book MODIFY name TEXT NULL
+        ;" may cause incompatibility with the existing data and code
+      line: 2
+      details: ""
+- statement: ALTER TABLE tech_book MODIFY name TEXT NOT NULL
+  want:
+    - status: WARN
+      code: 111
+      title: schema.backward-compatibility
+      content: |-
+        "ALTER TABLE tech_book MODIFY name TEXT NOT NULL
+        ;" may cause incompatibility with the existing data and code
+      line: 2
+      details: ""
+- statement: ALTER TABLE tech_book MODIFY name TEXT COMMENT 'bla'
+  want:
+    - status: WARN
+      code: 111
+      title: schema.backward-compatibility
+      content: |-
+        "ALTER TABLE tech_book MODIFY name TEXT COMMENT 'bla'
+        ;" may cause incompatibility with the existing data and code
+      line: 2
+      details: ""

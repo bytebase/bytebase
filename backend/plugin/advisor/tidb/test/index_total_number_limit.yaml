@@ -1,0 +1,60 @@
+- statement: CREATE TABLE t(a int, b int, c int, unique key(a, b, c))
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: CREATE INDEX idx_id_name on tech_book(id, name)
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |-
+    CREATE INDEX idx_id_name_1 on tech_book(id, name);
+    CREATE INDEX idx_id_name_2 on tech_book(id, name);
+    CREATE INDEX idx_id_name_3 on tech_book(id, name);
+    CREATE INDEX idx_id_name_4 on tech_book(id, name);
+    CREATE INDEX idx_id_name_5 on tech_book(id, name);
+  want:
+    - status: WARN
+      code: 813
+      title: index.total-number-limit
+      content: The count of index in table `tech_book` should be no more than 5, but found 8
+      line: 6
+      details: ""
+- statement: |-
+    CREATE TABLE t(a int PRIMARY KEY, b int, c int);
+    CREATE INDEX idx_a_b_1 on t(a, b);
+    CREATE INDEX idx_a_b_2 on t(a, b);
+    CREATE INDEX idx_a_b_3 on t(a, b);
+    CREATE INDEX idx_a_b_4 on t(a, b);
+    CREATE INDEX idx_a_b_5 on t(a, b);
+  want:
+    - status: WARN
+      code: 813
+      title: index.total-number-limit
+      content: The count of index in table `t` should be no more than 5, but found 6
+      line: 7
+      details: ""
+- statement: |-
+    CREATE TABLE t(
+      a int PRIMARY KEY,
+      b int,
+      c int,
+      INDEX idx_a_b_1 (a, b),
+      INDEX idx_a_b_2 (a, b),
+      INDEX idx_a_b_3 (a, b),
+      INDEX idx_a_b_4 (a, b),
+      INDEX idx_a_b_5 (a, b));
+  want:
+    - status: WARN
+      code: 813
+      title: index.total-number-limit
+      content: The count of index in table `t` should be no more than 5, but found 6
+      line: 10
+      details: ""
