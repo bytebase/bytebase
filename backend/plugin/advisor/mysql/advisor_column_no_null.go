@@ -21,6 +21,7 @@ func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLColumnNoNull, &ColumnNoNullAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLColumnNoNull, &ColumnNoNullAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLColumnNoNull, &ColumnNoNullAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnNoNull, &ColumnNoNullAdvisor{})
 }
 
 // ColumnNoNullAdvisor is the advisor checking for column no NULL value.

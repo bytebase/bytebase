@@ -22,6 +22,7 @@ func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLNamingAutoIncrementColumnConvention, &NamingAutoIncrementColumnAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLNamingAutoIncrementColumnConvention, &NamingAutoIncrementColumnAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLNamingAutoIncrementColumnConvention, &NamingAutoIncrementColumnAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLNamingAutoIncrementColumnConvention, &NamingAutoIncrementColumnAdvisor{})
 }
 
 // NamingAutoIncrementColumnAdvisor is the advisor checking for auto-increment naming convention.

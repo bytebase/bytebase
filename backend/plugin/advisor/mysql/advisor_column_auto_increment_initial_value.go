@@ -21,6 +21,7 @@ func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLAutoIncrementColumnInitialValue, &ColumnAutoIncrementInitialValueAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLAutoIncrementColumnInitialValue, &ColumnAutoIncrementInitialValueAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLAutoIncrementColumnInitialValue, &ColumnAutoIncrementInitialValueAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLAutoIncrementColumnInitialValue, &ColumnAutoIncrementInitialValueAdvisor{})
 }
 
 // ColumnAutoIncrementInitialValueAdvisor is the advisor checking for auto-increment column initial value.
