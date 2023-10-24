@@ -81,11 +81,13 @@
 import { isUndefined, flatten } from "lodash-es";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, nextTick, reactive, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { Drawer, DrawerContent } from "@/components/v2";
 import {
   hasFeature,
   generateUniqueTabId,
   useSchemaEditorV1Store,
+  pushNotification,
 } from "@/store/modules";
 import { Engine } from "@/types/proto/v1/common";
 import { ColumnMetadata } from "@/types/proto/v1/database_service";
@@ -119,6 +121,7 @@ interface LocalState {
   showFeatureModal: boolean;
 }
 
+const { t } = useI18n();
 const schemaEditorV1Store = useSchemaEditorV1Store();
 const currentTab = computed(
   () => schemaEditorV1Store.currentTab as TableTabContext
@@ -346,6 +349,19 @@ const handleEditColumnForeignKey = (column: Column) => {
 };
 
 const handleDropColumn = (column: Column) => {
+  // Disallow to drop the last column.
+  if (
+    table.value.columnList.filter((column) => column.status !== "dropped")
+      .length === 1
+  ) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: t("schema-editor.message.cannot-drop-the-last-column"),
+    });
+    return;
+  }
+
   if (column.status === "created") {
     table.value.columnList = table.value.columnList.filter(
       (item) => item !== column
