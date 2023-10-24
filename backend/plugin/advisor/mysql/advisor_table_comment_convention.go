@@ -19,7 +19,6 @@ var (
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLTableCommentConvention, &TableCommentConventionAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLTableCommentConvention, &TableCommentConventionAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLTableCommentConvention, &TableCommentConventionAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLTableCommentConvention, &TableCommentConventionAdvisor{})
 }

@@ -17,7 +17,6 @@ var (
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLTableNoFK, &TableNoFKAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLTableNoFK, &TableNoFKAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLTableNoFK, &TableNoFKAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLTableNoFK, &TableNoFKAdvisor{})
 }

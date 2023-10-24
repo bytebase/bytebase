@@ -23,7 +23,6 @@ var (
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLTableRequirePK, &TableRequirePKAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLTableRequirePK, &TableRequirePKAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLTableRequirePK, &TableRequirePKAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLTableRequirePK, &TableRequirePKAdvisor{})
 }
