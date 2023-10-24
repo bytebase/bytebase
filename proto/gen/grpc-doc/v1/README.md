@@ -2546,7 +2546,8 @@ Default (empty): Disable automatic backup. |
 | status | [ChangeHistory.Status](#bytebase-v1-ChangeHistory-Status) |  |  |
 | version | [string](#string) |  |  |
 | description | [string](#string) |  |  |
-| statement | [string](#string) |  |  |
+| statement | [string](#string) |  | The statement is used for preview purpose. |
+| statement_sheet | [string](#string) |  | The name of the sheet resource. Format: projects/{project}/sheets/{sheet} |
 | schema | [string](#string) |  |  |
 | prev_schema | [string](#string) |  |  |
 | execution_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |
