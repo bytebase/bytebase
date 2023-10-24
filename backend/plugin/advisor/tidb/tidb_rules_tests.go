@@ -1,7 +1,6 @@
 package tidb
 
 import (
-	"log/slog"
 	"testing"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -116,8 +115,6 @@ func TestMySQLRules(t *testing.T) {
 	}
 
 	for _, rule := range tidbRules {
-		slog.Info("test mysql rules", "rule", rule)
-
 		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_TIDB, false /* record */)
 	}
 }
