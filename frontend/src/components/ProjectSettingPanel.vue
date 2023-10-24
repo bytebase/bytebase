@@ -14,7 +14,7 @@
           :allow-edit="allowEdit"
         />
       </div>
-      <div v-if="isDev" class="pt-4">
+      <div class="pt-4">
         <ProjectArchiveRestoreButton :project="project" />
       </div>
     </div>
