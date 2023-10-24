@@ -254,6 +254,7 @@
     },
     "expiration": "Expiration",
     "configure": "Configure",
+    "groups": "Groups",
     "database-groups": "Database Groups",
     "members": "Members",
     "warehouse": "Warehouse",
