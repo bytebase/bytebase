@@ -469,7 +469,7 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 						"project_id":     issue.Project.ResourceID,
 						"database_name":  databaseName,
 						// convert to string type otherwise cel-go will complain that storepb.Engine is not string type.
-						"db_engine":     string(instance.Engine),
+						"db_engine":     instance.Engine.String(),
 						"sql_type":      "UNKNOWN",
 						"affected_rows": math.MaxInt32,
 					}
@@ -636,7 +636,7 @@ func getGrantRequestIssueRisk(ctx context.Context, s *store.Store, issue *store.
 					"project_id":     issue.Project.ResourceID,
 					"database_name":  database.DatabaseName,
 					// convert to string type otherwise cel-go will complain that storepb.Engine is not string type.
-					"db_engine":       string(instance.Engine),
+					"db_engine":       instance.Engine.String(),
 					"export_rows":     factors.ExportRows,
 					"expiration_days": expirationDays,
 				}
