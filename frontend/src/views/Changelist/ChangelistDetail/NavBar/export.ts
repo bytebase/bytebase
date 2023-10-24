@@ -4,7 +4,6 @@ import { useChangeHistoryStore, useSheetV1Store } from "@/store";
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
 import { Changelist_Change_Source as ChangeSource } from "@/types";
 import { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
-import { ChangeHistory_Status } from "@/types/proto/v1/database_service";
 import {
   escapeFilename,
   getChangelistChangeSourceType,
@@ -26,34 +25,25 @@ const zipFileForChangeHistory = async (
   change: Change,
   index: number
 ) => {
-  const name = change.source;
-  const { changeHistory, type, statement } =
-    await useChangeHistoryStore().exportChangeHistoryFullStatementByName(name);
-  console.log("export", change, changeHistory, type, statement.length);
-  if (changeHistory) {
-    if (changeHistory.status !== ChangeHistory_Status.DONE) {
-      return;
-    }
-
-    if (type === "MIGRATE") {
-      const filename = buildFileName(
-        "CHANGE_HISTORY",
-        changeHistory.version,
-        index
-      );
-      zip.file(filename, statement);
-    } else if (type === "BASELINE") {
-      const filename = buildFileName(
-        "CHANGE_HISTORY",
-        `${changeHistory.version}_baseline`,
-        index
-      );
-      zip.file(filename, statement);
-    } else {
-      // NOT SUPPORTED.
-      return;
-    }
+  const sheet = await useSheetV1Store().fetchSheetByName(
+    change.sheet,
+    true /* raw */
+  );
+  if (!sheet) {
+    return;
   }
+  const changeHistory =
+    await useChangeHistoryStore().getOrFetchChangeHistoryByName(change.source);
+  if (!changeHistory) {
+    return;
+  }
+
+  const filename = buildFileName(
+    "CHANGE_HISTORY",
+    changeHistory.version,
+    index
+  );
+  zip.file(filename, getSheetStatement(sheet));
 };
 
 const zipFileForBranch = async (zip: JSZip, change: Change, index: number) => {
