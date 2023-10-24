@@ -19,6 +19,7 @@ type ParseResult struct {
 	Tree     antlr.Tree
 	Tokens   *antlr.CommonTokenStream
 	BaseLine int
+	LastLine int
 }
 
 // ParseMySQL parses the given SQL statement and returns the AST.
@@ -165,6 +166,7 @@ func parseInputStream(input *antlr.InputStream) ([]*ParseResult, error) {
 			Tree:     tree,
 			Tokens:   tokens,
 			BaseLine: s.BaseLine,
+			LastLine: s.LastLine,
 		})
 	}
 
