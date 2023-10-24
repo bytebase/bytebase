@@ -251,6 +251,11 @@ func (s *SchemaDesignService) checkProtectionRules(ctx context.Context, project 
 	if err != nil {
 		return err
 	}
+	// Skip protection check for workspace owner and DBA.
+	if isOwnerOrDBA(user.Role) {
+		return nil
+	}
+
 	for _, rule := range project.Setting.ProtectionRules {
 		if rule.Target != storepb.ProtectionRule_BRANCH {
 			continue
@@ -276,8 +281,8 @@ func (s *SchemaDesignService) checkProtectionRules(ctx context.Context, project 
 					// Convert role format.
 					if role == convertToProjectRole(binding.Role) {
 						pass = true
+						break
 					}
-					break
 				}
 			}
 			if pass {
