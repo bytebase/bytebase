@@ -8,14 +8,14 @@
           :class="getItemClass(item.hash)"
           @click="onSelect(item.hash)"
         >
-          <component :is="item.icon" class="mr-3 w-5 h-5" />
+          <component :is="item.icon" class="mr-2 w-5 h-5 text-gray-500" />
           {{ item.title }}
         </div>
         <div v-if="item.children" class="space-y-1">
           <div
             v-for="child in item.children"
             :key="child.hash"
-            class="group w-full flex items-center pl-11 pr-2 py-1.5"
+            class="group w-full flex items-center pl-11 pr-2 py-1.5 rounded-md"
             :class="getItemClass(child.hash)"
             @click="onSelect(child.hash)"
           >
@@ -29,14 +29,17 @@
 
 <script setup lang="ts">
 import { startCase } from "lodash-es";
-import { GitBranch, CircleDot } from "lucide-vue-next";
+import {
+  Database,
+  GitBranch,
+  CircleDot,
+  Users,
+  Link,
+  Settings,
+} from "lucide-vue-next";
 import { computed, VNode, h, reactive, watch, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
-import CogIcon from "~icons/heroicons-outline/cog";
-import DatabaseIcon from "~icons/heroicons-outline/database";
-import LinkIcon from "~icons/heroicons-outline/link";
-import UserGroupIcon from "~icons/heroicons-outline/user-group";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
 import { useCurrentUserIamPolicy, useProjectV1Store } from "@/store";
 import { DEFAULT_PROJECT_V1_NAME } from "@/types";
@@ -86,7 +89,7 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
   const fullList: ProjectSidebarItem[] = [
     {
       title: t("common.database"),
-      icon: h(DatabaseIcon),
+      icon: h(Database),
       children: [
         {
           title: t("common.databases"),
@@ -136,7 +139,7 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
     // TODO: Sync schema
     {
       title: t("common.manage"),
-      icon: h(UserGroupIcon),
+      icon: h(Users),
       hide:
         isDefaultProject.value ||
         !currentUserIamPolicy.isMemberOfProject(project.value.name),
@@ -153,7 +156,7 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
     },
     {
       title: t("settings.sidebar.integration"),
-      icon: h(LinkIcon),
+      icon: h(Link),
       hide:
         isDefaultProject.value ||
         !currentUserIamPolicy.allowToChangeDatabaseOfProject(
@@ -172,7 +175,7 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
     },
     {
       title: t("common.setting"),
-      icon: h(CogIcon),
+      icon: h(Settings),
       hash: "setting",
       hide:
         isDefaultProject.value ||
