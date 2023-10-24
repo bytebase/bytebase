@@ -349,7 +349,11 @@ const handleEditColumnForeignKey = (column: Column) => {
 };
 
 const handleDropColumn = (column: Column) => {
-  if (table.value.columnList.length === 1) {
+  // Disallow to drop the last column.
+  if (
+    table.value.columnList.filter((column) => column.status !== "dropped")
+      .length === 1
+  ) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
