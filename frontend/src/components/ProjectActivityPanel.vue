@@ -1,9 +1,6 @@
 <template>
   <div>
     <div class="space-y-2">
-      <p class="text-lg font-medium leading-7 text-main">
-        {{ $t("common.activity") }}
-      </p>
       <PagedActivityTable
         :activity-find="{
           resource: project.name,
