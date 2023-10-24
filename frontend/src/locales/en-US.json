@@ -270,7 +270,8 @@
     "updated-at-by": "Updated {time} by {user}",
     "created-at-by": "Created {time} by {user}",
     "filter-by-name": "Filter by name",
-    "tenant": "Tenant"
+    "tenant": "Tenant",
+    "license": "License"
   },
   "error-page": {
     "go-back-home": "Go back home"

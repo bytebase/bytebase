@@ -77,6 +77,68 @@
             </div>
           </BBContextMenu>
         </div>
+        <div
+          v-if="isDev"
+          class="menu-item relative"
+          @mouseenter="licenseMenu.toggle()"
+          @mouseleave="licenseMenu.toggle()"
+          @click.capture.prevent="licenseMenu.toggle()"
+        >
+          <span>{{ $t("common.license") }}</span>
+          <BBContextMenu
+            ref="licenseMenu"
+            class="origin-left absolute left-0 -top-1 -translate-x-48 transform"
+          >
+            <div
+              class="menu-item px-3 py-1 hover:bg-gray-100"
+              :class="{ 'bg-gray-100': currentPlan == PlanType.FREE }"
+              @click.prevent="switchToFree()"
+            >
+              <div class="radio text-sm">
+                <input
+                  type="radio"
+                  class="btn"
+                  :checked="currentPlan == PlanType.FREE"
+                />
+                <label class="ml-2">{{
+                  $t("subscription.plan.free.title")
+                }}</label>
+              </div>
+            </div>
+            <div
+              class="menu-item px-3 py-1 hover:bg-gray-100"
+              :class="{ 'bg-gray-100': currentPlan == PlanType.TEAM }"
+              @click.prevent="switchToTeam()"
+            >
+              <div class="radio text-sm">
+                <input
+                  type="radio"
+                  class="btn"
+                  :checked="currentPlan == PlanType.TEAM"
+                />
+                <label class="ml-2">{{
+                  $t("subscription.plan.team.title")
+                }}</label>
+              </div>
+            </div>
+            <div
+              class="menu-item px-3 py-1 hover:bg-gray-100"
+              :class="{ 'bg-gray-100': currentPlan == PlanType.ENTERPRISE }"
+              @click.prevent="switchToEnterprise()"
+            >
+              <div class="radio text-sm">
+                <input
+                  type="radio"
+                  class="btn"
+                  :checked="currentPlan == PlanType.ENTERPRISE"
+                />
+                <label class="ml-2">
+                  {{ $t("subscription.plan.enterprise.title") }}
+                </label>
+              </div>
+            </div>
+          </BBContextMenu>
+        </div>
         <a
           v-if="showQuickstart"
           class="menu-item"
@@ -118,18 +180,22 @@ import {
   useActuatorV1Store,
   useAuthStore,
   useCurrentUserV1,
+  useSubscriptionV1Store,
   useUIStateStore,
 } from "@/store";
+import { PlanType } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV1, roleNameV1 } from "@/utils";
 import UserAvatar from "./User/UserAvatar.vue";
 
 const actuatorStore = useActuatorV1Store();
 const authStore = useAuthStore();
+const subscriptionStore = useSubscriptionV1Store();
 const uiStateStore = useUIStateStore();
 const router = useRouter();
 const { setLocale, locale } = useLanguage();
 const menu = ref();
 const languageMenu = ref();
+const licenseMenu = ref();
 const currentUserV1 = useCurrentUserV1();
 
 // For now, debug mode is a global setting and will affect all users.
@@ -140,6 +206,23 @@ const allowToggleDebug = computed(() => {
     currentUserV1.value.userRole
   );
 });
+const { currentPlan } = storeToRefs(subscriptionStore);
+
+const switchToFree = () => {
+  subscriptionStore.patchSubscription("");
+};
+
+const switchToTeam = () => {
+  subscriptionStore.patchSubscription(
+    import.meta.env.BB_DEV_TEAM_LICENSE as string
+  );
+};
+
+const switchToEnterprise = () => {
+  subscriptionStore.patchSubscription(
+    import.meta.env.BB_DEV_ENTERPRISE_LICENSE as string
+  );
+};
 
 const showQuickstart = computed(() => !actuatorStore.isDemo);
 

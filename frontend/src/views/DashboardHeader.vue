@@ -56,44 +56,6 @@
     <div>
       <div class="flex items-center space-x-3">
         <div
-          v-if="isDevFeatures"
-          class="hidden md:flex sm:flex-row items-center space-x-2 text-sm font-medium"
-        >
-          <div
-            class="cursor-pointer hover:bg-link-hover focus:outline-none"
-            :class="
-              currentPlan == PlanType.FREE
-                ? 'underline text-accent'
-                : 'text-main'
-            "
-            @click.prevent="switchToFree"
-          >
-            {{ $t("subscription.plan.free.title") }}
-          </div>
-          <div
-            class="cursor-pointer hover:bg-link-hover focus:outline-none"
-            :class="
-              currentPlan == PlanType.TEAM
-                ? 'underline text-accent'
-                : 'text-main'
-            "
-            @click.prevent="switchToTeam"
-          >
-            {{ $t("subscription.plan.team.title") }}
-          </div>
-          <div
-            class="cursor-pointer hover:bg-link-hover focus:outline-none"
-            :class="
-              currentPlan == PlanType.ENTERPRISE
-                ? 'underline text-accent'
-                : 'text-main'
-            "
-            @click.prevent="switchToEnterprise"
-          >
-            {{ $t("subscription.plan.enterprise.title") }}
-          </div>
-        </div>
-        <div
           v-if="currentPlan === PlanType.FREE"
           class="flex justify-between items-center min-w-fit px-4 py-1 bg-emerald-500 text-sm font-medium text-white rounded-md cursor-pointer"
           @click="handleWantHelp"
@@ -204,7 +166,7 @@ import ProfileBrandingLogo from "../components/ProfileBrandingLogo.vue";
 import ProfileDropdown from "../components/ProfileDropdown.vue";
 import { useLanguage } from "../composables/useLanguage";
 import { UNKNOWN_ID } from "../types";
-import { hasWorkspacePermissionV1, isDev } from "../utils";
+import { hasWorkspacePermissionV1 } from "../utils";
 
 interface LocalState {
   showMobileMenu: boolean;
@@ -243,10 +205,6 @@ const shouldShowInstanceEntry = computed(() => {
     "bb.permission.workspace.manage-instance",
     currentUserV1.value.userRole
   );
-});
-
-const isDevFeatures = computed((): boolean => {
-  return isDev();
 });
 
 const prepareInboxSummary = () => {
@@ -313,22 +271,6 @@ const kbarActions = computed(() => [
   }),
 ]);
 useRegisterActions(kbarActions);
-
-const switchToFree = () => {
-  subscriptionStore.patchSubscription("");
-};
-
-const switchToTeam = () => {
-  subscriptionStore.patchSubscription(
-    import.meta.env.BB_DEV_TEAM_LICENSE as string
-  );
-};
-
-const switchToEnterprise = () => {
-  subscriptionStore.patchSubscription(
-    import.meta.env.BB_DEV_ENTERPRISE_LICENSE as string
-  );
-};
 
 const handleWantHelp = () => {
   if (locale.value === "zh-CN") {
