@@ -1,5 +1,6 @@
 <template>
   <NDataTable
+    v-bind="$attrs"
     :loading="isLoading"
     :bordered="false"
     :columns="dataTableColumns"
@@ -138,30 +139,35 @@ const dataTableRows = computed(() => {
 });
 
 const dataTableColumns = computed(() => {
+  const BRANCH_NAME_COLUMN = {
+    title: t("common.branch"),
+    key: "branchName",
+  };
+  const PROJECT_NAME_COLUMN = {
+    title: t("common.project"),
+    key: "projectName",
+  };
+  const BASELINE_VERSION_COLUMN = {
+    title: t("schema-designer.baseline-version"),
+    key: "baselineVersion",
+    render: (row: BranchRowData) => {
+      return h(BranchBaseline, {
+        branch: row.branch,
+        showInstanceIcon: true,
+      });
+    },
+  };
+  const UPDATED_TIME_COLUMN = {
+    title: t("common.updated"),
+    key: "updatedTimeStr",
+  };
+
   return [
-    {
-      title: t("common.branch"),
-      key: "branchName",
-    },
-    {
-      title: t("common.project"),
-      key: "projectName",
-    },
-    {
-      title: t("schema-designer.baseline-version"),
-      key: "baselineVersion",
-      render: (row: BranchRowData) => {
-        return h(BranchBaseline, {
-          branch: row.branch,
-          showInstanceIcon: true,
-        });
-      },
-    },
-    {
-      title: t("common.updated"),
-      key: "updatedTimeStr",
-    },
-  ];
+    BRANCH_NAME_COLUMN,
+    !props.hideProjectColumn ? PROJECT_NAME_COLUMN : undefined,
+    BASELINE_VERSION_COLUMN,
+    UPDATED_TIME_COLUMN,
+  ].filter((column) => column);
 });
 
 const rowKey = (row: BranchRowData) => {
