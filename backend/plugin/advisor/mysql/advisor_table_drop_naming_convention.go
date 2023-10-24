@@ -20,6 +20,7 @@ func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
 }
 
 // TableDropNamingConventionAdvisor is the advisor checking the MySQLTableDropNamingConvention rule.

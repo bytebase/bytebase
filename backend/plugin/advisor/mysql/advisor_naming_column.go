@@ -20,6 +20,7 @@ func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLNamingColumnConvention, &NamingColumnConventionAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLNamingColumnConvention, &NamingColumnConventionAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLNamingColumnConvention, &NamingColumnConventionAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLNamingColumnConvention, &NamingColumnConventionAdvisor{})
 }
 
 // NamingColumnConventionAdvisor is the advisor checking for column naming convention.
