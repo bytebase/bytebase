@@ -1,5 +1,5 @@
 <template>
-  <form class="max-w-3xl w-full space-y-4 mx-auto">
+  <form class="w-full space-y-4 mx-auto">
     <p class="text-lg font-medium leading-7 text-main">
       {{ $t("common.general") }}
     </p>

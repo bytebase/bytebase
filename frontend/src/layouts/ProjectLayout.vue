@@ -1,7 +1,7 @@
 <template>
   <ArchiveBanner v-if="project.state === State.DELETED" class="py-2" />
   <HideInStandaloneMode>
-    <h1 class="px-4 py-2 text-xl font-bold leading-6 text-main truncate">
+    <h1 class="px-6 py-2 text-xl font-bold leading-6 text-main truncate">
       <template v-if="isDefaultProject">
         {{ $t("database.unassigned-databases") }}
       </template>
