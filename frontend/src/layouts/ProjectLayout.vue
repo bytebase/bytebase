@@ -5,15 +5,6 @@
       <template v-if="isDefaultProject">
         {{ $t("database.unassigned-databases") }}
       </template>
-      <template v-else>
-        {{ project.title }}
-      </template>
-      <span
-        v-if="isTenantProject"
-        class="text-sm font-normal px-2 ml-2 rounded whitespace-nowrap inline-flex items-center bg-gray-200"
-      >
-        {{ $t("project.mode.batch") }}
-      </span>
     </h1>
     <BBAttention
       v-if="isDefaultProject"
