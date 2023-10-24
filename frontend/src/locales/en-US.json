@@ -1278,8 +1278,8 @@
       "manual-by-project-releaser": "Project releaser",
       "manual-by-issue-creator": "Issue creator",
       "manual-by-last-approver": "Manual rollout by the last approver from the custom approval flow",
-      "manual-by-fixed-roles": "Manual rollout by fixed roles",
-      "manual-by-fixed-roles-info": "Allow any of the following selected roles to click the \"Rollout\" button, and then the change will be executed.",
+      "manual-by-dedicated-roles": "Manual rollout by dedicated roles",
+      "manual-by-dedicated-roles-info": "Allow any of the following selected roles to click the \"Rollout\" button, and then the change will be executed.",
       "manual-by-dba": "DBA",
       "manual-by-workspace-owner": "Workspace owner",
       "role": {
