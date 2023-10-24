@@ -92,22 +92,6 @@
           >
             {{ $t("subscription.plan.enterprise.title") }}
           </div>
-          <div class="cursor-pointer" @click="toggleLocales">
-            <heroicons-outline:translate class="w-6 h-6" />
-          </div>
-          <div class="cursor-pointer" @click="toggleDebug">
-            <svg
-              class="w-6 h-6"
-              :class="isDebug ? `text-accent` : `text-gray-400`"
-              fill="currentColor"
-              viewBox="0 0 32 32"
-            >
-              <path
-                d="M29,15h-5.1c-0.1-1.2-0.5-2.4-1-3.5c1.9-1.5,3.1-3.7,3.1-6.1V5c0-0.6-0.4-1-1-1s-1,0.4-1,1v0.4c0,1.8-0.8,3.4-2.2,4.5  c-0.5-0.7-1.2-1.2-1.9-1.7c0-0.1,0-0.1,0-0.2c0-2.2-1.8-4-4-4s-4,1.8-4,4c0,0.1,0,0.1,0,0.2c-0.7,0.5-1.3,1-1.9,1.7  C8.8,8.8,8,7.2,8,5.4V5c0-0.6-0.4-1-1-1S6,4.4,6,5v0.4c0,2.4,1.1,4.7,3.1,6.1c-0.5,1-0.9,2.2-1,3.5H3c-0.6,0-1,0.4-1,1s0.4,1,1,1  h5.1c0.1,1.2,0.5,2.4,1,3.5C7.1,21.9,6,24.2,6,26.6V27c0,0.6,0.4,1,1,1s1-0.4,1-1v-0.4c0-1.8,0.8-3.4,2.2-4.5  c1.5,1.8,3.5,2.9,5.8,2.9s4.4-1.1,5.8-2.9c1.4,1.1,2.2,2.7,2.2,4.5V27c0,0.6,0.4,1,1,1s1-0.4,1-1v-0.4c0-2.4-1.1-4.7-3.1-6.1  c0.5-1,0.9-2.2,1-3.5H29c0.6,0,1-0.4,1-1S29.6,15,29,15z"
-                stroke-width="1"
-              />
-            </svg>
-          </div>
         </div>
         <div
           v-if="currentPlan === PlanType.FREE"
@@ -210,7 +194,6 @@ import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import {
   useCurrentUser,
-  useActuatorV1Store,
   useSubscriptionV1Store,
   useInboxV1Store,
   useCurrentUserV1,
@@ -228,13 +211,12 @@ interface LocalState {
   showQRCodeModal: boolean;
 }
 
-const { t, availableLocales } = useI18n();
-const actuatorV1Store = useActuatorV1Store();
+const { t } = useI18n();
 const inboxV1Store = useInboxV1Store();
 const subscriptionStore = useSubscriptionV1Store();
 const router = useRouter();
 const route = useRoute();
-const { setLocale, toggleLocales, locale } = useLanguage();
+const { locale } = useLanguage();
 
 const state = reactive<LocalState>({
   showMobileMenu: false,
@@ -347,39 +329,6 @@ const switchToEnterprise = () => {
     import.meta.env.BB_DEV_ENTERPRISE_LICENSE as string
   );
 };
-
-const { isDebug } = storeToRefs(actuatorV1Store);
-
-const toggleDebug = () => {
-  actuatorV1Store.patchDebug({
-    debug: !isDebug.value,
-  });
-};
-
-const I18N_CHANGE_ACTION_ID_NAMESPACE = "bb.preferences.locale";
-const i18nChangeAction = computed(() =>
-  defineAction({
-    // here `id` is "bb.preferences.locale"
-    id: I18N_CHANGE_ACTION_ID_NAMESPACE,
-    section: t("kbar.preferences.common"),
-    name: t("kbar.preferences.change-language"),
-    keywords: "language lang locale",
-  })
-);
-const i18nActions = computed(() => [
-  i18nChangeAction.value,
-  ...availableLocales.map((lang) => {
-    return defineAction({
-      // here `id` looks like "bb.preferences.locale.en"
-      id: `${I18N_CHANGE_ACTION_ID_NAMESPACE}.${lang}`,
-      name: lang,
-      parent: I18N_CHANGE_ACTION_ID_NAMESPACE,
-      keywords: `language lang locale ${lang}`,
-      perform: () => setLocale(lang),
-    });
-  }),
-]);
-useRegisterActions(i18nActions);
 
 const handleWantHelp = () => {
   if (locale.value === "zh-CN") {
