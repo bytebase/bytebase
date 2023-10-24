@@ -19,7 +19,6 @@ var (
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLIndexNoDuplicateColumn, &IndexNoDuplicateColumnAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLIndexNoDuplicateColumn, &IndexNoDuplicateColumnAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLIndexNoDuplicateColumn, &IndexNoDuplicateColumnAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLIndexNoDuplicateColumn, &IndexNoDuplicateColumnAdvisor{})
 }

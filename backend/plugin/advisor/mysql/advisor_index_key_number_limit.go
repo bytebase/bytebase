@@ -19,7 +19,6 @@ var (
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLIndexKeyNumberLimit, &IndexKeyNumberLimitAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLIndexKeyNumberLimit, &IndexKeyNumberLimitAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLIndexKeyNumberLimit, &IndexKeyNumberLimitAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLIndexKeyNumberLimit, &IndexKeyNumberLimitAdvisor{})
 }

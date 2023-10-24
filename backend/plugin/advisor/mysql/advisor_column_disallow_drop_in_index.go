@@ -20,7 +20,6 @@ var (
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLColumnDisallowDropInIndex, &ColumnDisallowDropInIndexAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnDisallowDropInIndex, &ColumnDisallowDropInIndexAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLColumnDisallowDropInIndex, &ColumnDisallowDropInIndexAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLColumnDisallowDropInIndex, &ColumnDisallowDropInIndexAdvisor{})
 }

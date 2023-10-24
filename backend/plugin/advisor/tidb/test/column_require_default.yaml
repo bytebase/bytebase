@@ -1,0 +1,37 @@
+- statement: CREATE TABLE t(a int primary key, b int default 1)
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |-
+    CREATE TABLE t(
+      a int,
+      b int default 1
+    )
+  want:
+    - status: WARN
+      code: 420
+      title: column.require-default
+      content: Column `t`.`a` doesn't have DEFAULT.
+      line: 2
+      details: ""
+- statement: |-
+    ALTER TABLE tech_book ADD COLUMN a BLOB;
+    ALTER TABLE tech_book ADD COLUMN b timestamp;
+    ALTER TABLE tech_book MODIFY COLUMN a varchar(220);
+  want:
+    - status: WARN
+      code: 420
+      title: column.require-default
+      content: Column `tech_book`.`b` doesn't have DEFAULT.
+      line: 2
+      details: ""
+    - status: WARN
+      code: 420
+      title: column.require-default
+      content: Column `tech_book`.`a` doesn't have DEFAULT.
+      line: 4
+      details: ""
