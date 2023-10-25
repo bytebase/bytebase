@@ -71,7 +71,7 @@ func getSecretFromURL(secretURL string) (string, error) {
 	}
 	secret, err := base64.StdEncoding.DecodeString(r.Payload.Data)
 	if err != nil {
-		panic(err)
+		return "", errors.Wrapf(err, "failed to base64 decode secret")
 	}
 	return string(secret), nil
 }
