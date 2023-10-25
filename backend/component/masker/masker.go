@@ -41,41 +41,51 @@ func NewNoneMasker() *NoneMasker {
 func (*NoneMasker) Mask(data *MaskData) *v1pb.RowValue {
 	switch raw := data.Data.(type) {
 	case *sql.NullBool:
-		return &v1pb.RowValue{
-			Kind: &v1pb.RowValue_BoolValue{
-				BoolValue: raw.Bool,
-			},
-		}
-	case *sql.NullString:
-		if data.WantBytes {
+		if raw.Valid {
 			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_BytesValue{
-					BytesValue: []byte(raw.String),
+				Kind: &v1pb.RowValue_BoolValue{
+					BoolValue: raw.Bool,
 				},
 			}
 		}
-		return &v1pb.RowValue{
-			Kind: &v1pb.RowValue_StringValue{
-				StringValue: raw.String,
-			},
+	case *sql.NullString:
+		if raw.Valid {
+			if data.WantBytes {
+				return &v1pb.RowValue{
+					Kind: &v1pb.RowValue_BytesValue{
+						BytesValue: []byte(raw.String),
+					},
+				}
+			}
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{
+					StringValue: raw.String,
+				},
+			}
 		}
 	case *sql.NullInt32:
-		return &v1pb.RowValue{
-			Kind: &v1pb.RowValue_Int32Value{
-				Int32Value: raw.Int32,
-			},
+		if raw.Valid {
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_Int32Value{
+					Int32Value: raw.Int32,
+				},
+			}
 		}
 	case *sql.NullInt64:
-		return &v1pb.RowValue{
-			Kind: &v1pb.RowValue_Int64Value{
-				Int64Value: raw.Int64,
-			},
+		if raw.Valid {
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_Int64Value{
+					Int64Value: raw.Int64,
+				},
+			}
 		}
 	case *sql.NullFloat64:
-		return &v1pb.RowValue{
-			Kind: &v1pb.RowValue_DoubleValue{
-				DoubleValue: raw.Float64,
-			},
+		if raw.Valid {
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_DoubleValue{
+					DoubleValue: raw.Float64,
+				},
+			}
 		}
 	}
 	return &v1pb.RowValue{
