@@ -228,7 +228,6 @@ const onSelect = (hash: string | undefined) => {
   if (!hash) {
     return;
   }
-  hash = hash.replace(/^#?/g, "");
   state.selectedHash = hash;
   router.replace({
     name: "workspace.project.detail",
@@ -239,12 +238,18 @@ const onSelect = (hash: string | undefined) => {
 const selectProjectTabOnHash = () => {
   const { name, hash } = router.currentRoute.value;
   if (name == "workspace.project.detail") {
-    onSelect(hash || "databases");
+    let targetHash = (hash || "databases").replace(/^#?/g, "");
+    if (targetHash === "overview") {
+      targetHash = "databases";
+    }
+    onSelect(targetHash);
   } else if (
     name == "workspace.project.hook.create" ||
     name == "workspace.project.hook.detail"
   ) {
     state.selectedHash = "webhook";
+  } else if (name == "workspace.changelist.detail") {
+    state.selectedHash = "changelists";
   }
 };
 
