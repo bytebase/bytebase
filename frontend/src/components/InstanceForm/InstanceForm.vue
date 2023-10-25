@@ -567,7 +567,7 @@ const currentMongoDBConnectionSchema = computed(() => {
     : MongoDBConnectionStringSchemaList[1];
 });
 const allowCreate = computed(() => {
-  if (environment.value.uid === "-1") {
+  if (environment.value.uid === String(UNKNOWN_ID)) {
     return false;
   }
   if (basicInfo.value.engine === Engine.SPANNER) {
