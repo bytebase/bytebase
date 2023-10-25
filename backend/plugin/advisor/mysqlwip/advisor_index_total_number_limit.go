@@ -11,17 +11,12 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*IndexTotalNumberLimitAdvisor)(nil)
 	_ ast.Visitor     = (*indexTotalNumberLimitChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLIndexTotalNumberLimit, &IndexTotalNumberLimitAdvisor{})
-}
 
 // IndexTotalNumberLimitAdvisor is the advisor checking for index total number limit.
 type IndexTotalNumberLimitAdvisor struct {

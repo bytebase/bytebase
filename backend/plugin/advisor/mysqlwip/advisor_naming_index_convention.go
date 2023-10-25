@@ -10,17 +10,12 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*NamingIndexConventionAdvisor)(nil)
 	_ ast.Visitor     = (*namingIndexConventionChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLNamingIndexConvention, &NamingIndexConventionAdvisor{})
-}
 
 // NamingIndexConventionAdvisor is the advisor checking for index naming convention.
 type NamingIndexConventionAdvisor struct {

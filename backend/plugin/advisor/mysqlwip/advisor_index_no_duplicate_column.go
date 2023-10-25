@@ -9,17 +9,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*IndexNoDuplicateColumnAdvisor)(nil)
 	_ ast.Visitor     = (*indexNoDuplicateColumnChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLIndexNoDuplicateColumn, &IndexNoDuplicateColumnAdvisor{})
-}
 
 // IndexNoDuplicateColumnAdvisor is the advisor checking for no duplicate columns in index.
 type IndexNoDuplicateColumnAdvisor struct {

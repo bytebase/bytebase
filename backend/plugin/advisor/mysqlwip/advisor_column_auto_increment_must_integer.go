@@ -11,17 +11,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*ColumnAutoIncrementMustIntegerAdvisor)(nil)
 	_ ast.Visitor     = (*columnAutoIncrementMustIntegerChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLAutoIncrementColumnMustInteger, &ColumnAutoIncrementMustIntegerAdvisor{})
-}
 
 // ColumnAutoIncrementMustIntegerAdvisor is the advisor checking for auto-increment column type.
 type ColumnAutoIncrementMustIntegerAdvisor struct {

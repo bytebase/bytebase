@@ -6,7 +6,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	"github.com/pingcap/tidb/parser/ast"
 )
@@ -15,10 +14,6 @@ var (
 	_ advisor.Advisor = (*WhereRequirementAdvisor)(nil)
 	_ ast.Visitor     = (*whereRequirementChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLWhereRequirement, &WhereRequirementAdvisor{})
-}
 
 // WhereRequirementAdvisor is the advisor checking for the WHERE clause requirement.
 type WhereRequirementAdvisor struct {

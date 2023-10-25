@@ -8,17 +8,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*NamingFKConventionAdvisor)(nil)
 	_ ast.Visitor     = (*namingFKConventionChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLNamingFKConvention, &NamingFKConventionAdvisor{})
-}
 
 // NamingFKConventionAdvisor is the advisor checking for foreign key naming convention.
 type NamingFKConventionAdvisor struct {

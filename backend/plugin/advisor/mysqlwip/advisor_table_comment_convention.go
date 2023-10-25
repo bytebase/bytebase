@@ -9,17 +9,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*TableCommentConventionAdvisor)(nil)
 	_ ast.Visitor     = (*tableCommentConventionChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLTableCommentConvention, &TableCommentConventionAdvisor{})
-}
 
 // TableCommentConventionAdvisor is the advisor checking for table comment convention.
 type TableCommentConventionAdvisor struct {
