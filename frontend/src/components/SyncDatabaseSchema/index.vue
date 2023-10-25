@@ -32,7 +32,7 @@
         <DatabaseSchemaSelector
           v-if="state.sourceSchemaType === 'SCHEMA_HISTORY_VERSION'"
           :select-state="changeHistorySourceSchemaState"
-          :disableProjectSelect="!!project"
+          :disable-project-select="!!project"
           @update="handleChangeHistorySchameVersionChanges"
         />
         <SchemaDesignSelector
@@ -50,7 +50,7 @@
           :engine="rawSQLState.engine"
           :statement="rawSQLState.statement"
           :sheet-id="rawSQLState.sheetId"
-          :disableProjectSelect="!!project"
+          :disable-project-select="!!project"
           @update="handleRawSQLStateChange"
         />
       </template>
