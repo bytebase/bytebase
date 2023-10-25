@@ -1,6 +1,5 @@
 import DatabaseName from "./DatabaseName.vue";
 import DatabaseV1Name from "./DatabaseV1Name.vue";
-import DatabaseV1Table from "./DatabaseV1Table";
 import DatabaseView from "./DatabaseView.vue";
 import EnvironmentName from "./EnvironmentName.vue";
 import EnvironmentV1Name from "./EnvironmentV1Name.vue";
@@ -13,11 +12,11 @@ import RichDatabaseName from "./RichDatabaseName.vue";
 
 export * from "./Instance";
 export * from "./User";
+export * from "./DatabaseV1Table";
 export {
   DatabaseName,
   DatabaseV1Name,
   RichDatabaseName,
-  DatabaseV1Table,
   EnvironmentName,
   EnvironmentV1Name,
   EnvironmentV1Table,
