@@ -284,4 +284,4 @@ replace github.com/pingcap/tidb/parser => github.com/bytebase/tidb/parser v0.0.0
 
 replace github.com/pganalyze/pg_query_go/v4 => github.com/bytebase/pg_query_go/v4 v4.0.0-20230802100607-2f34e68d96f5
 
-replace github.com/mattn/go-oci8 => github.com/bytebase/go-obo v0.0.0-20231024042429-87de4ceb4d78
+replace github.com/mattn/go-oci8 => github.com/bytebase/go-obo v0.0.0-20231025081042-47252dbfd18c
