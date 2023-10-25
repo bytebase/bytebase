@@ -15,6 +15,7 @@
               <ProjectSelect
                 v-model:project="projectUID"
                 :include-all="false"
+                :disabled="disableProjectSelect"
                 style="width: 14rem"
               />
             </div>
@@ -103,12 +104,17 @@ import { Changelist } from "@/types/proto/v1/changelist_service";
 import { getErrorCode } from "@/utils/grpcweb";
 import { useChangelistDashboardContext } from "./context";
 
+const props = defineProps<{
+  projectUid?: string;
+  disableProjectSelect?: boolean;
+}>();
+
 const router = useRouter();
 const { t } = useI18n();
 const { showCreatePanel, events } = useChangelistDashboardContext();
 
 const title = ref("");
-const projectUID = ref<string>();
+const projectUID = ref<string | undefined>(props.projectUid);
 const isLoading = ref(false);
 const resourceId = ref("");
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();

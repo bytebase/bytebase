@@ -7,6 +7,7 @@ import {
   RouteLocationNormalized,
   RouteRecordRaw,
 } from "vue-router";
+import ProjectSidebar from "@/components/Project/ProjectSidebar.vue";
 import BodyLayout from "@/layouts/BodyLayout.vue";
 import DashboardLayout from "@/layouts/DashboardLayout.vue";
 import DatabaseLayout from "@/layouts/DatabaseLayout.vue";
@@ -247,7 +248,7 @@ const routes: Array<RouteRecordRaw> = [
             name: "workspace.changelist.dashboard",
             meta: { title: () => t("changelist.changelists") },
             components: {
-              content: () => import("../views/Changelist/ChangelistDashboard/"),
+              content: () => import("../views/ChangelistDashboard.vue"),
               leftSidebar: DashboardSidebar,
             },
             props: {
@@ -256,15 +257,16 @@ const routes: Array<RouteRecordRaw> = [
             },
           },
           {
-            path: "/projects/:projectName/changelists/:changelistName",
+            path: "/project/:projectSlug/changelists/:changelistName",
             name: "workspace.changelist.detail",
             meta: {
               allowBookmark: true,
               overrideTitle: true,
             },
             components: {
-              content: () => import("../views/Changelist/ChangelistDetail/"),
-              leftSidebar: DashboardSidebar,
+              content: () =>
+                import("../components/Changelist/ChangelistDetail/"),
+              leftSidebar: ProjectSidebar,
             },
             props: {
               content: true,
@@ -703,8 +705,7 @@ const routes: Array<RouteRecordRaw> = [
             path: "project/:projectSlug",
             components: {
               content: () => import("../layouts/ProjectLayout.vue"),
-              leftSidebar: () =>
-                import("../components/Project/ProjectSidebar.vue"),
+              leftSidebar: ProjectSidebar,
             },
             meta: {
               quickActionListByRole: (route) => {
@@ -1402,9 +1403,7 @@ router.beforeEach((to, from, next) => {
     projectV1Store
       .fetchProjectByUID(String(idFromSlug(projectSlug)))
       .then((project) => {
-        if (!projectWebhookSlug) {
-          next();
-        } else {
+        if (projectWebhookSlug) {
           const webhook =
             projectWebhookV1Store.getProjectWebhookFromProjectById(
               project,
@@ -1419,6 +1418,30 @@ router.beforeEach((to, from, next) => {
             });
             throw new Error("not found");
           }
+        } else if (to.name === "workspace.changelist.detail") {
+          const name = `${project.name}/changelists/${to.params.changelistName}`;
+          useChangelistStore()
+            .fetchChangelistByName(name)
+            .then((changelist) => {
+              if (changelist) {
+                next();
+              } else {
+                next({
+                  name: "error.404",
+                  replace: false,
+                });
+                return;
+              }
+            })
+            .catch((error) => {
+              next({
+                name: "error.404",
+                replace: false,
+              });
+              throw error;
+            });
+        } else {
+          next();
         }
       })
       .catch((error) => {
@@ -1599,31 +1622,6 @@ router.beforeEach((to, from, next) => {
         .then(() => next())
         .catch(() => next());
     }
-    return;
-  }
-
-  if (to.name === "workspace.changelist.detail") {
-    const name = `projects/${to.params.projectName}/changelists/${to.params.changelistName}`;
-    useChangelistStore()
-      .fetchChangelistByName(name)
-      .then((changelist) => {
-        if (changelist) {
-          next();
-        } else {
-          next({
-            name: "error.404",
-            replace: false,
-          });
-          return;
-        }
-      })
-      .catch((error) => {
-        next({
-          name: "error.404",
-          replace: false,
-        });
-        throw error;
-      });
     return;
   }
 
