@@ -7,13 +7,13 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func TestMySQLRules(t *testing.T) {
-	tidbRules := []advisor.SQLReviewRuleType{
+func TestMySQLWIPRules(t *testing.T) {
+	mysqlwipRules := []advisor.SQLReviewRuleType{
 		// advisor.SchemaRuleTableNaming enforce the table name format.
 		advisor.SchemaRuleTableNaming,
 	}
 
-	for _, rule := range tidbRules {
+	for _, rule := range mysqlwipRules {
 		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_ENGINE_UNSPECIFIED, false /* record */)
 	}
 }
