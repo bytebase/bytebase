@@ -1,5 +1,9 @@
 <template>
-  <div v-if="showSelectionColumn" class="bb-grid-cell !px-2">
+  <div
+    v-if="showSelectionColumn"
+    class="bb-grid-cell !px-2"
+    @click.stop.prevent
+  >
     <slot name="selection" :database="database" />
   </div>
   <div class="bb-grid-cell">
