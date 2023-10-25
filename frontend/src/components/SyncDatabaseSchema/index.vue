@@ -37,6 +37,7 @@
         />
         <SchemaDesignSelector
           v-if="state.sourceSchemaType === 'SCHEMA_DESIGN'"
+          :project-name="project?.name"
           :selected-schema-design="schemaDesignState.selectedSchemaDesign"
           @select="
             (schemaDesign) =>
