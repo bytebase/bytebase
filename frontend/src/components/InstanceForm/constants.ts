@@ -23,6 +23,8 @@ export const defaultPortForEngine = (engine: Engine) => {
     return "5439";
   } else if (engine === Engine.OCEANBASE) {
     return "2883";
+  } else if (engine === Engine.OCEANBASE_ORACLE) {
+    return "1521";
   } else if (engine === Engine.DM) {
     return "5236";
   }
@@ -51,6 +53,10 @@ export const EngineIconPath: Record<number, string> = {
   [Engine.MARIADB]: new URL("@/assets/db-mariadb.png", import.meta.url).href,
   [Engine.OCEANBASE]: new URL("@/assets/db-oceanbase.png", import.meta.url)
     .href,
+  [Engine.OCEANBASE_ORACLE]: new URL(
+    "@/assets/db-oceanbase.png",
+    import.meta.url
+  ).href,
   [Engine.RISINGWAVE]: new URL("@/assets/db-risingwave.png", import.meta.url)
     .href,
 };
