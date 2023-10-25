@@ -37,7 +37,7 @@
                 <div>
                   <ProjectTenantView
                     :state="state"
-                    :database-list="schemaDatabaseList"
+                    :database-list="selectableDatabaseList"
                     :environment-list="environmentList"
                     :project="state.project"
                     @dismiss="cancel"
@@ -75,11 +75,16 @@
                   </NRadio>
                 </div>
                 <div v-if="state.databaseSelectedTab === 'DATABASE'">
+                  <DatabaseLabelFilter
+                    v-model:selected="state.selectedLabels"
+                    :database-list="rawDatabaseList"
+                    class="mb-2"
+                  />
                   <DatabaseV1Table
                     mode="PROJECT_SHORT"
                     table-class="border"
                     :custom-click="true"
-                    :database-list="schemaDatabaseList"
+                    :database-list="selectableDatabaseList"
                     :show-selection-column="true"
                     @select-database="
                       (db: ComposedDatabase) =>
@@ -134,16 +139,15 @@
                 </div>
               </NTabPane>
               <template #suffix>
-                <BBTableSearch
+                <SearchBox
                   v-if="state.alterType === 'MULTI_DB'"
-                  class="m-px"
+                  v-model:value="state.searchText"
                   :placeholder="$t('database.filter-database')"
-                  @change-text="(text: string) => (state.searchText = text)"
                 />
                 <YAxisRadioGroup
                   v-else
                   v-model:label="state.label"
-                  :database-list="databaseList"
+                  :database-list="filteredDatabaseList"
                   class="text-sm m-px"
                 />
               </template>
@@ -155,16 +159,15 @@
               <ProjectStandardView
                 :state="state"
                 :project="state.project"
-                :database-list="schemaDatabaseList"
+                :database-list="selectableDatabaseList"
                 :environment-list="environmentList"
                 @select-database="selectDatabase"
               >
                 <template #header>
                   <div class="flex items-center justify-end mx-2">
-                    <BBTableSearch
-                      class="m-px"
+                    <SearchBox
+                      v-model:value="state.searchText"
                       :placeholder="$t('database.filter-database')"
-                      @change-text="(text: string) => (state.searchText = text)"
                     />
                   </div>
                 </template>
@@ -208,20 +211,24 @@
               </div>
             </div>
             <aside class="flex justify-end">
-              <BBTableSearch
-                class="m-px"
+              <SearchBox
+                v-model:value="state.searchText"
                 :placeholder="$t('database.filter-database')"
-                @change-text="(text: string) => (state.searchText = text)"
               />
             </aside>
           </div>
+          <DatabaseLabelFilter
+            v-model:selected="state.selectedLabels"
+            :database-list="rawDatabaseList"
+            class="mb-2"
+          />
           <!-- a simple table -->
           <div v-if="state.databaseSelectedTab === 'DATABASE'">
             <DatabaseV1Table
               mode="ALL_SHORT"
               table-class="border"
               :custom-click="true"
-              :database-list="schemaDatabaseList"
+              :database-list="selectableDatabaseList"
               :show-selection-column="true"
               @select-database="
                 (db: ComposedDatabase) =>
@@ -388,7 +395,12 @@ import {
   generateIssueName,
 } from "@/utils";
 import SelectDatabaseGroupTable from "../DatabaseGroup/SelectDatabaseGroupTable.vue";
-import { DatabaseV1Table, DrawerContent, ProjectSelect } from "../v2";
+import {
+  DatabaseLabelFilter,
+  DatabaseV1Table,
+  DrawerContent,
+  ProjectSelect,
+} from "../v2";
 import DatabaseGroupPrevEditorModal from "./DatabaseGroupPrevEditorModal.vue";
 import GhostDialog from "./GhostDialog.vue";
 import ProjectStandardView, {
@@ -410,6 +422,7 @@ type LocalState = ProjectStandardViewState &
     selectedDatabaseGroupName?: string;
     // Using to display the database group prev editor.
     selectedDatabaseGroup?: ComposedDatabaseGroup;
+    selectedLabels: { key: string; value: string }[];
   };
 
 const props = defineProps({
@@ -458,6 +471,7 @@ const state = reactive<LocalState>({
   databaseSelectedTab: "DATABASE",
   showSchemaLessDatabaseList: false,
   showSchemaEditorModal: false,
+  selectedLabels: [],
 });
 
 const selectProject = (projectId: string | undefined) => {
@@ -514,7 +528,7 @@ watchEffect(async () => {
   await prepareDatabaseGroupList();
 });
 
-const databaseList = computed(() => {
+const rawDatabaseList = computed(() => {
   let list: ComposedDatabase[] = [];
   if (state.project) {
     list = databaseV1Store.databaseListByProject(state.project.name);
@@ -525,6 +539,11 @@ const databaseList = computed(() => {
     (db) =>
       db.syncState == State.ACTIVE && db.project !== DEFAULT_PROJECT_V1_NAME
   );
+  return list;
+});
+
+const filteredDatabaseList = computed(() => {
+  let list = [...rawDatabaseList.value];
 
   list = list.filter((db) => {
     return filterDatabaseV1ByKeyword(db, state.searchText.trim(), [
@@ -535,21 +554,28 @@ const databaseList = computed(() => {
     ]);
   });
 
+  const labels = state.selectedLabels;
+  if (labels.length > 0) {
+    list = list.filter((db) => {
+      return labels.some((kv) => db.labels[kv.key] === kv.value);
+    });
+  }
+
   return sortDatabaseV1List(list);
 });
 
-const schemaDatabaseList = computed(() => {
+const selectableDatabaseList = computed(() => {
   if (isEditSchema.value) {
-    return databaseList.value.filter((db) =>
+    return filteredDatabaseList.value.filter((db) =>
       instanceV1HasAlterSchema(db.instanceEntity)
     );
   }
 
-  return databaseList.value;
+  return filteredDatabaseList.value;
 });
 
 const schemalessDatabaseList = computed(() => {
-  return databaseList.value.filter(
+  return filteredDatabaseList.value.filter(
     (db) => !instanceV1HasAlterSchema(db.instanceEntity)
   );
 });
@@ -653,7 +679,7 @@ const generateMultiDb = async () => {
   }
 
   const selectedDatabaseList = flattenSelectedDatabaseUidList.value.map(
-    (id) => schemaDatabaseList.value.find((db) => db.uid === id)!
+    (id) => selectableDatabaseList.value.find((db) => db.uid === id)!
   );
 
   if (isEditSchema.value && allowUsingSchemaEditorV1(selectedDatabaseList)) {
