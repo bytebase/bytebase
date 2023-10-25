@@ -36,6 +36,7 @@ import {
   Users,
   Link,
   Settings,
+  RefreshCcw,
 } from "lucide-vue-next";
 import { computed, VNode, h, reactive, watch, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
@@ -131,12 +132,24 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       title: t("common.branches"),
       hash: "branches",
       icon: h(GitBranch),
-      hide: !currentUserIamPolicy.allowToChangeDatabaseOfProject(
-        project.value.name
-      ),
+      hide:
+        isDefaultProject.value ||
+        !currentUserIamPolicy.allowToChangeDatabaseOfProject(
+          project.value.name
+        ),
     },
     // TODO: Changelists
     // TODO: Sync schema
+    {
+      title: t("database.sync-schema.title"),
+      hash: "sync-schema",
+      icon: h(RefreshCcw),
+      hide:
+        isDefaultProject.value ||
+        !currentUserIamPolicy.allowToChangeDatabaseOfProject(
+          project.value.name
+        ),
+    },
     {
       title: t("settings.sidebar.integration"),
       icon: h(Link),

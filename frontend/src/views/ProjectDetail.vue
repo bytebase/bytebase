@@ -17,6 +17,9 @@
       :database-list="databaseV1List"
     />
   </template>
+  <template v-if="hash === 'sync-schema'">
+    <SyncDatabaseSchema :project="project" />
+  </template>
   <template v-if="hash === 'slow-query'">
     <ProjectSlowQueryPanel :project="project" />
   </template>
@@ -58,6 +61,7 @@ import { computed } from "vue";
 import { useRoute } from "vue-router";
 import ProjectDatabaseGroupPanel from "@/components/DatabaseGroup/ProjectDatabaseGroupPanel.vue";
 import ProjectBranchesPanel from "@/components/ProjectBranchesPanel.vue";
+import SyncDatabaseSchema from "@/components/SyncDatabaseSchema/index.vue";
 import {
   useSearchDatabaseV1List,
   useDatabaseV1Store,
