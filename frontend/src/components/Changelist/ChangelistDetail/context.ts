@@ -6,7 +6,7 @@ import {
   useCurrentUserV1,
   useProjectV1Store,
 } from "@/store";
-import { ComposedProject, unknownChangelist } from "@/types";
+import { ComposedProject, unknownChangelist, unknownProject } from "@/types";
 import {
   Changelist,
   Changelist_Change as Change,
@@ -50,8 +50,12 @@ export const provideChangelistDetailContext = () => {
   const projectV1Store = useProjectV1Store();
 
   const project = computed(() => {
+    const projectSlug = route.params.projectSlug as string;
+    if (!projectSlug) {
+      return unknownProject();
+    }
     const proj = projectV1Store.getProjectByUID(
-      String(idFromSlug(route.params.projectSlug as string))
+      String(idFromSlug(projectSlug))
     );
     return proj;
   });
