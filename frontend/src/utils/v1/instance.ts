@@ -7,6 +7,7 @@ import { Engine, State } from "@/types/proto/v1/common";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { DataSourceType, Instance } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
+import { isDev } from "../util";
 
 export const instanceV1Slug = (instance: Instance): string => {
   return [slug(instance.title), instance.uid].join("-");
@@ -85,7 +86,6 @@ export const supportedEngineV1List = () => {
     Engine.SPANNER,
     Engine.ORACLE,
     Engine.OCEANBASE,
-    Engine.OCEANBASE_ORACLE,
     Engine.MARIADB,
     Engine.MSSQL,
     Engine.REDSHIFT,
@@ -93,6 +93,9 @@ export const supportedEngineV1List = () => {
   ];
   if (locale.value === "zh-CN") {
     engines.push(Engine.DM);
+  }
+  if (isDev()) {
+    engines.push(Engine.OCEANBASE_ORACLE);
   }
   return engines;
 };
