@@ -28,7 +28,7 @@ import { useProjectV1Store } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { useChangelistDashboardContext } from "./context";
 
-const props = defineProps<{
+defineProps<{
   disableProjectSelect?: boolean;
 }>();
 
