@@ -40,6 +40,13 @@
         {{ $t("database.sync-schema.title") }}
       </router-link>
       <router-link
+        to="/branches"
+        class="outline-item group flex items-center px-2 py-1.5 capitalize"
+      >
+        <GitBranch class="w-5 h-5 mr-2" />
+        {{ $t("common.branches") }}
+      </router-link>
+      <router-link
         to="/slow-query"
         class="outline-item group flex items-center px-2 py-1.5 capitalize"
       >
@@ -84,7 +91,7 @@
 
 <script lang="ts" setup>
 import { useKBarHandler } from "@bytebase/vue-kbar";
-import { PencilRuler } from "lucide-vue-next";
+import { GitBranch, PencilRuler } from "lucide-vue-next";
 import { computed } from "vue";
 import BookmarkListSidePanel from "@/components/BookmarkListSidePanel.vue";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
