@@ -15,6 +15,7 @@ type MaskData struct {
 	// any is the data to be masked, it can be assigned with the following types:
 	// *sql.NullString
 	// *sql.NullBool
+	// *sql.NullInt32
 	// *sql.NullInt64
 	// *sql.NullFloat64
 	Data any
@@ -56,6 +57,12 @@ func (*NoneMasker) Mask(data *MaskData) *v1pb.RowValue {
 		return &v1pb.RowValue{
 			Kind: &v1pb.RowValue_StringValue{
 				StringValue: raw.String,
+			},
+		}
+	case *sql.NullInt32:
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_Int32Value{
+				Int32Value: raw.Int32,
 			},
 		}
 	case *sql.NullInt64:
