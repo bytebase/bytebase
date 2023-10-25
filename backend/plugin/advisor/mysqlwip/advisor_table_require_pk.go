@@ -9,7 +9,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 const (
@@ -20,10 +19,6 @@ var (
 	_ advisor.Advisor = (*TableRequirePKAdvisor)(nil)
 	_ ast.Visitor     = (*tableRequirePKChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLTableRequirePK, &TableRequirePKAdvisor{})
-}
 
 // TableRequirePKAdvisor is the advisor checking table requires PK.
 type TableRequirePKAdvisor struct {

@@ -9,17 +9,12 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*ColumnNoNullAdvisor)(nil)
 	_ ast.Visitor     = (*columnNoNullChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnNoNull, &ColumnNoNullAdvisor{})
-}
 
 // ColumnNoNullAdvisor is the advisor checking for column no NULL value.
 type ColumnNoNullAdvisor struct {

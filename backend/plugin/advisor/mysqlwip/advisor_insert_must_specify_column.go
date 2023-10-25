@@ -9,17 +9,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*InsertMustSpecifyColumnAdvisor)(nil)
 	_ ast.Visitor     = (*insertMustSpecifyColumnChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLInsertMustSpecifyColumn, &InsertMustSpecifyColumnAdvisor{})
-}
 
 // InsertMustSpecifyColumnAdvisor is the advisor checking for to enforce column specified.
 type InsertMustSpecifyColumnAdvisor struct {

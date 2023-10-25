@@ -8,17 +8,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*NamingColumnConventionAdvisor)(nil)
 	_ ast.Visitor     = (*namingColumnConventionChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLNamingColumnConvention, &NamingColumnConventionAdvisor{})
-}
 
 // NamingColumnConventionAdvisor is the advisor checking for column naming convention.
 type NamingColumnConventionAdvisor struct {

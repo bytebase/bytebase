@@ -12,17 +12,12 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*IndexPrimaryKeyTypeAllowlistAdvisor)(nil)
 	_ ast.Visitor     = (*indexPrimaryKeyTypeAllowlistChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLPrimaryKeyTypeAllowlist, &IndexPrimaryKeyTypeAllowlistAdvisor{})
-}
 
 // IndexPrimaryKeyTypeAllowlistAdvisor is the advisor checking for primary key type allowlist.
 type IndexPrimaryKeyTypeAllowlistAdvisor struct {

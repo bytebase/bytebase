@@ -11,17 +11,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*StatementDmlDryRunAdvisor)(nil)
 	_ ast.Visitor     = (*statementDmlDryRunChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLStatementDMLDryRun, &StatementDmlDryRunAdvisor{})
-}
 
 // StatementDmlDryRunAdvisor is the advisor checking for DML dry run.
 type StatementDmlDryRunAdvisor struct {
