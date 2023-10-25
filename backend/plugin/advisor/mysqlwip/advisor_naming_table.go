@@ -10,11 +10,17 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*NamingTableConventionAdvisor)(nil)
 )
+
+func init() {
+	// only for test mysqlwip.
+	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLNamingTableConvention, &NamingTableConventionAdvisor{})
+}
 
 // NamingTableConventionAdvisor is the advisor checking for table naming convention.
 type NamingTableConventionAdvisor struct {

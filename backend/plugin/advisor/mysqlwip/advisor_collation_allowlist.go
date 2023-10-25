@@ -10,17 +10,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*CollationAllowlistAdvisor)(nil)
 	_ ast.Visitor     = (*collationAllowlistChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLCollationAllowlist, &CollationAllowlistAdvisor{})
-}
 
 // CollationAllowlistAdvisor is the advisor checking for collation allowlist.
 type CollationAllowlistAdvisor struct {

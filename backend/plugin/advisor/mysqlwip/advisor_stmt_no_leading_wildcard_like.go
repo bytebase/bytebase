@@ -8,7 +8,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 const (
@@ -19,10 +18,6 @@ var (
 	_ advisor.Advisor = (*NoLeadingWildcardLikeAdvisor)(nil)
 	_ ast.Visitor     = (*noLeadingWildcardLikeChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLNoLeadingWildcardLike, &NoLeadingWildcardLikeAdvisor{})
-}
 
 // NoLeadingWildcardLikeAdvisor is the advisor checking for no leading wildcard LIKE.
 type NoLeadingWildcardLikeAdvisor struct {
