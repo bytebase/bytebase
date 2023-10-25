@@ -45,8 +45,6 @@ export const provideChangelistDashboardContext = (
     (project) => {
       if (project) {
         context.filter.value.project = project;
-      } else {
-        context.filter.value.project = "projects/-";
       }
     },
     { immediate: true }
