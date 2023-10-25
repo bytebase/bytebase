@@ -1337,7 +1337,7 @@ FROM SYS.ALL_CONSTRAINTS CONS,
 	SYS.ALL_CONS_COLUMNS COLS,
 	SYS.ALL_CONSTRAINTS CONS_R ,
 	SYS.ALL_ALL_TABLES T ,
-	SYS.ALL_EXTERNAL_TABLES ET
+	SYS.ALL_OB_EXTERNAL_TABLE_FILES ET
 WHERE
 	COLS.OWNER(+) = CONS.OWNER
 	AND COLS.TABLE_NAME(+) = CONS.TABLE_NAME
@@ -1395,49 +1395,6 @@ WHERE
 	AND C.TABLE_NAME(+) = V.VIEW_NAME
 	AND V.OWNER = '%s'
 ORDER BY V.OWNER, V.VIEW_NAME ASC
-`
-	dumpFunctionSQL = `
-SELECT
-	O.OBJECT_NAME,
-	O.OWNER,
-	O.DATA_OBJECT_ID,
-	O.OBJECT_TYPE,
-	O.STATUS,
-	O.CREATED,
-	O.LAST_DDL_TIME,
-	P.AGGREGATE,
-	P.PIPELINED,
-	P.IMPLTYPEOWNER,
-	P.IMPLTYPENAME,
-	P.PARALLEL,
-	P.INTERFACE,
-	P.DETERMINISTIC,
-	P.AUTHID,
-	SS.PARAM_VALUE,
-	P.OBJECT_ID,
-	P.SUBPROGRAM_ID,
-	P.OVERLOAD,
-	O.TIMESTAMP,
-	S.LINE,
-	S.TEXT
-FROM
-	SYS.ALL_OBJECTS O,
-	SYS.ALL_PROCEDURES P,
-	SYS.ALL_STORED_SETTINGS SS,
-	SYS.ALL_SOURCE S
-WHERE
-	O.OBJECT_TYPE IN ('PROCEDURE', 'FUNCTION')
-	AND O.OWNER = '%s'
-	AND O.OBJECT_ID NOT IN (SELECT PURGE_OBJECT FROM RECYCLEBIN)
-	AND P.OWNER(+) = O.OWNER
-	AND P.OBJECT_NAME(+) = O.OBJECT_NAME
-	AND SS.OWNER(+) = O.OWNER
-	AND SS.OBJECT_NAME(+) = O.OBJECT_NAME
-	AND SS.PARAM_NAME(+) = 'plsql_debug'
-	AND O.OWNER(+) = S.OWNER
-	AND O.OBJECT_NAME(+) = S.NAME
-	AND O.OBJECT_TYPE(+) = S.TYPE
-ORDER BY O.OBJECT_NAME ASC, S.LINE
 `
 	dumpIndexSQL = `
 SELECT
@@ -1833,96 +1790,13 @@ func (driver *Driver) dumpTableTxn(ctx context.Context, txn *sql.Tx, schema stri
 }
 
 func dumpViewTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) error {
-	viewList := []*viewMeta{}
-	viewRows, err := txn.QueryContext(ctx, fmt.Sprintf(dumpViewSQL, schema))
-	if err != nil {
-		return err
-	}
-	defer viewRows.Close()
-	for viewRows.Next() {
-		view := viewMeta{}
-		// (help-wanted) Sadly, go-ora with struct tag does not work.
-		if err := viewRows.Scan(
-			&view.ViewName,
-			&view.TextLength,
-			&view.Text,
-			&view.TypeTextLength,
-			&view.TypeText,
-			&view.OidTextLength,
-			&view.OidText,
-			&view.ViewTypeOwner,
-			&view.ViewType,
-			&view.SuperViewName,
-			&view.EditioningView,
-			&view.ReadOnly,
-			&view.Status,
-			&view.Comments,
-			&view.ConstraintName,
-			&view.ConstraintType,
-		); err != nil {
-			return err
-		}
-		if !view.ViewName.Valid {
-			continue
-		}
-		viewList = append(viewList, &view)
-	}
-	if err := viewRows.Err(); err != nil {
-		return err
-	}
-
-	// TODO: assemble CREATE VIEW
-	_ = viewList
+	// TODO: implement
+	_ = dumpViewSQL
 	return nil
 }
 
 func dumpFunctionTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) error {
-	functionList := []*functionMeta{}
-	functionRows, err := txn.QueryContext(ctx, fmt.Sprintf(dumpFunctionSQL, schema))
-	if err != nil {
-		return err
-	}
-	defer functionRows.Close()
-	for functionRows.Next() {
-		function := functionMeta{}
-		// (help-wanted) Sadly, go-ora with struct tag does not work.
-		if err := functionRows.Scan(
-			&function.ObjectName,
-			&function.Owner,
-			&function.DataObjectID,
-			&function.ObjectType,
-			&function.Status,
-			&function.Created,
-			&function.LastDdlTime,
-			&function.Aggregate,
-			&function.Pipelined,
-			&function.ImplTypeOwner,
-			&function.ImplTypeName,
-			&function.Parallel,
-			&function.Interface,
-			&function.Deterministic,
-			&function.AuthID,
-			&function.ParamValue,
-			&function.ObjectID,
-			&function.SubProgramID,
-			&function.Overload,
-			&function.Timestamp,
-			&function.Line,
-			&function.Text,
-		); err != nil {
-			return err
-		}
-		if !function.ObjectName.Valid {
-			continue
-		}
-		functionList = append(functionList, &function)
-	}
-	if err := functionRows.Err(); err != nil {
-		return err
-	}
-
-	// TODO: assemble CREATE FUNCTION
-	_ = functionList
+	// TODO: implement
 	return nil
 }
 
@@ -2091,113 +1965,12 @@ func dumpIndexTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer
 }
 
 func (driver *Driver) dumpSequenceTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) error {
-	sequences := []*sequenceMeta{}
-	sequenceRows, err := txn.QueryContext(ctx, fmt.Sprintf(dumpSequenceSQL, schema))
-	if err != nil {
-		return err
-	}
-	defer sequenceRows.Close()
-	for sequenceRows.Next() {
-		sequence := sequenceMeta{}
-		// (help-wanted) Sadly, go-ora with struct tag does not work.
-		if err := sequenceRows.Scan(
-			&sequence.SequenceName,
-			&sequence.MinValue,
-			&sequence.MaxValue,
-			&sequence.IncrementBy,
-			&sequence.CycleFlag,
-			&sequence.OrderFlag,
-			&sequence.CacheSize,
-			&sequence.LastNumber,
-			&sequence.KeepValue,
-			&sequence.SessionFlag,
-		); err != nil {
-			return err
-		}
-		if !sequence.SequenceName.Valid {
-			continue
-		}
-		sequences = append(sequences, &sequence)
-	}
-	if err := sequenceRows.Err(); err != nil {
-		return err
-	}
-
-	// TODO: assemble CREATE SEQUENCE
-	_ = sequences
+	// TODO: implement
 	return nil
 }
 
 func dumpTriggerOrderingTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) error {
-	triggerOrderingMap := make(map[string]*triggerOrderingMeta)
-	triggerOrderingRows, err := txn.QueryContext(ctx, fmt.Sprintf(dumpTriggerOrderingSQL, schema))
-	if err != nil {
-		return err
-	}
-	defer triggerOrderingRows.Close()
-	for triggerOrderingRows.Next() {
-		triggerOrdering := triggerOrderingMeta{}
-		if err := triggerOrderingRows.Scan(
-			&triggerOrdering.TriggerOwner,
-			&triggerOrdering.TriggerName,
-			&triggerOrdering.ReferencedSchema,
-			&triggerOrdering.ReferencedTrigger,
-			&triggerOrdering.OrderingType,
-		); err != nil {
-			return err
-		}
-		if !triggerOrdering.TriggerName.Valid {
-			continue
-		}
-		triggerOrderingMap[triggerOrdering.TriggerName.String] = &triggerOrdering
-	}
-	if err := triggerOrderingRows.Err(); err != nil {
-		return err
-	}
-
-	triggers := []*triggerMeta{}
-	triggerRows, err := txn.QueryContext(ctx, fmt.Sprintf(dumpTriggerSQL, schema))
-	if err != nil {
-		return err
-	}
-	defer triggerRows.Close()
-	for triggerRows.Next() {
-		trigger := triggerMeta{}
-		if err := triggerRows.Scan(
-			&trigger.Owner,
-			&trigger.TriggerName,
-			&trigger.TriggerType,
-			&trigger.TriggerEvent,
-			&trigger.TableOwner,
-			&trigger.BaseObjectType,
-			&trigger.TableName,
-			&trigger.NestedColumn,
-			&trigger.ReferencingNames,
-			&trigger.WhenClause,
-			&trigger.IsEnable,
-			&trigger.Description,
-			&trigger.TriggerBody,
-			&trigger.ActionType,
-			&trigger.Edition,
-			&trigger.ColumnName,
-			&trigger.IotType,
-			&trigger.Debug,
-			&trigger.ObjectStatus,
-		); err != nil {
-			return err
-		}
-		if !trigger.TriggerName.Valid {
-			continue
-		}
-		triggers = append(triggers, &trigger)
-	}
-	if err := triggerRows.Err(); err != nil {
-		return err
-	}
-
-	// TODO: assemble CREATE TRIGGER
-	_ = triggerOrderingMap
-	_ = triggers
+	// TODO: implement
 	return nil
 }
 
