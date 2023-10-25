@@ -11,8 +11,7 @@
 
 <script lang="ts" setup>
 import { useTitle } from "@vueuse/core";
-import { computed, ref } from "vue";
-import { onMounted } from "vue";
+import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import BranchCreateView from "@/components/Branch/BranchCreateView.vue";
@@ -34,29 +33,50 @@ const branch = computed(() => {
   return schemaDesignStore.getSchemaDesignByName(branchName.value);
 });
 
-onMounted(async () => {
-  if (isCreating.value) {
-    ready.value = true;
-    return;
-  }
+watch(
+  () => route.params,
+  async () => {
+    if (isCreating.value) {
+      return;
+    }
 
-  // Prepare branch name from route params.
-  const sheetId = (route.params.branchName as string) || "";
-  if (!sheetId) {
-    return { ready: false };
+    // Prepare branch name from route params.
+    const sheetId = (route.params.branchName as string) || "";
+    if (!sheetId) {
+      return;
+    }
+    const sheet = await sheetStore.getOrFetchSheetByUID(`${sheetId}`);
+    if (sheet) {
+      const [projectName] = getProjectAndSheetId(sheet.name);
+      await projectStore.getOrFetchProjectByName(`projects/${projectName}`);
+      branchName.value = `projects/${projectName}/schemaDesigns/${sheetId}`;
+    }
+  },
+  {
+    immediate: true,
+    deep: true,
   }
-  const sheet = await sheetStore.getOrFetchSheetByUID(`${sheetId}`);
-  if (sheet) {
-    const [projectName] = getProjectAndSheetId(sheet.name);
-    await projectStore.getOrFetchProjectByName(`projects/${projectName}`);
-    branchName.value = `projects/${projectName}/schemaDesigns/${sheetId}`;
+);
+
+watch(
+  () => branchName.value,
+  async () => {
+    ready.value = false;
+    if (isCreating.value || !branchName.value) {
+      ready.value = true;
+      return;
+    }
+
     await schemaDesignStore.fetchSchemaDesignByName(
       branchName.value,
       false /* useCache */
     );
     ready.value = true;
+  },
+  {
+    immediate: true,
   }
-});
+);
 
 const documentTitle = computed(() => {
   if (isCreating.value) {
