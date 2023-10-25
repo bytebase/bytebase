@@ -4,8 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"regexp"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -17,22 +15,10 @@ import (
 
 const systemSchemas = "'DWEXP','OMC','ORAAUDITOR','LBACSYS','SYS'"
 
-var semVersionRegex = regexp.MustCompile(`[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+`)
-
 func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	var fullVersion string
-	if err := driver.db.QueryRowContext(ctx, "SELECT BANNER FROM v$version WHERE banner LIKE 'OceanBase%'").Scan(&fullVersion); err != nil {
-		return nil, errors.Wrapf(err, "failed to get version")
-	}
 	var version string
-	for _, token := range strings.Fields(fullVersion) {
-		if semVersionRegex.MatchString(token) {
-			version = token
-			break
-		}
-	}
-	if version == "" {
-		version = fullVersion
+	if err := driver.db.QueryRowContext(ctx, "SELECT OB_VERSION() FROM DUAL").Scan(&version); err != nil {
+		return nil, errors.Wrapf(err, "failed to get version")
 	}
 
 	query := fmt.Sprintf(`
@@ -94,7 +80,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		Name: driver.databaseName,
 	}
 	databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
-		Name:   driver.databaseName,
+		Name:   "",
 		Tables: tableMap[driver.databaseName],
 		Views:  viewMap[driver.databaseName],
 	})
