@@ -1,6 +1,6 @@
 <template>
   <div class="w-full h-full overflow-hidden flex flex-col">
-    <p class="text-sm text-gray-500 px-4">
+    <p class="text-sm text-gray-500">
       {{ $t("database.sync-schema.description") }}
       <LearnMoreLink
         url="https://www.bytebase.com/docs/change-database/synchronize-schema?source=console"
@@ -8,7 +8,7 @@
     </p>
     <BBStepTab
       ref="bbStepTabRef"
-      class="p-4 flex-1 overflow-hidden flex flex-col"
+      class="py-4 flex-1 overflow-hidden flex flex-col"
       :step-item-list="stepTabList"
       :show-cancel="false"
       :allow-next="allowNext"
