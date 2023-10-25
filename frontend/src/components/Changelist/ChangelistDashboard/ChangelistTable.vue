@@ -45,6 +45,8 @@ import {
   extractProjectResourceName,
   extractUserResourceName,
   getHighlightHTMLByRegExp,
+  projectV1Slug,
+  extractChangelistResourceName,
 } from "@/utils";
 
 const props = defineProps<{
@@ -81,8 +83,11 @@ const handleClickRow = (
   row: number,
   e: MouseEvent
 ) => {
+  const project = projectForChangelist(item);
   const url = router.resolve({
-    path: `/${item.name}`,
+    path: `/project/${projectV1Slug(
+      project
+    )}/changelists/${extractChangelistResourceName(item.name)}`,
   }).fullPath;
   if (e.ctrlKey || e.metaKey) {
     window.open(url, "_blank");
