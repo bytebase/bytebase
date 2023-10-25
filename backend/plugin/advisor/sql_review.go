@@ -403,6 +403,9 @@ type SQLReviewCheckContext struct {
 
 func syntaxCheck(statement string, checkContext SQLReviewCheckContext) (any, []Advice) {
 	switch checkContext.DbType {
+	// only for test mysqlwip.
+	case storepb.Engine_ENGINE_UNSPECIFIED:
+		return mysqlwipSyntaxCheck(statement)
 	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE, storepb.Engine_TIDB:
 		return mysqlSyntaxCheck(statement)
 	case storepb.Engine_POSTGRES:
@@ -576,6 +579,36 @@ func newTiDBParser() *tidbparser.Parser {
 	p.EnableWindowFunc(true)
 
 	return p
+}
+
+// only for test mysqlwip.
+func mysqlwipSyntaxCheck(statement string) (any, []Advice) {
+	res, err := mysqlparser.ParseMySQL(statement + ";")
+	if err != nil {
+		if syntaxErr, ok := err.(*base.SyntaxError); ok {
+			return nil, []Advice{
+				{
+					Status:  Warn,
+					Code:    StatementSyntaxError,
+					Title:   SyntaxErrorTitle,
+					Content: syntaxErr.Message,
+					Line:    syntaxErr.Line,
+					Column:  syntaxErr.Column,
+				},
+			}
+		}
+		return nil, []Advice{
+			{
+				Status:  Warn,
+				Code:    Internal,
+				Title:   "Parse error",
+				Content: err.Error(),
+				Line:    1,
+			},
+		}
+	}
+
+	return res, nil
 }
 
 func mysqlSyntaxCheck(statement string) (any, []Advice) {
@@ -1031,6 +1064,9 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleTableNaming:
 		switch engine {
+		// only for test mysqlwip.
+		case storepb.Engine_ENGINE_UNSPECIFIED:
+			return MySQLNamingTableConvention, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLNamingTableConvention, nil
 		case storepb.Engine_POSTGRES:

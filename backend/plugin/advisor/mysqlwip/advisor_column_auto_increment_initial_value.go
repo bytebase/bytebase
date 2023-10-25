@@ -9,17 +9,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*ColumnAutoIncrementInitialValueAdvisor)(nil)
 	_ ast.Visitor     = (*columnAutoIncrementInitialValueChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLAutoIncrementColumnInitialValue, &ColumnAutoIncrementInitialValueAdvisor{})
-}
 
 // ColumnAutoIncrementInitialValueAdvisor is the advisor checking for auto-increment column initial value.
 type ColumnAutoIncrementInitialValueAdvisor struct {

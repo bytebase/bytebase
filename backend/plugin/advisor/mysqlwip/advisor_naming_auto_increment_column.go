@@ -10,17 +10,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*NamingAutoIncrementColumnAdvisor)(nil)
 	_ ast.Visitor     = (*namingAutoIncrementColumnChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLNamingAutoIncrementColumnConvention, &NamingAutoIncrementColumnAdvisor{})
-}
 
 // NamingAutoIncrementColumnAdvisor is the advisor checking for auto-increment naming convention.
 type NamingAutoIncrementColumnAdvisor struct {

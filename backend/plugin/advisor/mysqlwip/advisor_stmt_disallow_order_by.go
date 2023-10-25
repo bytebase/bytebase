@@ -9,17 +9,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*DisallowOrderByAdvisor)(nil)
 	_ ast.Visitor     = (*disallowOrderByChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLDisallowOrderBy, &DisallowOrderByAdvisor{})
-}
 
 // DisallowOrderByAdvisor is the advisor checking for no ORDER BY clause in DELETE/UPDATE statements.
 type DisallowOrderByAdvisor struct {

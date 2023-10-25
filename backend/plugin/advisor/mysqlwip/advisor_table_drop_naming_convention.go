@@ -8,17 +8,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*TableDropNamingConventionAdvisor)(nil)
 	_ ast.Visitor     = (*namingDropTableConventionChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
-}
 
 // TableDropNamingConventionAdvisor is the advisor checking the MySQLTableDropNamingConvention rule.
 type TableDropNamingConventionAdvisor struct {

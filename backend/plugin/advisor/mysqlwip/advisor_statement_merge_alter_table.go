@@ -10,17 +10,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*StatementMergeAlterTableAdvisor)(nil)
 	_ ast.Visitor     = (*statementMergeAlterTableChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLMergeAlterTable, &StatementMergeAlterTableAdvisor{})
-}
 
 // StatementMergeAlterTableAdvisor is the advisor checking for merging ALTER TABLE statements.
 type StatementMergeAlterTableAdvisor struct {

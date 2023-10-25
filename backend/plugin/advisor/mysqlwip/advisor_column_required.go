@@ -9,17 +9,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*ColumnRequirementAdvisor)(nil)
 	_ ast.Visitor     = (*columnRequirementChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnRequirement, &ColumnRequirementAdvisor{})
-}
 
 // ColumnRequirementAdvisor is the advisor checking for column requirement.
 type ColumnRequirementAdvisor struct {

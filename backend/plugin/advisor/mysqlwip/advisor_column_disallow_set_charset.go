@@ -9,17 +9,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*ColumnDisallowSetCharsetAdvisor)(nil)
 	_ ast.Visitor     = (*columnDisallowSetCharsetChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLDisallowSetColumnCharset, &ColumnDisallowSetCharsetAdvisor{})
-}
 
 // ColumnDisallowSetCharsetAdvisor is the advisor checking for disallow set column charset.
 type ColumnDisallowSetCharsetAdvisor struct {

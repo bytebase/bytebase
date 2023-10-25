@@ -12,17 +12,12 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*IndexPkTypeAdvisor)(nil)
 	_ ast.Visitor     = (*indexPkTypeChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLIndexPKType, &IndexPkTypeAdvisor{})
-}
 
 // IndexPkTypeAdvisor is the advisor checking for correct type of PK.
 type IndexPkTypeAdvisor struct {
