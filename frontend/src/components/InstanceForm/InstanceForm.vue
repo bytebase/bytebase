@@ -99,9 +99,11 @@
             <label for="environment" class="textlabel">
               {{ $t("common.environment") }}
             </label>
+            <span class="text-red-600 mr-2">*</span>
             <EnvironmentSelect
               class="mt-1 w-full"
               :disabled="!isCreating"
+              required="true"
               :environment="
                 environment.uid === String(UNKNOWN_ID)
                   ? undefined
@@ -565,6 +567,9 @@ const currentMongoDBConnectionSchema = computed(() => {
     : MongoDBConnectionStringSchemaList[1];
 });
 const allowCreate = computed(() => {
+  if (environment.value.uid === String(UNKNOWN_ID)) {
+    return false;
+  }
   if (basicInfo.value.engine === Engine.SPANNER) {
     return (
       basicInfo.value.title.trim() &&
