@@ -9,6 +9,8 @@ import (
 
 func TestMySQLWIPRules(t *testing.T) {
 	mysqlwipRules := []advisor.SQLReviewRuleType{
+		// advisor.SchemaRuleMySQLEngine enforce the innodb engine.
+		advisor.SchemaRuleMySQLEngine,
 		// advisor.SchemaRuleTableNaming enforce the table name format.
 		advisor.SchemaRuleTableNaming,
 	}
