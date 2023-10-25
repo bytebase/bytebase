@@ -17,8 +17,8 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/masker"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/masker"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
