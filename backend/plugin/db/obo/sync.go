@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"regexp"
 	"time"
 
 	"github.com/pkg/errors"
@@ -15,8 +14,6 @@ import (
 )
 
 const systemSchemas = "'DWEXP','OMC','ORAAUDITOR','LBACSYS','SYS'"
-
-var semVersionRegex = regexp.MustCompile(`[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+`)
 
 func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
 	var version string

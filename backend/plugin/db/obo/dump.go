@@ -40,24 +40,12 @@ func (driver *Driver) dumpTxn(ctx context.Context, txn *sql.Tx, schemas []string
 	return nil
 }
 
-func (driver *Driver) dumpSchemaTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer) error {
-	if err := driver.dumpTableTxn(ctx, txn, schema, out); err != nil {
+func (*Driver) dumpSchemaTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer) error {
+	if err := dumpTableTxn(ctx, txn, schema, out); err != nil {
 		return errors.Wrapf(err, "failed to dump table")
-	}
-	if err := dumpViewTxn(ctx, txn, schema, out); err != nil {
-		return errors.Wrapf(err, "failed to dump view")
-	}
-	if err := dumpFunctionTxn(ctx, txn, schema, out); err != nil {
-		return errors.Wrapf(err, "failed to dump function")
 	}
 	if err := dumpIndexTxn(ctx, txn, schema, out); err != nil {
 		return errors.Wrapf(err, "failed to dump index")
-	}
-	if err := driver.dumpSequenceTxn(ctx, txn, schema, out); err != nil {
-		return errors.Wrapf(err, "failed to dump sequence")
-	}
-	if err := dumpTriggerOrderingTxn(ctx, txn, schema, out); err != nil {
-		return errors.Wrapf(err, "failed to dump trigger ordering")
 	}
 	return nil
 }
@@ -718,50 +706,6 @@ func (c *mergedConstraintMeta) assembleConstraintState(out io.Writer) error {
 	return nil
 }
 
-type viewMeta struct {
-	ViewName       sql.NullString
-	TextLength     sql.NullInt64
-	Text           sql.NullString
-	TypeTextLength sql.NullInt64
-	TypeText       sql.NullString
-	OidTextLength  sql.NullInt64
-	OidText        sql.NullString
-	ViewTypeOwner  sql.NullString
-	ViewType       sql.NullString
-	SuperViewName  sql.NullString
-	EditioningView sql.NullString
-	ReadOnly       sql.NullString
-	Status         sql.NullString
-	Comments       sql.NullString
-	ConstraintName sql.NullString
-	ConstraintType sql.NullString
-}
-
-type functionMeta struct {
-	ObjectName    sql.NullString
-	Owner         sql.NullString
-	DataObjectID  sql.NullInt64
-	ObjectType    sql.NullString
-	Status        sql.NullString
-	Created       sql.NullTime
-	LastDdlTime   sql.NullTime
-	Aggregate     sql.NullString
-	Pipelined     sql.NullString
-	ImplTypeOwner sql.NullString
-	ImplTypeName  sql.NullString
-	Parallel      sql.NullString
-	Interface     sql.NullString
-	Deterministic sql.NullString
-	AuthID        sql.NullString
-	ParamValue    sql.NullString
-	ObjectID      sql.NullInt64
-	SubProgramID  sql.NullInt64
-	Overload      sql.NullInt64
-	Timestamp     sql.NullString
-	Line          sql.NullInt64
-	Text          sql.NullString
-}
-
 func assembleIndexes(indexes []*mergedIndexMeta, out io.Writer) error {
 	for _, index := range indexes {
 		if err := assembleIndexStatement(index, out); err != nil {
@@ -1147,50 +1091,6 @@ type indexMeta struct {
 	ConstraintType       sql.NullString
 }
 
-type sequenceMeta struct {
-	SequenceName sql.NullString
-	MinValue     sql.NullInt64
-	// https://github.com/bytebase/bytebase/issues/8192.
-	MaxValue    sql.NullString
-	IncrementBy sql.NullInt64
-	CycleFlag   sql.NullString
-	OrderFlag   sql.NullString
-	CacheSize   sql.NullInt64
-	LastNumber  sql.NullInt64
-	KeepValue   sql.NullString
-	SessionFlag sql.NullString
-}
-
-type triggerOrderingMeta struct {
-	TriggerOwner      sql.NullString
-	TriggerName       sql.NullString
-	ReferencedSchema  sql.NullString
-	ReferencedTrigger sql.NullString
-	OrderingType      sql.NullString
-}
-
-type triggerMeta struct {
-	Owner            sql.NullString
-	TriggerName      sql.NullString
-	TriggerType      sql.NullString
-	TriggerEvent     sql.NullString
-	TableOwner       sql.NullString
-	BaseObjectType   sql.NullString
-	TableName        sql.NullString
-	NestedColumn     sql.NullString
-	ReferencingNames sql.NullString
-	WhenClause       sql.NullString
-	IsEnable         sql.NullString
-	Description      sql.NullString
-	TriggerBody      sql.NullString
-	ActionType       sql.NullString
-	Edition          sql.NullString
-	ColumnName       sql.NullString
-	IotType          sql.NullString
-	Debug            sql.NullString
-	ObjectStatus     sql.NullString
-}
-
 const (
 	dumpTableSQL = `
 SELECT
@@ -1351,51 +1251,6 @@ WHERE
 	AND CONS.OWNER = '%s'
 ORDER BY CONS.TABLE_NAME, CONS.CONSTRAINT_NAME, COLS.POSITION
 `
-	dumpViewSQL = `
-SELECT
-	V.VIEW_NAME,
-	V.TEXT_LENGTH,
-	V.TEXT,
-	V.TYPE_TEXT_LENGTH,
-	V.TYPE_TEXT,
-	V.OID_TEXT_LENGTH,
-	V.OID_TEXT,
-	V.VIEW_TYPE_OWNER,
-	V.VIEW_TYPE,
-	V.SUPERVIEW_NAME,
-	V.EDITIONING_VIEW,
-	V.READ_ONLY,
-	(
-		SELECT
-			STATUS
-		FROM
-			SYS.ALL_OBJECTS
-		WHERE
-			OWNER = V.OWNER
-			AND OBJECT_NAME = V.VIEW_NAME
-			AND OBJECT_TYPE = 'VIEW'
-			AND SUBOBJECT_NAME IS NULL
-	) STATUS,
-	(
-		SELECT
-			COMMENTS
-		FROM
-			SYS.ALL_TAB_COMMENTS
-		WHERE
-			OWNER = V.OWNER
-			AND TABLE_NAME = V.VIEW_NAME
-	) COMMENTS,
-	C.CONSTRAINT_NAME,
-	C.CONSTRAINT_TYPE
-FROM
-	SYS.ALL_VIEWS V,
-	SYS.ALL_CONSTRAINTS C
-WHERE
-	C.OWNER(+) = V.OWNER
-	AND C.TABLE_NAME(+) = V.VIEW_NAME
-	AND V.OWNER = '%s'
-ORDER BY V.OWNER, V.VIEW_NAME ASC
-`
 	dumpIndexSQL = `
 SELECT
 	I.INDEX_NAME,
@@ -1482,100 +1337,9 @@ WHERE
 	AND I.OWNER = '%s'
 ORDER BY I.INDEX_NAME, I.TABLE_NAME ASC, IC.COLUMN_POSITION ASC
 `
-	dumpSequenceSQL = `
-SELECT
-	SEQUENCE_NAME,
-	MIN_VALUE,
-	MAX_VALUE,
-	INCREMENT_BY,
-	CYCLE_FLAG,
-	ORDER_FLAG,
-	CACHE_SIZE,
-	LAST_NUMBER,
-	NULL,
-	NULL
-FROM
-	SYS.ALL_SEQUENCES
-WHERE
-	SEQUENCE_OWNER = '%s'
-ORDER BY SEQUENCE_NAME ASC
-`
-	dumpTriggerOrderingSQL = `
-SELECT
-	ATO.TRIGGER_OWNER,
-	ATO.TRIGGER_NAME,
-	ATO.REFERENCED_TRIGGER_OWNER AS REFERENCED_SCHEMA,
-	ATO.REFERENCED_TRIGGER_NAME AS REFERENCED_TRIGGER,
-	ATO.ORDERING_TYPE
-FROM
-	ALL_TRIGGER_ORDERING ATO
-WHERE
-	ATO.TRIGGER_OWNER = '%s'
-`
-	dumpTriggerSQL = `
-SELECT
-	AT.OWNER,
-	AT.TRIGGER_NAME,
-	AT.TRIGGER_TYPE,
-	AT.TRIGGERING_EVENT,
-	AT.TABLE_OWNER,
-	AT.BASE_OBJECT_TYPE,
-	AT.TABLE_NAME,
-	AT.COLUMN_NAME AS NESTED_COLUMN,
-	AT.REFERENCING_NAMES,
-	AT.WHEN_CLAUSE,
-	AT.STATUS AS IS_ENABLE,
-	AT.DESCRIPTION,
-	AT.TRIGGER_BODY,
-	AT.ACTION_TYPE,
-	AT.CROSSEDITION AS EDITION,
-	ATC.COLUMN_NAME,
-	(
-		SELECT
-			T.IOT_TYPE
-		FROM
-			SYS.ALL_TABLES T
-		WHERE
-			AT.TABLE_OWNER = T.OWNER
-			AND AT.TABLE_NAME = T.TABLE_NAME
-	) AS IOT_TYPE,
-	(
-		SELECT
-			S.PARAM_VALUE
-		FROM
-			SYS.ALL_STORED_SETTINGS S
-		WHERE
-			S.OBJECT_TYPE = 'TRIGGER'
-			AND S.PARAM_NAME = 'plsql_debug'
-			AND S.OWNER = AT.OWNER
-			AND S.OBJECT_NAME = AT.TRIGGER_NAME
-	) AS DEBUG,
-	(
-		SELECT
-			O.STATUS
-		FROM
-			SYS.ALL_OBJECTS O
-		WHERE
-			O.OWNER = AT.OWNER
-			AND O.OBJECT_NAME = AT.TRIGGER_NAME
-			AND O.OBJECT_TYPE = 'TRIGGER'
-			AND O.SUBOBJECT_NAME IS NULL
-	) AS OBJECT_STATUS
-FROM
-	SYS.ALL_TRIGGERS AT,
-	SYS.ALL_TRIGGER_COLS ATC
-WHERE
-	AT.OWNER = ATC.TRIGGER_OWNER(+)
-	AND AT.TRIGGER_NAME = ATC.TRIGGER_NAME(+)
-	AND AT.TABLE_OWNER = ATC.TABLE_OWNER(+)
-	AND AT.TABLE_NAME =  ATC.TABLE_NAME(+)
-	AND ATC.COLUMN_LIST(+) = 'YES'
-	AND AT.OWNER = '%s'
-ORDER BY AT.TABLE_OWNER, AT.TABLE_NAME, AT.TRIGGER_NAME, ATC.COLUMN_NAME ASC
-`
 )
 
-func (driver *Driver) dumpTableTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer) error {
+func dumpTableTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer) error {
 	tableMap := make(map[string]*tableSchema)
 	tableRows, err := txn.QueryContext(ctx, fmt.Sprintf(dumpTableSQL, schema))
 	var constraintList []*constraintMeta
@@ -1789,17 +1553,6 @@ func (driver *Driver) dumpTableTxn(ctx context.Context, txn *sql.Tx, schema stri
 	return assembleTableStatement(tableMap, out)
 }
 
-func dumpViewTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) error {
-	// TODO: implement
-	_ = dumpViewSQL
-	return nil
-}
-
-func dumpFunctionTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) error {
-	// TODO: implement
-	return nil
-}
-
 func dumpIndexTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer) error {
 	indexes := []*indexMeta{}
 	indexRows, err := txn.QueryContext(ctx, fmt.Sprintf(dumpIndexSQL, schema))
@@ -1962,16 +1715,6 @@ func dumpIndexTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer
 	}
 
 	return assembleIndexes(mergedIndexList, out)
-}
-
-func (driver *Driver) dumpSequenceTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) error {
-	// TODO: implement
-	return nil
-}
-
-func dumpTriggerOrderingTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) error {
-	// TODO: implement
-	return nil
 }
 
 // Restore restores a database.
