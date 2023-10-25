@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -21,7 +22,8 @@ func init() {
 }
 
 type Driver struct {
-	db *sql.DB
+	db           *sql.DB
+	databaseName string
 }
 
 func newDriver(db.DriverConfig) db.Driver {
@@ -29,7 +31,20 @@ func newDriver(db.DriverConfig) db.Driver {
 }
 
 func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
-	dsn := fmt.Sprintf("%s/%s@%s:%s", config.Username, config.Password, config.Host, config.Port)
+	databaseName := func() string {
+		if config.Database != "" {
+			return config.Database
+		}
+		i := strings.Index(config.Username, "@")
+		if i == -1 {
+			return config.Username
+		}
+		return config.Username[:i]
+	}()
+
+	// usename format: {user}@{tenant}#{cluster}
+	// user is required, others are optional.
+	dsn := fmt.Sprintf("%s/%s@%s:%s/%s", config.Username, config.Password, config.Host, config.Port, databaseName)
 
 	db, err := sql.Open("oci8", dsn)
 	if err != nil {
@@ -37,15 +52,16 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 	}
 
 	driver.db = db
+	driver.databaseName = databaseName
 	return driver, nil
 }
 
-func (*Driver) Close(context.Context) error {
-	return errors.New("not implemented")
+func (driver *Driver) Close(context.Context) error {
+	return driver.db.Close()
 }
 
-func (*Driver) Ping(context.Context) error {
-	return errors.New("not implemented")
+func (driver *Driver) Ping(ctx context.Context) error {
+	return driver.db.PingContext(ctx)
 }
 
 func (*Driver) GetType() storepb.Engine {
