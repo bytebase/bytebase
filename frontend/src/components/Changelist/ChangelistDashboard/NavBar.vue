@@ -1,7 +1,11 @@
 <template>
   <div class="flex flex-row items-center justify-between py-0.5">
     <div class="flex items-center justify-start">
-      <ProjectSelect v-model:project="projectUID" :include-all="true" />
+      <ProjectSelect
+        v-if="!disableProjectSelect"
+        v-model:project="projectUID"
+        :include-all="true"
+      />
     </div>
     <div class="flex items-center justify-end gap-x-2">
       <SearchBox
@@ -23,6 +27,10 @@ import { ProjectSelect } from "@/components/v2";
 import { useProjectV1Store } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { useChangelistDashboardContext } from "./context";
+
+const props = defineProps<{
+  disableProjectSelect?: boolean;
+}>();
 
 const { filter, showCreatePanel, events } = useChangelistDashboardContext();
 

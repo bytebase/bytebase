@@ -1,6 +1,6 @@
 <template>
-  <div class="flex flex-col gap-y-2 px-4">
-    <NavBar />
+  <div class="flex flex-col gap-y-2">
+    <NavBar :disable-project-select="!!project" />
 
     <ChangelistTable
       :changelists="filteredChangelists"
@@ -8,7 +8,10 @@
       :keyword="filter.keyword"
     />
 
-    <CreateChangelistPanel />
+    <CreateChangelistPanel
+      :project-uid="project?.uid"
+      :disable-project-select="!!project"
+    />
   </div>
 </template>
 
@@ -20,6 +23,7 @@ import {
   useCurrentUserV1,
   useProjectV1Store,
 } from "@/store";
+import { ComposedProject } from "@/types";
 import { Changelist } from "@/types/proto/v1/changelist_service";
 import { extractProjectResourceName, isMemberOfProjectV1 } from "@/utils";
 import ChangelistTable from "./ChangelistTable.vue";
@@ -27,8 +31,14 @@ import CreateChangelistPanel from "./CreateChangelistPanel.vue";
 import NavBar from "./NavBar.vue";
 import { provideChangelistDashboardContext } from "./context";
 
+const props = defineProps<{
+  project?: ComposedProject;
+}>();
+
 const me = useCurrentUserV1();
-const { filter, events } = provideChangelistDashboardContext();
+const { filter, events } = provideChangelistDashboardContext(
+  props.project?.name
+);
 
 const isFetching = ref(false);
 const changelists = ref<Changelist[]>([]);

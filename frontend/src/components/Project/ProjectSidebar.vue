@@ -37,6 +37,7 @@ import {
   Link,
   Settings,
   RefreshCcw,
+  PencilRuler,
 } from "lucide-vue-next";
 import { computed, VNode, h, reactive, watch, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
@@ -138,8 +139,16 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
           project.value.name
         ),
     },
-    // TODO: Changelists
-    // TODO: Sync schema
+    {
+      title: t("changelist.changelists"),
+      hash: "changelists",
+      icon: h(PencilRuler),
+      hide:
+        isDefaultProject.value ||
+        !currentUserIamPolicy.allowToChangeDatabaseOfProject(
+          project.value.name
+        ),
+    },
     {
       title: t("database.sync-schema.title"),
       hash: "sync-schema",
