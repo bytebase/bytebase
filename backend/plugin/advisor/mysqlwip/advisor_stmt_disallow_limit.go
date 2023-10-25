@@ -9,17 +9,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*DisallowLimitAdvisor)(nil)
 	_ ast.Visitor     = (*disallowLimitChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLDisallowLimit, &DisallowLimitAdvisor{})
-}
 
 // DisallowLimitAdvisor is the advisor checking for no LIMIT clause in INSERT/UPDATE statement.
 type DisallowLimitAdvisor struct {

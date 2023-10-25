@@ -13,17 +13,12 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*IndexTypeNoBlobAdvisor)(nil)
 	_ ast.Visitor     = (*indexTypeNoBlobChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLIndexTypeNoBlob, &IndexTypeNoBlobAdvisor{})
-}
 
 // IndexTypeNoBlobAdvisor is the advisor checking for index type no blob.
 type IndexTypeNoBlobAdvisor struct {

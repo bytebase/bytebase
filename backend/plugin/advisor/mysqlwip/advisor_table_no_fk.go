@@ -7,17 +7,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*TableNoFKAdvisor)(nil)
 	_ ast.Visitor     = (*tableNoFKChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLTableNoFK, &TableNoFKAdvisor{})
-}
 
 // TableNoFKAdvisor is the advisor checking table disallow foreign key.
 type TableNoFKAdvisor struct {

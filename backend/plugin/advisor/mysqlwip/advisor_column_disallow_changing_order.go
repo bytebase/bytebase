@@ -9,17 +9,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*ColumnDisallowChangingOrderAdvisor)(nil)
 	_ ast.Visitor     = (*columnDisallowChangingOrderChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnDisallowChangingOrder, &ColumnDisallowChangingOrderAdvisor{})
-}
 
 // ColumnDisallowChangingOrderAdvisor is the advisor checking for disallow changing column order.
 type ColumnDisallowChangingOrderAdvisor struct {

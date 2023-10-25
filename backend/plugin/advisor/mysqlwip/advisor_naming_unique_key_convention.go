@@ -9,17 +9,12 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*NamingUKConventionAdvisor)(nil)
 	_ ast.Visitor     = (*namingUKConventionChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLNamingUKConvention, &NamingUKConventionAdvisor{})
-}
 
 // NamingUKConventionAdvisor is the advisor checking for unique key naming convention.
 type NamingUKConventionAdvisor struct {

@@ -10,17 +10,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*ColumnTypeRestrictionAdvisor)(nil)
 	_ ast.Visitor     = (*columnTypeRestrictionChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnTypeRestriction, &ColumnTypeRestrictionAdvisor{})
-}
 
 // ColumnTypeRestrictionAdvisor is the advisor checking for column type restriction.
 type ColumnTypeRestrictionAdvisor struct {

@@ -6,7 +6,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	"github.com/pingcap/tidb/parser/ast"
 )
@@ -15,10 +14,6 @@ var (
 	_ advisor.Advisor = (*CompatibilityAdvisor)(nil)
 	_ ast.Visitor     = (*compatibilityChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
-}
 
 // CompatibilityAdvisor is the advisor checking for schema backward compatibility.
 type CompatibilityAdvisor struct {

@@ -12,7 +12,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 const (
@@ -24,10 +23,6 @@ var (
 	_ advisor.Advisor = (*ColumnCurrentTimeCountLimitAdvisor)(nil)
 	_ ast.Visitor     = (*columnCurrentTimeCountLimitChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLCurrentTimeColumnCountLimit, &ColumnCurrentTimeCountLimitAdvisor{})
-}
 
 // ColumnCurrentTimeCountLimitAdvisor is the advisor checking for current time column count limit.
 type ColumnCurrentTimeCountLimitAdvisor struct {

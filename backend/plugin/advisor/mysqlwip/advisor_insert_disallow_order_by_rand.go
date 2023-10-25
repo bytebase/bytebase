@@ -9,17 +9,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*InsertDisallowOrderByRandAdvisor)(nil)
 	_ ast.Visitor     = (*insertDisallowOrderByRandChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLInsertDisallowOrderByRand, &InsertDisallowOrderByRandAdvisor{})
-}
 
 // InsertDisallowOrderByRandAdvisor is the advisor checking for to disallow order by rand in INSERT statements.
 type InsertDisallowOrderByRandAdvisor struct {

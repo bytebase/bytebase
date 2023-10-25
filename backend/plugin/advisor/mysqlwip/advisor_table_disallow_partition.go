@@ -9,17 +9,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*TableDisallowPartitionAdvisor)(nil)
 	_ ast.Visitor     = (*tableDisallowPartitionChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLTableDisallowPartition, &TableDisallowPartitionAdvisor{})
-}
 
 // TableDisallowPartitionAdvisor is the advisor checking for disallow table partition.
 type TableDisallowPartitionAdvisor struct {

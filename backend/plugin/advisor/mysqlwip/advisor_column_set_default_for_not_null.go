@@ -9,17 +9,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*ColumnSetDefaultForNotNullAdvisor)(nil)
 	_ ast.Visitor     = (*columnSetDefaultForNotNullChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnSetDefaultForNotNull, &ColumnSetDefaultForNotNullAdvisor{})
-}
 
 // ColumnSetDefaultForNotNullAdvisor is the advisor checking for set default value for not null column.
 type ColumnSetDefaultForNotNullAdvisor struct {

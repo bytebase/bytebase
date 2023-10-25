@@ -10,17 +10,12 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*ColumnDisallowDropInIndexAdvisor)(nil)
 	_ ast.Visitor     = (*columnDisallowDropInIndexChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnDisallowDropInIndex, &ColumnDisallowDropInIndexAdvisor{})
-}
 
 // ColumnDisallowDropInIndexAdvisor is the advisor checking for disallow DROP COLUMN in index.
 type ColumnDisallowDropInIndexAdvisor struct {

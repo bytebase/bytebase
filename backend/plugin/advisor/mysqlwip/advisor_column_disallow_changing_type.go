@@ -11,17 +11,12 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*ColumnDisallowChangingTypeAdvisor)(nil)
 	_ ast.Visitor     = (*columnDisallowChangingTypeChecker)(nil)
 )
-
-func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnDisallowChangingType, &ColumnDisallowChangingTypeAdvisor{})
-}
 
 // ColumnDisallowChangingTypeAdvisor is the advisor checking for disallow changing column type..
 type ColumnDisallowChangingTypeAdvisor struct {
