@@ -15,11 +15,14 @@ type maskingLevelEvaluator struct {
 	maskingRules            []*storepb.MaskingRulePolicy_MaskingRule
 	dataClassificationIDMap map[string]*storepb.DataClassificationSetting_DataClassificationConfig
 	semanticTypesMap        map[string]*storepb.SemanticTypeSetting_SemanticType
+	maskingAlgorithms       map[string]*storepb.MaskingAlgorithmSetting_Algorithm
 }
 
 func newEmptyMaskingLevelEvaluator() *maskingLevelEvaluator {
 	return &maskingLevelEvaluator{
 		dataClassificationIDMap: make(map[string]*storepb.DataClassificationSetting_DataClassificationConfig),
+		semanticTypesMap:        make(map[string]*storepb.SemanticTypeSetting_SemanticType),
+		maskingAlgorithms:       make(map[string]*storepb.MaskingAlgorithmSetting_Algorithm),
 	}
 }
 
@@ -48,15 +51,76 @@ func (m *maskingLevelEvaluator) withSemanticTypeSetting(semanticTypeSetting *sto
 	if semanticTypeSetting == nil {
 		return m
 	}
-	m.semanticTypesMap = make(map[string]*storepb.SemanticTypeSetting_SemanticType)
 	for _, semanticType := range semanticTypeSetting.Types {
 		m.semanticTypesMap[semanticType.Id] = semanticType
 	}
 	return m
 }
 
+func (m *maskingLevelEvaluator) withMaskingAlgorithmSetting(maskingAlgorithmSetting *storepb.MaskingAlgorithmSetting) *maskingLevelEvaluator {
+	if maskingAlgorithmSetting == nil {
+		return m
+	}
+	for _, maskingAlgorithm := range maskingAlgorithmSetting.Algorithms {
+		m.maskingAlgorithms[maskingAlgorithm.Id] = maskingAlgorithm
+	}
+	return m
+}
+
 func (m *maskingLevelEvaluator) getDataClassificationConfig(classificationID string) *storepb.DataClassificationSetting_DataClassificationConfig {
 	return m.dataClassificationIDMap[classificationID]
+}
+
+func (m *maskingLevelEvaluator) evaluateMaskingAlgorithmOfColumn(databaseMessage *store.DatabaseMessage, schemaName, tableName, columnName, columnSemanticTypeID, columnClassification string, databaseProjectDataClassificationID string, maskingPolicyMap map[maskingPolicyKey]*storepb.MaskData, filteredMaskingExceptions []*storepb.MaskingExceptionPolicy_MaskingException) (*storepb.MaskingAlgorithmSetting_Algorithm, storepb.MaskingLevel, error) {
+	maskingLevel, err := m.evaluateMaskingLevelOfColumn(databaseMessage, schemaName, tableName, columnName, columnClassification, databaseProjectDataClassificationID, maskingPolicyMap, filteredMaskingExceptions)
+	if err != nil {
+		return nil, storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to evaluate masking level of column")
+	}
+	if maskingLevel == storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED || maskingLevel == storepb.MaskingLevel_NONE {
+		return nil, maskingLevel, nil
+	}
+	key := maskingPolicyKey{
+		schema: schemaName,
+		table:  tableName,
+		column: columnName,
+	}
+	if maskingData, ok := maskingPolicyMap[key]; ok {
+		algorithmID := ""
+		switch maskingLevel {
+		case storepb.MaskingLevel_PARTIAL:
+			algorithmID = maskingData.PartialMaskingAlgorithmId
+		case storepb.MaskingLevel_FULL:
+			algorithmID = maskingData.FullMaskingAlgorithmId
+		}
+		if algorithmID != "" {
+			if v, ok := m.maskingAlgorithms[algorithmID]; ok {
+				return v, maskingLevel, nil
+			}
+			// If we cannot find the algorithm, we will return the masking level and a error message to the caller.
+			return nil, maskingLevel, errors.Errorf("failed to find the masking algorithm %q", algorithmID)
+		}
+	}
+
+	semanticType, ok := m.semanticTypesMap[columnSemanticTypeID]
+	if !ok {
+		return nil, maskingLevel, errors.Errorf("failed to find the semantic type %q", columnSemanticTypeID)
+	}
+	algorithmID := ""
+	switch maskingLevel {
+	case storepb.MaskingLevel_PARTIAL:
+		algorithmID = semanticType.PartialMaskAlgorithmId
+	case storepb.MaskingLevel_FULL:
+		algorithmID = semanticType.FullMaskAlgorithmId
+	}
+	if algorithmID != "" {
+		if v, ok := m.maskingAlgorithms[algorithmID]; ok {
+			return v, maskingLevel, nil
+		}
+		// If we cannot find the algorithm, we will return the masking level and a error message to the caller.
+		return nil, maskingLevel, errors.Errorf("failed to find the masking algorithm %q", algorithmID)
+	}
+
+	return nil, maskingLevel, nil
 }
 
 // evaluateMaskingLevelOfColumn evaluates the masking level of the given column.
