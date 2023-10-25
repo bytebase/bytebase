@@ -118,7 +118,7 @@ func getTables(ctx context.Context, tx *sql.Tx, schemaName string) (map[string][
 		WHERE OWNER = '%s'
 		ORDER BY TABLE_NAME`, schemaName)
 
-	rows, err := tx.Query(query)
+	rows, err := tx.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +205,7 @@ func getIndexes(ctx context.Context, tx *sql.Tx, schemaName string) (map[db.Tabl
 		WHERE TABLE_OWNER = '%s'
 		ORDER BY TABLE_NAME, INDEX_NAME, COLUMN_POSITION`, schemaName)
 
-	colRows, err := tx.Query(queryColumn)
+	colRows, err := tx.QueryContext(ctx, queryColumn)
 	if err != nil {
 		return nil, err
 	}
@@ -226,7 +226,7 @@ func getIndexes(ctx context.Context, tx *sql.Tx, schemaName string) (map[db.Tabl
 		FROM sys.all_ind_expressions
 		WHERE TABLE_OWNER = '%s'
 		ORDER BY TABLE_NAME, INDEX_NAME, COLUMN_POSITION`, schemaName)
-	expRows, err := tx.Query(queryExpression)
+	expRows, err := tx.QueryContext(ctx, queryExpression)
 	if err != nil {
 		return nil, err
 	}
@@ -253,7 +253,7 @@ func getIndexes(ctx context.Context, tx *sql.Tx, schemaName string) (map[db.Tabl
 		FROM sys.all_indexes
 		WHERE OWNER = '%s'
 		ORDER BY TABLE_NAME, INDEX_NAME`, schemaName)
-	rows, err := tx.Query(query)
+	rows, err := tx.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -290,7 +290,7 @@ func getViews(ctx context.Context, tx *sql.Tx, schemaName string) (map[string][]
 		ORDER BY view_name
 	`, schemaName)
 
-	rows, err := tx.Query(query)
+	rows, err := tx.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
