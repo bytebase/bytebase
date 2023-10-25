@@ -77,6 +77,16 @@ func NormalizeMySQLIdentifier(identifier parser.IIdentifierContext) string {
 	return identifier.GetText()
 }
 
+// NormalizeMySQLTextOrIdentifier normalizes the given TextOrIdentifier.
+func NormalizeMySQLTextOrIdentifier(ctx parser.ITextOrIdentifierContext) string {
+	if ctx.Identifier() != nil {
+		return NormalizeMySQLIdentifier(ctx.Identifier())
+	}
+	textString := ctx.TextStringLiteral().GetText()
+	// remove the quotations.
+	return textString[1 : len(textString)-1]
+}
+
 // NormalizeMySQLSelectAlias normalizes the given select alias.
 func NormalizeMySQLSelectAlias(selectAlias parser.ISelectAliasContext) string {
 	if selectAlias.Identifier() != nil {

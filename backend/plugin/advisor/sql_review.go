@@ -1314,6 +1314,9 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleMySQLEngine:
 		switch engine {
+		// only for mysqlwip test.
+		case storepb.Engine_ENGINE_UNSPECIFIED:
+			return MySQLUseInnoDB, nil
 		case storepb.Engine_MYSQL, storepb.Engine_MARIADB:
 			return MySQLUseInnoDB, nil
 		}
