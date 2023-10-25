@@ -81,6 +81,7 @@ const emit = defineEmits<{
 
 const props = defineProps<{
   selectedSchemaDesign?: SchemaDesign;
+  projectName?: string;
 }>();
 
 const { t } = useI18n();
@@ -88,8 +89,9 @@ const router = useRouter();
 const userV1Store = useUserStore();
 const projectV1Store = useProjectV1Store();
 const databaseV1Store = useDatabaseV1Store();
-const { schemaDesignList, ready: schemaDesignListReady } =
-  useSchemaDesignList();
+const { schemaDesignList, ready: schemaDesignListReady } = useSchemaDesignList(
+  props.projectName
+);
 const selectedSchemaDesign = ref<SchemaDesign | undefined>(
   props.selectedSchemaDesign
 );

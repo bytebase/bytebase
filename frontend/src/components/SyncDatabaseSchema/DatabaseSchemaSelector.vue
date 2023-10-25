@@ -9,6 +9,7 @@
       <ProjectSelect
         class="!w-60 shrink-0"
         :project="state.projectId"
+        :disabled="disableProjectSelect"
         @update:project="handleProjectSelect"
       />
     </div>
@@ -110,6 +111,7 @@ import { ChangeHistorySourceSchema } from "./types";
 
 const props = defineProps<{
   selectState?: ChangeHistorySourceSchema;
+  disableProjectSelect?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -174,6 +176,8 @@ onMounted(async () => {
     } catch (error) {
       // do nothing.
     }
+  } else if (props.selectState?.projectId) {
+    state.projectId = props.selectState.projectId;
   }
 });
 
