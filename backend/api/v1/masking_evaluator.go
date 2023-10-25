@@ -14,6 +14,7 @@ import (
 type maskingLevelEvaluator struct {
 	maskingRules            []*storepb.MaskingRulePolicy_MaskingRule
 	dataClassificationIDMap map[string]*storepb.DataClassificationSetting_DataClassificationConfig
+	semanticTypesMap        map[string]*storepb.SemanticTypeSetting_SemanticType
 }
 
 func newEmptyMaskingLevelEvaluator() *maskingLevelEvaluator {
@@ -39,6 +40,17 @@ func (m *maskingLevelEvaluator) withDataClassificationSetting(dataClassification
 	}
 	for _, dataClassificationConfig := range dataClassification.Configs {
 		m.dataClassificationIDMap[dataClassificationConfig.Id] = dataClassificationConfig
+	}
+	return m
+}
+
+func (m *maskingLevelEvaluator) withSemanticTypeSetting(semanticTypeSetting *storepb.SemanticTypeSetting) *maskingLevelEvaluator {
+	if semanticTypeSetting == nil {
+		return m
+	}
+	m.semanticTypesMap = make(map[string]*storepb.SemanticTypeSetting_SemanticType)
+	for _, semanticType := range semanticTypeSetting.Types {
+		m.semanticTypesMap[semanticType.Id] = semanticType
 	}
 	return m
 }
