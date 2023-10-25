@@ -25,13 +25,15 @@ export const useChangelistDashboardContext = () => {
   return inject(KEY)!;
 };
 
-export const provideChangelistDashboardContext = () => {
+export const provideChangelistDashboardContext = (
+  project: string = "projects/-"
+) => {
   const route = useRoute();
   const router = useRouter();
 
   const context: ChangelistDashboardContext = {
     filter: ref({
-      project: "projects/-",
+      project,
       keyword: "",
     }),
     showCreatePanel: ref(false),

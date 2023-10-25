@@ -12,6 +12,7 @@ import {
   Changelist_Change as Change,
 } from "@/types/proto/v1/changelist_service";
 import {
+  idFromSlug,
   extractUserResourceName,
   hasWorkspacePermissionV1,
   isOwnerOfProjectV1,
@@ -46,8 +47,17 @@ export const useChangelistDetailContext = () => {
 export const provideChangelistDetailContext = () => {
   const me = useCurrentUserV1();
   const route = useRoute();
+  const projectV1Store = useProjectV1Store();
+
+  const project = computed(() => {
+    const proj = projectV1Store.getProjectByUID(
+      String(idFromSlug(route.params.projectSlug as string))
+    );
+    return proj;
+  });
+
   const name = computed(() => {
-    return `projects/${route.params.projectName}/changelists/${route.params.changelistName}`;
+    return `${project.value.name}/changelists/${route.params.changelistName}`;
   });
   const changelist = computed(() => {
     return (
@@ -55,11 +65,7 @@ export const provideChangelistDetailContext = () => {
       unknownChangelist()
     );
   });
-  const project = computed(() => {
-    return useProjectV1Store().getProjectByName(
-      `projects/${route.params.projectName}`
-    );
-  });
+
   const allowEdit = computed(() => {
     if (
       hasWorkspacePermissionV1(

@@ -17,6 +17,9 @@
       :database-list="databaseV1List"
     />
   </template>
+  <template v-if="hash === 'changelists'">
+    <ChangelistDashboard :project="project" />
+  </template>
   <template v-if="hash === 'sync-schema'">
     <SyncDatabaseSchema :project="project" />
   </template>
@@ -68,6 +71,7 @@ import {
   useProjectV1Store,
 } from "@/store";
 import { DEFAULT_PROJECT_V1_NAME } from "@/types";
+import ChangelistDashboard from "../components/Changelist/ChangelistDashboard";
 import ProjectIssuesPanel from "../components/Project/ProjectIssuesPanel.vue";
 import ProjectActivityPanel from "../components/ProjectActivityPanel.vue";
 import ProjectChangeHistoryPanel from "../components/ProjectChangeHistoryPanel.vue";
