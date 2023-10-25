@@ -37,6 +37,7 @@ func (m *maskingLevelEvaluator) withMaskingRulePolicy(maskingRulePolicy *storepb
 	return m
 }
 
+// nolint
 func (m *maskingLevelEvaluator) withDataClassificationSetting(dataClassification *storepb.DataClassificationSetting) *maskingLevelEvaluator {
 	if dataClassification == nil {
 		return m
@@ -47,6 +48,7 @@ func (m *maskingLevelEvaluator) withDataClassificationSetting(dataClassification
 	return m
 }
 
+// nolint
 func (m *maskingLevelEvaluator) withSemanticTypeSetting(semanticTypeSetting *storepb.SemanticTypeSetting) *maskingLevelEvaluator {
 	if semanticTypeSetting == nil {
 		return m
@@ -57,6 +59,7 @@ func (m *maskingLevelEvaluator) withSemanticTypeSetting(semanticTypeSetting *sto
 	return m
 }
 
+// nolint
 func (m *maskingLevelEvaluator) withMaskingAlgorithmSetting(maskingAlgorithmSetting *storepb.MaskingAlgorithmSetting) *maskingLevelEvaluator {
 	if maskingAlgorithmSetting == nil {
 		return m
@@ -71,6 +74,7 @@ func (m *maskingLevelEvaluator) getDataClassificationConfig(classificationID str
 	return m.dataClassificationIDMap[classificationID]
 }
 
+// nolint
 func (m *maskingLevelEvaluator) evaluateMaskingAlgorithmOfColumn(databaseMessage *store.DatabaseMessage, schemaName, tableName, columnName, columnSemanticTypeID, columnClassification string, databaseProjectDataClassificationID string, maskingPolicyMap map[maskingPolicyKey]*storepb.MaskData, filteredMaskingExceptions []*storepb.MaskingExceptionPolicy_MaskingException) (*storepb.MaskingAlgorithmSetting_Algorithm, storepb.MaskingLevel, error) {
 	maskingLevel, err := m.evaluateMaskingLevelOfColumn(databaseMessage, schemaName, tableName, columnName, columnClassification, databaseProjectDataClassificationID, maskingPolicyMap, filteredMaskingExceptions)
 	if err != nil {
