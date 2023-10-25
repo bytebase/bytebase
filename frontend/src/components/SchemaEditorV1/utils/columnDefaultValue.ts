@@ -61,6 +61,18 @@ const BOOLEAN_FALSE_OPTION: DefaultValueOption = {
   },
 };
 
+export const isTextOfColumnType = (_: Engine, columnType: string) => {
+  const type = columnType.toUpperCase();
+  if (
+    type === "TEXT" ||
+    type.startsWith("VARCHAR") ||
+    type.startsWith("CHAR")
+  ) {
+    return true;
+  }
+  return false;
+};
+
 export const getColumnTypeDefaultValueOptions = (
   engine: Engine,
   columnType: string

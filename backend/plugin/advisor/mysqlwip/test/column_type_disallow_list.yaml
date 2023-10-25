@@ -1,0 +1,36 @@
+- statement: CREATE TABLE t(a int)
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: CREATE TABLE t(a JSON, b BLOB, c TEXT)
+  want:
+    - status: WARN
+      code: 411
+      title: column.type-disallow-list
+      content: Disallow column type JSON but column `t`.`a` is
+      line: 1
+      details: ""
+- statement: |-
+    CREATE TABLE t(d int);
+    ALTER TABLE t add COLUMN (a JSON, b BLOB, c TEXT)
+  want:
+    - status: WARN
+      code: 411
+      title: column.type-disallow-list
+      content: Disallow column type JSON but column `t`.`a` is
+      line: 3
+      details: ""
+- statement: |-
+    CREATE TABLE t(c int, b int);
+    ALTER TABLE t CHANGE COLUMN c a JSON, MODIFY b BLOB
+  want:
+    - status: WARN
+      code: 411
+      title: column.type-disallow-list
+      content: Disallow column type JSON but column `t`.`a` is
+      line: 3
+      details: ""

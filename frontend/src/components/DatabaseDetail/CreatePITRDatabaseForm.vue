@@ -5,11 +5,10 @@
       <span class="text-red-600">*</span>
     </label>
     <ProjectSelect
-      class="mt-1"
+      v-model:project="state.context.projectId"
+      class="mt-1 !w-full"
       :disabled="true"
       :include-default-project="true"
-      :selected-id="state.context.projectId"
-      @select-project-id="(id: string) => (state.context.projectId = id)"
     />
   </div>
 
@@ -18,13 +17,14 @@
       {{ $t("create-db.new-database-name") }}
       <span class="text-red-600">*</span>
     </label>
-    <input
-      id="name"
-      v-model="state.context.databaseName"
+
+    <NInput
+      v-model:value="state.context.databaseName"
       required
-      name="name"
+      name="databaseName"
       type="text"
-      class="textfield mt-1 w-full"
+      class="mt-1 w-full"
+      :placeholder="$t('create-db.new-database-name')"
     />
     <span v-if="isReservedName" class="text-red-600">
       <i18n-t keypath="create-db.reserved-db-error">
@@ -41,9 +41,10 @@
     </label>
     <EnvironmentSelect
       class="mt-1"
-      :selected-id="state.context.environmentId"
+      required
+      name="environment"
       :disabled="true"
-      @select-environment-id="(id: string) => (state.context.environmentId = id)"
+      :environment="state.context.environmentId"
     />
   </div>
 
@@ -53,12 +54,12 @@
         {{ $t("common.instance") }} <span class="text-red-600">*</span>
       </label>
     </label>
+
     <InstanceSelect
+      v-model:instance="state.context.instanceId"
       class="mt-1"
-      :selected-id="String(state.context.instanceId)"
-      :environment-id="state.context.environmentId"
+      :environment="state.context.environmentId"
       :filter="instanceFilter"
-      @select-instance-id="(id: number) => (state.context.instanceId = String(id))"
     />
   </div>
 
@@ -70,11 +71,8 @@
           : $t("db.character-set")
       }}
     </label>
-    <input
-      id="charset"
-      v-model="state.context.characterSet"
-      name="charset"
-      type="text"
+    <NInput
+      v-model:value="state.context.characterSet"
       class="textfield mt-1 w-full"
       :placeholder="defaultCharsetOfEngineV1(selectedInstance.engine)"
     />
@@ -84,11 +82,8 @@
     <label for="collation" class="textlabel">
       {{ $t("db.collation") }}
     </label>
-    <input
-      id="collation"
-      v-model="state.context.collation"
-      name="collation"
-      type="text"
+    <NInput
+      v-model:value="state.context.collation"
       class="textfield mt-1 w-full"
       :placeholder="
         defaultCollationOfEngineV1(selectedInstance.engine) || 'default'
@@ -101,6 +96,7 @@
 
 <script lang="ts" setup>
 import { cloneDeep, isEmpty } from "lodash-es";
+import { NInput } from "naive-ui";
 import { computed, onBeforeMount, PropType, reactive, watch } from "vue";
 import { isPITRAvailableOnInstanceV1 } from "@/plugins/pitr";
 import { useDBSchemaV1Store, useInstanceV1Store } from "@/store";
@@ -111,6 +107,7 @@ import {
   defaultCollationOfEngineV1,
 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
+import { EnvironmentSelect, InstanceSelect, ProjectSelect } from "../v2";
 import { CreatePITRDatabaseContext } from "./utils";
 
 interface LocalState {

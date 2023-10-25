@@ -361,6 +361,7 @@ SELECT
 	cols.table_name,
 	cols.column_name,
 	cols.data_type,
+	cols.character_maximum_length,
 	cols.ordinal_position,
 	cols.column_default,
 	cols.is_nullable,
@@ -383,8 +384,8 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 	for rows.Next() {
 		column := &storepb.ColumnMetadata{}
 		var schemaName, tableName, nullable string
-		var defaultStr, collation, udtSchema, udtName, comment sql.NullString
-		if err := rows.Scan(&schemaName, &tableName, &column.Name, &column.Type, &column.Position, &defaultStr, &nullable, &collation, &udtSchema, &udtName, &comment); err != nil {
+		var characterMaxLength, defaultStr, collation, udtSchema, udtName, comment sql.NullString
+		if err := rows.Scan(&schemaName, &tableName, &column.Name, &column.Type, &characterMaxLength, &column.Position, &defaultStr, &nullable, &collation, &udtSchema, &udtName, &comment); err != nil {
 			return nil, err
 		}
 		if defaultStr.Valid {
@@ -402,6 +403,8 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 			column.Type = fmt.Sprintf("%s.%s", udtSchema.String, udtName.String)
 		case "ARRAY":
 			column.Type = udtName.String
+		case "character", "character varying", "bit", "bit varying":
+			column.Type = fmt.Sprintf("%s(%s)", column.Type, characterMaxLength.String)
 		}
 		column.Collation = collation.String
 		column.Comment = comment.String

@@ -19,9 +19,9 @@ var (
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLStatementDisallowCommit, &StatementDisallowCommitAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLStatementDisallowCommit, &StatementDisallowCommitAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLStatementDisallowCommit, &StatementDisallowCommitAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLStatementDisallowCommit, &StatementDisallowCommitAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLStatementDisallowCommit, &StatementDisallowCommitAdvisor{})
 }
 
 // StatementDisallowCommitAdvisor is the advisor checking for index type no blob.

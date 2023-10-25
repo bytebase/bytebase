@@ -4,7 +4,7 @@
       `a` int,
       PRIMARY KEY (`a`),
       CONSTRAINT fk1 FOREIGN KEY (`a`) REFERENCES `t2` (`b`)
-    );
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
     CREATE TABLE `t3` (
       `a` int
     );
@@ -125,7 +125,7 @@
   result: |+
     CREATE TABLE `t` (
       `a` int NOT NULL
-    );
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
     CREATE TABLE `t4` (
       `a` varchar(10) NOT NULL DEFAULT 'default value' COMMENT 'this is comment, aha',
       `c` int NOT NULL,
@@ -146,7 +146,7 @@
   baseline: |-
     CREATE TABLE `t` (
       `a` int
-    );
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
   target: |-
     {
       "schemas": [
@@ -166,8 +166,7 @@
         }
       ]
     }
-  # FIXME: table-level comment is not supported.
-  result: |+
+  result: |
     CREATE TABLE `t` (
       `a` int NOT NULL
-    );
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT 'this is comment';

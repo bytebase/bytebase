@@ -237,11 +237,7 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 
 	stmt := statement
 	if !isExplain && queryContext.Limit > 0 {
-		var err error
-		stmt, err = driver.getStatementWithResultLimit(stmt, queryContext.Limit)
-		if err != nil {
-			return nil, err
-		}
+		stmt = driver.getStatementWithResultLimit(stmt, queryContext.Limit)
 	}
 
 	if driver.dbType == storepb.Engine_TIDB && queryContext.ReadOnly {

@@ -14,12 +14,9 @@
       <!-- For mysql, username can be empty indicating anonymous user.
       But it's a very bad practice to use anonymous user for admin operation,
       thus we make it REQUIRED here.-->
-      <input
-        id="username"
-        v-model="dataSource.username"
-        name="username"
-        type="text"
-        class="textfield mt-1 w-full"
+      <NInput
+        v-model:value="dataSource.username"
+        class="mt-1 w-full"
         :disabled="!allowEdit"
         :placeholder="
           basicInfo.engine === Engine.CLICKHOUSE ? $t('common.default') : ''
@@ -31,13 +28,14 @@
         <label for="password" class="textlabel block">
           {{ $t("common.password") }}
         </label>
-        <BBCheckbox
+        <NCheckbox
           v-if="!isCreating && allowUsingEmptyPassword"
-          :title="$t('common.empty')"
-          :value="dataSource.useEmptyPassword"
+          :checked="dataSource.useEmptyPassword"
           :disabled="!allowEdit"
-          @toggle="toggleUseEmptyPassword"
-        />
+          @update:checked="toggleUseEmptyPassword"
+        >
+          {{ $t("common.empty") }}
+        </NCheckbox>
       </div>
       <div class="flex space-x-2 text-sm mb-1">
         <div class="text-gray-400">
@@ -49,12 +47,9 @@
         />
         <FeatureBadge feature="bb.feature.external-secret-manager" />
       </div>
-      <input
-        id="password"
-        name="password"
-        type="text"
-        class="textfield mt-1 w-full"
-        autocomplete="off"
+      <NInput
+        class="mt-1 w-full"
+        :input-props="{ autocomplete: 'off' }"
         :placeholder="
           dataSource.useEmptyPassword
             ? $t('instance.no-password')
@@ -62,7 +57,7 @@
         "
         :disabled="!allowEdit || dataSource.useEmptyPassword"
         :value="dataSource.useEmptyPassword ? '' : dataSource.updatedPassword"
-        @input="dataSource.updatedPassword = trimInputValue($event.target)"
+        @update:value="dataSource.updatedPassword = $event.trim()"
       />
     </div>
   </template>
@@ -88,17 +83,12 @@
           {{ $t("instance.authentication-database") }}
         </label>
       </div>
-      <input
-        id="authenticationDatabase"
-        name="authenticationDatabase"
-        type="text"
-        class="textfield mt-1 w-full"
-        autocomplete="off"
+      <NInput
+        class="mt-1 w-full"
+        :input-props="{ autocomplete: 'off' }"
         placeholder="admin"
         :value="dataSource.authenticationDatabase"
-        @input="
-          dataSource.authenticationDatabase = trimInputValue($event.target)
-        "
+        @update:value="dataSource.authenticationDatabase = $event.trim()"
       />
     </div>
   </template>
@@ -118,14 +108,11 @@
           {{ $t("data-source.read-replica-host") }}
         </label>
       </div>
-      <input
-        id="host"
-        name="host"
-        type="text"
-        class="textfield mt-1 w-full"
-        autocomplete="off"
+      <NInput
+        class="mt-1 w-full"
+        :input-props="{ autocomplete: 'off' }"
         :value="dataSource.host"
-        @input="handleHostInput"
+        @update:value="handleHostInput"
       />
     </div>
 
@@ -138,14 +125,12 @@
           {{ $t("data-source.read-replica-port") }}
         </label>
       </div>
-      <input
-        id="port"
-        name="port"
-        type="text"
-        class="textfield mt-1 w-full"
-        autocomplete="off"
+      <NInput
+        class="mt-1 w-full"
+        :input-props="{ autocomplete: 'off' }"
         :value="dataSource.port"
-        @input="handlePortInput"
+        :allow-input="onlyAllowNumber"
+        @update:value="handlePortInput"
       />
     </div>
   </template>
@@ -154,12 +139,9 @@
     <label for="database" class="textlabel block">
       {{ $t("common.database") }}
     </label>
-    <input
-      id="database"
-      v-model="dataSource.database"
-      name="database"
-      type="text"
-      class="textfield mt-1 w-full"
+    <NInput
+      v-model:value="dataSource.database"
+      class="mt-1 w-full"
       :disabled="!allowEdit"
       :placeholder="$t('common.database')"
     />
@@ -179,13 +161,13 @@
         <SslCertificateForm :value="dataSource" @change="handleSSLChange" />
       </template>
       <template v-else>
-        <button
-          class="btn-normal mt-2"
+        <NButton
+          class="!mt-2"
           :disabled="!allowEdit"
           @click.prevent="handleEditSSL"
         >
           {{ $t("common.edit") }} - {{ $t("common.write-only") }}
-        </button>
+        </NButton>
       </template>
     </template>
   </div>
@@ -216,13 +198,13 @@
         />
       </template>
       <template v-else>
-        <button
-          class="btn-normal mt-2"
+        <NButton
+          class="!mt-2"
           :disabled="!allowEdit"
           @click.prevent="handleEditSSH"
         >
           {{ $t("common.edit") }} - {{ $t("common.write-only") }}
-        </button>
+        </NButton>
       </template>
     </template>
   </div>
@@ -230,12 +212,17 @@
 
 <script setup lang="ts">
 /* eslint-disable vue/no-mutating-props */
+import { NButton, NCheckbox, NInput } from "naive-ui";
 import { DataSourceOptions } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { DataSource, DataSourceType } from "@/types/proto/v1/instance_service";
 import { EditDataSource } from "../common";
 import { useInstanceFormContext } from "../context";
 import { useInstanceSpecs } from "../specs";
+import SpannerCredentialInput from "./SpannerCredentialInput.vue";
+import SshConnectionForm from "./SshConnectionForm.vue";
+import SslCertificateForm from "./SslCertificateForm.vue";
+import { onlyAllowNumber } from "./common";
 
 const props = defineProps<{
   dataSource: EditDataSource;
@@ -267,7 +254,7 @@ const toggleUseEmptyPassword = (on: boolean) => {
     ds.updatedPassword = "";
   }
 };
-const handleHostInput = (event: Event) => {
+const handleHostInput = (value: string) => {
   const ds = props.dataSource;
   if (ds.type === DataSourceType.READ_ONLY) {
     if (!hasReadonlyReplicaFeature.value) {
@@ -279,10 +266,10 @@ const handleHostInput = (event: Event) => {
       }
     }
   }
-  ds.host = trimInputValue(event.target);
+  ds.host = value.trim();
 };
 
-const handlePortInput = (event: Event) => {
+const handlePortInput = (value: string) => {
   const ds = props.dataSource;
   if (ds.type === DataSourceType.READ_ONLY) {
     if (!hasReadonlyReplicaFeature.value) {
@@ -294,7 +281,7 @@ const handlePortInput = (event: Event) => {
       }
     }
   }
-  ds.port = trimInputValue(event.target);
+  ds.port = value.trim();
 };
 const handleEditSSL = () => {
   const ds = props.dataSource;
@@ -334,9 +321,5 @@ const handleSSHChange = (
   const ds = props.dataSource;
   Object.assign(ds, value);
   ds.updateSsh = true;
-};
-
-const trimInputValue = (target: Event["target"]) => {
-  return ((target as HTMLInputElement)?.value ?? "").trim();
 };
 </script>

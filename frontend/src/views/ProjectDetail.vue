@@ -1,19 +1,12 @@
 <template>
-  <template v-if="hash === 'overview'">
-    <ProjectOverviewPanel id="overview" :project="project" />
+  <template v-if="hash === 'issues'">
+    <ProjectIssuesPanel id="issues" :project="project" />
   </template>
   <template v-if="hash === 'branches'">
     <ProjectBranchesPanel id="branches" :project-id="project.uid" />
   </template>
   <template v-if="hash === 'databases'">
-    <ProjectDeploymentConfigPanel
-      v-if="isTenantProject"
-      id="deployment-config"
-      :project="project"
-      :database-list="databaseV1List"
-      :allow-edit="allowEdit"
-    />
-    <ProjectDatabasesPanel v-else :database-list="databaseV1List" />
+    <ProjectDatabasesPanel :database-list="databaseV1List" />
   </template>
   <template v-if="hash === 'database-groups'">
     <ProjectDatabaseGroupPanel :project="project" />
@@ -27,7 +20,7 @@
   <template v-if="hash === 'slow-query'">
     <ProjectSlowQueryPanel :project="project" />
   </template>
-  <template v-if="hash === 'activity'">
+  <template v-if="hash === 'activities'">
     <ProjectActivityPanel id="activity" :project="project" />
   </template>
   <template v-if="!isDefaultProject && hash === 'gitops'">
@@ -71,13 +64,11 @@ import {
   useProjectV1Store,
 } from "@/store";
 import { DEFAULT_PROJECT_V1_NAME } from "@/types";
-import { TenantMode } from "@/types/proto/v1/project_service";
+import ProjectIssuesPanel from "../components/Project/ProjectIssuesPanel.vue";
 import ProjectActivityPanel from "../components/ProjectActivityPanel.vue";
 import ProjectChangeHistoryPanel from "../components/ProjectChangeHistoryPanel.vue";
 import ProjectDatabasesPanel from "../components/ProjectDatabasesPanel.vue";
-import ProjectDeploymentConfigPanel from "../components/ProjectDeploymentConfigPanel.vue";
 import ProjectMemberPanel from "../components/ProjectMember/ProjectMemberPanel.vue";
-import ProjectOverviewPanel from "../components/ProjectOverviewPanel.vue";
 import ProjectSettingPanel from "../components/ProjectSettingPanel.vue";
 import ProjectSlowQueryPanel from "../components/ProjectSlowQueryPanel.vue";
 import ProjectVersionControlPanel from "../components/ProjectVersionControlPanel.vue";
@@ -122,9 +113,5 @@ useSearchDatabaseV1List(
 const databaseV1List = computed(() => {
   const list = useDatabaseV1Store().databaseListByProject(project.value.name);
   return sortDatabaseV1List(list);
-});
-
-const isTenantProject = computed(() => {
-  return project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED;
 });
 </script>

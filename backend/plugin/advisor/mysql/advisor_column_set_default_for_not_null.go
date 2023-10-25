@@ -19,9 +19,9 @@ var (
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLColumnSetDefaultForNotNull, &ColumnSetDefaultForNotNullAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnSetDefaultForNotNull, &ColumnSetDefaultForNotNullAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLColumnSetDefaultForNotNull, &ColumnSetDefaultForNotNullAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLColumnSetDefaultForNotNull, &ColumnSetDefaultForNotNullAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnSetDefaultForNotNull, &ColumnSetDefaultForNotNullAdvisor{})
 }
 
 // ColumnSetDefaultForNotNullAdvisor is the advisor checking for set default value for not null column.

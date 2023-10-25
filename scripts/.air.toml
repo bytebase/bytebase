@@ -5,8 +5,11 @@ tmp_dir = ".air"
 [build]
 bin = './.air/bytebase --port 8080 --data . --debug --disable-sample'
 ## Use --tags "store.db" to enable SQL query logging against our metadata db.
+## Use -gcflags="all=-N -l" to disable inlining and optimization
+
 cmd = """
   go build \
+  -gcflags="all=-N -l" \
   --tags "minimal" \
   -o ./.air/bytebase ./backend/bin/server/main.go"""
 delay = 500

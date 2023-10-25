@@ -41,6 +41,7 @@ require (
 	github.com/lestrrat-go/jwx/v2 v2.0.12
 	github.com/lib/pq v1.10.9
 	github.com/lor00x/goldap v0.0.0-20180618054307-a546dffdd1a3
+	github.com/mattn/go-oci8 v0.1.1
 	github.com/mattn/go-sqlite3 v1.14.17
 	github.com/microsoft/go-mssqldb v1.6.0
 	github.com/nyaruka/phonenumbers v1.1.8
@@ -282,3 +283,5 @@ replace github.com/pingcap/tidb => github.com/bytebase/tidb v0.0.0-2023091409431
 replace github.com/pingcap/tidb/parser => github.com/bytebase/tidb/parser v0.0.0-20230914094316-ec1081216cfb
 
 replace github.com/pganalyze/pg_query_go/v4 => github.com/bytebase/pg_query_go/v4 v4.0.0-20230802100607-2f34e68d96f5
+
+replace github.com/mattn/go-oci8 => github.com/bytebase/go-obo v0.0.0-20231024042429-87de4ceb4d78

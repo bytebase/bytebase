@@ -254,6 +254,7 @@
     },
     "expiration": "Expiration",
     "configure": "Configure",
+    "groups": "Groups",
     "database-groups": "Database Groups",
     "members": "Members",
     "warehouse": "Warehouse",
@@ -269,7 +270,8 @@
     "updated-at-by": "Updated {time} by {user}",
     "created-at-by": "Created {time} by {user}",
     "filter-by-name": "Filter by name",
-    "tenant": "Tenant"
+    "tenant": "Tenant",
+    "license": "License"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -628,7 +630,8 @@
         "extra-link": {
           "self": "Link",
           "placeholder": "Input announcement link"
-        }
+        },
+        "confirm-delete-custom-logo": "Delete custom branding logo?"
       }
     },
     "sensitive-data": {
@@ -1065,6 +1068,7 @@
     "select-database-user": "Select database user",
     "new-database": "New Database",
     "syncing": "Syncing ...",
+    "selected-n-instances": "{n} instance selected | {n} instances selected",
     "create-migration-schema": "Create migration schema",
     "missing-migration-schema": "Missing migration schema",
     "unable-to-connect-instance-to-check-migration-schema": "Unable to connect instance to check migration schema",
@@ -1276,8 +1280,8 @@
       "manual-by-project-releaser": "Project releaser",
       "manual-by-issue-creator": "Issue creator",
       "manual-by-last-approver": "Manual rollout by the last approver from the custom approval flow",
-      "manual-by-fixed-roles": "Manual rollout by fixed roles",
-      "manual-by-fixed-roles-info": "Allow any of the following selected roles to click the \"Rollout\" button, and then the change will be executed.",
+      "manual-by-dedicated-roles": "Manual rollout by dedicated roles",
+      "manual-by-dedicated-roles-info": "Allow any of the following selected roles to click the \"Rollout\" button, and then the change will be executed.",
       "manual-by-dba": "DBA",
       "manual-by-workspace-owner": "Workspace owner",
       "role": {
@@ -1749,7 +1753,18 @@
       "schema-change-type": "Schema change type",
       "select-schema-change-type-ddl": "Imperative - Specify the change with any DDL statements.",
       "select-schema-change-type-sdl": "Declarative - Specify the desired schema. Only use CREATE TABLE/INDEX.",
-      "schema-path-template-sdl-description": "The schema file describes the database's full schema."
+      "schema-path-template-sdl-description": "The schema file describes the database's full schema.",
+      "branch-protection-rules": {
+        "self": "Branch protection rules",
+        "add-rule": "Add Rule",
+        "branch-name-pattern": {
+          "self": "Branch name pattern",
+          "description": "Support wildcard such as feature/* or *-stable"
+        },
+        "applies-to-n-branches": "Applies to {n} branch | Applies to {n} branches",
+        "only-allow-specified-roles-to-create-branch": "Only allow specified roles to create branch",
+        "no-protection-rule-configured": "No protection rule configured."
+      }
     },
     "members": {
       "description": "Project members determine the permission to operate database and issues inside the proejct. Project Owner, Workspace Owner and Workspace DBA all have full project permissions.",
@@ -2159,7 +2174,8 @@
       "invalid-column-type": "Invalid column type",
       "schema-not-found": "Schema not found",
       "failed-to-fetch-database-schema": "Failed to fetch database schema",
-      "invalid-schema": "Invalid schema"
+      "invalid-schema": "Invalid schema",
+      "cannot-drop-the-last-column": "Cannot drop the last column"
     },
     "confirm-to-close": {
       "title": "Confirm to close",

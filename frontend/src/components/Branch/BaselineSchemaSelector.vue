@@ -46,13 +46,7 @@
           @select-item="(changeHistory: ChangeHistory) => handleSchemaVersionSelect(changeHistory)"
         >
           <template
-            #menuItem="{
-              item: changeHistory,
-              index,
-            }: {
-              item: ChangeHistory,
-              index: number,
-            }"
+            #menuItem="{ item, index }: { item: ChangeHistory, index: number }"
           >
             <div class="flex justify-between mr-2">
               <FeatureBadge
@@ -62,11 +56,11 @@
                 :instance="database?.instanceEntity"
               />
               <NEllipsis class="flex-1 pr-2" :tooltip="false">
-                {{ changeHistory.version }} -
-                {{ changeHistory.description }}
+                {{ item.version }} -
+                {{ item.description }}
               </NEllipsis>
               <span class="text-control-light">
-                {{ humanizeDate(changeHistory.updateTime) }}
+                {{ humanizeDate(item.updateTime) }}
               </span>
             </div>
           </template>

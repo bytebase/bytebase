@@ -58,6 +58,13 @@ service InstanceService {
     };
   }
 
+  rpc BatchSyncInstance(BatchSyncInstanceRequest) returns (BatchSyncInstanceResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances:batchSync"
+      body: "*"
+    };
+  }
+
   rpc AddDataSource(AddDataSourceRequest) returns (Instance) {
     option (google.api.http) = {
       post: "/v1/{instance=instances/*}:addDataSource"
@@ -170,6 +177,14 @@ message SyncInstanceRequest {
 }
 
 message SyncInstanceResponse {}
+
+message BatchSyncInstanceRequest {
+  // The request message specifying the instances to sync.
+  // A maximum of 1000 instances can be synced in a batch.
+  repeated SyncInstanceRequest requests = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message BatchSyncInstanceResponse {}
 
 message AddDataSourceRequest {
   // The name of the instance to add a data source to.

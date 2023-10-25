@@ -18,9 +18,9 @@ var (
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLWhereRequirement, &WhereRequirementAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLWhereRequirement, &WhereRequirementAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLWhereRequirement, &WhereRequirementAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLWhereRequirement, &WhereRequirementAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLWhereRequirement, &WhereRequirementAdvisor{})
 }
 
 // WhereRequirementAdvisor is the advisor checking for the WHERE clause requirement.

@@ -32,6 +32,12 @@
           <div v-else class="text-sm max-w-prose truncate">
             {{ item.name }}
           </div>
+          <span
+            v-if="isTenantProject && index == breadcrumbList.length - 1"
+            class="flex-shrink-0 h-4 w-4"
+          >
+            <TenantIcon class="ml-1 text-control" />
+          </span>
           <button
             v-if="allowBookmark && index == breadcrumbList.length - 1"
             class="relative focus:outline-none"
@@ -66,6 +72,7 @@ import { computed, ComputedRef, defineComponent, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import HelpTriggerIcon from "@/components/HelpTriggerIcon.vue";
+import TenantIcon from "@/components/TenantIcon.vue";
 import {
   useRouterStore,
   useBookmarkV1Store,
@@ -75,6 +82,7 @@ import {
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { RouteMapList } from "@/types";
 import { Bookmark } from "@/types/proto/v1/bookmark_service";
+import { TenantMode } from "@/types/proto/v1/project_service";
 import { databaseV1Slug, idFromSlug, projectV1Slug } from "../utils";
 
 interface BreadcrumbItem {
@@ -87,6 +95,7 @@ export default defineComponent({
   name: "Breadcrumb",
   components: {
     HelpTriggerIcon,
+    TenantIcon,
   },
   setup() {
     const routerStore = useRouterStore();
@@ -117,6 +126,18 @@ export default defineComponent({
     const isBookmarked: ComputedRef<boolean> = computed(() => !!bookmark.value);
 
     const allowBookmark = computed(() => currentRoute.value.meta.allowBookmark);
+
+    const isTenantProject: ComputedRef<boolean> = computed(() => {
+      const routeSlug = routerStore.routeSlug(currentRoute.value);
+      const projectSlug = routeSlug.projectSlug;
+      if (projectSlug === undefined) {
+        return false;
+      }
+      const project = projectV1Store.getProjectByUID(
+        String(idFromSlug(projectSlug))
+      );
+      return project.tenantMode == TenantMode.TENANT_MODE_ENABLED;
+    });
 
     const breadcrumbList = computed(() => {
       const route = currentRoute.value;
@@ -297,6 +318,7 @@ export default defineComponent({
       allowBookmark,
       bookmark,
       isBookmarked,
+      isTenantProject,
       breadcrumbList,
       toggleBookmark,
       currentRoute,

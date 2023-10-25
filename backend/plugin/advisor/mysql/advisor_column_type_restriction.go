@@ -20,9 +20,9 @@ var (
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLColumnTypeRestriction, &ColumnTypeRestrictionAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnTypeRestriction, &ColumnTypeRestrictionAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLColumnTypeRestriction, &ColumnTypeRestrictionAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLColumnTypeRestriction, &ColumnTypeRestrictionAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnTypeRestriction, &ColumnTypeRestrictionAdvisor{})
 }
 
 // ColumnTypeRestrictionAdvisor is the advisor checking for column type restriction.

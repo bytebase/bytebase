@@ -19,9 +19,9 @@ var (
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLDisallowOrderBy, &DisallowOrderByAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLDisallowOrderBy, &DisallowOrderByAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLDisallowOrderBy, &DisallowOrderByAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLDisallowOrderBy, &DisallowOrderByAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLDisallowOrderBy, &DisallowOrderByAdvisor{})
 }
 
 // DisallowOrderByAdvisor is the advisor checking for no ORDER BY clause in DELETE/UPDATE statements.

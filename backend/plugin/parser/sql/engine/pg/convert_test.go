@@ -331,7 +331,7 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 			},
 		},
 		{
-			stmt: "CREATE TABLE \"techBook\" (a int NOT NULL, b int CONSTRAINT b_not_null NOT NULL)",
+			stmt: "CREATE TABLE \"techBook\" (a int NOT NULL, b int CONSTRAINT b_not_null NOT NULL, c int NULL)",
 			want: []ast.Node{
 				&ast.CreateTableStmt{
 					IfNotExists: false,
@@ -361,17 +361,27 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 								},
 							},
 						},
+						{
+							ColumnName: "c",
+							Type:       &ast.Integer{Size: 4},
+							ConstraintList: []*ast.ConstraintDef{
+								{
+									Type:    ast.ConstraintTypeNull,
+									KeyList: []string{"c"},
+								},
+							},
+						},
 					},
 				},
 			},
 			statementList: []base.SingleSQL{
 				{
-					Text:     "CREATE TABLE \"techBook\" (a int NOT NULL, b int CONSTRAINT b_not_null NOT NULL)",
+					Text:     "CREATE TABLE \"techBook\" (a int NOT NULL, b int CONSTRAINT b_not_null NOT NULL, c int NULL)",
 					LastLine: 1,
 				},
 			},
 			columnLine: [][]int{
-				{1, 1},
+				{1, 1, 1},
 			},
 		},
 		{

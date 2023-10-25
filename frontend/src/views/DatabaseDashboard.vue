@@ -1,11 +1,5 @@
 <template>
   <div class="flex flex-col relative">
-    <DatabaseOperations
-      v-if="selectedDatabases.length > 0"
-      class="my-3"
-      :databases="selectedDatabases"
-      @dismiss="state.selectedDatabaseIds.clear()"
-    />
     <div class="px-4 py-2 flex justify-between items-center">
       <EnvironmentTabFilter
         :include-all="true"
@@ -54,6 +48,13 @@
         </NInputGroup>
       </div>
     </div>
+
+    <DatabaseOperations
+      v-if="selectedDatabases.length > 0"
+      class="mb-3"
+      :databases="selectedDatabases"
+      @dismiss="state.selectedDatabaseIds.clear()"
+    />
 
     <DatabaseV1Table
       pagination-class="mb-4"

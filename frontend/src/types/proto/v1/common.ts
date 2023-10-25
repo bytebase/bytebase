@@ -59,6 +59,7 @@ export enum Engine {
   OCEANBASE = 14,
   DM = 15,
   RISINGWAVE = 16,
+  OCEANBASE_ORACLE = 17,
   UNRECOGNIZED = -1,
 }
 
@@ -115,6 +116,9 @@ export function engineFromJSON(object: any): Engine {
     case 16:
     case "RISINGWAVE":
       return Engine.RISINGWAVE;
+    case 17:
+    case "OCEANBASE_ORACLE":
+      return Engine.OCEANBASE_ORACLE;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -158,6 +162,8 @@ export function engineToJSON(object: Engine): string {
       return "DM";
     case Engine.RISINGWAVE:
       return "RISINGWAVE";
+    case Engine.OCEANBASE_ORACLE:
+      return "OCEANBASE_ORACLE";
     case Engine.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

@@ -19,9 +19,9 @@ var (
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLDisallowSetColumnCharset, &ColumnDisallowSetCharsetAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLDisallowSetColumnCharset, &ColumnDisallowSetCharsetAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLDisallowSetColumnCharset, &ColumnDisallowSetCharsetAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLDisallowSetColumnCharset, &ColumnDisallowSetCharsetAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLDisallowSetColumnCharset, &ColumnDisallowSetCharsetAdvisor{})
 }
 
 // ColumnDisallowSetCharsetAdvisor is the advisor checking for disallow set column charset.
