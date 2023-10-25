@@ -8,7 +8,7 @@
           }}</span>
           <ProjectSelect
             :project="state.projectId"
-            :disabled="viewMode"
+            :disabled="viewMode || disableProjectSelect"
             @update:project="handleProjectSelect"
           />
         </div>
@@ -108,6 +108,7 @@ const props = defineProps<{
   statement?: string;
   sheetId?: number;
   viewMode?: boolean;
+  disableProjectSelect?: boolean;
 }>();
 
 const emit = defineEmits<{

@@ -301,7 +301,8 @@ const routes: Array<RouteRecordRaw> = [
             name: "workspace.sync-schema",
             meta: { title: () => startCase(t("database.sync-schema.title")) },
             components: {
-              content: () => import("../views/SyncDatabaseSchema/index.vue"),
+              content: () =>
+                import("../components/SyncDatabaseSchema/index.vue"),
               leftSidebar: DashboardSidebar,
             },
             props: {

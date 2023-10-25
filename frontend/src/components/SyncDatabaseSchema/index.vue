@@ -32,6 +32,7 @@
         <DatabaseSchemaSelector
           v-if="state.sourceSchemaType === 'SCHEMA_HISTORY_VERSION'"
           :select-state="changeHistorySourceSchemaState"
+          :disableProjectSelect="!!project"
           @update="handleChangeHistorySchameVersionChanges"
         />
         <SchemaDesignSelector
@@ -48,6 +49,7 @@
           :engine="rawSQLState.engine"
           :statement="rawSQLState.statement"
           :sheet-id="rawSQLState.sheetId"
+          :disableProjectSelect="!!project"
           @update="handleRawSQLStateChange"
         />
       </template>
@@ -76,7 +78,7 @@ import { BBStepTab } from "@/bbkit";
 import { useProjectV1Store } from "@/store";
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
 import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
-import { UNKNOWN_ID } from "@/types";
+import { UNKNOWN_ID, ComposedProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import DatabaseSchemaSelector from "./DatabaseSchemaSelector.vue";
@@ -99,6 +101,11 @@ interface LocalState {
   currentStep: Step;
 }
 
+const props = defineProps<{
+  project?: ComposedProject;
+  sourceSchemaType?: SourceSchemaType;
+}>();
+
 const { t } = useI18n();
 const router = useRouter();
 const dialog = useDialog();
@@ -108,19 +115,25 @@ const schemaDesignStore = useSchemaDesignStore();
 const targetDatabaseViewRef =
   ref<InstanceType<typeof SelectTargetDatabasesView>>();
 const state = reactive<LocalState>({
-  sourceSchemaType: "SCHEMA_HISTORY_VERSION",
+  sourceSchemaType: props.sourceSchemaType ?? "SCHEMA_HISTORY_VERSION",
   currentStep: SELECT_SOURCE_SCHEMA,
 });
-const changeHistorySourceSchemaState = reactive<ChangeHistorySourceSchema>({});
+const changeHistorySourceSchemaState = reactive<ChangeHistorySourceSchema>({
+  projectId: props.project?.uid,
+});
 const schemaDesignState = reactive<{
   selectedSchemaDesign?: SchemaDesign;
 }>({});
 const rawSQLState = reactive<RawSQLState>({
+  projectId: props.project?.uid,
   engine: Engine.MYSQL,
   statement: "",
 });
 
 const projectId = computed(() => {
+  if (props.project) {
+    return props.project.uid;
+  }
   if (state.sourceSchemaType === "SCHEMA_HISTORY_VERSION") {
     return changeHistorySourceSchemaState.projectId;
   } else if (state.sourceSchemaType === "SCHEMA_DESIGN") {

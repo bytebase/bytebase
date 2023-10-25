@@ -6,6 +6,7 @@
     :placeholder="$t('project.select')"
     :filterable="true"
     :filter="filterByName"
+    :disabled="disabled"
     class="bb-project-select"
     style="width: 12rem"
     @update:value="$emit('update:project', $event)"
@@ -34,6 +35,7 @@ interface ProjectSelectOption extends SelectOption {
 
 const props = withDefaults(
   defineProps<{
+    disabled?: boolean;
     project?: string | undefined; // UNKNOWN_ID(-1) to "ALL"
     allowedProjectRoleList?: string[]; // Empty array([]) to "ALL"
     allowedProjectTenantModeList?: TenantMode[];
@@ -45,6 +47,7 @@ const props = withDefaults(
     filter?: (project: Project, index: number) => boolean;
   }>(),
   {
+    disabled: false,
     project: undefined,
     allowedProjectRoleList: () => [],
     allowedProjectTenantModeList: () => [

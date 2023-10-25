@@ -23,10 +23,10 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
   >();
 
   // Actions
-  const fetchSchemaDesignList = async () => {
+  const fetchSchemaDesignList = async (projectName: string = "projects/-") => {
     const { schemaDesigns } = await schemaDesignServiceClient.listSchemaDesigns(
       {
-        parent: "projects/-",
+        parent: projectName,
         view: SchemaDesignView.SCHEMA_DESIGN_VIEW_FULL,
       }
     );
@@ -160,7 +160,9 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
   };
 });
 
-export const useSchemaDesignList = () => {
+export const useSchemaDesignList = (
+  projectName: string | undefined = undefined
+) => {
   const store = useSchemaDesignStore();
   const ready = ref(false);
   const schemaDesignList = ref<SchemaDesign[]>([]);
@@ -168,7 +170,7 @@ export const useSchemaDesignList = () => {
   watchEffect(() => {
     ready.value = false;
     schemaDesignList.value = [];
-    store.fetchSchemaDesignList().then((response) => {
+    store.fetchSchemaDesignList(projectName).then((response) => {
       ready.value = true;
       schemaDesignList.value = response;
     });
