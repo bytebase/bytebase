@@ -1397,7 +1397,7 @@ func (g *designSchemaGenerator) EnterCommentstmt(ctx *postgres.CommentstmtContex
 				return
 			}
 		}
-	case ctx.Object_type_any_name().TABLE() != nil:
+	case ctx.Object_type_any_name() != nil && ctx.Object_type_any_name().TABLE() != nil:
 		schemaName, tableName, err := pgparser.NormalizePostgreSQLAnyNameAsTableName(ctx.Any_name())
 		if err != nil {
 			g.err = err
