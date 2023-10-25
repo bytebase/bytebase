@@ -9,7 +9,7 @@
     />
 
     <CreateChangelistPanel
-      :project-uid="project?.uid"
+      :project="project"
       :disable-project-select="!!project"
     />
   </div>

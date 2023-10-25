@@ -28,6 +28,10 @@ import { useProjectV1Store } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { useChangelistDashboardContext } from "./context";
 
+defineProps<{
+  disableProjectSelect?: boolean;
+}>();
+
 const { filter, showCreatePanel, events } = useChangelistDashboardContext();
 
 const projectUID = computed({
