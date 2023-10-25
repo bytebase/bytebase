@@ -14,7 +14,7 @@
     />
   </HideInStandaloneMode>
 
-  <div class="py-4 px-6">
+  <div class="py-4 px-6 h-full">
     <router-view
       :project-slug="projectSlug"
       :project-webhook-slug="projectWebhookSlug"
