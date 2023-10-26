@@ -1,14 +1,8 @@
 package base
 
 import (
-	"cmp"
-
+	"github.com/bytebase/bytebase/backend/component/masker"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-)
-
-const (
-	defaultMaskingLevel storepb.MaskingLevel = storepb.MaskingLevel_NONE
-	MaxMaskingLevel     storepb.MaskingLevel = storepb.MaskingLevel_FULL
 )
 
 // SensitiveSchemaInfo is the schema info using to extract sensitive fields.
@@ -67,14 +61,31 @@ type FieldInfo struct {
 
 // MaskingAttributes contain the masking related attributes on the column, likes MaskingLevel.
 type MaskingAttributes struct {
+	Masker       masker.Masker
 	MaskingLevel storepb.MaskingLevel
 }
 
 // TransmittedBy transmits the masking attributes from other to self.
+// If two masker is not equal, self will be set to default full masker.
 func (m *MaskingAttributes) TransmittedBy(other MaskingAttributes) (changed bool) {
 	changed = false
-	if cmp.Less(m.MaskingLevel, other.MaskingLevel) {
-		m.MaskingLevel = other.MaskingLevel
+	defaultMasker := masker.NewDefaultFullMasker()
+	if !m.Masker.Equal(other.Masker) && !m.Masker.Equal(defaultMasker) {
+		changed = true
+	}
+	return changed
+}
+
+// TransmittedByInExpression transmits the masking attributes from other to self.
+// If anyone of the masker is not none masker, both masker will be set to default full masker.
+// It should be used in expression computing only.
+func (m *MaskingAttributes) TransmittedByInExpression(other MaskingAttributes) (changed bool) {
+	changed = false
+	_, selfIsNoneMasker := m.Masker.(*masker.NoneMasker)
+	_, otherIsNoneMasker := other.Masker.(*masker.NoneMasker)
+	// Any none masker will be replaced with default full masker in expr computing.
+	if (!selfIsNoneMasker) || (!otherIsNoneMasker) {
+		m.Masker = masker.NewDefaultFullMasker()
 		changed = true
 	}
 	return changed
@@ -82,7 +93,8 @@ func (m *MaskingAttributes) TransmittedBy(other MaskingAttributes) (changed bool
 
 // IsNeverChangeInTransmission returns true if the masking attributes would not never change in transmission, it can be used to do the quit early optimization.
 func (m *MaskingAttributes) IsNeverChangeInTransmission() bool {
-	return m.MaskingLevel == MaxMaskingLevel
+	_, ok := m.Masker.(*masker.FullMasker)
+	return ok
 }
 
 // Clone clones the masking attributes.
@@ -93,18 +105,18 @@ func (m *MaskingAttributes) Clone() MaskingAttributes {
 }
 
 // NewMaskingAttributes creates a new masking attributes.
-func NewMaskingAttributes(lvl storepb.MaskingLevel) MaskingAttributes {
+func NewMaskingAttributes(masker masker.Masker) MaskingAttributes {
 	return MaskingAttributes{
-		MaskingLevel: lvl,
+		Masker: masker,
 	}
 }
 
 // NewDefaultMaskingAttributes creates a new masking attributes with default masking level.
 func NewDefaultMaskingAttributes() MaskingAttributes {
-	return NewMaskingAttributes(defaultMaskingLevel)
+	return NewMaskingAttributes(masker.NewNoneMasker())
 }
 
 // NewEmptyMaskingAttributes creates a new masking attributes with empty masking level.
 func NewEmptyMaskingAttributes() MaskingAttributes {
-	return NewMaskingAttributes(storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED)
+	return NewMaskingAttributes(masker.NewNoneMasker())
 }

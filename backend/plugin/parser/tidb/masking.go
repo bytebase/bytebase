@@ -468,7 +468,7 @@ func (extractor *fieldExtractor) extractColumnFromExprNode(in tidbast.ExprNode) 
 		}
 		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, field := range fieldList {
-			finalAttributes.TransmittedBy(field.MaskingAttributes)
+			finalAttributes.TransmittedByInExpression(field.MaskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return finalAttributes, nil
 			}
@@ -525,7 +525,7 @@ func (extractor *fieldExtractor) extractColumnFromExprNodeList(nodeList []tidbas
 		if err != nil {
 			return base.NewDefaultMaskingAttributes(), err
 		}
-		finalAttributes.TransmittedBy(maskingAttributes)
+		finalAttributes.TransmittedByInExpression(maskingAttributes)
 		if finalAttributes.IsNeverChangeInTransmission() {
 			return finalAttributes, nil
 		}

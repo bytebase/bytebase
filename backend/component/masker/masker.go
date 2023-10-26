@@ -27,6 +27,7 @@ type MaskData struct {
 // Masker is the interface that masks the data.
 type Masker interface {
 	Mask(data *MaskData) *v1pb.RowValue
+	Equal(other Masker) bool
 }
 
 // NoneMasker is the masker that does not mask the data.
@@ -95,6 +96,12 @@ func (*NoneMasker) Mask(data *MaskData) *v1pb.RowValue {
 	}
 }
 
+// Equal implements Masker.Equal.
+func (*NoneMasker) Equal(other Masker) bool {
+	_, ok := other.(*NoneMasker)
+	return ok
+}
+
 // FullMasker is the masker that masks the data with `substitution`.
 type FullMasker struct {
 	substitution string
@@ -114,6 +121,14 @@ func (m *FullMasker) Mask(*MaskData) *v1pb.RowValue {
 			StringValue: m.substitution,
 		},
 	}
+}
+
+// Equal implements Masker.Equal.
+func (m *FullMasker) Equal(other Masker) bool {
+	if otherFullMasker, ok := other.(*FullMasker); ok {
+		return m.substitution == otherFullMasker.substitution
+	}
+	return false
 }
 
 // DefaultRangeMasker is the masker that masks the the left and right quarters with "**".
@@ -159,6 +174,12 @@ func (*DefaultRangeMasker) Mask(data *MaskData) *v1pb.RowValue {
 			StringValue: paddingAsterisk(stringValue),
 		},
 	}
+}
+
+// Equal implements Masker.Equal.
+func (*DefaultRangeMasker) Equal(other Masker) bool {
+	_, ok := other.(*DefaultRangeMasker)
+	return ok
 }
 
 // middle will get the middle part of the given slice.
