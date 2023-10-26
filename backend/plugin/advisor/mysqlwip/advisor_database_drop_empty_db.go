@@ -29,7 +29,7 @@ type DatabaseAllowDropIfEmptyAdvisor struct {
 func (*DatabaseAllowDropIfEmptyAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	list, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to Tree")
+		return nil, errors.Errorf("failed to convert to mysql ParseResult")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
