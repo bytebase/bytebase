@@ -6,7 +6,7 @@
     :placeholder="$t('label.filter-by-label')"
     :render-label="renderLabel"
     :multiple="true"
-    :show-path="false"
+    :show-path="true"
     :check-strategy="'child'"
     :max-tag-count="'responsive'"
     :expand-trigger="'click'"
@@ -15,6 +15,7 @@
     :menu-props="{
       style: '--n-column-width: max-content',
     }"
+    :separator="':'"
     style="width: 12rem"
     @update:value="updateCascaderValues"
   />
@@ -80,7 +81,7 @@ const options = computed(() => {
       type: "kv",
       kv,
       value: cascaderValueOfKV(kv),
-      label: `${kv.key}:${kv.value || t("label.empty-label-value")}`,
+      label: kv.value || t("label.empty-label-value"),
     }));
     return {
       type: "key",
