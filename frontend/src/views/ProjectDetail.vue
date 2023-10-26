@@ -27,7 +27,7 @@
     <ProjectSlowQueryPanel :project="project" />
   </template>
   <template v-if="hash === 'anomaly-center'">
-    <AnomalyCenterDashboard :project="project" />
+    <AnomalyCenterDashboard :project="project" :selected-tab="'database'" />
   </template>
   <template v-if="hash === 'activities'">
     <ProjectActivityPanel id="activity" :project="project" />

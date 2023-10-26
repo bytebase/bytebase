@@ -80,10 +80,12 @@
         <BBTabFilter
           v-if="!project"
           :tab-item-list="tabItemList"
-          :selected-index="state.selectedIndex"
+          :selected-index="
+            tabItemList.findIndex((tab) => tab.id === state.selectedTab)
+          "
           @select-index="
           (index: number) => {
-            state.selectedIndex = index;
+            state.selectedTab = tabItemList[index].id;
           }
         "
         />
@@ -94,7 +96,7 @@
         :placeholder="
           $t('anomaly.table-search-placeholder', {
             type:
-              state.selectedIndex == 0
+              state.selectedTab === 'database'
                 ? $t('common.database')
                 : $t('common.instance'),
           })
@@ -102,7 +104,7 @@
         @change-text="(text:string) => changeSearchText(text)"
       />
     </div>
-    <template v-if="state.selectedIndex == 0">
+    <template v-if="state.selectedTab === 'database'">
       <AnomalyTable
         v-if="databaseAnomalySectionList.length > 0"
         :anomaly-section-list="databaseAnomalySectionList"
@@ -165,14 +167,20 @@ type Summary = {
   mediumCount: number;
 };
 
+export type AnomalyTabId = "database" | "instance";
+
+interface AnomalyTabFilterItem extends BBTabFilterItem {
+  id: AnomalyTabId;
+}
+
 interface LocalState {
-  selectedIndex: number;
+  selectedTab: AnomalyTabId;
   searchText: string;
 }
 
 const props = defineProps<{
   project?: ComposedProject;
-  selectedTab?: number;
+  selectedTab?: AnomalyTabId;
 }>();
 
 const databaseStore = useDatabaseV1Store();
@@ -181,7 +189,7 @@ const { t } = useI18n();
 const currentUserV1 = useCurrentUserV1();
 
 const state = reactive<LocalState>({
-  selectedIndex: props.selectedTab ?? 0,
+  selectedTab: props.selectedTab ?? "database",
   searchText: "",
 });
 
@@ -400,13 +408,15 @@ const anomalySummaryList = computed(() => {
   return list;
 });
 
-const tabItemList = computed((): BBTabFilterItem[] => {
+const tabItemList = computed((): AnomalyTabFilterItem[] => {
   return [
     {
+      id: "database",
       title: t("common.database"),
       alert: databaseAnomalySectionList.value.length > 0,
     },
     {
+      id: "instance",
       title: t("common.instance"),
       alert: instanceAnomalySectionList.value.length > 0,
     },
