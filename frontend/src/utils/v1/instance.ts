@@ -90,12 +90,10 @@ export const supportedEngineV1List = () => {
     Engine.MSSQL,
     Engine.REDSHIFT,
     Engine.RISINGWAVE,
+    Engine.OCEANBASE_ORACLE,
   ];
   if (locale.value === "zh-CN") {
     engines.push(Engine.DM);
-  }
-  if (isDev()) {
-    engines.push(Engine.OCEANBASE_ORACLE);
   }
   return engines;
 };
