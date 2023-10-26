@@ -81,7 +81,6 @@
 
     <div class="flex-1 w-full flex flex-col overflow-y-auto">
       <DataTable
-        ref="dataTable"
         :table="table"
         :columns="columns"
         :data="data"
@@ -126,7 +125,7 @@
     :database-id="currentTab.connection.databaseId"
     :statement="result.statement"
     :statement-only="true"
-    :redirect-to-issue-page="sqlEditorStore.mode === 'BUNDLED'"
+    :redirect-to-issue-page="pageMode === 'BUNDLED'"
     @close="state.showRequestExportPanel = false"
   />
 </template>
@@ -136,13 +135,15 @@ import {
   ColumnDef,
   getCoreRowModel,
   getPaginationRowModel,
+  getSortedRowModel,
   useVueTable,
 } from "@tanstack/vue-table";
 import { useDebounceFn } from "@vueuse/core";
 import { isEmpty } from "lodash-es";
 import { NInput, NPagination, NTooltip } from "naive-ui";
 import { BinaryLike } from "node:crypto";
-import { computed, reactive, ref } from "vue";
+import { storeToRefs } from "pinia";
+import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
 import { DISMISS_PLACEHOLDER } from "@/plugins/ai/components/state";
@@ -153,7 +154,7 @@ import {
   featureToRef,
   useDatabaseV1Store,
   useCurrentUserV1,
-  useSQLEditorStore,
+  useActuatorV1Store,
 } from "@/store";
 import { useExportData } from "@/store/modules/export";
 import {
@@ -209,10 +210,10 @@ const tabStore = useTabStore();
 const instanceStore = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
 const currentUserV1 = useCurrentUserV1();
-const sqlEditorStore = useSQLEditorStore();
-const dataTable = ref<InstanceType<typeof DataTable>>();
 const { exportData } = useExportData();
 const currentTab = computed(() => tabStore.currentTab);
+const actuatorStore = useActuatorV1Store();
+const { pageMode } = storeToRefs(actuatorStore);
 
 const viewMode = computed((): ViewMode => {
   const { result } = props;
@@ -304,6 +305,7 @@ const table = useVueTable<string[]>({
     return columns.value;
   },
   getCoreRowModel: getCoreRowModel(),
+  getSortedRowModel: getSortedRowModel(),
   getPaginationRowModel: getPaginationRowModel(),
 });
 
@@ -374,7 +376,6 @@ const showPagination = computed(() => data.value.length > PAGE_SIZES[0]);
 
 const handleChangePage = (page: number) => {
   table.setPageIndex(page - 1);
-  dataTable.value?.scrollTo(0, 0);
 };
 
 const explainFromSQLResultSetV1 = (resultSet: SQLResultSetV1 | undefined) => {

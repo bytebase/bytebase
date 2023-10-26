@@ -2,14 +2,16 @@
   <div
     class="w-full mx-auto flex flex-col justify-start items-start space-y-3 mb-6"
   >
-    <div class="w-full flex flex-row justify-start items-center">
+    <div
+      v-if="!disableProjectSelect"
+      class="w-full flex flex-row justify-start items-center"
+    >
       <span class="flex w-40 items-center shrink-0 text-sm">
         {{ $t("common.project") }}
       </span>
       <ProjectSelect
         class="!w-60 shrink-0"
         :project="state.projectId"
-        :disabled="disableProjectSelect"
         @update:project="handleProjectSelect"
       />
     </div>

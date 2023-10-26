@@ -22,12 +22,12 @@
               class="w-5 h-auto max-h-[20px] object-contain mr-1"
               :src="EngineIconPath[engine]"
             />
-            <p
+            <RichEngineName
+              :engine="engine"
+              tag="p"
               class="text-center text-sm !text-main"
               :class="basicInfo.engine === engine && 'font-medium'"
-            >
-              {{ engineNameV1(engine) }}
-            </p>
+            />
             <template v-if="isEngineBeta(engine)">
               <BBBetaBadge
                 class="absolute -top-1.5 -right-1 rounded text-xs !bg-gray-500 px-1 !py-0 z-10"
@@ -359,6 +359,7 @@ import {
   DrawerContent,
   EnvironmentSelect,
   InstanceV1EngineIcon,
+  RichEngineName,
 } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { instanceServiceClient } from "@/grpcweb";
@@ -392,7 +393,6 @@ import {
   isDev,
   isValidSpannerHost,
   extractInstanceResourceName,
-  engineNameV1,
   instanceV1Slug,
   calcUpdateMask,
 } from "@/utils";
