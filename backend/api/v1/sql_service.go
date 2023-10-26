@@ -490,7 +490,7 @@ func getSQLStatementPrefix(engine storepb.Engine, resourceList []base.SchemaReso
 	switch engine {
 	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_TIDB, storepb.Engine_OCEANBASE, storepb.Engine_SPANNER:
 		escapeQuote = "`"
-	case storepb.Engine_CLICKHOUSE, storepb.Engine_MSSQL, storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT, storepb.Engine_SQLITE, storepb.Engine_SNOWFLAKE:
+	case storepb.Engine_CLICKHOUSE, storepb.Engine_MSSQL, storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE, storepb.Engine_DM, storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT, storepb.Engine_SQLITE, storepb.Engine_SNOWFLAKE:
 		// ClickHouse takes both double-quotes or backticks.
 		escapeQuote = "\""
 	default:
@@ -1111,7 +1111,7 @@ func (s *SQLService) preCheck(ctx context.Context, instanceName, connectionDatab
 			if !allPostgresSystemObjects(statement) {
 				databaseMap[connectionDatabase] = true
 			}
-		case storepb.Engine_ORACLE, storepb.Engine_DM:
+		case storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE, storepb.Engine_DM:
 			databaseMap[connectionDatabase] = true
 			if instance.Options != nil && instance.Options.SchemaTenantMode {
 				resources, err := base.ExtractResourceList(storepb.Engine_ORACLE, connectionDatabase, connectionDatabase, statement)
@@ -1341,7 +1341,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 			return nil, status.Errorf(codes.Internal, "Failed to find schema for database %q in instance %q: %v", databaseName, instance.Title, err)
 		}
 
-		if instance.Engine == storepb.Engine_ORACLE || instance.Engine == storepb.Engine_DM {
+		if instance.Engine == storepb.Engine_ORACLE || instance.Engine == storepb.Engine_DM || instance.Engine == storepb.Engine_OCEANBASE_ORACLE {
 			for _, schema := range dbSchema.Metadata.Schemas {
 				databaseSchema := base.DatabaseSchema{
 					Name: schema.Name,
@@ -1499,7 +1499,7 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, envir
 	}
 
 	currentSchema := ""
-	if instance.Engine == storepb.Engine_ORACLE || instance.Engine == storepb.Engine_DM {
+	if instance.Engine == storepb.Engine_ORACLE || instance.Engine == storepb.Engine_DM || instance.Engine == storepb.Engine_OCEANBASE_ORACLE {
 		if instance.Options == nil || !instance.Options.SchemaTenantMode {
 			currentSchema = getReadOnlyDataSource(instance).Username
 		} else {
@@ -1668,7 +1668,7 @@ func validateQueryRequest(instance *store.InstanceMessage, databaseName string, 
 		if databaseName == "" {
 			return status.Error(codes.InvalidArgument, "connection_database is required for postgres instance")
 		}
-	case storepb.Engine_ORACLE, storepb.Engine_DM:
+	case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
 		if instance.Options != nil && instance.Options.SchemaTenantMode && databaseName == "" {
 			return status.Error(codes.InvalidArgument, "connection_database is required for oracle schema tenant mode instance")
 		}
@@ -1807,7 +1807,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 		}
 
 		return result, nil
-	case storepb.Engine_ORACLE:
+	case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
 		dataSource := utils.DataSourceFromInstanceWithType(instance, api.RO)
 		adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
 		// If there are no read-only data source, fall back to admin data source.
@@ -2387,7 +2387,7 @@ func (s *SQLService) getInstanceMessage(ctx context.Context, name string) (*stor
 // IsSQLReviewSupported checks the engine type if SQL review supports it.
 func IsSQLReviewSupported(dbType storepb.Engine) bool {
 	switch dbType {
-	case storepb.Engine_POSTGRES, storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_ORACLE, storepb.Engine_OCEANBASE, storepb.Engine_SNOWFLAKE, storepb.Engine_DM, storepb.Engine_MSSQL:
+	case storepb.Engine_POSTGRES, storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE, storepb.Engine_OCEANBASE, storepb.Engine_SNOWFLAKE, storepb.Engine_DM, storepb.Engine_MSSQL:
 		return true
 	default:
 		return false

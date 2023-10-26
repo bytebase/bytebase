@@ -42,7 +42,7 @@ func isStatementTypeCheckSupported(dbType storepb.Engine) bool {
 
 func isStatementAdviseSupported(dbType storepb.Engine) bool {
 	switch dbType {
-	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_POSTGRES, storepb.Engine_ORACLE, storepb.Engine_OCEANBASE, storepb.Engine_SNOWFLAKE, storepb.Engine_MSSQL:
+	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_POSTGRES, storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE, storepb.Engine_OCEANBASE, storepb.Engine_SNOWFLAKE, storepb.Engine_MSSQL:
 		return true
 	default:
 		return false
@@ -51,7 +51,7 @@ func isStatementAdviseSupported(dbType storepb.Engine) bool {
 
 func isStatementReportSupported(dbType storepb.Engine) bool {
 	switch dbType {
-	case storepb.Engine_POSTGRES, storepb.Engine_MYSQL, storepb.Engine_OCEANBASE, storepb.Engine_ORACLE:
+	case storepb.Engine_POSTGRES, storepb.Engine_MYSQL, storepb.Engine_OCEANBASE, storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE:
 		return true
 	default:
 		return false

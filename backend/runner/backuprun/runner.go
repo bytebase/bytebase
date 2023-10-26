@@ -343,7 +343,7 @@ func (r *Runner) startAutoBackups(ctx context.Context) {
 			continue
 		}
 		// backup for ClickHouse, Snowflake, MongoDB, Spanner, Redis, Oracle is not supported.
-		if instance.Engine == storepb.Engine_CLICKHOUSE || instance.Engine == storepb.Engine_SNOWFLAKE || instance.Engine == storepb.Engine_MONGODB || instance.Engine == storepb.Engine_SPANNER || instance.Engine == storepb.Engine_REDIS || instance.Engine == storepb.Engine_ORACLE {
+		if instance.Engine == storepb.Engine_CLICKHOUSE || instance.Engine == storepb.Engine_SNOWFLAKE || instance.Engine == storepb.Engine_MONGODB || instance.Engine == storepb.Engine_SPANNER || instance.Engine == storepb.Engine_REDIS || instance.Engine == storepb.Engine_ORACLE || instance.Engine == storepb.Engine_OCEANBASE_ORACLE {
 			continue
 		}
 		environment, err := r.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})

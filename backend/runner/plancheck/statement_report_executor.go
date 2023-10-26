@@ -136,7 +136,7 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, conf
 		sqlDB := driver.GetDB()
 
 		return reportForMySQL(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema.Metadata)
-	case storepb.Engine_ORACLE, storepb.Engine_DM:
+	case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
 		schema := ""
 		if instance.Options == nil || !instance.Options.SchemaTenantMode {
 			adminSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
@@ -293,7 +293,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 					sqlDB := driver.GetDB()
 
 					return reportForMySQL(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema.Metadata)
-				case storepb.Engine_ORACLE, storepb.Engine_DM:
+				case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
 					schema := ""
 					if instance.Options == nil || !instance.Options.SchemaTenantMode {
 						adminSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
