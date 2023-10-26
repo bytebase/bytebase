@@ -79,9 +79,11 @@
 import { computed, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { BBTableSectionDataSource } from "@/bbkit/types";
 import DiffEditor from "@/components/MonacoEditor/DiffEditor.vue";
 import { useDatabaseV1Store, useInstanceV1Store } from "@/store";
 import { useEnvironmentV1Store } from "@/store";
+import { UNKNOWN_ENVIRONMENT_NAME } from "@/types";
 import {
   Anomaly,
   Anomaly_AnomalyType,
@@ -93,8 +95,6 @@ import {
   humanizeTs,
   extractDatabaseResourceName,
 } from "@/utils";
-import { BBTableSectionDataSource } from "../bbkit/types";
-import { UNKNOWN_ENVIRONMENT_NAME } from "../types";
 
 type Action = {
   onClick: () => void;
