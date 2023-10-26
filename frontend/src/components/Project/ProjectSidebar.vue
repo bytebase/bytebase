@@ -48,20 +48,39 @@ import { DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import { idFromSlug } from "@/utils";
 
+const projectHashList = [
+  "databases",
+  "database-groups",
+  "change-history",
+  "slow-query",
+  "anomaly-center",
+  "issues",
+  "branches",
+  "changelists",
+  "sync-schema",
+  "gitops",
+  "webhook",
+  "members",
+  "activities",
+  "setting",
+] as const;
+export type ProjectHash = typeof projectHashList[number];
+const isProjectHash = (x: any): x is ProjectHash => projectHashList.includes(x);
+
 interface ProjectSidebarItem {
   title: string;
-  hash?: string;
+  hash?: ProjectHash;
   icon: VNode;
   hide?: boolean;
   children?: {
     title: string;
-    hash: string;
+    hash: ProjectHash;
     hide?: boolean;
   }[];
 }
 
 interface LocalState {
-  selectedHash: string;
+  selectedHash: ProjectHash;
 }
 
 const { t } = useI18n();
@@ -70,7 +89,7 @@ const router = useRouter();
 const projectV1Store = useProjectV1Store();
 
 const state = reactive<LocalState>({
-  selectedHash: "",
+  selectedHash: "databases",
 });
 
 const projectSlug = computed(() => route.params.projectSlug as string);
@@ -224,7 +243,7 @@ const getItemClass = (hash: string | undefined) => {
   return list;
 };
 
-const onSelect = (hash: string | undefined) => {
+const onSelect = (hash: ProjectHash | undefined) => {
   if (!hash) {
     return;
   }
@@ -239,10 +258,10 @@ const selectProjectTabOnHash = () => {
   const { name, hash } = router.currentRoute.value;
   if (name == "workspace.project.detail") {
     let targetHash = (hash || "databases").replace(/^#?/g, "");
-    if (targetHash === "overview") {
+    if (!isProjectHash(targetHash)) {
       targetHash = "databases";
     }
-    onSelect(targetHash);
+    onSelect(targetHash as ProjectHash);
   } else if (
     name == "workspace.project.hook.create" ||
     name == "workspace.project.hook.detail"
