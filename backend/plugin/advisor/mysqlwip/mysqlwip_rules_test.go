@@ -16,6 +16,9 @@ func TestMySQLWIPRules(t *testing.T) {
 		// advisor.SchemaRuleColumnNaming enforce the column name format.
 		advisor.SchemaRuleColumnNaming,
 
+		// advisor.SchemaRuleStatementInsertRowLimit enforce the insert row limit.
+		advisor.SchemaRuleStatementInsertRowLimit,
+
 		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL support check if the database is empty before users drop it.
 		advisor.SchemaRuleDropEmptyDatabase,
 	}
