@@ -126,7 +126,7 @@
     :database-id="currentTab.connection.databaseId"
     :statement="result.statement"
     :statement-only="true"
-    :redirect-to-issue-page="sqlEditorStore.mode === 'BUNDLED'"
+    :redirect-to-issue-page="pageMode === 'BUNDLED'"
     @close="state.showRequestExportPanel = false"
   />
 </template>
@@ -142,6 +142,7 @@ import { useDebounceFn } from "@vueuse/core";
 import { isEmpty } from "lodash-es";
 import { NInput, NPagination, NTooltip } from "naive-ui";
 import { BinaryLike } from "node:crypto";
+import { storeToRefs } from "pinia";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
@@ -153,7 +154,7 @@ import {
   featureToRef,
   useDatabaseV1Store,
   useCurrentUserV1,
-  useSQLEditorStore,
+  useActuatorV1Store,
 } from "@/store";
 import { useExportData } from "@/store/modules/export";
 import {
@@ -209,10 +210,11 @@ const tabStore = useTabStore();
 const instanceStore = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
 const currentUserV1 = useCurrentUserV1();
-const sqlEditorStore = useSQLEditorStore();
 const dataTable = ref<InstanceType<typeof DataTable>>();
 const { exportData } = useExportData();
 const currentTab = computed(() => tabStore.currentTab);
+const actuatorStore = useActuatorV1Store();
+const { pageMode } = storeToRefs(actuatorStore);
 
 const viewMode = computed((): ViewMode => {
   const { result } = props;
