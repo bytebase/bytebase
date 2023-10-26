@@ -251,7 +251,7 @@ export const engineNameV1 = (type: Engine): string => {
     case Engine.MARIADB:
       return "MariaDB";
     case Engine.OCEANBASE:
-      return "OceanBase";
+      return "OceanBase (MySQL)";
     case Engine.OCEANBASE_ORACLE:
       return "OceanBase (Oracle)";
     case Engine.DM:
