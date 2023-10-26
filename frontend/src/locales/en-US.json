@@ -383,7 +383,7 @@
   "task-run": {
     "status": {
       "enqueued": "Waiting for execution",
-      "enqueued-with-rollout-time": "Waiting to execute, {time} after execution",
+      "enqueued-with-rollout-time": "Waiting to execute after {time}",
       "dumpling-schema-before-executing-sql": "Preparing to execute, dumpling Schema",
       "executing-sql": "Executing SQL",
       "dumpling-schema-after-executing-sql": "SQL execution completed, dumpling Schema"
