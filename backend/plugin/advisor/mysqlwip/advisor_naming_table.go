@@ -51,6 +51,7 @@ func (*NamingTableConventionAdvisor) Check(ctx advisor.Context, _ string) ([]adv
 	}
 
 	for _, stmt := range list {
+		checker.baseLine = stmt.BaseLine
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 	return checker.generateAdvice()
@@ -59,6 +60,7 @@ func (*NamingTableConventionAdvisor) Check(ctx advisor.Context, _ string) ([]adv
 type namingTableConventionChecker struct {
 	*mysql.BaseMySQLParserListener
 
+	baseLine   int
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
@@ -123,6 +125,7 @@ func (checker *namingTableConventionChecker) EnterRenameTableStatement(ctx *mysq
 }
 
 func (checker *namingTableConventionChecker) handleTableName(tableName string, lineNumber int) {
+	lineNumber += checker.baseLine
 	if !checker.format.MatchString(tableName) {
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  checker.level,
