@@ -1,16 +1,12 @@
 <template>
-  <div v-if="visible" class="flex items-center gap-x-2">
-    <slot name="title">
-      <span class="textlabel whitespace-nowrap">Group by</span>
-    </slot>
-
-    <NSelect
-      :options="options"
-      :value="label"
-      style="width: 9rem"
-      @update-value="$emit('update:label', $event)"
-    />
-  </div>
+  <NSelect
+    v-if="visible"
+    :options="options"
+    :value="label"
+    style="width: 9rem"
+    v-bind="$attrs"
+    @update-value="$emit('update:label', $event)"
+  />
 </template>
 
 <script lang="ts" setup>

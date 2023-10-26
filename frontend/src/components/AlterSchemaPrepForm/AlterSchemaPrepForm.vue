@@ -75,11 +75,6 @@
                   </NRadio>
                 </div>
                 <div v-if="state.databaseSelectedTab === 'DATABASE'">
-                  <DatabaseLabelFilter
-                    v-model:selected="state.selectedLabels"
-                    :database-list="rawDatabaseList"
-                    class="mb-2"
-                  />
                   <DatabaseV1Table
                     mode="PROJECT_SHORT"
                     table-class="border"
@@ -139,17 +134,29 @@
                 </div>
               </NTabPane>
               <template #suffix>
-                <SearchBox
-                  v-if="state.alterType === 'MULTI_DB'"
-                  v-model:value="state.searchText"
-                  :placeholder="$t('database.filter-database')"
-                />
-                <YAxisRadioGroup
-                  v-else
-                  v-model:label="state.label"
-                  :database-list="filteredDatabaseList"
-                  class="text-sm m-px"
-                />
+                <NInputGroup class="py-0.5">
+                  <template v-if="state.alterType === 'TENANT'">
+                    <NInputGroupLabel
+                      :bordered="false"
+                      style="--n-group-label-color: transparent"
+                    >
+                      Group by
+                    </NInputGroupLabel>
+                    <YAxisRadioGroup
+                      v-model:label="state.label"
+                      :database-list="filteredDatabaseList"
+                    />
+                  </template>
+                  <DatabaseLabelFilter
+                    v-model:selected="state.selectedLabels"
+                    :database-list="rawDatabaseList"
+                  />
+                  <SearchBox
+                    v-if="state.alterType === 'MULTI_DB'"
+                    v-model:value="state.searchText"
+                    :placeholder="$t('common.filter-by-name')"
+                  />
+                </NInputGroup>
               </template>
             </NTabs>
           </template>
@@ -164,19 +171,18 @@
                 @select-database="selectDatabase"
               >
                 <template #header>
-                  <div class="flex items-center justify-end mx-2">
-                    <SearchBox
-                      v-model:value="state.searchText"
-                      :placeholder="$t('database.filter-database')"
-                    />
+                  <div class="flex items-center justify-end">
+                    <NInputGroup class="py-0.5 pr-2">
+                      <DatabaseLabelFilter
+                        v-model:selected="state.selectedLabels"
+                        :database-list="rawDatabaseList"
+                      />
+                      <SearchBox
+                        v-model:value="state.searchText"
+                        :placeholder="$t('common.filter-by-name')"
+                      />
+                    </NInputGroup>
                   </div>
-                </template>
-                <template #sub-header>
-                  <DatabaseLabelFilter
-                    v-model:selected="state.selectedLabels"
-                    :database-list="rawDatabaseList"
-                    class="mt-2"
-                  />
                 </template>
               </ProjectStandardView>
               <SchemalessDatabaseTable
@@ -189,99 +195,104 @@
           </template>
         </template>
         <template v-else>
-          <div class="w-full flex flex-row justify-between items-center mb-2">
-            <div class="flex items-center space-x-3">
-              <ProjectSelect
-                :project="state.project?.uid ?? String(UNKNOWN_ID)"
-                @update:project="selectProject"
-              />
-              <div class="px-1 space-x-2">
-                <NRadio
-                  :checked="state.databaseSelectedTab === 'DATABASE'"
-                  value="DATABASE"
-                  name="database-tab"
-                  @update:checked="state.databaseSelectedTab = 'DATABASE'"
-                >
-                  {{ $t("common.database") }}
-                </NRadio>
-                <NRadio
-                  :checked="state.databaseSelectedTab === 'DATABASE_GROUP'"
-                  value="DATABASE_GROUP"
-                  name="database-tab"
-                  @update:checked="handleDatabaseGroupTabSelect"
-                >
-                  <div class="flex flex-row items-center">
-                    <span class="mr-1">{{ $t("database-group.self") }}</span>
-                    <FeatureBadge feature="bb.feature.database-grouping" />
-                  </div>
-                </NRadio>
+          <div class="flex flex-col gap-y-2 px-0.5">
+            <div class="w-full flex flex-row justify-between items-center">
+              <div class="flex items-center space-x-3">
+                <ProjectSelect
+                  :project="state.project?.uid ?? String(UNKNOWN_ID)"
+                  @update:project="selectProject"
+                />
+                <div class="px-1 space-x-2">
+                  <NRadio
+                    :checked="state.databaseSelectedTab === 'DATABASE'"
+                    value="DATABASE"
+                    name="database-tab"
+                    @update:checked="state.databaseSelectedTab = 'DATABASE'"
+                  >
+                    {{ $t("common.database") }}
+                  </NRadio>
+                  <NRadio
+                    :checked="state.databaseSelectedTab === 'DATABASE_GROUP'"
+                    value="DATABASE_GROUP"
+                    name="database-tab"
+                    @update:checked="handleDatabaseGroupTabSelect"
+                  >
+                    <div class="flex flex-row items-center">
+                      <span class="mr-1">{{ $t("database-group.self") }}</span>
+                      <FeatureBadge feature="bb.feature.database-grouping" />
+                    </div>
+                  </NRadio>
+                </div>
               </div>
+              <aside class="flex justify-end">
+                <NInputGroup class="py-0.5">
+                  <DatabaseLabelFilter
+                    v-model:selected="state.selectedLabels"
+                    :database-list="rawDatabaseList"
+                  />
+                  <SearchBox
+                    v-model:value="state.searchText"
+                    :placeholder="$t('common.filter-by-name')"
+                  />
+                </NInputGroup>
+              </aside>
             </div>
-            <aside class="flex justify-end">
-              <SearchBox
-                v-model:value="state.searchText"
-                :placeholder="$t('database.filter-database')"
-              />
-            </aside>
-          </div>
-          <DatabaseLabelFilter
-            v-model:selected="state.selectedLabels"
-            :database-list="rawDatabaseList"
-            class="mb-2"
-          />
-          <!-- a simple table -->
-          <div v-if="state.databaseSelectedTab === 'DATABASE'">
-            <DatabaseV1Table
-              mode="ALL_SHORT"
-              table-class="border"
-              :custom-click="true"
-              :database-list="selectableDatabaseList"
-              :show-selection-column="true"
-              @select-database="
+            <!-- a simple table -->
+            <div v-if="state.databaseSelectedTab === 'DATABASE'">
+              <DatabaseV1Table
+                mode="ALL_SHORT"
+                table-class="border"
+                :custom-click="true"
+                :database-list="selectableDatabaseList"
+                :show-selection-column="true"
+                @select-database="
                 (db: ComposedDatabase) =>
                   toggleDatabasesSelection([db as ComposedDatabase], !isDatabaseSelected(db))
               "
-            >
-              <template #selection-all="{ databaseList: selectedDatabaseList }">
-                <input
-                  v-if="selectedDatabaseList.length > 0"
-                  type="checkbox"
-                  class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-                  v-bind="getAllSelectionState(selectedDatabaseList as ComposedDatabase[])"
-                  @input="
-                    toggleDatabasesSelection(
-                      selectedDatabaseList as ComposedDatabase[],
-                      ($event.target as HTMLInputElement).checked
-                    )
-                  "
-                />
-              </template>
-              <template #selection="{ database }">
-                <input
-                  type="checkbox"
-                  class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-                  :checked="isDatabaseSelected(database as ComposedDatabase)"
-                  @click.stop="
-                    toggleDatabasesSelection(
-                      [database as ComposedDatabase],
-                      ($event.target as HTMLInputElement).checked
-                    )
-                  "
-                />
-              </template>
-            </DatabaseV1Table>
-            <SchemalessDatabaseTable
-              v-if="isEditSchema"
-              mode="ALL"
-              :database-list="schemalessDatabaseList"
-            />
-          </div>
-          <div v-else-if="state.databaseSelectedTab === 'DATABASE_GROUP'">
-            <SelectDatabaseGroupTable
-              :database-group-list="databaseGroupList"
-              :selected-database-group-name="state.selectedDatabaseGroupName"
-              @update="(name) => selectDatabaseGroup(name, true)"
-            />
+              >
+                <template
+                  #selection-all="{ databaseList: selectedDatabaseList }"
+                >
+                  <input
+                    v-if="selectedDatabaseList.length > 0"
+                    type="checkbox"
+                    class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+                    v-bind="getAllSelectionState(selectedDatabaseList as ComposedDatabase[])"
+                    @input="
+                      toggleDatabasesSelection(
+                        selectedDatabaseList as ComposedDatabase[],
+                        ($event.target as HTMLInputElement).checked
+                      )
+                    "
+                  />
+                </template>
+                <template #selection="{ database }">
+                  <input
+                    type="checkbox"
+                    class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+                    :checked="isDatabaseSelected(database as ComposedDatabase)"
+                    @click.stop="
+                      toggleDatabasesSelection(
+                        [database as ComposedDatabase],
+                        ($event.target as HTMLInputElement).checked
+                      )
+                    "
+                  />
+                </template>
+              </DatabaseV1Table>
+              <SchemalessDatabaseTable
+                v-if="isEditSchema"
+                mode="ALL"
+                :database-list="schemalessDatabaseList"
+              />
+            </div>
+            <div v-else-if="state.databaseSelectedTab === 'DATABASE_GROUP'">
+              <SelectDatabaseGroupTable
+                :database-group-list="databaseGroupList"
+                :selected-database-group-name="state.selectedDatabaseGroupName"
+                @update="(name) => selectDatabaseGroup(name, true)"
+              />
+            </div>
           </div>
         </template>
       </div>
@@ -370,7 +381,14 @@
 </template>
 
 <script lang="ts" setup>
-import { NButton, NTabs, NTabPane, NRadio } from "naive-ui";
+import {
+  NButton,
+  NTabs,
+  NTabPane,
+  NRadio,
+  NInputGroup,
+  NInputGroupLabel,
+} from "naive-ui";
 import { computed, reactive, PropType, ref, watch } from "vue";
 import { watchEffect } from "vue";
 import { useRouter } from "vue-router";
