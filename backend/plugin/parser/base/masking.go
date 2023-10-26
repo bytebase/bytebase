@@ -101,6 +101,7 @@ func (m *MaskingAttributes) IsNeverChangeInTransmission() bool {
 func (m *MaskingAttributes) Clone() MaskingAttributes {
 	return MaskingAttributes{
 		MaskingLevel: m.MaskingLevel,
+		Masker:       m.Masker,
 	}
 }
 
