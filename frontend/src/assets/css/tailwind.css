@@ -1,6 +1,7 @@
 :root {
   /* indigo-600 */
   --color-accent: #4f46e5;
+  --color-accent-tw: 79 70 229; /* same to --color-accent but used for tailwind css */
   /* indigo-300 */
   --color-accent-disabled: #a5b4fc;
   /* indigo-800 */
