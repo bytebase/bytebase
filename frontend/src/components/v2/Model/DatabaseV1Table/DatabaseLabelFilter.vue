@@ -125,8 +125,13 @@ const toggleSelection = (kv: KV, checked: boolean) => {
 };
 
 watch(
-  [containerSize.width, containerSize.height, distinctLabelList, props.maxRows],
-  ([containerWidth, containerHeight, list]) => {
+  [
+    containerSize.width,
+    containerSize.height,
+    distinctLabelList,
+    () => props.maxRows,
+  ],
+  () => {
     const containerElement = containerRef.value;
     if (!containerElement) {
       rowYCoords.value = [];
