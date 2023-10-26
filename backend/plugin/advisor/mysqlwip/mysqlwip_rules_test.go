@@ -13,6 +13,8 @@ func TestMySQLWIPRules(t *testing.T) {
 		advisor.SchemaRuleMySQLEngine,
 		// advisor.SchemaRuleTableNaming enforce the table name format.
 		advisor.SchemaRuleTableNaming,
+		// advisor.SchemaRuleColumnNaming enforce the column name format.
+		advisor.SchemaRuleColumnNaming,
 	}
 
 	for _, rule := range mysqlwipRules {
