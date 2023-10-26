@@ -271,7 +271,8 @@
     "created-at-by": "Created {time} by {user}",
     "filter-by-name": "Filter by name",
     "tenant": "Tenant",
-    "license": "License"
+    "license": "License",
+    "show-all": "Show all"
   },
   "error-page": {
     "go-back-home": "Go back home"

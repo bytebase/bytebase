@@ -269,7 +269,8 @@
     "created-at-by": "由 {user} 创建于 {time}",
     "filter-by-name": "按名称过滤",
     "tenant": "租户",
-    "license": "证书"
+    "license": "证书",
+    "show-all": "显示全部"
   },
   "error-page": {
     "go-back-home": "回到主页"

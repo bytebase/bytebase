@@ -271,7 +271,8 @@
     "created-at-by": "Creado {time} por {user}",
     "filter-by-name": "Filtrar por nombre",
     "tenant": "Arrendataria",
-    "license": "Licencia"
+    "license": "Licencia",
+    "show-all": "Mostrar todo"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
