@@ -382,11 +382,11 @@
   },
   "task-run": {
     "status": {
-      "enqueued": "Waiting for execution",
-      "enqueued-with-rollout-time": "Waiting to execute after {time}",
-      "dumping-schema-before-executing-sql": "Preparing to execute, dumping schema",
-      "executing-sql": "Executing SQL",
-      "dumping-schema-after-executing-sql": "SQL execution completed, dumping schema"
+      "enqueued": "Waiting for execution.",
+      "enqueued-with-rollout-time": "Waiting to execute after {time}.",
+      "dumping-schema-before-executing-sql": "Preparing to execute, dumping schema.",
+      "executing-sql": "Executing SQL.",
+      "dumping-schema-after-executing-sql": "SQL execution completed, dumping schema."
     }
   },
   "banner": {
