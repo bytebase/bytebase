@@ -36,6 +36,10 @@ const ICON_PATH_MAP = new Map([
     new URL("@/assets/db-oceanbase.png", import.meta.url).href,
   ],
   [
+    Engine.OCEANBASE_ORACLE,
+    new URL("@/assets/db-oceanbase.png", import.meta.url).href,
+  ],
+  [
     Engine.RISINGWAVE,
     new URL("@/assets/db-risingwave.png", import.meta.url).href,
   ],
