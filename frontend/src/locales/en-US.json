@@ -380,6 +380,15 @@
     "cancel-task": "Cancel task | Cancel tasks",
     "created": "Created"
   },
+  "task-run": {
+    "status": {
+      "enqueued": "Waiting for execution",
+      "enqueued-with-rollout-time": "Waiting to execute after {time}",
+      "dumpling-schema-before-executing-sql": "Preparing to execute, dumpling Schema",
+      "executing-sql": "Executing SQL",
+      "dumpling-schema-after-executing-sql": "SQL execution completed, dumpling Schema"
+    }
+  },
   "banner": {
     "update-license": "Update license",
     "license-expires": "Your license for {plan} has expired on {expireAt}.",
