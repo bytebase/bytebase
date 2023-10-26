@@ -771,11 +771,12 @@ func getOrDefaultLastSyncTime(t *timestamppb.Timestamp) time.Time {
 
 func disableSchemaDriftAnomalyCheck(dbTp storepb.Engine) bool {
 	m := map[storepb.Engine]struct{}{
-		storepb.Engine_MONGODB:  {},
-		storepb.Engine_REDIS:    {},
-		storepb.Engine_ORACLE:   {},
-		storepb.Engine_MSSQL:    {},
-		storepb.Engine_REDSHIFT: {},
+		storepb.Engine_MONGODB:          {},
+		storepb.Engine_REDIS:            {},
+		storepb.Engine_ORACLE:           {},
+		storepb.Engine_OCEANBASE_ORACLE: {},
+		storepb.Engine_MSSQL:            {},
+		storepb.Engine_REDSHIFT:         {},
 	}
 	_, ok := m[dbTp]
 	return ok
@@ -783,13 +784,14 @@ func disableSchemaDriftAnomalyCheck(dbTp storepb.Engine) bool {
 
 func disableBackupAnomalyCheck(dbTp storepb.Engine) bool {
 	m := map[storepb.Engine]struct{}{
-		storepb.Engine_MONGODB:  {},
-		storepb.Engine_SPANNER:  {},
-		storepb.Engine_REDIS:    {},
-		storepb.Engine_ORACLE:   {},
-		storepb.Engine_MSSQL:    {},
-		storepb.Engine_MARIADB:  {},
-		storepb.Engine_REDSHIFT: {},
+		storepb.Engine_MONGODB:          {},
+		storepb.Engine_SPANNER:          {},
+		storepb.Engine_REDIS:            {},
+		storepb.Engine_ORACLE:           {},
+		storepb.Engine_OCEANBASE_ORACLE: {},
+		storepb.Engine_MSSQL:            {},
+		storepb.Engine_MARIADB:          {},
+		storepb.Engine_REDSHIFT:         {},
 	}
 	_, ok := m[dbTp]
 	return ok

@@ -12,6 +12,7 @@ import (
 func init() {
 	base.RegisterGetMaskedFieldsFunc(storepb.Engine_ORACLE, GetMaskedFields)
 	base.RegisterGetMaskedFieldsFunc(storepb.Engine_DM, GetMaskedFields)
+	base.RegisterGetMaskedFieldsFunc(storepb.Engine_OCEANBASE_ORACLE, GetMaskedFields)
 }
 
 func GetMaskedFields(statement, currentDatabase string, schemaInfo *base.SensitiveSchemaInfo) ([]base.SensitiveField, error) {

@@ -14,6 +14,7 @@ import (
 func init() {
 	base.RegisterSplitterFunc(storepb.Engine_ORACLE, SplitSQL)
 	base.RegisterSplitterFunc(storepb.Engine_DM, SplitSQL)
+	base.RegisterSplitterFunc(storepb.Engine_OCEANBASE_ORACLE, SplitSQL)
 }
 
 // SplitMultiSQLStream splits MySQL multiSQL to stream.
