@@ -1104,7 +1104,7 @@ func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.Dif
 		engine = storepb.Engine_MYSQL
 	case storepb.Engine_TIDB:
 		engine = storepb.Engine_TIDB
-	case storepb.Engine_ORACLE:
+	case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
 		engine = storepb.Engine_ORACLE
 	default:
 		return engine, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid engine type %v", instance.Engine))
