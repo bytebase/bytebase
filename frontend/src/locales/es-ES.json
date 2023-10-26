@@ -384,7 +384,7 @@
     "status": {
       "enqueued": "Esperando a ser ejecutada.",
       "enqueued-with-rollout-time": "Esperando para ejecutar, {time} para ejecutar.",
-      "dumping-schema-before-executing-sql": "Listo para ejecutar, exportando schema.",
+      "dumping-schema-before-executing-sql": "Listo para ejecutar, exportando esquema.",
       "executing-sql": "Ejecutando SQL.",
       "dumping-schema-after-executing-sql": "Ejecución SQL completada, exportando esquema ahora."
     }
