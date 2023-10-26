@@ -271,7 +271,8 @@
     "created-at-by": "Creado {time} por {user}",
     "filter-by-name": "Filtrar por nombre",
     "tenant": "Arrendataria",
-    "license": "Licencia"
+    "license": "Licencia",
+    "show-all": "Mostrar todo"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -2219,7 +2220,8 @@
     "confirm-change": "¿Estás seguro de cambiar '{label}'?",
     "parsed-from-template": "Analizado desde {name} por la plantilla {template}.",
     "cannot-transfer-template-not-match": "La base de datos '{name}' no puede ser transferida a este proyecto, ya que su nombre no coincide con la plantilla {template}.",
-    "add-label": "Agregar etiqueta"
+    "add-label": "Agregar etiqueta",
+    "filter-by-label": "Filtrar por etiqueta"
   },
   "oauth": {
     "unknown-event": "Tipo de evento inesperado, OAuth falló."
