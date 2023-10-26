@@ -66,13 +66,13 @@ const comment = computed(() => {
     return t("task-run.status.enqueued");
   } else if (taskRun.status === TaskRun_Status.RUNNING) {
     if (taskRun.executionStatus === TaskRun_ExecutionStatus.PRE_EXECUTING) {
-      return t("task-run.status.dumpling-schema-before-executing-sql");
+      return t("task-run.status.dumping-schema-before-executing-sql");
     } else if (taskRun.executionStatus === TaskRun_ExecutionStatus.EXECUTING) {
       return t("task-run.status.executing-sql");
     } else if (
       taskRun.executionStatus === TaskRun_ExecutionStatus.POST_EXECUTING
     ) {
-      return t("task-run.status.dumpling-schema-after-executing-sql");
+      return t("task-run.status.dumping-schema-after-executing-sql");
     }
   }
   return taskRun.detail;
