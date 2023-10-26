@@ -48,6 +48,7 @@ func (*UseInnoDBAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice,
 	}
 
 	for _, stmt := range list {
+		checker.baseLine = stmt.BaseLine
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
@@ -65,6 +66,7 @@ func (*UseInnoDBAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice,
 type useInnoDBChecker struct {
 	*mysql.BaseMySQLParserListener
 
+	baseLine   int
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
@@ -75,25 +77,16 @@ func (c *useInnoDBChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
 	if ctx.CreateTableOptions() == nil {
 		return
 	}
-	code := advisor.Ok
 	for _, tableOption := range ctx.CreateTableOptions().AllCreateTableOption() {
 		if tableOption.ENGINE_SYMBOL() != nil && tableOption.EngineRef() != nil {
 			engine := mysqlparser.NormalizeMySQLTextOrIdentifier(tableOption.EngineRef().TextOrIdentifier())
 			if strings.ToLower(engine) != innoDB {
-				code = advisor.NotInnoDBEngine
+				content := "CREATE " + ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+				line := tableOption.GetStart().GetLine()
+				c.addAdvice(content, line)
 				break
 			}
 		}
-	}
-
-	if code != advisor.Ok {
-		c.adviceList = append(c.adviceList, advisor.Advice{
-			Status:  c.level,
-			Code:    code,
-			Title:   c.title,
-			Content: fmt.Sprintf("\"CREATE %s;\" doesn't use InnoDB engine", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)),
-			Line:    ctx.GetStart().GetLine(),
-		})
 	}
 }
 
@@ -114,13 +107,9 @@ func (c *useInnoDBChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
 	}
 
 	if code != advisor.Ok {
-		c.adviceList = append(c.adviceList, advisor.Advice{
-			Status:  c.level,
-			Code:    code,
-			Title:   c.title,
-			Content: fmt.Sprintf("\"ALTER %s;\" doesn't use InnoDB engine", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)),
-			Line:    ctx.GetStart().GetLine(),
-		})
+		content := "ALTER " + ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+		line := ctx.GetStart().GetLine()
+		c.addAdvice(content, line)
 	}
 }
 
@@ -143,12 +132,19 @@ func (c *useInnoDBChecker) EnterSetStatement(ctx *mysql.SetStatementContext) {
 	}
 
 	if code != advisor.Ok {
-		c.adviceList = append(c.adviceList, advisor.Advice{
-			Status:  c.level,
-			Code:    code,
-			Title:   c.title,
-			Content: fmt.Sprintf("\"%s;\" doesn't use InnoDB engine", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)),
-			Line:    ctx.GetStart().GetLine(),
-		})
+		content := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+		line := ctx.GetStart().GetLine()
+		c.addAdvice(content, line)
 	}
+}
+
+func (c *useInnoDBChecker) addAdvice(content string, lineNumber int) {
+	lineNumber += c.baseLine
+	c.adviceList = append(c.adviceList, advisor.Advice{
+		Status:  c.level,
+		Code:    advisor.NotInnoDBEngine,
+		Title:   c.title,
+		Content: fmt.Sprintf("\"%s;\" doesn't use InnoDB engine", content),
+		Line:    lineNumber,
+	})
 }
