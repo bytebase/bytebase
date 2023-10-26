@@ -121,7 +121,7 @@ const dropdownButtonStyle = (action: ContextMenuButtonAction) => {
   };
   if (action.props?.type === "primary") {
     style["--n-padding"] = "0 8px";
-    style["border-left"] = "0.5px solid var(--color-accent-hover)";
+    style["border-left"] = "0.5px solid rgb(var(--color-accent-hover))";
   }
   return style;
 };

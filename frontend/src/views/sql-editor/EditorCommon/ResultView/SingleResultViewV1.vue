@@ -106,9 +106,7 @@
   <template v-else-if="viewMode === 'AFFECTED-ROWS'">
     <div
       class="text-md font-normal flex items-center gap-x-1"
-      :class="[
-        dark ? 'text-[var(--color-matrix-green-hover)]' : 'text-control-light',
-      ]"
+      :class="[dark ? 'text-matrix-green-hover' : 'text-control-light']"
     >
       <span>{{ extractSQLRowValue(result.rows[0].values[0]) }}</span>
       <span>rows affected</span>

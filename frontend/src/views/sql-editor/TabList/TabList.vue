@@ -9,7 +9,7 @@
         v-model="tabStore.tabIdList"
         item-key="id"
         animation="300"
-        class="tab-list"
+        class="tab-list hide-scrollbar"
         :class="{
           'more-left': scrollState.moreLeft,
           'more-right': scrollState.moreRight,
@@ -290,6 +290,6 @@ useEmitteryEventListener(
 }
 
 .tab-list {
-  @apply flex flex-nowrap overflow-x-auto max-w-full hide-scrollbar overscroll-none;
+  @apply flex flex-nowrap overflow-x-auto max-w-full overscroll-none;
 }
 </style>

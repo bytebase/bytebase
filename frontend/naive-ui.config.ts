@@ -6,34 +6,31 @@ import {
   NDateLocale,
 } from "naive-ui";
 import { computed } from "vue";
+import { callCssVariable } from "@/utils";
 import { curLocale } from "./src/plugins/i18n";
-
-const callVar = (css: string) => {
-  return getComputedStyle(document.documentElement).getPropertyValue(css);
-};
 
 export const themeOverrides = computed((): GlobalThemeOverrides => {
   return {
     common: {
-      primaryColor: callVar("--color-accent"),
-      primaryColorHover: callVar("--color-accent-hover"),
-      primaryColorPressed: callVar("--color-accent"),
+      primaryColor: callCssVariable("--color-accent"),
+      primaryColorHover: callCssVariable("--color-accent-hover"),
+      primaryColorPressed: callCssVariable("--color-accent"),
 
-      successColor: callVar("--color-success"),
-      successColorHover: callVar("--color-success-hover"),
-      successColorPressed: callVar("--color-success"),
+      successColor: callCssVariable("--color-success"),
+      successColorHover: callCssVariable("--color-success-hover"),
+      successColorPressed: callCssVariable("--color-success"),
 
-      warningColor: callVar("--color-warning"),
-      warningColorHover: callVar("--color-warning-hover"),
-      warningColorPressed: callVar("--color-warning"),
+      warningColor: callCssVariable("--color-warning"),
+      warningColorHover: callCssVariable("--color-warning-hover"),
+      warningColorPressed: callCssVariable("--color-warning"),
 
-      infoColor: callVar("--color-info"),
-      infoColorHover: callVar("--color-info-hover"),
-      infoColorPressed: callVar("--color-info"),
+      infoColor: callCssVariable("--color-info"),
+      infoColorHover: callCssVariable("--color-info-hover"),
+      infoColorPressed: callCssVariable("--color-info"),
 
-      errorColor: callVar("--color-error"),
-      errorColorHover: callVar("--color-error-hover"),
-      errorColorPressed: callVar("--color-error"),
+      errorColor: callCssVariable("--color-error"),
+      errorColorHover: callCssVariable("--color-error-hover"),
+      errorColorPressed: callCssVariable("--color-error"),
     },
     Button: {
       color: "white",
@@ -47,24 +44,24 @@ export const themeOverrides = computed((): GlobalThemeOverrides => {
 export const darkThemeOverrides = computed((): GlobalThemeOverrides => {
   return {
     common: {
-      primaryColor: callVar("--color-matrix-green"),
-      primaryColorHover: callVar("--color-matrix-green-hover"),
-      primaryColorPressed: callVar("--color-matrix-green"),
+      primaryColor: callCssVariable("--color-matrix-green"),
+      primaryColorHover: callCssVariable("--color-matrix-green-hover"),
+      primaryColorPressed: callCssVariable("--color-matrix-green"),
     },
     Button: {
       color: "transparent",
       colorHover: "transparent",
       colorFocus: "transparent",
       colorPressed: "transparent",
-      colorInfo: callVar("--color-matrix-green"),
-      colorHoverInfo: callVar("--color-matrix-green-hover"),
-      colorFocusInfo: callVar("--color-matrix-green"),
-      borderInfo: callVar("--color-matrix-green"),
-      borderHoverInfo: callVar("--color-matrix-green-hover"),
-      borderFocusInfo: callVar("--color-matrix-green"),
+      colorInfo: callCssVariable("--color-matrix-green"),
+      colorHoverInfo: callCssVariable("--color-matrix-green-hover"),
+      colorFocusInfo: callCssVariable("--color-matrix-green"),
+      borderInfo: callCssVariable("--color-matrix-green"),
+      borderHoverInfo: callCssVariable("--color-matrix-green-hover"),
+      borderFocusInfo: callCssVariable("--color-matrix-green"),
     },
     Tabs: {
-      tabTextColorCard: callVar("--color-control-placeholder"),
+      tabTextColorCard: callCssVariable("--color-control-placeholder"),
     },
   };
 });
