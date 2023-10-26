@@ -15,6 +15,9 @@ func TestMySQLWIPRules(t *testing.T) {
 		advisor.SchemaRuleTableNaming,
 		// advisor.SchemaRuleColumnNaming enforce the column name format.
 		advisor.SchemaRuleColumnNaming,
+
+		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL support check if the database is empty before users drop it.
+		advisor.SchemaRuleDropEmptyDatabase,
 	}
 
 	for _, rule := range mysqlwipRules {
