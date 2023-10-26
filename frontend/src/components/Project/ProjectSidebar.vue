@@ -135,7 +135,11 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
           hash: "slow-query",
           hide: !currentUserIamPolicy.isMemberOfProject(project.value.name),
         },
-        // TODO: Anomaly
+        {
+          title: t("anomaly-center"),
+          hash: "anomaly-center",
+          hide: !currentUserIamPolicy.isMemberOfProject(project.value.name),
+        },
       ],
     },
     {

@@ -26,6 +26,9 @@
   <template v-if="hash === 'slow-query'">
     <ProjectSlowQueryPanel :project="project" />
   </template>
+  <template v-if="hash === 'anomaly-center'">
+    <AnomalyCenterDashboard :project="project" :selected-tab="'database'" />
+  </template>
   <template v-if="hash === 'activities'">
     <ProjectActivityPanel id="activity" :project="project" />
   </template>
@@ -62,6 +65,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useRoute } from "vue-router";
+import AnomalyCenterDashboard from "@/components/AnomalyCenter/AnomalyCenterDashboard.vue";
 import ChangelistDashboard from "@/components/Changelist/ChangelistDashboard";
 import ProjectDatabaseGroupPanel from "@/components/DatabaseGroup/ProjectDatabaseGroupPanel.vue";
 import ProjectIssuesPanel from "@/components/Project/ProjectIssuesPanel.vue";

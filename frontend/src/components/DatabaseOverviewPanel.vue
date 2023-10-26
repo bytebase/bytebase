@@ -170,7 +170,7 @@ import { useAnomalyV1List, useDBSchemaV1Store } from "@/store";
 import { Anomaly } from "@/types/proto/v1/anomaly_service";
 import { Engine, State } from "@/types/proto/v1/common";
 import { BBTableSectionDataSource } from "../bbkit/types";
-import AnomalyTable from "../components/AnomalyTable.vue";
+import AnomalyTable from "../components/AnomalyCenter/AnomalyTable.vue";
 import FunctionTable from "../components/FunctionTable.vue";
 import TableTable from "../components/TableTable.vue";
 import ViewTable from "../components/ViewTable.vue";
