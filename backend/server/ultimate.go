@@ -9,7 +9,6 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/db/mongodb"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/mssql"
 
-	// _ "github.com/bytebase/bytebase/backend/plugin/db/obo"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/oracle"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/redis"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/redshift"
