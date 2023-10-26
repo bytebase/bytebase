@@ -380,6 +380,15 @@
     "cancel-task": "Cancelar tarea | Cancelar tareas",
     "created": "Creado"
   },
+  "task-run": {
+    "status": {
+      "enqueued": "Esperando a ser ejecutada",
+      "enqueued-with-rollout-time": "Esperando para ejecutar, {time} para ejecutar",
+      "dumpling-schema-before-executing-sql": "Listo para ejecutar, exportando Schema",
+      "executing-sql": "Ejecutando SQL",
+      "dumpling-schema-after-executing-sql": "Ejecución SQL completada, exportando esquema ahora"
+    }
+  },
   "banner": {
     "update-license": "Actualizar licencia",
     "license-expires": "Su licencia para {plan} ha caducado el {expireAt}.",
