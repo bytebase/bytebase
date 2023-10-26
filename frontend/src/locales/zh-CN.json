@@ -382,9 +382,9 @@
     "status": {
       "enqueued": "等待执行",
       "enqueued-with-rollout-time": "等待执行，{time}后执行",
-      "dumpling-schema-before-executing-sql": "准备执行，正在导出 Schema",
+      "dumping-schema-before-executing-sql": "准备执行，正在导出 Schema",
       "executing-sql": "正在执行 SQL",
-      "dumpling-schema-after-executing-sql": "SQL 执行完毕，正在导出 Schema"
+      "dumping-schema-after-executing-sql": "SQL 执行完毕，正在导出 Schema"
     }
   },
   "banner": {

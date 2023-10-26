@@ -384,9 +384,9 @@
     "status": {
       "enqueued": "Waiting for execution",
       "enqueued-with-rollout-time": "Waiting to execute after {time}",
-      "dumpling-schema-before-executing-sql": "Preparing to execute, dumpling Schema",
+      "dumping-schema-before-executing-sql": "Preparing to execute, dumping schema",
       "executing-sql": "Executing SQL",
-      "dumpling-schema-after-executing-sql": "SQL execution completed, dumpling Schema"
+      "dumping-schema-after-executing-sql": "SQL execution completed, dumping schema"
     }
   },
   "banner": {
