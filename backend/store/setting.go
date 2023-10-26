@@ -133,6 +133,46 @@ func (s *Store) GetWorkspaceExternalApprovalSetting(ctx context.Context) (*store
 	return payload, nil
 }
 
+// GetMaskingAlgorithmSetting gets the masking algorithm setting.
+func (s *Store) GetMaskingAlgorithmSetting(ctx context.Context) (*storepb.MaskingAlgorithmSetting, error) {
+	settingName := api.SettingMaskingAlgorithm
+	setting, err := s.GetSettingV2(ctx, &FindSettingMessage{
+		Name: &settingName,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get setting %s", settingName)
+	}
+	if setting == nil {
+		return nil, errors.Errorf("cannot find setting %v", settingName)
+	}
+
+	payload := new(storepb.MaskingAlgorithmSetting)
+	if err := protojson.Unmarshal([]byte(setting.Value), payload); err != nil {
+		return nil, err
+	}
+	return payload, nil
+}
+
+// GetSemanticTypesSetting gets the semantic types setting.
+func (s *Store) GetSemanticTypesSetting(ctx context.Context) (*storepb.SemanticTypeSetting, error) {
+	settingName := api.SettingSemanticTypes
+	setting, err := s.GetSettingV2(ctx, &FindSettingMessage{
+		Name: &settingName,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get setting %s", settingName)
+	}
+	if setting == nil {
+		return nil, errors.Errorf("cannot find setting %v", settingName)
+	}
+
+	payload := new(storepb.SemanticTypeSetting)
+	if err := protojson.Unmarshal([]byte(setting.Value), payload); err != nil {
+		return nil, err
+	}
+	return payload, nil
+}
+
 // GetDataClassificationSetting gets the data classification setting.
 func (s *Store) GetDataClassificationSetting(ctx context.Context) (*storepb.DataClassificationSetting, error) {
 	settingName := api.SettingDataClassification

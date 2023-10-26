@@ -2,7 +2,6 @@ package base
 
 import (
 	"github.com/bytebase/bytebase/backend/component/masker"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // SensitiveSchemaInfo is the schema info using to extract sensitive fields.
@@ -61,8 +60,7 @@ type FieldInfo struct {
 
 // MaskingAttributes contain the masking related attributes on the column, likes MaskingLevel.
 type MaskingAttributes struct {
-	Masker       masker.Masker
-	MaskingLevel storepb.MaskingLevel
+	Masker masker.Masker
 }
 
 // TransmittedBy transmits the masking attributes from other to self.
@@ -100,8 +98,7 @@ func (m *MaskingAttributes) IsNeverChangeInTransmission() bool {
 // Clone clones the masking attributes.
 func (m *MaskingAttributes) Clone() MaskingAttributes {
 	return MaskingAttributes{
-		MaskingLevel: m.MaskingLevel,
-		Masker:       m.Masker,
+		Masker: m.Masker,
 	}
 }
 

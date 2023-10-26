@@ -29,6 +29,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/component/masker"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -1228,13 +1229,25 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 		return nil, errors.Wrapf(err, "failed to find masking rule policy")
 	}
 
+	algorithmSetting, err := s.store.GetMaskingAlgorithmSetting(ctx)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find masking algorithm setting")
+	}
+
+	semanticTypesSetting, err := s.store.GetSemanticTypesSetting(ctx)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find semantic types setting")
+	}
+
 	// Multiple databases may belong to the same project, to reduce the protojson unmarshal cost,
 	// we store the projectResourceID - maskingExceptionPolicy in a map.
 	maskingExceptionPolicyMap := make(map[string]*storepb.MaskingExceptionPolicy)
 
 	m := newEmptyMaskingLevelEvaluator().
 		withMaskingRulePolicy(maskingRulePolicy).
-		withDataClassificationSetting(classificationSetting)
+		withDataClassificationSetting(classificationSetting).
+		withMaskingAlgorithmSetting(algorithmSetting).
+		withSemanticTypeSetting(semanticTypesSetting)
 
 	for _, name := range databaseList {
 		databaseName := name
@@ -1343,6 +1356,16 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 
 		if instance.Engine == storepb.Engine_ORACLE || instance.Engine == storepb.Engine_DM {
 			for _, schema := range dbSchema.Metadata.Schemas {
+				var schemaConfig *storepb.SchemaConfig
+				if dataClassificationConfig != nil {
+					for _, c := range dbSchema.Config.SchemaConfigs {
+						if schemaConfig.Name == schema.Name {
+							schemaConfig = c
+							break
+						}
+					}
+				}
+
 				databaseSchema := base.DatabaseSchema{
 					Name: schema.Name,
 				}
@@ -1351,13 +1374,37 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 					TableList: []base.TableSchema{},
 				}
 				for _, table := range schema.Tables {
+					var tableConfig *storepb.TableConfig
+					if schemaConfig != nil {
+						for _, c := range schemaConfig.TableConfigs {
+							if c.Name == table.Name {
+								tableConfig = c
+								break
+							}
+						}
+					}
+
 					tableSchema := base.TableSchema{
 						Name:       table.Name,
 						ColumnList: []base.ColumnInfo{},
 					}
 					for _, column := range table.Columns {
+						var columnConfig *storepb.ColumnConfig
+						if tableConfig != nil {
+							for _, c := range tableConfig.ColumnConfigs {
+								if c.Name == column.Name {
+									columnConfig = c
+									break
+								}
+							}
+						}
+						columnSemanticTypeID := ""
+						if columnConfig != nil {
+							columnSemanticTypeID = columnConfig.SemanticTypeId
+						}
+
 						slog.Debug("processing sensitive schema info", slog.String("schema", schema.Name), slog.String("table", table.Name))
-						maskingLevel, err := m.evaluateMaskingLevelOfColumn(database, schema.Name, table.Name, column.Name, column.Classification, project.DataClassificationConfigID, maskingPolicyMap, maskingExceptionContainsCurrentPrincipal)
+						maskingAlgorithm, maskingLevel, err := m.evaluateMaskingAlgorithmOfColumn(database, schema.Name, table.Name, column.Name, columnSemanticTypeID, column.Classification, project.DataClassificationConfigID, maskingPolicyMap, maskingExceptionContainsCurrentPrincipal)
 						if err != nil {
 							return nil, errors.Wrapf(err, "failed to evaluate masking level of database %q, schema %q, table %q, column %q", databaseName, schema.Name, table.Name, column.Name)
 						}
@@ -1365,9 +1412,10 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 						if sensitive {
 							isEmpty = false
 						}
+						masker := getMaskerByMaskingAlgorithmAndLevel(maskingAlgorithm, maskingLevel)
 						tableSchema.ColumnList = append(tableSchema.ColumnList, base.ColumnInfo{
 							Name:              column.Name,
-							MaskingAttributes: base.NewMaskingAttributes(maskingLevel),
+							MaskingAttributes: base.NewMaskingAttributes(masker),
 						})
 					}
 					schemaSchema.TableList = append(schemaSchema.TableList, tableSchema)
@@ -1383,18 +1431,49 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 			SchemaList: []base.SchemaSchema{},
 		}
 		for _, schema := range dbSchema.Metadata.Schemas {
+			var schemaConfig *storepb.SchemaConfig
+			if dataClassificationConfig != nil {
+				for _, c := range dbSchema.Config.SchemaConfigs {
+					if schemaConfig.Name == schema.Name {
+						schemaConfig = c
+						break
+					}
+				}
+			}
 			schemaSchema := base.SchemaSchema{
 				Name:      schema.Name,
 				TableList: []base.TableSchema{},
 			}
 			for _, table := range schema.Tables {
+				var tableConfig *storepb.TableConfig
+				if schemaConfig != nil {
+					for _, c := range schemaConfig.TableConfigs {
+						if c.Name == table.Name {
+							tableConfig = c
+							break
+						}
+					}
+				}
 				tableSchema := base.TableSchema{
 					Name:       table.Name,
 					ColumnList: []base.ColumnInfo{},
 				}
 				for _, column := range table.Columns {
+					var columnConfig *storepb.ColumnConfig
+					if tableConfig != nil {
+						for _, c := range tableConfig.ColumnConfigs {
+							if c.Name == column.Name {
+								columnConfig = c
+							}
+						}
+					}
+					columnSemanticTypeID := ""
+					if columnConfig != nil {
+						columnSemanticTypeID = columnConfig.SemanticTypeId
+					}
+
 					slog.Debug("processing sensitive schema info", slog.String("database", database.DatabaseName), slog.String("schema", schema.Name), slog.String("table", table.Name), slog.String("column", column.Name))
-					maskingLevel, err := m.evaluateMaskingLevelOfColumn(database, schema.Name, table.Name, column.Name, column.Classification, project.DataClassificationConfigID, maskingPolicyMap, maskingExceptionContainsCurrentPrincipal)
+					maskingAlgorithm, maskingLevel, err := m.evaluateMaskingAlgorithmOfColumn(database, schema.Name, table.Name, column.Name, columnSemanticTypeID, column.Classification, project.DataClassificationConfigID, maskingPolicyMap, maskingExceptionContainsCurrentPrincipal)
 					if err != nil {
 						return nil, errors.Wrapf(err, "failed to evaluate masking level of database %q, schema %q, table %q, column %q", databaseName, schema.Name, table.Name, column.Name)
 					}
@@ -1402,9 +1481,10 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 					if sensitive {
 						isEmpty = false
 					}
+					masker := getMaskerByMaskingAlgorithmAndLevel(maskingAlgorithm, maskingLevel)
 					tableSchema.ColumnList = append(tableSchema.ColumnList, base.ColumnInfo{
 						Name:              column.Name,
-						MaskingAttributes: base.NewMaskingAttributes(maskingLevel),
+						MaskingAttributes: base.NewMaskingAttributes(masker),
 					})
 				}
 				schemaSchema.TableList = append(schemaSchema.TableList, tableSchema)
@@ -1427,6 +1507,20 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 		result = nil
 	}
 	return result, nil
+}
+
+func getMaskerByMaskingAlgorithmAndLevel(algorithm *storepb.MaskingAlgorithmSetting_Algorithm, level storepb.MaskingLevel) masker.Masker {
+	if algorithm == nil {
+		switch level {
+		case storepb.MaskingLevel_FULL:
+			return masker.NewDefaultFullMasker()
+		case storepb.MaskingLevel_PARTIAL:
+			return masker.NewDefaultRangeMasker()
+		default:
+			return masker.NewNoneMasker()
+		}
+	}
+	return nil
 }
 
 func isExcludeDatabase(dbType storepb.Engine, database string) bool {
