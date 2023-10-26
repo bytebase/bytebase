@@ -11,6 +11,7 @@
         <slot name="header"></slot>
       </div>
     </div>
+    <slot name="sub-header"></slot>
 
     <NCollapse
       arrow-placement="left"

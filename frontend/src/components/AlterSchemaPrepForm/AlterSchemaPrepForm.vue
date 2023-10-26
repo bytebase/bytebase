@@ -171,6 +171,13 @@
                     />
                   </div>
                 </template>
+                <template #sub-header>
+                  <DatabaseLabelFilter
+                    v-model:selected="state.selectedLabels"
+                    :database-list="rawDatabaseList"
+                    class="mt-2"
+                  />
+                </template>
               </ProjectStandardView>
               <SchemalessDatabaseTable
                 v-if="isEditSchema"
