@@ -17,6 +17,12 @@
       :database-list="databaseV1List"
     />
   </template>
+  <template v-if="hash === 'changelists'">
+    <ChangelistDashboard :project="project" />
+  </template>
+  <template v-if="hash === 'sync-schema'">
+    <SyncDatabaseSchema :project="project" />
+  </template>
   <template v-if="hash === 'slow-query'">
     <ProjectSlowQueryPanel :project="project" />
   </template>
@@ -58,12 +64,14 @@ import { computed } from "vue";
 import { useRoute } from "vue-router";
 import ProjectDatabaseGroupPanel from "@/components/DatabaseGroup/ProjectDatabaseGroupPanel.vue";
 import ProjectBranchesPanel from "@/components/ProjectBranchesPanel.vue";
+import SyncDatabaseSchema from "@/components/SyncDatabaseSchema/index.vue";
 import {
   useSearchDatabaseV1List,
   useDatabaseV1Store,
   useProjectV1Store,
 } from "@/store";
 import { DEFAULT_PROJECT_V1_NAME } from "@/types";
+import ChangelistDashboard from "../components/Changelist/ChangelistDashboard";
 import ProjectIssuesPanel from "../components/Project/ProjectIssuesPanel.vue";
 import ProjectActivityPanel from "../components/ProjectActivityPanel.vue";
 import ProjectChangeHistoryPanel from "../components/ProjectChangeHistoryPanel.vue";

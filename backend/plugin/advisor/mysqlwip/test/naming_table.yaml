@@ -1,0 +1,74 @@
+- statement: CREATE TABLE techBook(id int, name varchar(255));
+  want:
+    - status: WARN
+      code: 301
+      title: naming.table
+      content: '`techBook` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      line: 1
+      details: ""
+- statement: CREATE TABLE tech_book_copy(id int, name varchar(255));
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: CREATE TABLE cjnubexocfhqoogdmihudyahmmghviqkzvpixnwvxtxumvuannpwdcbtsgwrvzpde(id int, name varchar(255));
+  want:
+    - status: WARN
+      code: 301
+      title: naming.table
+      content: "`cjnubexocfhqoogdmihudyahmmghviqkzvpixnwvxtxumvuannpwdcbtsgwrvzpde` mismatches table naming convention, its length should be within 64 characters"
+      line: 1
+      details: ""
+- statement: ALTER TABLE tech_book RENAME TO TechBook;
+  want:
+    - status: WARN
+      code: 301
+      title: naming.table
+      content: '`TechBook` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      line: 1
+      details: ""
+- statement: ALTER TABLE tech_book RENAME TO tech_book_copy;
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: RENAME TABLE tech_book TO tech_book_copy, tech_book_copy TO LiteraryBook;
+  want:
+    - status: WARN
+      code: 301
+      title: naming.table
+      content: '`LiteraryBook` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      line: 1
+      details: ""
+- statement: |
+    CREATE TABLE literary_book(a int);
+    RENAME TABLE tech_book TO TechBook, literary_book TO LiteraryBook;
+  want:
+    - status: WARN
+      code: 301
+      title: naming.table
+      content: '`LiteraryBook` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      line: 2
+      details: ""
+    - status: WARN
+      code: 301
+      title: naming.table
+      content: '`TechBook` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      line: 2
+      details: ""
+- statement: |
+    CREATE TABLE literary_book(a int);
+    RENAME TABLE tech_book TO tech_book_copy, literary_book TO literary_book_copy;
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""

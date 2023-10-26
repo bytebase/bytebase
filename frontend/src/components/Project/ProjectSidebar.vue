@@ -36,6 +36,8 @@ import {
   Users,
   Link,
   Settings,
+  RefreshCcw,
+  PencilRuler,
 } from "lucide-vue-next";
 import { computed, VNode, h, reactive, watch, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
@@ -131,12 +133,32 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       title: t("common.branches"),
       hash: "branches",
       icon: h(GitBranch),
-      hide: !currentUserIamPolicy.allowToChangeDatabaseOfProject(
-        project.value.name
-      ),
+      hide:
+        isDefaultProject.value ||
+        !currentUserIamPolicy.allowToChangeDatabaseOfProject(
+          project.value.name
+        ),
     },
-    // TODO: Changelists
-    // TODO: Sync schema
+    {
+      title: t("changelist.changelists"),
+      hash: "changelists",
+      icon: h(PencilRuler),
+      hide:
+        isDefaultProject.value ||
+        !currentUserIamPolicy.allowToChangeDatabaseOfProject(
+          project.value.name
+        ),
+    },
+    {
+      title: t("database.sync-schema.title"),
+      hash: "sync-schema",
+      icon: h(RefreshCcw),
+      hide:
+        isDefaultProject.value ||
+        !currentUserIamPolicy.allowToChangeDatabaseOfProject(
+          project.value.name
+        ),
+    },
     {
       title: t("settings.sidebar.integration"),
       icon: h(Link),
@@ -206,7 +228,6 @@ const onSelect = (hash: string | undefined) => {
   if (!hash) {
     return;
   }
-  hash = hash.replace(/^#?/g, "");
   state.selectedHash = hash;
   router.replace({
     name: "workspace.project.detail",
@@ -217,12 +238,18 @@ const onSelect = (hash: string | undefined) => {
 const selectProjectTabOnHash = () => {
   const { name, hash } = router.currentRoute.value;
   if (name == "workspace.project.detail") {
-    onSelect(hash || "databases");
+    let targetHash = (hash || "databases").replace(/^#?/g, "");
+    if (targetHash === "overview") {
+      targetHash = "databases";
+    }
+    onSelect(targetHash);
   } else if (
     name == "workspace.project.hook.create" ||
     name == "workspace.project.hook.detail"
   ) {
     state.selectedHash = "webhook";
+  } else if (name == "workspace.changelist.detail") {
+    state.selectedHash = "changelists";
   }
 };
 

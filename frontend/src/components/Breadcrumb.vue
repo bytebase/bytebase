@@ -244,8 +244,8 @@ export default defineComponent({
         });
       }
       if (route.name === "workspace.changelist.detail") {
-        const project = useProjectV1Store().getProjectByName(
-          `projects/${route.params.projectName}`
+        const project = useProjectV1Store().getProjectByUID(
+          String(idFromSlug(route.params.projectSlug as string))
         );
         list.push({
           name: project.title,
@@ -253,7 +253,7 @@ export default defineComponent({
         });
         list.push({
           name: t("changelist.self"),
-          path: `/changelists?project=${project.name}`,
+          path: `/project/${projectSlug}#changelists`,
         });
       }
       if (route.name === "workspace.branch.detail") {
