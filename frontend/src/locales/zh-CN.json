@@ -2220,7 +2220,8 @@
     "confirm-change": "您确定要修改 '{label}' 吗？",
     "parsed-from-template": "从 {name} 中依据模板 {template} 解析得出",
     "cannot-transfer-template-not-match": "数据库 '{name}' 无法转移到这个项目，因为它的名称不符合模板 {template}。",
-    "add-label": "添加标签"
+    "add-label": "添加标签",
+    "filter-by-label": "按标签过滤"
   },
   "oauth": {
     "unknown-event": "未知的事件类型，认证失败"

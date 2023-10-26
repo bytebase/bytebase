@@ -1,72 +1,60 @@
 <template>
-  <div v-bind="$attrs">
-    <div
-      ref="containerRef"
-      class="flex flex-row flex-wrap gap-x-2 gap-y-2 text-sm select-none relative"
-      :style="style"
-    >
-      <div
-        v-for="kv in distinctLabelList"
-        :key="`${kv.key}:${kv.value}`"
-        class="label-item px-2 py-0.5 rounded cursor-pointer border text-control"
-        :class="
-          isKVSelected(kv)
-            ? 'border-accent-tw bg-accent-tw/10'
-            : 'bg-gray-100 hover:bg-accent-tw/10 border-gray-100 hover:border-gray-200'
-        "
-        @click="toggleSelection(kv, !isKVSelected(kv))"
-      >
-        <span>{{ kv.key }}</span>
-        <span>:</span>
-        <span :class="!kv.value && 'text-control-placeholder'">
-          {{ kv.value || $t("label.empty-label-value") }}
-        </span>
-      </div>
-    </div>
-
-    <div
-      v-if="shouldCollapse && !expanded"
-      class="flex flex-row justify-end mt-2 text-sm"
-    >
-      <div class="normal-link" @click="expanded = true">
-        {{ $t("common.show-all") }}
-      </div>
-    </div>
-  </div>
+  <NCascader
+    class="bb-database-label-filter"
+    :value="cascaderValues"
+    :options="options"
+    :placeholder="$t('label.filter-by-label')"
+    :render-label="renderLabel"
+    :multiple="true"
+    :show-path="false"
+    :check-strategy="'child'"
+    :max-tag-count="'responsive'"
+    :expand-trigger="'click'"
+    :virtual-scroll="true"
+    :filterable="true"
+    :menu-props="{
+      style: '--n-column-width: max-content',
+    }"
+    style="width: 12rem"
+    @update:value="updateCascaderValues"
+  />
 </template>
 
 <script setup lang="ts">
-import { useElementSize } from "@vueuse/core";
-import { orderBy, uniq, uniqBy } from "lodash-es";
-import { computed, ref, watch } from "vue";
-import { CSSProperties } from "vue";
+import { orderBy, uniqBy } from "lodash-es";
+import { CascaderOption, NCascader } from "naive-ui";
+import { computed, h } from "vue";
+import { useI18n } from "vue-i18n";
 import { ComposedDatabase } from "@/types";
+import { groupBy } from "@/utils";
 
 type KV = { key: string; value: string };
-const ROW_HEIGHT = 26;
-const ROW_GAP = 8;
+type KeyOption = CascaderOption & {
+  type: "key";
+  key: string;
+  value: string;
+};
+type KeyValueOption = CascaderOption & {
+  type: "kv";
+  kv: KV;
+  value: string;
+};
 
-const props = withDefaults(
-  defineProps<{
-    selected: KV[];
-    databaseList: ComposedDatabase[];
-    maxRows?: number;
-  }>(),
-  {
-    maxRows: 3,
-  }
-);
+const props = defineProps<{
+  selected: KV[];
+  databaseList: ComposedDatabase[];
+}>();
 
 const emit = defineEmits<{
   (event: "update:selected", selected: KV[]): void;
 }>();
 
-const containerRef = ref<HTMLDivElement>();
-const containerSize = useElementSize(containerRef);
-const rowYCoords = ref<number[]>([]);
-const expanded = ref(false);
+const { t } = useI18n();
 
-const distinctLabelList = computed(() => {
+const cascaderValueOfKV = (kv: KV) => {
+  return JSON.stringify(kv);
+};
+const distinctKVList = computed(() => {
   const list = props.databaseList.flatMap((db) => {
     return Object.keys(db.labels).map<KV>((key) => ({
       key,
@@ -85,77 +73,67 @@ const distinctLabelList = computed(() => {
   );
   return sortedList;
 });
-const shouldCollapse = computed(() => {
-  const rowCount = rowYCoords.value.length;
-  return rowCount > props.maxRows;
+const options = computed(() => {
+  const groups = groupBy(distinctKVList.value, (kv) => kv.key);
+  return Array.from(groups.entries()).map<KeyOption>(([key, group]) => {
+    const children = group.map<KeyValueOption>((kv) => ({
+      type: "kv",
+      kv,
+      value: cascaderValueOfKV(kv),
+      label: `${kv.key}:${kv.value || t("label.empty-label-value")}`,
+    }));
+    return {
+      type: "key",
+      key,
+      value: key,
+      label: key,
+      children,
+    };
+  });
 });
-const style = computed(() => {
-  const style: CSSProperties = {};
-  if (shouldCollapse.value) {
-    if (expanded.value) {
-      //
-    } else {
-      style.overflowY = "hidden";
-      const maxHeight =
-        props.maxRows * ROW_HEIGHT + (props.maxRows - 1) * ROW_GAP;
-      style.maxHeight = `${maxHeight}px`;
-    }
+const renderLabel = (option: KeyOption | KeyValueOption) => {
+  if (option.type === "key") {
+    const { key } = option;
+    return key;
   }
-
-  return style;
-});
-
-const isKVSelected = (kv: KV) => {
-  return !!props.selected.find(
-    ({ key, value }) => key === kv.key && value === kv.value
-  );
+  if (option.type === "kv") {
+    const { kv } = option;
+    if (!kv.value) {
+      return h(
+        "span",
+        {
+          class: "text-control-placeholder",
+        },
+        t("label.empty-label-value")
+      );
+    }
+    return kv.value;
+  }
+  console.error("should never reach this line", option);
+  return "";
 };
 
-const toggleSelection = (kv: KV, checked: boolean) => {
-  const index = props.selected.findIndex(
-    ({ key, value }) => key === kv.key && value === kv.value
+const cascaderValues = computed(() => {
+  return props.selected.map(cascaderValueOfKV);
+});
+
+const updateCascaderValues = (
+  values: string[],
+  options: (KeyOption | KeyValueOption)[]
+) => {
+  const kvOptions = options.filter(
+    (opt) => opt.type === "kv"
+  ) as KeyValueOption[];
+  emit(
+    "update:selected",
+    kvOptions.map((opt) => opt.kv)
   );
-  if (checked && index < 0) {
-    emit("update:selected", [...props.selected, kv]);
-  } else if (!checked && index >= 0) {
-    const updated = [...props.selected];
-    updated.splice(index, 1);
-    emit("update:selected", updated);
-  }
 };
-
-watch(
-  [
-    containerSize.width,
-    containerSize.height,
-    distinctLabelList,
-    () => props.maxRows,
-  ],
-  () => {
-    const containerElement = containerRef.value;
-    if (!containerElement) {
-      rowYCoords.value = [];
-      return;
-    }
-
-    const children = Array.from(
-      containerElement.querySelectorAll(".label-item")
-    );
-    const distinctChildrenTops = uniq(
-      children.map((element) => element.getBoundingClientRect().top)
-    );
-    rowYCoords.value = distinctChildrenTops;
-  },
-  { immediate: true }
-);
-
-watch(
-  shouldCollapse,
-  (shouldCollapse) => {
-    if (!shouldCollapse) {
-      expanded.value = false;
-    }
-  },
-  { immediate: true }
-);
 </script>
+
+<style lang="postcss" scoped>
+.bb-database-label-filter.n-cascader
+  :deep(.n-base-selection-input-tag__input:focus) {
+  @apply !ring-0;
+}
+</style>

@@ -11,6 +11,10 @@
         />
       </div>
       <NInputGroup style="width: auto">
+        <DatabaseLabelFilter
+          v-model:selected="state.selectedLabels"
+          :database-list="databaseList"
+        />
         <InstanceSelect
           class="!w-48"
           :instance="state.instance"
@@ -23,16 +27,11 @@
         />
         <SearchBox
           :value="state.keyword"
-          :placeholder="$t('database.filter-database')"
+          :placeholder="$t('common.filter-by-name')"
           @update:value="state.keyword = $event"
         />
       </NInputGroup>
     </div>
-
-    <DatabaseLabelFilter
-      v-model:selected="state.selectedLabels"
-      :database-list="databaseList"
-    />
 
     <DatabaseOperations
       v-if="selectedDatabases.length > 0"

@@ -2224,7 +2224,8 @@
     "confirm-change": "Are you sure to change '{label}' ?",
     "parsed-from-template": "Parsed from {name} by template {template}.",
     "cannot-transfer-template-not-match": "Database '{name}' cannot be transferred to this project. Since its name doesn't match the template {template}.",
-    "add-label": "Add label"
+    "add-label": "Add label",
+    "filter-by-label": "Filter by label"
   },
   "oauth": {
     "unknown-event": "Unexpected event type, OAuth failed."
