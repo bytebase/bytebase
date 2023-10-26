@@ -102,7 +102,7 @@ const projectSidebarItemList = computed((): SidebarItem[] => {
           title: t("common.groups"),
           path: "database-groups",
           hide:
-            isTenantProject.value ||
+            !isTenantProject.value ||
             !currentUserIamPolicy.isMemberOfProject(project.value.name),
         },
         {
