@@ -15,6 +15,9 @@ func TestMySQLWIPRules(t *testing.T) {
 		advisor.SchemaRuleTableNaming,
 		// advisor.SchemaRuleColumnNaming enforce the column name format.
 		advisor.SchemaRuleColumnNaming,
+
+		// advisor.SchemaRuleStatementInsertRowLimit enforce the insert row limit.
+		advisor.SchemaRuleStatementInsertRowLimit,
 	}
 
 	for _, rule := range mysqlwipRules {
