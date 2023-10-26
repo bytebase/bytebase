@@ -13,6 +13,7 @@ import (
 func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_ORACLE, extractChangedResources)
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_DM, extractChangedResources)
+	base.RegisterExtractChangedResourcesFunc(storepb.Engine_OCEANBASE_ORACLE, extractChangedResources)
 }
 
 func extractChangedResources(currentDatabase string, currentSchema string, statement string) ([]base.SchemaResource, error) {
