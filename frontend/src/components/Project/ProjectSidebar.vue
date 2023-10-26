@@ -136,7 +136,7 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
           hide: !currentUserIamPolicy.isMemberOfProject(project.value.name),
         },
         {
-          title: t("anomaly-center"),
+          title: t("common.anomalies"),
           hash: "anomaly-center",
           hide: !currentUserIamPolicy.isMemberOfProject(project.value.name),
         },
