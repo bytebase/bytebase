@@ -48,7 +48,8 @@ export const activeTaskInTaskList = (tasks: Task[]): Task => {
       task.status === Task_Status.FAILED ||
       // "CANCELED" tasks can be "RESTART"ed
       // So it should be an "active" task
-      task.status === Task_Status.CANCELED
+      task.status === Task_Status.CANCELED ||
+      task.status === Task_Status.STATUS_UNSPECIFIED // compatibility for preview phase
     ) {
       return task;
     }
