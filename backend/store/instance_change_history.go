@@ -664,6 +664,9 @@ func (s *Store) UpdateInstanceChangeHistory(ctx context.Context, update *UpdateI
 	if v := update.Schema; v != nil {
 		set, args = append(set, fmt.Sprintf("schema = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := update.Sheet; v != nil {
+		set, args = append(set, fmt.Sprintf("sheet_id = $%d", len(args)+1)), append(args, *v)
+	}
 	if len(set) == 0 {
 		return nil
 	}
