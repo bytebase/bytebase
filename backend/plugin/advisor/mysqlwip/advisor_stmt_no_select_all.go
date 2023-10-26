@@ -71,8 +71,7 @@ func (checker *noSelectAllChecker) EnterQuery(ctx *mysql.QueryContext) {
 }
 
 func (checker *noSelectAllChecker) EnterSelectItemList(ctx *mysql.SelectItemListContext) {
-	// we only focus on the first MULT_OPERATOR.
-	if ctx.MULT_OPERATOR() != nil && len(checker.adviceList) == 0 {
+	if ctx.MULT_OPERATOR() != nil {
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  checker.level,
 			Code:    advisor.StatementSelectAll,
