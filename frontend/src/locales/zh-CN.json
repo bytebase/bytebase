@@ -840,7 +840,7 @@
     },
     "view-commit": "查看提交",
     "advanced-search": {
-      "self": "高级搜素",
+      "self": "高级搜索",
       "scope": {
         "project": {
           "title": "项目",
