@@ -2,13 +2,16 @@
   <div class="w-full h-auto flex flex-col justify-start items-start">
     <div class="w-full h-auto shrink-0 flex flex-row justify-between items-end">
       <div class="flex flex-col justify-start items-start gap-y-2">
-        <div class="flex flex-row justify-start items-center">
+        <div
+          v-if="!disableProjectSelect"
+          class="flex flex-row justify-start items-center"
+        >
           <span class="mr-2 w-20 shrink-0 text-sm">{{
             $t("common.project")
           }}</span>
           <ProjectSelect
             :project="state.projectId"
-            :disabled="viewMode || disableProjectSelect"
+            :disabled="viewMode"
             @update:project="handleProjectSelect"
           />
         </div>

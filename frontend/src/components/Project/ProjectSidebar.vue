@@ -1,30 +1,10 @@
 <template>
-  <nav class="flex-1 flex flex-col overflow-y-hidden">
-    <BytebaseLogo class="w-full px-4 shrink-0" />
-    <div class="space-y-1 flex-1 overflow-y-auto px-2 pb-4">
-      <div v-for="(item, index) in projectSidebarItemList" :key="index">
-        <div
-          class="group flex items-center px-2 py-2 text-sm leading-5 font-medium rounded-md text-gray-700"
-          :class="getItemClass(item.hash)"
-          @click="onSelect(item.hash)"
-        >
-          <component :is="item.icon" class="mr-2 w-5 h-5 text-gray-500" />
-          {{ item.title }}
-        </div>
-        <div v-if="item.children" class="space-y-1">
-          <div
-            v-for="child in item.children"
-            :key="child.hash"
-            class="group w-full flex items-center pl-11 pr-2 py-1.5 rounded-md"
-            :class="getItemClass(child.hash)"
-            @click="onSelect(child.hash)"
-          >
-            {{ child.title }}
-          </div>
-        </div>
-      </div>
-    </div>
-  </nav>
+  <CommonSidebar
+    type="div"
+    :item-list="projectSidebarItemList"
+    :get-item-class="getItemClass"
+    @select="(val: string | undefined) => onSelect(val as ProjectHash)"
+  />
 </template>
 
 <script setup lang="ts">
@@ -42,26 +22,47 @@ import {
 import { computed, VNode, h, reactive, watch, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
-import BytebaseLogo from "@/components/BytebaseLogo.vue";
+import { SidebarItem } from "@/components/CommonSidebar.vue";
 import { useCurrentUserIamPolicy, useProjectV1Store } from "@/store";
 import { DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import { idFromSlug } from "@/utils";
 
+const projectHashList = [
+  "databases",
+  "database-groups",
+  "change-history",
+  "slow-query",
+  "anomalies",
+  "issues",
+  "branches",
+  "changelists",
+  "sync-schema",
+  "gitops",
+  "webhook",
+  "members",
+  "activities",
+  "setting",
+] as const;
+export type ProjectHash = typeof projectHashList[number];
+const isProjectHash = (x: any): x is ProjectHash => projectHashList.includes(x);
+
 interface ProjectSidebarItem {
   title: string;
-  hash?: string;
+  path?: ProjectHash;
   icon: VNode;
   hide?: boolean;
   children?: {
     title: string;
-    hash: string;
+    path: ProjectHash;
     hide?: boolean;
   }[];
 }
 
+const defaultHash: ProjectHash = "databases";
+
 interface LocalState {
-  selectedHash: string;
+  selectedHash: ProjectHash;
 }
 
 const { t } = useI18n();
@@ -70,7 +71,7 @@ const router = useRouter();
 const projectV1Store = useProjectV1Store();
 
 const state = reactive<LocalState>({
-  selectedHash: "",
+  selectedHash: defaultHash,
 });
 
 const projectSlug = computed(() => route.params.projectSlug as string);
@@ -87,7 +88,7 @@ const isTenantProject = computed((): boolean => {
   return project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED;
 });
 
-const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
+const projectSidebarItemList = computed((): SidebarItem[] => {
   const fullList: ProjectSidebarItem[] = [
     {
       title: t("common.database"),
@@ -95,33 +96,37 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       children: [
         {
           title: t("common.databases"),
-          hash: "databases",
+          path: "databases",
         },
         {
           title: t("common.groups"),
-          hash: "database-groups",
+          path: "database-groups",
           hide:
             isTenantProject.value ||
             !currentUserIamPolicy.isMemberOfProject(project.value.name),
         },
         {
           title: t("common.change-history"),
-          hash: "change-history",
+          path: "change-history",
           hide:
             isTenantProject.value ||
             !currentUserIamPolicy.isMemberOfProject(project.value.name),
         },
         {
           title: startCase(t("slow-query.slow-queries")),
-          hash: "slow-query",
+          path: "slow-query",
           hide: !currentUserIamPolicy.isMemberOfProject(project.value.name),
         },
-        // TODO: Anomaly
+        {
+          title: t("common.anomalies"),
+          path: "anomalies",
+          hide: !currentUserIamPolicy.isMemberOfProject(project.value.name),
+        },
       ],
     },
     {
       title: t("common.issues"),
-      hash: "issues",
+      path: "issues",
       icon: h(CircleDot),
       hide:
         isDefaultProject.value ||
@@ -131,7 +136,7 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
     },
     {
       title: t("common.branches"),
-      hash: "branches",
+      path: "branches",
       icon: h(GitBranch),
       hide:
         isDefaultProject.value ||
@@ -141,7 +146,7 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
     },
     {
       title: t("changelist.changelists"),
-      hash: "changelists",
+      path: "changelists",
       icon: h(PencilRuler),
       hide:
         isDefaultProject.value ||
@@ -151,7 +156,7 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
     },
     {
       title: t("database.sync-schema.title"),
-      hash: "sync-schema",
+      path: "sync-schema",
       icon: h(RefreshCcw),
       hide:
         isDefaultProject.value ||
@@ -170,11 +175,11 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       children: [
         {
           title: t("common.gitops"),
-          hash: "gitops",
+          path: "gitops",
         },
         {
           title: t("common.webhooks"),
-          hash: "webhook",
+          path: "webhook",
         },
       ],
     },
@@ -187,30 +192,25 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       children: [
         {
           title: t("common.members"),
-          hash: "members",
+          path: "members",
         },
         {
           title: t("common.activities"),
-          hash: "activities",
+          path: "activities",
         },
       ],
     },
     {
       title: t("common.setting"),
       icon: h(Settings),
-      hash: "setting",
+      path: "setting",
       hide:
         isDefaultProject.value ||
         !currentUserIamPolicy.isMemberOfProject(project.value.name),
     },
   ];
 
-  return fullList
-    .map((item) => ({
-      ...item,
-      children: (item.children ?? []).filter((child) => !child.hide),
-    }))
-    .filter((item) => !item.hide && (!!item.hash || item.children.length > 0));
+  return fullList as SidebarItem[];
 });
 
 const getItemClass = (hash: string | undefined) => {
@@ -224,8 +224,8 @@ const getItemClass = (hash: string | undefined) => {
   return list;
 };
 
-const onSelect = (hash: string | undefined) => {
-  if (!hash) {
+const onSelect = (hash: ProjectHash | undefined) => {
+  if (!hash || !isProjectHash(hash)) {
     return;
   }
   state.selectedHash = hash;
@@ -238,11 +238,11 @@ const onSelect = (hash: string | undefined) => {
 const selectProjectTabOnHash = () => {
   const { name, hash } = router.currentRoute.value;
   if (name == "workspace.project.detail") {
-    let targetHash = (hash || "databases").replace(/^#?/g, "");
-    if (targetHash === "overview") {
-      targetHash = "databases";
+    let targetHash = hash.replace(/^#?/g, "");
+    if (!isProjectHash(targetHash)) {
+      targetHash = defaultHash;
     }
-    onSelect(targetHash);
+    onSelect(targetHash as ProjectHash);
   } else if (
     name == "workspace.project.hook.create" ||
     name == "workspace.project.hook.detail"

@@ -18,6 +18,9 @@ func TestMySQLWIPRules(t *testing.T) {
 
 		// advisor.SchemaRuleStatementInsertRowLimit enforce the insert row limit.
 		advisor.SchemaRuleStatementInsertRowLimit,
+
+		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL support check if the database is empty before users drop it.
+		advisor.SchemaRuleDropEmptyDatabase,
 	}
 
 	for _, rule := range mysqlwipRules {
