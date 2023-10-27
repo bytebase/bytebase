@@ -1994,14 +1994,19 @@ func convertDatabaseMetadata(database *store.DatabaseMessage, metadata *storepb.
 		})
 	}
 
-	m.SchemaConfigs = convertDatabaseConfig(config)
+	databaseConfig := convertDatabaseConfig(config)
+	if databaseConfig != nil {
+		m.SchemaConfigs = databaseConfig.SchemaConfigs
+	}
 	return m
 }
 
-func convertDatabaseConfig(config *storepb.DatabaseConfig) []*v1pb.SchemaConfig {
-	var schemaConfigs []*v1pb.SchemaConfig
+func convertDatabaseConfig(config *storepb.DatabaseConfig) *v1pb.DatabaseConfig {
 	if config == nil {
 		return nil
+	}
+	databaseConfig := &v1pb.DatabaseConfig{
+		Name: config.Name,
 	}
 	for _, schema := range config.SchemaConfigs {
 		s := &v1pb.SchemaConfig{
@@ -2010,9 +2015,9 @@ func convertDatabaseConfig(config *storepb.DatabaseConfig) []*v1pb.SchemaConfig 
 		for _, table := range schema.TableConfigs {
 			s.TableConfigs = append(s.TableConfigs, convertTableConfig(table))
 		}
-		schemaConfigs = append(schemaConfigs, s)
+		databaseConfig.SchemaConfigs = append(databaseConfig.SchemaConfigs, s)
 	}
-	return schemaConfigs
+	return databaseConfig
 }
 
 func convertTableConfig(table *storepb.TableConfig) *v1pb.TableConfig {
