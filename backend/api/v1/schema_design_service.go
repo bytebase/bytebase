@@ -672,11 +672,8 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
 	}
-	if config := sheet.Payload.DatabaseConfig; config != nil {
-		databaseConfig := convertDatabaseConfig(config)
-		if databaseConfig != nil {
-			schemaMetadata.SchemaConfigs = databaseConfig.SchemaConfigs
-		}
+	if config := convertDatabaseConfig(sheet.Payload.DatabaseConfig); config != nil {
+		schemaMetadata.SchemaConfigs = config.SchemaConfigs
 	}
 
 	baselineSchema, baselineSheetName := "", ""
