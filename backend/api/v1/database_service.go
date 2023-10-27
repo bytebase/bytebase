@@ -566,7 +566,10 @@ func (s *DatabaseService) UpdateDatabaseMetadata(ctx context.Context, request *v
 
 	for _, path := range request.UpdateMask.Paths {
 		if path == "schema_configs" {
-			databaseConfig := convertV1DatabaseConfig(databaseName, request.DatabaseMetadata.SchemaConfigs)
+			databaseConfig := convertV1DatabaseConfig(&v1pb.DatabaseConfig{
+				Name:          databaseName,
+				SchemaConfigs: request.DatabaseMetadata.SchemaConfigs,
+			})
 			if err := s.store.UpdateDBSchema(ctx, database.UID, &store.UpdateDBSchemaMessage{Config: databaseConfig}, principalID); err != nil {
 				return nil, err
 			}
@@ -2044,11 +2047,15 @@ func convertColumnConfig(column *storepb.ColumnConfig) *v1pb.ColumnConfig {
 	}
 }
 
-func convertV1DatabaseConfig(databaseName string, schemaConfig []*v1pb.SchemaConfig) *storepb.DatabaseConfig {
-	m := &storepb.DatabaseConfig{
-		Name: databaseName,
+func convertV1DatabaseConfig(databaseConfig *v1pb.DatabaseConfig) *storepb.DatabaseConfig {
+	if databaseConfig == nil {
+		return nil
 	}
-	for _, schema := range schemaConfig {
+
+	config := &storepb.DatabaseConfig{
+		Name: databaseConfig.Name,
+	}
+	for _, schema := range databaseConfig.SchemaConfigs {
 		s := &storepb.SchemaConfig{
 			Name: schema.Name,
 		}
@@ -2065,9 +2072,9 @@ func convertV1DatabaseConfig(databaseName string, schemaConfig []*v1pb.SchemaCon
 			}
 			s.TableConfigs = append(s.TableConfigs, t)
 		}
-		m.SchemaConfigs = append(m.SchemaConfigs, s)
+		config.SchemaConfigs = append(config.SchemaConfigs, s)
 	}
-	return m
+	return config
 }
 
 func convertV1TableConfig(table *v1pb.TableConfig) *storepb.TableConfig {

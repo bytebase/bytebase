@@ -12,6 +12,7 @@ import {
   useProjectV1Store,
   useSheetV1Store,
 } from "@/store";
+import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
 import {
   ComposedProject,
   emptyIssue,
@@ -50,6 +51,7 @@ type CreateIssueParams = {
     sqlList?: string[];
     sql?: string;
   };
+  branch?: string;
 };
 
 export const createIssueSkeleton = async (route: _RouteLocationBase) => {
@@ -73,12 +75,14 @@ export const createIssueSkeleton = async (route: _RouteLocationBase) => {
     .split(",")
     .filter((uid) => uid && uid !== String(UNKNOWN_ID));
   await prepareDatabaseList(databaseUIDList, project.uid);
+  const branch = (route.query.branch as string) || undefined;
 
   const params: CreateIssueParams = {
     databaseUIDList,
     project,
     route,
     initialSQL: extractInitialSQLListFromQuery(route),
+    branch,
   };
 
   const plan = await buildPlan(params);
@@ -176,6 +180,7 @@ export const buildSteps = async (
       const spec = await buildSpecForTarget(db.name, params, sheetUID);
       step.specs.push(spec);
       maybeSetInitialSQLForSpec(spec, sqlIndex, params);
+      maybeSetInitialDatabaseConfigForSpec(spec, params);
     }
     steps.push(step);
   }
@@ -220,6 +225,7 @@ export const buildStepsViaDeploymentConfig = async (
     sheetUID
   );
   maybeSetInitialSQLForSpec(spec, 0, params);
+  maybeSetInitialDatabaseConfigForSpec(spec, params);
   const step = Plan_Step.fromPartial({
     specs: [spec],
   });
@@ -401,6 +407,31 @@ const maybeSetInitialSQLForSpec = (
   if (sql) {
     const sheetEntity = getLocalSheetByName(sheet);
     setSheetStatement(sheetEntity, sql);
+  }
+};
+
+const maybeSetInitialDatabaseConfigForSpec = (
+  spec: Plan_Spec,
+  params: CreateIssueParams
+) => {
+  const branch = params.branch;
+  if (!branch) {
+    return;
+  }
+
+  const sheetName = sheetNameForSpec(spec);
+  if (!sheetName) return;
+  const uid = extractSheetUID(sheetName);
+  if (!uid.startsWith("-")) {
+    // If the sheet is a remote sheet, ignore initial Database configs.
+    return;
+  }
+
+  const [_, sheetId] = getProjectAndSchemaDesignSheetId(branch);
+  const temp = useSheetV1Store().getSheetByUID(sheetId);
+  if (temp && temp.payload) {
+    const sheetEntity = getLocalSheetByName(sheetName);
+    sheetEntity.payload = temp.payload;
   }
 };
 

@@ -69,6 +69,7 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
     if (sheet.name) {
       removeLocalSheet(sheet.name);
     }
+    console.debug("created sheet", created);
     return created;
   };
 
