@@ -38,9 +38,3 @@ const filterByTitle = (pattern: string, option: SelectOption) => {
   return String(value).toLowerCase().includes(pattern);
 };
 </script>
-
-<style lang="postcss" scoped>
-.bb-workspace-role-select :deep(.n-base-selection-input:focus) {
-  @apply !ring-0;
-}
-</style>

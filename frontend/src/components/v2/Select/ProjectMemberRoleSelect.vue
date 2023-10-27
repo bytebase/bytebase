@@ -105,9 +105,3 @@ const filterByName = (pattern: string, option: SelectOption) => {
   return role.name.toLowerCase().includes(pattern);
 };
 </script>
-
-<style lang="postcss" scoped>
-.bb-project-member-role-select :deep(.n-base-selection-input:focus) {
-  @apply !ring-0;
-}
-</style>
