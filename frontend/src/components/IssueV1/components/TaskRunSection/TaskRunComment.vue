@@ -22,7 +22,7 @@ import {
   Task_Type,
 } from "@/types/proto/v1/rollout_service";
 import {
-  changeHistorySlug,
+  changeHistoryLinkRaw,
   extractChangeHistoryUID,
   extractTaskUID,
   flattenTaskV1List,
@@ -93,10 +93,11 @@ const commentLink = computed((): CommentLink => {
       case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC:
       case Task_Type.DATABASE_DATA_UPDATE: {
         const db = databaseForTask(issue.value, task);
-        const link = `/${db.name}/changeHistories/${changeHistorySlug(
+        const link = changeHistoryLinkRaw(
+          db.name,
           extractChangeHistoryUID(taskRun.changeHistory),
           taskRun.schemaVersion
-        )}`;
+        );
         return {
           title: t("task.view-change"),
           link,
