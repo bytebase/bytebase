@@ -3,6 +3,7 @@
     v-if="showAttention"
     :style="'WARN'"
     :description="attentionText"
+    :link="link"
   />
   <BBStepTab
     class="mt-4 mb-8"
@@ -146,6 +147,25 @@ const attentionText = computed((): string => {
     return t("gitops.setting.add-git-provider.bitbucket-admin-requirement");
   } else if (state.config.type === ExternalVersionControl_Type.AZURE_DEVOPS) {
     return t("gitops.setting.add-git-provider.azure-admin-requirement");
+  }
+  return "";
+});
+
+const link = computed((): string => {
+  if (state.config.type === ExternalVersionControl_Type.GITLAB) {
+    if (state.config.uiType == "GITLAB_SELF_HOST") {
+      return "https://www.bytebase.com/docs/vcs-integration/self-host-gitlab/?source=console";
+    }
+    return "https://www.bytebase.com/docs/vcs-integration/gitlab-com/?source=console";
+  } else if (state.config.type === ExternalVersionControl_Type.GITHUB) {
+    if (state.config.uiType == "GITHUB_COM") {
+      return "https://www.bytebase.com/docs/vcs-integration/github-com/?source=console";
+    }
+    return "https://www.bytebase.com/docs/vcs-integration/github-enterprise/?source=console";
+  } else if (state.config.type === ExternalVersionControl_Type.BITBUCKET) {
+    return "https://www.bytebase.com/docs/vcs-integration/bitbucket-org/?source=console";
+  } else if (state.config.type === ExternalVersionControl_Type.AZURE_DEVOPS) {
+    return "https://www.bytebase.com/docs/vcs-integration/azure-devops/?source=console";
   }
   return "";
 });
