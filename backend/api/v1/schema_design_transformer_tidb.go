@@ -259,7 +259,7 @@ func tidbRestoreFieldType(fieldType *tidbtypes.FieldType) (string, error) {
 		return fieldType.CompactStr(), nil
 	}
 	var buffer strings.Builder
-	flag := tidbformat.RestoreKeyWordLowercase
+	flag := tidbformat.RestoreKeyWordLowercase | tidbformat.RestoreStringSingleQuotes
 	ctx := tidbformat.NewRestoreCtx(flag, &buffer)
 	if err := fieldType.Restore(ctx); err != nil {
 		return "", err
