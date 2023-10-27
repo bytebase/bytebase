@@ -15,7 +15,7 @@
 import isChinese from "is-chinese";
 import { computed, withDefaults } from "vue";
 import { SYSTEM_BOT_EMAIL } from "@/types";
-import { VueClass } from "@/utils";
+import { VueClass, callCssVariable } from "@/utils";
 import { hashCode } from "./BBUtil";
 import { BBAvatarSizeType } from "./types";
 
@@ -132,11 +132,7 @@ const initials = computed(() => {
 
 const backgroundColor = computed(() => {
   if (props.email === SYSTEM_BOT_EMAIL) {
-    return (
-      getComputedStyle(document.documentElement)
-        .getPropertyValue("--color-accent")
-        .trim() || DEFAULT_BRANDING_COLOR
-    );
+    return callCssVariable("--color-accent") || DEFAULT_BRANDING_COLOR;
   }
   return (
     props.backgroundColor ||

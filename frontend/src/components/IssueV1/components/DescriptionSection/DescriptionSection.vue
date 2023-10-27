@@ -40,7 +40,7 @@
         :loading="state.isUpdating"
         style="
           width: 100%;
-          --n-placeholder-color: var(--color-control-placeholder);
+          --n-placeholder-color: rgb(var(--color-control-placeholder));
         "
         type="textarea"
         size="small"

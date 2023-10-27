@@ -1,9 +1,7 @@
 <template>
   <div
     class="text-md font-normal flex items-center gap-x-3"
-    :class="[
-      dark ? 'text-[var(--color-matrix-green-hover)]' : 'text-control-light',
-    ]"
+    :class="[dark ? 'text-matrix-green-hover' : 'text-control-light']"
   >
     <span>{{ error }}</span>
     <slot name="suffix" />
