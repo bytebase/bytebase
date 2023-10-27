@@ -32,7 +32,10 @@
             class="mt-2 text-sm"
             :class="`text-${color}-700`"
           >
-            <p class="whitespace-pre-wrap">{{ $t(description) }}</p>
+            <p class="whitespace-pre-wrap">
+              {{ $t(description) }}
+              <LearnMoreLink v-if="link" :url="link" class="ml-1 text-sm" />
+            </p>
           </div>
         </slot>
       </div>
@@ -64,6 +67,7 @@ const props = withDefaults(
     style?: BBAttentionStyle;
     title?: string;
     description?: string;
+    link?: string;
     actionText?: string;
     side?: BBAttentionSide;
   }>(),
