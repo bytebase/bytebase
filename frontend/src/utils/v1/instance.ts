@@ -7,7 +7,6 @@ import { Engine, State } from "@/types/proto/v1/common";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { DataSourceType, Instance } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
-import { isDev } from "../util";
 
 export const instanceV1Slug = (instance: Instance): string => {
   return [slug(instance.title), instance.uid].join("-");
@@ -90,12 +89,10 @@ export const supportedEngineV1List = () => {
     Engine.MSSQL,
     Engine.REDSHIFT,
     Engine.RISINGWAVE,
+    Engine.OCEANBASE_ORACLE,
   ];
   if (locale.value === "zh-CN") {
     engines.push(Engine.DM);
-  }
-  if (isDev()) {
-    engines.push(Engine.OCEANBASE_ORACLE);
   }
   return engines;
 };
