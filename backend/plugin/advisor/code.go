@@ -57,6 +57,8 @@ const (
 	NameIsKeywordIdentifier Code = 308
 	// 309 naming case mismatch advisor error code.
 	NamingCaseMismatch Code = 309
+	// 310 unique key name is empty advisor error code
+	NamingUKNameEmpty Code = 310
 
 	// 401 ~ 499 column error code.
 	NoRequiredColumn                           Code = 401

@@ -1,4 +1,4 @@
-- statement: CREATE UNIQUE INDEX uk_tech_book_id_name ON tech_book(id, name)
+- statement: CREATE UNIQUE INDEX uk_tech_book_id_name ON tech_book(id, name);
   want:
     - status: SUCCESS
       code: 0
@@ -6,7 +6,9 @@
       content: ""
       line: 0
       details: ""
-- statement: CREATE UNIQUE INDEX tech_book_id_name ON tech_book(id, name)
+- statement: |
+    CREATE UNIQUE INDEX uk_tech_book_id_name ON tech_book(id, name);
+    CREATE UNIQUE INDEX tech_book_id_name ON tech_book(id, name);
   want:
     - status: WARN
       code: 304
@@ -14,7 +16,9 @@
       content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found `tech_book_id_name`
       line: 2
       details: ""
-- statement: CREATE UNIQUE INDEX qtzmquwvlnttctfluoouxelxeliltcfzzstrtyocogwwyiyrflmrkbhbfasynlacy ON tech_book(id, name)
+- statement: |
+    CREATE UNIQUE INDEX uk_tech_book_id_name ON tech_book(id, name);
+    CREATE UNIQUE INDEX qtzmquwvlnttctfluoouxelxeliltcfzzstrtyocogwwyiyrflmrkbhbfasynlacy ON tech_book(id, name)
   want:
     - status: WARN
       code: 304
@@ -28,7 +32,7 @@
       content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found `qtzmquwvlnttctfluoouxelxeliltcfzzstrtyocogwwyiyrflmrkbhbfasynlacy`
       line: 2
       details: ""
-- statement: ALTER TABLE tech_book ADD UNIQUE uk_tech_book_id_name (id, name)
+- statement: ALTER TABLE tech_book ADD UNIQUE uk_tech_book_id_name (id, name);
   want:
     - status: SUCCESS
       code: 0
@@ -36,15 +40,15 @@
       content: ""
       line: 0
       details: ""
-- statement: ALTER TABLE tech_book ADD UNIQUE tech_book_id_name (id, name)
+- statement: ALTER TABLE tech_book ADD UNIQUE tech_book_id_name (id, name);
   want:
     - status: WARN
       code: 304
       title: naming.index.uk
       content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found `tech_book_id_name`
-      line: 2
+      line: 1
       details: ""
-- statement: ALTER TABLE tech_book RENAME INDEX old_uk TO uk_tech_book_id_name
+- statement: ALTER TABLE tech_book RENAME INDEX old_uk TO uk_tech_book_id_name;
   want:
     - status: SUCCESS
       code: 0
@@ -52,15 +56,15 @@
       content: ""
       line: 0
       details: ""
-- statement: ALTER TABLE tech_book RENAME INDEX old_uk TO uk_tech_book
+- statement: ALTER TABLE tech_book RENAME INDEX old_uk TO uk_tech_book;
   want:
     - status: WARN
       code: 304
       title: naming.index.uk
       content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found `uk_tech_book`
-      line: 2
+      line: 1
       details: ""
-- statement: CREATE TABLE book(id INT PRIMARY KEY, name VARCHAR(20), UNIQUE INDEX uk_book_name (name))
+- statement: CREATE TABLE book(id INT PRIMARY KEY, name VARCHAR(20), UNIQUE INDEX uk_book_name (name));
   want:
     - status: SUCCESS
       code: 0
@@ -68,19 +72,29 @@
       content: ""
       line: 0
       details: ""
-- statement: CREATE TABLE book(id INT PRIMARY KEY, name VARCHAR(20), UNIQUE KEY (name))
+- statement: |
+    CREATE TABLE book(
+      id INT PRIMARY KEY,
+      name VARCHAR(20),
+      UNIQUE KEY (name)
+    );
   want:
-    - status: SUCCESS
-      code: 0
-      title: OK
-      content: ""
-      line: 0
+    - status: WARN
+      code: 310
+      title: naming.index.uk
+      content: "Unique key in table `book` should be set a name explicitly"
+      line: 4
       details: ""
-- statement: CREATE TABLE book(id INT PRIMARY KEY, name VARCHAR(20), UNIQUE INDEX (name))
+- statement: |
+    CREATE TABLE book(
+      id INT PRIMARY KEY,
+      name VARCHAR(20),
+      UNIQUE INDEX (name)
+    );
   want:
-    - status: SUCCESS
-      code: 0
-      title: OK
-      content: ""
-      line: 0
+    - status: WARN
+      code: 310
+      title: naming.index.uk
+      content: "Unique key in table `book` should be set a name explicitly"
+      line: 4
       details: ""
