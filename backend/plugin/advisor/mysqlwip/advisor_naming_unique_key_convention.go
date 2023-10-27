@@ -165,7 +165,7 @@ func (checker *namingUKConventionChecker) EnterAlterTable(ctx *mysql.AlterTableC
 				indexName: newIndexName,
 				tableName: tableName,
 				metaData:  metaData,
-				line:      alterListItem.GetStart().GetLine(),
+				line:      checker.baseLine + ctx.GetStart().GetLine(),
 			}
 			indexDataList = append(indexDataList, indexData)
 		}

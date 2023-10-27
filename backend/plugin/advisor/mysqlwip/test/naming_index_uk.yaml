@@ -40,13 +40,15 @@
       content: ""
       line: 0
       details: ""
-- statement: ALTER TABLE tech_book ADD UNIQUE tech_book_id_name (id, name);
+- statement: |
+    CREATE TABLE t1(a INT);
+    ALTER TABLE tech_book ADD UNIQUE tech_book_id_name (id, name);
   want:
     - status: WARN
       code: 304
       title: naming.index.uk
       content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found `tech_book_id_name`
-      line: 1
+      line: 2
       details: ""
 - statement: ALTER TABLE tech_book RENAME INDEX old_uk TO uk_tech_book_id_name;
   want:
@@ -56,13 +58,15 @@
       content: ""
       line: 0
       details: ""
-- statement: ALTER TABLE tech_book RENAME INDEX old_uk TO uk_tech_book;
+- statement: |
+    CREATE TABLE t1(a INT);
+    ALTER TABLE tech_book RENAME INDEX old_uk TO uk_tech_book;
   want:
     - status: WARN
       code: 304
       title: naming.index.uk
       content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found `uk_tech_book`
-      line: 1
+      line: 2
       details: ""
 - statement: CREATE TABLE book(id INT PRIMARY KEY, name VARCHAR(20), UNIQUE INDEX uk_book_name (name));
   want:
