@@ -99,15 +99,16 @@ const triggerAuthCallback = async () => {
         web: true,
       });
       if (mfaTempToken) {
-        router.push({
+        const route = router.resolve({
           name: "auth.mfa",
           query: {
             mfaTempToken,
             redirect: oAuthState.redirect || "",
           },
         });
+        window.location.href = route.href;
       } else {
-        router.push(oAuthState.redirect || "/");
+        window.location.href = oAuthState.redirect || "/";
       }
     }
   } else if (
