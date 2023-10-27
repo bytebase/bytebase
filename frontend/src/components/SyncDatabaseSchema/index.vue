@@ -291,6 +291,9 @@ const tryFinishSetup = async () => {
   query.name = generateIssueName(
     targetDatabaseList.map((db) => db.databaseName)
   );
+  if (schemaDesignState.selectedSchemaDesign) {
+    query.branch = schemaDesignState.selectedSchemaDesign.name;
+  }
 
   const routeInfo = {
     name: "workspace.issue.detail",
