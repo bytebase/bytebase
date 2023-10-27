@@ -1520,7 +1520,28 @@ func getMaskerByMaskingAlgorithmAndLevel(algorithm *storepb.MaskingAlgorithmSett
 			return masker.NewNoneMasker()
 		}
 	}
-	return nil
+
+	switch m := algorithm.Mask.(type) {
+	case *storepb.MaskingAlgorithmSetting_Algorithm_FullMask_:
+		return masker.NewFullMasker(m.FullMask.Substitution)
+	case *storepb.MaskingAlgorithmSetting_Algorithm_RangeMask_:
+		return masker.NewRangeMasker(convertRangeMaskSlices(m.RangeMask.Slices))
+	case *storepb.MaskingAlgorithmSetting_Algorithm_Md5Mask:
+		return masker.NewMD5Masker(m.Md5Mask.Salt)
+	}
+	return masker.NewNoneMasker()
+}
+
+func convertRangeMaskSlices(slices []*storepb.MaskingAlgorithmSetting_Algorithm_RangeMask_Slice) []*masker.MaskRangeSlice {
+	var result []*masker.MaskRangeSlice
+	for _, slice := range slices {
+		result = append(result, &masker.MaskRangeSlice{
+			Start:        slice.Start,
+			End:          slice.End,
+			Substitution: slice.Substitution,
+		})
+	}
+	return result
 }
 
 func isExcludeDatabase(dbType storepb.Engine, database string) bool {
