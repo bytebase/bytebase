@@ -937,7 +937,7 @@ func convertToStoreSheetMessage(projectUID int, databaseUID *int, creatorID int,
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid type %q", sheet.Type))
 	}
 
-	return &store.SheetMessage{
+	sheetMessage := &store.SheetMessage{
 		ProjectUID:  projectUID,
 		DatabaseUID: databaseUID,
 		CreatorID:   creatorID,
@@ -946,7 +946,15 @@ func convertToStoreSheetMessage(projectUID int, databaseUID *int, creatorID int,
 		Visibility:  visibility,
 		Source:      source,
 		Type:        tp,
-	}, nil
+	}
+	if sheet.Payload != nil {
+		sheetMessage.Payload = &storepb.SheetPayload{
+			DatabaseConfig:         convertV1DatabaseConfig(sheet.Payload.DatabaseConfig),
+			BaselineDatabaseConfig: convertV1DatabaseConfig(sheet.Payload.BaselineDatabaseConfig),
+		}
+	}
+
+	return sheetMessage, nil
 }
 
 func convertToStoreSheetVisibility(visibility v1pb.Sheet_Visibility) (store.SheetVisibility, error) {
