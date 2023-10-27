@@ -18,9 +18,9 @@ var (
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLNamingTableConvention, &NamingTableConventionAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLNamingTableConvention, &NamingTableConventionAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLNamingTableConvention, &NamingTableConventionAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLNamingTableConvention, &NamingTableConventionAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLNamingTableConvention, &NamingTableConventionAdvisor{})
 }
 
 // NamingTableConventionAdvisor is the advisor checking for table naming convention.

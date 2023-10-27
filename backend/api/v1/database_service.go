@@ -1104,7 +1104,7 @@ func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.Dif
 		engine = storepb.Engine_MYSQL
 	case storepb.Engine_TIDB:
 		engine = storepb.Engine_TIDB
-	case storepb.Engine_ORACLE:
+	case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
 		engine = storepb.Engine_ORACLE
 	default:
 		return engine, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid engine type %v", instance.Engine))
@@ -1144,6 +1144,9 @@ func convertToChangeHistory(h *store.InstanceChangeHistoryMessage) (*v1pb.Change
 		PrevSchema:        h.SchemaPrev,
 		ExecutionDuration: durationpb.New(time.Duration(h.ExecutionDurationNs)),
 		Issue:             "",
+	}
+	if h.SheetID != nil {
+		v1pbHistory.StatementSheet = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, h.IssueProjectID, common.SheetIDPrefix, *h.SheetID)
 	}
 	if h.IssueUID != nil {
 		v1pbHistory.Issue = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, h.IssueProjectID, common.IssuePrefix, *h.IssueUID)
@@ -1991,14 +1994,19 @@ func convertDatabaseMetadata(database *store.DatabaseMessage, metadata *storepb.
 		})
 	}
 
-	m.SchemaConfigs = convertDatabaseConfig(config)
+	databaseConfig := convertDatabaseConfig(config)
+	if databaseConfig != nil {
+		m.SchemaConfigs = databaseConfig.SchemaConfigs
+	}
 	return m
 }
 
-func convertDatabaseConfig(config *storepb.DatabaseConfig) []*v1pb.SchemaConfig {
-	var schemaConfigs []*v1pb.SchemaConfig
+func convertDatabaseConfig(config *storepb.DatabaseConfig) *v1pb.DatabaseConfig {
 	if config == nil {
 		return nil
+	}
+	databaseConfig := &v1pb.DatabaseConfig{
+		Name: config.Name,
 	}
 	for _, schema := range config.SchemaConfigs {
 		s := &v1pb.SchemaConfig{
@@ -2007,9 +2015,9 @@ func convertDatabaseConfig(config *storepb.DatabaseConfig) []*v1pb.SchemaConfig 
 		for _, table := range schema.TableConfigs {
 			s.TableConfigs = append(s.TableConfigs, convertTableConfig(table))
 		}
-		schemaConfigs = append(schemaConfigs, s)
+		databaseConfig.SchemaConfigs = append(databaseConfig.SchemaConfigs, s)
 	}
-	return schemaConfigs
+	return databaseConfig
 }
 
 func convertTableConfig(table *storepb.TableConfig) *v1pb.TableConfig {

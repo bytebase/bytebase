@@ -1,7 +1,6 @@
 <template>
   <div class="w-full">
-    <div class="w-full flex flex-row justify-between items-center">
-      <span>{{ $t("database-group.self") }}</span>
+    <div class="flex items-center justify-end">
       <div class="flex flex-row gap-x-2">
         <NButton @click="handleCreateSchemaGroup">
           <span class="mr-1">{{

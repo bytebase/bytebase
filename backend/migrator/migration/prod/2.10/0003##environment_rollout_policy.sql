@@ -32,6 +32,7 @@ INSERT INTO policy (
         }' THEN '{
             "workspaceRoles": ["roles/OWNER", "roles/DBA"]
         }'::jsonb
+        ELSE '{"automatic": true}'::jsonb
     END,
     resource_type,
     resource_id,

@@ -46,9 +46,10 @@ type DatabaseCreateExecutor struct {
 }
 
 var cannotCreateDatabase = map[storepb.Engine]bool{
-	storepb.Engine_REDIS:  true,
-	storepb.Engine_ORACLE: true,
-	storepb.Engine_DM:     true,
+	storepb.Engine_REDIS:            true,
+	storepb.Engine_ORACLE:           true,
+	storepb.Engine_DM:               true,
+	storepb.Engine_OCEANBASE_ORACLE: true,
 }
 
 // RunOnce will run the database create task executor once.
@@ -141,10 +142,6 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		if err != nil {
 			return true, nil, err
 		}
-	case storepb.Engine_ORACLE:
-		return true, nil, errors.Errorf("Do not support creating databases for Oracle")
-	case storepb.Engine_DM:
-		return true, nil, errors.Errorf("Do not support creating databases for DM")
 	default:
 		defaultDBDriver, err = exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
 		if err != nil {

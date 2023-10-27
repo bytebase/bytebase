@@ -254,6 +254,7 @@
     },
     "expiration": "Expiración",
     "configure": "Configurar",
+    "groups": "Grupos",
     "database-groups": "Grupo de bases de datos",
     "members": "Miembros",
     "warehouse": "Almacén",
@@ -269,7 +270,9 @@
     "updated-at-by": "Actualizado {time} por {user}",
     "created-at-by": "Creado {time} por {user}",
     "filter-by-name": "Filtrar por nombre",
-    "tenant": "Arrendataria"
+    "tenant": "Arrendataria",
+    "license": "Licencia",
+    "show-all": "Mostrar todo"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -377,6 +380,15 @@
     "action-all-tasks-in-current-stage": "{action} todas las tareas en la etapa actual",
     "cancel-task": "Cancelar tarea | Cancelar tareas",
     "created": "Creado"
+  },
+  "task-run": {
+    "status": {
+      "enqueued": "Esperando a ser ejecutada.",
+      "enqueued-with-rollout-time": "Esperando para ejecutar, {time} para ejecutar.",
+      "dumping-schema-before-executing-sql": "Listo para ejecutar, exportando esquema.",
+      "executing-sql": "Ejecutando SQL.",
+      "dumping-schema-after-executing-sql": "Ejecución SQL completada, exportando esquema ahora."
+    }
   },
   "banner": {
     "update-license": "Actualizar licencia",
@@ -1277,8 +1289,8 @@
       "manual-by-project-releaser": "Liberador de proyecto",
       "manual-by-issue-creator": "Creador del problema",
       "manual-by-last-approver": "Implementación manual por parte del último aprobador del flujo de aprobación personalizado",
-      "manual-by-fixed-roles": "Implementación manual por roles fijos",
-      "manual-by-fixed-roles-info": "Permita que cualquiera de los siguientes roles seleccionados haga clic en el botón \"Implementar\" y luego se ejecutará el cambio.",
+      "manual-by-dedicated-roles": "Implementación manual por roles especializados",
+      "manual-by-dedicated-roles-info": "Permita que cualquiera de los siguientes roles seleccionados haga clic en el botón \"Implementar\" y luego se ejecutará el cambio.",
       "manual-by-dba": "DBA",
       "manual-by-workspace-owner": "Propietario del espacio de trabajo",
       "role": {
@@ -1750,7 +1762,18 @@
       "schema-change-type": "Tipo de cambio de esquema",
       "select-schema-change-type-ddl": "Imperativo: especifique el cambio con cualquier declaración DDL.",
       "select-schema-change-type-sdl": "Declarativo: especifique el esquema deseado. Utilice únicamente CREAR TABLA/ÍNDICE.",
-      "schema-path-template-sdl-description": "El archivo de esquema describe el esquema completo de la base de datos."
+      "schema-path-template-sdl-description": "El archivo de esquema describe el esquema completo de la base de datos.",
+      "branch-protection-rules": {
+        "self": "Branch protection rules",
+        "add-rule": "Añadir regla",
+        "branch-name-pattern": {
+          "self": "Patrón de nombre de rama",
+          "description": "Soporta comodines como feature/* o *-stable"
+        },
+        "applies-to-n-branches": "Se aplica a {n} ramas",
+        "only-allow-specified-roles-to-create-branch": "Sólo permitir roles especificados para crear rama",
+        "no-protection-rule-configured": "No hay regla de protección configurada"
+      }
     },
     "members": {
       "description": "Los miembros del proyecto determinan el permiso para operar la base de datos y los problemas dentro del proyecto. El propietario del proyecto, el propietario del espacio de trabajo y el DBA del espacio de trabajo tienen permisos completos para el proyecto.",
@@ -2157,7 +2180,8 @@
       "invalid-column-type": "Tipo de columna inválido",
       "schema-not-found": "Esquema no encontrado",
       "failed-to-fetch-database-schema": "Error al obtener el esquema de la base de datos",
-      "invalid-schema": "Esquema no válido"
+      "invalid-schema": "Esquema no válido",
+      "cannot-drop-the-last-column": "No se puede eliminar la última columna"
     },
     "confirm-to-close": {
       "title": "Confirmar para cerrar",
@@ -2196,7 +2220,8 @@
     "confirm-change": "¿Estás seguro de cambiar '{label}'?",
     "parsed-from-template": "Analizado desde {name} por la plantilla {template}.",
     "cannot-transfer-template-not-match": "La base de datos '{name}' no puede ser transferida a este proyecto, ya que su nombre no coincide con la plantilla {template}.",
-    "add-label": "Agregar etiqueta"
+    "add-label": "Agregar etiqueta",
+    "filter-by-label": "Filtrar por etiqueta"
   },
   "oauth": {
     "unknown-event": "Tipo de evento inesperado, OAuth falló."

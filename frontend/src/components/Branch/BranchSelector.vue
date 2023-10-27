@@ -111,9 +111,3 @@ const renderLabel: SelectRenderLabel = (option) => {
   );
 };
 </script>
-
-<style lang="postcss" scoped>
-.bb-branch-select :deep(.n-base-selection-input:focus) {
-  @apply !ring-0;
-}
-</style>

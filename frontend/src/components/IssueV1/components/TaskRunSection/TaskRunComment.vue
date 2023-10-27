@@ -1,5 +1,5 @@
 <template>
-  {{ taskRun.detail }}
+  {{ comment }}
 
   <template v-if="commentLink.link">
     <router-link
@@ -17,16 +17,17 @@ import { useI18n } from "vue-i18n";
 import { unknownTask } from "@/types";
 import {
   TaskRun,
+  TaskRun_ExecutionStatus,
   TaskRun_Status,
   Task_Type,
 } from "@/types/proto/v1/rollout_service";
 import {
-  changeHistorySlug,
+  changeHistoryLinkRaw,
   extractChangeHistoryUID,
   extractTaskUID,
   flattenTaskV1List,
 } from "@/utils";
-import { databaseForTask, useIssueContext } from "../../logic";
+import { databaseForTask, specForTask, useIssueContext } from "../../logic";
 
 export type CommentLink = {
   title: string;
@@ -39,6 +40,43 @@ const props = defineProps<{
 
 const { issue } = useIssueContext();
 const { t } = useI18n();
+
+const task = computed(() => {
+  const taskUID = extractTaskUID(props.taskRun.name);
+  const task =
+    flattenTaskV1List(issue.value.rolloutEntity).find(
+      (task) => task.uid === taskUID
+    ) ?? unknownTask();
+  return task;
+});
+
+const earliestAllowedTime = computed(() => {
+  const spec = specForTask(issue.value.planEntity, task.value);
+  return spec?.earliestAllowedTime ? spec.earliestAllowedTime.getTime() : null;
+});
+
+const comment = computed(() => {
+  const { taskRun } = props;
+  if (taskRun.status === TaskRun_Status.PENDING) {
+    if (earliestAllowedTime.value) {
+      return t("task-run.status.enqueued-with-rollout-time", {
+        time: new Date(earliestAllowedTime.value).toLocaleString(),
+      });
+    }
+    return t("task-run.status.enqueued");
+  } else if (taskRun.status === TaskRun_Status.RUNNING) {
+    if (taskRun.executionStatus === TaskRun_ExecutionStatus.PRE_EXECUTING) {
+      return t("task-run.status.dumping-schema-before-executing-sql");
+    } else if (taskRun.executionStatus === TaskRun_ExecutionStatus.EXECUTING) {
+      return t("task-run.status.executing-sql");
+    } else if (
+      taskRun.executionStatus === TaskRun_ExecutionStatus.POST_EXECUTING
+    ) {
+      return t("task-run.status.dumping-schema-after-executing-sql");
+    }
+  }
+  return taskRun.detail;
+});
 
 const commentLink = computed((): CommentLink => {
   const { taskRun } = props;
@@ -55,10 +93,11 @@ const commentLink = computed((): CommentLink => {
       case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC:
       case Task_Type.DATABASE_DATA_UPDATE: {
         const db = databaseForTask(issue.value, task);
-        const link = `/${db.name}/changeHistories/${changeHistorySlug(
+        const link = changeHistoryLinkRaw(
+          db.name,
           extractChangeHistoryUID(taskRun.changeHistory),
           taskRun.schemaVersion
-        )}`;
+        );
         return {
           title: t("task.view-change"),
           link,

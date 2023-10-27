@@ -1,6 +1,6 @@
 <template>
-  <template v-if="hash === 'overview'">
-    <ProjectOverviewPanel id="overview" :project="project" />
+  <template v-if="hash === 'issues'">
+    <ProjectIssuesPanel id="issues" :project="project" />
   </template>
   <template v-if="hash === 'branches'">
     <ProjectBranchesPanel id="branches" :project-id="project.uid" />
@@ -17,10 +17,19 @@
       :database-list="databaseV1List"
     />
   </template>
+  <template v-if="hash === 'changelists'">
+    <ChangelistDashboard :project="project" />
+  </template>
+  <template v-if="hash === 'sync-schema'">
+    <SyncDatabaseSchema :project="project" />
+  </template>
   <template v-if="hash === 'slow-query'">
     <ProjectSlowQueryPanel :project="project" />
   </template>
-  <template v-if="hash === 'activity'">
+  <template v-if="hash === 'anomalies'">
+    <AnomalyCenterDashboard :project="project" :selected-tab="'database'" />
+  </template>
+  <template v-if="hash === 'activities'">
     <ProjectActivityPanel id="activity" :project="project" />
   </template>
   <template v-if="!isDefaultProject && hash === 'gitops'">
@@ -56,24 +65,28 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useRoute } from "vue-router";
+import AnomalyCenterDashboard from "@/components/AnomalyCenter/AnomalyCenterDashboard.vue";
+import ChangelistDashboard from "@/components/Changelist/ChangelistDashboard";
 import ProjectDatabaseGroupPanel from "@/components/DatabaseGroup/ProjectDatabaseGroupPanel.vue";
+import ProjectIssuesPanel from "@/components/Project/ProjectIssuesPanel.vue";
+import { ProjectHash } from "@/components/Project/ProjectSidebar.vue";
+import ProjectActivityPanel from "@/components/ProjectActivityPanel.vue";
 import ProjectBranchesPanel from "@/components/ProjectBranchesPanel.vue";
+import ProjectChangeHistoryPanel from "@/components/ProjectChangeHistoryPanel.vue";
+import ProjectDatabasesPanel from "@/components/ProjectDatabasesPanel.vue";
+import ProjectMemberPanel from "@/components/ProjectMember/ProjectMemberPanel.vue";
+import ProjectSettingPanel from "@/components/ProjectSettingPanel.vue";
+import ProjectSlowQueryPanel from "@/components/ProjectSlowQueryPanel.vue";
+import ProjectVersionControlPanel from "@/components/ProjectVersionControlPanel.vue";
+import ProjectWebhookPanel from "@/components/ProjectWebhookPanel.vue";
+import SyncDatabaseSchema from "@/components/SyncDatabaseSchema/index.vue";
 import {
   useSearchDatabaseV1List,
   useDatabaseV1Store,
   useProjectV1Store,
 } from "@/store";
 import { DEFAULT_PROJECT_V1_NAME } from "@/types";
-import ProjectActivityPanel from "../components/ProjectActivityPanel.vue";
-import ProjectChangeHistoryPanel from "../components/ProjectChangeHistoryPanel.vue";
-import ProjectDatabasesPanel from "../components/ProjectDatabasesPanel.vue";
-import ProjectMemberPanel from "../components/ProjectMember/ProjectMemberPanel.vue";
-import ProjectOverviewPanel from "../components/ProjectOverviewPanel.vue";
-import ProjectSettingPanel from "../components/ProjectSettingPanel.vue";
-import ProjectSlowQueryPanel from "../components/ProjectSlowQueryPanel.vue";
-import ProjectVersionControlPanel from "../components/ProjectVersionControlPanel.vue";
-import ProjectWebhookPanel from "../components/ProjectWebhookPanel.vue";
-import { idFromSlug, sortDatabaseV1List } from "../utils";
+import { idFromSlug, sortDatabaseV1List } from "@/utils";
 
 const props = defineProps({
   projectWebhookSlug: {
@@ -93,7 +106,7 @@ const props = defineProps({
 const route = useRoute();
 const projectV1Store = useProjectV1Store();
 
-const hash = computed(() => route.hash.replace(/^#?/, ""));
+const hash = computed(() => route.hash.replace(/^#?/, "") as ProjectHash);
 
 const project = computed(() => {
   return projectV1Store.getProjectByUID(String(idFromSlug(props.projectSlug)));

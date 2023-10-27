@@ -249,7 +249,7 @@ func (t *tableState) toString(buf *strings.Builder) error {
 	}
 
 	if t.comment != "" {
-		if _, err := buf.WriteString(fmt.Sprintf(" COMMENT='%s'", t.comment)); err != nil {
+		if _, err := buf.WriteString(fmt.Sprintf(" COMMENT '%s'", strings.ReplaceAll(t.comment, "'", "''"))); err != nil {
 			return err
 		}
 	}
@@ -615,7 +615,7 @@ func (t *mysqlTransformer) EnterCreateTableOption(ctx *mysql.CreateTableOptionCo
 
 	if ctx.COMMENT_SYMBOL() != nil {
 		commentString := ctx.TextStringLiteral().GetText()
-		if len(commentString) < 2 {
+		if len(commentString) > 2 {
 			quotes := commentString[0]
 			escape := fmt.Sprintf("%c%c", quotes, quotes)
 			commentString = strings.ReplaceAll(commentString[1:len(commentString)-1], escape, string(quotes))
@@ -929,6 +929,7 @@ func (g *mysqlDesignSchemaGenerator) EnterCreateTable(ctx *mysql.CreateTableCont
 	g.firstElementInTable = true
 	g.columnDefine.Reset()
 	g.tableConstraints.Reset()
+	g.tableOptions.Reset()
 
 	delete(schema.tables, tableName)
 	if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
@@ -1076,7 +1077,7 @@ func (g *mysqlDesignSchemaGenerator) ExitCreateTableOptions(ctx *mysql.CreateTab
 		return
 	}
 
-	if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+	if _, err := g.tableOptions.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 		Start: g.tableOptionTokenIndex,
 		Stop:  ctx.GetStop().GetTokenIndex(),
 	})); err != nil {
@@ -1094,7 +1095,7 @@ func (g *mysqlDesignSchemaGenerator) EnterCreateTableOption(ctx *mysql.CreateTab
 
 	if ctx.COMMENT_SYMBOL() != nil {
 		commentString := ctx.TextStringLiteral().GetText()
-		if len(commentString) < 2 {
+		if len(commentString) > 2 {
 			quotes := commentString[0]
 			escape := fmt.Sprintf("%c%c", quotes, quotes)
 			commentString = strings.ReplaceAll(commentString[1:len(commentString)-1], escape, string(quotes))

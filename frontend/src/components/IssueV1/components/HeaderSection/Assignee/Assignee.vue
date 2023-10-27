@@ -50,6 +50,7 @@ import {
   getCurrentRolloutPolicyForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
+import ErrorList, { ErrorItem } from "@/components/misc/ErrorList.vue";
 import { UserSelect } from "@/components/v2";
 import { issueServiceClient } from "@/grpcweb";
 import { pushNotification, useCurrentUserV1, useUserStore } from "@/store";
@@ -69,7 +70,6 @@ import {
   extractUserResourceName,
   extractUserUID,
 } from "@/utils";
-import { ErrorList } from "../../common";
 import AssigneeAttentionButton from "./AssigneeAttentionButton.vue";
 
 const { t } = useI18n();
@@ -100,7 +100,7 @@ const allowChangeAssignee = computed(() => {
 });
 
 const errors = asyncComputed(async () => {
-  const errors: string[] = [];
+  const errors: ErrorItem[] = [];
   if (!allowChangeAssignee.value) {
     errors.push(t("issue.you-are-not-allowed-to-change-this-value"));
   } else if (assigneeCandidates.value.length === 0) {
@@ -112,22 +112,28 @@ const errors = asyncComputed(async () => {
     );
     errors.push(t("issue.allow-any-following-roles-to-be-assignee"));
     if (policy.workspaceRoles.includes(VirtualRoleType.OWNER)) {
-      errors.push(t("policy.rollout.role.workspace-owner"));
+      errors.push({
+        error: t("policy.rollout.role.workspace-owner"),
+        indent: 1,
+      });
     }
     if (policy.workspaceRoles.includes(VirtualRoleType.DBA)) {
-      errors.push(t("policy.rollout.role.dba"));
+      errors.push({ error: t("policy.rollout.role.dba"), indent: 1 });
     }
     if (policy.projectRoles.includes(PresetRoleType.OWNER)) {
-      errors.push(t("policy.rollout.role.project-owner"));
+      errors.push({ error: t("policy.rollout.role.project-owner"), indent: 1 });
     }
     if (policy.projectRoles.includes(PresetRoleType.RELEASER)) {
-      errors.push(t("policy.rollout.role.project-releaser"));
+      errors.push({
+        error: t("policy.rollout.role.project-releaser"),
+        indent: 1,
+      });
     }
     if (policy.issueRoles.includes(VirtualRoleType.CREATOR)) {
-      errors.push(t("policy.rollout.role.issue-creator"));
+      errors.push({ error: t("policy.rollout.role.issue-creator"), indent: 1 });
     }
     if (policy.issueRoles.includes(VirtualRoleType.LAST_APPROVER)) {
-      errors.push(t("policy.rollout.role.last-approver"));
+      errors.push({ error: t("policy.rollout.role.last-approver"), indent: 1 });
     }
   }
 

@@ -87,9 +87,9 @@ const isCurrentTab = computed(() => props.tab.id === currentTabId.value);
 }
 
 .tab-item.admin .body {
-  @apply text-[var(--color-matrix-green-hover)];
+  @apply text-matrix-green-hover;
 }
 .tab-item.admin.current .body {
-  @apply !bg-dark-bg border-[var(--color-matrix-green-hover)];
+  @apply !bg-dark-bg border-matrix-green-hover;
 }
 </style>

@@ -51,8 +51,8 @@
                   "visible": true
                 }
               ],
-              "comment": "'this is comment with '' escaped'",
-              "userComment": "'this is comment with '' escaped'",
+              "comment": "this is comment with ' escaped",
+              "userComment": "this is comment with ' escaped",
               "foreignKeys": [
                 {
                   "name": "fk1",

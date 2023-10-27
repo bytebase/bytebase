@@ -122,7 +122,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 	if instance == nil {
 		return nil, nil, errors.Errorf("instance ID not found %v", instanceID)
 	}
-	if instance.Engine == storepb.Engine_ORACLE {
+	if instance.Engine == storepb.Engine_ORACLE || instance.Engine == storepb.Engine_OCEANBASE_ORACLE {
 		return nil, nil, errors.Errorf("creating Oracle database is not supported")
 	}
 

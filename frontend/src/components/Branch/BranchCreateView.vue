@@ -66,6 +66,7 @@
         <NButton
           type="primary"
           :disabled="!allowConfirm"
+          :loading="state.isCreating"
           @click.prevent="handleConfirm"
         >
           {{ confirmText }}
@@ -129,6 +130,7 @@ interface LocalState {
   baselineSchema: BaselineSchema;
   schemaDesign: SchemaDesign;
   parentBranchName?: string;
+  isCreating: boolean;
 }
 
 const props = defineProps({
@@ -153,6 +155,7 @@ const state = reactive<LocalState>({
   schemaDesign: SchemaDesign.fromPartial({
     type: SchemaDesign_Type.MAIN_BRANCH,
   }),
+  isCreating: false,
 });
 const showProjectSelector = ref<boolean>(true);
 const refreshId = ref<string>("");
@@ -272,7 +275,8 @@ const allowConfirm = computed(() => {
   return (
     state.projectId &&
     state.schemaDesignTitle &&
-    state.baselineSchema.databaseId
+    state.baselineSchema.databaseId &&
+    !state.isCreating
   );
 });
 
@@ -326,6 +330,7 @@ const handleConfirm = async () => {
     return;
   }
 
+  state.isCreating = true;
   const metadata = mergeSchemaEditToMetadata(
     branchSchema.schemaList,
     cloneDeep(
@@ -376,6 +381,7 @@ const handleConfirm = async () => {
       title: state.schemaDesignTitle,
     });
   }
+  state.isCreating = false;
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",

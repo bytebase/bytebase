@@ -5,20 +5,10 @@
     >
       <div class="flex flex-row justify-start items-center space-x-4">
         <div class="w-44">
-          <BBSelect
-            :selected-item="state.selectedAffectedTable"
-            :item-list="affectedTables"
-            @select-item="(item: AffectedTable) => state.selectedAffectedTable = item"
-          >
-            <template #menuItem="{ item }">
-              <span
-                class="block w-full truncate"
-                :class="item.dropped && 'text-gray-400'"
-              >
-                {{ getAffectedTableDisplayName(item) }}
-              </span>
-            </template>
-          </BBSelect>
+          <AffectedTableSelect
+            v-model:affected-table="state.selectedAffectedTable"
+            :change-history-list="changeHistoryList"
+          />
         </div>
         <div class="flex items-center">
           <label
@@ -40,28 +30,31 @@
           v-if="state.loading"
           :title="$t('change-history.refreshing-history')"
         />
-        <BBTooltipButton
-          type="normal"
-          :disabled="!allowExportChangeHistory || state.isExporting"
+        <TooltipButton
           tooltip-mode="DISABLED-ONLY"
+          :disabled="!allowExportChangeHistory"
+          :loading="state.isExporting"
           @click="handleExportChangeHistory"
         >
-          {{ $t("change-history.export") }}
+          <template #default>
+            {{ $t("change-history.export") }}
+          </template>
           <template #tooltip>
             <div class="whitespace-pre-line">
               {{ $t("change-history.need-to-select-first") }}
             </div>
           </template>
-        </BBTooltipButton>
-        <BBTooltipButton
+        </TooltipButton>
+        <TooltipButton
           v-if="showEstablishBaselineButton"
+          tooltip-mode="DISABLED-ONLY"
           type="primary"
           :disabled="!allowMigrate"
-          tooltip-mode="DISABLED-ONLY"
-          data-label="bb-establish-baseline-button"
           @click="state.showBaselineModal = true"
         >
-          {{ $t("change-history.establish-baseline") }}
+          <template #default>
+            {{ $t("change-history.establish-baseline") }}
+          </template>
           <template
             v-if="database.project === DEFAULT_PROJECT_V1_NAME"
             #tooltip
@@ -76,7 +69,7 @@
               }}
             </div>
           </template>
-        </BBTooltipButton>
+        </TooltipButton>
       </div>
     </div>
     <ChangeHistoryTable
@@ -110,14 +103,16 @@
 import dayjs from "dayjs";
 import saveAs from "file-saver";
 import JSZip from "jszip";
-import { isEqual, orderBy, uniqBy } from "lodash-es";
+import { isEqual } from "lodash-es";
 import { NCheckbox } from "naive-ui";
-import { computed, onBeforeMount, PropType, reactive } from "vue";
+import { computed, onBeforeMount, PropType, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBTooltipButton } from "@/bbkit";
 import { BBTableSectionDataSource } from "@/bbkit/types";
-import { ChangeHistoryTable } from "@/components/ChangeHistory";
+import {
+  AffectedTableSelect,
+  ChangeHistoryTable,
+} from "@/components/ChangeHistory";
 import { useChangeHistoryStore, useDBSchemaV1Store } from "@/store";
 import { ComposedDatabase, DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { AffectedTable, EmptyAffectedTable } from "@/types/changeHistory";
@@ -133,6 +128,7 @@ import {
   instanceV1HasAlterSchema,
   getHistoryChangeType,
 } from "@/utils";
+import { TooltipButton } from "./v2";
 
 interface LocalState {
   showBaselineModal: boolean;
@@ -247,39 +243,6 @@ const changeHistorySectionList = computed(
   }
 );
 
-const affectedTables = computed(() => {
-  return [
-    EmptyAffectedTable,
-    ...orderBy(
-      uniqBy(
-        changeHistoryList.value
-          .map((changeHistory) =>
-            getAffectedTablesOfChangeHistory(changeHistory)
-          )
-          .flat(),
-        (affectedTable) => `${affectedTable.schema}.${affectedTable.table}`
-      ),
-      ["dropped", "table", "schema"]
-    ),
-  ];
-});
-
-const getAffectedTableDisplayName = (affectedTable: AffectedTable) => {
-  if (isEqual(affectedTable, EmptyAffectedTable)) {
-    return t("change-history.all-tables");
-  }
-
-  const { schema, table, dropped } = affectedTable;
-  let name = table;
-  if (schema !== "") {
-    name = `${schema}.${table}`;
-  }
-  if (dropped) {
-    name = `${name} (deleted)`;
-  }
-  return name;
-};
-
 const handleExportChangeHistory = async () => {
   if (state.isExporting) {
     return;
@@ -349,4 +312,12 @@ const toggleChangeType = (type: string, checked: boolean) => {
   if (checked) state.selectedChangeType.add(type);
   else state.selectedChangeType.delete(type);
 };
+
+watch(
+  changeHistoryList,
+  () => {
+    state.selectedAffectedTable = EmptyAffectedTable;
+  },
+  { immediate: true }
+);
 </script>

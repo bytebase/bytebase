@@ -22,12 +22,12 @@
               class="w-5 h-auto max-h-[20px] object-contain mr-1"
               :src="EngineIconPath[engine]"
             />
-            <p
+            <RichEngineName
+              :engine="engine"
+              tag="p"
               class="text-center text-sm !text-main"
               :class="basicInfo.engine === engine && 'font-medium'"
-            >
-              {{ engineNameV1(engine) }}
-            </p>
+            />
             <template v-if="isEngineBeta(engine)">
               <BBBetaBadge
                 class="absolute -top-1.5 -right-1 rounded text-xs !bg-gray-500 px-1 !py-0 z-10"
@@ -99,9 +99,11 @@
             <label for="environment" class="textlabel">
               {{ $t("common.environment") }}
             </label>
+            <span class="text-red-600 mr-2">*</span>
             <EnvironmentSelect
               class="mt-1 w-full"
               :disabled="!isCreating"
+              required="true"
               :environment="
                 environment.uid === String(UNKNOWN_ID)
                   ? undefined
@@ -357,6 +359,7 @@ import {
   DrawerContent,
   EnvironmentSelect,
   InstanceV1EngineIcon,
+  RichEngineName,
 } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { instanceServiceClient } from "@/grpcweb";
@@ -390,7 +393,6 @@ import {
   isDev,
   isValidSpannerHost,
   extractInstanceResourceName,
-  engineNameV1,
   instanceV1Slug,
   calcUpdateMask,
 } from "@/utils";
@@ -565,6 +567,9 @@ const currentMongoDBConnectionSchema = computed(() => {
     : MongoDBConnectionStringSchemaList[1];
 });
 const allowCreate = computed(() => {
+  if (environment.value.uid === String(UNKNOWN_ID)) {
+    return false;
+  }
   if (basicInfo.value.engine === Engine.SPANNER) {
     return (
       basicInfo.value.title.trim() &&

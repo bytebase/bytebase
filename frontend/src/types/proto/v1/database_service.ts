@@ -706,6 +706,12 @@ export interface ForeignKeyMetadata {
   matchType: string;
 }
 
+export interface DatabaseConfig {
+  name: string;
+  /** The schema_configs is the list of configs for schemas in a database. */
+  schemaConfigs: SchemaConfig[];
+}
+
 export interface SchemaConfig {
   /**
    * The name is the schema name.
@@ -1114,7 +1120,13 @@ export interface ChangeHistory {
   status: ChangeHistory_Status;
   version: string;
   description: string;
+  /** The statement is used for preview purpose. */
   statement: string;
+  /**
+   * The name of the sheet resource.
+   * Format: projects/{project}/sheets/{sheet}
+   */
+  statementSheet: string;
   schema: string;
   prevSchema: string;
   executionDuration:
@@ -4820,6 +4832,83 @@ export const ForeignKeyMetadata = {
   },
 };
 
+function createBaseDatabaseConfig(): DatabaseConfig {
+  return { name: "", schemaConfigs: [] };
+}
+
+export const DatabaseConfig = {
+  encode(message: DatabaseConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    for (const v of message.schemaConfigs) {
+      SchemaConfig.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DatabaseConfig {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDatabaseConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.schemaConfigs.push(SchemaConfig.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DatabaseConfig {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      schemaConfigs: Array.isArray(object?.schemaConfigs)
+        ? object.schemaConfigs.map((e: any) => SchemaConfig.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: DatabaseConfig): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    if (message.schemaConfigs) {
+      obj.schemaConfigs = message.schemaConfigs.map((e) => e ? SchemaConfig.toJSON(e) : undefined);
+    } else {
+      obj.schemaConfigs = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DatabaseConfig>): DatabaseConfig {
+    return DatabaseConfig.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<DatabaseConfig>): DatabaseConfig {
+    const message = createBaseDatabaseConfig();
+    message.name = object.name ?? "";
+    message.schemaConfigs = object.schemaConfigs?.map((e) => SchemaConfig.fromPartial(e)) || [];
+    return message;
+  },
+};
+
 function createBaseSchemaConfig(): SchemaConfig {
   return { name: "", tableConfigs: [] };
 }
@@ -6607,6 +6696,7 @@ function createBaseChangeHistory(): ChangeHistory {
     version: "",
     description: "",
     statement: "",
+    statementSheet: "",
     schema: "",
     prevSchema: "",
     executionDuration: undefined,
@@ -6656,6 +6746,9 @@ export const ChangeHistory = {
     }
     if (message.statement !== "") {
       writer.uint32(106).string(message.statement);
+    }
+    if (message.statementSheet !== "") {
+      writer.uint32(162).string(message.statementSheet);
     }
     if (message.schema !== "") {
       writer.uint32(114).string(message.schema);
@@ -6776,6 +6869,13 @@ export const ChangeHistory = {
 
           message.statement = reader.string();
           continue;
+        case 20:
+          if (tag !== 162) {
+            break;
+          }
+
+          message.statementSheet = reader.string();
+          continue;
         case 14:
           if (tag !== 114) {
             break;
@@ -6842,6 +6942,7 @@ export const ChangeHistory = {
       version: isSet(object.version) ? String(object.version) : "",
       description: isSet(object.description) ? String(object.description) : "",
       statement: isSet(object.statement) ? String(object.statement) : "",
+      statementSheet: isSet(object.statementSheet) ? String(object.statementSheet) : "",
       schema: isSet(object.schema) ? String(object.schema) : "",
       prevSchema: isSet(object.prevSchema) ? String(object.prevSchema) : "",
       executionDuration: isSet(object.executionDuration) ? Duration.fromJSON(object.executionDuration) : undefined,
@@ -6866,6 +6967,7 @@ export const ChangeHistory = {
     message.version !== undefined && (obj.version = message.version);
     message.description !== undefined && (obj.description = message.description);
     message.statement !== undefined && (obj.statement = message.statement);
+    message.statementSheet !== undefined && (obj.statementSheet = message.statementSheet);
     message.schema !== undefined && (obj.schema = message.schema);
     message.prevSchema !== undefined && (obj.prevSchema = message.prevSchema);
     message.executionDuration !== undefined &&
@@ -6897,6 +6999,7 @@ export const ChangeHistory = {
     message.version = object.version ?? "";
     message.description = object.description ?? "";
     message.statement = object.statement ?? "";
+    message.statementSheet = object.statementSheet ?? "";
     message.schema = object.schema ?? "";
     message.prevSchema = object.prevSchema ?? "";
     message.executionDuration = (object.executionDuration !== undefined && object.executionDuration !== null)

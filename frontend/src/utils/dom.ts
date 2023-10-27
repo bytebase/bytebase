@@ -14,6 +14,19 @@ export const isDescendantOf = (
   return false;
 };
 
+export const findAncestor = (
+  node: HTMLElement | SVGElement | null | undefined,
+  selector: string
+) => {
+  while (node) {
+    if (node.matches(selector)) {
+      return node;
+    }
+    node = node.parentElement;
+  }
+  return undefined;
+};
+
 export const readFileAsync = (
   event: Event,
   maxFileSizeMB: number

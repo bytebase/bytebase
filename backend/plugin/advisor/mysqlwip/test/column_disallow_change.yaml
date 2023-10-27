@@ -1,0 +1,23 @@
+- statement: |-
+    CREATE TABLE t(b int);
+    ALTER TABLE t ADD COLUMN a int
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |-
+    CREATE TABLE t(b int);
+    ALTER TABLE t CHANGE COLUMN b a int
+  want:
+    - status: WARN
+      code: 406
+      title: column.disallow-change
+      content: |-
+        "
+        ALTER TABLE t CHANGE COLUMN b a int
+        ;" contains CHANGE COLUMN statement
+      line: 3
+      details: ""

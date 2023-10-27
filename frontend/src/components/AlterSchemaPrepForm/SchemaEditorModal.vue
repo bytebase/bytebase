@@ -163,6 +163,7 @@ import { allowGhostMigrationV1 } from "@/utils";
 import MonacoEditor from "../MonacoEditor";
 import { provideSQLCheckContext } from "../SQLCheck";
 import {
+  initialSchemaConfigToMetadata,
   mergeSchemaEditToMetadata,
   validateDatabaseMetadata,
 } from "../SchemaEditorV1/utils";
@@ -214,8 +215,8 @@ const { runSQLCheck } = provideSQLCheckContext();
 
 const allowPreviewIssue = computed(() => {
   if (state.selectedTab === "schema-editor") {
-    const databaseMetadataMap = getChangedDatabaseMetadatas();
-    return databaseMetadataMap && databaseMetadataMap.size > 0;
+    // Always return true for schema editor to prevent huge calculation from schema editor.
+    return true;
   } else {
     return state.editStatement !== "";
   }
@@ -324,7 +325,17 @@ const getChangedDatabaseMetadatas = () => {
       databaseSchema.schemaList,
       cloneDeep(metadata)
     );
-    if (isEqual(metadata, mergedMetadata)) {
+    // Initial an empty schema config to origin metadata to prevent unexpected diff.
+    initialSchemaConfigToMetadata(metadata);
+    if (
+      // If there is no schema change, we don't need to create an issue.
+      databaseSchema.schemaList.length === 0 ||
+      isEqual(metadata, mergedMetadata)
+    ) {
+      databaseMetadataMap.set(database.uid, [
+        DatabaseMetadata.fromPartial({}),
+        DatabaseMetadata.fromPartial({}),
+      ]);
       continue;
     }
 
@@ -359,6 +370,11 @@ const fetchStatementMapWithSchemaEditor = async () => {
     if (!database) {
       continue;
     }
+    if (isEqual(sourceMetadata, targetMetadata)) {
+      statementMap.set(database.uid, "");
+      continue;
+    }
+
     const { diff } = await schemaDesignServiceClient.diffMetadata({
       sourceMetadata,
       targetMetadata,

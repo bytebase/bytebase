@@ -1,5 +1,9 @@
 <template>
-  <div v-if="showSelectionColumn" class="bb-grid-cell !px-2">
+  <div
+    v-if="showSelectionColumn"
+    class="bb-grid-cell !px-2"
+    @click.stop.prevent
+  >
     <slot name="selection" :database="database" />
   </div>
   <div class="bb-grid-cell">
@@ -43,7 +47,7 @@
       tag="div"
     />
   </div>
-  <div v-if="showLabelsColumn" class="bb-grid-cell">
+  <div v-if="showLabelsColumn" class="bb-grid-cell !py-1">
     <LabelsColumn :labels="database.labels" :show-count="1" placeholder="-" />
   </div>
 </template>
@@ -54,6 +58,7 @@ import { InstanceV1Name, EnvironmentV1Name } from "@/components/v2";
 import { useEnvironmentV1Store } from "@/store";
 import { ComposedDatabase } from "@/types";
 import { isPITRDatabaseV1 } from "@/utils";
+import LabelsColumn from "./LabelsColumn.vue";
 import ProjectCol from "./ProjectCol.vue";
 
 const props = defineProps<{

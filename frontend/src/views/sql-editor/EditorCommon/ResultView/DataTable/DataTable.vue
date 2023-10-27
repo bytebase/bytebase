@@ -26,13 +26,19 @@
                 v-bind="tableResize.getColumnProps(header.index)"
               >
                 <div class="flex items-center overflow-hidden">
-                  <span>
+                  <span
+                    class="flex flex-row items-center cursor-pointer select-none"
+                    @click="header.column.getToggleSortingHandler()?.($event)"
+                  >
                     <template
                       v-if="String(header.column.columnDef.header).length > 0"
                     >
                       {{ header.column.columnDef.header }}
                     </template>
                     <br v-else class="min-h-[1rem] inline-flex" />
+                    <ColumnSortedIcon
+                      :is-sorted="header.column.getIsSorted()"
+                    />
                   </span>
 
                   <SensitiveDataIcon
@@ -103,6 +109,7 @@ import { ColumnDef, Table } from "@tanstack/vue-table";
 import { computed, nextTick, PropType, ref, watch } from "vue";
 import { useSubscriptionV1Store } from "@/store";
 import { useSQLResultViewContext } from "../context";
+import ColumnSortedIcon from "./ColumnSortedIcon.vue";
 import SensitiveDataIcon from "./SensitiveDataIcon.vue";
 import TableCell from "./TableCell.vue";
 import useTableColumnWidthLogic from "./useTableResize";
@@ -185,5 +192,19 @@ watch(
   { immediate: true }
 );
 
-defineExpose({ scrollTo });
+watch(
+  () => props.offset,
+  () => {
+    // When the offset changed, we need to reset the scroll position.
+    scrollTo(0, 0);
+  }
+);
+
+watch(
+  () => props.table.getState().sorting,
+  () => {
+    // When the sorting changed, we need to reset table size.
+    tableResize.reset();
+  }
+);
 </script>

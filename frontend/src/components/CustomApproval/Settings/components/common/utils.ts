@@ -92,6 +92,8 @@ const FactorList = {
   RequestQuery: uniq(
     without(
       [...StringFactorList, ...NumberFactorList],
+      "level",
+      "source",
       "affected_rows",
       "sql_type",
       "export_rows"
@@ -100,6 +102,8 @@ const FactorList = {
   RequestExport: uniq(
     without(
       [...StringFactorList, ...NumberFactorList],
+      "level",
+      "source",
       "affected_rows",
       "sql_type"
     )

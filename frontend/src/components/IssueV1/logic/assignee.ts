@@ -181,23 +181,20 @@ export const assigneeCandidatesForIssue = async (issue: ComposedIssue) => {
     }
   }
   if (issueRoles.includes(VirtualRoleType.LAST_APPROVER)) {
-    const lastApprover = lastApproverForIssue(issue);
-    if (lastApprover) {
-      users.push(lastApprover);
-    }
+    const lastApprovers = lastApproverCandidatesForIssue(issue);
+    users.push(...lastApprovers);
   }
 
   return uniqBy(users, (user) => user.name);
 };
 
-const lastApproverForIssue = (issue: ComposedIssue) => {
+const lastApproverCandidatesForIssue = (issue: ComposedIssue) => {
   const context = extractIssueReviewContext(computed(() => issue));
-  if (!context.done) return undefined;
+  if (!context.ready) return [];
 
   const steps = useWrappedReviewStepsV1(issue, context);
   const lastStep = last(steps.value);
-  if (!lastStep) return undefined;
-  if (lastStep.status !== "APPROVED") return undefined;
+  if (!lastStep) return [];
 
-  return lastStep.approver;
+  return lastStep.candidates;
 };

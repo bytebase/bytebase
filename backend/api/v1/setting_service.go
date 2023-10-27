@@ -6,6 +6,7 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -69,6 +70,8 @@ var whitelistSettings = []api.SettingName{
 	api.SettingSemanticTypes,
 	api.SettingMaskingAlgorithm,
 }
+
+var preservedMaskingAlgorithmIDMatcher = regexp.MustCompile("^[0]{8}-[0]{4}-[0]{4}-[0]{4}-[0]{9}[0-9a-fA-F]{3}$")
 
 //go:embed mail_templates/testmail/template.html
 //go:embed mail_templates/testmail/statics/logo-full.png
@@ -1091,6 +1094,9 @@ func convertV1SchemaTemplateSetting(template *v1pb.SchemaTemplateSetting) *store
 func validateMaskingAlgorithm(algorithm *v1pb.MaskingAlgorithmSetting_Algorithm) error {
 	if !isValidUUID(algorithm.Id) {
 		return status.Errorf(codes.InvalidArgument, "invalid masking algorithm id format: %s", algorithm.Id)
+	}
+	if preservedMaskingAlgorithmIDMatcher.MatchString(algorithm.Id) {
+		return status.Errorf(codes.InvalidArgument, "masking algorithm id cannot be preserved id: %s", algorithm.Id)
 	}
 	if algorithm.Title == "" {
 		return status.Errorf(codes.InvalidArgument, "masking algorithm title cannot be empty: %s", algorithm.Id)

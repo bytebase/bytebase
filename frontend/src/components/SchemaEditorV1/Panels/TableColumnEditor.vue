@@ -307,6 +307,7 @@ import {
   getColumnDefaultValuePlaceholder,
   getDefaultValueByKey,
   getColumnDefaultValueOptions,
+  isTextOfColumnType,
 } from "../utils/columnDefaultValue";
 
 interface LocalState {
@@ -501,11 +502,16 @@ const handleColumnDefaultInputChange = (event: Event, column: Column) => {
   const value = (event.target as HTMLInputElement).value;
   column.hasDefault = true;
   column.defaultNull = undefined;
-  if (column.defaultString !== undefined) {
+  // If column is text type or has default string, we will treat user's input as string.
+  if (
+    isTextOfColumnType(props.engine, column.type) ||
+    column.defaultString !== undefined
+  ) {
     column.defaultString = value;
+    column.defaultExpression = undefined;
     return;
   }
-  // By default, user input is treated as expression.
+  // Otherwise we will treat user's input as expression.
   column.defaultExpression = value;
 };
 

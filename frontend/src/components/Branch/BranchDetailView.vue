@@ -36,9 +36,12 @@
               <NButton @click="handleCancelEdit">{{
                 $t("common.cancel")
               }}</NButton>
-              <NButton type="primary" @click="handleSaveBranch">{{
-                $t("common.save")
-              }}</NButton>
+              <NButton
+                type="primary"
+                :loading="state.isSaving"
+                @click="handleSaveBranch"
+                >{{ $t("common.save") }}</NButton
+              >
             </template>
           </div>
         </div>
@@ -149,6 +152,7 @@ interface LocalState {
   isEditing: boolean;
   isEditingTitle: boolean;
   showDiffEditor: boolean;
+  isSaving: boolean;
 }
 
 const props = defineProps<{
@@ -170,6 +174,7 @@ const state = reactive<LocalState>({
   isEditing: false,
   isEditingTitle: false,
   showDiffEditor: false,
+  isSaving: false,
 });
 const mergeBranchPanelContext = ref<{
   sourceBranchName: string;
@@ -222,7 +227,7 @@ const titleInputStyle = computed(() => {
     "--n-font-size": "20px",
   };
   const border = state.isEditingTitle
-    ? "1px solid var(--color-control-border)"
+    ? "1px solid rgb(var(--color-control-border))"
     : "none";
   style["--n-border"] = border;
   style["--n-border-disabled"] = border;
@@ -361,6 +366,9 @@ const handleSaveBranch = async () => {
   if (!state.isEditing) {
     return;
   }
+  if (state.isSaving) {
+    return;
+  }
   const check = runSQLCheck.value;
   if (check && !(await check())) {
     return;
@@ -396,6 +404,7 @@ const handleSaveBranch = async () => {
     updateMask.push("metadata");
   }
 
+  state.isSaving = true;
   if (updateMask.length !== 0) {
     if (schemaDesign.value.type === SchemaDesign_Type.MAIN_BRANCH) {
       const branchName = generateForkedBranchName(schemaDesign.value);
@@ -453,6 +462,7 @@ const handleSaveBranch = async () => {
             description: error.details,
           });
         }
+        state.isSaving = false;
         return;
       }
 
@@ -483,6 +493,7 @@ const handleSaveBranch = async () => {
       title: t("schema-designer.message.updated-succeed"),
     });
   }
+  state.isSaving = false;
   state.isEditing = false;
 };
 

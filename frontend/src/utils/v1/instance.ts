@@ -89,6 +89,7 @@ export const supportedEngineV1List = () => {
     Engine.MSSQL,
     Engine.REDSHIFT,
     Engine.RISINGWAVE,
+    Engine.OCEANBASE_ORACLE,
   ];
   if (locale.value === "zh-CN") {
     engines.push(Engine.DM);
@@ -247,7 +248,9 @@ export const engineNameV1 = (type: Engine): string => {
     case Engine.MARIADB:
       return "MariaDB";
     case Engine.OCEANBASE:
-      return "OceanBase";
+      return "OceanBase (MySQL)";
+    case Engine.OCEANBASE_ORACLE:
+      return "OceanBase (Oracle)";
     case Engine.DM:
       return "DM";
     case Engine.RISINGWAVE:

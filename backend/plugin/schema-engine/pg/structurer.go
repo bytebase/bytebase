@@ -900,6 +900,17 @@ func (g *designSchemaGenerator) EnterCreatestmt(ctx *postgres.CreatestmtContext)
 		return
 	}
 
+	if _, err := g.result.WriteString(
+		ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+			Start: g.lastTokenIndex,
+			Stop:  ctx.GetStart().GetTokenIndex() - 1,
+		}),
+	); err != nil {
+		g.err = err
+		return
+	}
+	g.lastTokenIndex = ctx.GetStart().GetTokenIndex()
+
 	schema, exists := g.to.schemas[schemaName]
 	if !exists {
 		// Skip not found schema.
@@ -911,18 +922,6 @@ func (g *designSchemaGenerator) EnterCreatestmt(ctx *postgres.CreatestmtContext)
 	if !exists {
 		// Skip not found table.
 		g.lastTokenIndex = skipFollowingSemiIndex(ctx.GetParser().GetTokenStream(), ctx.GetStop().GetTokenIndex()+1)
-		return
-	}
-
-	g.currentTable = table
-
-	if _, err := g.result.WriteString(
-		ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
-			Start: g.lastTokenIndex,
-			Stop:  ctx.GetStart().GetTokenIndex() - 1,
-		}),
-	); err != nil {
-		g.err = err
 		return
 	}
 
@@ -1397,7 +1396,7 @@ func (g *designSchemaGenerator) EnterCommentstmt(ctx *postgres.CommentstmtContex
 				return
 			}
 		}
-	case ctx.Object_type_any_name().TABLE() != nil:
+	case ctx.Object_type_any_name() != nil && ctx.Object_type_any_name().TABLE() != nil:
 		schemaName, tableName, err := pgparser.NormalizePostgreSQLAnyNameAsTableName(ctx.Any_name())
 		if err != nil {
 			g.err = err

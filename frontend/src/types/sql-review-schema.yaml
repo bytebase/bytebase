@@ -21,6 +21,7 @@ ruleList:
       - TIDB
       - POSTGRES
       - ORACLE
+      - OCEANBASE_ORACLE
       - OCEANBASE
       - SNOWFLAKE
       - MSSQL
@@ -32,6 +33,7 @@ ruleList:
       - TIDB
       - POSTGRES
       - ORACLE
+      - OCEANBASE_ORACLE
       - OCEANBASE
       - SNOWFLAKE
       - MSSQL
@@ -80,6 +82,7 @@ ruleList:
       - TIDB
       - POSTGRES
       - ORACLE
+      - OCEANBASE_ORACLE
       - OCEANBASE
       - SNOWFLAKE
       - MSSQL
@@ -91,6 +94,7 @@ ruleList:
       - TIDB
       - POSTGRES
       - ORACLE
+      - OCEANBASE_ORACLE
       - OCEANBASE
       - SNOWFLAKE
       - MSSQL
@@ -102,6 +106,7 @@ ruleList:
       - TIDB
       - POSTGRES
       - ORACLE
+      - OCEANBASE_ORACLE
       - OCEANBASE
     componentList: []
   - type: statement.disallow-commit
@@ -152,6 +157,7 @@ ruleList:
       - TIDB
       - POSTGRES
       - ORACLE
+      - OCEANBASE_ORACLE
       - OCEANBASE
     componentList: []
   - type: statement.insert.disallow-order-by-rand
@@ -202,6 +208,7 @@ ruleList:
       - TIDB
       - POSTGRES
       - ORACLE
+      - OCEANBASE_ORACLE
       - OCEANBASE
       - SNOWFLAKE
       - MSSQL
@@ -324,6 +331,7 @@ ruleList:
     category: NAMING
     engineList:
       - ORACLE
+      - OCEANBASE_ORACLE
       - SNOWFLAKE
       - MSSQL
     componentList: []
@@ -331,6 +339,7 @@ ruleList:
     category: NAMING
     engineList:
       - ORACLE
+      - OCEANBASE_ORACLE
       - SNOWFLAKE
       - MSSQL
     componentList: []
@@ -338,6 +347,7 @@ ruleList:
     category: NAMING
     engineList:
       - ORACLE
+      - OCEANBASE_ORACLE
       - SNOWFLAKE
     componentList:
       - key: upper
@@ -351,6 +361,7 @@ ruleList:
       - TIDB
       - POSTGRES
       - ORACLE
+      - OCEANBASE_ORACLE
       - OCEANBASE
       - SNOWFLAKE
       - MSSQL
@@ -383,6 +394,15 @@ ruleList:
               - UPDATED_TS
               - CREATOR_ID
               - UPDATER_ID
+      - engine: OCEANBASE_ORACLE
+        payload:
+          list:
+            default:
+              - ID
+              - CREATED_TS
+              - UPDATED_TS
+              - CREATOR_ID
+              - UPDATER_ID
   - type: column.no-null
     category: COLUMN
     engineList:
@@ -390,6 +410,7 @@ ruleList:
       - TIDB
       - POSTGRES
       - ORACLE
+      - OCEANBASE_ORACLE
       - OCEANBASE
       - SNOWFLAKE
       - MSSQL
@@ -408,6 +429,7 @@ ruleList:
       - MYSQL
       - TIDB
       - ORACLE
+      - OCEANBASE_ORACLE
       - OCEANBASE
     componentList: []
   - type: column.disallow-change
@@ -460,6 +482,7 @@ ruleList:
       - TIDB
       - POSTGRES
       - ORACLE
+      - OCEANBASE_ORACLE
       - OCEANBASE
     componentList:
       - key: list
@@ -480,6 +503,7 @@ ruleList:
       - TIDB
       - POSTGRES
       - ORACLE
+      - OCEANBASE_ORACLE
       - OCEANBASE
     componentList:
       - key: number
@@ -490,6 +514,7 @@ ruleList:
     category: COLUMN
     engineList:
       - ORACLE
+      - OCEANBASE_ORACLE
       - SNOWFLAKE
       - MSSQL
     componentList:
@@ -529,6 +554,7 @@ ruleList:
       - TIDB
       - POSTGRES
       - ORACLE
+      - OCEANBASE_ORACLE
       - OCEANBASE
     componentList: []
   - type: schema.backward-compatibility
@@ -563,6 +589,7 @@ ruleList:
       - TIDB
       - POSTGRES
       - ORACLE
+      - OCEANBASE_ORACLE
       - OCEANBASE
     componentList:
       - key: number

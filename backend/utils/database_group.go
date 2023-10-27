@@ -15,7 +15,7 @@ import (
 // ConvertDatabaseToParserEngineType converts a database type to a parser engine type.
 func ConvertDatabaseToParserEngineType(engine storepb.Engine) (storepb.Engine, error) {
 	switch engine {
-	case storepb.Engine_ORACLE:
+	case storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE:
 		return storepb.Engine_ORACLE, nil
 	case storepb.Engine_MSSQL:
 		return storepb.Engine_MSSQL, nil

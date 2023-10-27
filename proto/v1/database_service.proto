@@ -692,6 +692,13 @@ message ForeignKeyMetadata {
   string match_type = 8;
 }
 
+message DatabaseConfig {
+  string name = 1;
+
+  // The schema_configs is the list of configs for schemas in a database.
+  repeated SchemaConfig schema_configs = 2;
+}
+
 message SchemaConfig {
   // The name is the schema name.
   // It is an empty string for databases without such concept such as MySQL.
@@ -1040,7 +1047,11 @@ message ChangeHistory {
   string version = 11;
 
   string description = 12;
+  // The statement is used for preview purpose.
   string statement = 13;
+  // The name of the sheet resource.
+  // Format: projects/{project}/sheets/{sheet}
+  string statement_sheet = 20;
   string schema = 14;
   string prev_schema = 15;
   google.protobuf.Duration execution_duration = 16;

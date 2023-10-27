@@ -20,9 +20,9 @@ var (
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLNamingIndexConvention, &NamingIndexConventionAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLNamingIndexConvention, &NamingIndexConventionAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLNamingIndexConvention, &NamingIndexConventionAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLNamingIndexConvention, &NamingIndexConventionAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLNamingIndexConvention, &NamingIndexConventionAdvisor{})
 }
 
 // NamingIndexConventionAdvisor is the advisor checking for index naming convention.

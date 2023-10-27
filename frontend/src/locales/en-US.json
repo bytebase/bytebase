@@ -254,6 +254,7 @@
     },
     "expiration": "Expiration",
     "configure": "Configure",
+    "groups": "Groups",
     "database-groups": "Database Groups",
     "members": "Members",
     "warehouse": "Warehouse",
@@ -269,7 +270,9 @@
     "updated-at-by": "Updated {time} by {user}",
     "created-at-by": "Created {time} by {user}",
     "filter-by-name": "Filter by name",
-    "tenant": "Tenant"
+    "tenant": "Tenant",
+    "license": "License",
+    "show-all": "Show all"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -377,6 +380,15 @@
     "action-all-tasks-in-current-stage": "{action} all tasks in current stage",
     "cancel-task": "Cancel task | Cancel tasks",
     "created": "Created"
+  },
+  "task-run": {
+    "status": {
+      "enqueued": "Waiting for execution.",
+      "enqueued-with-rollout-time": "Waiting to execute after {time}.",
+      "dumping-schema-before-executing-sql": "Preparing to execute, dumping schema.",
+      "executing-sql": "Executing SQL.",
+      "dumping-schema-after-executing-sql": "SQL execution completed, dumping schema."
+    }
   },
   "banner": {
     "update-license": "Update license",
@@ -1278,8 +1290,8 @@
       "manual-by-project-releaser": "Project releaser",
       "manual-by-issue-creator": "Issue creator",
       "manual-by-last-approver": "Manual rollout by the last approver from the custom approval flow",
-      "manual-by-fixed-roles": "Manual rollout by fixed roles",
-      "manual-by-fixed-roles-info": "Allow any of the following selected roles to click the \"Rollout\" button, and then the change will be executed.",
+      "manual-by-dedicated-roles": "Manual rollout by dedicated roles",
+      "manual-by-dedicated-roles-info": "Allow any of the following selected roles to click the \"Rollout\" button, and then the change will be executed.",
       "manual-by-dba": "DBA",
       "manual-by-workspace-owner": "Workspace owner",
       "role": {
@@ -1751,7 +1763,18 @@
       "schema-change-type": "Schema change type",
       "select-schema-change-type-ddl": "Imperative - Specify the change with any DDL statements.",
       "select-schema-change-type-sdl": "Declarative - Specify the desired schema. Only use CREATE TABLE/INDEX.",
-      "schema-path-template-sdl-description": "The schema file describes the database's full schema."
+      "schema-path-template-sdl-description": "The schema file describes the database's full schema.",
+      "branch-protection-rules": {
+        "self": "Branch protection rules",
+        "add-rule": "Add Rule",
+        "branch-name-pattern": {
+          "self": "Branch name pattern",
+          "description": "Support wildcard such as feature/* or *-stable"
+        },
+        "applies-to-n-branches": "Applies to {n} branch | Applies to {n} branches",
+        "only-allow-specified-roles-to-create-branch": "Only allow specified roles to create branch",
+        "no-protection-rule-configured": "No protection rule configured."
+      }
     },
     "members": {
       "description": "Project members determine the permission to operate database and issues inside the proejct. Project Owner, Workspace Owner and Workspace DBA all have full project permissions.",
@@ -2161,7 +2184,8 @@
       "invalid-column-type": "Invalid column type",
       "schema-not-found": "Schema not found",
       "failed-to-fetch-database-schema": "Failed to fetch database schema",
-      "invalid-schema": "Invalid schema"
+      "invalid-schema": "Invalid schema",
+      "cannot-drop-the-last-column": "Cannot drop the last column"
     },
     "confirm-to-close": {
       "title": "Confirm to close",
@@ -2200,7 +2224,8 @@
     "confirm-change": "Are you sure to change '{label}' ?",
     "parsed-from-template": "Parsed from {name} by template {template}.",
     "cannot-transfer-template-not-match": "Database '{name}' cannot be transferred to this project. Since its name doesn't match the template {template}.",
-    "add-label": "Add label"
+    "add-label": "Add label",
+    "filter-by-label": "Filter by label"
   },
   "oauth": {
     "unknown-event": "Unexpected event type, OAuth failed."
