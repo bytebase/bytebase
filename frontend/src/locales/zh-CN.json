@@ -269,7 +269,8 @@
     "created-at-by": "由 {user} 创建于 {time}",
     "filter-by-name": "按名称过滤",
     "tenant": "租户",
-    "license": "证书"
+    "license": "证书",
+    "show-all": "显示全部"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -377,6 +378,15 @@
     "action-all-tasks-in-current-stage": "{action}当前阶段的所有任务",
     "cancel-task": "取消任务",
     "created": "创建于"
+  },
+  "task-run": {
+    "status": {
+      "enqueued": "等待执行。",
+      "enqueued-with-rollout-time": "等待执行，{time}后执行。",
+      "dumping-schema-before-executing-sql": "准备执行，正在导出 schema。",
+      "executing-sql": "正在执行 SQL。",
+      "dumping-schema-after-executing-sql": "SQL 执行完毕，正在导出 schema。"
+    }
   },
   "banner": {
     "update-license": "更新证书",
@@ -831,7 +841,7 @@
     },
     "view-commit": "查看提交",
     "advanced-search": {
-      "self": "高级搜素",
+      "self": "高级搜索",
       "scope": {
         "project": {
           "title": "项目",
@@ -2210,7 +2220,8 @@
     "confirm-change": "您确定要修改 '{label}' 吗？",
     "parsed-from-template": "从 {name} 中依据模板 {template} 解析得出",
     "cannot-transfer-template-not-match": "数据库 '{name}' 无法转移到这个项目，因为它的名称不符合模板 {template}。",
-    "add-label": "添加标签"
+    "add-label": "添加标签",
+    "filter-by-label": "按标签过滤"
   },
   "oauth": {
     "unknown-event": "未知的事件类型，认证失败"

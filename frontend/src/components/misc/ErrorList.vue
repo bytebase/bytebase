@@ -3,9 +3,10 @@
     class="flex flex-col whitespace-nowrap"
     :class="[showBullets && 'list-disc pl-4']"
   >
-    <li v-for="(error, i) in errors" :key="i">
+    <li v-for="(item, i) in errors" :key="i" :style="itemStyle(item)">
       <slot name="prefix" />
-      {{ error }}
+
+      {{ itemText(item) }}
     </li>
   </ul>
 </template>
@@ -13,9 +14,15 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+export type NestedError = {
+  error: string;
+  indent: number;
+};
+export type ErrorItem = string | NestedError;
+
 const props = withDefaults(
   defineProps<{
-    errors: string[];
+    errors: ErrorItem[];
     bullets?: "on-demand" | "always" | "none";
   }>(),
   {
@@ -35,4 +42,17 @@ const showBullets = computed(() => {
   console.error("should never reach this line");
   return false;
 });
+
+const itemStyle = (item: ErrorItem) => {
+  if (typeof item === "string") {
+    return "";
+  }
+  return `margin-left: ${item.indent}rem;`;
+};
+const itemText = (item: ErrorItem) => {
+  if (typeof item === "string") {
+    return item;
+  }
+  return item.error;
+};
 </script>
