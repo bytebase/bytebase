@@ -207,3 +207,19 @@ func NormalizeIndexRef(ctx parser.IIndexRefContext) (string, string, string) {
 	}
 	return "", "", ""
 }
+
+// NormalizeMySQLIdentifierListWithParentheses normalize the given IdentififerListWithparentheses.
+func NormalizeIdentifierListWithParentheses(ctx parser.IIdentifierListWithParenthesesContext) []string {
+	if ctx.IdentifierList() != nil {
+		return NormalizeMySQLIdentifierList(ctx.IdentifierList())
+	}
+	return nil
+}
+
+// NormalizeMySQLConstraintName normalize the given IConstraintName.
+func NormalizeConstraintName(ctx parser.IConstraintNameContext) string {
+	if ctx.Identifier() != nil {
+		return NormalizeMySQLIdentifier(ctx.Identifier())
+	}
+	return ""
+}
