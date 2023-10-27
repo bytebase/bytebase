@@ -14,9 +14,10 @@ func TestMySQLWIPRules(t *testing.T) {
 
 		// advisor.SchemaRuleTableNaming enforce the table name format.
 		advisor.SchemaRuleTableNaming,
-
 		// advisor.SchemaRuleColumnNaming enforce the column name format.
 		advisor.SchemaRuleColumnNaming,
+		// advisor.SchemaRuleUKNaming enforce the unique key name format.
+		advisor.SchemaRuleUKNaming,
 
 		// advisor.SchemaRuleStatementNoSelectAll disallow 'SELECT *'.
 		advisor.SchemaRuleStatementNoSelectAll,
