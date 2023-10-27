@@ -52,7 +52,7 @@ const style = computed(() => {
   };
   const border =
     viewMode.value === "EDIT"
-      ? "1px solid var(--color-control-border)"
+      ? "1px solid rgb(var(--color-control-border))"
       : "none";
   style["--n-border"] = border;
   style["--n-border-disabled"] = border;

@@ -1,66 +1,65 @@
 :root {
   /* indigo-600 */
-  --color-accent: #4f46e5;
-  --color-accent-tw: 79 70 229; /* same to --color-accent but used for tailwind css */
+  --color-accent: 79 70 229; /* #4f46e5 */
   /* indigo-300 */
-  --color-accent-disabled: #a5b4fc;
+  --color-accent-disabled: 165 180 252; /* #a5b4fc */
   /* indigo-800 */
-  --color-accent-hover: #3730a3;
+  --color-accent-hover: 55 48 163; /* #3730a3 */
   /* white */
-  --color-accent-text: #ffffff;
+  --color-accent-text: 255 255 255; /* #ffffff */
 
   /* gray-900 */
-  --color-main: #18181b;
+  --color-main: 24 24 27; /* #18181b */
   /* gray-700 */
-  --color-main-hover: #3f3f46;
+  --color-main-hover: 63 63 70; /* #3f3f46 */
   /* white */
-  --color-main-text: #ffffff;
+  --color-main-text: 255 255 255; /* #ffffff */
 
   /* gray-700 */
-  --color-control: #52525b;
+  --color-control: 82 82 91; /* #52525b */
   /* gray-900 */
-  --color-control-hover: #18181b;
+  --color-control-hover: 24 24 27; /* #18181b */
 
   /* gray-500 */
-  --color-control-light: #71717a;
+  --color-control-light: 113 113 122; /* #71717a */
   /* gray-600 */
-  --color-control-light-hover: #52525b;
+  --color-control-light-hover: 82 82 91; /* #52525b */
 
   /* gray-100 */
-  --color-control-bg: #f3f4f6;
+  --color-control-bg: 243 244 246; /* #f3f4f6 */
   /* gray-200 */
-  --color-control-bg-hover: #e5e7eb;
+  --color-control-bg-hover: 229 231 235; /* #e5e7eb */
 
   /* gray-400 */
-  --color-control-placeholder: #a1a1aa;
+  --color-control-placeholder: 161 161 170; /* #a1a1aa */
 
   /* blue-600 */
-  --color-info: #2563eb;
+  --color-info: 37 99 235; /* #2563eb */
   /* blue-700 */
-  --color-info-hover: #1d4ed8;
+  --color-info-hover: 29 78 216; /* #1d4ed8 */
 
   /* yellow-500 */
-  --color-warning: #f59e0b;
+  --color-warning: 245 158 11; /* #f59e0b */
   /* yellow-700 */
-  --color-warning-hover: #b45309;
+  --color-warning-hover: 180 83 9; /* #b45309 */
 
   /* red-600 */
-  --color-error: #dc2626;
+  --color-error: 220 38 38; /* #dc2626 */
   /* red-700 */
-  --color-error-hover: #b91c1c;
+  --color-error-hover: 185 28 28; /* #b91c1c */
 
   /* green-600 */
-  --color-success: #16a34a;
+  --color-success: 22 163 74; /* #16a34a */
   /* green-700 */
-  --color-success-hover: #15803d;
+  --color-success-hover: 21 128 61; /* #15803d */
 
   /* gray-200 */
-  --color-link-hover: #e5e7eb;
+  --color-link-hover: 229 231 235; /* #e5e7eb */
 
   /* gray-200 */
-  --color-block-border: #e5e7eb;
+  --color-block-border: 229 231 235; /* #e5e7eb */
   /* gray-300 */
-  --color-control-border: #d1d5db;
+  --color-control-border: 209 213 219; /* #d1d5db */
 }
 
 /*
@@ -69,12 +68,12 @@
 */
 :root {
   /* same as vs-dark theme's bg, not pure black. */
-  --color-dark-bg: #1e1e1e;
+  --color-dark-bg: 30 30 30; /* #1e1e1e */
 
   /* The Matrix green */
-  --color-matrix-green: #00cc00;
+  --color-matrix-green: 0 204 0; /* #00cc00 */
   /* The matrix green lighter */
-  --color-matrix-green-hover: #88ff88;
+  --color-matrix-green-hover: 136 255 136; /* #88ff88 */
 }
 
 @tailwind base;
@@ -270,12 +269,6 @@
 .tooltip-wrapper:hover .tooltip-left,
 .tooltip-wrapper:hover .tooltip-top {
   @apply visible z-50;
-}
-
-@layer base {
-  .bg-dark-bg {
-    background-color: var(--color-dark-bg);
-  }
 }
 
 @layer utilities {

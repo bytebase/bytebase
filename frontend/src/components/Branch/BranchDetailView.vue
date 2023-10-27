@@ -227,7 +227,7 @@ const titleInputStyle = computed(() => {
     "--n-font-size": "20px",
   };
   const border = state.isEditingTitle
-    ? "1px solid var(--color-control-border)"
+    ? "1px solid rgb(var(--color-control-border))"
     : "none";
   style["--n-border"] = border;
   style["--n-border-disabled"] = border;

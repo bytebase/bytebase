@@ -3,21 +3,21 @@
     <div class="divide-y border-b">
       <div
         v-if="showInfoPane"
-        class="gutter-bar--tab"
+        class="gutter-bar--tab writing-vertical-rl"
         :class="[activeTab === 'INFO' && 'gutter-bar--tab-active']"
         @click="handleClickTab('INFO')"
       >
         {{ $t("common.info") }}
       </div>
       <div
-        class="gutter-bar--tab"
+        class="gutter-bar--tab writing-vertical-rl"
         :class="[activeTab === 'SHEET' && 'gutter-bar--tab-active']"
         @click="handleClickTab('SHEET')"
       >
         {{ $t("sheet.sheet") }}
       </div>
       <div
-        class="gutter-bar--tab"
+        class="gutter-bar--tab writing-vertical-rl"
         :class="[activeTab === 'HISTORY' && 'gutter-bar--tab-active']"
         @click="handleClickTab('HISTORY')"
       >
@@ -115,7 +115,7 @@ watch(
 
 <style lang="postcss" scoped>
 .gutter-bar--tab {
-  @apply writing-vertical-rl px-1 py-4 bg-white cursor-pointer select-none;
+  @apply px-1 py-4 bg-white cursor-pointer select-none;
 }
 .gutter-bar--tab.gutter-bar--tab-active {
   @apply bg-gray-100;
