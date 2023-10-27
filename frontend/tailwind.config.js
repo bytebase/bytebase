@@ -37,6 +37,7 @@ module.exports = {
       },
       colors: {
         accent: "rgb(var(--color-accent) / <alpha-value>)",
+        "accent-tw": "rgb(var(--color-accent-tw) / <alpha-value>)",
         "accent-disabled": "rgb(var(--color-accent-disabled) / <alpha-value>)",
         "accent-hover": "rgb(var(--color-accent-hover) / <alpha-value>)",
         "accent-text": "rgb(var(--color-accent-text) / <alpha-value>)",

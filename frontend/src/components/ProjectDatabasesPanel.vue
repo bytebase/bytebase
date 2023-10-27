@@ -11,6 +11,10 @@
         />
       </div>
       <NInputGroup style="width: auto">
+        <DatabaseLabelFilter
+          v-model:selected="state.selectedLabels"
+          :database-list="databaseList"
+        />
         <InstanceSelect
           class="!w-48"
           :instance="state.instance"
@@ -23,7 +27,7 @@
         />
         <SearchBox
           :value="state.keyword"
-          :placeholder="$t('database.filter-database')"
+          :placeholder="$t('common.filter-by-name')"
           @update:value="state.keyword = $event"
         />
       </NInputGroup>
@@ -105,14 +109,21 @@ import {
   UNKNOWN_ID,
   UNKNOWN_ENVIRONMENT_NAME,
 } from "../types";
-import { DatabaseV1Table } from "./v2";
-import { EnvironmentTabFilter, InstanceSelect, SearchBox } from "./v2";
+import {
+  DatabaseV1Table,
+  DatabaseOperations,
+  DatabaseLabelFilter,
+  EnvironmentTabFilter,
+  InstanceSelect,
+  SearchBox,
+} from "./v2";
 
 interface LocalState {
   environment: string;
   instance: string;
   keyword: string;
   selectedDatabaseIds: Set<string>;
+  selectedLabels: { key: string; value: string }[];
 }
 
 const props = defineProps({
@@ -130,6 +141,7 @@ const state = reactive<LocalState>({
   instance: String(UNKNOWN_ID),
   keyword: "",
   selectedDatabaseIds: new Set(),
+  selectedLabels: [],
 });
 const policyList = ref<Policy[]>([]);
 
@@ -165,6 +177,12 @@ const filteredDatabaseList = computed(() => {
         "instance",
       ])
     );
+  }
+  const labels = state.selectedLabels;
+  if (labels.length > 0) {
+    list = list.filter((db) => {
+      return labels.some((kv) => db.labels[kv.key] === kv.value);
+    });
   }
   return list;
 });

@@ -13,8 +13,10 @@ import (
 func init() {
 	base.RegisterQueryValidator(storepb.Engine_ORACLE, validateQuery)
 	base.RegisterQueryValidator(storepb.Engine_DM, validateQuery)
+	base.RegisterQueryValidator(storepb.Engine_OCEANBASE_ORACLE, validateQuery)
 	base.RegisterExtractResourceListFunc(storepb.Engine_ORACLE, ExtractResourceList)
 	base.RegisterExtractResourceListFunc(storepb.Engine_DM, ExtractResourceList)
+	base.RegisterExtractResourceListFunc(storepb.Engine_OCEANBASE_ORACLE, ExtractResourceList)
 }
 
 // validateQuery validates the SQL statement for SQL editor.
