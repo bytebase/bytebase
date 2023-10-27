@@ -44,7 +44,6 @@ const taskConfig = computed(() => {
   const task = selectedTask.value;
   if (task.type === Task_Type.DATABASE_DATA_UPDATE) {
     return task.databaseDataUpdate;
-    // return task.payload as TaskDatabaseDataUpdatePayload | undefined;
   }
   return undefined;
 });
