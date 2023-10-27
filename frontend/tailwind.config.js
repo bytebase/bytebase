@@ -36,42 +36,50 @@ module.exports = {
         "4xl": "2160px",
       },
       colors: {
-        accent: "var(--color-accent)",
-        "accent-disabled": "var(--color-accent-disabled)",
-        "accent-hover": "var(--color-accent-hover)",
-        "accent-text": "var(--color-accent-text)",
+        accent: "rgb(var(--color-accent) / <alpha-value>)",
+        "accent-disabled": "rgb(var(--color-accent-disabled) / <alpha-value>)",
+        "accent-hover": "rgb(var(--color-accent-hover) / <alpha-value>)",
+        "accent-text": "rgb(var(--color-accent-text) / <alpha-value>)",
 
-        main: "var(--color-main)",
-        "main-hover": "var(--color-main-hover)",
-        "main-text": "var(--color-main-text)",
+        main: "rgb(var(--color-main) / <alpha-value>)",
+        "main-hover": "rgb(var(--color-main-hover) / <alpha-value>)",
+        "main-text": "rgb(var(--color-main-text) / <alpha-value>)",
 
-        control: "var(--color-control)",
-        "control-hover": "var(--color-control-hover)",
+        control: "rgb(var(--color-control) / <alpha-value>)",
+        "control-hover": "rgb(var(--color-control-hover) / <alpha-value>)",
 
-        "control-light": "var(--color-control-light)",
-        "control-light-hover": "var(--color-control-light-hover)",
+        "control-light": "rgb(var(--color-control-light) / <alpha-value>)",
+        "control-light-hover":
+          "rgb(var(--color-control-light-hover) / <alpha-value>)",
 
-        "control-bg": "var(--color-control-bg)",
-        "control-bg-hover": "var(--color-control-bg-hover)",
+        "control-bg": "rgb(var(--color-control-bg) / <alpha-value>)",
+        "control-bg-hover":
+          "rgb(var(--color-control-bg-hover) / <alpha-value>)",
 
-        "control-placeholder": "var(--color-control-placeholder)",
+        "control-placeholder":
+          "rgb(var(--color-control-placeholder) / <alpha-value>)",
 
-        info: "var(--color-info)",
-        "info-hover": "var(--color-info-hover)",
+        info: "rgb(var(--color-info) / <alpha-value>)",
+        "info-hover": "rgb(var(--color-info-hover) / <alpha-value>)",
 
-        warning: "var(--color-warning)",
-        "warning-hover": "var(--color-warning-hover)",
+        warning: "rgb(var(--color-warning) / <alpha-value>)",
+        "warning-hover": "rgb(var(--color-warning-hover) / <alpha-value>)",
 
-        error: "var(--color-error)",
-        "error-hover": "var(--color-error-hover)",
+        error: "rgb(var(--color-error) / <alpha-value>)",
+        "error-hover": "rgb(var(--color-error-hover) / <alpha-value>)",
 
-        success: "var(--color-success)",
-        "success-hover": "var(--color-success-hover)",
+        success: "rgb(var(--color-success) / <alpha-value>)",
+        "success-hover": "rgb(var(--color-success-hover) / <alpha-value>)",
 
-        "link-hover": "var(--color-link-hover)",
+        "link-hover": "rgb(var(--color-link-hover) / <alpha-value>)",
 
-        "block-border": "var(--color-block-border)",
-        "control-border": "var(--color-control-border)",
+        "block-border": "rgb(var(--color-block-border) / <alpha-value>)",
+        "control-border": "rgb(var(--color-control-border) / <alpha-value>)",
+
+        "dark-bg": "rgb(var(--color-dark-bg) / <alpha-value>)",
+        "matrix-green": "rgb(var(--color-matrix-green) / <alpha-value>)",
+        "matrix-green-hover":
+          "rgb(var(--color-matrix-green-hover) / <alpha-value>)",
       },
       fontFamily: {
         sans: ["Inter var", ...defaultTheme.fontFamily.sans],

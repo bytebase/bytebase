@@ -14,18 +14,25 @@
     </div>
 
     <template v-else>
-      <div class="flex justify-end items-center py-0.5 space-x-2">
-        <YAxisRadioGroup
-          v-model:label="state.label"
-          :database-list="databaseList"
-          class="text-sm"
-        />
-        <BBTableSearch
-          v-if="showSearchBox"
-          class="w-60"
-          :placeholder="$t('database.filter-database')"
-          @change-text="(text: string) => (state.keyword = text)"
-        />
+      <div class="flex justify-end items-center">
+        <NInputGroup style="width: auto" class="py-0.5">
+          <NInputGroupLabel
+            :bordered="false"
+            style="--n-group-label-color: transparent"
+          >
+            Group by
+          </NInputGroupLabel>
+          <YAxisRadioGroup
+            v-model:label="state.label"
+            :database-list="databaseList"
+          />
+          <SearchBox
+            v-if="showSearchBox"
+            v-model:value="state.keyword"
+            :placeholder="$t('common.filter-by-name')"
+            style="width: 12rem"
+          />
+        </NInputGroup>
       </div>
       <div class="w-full overflow-x-auto">
         <DeployDatabaseTable
@@ -40,12 +47,14 @@
 </template>
 
 <script lang="ts" setup>
+import { NInputGroup, NInputGroupLabel } from "naive-ui";
 import { computed, reactive } from "vue";
 import { ComposedDatabase } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { DeploymentConfig } from "@/types/proto/v1/project_service";
 import { filterDatabaseV1ByKeyword } from "@/utils";
 import { DeployDatabaseTable } from "../TenantDatabaseTable";
+import { SearchBox } from "../v2";
 
 const props = withDefaults(
   defineProps<{

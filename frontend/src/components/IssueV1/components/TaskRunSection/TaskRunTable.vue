@@ -32,7 +32,11 @@ import { useI18n } from "vue-i18n";
 import { BBGrid, BBGridColumn, BBGridRow } from "@/bbkit";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { Duration } from "@/types/proto/google/protobuf/duration";
-import { Task, TaskRun } from "@/types/proto/v1/rollout_service";
+import {
+  Task,
+  TaskRun,
+  TaskRun_Status,
+} from "@/types/proto/v1/rollout_service";
 import TaskRunComment from "./TaskRunComment.vue";
 import TaskRunStatusIcon from "./TaskRunStatusIcon.vue";
 
@@ -80,6 +84,16 @@ const executionDurationOfTaskRun = (taskRun: TaskRun): Duration | undefined => {
   }
   if (startTime.getTime() === 0) {
     return undefined;
+  }
+  if (
+    taskRun.status === TaskRun_Status.RUNNING &&
+    taskRun.executionStatusUpdateTime
+  ) {
+    const elapsedMS = Date.now() - taskRun.executionStatusUpdateTime.getTime();
+    return {
+      seconds: Math.floor(elapsedMS / 1000),
+      nanos: (elapsedMS % 1000) * 1e6,
+    };
   }
   const startMS = startTime.getTime();
   const updateMS = updateTime.getTime();

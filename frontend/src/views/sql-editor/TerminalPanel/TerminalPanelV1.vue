@@ -39,7 +39,7 @@
 
           <div
             v-if="query.resultSet?.error"
-            class="p-2 pb-1 text-md font-normal text-[var(--color-matrix-green-hover)]"
+            class="p-2 pb-1 text-md font-normal text-matrix-green-hover"
           >
             {{ $t("sql-editor.connection-lost") }}
           </div>

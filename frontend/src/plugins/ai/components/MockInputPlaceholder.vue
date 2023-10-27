@@ -51,6 +51,6 @@ const handleDismiss = () => {
 
 <style lang="postcss">
 .bb-ai-mock-input .n-input__input-el {
-  @apply !ring-0 !cursor-pointer !placeholder-current;
+  @apply !cursor-pointer !placeholder-current;
 }
 </style>

@@ -158,8 +158,4 @@ watch([() => props.instance, combinedInstanceList], resetInvalidSelection, {
   :deep(.n-base-selection--active .bb-instance-select--engine-icon) {
   opacity: 0.3;
 }
-
-.bb-instance-select :deep(.n-base-selection-input:focus) {
-  @apply !ring-0;
-}
 </style>

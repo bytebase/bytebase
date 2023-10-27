@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	pgquery "github.com/pganalyze/pg_query_go/v4"
+	pgparser "github.com/pganalyze/pg_query_go/v4/parser"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -32,12 +33,7 @@ func init() {
 func validateQuery(statement string) (bool, error) {
 	stmtList, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
 	if err != nil {
-		// Parse error again for getting a better error message.
-		_, syntaxError := ParsePostgreSQL(statement)
-		if syntaxError != nil {
-			return false, syntaxError
-		}
-		return false, err
+		return false, convertToSyntaxError(statement, err)
 	}
 	for _, stmt := range stmtList {
 		switch stmt.(type) {
@@ -172,4 +168,35 @@ func extractRangeVarFromJSON(currentDatabase string, currentSchema string, jsonD
 	}
 
 	return result
+}
+
+func convertToSyntaxError(statement string, err error) *base.SyntaxError {
+	if pgErr, ok := err.(*pgparser.Error); ok {
+		line, column := getLineAndColumn(statement, pgErr.Cursorpos)
+		return &base.SyntaxError{
+			Line:    line,
+			Column:  column,
+			Message: pgErr.Message,
+		}
+	}
+
+	return &base.SyntaxError{
+		Line:    1,
+		Column:  0,
+		Message: err.Error(),
+	}
+}
+
+func getLineAndColumn(statement string, pos int) (int, int) {
+	var line, column int
+	for i := 0; i < pos; i++ {
+		if statement[i] == '\n' {
+			line++
+			column = 0
+		} else {
+			column++
+		}
+	}
+
+	return line + 1, column
 }
