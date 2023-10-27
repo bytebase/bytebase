@@ -11,7 +11,7 @@
             minimumShowCount
           )"
           :key="key"
-          class="rounded-lg bg-gray-100 group-hover:bg-gray-200 py-1 px-2 text-sm"
+          class="rounded-lg bg-gray-100 group-hover:bg-gray-200 py-0.5 px-2 text-sm"
         >
           {{ `${key}:${label}` }}
         </div>
