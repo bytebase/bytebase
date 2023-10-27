@@ -18,6 +18,8 @@ var (
 
 func init() {
 	advisor.Register(storepb.Engine_ORACLE, advisor.OracleNoLeadingWildcardLike, &WhereNoLeadingWildcardLikeAdvisor{})
+	advisor.Register(storepb.Engine_DM, advisor.OracleNoLeadingWildcardLike, &WhereNoLeadingWildcardLikeAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE_ORACLE, advisor.OracleNoLeadingWildcardLike, &WhereNoLeadingWildcardLikeAdvisor{})
 }
 
 // WhereNoLeadingWildcardLikeAdvisor is the advisor checking for no leading wildcard LIKE.

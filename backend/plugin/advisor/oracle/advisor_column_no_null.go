@@ -19,6 +19,8 @@ var (
 
 func init() {
 	advisor.Register(storepb.Engine_ORACLE, advisor.OracleColumnNoNull, &ColumnNoNullAdvisor{})
+	advisor.Register(storepb.Engine_DM, advisor.OracleColumnNoNull, &ColumnNoNullAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE_ORACLE, advisor.OracleColumnNoNull, &ColumnNoNullAdvisor{})
 }
 
 type columnMap map[string]int
