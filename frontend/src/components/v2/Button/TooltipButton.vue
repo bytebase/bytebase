@@ -1,5 +1,5 @@
 <template>
-  <NTooltip v-bind="tooltipProps" :disabled="!tooltipDisabled">
+  <NTooltip v-bind="tooltipProps" :disabled="!tooltipEnabled">
     <template #trigger>
       <NButton
         v-bind="$attrs"
@@ -52,9 +52,13 @@ defineEmits<{
 
 const slots = useSlots();
 
-const tooltipDisabled = computed(() => {
-  if (props.tooltipMode === "ALWAYS") return false;
-  if (!slots.tooltip) return true;
+const tooltipEnabled = computed(() => {
+  // Enable tooltip when tooltipMode is "ALWAYS"
+  if (props.tooltipMode === "ALWAYS") return true;
+  // Disable tooltip if no tooltip contents
+  if (!slots.tooltip) return false;
+  // Enable tooltip if button is disabled
+  // Disable tooltip otherwise
   return props.disabled;
 });
 </script>
