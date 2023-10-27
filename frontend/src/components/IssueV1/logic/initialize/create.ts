@@ -85,6 +85,9 @@ export const createIssueSkeleton = async (route: _RouteLocationBase) => {
     branch,
   };
 
+  // Prepare params context for building plan.
+  await prepareParamsContext(params);
+
   const plan = await buildPlan(params);
   issue.plan = plan.name;
   issue.planEntity = plan;
@@ -101,6 +104,13 @@ export const createIssueSkeleton = async (route: _RouteLocationBase) => {
   }
 
   return issue;
+};
+
+const prepareParamsContext = async (params: CreateIssueParams) => {
+  if (params.branch) {
+    const [_, sheetId] = getProjectAndSchemaDesignSheetId(params.branch);
+    await useSheetV1Store().getOrFetchSheetByUID(sheetId);
+  }
 };
 
 export const buildPlan = async (params: CreateIssueParams) => {
