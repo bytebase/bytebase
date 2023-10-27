@@ -871,10 +871,20 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with id %d not found", sheet.ProjectUID))
 	}
-	sheetPayload := sheet.Payload
+	var v1SheetPayload *v1pb.SheetPayload
 	var v1PushEvent *v1pb.PushEvent
-	if sheetPayload.VcsPayload != nil && sheetPayload.VcsPayload.PushEvent != nil {
-		v1PushEvent = convertToPushEvent(sheetPayload.VcsPayload.PushEvent)
+	if sheet.Payload != nil {
+		payload := sheet.Payload
+		if payload.VcsPayload != nil && payload.VcsPayload.PushEvent != nil {
+			v1PushEvent = convertToPushEvent(payload.VcsPayload.PushEvent)
+		}
+		if payload.DatabaseConfig != nil && payload.BaselineDatabaseConfig != nil {
+			v1SheetPayload = &v1pb.SheetPayload{
+				Type:                   v1pb.SheetPayload_Type(payload.Type),
+				DatabaseConfig:         convertDatabaseConfig(payload.DatabaseConfig),
+				BaselineDatabaseConfig: convertDatabaseConfig(payload.BaselineDatabaseConfig),
+			}
+		}
 	}
 
 	return &v1pb.Sheet{
@@ -891,6 +901,7 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 		Type:        tp,
 		Starred:     sheet.Starred,
 		PushEvent:   v1PushEvent,
+		Payload:     v1SheetPayload,
 	}, nil
 }
 

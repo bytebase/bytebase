@@ -8,6 +8,7 @@ import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
+import "v1/database_service.proto";
 import "v1/vcs.proto";
 
 option go_package = "generated-go/v1";
@@ -240,8 +241,22 @@ message Sheet {
   // starred indicates whether the sheet is starred by the current authenticated user.
   bool starred = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // TODO: deprecate this field.
-  string payload = 13;
+  SheetPayload payload = 13;
 
   PushEvent push_event = 14;
+}
+
+message SheetPayload {
+  // Type of the SheetPayload.
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    SCHEMA_DESIGN = 1;
+  }
+  Type type = 1;
+
+  // The snapshot of the database config when creating the sheet, be used to compare with the baseline_database_config and apply the diff to the database.
+  DatabaseConfig database_config = 2;
+
+  // The snapshot of the baseline database config when creating the sheet.
+  DatabaseConfig baseline_database_config = 3;
 }

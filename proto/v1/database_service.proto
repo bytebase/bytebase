@@ -692,6 +692,13 @@ message ForeignKeyMetadata {
   string match_type = 8;
 }
 
+message DatabaseConfig {
+  string name = 1;
+
+  // The schema_configs is the list of configs for schemas in a database.
+  repeated SchemaConfig schema_configs = 2;
+}
+
 message SchemaConfig {
   // The name is the schema name.
   // It is an empty string for databases without such concept such as MySQL.
