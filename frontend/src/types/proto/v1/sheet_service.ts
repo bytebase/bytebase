@@ -4,6 +4,7 @@ import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
+import { DatabaseConfig } from "./database_service";
 import { PushEvent } from "./vcs";
 
 export const protobufPackage = "bytebase.v1";
@@ -184,8 +185,7 @@ export interface Sheet {
   type: Sheet_Type;
   /** starred indicates whether the sheet is starred by the current authenticated user. */
   starred: boolean;
-  /** TODO: deprecate this field. */
-  payload: string;
+  payload: SheetPayload | undefined;
   pushEvent: PushEvent | undefined;
 }
 
@@ -327,6 +327,50 @@ export function sheet_TypeToJSON(object: Sheet_Type): string {
     case Sheet_Type.TYPE_SQL:
       return "TYPE_SQL";
     case Sheet_Type.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export interface SheetPayload {
+  type: SheetPayload_Type;
+  /** The snapshot of the database config when creating the sheet, be used to compare with the baseline_database_config and apply the diff to the database. */
+  databaseConfig:
+    | DatabaseConfig
+    | undefined;
+  /** The snapshot of the baseline database config when creating the sheet. */
+  baselineDatabaseConfig: DatabaseConfig | undefined;
+}
+
+/** Type of the SheetPayload. */
+export enum SheetPayload_Type {
+  TYPE_UNSPECIFIED = 0,
+  SCHEMA_DESIGN = 1,
+  UNRECOGNIZED = -1,
+}
+
+export function sheetPayload_TypeFromJSON(object: any): SheetPayload_Type {
+  switch (object) {
+    case 0:
+    case "TYPE_UNSPECIFIED":
+      return SheetPayload_Type.TYPE_UNSPECIFIED;
+    case 1:
+    case "SCHEMA_DESIGN":
+      return SheetPayload_Type.SCHEMA_DESIGN;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return SheetPayload_Type.UNRECOGNIZED;
+  }
+}
+
+export function sheetPayload_TypeToJSON(object: SheetPayload_Type): string {
+  switch (object) {
+    case SheetPayload_Type.TYPE_UNSPECIFIED:
+      return "TYPE_UNSPECIFIED";
+    case SheetPayload_Type.SCHEMA_DESIGN:
+      return "SCHEMA_DESIGN";
+    case SheetPayload_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
@@ -1001,7 +1045,7 @@ function createBaseSheet(): Sheet {
     source: 0,
     type: 0,
     starred: false,
-    payload: "",
+    payload: undefined,
     pushEvent: undefined,
   };
 }
@@ -1044,8 +1088,8 @@ export const Sheet = {
     if (message.starred === true) {
       writer.uint32(96).bool(message.starred);
     }
-    if (message.payload !== "") {
-      writer.uint32(106).string(message.payload);
+    if (message.payload !== undefined) {
+      SheetPayload.encode(message.payload, writer.uint32(106).fork()).ldelim();
     }
     if (message.pushEvent !== undefined) {
       PushEvent.encode(message.pushEvent, writer.uint32(114).fork()).ldelim();
@@ -1149,7 +1193,7 @@ export const Sheet = {
             break;
           }
 
-          message.payload = reader.string();
+          message.payload = SheetPayload.decode(reader, reader.uint32());
           continue;
         case 14:
           if (tag !== 114) {
@@ -1181,7 +1225,7 @@ export const Sheet = {
       source: isSet(object.source) ? sheet_SourceFromJSON(object.source) : 0,
       type: isSet(object.type) ? sheet_TypeFromJSON(object.type) : 0,
       starred: isSet(object.starred) ? Boolean(object.starred) : false,
-      payload: isSet(object.payload) ? String(object.payload) : "",
+      payload: isSet(object.payload) ? SheetPayload.fromJSON(object.payload) : undefined,
       pushEvent: isSet(object.pushEvent) ? PushEvent.fromJSON(object.pushEvent) : undefined,
     };
   },
@@ -1201,7 +1245,7 @@ export const Sheet = {
     message.source !== undefined && (obj.source = sheet_SourceToJSON(message.source));
     message.type !== undefined && (obj.type = sheet_TypeToJSON(message.type));
     message.starred !== undefined && (obj.starred = message.starred);
-    message.payload !== undefined && (obj.payload = message.payload);
+    message.payload !== undefined && (obj.payload = message.payload ? SheetPayload.toJSON(message.payload) : undefined);
     message.pushEvent !== undefined &&
       (obj.pushEvent = message.pushEvent ? PushEvent.toJSON(message.pushEvent) : undefined);
     return obj;
@@ -1225,10 +1269,106 @@ export const Sheet = {
     message.source = object.source ?? 0;
     message.type = object.type ?? 0;
     message.starred = object.starred ?? false;
-    message.payload = object.payload ?? "";
+    message.payload = (object.payload !== undefined && object.payload !== null)
+      ? SheetPayload.fromPartial(object.payload)
+      : undefined;
     message.pushEvent = (object.pushEvent !== undefined && object.pushEvent !== null)
       ? PushEvent.fromPartial(object.pushEvent)
       : undefined;
+    return message;
+  },
+};
+
+function createBaseSheetPayload(): SheetPayload {
+  return { type: 0, databaseConfig: undefined, baselineDatabaseConfig: undefined };
+}
+
+export const SheetPayload = {
+  encode(message: SheetPayload, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.type !== 0) {
+      writer.uint32(8).int32(message.type);
+    }
+    if (message.databaseConfig !== undefined) {
+      DatabaseConfig.encode(message.databaseConfig, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.baselineDatabaseConfig !== undefined) {
+      DatabaseConfig.encode(message.baselineDatabaseConfig, writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SheetPayload {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSheetPayload();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.type = reader.int32() as any;
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.databaseConfig = DatabaseConfig.decode(reader, reader.uint32());
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.baselineDatabaseConfig = DatabaseConfig.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SheetPayload {
+    return {
+      type: isSet(object.type) ? sheetPayload_TypeFromJSON(object.type) : 0,
+      databaseConfig: isSet(object.databaseConfig) ? DatabaseConfig.fromJSON(object.databaseConfig) : undefined,
+      baselineDatabaseConfig: isSet(object.baselineDatabaseConfig)
+        ? DatabaseConfig.fromJSON(object.baselineDatabaseConfig)
+        : undefined,
+    };
+  },
+
+  toJSON(message: SheetPayload): unknown {
+    const obj: any = {};
+    message.type !== undefined && (obj.type = sheetPayload_TypeToJSON(message.type));
+    message.databaseConfig !== undefined &&
+      (obj.databaseConfig = message.databaseConfig ? DatabaseConfig.toJSON(message.databaseConfig) : undefined);
+    message.baselineDatabaseConfig !== undefined && (obj.baselineDatabaseConfig = message.baselineDatabaseConfig
+      ? DatabaseConfig.toJSON(message.baselineDatabaseConfig)
+      : undefined);
+    return obj;
+  },
+
+  create(base?: DeepPartial<SheetPayload>): SheetPayload {
+    return SheetPayload.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<SheetPayload>): SheetPayload {
+    const message = createBaseSheetPayload();
+    message.type = object.type ?? 0;
+    message.databaseConfig = (object.databaseConfig !== undefined && object.databaseConfig !== null)
+      ? DatabaseConfig.fromPartial(object.databaseConfig)
+      : undefined;
+    message.baselineDatabaseConfig =
+      (object.baselineDatabaseConfig !== undefined && object.baselineDatabaseConfig !== null)
+        ? DatabaseConfig.fromPartial(object.baselineDatabaseConfig)
+        : undefined;
     return message;
   },
 };
