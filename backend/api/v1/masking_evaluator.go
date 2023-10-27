@@ -105,6 +105,10 @@ func (m *maskingLevelEvaluator) evaluateMaskingAlgorithmOfColumn(databaseMessage
 		}
 	}
 
+	if columnSemanticTypeID == "" {
+		return nil, maskingLevel, nil
+	}
+
 	semanticType, ok := m.semanticTypesMap[columnSemanticTypeID]
 	if !ok {
 		return nil, maskingLevel, errors.Errorf("failed to find the semantic type %q", columnSemanticTypeID)
