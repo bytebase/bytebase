@@ -56,9 +56,3 @@ const handlePressEnter = () => {
   applyValue(state.value);
 };
 </script>
-
-<style lang="postcss">
-.bb-ai-prompt-input .n-input__input-el {
-  @apply !ring-0;
-}
-</style>

@@ -131,10 +131,3 @@ const updateCascaderValues = (
   );
 };
 </script>
-
-<style lang="postcss" scoped>
-.bb-database-label-filter.n-cascader
-  :deep(.n-base-selection-input-tag__input:focus) {
-  @apply !ring-0;
-}
-</style>
