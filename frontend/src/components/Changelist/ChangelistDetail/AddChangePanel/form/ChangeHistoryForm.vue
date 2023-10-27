@@ -25,9 +25,9 @@
           v-model:database="state.databaseUID"
           :project="project.uid"
         />
-        <NSelect
-          v-model:value="state.affectedTableKey"
-          :options="affectedTableOptions"
+        <AffectedTableSelect
+          v-model:affected-table="state.affectedTable"
+          :change-history-list="state.changeHistoryList"
           style="width: 12rem"
         />
         <NCheckboxGroup v-model:value="state.changeHistoryTypes">
@@ -59,10 +59,10 @@
 </template>
 
 <script setup lang="ts">
-import { first } from "lodash-es";
-import { NCheckbox, NCheckboxGroup, NSelect, SelectOption } from "naive-ui";
+import { first, isEqual } from "lodash-es";
+import { NCheckbox, NCheckboxGroup } from "naive-ui";
 import { computed, reactive, watch } from "vue";
-import { h } from "vue";
+import { AffectedTableSelect } from "@/components/ChangeHistory";
 import { DatabaseSelect, SearchBox } from "@/components/v2";
 import {
   useChangeHistoryStore,
@@ -88,29 +88,17 @@ import { useChangelistDetailContext } from "../../context";
 import { useAddChangeContext } from "../context";
 import ChangeHistoryChangeItem from "./ChangeHistoryChangeItem.vue";
 import ChangeHistoryTable from "./ChangeHistoryTable";
-import {
-  getAffectedTableDisplayName,
-  getAffectedTableKey,
-  getAffectedTablesFromChangeHistoryList,
-  semanticChangeHistoryType,
-} from "./utils";
+import { semanticChangeHistoryType } from "./utils";
 
 type LocalState = {
   isLoading: boolean;
   keyword: string;
   databaseUID: string | undefined;
   changeHistoryList: ChangeHistory[];
-  affectedTableKey: string | undefined;
+  affectedTable: AffectedTable;
   changeHistoryTypes: ChangeHistory_Type[];
   detailChangeHistoryName: string | undefined;
 };
-
-type AffectedTableSelectOption = SelectOption & {
-  affectedTable: AffectedTable;
-  value: string;
-};
-
-const ALL_TABLE_KEY = getAffectedTableKey(EmptyAffectedTable);
 
 const { project } = useChangelistDetailContext();
 const { changesFromChangeHistory: changes } = useAddChangeContext();
@@ -121,7 +109,7 @@ const state = reactive<LocalState>({
   keyword: "",
   databaseUID: undefined,
   changeHistoryList: [],
-  affectedTableKey: undefined,
+  affectedTable: EmptyAffectedTable,
   changeHistoryTypes: [ChangeHistory_Type.DATA, ChangeHistory_Type.MIGRATE],
   detailChangeHistoryName: undefined,
 });
@@ -130,29 +118,6 @@ const database = computed(() => {
   const uid = state.databaseUID;
   if (!uid || uid === String(UNKNOWN_ID)) return undefined;
   return useDatabaseV1Store().getDatabaseByUID(uid);
-});
-
-const affectedTableOptions = computed(() => {
-  const affectedTables = getAffectedTablesFromChangeHistoryList(
-    state.changeHistoryList
-  );
-
-  return affectedTables.map<AffectedTableSelectOption>((item) => {
-    const key = getAffectedTableKey(item);
-    const name = getAffectedTableDisplayName(item);
-    return {
-      label: name,
-      value: key,
-      affectedTable: item,
-      renderLabel() {
-        const classes = ["truncate"];
-        if (item.dropped) {
-          classes.push("text-gray-400");
-        }
-        return h("span", { class: classes, "data-key": key }, name);
-      },
-    };
-  });
 });
 
 const filteredChangeHistoryList = computed(() => {
@@ -169,13 +134,11 @@ const filteredChangeHistoryList = computed(() => {
       changeHistory.version.toLowerCase().includes(kw)
     );
   }
-  const tableKey = state.affectedTableKey;
-  if (tableKey && tableKey !== ALL_TABLE_KEY) {
+  const { affectedTable: table } = state;
+  if (!isEqual(table, EmptyAffectedTable)) {
     list = list.filter((changeHistory) => {
       const affectedTables = getAffectedTablesOfChangeHistory(changeHistory);
-      return affectedTables.find(
-        (item) => getAffectedTableKey(item) === tableKey
-      );
+      return affectedTables.find((item) => isEqual(item, table));
     });
   }
 
@@ -271,9 +234,9 @@ watch(
 watch(() => database.value?.uid, fetchChangeHistoryList, { immediate: true });
 
 watch(
-  affectedTableOptions,
+  () => state.changeHistoryList,
   (options) => {
-    state.affectedTableKey = first(options)?.value;
+    state.affectedTable = EmptyAffectedTable;
   },
   { immediate: true }
 );
