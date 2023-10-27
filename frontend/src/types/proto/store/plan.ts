@@ -87,6 +87,7 @@ export interface PlanConfig_ChangeDatabaseConfig {
   /** If RollbackEnabled, build the RollbackSheetID of the task. */
   rollbackEnabled: boolean;
   rollbackDetail?: PlanConfig_ChangeDatabaseConfig_RollbackDetail | undefined;
+  ghostFlags: { [key: string]: string };
 }
 
 /** Type is the database change type. */
@@ -174,6 +175,11 @@ export interface PlanConfig_ChangeDatabaseConfig_RollbackDetail {
    * Format: projects/{project}/issues/{issue}
    */
   rollbackFromIssue: string;
+}
+
+export interface PlanConfig_ChangeDatabaseConfig_GhostFlagsEntry {
+  key: string;
+  value: string;
 }
 
 export interface PlanConfig_RestoreDatabaseConfig {
@@ -729,7 +735,15 @@ export const PlanConfig_CreateDatabaseConfig_LabelsEntry = {
 };
 
 function createBasePlanConfig_ChangeDatabaseConfig(): PlanConfig_ChangeDatabaseConfig {
-  return { target: "", sheet: "", type: 0, schemaVersion: "", rollbackEnabled: false, rollbackDetail: undefined };
+  return {
+    target: "",
+    sheet: "",
+    type: 0,
+    schemaVersion: "",
+    rollbackEnabled: false,
+    rollbackDetail: undefined,
+    ghostFlags: {},
+  };
 }
 
 export const PlanConfig_ChangeDatabaseConfig = {
@@ -752,6 +766,10 @@ export const PlanConfig_ChangeDatabaseConfig = {
     if (message.rollbackDetail !== undefined) {
       PlanConfig_ChangeDatabaseConfig_RollbackDetail.encode(message.rollbackDetail, writer.uint32(50).fork()).ldelim();
     }
+    Object.entries(message.ghostFlags).forEach(([key, value]) => {
+      PlanConfig_ChangeDatabaseConfig_GhostFlagsEntry.encode({ key: key as any, value }, writer.uint32(58).fork())
+        .ldelim();
+    });
     return writer;
   },
 
@@ -804,6 +822,16 @@ export const PlanConfig_ChangeDatabaseConfig = {
 
           message.rollbackDetail = PlanConfig_ChangeDatabaseConfig_RollbackDetail.decode(reader, reader.uint32());
           continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          const entry7 = PlanConfig_ChangeDatabaseConfig_GhostFlagsEntry.decode(reader, reader.uint32());
+          if (entry7.value !== undefined) {
+            message.ghostFlags[entry7.key] = entry7.value;
+          }
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -823,6 +851,12 @@ export const PlanConfig_ChangeDatabaseConfig = {
       rollbackDetail: isSet(object.rollbackDetail)
         ? PlanConfig_ChangeDatabaseConfig_RollbackDetail.fromJSON(object.rollbackDetail)
         : undefined,
+      ghostFlags: isObject(object.ghostFlags)
+        ? Object.entries(object.ghostFlags).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+          acc[key] = String(value);
+          return acc;
+        }, {})
+        : {},
     };
   },
 
@@ -836,6 +870,12 @@ export const PlanConfig_ChangeDatabaseConfig = {
     message.rollbackDetail !== undefined && (obj.rollbackDetail = message.rollbackDetail
       ? PlanConfig_ChangeDatabaseConfig_RollbackDetail.toJSON(message.rollbackDetail)
       : undefined);
+    obj.ghostFlags = {};
+    if (message.ghostFlags) {
+      Object.entries(message.ghostFlags).forEach(([k, v]) => {
+        obj.ghostFlags[k] = v;
+      });
+    }
     return obj;
   },
 
@@ -853,6 +893,15 @@ export const PlanConfig_ChangeDatabaseConfig = {
     message.rollbackDetail = (object.rollbackDetail !== undefined && object.rollbackDetail !== null)
       ? PlanConfig_ChangeDatabaseConfig_RollbackDetail.fromPartial(object.rollbackDetail)
       : undefined;
+    message.ghostFlags = Object.entries(object.ghostFlags ?? {}).reduce<{ [key: string]: string }>(
+      (acc, [key, value]) => {
+        if (value !== undefined) {
+          acc[key] = String(value);
+        }
+        return acc;
+      },
+      {},
+    );
     return message;
   },
 };
@@ -931,6 +980,81 @@ export const PlanConfig_ChangeDatabaseConfig_RollbackDetail = {
     const message = createBasePlanConfig_ChangeDatabaseConfig_RollbackDetail();
     message.rollbackFromTask = object.rollbackFromTask ?? "";
     message.rollbackFromIssue = object.rollbackFromIssue ?? "";
+    return message;
+  },
+};
+
+function createBasePlanConfig_ChangeDatabaseConfig_GhostFlagsEntry(): PlanConfig_ChangeDatabaseConfig_GhostFlagsEntry {
+  return { key: "", value: "" };
+}
+
+export const PlanConfig_ChangeDatabaseConfig_GhostFlagsEntry = {
+  encode(
+    message: PlanConfig_ChangeDatabaseConfig_GhostFlagsEntry,
+    writer: _m0.Writer = _m0.Writer.create(),
+  ): _m0.Writer {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PlanConfig_ChangeDatabaseConfig_GhostFlagsEntry {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePlanConfig_ChangeDatabaseConfig_GhostFlagsEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PlanConfig_ChangeDatabaseConfig_GhostFlagsEntry {
+    return { key: isSet(object.key) ? String(object.key) : "", value: isSet(object.value) ? String(object.value) : "" };
+  },
+
+  toJSON(message: PlanConfig_ChangeDatabaseConfig_GhostFlagsEntry): unknown {
+    const obj: any = {};
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value);
+    return obj;
+  },
+
+  create(
+    base?: DeepPartial<PlanConfig_ChangeDatabaseConfig_GhostFlagsEntry>,
+  ): PlanConfig_ChangeDatabaseConfig_GhostFlagsEntry {
+    return PlanConfig_ChangeDatabaseConfig_GhostFlagsEntry.fromPartial(base ?? {});
+  },
+
+  fromPartial(
+    object: DeepPartial<PlanConfig_ChangeDatabaseConfig_GhostFlagsEntry>,
+  ): PlanConfig_ChangeDatabaseConfig_GhostFlagsEntry {
+    const message = createBasePlanConfig_ChangeDatabaseConfig_GhostFlagsEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
     return message;
   },
 };
