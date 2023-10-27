@@ -1,7 +1,8 @@
-import { isUndefined, orderBy, uniqBy } from "lodash-es";
+import { isEqual, isUndefined, orderBy, uniqBy } from "lodash-es";
 import slug from "slug";
+import { t } from "@/plugins/i18n";
 import { useDBSchemaV1Store, useDatabaseV1Store } from "@/store";
-import { AffectedTable } from "@/types/changeHistory";
+import { AffectedTable, EmptyAffectedTable } from "@/types/changeHistory";
 import {
   ChangeHistory,
   ChangeHistory_Type,
@@ -84,6 +85,22 @@ export const getAffectedTablesOfChangeHistory = (
     ),
     (affectedTable) => `${affectedTable.schema}.${affectedTable.table}`
   );
+};
+
+export const getAffectedTableDisplayName = (affectedTable: AffectedTable) => {
+  if (isEqual(affectedTable, EmptyAffectedTable)) {
+    return t("change-history.all-tables");
+  }
+
+  const { schema, table, dropped } = affectedTable;
+  let name = table;
+  if (schema !== "") {
+    name = `${schema}.${table}`;
+  }
+  if (dropped) {
+    name = `${name} (deleted)`;
+  }
+  return name;
 };
 
 export const getHistoryChangeType = (type: ChangeHistory_Type) => {

@@ -1,6 +1,5 @@
-import { isEqual, orderBy, uniqBy } from "lodash-es";
-import { t } from "@/plugins/i18n";
-import { AffectedTable, EmptyAffectedTable } from "@/types/changeHistory";
+import { orderBy, uniqBy } from "lodash-es";
+import { EmptyAffectedTable } from "@/types/changeHistory";
 import {
   ChangeHistory,
   ChangeHistory_Type,
@@ -24,26 +23,6 @@ export const getAffectedTablesFromChangeHistoryList = (
       ["dropped", "table", "schema"]
     ),
   ];
-};
-
-export const getAffectedTableKey = (affectedTable: AffectedTable) => {
-  return JSON.stringify(affectedTable);
-};
-
-export const getAffectedTableDisplayName = (affectedTable: AffectedTable) => {
-  if (isEqual(affectedTable, EmptyAffectedTable)) {
-    return t("change-history.all-tables");
-  }
-
-  const { schema, table, dropped } = affectedTable;
-  let name = table;
-  if (schema !== "") {
-    name = `${schema}.${table}`;
-  }
-  if (dropped) {
-    name = `${name} (deleted)`;
-  }
-  return name;
 };
 
 export const semanticChangeHistoryType = (type: ChangeHistory_Type) => {
