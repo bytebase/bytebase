@@ -879,6 +879,7 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 			v1PushEvent = convertToPushEvent(payload.VcsPayload.PushEvent)
 		}
 		if payload.DatabaseConfig != nil && payload.BaselineDatabaseConfig != nil {
+			v1SheetPayload.Type = v1pb.SheetPayload_Type(payload.Type)
 			v1SheetPayload = &v1pb.SheetPayload{
 				DatabaseConfig:         convertDatabaseConfig(payload.DatabaseConfig),
 				BaselineDatabaseConfig: convertDatabaseConfig(payload.BaselineDatabaseConfig),
