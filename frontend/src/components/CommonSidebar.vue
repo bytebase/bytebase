@@ -25,14 +25,21 @@
         </router-link>
         <div
           v-else
-          class="group flex items-center px-2 py-2 text-sm leading-5 font-medium rounded-md text-gray-700"
+          class="group flex items-center px-2 py-2 text-sm leading-5 font-medium rounded-md text-gray-700 outline-item"
           :class="getItemClass(item.path)"
-          @click="$emit('select', item.path)"
+          @click="onClick(i)"
         >
           <component :is="item.icon" class="mr-2 w-5 h-5 text-gray-500" />
           {{ item.title }}
+          <div v-if="item.children.length > 0" class="ml-auto text-gray-500">
+            <ChevronDown v-if="!state.expandedSidebar.has(i)" class="w-4 h-4" />
+            <ChevronUp v-else class="w-4 h-4" />
+          </div>
         </div>
-        <div v-if="item.children" class="space-y-1">
+        <div
+          v-if="item.children.length > 0 && state.expandedSidebar.has(i)"
+          class="space-y-1"
+        >
           <template v-for="(child, j) in item.children" :key="`${i}-${j}`">
             <div
               v-if="type === 'div'"
@@ -58,7 +65,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, VNode } from "vue";
+import { ChevronDown, ChevronUp } from "lucide-vue-next";
+import { computed, VNode, reactive, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useRouterStore } from "@/store";
 
@@ -74,6 +82,10 @@ export interface SidebarItem {
   }[];
 }
 
+interface LocalState {
+  expandedSidebar: Set<number>;
+}
+
 const props = withDefaults(
   defineProps<{
     itemList: SidebarItem[];
@@ -87,12 +99,15 @@ const props = withDefaults(
   }
 );
 
-defineEmits<{
+const emit = defineEmits<{
   (event: "select", path: string | undefined): void;
 }>();
 
 const routerStore = useRouterStore();
 const router = useRouter();
+const state = reactive<LocalState>({
+  expandedSidebar: new Set(),
+});
 
 const goBack = () => {
   router.push(routerStore.backPath());
@@ -106,4 +121,25 @@ const filteredSidebarList = computed(() => {
     }))
     .filter((item) => !item.hide && (!!item.path || item.children.length > 0));
 });
+
+onMounted(() => {
+  state.expandedSidebar.clear();
+  for (let i = 0; i < filteredSidebarList.value.length; i++) {
+    if (filteredSidebarList.value[i].children.length > 0) {
+      state.expandedSidebar.add(i);
+    }
+  }
+});
+
+const onClick = (index: number) => {
+  const sidebar = filteredSidebarList.value[index];
+  if (sidebar.path) {
+    return emit("select", sidebar.path);
+  }
+  if (state.expandedSidebar.has(index)) {
+    state.expandedSidebar.delete(index);
+  } else {
+    state.expandedSidebar.add(index);
+  }
+};
 </script>
