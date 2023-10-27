@@ -31,11 +31,26 @@ export const changeHistorySlug = (uid: string, version: string): string => {
   return [slug(version), uid].join("-");
 };
 
+export const changeHistoryLinkRaw = (
+  parent: string,
+  uid: string,
+  version: string
+) => {
+  const { instance, database } = extractDatabaseResourceName(parent);
+  const path = [
+    "instances",
+    encodeURIComponent(instance),
+    "databases",
+    encodeURIComponent(database),
+    "changeHistories",
+    changeHistorySlug(uid, version),
+  ].join("/");
+  return `/${path}`;
+};
+
 export const changeHistoryLink = (changeHistory: ChangeHistory): string => {
   const { name, uid, version } = changeHistory;
-  const { instance, database } = extractDatabaseResourceName(name);
-  const parent = `instances/${instance}/databases/${database}`;
-  return `/${parent}/changeHistories/${changeHistorySlug(uid, version)}`;
+  return changeHistoryLinkRaw(name, uid, version);
 };
 
 export const getAffectedTablesOfChangeHistory = (
