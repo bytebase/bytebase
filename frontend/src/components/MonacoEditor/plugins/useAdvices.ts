@@ -2,8 +2,7 @@ import { maxBy } from "lodash-es";
 import type { editor as Editor } from "monaco-editor";
 import { unref, watchEffect } from "vue";
 import type { MaybeRef } from "@/types";
-import { escapeMarkdown } from "@/utils";
-import { callVar } from "../themes/utils";
+import { escapeMarkdown, callCssVariable } from "@/utils";
 import type { AdviceOption } from "../types";
 
 export const useAdvices = async (
@@ -59,8 +58,8 @@ export const useAdvices = async (
 
 const buildHoverMessage = (advice: AdviceOption) => {
   const COLORS = {
-    WARNING: callVar("--color-warning"),
-    ERROR: callVar("--color-error"),
+    WARNING: callCssVariable("--color-warning"),
+    ERROR: callCssVariable("--color-error"),
   };
 
   const { severity, message, source } = advice;

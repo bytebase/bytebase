@@ -2098,6 +2098,12 @@ func (t *mysqlTransformer) ExitCreateView(ctx *mysql.CreateViewContext) {
 	for _, field := range fields {
 		result = append(result, field.Name)
 	}
+	// the column order of createView is decided by createView statement.
+	// we get columns here only for create temp view.
+	// only for test-case.
+	sort.Slice(result, func(i, j int) bool {
+		return result[i] < result[j]
+	})
 	view.columns = result
 }
 

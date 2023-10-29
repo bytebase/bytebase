@@ -706,6 +706,12 @@ export interface ForeignKeyMetadata {
   matchType: string;
 }
 
+export interface DatabaseConfig {
+  name: string;
+  /** The schema_configs is the list of configs for schemas in a database. */
+  schemaConfigs: SchemaConfig[];
+}
+
 export interface SchemaConfig {
   /**
    * The name is the schema name.
@@ -4822,6 +4828,83 @@ export const ForeignKeyMetadata = {
     message.onDelete = object.onDelete ?? "";
     message.onUpdate = object.onUpdate ?? "";
     message.matchType = object.matchType ?? "";
+    return message;
+  },
+};
+
+function createBaseDatabaseConfig(): DatabaseConfig {
+  return { name: "", schemaConfigs: [] };
+}
+
+export const DatabaseConfig = {
+  encode(message: DatabaseConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    for (const v of message.schemaConfigs) {
+      SchemaConfig.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DatabaseConfig {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDatabaseConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.schemaConfigs.push(SchemaConfig.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DatabaseConfig {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      schemaConfigs: Array.isArray(object?.schemaConfigs)
+        ? object.schemaConfigs.map((e: any) => SchemaConfig.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: DatabaseConfig): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    if (message.schemaConfigs) {
+      obj.schemaConfigs = message.schemaConfigs.map((e) => e ? SchemaConfig.toJSON(e) : undefined);
+    } else {
+      obj.schemaConfigs = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DatabaseConfig>): DatabaseConfig {
+    return DatabaseConfig.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<DatabaseConfig>): DatabaseConfig {
+    const message = createBaseDatabaseConfig();
+    message.name = object.name ?? "";
+    message.schemaConfigs = object.schemaConfigs?.map((e) => SchemaConfig.fromPartial(e)) || [];
     return message;
   },
 };

@@ -264,6 +264,8 @@ message Plan {
       string rollback_from_issue = 2;
     }
     optional RollbackDetail rollback_detail = 6;
+
+    map<string, string> ghost_flags = 7;
   }
 
   message RestoreDatabaseConfig {

@@ -259,7 +259,7 @@ func tidbRestoreFieldType(fieldType *tidbtypes.FieldType) (string, error) {
 		return fieldType.CompactStr(), nil
 	}
 	var buffer strings.Builder
-	flag := tidbformat.RestoreKeyWordLowercase
+	flag := tidbformat.RestoreKeyWordLowercase | tidbformat.RestoreStringSingleQuotes
 	ctx := tidbformat.NewRestoreCtx(flag, &buffer)
 	if err := fieldType.Restore(ctx); err != nil {
 		return "", err
@@ -755,14 +755,7 @@ func (g *tidbDesignSchemaGenerator) Leave(in tidbast.Node) (tidbast.Node, bool) 
 		for _, option := range node.Options {
 			if option.Tp == tidbast.TableOptionComment {
 				commentValue := tableComment(option)
-				if g.currentTable.comment == commentValue {
-					if commentStr, err := tidbRestoreNodeDefault(option.Value); err == nil {
-						if _, err := g.result.WriteString(" " + commentStr); err != nil {
-							g.err = err
-							return in, true
-						}
-					}
-				} else if g.currentTable.comment != "" {
+				if g.currentTable.comment == commentValue && g.currentTable.comment != "" {
 					if _, err := g.result.WriteString(" COMMENT"); err != nil {
 						g.err = err
 						return in, true

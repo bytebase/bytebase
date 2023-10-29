@@ -566,7 +566,10 @@ func (s *DatabaseService) UpdateDatabaseMetadata(ctx context.Context, request *v
 
 	for _, path := range request.UpdateMask.Paths {
 		if path == "schema_configs" {
-			databaseConfig := convertV1DatabaseConfig(databaseName, request.DatabaseMetadata.SchemaConfigs)
+			databaseConfig := convertV1DatabaseConfig(&v1pb.DatabaseConfig{
+				Name:          databaseName,
+				SchemaConfigs: request.DatabaseMetadata.SchemaConfigs,
+			})
 			if err := s.store.UpdateDBSchema(ctx, database.UID, &store.UpdateDBSchemaMessage{Config: databaseConfig}, principalID); err != nil {
 				return nil, err
 			}
@@ -1994,14 +1997,19 @@ func convertDatabaseMetadata(database *store.DatabaseMessage, metadata *storepb.
 		})
 	}
 
-	m.SchemaConfigs = convertDatabaseConfig(config)
+	databaseConfig := convertDatabaseConfig(config)
+	if databaseConfig != nil {
+		m.SchemaConfigs = databaseConfig.SchemaConfigs
+	}
 	return m
 }
 
-func convertDatabaseConfig(config *storepb.DatabaseConfig) []*v1pb.SchemaConfig {
-	var schemaConfigs []*v1pb.SchemaConfig
+func convertDatabaseConfig(config *storepb.DatabaseConfig) *v1pb.DatabaseConfig {
 	if config == nil {
 		return nil
+	}
+	databaseConfig := &v1pb.DatabaseConfig{
+		Name: config.Name,
 	}
 	for _, schema := range config.SchemaConfigs {
 		s := &v1pb.SchemaConfig{
@@ -2010,9 +2018,9 @@ func convertDatabaseConfig(config *storepb.DatabaseConfig) []*v1pb.SchemaConfig 
 		for _, table := range schema.TableConfigs {
 			s.TableConfigs = append(s.TableConfigs, convertTableConfig(table))
 		}
-		schemaConfigs = append(schemaConfigs, s)
+		databaseConfig.SchemaConfigs = append(databaseConfig.SchemaConfigs, s)
 	}
-	return schemaConfigs
+	return databaseConfig
 }
 
 func convertTableConfig(table *storepb.TableConfig) *v1pb.TableConfig {
@@ -2039,11 +2047,15 @@ func convertColumnConfig(column *storepb.ColumnConfig) *v1pb.ColumnConfig {
 	}
 }
 
-func convertV1DatabaseConfig(databaseName string, schemaConfig []*v1pb.SchemaConfig) *storepb.DatabaseConfig {
-	m := &storepb.DatabaseConfig{
-		Name: databaseName,
+func convertV1DatabaseConfig(databaseConfig *v1pb.DatabaseConfig) *storepb.DatabaseConfig {
+	if databaseConfig == nil {
+		return nil
 	}
-	for _, schema := range schemaConfig {
+
+	config := &storepb.DatabaseConfig{
+		Name: databaseConfig.Name,
+	}
+	for _, schema := range databaseConfig.SchemaConfigs {
 		s := &storepb.SchemaConfig{
 			Name: schema.Name,
 		}
@@ -2060,9 +2072,9 @@ func convertV1DatabaseConfig(databaseName string, schemaConfig []*v1pb.SchemaCon
 			}
 			s.TableConfigs = append(s.TableConfigs, t)
 		}
-		m.SchemaConfigs = append(m.SchemaConfigs, s)
+		config.SchemaConfigs = append(config.SchemaConfigs, s)
 	}
-	return m
+	return config
 }
 
 func convertV1TableConfig(table *v1pb.TableConfig) *storepb.TableConfig {

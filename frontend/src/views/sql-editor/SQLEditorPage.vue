@@ -302,13 +302,13 @@ useEmitteryEventListener(
 }
 </style>
 
-<style scoped>
+<style scoped lang="postcss">
 .sqleditor--wrapper {
+  /*
   color: var(--base);
   --base: #444;
-  --font-code: "Source Code Pro", monospace;
-  --color-branding: #4f46e5;
   --border-color: rgba(200, 200, 200, 0.2);
+  */
 
   @apply w-full flex-1 overflow-hidden flex flex-col;
 }

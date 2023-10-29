@@ -184,9 +184,3 @@ const filterByName = (pattern: string, option: SelectOption) => {
 
 watchEffect(prepare);
 </script>
-
-<style lang="postcss" scoped>
-.bb-project-select :deep(.n-base-selection-input:focus) {
-  @apply !ring-0;
-}
-</style>

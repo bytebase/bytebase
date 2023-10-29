@@ -25,9 +25,12 @@
           >
             <template v-if="!state.isEditing">
               <NButton @click="handleEdit">{{ $t("common.edit") }}</NButton>
-              <NButton @click="handleMergeBranch">{{
-                $t("schema-designer.merge-branch")
-              }}</NButton>
+              <NButton
+                :disabled="!ready"
+                :loading="!ready"
+                @click="handleMergeBranch"
+                >{{ $t("schema-designer.merge-branch") }}</NButton
+              >
               <NButton type="primary" @click="handleApplySchemaDesignClick">{{
                 $t("schema-designer.apply-to-database")
               }}</NButton>
@@ -166,7 +169,7 @@ const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const changeHistoryStore = useChangeHistoryStore();
 const schemaDesignStore = useSchemaDesignStore();
-const { schemaDesignList } = useSchemaDesignList();
+const { schemaDesignList, ready } = useSchemaDesignList();
 const { runSQLCheck } = provideSQLCheckContext();
 const dialog = useDialog();
 const state = reactive<LocalState>({
@@ -227,7 +230,7 @@ const titleInputStyle = computed(() => {
     "--n-font-size": "20px",
   };
   const border = state.isEditingTitle
-    ? "1px solid var(--color-control-border)"
+    ? "1px solid rgb(var(--color-control-border))"
     : "none";
   style["--n-border"] = border;
   style["--n-border-disabled"] = border;

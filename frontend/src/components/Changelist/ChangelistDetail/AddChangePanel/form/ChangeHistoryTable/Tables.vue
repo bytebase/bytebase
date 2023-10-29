@@ -10,8 +10,10 @@
 import { computed } from "vue";
 import TextOverflowPopover from "@/components/misc/TextOverflowPopover.vue";
 import { ChangeHistory } from "@/types/proto/v1/database_service";
-import { getAffectedTablesOfChangeHistory } from "@/utils";
-import { getAffectedTableDisplayName } from "../utils";
+import {
+  getAffectedTableDisplayName,
+  getAffectedTablesOfChangeHistory,
+} from "@/utils";
 
 const props = defineProps<{
   changeHistory: ChangeHistory;
