@@ -400,7 +400,6 @@
     "deploy": "Auto Hospedaje",
     "cloud": "Cloud",
     "request-demo": "Reserve una presentación de producto de 30 minutos con nuestro experto en productos",
-    "debug": "El modo de depuración está activo, puede desactivar el modo de depuración a través del menú desplegable del perfil en la parte superior derecha.",
     "readonly": "Bytebase está en modo de solo lectura. Todavía puede ver la consola, pero cualquier intento de cambio fallará.",
     "external-url": "Bytebase no ha configurado --external-url",
     "configure-now": "Configurar ahora"
