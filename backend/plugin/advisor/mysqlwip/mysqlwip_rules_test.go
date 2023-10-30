@@ -33,6 +33,8 @@ func TestMySQLWIPRules(t *testing.T) {
 		advisor.SchemaRuleStatementNoLeadingWildcardLike,
 		// advisor.SchemaRuleStatementDisallowCommit disallow using commit in the issue.
 		advisor.SchemaRuleStatementDisallowCommit,
+		// advisor.SchemaRuleStatementDisallowLimit disallow the LIMIT clause in INSERT, DELETE and UPDATE statements.
+		advisor.SchemaRuleStatementDisallowLimit,
 
 		// advisor.SchemaRuleStatementInsertRowLimit enforce the insert row limit.
 		advisor.SchemaRuleStatementInsertRowLimit,
