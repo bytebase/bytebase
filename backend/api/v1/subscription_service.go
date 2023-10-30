@@ -76,8 +76,12 @@ func (s *SubscriptionService) UpdateSubscription(ctx context.Context, request *v
 		}
 	}
 
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	if err := s.licenseService.StoreLicense(ctx, &enterpriseAPI.SubscriptionPatch{
-		UpdaterID: ctx.Value(common.PrincipalIDContextKey).(int),
+		UpdaterID: principalID,
 		License:   request.Patch.License,
 	}); err != nil {
 		if common.ErrorCode(err) == common.Invalid {
@@ -133,7 +137,10 @@ func (s *SubscriptionService) TrialSubscription(ctx context.Context, request *v1
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	_, created, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:  api.SettingEnterpriseTrial,
 		Value: string(value),

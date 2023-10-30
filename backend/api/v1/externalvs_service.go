@@ -54,7 +54,11 @@ func (s *ExternalVersionControlService) CreateExternalVersionControl(ctx context
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	storeExternalVersionControl, err := s.store.CreateExternalVersionControlV2(ctx, ctx.Value(common.PrincipalIDContextKey).(int), externalVersionControl)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+	storeExternalVersionControl, err := s.store.CreateExternalVersionControlV2(ctx, principalID, externalVersionControl)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to create external version control: %v", err)
 	}
@@ -100,7 +104,11 @@ func (s *ExternalVersionControlService) UpdateExternalVersionControl(ctx context
 		}
 	}
 
-	externalVersionControl, err = s.store.UpdateExternalVersionControlV2(ctx, ctx.Value(common.PrincipalIDContextKey).(int), externalVersionControlUID, update)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+	externalVersionControl, err = s.store.UpdateExternalVersionControlV2(ctx, principalID, externalVersionControlUID, update)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
