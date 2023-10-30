@@ -35,9 +35,8 @@ func getConfigBytes(config *storepb.IdentityProviderConfig) ([]byte, error) {
 	} else if v := config.GetLdapConfig(); v != nil {
 		configBytes, err := protojson.Marshal(v)
 		return configBytes, err
-	} else {
-		return nil, errors.Errorf("unexpected provider type")
 	}
+	return nil, errors.Errorf("unexpected provider type")
 }
 
 // FindIdentityProviderMessage is the message for finding identity providers.
@@ -115,7 +114,9 @@ func (s *Store) CreateIdentityProvider(ctx context.Context, create *IdentityProv
 func (s *Store) GetIdentityProvider(ctx context.Context, find *FindIdentityProviderMessage) (*IdentityProviderMessage, error) {
 	if find.ResourceID != nil {
 		if identityProvider, ok := s.idpCache.Load(*find.ResourceID); ok {
-			return identityProvider.(*IdentityProviderMessage), nil
+			if v, ok := identityProvider.(*IdentityProviderMessage); ok {
+				return v, nil
+			}
 		}
 	}
 	// We will always return the resource regardless of its deleted state.

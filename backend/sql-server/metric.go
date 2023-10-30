@@ -8,7 +8,7 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/bytebase/bytebase/backend/common/log"
-	metricAPI "github.com/bytebase/bytebase/backend/metric"
+	metricapi "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 )
 
@@ -25,7 +25,7 @@ func (m *metricReporter) Report(metric *metric.Metric) {
 	if err := m.reporter.Report(m.workspaceID, metric); err != nil {
 		slog.Error(
 			"Failed to report metric",
-			slog.String("metric", string(metricAPI.OpenAPIMetricName)),
+			slog.String("metric", string(metricapi.OpenAPIMetricName)),
 			log.BBError(err),
 		)
 	}
@@ -42,7 +42,7 @@ func metricMiddleware(s *Server, next echo.HandlerFunc) echo.HandlerFunc {
 			responseCode := c.Response().Status
 
 			s.metricReporter.Report(&metric.Metric{
-				Name:  metricAPI.OpenAPIMetricName,
+				Name:  metricapi.OpenAPIMetricName,
 				Value: 1,
 				Labels: map[string]any{
 					"latency_ns":     strconv.FormatInt(duration.Nanoseconds(), 10),

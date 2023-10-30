@@ -73,12 +73,16 @@ type FindDatabaseMessage struct {
 func (s *Store) GetDatabaseV2(ctx context.Context, find *FindDatabaseMessage) (*DatabaseMessage, error) {
 	if find.InstanceID != nil && find.DatabaseName != nil {
 		if database, ok := s.databaseCache.Load(getDatabaseCacheKey(*find.InstanceID, *find.DatabaseName)); ok {
-			return database.(*DatabaseMessage), nil
+			if db, ok := database.(*DatabaseMessage); ok {
+				return db, nil
+			}
 		}
 	}
 	if find.UID != nil {
 		if database, ok := s.databaseIDCache.Load(*find.UID); ok {
-			return database.(*DatabaseMessage), nil
+			if v, ok := database.(*DatabaseMessage); ok {
+				return v, nil
+			}
 		}
 	}
 

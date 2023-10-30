@@ -206,17 +206,6 @@ func (checker *namingUKConventionChecker) EnterCreateIndex(ctx *mysql.CreateInde
 
 func (checker *namingUKConventionChecker) handleIndexList(indexDataList []*indexMetaData) {
 	for _, indexData := range indexDataList {
-		// if indexName is not set explicitly. we throw an error.
-		if indexData.indexName == "" {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
-				Status:  checker.level,
-				Title:   checker.title,
-				Code:    advisor.NamingUKNameEmpty,
-				Content: fmt.Sprintf("Unique key in table `%s` should be set a name explicitly", indexData.tableName),
-				Line:    indexData.line,
-			})
-			continue
-		}
 		regex, err := getTemplateRegexp(checker.format, checker.templateList, indexData.metaData)
 		if err != nil {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{

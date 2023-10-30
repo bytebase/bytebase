@@ -77,19 +77,19 @@ export const supportedEngineV1List = () => {
   const engines: Engine[] = [
     Engine.MYSQL,
     Engine.POSTGRES,
-    Engine.TIDB,
+    Engine.ORACLE,
+    Engine.MSSQL,
     Engine.SNOWFLAKE,
     Engine.CLICKHOUSE,
     Engine.MONGODB,
     Engine.REDIS,
-    Engine.SPANNER,
-    Engine.ORACLE,
+    Engine.TIDB,
     Engine.OCEANBASE,
-    Engine.MARIADB,
-    Engine.MSSQL,
-    Engine.REDSHIFT,
-    Engine.RISINGWAVE,
     Engine.OCEANBASE_ORACLE,
+    Engine.SPANNER,
+    Engine.REDSHIFT,
+    Engine.MARIADB,
+    Engine.RISINGWAVE,
   ];
   if (locale.value === "zh-CN") {
     engines.push(Engine.DM);

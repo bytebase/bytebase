@@ -473,9 +473,10 @@ func convertToTaskRun(stateCfg *state.State, taskRun *store.TaskRunMessage) *v1p
 	}
 
 	if v, ok := stateCfg.TaskRunExecutionStatuses.Load(taskRun.ID); ok {
-		s := v.(state.TaskRunExecutionStatus)
-		t.ExecutionStatus = s.ExecutionStatus
-		t.ExecutionStatusUpdateTime = timestamppb.New(s.UpdateTime)
+		if s, ok := v.(state.TaskRunExecutionStatus); ok {
+			t.ExecutionStatus = s.ExecutionStatus
+			t.ExecutionStatusUpdateTime = timestamppb.New(s.UpdateTime)
+		}
 	}
 
 	return t

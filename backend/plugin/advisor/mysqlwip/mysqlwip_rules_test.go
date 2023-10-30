@@ -22,9 +22,13 @@ func TestMySQLWIPRules(t *testing.T) {
 		advisor.SchemaRuleFKNaming,
 		// advisor.SchemaRuleIDXNaming enforce the index name format.
 		advisor.SchemaRuleIDXNaming,
+		// advisor.SchemaRuleAutoIncrementColumnNaming enforce the auto_increment column name format.
+		advisor.SchemaRuleAutoIncrementColumnNaming,
 
 		// advisor.SchemaRuleStatementNoSelectAll disallow 'SELECT *'.
 		advisor.SchemaRuleStatementNoSelectAll,
+		// advisor.SchemaRuleStatementRequireWhere require 'WHERE' clause.
+		advisor.SchemaRuleStatementRequireWhere,
 		// advisor.SchemaRuleStatementNoLeadingWildcardLike disallow leading '%' in LIKE, e.g. LIKE foo = '%x' is not allowed.
 		advisor.SchemaRuleStatementNoLeadingWildcardLike,
 
