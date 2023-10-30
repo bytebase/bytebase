@@ -34,12 +34,6 @@ const (
 	SheetFromBytebase SheetSource = "BYTEBASE"
 	// SheetFromBytebaseArtifact is the artifact sheet.
 	SheetFromBytebaseArtifact SheetSource = "BYTEBASE_ARTIFACT"
-	// SheetFromGitLab is the sheet synced from GitLab (for both GitLab.com and self-hosted GitLab).
-	SheetFromGitLab SheetSource = "GITLAB"
-	// SheetFromGitHub is the sheet synced from GitHub (for both GitHub.com and GitHub Enterprise).
-	SheetFromGitHub SheetSource = "GITHUB"
-	// SheetFromBitbucket is the sheet synced from Bitbucket.
-	SheetFromBitbucket SheetSource = "BITBUCKET"
 )
 
 // SheetType is the type of sheet.
@@ -136,7 +130,9 @@ type PatchSheetMessage struct {
 // GetSheetStatementByID gets the statement of a sheet by ID.
 func (s *Store) GetSheetStatementByID(ctx context.Context, id int) (string, error) {
 	if statement, ok := s.sheetStatementCache.Get(id); ok {
-		return statement.(string), nil
+		if v, ok := statement.(string); ok {
+			return v, nil
+		}
 	}
 
 	sheets, err := s.ListSheets(ctx, &FindSheetMessage{UID: &id, LoadFull: true}, SystemBotID)

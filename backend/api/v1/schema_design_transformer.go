@@ -14,7 +14,7 @@ import (
 
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
-	pgSchemaEngine "github.com/bytebase/bytebase/backend/plugin/schema-engine/pg"
+	pgse "github.com/bytebase/bytebase/backend/plugin/schema-engine/pg"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -25,7 +25,7 @@ func transformDatabaseMetadataToSchemaString(engine v1pb.Engine, database *v1pb.
 	case v1pb.Engine_TIDB:
 		return getTiDBDesignSchema("", database)
 	case v1pb.Engine_POSTGRES:
-		return pgSchemaEngine.GetDesignSchema("", database)
+		return pgse.GetDesignSchema("", database)
 	default:
 		return "", status.Errorf(codes.InvalidArgument, fmt.Sprintf("unsupported engine: %v", engine))
 	}
@@ -37,7 +37,7 @@ func transformSchemaStringToDatabaseMetadata(engine v1pb.Engine, schema string) 
 		case v1pb.Engine_MYSQL:
 			return parseMySQLSchemaStringToDatabaseMetadata(schema)
 		case v1pb.Engine_POSTGRES:
-			return pgSchemaEngine.ParseToMetadata(schema)
+			return pgse.ParseToMetadata(schema)
 		case v1pb.Engine_TIDB:
 			return parseTiDBSchemaStringToDatabaseMetadata(schema)
 		default:
@@ -799,7 +799,7 @@ func getDesignSchema(engine v1pb.Engine, baselineSchema string, to *v1pb.Databas
 		}
 		return result, nil
 	case v1pb.Engine_POSTGRES:
-		result, err := pgSchemaEngine.GetDesignSchema(baselineSchema, to)
+		result, err := pgse.GetDesignSchema(baselineSchema, to)
 		if err != nil {
 			return "", status.Errorf(codes.Internal, "failed to generate postgres design schema: %v", err)
 		}

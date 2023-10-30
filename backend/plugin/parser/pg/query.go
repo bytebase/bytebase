@@ -9,6 +9,7 @@ import (
 
 	pgquery "github.com/pganalyze/pg_query_go/v4"
 	pgparser "github.com/pganalyze/pg_query_go/v4/parser"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -123,7 +124,10 @@ func ExtractResourceList(currentDatabase string, currentSchema string, sql strin
 	}
 
 	resourceMap := make(map[string]base.SchemaResource)
-	list := extractRangeVarFromJSON(currentDatabase, currentSchema, jsonData)
+	list, err := extractRangeVarFromJSON(currentDatabase, currentSchema, jsonData)
+	if err != nil {
+		return nil, err
+	}
 	for _, resource := range list {
 		resourceMap[resource.String()] = resource
 	}
@@ -137,19 +141,30 @@ func ExtractResourceList(currentDatabase string, currentSchema string, sql strin
 	return list, nil
 }
 
-func extractRangeVarFromJSON(currentDatabase string, currentSchema string, jsonData map[string]any) []base.SchemaResource {
+func extractRangeVarFromJSON(currentDatabase string, currentSchema string, jsonData map[string]any) ([]base.SchemaResource, error) {
 	var result []base.SchemaResource
 	if jsonData["RangeVar"] != nil {
 		resource := base.SchemaResource{
 			Database: currentDatabase,
 			Schema:   currentSchema,
 		}
-		rangeVar := jsonData["RangeVar"].(map[string]any)
+		rangeVar, ok := jsonData["RangeVar"].(map[string]any)
+		if !ok {
+			return nil, errors.Errorf("failed to convert range var")
+		}
 		if rangeVar["schemaname"] != nil {
-			resource.Schema = rangeVar["schemaname"].(string)
+			schema, ok := rangeVar["schemaname"].(string)
+			if !ok {
+				return nil, errors.Errorf("failed to convert schemaname")
+			}
+			resource.Schema = schema
 		}
 		if rangeVar["relname"] != nil {
-			resource.Table = rangeVar["relname"].(string)
+			table, ok := rangeVar["relname"].(string)
+			if !ok {
+				return nil, errors.Errorf("failed to convert relname")
+			}
+			resource.Table = table
 		}
 		result = append(result, resource)
 	}
@@ -157,17 +172,25 @@ func extractRangeVarFromJSON(currentDatabase string, currentSchema string, jsonD
 	for _, value := range jsonData {
 		switch v := value.(type) {
 		case map[string]any:
-			result = append(result, extractRangeVarFromJSON(currentDatabase, currentSchema, v)...)
+			resources, err := extractRangeVarFromJSON(currentDatabase, currentSchema, v)
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, resources...)
 		case []any:
 			for _, item := range v {
 				if m, ok := item.(map[string]any); ok {
-					result = append(result, extractRangeVarFromJSON(currentDatabase, currentSchema, m)...)
+					resources, err := extractRangeVarFromJSON(currentDatabase, currentSchema, m)
+					if err != nil {
+						return nil, err
+					}
+					result = append(result, resources...)
 				}
 			}
 		}
 	}
 
-	return result
+	return result, nil
 }
 
 func convertToSyntaxError(statement string, err error) *base.SyntaxError {

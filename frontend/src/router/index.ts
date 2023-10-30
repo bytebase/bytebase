@@ -44,18 +44,14 @@ import {
 } from "@/store";
 import {
   DEFAULT_PROJECT_ID,
-  DEFAULT_PROJECT_V1_NAME,
   QuickActionType,
   unknownUser,
   UNKNOWN_ID,
 } from "@/types";
-import { State } from "@/types/proto/v1/common";
 import {
-  hasPermissionInProjectV1,
   hasWorkspacePermissionV1,
   idFromSlug,
   sheetNameFromSlug,
-  isOwnerOfProjectV1,
   uidFromSlug,
 } from "@/utils";
 import DashboardSidebar from "@/views/DashboardSidebar.vue";
@@ -286,7 +282,7 @@ const routes: Array<RouteRecordRaw> = [
             props: { content: true, leftSidebar: true },
           },
           {
-            path: "/projects/:projectName/branches/:branchName",
+            path: "/project/:projectSlug/branches/:branchName",
             name: "workspace.branch.detail",
             meta: {
               allowBookmark: true,
@@ -294,9 +290,9 @@ const routes: Array<RouteRecordRaw> = [
             },
             components: {
               content: () => import("../views/branch/BranchDetail.vue"),
-              leftSidebar: DashboardSidebar,
+              leftSidebar: ProjectSidebar,
             },
-            props: { content: false },
+            props: { content: true },
           },
           {
             path: "sync-schema",
@@ -706,77 +702,6 @@ const routes: Array<RouteRecordRaw> = [
             components: {
               content: () => import("../layouts/ProjectLayout.vue"),
               leftSidebar: ProjectSidebar,
-            },
-            meta: {
-              quickActionListByRole: (route) => {
-                const slug = route.params.projectSlug as string;
-                const project = useProjectV1Store().getProjectByUID(
-                  String(idFromSlug(slug))
-                );
-
-                if (project.state === State.ACTIVE) {
-                  const DBA_AND_OWNER_QUICK_ACTION_LIST: QuickActionType[] = [
-                    "quickaction.bb.database.schema.update",
-                    "quickaction.bb.database.data.update",
-                    "quickaction.bb.database.create",
-                    "quickaction.bb.project.database.transfer",
-                    "quickaction.bb.project.database.transfer-out",
-                  ];
-                  const DEVELOPER_QUICK_ACTION_LIST: QuickActionType[] = [];
-
-                  const currentUserV1 = useCurrentUserV1();
-                  if (
-                    project.name !== DEFAULT_PROJECT_V1_NAME &&
-                    hasPermissionInProjectV1(
-                      project.iamPolicy,
-                      currentUserV1.value,
-                      "bb.permission.project.change-database"
-                    )
-                  ) {
-                    // Default project (Unassigned databases) are not allowed
-                    // to be changed.
-                    DEVELOPER_QUICK_ACTION_LIST.push(
-                      "quickaction.bb.database.schema.update",
-                      "quickaction.bb.database.data.update",
-                      "quickaction.bb.database.create"
-                    );
-                  }
-                  if (
-                    hasPermissionInProjectV1(
-                      project.iamPolicy,
-                      currentUserV1.value,
-                      "bb.permission.project.transfer-database"
-                    )
-                  ) {
-                    DEVELOPER_QUICK_ACTION_LIST.push(
-                      "quickaction.bb.project.database.transfer",
-                      "quickaction.bb.project.database.transfer-out"
-                    );
-                  }
-                  if (
-                    !isOwnerOfProjectV1(project.iamPolicy, currentUserV1.value)
-                  ) {
-                    DEVELOPER_QUICK_ACTION_LIST.push(
-                      "quickaction.bb.issue.grant.request.querier",
-                      "quickaction.bb.issue.grant.request.exporter"
-                    );
-                  }
-
-                  if (hasFeature("bb.feature.dba-workflow")) {
-                    pull(
-                      DEVELOPER_QUICK_ACTION_LIST,
-                      "quickaction.bb.database.create"
-                    );
-                  }
-
-                  return new Map([
-                    ["OWNER", DBA_AND_OWNER_QUICK_ACTION_LIST],
-                    ["DBA", DBA_AND_OWNER_QUICK_ACTION_LIST],
-                    ["DEVELOPER", DEVELOPER_QUICK_ACTION_LIST],
-                  ]);
-                }
-                return new Map();
-              },
             },
             props: { content: true },
             children: [
@@ -1306,7 +1231,6 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.branch.dashboard" ||
     to.name === "workspace.environment" ||
     to.name === "sql-editor.home" ||
-    to.name?.toString().startsWith("workspace.database-group") ||
     to.name?.toString().startsWith("sheets") ||
     (to.name?.toString().startsWith("setting") &&
       to.name?.toString() != "setting.workspace.gitops.detail" &&
@@ -1399,7 +1323,7 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  if (projectSlug) {
+  if (projectSlug && projectSlug !== "-") {
     projectV1Store
       .fetchProjectByUID(String(idFromSlug(projectSlug)))
       .then((project) => {
@@ -1440,6 +1364,31 @@ router.beforeEach((to, from, next) => {
               });
               throw error;
             });
+        } else if (
+          to.name === "workspace.branch.detail" &&
+          to.params.branchName !== "new"
+        ) {
+          const name = `${project.name}/schemaDesigns/${to.params.branchName}`;
+          useSchemaDesignStore()
+            .fetchSchemaDesignByName(name, false /* !useCache */)
+            .then((branch) => {
+              if (branch) {
+                next();
+              } else {
+                next({
+                  name: "error.404",
+                  replace: false,
+                });
+                throw new Error("not found");
+              }
+            })
+            .catch((error) => {
+              next({
+                name: "error.404",
+                replace: false,
+              });
+              throw error;
+            });
         } else {
           next();
         }
@@ -1466,30 +1415,6 @@ router.beforeEach((to, from, next) => {
       next();
       return;
     }
-
-    // Prepare the data for the branch detail page.
-    const name = `projects/${to.params.projectName}/schemaDesigns/${to.params.branchName}`;
-    useSchemaDesignStore()
-      .fetchSchemaDesignByName(name, false /* !useCache */)
-      .then((branch) => {
-        if (branch) {
-          next();
-        } else {
-          next({
-            name: "error.404",
-            replace: false,
-          });
-          throw new Error("not found");
-        }
-      })
-      .catch((error) => {
-        next({
-          name: "error.404",
-          replace: false,
-        });
-        throw error;
-      });
-    return;
   }
 
   if (databaseSlug) {

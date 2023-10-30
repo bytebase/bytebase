@@ -4,7 +4,7 @@ import (
 	"context"
 	"strconv"
 
-	metricAPI "github.com/bytebase/bytebase/backend/metric"
+	metricapi "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -44,7 +44,7 @@ func (c *databaseCountCollector) Collect(ctx context.Context) ([]*metric.Metric,
 			labels["backup_enabled"] = strconv.FormatBool(*v)
 		}
 		res = append(res, &metric.Metric{
-			Name:   metricAPI.DatabaseCountMetricName,
+			Name:   metricapi.DatabaseCountMetricName,
 			Value:  databaseCountMetric.Count,
 			Labels: labels,
 		})

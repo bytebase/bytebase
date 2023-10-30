@@ -28,12 +28,16 @@ func NewBookmarkService(store *store.Store) *BookmarkService {
 
 // CreateBookmark creates a new bookmark.
 func (s *BookmarkService) CreateBookmark(ctx context.Context, request *v1pb.CreateBookmarkRequest) (*v1pb.Bookmark, error) {
-	currentPincipalUID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+
 	if request.Bookmark == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Missing bookmark")
 	}
 
-	bookmark, err := s.store.CreateBookmarkV2(ctx, convertToStoreBookmark(request.Bookmark), currentPincipalUID)
+	bookmark, err := s.store.CreateBookmarkV2(ctx, convertToStoreBookmark(request.Bookmark), principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to create bookmark: %v", err)
 	}
@@ -43,8 +47,11 @@ func (s *BookmarkService) CreateBookmark(ctx context.Context, request *v1pb.Crea
 
 // ListBookmarks lists bookmarks.
 func (s *BookmarkService) ListBookmarks(ctx context.Context, _ *v1pb.ListBookmarksRequest) (*v1pb.ListBookmarksResponse, error) {
-	currentPincipalUID := ctx.Value(common.PrincipalIDContextKey).(int)
-	bookmarkList, err := s.store.ListBookmarkV2(ctx, currentPincipalUID)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+	bookmarkList, err := s.store.ListBookmarkV2(ctx, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to list bookmarks: %v", err)
 	}
@@ -61,7 +68,11 @@ func (s *BookmarkService) ListBookmarks(ctx context.Context, _ *v1pb.ListBookmar
 
 // DeleteBookmark deletes a bookmark.
 func (s *BookmarkService) DeleteBookmark(ctx context.Context, request *v1pb.DeleteBookmarkRequest) (*emptypb.Empty, error) {
-	currentPincipalUID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+
 	bookmarkUID, err := common.GetBookmarkID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid book mark name: %v", err)
@@ -69,7 +80,7 @@ func (s *BookmarkService) DeleteBookmark(ctx context.Context, request *v1pb.Dele
 
 	if err := s.store.DeleteBookmarkV2(ctx, &store.DeleteBookmarkMessage{
 		UID:        bookmarkUID,
-		CreatorUID: currentPincipalUID,
+		CreatorUID: principalID,
 	}); err != nil {
 		if common.ErrorCode(err) == common.NotFound {
 			return nil, status.Errorf(codes.NotFound, "Bookmark not found: %v", err)

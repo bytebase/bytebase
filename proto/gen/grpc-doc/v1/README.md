@@ -603,7 +603,6 @@
     - [Sheet](#bytebase-v1-Sheet)
     - [SheetOrganizer](#bytebase-v1-SheetOrganizer)
     - [SheetPayload](#bytebase-v1-SheetPayload)
-    - [SyncSheetsRequest](#bytebase-v1-SyncSheetsRequest)
     - [UpdateSheetOrganizerRequest](#bytebase-v1-UpdateSheetOrganizerRequest)
     - [UpdateSheetRequest](#bytebase-v1-UpdateSheetRequest)
   
@@ -9646,23 +9645,6 @@ When paginating, all other parameters provided to `SearchSheets` must match the 
 
 
 
-<a name="bytebase-v1-SyncSheetsRequest"></a>
-
-### SyncSheetsRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The name of the project to sync sheets.
-
-Format: projects/{project} |
-
-
-
-
-
-
 <a name="bytebase-v1-UpdateSheetOrganizerRequest"></a>
 
 ### UpdateSheetOrganizerRequest
@@ -9709,11 +9691,8 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | SOURCE_UNSPECIFIED | 0 |  |
-| SOURCE_BYTEBASE | 1 | BYTEBASE is the sheet created by Bytebase. e.g. SQL Editor. |
-| SOURCE_BYTEBASE_ARTIFACT | 2 | BYTEBASE_ARTIFACT is the artifact sheet. |
-| SOURCE_GITLAB | 3 | GITLAB is the sheet synced from GitLab (for both GitLab.com and self-hosted GitLab). |
-| SOURCE_GITHUB | 4 | GITHUB is the sheet synced from GitHub (for both GitHub.com and GitHub Enterprise). |
-| SOURCE_BITBUCKET | 5 | BITBUCKET is the sheet synced from Bitbucket (for both Bitbucket.org and Bitbucket Server). |
+| SOURCE_BYTEBASE | 1 | BYTEBASE is the sheet created in SQL Editor. |
+| SOURCE_BYTEBASE_ARTIFACT | 2 | BYTEBASE_ARTIFACT is the artifact sheet such as DDL/DML. |
 
 
 
@@ -9772,7 +9751,6 @@ Type of the SheetPayload.
 | UpdateSheet | [UpdateSheetRequest](#bytebase-v1-UpdateSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
 | UpdateSheetOrganizer | [UpdateSheetOrganizerRequest](#bytebase-v1-UpdateSheetOrganizerRequest) | [SheetOrganizer](#bytebase-v1-SheetOrganizer) |  |
 | DeleteSheet | [DeleteSheetRequest](#bytebase-v1-DeleteSheetRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| SyncSheets | [SyncSheetsRequest](#bytebase-v1-SyncSheetsRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
  
 

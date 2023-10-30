@@ -20,10 +20,15 @@ import { useSheetV1Store } from "./sheet";
 export const useChangelistStore = defineStore("changelist", () => {
   const changelistMapByName = reactive(new Map<string, Changelist>());
 
-  const upsertChangelistMap = async (changelists: Changelist[]) => {
+  const upsertChangelistMap = async (
+    changelists: Changelist[],
+    compose: boolean
+  ) => {
     for (let i = 0; i < changelists.length; i++) {
       const changelist = changelists[i];
-      await composeChangelist(changelist);
+      if (compose) {
+        await composeChangelist(changelist);
+      }
       changelistMapByName.set(changelist.name, changelist);
     }
   };
@@ -37,7 +42,7 @@ export const useChangelistStore = defineStore("changelist", () => {
       { name },
       { silent }
     );
-    await upsertChangelistMap([changelist]);
+    await upsertChangelistMap([changelist], true /* compose */);
     return changelist;
   };
 
@@ -52,7 +57,7 @@ export const useChangelistStore = defineStore("changelist", () => {
 
   const createChangelist = async (request: CreateChangelistRequest) => {
     const created = await changelistServiceClient.createChangelist(request);
-    await upsertChangelistMap([created]);
+    await upsertChangelistMap([created], true /* compose */);
     return created;
   };
 
@@ -60,7 +65,7 @@ export const useChangelistStore = defineStore("changelist", () => {
     request: DeepPartial<ListChangelistsRequest>
   ) => {
     const response = await changelistServiceClient.listChangelists(request);
-    await upsertChangelistMap(response.changelists);
+    await upsertChangelistMap(response.changelists, false /* !compose */);
     return response;
   };
 
@@ -72,7 +77,7 @@ export const useChangelistStore = defineStore("changelist", () => {
       changelist,
       updateMask,
     });
-    await upsertChangelistMap([updated]);
+    await upsertChangelistMap([updated], true /* compose */);
     return updated;
   };
 
