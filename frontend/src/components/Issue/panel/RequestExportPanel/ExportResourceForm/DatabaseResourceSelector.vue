@@ -14,6 +14,7 @@
 </template>
 
 <script setup lang="ts">
+import { orderBy } from "lodash-es";
 import {
   NTransfer,
   TransferRenderSourceList,
@@ -101,7 +102,16 @@ onMounted(async () => {
 
 const databaseList = computed(() => {
   const project = useProjectV1Store().getProjectByUID(props.projectId);
-  const list = databaseStore.databaseListByProject(project.name);
+  const list = orderBy(
+    databaseStore.databaseListByProject(project.name),
+    [
+      (db) => db.effectiveEnvironmentEntity.order,
+      (db) => db.effectiveEnvironmentEntity.title,
+      (db) => db.databaseName,
+      (db) => db.instanceEntity.title,
+    ],
+    ["desc", "asc", "asc", "asc"]
+  );
   return props.databaseId
     ? list.filter((item) => item.uid === props.databaseId)
     : list;
@@ -124,6 +134,7 @@ const renderSourceList: TransferRenderSourceList = ({ onCheck, pattern }) => {
     virtualScroll: true,
     data: sourceTreeOptions.value,
     defaultExpandAll: true,
+    blockLine: true,
     renderLabel: ({ option }: { option: TreeOption }) => {
       return h(Label, {
         option: option as DatabaseTreeOption,
@@ -152,6 +163,7 @@ const renderTargetList: TransferRenderSourceList = ({ onCheck }) => {
     virtualScroll: true,
     defaultExpandAll: true,
     data: targetTreeOptions.value,
+    blockLine: true,
     renderLabel: ({ option }: { option: TreeOption }) => {
       return h(Label, {
         option: option as DatabaseTreeOption,
