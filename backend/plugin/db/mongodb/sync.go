@@ -182,7 +182,10 @@ func getIndexes(ctx context.Context, collection *mongo.Collection) ([]*storepb.I
 		if !ok {
 			return nil, errors.New("cannot get index name from index info")
 		}
-		indexName := name.(string)
+		indexName, ok := name.(string)
+		if !ok {
+			return nil, errors.New("cannot cinvert index name to string")
+		}
 		key, ok := indexInfo["key"]
 		if !ok {
 			return nil, errors.New("cannot get index key from index info")
@@ -193,7 +196,10 @@ func getIndexes(ctx context.Context, collection *mongo.Collection) ([]*storepb.I
 		}
 		unique := false
 		if u, ok := indexInfo["unique"]; ok {
-			unique = u.(bool)
+			unique, ok = u.(bool)
+			if !ok {
+				return nil, errors.New("cannot convert unique to bool")
+			}
 		}
 
 		if _, ok := indexMap[indexName]; !ok {
@@ -229,7 +235,11 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 	if !ok {
 		return "", errors.New("cannot get version from buildInfo command result")
 	}
-	return version.(string), nil
+	v, ok := version.(string)
+	if !ok {
+		return "", errors.New("cannot convert version to string")
+	}
+	return v, nil
 }
 
 // isDatabaseExist returns true if the database exists.

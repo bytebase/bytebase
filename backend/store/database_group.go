@@ -101,12 +101,16 @@ func (s *Store) ListDatabaseGroups(ctx context.Context, find *FindDatabaseGroupM
 func (s *Store) GetDatabaseGroup(ctx context.Context, find *FindDatabaseGroupMessage) (*DatabaseGroupMessage, error) {
 	if find.ProjectUID != nil && find.ResourceID != nil && find.UID == nil {
 		if databaseGroup, ok := s.databaseGroupCache.Load(getDatabaseGroupCacheKey(*find.ProjectUID, *find.ResourceID)); ok {
-			return databaseGroup.(*DatabaseGroupMessage), nil
+			if v, ok := databaseGroup.(*DatabaseGroupMessage); ok {
+				return v, nil
+			}
 		}
 	}
 	if find.UID != nil && find.ProjectUID == nil && find.ResourceID == nil {
 		if databaseGroup, ok := s.databaseGroupIDCache.Load(*find.UID); ok {
-			return databaseGroup.(*DatabaseGroupMessage), nil
+			if v, ok := databaseGroup.(*DatabaseGroupMessage); ok {
+				return v, nil
+			}
 		}
 	}
 
@@ -398,7 +402,9 @@ func (s *Store) ListSchemaGroups(ctx context.Context, find *FindSchemaGroupMessa
 func (s *Store) GetSchemaGroup(ctx context.Context, find *FindSchemaGroupMessage) (*SchemaGroupMessage, error) {
 	if find.DatabaseGroupUID != nil && find.ResourceID != nil {
 		if schemaGroup, ok := s.schemaGroupCache.Load(getSchemaGroupCacheKey(*find.DatabaseGroupUID, *find.ResourceID)); ok {
-			return schemaGroup.(*SchemaGroupMessage), nil
+			if v, ok := schemaGroup.(*SchemaGroupMessage); ok {
+				return v, nil
+			}
 		}
 	}
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})

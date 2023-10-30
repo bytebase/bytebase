@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	metricAPI "github.com/bytebase/bytebase/backend/metric"
+	metricapi "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -33,7 +33,7 @@ func (c *policyCountCollector) Collect(ctx context.Context) ([]*metric.Metric, e
 		return nil, err
 	}
 
-	policyCountMap := make(map[string]*metricAPI.PolicyCountMetric)
+	policyCountMap := make(map[string]*metricapi.PolicyCountMetric)
 
 	for _, policy := range policies {
 		var key string
@@ -80,7 +80,7 @@ func (c *policyCountCollector) Collect(ctx context.Context) ([]*metric.Metric, e
 		}
 
 		if _, ok := policyCountMap[key]; !ok {
-			policyCountMap[key] = &metricAPI.PolicyCountMetric{
+			policyCountMap[key] = &metricapi.PolicyCountMetric{
 				Type:            policy.Type,
 				Value:           value,
 				EnvironmentName: environment.Title,
@@ -93,7 +93,7 @@ func (c *policyCountCollector) Collect(ctx context.Context) ([]*metric.Metric, e
 
 	for _, policyCountMetric := range policyCountMap {
 		res = append(res, &metric.Metric{
-			Name:  metricAPI.PolicyCountMetricName,
+			Name:  metricapi.PolicyCountMetricName,
 			Value: policyCountMetric.Count,
 			Labels: map[string]any{
 				"type":        string(policyCountMetric.Type),

@@ -153,7 +153,9 @@ func (s *Store) GetDBSchema(ctx context.Context, databaseID int) (*DBSchema, err
 	})
 	if s.dbSchemaCache.MaxCost() != 1_000_000 || instanceCount <= 10 {
 		if dbSchema, ok := s.dbSchemaCache.Get(databaseID); ok {
-			return dbSchema.(*DBSchema), nil
+			if v, ok := dbSchema.(*DBSchema); ok {
+				return v, nil
+			}
 		}
 	}
 

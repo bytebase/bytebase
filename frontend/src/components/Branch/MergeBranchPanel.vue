@@ -96,7 +96,10 @@ import { useI18n } from "vue-i18n";
 import DiffEditor from "@/components/MonacoEditor/DiffEditor.vue";
 import { pushNotification, useSheetV1Store } from "@/store";
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
-import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
+import {
+  getProjectAndSchemaDesignSheetId,
+  projectNamePrefix,
+} from "@/store/modules/v1/common";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import {
   Sheet_Source,
@@ -186,7 +189,7 @@ const handleSaveDraft = async (ignoreNotify?: boolean) => {
   );
   // Create a baseline sheet for the schema design.
   const baselineSheet = await sheetStore.createSheet(
-    `projects/${projectName}`,
+    `${projectNamePrefix}${projectName}`,
     {
       title: `baseline schema of ${targetBranch.value.title}`,
       database: targetBranch.value.baselineDatabase,

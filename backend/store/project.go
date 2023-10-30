@@ -59,12 +59,16 @@ type UpdateProjectMessage struct {
 func (s *Store) GetProjectV2(ctx context.Context, find *FindProjectMessage) (*ProjectMessage, error) {
 	if find.ResourceID != nil {
 		if project, ok := s.projectCache.Load(*find.ResourceID); ok {
-			return project.(*ProjectMessage), nil
+			if v, ok := project.(*ProjectMessage); ok {
+				return v, nil
+			}
 		}
 	}
 	if find.UID != nil {
 		if project, ok := s.projectIDCache.Load(*find.UID); ok {
-			return project.(*ProjectMessage), nil
+			if v, ok := project.(*ProjectMessage); ok {
+				return v, nil
+			}
 		}
 	}
 

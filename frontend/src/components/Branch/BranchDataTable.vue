@@ -22,7 +22,10 @@ import {
   useProjectV1Store,
   useUserStore,
 } from "@/store";
-import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
+import {
+  getProjectAndSchemaDesignSheetId,
+  projectNamePrefix,
+} from "@/store/modules/v1/common";
 import { UNKNOWN_ID } from "@/types";
 import {
   SchemaDesign,
@@ -92,7 +95,9 @@ const dataTableRows = computed(() => {
   });
   const parentRows: BranchRowData[] = parentBranches.map((branch) => {
     const [projectName] = getProjectAndSchemaDesignSheetId(branch.name);
-    const project = projectV1Store.getProjectByName(`projects/${projectName}`);
+    const project = projectV1Store.getProjectByName(
+      `${projectNamePrefix}${projectName}`
+    );
     const database = databaseStore.getDatabaseByName(branch.baselineDatabase);
     const changeHistory =
       branch.baselineChangeHistoryId &&

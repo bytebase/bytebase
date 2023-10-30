@@ -65,6 +65,7 @@ export type RouterSlug = {
   databaseGroupName?: string;
   schemaGroupName?: string;
   changelistName?: string;
+  branchName?: string;
 };
 
 // Quick Action Type

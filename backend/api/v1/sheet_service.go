@@ -3,14 +3,10 @@ package v1
 import (
 	"context"
 	"fmt"
-	"path/filepath"
-	"regexp"
 	"strings"
-	"time"
 
 	"log/slog"
 
-	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -18,11 +14,9 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	vcsPlugin "github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -31,11 +25,11 @@ import (
 type SheetService struct {
 	v1pb.UnimplementedSheetServiceServer
 	store          *store.Store
-	licenseService enterpriseAPI.LicenseService
+	licenseService enterprise.LicenseService
 }
 
 // NewSheetService creates a new SheetService.
-func NewSheetService(store *store.Store, licenseService enterpriseAPI.LicenseService) *SheetService {
+func NewSheetService(store *store.Store, licenseService enterprise.LicenseService) *SheetService {
 	return &SheetService{
 		store:          store,
 		licenseService: licenseService,
@@ -47,7 +41,10 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *v1pb.CreateShee
 	if request.Sheet == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "sheet must be set")
 	}
-	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 
 	projectResourceID, err := common.GetProjectID(request.Parent)
 	if err != nil {
@@ -107,7 +104,7 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *v1pb.CreateShee
 		}
 		databaseUID = &database.UID
 	}
-	storeSheetCreate, err := convertToStoreSheetMessage(project.UID, databaseUID, currentPrincipalID, request.Sheet)
+	storeSheetCreate, err := convertToStoreSheetMessage(project.UID, databaseUID, principalID, request.Sheet)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("failed to convert sheet: %v", err))
 	}
@@ -182,7 +179,10 @@ func (s *SheetService) SearchSheets(ctx context.Context, request *v1pb.SearchShe
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 
 	sheetFind := &store.FindSheetMessage{}
 	if projectResourceID != "-" {
@@ -244,9 +244,9 @@ func (s *SheetService) SearchSheets(ctx context.Context, request *v1pb.SearchShe
 			}
 			switch spec.value {
 			case "true":
-				sheetFind.OrganizerPrincipalIDStarred = &currentPrincipalID
+				sheetFind.OrganizerPrincipalIDStarred = &principalID
 			case "false":
-				sheetFind.OrganizerPrincipalIDNotStarred = &currentPrincipalID
+				sheetFind.OrganizerPrincipalIDNotStarred = &principalID
 			default:
 				return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid value %q for starred", spec.value))
 			}
@@ -264,7 +264,7 @@ func (s *SheetService) SearchSheets(ctx context.Context, request *v1pb.SearchShe
 			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid filter key %q", spec.key))
 		}
 	}
-	sheetList, err := s.store.ListSheets(ctx, sheetFind, currentPrincipalID)
+	sheetList, err := s.store.ListSheets(ctx, sheetFind, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to list sheets: %v", err))
 	}
@@ -328,11 +328,14 @@ func (s *SheetService) UpdateSheet(ctx context.Context, request *v1pb.UpdateShee
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %q had deleted", projectResourceID))
 	}
 
-	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{
 		UID:        &sheetUID,
 		ProjectUID: &project.UID,
-	}, currentPrincipalID)
+	}, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
 	}
@@ -349,7 +352,7 @@ func (s *SheetService) UpdateSheet(ctx context.Context, request *v1pb.UpdateShee
 
 	sheetPatch := &store.PatchSheetMessage{
 		UID:       sheet.UID,
-		UpdaterID: currentPrincipalID,
+		UpdaterID: principalID,
 	}
 
 	for _, path := range request.UpdateMask.Paths {
@@ -401,12 +404,14 @@ func (s *SheetService) DeleteSheet(ctx context.Context, request *v1pb.DeleteShee
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %q had deleted", projectResourceID))
 	}
 
-	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
-
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{
 		UID:        &sheetUID,
 		ProjectUID: &project.UID,
-	}, currentPrincipalID)
+	}, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
 	}
@@ -425,255 +430,6 @@ func (s *SheetService) DeleteSheet(ctx context.Context, request *v1pb.DeleteShee
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to delete sheet: %v", err))
 	}
 
-	return &emptypb.Empty{}, nil
-}
-
-// SyncSheets syncs sheets from VCS.
-func (s *SheetService) SyncSheets(ctx context.Context, request *v1pb.SyncSheetsRequest) (*emptypb.Empty, error) {
-	// TODO(tianzhou): uncomment this after adding the test harness to using Enterprise version.
-	// if !s.licenseService.IsFeatureEnabled(api.FeatureVCSSheetSync) {
-	// 	return echo.NewHTTPError(http.StatusForbidden, api.FeatureVCSSheetSync.AccessErrorMessage())
-	// }
-	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
-
-	projectResourceID, err := common.GetProjectID(request.Parent)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &projectResourceID})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get project with resource id %q, err: %s", projectResourceID, err.Error()))
-	}
-	if project == nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %q not found", projectResourceID))
-	}
-	if project.Deleted {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %q had deleted", projectResourceID))
-	}
-	if project.Workflow != api.VCSWorkflow {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("project with resource id %q is not a VCS enabled project", projectResourceID))
-	}
-
-	projectRoles, err := s.findProjectRoles(ctx, project.UID, currentPrincipalID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to find roles in the project: %v", err))
-	}
-	if !api.ProjectPermission(api.ProjectPermissionSyncSheet, s.licenseService.GetEffectivePlan(), projectRoles) {
-		return nil, status.Errorf(codes.PermissionDenied, "permission denied to sync sheet for project")
-	}
-
-	repo, err := s.store.GetRepositoryV2(ctx, &store.FindRepositoryMessage{ProjectResourceID: &project.ResourceID})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to find repository for sync sheet: %d", project.UID))
-	}
-	if repo == nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("repository not found for sync sheet: %d", project.UID))
-	}
-
-	vcs, err := s.store.GetExternalVersionControlV2(ctx, repo.VCSUID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to find VCS for sync sheet, VCSID: %d", repo.VCSUID))
-	}
-	if vcs == nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("VCS not found for sync sheet: %d", repo.VCSUID))
-	}
-
-	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find workspace setting with error: %v", err.Error())
-	}
-	if setting.ExternalUrl == "" {
-		return nil, status.Errorf(codes.FailedPrecondition, "external url is required")
-	}
-
-	basePath := filepath.Dir(repo.SheetPathTemplate)
-	// TODO(Steven): The repo.branchFilter could be `test/*` which cannot be the ref value.
-	// TODO(zp): We may need a need VCS interface to get fetch repository file list for a branch instead of a SHA1.
-	fileList, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).FetchRepositoryFileList(ctx,
-		common.OauthContext{
-			ClientID:     vcs.ApplicationID,
-			ClientSecret: vcs.Secret,
-			AccessToken:  repo.AccessToken,
-			RefreshToken: repo.RefreshToken,
-			Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
-			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
-		},
-		vcs.InstanceURL,
-		repo.ExternalID,
-		repo.BranchFilter,
-		basePath,
-	)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to fetch repository file list for sync sheet: %d", project.UID))
-	}
-
-	for _, file := range fileList {
-		sheetInfo, err := parseSheetInfo(file.Path, repo.SheetPathTemplate)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Failed to parse sheet info from template")
-		}
-		if sheetInfo.SheetName == "" {
-			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("sheet name cannot be empty from sheet path %s with template %s", file.Path, repo.SheetPathTemplate))
-		}
-
-		fileContent, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).ReadFileContent(ctx,
-			common.OauthContext{
-				ClientID:     vcs.ApplicationID,
-				ClientSecret: vcs.Secret,
-				AccessToken:  repo.AccessToken,
-				RefreshToken: repo.RefreshToken,
-				Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
-				RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
-			},
-			vcs.InstanceURL,
-			repo.ExternalID,
-			file.Path,
-			vcsPlugin.RefInfo{
-				RefType: vcsPlugin.RefTypeBranch,
-				RefName: repo.BranchFilter,
-			},
-		)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, fmt.Sprintf("Failed to fetch file content from VCS, instance URL: %s, repo ID: %s, file path: %s, branch: %s", vcs.InstanceURL, repo.ExternalID, file.Path, repo.BranchFilter))
-		}
-
-		fileMeta, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(ctx,
-			common.OauthContext{
-				ClientID:     vcs.ApplicationID,
-				ClientSecret: vcs.Secret,
-				AccessToken:  repo.AccessToken,
-				RefreshToken: repo.RefreshToken,
-				Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
-				RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
-			},
-			vcs.InstanceURL,
-			repo.ExternalID,
-			file.Path,
-			vcsPlugin.RefInfo{
-				RefType: vcsPlugin.RefTypeBranch,
-				RefName: repo.BranchFilter,
-			},
-		)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, fmt.Sprintf("Failed to fetch file meta from VCS, instance URL: %s, repo ID: %s, file path: %s, branch: %s", vcs.InstanceURL, repo.ExternalID, file.Path, repo.BranchFilter))
-		}
-
-		lastCommit, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).FetchCommitByID(ctx,
-			common.OauthContext{
-				ClientID:     vcs.ApplicationID,
-				ClientSecret: vcs.Secret,
-				AccessToken:  repo.AccessToken,
-				RefreshToken: repo.RefreshToken,
-				Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
-				RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
-			},
-			vcs.InstanceURL,
-			repo.ExternalID,
-			fileMeta.LastCommitID,
-		)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, fmt.Sprintf("Failed to fetch commit data from VCS, instance URL: %s, repo ID: %s, commit ID: %s", vcs.InstanceURL, repo.ExternalID, fileMeta.LastCommitID))
-		}
-
-		sheetVCSPayload := &storepb.SheetPayload{
-			VcsPayload: &storepb.SheetPayload_VCSPayload{
-				FileName:     fileMeta.Name,
-				FilePath:     fileMeta.Path,
-				Size:         fileMeta.Size,
-				Author:       lastCommit.AuthorName,
-				LastCommitId: lastCommit.ID,
-				LastSyncTs:   time.Now().Unix(),
-			},
-		}
-
-		var databaseID *int
-		// In non-tenant mode, we can set a databaseId for sheet with ENV_ID and DB_NAME,
-		// and ENV_ID and DB_NAME is either both present or neither present.
-		if project.TenantMode != api.TenantModeDisabled {
-			if sheetInfo.EnvironmentID != "" && sheetInfo.DatabaseName != "" {
-				// The database name for PostgreSQL, Oracle, Snowflake and some databases are case sensitive.
-				// But the database name for MySQL, TiDB and other databases are case insensitive.
-				// So we should find databases by case-insensitive and double-check for case sensitive database engines.
-				databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
-					ProjectID:           &project.ResourceID,
-					DatabaseName:        &sheetInfo.DatabaseName,
-					IgnoreCaseSensitive: true,
-				})
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, fmt.Sprintf("Failed to find database list with name: %s, project ID: %d", sheetInfo.DatabaseName, project.UID))
-				}
-				for _, database := range databases {
-					database := database // create a new var "database".
-					instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
-					if err != nil {
-						return nil, status.Errorf(codes.Internal, fmt.Sprintf("Failed to find instance with ID: %s", database.InstanceID))
-					}
-					if !store.IgnoreDatabaseAndTableCaseSensitive(instance) && database.DatabaseName != sheetInfo.DatabaseName {
-						continue
-					}
-					if database.EffectiveEnvironmentID == sheetInfo.EnvironmentID {
-						databaseID = &database.UID
-						break
-					}
-				}
-			}
-		}
-
-		var sheetSource store.SheetSource
-		switch vcs.Type {
-		case vcsPlugin.GitLab:
-			sheetSource = store.SheetFromGitLab
-		case vcsPlugin.GitHub:
-			sheetSource = store.SheetFromGitHub
-		case vcsPlugin.Bitbucket:
-			sheetSource = store.SheetFromBitbucket
-		}
-		vscSheetType := store.SheetForSQL
-		sheetFind := &store.FindSheetMessage{
-			Name:       &sheetInfo.SheetName,
-			ProjectUID: &project.UID,
-			Source:     &sheetSource,
-			Type:       &vscSheetType,
-		}
-		sheet, err := s.store.GetSheet(ctx, sheetFind, currentPrincipalID)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, fmt.Sprintf("Failed to find sheet with name: %s, project ID: %d", sheetInfo.SheetName, project.UID))
-		}
-
-		if sheet == nil {
-			sheetCreate := &store.SheetMessage{
-				ProjectUID: project.UID,
-				CreatorID:  currentPrincipalID,
-				Name:       sheetInfo.SheetName,
-				Statement:  fileContent,
-				Visibility: store.ProjectSheet,
-				Source:     sheetSource,
-				Type:       store.SheetForSQL,
-				Payload:    sheetVCSPayload,
-			}
-			if databaseID != nil {
-				sheetCreate.DatabaseUID = databaseID
-			}
-
-			if _, err := s.store.CreateSheet(ctx, sheetCreate); err != nil {
-				return nil, status.Errorf(codes.Internal, "Failed to create sheet from VCS")
-			}
-		} else {
-			sheetPatch := store.PatchSheetMessage{
-				UID:       sheet.UID,
-				UpdaterID: currentPrincipalID,
-				Statement: &fileContent,
-				Payload:   sheetVCSPayload,
-			}
-			if databaseID != nil {
-				sheetPatch.DatabaseUID = databaseID
-			}
-
-			if _, err := s.store.PatchSheet(ctx, &sheetPatch); err != nil {
-				return nil, status.Errorf(codes.Internal, "Failed to patch sheet from VCS")
-			}
-		}
-	}
 	return &emptypb.Empty{}, nil
 }
 
@@ -702,10 +458,13 @@ func (s *SheetService) UpdateSheetOrganizer(ctx context.Context, request *v1pb.U
 		return nil, status.Errorf(codes.PermissionDenied, "cannot access sheet %s", sheet.Name)
 	}
 
-	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	sheetOrganizerUpsert := &store.SheetOrganizerMessage{
 		SheetUID:     sheetUID,
-		PrincipalUID: currentPrincipalID,
+		PrincipalUID: principalID,
 	}
 
 	for _, path := range request.UpdateMask.Paths {
@@ -730,8 +489,11 @@ func (s *SheetService) UpdateSheetOrganizer(ctx context.Context, request *v1pb.U
 }
 
 func (s *SheetService) findSheet(ctx context.Context, find *store.FindSheetMessage) (*store.SheetMessage, error) {
-	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	sheet, err := s.store.GetSheet(ctx, find, currentPrincipalID)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+	sheet, err := s.store.GetSheet(ctx, find, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
 	}
@@ -747,14 +509,17 @@ func (s *SheetService) findSheet(ctx context.Context, find *store.FindSheetMessa
 // PROJECT: the creator or project role can manage sheet, workspace Owner and DBA.
 // PUBLIC: the creator only.
 func (s *SheetService) canWriteSheet(ctx context.Context, sheet *store.SheetMessage) (bool, error) {
-	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return false, status.Errorf(codes.Internal, "principal ID not found")
+	}
 
-	if sheet.CreatorID == currentPrincipalID {
+	if sheet.CreatorID == principalID {
 		return true, nil
 	}
 
 	if sheet.Visibility == store.ProjectSheet {
-		projectRoles, err := s.findProjectRoles(ctx, sheet.ProjectUID, currentPrincipalID)
+		projectRoles, err := s.findProjectRoles(ctx, sheet.ProjectUID, principalID)
 		if err != nil {
 			return false, err
 		}
@@ -773,19 +538,25 @@ func (s *SheetService) canWriteSheet(ctx context.Context, sheet *store.SheetMess
 // PROJECT: the creator and members in the project.
 // PUBLIC: everyone in the workspace.
 func (s *SheetService) canReadSheet(ctx context.Context, sheet *store.SheetMessage) (bool, error) {
-	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	role := ctx.Value(common.RoleContextKey).(api.Role)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return false, status.Errorf(codes.Internal, "principal ID not found")
+	}
+	role, ok := ctx.Value(common.RoleContextKey).(api.Role)
+	if !ok {
+		return false, status.Errorf(codes.Internal, "role not found")
+	}
 
 	switch sheet.Visibility {
 	case store.PrivateSheet:
-		return sheet.CreatorID == currentPrincipalID, nil
+		return sheet.CreatorID == principalID, nil
 	case store.PublicSheet:
 		return true, nil
 	case store.ProjectSheet:
 		if role == api.Owner || role == api.DBA {
 			return true, nil
 		}
-		projectRoles, err := s.findProjectRoles(ctx, sheet.ProjectUID, currentPrincipalID)
+		projectRoles, err := s.findProjectRoles(ctx, sheet.ProjectUID, principalID)
 		if err != nil {
 			return false, err
 		}
@@ -842,12 +613,6 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 		source = v1pb.Sheet_SOURCE_BYTEBASE
 	case store.SheetFromBytebaseArtifact:
 		source = v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT
-	case store.SheetFromGitLab:
-		source = v1pb.Sheet_SOURCE_GITLAB
-	case store.SheetFromGitHub:
-		source = v1pb.Sheet_SOURCE_GITHUB
-	case store.SheetFromBitbucket:
-		source = v1pb.Sheet_SOURCE_BITBUCKET
 	}
 
 	tp := v1pb.Sheet_TYPE_UNSPECIFIED
@@ -918,14 +683,8 @@ func convertToStoreSheetMessage(projectUID int, databaseUID *int, creatorID int,
 		source = store.SheetFromBytebase
 	case v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT:
 		source = store.SheetFromBytebaseArtifact
-	case v1pb.Sheet_SOURCE_GITLAB:
-		source = store.SheetFromGitLab
-	case v1pb.Sheet_SOURCE_GITHUB:
-		source = store.SheetFromGitHub
-	case v1pb.Sheet_SOURCE_BITBUCKET:
-		source = store.SheetFromBitbucket
 	default:
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid source %q", sheet.Source))
+		source = store.SheetFromBytebaseArtifact
 	}
 	var tp store.SheetType
 	switch sheet.Type {
@@ -970,50 +729,4 @@ func convertToStoreSheetVisibility(visibility v1pb.Sheet_Visibility) (store.Shee
 	default:
 		return store.SheetVisibility(""), status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid visibility %q", visibility))
 	}
-}
-
-// SheetInfo represents the sheet related information from sheetPathTemplate.
-type SheetInfo struct {
-	EnvironmentID string
-	DatabaseName  string
-	SheetName     string
-}
-
-// parseSheetInfo matches sheetPath against sheetPathTemplate. If sheetPath matches, then it will derive SheetInfo from the sheetPath.
-// Both sheetPath and sheetPathTemplate are the full file path(including the base directory) of the repository.
-func parseSheetInfo(sheetPath string, sheetPathTemplate string) (*SheetInfo, error) {
-	placeholderList := []string{
-		"ENV_ID",
-		"DB_NAME",
-		"NAME",
-	}
-	sheetPathRegex := sheetPathTemplate
-	for _, placeholder := range placeholderList {
-		sheetPathRegex = strings.ReplaceAll(sheetPathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf("(?P<%s>[a-zA-Z0-9\\+\\-\\=\\_\\#\\!\\$\\. ]+)", placeholder))
-	}
-	sheetRegex, err := regexp.Compile(fmt.Sprintf("^%s$", sheetPathRegex))
-	if err != nil {
-		return nil, errors.Wrapf(err, "invalid sheet path template %q", sheetPathTemplate)
-	}
-	if !sheetRegex.MatchString(sheetPath) {
-		return nil, errors.Errorf("sheet path %q does not match sheet path template %q", sheetPath, sheetPathTemplate)
-	}
-
-	matchList := sheetRegex.FindStringSubmatch(sheetPath)
-	sheetInfo := &SheetInfo{}
-	for _, placeholder := range placeholderList {
-		index := sheetRegex.SubexpIndex(placeholder)
-		if index >= 0 {
-			switch placeholder {
-			case "ENV_ID":
-				sheetInfo.EnvironmentID = matchList[index]
-			case "DB_NAME":
-				sheetInfo.DatabaseName = matchList[index]
-			case "NAME":
-				sheetInfo.SheetName = matchList[index]
-			}
-		}
-	}
-
-	return sheetInfo, nil
 }

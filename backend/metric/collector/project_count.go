@@ -3,7 +3,7 @@ package collector
 import (
 	"context"
 
-	metricAPI "github.com/bytebase/bytebase/backend/metric"
+	metricapi "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -33,7 +33,7 @@ func (c *projectCountCollector) Collect(ctx context.Context) ([]*metric.Metric, 
 
 	for _, projectCountMetric := range projectCountMetricList {
 		res = append(res, &metric.Metric{
-			Name:  metricAPI.ProjectCountMetricName,
+			Name:  metricapi.ProjectCountMetricName,
 			Value: projectCountMetric.Count,
 			Labels: map[string]any{
 				"tenant_mode": string(projectCountMetric.TenantMode),
