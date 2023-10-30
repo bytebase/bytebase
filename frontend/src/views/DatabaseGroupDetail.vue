@@ -145,12 +145,10 @@ import {
   useProjectV1Store,
   useSubscriptionV1Store,
 } from "@/store";
-import {
-  databaseGroupNamePrefix,
-  projectNamePrefix,
-} from "@/store/modules/v1/common";
+import { databaseGroupNamePrefix } from "@/store/modules/v1/common";
 import { ComposedDatabase, ComposedDatabaseGroup } from "@/types";
 import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
+import { idFromSlug } from "@/utils";
 
 interface LocalState {
   isLoaded: boolean;
@@ -165,7 +163,7 @@ interface EditDatabaseGroupState {
 }
 
 const props = defineProps({
-  projectName: {
+  projectSlug: {
     required: true,
     type: String,
   },
@@ -191,8 +189,11 @@ const issueType = ref<
   | "bb.issue.database.data.update"
   | undefined
 >();
+const project = computed(() => {
+  return projectStore.getProjectByUID(String(idFromSlug(props.projectSlug)));
+});
 const databaseGroupResourceName = computed(() => {
-  return `${projectNamePrefix}${props.projectName}/${databaseGroupNamePrefix}${props.databaseGroupName}`;
+  return `${project.value.name}/${databaseGroupNamePrefix}${props.databaseGroupName}`;
 });
 const databaseGroup = computed(() => {
   return dbGroupStore.getDBGroupByName(
@@ -205,11 +206,6 @@ const schemaGroupList = computed(() => {
   );
 });
 const environment = computed(() => databaseGroup.value?.environment);
-const project = computed(() => {
-  return projectStore.getProjectByName(
-    `${projectNamePrefix}${props.projectName}`
-  );
-});
 
 onMounted(async () => {
   await dbGroupStore.getOrFetchDBGroupByName(databaseGroupResourceName.value);

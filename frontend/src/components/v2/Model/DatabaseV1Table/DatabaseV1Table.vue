@@ -164,6 +164,7 @@ import {
 import { getScrollParent } from "@/utils";
 import {
   databaseV1Slug,
+  projectV1Slug,
   isDatabaseV1Queryable,
   isPITRDatabaseV1,
   VueClass,
@@ -487,10 +488,13 @@ const clickDatabase = (
         router.push(url);
       }
     } else {
-      const [projectName, databaseGroupName] =
-        getProjectNameAndDatabaseGroupName(database.name);
+      const [_, databaseGroupName] = getProjectNameAndDatabaseGroupName(
+        database.name
+      );
       router.push(
-        `/projects/${projectName}/database-groups/${databaseGroupName}`
+        `/project/${projectV1Slug(
+          (database as ComposedDatabaseGroup).project
+        )}/database-groups/${databaseGroupName}`
       );
     }
   }

@@ -1000,14 +1000,14 @@ const routes: Array<RouteRecordRaw> = [
           },
           // Resource name related routes.
           {
-            path: "projects/:projectName",
+            path: "project/:projectSlug",
             children: [
               {
                 path: "database-groups/:databaseGroupName",
                 name: "workspace.database-group.detail",
                 components: {
                   content: () => import("../views/DatabaseGroupDetail.vue"),
-                  leftSidebar: DashboardSidebar,
+                  leftSidebar: ProjectSidebar,
                 },
                 props: true,
               },
@@ -1016,7 +1016,7 @@ const routes: Array<RouteRecordRaw> = [
                 name: "workspace.database-group.table-group.detail",
                 components: {
                   content: () => import("../views/SchemaGroupDetail.vue"),
-                  leftSidebar: DashboardSidebar,
+                  leftSidebar: ProjectSidebar,
                 },
                 props: true,
               },
