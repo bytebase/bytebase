@@ -25,7 +25,6 @@
               :value="'SCHEMA_HISTORY_VERSION'"
               :label="$t('database.sync-schema.schema-history-version')"
             />
-            <NRadio :value="'SCHEMA_DESIGN'" :label="$t('database.branch')" />
             <NRadio :value="'RAW_SQL'" :label="$t('schema-editor.raw-sql')" />
           </NRadioGroup>
         </div>
@@ -34,15 +33,6 @@
           :select-state="changeHistorySourceSchemaState"
           :disable-project-select="!!project"
           @update="handleChangeHistorySchameVersionChanges"
-        />
-        <SchemaDesignSelector
-          v-if="state.sourceSchemaType === 'SCHEMA_DESIGN'"
-          :project-name="project?.name"
-          :selected-schema-design="schemaDesignState.selectedSchemaDesign"
-          @select="
-            (schemaDesign) =>
-              (schemaDesignState.selectedSchemaDesign = schemaDesign)
-          "
         />
         <RawSQLEditor
           v-if="state.sourceSchemaType === 'RAW_SQL'"
@@ -60,7 +50,6 @@
           :project-id="projectId!"
           :source-schema-type="state.sourceSchemaType"
           :database-source-schema="(changeHistorySourceSchemaState as any)"
-          :schema-design-name="schemaDesignState.selectedSchemaDesign?.name"
           :raw-sql-state="rawSQLState"
         />
       </template>
@@ -72,19 +61,15 @@
 import dayjs from "dayjs";
 import { isNull, isUndefined } from "lodash-es";
 import { NRadioGroup, NRadio, useDialog } from "naive-ui";
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBStepTab } from "@/bbkit";
 import { useProjectV1Store } from "@/store";
-import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
-import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
 import { UNKNOWN_ID, ComposedProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import DatabaseSchemaSelector from "./DatabaseSchemaSelector.vue";
 import RawSQLEditor from "./RawSQLEditor.vue";
-import SchemaDesignSelector from "./SchemaDesignSelector.vue";
 import SelectTargetDatabasesView from "./SelectTargetDatabasesView.vue";
 import {
   ChangeHistorySourceSchema,
@@ -112,7 +97,6 @@ const router = useRouter();
 const dialog = useDialog();
 const bbStepTabRef = ref<InstanceType<typeof BBStepTab>>();
 const projectStore = useProjectV1Store();
-const schemaDesignStore = useSchemaDesignStore();
 const targetDatabaseViewRef =
   ref<InstanceType<typeof SelectTargetDatabasesView>>();
 const state = reactive<LocalState>({
@@ -122,9 +106,6 @@ const state = reactive<LocalState>({
 const changeHistorySourceSchemaState = reactive<ChangeHistorySourceSchema>({
   projectId: props.project?.uid,
 });
-const schemaDesignState = reactive<{
-  selectedSchemaDesign?: SchemaDesign;
-}>({});
 const rawSQLState = reactive<RawSQLState>({
   projectId: props.project?.uid,
   engine: Engine.MYSQL,
@@ -137,15 +118,6 @@ const projectId = computed(() => {
   }
   if (state.sourceSchemaType === "SCHEMA_HISTORY_VERSION") {
     return changeHistorySourceSchemaState.projectId;
-  } else if (state.sourceSchemaType === "SCHEMA_DESIGN") {
-    if (!schemaDesignState.selectedSchemaDesign) {
-      return undefined;
-    }
-    const [projectName] = getProjectAndSchemaDesignSheetId(
-      schemaDesignState.selectedSchemaDesign.name
-    );
-    const project = projectStore.getProjectByName(`projects/${projectName}`);
-    return project.uid;
   } else {
     return rawSQLState.projectId;
   }
@@ -179,8 +151,6 @@ const allowNext = computed(() => {
         isValidId(changeHistorySourceSchemaState.databaseId) &&
         !isUndefined(changeHistorySourceSchemaState.changeHistory)
       );
-    } else if (state.sourceSchemaType === "SCHEMA_DESIGN") {
-      return !isUndefined(schemaDesignState.selectedSchemaDesign);
     } else {
       return (
         !isUndefined(rawSQLState.projectId) &&
@@ -202,26 +172,6 @@ const allowNext = computed(() => {
       })
       .filter((item) => item.diff !== "");
     return targetDatabaseDiffList.length > 0;
-  }
-});
-
-onMounted(async () => {
-  const schemaDesignName = router.currentRoute.value.query
-    .schemaDesignName as string;
-  if (schemaDesignName) {
-    try {
-      const schemaDesign = await schemaDesignStore.fetchSchemaDesignByName(
-        schemaDesignName,
-        false /* !useCache */
-      );
-      if (schemaDesign) {
-        state.sourceSchemaType = "SCHEMA_DESIGN";
-        schemaDesignState.selectedSchemaDesign = schemaDesign;
-        bbStepTabRef.value?.changeStep(SELECT_TARGET_DATABASE_LIST);
-      }
-    } catch (error) {
-      // do nothing
-    }
   }
 });
 
@@ -291,9 +241,6 @@ const tryFinishSetup = async () => {
   query.name = generateIssueName(
     targetDatabaseList.map((db) => db.databaseName)
   );
-  if (schemaDesignState.selectedSchemaDesign) {
-    query.branch = schemaDesignState.selectedSchemaDesign.name;
-  }
 
   const routeInfo = {
     name: "workspace.issue.detail",
