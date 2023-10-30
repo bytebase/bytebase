@@ -107,12 +107,16 @@ type FindIssueMessage struct {
 func (s *Store) GetIssueV2(ctx context.Context, find *FindIssueMessage) (*IssueMessage, error) {
 	if find.UID != nil {
 		if issue, ok := s.issueCache.Load(*find.UID); ok {
-			return issue.(*IssueMessage), nil
+			if v, ok := issue.(*IssueMessage); ok {
+				return v, nil
+			}
 		}
 	}
 	if find.PipelineID != nil {
 		if issue, ok := s.issueByPipelineCache.Load(*find.PipelineID); ok {
-			return issue.(*IssueMessage), nil
+			if v, ok := issue.(*IssueMessage); ok {
+				return v, nil
+			}
 		}
 	}
 

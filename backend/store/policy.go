@@ -217,7 +217,9 @@ func (s *Store) GetPolicyV2(ctx context.Context, find *FindPolicyMessage) (*Poli
 			if policy == nil {
 				return nil, nil
 			}
-			return policy.(*PolicyMessage), nil
+			if v, ok := policy.(*PolicyMessage); ok {
+				return v, nil
+			}
 		}
 	}
 

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	grpcRuntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	grpcruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/labstack/echo-contrib/pprof"
 	"github.com/labstack/echo-contrib/prometheus"
@@ -19,7 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 )
 
-func configureEchoRouters(e *echo.Echo, grpcServer *grpc.Server, mux *grpcRuntime.ServeMux) {
+func configureEchoRouters(e *echo.Echo, grpcServer *grpc.Server, mux *grpcruntime.ServeMux) {
 	// Embed frontend.
 	embedFrontend(e)
 

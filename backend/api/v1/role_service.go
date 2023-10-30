@@ -9,7 +9,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -19,11 +19,11 @@ import (
 type RoleService struct {
 	v1pb.UnimplementedRoleServiceServer
 	store          *store.Store
-	licenseService enterpriseAPI.LicenseService
+	licenseService enterprise.LicenseService
 }
 
 // NewRoleService returns a new instance of the role service.
-func NewRoleService(store *store.Store, licenseService enterpriseAPI.LicenseService) *RoleService {
+func NewRoleService(store *store.Store, licenseService enterprise.LicenseService) *RoleService {
 	return &RoleService{
 		store:          store,
 		licenseService: licenseService,
