@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	grpcRuntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	grpcruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -21,7 +21,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/api/gitops"
-	v1 "github.com/bytebase/bytebase/backend/api/v1"
+	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/common/stacktrace"
 	"github.com/bytebase/bytebase/backend/component/activity"
@@ -87,8 +87,8 @@ type Server struct {
 	errorRecordRing api.ErrorRecordRing
 
 	// Stubs.
-	rolloutService *v1.RolloutService
-	issueService   *v1.IssueService
+	rolloutService *apiv1.RolloutService
+	issueService   *apiv1.IssueService
 
 	// MySQL utility binaries
 	mysqlBinDir string
@@ -234,7 +234,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	// Note: the gateway response modifier takes the external url on server startup. If the external URL is changed,
 	// the user has to restart the server to take the latest value.
 	gatewayModifier := auth.GatewayResponseModifier{ExternalURL: externalURL, TokenDuration: tokenDuration}
-	mux := grpcRuntime.NewServeMux(grpcRuntime.WithForwardResponseOption(gatewayModifier.Modify))
+	mux := grpcruntime.NewServeMux(grpcruntime.WithForwardResponseOption(gatewayModifier.Modify))
 
 	if profile.BackupBucket != "" {
 		credentials, err := bbs3.GetCredentialsFromFile(ctx, profile.BackupCredentialFile)
@@ -291,8 +291,8 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	// Setup the gRPC and grpc-gateway.
 	authProvider := auth.New(s.store, s.secret, tokenDuration, s.licenseService, s.stateCfg, profile.Mode)
-	aclProvider := v1.NewACLInterceptor(s.store, s.secret, s.licenseService, profile.Mode)
-	debugProvider := v1.NewDebugInterceptor(&s.errorRecordRing, &profile, s.metricReporter)
+	aclProvider := apiv1.NewACLInterceptor(s.store, s.secret, s.licenseService, profile.Mode)
+	debugProvider := apiv1.NewDebugInterceptor(&s.errorRecordRing, &profile, s.metricReporter)
 	onPanic := func(p any) error {
 		stack := stacktrace.TakeStacktrace(20 /* n */, 5 /* skip */)
 		// keep a multiline stack

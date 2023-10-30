@@ -8,9 +8,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	grpcRuntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	grpcruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 
-	v1 "github.com/bytebase/bytebase/backend/api/v1"
+	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
@@ -28,7 +28,7 @@ import (
 
 func configureGrpcRouters(
 	ctx context.Context,
-	mux *grpcRuntime.ServeMux,
+	mux *grpcruntime.ServeMux,
 	grpcServer *grpc.Server,
 	stores *store.Store,
 	dbFactory *dbfactory.DBFactory,
@@ -41,24 +41,24 @@ func configureGrpcRouters(
 	backupRunner *backuprun.Runner,
 	relayRunner *relay.Runner,
 	planCheckScheduler *plancheck.Scheduler,
-	postCreateUser v1.CreateUserFunc,
+	postCreateUser apiv1.CreateUserFunc,
 	secret string,
 	errorRecordRing *api.ErrorRecordRing,
-	tokenDuration time.Duration) (*v1.RolloutService, *v1.IssueService, error) {
+	tokenDuration time.Duration) (*apiv1.RolloutService, *apiv1.IssueService, error) {
 	// Register services.
-	authService, err := v1.NewAuthService(stores, secret, tokenDuration, licenseService, metricReporter, profile, stateCfg, postCreateUser)
+	authService, err := apiv1.NewAuthService(stores, secret, tokenDuration, licenseService, metricReporter, profile, stateCfg, postCreateUser)
 	if err != nil {
 		return nil, nil, err
 	}
 	v1pb.RegisterAuthServiceServer(grpcServer, authService)
-	v1pb.RegisterActuatorServiceServer(grpcServer, v1.NewActuatorService(stores, profile, errorRecordRing))
-	v1pb.RegisterSubscriptionServiceServer(grpcServer, v1.NewSubscriptionService(
+	v1pb.RegisterActuatorServiceServer(grpcServer, apiv1.NewActuatorService(stores, profile, errorRecordRing))
+	v1pb.RegisterSubscriptionServiceServer(grpcServer, apiv1.NewSubscriptionService(
 		stores,
 		profile,
 		metricReporter,
 		licenseService))
-	v1pb.RegisterEnvironmentServiceServer(grpcServer, v1.NewEnvironmentService(stores, licenseService))
-	v1pb.RegisterInstanceServiceServer(grpcServer, v1.NewInstanceService(
+	v1pb.RegisterEnvironmentServiceServer(grpcServer, apiv1.NewEnvironmentService(stores, licenseService))
+	v1pb.RegisterInstanceServiceServer(grpcServer, apiv1.NewInstanceService(
 		stores,
 		licenseService,
 		metricReporter,
@@ -66,28 +66,28 @@ func configureGrpcRouters(
 		stateCfg,
 		dbFactory,
 		schemaSyncer))
-	v1pb.RegisterProjectServiceServer(grpcServer, v1.NewProjectService(stores, activityManager, licenseService))
-	v1pb.RegisterDatabaseServiceServer(grpcServer, v1.NewDatabaseService(stores, backupRunner, schemaSyncer, licenseService, profile))
-	v1pb.RegisterInstanceRoleServiceServer(grpcServer, v1.NewInstanceRoleService(stores, dbFactory))
-	v1pb.RegisterOrgPolicyServiceServer(grpcServer, v1.NewOrgPolicyService(stores, licenseService))
-	v1pb.RegisterIdentityProviderServiceServer(grpcServer, v1.NewIdentityProviderService(stores, licenseService))
-	v1pb.RegisterSettingServiceServer(grpcServer, v1.NewSettingService(stores, profile, licenseService, stateCfg))
-	v1pb.RegisterAnomalyServiceServer(grpcServer, v1.NewAnomalyService(stores))
-	v1pb.RegisterSQLServiceServer(grpcServer, v1.NewSQLService(stores, schemaSyncer, dbFactory, activityManager, licenseService))
-	v1pb.RegisterExternalVersionControlServiceServer(grpcServer, v1.NewExternalVersionControlService(stores))
-	v1pb.RegisterRiskServiceServer(grpcServer, v1.NewRiskService(stores, licenseService))
-	issueService := v1.NewIssueService(stores, activityManager, relayRunner, stateCfg, licenseService, metricReporter)
+	v1pb.RegisterProjectServiceServer(grpcServer, apiv1.NewProjectService(stores, activityManager, licenseService))
+	v1pb.RegisterDatabaseServiceServer(grpcServer, apiv1.NewDatabaseService(stores, backupRunner, schemaSyncer, licenseService, profile))
+	v1pb.RegisterInstanceRoleServiceServer(grpcServer, apiv1.NewInstanceRoleService(stores, dbFactory))
+	v1pb.RegisterOrgPolicyServiceServer(grpcServer, apiv1.NewOrgPolicyService(stores, licenseService))
+	v1pb.RegisterIdentityProviderServiceServer(grpcServer, apiv1.NewIdentityProviderService(stores, licenseService))
+	v1pb.RegisterSettingServiceServer(grpcServer, apiv1.NewSettingService(stores, profile, licenseService, stateCfg))
+	v1pb.RegisterAnomalyServiceServer(grpcServer, apiv1.NewAnomalyService(stores))
+	v1pb.RegisterSQLServiceServer(grpcServer, apiv1.NewSQLService(stores, schemaSyncer, dbFactory, activityManager, licenseService))
+	v1pb.RegisterExternalVersionControlServiceServer(grpcServer, apiv1.NewExternalVersionControlService(stores))
+	v1pb.RegisterRiskServiceServer(grpcServer, apiv1.NewRiskService(stores, licenseService))
+	issueService := apiv1.NewIssueService(stores, activityManager, relayRunner, stateCfg, licenseService, metricReporter)
 	v1pb.RegisterIssueServiceServer(grpcServer, issueService)
-	rolloutService := v1.NewRolloutService(stores, licenseService, dbFactory, planCheckScheduler, stateCfg, activityManager)
+	rolloutService := apiv1.NewRolloutService(stores, licenseService, dbFactory, planCheckScheduler, stateCfg, activityManager)
 	v1pb.RegisterRolloutServiceServer(grpcServer, rolloutService)
-	v1pb.RegisterRoleServiceServer(grpcServer, v1.NewRoleService(stores, licenseService))
-	v1pb.RegisterSheetServiceServer(grpcServer, v1.NewSheetService(stores, licenseService))
-	v1pb.RegisterSchemaDesignServiceServer(grpcServer, v1.NewSchemaDesignService(stores, licenseService))
-	v1pb.RegisterCelServiceServer(grpcServer, v1.NewCelService())
-	v1pb.RegisterLoggingServiceServer(grpcServer, v1.NewLoggingService(stores))
-	v1pb.RegisterBookmarkServiceServer(grpcServer, v1.NewBookmarkService(stores))
-	v1pb.RegisterInboxServiceServer(grpcServer, v1.NewInboxService(stores))
-	v1pb.RegisterChangelistServiceServer(grpcServer, v1.NewChangelistService(stores))
+	v1pb.RegisterRoleServiceServer(grpcServer, apiv1.NewRoleService(stores, licenseService))
+	v1pb.RegisterSheetServiceServer(grpcServer, apiv1.NewSheetService(stores, licenseService))
+	v1pb.RegisterSchemaDesignServiceServer(grpcServer, apiv1.NewSchemaDesignService(stores, licenseService))
+	v1pb.RegisterCelServiceServer(grpcServer, apiv1.NewCelService())
+	v1pb.RegisterLoggingServiceServer(grpcServer, apiv1.NewLoggingService(stores))
+	v1pb.RegisterBookmarkServiceServer(grpcServer, apiv1.NewBookmarkService(stores))
+	v1pb.RegisterInboxServiceServer(grpcServer, apiv1.NewInboxService(stores))
+	v1pb.RegisterChangelistServiceServer(grpcServer, apiv1.NewChangelistService(stores))
 
 	// REST gateway proxy.
 	grpcEndpoint := fmt.Sprintf(":%d", profile.GrpcPort)
