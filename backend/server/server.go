@@ -176,8 +176,8 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	// configure an external instance.
 	if profile.SampleDatabasePort != 0 {
 		slog.Info("-----Sample Postgres Instance BEGIN-----")
-		for i, v := range []string{"test", "prod"} {
-			slog.Info(fmt.Sprintf("Start %q sample database sampleDatabasePort=%d", v, profile.SampleDatabasePort))
+		for i, v := range []string{postgres.SampleDatabaseTest, postgres.SampleDatabaseProd} {
+			slog.Info(fmt.Sprintf("Start sample instance for %q sampleDatabasePort=%d", v, profile.SampleDatabasePort+i))
 			stopper, err := postgres.StartSampleInstance(ctx, s.pgBinDir, profile.DataDir, v, profile.SampleDatabasePort+i, profile.Mode)
 			if err != nil {
 				slog.Error("failed to init sample instance", log.BBError(err))
