@@ -12,7 +12,7 @@ import (
 
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 
-	ast "github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	pg_query "github.com/pganalyze/pg_query_go/v4"
+	pgquery "github.com/pganalyze/pg_query_go/v4"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
@@ -53,7 +53,7 @@ func runTest(t *testing.T, filepath string, record bool) {
 		}
 
 		// The result should be parsed correctly by PostgreSQL parser.
-		_, err = pg_query.Parse(testCases[i].PostgreSQL)
+		_, err = pgquery.Parse(testCases[i].PostgreSQL)
 		require.NoError(t, err, "failed to parse restored sql with PostgreSQL parser: %s", testCases[i].PostgreSQL)
 
 		stringsBuilder.Reset()
