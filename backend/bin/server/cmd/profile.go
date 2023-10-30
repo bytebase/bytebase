@@ -24,7 +24,6 @@ func getBaseProfile(dataDir string) config.Profile {
 		ExternalURL:          flags.externalURL,
 		GrpcPort:             flags.port + 1, // Using flags.port + 1 as our gRPC server port.
 		DatastorePort:        flags.port + 2, // Using flags.port + 2 as our datastore port.
-		LSPProt:              flags.port + 4, // Using flags.port + 4 as our LSP server port.
 		SampleDatabasePort:   sampleDatabasePort,
 		Readonly:             flags.readonly,
 		SaaS:                 flags.saas,
