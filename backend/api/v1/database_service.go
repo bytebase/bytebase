@@ -2066,6 +2066,10 @@ func convertV1DatabaseConfig(databaseName string, schemaConfig []*v1pb.SchemaCon
 }
 
 func convertV1TableConfig(table *v1pb.TableConfig) *storepb.TableConfig {
+	if table == nil {
+		return nil
+	}
+
 	t := &storepb.TableConfig{
 		Name: table.Name,
 	}
@@ -2076,6 +2080,10 @@ func convertV1TableConfig(table *v1pb.TableConfig) *storepb.TableConfig {
 }
 
 func convertV1ColumnConfig(column *v1pb.ColumnConfig) *storepb.ColumnConfig {
+	if column == nil {
+		return nil
+	}
+
 	return &storepb.ColumnConfig{
 		Name:           column.Name,
 		SemanticTypeId: column.SemanticTypeId,
