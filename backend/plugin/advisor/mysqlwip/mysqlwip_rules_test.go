@@ -29,6 +29,14 @@ func TestMySQLWIPRules(t *testing.T) {
 		advisor.SchemaRuleStatementNoSelectAll,
 		// advisor.SchemaRuleStatementRequireWhere require 'WHERE' clause.
 		advisor.SchemaRuleStatementRequireWhere,
+		// advisor.SchemaRuleStatementNoLeadingWildcardLike disallow leading '%' in LIKE, e.g. LIKE foo = '%x' is not allowed.
+		advisor.SchemaRuleStatementNoLeadingWildcardLike,
+		// advisor.SchemaRuleStatementDisallowCommit disallow using commit in the issue.
+		advisor.SchemaRuleStatementDisallowCommit,
+		// advisor.SchemaRuleStatementDisallowLimit disallow the LIMIT clause in INSERT, DELETE and UPDATE statements.
+		advisor.SchemaRuleStatementDisallowLimit,
+		// advisor.SchemaRuleStatementDisallowOrderBy disallow the ORDER BY clause in DELETE and UPDATE statements.
+		advisor.SchemaRuleStatementDisallowOrderBy,
 
 		// advisor.SchemaRuleStatementInsertRowLimit enforce the insert row limit.
 		advisor.SchemaRuleStatementInsertRowLimit,
