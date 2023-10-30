@@ -64,9 +64,20 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 		select {
 		case <-ticker.C:
 			s.trySyncAll(ctx)
-		case instance := <-s.stateCfg.InstanceDatabaseSyncChan:
-			// Sync all databases for instance.
-			s.syncAllDatabases(ctx, instance)
+		case <-s.stateCfg.InstanceSyncTickleChan:
+			s.stateCfg.InstanceSyncs.Range(func(key, value any) bool {
+				s.stateCfg.InstanceSyncs.Delete(key)
+				instance, ok := value.(*store.InstanceMessage)
+				if !ok {
+					return true
+				}
+				// Sync all databases for instance.
+				if err := s.SyncInstance(ctx, instance); err != nil {
+					slog.Error("failed to sync instance", log.BBError(err))
+				}
+				s.syncAllDatabases(ctx, instance)
+				return true
+			})
 		case <-ctx.Done(): // if cancel() execute
 			return
 		}
