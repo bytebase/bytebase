@@ -684,7 +684,7 @@ func convertToStoreSheetMessage(projectUID int, databaseUID *int, creatorID int,
 	case v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT:
 		source = store.SheetFromBytebaseArtifact
 	default:
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid source %q", sheet.Source))
+		source = store.SheetFromBytebaseArtifact
 	}
 	var tp store.SheetType
 	switch sheet.Type {
