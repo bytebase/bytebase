@@ -2,11 +2,13 @@ package lsp
 
 import (
 	"context"
+	"log/slog"
 	"net"
 	"net/http"
 	"sync/atomic"
 	"time"
 
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -37,9 +39,13 @@ func (s *Server) Serve(lis net.Listener) error {
 }
 
 func (s *Server) GracefulStop(ctx context.Context) {
-	s.server.Shutdown(ctx)
+	if err := s.server.Shutdown(ctx); err != nil {
+		slog.Error("Failed to shutdown LSP server", log.BBError(err))
+	}
 }
 
 func (s *Server) Stop() {
-	s.server.Close()
+	if err := s.server.Close(); err != nil {
+		slog.Error("Failed to close LSP server", log.BBError(err))
+	}
 }
