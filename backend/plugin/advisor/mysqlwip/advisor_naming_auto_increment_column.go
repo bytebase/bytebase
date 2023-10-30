@@ -99,7 +99,6 @@ func (checker *namingAutoIncrementColumnChecker) EnterCreateTable(ctx *mysql.Cre
 		if checker.isAutoIncrement(tableElement.ColumnDefinition().FieldDefinition()) {
 			checker.handleColumn(tableName, columnName, tableElement.GetStart().GetLine())
 		}
-
 	}
 }
 
