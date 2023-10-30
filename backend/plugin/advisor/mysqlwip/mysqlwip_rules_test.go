@@ -39,12 +39,3 @@ func TestMySQLWIPRules(t *testing.T) {
 		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_ENGINE_UNSPECIFIED, false /* record */)
 	}
 }
-
-func TestRules(t *testing.T) {
-	mysqlwipRules := []advisor.SQLReviewRuleType{
-		advisor.SchemaRuleStatementDisallowOrderBy,
-	}
-	for _, rule := range mysqlwipRules {
-		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_ENGINE_UNSPECIFIED, false /* record */)
-	}
-}
