@@ -279,11 +279,15 @@ const renderActionSentence = () => {
       ) as ActivityTaskEarliestAllowedTimeUpdatePayload;
       const newVal = payload.newEarliestAllowedTs;
       const oldVal = payload.oldEarliestAllowedTs;
-      return t("activity.sentence.changed-from-to", {
-        name: "earliest allowed time",
-        oldValue: oldVal ? dayjs(oldVal * 1000) : "Unset",
-        newValue: newVal ? dayjs(newVal * 1000) : "Unset",
-      });
+      return h(
+        "span",
+        {},
+        t("activity.sentence.changed-from-to", {
+          name: t("task.rollout-time"),
+          oldValue: oldVal ? dayjs(oldVal * 1000) : "Unset",
+          newValue: newVal ? dayjs(newVal * 1000) : "Unset",
+        })
+      );
     }
   }
   return "";
@@ -331,7 +335,7 @@ const Renderer = defineComponent({
 
 const renderStatement = (content: string) => {
   return h(TextOverflowPopover, {
-    statement: content,
+    content,
     maxLength: 50,
     width: 400,
     contentClass: "text-main",
