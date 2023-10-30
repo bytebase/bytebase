@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-row items-center">
+  <div class="flex flex-row items-center gap-x-2 overflow-hidden">
     <template v-if="issue.status !== IssueStatus.OPEN || done">
       <span>-</span>
     </template>
@@ -8,7 +8,7 @@
     </template>
     <template v-else-if="currentApprover">
       <BBAvatar :size="'SMALL'" :username="currentApprover.title" />
-      <span class="ml-2">
+      <span class="truncate">
         {{ currentApprover.title }}
       </span>
     </template>
