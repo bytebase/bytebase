@@ -613,12 +613,6 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 		source = v1pb.Sheet_SOURCE_BYTEBASE
 	case store.SheetFromBytebaseArtifact:
 		source = v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT
-	case store.SheetFromGitLab:
-		source = v1pb.Sheet_SOURCE_GITLAB
-	case store.SheetFromGitHub:
-		source = v1pb.Sheet_SOURCE_GITHUB
-	case store.SheetFromBitbucket:
-		source = v1pb.Sheet_SOURCE_BITBUCKET
 	}
 
 	tp := v1pb.Sheet_TYPE_UNSPECIFIED
@@ -689,12 +683,6 @@ func convertToStoreSheetMessage(projectUID int, databaseUID *int, creatorID int,
 		source = store.SheetFromBytebase
 	case v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT:
 		source = store.SheetFromBytebaseArtifact
-	case v1pb.Sheet_SOURCE_GITLAB:
-		source = store.SheetFromGitLab
-	case v1pb.Sheet_SOURCE_GITHUB:
-		source = store.SheetFromGitHub
-	case v1pb.Sheet_SOURCE_BITBUCKET:
-		source = store.SheetFromBitbucket
 	default:
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid source %q", sheet.Source))
 	}
