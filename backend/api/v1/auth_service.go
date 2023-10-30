@@ -26,7 +26,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	metricAPI "github.com/bytebase/bytebase/backend/metric"
+	metricapi "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/idp/ldap"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oauth2"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oidc"
@@ -207,7 +207,7 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 
 	isFirstUser := user.ID == api.PrincipalIDForFirstUser
 	s.metricReporter.Report(ctx, &metric.Metric{
-		Name:  metricAPI.PrincipalRegistrationMetricName,
+		Name:  metricapi.PrincipalRegistrationMetricName,
 		Value: 1,
 		Labels: map[string]any{
 			"email": user.Email,
@@ -647,7 +647,7 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 	}
 
 	s.metricReporter.Report(ctx, &metric.Metric{
-		Name:  metricAPI.PrincipalLoginMetricName,
+		Name:  metricapi.PrincipalLoginMetricName,
 		Value: 1,
 		Labels: map[string]any{
 			"email": loginUser.Email,

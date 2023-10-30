@@ -13,7 +13,7 @@ import (
 
 	// Import go-ora Oracle driver.
 	"github.com/pkg/errors"
-	go_ora "github.com/sijms/go-ora/v2"
+	goora "github.com/sijms/go-ora/v2"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -57,7 +57,7 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 	if config.SID != "" {
 		options["SID"] = config.SID
 	}
-	dsn := go_ora.BuildUrl(config.Host, port, config.ServiceName, config.Username, config.Password, options)
+	dsn := goora.BuildUrl(config.Host, port, config.ServiceName, config.Username, config.Password, options)
 	db, err := sql.Open("oracle", dsn)
 	if err != nil {
 		return nil, err

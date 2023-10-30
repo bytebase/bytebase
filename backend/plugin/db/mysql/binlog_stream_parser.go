@@ -187,8 +187,7 @@ func getEventType(header string) BinlogEventType {
 		return UpdateRowsEventType
 	} else if strings.Contains(header, "Delete_rows") {
 		return DeleteRowsEventType
-	} else {
-		// Ignore other events.
-		return UnknownEventType
 	}
+	// Ignore other events.
+	return UnknownEventType
 }
