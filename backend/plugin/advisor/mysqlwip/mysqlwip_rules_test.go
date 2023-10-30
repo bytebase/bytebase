@@ -35,6 +35,8 @@ func TestMySQLWIPRules(t *testing.T) {
 		advisor.SchemaRuleStatementDisallowCommit,
 		// advisor.SchemaRuleStatementDisallowLimit disallow the LIMIT clause in INSERT, DELETE and UPDATE statements.
 		advisor.SchemaRuleStatementDisallowLimit,
+		// advisor.SchemaRuleStatementDisallowOrderBy disallow the ORDER BY clause in DELETE and UPDATE statements.
+		advisor.SchemaRuleStatementDisallowOrderBy,
 
 		// advisor.SchemaRuleStatementInsertRowLimit enforce the insert row limit.
 		advisor.SchemaRuleStatementInsertRowLimit,
