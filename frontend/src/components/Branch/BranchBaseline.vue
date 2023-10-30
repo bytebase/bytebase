@@ -23,7 +23,7 @@ import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 const props = withDefaults(
   defineProps<{
     branch: SchemaDesign;
-    showInstanceIcon: boolean;
+    showInstanceIcon?: boolean;
   }>(),
   {
     showInstanceIcon: false,
