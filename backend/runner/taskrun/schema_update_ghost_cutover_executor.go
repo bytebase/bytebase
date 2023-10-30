@@ -17,6 +17,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/component/ghost"
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -92,12 +93,12 @@ func (e *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, _ contex
 	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
 	renderedStatement := utils.RenderStatement(statement, materials)
 
-	tableName, err := utils.GetTableNameFromStatement(renderedStatement)
+	tableName, err := ghost.GetTableNameFromStatement(renderedStatement)
 	if err != nil {
 		return true, nil, common.Wrapf(err, common.Internal, "failed to parse table name from statement, statement: %v", statement)
 	}
 
-	postponeFilename := utils.GetPostponeFlagFilename(syncTaskID, database.UID, database.DatabaseName, tableName)
+	postponeFilename := ghost.GetPostponeFlagFilename(syncTaskID, database.UID, database.DatabaseName, tableName)
 
 	value, ok := e.stateCfg.GhostTaskState.Load(syncTaskID)
 	if !ok {
