@@ -405,6 +405,16 @@
                   </button>
                 </dd>
               </div>
+              <div class="grid grid-cols-2 gap-4 px-4 py-2">
+                <dt class="text-sm font-medium text-control-light text-right">
+                  Permissions
+                </dt>
+                <!-- TODO: decide necessary scopes -->
+                <dd class="text-sm text-main">
+                  Account > Read, Webhooks > Read and Write, Repositories >
+                  Write
+                </dd>
+              </div>
             </dl>
           </div>
         </li>
