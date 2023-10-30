@@ -205,16 +205,10 @@ message Sheet {
 
   enum Source {
     SOURCE_UNSPECIFIED = 0;
-    // BYTEBASE is the sheet created by Bytebase. e.g. SQL Editor.
+    // BYTEBASE is the sheet created in SQL Editor.
     SOURCE_BYTEBASE = 1;
-    // BYTEBASE_ARTIFACT is the artifact sheet.
+    // BYTEBASE_ARTIFACT is the artifact sheet such as DDL/DML.
     SOURCE_BYTEBASE_ARTIFACT = 2;
-    // GITLAB is the sheet synced from GitLab (for both GitLab.com and self-hosted GitLab).
-    SOURCE_GITLAB = 3;
-    // GITHUB is the sheet synced from GitHub (for both GitHub.com and GitHub Enterprise).
-    SOURCE_GITHUB = 4;
-    // BITBUCKET is the sheet synced from Bitbucket (for both Bitbucket.org and Bitbucket Server).
-    SOURCE_BITBUCKET = 5;
   }
   // The source of the sheet.
   Source source = 10 [(google.api.field_behavior) = OUTPUT_ONLY];

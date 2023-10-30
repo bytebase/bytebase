@@ -230,16 +230,10 @@ export function sheet_VisibilityToJSON(object: Sheet_Visibility): string {
 
 export enum Sheet_Source {
   SOURCE_UNSPECIFIED = 0,
-  /** SOURCE_BYTEBASE - BYTEBASE is the sheet created by Bytebase. e.g. SQL Editor. */
+  /** SOURCE_BYTEBASE - BYTEBASE is the sheet created in SQL Editor. */
   SOURCE_BYTEBASE = 1,
-  /** SOURCE_BYTEBASE_ARTIFACT - BYTEBASE_ARTIFACT is the artifact sheet. */
+  /** SOURCE_BYTEBASE_ARTIFACT - BYTEBASE_ARTIFACT is the artifact sheet such as DDL/DML. */
   SOURCE_BYTEBASE_ARTIFACT = 2,
-  /** SOURCE_GITLAB - GITLAB is the sheet synced from GitLab (for both GitLab.com and self-hosted GitLab). */
-  SOURCE_GITLAB = 3,
-  /** SOURCE_GITHUB - GITHUB is the sheet synced from GitHub (for both GitHub.com and GitHub Enterprise). */
-  SOURCE_GITHUB = 4,
-  /** SOURCE_BITBUCKET - BITBUCKET is the sheet synced from Bitbucket (for both Bitbucket.org and Bitbucket Server). */
-  SOURCE_BITBUCKET = 5,
   UNRECOGNIZED = -1,
 }
 
@@ -254,15 +248,6 @@ export function sheet_SourceFromJSON(object: any): Sheet_Source {
     case 2:
     case "SOURCE_BYTEBASE_ARTIFACT":
       return Sheet_Source.SOURCE_BYTEBASE_ARTIFACT;
-    case 3:
-    case "SOURCE_GITLAB":
-      return Sheet_Source.SOURCE_GITLAB;
-    case 4:
-    case "SOURCE_GITHUB":
-      return Sheet_Source.SOURCE_GITHUB;
-    case 5:
-    case "SOURCE_BITBUCKET":
-      return Sheet_Source.SOURCE_BITBUCKET;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -278,12 +263,6 @@ export function sheet_SourceToJSON(object: Sheet_Source): string {
       return "SOURCE_BYTEBASE";
     case Sheet_Source.SOURCE_BYTEBASE_ARTIFACT:
       return "SOURCE_BYTEBASE_ARTIFACT";
-    case Sheet_Source.SOURCE_GITLAB:
-      return "SOURCE_GITLAB";
-    case Sheet_Source.SOURCE_GITHUB:
-      return "SOURCE_GITHUB";
-    case Sheet_Source.SOURCE_BITBUCKET:
-      return "SOURCE_BITBUCKET";
     case Sheet_Source.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
