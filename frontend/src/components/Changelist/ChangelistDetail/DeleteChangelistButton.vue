@@ -38,6 +38,8 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import ErrorList from "@/components/misc/ErrorList.vue";
 import { pushNotification, useChangelistStore } from "@/store";
+import { projectV1Slug } from "@/utils";
+import { projectForChangelist } from "./common";
 import { useChangelistDetailContext } from "./context";
 
 const router = useRouter();
@@ -57,11 +59,15 @@ const errors = computed(() => {
 
 const handleDelete = async () => {
   isUpdating.value = true;
-
+  const project = projectForChangelist(changelist.value);
   try {
     await useChangelistStore().deleteChangelist(changelist.value.name);
-    router.push({
-      name: "workspace.changelist.dashboard",
+    router.replace({
+      name: "workspace.project.detail",
+      hash: "#changelists",
+      params: {
+        projectSlug: projectV1Slug(project),
+      },
     });
     pushNotification({
       module: "bytebase",
