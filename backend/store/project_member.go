@@ -118,12 +118,16 @@ func (s *Store) GetProjectPolicy(ctx context.Context, find *GetProjectPolicyMess
 	}
 	if find.ProjectID != nil {
 		if policy, ok := s.projectPolicyCache.Load(*find.ProjectID); ok {
-			return policy.(*IAMPolicyMessage), nil
+			if v, ok := policy.(*IAMPolicyMessage); ok {
+				return v, nil
+			}
 		}
 	}
 	if find.UID != nil {
 		if policy, ok := s.projectIDPolicyCache.Load(*find.UID); ok {
-			return policy.(*IAMPolicyMessage), nil
+			if v, ok := policy.(*IAMPolicyMessage); ok {
+				return v, nil
+			}
 		}
 	}
 

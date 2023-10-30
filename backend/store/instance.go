@@ -64,12 +64,16 @@ type FindInstanceMessage struct {
 func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*InstanceMessage, error) {
 	if find.ResourceID != nil {
 		if instance, ok := s.instanceCache.Load(getInstanceCacheKey(*find.ResourceID)); ok {
-			return instance.(*InstanceMessage), nil
+			if v, ok := instance.(*InstanceMessage); ok {
+				return v, nil
+			}
 		}
 	}
 	if find.UID != nil {
 		if instance, ok := s.instanceIDCache.Load(*find.UID); ok {
-			return instance.(*InstanceMessage), nil
+			if v, ok := instance.(*InstanceMessage); ok {
+				return v, nil
+			}
 		}
 	}
 

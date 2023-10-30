@@ -45,12 +45,16 @@ type UpdateEnvironmentMessage struct {
 func (s *Store) GetEnvironmentV2(ctx context.Context, find *FindEnvironmentMessage) (*EnvironmentMessage, error) {
 	if find.ResourceID != nil {
 		if environment, ok := s.environmentCache.Load(*find.ResourceID); ok {
-			return environment.(*EnvironmentMessage), nil
+			if v, ok := environment.(*EnvironmentMessage); ok {
+				return v, nil
+			}
 		}
 	}
 	if find.UID != nil {
 		if environment, ok := s.environmentIDCache.Load(*find.UID); ok {
-			return environment.(*EnvironmentMessage), nil
+			if v, ok := environment.(*EnvironmentMessage); ok {
+				return v, nil
+			}
 		}
 	}
 

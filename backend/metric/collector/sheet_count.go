@@ -3,7 +3,7 @@ package collector
 import (
 	"context"
 
-	metricAPI "github.com/bytebase/bytebase/backend/metric"
+	metricapi "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -33,7 +33,7 @@ func (c *sheetCountCollector) Collect(ctx context.Context) ([]*metric.Metric, er
 
 	for _, sheetCountMetric := range sheetCountMetricList {
 		res = append(res, &metric.Metric{
-			Name:  metricAPI.SheetCountMetricName,
+			Name:  metricapi.SheetCountMetricName,
 			Value: sheetCountMetric.Count,
 			Labels: map[string]any{
 				"row_status": string(sheetCountMetric.RowStatus),

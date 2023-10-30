@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	grpcRuntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	grpcruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -21,15 +21,15 @@ import (
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/api/gitops"
-	v1 "github.com/bytebase/bytebase/backend/api/v1"
+	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/common/stacktrace"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
-	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
-	enterpriseService "github.com/bytebase/bytebase/backend/enterprise/service"
+	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
+	enterprisesvc "github.com/bytebase/bytebase/backend/enterprise/service"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/migrator"
 	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
@@ -75,7 +75,7 @@ type Server struct {
 
 	activityManager *activity.Manager
 
-	licenseService enterpriseAPI.LicenseService
+	licenseService enterprise.LicenseService
 
 	profile         config.Profile
 	e               *echo.Echo
@@ -87,8 +87,8 @@ type Server struct {
 	errorRecordRing api.ErrorRecordRing
 
 	// Stubs.
-	rolloutService *v1.RolloutService
-	issueService   *v1.IssueService
+	rolloutService *apiv1.RolloutService
+	issueService   *apiv1.IssueService
 
 	// MySQL utility binaries
 	mysqlBinDir string
@@ -176,8 +176,8 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	// configure an external instance.
 	if profile.SampleDatabasePort != 0 {
 		slog.Info("-----Sample Postgres Instance BEGIN-----")
-		for i, v := range []string{"test", "prod"} {
-			slog.Info(fmt.Sprintf("Start %q sample database sampleDatabasePort=%d", v, profile.SampleDatabasePort))
+		for i, v := range []string{postgres.SampleDatabaseTest, postgres.SampleDatabaseProd} {
+			slog.Info(fmt.Sprintf("Start sample instance for %q sampleDatabasePort=%d", v, profile.SampleDatabasePort+i))
 			stopper, err := postgres.StartSampleInstance(ctx, s.pgBinDir, profile.DataDir, v, profile.SampleDatabasePort+i, profile.Mode)
 			if err != nil {
 				slog.Error("failed to init sample instance", log.BBError(err))
@@ -213,7 +213,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		slog.Warn("failed to backfill issue ts vector", log.BBError(err))
 	}
 
-	s.licenseService, err = enterpriseService.NewLicenseService(profile.Mode, storeInstance)
+	s.licenseService, err = enterprisesvc.NewLicenseService(profile.Mode, storeInstance)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create license service")
 	}
@@ -234,7 +234,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	// Note: the gateway response modifier takes the external url on server startup. If the external URL is changed,
 	// the user has to restart the server to take the latest value.
 	gatewayModifier := auth.GatewayResponseModifier{ExternalURL: externalURL, TokenDuration: tokenDuration}
-	mux := grpcRuntime.NewServeMux(grpcRuntime.WithForwardResponseOption(gatewayModifier.Modify))
+	mux := grpcruntime.NewServeMux(grpcruntime.WithForwardResponseOption(gatewayModifier.Modify))
 
 	if profile.BackupBucket != "" {
 		credentials, err := bbs3.GetCredentialsFromFile(ctx, profile.BackupCredentialFile)
@@ -291,8 +291,8 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	// Setup the gRPC and grpc-gateway.
 	authProvider := auth.New(s.store, s.secret, tokenDuration, s.licenseService, s.stateCfg, profile.Mode)
-	aclProvider := v1.NewACLInterceptor(s.store, s.secret, s.licenseService, profile.Mode)
-	debugProvider := v1.NewDebugInterceptor(&s.errorRecordRing, &profile, s.metricReporter)
+	aclProvider := apiv1.NewACLInterceptor(s.store, s.secret, s.licenseService, profile.Mode)
+	debugProvider := apiv1.NewDebugInterceptor(&s.errorRecordRing, &profile, s.metricReporter)
 	onPanic := func(p any) error {
 		stack := stacktrace.TakeStacktrace(20 /* n */, 5 /* skip */)
 		// keep a multiline stack

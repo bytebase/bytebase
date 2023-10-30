@@ -52,7 +52,10 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 		select {
 		case <-ticker.C:
 			r.stateCfg.RollbackGenerate.Range(func(key, value any) bool {
-				task := value.(*store.TaskMessage)
+				task, ok := value.(*store.TaskMessage)
+				if !ok {
+					return true
+				}
 				slog.Debug(fmt.Sprintf("Generating rollback SQL for task %d", task.ID))
 				ctx, cancel := context.WithCancel(ctx)
 				r.stateCfg.RollbackCancel.Store(task.ID, cancel)

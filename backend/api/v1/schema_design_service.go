@@ -13,7 +13,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -24,11 +24,11 @@ import (
 type SchemaDesignService struct {
 	v1pb.UnimplementedSchemaDesignServiceServer
 	store          *store.Store
-	licenseService enterpriseAPI.LicenseService
+	licenseService enterprise.LicenseService
 }
 
 // NewSchemaDesignService creates a new SchemaDesignService.
-func NewSchemaDesignService(store *store.Store, licenseService enterpriseAPI.LicenseService) *SchemaDesignService {
+func NewSchemaDesignService(store *store.Store, licenseService enterprise.LicenseService) *SchemaDesignService {
 	return &SchemaDesignService{
 		store:          store,
 		licenseService: licenseService,

@@ -21,9 +21,9 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/state"
-	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	metricAPI "github.com/bytebase/bytebase/backend/metric"
+	metricapi "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/runner/relay"
@@ -40,7 +40,7 @@ type IssueService struct {
 	activityManager *activity.Manager
 	relayRunner     *relay.Runner
 	stateCfg        *state.State
-	licenseService  enterpriseAPI.LicenseService
+	licenseService  enterprise.LicenseService
 	metricReporter  *metricreport.Reporter
 }
 
@@ -50,7 +50,7 @@ func NewIssueService(
 	activityManager *activity.Manager,
 	relayRunner *relay.Runner,
 	stateCfg *state.State,
-	licenseService enterpriseAPI.LicenseService,
+	licenseService enterprise.LicenseService,
 	metricReporter *metricreport.Reporter,
 ) *IssueService {
 	return &IssueService{
@@ -722,7 +722,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 	}
 
 	s.metricReporter.Report(ctx, &metric.Metric{
-		Name:  metricAPI.IssueCreateMetricName,
+		Name:  metricapi.IssueCreateMetricName,
 		Value: 1,
 		Labels: map[string]any{
 			"type": issue.Type,
@@ -1886,7 +1886,10 @@ func getProjectIDsFilter(ctx context.Context, s *store.Store, requestProjectID s
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
-	role := ctx.Value(common.RoleContextKey).(api.Role)
+	role, ok := ctx.Value(common.RoleContextKey).(api.Role)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "role not found")
+	}
 
 	if isOwnerOrDBA(role) {
 		if requestProjectID == "-" {
