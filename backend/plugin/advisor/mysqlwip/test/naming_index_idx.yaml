@@ -1,4 +1,4 @@
-- statement: CREATE INDEX idx_tech_book_id_name ON tech_book(id, name)
+- statement: CREATE INDEX idx_tech_book_id_name ON tech_book(id, name);
   want:
     - status: SUCCESS
       code: 0
@@ -6,7 +6,9 @@
       content: ""
       line: 0
       details: ""
-- statement: CREATE INDEX tech_book_id_name ON tech_book(id, name)
+- statement: |
+    CREATE TABLE tech_book (id INT, name VARCHAR(255));
+    CREATE INDEX tech_book_id_name ON tech_book(id, name);
   want:
     - status: WARN
       code: 303
@@ -14,7 +16,9 @@
       content: Index in table `tech_book` mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found `tech_book_id_name`
       line: 2
       details: ""
-- statement: CREATE INDEX afvjwsgrbgqzjfrkmbcoxzstznuypasijbbcdykoboredqovetzfcmmqliaelyavw ON tech_book(id, name)
+- statement: |
+    CREATE TABLE tech_book (id INT, name VARCHAR(255));
+    CREATE INDEX afvjwsgrbgqzjfrkmbcoxzstznuypasijbbcdykoboredqovetzfcmmqliaelyavw ON tech_book(id, name);
   want:
     - status: WARN
       code: 303
@@ -28,7 +32,7 @@
       content: Index in table `tech_book` mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found `afvjwsgrbgqzjfrkmbcoxzstznuypasijbbcdykoboredqovetzfcmmqliaelyavw`
       line: 2
       details: ""
-- statement: ALTER TABLE tech_book RENAME INDEX old_index TO idx_tech_book_id_name
+- statement: ALTER TABLE tech_book RENAME INDEX old_index TO idx_tech_book_id_name;
   want:
     - status: SUCCESS
       code: 0
@@ -36,7 +40,9 @@
       content: ""
       line: 0
       details: ""
-- statement: ALTER TABLE tech_book RENAME INDEX old_index TO idx_tech_book
+- statement: |
+    CREATE TABLE tech_book (id INT, name VARCHAR(255));
+    ALTER TABLE tech_book RENAME INDEX old_index TO idx_tech_book;
   want:
     - status: WARN
       code: 303
@@ -44,7 +50,9 @@
       content: Index in table `tech_book` mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found `idx_tech_book`
       line: 2
       details: ""
-- statement: ALTER TABLE tech_book ADD INDEX idx_tech_book_id_name (id, name)
+- statement: |
+    CREATE TABLE tech_book (id INT, name VARCHAR(255));
+    ALTER TABLE tech_book ADD INDEX idx_tech_book_id_name (id, name);
   want:
     - status: SUCCESS
       code: 0
@@ -52,7 +60,9 @@
       content: ""
       line: 0
       details: ""
-- statement: ALTER TABLE tech_book ADD INDEX tech_book_id_name (id, name)
+- statement: |
+    CREATE TABLE tech_book (id INT, name VARCHAR(255));
+    ALTER TABLE tech_book ADD INDEX tech_book_id_name (id, name);
   want:
     - status: WARN
       code: 303
@@ -60,7 +70,7 @@
       content: Index in table `tech_book` mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found `tech_book_id_name`
       line: 2
       details: ""
-- statement: CREATE TABLE tech_book_copy(id INT PRIMARY KEY, name VARCHAR(20), INDEX idx_tech_book_copy_name (name))
+- statement: CREATE TABLE tech_book_copy(id INT PRIMARY KEY, name VARCHAR(20), INDEX idx_tech_book_copy_name (name));
   want:
     - status: SUCCESS
       code: 0
@@ -68,7 +78,31 @@
       content: ""
       line: 0
       details: ""
-- statement: CREATE TABLE tech_book_copy(id INT PRIMARY KEY, name VARCHAR(20), INDEX (name))
+- statement: CREATE TABLE tech_book_copy(id INT PRIMARY KEY, name VARCHAR(20), INDEX (name));
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: CREATE TABLE tech_book_copy(id INT PRIMARY KEY, name VARCHAR(20), UNIQUE INDEX (name));
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: CREATE TABLE tech_book_copy(id INT PRIMARY KEY, name VARCHAR(20), FULLTEXT INDEX (name));
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: CREATE TABLE tech_book_copy(id INT PRIMARY KEY, name VARCHAR(20), SPATIAL INDEX (name));
   want:
     - status: SUCCESS
       code: 0
