@@ -28,6 +28,7 @@ import { useRouter } from "vue-router";
 import { BBGridColumn } from "@/bbkit";
 import { ComposedDatabaseGroup } from "@/types";
 import { DatabaseGroup } from "@/types/proto/v1/project_service";
+import { projectV1Slug } from "@/utils";
 
 const props = defineProps<{
   databaseGroupList: ComposedDatabaseGroup[];
@@ -66,7 +67,9 @@ const clickDatabaseGroup = (databaseGroup: ComposedDatabaseGroup) => {
   }
 
   router.push(
-    `/${databaseGroup.project.name}/database-groups/${databaseGroup.databaseGroupName}`
+    `/project/${projectV1Slug(databaseGroup.project)}/database-groups/${
+      databaseGroup.databaseGroupName
+    }`
   );
 };
 </script>

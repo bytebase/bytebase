@@ -181,12 +181,14 @@ const doDelete = () => {
           router.currentRoute.value.name ===
           "workspace.database-group.table-group.detail"
         ) {
-          const [projectName, databaseGroupName] =
+          const [_, databaseGroupName] =
             getProjectNameAndDatabaseGroupNameAndSchemaGroupName(
               schemaGroupName
             );
           // TODO(steven): prevent `Cannot use 'in' operator to search for 'path' in undefined` error in vue-router.
-          window.location.href = `/projects/${projectName}/database-groups/${databaseGroupName}`;
+          window.location.href = `/project/${projectV1Slug(
+            props.project
+          )}/database-groups/${databaseGroupName}`;
         }
       }
       emit("close");
@@ -253,6 +255,10 @@ const doConfirm = async () => {
     } else if (props.resourceType === "SCHEMA_GROUP") {
       if (isCreating.value) {
         if (!formState.selectedDatabaseGroupId) {
+          return;
+        }
+
+        if (!buildCELExpr(formState.expr)) {
           return;
         }
 
