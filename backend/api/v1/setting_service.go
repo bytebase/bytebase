@@ -456,10 +456,14 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 	default:
 		storeSettingValue = request.Setting.Value.GetStringValue()
 	}
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	setting, err := s.store.UpsertSettingV2(ctx, &store.SetSettingMessage{
 		Name:  apiSettingName,
 		Value: storeSettingValue,
-	}, ctx.Value(common.PrincipalIDContextKey).(int))
+	}, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to set setting: %v", err)
 	}
@@ -478,7 +482,7 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 		}
 		for _, project := range projects {
 			patch := &store.UpdateProjectMessage{
-				UpdaterID:                  ctx.Value(common.PrincipalIDContextKey).(int),
+				UpdaterID:                  principalID,
 				ResourceID:                 project.ResourceID,
 				DataClassificationConfigID: &classificationID,
 			}

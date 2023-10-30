@@ -1203,9 +1203,12 @@ func (s *SQLService) createQueryActivity(ctx context.Context, user *store.UserMe
 }
 
 func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store.InstanceMessage, databaseList []string, currentDatabase string, action storepb.MaskingExceptionPolicy_MaskingException_Action) (*base.SensitiveSchemaInfo, error) {
-	currentPrincipalUID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	currentPrincipal, err := s.store.GetUser(ctx, &store.FindUserMessage{
-		ID: &currentPrincipalUID,
+		ID: &principalID,
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find current principal")

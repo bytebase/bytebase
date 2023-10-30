@@ -133,7 +133,10 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 		}
 	}
 
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	instance, err := s.store.CreateInstanceV2(ctx,
 		instanceMessage,
 		principalID,
@@ -197,8 +200,12 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Instance.Name)
 	}
 
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	patch := &store.UpdateInstanceMessage{
-		UpdaterID:     ctx.Value(common.PrincipalIDContextKey).(int),
+		UpdaterID:     principalID,
 		EnvironmentID: instance.EnvironmentID,
 		ResourceID:    instance.ResourceID,
 	}
@@ -464,8 +471,12 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.Dele
 		}
 	}
 
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	if _, err := s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
-		UpdaterID:     ctx.Value(common.PrincipalIDContextKey).(int),
+		UpdaterID:     principalID,
 		EnvironmentID: instance.EnvironmentID,
 		ResourceID:    instance.ResourceID,
 		Delete:        &deletePatch,
@@ -486,8 +497,12 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, request *v1pb.Un
 		return nil, status.Errorf(codes.InvalidArgument, "instance %q is active", request.Name)
 	}
 
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	ins, err := s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
-		UpdaterID:     ctx.Value(common.PrincipalIDContextKey).(int),
+		UpdaterID:     principalID,
 		EnvironmentID: instance.EnvironmentID,
 		ResourceID:    instance.ResourceID,
 		Delete:        &undeletePatch,
@@ -593,7 +608,10 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 		return nil, status.Errorf(codes.PermissionDenied, err.Error())
 	}
 
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	if err := s.store.AddDataSourceToInstanceV2(ctx, instance.UID, principalID, instance.ResourceID, dataSource); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -647,8 +665,12 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		return nil, err
 	}
 
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	patch := &store.UpdateDataSourceMessage{
-		UpdaterID:    ctx.Value(common.PrincipalIDContextKey).(int),
+		UpdaterID:    principalID,
 		InstanceUID:  instance.UID,
 		InstanceID:   instance.ResourceID,
 		DataSourceID: request.DataSource.Id,

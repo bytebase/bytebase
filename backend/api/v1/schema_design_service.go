@@ -123,11 +123,14 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project not found: %v", projectID))
 	}
-	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	schemaDesign := request.SchemaDesign
 
 	// Branch protection check.
-	if err := s.checkProtectionRules(ctx, project, schemaDesign, currentPrincipalID); err != nil {
+	if err := s.checkProtectionRules(ctx, project, schemaDesign, principalID); err != nil {
 		return nil, err
 	}
 
@@ -207,8 +210,8 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 			Visibility:  store.ProjectSheet,
 			Source:      store.SheetFromBytebaseArtifact,
 			Type:        store.SheetForSQL,
-			CreatorID:   currentPrincipalID,
-			UpdaterID:   currentPrincipalID,
+			CreatorID:   principalID,
+			UpdaterID:   principalID,
 		}
 		sheet, err := s.store.CreateSheet(ctx, baselineSheetCreate)
 		if err != nil {
@@ -230,8 +233,8 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 		Visibility:  store.ProjectSheet,
 		Source:      store.SheetFromBytebaseArtifact,
 		Type:        store.SheetForSQL,
-		CreatorID:   currentPrincipalID,
-		UpdaterID:   currentPrincipalID,
+		CreatorID:   principalID,
+		UpdaterID:   principalID,
 		Payload:     schemaDesignSheetPayload,
 	}
 	sheet, err := s.store.CreateSheet(ctx, sheetCreate)
@@ -304,7 +307,10 @@ func (s *SchemaDesignService) checkProtectionRules(ctx context.Context, project 
 
 // UpdateSchemaDesign updates an existing schema design.
 func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v1pb.UpdateSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
-	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	_, sheetID, err := common.GetProjectResourceIDAndSchemaDesignSheetID(request.SchemaDesign.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid schema design name: %v", err))
@@ -327,7 +333,7 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 
 	sheetUpdate := &store.PatchSheetMessage{
 		UID:       sheetUID,
-		UpdaterID: currentPrincipalID,
+		UpdaterID: principalID,
 	}
 	schemaDesign := request.SchemaDesign
 	_, databaseName, err := common.GetInstanceDatabaseID(schemaDesign.BaselineDatabase)
@@ -455,13 +461,15 @@ func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1
 
 	// To merge from one schema design to another, we focus on the three schema string(map to database metadata):
 	// Head Schema, Baseline of Head Schema, and Target Schema.
-
-	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	targetSheet.Payload.DatabaseConfig = sheet.Payload.DatabaseConfig
 	targetSheet.Payload.BaselineDatabaseConfig = sheet.Payload.BaselineDatabaseConfig
 	sheetUpdate := &store.PatchSheetMessage{
 		UID:       targetSheetUID,
-		UpdaterID: currentPrincipalID,
+		UpdaterID: principalID,
 		Statement: &mergedTargetSchema,
 		Payload:   targetSheet.Payload,
 	}
@@ -493,7 +501,10 @@ func (*SchemaDesignService) ParseSchemaString(_ context.Context, request *v1pb.P
 
 // DeleteSchemaDesign deletes an existing schema design.
 func (s *SchemaDesignService) DeleteSchemaDesign(ctx context.Context, request *v1pb.DeleteSchemaDesignRequest) (*emptypb.Empty, error) {
-	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	_, sheetID, err := common.GetProjectResourceIDAndSchemaDesignSheetID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -518,7 +529,7 @@ func (s *SchemaDesignService) DeleteSchemaDesign(ctx context.Context, request *v
 		filter := fmt.Sprintf("(sheet.payload->>'schemaDesign')::jsonb->>'baselineSchemaDesignId' = '%d'", sheet.UID)
 		sheets, err := s.store.ListSheets(ctx, &store.FindSheetMessage{
 			SchemaDesignFilter: &filter,
-		}, currentPrincipalID)
+		}, principalID)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to list sheets: %v", err))
 		}
@@ -526,7 +537,7 @@ func (s *SchemaDesignService) DeleteSchemaDesign(ctx context.Context, request *v
 			sheet.Payload.SchemaDesign.BaselineSchemaDesignId = ""
 			_, err := s.store.PatchSheet(ctx, &store.PatchSheetMessage{
 				UID:       sheet.UID,
-				UpdaterID: currentPrincipalID,
+				UpdaterID: principalID,
 				Payload:   sheet.Payload,
 			})
 			if err != nil {
@@ -593,8 +604,11 @@ func (*SchemaDesignService) DiffMetadata(_ context.Context, request *v1pb.DiffMe
 }
 
 func (s *SchemaDesignService) listSheets(ctx context.Context, find *store.FindSheetMessage) ([]*store.SheetMessage, error) {
-	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	list, err := s.store.ListSheets(ctx, find, currentPrincipalID)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+	list, err := s.store.ListSheets(ctx, find, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
 	}
@@ -602,8 +616,11 @@ func (s *SchemaDesignService) listSheets(ctx context.Context, find *store.FindSh
 }
 
 func (s *SchemaDesignService) getSheet(ctx context.Context, find *store.FindSheetMessage) (*store.SheetMessage, error) {
-	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
-	sheet, err := s.store.GetSheet(ctx, find, currentPrincipalID)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+	sheet, err := s.store.GetSheet(ctx, find, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
 	}
