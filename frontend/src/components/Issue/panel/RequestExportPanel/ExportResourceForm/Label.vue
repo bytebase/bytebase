@@ -50,15 +50,15 @@ const environment = computed(() => {
 const Prefix = () => {
   if (option.value.level === "database") {
     return h(DatabaseIcon, {
-      class: "w-4 h-auto text-gray-400",
+      class: "w-4 h-auto text-gray-400 shrink-0",
     });
   } else if (option.value.level === "schema") {
     return h(SchemaIcon, {
-      class: "w-4 h-auto text-gray-400",
+      class: "w-4 h-auto text-gray-400 shrink-0",
     });
   } else if (option.value.level === "table") {
     return h(TableIcon, {
-      class: "w-4 h-auto text-gray-400",
+      class: "w-4 h-auto text-gray-400 shrink-0",
     });
   }
   return null;
