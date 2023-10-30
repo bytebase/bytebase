@@ -16,9 +16,8 @@ import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import BranchCreateView from "@/components/Branch/BranchCreateView.vue";
 import BranchDetailView from "@/components/Branch/BranchDetailView.vue";
-import { useProjectV1Store, useSheetV1Store } from "@/store";
+import { useProjectV1Store } from "@/store";
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
-import { getProjectAndSheetId } from "@/store/modules/v1/common";
 import { idFromSlug } from "@/utils";
 
 const props = defineProps({
@@ -34,7 +33,6 @@ const props = defineProps({
 
 const { t } = useI18n();
 const route = useRoute();
-const sheetStore = useSheetV1Store();
 const projectStore = useProjectV1Store();
 const schemaDesignStore = useSchemaDesignStore();
 const branchFullName = ref<string>("");
@@ -60,15 +58,10 @@ watch(
 
     // Prepare branch name from route params.
     const sheetId = (props.branchName as string) || "";
-    if (!sheetId) {
+    if (!sheetId || !project.value) {
       return;
     }
-    const sheet = await sheetStore.getOrFetchSheetByUID(`${sheetId}`);
-    if (sheet) {
-      const [projectName] = getProjectAndSheetId(sheet.name);
-      await projectStore.getOrFetchProjectByName(`projects/${projectName}`);
-      branchFullName.value = `projects/${projectName}/schemaDesigns/${sheetId}`;
-    }
+    branchFullName.value = `${project.value.name}/schemaDesigns/${sheetId}`;
   },
   {
     immediate: true,
