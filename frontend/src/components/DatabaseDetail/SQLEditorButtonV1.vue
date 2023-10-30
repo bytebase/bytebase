@@ -16,18 +16,37 @@
       {{ $t("sql-editor.self") }}
     </div>
   </NTooltip>
+
+  <RequestQueryPanel
+    v-if="state.showRequestQueryPanel"
+    :project-id="database?.projectEntity.uid"
+    :database="database"
+    :redirect-to-issue-page="pageMode === 'BUNDLED'"
+    @close="state.showRequestQueryPanel = false"
+  />
 </template>
 
 <script lang="ts" setup>
 import { NTooltip } from "naive-ui";
+import { storeToRefs } from "pinia";
 import { computed } from "vue";
-import { useCurrentUserV1, useSQLEditorTreeStore } from "@/store";
+import { reactive } from "vue";
+import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.vue";
+import {
+  useActuatorV1Store,
+  useCurrentUserV1,
+  useSQLEditorTreeStore,
+} from "@/store";
 import {
   ComposedDatabase,
   DEFAULT_PROJECT_V1_NAME,
   UNKNOWN_PROJECT_NAME,
 } from "@/types";
 import { connectionV1Slug, hasWorkspacePermissionV1 } from "@/utils";
+
+interface LocalState {
+  showRequestQueryPanel: boolean;
+}
 
 const props = withDefaults(
   defineProps<{
@@ -49,6 +68,11 @@ const emit = defineEmits<{
 }>();
 
 const currentUserV1 = useCurrentUserV1();
+const actuatorStore = useActuatorV1Store();
+const { pageMode } = storeToRefs(actuatorStore);
+const state = reactive<LocalState>({
+  showRequestQueryPanel: false,
+});
 
 const disabled = computed(() => props.disabled || !props.database);
 
@@ -62,7 +86,7 @@ const classes = computed((): string[] => {
     classes.push("tooltip-wrapper");
   }
   if (props.disabled) {
-    classes.push("text-gray-400", "cursor-not-allowed");
+    classes.push("text-gray-400");
   } else {
     classes.push("textlabel", "cursor-pointer", "hover:text-accent");
   }
@@ -71,6 +95,7 @@ const classes = computed((): string[] => {
 
 const gotoSQLEditor = () => {
   if (disabled.value) {
+    state.showRequestQueryPanel = true;
     return;
   }
 
