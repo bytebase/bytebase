@@ -481,7 +481,10 @@ func (s *IssueService) CreateIssue(ctx context.Context, request *v1pb.CreateIssu
 }
 
 func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v1pb.CreateIssueRequest) (*v1pb.Issue, error) {
-	creatorID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -560,7 +563,7 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 		},
 	}
 
-	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, creatorID)
+	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create issue, error: %v", err)
 	}
@@ -574,7 +577,7 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
 	}
 	activityCreate := &store.ActivityMessage{
-		CreatorUID:   creatorID,
+		CreatorUID:   principalID,
 		ContainerUID: issue.UID,
 		Type:         api.ActivityIssueCreate,
 		Level:        api.ActivityInfo,
@@ -595,7 +598,10 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 }
 
 func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1pb.CreateIssueRequest) (*v1pb.Issue, error) {
-	creatorID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -684,7 +690,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 		},
 	}
 
-	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, creatorID)
+	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create issue, error: %v", err)
 	}
@@ -698,7 +704,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 		return nil, errors.Wrapf(err, "failed to create ActivityIssueCreate activity after creating the issue: %v", issue.Title)
 	}
 	activityCreate := &store.ActivityMessage{
-		CreatorUID:   creatorID,
+		CreatorUID:   principalID,
 		ContainerUID: issue.UID,
 		Type:         api.ActivityIssueCreate,
 		Level:        api.ActivityInfo,
@@ -756,7 +762,10 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 		return nil, status.Errorf(codes.InvalidArgument, "the issue has been approved")
 	}
 
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	user, err := s.store.GetUserByID(ctx, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find user by id %v", principalID)
@@ -938,7 +947,10 @@ func (s *IssueService) RejectIssue(ctx context.Context, request *v1pb.RejectIssu
 		return nil, status.Errorf(codes.InvalidArgument, "the issue has been approved")
 	}
 
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	user, err := s.store.GetUserByID(ctx, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find user by id %v", principalID)
@@ -1031,7 +1043,10 @@ func (s *IssueService) RequestIssue(ctx context.Context, request *v1pb.RequestIs
 		return nil, status.Errorf(codes.InvalidArgument, "cannot request issues because the issue is not rejected")
 	}
 
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	user, err := s.store.GetUserByID(ctx, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find user by id %v", principalID)
@@ -1111,7 +1126,10 @@ func (s *IssueService) RequestIssue(ctx context.Context, request *v1pb.RequestIs
 
 // UpdateIssue updates the issue.
 func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssueRequest) (*v1pb.Issue, error) {
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
@@ -1120,7 +1138,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 		return nil, err
 	}
 
-	ok, err := isUserAtLeastProjectDeveloper(ctx, s.store, issue.Project.ResourceID)
+	ok, err = isUserAtLeastProjectDeveloper(ctx, s.store, issue.Project.ResourceID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check if the user can update issue, error: %v", err)
 	}
@@ -1290,7 +1308,10 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 
 // BatchUpdateIssuesStatus batch updates issues status.
 func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, request *v1pb.BatchUpdateIssuesStatusRequest) (*v1pb.BatchUpdateIssuesStatusResponse, error) {
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 
 	var issueIDs []int
 	var issues []*store.IssueMessage
@@ -1386,9 +1407,13 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, request *v1pb.Cre
 		return nil, status.Errorf(codes.PermissionDenied, "permission denied")
 	}
 
-	// TODO: migrate to store v2
+	// TODO: migrate to store v2.
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	activityCreate := &store.ActivityMessage{
-		CreatorUID:   ctx.Value(common.PrincipalIDContextKey).(int),
+		CreatorUID:   principalID,
 		ContainerUID: issue.UID,
 		Type:         api.ActivityIssueCommentCreate,
 		Level:        api.ActivityInfo,
@@ -1444,7 +1469,10 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, request *v1pb.Upd
 		return nil, status.Errorf(codes.InvalidArgument, `invalid comment id "%s": %v`, request.IssueComment.Uid, err.Error())
 	}
 
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	update := &store.UpdateActivityMessage{
 		UID:        activityUID,
 		CreatorUID: &principalID,
@@ -1804,7 +1832,10 @@ func getUserBelongingProjects(ctx context.Context, s *store.Store, userUID int) 
 }
 
 func isUserAtLeastProjectDeveloper(ctx context.Context, s *store.Store, requestProjectID string) (bool, error) {
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return false, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	user, err := s.GetUserByID(ctx, principalID)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to get user %d", principalID)
@@ -1826,7 +1857,10 @@ func isUserAtLeastProjectDeveloper(ctx context.Context, s *store.Store, requestP
 }
 
 func isUserAtLeastProjectMember(ctx context.Context, s *store.Store, requestProjectID string) (bool, error) {
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return false, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	user, err := s.GetUserByID(ctx, principalID)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to get user %d", principalID)
@@ -1848,7 +1882,10 @@ func isUserAtLeastProjectMember(ctx context.Context, s *store.Store, requestProj
 }
 
 func getProjectIDsFilter(ctx context.Context, s *store.Store, requestProjectID string) (*[]string, error) {
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	role := ctx.Value(common.RoleContextKey).(api.Role)
 
 	if isOwnerOrDBA(role) {

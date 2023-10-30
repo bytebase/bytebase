@@ -99,7 +99,10 @@ func (s *ProjectService) CreateProject(ctx context.Context, request *v1pb.Create
 		projectMessage.DataClassificationConfigID = setting.Configs[0].Id
 	}
 
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	project, err := s.store.CreateProjectV2(ctx,
 		projectMessage,
 		principalID,
@@ -130,8 +133,12 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 		return nil, status.Errorf(codes.InvalidArgument, "default project cannot be updated")
 	}
 
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	patch := &store.UpdateProjectMessage{
-		UpdaterID:  ctx.Value(common.PrincipalIDContextKey).(int),
+		UpdaterID:  principalID,
 		ResourceID: project.ResourceID,
 	}
 
@@ -219,8 +226,12 @@ func (s *ProjectService) DeleteProject(ctx context.Context, request *v1pb.Delete
 		}
 	}
 
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	if _, err := s.store.UpdateProjectV2(ctx, &store.UpdateProjectMessage{
-		UpdaterID:  ctx.Value(common.PrincipalIDContextKey).(int),
+		UpdaterID:  principalID,
 		ResourceID: project.ResourceID,
 		Delete:     &deletePatch,
 	}); err != nil {
@@ -240,8 +251,12 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, request *v1pb.Unde
 		return nil, status.Errorf(codes.InvalidArgument, "project %q is active", request.Name)
 	}
 
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	project, err = s.store.UpdateProjectV2(ctx, &store.UpdateProjectMessage{
-		UpdaterID:  ctx.Value(common.PrincipalIDContextKey).(int),
+		UpdaterID:  principalID,
 		ResourceID: project.ResourceID,
 		Delete:     &undeletePatch,
 	})
@@ -253,7 +268,10 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, request *v1pb.Unde
 
 // SearchProjects searches all projects that the caller have permission to.
 func (s *ProjectService) SearchProjects(ctx context.Context, _ *v1pb.SearchProjectsRequest) (*v1pb.SearchProjectsResponse, error) {
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	role := ctx.Value(common.RoleContextKey).(api.Role)
 
 	projects, err := s.store.ListProjectV2(ctx, &store.FindProjectMessage{})
@@ -533,7 +551,11 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 		return nil, status.Errorf(codes.InvalidArgument, "invalid base directory and filepath template combination: %v", err.Error())
 	}
 
-	updatedRepo, err := s.store.PatchRepositoryV2(ctx, patch, ctx.Value(common.PrincipalIDContextKey).(int))
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+	updatedRepo, err := s.store.PatchRepositoryV2(ctx, patch, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update repository with error: %v", err.Error())
 	}
@@ -574,7 +596,11 @@ func (s *ProjectService) SetupProjectSQLReviewCI(ctx context.Context, request *v
 		UID:               &repo.UID,
 		EnableSQLReviewCI: &enableSQLReviewCi,
 	}
-	if _, err := s.store.PatchRepositoryV2(ctx, repoPatch, ctx.Value(common.PrincipalIDContextKey).(int)); err != nil {
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+	if _, err := s.store.PatchRepositoryV2(ctx, repoPatch, principalID); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to patch repository with error: %v", err.Error())
 	}
 
@@ -601,7 +627,11 @@ func (s *ProjectService) UnsetProjectGitOpsInfo(ctx context.Context, request *v1
 		return nil, status.Errorf(codes.NotFound, "vcs %d not found", repo.VCSUID)
 	}
 
-	if err := s.store.DeleteRepositoryV2(ctx, repo.ProjectResourceID, ctx.Value(common.PrincipalIDContextKey).(int)); err != nil {
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+	if err := s.store.DeleteRepositoryV2(ctx, repo.ProjectResourceID, principalID); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to delete repository with error: %v", err.Error())
 	}
 
@@ -733,7 +763,11 @@ func (s *ProjectService) UpdateDeploymentConfig(ctx context.Context, request *v1
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	deploymentConfig, err := s.store.UpsertDeploymentConfigV2(ctx, project.UID, ctx.Value(common.PrincipalIDContextKey).(int), storeDeploymentConfig)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+	deploymentConfig, err := s.store.UpsertDeploymentConfigV2(ctx, project.UID, principalID, storeDeploymentConfig)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -772,7 +806,11 @@ func (s *ProjectService) AddWebhook(ctx context.Context, request *v1pb.AddWebhoo
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	if _, err := s.store.CreateProjectWebhookV2(ctx, ctx.Value(common.PrincipalIDContextKey).(int), project.UID, project.ResourceID, create); err != nil {
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+	if _, err := s.store.CreateProjectWebhookV2(ctx, principalID, project.UID, project.ResourceID, create); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
@@ -843,7 +881,11 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, request *v1pb.Update
 		}
 	}
 
-	if _, err := s.store.UpdateProjectWebhookV2(ctx, ctx.Value(common.PrincipalIDContextKey).(int), project.ResourceID, webhook.ID, update); err != nil {
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+	if _, err := s.store.UpdateProjectWebhookV2(ctx, principalID, project.ResourceID, webhook.ID, update); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
@@ -1123,7 +1165,11 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 		repositoryCreate.ExternalWebhookID = webhookID
 	}
 
-	repository, err := s.store.CreateRepositoryV2(ctx, repositoryCreate, ctx.Value(common.PrincipalIDContextKey).(int))
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+	repository, err := s.store.CreateRepositoryV2(ctx, repositoryCreate, principalID)
 	if err != nil {
 		if common.ErrorCode(err) == common.Conflict {
 			return nil, status.Errorf(codes.AlreadyExists, "project %s has already linked repository", repositoryCreate.ProjectResourceID)
@@ -1619,7 +1665,10 @@ func (s *ProjectService) CreateDatabaseGroup(ctx context.Context, request *v1pb.
 		return s.convertStoreToAPIDatabaseGroupFull(ctx, storeDatabaseGroup, projectResourceID)
 	}
 
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	databaseGroup, err := s.store.CreateDatabaseGroup(ctx, principalID, storeDatabaseGroup)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -1682,7 +1731,10 @@ func (s *ProjectService) UpdateDatabaseGroup(ctx context.Context, request *v1pb.
 			return nil, status.Errorf(codes.InvalidArgument, "unsupported path: %q", path)
 		}
 	}
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	databaseGroup, err := s.store.UpdateDatabaseGroup(ctx, principalID, existedDatabaseGroup.UID, &updateDatabaseGroup)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -1871,7 +1923,10 @@ func (s *ProjectService) CreateSchemaGroup(ctx context.Context, request *v1pb.Cr
 		return s.convertStoreToAPISchemaGroupFull(ctx, storeSchemaGroup, databaseGroup, projectResourceID)
 	}
 
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	schemaGroup, err := s.store.CreateSchemaGroup(ctx, principalID, storeSchemaGroup)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -1944,7 +1999,10 @@ func (s *ProjectService) UpdateSchemaGroup(ctx context.Context, request *v1pb.Up
 			return nil, status.Errorf(codes.InvalidArgument, "unsupported path: %q", path)
 		}
 	}
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	schemaGroup, err := s.store.UpdateSchemaGroup(ctx, principalID, existedSchemaGroup.UID, &updateSchemaGroup)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -2143,7 +2201,10 @@ func (s *ProjectService) UpdateProjectProtectionRules(ctx context.Context, reque
 		})
 	}
 
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	setting := project.Setting
 	setting.ProtectionRules = rules
 	project, err = s.store.UpdateProjectV2(ctx, &store.UpdateProjectMessage{

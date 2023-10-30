@@ -129,7 +129,10 @@ func (s *RolloutService) ListPlans(ctx context.Context, request *v1pb.ListPlansR
 
 // CreatePlan creates a new plan.
 func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePlanRequest) (*v1pb.Plan, error) {
-	creatorID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -157,7 +160,7 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 		},
 	}
 
-	plan, err := s.store.CreatePlan(ctx, planMessage, creatorID)
+	plan, err := s.store.CreatePlan(ctx, planMessage, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create plan, error: %v", err)
 	}
@@ -241,7 +244,10 @@ func (s *RolloutService) GetRollout(ctx context.Context, request *v1pb.GetRollou
 
 // CreateRollout creates a rollout from plan.
 func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.CreateRolloutRequest) (*v1pb.Rollout, error) {
-	creatorID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -275,7 +281,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 	if len(pipelineCreate.Stages) == 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "no database matched for deployment")
 	}
-	pipeline, err := s.createPipeline(ctx, project, pipelineCreate, creatorID)
+	pipeline, err := s.createPipeline(ctx, project, pipelineCreate, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create pipeline, error: %v", err)
 	}
@@ -283,7 +289,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 	// Update pipeline ID in the plan.
 	if err := s.store.UpdatePlan(ctx, &store.UpdatePlanMessage{
 		UID:         planID,
-		UpdaterID:   creatorID,
+		UpdaterID:   principalID,
 		PipelineUID: &pipeline.ID,
 	}); err != nil {
 		return nil, err
@@ -296,7 +302,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 	if issue != nil {
 		if _, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
 			PipelineUID: &pipeline.ID,
-		}, creatorID); err != nil {
+		}, principalID); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to update issue by plan id %v, error: %v", planID, err)
 		}
 	}
@@ -479,7 +485,10 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 		return nil, status.Errorf(codes.InvalidArgument, "No tasks to run in the stage")
 	}
 
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	user, err := s.store.GetUserByID(ctx, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find user, error: %v", err)
@@ -488,7 +497,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 		return nil, status.Errorf(codes.NotFound, "user %v not found", principalID)
 	}
 
-	ok, err := canUserRunStageTasks(ctx, s.store, user, issue, stageToRun.EnvironmentID)
+	ok, err = canUserRunStageTasks(ctx, s.store, user, issue, stageToRun.EnvironmentID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check if the user can run tasks, error: %v", err)
 	}
@@ -578,7 +587,10 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.Batch
 		taskByID[task.ID] = task
 	}
 
-	updaterID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	var taskUIDs []int
 	var tasksToSkip []*store.TaskMessage
 	for _, task := range request.Tasks {
@@ -593,7 +605,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.Batch
 		tasksToSkip = append(tasksToSkip, taskByID[taskID])
 	}
 
-	if err := s.store.BatchSkipTasks(ctx, taskUIDs, request.Reason, updaterID); err != nil {
+	if err := s.store.BatchSkipTasks(ctx, taskUIDs, request.Reason, principalID); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to skip tasks, error: %v", err)
 	}
 
@@ -601,7 +613,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.Batch
 		s.stateCfg.TaskSkippedOrDoneChan <- task.ID
 	}
 
-	if err := s.activityManager.BatchCreateActivitiesForSkipTasks(ctx, tasksToSkip, issue, request.Reason, updaterID); err != nil {
+	if err := s.activityManager.BatchCreateActivitiesForSkipTasks(ctx, tasksToSkip, issue, request.Reason, principalID); err != nil {
 		slog.Error("failed to batch create activities for skipping tasks", log.BBError(err))
 	}
 
@@ -665,7 +677,10 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.NotFound, "stage %v not found in rollout %v", stageID, rolloutID)
 	}
 
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	user, err := s.store.GetUserByID(ctx, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find user, error: %v", err)
@@ -674,7 +689,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.NotFound, "user %v not found", principalID)
 	}
 
-	ok, err := canUserCancelStageTaskRun(ctx, s.store, user, issue, stage.EnvironmentID)
+	ok, err = canUserCancelStageTaskRun(ctx, s.store, user, issue, stage.EnvironmentID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check if the user can run tasks, error: %v", err)
 	}
@@ -783,7 +798,10 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 	var taskPatchList []*api.TaskPatch
 	var statementUpdates []api.ActivityPipelineTaskStatementUpdatePayload
 	var earliestUpdates []api.ActivityPipelineTaskEarliestAllowedTimeUpdatePayload
-	updaterID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	if oldPlan.PipelineUID != nil {
 		tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: oldPlan.PipelineUID})
 		if err != nil {
@@ -793,7 +811,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 			doUpdate := false
 			taskPatch := &api.TaskPatch{
 				ID:        task.ID,
-				UpdaterID: updaterID,
+				UpdaterID: principalID,
 			}
 			tasksMap[task.ID] = task
 
@@ -947,7 +965,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 
 	if err := s.store.UpdatePlan(ctx, &store.UpdatePlanMessage{
 		UID:       oldPlan.UID,
-		UpdaterID: updaterID,
+		UpdaterID: principalID,
 		Config: &storepb.PlanConfig{
 			Steps: convertPlanSteps(request.Plan.Steps),
 		},
@@ -981,7 +999,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				return errors.Wrapf(err, "failed to marshal payload")
 			}
 			_, err = s.activityManager.CreateActivity(ctx, &store.ActivityMessage{
-				CreatorUID:   updaterID,
+				CreatorUID:   principalID,
 				ContainerUID: task.PipelineID,
 				Type:         api.ActivityPipelineTaskStatementUpdate,
 				Payload:      string(payload),
@@ -1002,7 +1020,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				return errors.Wrapf(err, "failed to marshal payload")
 			}
 			_, err = s.activityManager.CreateActivity(ctx, &store.ActivityMessage{
-				CreatorUID:   updaterID,
+				CreatorUID:   principalID,
 				ContainerUID: task.PipelineID,
 				Type:         api.ActivityPipelineTaskEarliestAllowedTimeUpdate,
 				Payload:      string(payload),

@@ -54,7 +54,10 @@ func (s *EnvironmentService) ListEnvironments(ctx context.Context, request *v1pb
 
 // CreateEnvironment creates an environment.
 func (s *EnvironmentService) CreateEnvironment(ctx context.Context, request *v1pb.CreateEnvironmentRequest) (*v1pb.Environment, error) {
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	if request.Environment == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "environment must be set")
 	}
@@ -93,7 +96,10 @@ func (s *EnvironmentService) CreateEnvironment(ctx context.Context, request *v1p
 
 // UpdateEnvironment updates an environment.
 func (s *EnvironmentService) UpdateEnvironment(ctx context.Context, request *v1pb.UpdateEnvironmentRequest) (*v1pb.Environment, error) {
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	if request.Environment == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "environment must be set")
 	}
@@ -135,7 +141,10 @@ func (s *EnvironmentService) UpdateEnvironment(ctx context.Context, request *v1p
 
 // DeleteEnvironment deletes an environment.
 func (s *EnvironmentService) DeleteEnvironment(ctx context.Context, request *v1pb.DeleteEnvironmentRequest) (*emptypb.Empty, error) {
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 
 	environment, err := s.getEnvironmentMessage(ctx, request.Name)
 	if err != nil {
@@ -162,7 +171,10 @@ func (s *EnvironmentService) DeleteEnvironment(ctx context.Context, request *v1p
 
 // UndeleteEnvironment undeletes an environment.
 func (s *EnvironmentService) UndeleteEnvironment(ctx context.Context, request *v1pb.UndeleteEnvironmentRequest) (*v1pb.Environment, error) {
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 
 	environment, err := s.getEnvironmentMessage(ctx, request.Name)
 	if err != nil {
@@ -191,7 +203,12 @@ func (s *EnvironmentService) UpdateBackupSetting(ctx context.Context, request *v
 		return nil, err
 	}
 
-	if err := s.store.UpdateBackupSettingsForEnvironmentV2(ctx, environment.ResourceID, request.Setting.Enabled, ctx.Value(common.PrincipalIDContextKey).(int)); err != nil {
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+
+	if err := s.store.UpdateBackupSettingsForEnvironmentV2(ctx, environment.ResourceID, request.Setting.Enabled, principalID); err != nil {
 		if common.ErrorCode(err) == common.Invalid {
 			return nil, status.Errorf(codes.InvalidArgument, "invalid backup setting: %v", err.Error())
 		}
