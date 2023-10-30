@@ -59,7 +59,7 @@ interface ProjectSidebarItem {
   }[];
 }
 
-const defaultHash: ProjectHash = "databases";
+const defaultHash: ProjectHash = "issues";
 
 interface LocalState {
   selectedHash: ProjectHash;
