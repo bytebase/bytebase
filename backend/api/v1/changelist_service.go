@@ -33,7 +33,10 @@ func (s *ChangelistService) CreateChangelist(ctx context.Context, request *v1pb.
 	if request.Changelist == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "changelist must be set")
 	}
-	currentPrincipalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 
 	projectResourceID, err := common.GetProjectID(request.Parent)
 	if err != nil {
@@ -64,7 +67,7 @@ func (s *ChangelistService) CreateChangelist(ctx context.Context, request *v1pb.
 		ProjectID:  project.ResourceID,
 		ResourceID: request.ChangelistId,
 		Payload:    convertV1ChangelistPayload(request.Changelist),
-		CreatorID:  currentPrincipalID,
+		CreatorID:  principalID,
 	})
 	if err != nil {
 		return nil, err
@@ -175,8 +178,12 @@ func (s *ChangelistService) UpdateChangelist(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.NotFound, "changelist %q not found", changelistID)
 	}
 
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	update := &store.UpdateChangelistMessage{
-		UpdaterID:  ctx.Value(common.PrincipalIDContextKey).(int),
+		UpdaterID:  principalID,
 		ProjectID:  project.ResourceID,
 		ResourceID: changelistID,
 	}
