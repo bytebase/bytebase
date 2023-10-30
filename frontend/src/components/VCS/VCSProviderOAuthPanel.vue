@@ -409,7 +409,6 @@
                 <dt class="text-sm font-medium text-control-light text-right">
                   Permissions
                 </dt>
-                <!-- TODO: decide necessary scopes -->
                 <dd class="text-sm text-main">
                   Account > Read, Webhooks > Read and write, Repositories >
                   Write
