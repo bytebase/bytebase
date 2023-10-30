@@ -218,7 +218,11 @@ const getItemClass = (hash: string | undefined) => {
     return [];
   }
   const list = ["outline-item"];
-  if (state.selectedHash === hash) {
+  if (!isProjectHash(hash)) {
+    return list;
+  }
+  const projectHash = hash as ProjectHash;
+  if (state.selectedHash === projectHash) {
     list.push("bg-link-hover");
   }
   return list;
@@ -250,6 +254,13 @@ const selectProjectTabOnHash = () => {
     state.selectedHash = "webhook";
   } else if (name == "workspace.changelist.detail") {
     state.selectedHash = "changelists";
+  } else if (name === "workspace.branch.detail") {
+    state.selectedHash = "branches";
+  } else if (
+    name === "workspace.database-group.detail" ||
+    name === "workspace.database-group.table-group.detail"
+  ) {
+    state.selectedHash = "database-groups";
   }
 };
 

@@ -450,13 +450,13 @@ const handleViewBranch = () => {
     return;
   }
 
-  const [projectName, sheetId] = getProjectAndSchemaDesignSheetId(
+  const [_, sheetId] = getProjectAndSchemaDesignSheetId(
     selectedSchemaDesign.value.name
   );
   const route = router.resolve({
     name: "workspace.branch.detail",
     params: {
-      projectName,
+      projectSlug: projectV1Slug(project.value),
       branchName: sheetId,
     },
   });

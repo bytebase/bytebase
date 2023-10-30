@@ -73,7 +73,7 @@ import {
   SchemaDesign,
   SchemaDesign_Type,
 } from "@/types/proto/v1/schema_design_service";
-import { projectV1Name } from "@/utils";
+import { projectV1Name, projectV1Slug } from "@/utils";
 
 const emit = defineEmits<{
   (event: "select", schemaDesign: SchemaDesign): void;
@@ -154,7 +154,7 @@ const handleCreateBranch = () => {
   const route = router.resolve({
     name: "workspace.branch.detail",
     params: {
-      projectName: "-",
+      projectSlug: "-",
       branchName: "new",
     },
   });
@@ -162,13 +162,14 @@ const handleCreateBranch = () => {
 };
 
 const handleViewSchemaDesign = (schemaDesign: SchemaDesign) => {
-  const [projectName, sheetId] = getProjectAndSchemaDesignSheetId(
-    schemaDesign.name
+  const [_, sheetId] = getProjectAndSchemaDesignSheetId(schemaDesign.name);
+  const baselineDatabase = databaseV1Store.getDatabaseByName(
+    schemaDesign.baselineDatabase
   );
   const route = router.resolve({
     name: "workspace.branch.detail",
     params: {
-      projectName,
+      projectSlug: projectV1Slug(baselineDatabase.projectEntity),
       branchName: sheetId,
     },
   });
