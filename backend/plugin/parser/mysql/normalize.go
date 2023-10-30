@@ -223,3 +223,11 @@ func NormalizeConstraintName(ctx parser.IConstraintNameContext) string {
 	}
 	return ""
 }
+
+// NormalizeMySQLColumnInternalRef noamalizes the given columnInternalRef.
+func NormalizeMySQLColumnInternalRef(ctx parser.IColumnInternalRefContext) string {
+	if ctx.Identifier() != nil {
+		return NormalizeMySQLIdentifier(ctx.Identifier())
+	}
+	return ""
+}
