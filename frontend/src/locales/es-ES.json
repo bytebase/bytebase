@@ -1031,7 +1031,7 @@
     "from-projects": "Transfer from other projects",
     "transfer-in-db-title": "Transferir base de datos",
     "transfer-in-db-alert": "¿Estás seguro de transferir \"{dbName}\" a nuestro proyecto?",
-    "unassigned-db-hint": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas no están asignadas al principio y deben transferirse a un proyecto antes de que puedan usarse.",
+    "unassigned-db-hint": "Las bases de datos recién sincronizadas comienzan sin asignar y deben ser asignadas a un proyecto para su uso.",
     "transfer-out-db": "Transferir base de datos",
     "transfer-out-db-title": "Transferir la base de datos",
     "request-export-permission": "Solicitar exportación",
