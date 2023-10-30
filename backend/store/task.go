@@ -217,6 +217,7 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 	}
 	defer tx.Rollback()
 
+	args = append(args, api.TaskRunNotStarted)
 	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
 			task.id,
@@ -230,7 +231,7 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 			task.database_id,
 			task.name,
 			task.status,
-			COALESCE(latest_task_run.status, 'NOT_STARTED') AS latest_task_run_status,
+			COALESCE(latest_task_run.status, $%d) AS latest_task_run_status,
 			task.type,
 			task.payload,
 			task.earliest_allowed_ts,
@@ -245,7 +246,7 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 			LIMIT 1
 		) AS latest_task_run ON TRUE
 		WHERE %s
-		ORDER BY task.id ASC`, strings.Join(where, " AND ")),
+		ORDER BY task.id ASC`, len(args), strings.Join(where, " AND ")),
 		args...,
 	)
 	if err != nil {
