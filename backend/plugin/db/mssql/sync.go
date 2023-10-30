@@ -248,7 +248,7 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 		INNER JOIN
 			sys.schemas s ON s.schema_id = t.schema_id
 		WHERE
-			t.is_ms_shipped = 0
+			t.is_ms_shipped = 0 AND ind.name IS NOT NULL
 		ORDER BY 
 			s.name, t.name, ind.name, ic.key_ordinal;`
 	rows, err := txn.Query(query)
