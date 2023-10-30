@@ -400,7 +400,6 @@
     "deploy": "Self Host",
     "cloud": "Cloud",
     "request-demo": "Book a 30 min product walkthrough with our product expert",
-    "debug": "Debug mode is active, you can disable Debug mode via the top-right profile dropdown.",
     "readonly": "Bytebase is in readonly mode. You can still view the console, but any change attempt will fail.",
     "external-url": "Bytebase has not configured --external-url",
     "configure-now": "Configure now"
