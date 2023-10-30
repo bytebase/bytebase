@@ -48,7 +48,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 				ObfuscatedPassword: common.Obfuscate("", s.secret),
 				Host:               common.GetPostgresSocketDir(),
 				Port:               strconv.Itoa(s.profile.SampleDatabasePort),
-				Database:           postgres.SampleDatabase,
+				Database:           postgres.SampleDatabaseTest,
 			},
 		},
 		EnvironmentID: api.DefaultTestEnvironmentID,
@@ -66,7 +66,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 	// Transfer sample database to the just created project.
 	transferDatabaseMessage := &store.UpdateDatabaseMessage{
 		InstanceID:   testInstance.ResourceID,
-		DatabaseName: postgres.SampleDatabase,
+		DatabaseName: postgres.SampleDatabaseTest,
 		ProjectID:    &project.ResourceID,
 	}
 	_, err = s.store.UpdateDatabase(ctx, transferDatabaseMessage, userID)
@@ -74,7 +74,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		return errors.Wrapf(err, "failed to transfer test sample database")
 	}
 
-	dbName := postgres.SampleDatabase
+	dbName := postgres.SampleDatabaseTest
 	testDatabase, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 		InstanceID:          &testInstance.ResourceID,
 		DatabaseName:        &dbName,
@@ -107,7 +107,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 				ObfuscatedPassword: common.Obfuscate("", s.secret),
 				Host:               common.GetPostgresSocketDir(),
 				Port:               strconv.Itoa(s.profile.SampleDatabasePort + 1),
-				Database:           postgres.SampleDatabase,
+				Database:           postgres.SampleDatabaseProd,
 			},
 		},
 		EnvironmentID: api.DefaultProdEnvironmentID,
@@ -125,7 +125,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 	// Transfer sample database to the just created project.
 	transferDatabaseMessage = &store.UpdateDatabaseMessage{
 		InstanceID:   prodInstance.ResourceID,
-		DatabaseName: postgres.SampleDatabase,
+		DatabaseName: postgres.SampleDatabaseProd,
 		ProjectID:    &project.ResourceID,
 	}
 	_, err = s.store.UpdateDatabase(ctx, transferDatabaseMessage, userID)
@@ -133,7 +133,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		return errors.Wrapf(err, "failed to transfer prod sample database")
 	}
 
-	dbName = postgres.SampleDatabase
+	dbName = postgres.SampleDatabaseProd
 	prodDatabase, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 		InstanceID:          &prodInstance.ResourceID,
 		DatabaseName:        &dbName,
