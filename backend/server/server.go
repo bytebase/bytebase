@@ -21,6 +21,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/api/gitops"
+	"github.com/bytebase/bytebase/backend/api/lsp"
 	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/common/stacktrace"
@@ -80,6 +81,7 @@ type Server struct {
 	profile         config.Profile
 	e               *echo.Echo
 	grpcServer      *grpc.Server
+	lspServer       *lsp.Server
 	store           *store.Store
 	dbFactory       *dbfactory.DBFactory
 	startedTs       int64
@@ -347,6 +349,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	reflection.Register(s.grpcServer)
 
+	s.lspServer = lsp.NewServer(s.store)
+	s.lspServer.ConfigLSPRouters(ctx)
+
 	serverStarted = true
 	return s, nil
 }
@@ -393,6 +398,17 @@ func (s *Server) Run(ctx context.Context, port int) error {
 			slog.Error("grpc server listen error", log.BBError(err))
 		}
 	}()
+
+	// Listen for LSP websocket request
+	lspListen, err := net.Listen("tcp", fmt.Sprintf(":%d", port+4))
+	if err != nil {
+		return err
+	}
+	go func() {
+		if err := s.lspServer.Serve(lspListen); err != nil {
+			slog.Error("lsp server listen error", log.BBError(err))
+		}
+	}()
 	return s.e.Start(fmt.Sprintf(":%d", port))
 }
 
@@ -431,6 +447,21 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		select {
 		case <-t.C:
 			s.grpcServer.Stop()
+		case <-stopped:
+			t.Stop()
+		}
+	}
+	if s.lspServer != nil {
+		stopped := make(chan struct{})
+		go func() {
+			s.lspServer.GracefulStop(ctx)
+			close(stopped)
+		}()
+
+		t := time.NewTimer(gracefulShutdownPeriod)
+		select {
+		case <-t.C:
+			s.lspServer.Stop()
 		case <-stopped:
 			t.Stop()
 		}

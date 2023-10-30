@@ -22,6 +22,8 @@ type Profile struct {
 	SampleDatabasePort int
 	// GrpcPort is the binding port for gRPC server.
 	GrpcPort int
+	// LSPPort is the binding port for Language Server Protocol server.
+	LSPProt int
 	// PgUser is the user we use to connect to bytebase's Postgres database.
 	// The name of the database storing metadata is the same as pgUser.
 	PgUser string

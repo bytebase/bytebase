@@ -232,6 +232,10 @@ func start() {
 		slog.Error(fmt.Sprintf("gRPC server port %d is not available", profile.GrpcPort), log.BBError(err))
 		return
 	}
+	if err := checkPort(profile.LSPProt); err != nil {
+		slog.Error(fmt.Sprintf("LSP server port %d is not available", profile.LSPProt), log.BBError(err))
+		return
+	}
 
 	var s *server.Server
 	// Setup signal handlers.
