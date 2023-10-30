@@ -25,6 +25,8 @@ func TestMySQLWIPRules(t *testing.T) {
 
 		// advisor.SchemaRuleStatementNoSelectAll disallow 'SELECT *'.
 		advisor.SchemaRuleStatementNoSelectAll,
+		// advisor.SchemaRuleStatementDisallowLimit disallow the LIMIT clause in INSERT, DELETE and UPDATE statements.
+		advisor.SchemaRuleStatementDisallowLimit,
 
 		// advisor.SchemaRuleStatementInsertRowLimit enforce the insert row limit.
 		advisor.SchemaRuleStatementInsertRowLimit,
