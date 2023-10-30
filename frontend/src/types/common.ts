@@ -64,6 +64,7 @@ export type RouterSlug = {
   projectName?: string;
   databaseGroupName?: string;
   schemaGroupName?: string;
+  changelistName?: string;
 };
 
 // Quick Action Type

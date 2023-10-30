@@ -114,10 +114,10 @@ import {
 } from "@/store";
 import {
   databaseGroupNamePrefix,
-  projectNamePrefix,
   schemaGroupNamePrefix,
 } from "@/store/modules/v1/common";
 import { ComposedSchemaGroupTable } from "@/types";
+import { idFromSlug } from "@/utils";
 import { convertCELStringToExpr } from "@/utils/databaseGroup/cel";
 
 interface LocalState {
@@ -127,7 +127,7 @@ interface LocalState {
 }
 
 const props = defineProps({
-  projectName: {
+  projectSlug: {
     required: true,
     type: String,
   },
@@ -150,13 +150,11 @@ const state = reactive<LocalState>({
   showConfigurePanel: false,
 });
 const project = computed(() => {
-  return projectStore.getProjectByName(
-    `${projectNamePrefix}${props.projectName}`
-  );
+  return projectStore.getProjectByUID(String(idFromSlug(props.projectSlug)));
 });
 const schemaGroup = computed(() => {
   return dbGroupStore.getSchemaGroupByName(
-    `${projectNamePrefix}${props.projectName}/${databaseGroupNamePrefix}${props.databaseGroupName}/${schemaGroupNamePrefix}${props.schemaGroupName}`
+    `${project.value.name}/${databaseGroupNamePrefix}${props.databaseGroupName}/${schemaGroupNamePrefix}${props.schemaGroupName}`
   );
 });
 
@@ -164,7 +162,7 @@ watch(
   () => [props, schemaGroup.value],
   async () => {
     const schemaGroup = await dbGroupStore.getOrFetchSchemaGroupByName(
-      `${projectNamePrefix}${props.projectName}/${databaseGroupNamePrefix}${props.databaseGroupName}/${schemaGroupNamePrefix}${props.schemaGroupName}`
+      `${project.value.name}/${databaseGroupNamePrefix}${props.databaseGroupName}/${schemaGroupNamePrefix}${props.schemaGroupName}`
     );
 
     const expression = schemaGroup.tableExpr?.expression ?? "";
