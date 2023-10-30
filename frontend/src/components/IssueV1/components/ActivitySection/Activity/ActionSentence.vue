@@ -331,7 +331,7 @@ const Renderer = defineComponent({
 
 const renderStatement = (content: string) => {
   return h(TextOverflowPopover, {
-    statement: content,
+    content,
     maxLength: 50,
     width: 400,
     contentClass: "text-main",
