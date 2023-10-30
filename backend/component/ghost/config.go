@@ -32,8 +32,8 @@ type Config struct {
 	IsAWS bool
 }
 
-// GetGhostConfig returns a gh-ost configuration for migration.
-func GetGhostConfig(taskID int, database *store.DatabaseMessage, dataSource *store.DataSourceMessage, secret string, instanceUsers []*store.InstanceUserMessage, tableName string, statement string, noop bool, serverIDOffset uint) (Config, error) {
+// getGhostConfig returns a gh-ost configuration for migration.
+func getGhostConfig(taskID int, database *store.DatabaseMessage, dataSource *store.DataSourceMessage, secret string, instanceUsers []*store.InstanceUserMessage, tableName string, statement string, noop bool, serverIDOffset uint) (Config, error) {
 	var isAWS bool
 	for _, user := range instanceUsers {
 		if user.Name == "'rdsadmin'@'localhost'" && strings.Contains(user.Grant, "SUPER") {
@@ -75,7 +75,12 @@ func GetPostponeFlagFilename(taskID int, databaseID int, databaseName string, ta
 }
 
 // NewMigrationContext is the context for gh-ost migration.
-func NewMigrationContext(config Config) (*base.MigrationContext, error) {
+func NewMigrationContext(taskID int, database *store.DatabaseMessage, dataSource *store.DataSourceMessage, secret string, instanceUsers []*store.InstanceUserMessage, tableName string, statement string, noop bool, serverIDOffset uint) (*base.MigrationContext, error) {
+	config, err := getGhostConfig(taskID, database, dataSource, secret, instanceUsers, tableName, statement, noop, serverIDOffset)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get ghost config")
+	}
+
 	const (
 		allowedRunningOnMaster              = true
 		concurrentCountTableRows            = true
@@ -92,7 +97,7 @@ func NewMigrationContext(config Config) (*base.MigrationContext, error) {
 		throttleHTTPIntervalMillis          = 100
 		throttleHTTPTimeoutMillis           = 1000
 	)
-	statement := strings.Join(strings.Fields(config.AlterStatement), " ")
+	statement = strings.Join(strings.Fields(config.AlterStatement), " ")
 	migrationContext := base.NewMigrationContext()
 	migrationContext.InspectorConnectionConfig.Key.Hostname = config.Host
 	port := 3306
