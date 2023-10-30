@@ -22,6 +22,8 @@ func TestMySQLWIPRules(t *testing.T) {
 		advisor.SchemaRuleFKNaming,
 		// advisor.SchemaRuleIDXNaming enforce the index name format.
 		advisor.SchemaRuleIDXNaming,
+		// advisor.SchemaRuleAutoIncrementColumnNaming enforce the auto_increment column name format.
+		advisor.SchemaRuleAutoIncrementColumnNaming,
 
 		// advisor.SchemaRuleStatementNoSelectAll disallow 'SELECT *'.
 		advisor.SchemaRuleStatementNoSelectAll,

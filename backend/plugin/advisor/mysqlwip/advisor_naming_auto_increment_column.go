@@ -6,26 +6,34 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/pingcap/tidb/parser/ast"
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
+	mysql "github.com/bytebase/mysql-parser"
+
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*NamingAutoIncrementColumnAdvisor)(nil)
-	_ ast.Visitor     = (*namingAutoIncrementColumnChecker)(nil)
 )
+
+func init() {
+	// only for mysqlwip test.
+	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLNamingAutoIncrementColumnConvention, &NamingAutoIncrementColumnAdvisor{})
+}
 
 // NamingAutoIncrementColumnAdvisor is the advisor checking for auto-increment naming convention.
 type NamingAutoIncrementColumnAdvisor struct {
 }
 
 // Check checks for auto-increment naming convention.
-func (*NamingAutoIncrementColumnAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	stmtList, ok := ctx.AST.([]ast.StmtNode)
+func (*NamingAutoIncrementColumnAdvisor) Check(ctx advisor.Context, statements string) ([]advisor.Advice, error) {
+	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to StmtNode")
+		return nil, errors.Errorf("failed to convert to mysql parser result")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -44,9 +52,8 @@ func (*NamingAutoIncrementColumnAdvisor) Check(ctx advisor.Context, _ string) ([
 	}
 
 	for _, stmt := range stmtList {
-		checker.text = stmt.Text()
-		checker.line = stmt.OriginTextPosition()
-		(stmt).Accept(checker)
+		checker.baseLine = stmt.BaseLine
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -61,96 +68,103 @@ func (*NamingAutoIncrementColumnAdvisor) Check(ctx advisor.Context, _ string) ([
 }
 
 type namingAutoIncrementColumnChecker struct {
+	*mysql.BaseMySQLParserListener
+
+	baseLine   int
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
-	text       string
-	line       int
 	format     *regexp.Regexp
 	maxLength  int
 }
 
-// Enter implements the ast.Visitor interface.
-func (checker *namingAutoIncrementColumnChecker) Enter(in ast.Node) (ast.Node, bool) {
-	type columnData struct {
-		name string
-		line int
-	}
-	var columnList []columnData
-	var tableName string
-	switch node := in.(type) {
-	// CREATE TABLE
-	case *ast.CreateTableStmt:
-		tableName = node.Table.Name.O
-		for _, column := range node.Cols {
-			if isAutoIncrement(column) {
-				columnList = append(columnList, columnData{
-					name: column.Name.Name.O,
-					line: column.OriginTextPosition(),
-				})
-			}
-		}
-	// ALTER TABLE
-	case *ast.AlterTableStmt:
-		tableName = node.Table.Name.O
-		for _, spec := range node.Specs {
-			switch spec.Tp {
-			// ADD COLUMNS
-			case ast.AlterTableAddColumns:
-				for _, column := range spec.NewColumns {
-					if isAutoIncrement(column) {
-						columnList = append(columnList, columnData{
-							name: column.Name.Name.O,
-							line: in.OriginTextPosition(),
-						})
-					}
-				}
-			// CHANGE COLUMN/MODIFY COLUMN
-			case ast.AlterTableChangeColumn, ast.AlterTableModifyColumn:
-				if isAutoIncrement(spec.NewColumns[0]) {
-					columnList = append(columnList, columnData{
-						name: spec.NewColumns[0].Name.Name.O,
-						line: in.OriginTextPosition(),
-					})
-				}
-			}
-		}
+func (checker *namingAutoIncrementColumnChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if ctx.TableName() == nil || ctx.TableElementList() == nil {
+		return
 	}
 
-	for _, column := range columnList {
-		if !checker.format.MatchString(column.name) {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
-				Status:  checker.level,
-				Code:    advisor.NamingAutoIncrementColumnConventionMismatch,
-				Title:   checker.title,
-				Content: fmt.Sprintf("`%s`.`%s` mismatches auto_increment column naming convention, naming format should be %q", tableName, column.name, checker.format),
-				Line:    column.line,
-			})
+	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
+	for _, tableElement := range ctx.TableElementList().AllTableElement() {
+		if tableElement == nil {
+			continue
 		}
-		if checker.maxLength > 0 && len(column.name) > checker.maxLength {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
-				Status:  checker.level,
-				Code:    advisor.NamingAutoIncrementColumnConventionMismatch,
-				Title:   checker.title,
-				Content: fmt.Sprintf("`%s`.`%s` mismatches auto_increment column naming convention, its length should be within %d characters", tableName, column.name, checker.maxLength),
-				Line:    column.line,
-			})
+		if tableElement.ColumnDefinition() == nil {
+			continue
 		}
-	}
+		if tableElement.ColumnDefinition().ColumnName() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil {
+			continue
+		}
 
-	return in, false
+		_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
+		if checker.isAutoIncrement(tableElement.ColumnDefinition().FieldDefinition()) {
+			checker.handleColumn(tableName, columnName, tableElement.GetStart().GetLine())
+		}
+
+	}
 }
 
-// Leave implements the ast.Visitor interface.
-func (*namingAutoIncrementColumnChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
-}
-
-func isAutoIncrement(column *ast.ColumnDef) bool {
-	for _, option := range column.Options {
-		if option.Tp == ast.ColumnOptionAutoIncrement {
+func (*namingAutoIncrementColumnChecker) isAutoIncrement(ctx mysql.IFieldDefinitionContext) bool {
+	for _, attr := range ctx.AllColumnAttribute() {
+		if attr.AUTO_INCREMENT_SYMBOL() != nil {
 			return true
 		}
 	}
 	return false
+}
+
+// EnterAlterTable is called when production alterTable is entered.
+func (checker *namingAutoIncrementColumnChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if ctx.AlterTableActions() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
+		return
+	}
+
+	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
+	// alter table add column, change column, modify column.
+	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
+		if item == nil {
+			continue
+		}
+
+		var columnName string
+		switch {
+		// add column
+		case item.ADD_SYMBOL() != nil && item.Identifier() != nil:
+			columnName = mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+		// modify column
+		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil:
+			columnName = mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
+		// change column
+		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil:
+			columnName = mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+		}
+		checker.handleColumn(tableName, columnName, ctx.GetStart().GetLine())
+	}
+}
+
+func (checker *namingAutoIncrementColumnChecker) handleColumn(tableName string, columnName string, lineNumber int) {
+	lineNumber += checker.baseLine
+	if !checker.format.MatchString(columnName) {
+		checker.adviceList = append(checker.adviceList, advisor.Advice{
+			Status:  checker.level,
+			Code:    advisor.NamingAutoIncrementColumnConventionMismatch,
+			Title:   checker.title,
+			Content: fmt.Sprintf("`%s`.`%s` mismatches auto_increment column naming convention, naming format should be %q", tableName, columnName, checker.format),
+			Line:    lineNumber,
+		})
+	}
+	if checker.maxLength > 0 && len(columnName) > checker.maxLength {
+		checker.adviceList = append(checker.adviceList, advisor.Advice{
+			Status:  checker.level,
+			Code:    advisor.NamingAutoIncrementColumnConventionMismatch,
+			Title:   checker.title,
+			Content: fmt.Sprintf("`%s`.`%s` mismatches auto_increment column naming convention, its length should be within %d characters", tableName, columnName, checker.maxLength),
+			Line:    lineNumber,
+		})
+	}
 }
