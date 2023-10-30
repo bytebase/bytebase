@@ -40,7 +40,6 @@ import {
   environmentV1Name,
   projectV1Slug,
   isDatabaseV1Accessible,
-  extractProjectResourceName,
   uidFromSlug,
   keyBy,
   extractUserUID,
@@ -272,9 +271,9 @@ const tenantDatabaseListByProject = computed((): BBOutlineItem[] => {
         ...databaseGroupList.map<BBOutlineItem>((dbGroup) => ({
           id: `bb.project.${project.uid}.databaseGroup.${dbGroup.name}`,
           name: dbGroup.databaseGroupName,
-          link: `/projects/${extractProjectResourceName(
-            project.name
-          )}/database-groups/${dbGroup.databaseGroupName}`,
+          link: `/project/${projectV1Slug(project)}/database-groups/${
+            dbGroup.databaseGroupName
+          }`,
           prefix: h(DatabaseGroupIcon, {
             class: "w-4 h-auto",
           }),
