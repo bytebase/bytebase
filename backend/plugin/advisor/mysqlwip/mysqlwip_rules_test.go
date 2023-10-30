@@ -25,6 +25,8 @@ func TestMySQLWIPRules(t *testing.T) {
 
 		// advisor.SchemaRuleStatementNoSelectAll disallow 'SELECT *'.
 		advisor.SchemaRuleStatementNoSelectAll,
+		// advisor.SchemaRuleStatementDisallowOrderBy disallow the ORDER BY clause in DELETE and UPDATE statements.
+		advisor.SchemaRuleStatementDisallowOrderBy,
 
 		// advisor.SchemaRuleStatementInsertRowLimit enforce the insert row limit.
 		advisor.SchemaRuleStatementInsertRowLimit,
@@ -33,6 +35,15 @@ func TestMySQLWIPRules(t *testing.T) {
 		advisor.SchemaRuleDropEmptyDatabase,
 	}
 
+	for _, rule := range mysqlwipRules {
+		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_ENGINE_UNSPECIFIED, false /* record */)
+	}
+}
+
+func TestRules(t *testing.T) {
+	mysqlwipRules := []advisor.SQLReviewRuleType{
+		advisor.SchemaRuleStatementDisallowOrderBy,
+	}
 	for _, rule := range mysqlwipRules {
 		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_ENGINE_UNSPECIFIED, false /* record */)
 	}
