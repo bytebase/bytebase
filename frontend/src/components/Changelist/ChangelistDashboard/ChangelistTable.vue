@@ -10,7 +10,7 @@
     <template #item="{ item: changelist }: BBGridRow<Changelist>">
       <!-- eslint-disable-next-line vue/no-v-html -->
       <div class="bb-grid-cell" v-html="renderDescription(changelist)"></div>
-      <div class="bb-grid-cell">
+      <div v-if="!hideProjectColumn" class="bb-grid-cell">
         {{ projectForChangelist(changelist).title }}
       </div>
       <div class="bb-grid-cell">
@@ -39,20 +39,21 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBGrid, BBGridRow, BBGridColumn } from "@/bbkit";
-import { useProjectV1Store, useUserStore } from "@/store";
+import { useUserStore } from "@/store";
 import { Changelist } from "@/types/proto/v1/changelist_service";
 import {
-  extractProjectResourceName,
   extractUserResourceName,
   getHighlightHTMLByRegExp,
   projectV1Slug,
   extractChangelistResourceName,
 } from "@/utils";
+import { projectForChangelist } from "../ChangelistDetail/common";
 
 const props = defineProps<{
   changelists: Changelist[];
   isFetching: boolean;
   keyword?: string;
+  hideProjectColumn: boolean;
 }>();
 
 const { t } = useI18n();
@@ -61,16 +62,11 @@ const router = useRouter();
 const columns = computed((): BBGridColumn[] => {
   return [
     { title: t("changelist.self"), width: "3fr" },
-    { title: t("common.project"), width: "1fr" },
+    { title: t("common.project"), width: "1fr", hide: props.hideProjectColumn },
     { title: t("common.updated-at"), width: "minmax(8rem, auto)" },
     { title: t("common.created-at"), width: "minmax(8rem, auto)" },
-  ];
+  ].filter((item) => !item.hide);
 });
-
-const projectForChangelist = (changelist: Changelist) => {
-  const proj = extractProjectResourceName(changelist.name);
-  return useProjectV1Store().getProjectByName(`projects/${proj}`);
-};
 
 const getUser = (name: string) => {
   const email = extractUserResourceName(name);
