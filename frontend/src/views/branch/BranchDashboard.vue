@@ -27,6 +27,12 @@
       @click="handleBranchClick"
     />
   </div>
+
+  <Drawer :show="state.showCreateModal" @close="state.showCreateModal = false">
+    <DrawerContent :title="$t('database.new-branch')">
+      <BranchCreateView />
+    </DrawerContent>
+  </Drawer>
 </template>
 
 <script lang="ts" setup>
@@ -36,9 +42,13 @@ import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
 import BranchDataTable from "@/components/Branch/BranchDataTable.vue";
 import { ProjectSelect } from "@/components/v2";
+import { Drawer, DrawerContent } from "@/components/v2";
 import { useProjectV1Store, useDatabaseV1Store } from "@/store";
 import { useSchemaDesignList } from "@/store/modules/schemaDesign";
-import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
+import {
+  getProjectAndSchemaDesignSheetId,
+  projectNamePrefix,
+} from "@/store/modules/v1/common";
 import { UNKNOWN_ID } from "@/types";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import { projectV1Slug } from "@/utils";
@@ -46,6 +56,7 @@ import { projectV1Slug } from "@/utils";
 interface LocalState {
   searchKeyword: string;
   projectFilter: string;
+  showCreateModal: boolean;
 }
 
 const router = useRouter();
@@ -55,13 +66,16 @@ const databaseStore = useDatabaseV1Store();
 const state = reactive<LocalState>({
   searchKeyword: "",
   projectFilter: String(UNKNOWN_ID),
+  showCreateModal: false,
 });
 
 const filteredBranches = computed(() => {
   return orderBy(schemaDesignList.value, "updateTime", "desc")
     .filter((branch) => {
       const [projectName] = getProjectAndSchemaDesignSheetId(branch.name);
-      const project = projectStore.getProjectByName(`projects/${projectName}`);
+      const project = projectStore.getProjectByName(
+        `${projectNamePrefix}${projectName}`
+      );
       return (
         !state.projectFilter ||
         state.projectFilter === String(UNKNOWN_ID) ||
@@ -76,13 +90,7 @@ const filteredBranches = computed(() => {
 });
 
 const handleCreateBranch = () => {
-  router.push({
-    name: "workspace.branch.detail",
-    params: {
-      projectSlug: "-",
-      branchName: "new",
-    },
-  });
+  state.showCreateModal = true;
 };
 
 const handleBranchClick = async (schemaDesign: SchemaDesign) => {
@@ -90,7 +98,6 @@ const handleBranchClick = async (schemaDesign: SchemaDesign) => {
   const baselineDatabase = databaseStore.getDatabaseByName(
     schemaDesign.baselineDatabase
   );
-  console.log("handleBranchClick");
   router.push({
     name: "workspace.branch.detail",
     params: {
