@@ -203,13 +203,7 @@ const quickActionMapByRole = computed(() => {
 });
 
 const isDatabaseHash = computed(() => {
-  return (
-    hash.value === "databases" ||
-    hash.value === "database-groups" ||
-    hash.value === "change-history" ||
-    hash.value === "slow-query" ||
-    hash.value === "anomalies"
-  );
+  return hash.value === "databases" || hash.value === "database-groups";
 });
 
 const quickActionList = computed(() => {
