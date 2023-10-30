@@ -79,7 +79,7 @@ import {
   useProjectV1Store,
   useDatabaseV1Store,
 } from "@/store";
-import { RouteMapList, UNKNOWN_ID } from "@/types";
+import { RouteMapList } from "@/types";
 import { Bookmark } from "@/types/proto/v1/bookmark_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import { databaseV1Slug, idFromSlug, projectV1Slug } from "../utils";
@@ -218,18 +218,12 @@ export default defineComponent({
         } else if (route.name === "workspace.branch.detail") {
           list.push(
             {
-              name: project.uid === String(UNKNOWN_ID) ? "-" : project.title,
-              path:
-                project.uid === String(UNKNOWN_ID)
-                  ? undefined
-                  : `/project/${projectV1Slug(project)}`,
+              name: project.title,
+              path: `/project/${projectV1Slug(project)}`,
             },
             {
               name: t("common.branches"),
-              path:
-                project.uid === String(UNKNOWN_ID)
-                  ? "/branches"
-                  : `/project/${projectV1Slug(project)}#branches`,
+              path: `/project/${projectV1Slug(project)}#branches`,
             }
           );
         }

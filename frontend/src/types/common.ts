@@ -61,7 +61,6 @@ export type RouterSlug = {
   ssoName?: string;
 
   // Resource names.
-  projectName?: string;
   databaseGroupName?: string;
   schemaGroupName?: string;
   changelistName?: string;

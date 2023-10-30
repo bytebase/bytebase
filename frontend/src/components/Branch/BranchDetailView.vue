@@ -600,7 +600,11 @@ const generateIssueName = (databaseNameList: string[]) => {
 const deleteSchemaDesign = async () => {
   await schemaDesignStore.deleteSchemaDesign(schemaDesign.value.name);
   router.replace({
-    name: "workspace.branch.dashboard",
+    name: "workspace.project.detail",
+    hash: "#branches",
+    params: {
+      projectSlug: projectV1Slug(project.value),
+    },
   });
 };
 </script>
