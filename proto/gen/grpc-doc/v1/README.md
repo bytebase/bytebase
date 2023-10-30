@@ -603,7 +603,6 @@
     - [Sheet](#bytebase-v1-Sheet)
     - [SheetOrganizer](#bytebase-v1-SheetOrganizer)
     - [SheetPayload](#bytebase-v1-SheetPayload)
-    - [SyncSheetsRequest](#bytebase-v1-SyncSheetsRequest)
     - [UpdateSheetOrganizerRequest](#bytebase-v1-UpdateSheetOrganizerRequest)
     - [UpdateSheetRequest](#bytebase-v1-UpdateSheetRequest)
   
@@ -9646,23 +9645,6 @@ When paginating, all other parameters provided to `SearchSheets` must match the 
 
 
 
-<a name="bytebase-v1-SyncSheetsRequest"></a>
-
-### SyncSheetsRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The name of the project to sync sheets.
-
-Format: projects/{project} |
-
-
-
-
-
-
 <a name="bytebase-v1-UpdateSheetOrganizerRequest"></a>
 
 ### UpdateSheetOrganizerRequest
@@ -9772,7 +9754,6 @@ Type of the SheetPayload.
 | UpdateSheet | [UpdateSheetRequest](#bytebase-v1-UpdateSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
 | UpdateSheetOrganizer | [UpdateSheetOrganizerRequest](#bytebase-v1-UpdateSheetOrganizerRequest) | [SheetOrganizer](#bytebase-v1-SheetOrganizer) |  |
 | DeleteSheet | [DeleteSheetRequest](#bytebase-v1-DeleteSheetRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| SyncSheets | [SyncSheetsRequest](#bytebase-v1-SyncSheetsRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
  
 
