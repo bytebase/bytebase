@@ -12,7 +12,9 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-var _ advisor.Advisor = (*WhereRequirementAdvisor)(nil)
+var (
+	_ advisor.Advisor = (*WhereRequirementAdvisor)(nil)
+)
 
 func init() {
 	// only for mysqlwip test.
