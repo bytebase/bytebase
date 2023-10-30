@@ -29,7 +29,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
-	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
@@ -59,7 +59,7 @@ type SQLService struct {
 	schemaSyncer    *schemasync.Syncer
 	dbFactory       *dbfactory.DBFactory
 	activityManager *activity.Manager
-	licenseService  enterpriseAPI.LicenseService
+	licenseService  enterprise.LicenseService
 }
 
 // NewSQLService creates a SQLService.
@@ -68,7 +68,7 @@ func NewSQLService(
 	schemaSyncer *schemasync.Syncer,
 	dbFactory *dbfactory.DBFactory,
 	activityManager *activity.Manager,
-	licenseService enterpriseAPI.LicenseService,
+	licenseService enterprise.LicenseService,
 ) *SQLService {
 	return &SQLService{
 		store:           store,

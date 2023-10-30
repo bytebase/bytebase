@@ -19,7 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
-	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/mysql"
@@ -386,7 +386,7 @@ func setMigrationIDAndEndBinlogCoordinate(ctx context.Context, conn *sql.Conn, t
 	return updatedTask, nil
 }
 
-func postMigration(ctx context.Context, stores *store.Store, activityManager *activity.Manager, license enterpriseAPI.LicenseService, task *store.TaskMessage, mi *db.MigrationInfo, migrationID string, schema string, sheetID *int) (bool, *api.TaskRunResultPayload, error) {
+func postMigration(ctx context.Context, stores *store.Store, activityManager *activity.Manager, license enterprise.LicenseService, task *store.TaskMessage, mi *db.MigrationInfo, migrationID string, schema string, sheetID *int) (bool, *api.TaskRunResultPayload, error) {
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return true, nil, err
@@ -570,7 +570,7 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 	}, nil
 }
 
-func isWriteBack(ctx context.Context, stores *store.Store, license enterpriseAPI.LicenseService, project *store.ProjectMessage, repo *store.RepositoryMessage, task *store.TaskMessage) (string, error) {
+func isWriteBack(ctx context.Context, stores *store.Store, license enterprise.LicenseService, project *store.ProjectMessage, repo *store.RepositoryMessage, task *store.TaskMessage) (string, error) {
 	if task.Type != api.TaskDatabaseSchemaBaseline && task.Type != api.TaskDatabaseSchemaUpdate && task.Type != api.TaskDatabaseSchemaUpdateGhostCutover {
 		return "", nil
 	}
@@ -633,7 +633,7 @@ func isWriteBack(ctx context.Context, stores *store.Store, license enterpriseAPI
 	return branch, nil
 }
 
-func runMigration(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, license enterpriseAPI.LicenseService, stateCfg *state.State, profile config.Profile, task *store.TaskMessage, taskRunUID int, migrationType db.MigrationType, statement string, schemaVersion model.Version, sheetID *int) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func runMigration(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, activityManager *activity.Manager, license enterprise.LicenseService, stateCfg *state.State, profile config.Profile, task *store.TaskMessage, taskRunUID int, migrationType db.MigrationType, statement string, schemaVersion model.Version, sheetID *int) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	mi, err := getMigrationInfo(ctx, store, profile, task, migrationType, statement, schemaVersion)
 	if err != nil {
 		return true, nil, err

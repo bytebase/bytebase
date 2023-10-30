@@ -18,7 +18,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	vcsplugin "github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
@@ -31,11 +31,11 @@ import (
 type SheetService struct {
 	v1pb.UnimplementedSheetServiceServer
 	store          *store.Store
-	licenseService enterpriseAPI.LicenseService
+	licenseService enterprise.LicenseService
 }
 
 // NewSheetService creates a new SheetService.
-func NewSheetService(store *store.Store, licenseService enterpriseAPI.LicenseService) *SheetService {
+func NewSheetService(store *store.Store, licenseService enterprise.LicenseService) *SheetService {
 	return &SheetService{
 		store:          store,
 		licenseService: licenseService,

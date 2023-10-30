@@ -6,7 +6,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
-	enterpriseapi "github.com/bytebase/bytebase/backend/enterprise/api"
+	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -16,7 +16,7 @@ type Service struct {
 	dbFactory       *dbfactory.DBFactory
 	activityManager *activity.Manager
 	stateCfg        *state.State
-	licenseService  enterpriseapi.LicenseService
+	licenseService  enterprise.LicenseService
 	rolloutService  *v1pb.RolloutService
 	issueService    *v1pb.IssueService
 }
@@ -27,7 +27,7 @@ func NewService(
 	dbFactory *dbfactory.DBFactory,
 	activityManager *activity.Manager,
 	stateCfg *state.State,
-	licenseService enterpriseapi.LicenseService,
+	licenseService enterprise.LicenseService,
 	rolloutService *v1pb.RolloutService,
 	issueService *v1pb.IssueService,
 ) *Service {

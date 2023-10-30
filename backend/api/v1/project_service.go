@@ -22,7 +22,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
-	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	vcsplugin "github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/azure"
@@ -46,11 +46,11 @@ type ProjectService struct {
 	v1pb.UnimplementedProjectServiceServer
 	store           *store.Store
 	activityManager *activity.Manager
-	licenseService  enterpriseAPI.LicenseService
+	licenseService  enterprise.LicenseService
 }
 
 // NewProjectService creates a new ProjectService.
-func NewProjectService(store *store.Store, activityManager *activity.Manager, licenseService enterpriseAPI.LicenseService) *ProjectService {
+func NewProjectService(store *store.Store, activityManager *activity.Manager, licenseService enterprise.LicenseService) *ProjectService {
 	return &ProjectService{
 		store:           store,
 		activityManager: activityManager,

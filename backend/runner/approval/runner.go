@@ -25,7 +25,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
-	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/runner/relay"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -43,11 +43,11 @@ type Runner struct {
 	stateCfg        *state.State
 	activityManager *activity.Manager
 	relayRunner     *relay.Runner
-	licenseService  enterpriseAPI.LicenseService
+	licenseService  enterprise.LicenseService
 }
 
 // NewRunner creates a new runner.
-func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, activityManager *activity.Manager, relayRunner *relay.Runner, licenseService enterpriseAPI.LicenseService) *Runner {
+func NewRunner(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, activityManager *activity.Manager, relayRunner *relay.Runner, licenseService enterprise.LicenseService) *Runner {
 	return &Runner{
 		store:           store,
 		dbFactory:       dbFactory,
@@ -323,7 +323,7 @@ func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, risk
 	return nil, nil
 }
 
-func getIssueRisk(ctx context.Context, s *store.Store, licenseService enterpriseAPI.LicenseService, dbFactory *dbfactory.DBFactory, issue *store.IssueMessage, risks []*store.RiskMessage) (int64, store.RiskSource, bool, error) {
+func getIssueRisk(ctx context.Context, s *store.Store, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, issue *store.IssueMessage, risks []*store.RiskMessage) (int64, store.RiskSource, bool, error) {
 	switch issue.Type {
 	case api.IssueGrantRequest:
 		return getGrantRequestIssueRisk(ctx, s, issue, risks)
@@ -334,7 +334,7 @@ func getIssueRisk(ctx context.Context, s *store.Store, licenseService enterprise
 	}
 }
 
-func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseService enterpriseAPI.LicenseService, dbFactory *dbfactory.DBFactory, issue *store.IssueMessage, risks []*store.RiskMessage) (int64, store.RiskSource, bool, error) {
+func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, issue *store.IssueMessage, risks []*store.RiskMessage) (int64, store.RiskSource, bool, error) {
 	if issue.PlanUID == nil {
 		return 0, store.RiskSourceUnknown, false, errors.Errorf("expected plan UID in issue %v", issue.UID)
 	}

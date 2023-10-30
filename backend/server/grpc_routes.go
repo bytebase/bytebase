@@ -15,7 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
-	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/runner/backuprun"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
@@ -32,7 +32,7 @@ func configureGrpcRouters(
 	grpcServer *grpc.Server,
 	stores *store.Store,
 	dbFactory *dbfactory.DBFactory,
-	licenseService enterpriseAPI.LicenseService,
+	licenseService enterprise.LicenseService,
 	profile *config.Profile,
 	metricReporter *metricreport.Reporter,
 	stateCfg *state.State,

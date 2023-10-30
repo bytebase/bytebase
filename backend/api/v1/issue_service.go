@@ -21,7 +21,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/state"
-	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	metricAPI "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
@@ -40,7 +40,7 @@ type IssueService struct {
 	activityManager *activity.Manager
 	relayRunner     *relay.Runner
 	stateCfg        *state.State
-	licenseService  enterpriseAPI.LicenseService
+	licenseService  enterprise.LicenseService
 	metricReporter  *metricreport.Reporter
 }
 
@@ -50,7 +50,7 @@ func NewIssueService(
 	activityManager *activity.Manager,
 	relayRunner *relay.Runner,
 	stateCfg *state.State,
-	licenseService enterpriseAPI.LicenseService,
+	licenseService enterprise.LicenseService,
 	metricReporter *metricreport.Reporter,
 ) *IssueService {
 	return &IssueService{

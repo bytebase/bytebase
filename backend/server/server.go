@@ -28,8 +28,8 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
-	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
-	enterpriseService "github.com/bytebase/bytebase/backend/enterprise/service"
+	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
+	enterprisesvc "github.com/bytebase/bytebase/backend/enterprise/service"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/migrator"
 	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
@@ -75,7 +75,7 @@ type Server struct {
 
 	activityManager *activity.Manager
 
-	licenseService enterpriseAPI.LicenseService
+	licenseService enterprise.LicenseService
 
 	profile         config.Profile
 	e               *echo.Echo
@@ -213,7 +213,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		slog.Warn("failed to backfill issue ts vector", log.BBError(err))
 	}
 
-	s.licenseService, err = enterpriseService.NewLicenseService(profile.Mode, storeInstance)
+	s.licenseService, err = enterprisesvc.NewLicenseService(profile.Mode, storeInstance)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create license service")
 	}

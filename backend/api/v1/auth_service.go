@@ -24,7 +24,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/state"
-	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	metricAPI "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/idp/ldap"
@@ -49,7 +49,7 @@ type AuthService struct {
 	store          *store.Store
 	secret         string
 	tokenDuration  time.Duration
-	licenseService enterpriseAPI.LicenseService
+	licenseService enterprise.LicenseService
 	metricReporter *metricreport.Reporter
 	profile        *config.Profile
 	stateCfg       *state.State
@@ -57,7 +57,7 @@ type AuthService struct {
 }
 
 // NewAuthService creates a new AuthService.
-func NewAuthService(store *store.Store, secret string, tokenDuration time.Duration, licenseService enterpriseAPI.LicenseService, metricReporter *metricreport.Reporter, profile *config.Profile, stateCfg *state.State, postCreateUser func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error) (*AuthService, error) {
+func NewAuthService(store *store.Store, secret string, tokenDuration time.Duration, licenseService enterprise.LicenseService, metricReporter *metricreport.Reporter, profile *config.Profile, stateCfg *state.State, postCreateUser func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error) (*AuthService, error) {
 	return &AuthService{
 		store:          store,
 		secret:         secret,
@@ -943,7 +943,7 @@ func generateRecoveryCodes(n int) ([]string, error) {
 }
 
 func (s *AuthService) userCountGuard(ctx context.Context) error {
-	userLimit := s.licenseService.GetPlanLimitValue(ctx, enterpriseAPI.PlanLimitMaximumUser)
+	userLimit := s.licenseService.GetPlanLimitValue(ctx, enterprise.PlanLimitMaximumUser)
 
 	count, err := s.store.CountActiveUsers(ctx)
 	if err != nil {

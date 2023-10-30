@@ -12,7 +12,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
-	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -22,12 +22,12 @@ import (
 type ACLInterceptor struct {
 	store          *store.Store
 	secret         string
-	licenseService enterpriseAPI.LicenseService
+	licenseService enterprise.LicenseService
 	mode           common.ReleaseMode
 }
 
 // NewACLInterceptor returns a new v1 API ACL interceptor.
-func NewACLInterceptor(store *store.Store, secret string, licenseService enterpriseAPI.LicenseService, mode common.ReleaseMode) *ACLInterceptor {
+func NewACLInterceptor(store *store.Store, secret string, licenseService enterprise.LicenseService, mode common.ReleaseMode) *ACLInterceptor {
 	return &ACLInterceptor{
 		store:          store,
 		secret:         secret,

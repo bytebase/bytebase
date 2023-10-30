@@ -9,7 +9,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -19,11 +19,11 @@ import (
 type EnvironmentService struct {
 	v1pb.UnimplementedEnvironmentServiceServer
 	store          *store.Store
-	licenseService enterpriseAPI.LicenseService
+	licenseService enterprise.LicenseService
 }
 
 // NewEnvironmentService creates a new EnvironmentService.
-func NewEnvironmentService(store *store.Store, licenseService enterpriseAPI.LicenseService) *EnvironmentService {
+func NewEnvironmentService(store *store.Store, licenseService enterprise.LicenseService) *EnvironmentService {
 	return &EnvironmentService{
 		store:          store,
 		licenseService: licenseService,
@@ -74,7 +74,7 @@ func (s *EnvironmentService) CreateEnvironment(ctx context.Context, request *v1p
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	maximumEnvironmentLimit := s.licenseService.GetPlanLimitValue(ctx, enterpriseAPI.PlanLimitMaximumEnvironment)
+	maximumEnvironmentLimit := s.licenseService.GetPlanLimitValue(ctx, enterprise.PlanLimitMaximumEnvironment)
 	if int64(len(environments)) >= maximumEnvironmentLimit {
 		return nil, status.Errorf(codes.ResourceExhausted, "current plan can create up to %d environments.", maximumEnvironmentLimit)
 	}
