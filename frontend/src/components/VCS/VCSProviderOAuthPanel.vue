@@ -411,7 +411,7 @@
                 </dt>
                 <!-- TODO: decide necessary scopes -->
                 <dd class="text-sm text-main">
-                  Account > Read, Webhooks > Read and Write, Repositories >
+                  Account > Read, Webhooks > Read and write, Repositories >
                   Write
                 </dd>
               </div>
