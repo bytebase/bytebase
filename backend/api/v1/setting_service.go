@@ -21,7 +21,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/state"
-	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/mail"
 	"github.com/bytebase/bytebase/backend/store"
@@ -34,7 +34,7 @@ type SettingService struct {
 	v1pb.UnimplementedSettingServiceServer
 	store          *store.Store
 	profile        *config.Profile
-	licenseService enterpriseAPI.LicenseService
+	licenseService enterprise.LicenseService
 	stateCfg       *state.State
 }
 
@@ -42,7 +42,7 @@ type SettingService struct {
 func NewSettingService(
 	store *store.Store,
 	profile *config.Profile,
-	licenseService enterpriseAPI.LicenseService,
+	licenseService enterprise.LicenseService,
 	stateCfg *state.State,
 ) *SettingService {
 	return &SettingService{

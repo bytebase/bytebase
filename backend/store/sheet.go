@@ -136,7 +136,9 @@ type PatchSheetMessage struct {
 // GetSheetStatementByID gets the statement of a sheet by ID.
 func (s *Store) GetSheetStatementByID(ctx context.Context, id int) (string, error) {
 	if statement, ok := s.sheetStatementCache.Get(id); ok {
-		return statement.(string), nil
+		if v, ok := statement.(string); ok {
+			return v, nil
+		}
 	}
 
 	sheets, err := s.ListSheets(ctx, &FindSheetMessage{UID: &id, LoadFull: true}, SystemBotID)

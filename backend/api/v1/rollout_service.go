@@ -20,7 +20,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
-	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/store"
@@ -33,7 +33,7 @@ import (
 type RolloutService struct {
 	v1pb.UnimplementedRolloutServiceServer
 	store              *store.Store
-	licenseService     enterpriseAPI.LicenseService
+	licenseService     enterprise.LicenseService
 	dbFactory          *dbfactory.DBFactory
 	planCheckScheduler *plancheck.Scheduler
 	stateCfg           *state.State
@@ -41,7 +41,7 @@ type RolloutService struct {
 }
 
 // NewRolloutService returns a rollout service instance.
-func NewRolloutService(store *store.Store, licenseService enterpriseAPI.LicenseService, dbFactory *dbfactory.DBFactory, planCheckScheduler *plancheck.Scheduler, stateCfg *state.State, activityManager *activity.Manager) *RolloutService {
+func NewRolloutService(store *store.Store, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, planCheckScheduler *plancheck.Scheduler, stateCfg *state.State, activityManager *activity.Manager) *RolloutService {
 	return &RolloutService{
 		store:              store,
 		licenseService:     licenseService,
@@ -1125,7 +1125,7 @@ func validateSteps(steps []*v1pb.Plan_Step) error {
 }
 
 // GetPipelineCreate gets a pipeline create message from a plan.
-func GetPipelineCreate(ctx context.Context, s *store.Store, licenseService enterpriseAPI.LicenseService, dbFactory *dbfactory.DBFactory, steps []*storepb.PlanConfig_Step, project *store.ProjectMessage) (*store.PipelineMessage, error) {
+func GetPipelineCreate(ctx context.Context, s *store.Store, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, steps []*storepb.PlanConfig_Step, project *store.ProjectMessage) (*store.PipelineMessage, error) {
 	pipelineCreate := &store.PipelineMessage{
 		Name: "Rollout Pipeline",
 	}
