@@ -5,6 +5,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: |
     CREATE UNIQUE INDEX uk_tech_book_id_name ON tech_book(id, name);
@@ -15,6 +16,7 @@
       title: naming.index.uk
       content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found `tech_book_id_name`
       line: 2
+      column: 0
       details: ""
 - statement: |
     CREATE UNIQUE INDEX uk_tech_book_id_name ON tech_book(id, name);
@@ -25,12 +27,14 @@
       title: naming.index.uk
       content: Unique key `qtzmquwvlnttctfluoouxelxeliltcfzzstrtyocogwwyiyrflmrkbhbfasynlacy` in table `tech_book` mismatches the naming convention, its length should be within 64 characters
       line: 2
+      column: 0
       details: ""
     - status: WARN
       code: 304
       title: naming.index.uk
       content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found `qtzmquwvlnttctfluoouxelxeliltcfzzstrtyocogwwyiyrflmrkbhbfasynlacy`
       line: 2
+      column: 0
       details: ""
 - statement: ALTER TABLE tech_book ADD UNIQUE uk_tech_book_id_name (id, name);
   want:
@@ -39,6 +43,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: |
     CREATE TABLE t1(a INT);
@@ -49,6 +54,7 @@
       title: naming.index.uk
       content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found `tech_book_id_name`
       line: 2
+      column: 0
       details: ""
 - statement: ALTER TABLE tech_book RENAME INDEX old_uk TO uk_tech_book_id_name;
   want:
@@ -57,6 +63,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: |
     CREATE TABLE t1(a INT);
@@ -67,6 +74,7 @@
       title: naming.index.uk
       content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found `uk_tech_book`
       line: 2
+      column: 0
       details: ""
 - statement: CREATE TABLE book(id INT PRIMARY KEY, name VARCHAR(20), UNIQUE INDEX uk_book_name (name));
   want:
@@ -75,6 +83,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: |
     CREATE TABLE book(
@@ -83,11 +92,12 @@
       UNIQUE KEY (name)
     );
   want:
-    - status: WARN
-      code: 310
-      title: naming.index.uk
-      content: "Unique key in table `book` should be set a name explicitly"
-      line: 4
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      column: 0
       details: ""
 - statement: |
     CREATE TABLE book(
@@ -96,9 +106,10 @@
       UNIQUE INDEX (name)
     );
   want:
-    - status: WARN
-      code: 310
-      title: naming.index.uk
-      content: "Unique key in table `book` should be set a name explicitly"
-      line: 4
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      column: 0
       details: ""
