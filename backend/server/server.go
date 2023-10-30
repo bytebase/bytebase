@@ -54,7 +54,9 @@ import (
 
 const (
 	// webhookAPIPrefix is the API prefix for Bytebase webhook.
-	webhookAPIPrefix       = "/hook"
+	webhookAPIPrefix = "/hook"
+	// lspAPI is the API for Bytebase Language Server Protocol.
+	lspAPI                 = "/lsp"
 	maxStacksize           = 1024 * 10240
 	gracefulShutdownPeriod = 10 * time.Second
 )
@@ -350,7 +352,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	reflection.Register(s.grpcServer)
 
 	s.lspServer = lsp.NewServer(s.store)
-	s.lspServer.ConfigLSPRouters(ctx)
+	s.e.GET(lspAPI, s.lspServer.Router)
 
 	serverStarted = true
 	return s, nil
@@ -399,16 +401,6 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		}
 	}()
 
-	// Listen for LSP websocket request
-	lspListen, err := net.Listen("tcp", fmt.Sprintf(":%d", port+4))
-	if err != nil {
-		return err
-	}
-	go func() {
-		if err := s.lspServer.Serve(lspListen); err != nil {
-			slog.Error("lsp server listen error", log.BBError(err))
-		}
-	}()
 	return s.e.Start(fmt.Sprintf(":%d", port))
 }
 
@@ -447,21 +439,6 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		select {
 		case <-t.C:
 			s.grpcServer.Stop()
-		case <-stopped:
-			t.Stop()
-		}
-	}
-	if s.lspServer != nil {
-		stopped := make(chan struct{})
-		go func() {
-			s.lspServer.GracefulStop(ctx)
-			close(stopped)
-		}()
-
-		t := time.NewTimer(gracefulShutdownPeriod)
-		select {
-		case <-t.C:
-			s.lspServer.Stop()
 		case <-stopped:
 			t.Stop()
 		}
