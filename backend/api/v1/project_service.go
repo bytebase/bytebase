@@ -24,12 +24,12 @@ import (
 	"github.com/bytebase/bytebase/backend/component/activity"
 	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	vcsPlugin "github.com/bytebase/bytebase/backend/plugin/vcs"
+	vcsplugin "github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/azure"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/bitbucket"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/github"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/gitlab"
-	webhookPlugin "github.com/bytebase/bytebase/backend/plugin/webhook"
+	webhookplugin "github.com/bytebase/bytebase/backend/plugin/webhook"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -272,7 +272,10 @@ func (s *ProjectService) SearchProjects(ctx context.Context, _ *v1pb.SearchProje
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
-	role := ctx.Value(common.RoleContextKey).(api.Role)
+	role, ok := ctx.Value(common.RoleContextKey).(api.Role)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "role not found")
+	}
 
 	projects, err := s.store.ListProjectV2(ctx, &store.FindProjectMessage{})
 	if err != nil {
@@ -477,7 +480,7 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 			}
 			baseDir := request.ProjectGitopsInfo.BaseDirectory
 			// Azure DevOps base directory should start with /.
-			if storeVCS.Type == vcsPlugin.AzureDevOps {
+			if storeVCS.Type == vcsplugin.AzureDevOps {
 				if !strings.HasPrefix(baseDir, "/") {
 					baseDir = "/" + request.ProjectGitopsInfo.BaseDirectory
 				}
@@ -547,7 +550,7 @@ func (s *ProjectService) UpdateProjectGitOpsInfo(ctx context.Context, request *v
 		newFilePathTemplate = *patch.FilePathTemplate
 	}
 
-	if err := vcsPlugin.IsAsterisksInTemplateValid(path.Join(newBaseDirectory, newFilePathTemplate)); err != nil {
+	if err := vcsplugin.IsAsterisksInTemplateValid(path.Join(newBaseDirectory, newFilePathTemplate)); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid base directory and filepath template combination: %v", err.Error())
 	}
 
@@ -653,7 +656,7 @@ func (s *ProjectService) UnsetProjectGitOpsInfo(ctx context.Context, request *v1
 		// Delete the webhook after we successfully delete the repository.
 		// This is because in case the webhook deletion fails, we can still have a cleanup process to cleanup the orphaned webhook.
 		// If we delete it before we delete the repository, then if the repository deletion fails, we will have a broken repository with no webhook.
-		if err = vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).DeleteWebhook(
+		if err = vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).DeleteWebhook(
 			ctx,
 			// Need to get ApplicationID, Secret from vcs instead of repository.vcs since the latter is not composed.
 			common.OauthContext{
@@ -979,11 +982,11 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 	}
 
 	resp := &v1pb.TestWebhookResponse{}
-	err = webhookPlugin.Post(
+	err = webhookplugin.Post(
 		webhook.Type,
-		webhookPlugin.Context{
+		webhookplugin.Context{
 			URL:          webhook.URL,
-			Level:        webhookPlugin.WebhookInfo,
+			Level:        webhookplugin.WebhookInfo,
 			ActivityType: string(api.ActivityIssueCreate),
 			Title:        fmt.Sprintf("Test webhook %q", webhook.Title),
 			Description:  "This is a test",
@@ -992,7 +995,7 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 			CreatorName:  "Bytebase",
 			CreatorEmail: api.SystemBotEmail,
 			CreatedTs:    time.Now().Unix(),
-			Project:      &webhookPlugin.Project{Name: project.Title},
+			Project:      &webhookplugin.Project{Name: project.Title},
 		},
 	)
 	if err != nil {
@@ -1047,7 +1050,7 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 
 	baseDir := request.ProjectGitopsInfo.BaseDirectory
 	// Azure DevOps base directory should start with /.
-	if storeVCS.Type == vcsPlugin.AzureDevOps {
+	if storeVCS.Type == vcsplugin.AzureDevOps {
 		if !strings.HasPrefix(baseDir, "/") {
 			baseDir = "/" + request.ProjectGitopsInfo.BaseDirectory
 		}
@@ -1086,7 +1089,7 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 
 	// We need to check the FilePathTemplate in create repository request.
 	// This avoids to a certain extent that the creation succeeds but does not work.
-	if err := vcsPlugin.IsAsterisksInTemplateValid(path.Join(repositoryCreate.BaseDirectory, repositoryCreate.FilePathTemplate)); err != nil {
+	if err := vcsplugin.IsAsterisksInTemplateValid(path.Join(repositoryCreate.BaseDirectory, repositoryCreate.FilePathTemplate)); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid base directory and filepath template combination: %v", err.Error())
 	}
 
@@ -1180,7 +1183,7 @@ func (s *ProjectService) createProjectGitOpsInfo(ctx context.Context, request *v
 	return convertToProjectGitOpsInfo(repository), nil
 }
 
-func (s *ProjectService) setupVCSSQLReviewCI(ctx context.Context, repository *store.RepositoryMessage, vcs *store.ExternalVersionControlMessage) (*vcsPlugin.PullRequest, error) {
+func (s *ProjectService) setupVCSSQLReviewCI(ctx context.Context, repository *store.RepositoryMessage, vcs *store.ExternalVersionControlMessage) (*vcsplugin.PullRequest, error) {
 	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
 		return nil, err
@@ -1195,7 +1198,7 @@ func (s *ProjectService) setupVCSSQLReviewCI(ctx context.Context, repository *st
 		return nil, err
 	}
 
-	if err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).UpsertEnvironmentVariable(
+	if err := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).UpsertEnvironmentVariable(
 		ctx,
 		common.OauthContext{
 			ClientID:     vcs.ApplicationID,
@@ -1207,7 +1210,7 @@ func (s *ProjectService) setupVCSSQLReviewCI(ctx context.Context, repository *st
 		},
 		vcs.InstanceURL,
 		repository.ExternalID,
-		vcsPlugin.SQLReviewAPISecretName,
+		vcsplugin.SQLReviewAPISecretName,
 		repository.WebhookSecretToken,
 	); err != nil {
 		return nil, err
@@ -1220,21 +1223,21 @@ func (s *ProjectService) setupVCSSQLReviewCI(ctx context.Context, repository *st
 	sqlReviewEndpoint := fmt.Sprintf("%s/hook/sql-review/%s", endpoint, repository.WebhookEndpointID)
 
 	switch vcs.Type {
-	case vcsPlugin.GitHub:
+	case vcsplugin.GitHub:
 		if err := s.setupVCSSQLReviewCIForGitHub(ctx, repository, vcs, branch, sqlReviewEndpoint); err != nil {
 			return nil, err
 		}
-	case vcsPlugin.GitLab:
+	case vcsplugin.GitLab:
 		if err := s.setupVCSSQLReviewCIForGitLab(ctx, repository, vcs, branch, sqlReviewEndpoint); err != nil {
 			return nil, err
 		}
-	case vcsPlugin.AzureDevOps:
+	case vcsplugin.AzureDevOps:
 		if err := s.setupVCSSQLReviewCIForAzureDevOps(ctx, repository, vcs, branch, sqlReviewEndpoint); err != nil {
 			return nil, err
 		}
 	}
 
-	return vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).CreatePullRequest(
+	return vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).CreatePullRequest(
 		ctx,
 		common.OauthContext{
 			ClientID:     vcs.ApplicationID,
@@ -1246,7 +1249,7 @@ func (s *ProjectService) setupVCSSQLReviewCI(ctx context.Context, repository *st
 		},
 		vcs.InstanceURL,
 		repository.ExternalID,
-		&vcsPlugin.PullRequestCreate{
+		&vcsplugin.PullRequestCreate{
 			Title:                 sqlReviewInVCSPRTitle,
 			Body:                  "This pull request is auto-generated by Bytebase for GitOps workflow.",
 			Head:                  branch.Name,
@@ -1257,7 +1260,7 @@ func (s *ProjectService) setupVCSSQLReviewCI(ctx context.Context, repository *st
 }
 
 // setupVCSSQLReviewBranch will create a new branch to setup SQL review CI.
-func (s *ProjectService) setupVCSSQLReviewBranch(ctx context.Context, repository *store.RepositoryMessage, vcs *store.ExternalVersionControlMessage) (*vcsPlugin.BranchInfo, error) {
+func (s *ProjectService) setupVCSSQLReviewBranch(ctx context.Context, repository *store.RepositoryMessage, vcs *store.ExternalVersionControlMessage) (*vcsplugin.BranchInfo, error) {
 	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find workspace setting with error: %v", err.Error())
@@ -1265,7 +1268,7 @@ func (s *ProjectService) setupVCSSQLReviewBranch(ctx context.Context, repository
 	if setting.ExternalUrl == "" {
 		return nil, status.Errorf(codes.FailedPrecondition, "external url is required")
 	}
-	branch, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).GetBranch(
+	branch, err := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).GetBranch(
 		ctx,
 		common.OauthContext{
 			ClientID:     vcs.ApplicationID,
@@ -1284,11 +1287,11 @@ func (s *ProjectService) setupVCSSQLReviewBranch(ctx context.Context, repository
 	}
 	slog.Debug("VCS target branch info", slog.String("last_commit", branch.LastCommitID), slog.String("name", branch.Name))
 
-	branchCreate := &vcsPlugin.BranchInfo{
+	branchCreate := &vcsplugin.BranchInfo{
 		Name:         fmt.Sprintf("bytebase-vcs-%d", time.Now().Unix()),
 		LastCommitID: branch.LastCommitID,
 	}
-	if err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).CreateBranch(
+	if err := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).CreateBranch(
 		ctx,
 		common.OauthContext{
 			ClientID:     vcs.ApplicationID,
@@ -1313,7 +1316,7 @@ func (s *ProjectService) setupVCSSQLReviewCIForGitHub(
 	ctx context.Context,
 	repository *store.RepositoryMessage,
 	vcs *store.ExternalVersionControlMessage,
-	branch *vcsPlugin.BranchInfo,
+	branch *vcsplugin.BranchInfo,
 	sqlReviewEndpoint string,
 ) error {
 	sqlReviewConfig := github.SetupSQLReviewCI(sqlReviewEndpoint)
@@ -1328,7 +1331,7 @@ func (s *ProjectService) setupVCSSQLReviewCIForGitHub(
 		return status.Errorf(codes.FailedPrecondition, "external url is required")
 	}
 
-	fileMeta, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(
+	fileMeta, err := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).ReadFileMeta(
 		ctx,
 		common.OauthContext{
 			ClientID:     vcs.ApplicationID,
@@ -1341,8 +1344,8 @@ func (s *ProjectService) setupVCSSQLReviewCIForGitHub(
 		vcs.InstanceURL,
 		repository.ExternalID,
 		github.SQLReviewActionFilePath,
-		vcsPlugin.RefInfo{
-			RefType: vcsPlugin.RefTypeBranch,
+		vcsplugin.RefInfo{
+			RefType: vcsplugin.RefTypeBranch,
 			RefName: branch.Name,
 		},
 	)
@@ -1359,7 +1362,7 @@ func (s *ProjectService) setupVCSSQLReviewCIForGitHub(
 		fileSHA = fileMeta.SHA
 	}
 
-	return vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).CreateFile(
+	return vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).CreateFile(
 		ctx,
 		common.OauthContext{
 			ClientID:     vcs.ApplicationID,
@@ -1372,7 +1375,7 @@ func (s *ProjectService) setupVCSSQLReviewCIForGitHub(
 		vcs.InstanceURL,
 		repository.ExternalID,
 		github.SQLReviewActionFilePath,
-		vcsPlugin.FileCommitCreate{
+		vcsplugin.FileCommitCreate{
 			Branch:        branch.Name,
 			CommitMessage: sqlReviewInVCSPRTitle,
 			Content:       sqlReviewConfig,
@@ -1387,7 +1390,7 @@ func (s *ProjectService) setupVCSSQLReviewCIForGitLab(
 	ctx context.Context,
 	repository *store.RepositoryMessage,
 	vcs *store.ExternalVersionControlMessage,
-	branch *vcsPlugin.BranchInfo,
+	branch *vcsplugin.BranchInfo,
 	sqlReviewEndpoint string,
 ) error {
 	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
@@ -1398,11 +1401,11 @@ func (s *ProjectService) setupVCSSQLReviewCIForGitLab(
 		return status.Errorf(codes.FailedPrecondition, "external url is required")
 	}
 	// create or update the .gitlab-ci.yml
-	if err := s.createOrUpdateVCSSQLReviewFileForGitLab(ctx, repository, vcs, branch, gitlab.CIFilePath, func(fileMeta *vcsPlugin.FileMeta) (string, error) {
+	if err := s.createOrUpdateVCSSQLReviewFileForGitLab(ctx, repository, vcs, branch, gitlab.CIFilePath, func(fileMeta *vcsplugin.FileMeta) (string, error) {
 		content := make(map[string]any)
 
 		if fileMeta != nil {
-			ciFileContent, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).ReadFileContent(
+			ciFileContent, err := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).ReadFileContent(
 				ctx,
 				common.OauthContext{
 					ClientID:     vcs.ApplicationID,
@@ -1415,8 +1418,8 @@ func (s *ProjectService) setupVCSSQLReviewCIForGitLab(
 				vcs.InstanceURL,
 				repository.ExternalID,
 				gitlab.CIFilePath,
-				vcsPlugin.RefInfo{
-					RefType: vcsPlugin.RefTypeCommit,
+				vcsplugin.RefInfo{
+					RefType: vcsplugin.RefTypeCommit,
 					RefName: fileMeta.LastCommitID,
 				},
 			)
@@ -1439,7 +1442,7 @@ func (s *ProjectService) setupVCSSQLReviewCIForGitLab(
 	}
 
 	// create or update the SQL review CI.
-	return s.createOrUpdateVCSSQLReviewFileForGitLab(ctx, repository, vcs, branch, gitlab.SQLReviewCIFilePath, func(_ *vcsPlugin.FileMeta) (string, error) {
+	return s.createOrUpdateVCSSQLReviewFileForGitLab(ctx, repository, vcs, branch, gitlab.SQLReviewCIFilePath, func(_ *vcsplugin.FileMeta) (string, error) {
 		return gitlab.SetupSQLReviewCI(sqlReviewEndpoint), nil
 	})
 }
@@ -1449,7 +1452,7 @@ func (s *ProjectService) setupVCSSQLReviewCIForAzureDevOps(
 	ctx context.Context,
 	repository *store.RepositoryMessage,
 	vcs *store.ExternalVersionControlMessage,
-	branch *vcsPlugin.BranchInfo,
+	branch *vcsplugin.BranchInfo,
 	sqlReviewEndpoint string,
 ) error {
 	sqlReviewConfig := azure.SetupSQLReviewCI(sqlReviewEndpoint, repository.BranchFilter)
@@ -1464,7 +1467,7 @@ func (s *ProjectService) setupVCSSQLReviewCIForAzureDevOps(
 		return status.Errorf(codes.FailedPrecondition, "external url is required")
 	}
 
-	fileMeta, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(
+	fileMeta, err := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).ReadFileMeta(
 		ctx,
 		common.OauthContext{
 			ClientID:     vcs.ApplicationID,
@@ -1477,8 +1480,8 @@ func (s *ProjectService) setupVCSSQLReviewCIForAzureDevOps(
 		vcs.InstanceURL,
 		repository.ExternalID,
 		azure.SQLReviewPipelineFilePath,
-		vcsPlugin.RefInfo{
-			RefType: vcsPlugin.RefTypeBranch,
+		vcsplugin.RefInfo{
+			RefType: vcsplugin.RefTypeBranch,
 			RefName: branch.Name,
 		},
 	)
@@ -1495,7 +1498,7 @@ func (s *ProjectService) setupVCSSQLReviewCIForAzureDevOps(
 		fileSHA = fileMeta.SHA
 	}
 
-	return vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).OverwriteFile(
+	return vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).OverwriteFile(
 		ctx,
 		common.OauthContext{
 			ClientID:     vcs.ApplicationID,
@@ -1508,7 +1511,7 @@ func (s *ProjectService) setupVCSSQLReviewCIForAzureDevOps(
 		vcs.InstanceURL,
 		repository.ExternalID,
 		azure.SQLReviewPipelineFilePath,
-		vcsPlugin.FileCommitCreate{
+		vcsplugin.FileCommitCreate{
 			Branch:        branch.Name,
 			CommitMessage: sqlReviewInVCSPRTitle,
 			Content:       sqlReviewConfig,
@@ -1523,9 +1526,9 @@ func (s *ProjectService) createOrUpdateVCSSQLReviewFileForGitLab(
 	ctx context.Context,
 	repository *store.RepositoryMessage,
 	vcs *store.ExternalVersionControlMessage,
-	branch *vcsPlugin.BranchInfo,
+	branch *vcsplugin.BranchInfo,
 	fileName string,
-	getNewContent func(meta *vcsPlugin.FileMeta) (string, error),
+	getNewContent func(meta *vcsplugin.FileMeta) (string, error),
 ) error {
 	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
@@ -1535,7 +1538,7 @@ func (s *ProjectService) createOrUpdateVCSSQLReviewFileForGitLab(
 		return status.Errorf(codes.FailedPrecondition, "external url is required")
 	}
 	fileExisted := true
-	fileMeta, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(
+	fileMeta, err := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).ReadFileMeta(
 		ctx,
 		common.OauthContext{
 			ClientID:     vcs.ApplicationID,
@@ -1548,8 +1551,8 @@ func (s *ProjectService) createOrUpdateVCSSQLReviewFileForGitLab(
 		vcs.InstanceURL,
 		repository.ExternalID,
 		fileName,
-		vcsPlugin.RefInfo{
-			RefType: vcsPlugin.RefTypeBranch,
+		vcsplugin.RefInfo{
+			RefType: vcsplugin.RefTypeBranch,
 			RefName: branch.Name,
 		},
 	)
@@ -1573,7 +1576,7 @@ func (s *ProjectService) createOrUpdateVCSSQLReviewFileForGitLab(
 	}
 
 	if fileExisted {
-		return vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).OverwriteFile(
+		return vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).OverwriteFile(
 			ctx,
 			common.OauthContext{
 				ClientID:     vcs.ApplicationID,
@@ -1586,7 +1589,7 @@ func (s *ProjectService) createOrUpdateVCSSQLReviewFileForGitLab(
 			vcs.InstanceURL,
 			repository.ExternalID,
 			fileName,
-			vcsPlugin.FileCommitCreate{
+			vcsplugin.FileCommitCreate{
 				Branch:        branch.Name,
 				CommitMessage: sqlReviewInVCSPRTitle,
 				Content:       newContent,
@@ -1596,7 +1599,7 @@ func (s *ProjectService) createOrUpdateVCSSQLReviewFileForGitLab(
 		)
 	}
 
-	return vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).CreateFile(
+	return vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).CreateFile(
 		ctx,
 		common.OauthContext{
 			ClientID:     vcs.ApplicationID,
@@ -1609,7 +1612,7 @@ func (s *ProjectService) createOrUpdateVCSSQLReviewFileForGitLab(
 		vcs.InstanceURL,
 		repository.ExternalID,
 		fileName,
-		vcsPlugin.FileCommitCreate{
+		vcsplugin.FileCommitCreate{
 			Branch:        branch.Name,
 			CommitMessage: sqlReviewInVCSPRTitle,
 			Content:       newContent,
@@ -3050,7 +3053,7 @@ func isBranchNotFound(
 	store *store.Store,
 	webURL, accessToken, refreshToken, externalID, branch, externalURL string,
 ) (bool, error) {
-	_, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).GetBranch(ctx,
+	_, err := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).GetBranch(ctx,
 		common.OauthContext{
 			ClientID:     vcs.ApplicationID,
 			ClientSecret: vcs.Secret,
@@ -3067,12 +3070,12 @@ func isBranchNotFound(
 	return false, err
 }
 
-func createVCSWebhook(ctx context.Context, vcsType vcsPlugin.Type, webhookEndpointID, secretToken, accessToken, instanceURL, externalRepoID, gitopsWebhookURL string) (string, error) {
+func createVCSWebhook(ctx context.Context, vcsType vcsplugin.Type, webhookEndpointID, secretToken, accessToken, instanceURL, externalRepoID, gitopsWebhookURL string) (string, error) {
 	// Create a new webhook and retrieve the created webhook ID
 	var webhookCreatePayload []byte
 	var err error
 	switch vcsType {
-	case vcsPlugin.GitLab:
+	case vcsplugin.GitLab:
 		webhookCreate := gitlab.WebhookCreate{
 			URL:                   fmt.Sprintf("%s/hook/gitlab/%s", gitopsWebhookURL, webhookEndpointID),
 			SecretToken:           secretToken,
@@ -3083,7 +3086,7 @@ func createVCSWebhook(ctx context.Context, vcsType vcsPlugin.Type, webhookEndpoi
 		if err != nil {
 			return "", errors.Wrap(err, "failed to marshal request body for creating webhook")
 		}
-	case vcsPlugin.GitHub:
+	case vcsplugin.GitHub:
 		webhookPost := github.WebhookCreateOrUpdate{
 			Config: github.WebhookConfig{
 				URL:         fmt.Sprintf("%s/hook/github/%s", gitopsWebhookURL, webhookEndpointID),
@@ -3097,7 +3100,7 @@ func createVCSWebhook(ctx context.Context, vcsType vcsPlugin.Type, webhookEndpoi
 		if err != nil {
 			return "", errors.Wrap(err, "failed to marshal request body for creating webhook")
 		}
-	case vcsPlugin.Bitbucket:
+	case vcsplugin.Bitbucket:
 		webhookPost := bitbucket.WebhookCreateOrUpdate{
 			Description: "Bytebase GitOps",
 			URL:         fmt.Sprintf("%s/hook/bitbucket/%s", gitopsWebhookURL, webhookEndpointID),
@@ -3108,7 +3111,7 @@ func createVCSWebhook(ctx context.Context, vcsType vcsPlugin.Type, webhookEndpoi
 		if err != nil {
 			return "", errors.Wrap(err, "failed to marshal request body for creating webhook")
 		}
-	case vcsPlugin.AzureDevOps:
+	case vcsplugin.AzureDevOps:
 		part := strings.Split(externalRepoID, "/")
 		if len(part) != 3 {
 			return "", errors.Errorf("invalid external repo id %q", externalRepoID)
@@ -3136,7 +3139,7 @@ func createVCSWebhook(ctx context.Context, vcsType vcsPlugin.Type, webhookEndpoi
 			return "", errors.Wrap(err, "failed to marshal request body for creating webhook")
 		}
 	}
-	webhookID, err := vcsPlugin.Get(vcsType, vcsPlugin.ProviderConfig{}).CreateWebhook(
+	webhookID, err := vcsplugin.Get(vcsType, vcsplugin.ProviderConfig{}).CreateWebhook(
 		ctx,
 		common.OauthContext{
 			AccessToken: accessToken,

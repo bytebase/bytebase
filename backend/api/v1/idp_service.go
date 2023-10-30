@@ -11,7 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	enterpriseapi "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/plugin/idp/ldap"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oauth2"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oidc"
@@ -24,11 +24,11 @@ import (
 type IdentityProviderService struct {
 	v1pb.UnimplementedIdentityProviderServiceServer
 	store          *store.Store
-	licenseService enterpriseAPI.LicenseService
+	licenseService enterpriseapi.LicenseService
 }
 
 // NewIdentityProviderService creates a new IdentityProviderService.
-func NewIdentityProviderService(store *store.Store, licenseService enterpriseAPI.LicenseService) *IdentityProviderService {
+func NewIdentityProviderService(store *store.Store, licenseService enterpriseapi.LicenseService) *IdentityProviderService {
 	return &IdentityProviderService{
 		store:          store,
 		licenseService: licenseService,
@@ -486,9 +486,8 @@ func convertIdentityProviderConfigToStore(identityProviderConfig *v1pb.IdentityP
 				},
 			},
 		}
-	} else {
-		return nil
 	}
+	return nil
 }
 
 // validIdentityProviderConfig validates the identity provider's config is a valid JSON.
@@ -505,8 +504,6 @@ func validIdentityProviderConfig(identityProviderType v1pb.IdentityProviderType,
 		if identityProviderConfig.GetLdapConfig() == nil {
 			return errors.Errorf("unexpected provider config value")
 		}
-	} else {
-		return errors.Errorf("unexpected provider type %s", identityProviderType)
 	}
-	return nil
+	return errors.Errorf("unexpected provider type %s", identityProviderType)
 }

@@ -149,7 +149,10 @@ func (in *ACLInterceptor) getUser(ctx context.Context) (*store.UserMessage, erro
 	if principalPtr == nil {
 		return nil, nil
 	}
-	principalID := principalPtr.(int)
+	principalID, ok := principalPtr.(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	user, err := in.store.GetUserByID(ctx, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.PermissionDenied, "failed to get member for user %v in processing authorize request.", principalID)

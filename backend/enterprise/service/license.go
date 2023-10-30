@@ -13,7 +13,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	enterpriseapi "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/enterprise/config"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
@@ -24,7 +24,7 @@ type LicenseService struct {
 	config             *config.Config
 	store              *store.Store
 	provider           *LicenseProvider
-	cachedSubscription *enterpriseAPI.Subscription
+	cachedSubscription *enterpriseapi.Subscription
 }
 
 // Claims creates a struct that will be encoded to a JWT.
@@ -52,7 +52,7 @@ func NewLicenseService(mode common.ReleaseMode, store *store.Store) (*LicenseSer
 }
 
 // StoreLicense will store license into file.
-func (s *LicenseService) StoreLicense(ctx context.Context, patch *enterpriseAPI.SubscriptionPatch) error {
+func (s *LicenseService) StoreLicense(ctx context.Context, patch *enterpriseapi.SubscriptionPatch) error {
 	if patch.License != "" {
 		if _, err := s.parseLicense(patch.License); err != nil {
 			return err
@@ -70,7 +70,7 @@ func (s *LicenseService) StoreLicense(ctx context.Context, patch *enterpriseAPI.
 }
 
 // LoadSubscription will load subscription.
-func (s *LicenseService) LoadSubscription(ctx context.Context) enterpriseAPI.Subscription {
+func (s *LicenseService) LoadSubscription(ctx context.Context) enterpriseapi.Subscription {
 	if s.cachedSubscription != nil && s.cachedSubscription.IsExpired() {
 		// refresh expired subscription
 		s.cachedSubscription = nil
@@ -82,7 +82,7 @@ func (s *LicenseService) LoadSubscription(ctx context.Context) enterpriseAPI.Sub
 	license := s.loadLicense(ctx)
 	if license == nil {
 		s.store.RefreshSwap(false)
-		return enterpriseAPI.Subscription{
+		return enterpriseapi.Subscription{
 			Plan: api.FREE,
 			// -1 means not expire, just for free plan
 			ExpiresTs: -1,
@@ -92,7 +92,7 @@ func (s *LicenseService) LoadSubscription(ctx context.Context) enterpriseAPI.Sub
 	}
 
 	// Cache the subscription.
-	s.cachedSubscription = &enterpriseAPI.Subscription{
+	s.cachedSubscription = &enterpriseapi.Subscription{
 		Plan:          license.Plan,
 		ExpiresTs:     license.ExpiresTs,
 		StartedTs:     license.IssuedTs,
@@ -155,8 +155,8 @@ func (s *LicenseService) GetEffectivePlan() api.PlanType {
 }
 
 // GetPlanLimitValue gets the limit value for the plan.
-func (s *LicenseService) GetPlanLimitValue(ctx context.Context, name enterpriseAPI.PlanLimit) int64 {
-	v, ok := enterpriseAPI.PlanLimitValues[name]
+func (s *LicenseService) GetPlanLimitValue(ctx context.Context, name enterpriseapi.PlanLimit) int64 {
+	v, ok := enterpriseapi.PlanLimitValues[name]
 	if !ok {
 		return 0
 	}
@@ -180,7 +180,7 @@ func (s *LicenseService) RefreshCache(ctx context.Context) {
 	s.LoadSubscription(ctx)
 }
 
-func (s *LicenseService) fetchLicense(ctx context.Context) (*enterpriseAPI.License, error) {
+func (s *LicenseService) fetchLicense(ctx context.Context) (*enterpriseapi.License, error) {
 	license, err := s.provider.FetchLicense(ctx)
 	if err != nil {
 		return nil, err
@@ -206,7 +206,7 @@ func (s *LicenseService) fetchLicense(ctx context.Context) (*enterpriseAPI.Licen
 }
 
 // loadLicense will load license and validate it.
-func (s *LicenseService) loadLicense(ctx context.Context) *enterpriseAPI.License {
+func (s *LicenseService) loadLicense(ctx context.Context) *enterpriseapi.License {
 	license, err := s.findEnterpriseLicense(ctx)
 	if err != nil {
 		slog.Debug("failed to load enterprise license", log.BBError(err))
@@ -235,7 +235,7 @@ func (s *LicenseService) loadLicense(ctx context.Context) *enterpriseAPI.License
 	return license
 }
 
-func (s *LicenseService) parseLicense(license string) (*enterpriseAPI.License, error) {
+func (s *LicenseService) parseLicense(license string) (*enterpriseapi.License, error) {
 	claims := &Claims{}
 	if err := parseJWTToken(license, s.config.Version, s.config.PublicKey, claims); err != nil {
 		return nil, common.Wrap(err, common.Invalid)
@@ -244,7 +244,7 @@ func (s *LicenseService) parseLicense(license string) (*enterpriseAPI.License, e
 	return s.parseClaims(claims)
 }
 
-func (s *LicenseService) findEnterpriseLicense(ctx context.Context) (*enterpriseAPI.License, error) {
+func (s *LicenseService) findEnterpriseLicense(ctx context.Context) (*enterpriseapi.License, error) {
 	// Find enterprise license.
 	settingName := api.SettingEnterpriseLicense
 	setting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{
@@ -272,7 +272,7 @@ func (s *LicenseService) findEnterpriseLicense(ctx context.Context) (*enterprise
 	return nil, nil
 }
 
-func (s *LicenseService) findTrialingLicense(ctx context.Context) (*enterpriseAPI.License, error) {
+func (s *LicenseService) findTrialingLicense(ctx context.Context) (*enterpriseapi.License, error) {
 	settingName := api.SettingEnterpriseTrial
 	setting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{
 		Name: &settingName,
@@ -281,12 +281,12 @@ func (s *LicenseService) findTrialingLicense(ctx context.Context) (*enterpriseAP
 		return nil, errors.Wrapf(err, "failed to load trial license from settings")
 	}
 	if setting != nil && setting.Value != "" {
-		var data enterpriseAPI.License
+		var data enterpriseapi.License
 		if err := json.Unmarshal([]byte(setting.Value), &data); err != nil {
 			return nil, errors.Wrapf(err, "failed to parse trial license")
 		}
-		data.InstanceCount = enterpriseAPI.InstanceLimitForTrial
-		if time.Now().AddDate(0, 0, -enterpriseAPI.TrialDaysLimit).Unix() >= setting.CreatedTs {
+		data.InstanceCount = enterpriseapi.InstanceLimitForTrial
+		if time.Now().AddDate(0, 0, -enterpriseapi.TrialDaysLimit).Unix() >= setting.CreatedTs {
 			return nil, nil
 		}
 		return &data, nil
@@ -296,7 +296,7 @@ func (s *LicenseService) findTrialingLicense(ctx context.Context) (*enterpriseAP
 }
 
 // parseClaims will valid and parse JWT claims to license instance.
-func (s *LicenseService) parseClaims(claims *Claims) (*enterpriseAPI.License, error) {
+func (s *LicenseService) parseClaims(claims *Claims) (*enterpriseapi.License, error) {
 	verifyIssuer := claims.VerifyIssuer(s.config.Issuer, true)
 	if !verifyIssuer {
 		return nil, common.Errorf(common.Invalid, "iss is not valid, expect %s but found '%v'", s.config.Issuer, claims.Issuer)
@@ -312,7 +312,7 @@ func (s *LicenseService) parseClaims(claims *Claims) (*enterpriseAPI.License, er
 		return nil, common.Errorf(common.Invalid, "plan type %q is not valid", planType)
 	}
 
-	license := &enterpriseAPI.License{
+	license := &enterpriseapi.License{
 		InstanceCount: claims.InstanceCount,
 		ExpiresTs:     claims.ExpiresAt.Unix(),
 		IssuedTs:      claims.IssuedAt.Unix(),

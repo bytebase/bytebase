@@ -17,7 +17,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	enterpriseapi "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/store"
@@ -32,11 +32,11 @@ var defaultWorkspaceResourceID = 1
 type OrgPolicyService struct {
 	v1pb.UnimplementedOrgPolicyServiceServer
 	store          *store.Store
-	licenseService enterpriseAPI.LicenseService
+	licenseService enterpriseapi.LicenseService
 }
 
 // NewOrgPolicyService creates a new OrgPolicyService.
-func NewOrgPolicyService(store *store.Store, licenseService enterpriseAPI.LicenseService) *OrgPolicyService {
+func NewOrgPolicyService(store *store.Store, licenseService enterpriseapi.LicenseService) *OrgPolicyService {
 	return &OrgPolicyService{
 		store:          store,
 		licenseService: licenseService,

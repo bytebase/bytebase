@@ -2347,7 +2347,10 @@ func (s *SQLService) getUser(ctx context.Context) (*store.UserMessage, error) {
 	if principalPtr == nil {
 		return nil, nil
 	}
-	principalID := principalPtr.(int)
+	principalID, ok := principalPtr.(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	user, err := s.store.GetUserByID(ctx, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.PermissionDenied, "failed to get member for user %v in processing authorize request.", principalID)
