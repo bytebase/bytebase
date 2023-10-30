@@ -9691,8 +9691,8 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | SOURCE_UNSPECIFIED | 0 |  |
-| SOURCE_BYTEBASE | 1 | BYTEBASE is the sheet created by Bytebase. e.g. SQL Editor. |
-| SOURCE_BYTEBASE_ARTIFACT | 2 | BYTEBASE_ARTIFACT is the artifact sheet. |
+| SOURCE_BYTEBASE | 1 | BYTEBASE is the sheet created in SQL Editor. |
+| SOURCE_BYTEBASE_ARTIFACT | 2 | BYTEBASE_ARTIFACT is the artifact sheet such as DDL/DML. |
 
 
 

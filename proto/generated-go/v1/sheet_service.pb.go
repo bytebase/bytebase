@@ -83,9 +83,9 @@ type Sheet_Source int32
 
 const (
 	Sheet_SOURCE_UNSPECIFIED Sheet_Source = 0
-	// BYTEBASE is the sheet created by Bytebase. e.g. SQL Editor.
+	// BYTEBASE is the sheet created in SQL Editor.
 	Sheet_SOURCE_BYTEBASE Sheet_Source = 1
-	// BYTEBASE_ARTIFACT is the artifact sheet.
+	// BYTEBASE_ARTIFACT is the artifact sheet such as DDL/DML.
 	Sheet_SOURCE_BYTEBASE_ARTIFACT Sheet_Source = 2
 )
 

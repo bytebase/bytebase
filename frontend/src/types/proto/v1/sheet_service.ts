@@ -230,9 +230,9 @@ export function sheet_VisibilityToJSON(object: Sheet_Visibility): string {
 
 export enum Sheet_Source {
   SOURCE_UNSPECIFIED = 0,
-  /** SOURCE_BYTEBASE - BYTEBASE is the sheet created by Bytebase. e.g. SQL Editor. */
+  /** SOURCE_BYTEBASE - BYTEBASE is the sheet created in SQL Editor. */
   SOURCE_BYTEBASE = 1,
-  /** SOURCE_BYTEBASE_ARTIFACT - BYTEBASE_ARTIFACT is the artifact sheet. */
+  /** SOURCE_BYTEBASE_ARTIFACT - BYTEBASE_ARTIFACT is the artifact sheet such as DDL/DML. */
   SOURCE_BYTEBASE_ARTIFACT = 2,
   UNRECOGNIZED = -1,
 }
