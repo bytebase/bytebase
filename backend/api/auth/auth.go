@@ -20,7 +20,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/state"
-	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -53,13 +53,13 @@ type APIAuthInterceptor struct {
 	store          *store.Store
 	secret         string
 	tokenDuration  time.Duration
-	licenseService enterpriseAPI.LicenseService
+	licenseService enterprise.LicenseService
 	stateCfg       *state.State
 	mode           common.ReleaseMode
 }
 
 // New returns a new API auth interceptor.
-func New(store *store.Store, secret string, tokenDuration time.Duration, licenseService enterpriseAPI.LicenseService, stateCfg *state.State, mode common.ReleaseMode) *APIAuthInterceptor {
+func New(store *store.Store, secret string, tokenDuration time.Duration, licenseService enterprise.LicenseService, stateCfg *state.State, mode common.ReleaseMode) *APIAuthInterceptor {
 	return &APIAuthInterceptor{
 		store:          store,
 		secret:         secret,

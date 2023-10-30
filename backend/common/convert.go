@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/cel-go/cel"
 	"github.com/pkg/errors"
-	v1alpha1 "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
+	exprproto "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
 	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -85,7 +85,7 @@ var ProjectMemberCELAttributes = []cel.EnvOption{
 }
 
 // ConvertParsedRisk converts parsed risk to unparsed format.
-func ConvertParsedRisk(expression *v1alpha1.ParsedExpr) (*expr.Expr, error) {
+func ConvertParsedRisk(expression *exprproto.ParsedExpr) (*expr.Expr, error) {
 	if expression == nil || expression.Expr == nil {
 		return nil, nil
 	}
@@ -100,7 +100,7 @@ func ConvertParsedRisk(expression *v1alpha1.ParsedExpr) (*expr.Expr, error) {
 }
 
 // ConvertUnparsedRisk converts unparsed risk to parsed format.
-func ConvertUnparsedRisk(expression *expr.Expr) (*v1alpha1.ParsedExpr, error) {
+func ConvertUnparsedRisk(expression *expr.Expr) (*exprproto.ParsedExpr, error) {
 	if expression == nil || expression.Expression == "" {
 		return nil, nil
 	}
@@ -121,7 +121,7 @@ func ConvertUnparsedRisk(expression *expr.Expr) (*v1alpha1.ParsedExpr, error) {
 }
 
 // ConvertParsedApproval converts parsed approval to unparsed format.
-func ConvertParsedApproval(expression *v1alpha1.ParsedExpr) (*expr.Expr, error) {
+func ConvertParsedApproval(expression *exprproto.ParsedExpr) (*expr.Expr, error) {
 	if expression == nil || expression.Expr == nil {
 		return nil, nil
 	}
@@ -136,7 +136,7 @@ func ConvertParsedApproval(expression *v1alpha1.ParsedExpr) (*expr.Expr, error) 
 }
 
 // ConvertUnparsedApproval converts unparsed approval to parsed format.
-func ConvertUnparsedApproval(expression *expr.Expr) (*v1alpha1.ParsedExpr, error) {
+func ConvertUnparsedApproval(expression *expr.Expr) (*exprproto.ParsedExpr, error) {
 	if expression == nil || expression.Expression == "" {
 		return nil, nil
 	}
@@ -262,7 +262,7 @@ func GetQueryExportFactors(expression string) (*QueryExportFactors, error) {
 	return factors, nil
 }
 
-func findField(callExpr *v1alpha1.Expr_Call, factors *QueryExportFactors) {
+func findField(callExpr *exprproto.Expr_Call, factors *QueryExportFactors) {
 	if callExpr == nil {
 		return
 	}

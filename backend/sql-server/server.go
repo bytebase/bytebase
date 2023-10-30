@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	echoSwagger "github.com/swaggo/echo-swagger"
+	echoswagger "github.com/swaggo/echo-swagger"
 
 	"github.com/bytebase/bytebase/backend/plugin/metric/segment"
 	_ "github.com/bytebase/bytebase/docs/sqlservice" // initial the swagger doc
@@ -90,7 +90,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		}))
 	}
 	e.Use(middleware.RecoverWithConfig(middleware.RecoverConfig{}))
-	e.GET("/swagger/*", echoSwagger.WrapHandler)
+	e.GET("/swagger/*", echoswagger.WrapHandler)
 
 	apiGroup := e.Group("/v1")
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {

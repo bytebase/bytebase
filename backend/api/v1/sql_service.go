@@ -29,7 +29,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
-	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
@@ -59,7 +59,7 @@ type SQLService struct {
 	schemaSyncer    *schemasync.Syncer
 	dbFactory       *dbfactory.DBFactory
 	activityManager *activity.Manager
-	licenseService  enterpriseAPI.LicenseService
+	licenseService  enterprise.LicenseService
 }
 
 // NewSQLService creates a SQLService.
@@ -68,7 +68,7 @@ func NewSQLService(
 	schemaSyncer *schemasync.Syncer,
 	dbFactory *dbfactory.DBFactory,
 	activityManager *activity.Manager,
-	licenseService enterpriseAPI.LicenseService,
+	licenseService enterprise.LicenseService,
 ) *SQLService {
 	return &SQLService{
 		store:           store,
@@ -2347,7 +2347,10 @@ func (s *SQLService) getUser(ctx context.Context) (*store.UserMessage, error) {
 	if principalPtr == nil {
 		return nil, nil
 	}
-	principalID := principalPtr.(int)
+	principalID, ok := principalPtr.(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	user, err := s.store.GetUserByID(ctx, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.PermissionDenied, "failed to get member for user %v in processing authorize request.", principalID)

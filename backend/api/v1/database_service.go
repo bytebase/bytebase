@@ -29,7 +29,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
-	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -66,12 +66,12 @@ type DatabaseService struct {
 	store          *store.Store
 	backupRunner   *backuprun.Runner
 	schemaSyncer   *schemasync.Syncer
-	licenseService enterpriseAPI.LicenseService
+	licenseService enterprise.LicenseService
 	profile        *config.Profile
 }
 
 // NewDatabaseService creates a new DatabaseService.
-func NewDatabaseService(store *store.Store, br *backuprun.Runner, schemaSyncer *schemasync.Syncer, licenseService enterpriseAPI.LicenseService, profile *config.Profile) *DatabaseService {
+func NewDatabaseService(store *store.Store, br *backuprun.Runner, schemaSyncer *schemasync.Syncer, licenseService enterprise.LicenseService, profile *config.Profile) *DatabaseService {
 	return &DatabaseService{
 		store:          store,
 		backupRunner:   br,
@@ -1539,7 +1539,10 @@ func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.Delete
 }
 
 func (s *DatabaseService) checkDatabasePermission(ctx context.Context, projectID string, permission api.ProjectPermissionType) error {
-	role := ctx.Value(common.RoleContextKey).(api.Role)
+	role, ok := ctx.Value(common.RoleContextKey).(api.Role)
+	if !ok {
+		return status.Errorf(codes.Internal, "role not found")
+	}
 	if isOwnerOrDBA(role) {
 		return nil
 	}

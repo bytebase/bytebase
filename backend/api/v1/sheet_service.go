@@ -18,9 +18,9 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	vcsPlugin "github.com/bytebase/bytebase/backend/plugin/vcs"
+	vcsplugin "github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -31,11 +31,11 @@ import (
 type SheetService struct {
 	v1pb.UnimplementedSheetServiceServer
 	store          *store.Store
-	licenseService enterpriseAPI.LicenseService
+	licenseService enterprise.LicenseService
 }
 
 // NewSheetService creates a new SheetService.
-func NewSheetService(store *store.Store, licenseService enterpriseAPI.LicenseService) *SheetService {
+func NewSheetService(store *store.Store, licenseService enterprise.LicenseService) *SheetService {
 	return &SheetService{
 		store:          store,
 		licenseService: licenseService,
@@ -499,7 +499,7 @@ func (s *SheetService) SyncSheets(ctx context.Context, request *v1pb.SyncSheetsR
 	basePath := filepath.Dir(repo.SheetPathTemplate)
 	// TODO(Steven): The repo.branchFilter could be `test/*` which cannot be the ref value.
 	// TODO(zp): We may need a need VCS interface to get fetch repository file list for a branch instead of a SHA1.
-	fileList, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).FetchRepositoryFileList(ctx,
+	fileList, err := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).FetchRepositoryFileList(ctx,
 		common.OauthContext{
 			ClientID:     vcs.ApplicationID,
 			ClientSecret: vcs.Secret,
@@ -526,7 +526,7 @@ func (s *SheetService) SyncSheets(ctx context.Context, request *v1pb.SyncSheetsR
 			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("sheet name cannot be empty from sheet path %s with template %s", file.Path, repo.SheetPathTemplate))
 		}
 
-		fileContent, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).ReadFileContent(ctx,
+		fileContent, err := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).ReadFileContent(ctx,
 			common.OauthContext{
 				ClientID:     vcs.ApplicationID,
 				ClientSecret: vcs.Secret,
@@ -538,8 +538,8 @@ func (s *SheetService) SyncSheets(ctx context.Context, request *v1pb.SyncSheetsR
 			vcs.InstanceURL,
 			repo.ExternalID,
 			file.Path,
-			vcsPlugin.RefInfo{
-				RefType: vcsPlugin.RefTypeBranch,
+			vcsplugin.RefInfo{
+				RefType: vcsplugin.RefTypeBranch,
 				RefName: repo.BranchFilter,
 			},
 		)
@@ -547,7 +547,7 @@ func (s *SheetService) SyncSheets(ctx context.Context, request *v1pb.SyncSheetsR
 			return nil, status.Errorf(codes.Internal, fmt.Sprintf("Failed to fetch file content from VCS, instance URL: %s, repo ID: %s, file path: %s, branch: %s", vcs.InstanceURL, repo.ExternalID, file.Path, repo.BranchFilter))
 		}
 
-		fileMeta, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(ctx,
+		fileMeta, err := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).ReadFileMeta(ctx,
 			common.OauthContext{
 				ClientID:     vcs.ApplicationID,
 				ClientSecret: vcs.Secret,
@@ -559,8 +559,8 @@ func (s *SheetService) SyncSheets(ctx context.Context, request *v1pb.SyncSheetsR
 			vcs.InstanceURL,
 			repo.ExternalID,
 			file.Path,
-			vcsPlugin.RefInfo{
-				RefType: vcsPlugin.RefTypeBranch,
+			vcsplugin.RefInfo{
+				RefType: vcsplugin.RefTypeBranch,
 				RefName: repo.BranchFilter,
 			},
 		)
@@ -568,7 +568,7 @@ func (s *SheetService) SyncSheets(ctx context.Context, request *v1pb.SyncSheetsR
 			return nil, status.Errorf(codes.Internal, fmt.Sprintf("Failed to fetch file meta from VCS, instance URL: %s, repo ID: %s, file path: %s, branch: %s", vcs.InstanceURL, repo.ExternalID, file.Path, repo.BranchFilter))
 		}
 
-		lastCommit, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).FetchCommitByID(ctx,
+		lastCommit, err := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).FetchCommitByID(ctx,
 			common.OauthContext{
 				ClientID:     vcs.ApplicationID,
 				ClientSecret: vcs.Secret,
@@ -631,11 +631,11 @@ func (s *SheetService) SyncSheets(ctx context.Context, request *v1pb.SyncSheetsR
 
 		var sheetSource store.SheetSource
 		switch vcs.Type {
-		case vcsPlugin.GitLab:
+		case vcsplugin.GitLab:
 			sheetSource = store.SheetFromGitLab
-		case vcsPlugin.GitHub:
+		case vcsplugin.GitHub:
 			sheetSource = store.SheetFromGitHub
-		case vcsPlugin.Bitbucket:
+		case vcsplugin.Bitbucket:
 			sheetSource = store.SheetFromBitbucket
 		}
 		vscSheetType := store.SheetForSQL
@@ -796,7 +796,10 @@ func (s *SheetService) canReadSheet(ctx context.Context, sheet *store.SheetMessa
 	if !ok {
 		return false, status.Errorf(codes.Internal, "principal ID not found")
 	}
-	role := ctx.Value(common.RoleContextKey).(api.Role)
+	role, ok := ctx.Value(common.RoleContextKey).(api.Role)
+	if !ok {
+		return false, status.Errorf(codes.Internal, "role not found")
+	}
 
 	switch sheet.Visibility {
 	case store.PrivateSheet:

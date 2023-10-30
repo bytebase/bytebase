@@ -12,7 +12,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
-	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	metricAPI "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
@@ -27,7 +27,7 @@ type SubscriptionService struct {
 	store          *store.Store
 	profile        *config.Profile
 	metricReporter *metricreport.Reporter
-	licenseService enterpriseAPI.LicenseService
+	licenseService enterprise.LicenseService
 }
 
 // NewSubscriptionService creates a new SubscriptionService.
@@ -35,7 +35,7 @@ func NewSubscriptionService(
 	store *store.Store,
 	profile *config.Profile,
 	metricReporter *metricreport.Reporter,
-	licenseService enterpriseAPI.LicenseService) *SubscriptionService {
+	licenseService enterprise.LicenseService) *SubscriptionService {
 	return &SubscriptionService{
 		store:          store,
 		profile:        profile,
@@ -80,7 +80,7 @@ func (s *SubscriptionService) UpdateSubscription(ctx context.Context, request *v
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
-	if err := s.licenseService.StoreLicense(ctx, &enterpriseAPI.SubscriptionPatch{
+	if err := s.licenseService.StoreLicense(ctx, &enterprise.SubscriptionPatch{
 		UpdaterID: principalID,
 		License:   request.Patch.License,
 	}); err != nil {
@@ -108,9 +108,9 @@ func (s *SubscriptionService) TrialSubscription(ctx context.Context, request *v1
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	license := &enterpriseAPI.License{
-		InstanceCount: enterpriseAPI.InstanceLimitForTrial,
-		ExpiresTs:     time.Now().AddDate(0, 0, enterpriseAPI.TrialDaysLimit).Unix(),
+	license := &enterprise.License{
+		InstanceCount: enterprise.InstanceLimitForTrial,
+		ExpiresTs:     time.Now().AddDate(0, 0, enterprise.TrialDaysLimit).Unix(),
 		IssuedTs:      time.Now().Unix(),
 		Plan:          planType,
 		// the subject format for license should be {org id in hub}.{subscription id in hub}
@@ -153,7 +153,7 @@ func (s *SubscriptionService) TrialSubscription(ctx context.Context, request *v1
 	}
 
 	// we need to override the SettingEnterpriseLicense with an empty value to get the valid free trial.
-	if err := s.licenseService.StoreLicense(ctx, &enterpriseAPI.SubscriptionPatch{
+	if err := s.licenseService.StoreLicense(ctx, &enterprise.SubscriptionPatch{
 		UpdaterID: principalID,
 		License:   "",
 	}); err != nil {
