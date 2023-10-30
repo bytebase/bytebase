@@ -21,11 +21,33 @@
       `id` int(11) NOT NULL COMMENT 'ID',
       PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+    CREATE TABLE `rds` (
+      `id` bigint(20) NOT NULL,
+      `binlog_format` enum('ROW','MIXED','STATEMENT','')
+    );
   target: |-
     {
       "schemas":  [
         {
           "tables":  [
+            {
+              "name":  "rds",
+              "columns":  [
+                {
+                  "name":  "id",
+                  "type":  "bigint(20)",
+                  "comment":  "ID"
+                },
+                {
+                  "name":  "binlog_format",
+                  "nullable":  true,
+                  "type":  "enum('ROW','MIXED','STATEMENT','')"
+                }
+              ],
+              "indexes":  [
+              ],
+              "comment": "hello"
+            },
             {
               "name":  "users",
               "columns":  [
@@ -189,6 +211,10 @@
       `name` binary(10) NULL,
       PRIMARY KEY(`id`) CLUSTERED
     ) ENGINE = InnoDB DEFAULT CHARACTER SET = UTF8MB4 DEFAULT COLLATE = UTF8MB4_BIN COMMENT 'hello';
+    CREATE TABLE `rds` (
+      `id` bigint(20) NOT NULL COMMENT 'ID',
+      `binlog_format` enum('ROW','MIXED','STATEMENT','')
+    ) COMMENT 'hello';
 
     CREATE TABLE `t2` (
       `b` int NULL,
