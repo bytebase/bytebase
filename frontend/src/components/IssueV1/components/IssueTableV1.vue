@@ -28,17 +28,11 @@
             class="bb-grid-header-cell"
           >
             <template v-if="index === 0">
-              <input
+              <NCheckbox
                 v-if="issueList.length > 0"
-                type="checkbox"
-                class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
                 :checked="allSelectionState.checked"
                 :indeterminate="allSelectionState.indeterminate"
-                @input="
-                  setAllIssuesSelection(
-                    ($event.target as HTMLInputElement).checked
-                  )
-                "
+                @update:checked="setAllIssuesSelection"
               />
             </template>
             <template v-else>{{ column.title }}</template>
@@ -50,14 +44,9 @@
           class="bb-grid-cell"
           @click.stop="setIssueSelection(issue, !isIssueSelected(issue))"
         >
-          <!-- width: 1% means as narrow as possible -->
-          <input
-            type="checkbox"
-            class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-            :checked="isIssueSelected(issue)"
-          />
+          <NCheckbox :checked="isIssueSelected(issue)" />
         </div>
-        <div class="bb-grid-cell w-12">
+        <div class="bb-grid-cell !px-1">
           <IssueStatusIcon
             :issue-status="issue.status"
             :task-status="issueTaskStatus(issue)"
@@ -105,27 +94,27 @@
             </NTooltip>
           </div>
         </div>
-        <div class="hidden md:bb-grid-cell w-36">
+        <div v-if="showExtendedColumns" class="bb-grid-cell">
           {{ humanizeTs((issue.updateTime?.getTime() ?? 0) / 1000) }}
         </div>
-        <div class="hidden sm:bb-grid-cell w-36">
+        <div v-if="showExtendedColumns" class="bb-grid-cell !py-0.5">
           <CurrentApproverV1 :issue="issue" />
         </div>
-        <div class="hidden sm:bb-grid-cell w-36">
-          <div class="flex flex-row items-center">
+        <div v-if="showExtendedColumns" class="bb-grid-cell !py-0.5">
+          <div class="flex flex-row items-center overflow-hidden gap-x-2">
             <BBAvatar
               :size="'SMALL'"
               :username="issue.assigneeEntity?.title ?? $t('common.unassigned')"
             />
-            <span class="ml-2">
+            <span class="truncate">
               {{ issue.assigneeEntity?.title ?? $t("common.unassigned") }}
             </span>
           </div>
         </div>
-        <div class="hidden sm:bb-grid-cell w-36">
-          <div class="flex flex-row items-center">
+        <div v-if="showExtendedColumns" class="bb-grid-cell !py-0.5">
+          <div class="flex flex-row items-center overflow-hidden gap-x-2">
             <BBAvatar :size="'SMALL'" :username="issue.creatorEntity.title" />
-            <span class="ml-2">
+            <span class="truncate">
               {{ issue.creatorEntity.title }}
             </span>
           </div>
@@ -150,13 +139,16 @@
 
   <div
     v-if="isTableInViewport && selectedIssueList.length > 0"
-    class="sticky bottom-0 w-full bg-white flex items-center gap-x-2 px-4 py-2 border border-t-0"
+    class="sticky bottom-0 w-full bg-white flex items-center gap-x-2 px-4 py-2 border-b"
+    :class="isGridXBordered && 'border-x'"
   >
     <BatchIssueActionsV1 :issue-list="selectedIssueList" />
   </div>
 </template>
 
 <script lang="ts" setup>
+import { useElementSize } from "@vueuse/core";
+import { NCheckbox } from "naive-ui";
 import { reactive, computed, watch, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -178,45 +170,49 @@ type Mode = "ALL" | "PROJECT";
 const { t } = useI18n();
 
 const columnList = computed((): BBGridColumn[] => {
-  const resp = [
+  const columns: BBGridColumn[] = [
     {
-      title: "",
-      width: "auto",
+      title: "", // Checkbox
+      width: "3rem",
     },
     {
-      title: "",
-      width: "2rem",
+      title: "", // Status
+      width: "auto",
     },
     {
       title: t("issue.table.name"),
       width: "minmax(auto, 1fr)",
     },
-    {
-      title: t("issue.table.updated"),
-      width: "minmax(auto, 5rem)",
-    },
-    {
-      title: t("issue.table.approver"),
-      width: "minmax(auto, 2rem)",
-    },
-    {
-      title: t("issue.table.assignee"),
-      width: "minmax(auto, 2rem)",
-    },
-    {
-      title: t("issue.table.creator"),
-      width: "minmax(auto, 2rem)",
-    },
   ];
+  if (showExtendedColumns.value) {
+    columns.push(
+      {
+        title: t("issue.table.updated"),
+        width: "minmax(auto, 5rem)",
+      },
+      {
+        title: t("issue.table.approver"),
+        width: "minmax(auto, 8rem)",
+      },
+      {
+        title: t("issue.table.assignee"),
+        width: "minmax(auto, 8rem)",
+      },
+      {
+        title: t("issue.table.creator"),
+        width: "minmax(auto, 8rem)",
+      }
+    );
+  }
 
   if (props.issueList.length === 0) {
-    return resp.map((col) => ({
+    return columns.map((col) => ({
       ...col,
       width: "1fr",
     }));
   }
 
-  return resp;
+  return columns;
 });
 
 interface LocalState {
@@ -249,6 +245,15 @@ const currentUserV1 = useCurrentUserV1();
 
 const tableRef = ref<HTMLDivElement>();
 const isTableInViewport = useElementVisibilityInScrollParent(tableRef);
+const { width: tableWidth } = useElementSize(tableRef);
+const showExtendedColumns = computed(() => {
+  return tableWidth.value > 800;
+});
+const isGridXBordered = computed(() => {
+  const grid = tableRef.value?.querySelector(".bb-grid");
+  if (!grid) return false;
+  return parseInt(getComputedStyle(grid).borderLeftWidth, 10) > 0;
+});
 
 const selectedIssueList = computed(() => {
   return props.issueList.filter((issue) =>
