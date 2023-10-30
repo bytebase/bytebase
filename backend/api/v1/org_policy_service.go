@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/cel-go/cel"
 	"github.com/pkg/errors"
-	expr "google.golang.org/genproto/googleapis/type/expr"
+	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"

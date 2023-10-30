@@ -1539,7 +1539,10 @@ func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.Delete
 }
 
 func (s *DatabaseService) checkDatabasePermission(ctx context.Context, projectID string, permission api.ProjectPermissionType) error {
-	role := ctx.Value(common.RoleContextKey).(api.Role)
+	role, ok := ctx.Value(common.RoleContextKey).(api.Role)
+	if !ok {
+		return status.Errorf(codes.Internal, "role not found")
+	}
 	if isOwnerOrDBA(role) {
 		return nil
 	}

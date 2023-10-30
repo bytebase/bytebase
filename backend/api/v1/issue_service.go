@@ -1886,7 +1886,10 @@ func getProjectIDsFilter(ctx context.Context, s *store.Store, requestProjectID s
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
-	role := ctx.Value(common.RoleContextKey).(api.Role)
+	role, ok := ctx.Value(common.RoleContextKey).(api.Role)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "role not found")
+	}
 
 	if isOwnerOrDBA(role) {
 		if requestProjectID == "-" {

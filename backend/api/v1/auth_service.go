@@ -273,7 +273,10 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		return nil, status.Errorf(codes.NotFound, "user %q has been deleted", userID)
 	}
 
-	role := ctx.Value(common.RoleContextKey).(api.Role)
+	role, ok := ctx.Value(common.RoleContextKey).(api.Role)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "role not found")
+	}
 	if principalID != userID && role != api.Owner {
 		return nil, status.Errorf(codes.PermissionDenied, "only workspace owner or user itself can update the user %d", userID)
 	}
@@ -435,7 +438,10 @@ func (s *AuthService) DeleteUser(ctx context.Context, request *v1pb.DeleteUserRe
 		return nil, status.Errorf(codes.NotFound, "user %q has been deleted", userID)
 	}
 
-	role := ctx.Value(common.RoleContextKey).(api.Role)
+	role, ok := ctx.Value(common.RoleContextKey).(api.Role)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "role not found")
+	}
 	if role != api.Owner {
 		return nil, status.Errorf(codes.PermissionDenied, "only workspace owner can delete the user %d", userID)
 	}
@@ -471,7 +477,10 @@ func (s *AuthService) UndeleteUser(ctx context.Context, request *v1pb.UndeleteUs
 		return nil, status.Errorf(codes.InvalidArgument, "user %q is already active", userID)
 	}
 
-	role := ctx.Value(common.RoleContextKey).(api.Role)
+	role, ok := ctx.Value(common.RoleContextKey).(api.Role)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "role not found")
+	}
 	if role != api.Owner {
 		return nil, status.Errorf(codes.PermissionDenied, "only workspace owner can undelete the user %d", userID)
 	}
