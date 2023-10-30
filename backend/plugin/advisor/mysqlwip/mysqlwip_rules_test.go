@@ -31,6 +31,8 @@ func TestMySQLWIPRules(t *testing.T) {
 		advisor.SchemaRuleStatementRequireWhere,
 		// advisor.SchemaRuleStatementNoLeadingWildcardLike disallow leading '%' in LIKE, e.g. LIKE foo = '%x' is not allowed.
 		advisor.SchemaRuleStatementNoLeadingWildcardLike,
+		// advisor.SchemaRuleStatementDisallowCommit disallow using commit in the issue.
+		advisor.SchemaRuleStatementDisallowCommit,
 
 		// advisor.SchemaRuleStatementInsertRowLimit enforce the insert row limit.
 		advisor.SchemaRuleStatementInsertRowLimit,
