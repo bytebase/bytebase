@@ -180,14 +180,21 @@ func (checker *namingIndexConventionChecker) EnterAlterTable(ctx *mysql.AlterTab
 
 func (checker *namingIndexConventionChecker) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
 	// Unique index naming convention should in advisor_naming_unique_key_convention.go
-	if ctx.UNIQUE_SYMBOL() != nil {
+	if ctx.UNIQUE_SYMBOL() != nil || ctx.FULLTEXT_SYMBOL() != nil || ctx.SPATIAL_SYMBOL() != nil {
 		return
 	}
-	if ctx.IndexName() == nil || ctx.CreateIndexTarget() == nil || ctx.CreateIndexTarget().TableRef() == nil {
+	if ctx.CreateIndexTarget() == nil || ctx.CreateIndexTarget().TableRef() == nil {
 		return
 	}
 
-	indexName := mysqlparser.NormalizeIndexName(ctx.IndexName())
+	indexName := ""
+	if ctx.IndexName() != nil {
+		indexName = mysqlparser.NormalizeIndexName(ctx.IndexName())
+	}
+	if ctx.IndexNameAndType() != nil && ctx.IndexNameAndType().IndexName() != nil {
+		indexName = mysqlparser.NormalizeIndexName(ctx.IndexNameAndType().IndexName())
+	}
+
 	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.CreateIndexTarget().TableRef())
 
 	if ctx.CreateIndexTarget().KeyListVariants() == nil {
@@ -244,7 +251,7 @@ func (checker *namingIndexConventionChecker) handleIndexList(indexDataList []*in
 
 func (checker *namingIndexConventionChecker) handleConstraintDef(tableName string, ctx mysql.ITableConstraintDefContext) *indexMetaData {
 	// we only focus normal index.
-	if ctx.UNIQUE_SYMBOL() != nil || ctx.FULLTEXT_SYMBOL() != nil || ctx.SPATIAL_SYMBOL() != nil {
+	if ctx.UNIQUE_SYMBOL() != nil || ctx.FULLTEXT_SYMBOL() != nil || ctx.SPATIAL_SYMBOL() != nil || ctx.PRIMARY_SYMBOL() != nil {
 		return nil
 	}
 	if ctx.KeyListVariants() == nil {
@@ -252,9 +259,6 @@ func (checker *namingIndexConventionChecker) handleConstraintDef(tableName strin
 	}
 
 	indexName := ""
-	if ctx.IndexName() != nil {
-		indexName = mysqlparser.NormalizeIndexName(ctx.IndexName())
-	}
 	if ctx.IndexNameAndType() != nil && ctx.IndexNameAndType().IndexName() != nil {
 		indexName = mysqlparser.NormalizeIndexName(ctx.IndexNameAndType().IndexName())
 	}
