@@ -31,9 +31,11 @@
                 @click="handleMergeBranch"
                 >{{ $t("schema-designer.merge-branch") }}</NButton
               >
-              <NButton type="primary" @click="handleApplySchemaDesignClick">{{
-                $t("schema-designer.apply-to-database")
-              }}</NButton>
+              <NButton
+                type="primary"
+                @click="selectTargetDatabasesContext.show = true"
+                >{{ $t("schema-designer.apply-to-database") }}</NButton
+              >
             </template>
             <template v-else>
               <NButton @click="handleCancelEdit">{{
@@ -103,6 +105,15 @@
     </div>
   </div>
 
+  <TargetDatabasesSelectPanel
+    v-if="selectTargetDatabasesContext.show"
+    :project-id="project.uid"
+    :engine="schemaDesign.engine"
+    :selected-database-id-list="[]"
+    @close="selectTargetDatabasesContext.show = false"
+    @update="handleSelectedDatabaseIdListChanged"
+  />
+
   <MergeBranchPanel
     v-if="state.showDiffEditor && mergeBranchPanelContext"
     :source-branch-name="mergeBranchPanelContext.sourceBranchName"
@@ -114,6 +125,7 @@
 
 <script lang="ts" setup>
 import { asyncComputed } from "@vueuse/core";
+import dayjs from "dayjs";
 import { cloneDeep, head, isEqual, uniqueId } from "lodash-es";
 import { NButton, NDivider, NInput, NTooltip, useDialog, NTag } from "naive-ui";
 import { Status } from "nice-grpc-common";
@@ -125,6 +137,8 @@ import {
   mergeSchemaEditToMetadata,
   validateDatabaseMetadata,
 } from "@/components/SchemaEditorV1/utils";
+import TargetDatabasesSelectPanel from "@/components/SyncDatabaseSchema/TargetDatabasesSelectPanel.vue";
+import { schemaDesignServiceClient } from "@/grpcweb";
 import {
   pushNotification,
   useChangeHistoryStore,
@@ -185,6 +199,11 @@ const mergeBranchPanelContext = ref<{
   targetBranchName: string;
 }>();
 const schemaEditorKey = ref<string>(uniqueId());
+const selectTargetDatabasesContext = ref<{
+  show: boolean;
+}>({
+  show: false,
+});
 
 const schemaDesign = computed(() => {
   return props.branch;
@@ -514,13 +533,68 @@ const handleMergeAfterConflictResolved = (branchName: string) => {
   });
 };
 
-const handleApplySchemaDesignClick = () => {
-  router.push({
-    name: "workspace.sync-schema",
-    query: {
-      schemaDesignName: schemaDesign.value.name,
+const handleSelectedDatabaseIdListChanged = async (
+  databaseIdList: string[]
+) => {
+  let statement = "";
+  try {
+    const diffResponse = await schemaDesignServiceClient.diffMetadata(
+      {
+        sourceMetadata: schemaDesign.value.baselineSchemaMetadata,
+        targetMetadata: schemaDesign.value.schemaMetadata,
+        engine: schemaDesign.value.engine,
+      },
+      {
+        silent: true,
+      }
+    );
+    statement = diffResponse.diff;
+  } catch {
+    pushNotification({
+      module: "bytebase",
+      style: "WARN",
+      title: t("schema-editor.message.invalid-schema"),
+    });
+    return;
+  }
+
+  const targetDatabaseList = databaseIdList.map((id) =>
+    databaseStore.getDatabaseByUID(id)
+  );
+  const query: Record<string, any> = {
+    template: "bb.issue.database.schema.update",
+    project: project.value.uid,
+    mode: "normal",
+    ghost: undefined,
+    branch: schemaDesign.value.name,
+  };
+  query.databaseList = databaseIdList.join(",");
+  query.sql = statement;
+  query.name = generateIssueName(
+    targetDatabaseList.map((db) => db.databaseName)
+  );
+  const routeInfo = {
+    name: "workspace.issue.detail",
+    params: {
+      issueSlug: "new",
     },
-  });
+    query,
+  };
+  router.push(routeInfo);
+};
+
+const generateIssueName = (databaseNameList: string[]) => {
+  const issueNameParts: string[] = [];
+  if (databaseNameList.length === 1) {
+    issueNameParts.push(`[${databaseNameList[0]}]`);
+  } else {
+    issueNameParts.push(`[${databaseNameList.length} databases]`);
+  }
+  issueNameParts.push(`Alter schema`);
+  const datetime = dayjs().format("@MM-DD HH:mm");
+  const tz = "UTC" + dayjs().format("ZZ");
+  issueNameParts.push(`${datetime} ${tz}`);
+  return issueNameParts.join(" ");
 };
 
 const deleteSchemaDesign = async () => {
