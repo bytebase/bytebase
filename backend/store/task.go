@@ -190,8 +190,8 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 		where = append(where, fmt.Sprintf("task.status in (%s)", strings.Join(list, ",")))
 	}
 	if v := find.LatestTaskRunStatusList; v != nil {
-		where = append(where, fmt.Sprintf("COALESCE(latest_task_run.status, 'NOT_STARTED') = ANY($%d)", len(args)+1))
-		args = append(args, *v)
+		where = append(where, fmt.Sprintf("COALESCE(latest_task_run.status, $%d) = ANY($%d)", len(args)+1, len(args)+2))
+		args = append(args, api.TaskRunNotStarted, *v)
 	}
 	if v := find.TypeList; v != nil {
 		var list []string
