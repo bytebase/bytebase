@@ -75,6 +75,7 @@ const props = withDefaults(
     style: "INFO",
     title: "bbkit.attention.default",
     description: "",
+    link: undefined,
     actionText: "",
     side: "BETWEEN",
   }
