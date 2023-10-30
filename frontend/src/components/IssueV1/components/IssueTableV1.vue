@@ -192,15 +192,15 @@ const columnList = computed((): BBGridColumn[] => {
       },
       {
         title: t("issue.table.approver"),
-        width: "minmax(auto,8rem)",
+        width: "minmax(auto, 8rem)",
       },
       {
         title: t("issue.table.assignee"),
-        width: "minmax(auto,8rem)",
+        width: "minmax(auto, 8rem)",
       },
       {
         title: t("issue.table.creator"),
-        width: "minmax(auto,8rem)",
+        width: "minmax(auto, 8rem)",
       }
     );
   }
