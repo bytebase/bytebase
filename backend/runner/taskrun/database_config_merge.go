@@ -4,8 +4,6 @@ import (
 	"reflect"
 	"sort"
 
-	"google.golang.org/protobuf/proto"
-
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -142,7 +140,6 @@ func mergeColumnConfig(target, baseline, current *storepb.ColumnConfig) *storepb
 	// Current is never nil.
 	// If baseline = A, target = B, current = C, we should set merged value to B.
 	// If baseline = A, target = A, current = B, we should set merged value to B since there is no change intentially.
-	current = proto.Clone(current).(*storepb.ColumnConfig)
 	if target.SemanticTypeId != baseline.SemanticTypeId {
 		current.SemanticTypeId = target.SemanticTypeId
 	}

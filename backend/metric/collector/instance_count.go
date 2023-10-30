@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	metricAPI "github.com/bytebase/bytebase/backend/metric"
+	metricapi "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -42,7 +42,7 @@ func (c *instanceCountCollector) Collect(ctx context.Context) ([]*metric.Metric,
 		}
 
 		res = append(res, &metric.Metric{
-			Name:  metricAPI.InstanceCountMetricName,
+			Name:  metricapi.InstanceCountMetricName,
 			Value: instanceCountMetric.Count,
 			Labels: map[string]any{
 				"engine":      instanceCountMetric.Engine.String(),

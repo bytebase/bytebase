@@ -23,7 +23,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	metricAPI "github.com/bytebase/bytebase/backend/metric"
+	metricapi "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/runner/relay"
@@ -722,7 +722,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 	}
 
 	s.metricReporter.Report(ctx, &metric.Metric{
-		Name:  metricAPI.IssueCreateMetricName,
+		Name:  metricapi.IssueCreateMetricName,
 		Value: 1,
 		Labels: map[string]any{
 			"type": issue.Type,

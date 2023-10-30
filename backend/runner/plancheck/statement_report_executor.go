@@ -21,7 +21,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
-	tidb "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
+	"github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"

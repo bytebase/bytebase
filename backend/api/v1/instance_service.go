@@ -19,7 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	metricAPI "github.com/bytebase/bytebase/backend/metric"
+	metricapi "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
@@ -159,7 +159,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 	}
 
 	s.metricReporter.Report(ctx, &metric.Metric{
-		Name:  metricAPI.InstanceCreateMetricName,
+		Name:  metricapi.InstanceCreateMetricName,
 		Value: 1,
 		Labels: map[string]any{
 			"engine": instance.Engine,
