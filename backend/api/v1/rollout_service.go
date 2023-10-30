@@ -781,6 +781,8 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 
 	tasksMap := map[int]*store.TaskMessage{}
 	var taskPatchList []*api.TaskPatch
+	var statementUpdates []api.ActivityPipelineTaskStatementUpdatePayload
+	var earliestUpdates []api.ActivityPipelineTaskEarliestAllowedTimeUpdatePayload
 	updaterID := ctx.Value(common.PrincipalIDContextKey).(int)
 	if oldPlan.PipelineUID != nil {
 		tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: oldPlan.PipelineUID})
@@ -811,6 +813,13 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				seconds := spec.EarliestAllowedTime.GetSeconds()
 				taskPatch.EarliestAllowedTs = &seconds
 				doUpdate = true
+				earliestUpdates = append(earliestUpdates, api.ActivityPipelineTaskEarliestAllowedTimeUpdatePayload{
+					TaskID:               task.ID,
+					OldEarliestAllowedTs: task.EarliestAllowedTs,
+					NewEarliestAllowedTs: seconds,
+					IssueName:            issue.Title,
+					TaskName:             task.Name,
+				})
 			}
 
 			// RollbackEnabled
@@ -870,6 +879,13 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 					doUpdate = true
 					// TODO(p0ny): update schema version
 					taskPatch.SheetID = &sheet.UID
+					statementUpdates = append(statementUpdates, api.ActivityPipelineTaskStatementUpdatePayload{
+						TaskID:     task.ID,
+						OldSheetID: taskPayload.SheetID,
+						NewSheetID: sheet.UID,
+						TaskName:   task.Name,
+						IssueName:  issue.Title,
+					})
 				}
 				return nil
 			}(); err != nil {
@@ -954,6 +970,49 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 		}
 		if err := s.store.CreatePlanCheckRuns(ctx, planCheckRuns...); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create plan check runs, error: %v", err)
+		}
+	}
+
+	for _, statementUpdate := range statementUpdates {
+		task := tasksMap[statementUpdate.TaskID]
+		if err := func() error {
+			payload, err := json.Marshal(statementUpdate)
+			if err != nil {
+				return errors.Wrapf(err, "failed to marshal payload")
+			}
+			_, err = s.activityManager.CreateActivity(ctx, &store.ActivityMessage{
+				CreatorUID:   updaterID,
+				ContainerUID: task.PipelineID,
+				Type:         api.ActivityPipelineTaskStatementUpdate,
+				Payload:      string(payload),
+				Level:        api.ActivityInfo,
+			}, &activity.Metadata{
+				Issue: issue,
+			})
+			return errors.Wrapf(err, "failed to create activity")
+		}(); err != nil {
+			slog.Error("failed to create statement update activity after updating plan", log.BBError(err))
+		}
+	}
+	for _, earliestUpdate := range earliestUpdates {
+		task := tasksMap[earliestUpdate.TaskID]
+		if err := func() error {
+			payload, err := json.Marshal(earliestUpdate)
+			if err != nil {
+				return errors.Wrapf(err, "failed to marshal payload")
+			}
+			_, err = s.activityManager.CreateActivity(ctx, &store.ActivityMessage{
+				CreatorUID:   updaterID,
+				ContainerUID: task.PipelineID,
+				Type:         api.ActivityPipelineTaskEarliestAllowedTimeUpdate,
+				Payload:      string(payload),
+				Level:        api.ActivityInfo,
+			}, &activity.Metadata{
+				Issue: issue,
+			})
+			return errors.Wrapf(err, "failed to create activity")
+		}(); err != nil {
+			slog.Error("failed to create earliest update activity after updating plan", log.BBError(err))
 		}
 	}
 
