@@ -144,6 +144,7 @@ import {
   SchemaDesign,
   SchemaDesign_Type,
 } from "@/types/proto/v1/schema_design_service";
+import { projectV1Slug } from "@/utils";
 import { provideSQLCheckContext } from "../SQLCheck";
 import { fetchBaselineMetadataOfBranch } from "../SchemaEditorV1/utils/branch";
 import MergeBranchPanel from "./MergeBranchPanel.vue";
@@ -437,14 +438,14 @@ const handleSaveBranch = async () => {
             closeOnEsc: true,
             onNegativeClick: () => {
               // Go to draft branch detail page after merge failed.
-              const [projectName, sheetId] = getProjectAndSchemaDesignSheetId(
+              const [_, sheetId] = getProjectAndSchemaDesignSheetId(
                 newBranch.name
               );
               state.isEditing = false;
               router.replace({
                 name: "workspace.branch.detail",
                 params: {
-                  projectName,
+                  projectSlug: projectV1Slug(project.value),
                   branchName: sheetId,
                 },
               });
@@ -503,11 +504,11 @@ const handleSaveBranch = async () => {
 const handleMergeAfterConflictResolved = (branchName: string) => {
   state.showDiffEditor = false;
   state.isEditing = false;
-  const [projectName, sheetId] = getProjectAndSchemaDesignSheetId(branchName);
+  const [_, sheetId] = getProjectAndSchemaDesignSheetId(branchName);
   router.replace({
     name: "workspace.branch.detail",
     params: {
-      projectName,
+      projectSlug: projectV1Slug(project.value),
       branchName: sheetId,
     },
   });

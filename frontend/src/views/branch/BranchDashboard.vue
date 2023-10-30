@@ -36,11 +36,12 @@ import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
 import BranchDataTable from "@/components/Branch/BranchDataTable.vue";
 import { ProjectSelect } from "@/components/v2";
-import { useProjectV1Store } from "@/store";
+import { useProjectV1Store, useDatabaseV1Store } from "@/store";
 import { useSchemaDesignList } from "@/store/modules/schemaDesign";
 import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
 import { UNKNOWN_ID } from "@/types";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
+import { projectV1Slug } from "@/utils";
 
 interface LocalState {
   searchKeyword: string;
@@ -50,6 +51,7 @@ interface LocalState {
 const router = useRouter();
 const { schemaDesignList, ready } = useSchemaDesignList();
 const projectStore = useProjectV1Store();
+const databaseStore = useDatabaseV1Store();
 const state = reactive<LocalState>({
   searchKeyword: "",
   projectFilter: String(UNKNOWN_ID),
@@ -77,20 +79,22 @@ const handleCreateBranch = () => {
   router.push({
     name: "workspace.branch.detail",
     params: {
-      projectName: "-",
+      projectSlug: "-",
       branchName: "new",
     },
   });
 };
 
 const handleBranchClick = async (schemaDesign: SchemaDesign) => {
-  const [projectName, sheetId] = getProjectAndSchemaDesignSheetId(
-    schemaDesign.name
+  const [_, sheetId] = getProjectAndSchemaDesignSheetId(schemaDesign.name);
+  const baselineDatabase = databaseStore.getDatabaseByName(
+    schemaDesign.baselineDatabase
   );
+  console.log("handleBranchClick");
   router.push({
     name: "workspace.branch.detail",
     params: {
-      projectName,
+      projectSlug: projectV1Slug(baselineDatabase.projectEntity),
       branchName: sheetId,
     },
   });
