@@ -565,6 +565,7 @@ const handleSelectedDatabaseIdListChanged = async (
     project: project.value.uid,
     mode: "normal",
     ghost: undefined,
+    branch: schemaDesign.value.name,
   };
   query.databaseList = databaseIdList.join(",");
   query.sql = statement;
