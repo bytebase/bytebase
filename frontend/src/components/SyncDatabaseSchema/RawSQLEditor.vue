@@ -228,9 +228,9 @@ const handleUploadFile = (e: Event) => {
   cleanup();
 };
 
-const handleStatementChange = async (statement: string) => {
-  await handleUpdateSheet(statement);
+const handleStatementChange = (statement: string) => {
   state.editStatement = statement;
+  handleUpdateSheet(statement);
   update();
 };
 
