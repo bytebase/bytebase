@@ -673,27 +673,47 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 
 	engine := v1pb.Engine(sheet.Payload.SchemaDesign.Engine)
 	schemaDesignType := v1pb.SchemaDesign_Type(sheet.Payload.SchemaDesign.Type)
+	// For backward compatibility, we default to MAIN_BRANCH if the type is not specified.
+	if schemaDesignType == v1pb.SchemaDesign_TYPE_UNSPECIFIED {
+		schemaDesignType = v1pb.SchemaDesign_MAIN_BRANCH
+	}
 	name := fmt.Sprintf("%s%s/%s%v", common.ProjectNamePrefix, project.ResourceID, common.SchemaDesignPrefix, sheet.UID)
 
+	var baselineSheetName string
+	if schemaDesignType == v1pb.SchemaDesign_MAIN_BRANCH {
+		if sheet.Payload.SchemaDesign.BaselineSheetId != "" {
+			baselineSheetName = fmt.Sprintf("%s%s/%s%v", common.ProjectNamePrefix, project.ResourceID, common.SheetIDPrefix, sheet.Payload.SchemaDesign.BaselineSheetId)
+		}
+	} else {
+		if sheet.Payload.SchemaDesign.BaselineSchemaDesignId != "" {
+			baselineSheetName = fmt.Sprintf("%s%s/%s%v", common.ProjectNamePrefix, project.ResourceID, common.SchemaDesignPrefix, sheet.Payload.SchemaDesign.BaselineSchemaDesignId)
+		}
+	}
+	schemaDesign := &v1pb.SchemaDesign{
+		Name:                   name,
+		Title:                  sheet.Name,
+		Etag:                   "",
+		Schema:                 "",
+		SchemaMetadata:         nil,
+		BaselineSchema:         "",
+		BaselineSchemaMetadata: nil,
+		BaselineSheetName:      baselineSheetName,
+		Engine:                 engine,
+		BaselineDatabase:       fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
+		Type:                   schemaDesignType,
+		Protection:             convertProtectionFromStore(sheet.Payload.SchemaDesign.Protection),
+		Creator:                common.FormatUserEmail(creator.Email),
+		Updater:                common.FormatUserEmail(updater.Email),
+		CreateTime:             timestamppb.New(sheet.CreatedTime),
+		UpdateTime:             timestamppb.New(sheet.UpdatedTime),
+	}
+	baselineChangeHistoryID := sheet.Payload.SchemaDesign.BaselineChangeHistoryId
+	if baselineChangeHistoryID != "" {
+		schemaDesign.BaselineChangeHistoryId = &baselineChangeHistoryID
+	}
+
 	if view == v1pb.SchemaDesignView_SCHEMA_DESIGN_VIEW_BASIC || view == v1pb.SchemaDesignView_SCHEMA_DESIGN_VIEW_UNSPECIFIED {
-		return &v1pb.SchemaDesign{
-			Name:                   name,
-			Title:                  sheet.Name,
-			Schema:                 "",
-			SchemaMetadata:         nil,
-			BaselineSchema:         "",
-			BaselineSchemaMetadata: nil,
-			BaselineSheetName:      "",
-			Engine:                 engine,
-			BaselineDatabase:       fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
-			Type:                   schemaDesignType,
-			Etag:                   "",
-			Protection:             convertProtectionFromStore(sheet.Payload.SchemaDesign.Protection),
-			Creator:                common.FormatUserEmail(creator.Email),
-			Updater:                common.FormatUserEmail(updater.Email),
-			CreateTime:             timestamppb.New(sheet.CreatedTime),
-			UpdateTime:             timestamppb.New(sheet.UpdatedTime),
-		}, nil
+		return schemaDesign, nil
 	}
 
 	schema := sheet.Statement
@@ -705,11 +725,7 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 		schemaMetadata.SchemaConfigs = config.SchemaConfigs
 	}
 
-	baselineSchema, baselineSheetName := "", ""
-	// For backward compatibility, we default to MAIN_BRANCH if the type is not specified.
-	if schemaDesignType == v1pb.SchemaDesign_TYPE_UNSPECIFIED {
-		schemaDesignType = v1pb.SchemaDesign_MAIN_BRANCH
-	}
+	baselineSchema := ""
 	if sheet.Payload.SchemaDesign.BaselineSheetId != "" {
 		sheetUID, err := strconv.Atoi(sheet.Payload.SchemaDesign.BaselineSheetId)
 		if err != nil {
@@ -725,16 +741,6 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 		baselineSchema = baselineSheet.Statement
 	}
 
-	if schemaDesignType == v1pb.SchemaDesign_MAIN_BRANCH {
-		if sheet.Payload.SchemaDesign.BaselineSheetId != "" {
-			baselineSheetName = fmt.Sprintf("%s%s/%s%v", common.ProjectNamePrefix, project.ResourceID, common.SheetIDPrefix, sheet.Payload.SchemaDesign.BaselineSheetId)
-		}
-	} else {
-		if sheet.Payload.SchemaDesign.BaselineSchemaDesignId != "" {
-			baselineSheetName = fmt.Sprintf("%s%s/%s%v", common.ProjectNamePrefix, project.ResourceID, common.SchemaDesignPrefix, sheet.Payload.SchemaDesign.BaselineSchemaDesignId)
-		}
-	}
-
 	// If the baseline schema is not found or empty, we use the current schema as the baseline schema.
 	if baselineSchema == "" {
 		baselineSchema = schema
@@ -747,29 +753,11 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 		baselineSchemaMetadata.SchemaConfigs = config.SchemaConfigs
 	}
 
-	schemaDesign := &v1pb.SchemaDesign{
-		Name:                   name,
-		Title:                  sheet.Name,
-		Schema:                 schema,
-		SchemaMetadata:         schemaMetadata,
-		BaselineSchema:         baselineSchema,
-		BaselineSchemaMetadata: baselineSchemaMetadata,
-		BaselineSheetName:      baselineSheetName,
-		Engine:                 engine,
-		BaselineDatabase:       fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
-		Type:                   schemaDesignType,
-		Etag:                   generateEtag([]byte(schema)),
-		Protection:             convertProtectionFromStore(sheet.Payload.SchemaDesign.Protection),
-		Creator:                common.FormatUserEmail(creator.Email),
-		Updater:                common.FormatUserEmail(updater.Email),
-		CreateTime:             timestamppb.New(sheet.CreatedTime),
-		UpdateTime:             timestamppb.New(sheet.UpdatedTime),
-	}
-
-	baselineChangeHistoryID := sheet.Payload.SchemaDesign.BaselineChangeHistoryId
-	if baselineChangeHistoryID != "" {
-		schemaDesign.BaselineChangeHistoryId = &baselineChangeHistoryID
-	}
+	schemaDesign.Etag = generateEtag([]byte(schema))
+	schemaDesign.Schema = schema
+	schemaDesign.SchemaMetadata = schemaMetadata
+	schemaDesign.BaselineSchema = baselineSchema
+	schemaDesign.BaselineSchemaMetadata = baselineSchemaMetadata
 
 	return schemaDesign, nil
 }
