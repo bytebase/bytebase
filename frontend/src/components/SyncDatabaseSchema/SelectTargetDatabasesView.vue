@@ -51,28 +51,6 @@
           </div>
         </div>
       </template>
-      <template
-        v-else-if="sourceSchemaType === 'SCHEMA_DESIGN' && selectedSchemaDesign"
-      >
-        <div>
-          <span>{{ $t("common.project") }} - </span>
-          <a
-            class="normal-link inline-flex items-center"
-            :href="`/project/${projectV1Slug(project)}`"
-            >{{ project.title }}</a
-          >
-        </div>
-        <div class="flex flex-row justify-start items-center">
-          <span>{{ $t("database.branch") }} - </span>
-          <span
-            class="normal-link inline-flex items-center ml-1"
-            @click="handleViewBranch"
-          >
-            <EngineIcon class="mr-1" :engine="engine" />
-            {{ selectedSchemaDesign?.title || "Unknown" }}
-          </span>
-        </div>
-      </template>
       <template v-else>
         <div>
           <span>{{ $t("common.project") }} - </span>
@@ -251,14 +229,11 @@
 
 <script lang="ts" setup>
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
-import { asyncComputed } from "@vueuse/core";
 import { head } from "lodash-es";
 import { NEllipsis } from "naive-ui";
 import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 import { InstanceV1EngineIcon } from "@/components/v2";
-import { sqlServiceClient } from "@/grpcweb";
 import {
   pushNotification,
   useDatabaseV1Store,
@@ -266,8 +241,6 @@ import {
   useProjectV1Store,
   useSheetV1Store,
 } from "@/store";
-import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
-import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
 import { ComposedDatabase, UNKNOWN_ID } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { ChangeHistory } from "@/types/proto/v1/database_service";
@@ -289,7 +262,6 @@ interface LocalState {
   selectedDatabaseId: string | undefined;
   selectedDatabaseIdList: string[];
   showSelectDatabasePanel: boolean;
-  showViewSchemaDesignPanel: boolean;
   showViewRawSQLPanel: boolean;
 }
 
@@ -297,15 +269,12 @@ const props = defineProps<{
   projectId: string;
   sourceSchemaType: SourceSchemaType;
   databaseSourceSchema?: DatabaseSourceSchema;
-  schemaDesignName?: string;
   rawSqlState?: RawSQLState;
 }>();
 
 const { t } = useI18n();
-const router = useRouter();
 const environmentV1Store = useEnvironmentV1Store();
 const databaseStore = useDatabaseV1Store();
-const schemaDesignStore = useSchemaDesignStore();
 const sheetStore = useSheetV1Store();
 const diffViewerRef = ref<HTMLDivElement>();
 const state = reactive<LocalState>({
@@ -314,7 +283,6 @@ const state = reactive<LocalState>({
   showSelectDatabasePanel: false,
   selectedDatabaseId: undefined,
   selectedDatabaseIdList: [],
-  showViewSchemaDesignPanel: false,
   showViewRawSQLPanel: false,
 });
 const databaseSchemaCache = reactive<Record<string, string>>({});
@@ -327,32 +295,13 @@ const databaseDiffCache = reactive<
     }
   >
 >({});
-const schemaDesignPreviewCache = reactive<Record<string, string>>({});
 const project = computed(() => {
   return useProjectV1Store().getProjectByUID(props.projectId);
 });
 
-const selectedSchemaDesign = asyncComputed(() => {
-  if (!props.schemaDesignName) {
-    return undefined;
-  }
-  return schemaDesignStore.fetchSchemaDesignByName(
-    props.schemaDesignName,
-    true /* useCache */
-  );
-}, undefined);
 const sourceDatabaseSchema = computed(() => {
   if (props.sourceSchemaType === "SCHEMA_HISTORY_VERSION") {
     return props.databaseSourceSchema?.changeHistory.schema || "";
-  } else if (props.sourceSchemaType === "SCHEMA_DESIGN") {
-    const databaseId = state.selectedDatabaseId || "";
-    return (
-      schemaDesignPreviewCache[
-        databaseId + "|" + selectedSchemaDesign.value?.name
-      ] ||
-      selectedSchemaDesign.value?.schema ||
-      ""
-    );
   } else if (props.sourceSchemaType === "RAW_SQL") {
     let statement = props.rawSqlState?.statement || "";
     if (props.rawSqlState?.sheetId) {
@@ -371,8 +320,6 @@ const engine = computed(() => {
     return databaseStore.getDatabaseByUID(
       props.databaseSourceSchema!.databaseId
     ).instanceEntity.engine;
-  } else if (props.sourceSchemaType === "SCHEMA_DESIGN") {
-    return selectedSchemaDesign.value?.engine ?? Engine.ENGINE_UNSPECIFIED;
   } else if (props.sourceSchemaType === "RAW_SQL") {
     return props.rawSqlState!.engine;
   } else {
@@ -445,24 +392,6 @@ onMounted(async () => {
   }
 });
 
-const handleViewBranch = () => {
-  if (!selectedSchemaDesign.value) {
-    return;
-  }
-
-  const [_, sheetId] = getProjectAndSchemaDesignSheetId(
-    selectedSchemaDesign.value.name
-  );
-  const route = router.resolve({
-    name: "workspace.branch.detail",
-    params: {
-      projectSlug: projectV1Slug(project.value),
-      branchName: sheetId,
-    },
-  });
-  window.open(route.href, "_blank");
-};
-
 const getSourceDatabase = () => {
   if (!props.databaseSourceSchema) {
     return;
@@ -517,24 +446,6 @@ watch(
   () => state.selectedDatabaseId,
   () => {
     diffViewerRef.value?.scrollTo(0, 0);
-  }
-);
-
-watch(
-  () => [state.selectedDatabaseId, selectedSchemaDesign.value],
-  async () => {
-    if (!state.selectedDatabaseId || !selectedSchemaDesign.value) {
-      return;
-    }
-    const schema = await sqlServiceClient.differPreview({
-      engine: engine.value,
-      oldSchema: targetDatabaseSchema.value,
-      newMetadata: selectedSchemaDesign.value?.schemaMetadata,
-    });
-    const databaseId = state.selectedDatabaseId || "";
-    schemaDesignPreviewCache[
-      databaseId + "|" + selectedSchemaDesign.value?.name
-    ] = schema.schema;
   }
 );
 
