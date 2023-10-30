@@ -79,8 +79,7 @@ import {
   useProjectV1Store,
   useDatabaseV1Store,
 } from "@/store";
-import { projectNamePrefix } from "@/store/modules/v1/common";
-import { RouteMapList } from "@/types";
+import { RouteMapList, UNKNOWN_ID } from "@/types";
 import { Bookmark } from "@/types/proto/v1/bookmark_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import { databaseV1Slug, idFromSlug, projectV1Slug } from "../utils";
@@ -216,6 +215,23 @@ export default defineComponent({
               path: `/project/${projectSlug}#changelists`,
             }
           );
+        } else if (route.name === "workspace.branch.detail") {
+          list.push(
+            {
+              name: project.uid === String(UNKNOWN_ID) ? "-" : project.title,
+              path:
+                project.uid === String(UNKNOWN_ID)
+                  ? undefined
+                  : `/project/${projectV1Slug(project)}`,
+            },
+            {
+              name: t("common.branches"),
+              path:
+                project.uid === String(UNKNOWN_ID)
+                  ? "/branches"
+                  : `/project/${projectV1Slug(project)}#branches`,
+            }
+          );
         }
       } else if (instanceSlug) {
         list.push({
@@ -265,24 +281,6 @@ export default defineComponent({
         list.push({
           name: t("common.change"),
           path: `/db/${databaseV1Slug(database)}#change-history`,
-        });
-      }
-
-      if (route.name === "workspace.branch.detail") {
-        if (route.params.branchName !== "new") {
-          const project = projectV1Store.getProjectByName(
-            `${projectNamePrefix}${route.params.projectName}`
-          );
-          if (project) {
-            list.push({
-              name: project.title,
-              path: `/project/${projectV1Slug(project)}#branches`,
-            });
-          }
-        }
-        list.push({
-          name: t("common.branches"),
-          path: `/branches`,
         });
       }
 

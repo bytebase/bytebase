@@ -29,7 +29,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
-	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -66,12 +66,12 @@ type DatabaseService struct {
 	store          *store.Store
 	backupRunner   *backuprun.Runner
 	schemaSyncer   *schemasync.Syncer
-	licenseService enterpriseAPI.LicenseService
+	licenseService enterprise.LicenseService
 	profile        *config.Profile
 }
 
 // NewDatabaseService creates a new DatabaseService.
-func NewDatabaseService(store *store.Store, br *backuprun.Runner, schemaSyncer *schemasync.Syncer, licenseService enterpriseAPI.LicenseService, profile *config.Profile) *DatabaseService {
+func NewDatabaseService(store *store.Store, br *backuprun.Runner, schemaSyncer *schemasync.Syncer, licenseService enterprise.LicenseService, profile *config.Profile) *DatabaseService {
 	return &DatabaseService{
 		store:          store,
 		backupRunner:   br,
@@ -292,7 +292,10 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 		}
 	}
 
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	updatedDatabase, err := s.store.UpdateDatabase(ctx, patch, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -409,7 +412,10 @@ func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, request *v1p
 	}
 
 	response := &v1pb.BatchUpdateDatabasesResponse{}
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	if len(databases) > 0 {
 		updatedDatabases, err := s.store.BatchUpdateDatabaseProject(ctx, databases, project.ResourceID, principalID)
 		if err != nil {
@@ -527,7 +533,10 @@ func (s *DatabaseService) UpdateDatabaseMetadata(ctx context.Context, request *v
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
 
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	instanceID, databaseName, err := common.TrimSuffixAndGetInstanceDatabaseID(request.DatabaseMetadata.Name, common.MetadataSuffix)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -720,7 +729,10 @@ func (s *DatabaseService) UpdateBackupSetting(ctx context.Context, request *v1pb
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	backupSetting, err = s.store.UpsertBackupSettingV2(ctx, principalID, backupSetting)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -817,7 +829,10 @@ func (s *DatabaseService) CreateBackup(ctx context.Context, request *v1pb.Create
 		return nil, status.Errorf(codes.AlreadyExists, "backup %q in database %q already exists", backupName, databaseName)
 	}
 
-	creatorID := ctx.Value(common.PrincipalIDContextKey).(int)
+	creatorID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	backup, err := s.backupRunner.ScheduleBackupTask(ctx, database, backupName, api.BackupTypeManual, creatorID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -1436,7 +1451,10 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 	}
 	updateDatabaseMessage.InstanceID = database.InstanceID
 	updateDatabaseMessage.DatabaseName = database.DatabaseName
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	updatedDatabase, err := s.store.UpdateDatabase(ctx, &updateDatabaseMessage, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -1509,7 +1527,10 @@ func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.Delete
 	}
 	updateDatabaseMessage.InstanceID = database.InstanceID
 	updateDatabaseMessage.DatabaseName = database.DatabaseName
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	if _, err := s.store.UpdateDatabase(ctx, &updateDatabaseMessage, principalID); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -1518,12 +1539,18 @@ func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.Delete
 }
 
 func (s *DatabaseService) checkDatabasePermission(ctx context.Context, projectID string, permission api.ProjectPermissionType) error {
-	role := ctx.Value(common.RoleContextKey).(api.Role)
+	role, ok := ctx.Value(common.RoleContextKey).(api.Role)
+	if !ok {
+		return status.Errorf(codes.Internal, "role not found")
+	}
 	if isOwnerOrDBA(role) {
 		return nil
 	}
 
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return status.Errorf(codes.Internal, "principal ID not found")
+	}
 	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &projectID})
 	if err != nil {
 		return status.Errorf(codes.Internal, err.Error())
@@ -1667,7 +1694,10 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 
 	var canAccessDBs []*store.DatabaseMessage
 
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	user, err := s.store.GetUserByID(ctx, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find user %q", err.Error())
@@ -2078,6 +2108,10 @@ func convertV1DatabaseConfig(databaseConfig *v1pb.DatabaseConfig) *storepb.Datab
 }
 
 func convertV1TableConfig(table *v1pb.TableConfig) *storepb.TableConfig {
+	if table == nil {
+		return nil
+	}
+
 	t := &storepb.TableConfig{
 		Name: table.Name,
 	}
@@ -2088,6 +2122,10 @@ func convertV1TableConfig(table *v1pb.TableConfig) *storepb.TableConfig {
 }
 
 func convertV1ColumnConfig(column *v1pb.ColumnConfig) *storepb.ColumnConfig {
+	if column == nil {
+		return nil
+	}
+
 	return &storepb.ColumnConfig{
 		Name:           column.Name,
 		SemanticTypeId: column.SemanticTypeId,

@@ -34,13 +34,15 @@ const (
 	ProdSampleInstanceResourceID = "prod-sample-instance"
 	// SampleUser is the user name for the sample database.
 	SampleUser = "bbsample"
-	// SampleDatabase is the sample database name.
-	SampleDatabase = "employee"
+	// SampleDatabaseTest is the test sample database name.
+	SampleDatabaseTest = "hr_test"
+	// SampleDatabaseProd is the prod sample database name.
+	SampleDatabaseProd = "hr_prod"
 )
 
 // StartSampleInstance starts a postgres sample instance.
-func StartSampleInstance(ctx context.Context, pgBinDir, dataDir, sampleName string, port int, mode common.ReleaseMode) (func(), error) {
-	pgDataDir := path.Join(dataDir, "pgdata-sample", sampleName)
+func StartSampleInstance(ctx context.Context, pgBinDir, dataDir, sampleDatabaseName string, port int, mode common.ReleaseMode) (func(), error) {
+	pgDataDir := path.Join(dataDir, "pgdata-sample", sampleDatabaseName)
 
 	v, err := getVersion(pgDataDir)
 	if err != nil {
@@ -66,11 +68,11 @@ func StartSampleInstance(ctx context.Context, pgBinDir, dataDir, sampleName stri
 	}
 
 	host := common.GetPostgresSocketDir()
-	if err := prepareSampleDatabaseIfNeeded(ctx, SampleUser, host, strconv.Itoa(port), SampleDatabase); err != nil {
+	if err := prepareSampleDatabaseIfNeeded(ctx, SampleUser, host, strconv.Itoa(port), sampleDatabaseName); err != nil {
 		return nil, errors.Wrapf(err, "failed to prepare sample database")
 	}
 
-	if err := createPGStatStatementsExtension(ctx, SampleUser, host, strconv.Itoa(port), SampleDatabase); err != nil {
+	if err := createPGStatStatementsExtension(ctx, SampleUser, host, strconv.Itoa(port), sampleDatabaseName); err != nil {
 		slog.Warn("Failed to create pg_stat_statements extension", log.BBError(err))
 	}
 
@@ -115,7 +117,7 @@ func prepareSampleDatabaseIfNeeded(ctx context.Context, pgUser, host, port, data
 		return nil
 	}
 
-	// Connect the default postgres database created by initdb.
+	// Connect the default database created by initdb.
 	if err := prepareDemoDatabase(ctx, pgUser, host, port, database); err != nil {
 		return err
 	}

@@ -12,7 +12,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
-	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/plugin/metric/segment"
@@ -47,7 +47,7 @@ const (
 
 // Reporter is the metric reporter.
 type Reporter struct {
-	licenseService enterpriseAPI.LicenseService
+	licenseService enterprise.LicenseService
 	profile        *config.Profile
 	reporter       metric.Reporter
 	collectors     map[string]metric.Collector
@@ -55,7 +55,7 @@ type Reporter struct {
 }
 
 // NewReporter creates a new metric scheduler.
-func NewReporter(store *store.Store, licenseService enterpriseAPI.LicenseService, profile *config.Profile, enabled bool) *Reporter {
+func NewReporter(store *store.Store, licenseService enterprise.LicenseService, profile *config.Profile, enabled bool) *Reporter {
 	var r metric.Reporter
 	if enabled {
 		r = segment.NewReporter(profile.MetricConnectionKey)

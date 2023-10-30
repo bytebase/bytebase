@@ -34,11 +34,9 @@ import { useRouter } from "vue-router";
 import BranchDataTable from "@/components/Branch/BranchDataTable.vue";
 import { useProjectV1Store } from "@/store";
 import { useSchemaDesignList } from "@/store/modules/schemaDesign";
-import {
-  getProjectAndSchemaDesignSheetId,
-  getProjectName,
-} from "@/store/modules/v1/common";
+import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
+import { projectV1Slug } from "@/utils";
 
 const props = defineProps<{
   projectId: string;
@@ -74,24 +72,21 @@ const filteredBranches = computed(() => {
 });
 
 const handleCreateBranch = () => {
-  const projectName = getProjectName(project.value.name);
   router.push({
     name: "workspace.branch.detail",
     params: {
-      projectName: projectName,
+      projectSlug: projectV1Slug(project.value),
       branchName: "new",
     },
   });
 };
 
 const handleBranchClick = async (schemaDesign: SchemaDesign) => {
-  const [projectName, sheetId] = getProjectAndSchemaDesignSheetId(
-    schemaDesign.name
-  );
+  const [_, sheetId] = getProjectAndSchemaDesignSheetId(schemaDesign.name);
   router.push({
     name: "workspace.branch.detail",
     params: {
-      projectName: projectName,
+      projectSlug: projectV1Slug(project.value),
       branchName: `${sheetId}`,
     },
   });

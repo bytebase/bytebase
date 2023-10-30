@@ -75,6 +75,20 @@ export const useRouterStore = defineStore("router", {
       }
 
       {
+        // /project/:projectSlug/branches/:branchName
+        // Total 3 elements, 2nd element is the project slug, 3rd element is the project changelist name.
+        const projectComponents = currentRoute.path.match(
+          "/project/([0-9a-zA-Z_-]+)/branches/([0-9a-zA-Z_-]+)"
+        ) || ["/", undefined];
+        if (projectComponents.length === 3) {
+          return {
+            projectSlug: projectComponents[1],
+            branchName: projectComponents[2],
+          };
+        }
+      }
+
+      {
         // /issue/:issueSlug
         // Total 2 elements, 2nd element is the issue slug
         const issueComponents = currentRoute.path.match(

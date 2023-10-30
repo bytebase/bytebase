@@ -9,7 +9,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -19,11 +19,11 @@ import (
 type RoleService struct {
 	v1pb.UnimplementedRoleServiceServer
 	store          *store.Store
-	licenseService enterpriseAPI.LicenseService
+	licenseService enterprise.LicenseService
 }
 
 // NewRoleService returns a new instance of the role service.
-func NewRoleService(store *store.Store, licenseService enterpriseAPI.LicenseService) *RoleService {
+func NewRoleService(store *store.Store, licenseService enterprise.LicenseService) *RoleService {
 	return &RoleService{
 		store:          store,
 		licenseService: licenseService,
@@ -47,7 +47,10 @@ func (s *RoleService) CreateRole(ctx context.Context, request *v1pb.CreateRoleRe
 	if err := s.licenseService.IsFeatureEnabled(api.FeatureCustomRole); err != nil {
 		return nil, status.Errorf(codes.PermissionDenied, err.Error())
 	}
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	create := &store.RoleMessage{
 		ResourceID:  request.RoleId,
 		Name:        request.Role.Title,
@@ -68,7 +71,10 @@ func (s *RoleService) UpdateRole(ctx context.Context, request *v1pb.UpdateRoleRe
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	roleID, err := common.GetRoleID(request.Role.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())

@@ -27,7 +27,7 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
     const { schemaDesigns } = await schemaDesignServiceClient.listSchemaDesigns(
       {
         parent: projectName,
-        view: SchemaDesignView.SCHEMA_DESIGN_VIEW_FULL,
+        view: SchemaDesignView.SCHEMA_DESIGN_VIEW_BASIC,
       }
     );
     return schemaDesigns;

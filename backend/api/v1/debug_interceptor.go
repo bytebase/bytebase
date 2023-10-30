@@ -17,7 +17,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/metric"
-	metricPlugin "github.com/bytebase/bytebase/backend/plugin/metric"
+	metricplugin "github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -106,7 +106,7 @@ func (in *DebugInterceptor) debugInterceptorDo(ctx context.Context, fullMethod s
 		// Only update for authorized request.
 		in.profile.LastActiveTs = time.Now().Unix()
 	}
-	in.metricReporter.Report(ctx, &metricPlugin.Metric{
+	in.metricReporter.Report(ctx, &metricplugin.Metric{
 		Name:  metric.APIRequestMetricName,
 		Value: 1,
 		Labels: map[string]any{
