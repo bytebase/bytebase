@@ -51,11 +51,6 @@ service SheetService {
     option (google.api.http) = {delete: "/v1/{name=projects/*/sheets/*}"};
     option (google.api.method_signature) = "name";
   }
-
-  rpc SyncSheets(SyncSheetsRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {post: "/v1/{parent=projects/*}/sheets:sync"};
-    option (google.api.method_signature) = "parent";
-  }
 }
 
 message CreateSheetRequest {
@@ -160,13 +155,6 @@ message SearchSheetsResponse {
   // Not used. A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
-}
-
-message SyncSheetsRequest {
-  // The name of the project to sync sheets.
-  //
-  // Format: projects/{project}
-  string parent = 1;
 }
 
 message Sheet {
