@@ -81,7 +81,7 @@ import { cloneDeep, uniqueId } from "lodash-es";
 import { NButton, NDivider, NInput } from "naive-ui";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoute, useRouter } from "vue-router";
+import { useRouter } from "vue-router";
 import SchemaEditorV1 from "@/components/SchemaEditorV1/index.vue";
 import { mergeSchemaEditToMetadata } from "@/components/SchemaEditorV1/utils";
 import { ProjectSelect } from "@/components/v2";
@@ -141,7 +141,6 @@ const props = defineProps({
 
 const { t } = useI18n();
 const router = useRouter();
-const route = useRoute();
 const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
 const schemaDesignStore = useSchemaDesignStore();

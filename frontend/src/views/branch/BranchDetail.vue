@@ -37,12 +37,12 @@ const route = useRoute();
 const sheetStore = useSheetV1Store();
 const projectStore = useProjectV1Store();
 const schemaDesignStore = useSchemaDesignStore();
-const branchName = ref<string>("");
+const branchFullName = ref<string>("");
 const ready = ref<boolean>(false);
 
 const isCreating = computed(() => props.branchName === "new");
 const branch = computed(() => {
-  return schemaDesignStore.getSchemaDesignByName(branchName.value);
+  return schemaDesignStore.getSchemaDesignByName(branchFullName.value);
 });
 const project = computed(() => {
   if (props.projectSlug === "-") {
@@ -67,7 +67,7 @@ watch(
     if (sheet) {
       const [projectName] = getProjectAndSheetId(sheet.name);
       await projectStore.getOrFetchProjectByName(`projects/${projectName}`);
-      branchName.value = `projects/${projectName}/schemaDesigns/${sheetId}`;
+      branchFullName.value = `projects/${projectName}/schemaDesigns/${sheetId}`;
     }
   },
   {
@@ -77,16 +77,16 @@ watch(
 );
 
 watch(
-  () => branchName.value,
+  () => branchFullName.value,
   async () => {
     ready.value = false;
-    if (isCreating.value || !branchName.value) {
+    if (isCreating.value || !branchFullName.value) {
       ready.value = true;
       return;
     }
 
     await schemaDesignStore.fetchSchemaDesignByName(
-      branchName.value,
+      branchFullName.value,
       false /* useCache */
     );
     ready.value = true;
