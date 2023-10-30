@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/ghost"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -101,17 +102,17 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, config *storepb.PlanCheckRu
 	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
 	renderedStatement := utils.RenderStatement(statement, materials)
 
-	tableName, err := utils.GetTableNameFromStatement(renderedStatement)
+	tableName, err := ghost.GetTableNameFromStatement(renderedStatement)
 	if err != nil {
 		return nil, common.Wrapf(err, common.Internal, "failed to parse table name from statement, statement: %v", statement)
 	}
 
-	ghostConfig, err := utils.GetGhostConfig(rand.Intn(10000000), database, adminDataSource, e.secret, instanceUsers, tableName, renderedStatement, true, 20000000)
+	ghostConfig, err := ghost.GetGhostConfig(rand.Intn(10000000), database, adminDataSource, e.secret, instanceUsers, tableName, renderedStatement, true, 20000000)
 	if err != nil {
 		return nil, err
 	}
 
-	migrationContext, err := utils.NewMigrationContext(ghostConfig)
+	migrationContext, err := ghost.NewMigrationContext(ghostConfig)
 	if err != nil {
 		return nil, common.Wrapf(err, common.Internal, "failed to create migration context")
 	}

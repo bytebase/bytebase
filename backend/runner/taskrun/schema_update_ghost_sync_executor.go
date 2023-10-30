@@ -14,6 +14,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/ghost"
 	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
@@ -71,7 +72,7 @@ func (exec *SchemaUpdateGhostSyncExecutor) runGhostMigration(ctx context.Context
 
 	statement = strings.TrimSpace(statement)
 
-	tableName, err := utils.GetTableNameFromStatement(statement)
+	tableName, err := ghost.GetTableNameFromStatement(statement)
 	if err != nil {
 		return true, nil, err
 	}
@@ -105,12 +106,12 @@ func (exec *SchemaUpdateGhostSyncExecutor) runGhostMigration(ctx context.Context
 	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
 	renderedStatement := utils.RenderStatement(statement, materials)
 
-	config, err := utils.GetGhostConfig(task.ID, database, adminDataSource, exec.secret, instanceUsers, tableName, renderedStatement, false, 10000000)
+	config, err := ghost.GetGhostConfig(task.ID, database, adminDataSource, exec.secret, instanceUsers, tableName, renderedStatement, false, 10000000)
 	if err != nil {
 		return true, nil, err
 	}
 
-	migrationContext, err := utils.NewMigrationContext(config)
+	migrationContext, err := ghost.NewMigrationContext(config)
 	if err != nil {
 		return true, nil, errors.Wrap(err, "failed to init migrationContext for gh-ost")
 	}
