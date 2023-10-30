@@ -270,18 +270,6 @@ const routes: Array<RouteRecordRaw> = [
             },
           },
           {
-            path: "branches",
-            name: "workspace.branch.dashboard",
-            meta: {
-              title: () => t("common.branches"),
-            },
-            components: {
-              content: () => import("../views/branch/BranchDashboard.vue"),
-              leftSidebar: DashboardSidebar,
-            },
-            props: { content: true, leftSidebar: true },
-          },
-          {
             path: "/project/:projectSlug/branches/:branchName",
             name: "workspace.branch.detail",
             meta: {
@@ -1228,7 +1216,6 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.database" ||
     to.name === "workspace.archive" ||
     to.name === "workspace.issue" ||
-    to.name === "workspace.branch.dashboard" ||
     to.name === "workspace.environment" ||
     to.name === "sql-editor.home" ||
     to.name?.toString().startsWith("sheets") ||
