@@ -9,8 +9,6 @@ import (
 
 	"github.com/dgraph-io/ristretto"
 	"github.com/pkg/errors"
-
-	"github.com/bytebase/bytebase/backend/store"
 )
 
 // InstanceMaximumConnectionNumber is the maximum number of connections outstanding per instance.
@@ -19,7 +17,7 @@ const InstanceMaximumConnectionNumber = 10
 // State is the state for all in-memory states within the server.
 type State struct {
 	// InstanceDatabaseSyncChan is the channel for synchronizing schemas for instances.
-	InstanceDatabaseSyncChan chan *store.InstanceMessage
+	InstanceSyncs sync.Map // map[instance.ID]*store.InstanceMessage
 	// InstanceSlowQuerySyncChan is the channel for synchronizing slow query logs for instances.
 	InstanceSlowQuerySyncChan chan *InstanceSlowQuerySyncMessage
 
@@ -63,6 +61,8 @@ type State struct {
 	// TaskSkippedOrDoneChan is the channel for notifying the task is skipped or done.
 	TaskSkippedOrDoneChan chan int
 
+	// InstanceSyncTickleChan is the tickler for syncing instances.
+	InstanceSyncTickleChan chan int
 	// PlanCheckTickleChan is the tickler for plan check scheduler.
 	PlanCheckTickleChan chan int
 	// TaskRunTickleChan is the tickler for task run scheduler.
@@ -83,11 +83,11 @@ func New() (*State, error) {
 		return nil, errors.Wrapf(err, "failed to create auth expire cache")
 	}
 	return &State{
-		InstanceDatabaseSyncChan:             make(chan *store.InstanceMessage, 100),
 		InstanceSlowQuerySyncChan:            make(chan *InstanceSlowQuerySyncMessage, 100),
 		InstanceOutstandingConnections:       make(map[int]int),
 		IssueExternalApprovalRelayCancelChan: make(chan int, 1),
 		TaskSkippedOrDoneChan:                make(chan int, 1000),
+		InstanceSyncTickleChan:               make(chan int, 1000),
 		PlanCheckTickleChan:                  make(chan int, 1000),
 		TaskRunTickleChan:                    make(chan int, 1000),
 		ExpireCache:                          expireCache,

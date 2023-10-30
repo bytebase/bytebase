@@ -155,7 +155,8 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 				log.BBError(err))
 		}
 		// Sync all databases in the instance asynchronously.
-		s.stateCfg.InstanceDatabaseSyncChan <- instance
+		s.stateCfg.InstanceSyncs.Store(instance.UID, instance)
+		s.stateCfg.InstanceSyncTickleChan <- 0
 	}
 
 	s.metricReporter.Report(ctx, &metric.Metric{
@@ -270,7 +271,8 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 			log.BBError(err))
 	}
 	// Sync all databases in the instance asynchronously.
-	s.stateCfg.InstanceDatabaseSyncChan <- instance
+	s.stateCfg.InstanceSyncs.Store(instance.UID, instance)
+	s.stateCfg.InstanceSyncTickleChan <- 0
 
 	return convertToInstance(ins), nil
 }
@@ -528,7 +530,8 @@ func (s *InstanceService) SyncInstance(ctx context.Context, request *v1pb.SyncIn
 		return nil, err
 	}
 	// Sync all databases in the instance asynchronously.
-	s.stateCfg.InstanceDatabaseSyncChan <- instance
+	s.stateCfg.InstanceSyncs.Store(instance.UID, instance)
+	s.stateCfg.InstanceSyncTickleChan <- 0
 
 	return &v1pb.SyncInstanceResponse{}, nil
 }
@@ -543,13 +546,10 @@ func (s *InstanceService) BatchSyncInstance(ctx context.Context, request *v1pb.B
 		if instance.Deleted {
 			return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", r.Name)
 		}
-
-		if err := s.schemaSyncer.SyncInstance(ctx, instance); err != nil {
-			return nil, err
-		}
 		// Sync all databases in the instance asynchronously.
-		s.stateCfg.InstanceDatabaseSyncChan <- instance
+		s.stateCfg.InstanceSyncs.Store(instance.UID, instance)
 	}
+	s.stateCfg.InstanceSyncTickleChan <- 0
 
 	return &v1pb.BatchSyncInstanceResponse{}, nil
 }
