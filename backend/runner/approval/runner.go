@@ -19,7 +19,7 @@ import (
 	"go.uber.org/multierr"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	v1 "github.com/bytebase/bytebase/backend/api/v1"
+	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
@@ -100,7 +100,10 @@ func (r *Runner) runOnce(ctx context.Context) {
 
 		var errs error
 		r.stateCfg.ApprovalFinding.Range(func(key, value any) bool {
-			issue := value.(*store.IssueMessage)
+			issue, ok := value.(*store.IssueMessage)
+			if !ok {
+				return true
+			}
 			done, err := r.findApprovalTemplateForIssue(ctx, issue, risks, approvalSetting)
 			if err != nil {
 				errs = multierr.Append(errs, errors.Wrapf(err, "failed to find approval template for issue %v", issue.UID))
@@ -375,7 +378,7 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 		}
 	}
 
-	pipelineCreate, err := v1.GetPipelineCreate(ctx, s, licenseService, dbFactory, plan.Config.Steps, issue.Project)
+	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, s, licenseService, dbFactory, plan.Config.Steps, issue.Project)
 	if err != nil {
 		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get pipeline create")
 	}

@@ -103,7 +103,10 @@ func (e *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, _ contex
 	if !ok {
 		return true, nil, errors.Errorf("failed to get gh-ost state from sync task")
 	}
-	sharedGhost := value.(sharedGhostState)
+	sharedGhost, ok := value.(sharedGhostState)
+	if !ok {
+		return true, nil, errors.Errorf("failed to convert shared gh-ost state")
+	}
 
 	// not using the rendered statement here because we want to avoid leaking the rendered statement
 	version := model.Version{Version: payload.SchemaVersion}

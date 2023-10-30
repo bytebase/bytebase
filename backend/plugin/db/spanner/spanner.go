@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	spanner "cloud.google.com/go/spanner"
+	"cloud.google.com/go/spanner"
 	spannerdb "cloud.google.com/go/spanner/admin/database/apiv1"
 	"cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
 

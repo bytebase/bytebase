@@ -32,7 +32,8 @@ func TestPLSQLParser(t *testing.T) {
 
 	for _, test := range tests {
 		tree, _, err := ParsePLSQL(test.statement)
-		_, _ = tree.(*parser.Sql_scriptContext)
+		_, ok := tree.(*parser.Sql_scriptContext)
+		require.True(t, ok)
 		if test.errorMessage == "" {
 			require.NoError(t, err)
 		} else {

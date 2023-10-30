@@ -27,7 +27,8 @@ func TestPostgreSQLParser(t *testing.T) {
 	for _, test := range tests {
 		res, err := ParsePostgreSQL(test.statement)
 		if res != nil {
-			_, _ = res.Tree.(*parser.RootContext)
+			_, ok := res.Tree.(*parser.RootContext)
+			require.True(t, ok)
 		}
 		if test.errorMessage == "" {
 			require.NoError(t, err)

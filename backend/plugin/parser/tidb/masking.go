@@ -7,7 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	parser "github.com/pingcap/tidb/parser"
+	"github.com/pingcap/tidb/parser"
 	tidbast "github.com/pingcap/tidb/parser/ast"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"

@@ -24,7 +24,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
-	vcsPlugin "github.com/bytebase/bytebase/backend/plugin/vcs"
+	vcsplugin "github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -653,11 +653,11 @@ func writeBackLatestSchema(
 	storage *store.Store,
 	repository *store.RepositoryMessage,
 	vcs *store.ExternalVersionControlMessage,
-	pushEvent *vcsPlugin.PushEvent,
+	pushEvent *vcsplugin.PushEvent,
 	mi *db.MigrationInfo,
 	writebackBranch, latestSchemaFile string, schema string, bytebaseURL string,
 ) (string, error) {
-	schemaFileMeta, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(
+	schemaFileMeta, err := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).ReadFileMeta(
 		ctx,
 		common.OauthContext{
 			ClientID:     vcs.ApplicationID,
@@ -669,8 +669,8 @@ func writeBackLatestSchema(
 		vcs.InstanceURL,
 		repository.ExternalID,
 		latestSchemaFile,
-		vcsPlugin.RefInfo{
-			RefType: vcsPlugin.RefTypeBranch,
+		vcsplugin.RefInfo{
+			RefType: vcsplugin.RefTypeBranch,
 			RefName: writebackBranch,
 		},
 	)
@@ -722,19 +722,19 @@ func writeBackLatestSchema(
 		return "", err
 	}
 
-	schemaFileCommit := vcsPlugin.FileCommitCreate{
+	schemaFileCommit := vcsplugin.FileCommitCreate{
 		Branch:        writebackBranch,
 		CommitMessage: commitMessage,
 		Content:       schema,
-		AuthorName:    vcsPlugin.BytebaseAuthorName,
-		AuthorEmail:   vcsPlugin.BytebaseAuthorEmail,
+		AuthorName:    vcsplugin.BytebaseAuthorName,
+		AuthorEmail:   vcsplugin.BytebaseAuthorEmail,
 	}
 	if createSchemaFile {
 		slog.Debug("Create latest schema file",
 			slog.String("schema_file", latestSchemaFile),
 		)
 
-		err := vcsPlugin.Get(vcs2.Type, vcsPlugin.ProviderConfig{}).CreateFile(
+		err := vcsplugin.Get(vcs2.Type, vcsplugin.ProviderConfig{}).CreateFile(
 			ctx,
 			common.OauthContext{
 				ClientID:     vcs2.ApplicationID,
@@ -758,7 +758,7 @@ func writeBackLatestSchema(
 
 		schemaFileCommit.LastCommitID = schemaFileMeta.LastCommitID
 		schemaFileCommit.SHA = schemaFileMeta.SHA
-		err := vcsPlugin.Get(vcs2.Type, vcsPlugin.ProviderConfig{}).OverwriteFile(
+		err := vcsplugin.Get(vcs2.Type, vcsplugin.ProviderConfig{}).OverwriteFile(
 			ctx,
 			common.OauthContext{
 				ClientID:     vcs2.ApplicationID,
@@ -786,7 +786,7 @@ func writeBackLatestSchema(
 	}
 
 	// VCS such as GitLab API doesn't return the commit on write, so we have to call ReadFileMeta again
-	schemaFileMeta, err = vcsPlugin.Get(vcs2.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(
+	schemaFileMeta, err = vcsplugin.Get(vcs2.Type, vcsplugin.ProviderConfig{}).ReadFileMeta(
 		ctx,
 		common.OauthContext{
 			ClientID:     vcs2.ApplicationID,
@@ -798,8 +798,8 @@ func writeBackLatestSchema(
 		vcs2.InstanceURL,
 		repo2.ExternalID,
 		latestSchemaFile,
-		vcsPlugin.RefInfo{
-			RefType: vcsPlugin.RefTypeBranch,
+		vcsplugin.RefInfo{
+			RefType: vcsplugin.RefTypeBranch,
 			RefName: writebackBranch,
 		},
 	)

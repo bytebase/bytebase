@@ -14,7 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	metricAPI "github.com/bytebase/bytebase/backend/metric"
+	metricapi "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/store"
@@ -164,7 +164,7 @@ func (s *SubscriptionService) TrialSubscription(ctx context.Context, request *v1
 	subscription = s.licenseService.LoadSubscription(ctx)
 	currentPlan := subscription.Plan
 	s.metricReporter.Report(ctx, &metric.Metric{
-		Name:  metricAPI.SubscriptionTrialMetricName,
+		Name:  metricapi.SubscriptionTrialMetricName,
 		Value: 1,
 		Labels: map[string]any{
 			"trial_plan":    currentPlan.String(),
