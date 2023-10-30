@@ -30,6 +30,7 @@ func configureEchoRouters(e *echo.Echo, grpcServer *grpc.Server, mux *grpcruntim
 		// Skip grpc and webhook calls.
 		return strings.HasPrefix(c.Request().URL.Path, "/bytebase.v1.") ||
 			strings.HasPrefix(c.Request().URL.Path, "/v1:adminExecute") ||
+			strings.HasPrefix(c.Request().URL.Path, lspAPI) ||
 			strings.HasPrefix(c.Request().URL.Path, webhookAPIPrefix)
 	}
 	e.Use(middleware.TimeoutWithConfig(middleware.TimeoutConfig{
