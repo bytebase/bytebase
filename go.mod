@@ -57,6 +57,7 @@ require (
 	github.com/shopspring/decimal v1.3.1
 	github.com/sijms/go-ora/v2 v2.7.18
 	github.com/snowflakedb/gosnowflake v1.6.25
+	github.com/sourcegraph/go-lsp v0.0.0-20200429204803-219e11d77f5d
 	github.com/sourcegraph/jsonrpc2 v0.2.0
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.4
