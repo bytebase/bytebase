@@ -1,4 +1,4 @@
-- statement: INSERT INTO tech_book values(1, 'xz');
+- statement: INSERT INTO tech_book values(1, 'zp');
   want:
     - status: SUCCESS
       code: 0
