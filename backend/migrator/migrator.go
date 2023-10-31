@@ -3,7 +3,6 @@ package migrator
 
 import (
 	"context"
-	"database/sql"
 	"embed"
 	"fmt"
 	"io/fs"
@@ -18,6 +17,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/demo"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
@@ -28,9 +28,6 @@ import (
 
 //go:embed migration
 var migrationFS embed.FS
-
-//go:embed demo
-var demoFS embed.FS
 
 // MigrateSchema migrates the schema for metadata database.
 func MigrateSchema(ctx context.Context, storeDB *store.DB, strictUseDb bool, pgBinDir, demoName, serverVersion string, mode common.ReleaseMode) (*semver.Version, error) {
@@ -98,7 +95,7 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, strictUseDb bool, pgB
 	}
 	slog.Info(fmt.Sprintf("Current schema version after migration: %s", verAfter))
 
-	if err := setupDemoData(demoName, metadataDriver.GetDB()); err != nil {
+	if err := demo.SetupDemoData(demoName, metadataDriver.GetDB()); err != nil {
 		return nil, errors.Wrapf(err, "failed to setup demo data."+
 			" It could be Bytebase is running against an old Bytebase schema. If you are developing Bytebase, you can remove pgdata"+
 			" directory under the same directory where the Bytebase binary resides. and restart again to let"+
@@ -207,60 +204,6 @@ func getLatestVersion(ctx context.Context, storeInstance *store.Store) (semver.V
 	}
 
 	return semver.Version{}, errors.Errorf("failed to find a successful migration history to determine the schema version")
-}
-
-// setupDemoData loads the demo data.
-func setupDemoData(demoName string, db *sql.DB) error {
-	if demoName == "" {
-		slog.Debug("Skip setting up demo data. Demo not specified.")
-		return nil
-	}
-
-	slog.Info(fmt.Sprintf("Setting up demo %q...", demoName))
-
-	// Reset existing demo data.
-	if err := applyDataFile("demo/reset.sql", db); err != nil {
-		return errors.Wrapf(err, "Failed to reset demo data")
-	}
-
-	names, err := fs.Glob(demoFS, fmt.Sprintf("demo/%s/*.sql", demoName))
-	if err != nil {
-		return err
-	}
-
-	// We separate demo data for each table into their own demo data file.
-	// And there exists foreign key dependency among tables, so we
-	// name the data file as 10001_xxx.sql, 10002_xxx.sql. Here we sort
-	// the file name so they are loaded accordingly.
-	sort.Strings(names)
-
-	// Loop over all data files and execute them in order.
-	for _, name := range names {
-		if err := applyDataFile(name, db); err != nil {
-			return errors.Wrapf(err, "Failed to load demo data: %q", name)
-		}
-	}
-	slog.Info("Completed demo data setup.")
-	return nil
-}
-
-// applyDataFile runs a single demo data file within a transaction.
-func applyDataFile(name string, db *sql.DB) error {
-	slog.Info(fmt.Sprintf("Applying data file %s...", name))
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	// Read and execute migration file.
-	if buf, err := fs.ReadFile(demoFS, name); err != nil {
-		return err
-	} else if _, err := tx.Exec(string(buf)); err != nil {
-		return err
-	}
-
-	return tx.Commit()
 }
 
 const (
