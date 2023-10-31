@@ -7,7 +7,6 @@ import { Engine, State } from "@/types/proto/v1/common";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { DataSourceType, Instance } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
-import { isDev } from "../util";
 
 export const instanceV1Slug = (instance: Instance): string => {
   return [slug(instance.title), instance.uid].join("-");
@@ -78,24 +77,22 @@ export const supportedEngineV1List = () => {
   const engines: Engine[] = [
     Engine.MYSQL,
     Engine.POSTGRES,
-    Engine.TIDB,
+    Engine.ORACLE,
+    Engine.MSSQL,
     Engine.SNOWFLAKE,
     Engine.CLICKHOUSE,
     Engine.MONGODB,
     Engine.REDIS,
-    Engine.SPANNER,
-    Engine.ORACLE,
+    Engine.TIDB,
     Engine.OCEANBASE,
-    Engine.MARIADB,
-    Engine.MSSQL,
+    Engine.OCEANBASE_ORACLE,
+    Engine.SPANNER,
     Engine.REDSHIFT,
+    Engine.MARIADB,
     Engine.RISINGWAVE,
   ];
   if (locale.value === "zh-CN") {
     engines.push(Engine.DM);
-  }
-  if (isDev()) {
-    engines.push(Engine.OCEANBASE_ORACLE);
   }
   return engines;
 };
@@ -251,7 +248,7 @@ export const engineNameV1 = (type: Engine): string => {
     case Engine.MARIADB:
       return "MariaDB";
     case Engine.OCEANBASE:
-      return "OceanBase";
+      return "OceanBase (MySQL)";
     case Engine.OCEANBASE_ORACLE:
       return "OceanBase (Oracle)";
     case Engine.DM:

@@ -56,7 +56,7 @@
           @update:checked="handleToggleChangeHistorySelected(history)"
         />
       </BBTableCell>
-      <BBTableCell :left-padding="mode !== 'DATABASE' && 4">
+      <BBTableCell :left-padding="mode !== 'DATABASE' ? 4 : undefined">
         <ChangeHistoryStatusIcon class="mx-auto" :status="history.status" />
       </BBTableCell>
       <BBTableCell v-if="mode === 'DATABASE'">

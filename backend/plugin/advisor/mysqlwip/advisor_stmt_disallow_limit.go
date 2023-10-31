@@ -5,16 +5,23 @@ package mysqlwip
 import (
 	"fmt"
 
-	"github.com/pingcap/tidb/parser/ast"
+	"github.com/antlr4-go/antlr/v4"
+	mysql "github.com/bytebase/mysql-parser"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*DisallowLimitAdvisor)(nil)
-	_ ast.Visitor     = (*disallowLimitChecker)(nil)
 )
+
+func init() {
+	// only for mysqlwip test.
+	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLDisallowLimit, &DisallowLimitAdvisor{})
+}
 
 // DisallowLimitAdvisor is the advisor checking for no LIMIT clause in INSERT/UPDATE statement.
 type DisallowLimitAdvisor struct {
@@ -22,9 +29,9 @@ type DisallowLimitAdvisor struct {
 
 // Check checks for no LIMIT clause in INSERT/UPDATE statement.
 func (*DisallowLimitAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	stmtList, ok := ctx.AST.([]ast.StmtNode)
+	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to StmtNode")
+		return nil, errors.Errorf("failed to convert to mysql parser result")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -37,9 +44,8 @@ func (*DisallowLimitAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Adv
 	}
 
 	for _, stmt := range stmtList {
-		checker.text = stmt.Text()
-		checker.line = stmt.OriginTextPosition()
-		(stmt).Accept(checker)
+		checker.baseLine = stmt.BaseLine
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -54,57 +60,61 @@ func (*DisallowLimitAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Adv
 }
 
 type disallowLimitChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
-	title      string
-	text       string
-	line       int
+	*mysql.BaseMySQLParserListener
+
+	baseLine     int
+	isInsertStmt bool
+	adviceList   []advisor.Advice
+	level        advisor.Status
+	title        string
+	text         string
+	line         int
 }
 
-// Enter implements the ast.Visitor interface.
-func (checker *disallowLimitChecker) Enter(in ast.Node) (ast.Node, bool) {
-	code := advisor.Ok
-	switch node := in.(type) {
-	case *ast.UpdateStmt:
-		if node.Limit != nil {
-			code = advisor.UpdateUseLimit
-		}
-	case *ast.DeleteStmt:
-		if node.Limit != nil {
-			code = advisor.DeleteUseLimit
-		}
-	case *ast.InsertStmt:
-		if useLimit(node) {
-			code = advisor.InsertUseLimit
-		}
-	}
-
-	if code != advisor.Ok {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  checker.level,
-			Code:    code,
-			Title:   checker.title,
-			Content: fmt.Sprintf("LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but \"%s\" uses", checker.text),
-			Line:    checker.line,
-		})
-	}
-
-	return in, false
+func (checker *disallowLimitChecker) EnterQuery(ctx *mysql.QueryContext) {
+	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
 }
 
-// Leave implements the ast.Visitor interface.
-func (*disallowLimitChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
+// EnterDeleteStatement is called when production deleteStatement is entered.
+func (checker *disallowLimitChecker) EnterDeleteStatement(ctx *mysql.DeleteStatementContext) {
+	if ctx.SimpleLimitClause() != nil && ctx.SimpleLimitClause().LIMIT_SYMBOL() != nil {
+		checker.handleLimitClause(advisor.DeleteUseLimit, ctx.GetStart().GetLine())
+	}
 }
 
-func useLimit(node *ast.InsertStmt) bool {
-	if node.Select != nil {
-		switch stmt := node.Select.(type) {
-		case *ast.SelectStmt:
-			return stmt.Limit != nil
-		case *ast.SetOprStmt:
-			return stmt.Limit != nil
-		}
+// EnterUpdateStatement is called when production updateStatement is entered.
+func (checker *disallowLimitChecker) EnterUpdateStatement(ctx *mysql.UpdateStatementContext) {
+	if ctx.SimpleLimitClause() != nil && ctx.SimpleLimitClause().LIMIT_SYMBOL() != nil {
+		checker.handleLimitClause(advisor.UpdateUseLimit, ctx.GetStart().GetLine())
 	}
-	return false
+}
+
+// EnterInsertStatement is called when production insertStatement is entered.
+func (checker *disallowLimitChecker) EnterInsertStatement(_ *mysql.InsertStatementContext) {
+	checker.isInsertStmt = true
+}
+
+// ExitInsertStatement is called when production insertStatement is exited.
+func (checker *disallowLimitChecker) ExitInsertStatement(_ *mysql.InsertStatementContext) {
+	checker.isInsertStmt = false
+}
+
+// EnterQueryExpression is called when production queryExpression is entered.
+func (checker *disallowLimitChecker) EnterQueryExpression(ctx *mysql.QueryExpressionContext) {
+	if !checker.isInsertStmt {
+		return
+	}
+	if ctx.LimitClause() != nil && ctx.LimitClause().LIMIT_SYMBOL() != nil {
+		checker.handleLimitClause(advisor.InsertUseLimit, ctx.GetStart().GetLine())
+	}
+}
+
+func (checker *disallowLimitChecker) handleLimitClause(code advisor.Code, lineNumber int) {
+	checker.adviceList = append(checker.adviceList, advisor.Advice{
+		Status:  checker.level,
+		Code:    code,
+		Title:   checker.title,
+		Content: fmt.Sprintf("LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but \"%s\" uses", checker.text),
+		Line:    checker.line + lineNumber,
+	})
 }

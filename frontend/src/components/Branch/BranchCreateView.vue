@@ -81,7 +81,7 @@ import { cloneDeep, uniqueId } from "lodash-es";
 import { NButton, NDivider, NInput } from "naive-ui";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoute, useRouter } from "vue-router";
+import { useRouter } from "vue-router";
 import SchemaEditorV1 from "@/components/SchemaEditorV1/index.vue";
 import { mergeSchemaEditToMetadata } from "@/components/SchemaEditorV1/utils";
 import { ProjectSelect } from "@/components/v2";
@@ -97,7 +97,6 @@ import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
 import {
   databaseNamePrefix,
   getProjectAndSchemaDesignSheetId,
-  projectNamePrefix,
 } from "@/store/modules/v1/common";
 import { UNKNOWN_ID } from "@/types";
 import {
@@ -114,7 +113,7 @@ import {
   Sheet_Type,
   Sheet_Visibility,
 } from "@/types/proto/v1/sheet_service";
-import { extractChangeHistoryUID } from "@/utils";
+import { extractChangeHistoryUID, projectV1Slug } from "@/utils";
 import BaselineSchemaSelector from "./BaselineSchemaSelector.vue";
 import { validateBranchName } from "./utils";
 
@@ -142,7 +141,6 @@ const props = defineProps({
 
 const { t } = useI18n();
 const router = useRouter();
-const route = useRoute();
 const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
 const schemaDesignStore = useSchemaDesignStore();
@@ -170,12 +168,8 @@ const disallowToChangeBaseline = computed(() => {
 });
 
 onMounted(async () => {
-  const projectName = route.params.projectName;
-  if (projectName !== "-") {
-    const project = await projectStore.getOrFetchProjectByName(
-      `${projectNamePrefix}${projectName}`
-    );
-    state.projectId = project.uid;
+  if (props.projectId) {
+    state.projectId = props.projectId;
     // When we are creating a branch from a project page, we don't show the project selector.
     showProjectSelector.value = false;
   }
@@ -252,11 +246,16 @@ const prepareSchemaDesign = async () => {
     const database = databaseStore.getDatabaseByUID(
       state.baselineSchema.databaseId
     );
+    const sheet = await sheetStore.getOrFetchSheetByName(
+      changeHistory.statementSheet
+    );
     const fullSchema = await prepareFullChangeHistorySchema(changeHistory);
     const baselineMetadata = await schemaDesignStore.parseSchemaString(
       fullSchema,
       database.instanceEntity.engine
     );
+    baselineMetadata.schemaConfigs =
+      sheet?.payload?.databaseConfig?.schemaConfigs ?? [];
     return SchemaDesign.fromPartial({
       engine: database.instanceEntity.engine,
       baselineSchema: fullSchema,
@@ -389,13 +388,13 @@ const handleConfirm = async () => {
   });
 
   // Go to branch detail page after created.
-  const [projectName, sheetId] = getProjectAndSchemaDesignSheetId(
+  const [_, sheetId] = getProjectAndSchemaDesignSheetId(
     createdSchemaDesign.name
   );
   router.replace({
     name: "workspace.branch.detail",
     params: {
-      projectName,
+      projectSlug: projectV1Slug(project.value),
       branchName: sheetId,
     },
   });

@@ -1,7 +1,7 @@
 <template>
   <template v-if="ready">
     <template v-if="isCreating">
-      <BranchCreateView />
+      <BranchCreateView :project-id="project?.uid" />
     </template>
     <template v-else-if="branch">
       <BranchDetailView :branch="branch" />
@@ -16,21 +16,28 @@ import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import BranchCreateView from "@/components/Branch/BranchCreateView.vue";
 import BranchDetailView from "@/components/Branch/BranchDetailView.vue";
-import { useProjectV1Store, useSheetV1Store } from "@/store";
+import { useProjectV1Store } from "@/store";
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
-import { getProjectAndSheetId } from "@/store/modules/v1/common";
+import { idFromSlug } from "@/utils";
 
 const { t } = useI18n();
 const route = useRoute();
-const sheetStore = useSheetV1Store();
 const projectStore = useProjectV1Store();
 const schemaDesignStore = useSchemaDesignStore();
-const branchName = ref<string>("");
+const branchFullName = ref<string>("");
 const ready = ref<boolean>(false);
 
 const isCreating = computed(() => route.params.branchName === "new");
 const branch = computed(() => {
-  return schemaDesignStore.getSchemaDesignByName(branchName.value);
+  return schemaDesignStore.getSchemaDesignByName(branchFullName.value);
+});
+const project = computed(() => {
+  if (route.params.projectSlug === "-") {
+    return;
+  }
+  return projectStore.getProjectByUID(
+    String(idFromSlug(route.params.projectSlug as string))
+  );
 });
 
 watch(
@@ -42,15 +49,10 @@ watch(
 
     // Prepare branch name from route params.
     const sheetId = (route.params.branchName as string) || "";
-    if (!sheetId) {
+    if (!sheetId || !project.value) {
       return;
     }
-    const sheet = await sheetStore.getOrFetchSheetByUID(`${sheetId}`);
-    if (sheet) {
-      const [projectName] = getProjectAndSheetId(sheet.name);
-      await projectStore.getOrFetchProjectByName(`projects/${projectName}`);
-      branchName.value = `projects/${projectName}/schemaDesigns/${sheetId}`;
-    }
+    branchFullName.value = `${project.value.name}/schemaDesigns/${sheetId}`;
   },
   {
     immediate: true,
@@ -59,16 +61,16 @@ watch(
 );
 
 watch(
-  () => branchName.value,
+  () => branchFullName.value,
   async () => {
     ready.value = false;
-    if (isCreating.value || !branchName.value) {
+    if (isCreating.value || !branchFullName.value) {
       ready.value = true;
       return;
     }
 
     await schemaDesignStore.fetchSchemaDesignByName(
-      branchName.value,
+      branchFullName.value,
       false /* useCache */
     );
     ready.value = true;

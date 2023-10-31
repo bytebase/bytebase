@@ -21,7 +21,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
-	tidb "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
+	"github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -136,7 +136,7 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, conf
 		sqlDB := driver.GetDB()
 
 		return reportForMySQL(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema.Metadata)
-	case storepb.Engine_ORACLE, storepb.Engine_DM:
+	case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
 		schema := ""
 		if instance.Options == nil || !instance.Options.SchemaTenantMode {
 			adminSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
@@ -293,7 +293,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 					sqlDB := driver.GetDB()
 
 					return reportForMySQL(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema.Metadata)
-				case storepb.Engine_ORACLE, storepb.Engine_DM:
+				case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
 					schema := ""
 					if instance.Options == nil || !instance.Options.SchemaTenantMode {
 						adminSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)

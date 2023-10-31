@@ -51,7 +51,9 @@ type findExternalVersionControlMessage struct {
 // GetExternalVersionControlV2 gets an external version control by ID.
 func (s *Store) GetExternalVersionControlV2(ctx context.Context, id int) (*ExternalVersionControlMessage, error) {
 	if vcs, ok := s.vcsIDCache.Load(id); ok {
-		return vcs.(*ExternalVersionControlMessage), nil
+		if v, ok := vcs.(*ExternalVersionControlMessage); ok {
+			return v, nil
+		}
 	}
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})

@@ -12,7 +12,7 @@ import (
 
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 
-	ast "github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -900,6 +900,17 @@ func (g *designSchemaGenerator) EnterCreatestmt(ctx *postgres.CreatestmtContext)
 		return
 	}
 
+	if _, err := g.result.WriteString(
+		ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+			Start: g.lastTokenIndex,
+			Stop:  ctx.GetStart().GetTokenIndex() - 1,
+		}),
+	); err != nil {
+		g.err = err
+		return
+	}
+	g.lastTokenIndex = ctx.GetStart().GetTokenIndex()
+
 	schema, exists := g.to.schemas[schemaName]
 	if !exists {
 		// Skip not found schema.
@@ -911,18 +922,6 @@ func (g *designSchemaGenerator) EnterCreatestmt(ctx *postgres.CreatestmtContext)
 	if !exists {
 		// Skip not found table.
 		g.lastTokenIndex = skipFollowingSemiIndex(ctx.GetParser().GetTokenStream(), ctx.GetStop().GetTokenIndex()+1)
-		return
-	}
-
-	g.currentTable = table
-
-	if _, err := g.result.WriteString(
-		ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
-			Start: g.lastTokenIndex,
-			Stop:  ctx.GetStart().GetTokenIndex() - 1,
-		}),
-	); err != nil {
-		g.err = err
 		return
 	}
 

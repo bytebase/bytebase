@@ -33,7 +33,7 @@
             {{ item.name }}
           </div>
           <span
-            v-if="isTenantProject && index == breadcrumbList.length - 1"
+            v-if="isTenantProject && index == 1"
             class="flex-shrink-0 h-4 w-4"
           >
             <TenantIcon class="ml-1 text-control" />
@@ -79,7 +79,6 @@ import {
   useProjectV1Store,
   useDatabaseV1Store,
 } from "@/store";
-import { projectNamePrefix } from "@/store/modules/v1/common";
 import { RouteMapList } from "@/types";
 import { Bookmark } from "@/types/proto/v1/bookmark_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
@@ -153,7 +152,7 @@ export default defineComponent({
       const sqlReviewPolicySlug = routeSlug.sqlReviewPolicySlug;
       const ssoName = routeSlug.ssoName;
 
-      const projectName = routeSlug.projectName;
+      const changelistName = routeSlug.changelistName;
       const databaseGroupName = routeSlug.databaseGroupName;
       const schemaGroupName = routeSlug.schemaGroupName;
 
@@ -169,14 +168,64 @@ export default defineComponent({
           path: "/project",
         });
 
+        const project = projectV1Store.getProjectByUID(
+          String(idFromSlug(projectSlug))
+        );
+
         if (projectWebhookSlug) {
-          const project = projectV1Store.getProjectByUID(
-            String(idFromSlug(projectSlug))
-          );
           list.push({
             name: `${project.title}`,
             path: `/project/${projectSlug}`,
           });
+        } else if (databaseGroupName) {
+          list.push(
+            {
+              name: project.title,
+              path: `/project/${projectV1Slug(project)}`,
+            },
+            {
+              name: t("common.database-groups"),
+              path: `/project/${projectSlug}#database-groups`,
+            }
+          );
+
+          if (schemaGroupName) {
+            list.push(
+              {
+                name: databaseGroupName,
+                path: `/project/${projectSlug}/database-groups/${databaseGroupName}`,
+              },
+              {
+                name: `Tables - ${schemaGroupName}`,
+              }
+            );
+          } else {
+            list.push({
+              name: databaseGroupName,
+            });
+          }
+        } else if (changelistName) {
+          list.push(
+            {
+              name: project.title,
+              path: `/project/${projectV1Slug(project)}`,
+            },
+            {
+              name: t("changelist.self"),
+              path: `/project/${projectSlug}#changelists`,
+            }
+          );
+        } else if (route.name === "workspace.branch.detail") {
+          list.push(
+            {
+              name: project.title,
+              path: `/project/${projectV1Slug(project)}`,
+            },
+            {
+              name: t("common.branches"),
+              path: `/project/${projectV1Slug(project)}#branches`,
+            }
+          );
         }
       } else if (instanceSlug) {
         list.push({
@@ -215,21 +264,6 @@ export default defineComponent({
             path: "/setting/sso",
           });
         }
-      } else if (schemaGroupName) {
-        if (projectName && databaseGroupName) {
-          list.push(
-            {
-              name: "Databases",
-            },
-            {
-              name: databaseGroupName,
-              path: `/projects/${projectName}/database-groups/${databaseGroupName}`,
-            },
-            {
-              name: `Tables - ${schemaGroupName}`,
-            }
-          );
-        }
       }
       if (route.name === "workspace.database.history.detail") {
         const parent = `instances/${route.params.instance}/databases/${route.params.database}`;
@@ -241,36 +275,6 @@ export default defineComponent({
         list.push({
           name: t("common.change"),
           path: `/db/${databaseV1Slug(database)}#change-history`,
-        });
-      }
-      if (route.name === "workspace.changelist.detail") {
-        const project = useProjectV1Store().getProjectByUID(
-          String(idFromSlug(route.params.projectSlug as string))
-        );
-        list.push({
-          name: project.title,
-          path: `/project/${projectV1Slug(project)}`,
-        });
-        list.push({
-          name: t("changelist.self"),
-          path: `/project/${projectSlug}#changelists`,
-        });
-      }
-      if (route.name === "workspace.branch.detail") {
-        if (route.params.branchName !== "new") {
-          const project = projectV1Store.getProjectByName(
-            `${projectNamePrefix}${route.params.projectName}`
-          );
-          if (project) {
-            list.push({
-              name: project.title,
-              path: `/project/${projectV1Slug(project)}#branches`,
-            });
-          }
-        }
-        list.push({
-          name: t("common.branches"),
-          path: `/branches`,
         });
       }
 

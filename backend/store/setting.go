@@ -202,7 +202,9 @@ func (s *Store) DeleteCache() {
 func (s *Store) GetSettingV2(ctx context.Context, find *FindSettingMessage) (*SettingMessage, error) {
 	if find.Name != nil && !find.Enforce {
 		if setting, ok := s.settingCache.Load(*find.Name); ok {
-			return setting.(*SettingMessage), nil
+			if v, ok := setting.(*SettingMessage); ok {
+				return v, nil
+			}
 		}
 	}
 
@@ -296,7 +298,9 @@ func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage, 
 // CreateSettingIfNotExistV2 creates a new setting only if the named setting doesn't exist.
 func (s *Store) CreateSettingIfNotExistV2(ctx context.Context, create *SettingMessage, principalUID int) (*SettingMessage, bool, error) {
 	if setting, ok := s.settingCache.Load(create.Name); ok {
-		return setting.(*SettingMessage), false, nil
+		if v, ok := setting.(*SettingMessage); ok {
+			return v, false, nil
+		}
 	}
 
 	tx, err := s.db.BeginTx(ctx, nil)

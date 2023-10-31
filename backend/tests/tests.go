@@ -28,7 +28,7 @@ import (
 	_ "github.com/jackc/pgx/v4/stdlib"
 
 	"github.com/bytebase/bytebase/backend/common"
-	componentConfig "github.com/bytebase/bytebase/backend/component/config"
+	component "github.com/bytebase/bytebase/backend/component/config"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/server"
@@ -157,7 +157,7 @@ CREATE TABLE book4 (
 
 type controller struct {
 	server                    *server.Server
-	profile                   componentConfig.Profile
+	profile                   component.Profile
 	client                    *http.Client
 	grpcConn                  *grpc.ClientConn
 	issueServiceClient        v1pb.IssueServiceClient
@@ -337,8 +337,8 @@ func (ctl *controller) initWorkspaceProfile(ctx context.Context) error {
 
 // GetTestProfile will return a profile for testing.
 // We require port as an argument of GetTestProfile so that test can run in parallel in different ports.
-func getTestProfile(dataDir, resourceDir string, port int, readOnly bool) componentConfig.Profile {
-	return componentConfig.Profile{
+func getTestProfile(dataDir, resourceDir string, port int, readOnly bool) component.Profile {
+	return component.Profile{
 		Mode:                 common.ReleaseModeDev,
 		ExternalURL:          fmt.Sprintf("http://localhost:%d", port),
 		GrpcPort:             port + 1,
@@ -357,8 +357,8 @@ func getTestProfile(dataDir, resourceDir string, port int, readOnly bool) compon
 // GetTestProfileWithExternalPg will return a profile for testing with external Postgres.
 // We require port as an argument of GetTestProfile so that test can run in parallel in different ports,
 // pgURL for connect to Postgres.
-func getTestProfileWithExternalPg(dataDir, resourceDir string, port int, pgUser string, pgURL string, skipOnboardingData bool) componentConfig.Profile {
-	return componentConfig.Profile{
+func getTestProfileWithExternalPg(dataDir, resourceDir string, port int, pgUser string, pgURL string, skipOnboardingData bool) component.Profile {
+	return component.Profile{
 		Mode:                       common.ReleaseModeDev,
 		ExternalURL:                fmt.Sprintf("http://localhost:%d", port),
 		GrpcPort:                   port + 1,

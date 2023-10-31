@@ -1,4 +1,7 @@
 <template>
+  <div v-if="quickActionList.length > 0" class="flex-1 pb-2">
+    <QuickActionPanel :quick-action-list="quickActionList" />
+  </div>
   <template v-if="hash === 'issues'">
     <ProjectIssuesPanel id="issues" :project="project" />
   </template>
@@ -26,7 +29,7 @@
   <template v-if="hash === 'slow-query'">
     <ProjectSlowQueryPanel :project="project" />
   </template>
-  <template v-if="hash === 'anomaly-center'">
+  <template v-if="hash === 'anomalies'">
     <AnomalyCenterDashboard :project="project" :selected-tab="'database'" />
   </template>
   <template v-if="hash === 'activities'">
@@ -63,6 +66,7 @@
 </template>
 
 <script lang="ts" setup>
+import { pull } from "lodash-es";
 import { computed } from "vue";
 import { useRoute } from "vue-router";
 import AnomalyCenterDashboard from "@/components/AnomalyCenter/AnomalyCenterDashboard.vue";
@@ -84,9 +88,18 @@ import {
   useSearchDatabaseV1List,
   useDatabaseV1Store,
   useProjectV1Store,
+  useCurrentUserV1,
+  hasFeature,
 } from "@/store";
-import { DEFAULT_PROJECT_V1_NAME } from "@/types";
-import { idFromSlug, sortDatabaseV1List } from "@/utils";
+import { QuickActionType, DEFAULT_PROJECT_V1_NAME, RoleType } from "@/types";
+import { State } from "@/types/proto/v1/common";
+import {
+  idFromSlug,
+  sortDatabaseV1List,
+  isOwnerOfProjectV1,
+  hasPermissionInProjectV1,
+  getQuickActionList,
+} from "@/utils";
 
 const props = defineProps({
   projectWebhookSlug: {
@@ -126,5 +139,77 @@ useSearchDatabaseV1List(
 const databaseV1List = computed(() => {
   const list = useDatabaseV1Store().databaseListByProject(project.value.name);
   return sortDatabaseV1List(list);
+});
+
+const quickActionMapByRole = computed(() => {
+  if (project.value.state === State.ACTIVE) {
+    const DBA_AND_OWNER_QUICK_ACTION_LIST: QuickActionType[] = [
+      "quickaction.bb.database.schema.update",
+      "quickaction.bb.database.data.update",
+      "quickaction.bb.database.create",
+      "quickaction.bb.project.database.transfer",
+      "quickaction.bb.project.database.transfer-out",
+    ];
+    const DEVELOPER_QUICK_ACTION_LIST: QuickActionType[] = [];
+
+    const currentUserV1 = useCurrentUserV1();
+    if (
+      project.value.name !== DEFAULT_PROJECT_V1_NAME &&
+      hasPermissionInProjectV1(
+        project.value.iamPolicy,
+        currentUserV1.value,
+        "bb.permission.project.change-database"
+      )
+    ) {
+      // Default project (Unassigned databases) are not allowed
+      // to be changed.
+      DEVELOPER_QUICK_ACTION_LIST.push(
+        "quickaction.bb.database.schema.update",
+        "quickaction.bb.database.data.update",
+        "quickaction.bb.database.create"
+      );
+    }
+    if (
+      hasPermissionInProjectV1(
+        project.value.iamPolicy,
+        currentUserV1.value,
+        "bb.permission.project.transfer-database"
+      )
+    ) {
+      DEVELOPER_QUICK_ACTION_LIST.push(
+        "quickaction.bb.project.database.transfer",
+        "quickaction.bb.project.database.transfer-out"
+      );
+    }
+    if (!isOwnerOfProjectV1(project.value.iamPolicy, currentUserV1.value)) {
+      DEVELOPER_QUICK_ACTION_LIST.push(
+        "quickaction.bb.issue.grant.request.querier",
+        "quickaction.bb.issue.grant.request.exporter"
+      );
+    }
+
+    if (hasFeature("bb.feature.dba-workflow")) {
+      pull(DEVELOPER_QUICK_ACTION_LIST, "quickaction.bb.database.create");
+    }
+
+    return new Map([
+      ["OWNER", DBA_AND_OWNER_QUICK_ACTION_LIST],
+      ["DBA", DBA_AND_OWNER_QUICK_ACTION_LIST],
+      ["DEVELOPER", DEVELOPER_QUICK_ACTION_LIST],
+    ]) as Map<RoleType, QuickActionType[]>;
+  }
+
+  return new Map<RoleType, QuickActionType[]>();
+});
+
+const isDatabaseHash = computed(() => {
+  return hash.value === "databases" || hash.value === "database-groups";
+});
+
+const quickActionList = computed(() => {
+  if (!isDatabaseHash.value) {
+    return [];
+  }
+  return getQuickActionList(quickActionMapByRole.value);
 });
 </script>

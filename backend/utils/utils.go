@@ -14,8 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/github/gh-ost/go/base"
-	ghostsql "github.com/github/gh-ost/go/sql"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -61,167 +59,6 @@ func DataSourceFromInstanceWithType(instance *store.InstanceMessage, dataSourceT
 		}
 	}
 	return nil
-}
-
-// GetTableNameFromStatement gets the table name from statement for gh-ost.
-func GetTableNameFromStatement(statement string) (string, error) {
-	// Trim the statement for the parser.
-	// This in effect removes all leading and trailing spaces, substitute multiple spaces with one.
-	statement = strings.Join(strings.Fields(statement), " ")
-	parser := ghostsql.NewParserFromAlterStatement(statement)
-	if !parser.HasExplicitTable() {
-		return "", errors.Errorf("failed to parse table name from statement, statement: %v", statement)
-	}
-	return parser.GetExplicitTable(), nil
-}
-
-// GhostConfig is the configuration for gh-ost migration.
-type GhostConfig struct {
-	// serverID should be unique
-	serverID             uint
-	host                 string
-	port                 string
-	user                 string
-	password             string
-	database             string
-	table                string
-	alterStatement       string
-	socketFilename       string
-	postponeFlagFilename string
-	noop                 bool
-
-	// vendor related
-	isAWS bool
-}
-
-// GetGhostConfig returns a gh-ost configuration for migration.
-func GetGhostConfig(taskID int, database *store.DatabaseMessage, dataSource *store.DataSourceMessage, secret string, instanceUsers []*store.InstanceUserMessage, tableName string, statement string, noop bool, serverIDOffset uint) (GhostConfig, error) {
-	var isAWS bool
-	for _, user := range instanceUsers {
-		if user.Name == "'rdsadmin'@'localhost'" && strings.Contains(user.Grant, "SUPER") {
-			isAWS = true
-			break
-		}
-	}
-	password, err := common.Unobfuscate(dataSource.ObfuscatedPassword, secret)
-	if err != nil {
-		return GhostConfig{}, err
-	}
-	return GhostConfig{
-		host:                 dataSource.Host,
-		port:                 dataSource.Port,
-		user:                 dataSource.Username,
-		password:             password,
-		database:             database.DatabaseName,
-		table:                tableName,
-		alterStatement:       statement,
-		socketFilename:       getSocketFilename(taskID, database.UID, database.DatabaseName, tableName),
-		postponeFlagFilename: GetPostponeFlagFilename(taskID, database.UID, database.DatabaseName, tableName),
-		noop:                 noop,
-		// On the source and each replica, you must set the server_id system variable to establish a unique replication ID. For each server, you should pick a unique positive integer in the range from 1 to 2^32 − 1, and each ID must be different from every other ID in use by any other source or replica in the replication topology. Example: server-id=3.
-		// https://dev.mysql.com/doc/refman/5.7/en/replication-options-source.html
-		// Here we use serverID = offset + task.ID to avoid potential conflicts.
-		serverID: serverIDOffset + uint(taskID),
-		// https://github.com/github/gh-ost/blob/master/doc/rds.md
-		isAWS: isAWS,
-	}, nil
-}
-
-func getSocketFilename(taskID int, databaseID int, databaseName string, tableName string) string {
-	return fmt.Sprintf("/tmp/gh-ost.%v.%v.%v.%v.sock", taskID, databaseID, databaseName, tableName)
-}
-
-// GetPostponeFlagFilename gets the postpone flag filename for gh-ost.
-func GetPostponeFlagFilename(taskID int, databaseID int, databaseName string, tableName string) string {
-	return fmt.Sprintf("/tmp/gh-ost.%v.%v.%v.%v.postponeFlag", taskID, databaseID, databaseName, tableName)
-}
-
-// NewMigrationContext is the context for gh-ost migration.
-func NewMigrationContext(config GhostConfig) (*base.MigrationContext, error) {
-	const (
-		allowedRunningOnMaster              = true
-		concurrentCountTableRows            = true
-		timestampAllTable                   = true
-		hooksStatusIntervalSec              = 60
-		heartbeatIntervalMilliseconds       = 100
-		niceRatio                           = 0
-		chunkSize                           = 1000
-		dmlBatchSize                        = 10
-		maxLagMillisecondsThrottleThreshold = 1500
-		defaultNumRetries                   = 60
-		cutoverLockTimeoutSeconds           = 60
-		exponentialBackoffMaxInterval       = 64
-		throttleHTTPIntervalMillis          = 100
-		throttleHTTPTimeoutMillis           = 1000
-	)
-	statement := strings.Join(strings.Fields(config.alterStatement), " ")
-	migrationContext := base.NewMigrationContext()
-	migrationContext.InspectorConnectionConfig.Key.Hostname = config.host
-	port := 3306
-	if config.port != "" {
-		configPort, err := strconv.Atoi(config.port)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to convert port from string to int")
-		}
-		port = configPort
-	}
-	migrationContext.InspectorConnectionConfig.Key.Port = port
-	migrationContext.CliUser = config.user
-	migrationContext.CliPassword = config.password
-	migrationContext.DatabaseName = config.database
-	migrationContext.OriginalTableName = config.table
-	migrationContext.AlterStatement = statement
-	migrationContext.Noop = config.noop
-	migrationContext.ReplicaServerId = config.serverID
-	if config.isAWS {
-		migrationContext.AssumeRBR = true
-	}
-	// set defaults
-	if err := migrationContext.SetConnectionConfig(""); err != nil {
-		return nil, err
-	}
-	migrationContext.AllowedRunningOnMaster = allowedRunningOnMaster
-	migrationContext.ConcurrentCountTableRows = concurrentCountTableRows
-	migrationContext.HooksStatusIntervalSec = hooksStatusIntervalSec
-	migrationContext.CutOverType = base.CutOverAtomic
-	migrationContext.ThrottleHTTPIntervalMillis = throttleHTTPIntervalMillis
-	migrationContext.ThrottleHTTPTimeoutMillis = throttleHTTPTimeoutMillis
-
-	if migrationContext.AlterStatement == "" {
-		return nil, errors.Errorf("alterStatement must be provided and must not be empty")
-	}
-	parser := ghostsql.NewParserFromAlterStatement(migrationContext.AlterStatement)
-	migrationContext.AlterStatementOptions = parser.GetAlterStatementOptions()
-
-	if migrationContext.DatabaseName == "" {
-		if !parser.HasExplicitSchema() {
-			return nil, errors.Errorf("database must be provided and database name must not be empty, or alterStatement must specify database name")
-		}
-		migrationContext.DatabaseName = parser.GetExplicitSchema()
-	}
-	if migrationContext.OriginalTableName == "" {
-		if !parser.HasExplicitTable() {
-			return nil, errors.Errorf("table must be provided and table name must not be empty, or alterStatement must specify table name")
-		}
-		migrationContext.OriginalTableName = parser.GetExplicitTable()
-	}
-	migrationContext.ServeSocketFile = config.socketFilename
-	migrationContext.PostponeCutOverFlagFile = config.postponeFlagFilename
-	migrationContext.TimestampAllTable = timestampAllTable
-	migrationContext.SetHeartbeatIntervalMilliseconds(heartbeatIntervalMilliseconds)
-	migrationContext.SetNiceRatio(niceRatio)
-	migrationContext.SetChunkSize(chunkSize)
-	migrationContext.SetDMLBatchSize(dmlBatchSize)
-	migrationContext.SetMaxLagMillisecondsThrottleThreshold(maxLagMillisecondsThrottleThreshold)
-	migrationContext.SetDefaultNumRetries(defaultNumRetries)
-	migrationContext.ApplyCredentials()
-	if err := migrationContext.SetCutOverLockTimeoutSeconds(cutoverLockTimeoutSeconds); err != nil {
-		return nil, err
-	}
-	if err := migrationContext.SetExponentialBackoffMaxInterval(exponentialBackoffMaxInterval); err != nil {
-		return nil, err
-	}
-	return migrationContext, nil
 }
 
 // isMatchExpression checks whether a databases matches the query.
@@ -428,7 +265,7 @@ func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 	startedNs := time.Now().UnixNano()
 
 	defer func() {
-		if err := EndMigration(ctx, s, startedNs, insertedID, updatedSchema, resErr == nil /* isDone */); err != nil {
+		if err := EndMigration(ctx, s, startedNs, insertedID, updatedSchema, sheetID, resErr == nil /* isDone */); err != nil {
 			slog.Error("Failed to update migration history record",
 				log.BBError(err),
 				slog.String("migration_id", migrationHistoryID),
@@ -544,11 +381,13 @@ func BeginMigration(ctx context.Context, stores *store.Store, m *db.MigrationInf
 }
 
 // EndMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
-func EndMigration(ctx context.Context, storeInstance *store.Store, startedNs int64, insertedID string, updatedSchema string, isDone bool) error {
+func EndMigration(ctx context.Context, storeInstance *store.Store, startedNs int64, insertedID string, updatedSchema string, sheetID *int, isDone bool) error {
 	migrationDurationNs := time.Now().UnixNano() - startedNs
 	update := &store.UpdateInstanceChangeHistoryMessage{
 		ID:                  insertedID,
 		ExecutionDurationNs: &migrationDurationNs,
+		// Update the sheet ID just in case it has been updated.
+		Sheet: sheetID,
 	}
 	if isDone {
 		// Upon success, update the migration history as 'DONE', execution_duration_ns, updated schema.

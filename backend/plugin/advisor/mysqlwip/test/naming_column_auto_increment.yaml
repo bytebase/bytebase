@@ -1,4 +1,4 @@
-- statement: CREATE TABLE book(id int AUTO_INCREMENT)
+- statement: CREATE TABLE book(id int AUTO_INCREMENT);
   want:
     - status: SUCCESS
       code: 0
@@ -6,7 +6,7 @@
       content: ""
       line: 0
       details: ""
-- statement: CREATE TABLE book(a int AUTO_INCREMENT)
+- statement: CREATE TABLE book(a int AUTO_INCREMENT);
   want:
     - status: WARN
       code: 307
@@ -14,7 +14,9 @@
       content: '`book`.`a` mismatches auto_increment column naming convention, naming format should be "^id$"'
       line: 1
       details: ""
-- statement: ALTER TABLE tech_book ADD COLUMN a int AUTO_INCREMENT
+- statement: |
+    CREATE TABLE tech_book (name VARCHAR(255));
+    ALTER TABLE tech_book ADD COLUMN a int AUTO_INCREMENT;
   want:
     - status: WARN
       code: 307
@@ -22,7 +24,9 @@
       content: '`tech_book`.`a` mismatches auto_increment column naming convention, naming format should be "^id$"'
       line: 2
       details: ""
-- statement: ALTER TABLE tech_book CHANGE COLUMN id a int AUTO_INCREMENT
+- statement: |
+    CREATE TABLE tech_book (name VARCHAR(255));
+    ALTER TABLE tech_book CHANGE COLUMN id a int AUTO_INCREMENT;
   want:
     - status: WARN
       code: 307
@@ -30,11 +34,43 @@
       content: '`tech_book`.`a` mismatches auto_increment column naming convention, naming format should be "^id$"'
       line: 2
       details: ""
-- statement: ALTER TABLE tech_book MODIFY COLUMN name int AUTO_INCREMENT
+- statement: |
+    CREATE TABLE tech_book (price INT);
+    ALTER TABLE tech_book MODIFY COLUMN name int AUTO_INCREMENT;
   want:
     - status: WARN
       code: 307
       title: naming.column.auto-increment
       content: '`tech_book`.`name` mismatches auto_increment column naming convention, naming format should be "^id$"'
       line: 2
+      details: ""
+- statement: |
+    CREATE TABLE book(id int);
+    ALTER TABLE tech_book MODIFY COLUMN id int AUTO_INCREMENT;
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |
+    CREATE TABLE book(name VARCHAR(255));
+    ALTER TABLE tech_book ADD COLUMN id int AUTO_INCREMENT;
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |
+    CREATE TABLE book(a INT, name VARCHAR(255));
+    ALTER TABLE tech_book CHANGE COLUMN a id int AUTO_INCREMENT;
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
       details: ""

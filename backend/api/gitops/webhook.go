@@ -1455,7 +1455,7 @@ func (s *Service) processFilesInProject(ctx context.Context, pushEvent vcs.PushE
 					issueName := fmt.Sprintf(sdlIssueNameTemplate, databaseName, "Alter schema")
 					issueDescription := fmt.Sprintf("Apply schema diff by file %s", strings.TrimPrefix(fileInfo.item.FileName, repoInfo.repository.BaseDirectory+"/"))
 					if err := s.createIssueFromMigrationDetailsV2(ctx, repoInfo.project, issueName, issueDescription, pushEvent, creatorID, migrationDetailListForFile); err != nil {
-						return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
+						return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue %s, error %v", issueName, err).SetInternal(err)
 					}
 					createdIssueList = append(createdIssueList, issueName)
 				}
@@ -1496,7 +1496,7 @@ func (s *Service) processFilesInProject(ctx context.Context, pushEvent vcs.PushE
 	issueName := fmt.Sprintf(issueNameTemplate, databaseName, migrateType, description)
 	issueDescription := fmt.Sprintf("By VCS files:\n\n%s\n", strings.Join(fileNameList, "\n"))
 	if err := s.createIssueFromMigrationDetailsV2(ctx, repoInfo.project, issueName, issueDescription, pushEvent, creatorID, migrationDetailList); err != nil {
-		return "", len(createdIssueList) != 0, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create issue %s", issueName)).SetInternal(err)
+		return "", len(createdIssueList) != 0, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create issue %s, error %v", issueName, err)).SetInternal(err)
 	}
 	createdIssueList = append(createdIssueList, issueName)
 
@@ -1520,7 +1520,7 @@ func (s *Service) processFilesInBatchProject(ctx context.Context, pushEvent vcs.
 					issueName := fmt.Sprintf(sdlIssueNameTemplate, databaseName, "Alter schema")
 					issueDescription := fmt.Sprintf("Apply schema diff by file %s", strings.TrimPrefix(fileInfo.item.FileName, repoInfo.repository.BaseDirectory+"/"))
 					if err := s.createIssueFromMigrationDetailsV2(ctx, repoInfo.project, issueName, issueDescription, pushEvent, creatorID, migrationDetailListForFile); err != nil {
-						return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
+						return "", false, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue %s, error %v", issueName, err).SetInternal(err)
 					}
 					createdIssueList = append(createdIssueList, issueName)
 				}
@@ -1542,7 +1542,7 @@ func (s *Service) processFilesInBatchProject(ctx context.Context, pushEvent vcs.
 			issueName := fmt.Sprintf(batchIssueNameTemplate, migrateType, description)
 			issueDescription := fmt.Sprintf("By VCS file: %s\n", fileInfo.item.FileName)
 			if err := s.createIssueFromMigrationDetailsV2(ctx, repoInfo.project, issueName, issueDescription, pushEvent, creatorID, migrationDetailListForFile); err != nil {
-				return "", len(createdIssueList) != 0, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create issue %s", issueName)).SetInternal(err)
+				return "", len(createdIssueList) != 0, activityCreateList, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create issue %s, error %v", issueName, err)).SetInternal(err)
 			}
 			createdIssueList = append(createdIssueList, issueName)
 		}

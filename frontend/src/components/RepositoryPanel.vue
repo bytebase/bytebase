@@ -1,10 +1,15 @@
 <template>
-  <div class="text-lg leading-6 font-medium text-main">
-    <i18n-t keypath="repository.gitops-status">
-      <template #status>
-        <span class="text-success"> {{ $t("common.enabled") }} </span>
-      </template>
-    </i18n-t>
+  <div class="flex justify-between">
+    <div class="text-lg leading-6 font-medium text-main">
+      <i18n-t keypath="repository.gitops-status">
+        <template #status>
+          <span class="text-success"> {{ $t("common.enabled") }} </span>
+        </template>
+      </i18n-t>
+    </div>
+    <TroubleshootLink
+      url="https://www.bytebase.com/docs/vcs-integration/troubleshoot/?source=console"
+    />
   </div>
   <div class="mt-2 textinfolabel">
     <template v-if="isProjectSchemaChangeTypeDDL">

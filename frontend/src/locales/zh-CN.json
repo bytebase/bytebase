@@ -140,6 +140,7 @@
     "confirm": "确认",
     "coming-later": "敬请期待",
     "learn-more": "了解更多",
+    "troubleshoot": "排查问题",
     "schema-version": "Schema 版本",
     "time": "时间",
     "manual": "手动",
@@ -269,7 +270,8 @@
     "created-at-by": "由 {user} 创建于 {time}",
     "filter-by-name": "按名称过滤",
     "tenant": "租户",
-    "license": "证书"
+    "license": "证书",
+    "show-all": "显示全部"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -378,6 +380,15 @@
     "cancel-task": "取消任务",
     "created": "创建于"
   },
+  "task-run": {
+    "status": {
+      "enqueued": "等待执行。",
+      "enqueued-with-rollout-time": "等待执行，{time}后执行。",
+      "dumping-schema-before-executing-sql": "准备执行，正在导出 schema。",
+      "executing-sql": "正在执行 SQL。",
+      "dumping-schema-after-executing-sql": "SQL 执行完毕，正在导出 schema。"
+    }
+  },
   "banner": {
     "update-license": "更新证书",
     "license-expires": "您的{plan}证书已在 {expireAt} 过期",
@@ -387,7 +398,6 @@
     "deploy": "本地部署",
     "cloud": "云服务",
     "request-demo": "和我们的产品专家预约 30 分钟产品演示",
-    "debug": "Debug 模式已开启，您可以通过右上角头像下拉框关闭 Debug。",
     "readonly": "Bytebase 处于只读模式。您仍然可以查看控制台，但任何尝试更改的请求都会失败。",
     "external-url": "Bytebase 还没有配置 --external-url",
     "configure-now": "现在配置"
@@ -831,7 +841,7 @@
     },
     "view-commit": "查看提交",
     "advanced-search": {
-      "self": "高级搜素",
+      "self": "高级搜索",
       "scope": {
         "project": {
           "title": "项目",
@@ -1019,7 +1029,7 @@
     "from-projects": "从其他项目转移",
     "transfer-in-db-title": "转进数据库",
     "transfer-in-db-alert": "您确定要转进 \"{ dbName }\" 到我们的项目中吗？",
-    "unassigned-db-hint": "Bytebase 会定期同步实例的 Schema。新同步的数据库起先是未分配的状态。需要把数据库转移到项目后，才能使用。",
+    "unassigned-db-hint": "新同步的数据库起先是未分配的状态，必须移至一个项目以供使用。",
     "transfer-out-db": "转出数据库",
     "transfer-out-db-title": "转出数据库",
     "request-query-permission": "申请查询权限",
@@ -1211,7 +1221,7 @@
     "visit-instance": "@:common.visit@:common.instances",
     "visit-database": "@:common.visit@:common.databases",
     "visit-environment": "@:common.visit@:common.environments",
-    "add-a-member": "添加成员",
+    "visit-member": "@:common.visit@:common.members",
     "use-kbar": "使用 kbar ({shortcut})",
     "query-data": "查询数据",
     "notice": {
@@ -2210,7 +2220,8 @@
     "confirm-change": "您确定要修改 '{label}' 吗？",
     "parsed-from-template": "从 {name} 中依据模板 {template} 解析得出",
     "cannot-transfer-template-not-match": "数据库 '{name}' 无法转移到这个项目，因为它的名称不符合模板 {template}。",
-    "add-label": "添加标签"
+    "add-label": "添加标签",
+    "filter-by-label": "按标签过滤"
   },
   "oauth": {
     "unknown-event": "未知的事件类型，认证失败"

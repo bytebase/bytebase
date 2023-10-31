@@ -12,9 +12,9 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
-	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	metricAPI "github.com/bytebase/bytebase/backend/metric"
+	metricapi "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/store"
@@ -27,7 +27,7 @@ type SubscriptionService struct {
 	store          *store.Store
 	profile        *config.Profile
 	metricReporter *metricreport.Reporter
-	licenseService enterpriseAPI.LicenseService
+	licenseService enterprise.LicenseService
 }
 
 // NewSubscriptionService creates a new SubscriptionService.
@@ -35,7 +35,7 @@ func NewSubscriptionService(
 	store *store.Store,
 	profile *config.Profile,
 	metricReporter *metricreport.Reporter,
-	licenseService enterpriseAPI.LicenseService) *SubscriptionService {
+	licenseService enterprise.LicenseService) *SubscriptionService {
 	return &SubscriptionService{
 		store:          store,
 		profile:        profile,
@@ -76,8 +76,12 @@ func (s *SubscriptionService) UpdateSubscription(ctx context.Context, request *v
 		}
 	}
 
-	if err := s.licenseService.StoreLicense(ctx, &enterpriseAPI.SubscriptionPatch{
-		UpdaterID: ctx.Value(common.PrincipalIDContextKey).(int),
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+	if err := s.licenseService.StoreLicense(ctx, &enterprise.SubscriptionPatch{
+		UpdaterID: principalID,
 		License:   request.Patch.License,
 	}); err != nil {
 		if common.ErrorCode(err) == common.Invalid {
@@ -104,9 +108,9 @@ func (s *SubscriptionService) TrialSubscription(ctx context.Context, request *v1
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	license := &enterpriseAPI.License{
-		InstanceCount: enterpriseAPI.InstanceLimitForTrial,
-		ExpiresTs:     time.Now().AddDate(0, 0, enterpriseAPI.TrialDaysLimit).Unix(),
+	license := &enterprise.License{
+		InstanceCount: enterprise.InstanceLimitForTrial,
+		ExpiresTs:     time.Now().AddDate(0, 0, enterprise.TrialDaysLimit).Unix(),
 		IssuedTs:      time.Now().Unix(),
 		Plan:          planType,
 		// the subject format for license should be {org id in hub}.{subscription id in hub}
@@ -133,7 +137,10 @@ func (s *SubscriptionService) TrialSubscription(ctx context.Context, request *v1
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	_, created, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:  api.SettingEnterpriseTrial,
 		Value: string(value),
@@ -146,7 +153,7 @@ func (s *SubscriptionService) TrialSubscription(ctx context.Context, request *v1
 	}
 
 	// we need to override the SettingEnterpriseLicense with an empty value to get the valid free trial.
-	if err := s.licenseService.StoreLicense(ctx, &enterpriseAPI.SubscriptionPatch{
+	if err := s.licenseService.StoreLicense(ctx, &enterprise.SubscriptionPatch{
 		UpdaterID: principalID,
 		License:   "",
 	}); err != nil {
@@ -157,7 +164,7 @@ func (s *SubscriptionService) TrialSubscription(ctx context.Context, request *v1
 	subscription = s.licenseService.LoadSubscription(ctx)
 	currentPlan := subscription.Plan
 	s.metricReporter.Report(ctx, &metric.Metric{
-		Name:  metricAPI.SubscriptionTrialMetricName,
+		Name:  metricapi.SubscriptionTrialMetricName,
 		Value: 1,
 		Labels: map[string]any{
 			"trial_plan":    currentPlan.String(),

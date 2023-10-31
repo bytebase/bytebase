@@ -304,8 +304,4 @@ watch(
 .bb-user-select :deep(.n-base-selection--active .bb-user-select--avatar) {
   opacity: 0.3;
 }
-.bb-user-select :deep(.n-base-selection-input:focus),
-.bb-user-select :deep(.n-base-selection-input-tag__input:focus) {
-  @apply !ring-0;
-}
 </style>

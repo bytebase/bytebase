@@ -13,12 +13,12 @@ bytebase-sql-review:
     - request_body=$(jq -n --arg repositoryId "$CI_PROJECT_ID" --arg pullRequestId $CI_MERGE_REQUEST_IID --arg webURL "$CI_SERVER_URL" '$ARGS.named')
     - 'response=$(curl -s --show-error -X POST "$API" -H "Content-type: application/json" -H "X-SQL-Review-Token: $%s" -d "$request_body")'
     - echo $response
-    - content=$(echo $response | jq -r '.content')
-    - len=$(echo $content | jq '. | length')
+    - content=$(echo "$response" | jq -r '.content')
+    - len=$(echo "$content" | jq '. | length')
     - if [ $len == 0 ]; then exit 0; fi
-    - msg=$(echo $content | jq -r '.[0]')
+    - msg=$(echo "$content" | jq -r '.[0]')
     - echo $msg >> bytebase-sql-review.xml
-    - status=$(echo $response | jq -r '.status')
+    - status=$(echo "$response" | jq -r '.status')
     - if [ "$status" == "ERROR" ]; then exit 1; fi
   artifacts:
     when: always

@@ -1,11 +1,13 @@
 <template>
-  <BBTooltipButton
+  <TooltipButton
     type="primary"
     :disabled="!isActionApplicableForAllIssues('RESOLVE')"
     tooltip-mode="DISABLED-ONLY"
     @click="startBatchIssueStatusAction('RESOLVE')"
   >
-    {{ $t("issue.batch-transition.resolve") }}
+    <template #default>
+      {{ $t("issue.batch-transition.resolve") }}
+    </template>
     <template #tooltip>
       <div class="whitespace-nowrap">
         {{
@@ -15,15 +17,16 @@
         }}
       </div>
     </template>
-  </BBTooltipButton>
+  </TooltipButton>
 
-  <BBTooltipButton
-    type="normal"
+  <TooltipButton
     :disabled="!isActionApplicableForAllIssues('CANCEL')"
     tooltip-mode="DISABLED-ONLY"
     @click="startBatchIssueStatusAction('CANCEL')"
   >
-    {{ $t("issue.batch-transition.cancel") }}
+    <template #default>
+      {{ $t("issue.batch-transition.cancel") }}
+    </template>
     <template #tooltip>
       <div class="whitespace-nowrap">
         {{
@@ -33,10 +36,9 @@
         }}
       </div>
     </template>
-  </BBTooltipButton>
+  </TooltipButton>
 
-  <BBTooltipButton
-    type="normal"
+  <TooltipButton
     :disabled="!isActionApplicableForAllIssues('REOPEN')"
     tooltip-mode="DISABLED-ONLY"
     @click="startBatchIssueStatusAction('REOPEN')"
@@ -51,7 +53,7 @@
         }}
       </div>
     </template>
-  </BBTooltipButton>
+  </TooltipButton>
 
   <BatchIssueStatusActionPanel
     :issue-list="issueList"
@@ -65,6 +67,7 @@
 <script lang="ts" setup>
 import { computed, PropType, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { TooltipButton } from "@/components/v2";
 import { refreshIssueList } from "@/store";
 import type { ComposedIssue } from "@/types";
 import {

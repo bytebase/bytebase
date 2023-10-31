@@ -6,6 +6,7 @@
       :changelists="filteredChangelists"
       :is-fetching="isFetching"
       :keyword="filter.keyword"
+      :hide-project-column="!!project"
     />
 
     <CreateChangelistPanel

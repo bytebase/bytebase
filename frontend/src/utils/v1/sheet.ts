@@ -2,17 +2,7 @@ import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import {
   getUserEmailFromIdentifier,
   getProjectAndSheetId,
-  getSheetPathByLegacyProject,
 } from "@/store/modules/v1/common";
-import {
-  Task,
-  TaskDatabaseCreatePayload,
-  TaskDatabaseDataUpdatePayload,
-  TaskDatabaseSchemaUpdateGhostSyncPayload,
-  TaskDatabaseSchemaUpdatePayload,
-  TaskDatabaseSchemaUpdateSDLPayload,
-  SheetId,
-} from "@/types";
 import { Sheet, Sheet_Visibility } from "@/types/proto/v1/sheet_service";
 import {
   hasPermissionInProjectV1,
@@ -108,44 +98,6 @@ export const isSheetWritableV1 = (sheet: Sheet) => {
   }
   // visibility === "PUBLIC"
   return false;
-};
-
-export const sheetNameOfTask = (task: Task) => {
-  const project = task.database?.project;
-  if (!project) {
-    return "";
-  }
-
-  let sheetId: SheetId;
-
-  switch (task.type) {
-    case "bb.task.database.create":
-      sheetId = (task.payload as TaskDatabaseCreatePayload).sheetId || "";
-      break;
-    case "bb.task.database.schema.update":
-      sheetId = (task.payload as TaskDatabaseSchemaUpdatePayload).sheetId || "";
-      break;
-    case "bb.task.database.schema.update-sdl":
-      sheetId =
-        (task.payload as TaskDatabaseSchemaUpdateSDLPayload).sheetId || "";
-      break;
-    case "bb.task.database.data.update":
-      sheetId = (task.payload as TaskDatabaseDataUpdatePayload).sheetId || "";
-      break;
-    case "bb.task.database.schema.update.ghost.sync":
-      sheetId =
-        (task.payload as TaskDatabaseSchemaUpdateGhostSyncPayload).sheetId ||
-        "";
-      break;
-    default:
-      return "";
-  }
-
-  if (!sheetId) {
-    return "";
-  }
-
-  return getSheetPathByLegacyProject(project, sheetId);
 };
 
 export const setSheetStatement = (sheet: Sheet, statement: string) => {

@@ -408,6 +408,12 @@ export const useDBGroupStore = defineStore("db-group", () => {
     databaseGroupName: string;
     expr: ConditionGroupExpr;
   }) => {
+    if (!buildCELExpr(expr)) {
+      return {
+        matchedTableList: [],
+        unmatchedTableList: [],
+      };
+    }
     const celStrings = await batchConvertParsedExprToCELString([
       ParsedExpr.fromJSON({
         expr: buildCELExpr(expr),

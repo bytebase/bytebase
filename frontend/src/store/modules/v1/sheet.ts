@@ -224,12 +224,6 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
     sheetsByName.value.delete(name);
   };
 
-  // Other functions
-  const syncSheetFromVCS = async (parent: string) => {
-    await sheetServiceClient.syncSheets({
-      parent,
-    });
-  };
   const upsertSheetOrganizer = async (
     organizer: Pick<SheetOrganizer, "sheet" | "starred">
   ) => {
@@ -262,7 +256,6 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
     fetchStarredSheetList,
     patchSheet,
     deleteSheetByName,
-    syncSheetFromVCS,
     upsertSheetOrganizer,
   };
 });
@@ -326,12 +319,6 @@ const getUpdateMaskForSheet = (
     !isEqual(origin.visibility, update.visibility)
   ) {
     updateMask.push("visibility");
-  }
-  if (
-    !isUndefined(update.payload) &&
-    !isEqual(origin.payload, update.payload)
-  ) {
-    updateMask.push("payload");
   }
   return updateMask;
 };

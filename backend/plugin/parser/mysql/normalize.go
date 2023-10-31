@@ -147,3 +147,87 @@ func NormalizeMySQLProcedureName(ctx parser.IProcedureNameContext) (string, stri
 	}
 	return "", ""
 }
+
+// NormalizeMySQLSchemaRef noamalizes the given schemaRef.
+func NormalizeMySQLSchemaRef(ctx parser.ISchemaRefContext) string {
+	if ctx.Identifier() != nil {
+		return NormalizeMySQLIdentifier(ctx.Identifier())
+	}
+	return ""
+}
+
+// NormalizeMySQLKeyListVariants normalize the given keyListVariants.
+func NormalizeKeyListVariants(ctx parser.IKeyListVariantsContext) []string {
+	if ctx.KeyList() != nil {
+		return NormalizeKeyList(ctx.KeyList())
+	}
+	if ctx.KeyListWithExpression() != nil {
+		return NormalizeKeyListWithExpression(ctx.KeyListWithExpression())
+	}
+	return nil
+}
+
+// NormalizeMySQLKeyList normalize the given keyList.
+func NormalizeKeyList(ctx parser.IKeyListContext) []string {
+	var result []string
+	for _, key := range ctx.AllKeyPart() {
+		keyText := NormalizeMySQLIdentifier(key.Identifier())
+		result = append(result, keyText)
+	}
+	return result
+}
+
+// NormalizeMySQLKeyListWithExpression normalize the given keyListWithExpression.
+func NormalizeKeyListWithExpression(ctx parser.IKeyListWithExpressionContext) []string {
+	var result []string
+	for _, key := range ctx.AllKeyPartOrExpression() {
+		if key.KeyPart() != nil {
+			keyText := NormalizeMySQLIdentifier(key.KeyPart().Identifier())
+			result = append(result, keyText)
+		} else if key.ExprWithParentheses() != nil {
+			keyText := key.GetParser().GetTokenStream().GetTextFromRuleContext(key.ExprWithParentheses())
+			result = append(result, keyText)
+		}
+	}
+	return result
+}
+
+// NormalizeMySQLIndexName normalize the given IndexName.
+func NormalizeIndexName(ctx parser.IIndexNameContext) string {
+	if ctx.Identifier() != nil {
+		return NormalizeMySQLIdentifier(ctx.Identifier())
+	}
+	return ""
+}
+
+// NormalizeMySQLIndexName normalize the given IndeRef.
+func NormalizeIndexRef(ctx parser.IIndexRefContext) (string, string, string) {
+	if ctx.FieldIdentifier() != nil {
+		return NormalizeMySQLFieldIdentifier(ctx.FieldIdentifier())
+	}
+	return "", "", ""
+}
+
+// NormalizeMySQLIdentifierListWithParentheses normalize the given IdentififerListWithparentheses.
+func NormalizeIdentifierListWithParentheses(ctx parser.IIdentifierListWithParenthesesContext) []string {
+	if ctx.IdentifierList() != nil {
+		return NormalizeMySQLIdentifierList(ctx.IdentifierList())
+	}
+	return nil
+}
+
+// NormalizeMySQLConstraintName normalize the given IConstraintName.
+func NormalizeConstraintName(ctx parser.IConstraintNameContext) string {
+	if ctx.Identifier() != nil {
+		return NormalizeMySQLIdentifier(ctx.Identifier())
+	}
+	return ""
+}
+
+// NormalizeMySQLColumnInternalRef noamalizes the given columnInternalRef.
+func NormalizeMySQLColumnInternalRef(ctx parser.IColumnInternalRefContext) string {
+	if ctx.Identifier() != nil {
+		return NormalizeMySQLIdentifier(ctx.Identifier())
+	}
+	return ""
+}

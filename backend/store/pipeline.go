@@ -77,7 +77,9 @@ func (s *Store) CreatePipelineV2(ctx context.Context, create *PipelineMessage, c
 // GetPipelineV2ByID gets the pipeline by ID.
 func (s *Store) GetPipelineV2ByID(ctx context.Context, id int) (*PipelineMessage, error) {
 	if pipeline, ok := s.pipelineCache.Load(id); ok {
-		return pipeline.(*PipelineMessage), nil
+		if v, ok := pipeline.(*PipelineMessage); ok {
+			return v, nil
+		}
 	}
 	pipelines, err := s.ListPipelineV2(ctx, &PipelineFind{ID: &id})
 	if err != nil {

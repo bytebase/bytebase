@@ -140,6 +140,7 @@
     "confirm": "Confirmar",
     "coming-later": "Disponible más tarde",
     "learn-more": "Aprender más",
+    "troubleshoot": "Solucionar problemas",
     "schema-version": "Versión de esquema",
     "time": "Tiempo",
     "manual": "Manual",
@@ -271,7 +272,8 @@
     "created-at-by": "Creado {time} por {user}",
     "filter-by-name": "Filtrar por nombre",
     "tenant": "Arrendataria",
-    "license": "Licencia"
+    "license": "Licencia",
+    "show-all": "Mostrar todo"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -380,6 +382,15 @@
     "cancel-task": "Cancelar tarea | Cancelar tareas",
     "created": "Creado"
   },
+  "task-run": {
+    "status": {
+      "enqueued": "Esperando a ser ejecutada.",
+      "enqueued-with-rollout-time": "Esperando para ejecutar, {time} para ejecutar.",
+      "dumping-schema-before-executing-sql": "Listo para ejecutar, exportando esquema.",
+      "executing-sql": "Ejecutando SQL.",
+      "dumping-schema-after-executing-sql": "Ejecución SQL completada, exportando esquema ahora."
+    }
+  },
   "banner": {
     "update-license": "Actualizar licencia",
     "license-expires": "Su licencia para {plan} ha caducado el {expireAt}.",
@@ -389,7 +400,6 @@
     "deploy": "Auto Hospedaje",
     "cloud": "Cloud",
     "request-demo": "Reserve una presentación de producto de 30 minutos con nuestro experto en productos",
-    "debug": "El modo de depuración está activo, puede desactivar el modo de depuración a través del menú desplegable del perfil en la parte superior derecha.",
     "readonly": "Bytebase está en modo de solo lectura. Todavía puede ver la consola, pero cualquier intento de cambio fallará.",
     "external-url": "Bytebase no ha configurado --external-url",
     "configure-now": "Configurar ahora"
@@ -1021,7 +1031,7 @@
     "from-projects": "Transfer from other projects",
     "transfer-in-db-title": "Transferir base de datos",
     "transfer-in-db-alert": "¿Estás seguro de transferir \"{dbName}\" a nuestro proyecto?",
-    "unassigned-db-hint": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas no están asignadas al principio y deben transferirse a un proyecto antes de que puedan usarse.",
+    "unassigned-db-hint": "Las bases de datos recién sincronizadas comienzan sin asignar y deben ser asignadas a un proyecto para su uso.",
     "transfer-out-db": "Transferir base de datos",
     "transfer-out-db-title": "Transferir la base de datos",
     "request-export-permission": "Solicitar exportación",
@@ -1213,7 +1223,7 @@
     "visit-instance": "@:common.visit @:common.instances",
     "visit-database": "@:common.visit @:common.databases",
     "visit-environment": "@:common.visit @:common.environments",
-    "add-a-member": "Agregar un miembro",
+    "visit-member": "@:common.visit @:common.members",
     "use-kbar": "Usar kbar ({shortcut})",
     "query-data": "Consultar datos",
     "notice": {
@@ -2210,7 +2220,8 @@
     "confirm-change": "¿Estás seguro de cambiar '{label}'?",
     "parsed-from-template": "Analizado desde {name} por la plantilla {template}.",
     "cannot-transfer-template-not-match": "La base de datos '{name}' no puede ser transferida a este proyecto, ya que su nombre no coincide con la plantilla {template}.",
-    "add-label": "Agregar etiqueta"
+    "add-label": "Agregar etiqueta",
+    "filter-by-label": "Filtrar por etiqueta"
   },
   "oauth": {
     "unknown-event": "Tipo de evento inesperado, OAuth falló."

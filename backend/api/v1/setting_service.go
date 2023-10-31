@@ -21,7 +21,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/state"
-	enterpriseAPI "github.com/bytebase/bytebase/backend/enterprise/api"
+	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/mail"
 	"github.com/bytebase/bytebase/backend/store"
@@ -34,7 +34,7 @@ type SettingService struct {
 	v1pb.UnimplementedSettingServiceServer
 	store          *store.Store
 	profile        *config.Profile
-	licenseService enterpriseAPI.LicenseService
+	licenseService enterprise.LicenseService
 	stateCfg       *state.State
 }
 
@@ -42,7 +42,7 @@ type SettingService struct {
 func NewSettingService(
 	store *store.Store,
 	profile *config.Profile,
-	licenseService enterpriseAPI.LicenseService,
+	licenseService enterprise.LicenseService,
 	stateCfg *state.State,
 ) *SettingService {
 	return &SettingService{
@@ -456,10 +456,14 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 	default:
 		storeSettingValue = request.Setting.Value.GetStringValue()
 	}
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	setting, err := s.store.UpsertSettingV2(ctx, &store.SetSettingMessage{
 		Name:  apiSettingName,
 		Value: storeSettingValue,
-	}, ctx.Value(common.PrincipalIDContextKey).(int))
+	}, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to set setting: %v", err)
 	}
@@ -478,7 +482,7 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 		}
 		for _, project := range projects {
 			patch := &store.UpdateProjectMessage{
-				UpdaterID:                  ctx.Value(common.PrincipalIDContextKey).(int),
+				UpdaterID:                  principalID,
 				ResourceID:                 project.ResourceID,
 				DataClassificationConfigID: &classificationID,
 			}
@@ -1052,7 +1056,7 @@ func convertSchemaTemplateSetting(template *storepb.SchemaTemplateSetting) *v1pb
 			Id:       v.Id,
 			Engine:   convertToEngine(v.Engine),
 			Category: v.Category,
-			Table:    convertTableMetadata(v.Table),
+			Table:    convertTableMetadata(v.Table, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL),
 			Config:   convertTableConfig(v.Config),
 		})
 	}

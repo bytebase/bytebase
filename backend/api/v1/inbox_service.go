@@ -58,7 +58,10 @@ func (s *InboxService) ListInbox(ctx context.Context, request *v1pb.ListInboxReq
 	limitPlusOne := limit + 1
 	offset := int(pageToken.Offset)
 
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	find := &store.FindInboxMessage{
 		ReceiverUID: &principalID,
 		Limit:       &limitPlusOne,
@@ -115,7 +118,10 @@ func (s *InboxService) ListInbox(ctx context.Context, request *v1pb.ListInboxReq
 
 // GetInboxSummary gets the inbox summary.
 func (s *InboxService) GetInboxSummary(ctx context.Context, _ *v1pb.GetInboxSummaryRequest) (*v1pb.InboxSummary, error) {
-	principalID := ctx.Value(common.PrincipalIDContextKey).(int)
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	summary, err := s.store.FindInboxSummary(ctx, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find inbox summary with error: %v", err.Error())

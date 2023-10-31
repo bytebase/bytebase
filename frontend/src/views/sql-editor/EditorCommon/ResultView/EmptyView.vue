@@ -1,9 +1,7 @@
 <template>
   <div
     class="text-md font-normal"
-    :class="[
-      dark ? 'text-[var(--color-matrix-green-hover)]' : 'text-control-light',
-    ]"
+    :class="[dark ? 'text-matrix-green-hover' : 'text-control-light']"
   >
     {{ $t("sql-editor.no-rows-found") }}
   </div>

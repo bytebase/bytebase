@@ -40,7 +40,10 @@ import { useI18n } from "vue-i18n";
 import { BBGridColumn } from "@/bbkit";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
 import { useDatabaseV1Store, useProjectV1Store, useUserStore } from "@/store";
-import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
+import {
+  getProjectAndSchemaDesignSheetId,
+  projectNamePrefix,
+} from "@/store/modules/v1/common";
 import {
   SchemaDesign,
   SchemaDesign_Type,
@@ -81,7 +84,9 @@ const COLUMN_LIST = computed(() => {
 
 const getFormattedValue = (branch: SchemaDesign) => {
   const [projectName] = getProjectAndSchemaDesignSheetId(branch.name);
-  const project = projectV1Store.getProjectByName(`projects/${projectName}`);
+  const project = projectV1Store.getProjectByName(
+    `${projectNamePrefix}${projectName}`
+  );
   let parentBranch = "";
   if (branch.type === SchemaDesign_Type.PERSONAL_DRAFT) {
     const parentSchemaDesign = props.branches.find(

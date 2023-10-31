@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	grpcRuntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	grpcruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/labstack/echo-contrib/pprof"
 	"github.com/labstack/echo-contrib/prometheus"
@@ -19,17 +19,32 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 )
 
-func configureEchoRouters(e *echo.Echo, grpcServer *grpc.Server, mux *grpcRuntime.ServeMux) {
+func configureEchoRouters(e *echo.Echo, grpcServer *grpc.Server, mux *grpcruntime.ServeMux) {
 	// Embed frontend.
 	embedFrontend(e)
 
 	e.HideBanner = true
 	e.HidePort = true
 	e.Use(recoverMiddleware)
+
+	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
+		LogURI:    true,
+		LogMethod: true,
+		LogStatus: true,
+		LogError:  true,
+		LogValuesFunc: func(c echo.Context, values middleware.RequestLoggerValues) error {
+			if values.Error != nil {
+				slog.Error("echo request logger", "method", values.Method, "uri", values.URI, "status", values.Status, log.BBError(values.Error))
+			}
+			return nil
+		},
+	}))
+
 	grpcSkipper := func(c echo.Context) bool {
 		// Skip grpc and webhook calls.
 		return strings.HasPrefix(c.Request().URL.Path, "/bytebase.v1.") ||
 			strings.HasPrefix(c.Request().URL.Path, "/v1:adminExecute") ||
+			strings.HasPrefix(c.Request().URL.Path, lspAPI) ||
 			strings.HasPrefix(c.Request().URL.Path, webhookAPIPrefix)
 	}
 	e.Use(middleware.TimeoutWithConfig(middleware.TimeoutConfig{

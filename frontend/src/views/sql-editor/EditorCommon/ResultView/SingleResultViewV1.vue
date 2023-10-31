@@ -81,7 +81,6 @@
 
     <div class="flex-1 w-full flex flex-col overflow-y-auto">
       <DataTable
-        ref="dataTable"
         :table="table"
         :columns="columns"
         :data="data"
@@ -106,9 +105,7 @@
   <template v-else-if="viewMode === 'AFFECTED-ROWS'">
     <div
       class="text-md font-normal flex items-center gap-x-1"
-      :class="[
-        dark ? 'text-[var(--color-matrix-green-hover)]' : 'text-control-light',
-      ]"
+      :class="[dark ? 'text-matrix-green-hover' : 'text-control-light']"
     >
       <span>{{ extractSQLRowValue(result.rows[0].values[0]) }}</span>
       <span>rows affected</span>
@@ -136,6 +133,7 @@ import {
   ColumnDef,
   getCoreRowModel,
   getPaginationRowModel,
+  getSortedRowModel,
   useVueTable,
 } from "@tanstack/vue-table";
 import { useDebounceFn } from "@vueuse/core";
@@ -143,7 +141,7 @@ import { isEmpty } from "lodash-es";
 import { NInput, NPagination, NTooltip } from "naive-ui";
 import { BinaryLike } from "node:crypto";
 import { storeToRefs } from "pinia";
-import { computed, reactive, ref } from "vue";
+import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
 import { DISMISS_PLACEHOLDER } from "@/plugins/ai/components/state";
@@ -210,7 +208,6 @@ const tabStore = useTabStore();
 const instanceStore = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
 const currentUserV1 = useCurrentUserV1();
-const dataTable = ref<InstanceType<typeof DataTable>>();
 const { exportData } = useExportData();
 const currentTab = computed(() => tabStore.currentTab);
 const actuatorStore = useActuatorV1Store();
@@ -306,6 +303,7 @@ const table = useVueTable<string[]>({
     return columns.value;
   },
   getCoreRowModel: getCoreRowModel(),
+  getSortedRowModel: getSortedRowModel(),
   getPaginationRowModel: getPaginationRowModel(),
 });
 
@@ -376,7 +374,6 @@ const showPagination = computed(() => data.value.length > PAGE_SIZES[0]);
 
 const handleChangePage = (page: number) => {
   table.setPageIndex(page - 1);
-  dataTable.value?.scrollTo(0, 0);
 };
 
 const explainFromSQLResultSetV1 = (resultSet: SQLResultSetV1 | undefined) => {

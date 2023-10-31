@@ -223,6 +223,9 @@ func (p *Provider) GetDiffFileList(ctx context.Context, oauthCtx common.OauthCon
 			diff.Type = vcs.FileDiffTypeModified
 		case "removed":
 			diff.Type = vcs.FileDiffTypeRemoved
+		// To be consistent with GitLab, we treat renamed as added.
+		case "renamed":
+			diff.Type = vcs.FileDiffTypeAdded
 		default:
 			// Skip because we don't care about file diff in other status
 			continue

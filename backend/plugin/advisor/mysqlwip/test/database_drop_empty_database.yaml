@@ -1,8 +1,16 @@
-- statement: DROP DATABASE IF EXISTS test
+- statement: DROP DATABASE IF EXISTS test;
   want:
     - status: WARN
       code: 701
       title: database.drop-empty-database
       content: Database `test` is not allowed to drop if not empty
-      line: 2
+      line: 1
+      details: ""
+- statement: DROP DATABASE IF EXISTS bbdev;
+  want:
+    - status: WARN
+      code: 702
+      title: database.drop-empty-database
+      content: Database `bbdev` that is trying to be deleted is not the current database `test`
+      line: 1
       details: ""

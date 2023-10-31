@@ -25,12 +25,17 @@
           >
             <template v-if="!state.isEditing">
               <NButton @click="handleEdit">{{ $t("common.edit") }}</NButton>
-              <NButton @click="handleMergeBranch">{{
-                $t("schema-designer.merge-branch")
-              }}</NButton>
-              <NButton type="primary" @click="handleApplySchemaDesignClick">{{
-                $t("schema-designer.apply-to-database")
-              }}</NButton>
+              <NButton
+                :disabled="!ready"
+                :loading="!ready"
+                @click="handleMergeBranch"
+                >{{ $t("schema-designer.merge-branch") }}</NButton
+              >
+              <NButton
+                type="primary"
+                @click="selectTargetDatabasesContext.show = true"
+                >{{ $t("schema-designer.apply-to-database") }}</NButton
+              >
             </template>
             <template v-else>
               <NButton @click="handleCancelEdit">{{
@@ -100,6 +105,15 @@
     </div>
   </div>
 
+  <TargetDatabasesSelectPanel
+    v-if="selectTargetDatabasesContext.show"
+    :project-id="project.uid"
+    :engine="schemaDesign.engine"
+    :selected-database-id-list="[]"
+    @close="selectTargetDatabasesContext.show = false"
+    @update="handleSelectedDatabaseIdListChanged"
+  />
+
   <MergeBranchPanel
     v-if="state.showDiffEditor && mergeBranchPanelContext"
     :source-branch-name="mergeBranchPanelContext.sourceBranchName"
@@ -111,6 +125,7 @@
 
 <script lang="ts" setup>
 import { asyncComputed } from "@vueuse/core";
+import dayjs from "dayjs";
 import { cloneDeep, head, isEqual, uniqueId } from "lodash-es";
 import { NButton, NDivider, NInput, NTooltip, useDialog, NTag } from "naive-ui";
 import { Status } from "nice-grpc-common";
@@ -122,6 +137,8 @@ import {
   mergeSchemaEditToMetadata,
   validateDatabaseMetadata,
 } from "@/components/SchemaEditorV1/utils";
+import TargetDatabasesSelectPanel from "@/components/SyncDatabaseSchema/TargetDatabasesSelectPanel.vue";
+import { schemaDesignServiceClient } from "@/grpcweb";
 import {
   pushNotification,
   useChangeHistoryStore,
@@ -141,6 +158,7 @@ import {
   SchemaDesign,
   SchemaDesign_Type,
 } from "@/types/proto/v1/schema_design_service";
+import { projectV1Slug } from "@/utils";
 import { provideSQLCheckContext } from "../SQLCheck";
 import { fetchBaselineMetadataOfBranch } from "../SchemaEditorV1/utils/branch";
 import MergeBranchPanel from "./MergeBranchPanel.vue";
@@ -166,7 +184,7 @@ const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const changeHistoryStore = useChangeHistoryStore();
 const schemaDesignStore = useSchemaDesignStore();
-const { schemaDesignList } = useSchemaDesignList();
+const { schemaDesignList, ready } = useSchemaDesignList();
 const { runSQLCheck } = provideSQLCheckContext();
 const dialog = useDialog();
 const state = reactive<LocalState>({
@@ -181,6 +199,11 @@ const mergeBranchPanelContext = ref<{
   targetBranchName: string;
 }>();
 const schemaEditorKey = ref<string>(uniqueId());
+const selectTargetDatabasesContext = ref<{
+  show: boolean;
+}>({
+  show: false,
+});
 
 const schemaDesign = computed(() => {
   return props.branch;
@@ -227,7 +250,7 @@ const titleInputStyle = computed(() => {
     "--n-font-size": "20px",
   };
   const border = state.isEditingTitle
-    ? "1px solid var(--color-control-border)"
+    ? "1px solid rgb(var(--color-control-border))"
     : "none";
   style["--n-border"] = border;
   style["--n-border-disabled"] = border;
@@ -434,14 +457,14 @@ const handleSaveBranch = async () => {
             closeOnEsc: true,
             onNegativeClick: () => {
               // Go to draft branch detail page after merge failed.
-              const [projectName, sheetId] = getProjectAndSchemaDesignSheetId(
+              const [_, sheetId] = getProjectAndSchemaDesignSheetId(
                 newBranch.name
               );
               state.isEditing = false;
               router.replace({
                 name: "workspace.branch.detail",
                 params: {
-                  projectName,
+                  projectSlug: projectV1Slug(project.value),
                   branchName: sheetId,
                 },
               });
@@ -500,29 +523,88 @@ const handleSaveBranch = async () => {
 const handleMergeAfterConflictResolved = (branchName: string) => {
   state.showDiffEditor = false;
   state.isEditing = false;
-  const [projectName, sheetId] = getProjectAndSchemaDesignSheetId(branchName);
+  const [_, sheetId] = getProjectAndSchemaDesignSheetId(branchName);
   router.replace({
     name: "workspace.branch.detail",
     params: {
-      projectName,
+      projectSlug: projectV1Slug(project.value),
       branchName: sheetId,
     },
   });
 };
 
-const handleApplySchemaDesignClick = () => {
-  router.push({
-    name: "workspace.sync-schema",
-    query: {
-      schemaDesignName: schemaDesign.value.name,
+const handleSelectedDatabaseIdListChanged = async (
+  databaseIdList: string[]
+) => {
+  let statement = "";
+  try {
+    const diffResponse = await schemaDesignServiceClient.diffMetadata(
+      {
+        sourceMetadata: schemaDesign.value.baselineSchemaMetadata,
+        targetMetadata: schemaDesign.value.schemaMetadata,
+        engine: schemaDesign.value.engine,
+      },
+      {
+        silent: true,
+      }
+    );
+    statement = diffResponse.diff;
+  } catch {
+    pushNotification({
+      module: "bytebase",
+      style: "WARN",
+      title: t("schema-editor.message.invalid-schema"),
+    });
+    return;
+  }
+
+  const targetDatabaseList = databaseIdList.map((id) =>
+    databaseStore.getDatabaseByUID(id)
+  );
+  const query: Record<string, any> = {
+    template: "bb.issue.database.schema.update",
+    project: project.value.uid,
+    mode: "normal",
+    ghost: undefined,
+    branch: schemaDesign.value.name,
+  };
+  query.databaseList = databaseIdList.join(",");
+  query.sql = statement;
+  query.name = generateIssueName(
+    targetDatabaseList.map((db) => db.databaseName)
+  );
+  const routeInfo = {
+    name: "workspace.issue.detail",
+    params: {
+      issueSlug: "new",
     },
-  });
+    query,
+  };
+  router.push(routeInfo);
+};
+
+const generateIssueName = (databaseNameList: string[]) => {
+  const issueNameParts: string[] = [];
+  if (databaseNameList.length === 1) {
+    issueNameParts.push(`[${databaseNameList[0]}]`);
+  } else {
+    issueNameParts.push(`[${databaseNameList.length} databases]`);
+  }
+  issueNameParts.push(`Alter schema`);
+  const datetime = dayjs().format("@MM-DD HH:mm");
+  const tz = "UTC" + dayjs().format("ZZ");
+  issueNameParts.push(`${datetime} ${tz}`);
+  return issueNameParts.join(" ");
 };
 
 const deleteSchemaDesign = async () => {
   await schemaDesignStore.deleteSchemaDesign(schemaDesign.value.name);
   router.replace({
-    name: "workspace.branch.dashboard",
+    name: "workspace.project.detail",
+    hash: "#branches",
+    params: {
+      projectSlug: projectV1Slug(project.value),
+    },
   });
 };
 </script>

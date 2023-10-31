@@ -12,6 +12,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import type { ComposedDatabaseGroup } from "@/types";
+import { projectV1Slug } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
@@ -32,7 +33,9 @@ const bindings = computed(() => {
     return {};
   }
 
-  const route = `/${props.databaseGroup.project.name}/database-groups/${props.databaseGroup.databaseGroupName}`;
+  const route = `/project/${projectV1Slug(
+    props.databaseGroup.project
+  )}/database-groups/${props.databaseGroup.databaseGroupName}`;
   if (props.link) {
     return {
       to: route,

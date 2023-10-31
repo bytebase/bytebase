@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"math"
 	"sort"
@@ -190,8 +191,8 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 		where = append(where, fmt.Sprintf("task.status in (%s)", strings.Join(list, ",")))
 	}
 	if v := find.LatestTaskRunStatusList; v != nil {
-		where = append(where, fmt.Sprintf("latest_task_run.status = ANY($%d)", len(args)+1))
-		args = append(args, *v)
+		where = append(where, fmt.Sprintf("COALESCE(latest_task_run.status, $%d) = ANY($%d)", len(args)+1, len(args)+2))
+		args = append(args, api.TaskRunNotStarted, *v)
 	}
 	if v := find.TypeList; v != nil {
 		var list []string
@@ -217,6 +218,7 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 	}
 	defer tx.Rollback()
 
+	args = append(args, api.TaskRunNotStarted)
 	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
 			task.id,
@@ -230,7 +232,7 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 			task.database_id,
 			task.name,
 			task.status,
-			COALESCE(latest_task_run.status, 'NOT_STARTED') AS latest_task_run_status,
+			COALESCE(latest_task_run.status, $%d) AS latest_task_run_status,
 			task.type,
 			task.payload,
 			task.earliest_allowed_ts,
@@ -245,7 +247,7 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 			LIMIT 1
 		) AS latest_task_run ON TRUE
 		WHERE %s
-		ORDER BY task.id ASC`, strings.Join(where, " AND ")),
+		ORDER BY task.id ASC`, len(args), strings.Join(where, " AND ")),
 		args...,
 	)
 	if err != nil {
@@ -301,8 +303,8 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *api.TaskPatch) (*TaskMe
 	if (patch.SchemaVersion != nil || patch.SheetID != nil) && patch.Payload != nil {
 		return nil, errors.Errorf("cannot set both sheetID/schemaVersion and payload for TaskPatch")
 	}
-	if (patch.RollbackEnabled != nil || patch.RollbackSQLStatus != nil || patch.RollbackSheetID != nil || patch.RollbackError != nil) && patch.Payload != nil {
-		return nil, errors.Errorf("cannot set both rollbackEnabled/rollbackSQLStatus/rollbackSheetID/rollbackError payload for TaskPatch")
+	if (patch.RollbackEnabled != nil || patch.RollbackSQLStatus != nil || patch.RollbackSheetID != nil || patch.RollbackError != nil || patch.Flags != nil) && patch.Payload != nil {
+		return nil, errors.Errorf("cannot set both rollbackEnabled/rollbackSQLStatus/rollbackSheetID/rollbackError/flags payload for TaskPatch")
 	}
 	var payloadSet []string
 	if v := patch.SheetID; v != nil {
@@ -322,6 +324,13 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *api.TaskPatch) (*TaskMe
 	}
 	if v := patch.RollbackError; v != nil {
 		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('rollbackError', to_jsonb($%d::TEXT))`, len(args)+1)), append(args, *v)
+	}
+	if v := patch.Flags; v != nil {
+		jsonb, err := json.Marshal(v)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal flags")
+		}
+		payloadSet, args = append(payloadSet, fmt.Sprintf(`jsonb_build_object('flags', $%d::JSONB)`, len(args)+1)), append(args, jsonb)
 	}
 	if len(payloadSet) != 0 {
 		set = append(set, fmt.Sprintf(`payload = payload || %s`, strings.Join(payloadSet, "||")))

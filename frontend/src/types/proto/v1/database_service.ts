@@ -10,6 +10,51 @@ import { PushEvent } from "./vcs";
 
 export const protobufPackage = "bytebase.v1";
 
+export enum DatabaseMetadataView {
+  /**
+   * DATABASE_METADATA_VIEW_UNSPECIFIED - The default and unset value.
+   * The API will default to the BASIC view.
+   */
+  DATABASE_METADATA_VIEW_UNSPECIFIED = 0,
+  /** DATABASE_METADATA_VIEW_BASIC - Include basic information of schema object names such as schema, table, view, function names. */
+  DATABASE_METADATA_VIEW_BASIC = 1,
+  /** DATABASE_METADATA_VIEW_FULL - Include everything such as columns and column masking level. */
+  DATABASE_METADATA_VIEW_FULL = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function databaseMetadataViewFromJSON(object: any): DatabaseMetadataView {
+  switch (object) {
+    case 0:
+    case "DATABASE_METADATA_VIEW_UNSPECIFIED":
+      return DatabaseMetadataView.DATABASE_METADATA_VIEW_UNSPECIFIED;
+    case 1:
+    case "DATABASE_METADATA_VIEW_BASIC":
+      return DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC;
+    case 2:
+    case "DATABASE_METADATA_VIEW_FULL":
+      return DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return DatabaseMetadataView.UNRECOGNIZED;
+  }
+}
+
+export function databaseMetadataViewToJSON(object: DatabaseMetadataView): string {
+  switch (object) {
+    case DatabaseMetadataView.DATABASE_METADATA_VIEW_UNSPECIFIED:
+      return "DATABASE_METADATA_VIEW_UNSPECIFIED";
+    case DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC:
+      return "DATABASE_METADATA_VIEW_BASIC";
+    case DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL:
+      return "DATABASE_METADATA_VIEW_FULL";
+    case DatabaseMetadataView.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export enum ChangeHistoryView {
   /**
    * CHANGE_HISTORY_VIEW_UNSPECIFIED - The default / unset value.
@@ -190,6 +235,14 @@ export interface GetDatabaseMetadataRequest {
    * Format: instances/{instance}/databases/{database}/metadata
    */
   name: string;
+  /** The view to return. Defaults to DATABASE_METADATA_VIEW_BASIC. */
+  view: DatabaseMetadataView;
+  /**
+   * The filter used for a specific schema object such as
+   * "schemas/schema-a/tables/table-a".
+   * The column masking level will only be returned when a table filter is used.
+   */
+  filter: string;
 }
 
 export interface UpdateDatabaseMetadataRequest {
@@ -704,6 +757,12 @@ export interface ForeignKeyMetadata {
    * It's empty string for other databases.
    */
   matchType: string;
+}
+
+export interface DatabaseConfig {
+  name: string;
+  /** The schema_configs is the list of configs for schemas in a database. */
+  schemaConfigs: SchemaConfig[];
 }
 
 export interface SchemaConfig {
@@ -2083,13 +2142,19 @@ export const SyncDatabaseResponse = {
 };
 
 function createBaseGetDatabaseMetadataRequest(): GetDatabaseMetadataRequest {
-  return { name: "" };
+  return { name: "", view: 0, filter: "" };
 }
 
 export const GetDatabaseMetadataRequest = {
   encode(message: GetDatabaseMetadataRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
+    }
+    if (message.view !== 0) {
+      writer.uint32(16).int32(message.view);
+    }
+    if (message.filter !== "") {
+      writer.uint32(26).string(message.filter);
     }
     return writer;
   },
@@ -2108,6 +2173,20 @@ export const GetDatabaseMetadataRequest = {
 
           message.name = reader.string();
           continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.view = reader.int32() as any;
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.filter = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2118,12 +2197,18 @@ export const GetDatabaseMetadataRequest = {
   },
 
   fromJSON(object: any): GetDatabaseMetadataRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      view: isSet(object.view) ? databaseMetadataViewFromJSON(object.view) : 0,
+      filter: isSet(object.filter) ? String(object.filter) : "",
+    };
   },
 
   toJSON(message: GetDatabaseMetadataRequest): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
+    message.view !== undefined && (obj.view = databaseMetadataViewToJSON(message.view));
+    message.filter !== undefined && (obj.filter = message.filter);
     return obj;
   },
 
@@ -2134,6 +2219,8 @@ export const GetDatabaseMetadataRequest = {
   fromPartial(object: DeepPartial<GetDatabaseMetadataRequest>): GetDatabaseMetadataRequest {
     const message = createBaseGetDatabaseMetadataRequest();
     message.name = object.name ?? "";
+    message.view = object.view ?? 0;
+    message.filter = object.filter ?? "";
     return message;
   },
 };
@@ -4822,6 +4909,83 @@ export const ForeignKeyMetadata = {
     message.onDelete = object.onDelete ?? "";
     message.onUpdate = object.onUpdate ?? "";
     message.matchType = object.matchType ?? "";
+    return message;
+  },
+};
+
+function createBaseDatabaseConfig(): DatabaseConfig {
+  return { name: "", schemaConfigs: [] };
+}
+
+export const DatabaseConfig = {
+  encode(message: DatabaseConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    for (const v of message.schemaConfigs) {
+      SchemaConfig.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DatabaseConfig {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDatabaseConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.schemaConfigs.push(SchemaConfig.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DatabaseConfig {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      schemaConfigs: Array.isArray(object?.schemaConfigs)
+        ? object.schemaConfigs.map((e: any) => SchemaConfig.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: DatabaseConfig): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    if (message.schemaConfigs) {
+      obj.schemaConfigs = message.schemaConfigs.map((e) => e ? SchemaConfig.toJSON(e) : undefined);
+    } else {
+      obj.schemaConfigs = [];
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DatabaseConfig>): DatabaseConfig {
+    return DatabaseConfig.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<DatabaseConfig>): DatabaseConfig {
+    const message = createBaseDatabaseConfig();
+    message.name = object.name ?? "";
+    message.schemaConfigs = object.schemaConfigs?.map((e) => SchemaConfig.fromPartial(e)) || [];
     return message;
   },
 };

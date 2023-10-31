@@ -140,6 +140,7 @@
     "confirm": "Confirm",
     "coming-later": "Coming later",
     "learn-more": "Learn more",
+    "troubleshoot": "Troubleshoot",
     "schema-version": "Schema version",
     "time": "Time",
     "manual": "Manual",
@@ -271,7 +272,8 @@
     "created-at-by": "Created {time} by {user}",
     "filter-by-name": "Filter by name",
     "tenant": "Tenant",
-    "license": "License"
+    "license": "License",
+    "show-all": "Show all"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -380,6 +382,15 @@
     "cancel-task": "Cancel task | Cancel tasks",
     "created": "Created"
   },
+  "task-run": {
+    "status": {
+      "enqueued": "Waiting for execution.",
+      "enqueued-with-rollout-time": "Waiting to execute after {time}.",
+      "dumping-schema-before-executing-sql": "Preparing to execute, dumping schema.",
+      "executing-sql": "Executing SQL.",
+      "dumping-schema-after-executing-sql": "SQL execution completed, dumping schema."
+    }
+  },
   "banner": {
     "update-license": "Update license",
     "license-expires": "Your license for {plan} has expired on {expireAt}.",
@@ -389,7 +400,6 @@
     "deploy": "Self Host",
     "cloud": "Cloud",
     "request-demo": "Book a 30 min product walkthrough with our product expert",
-    "debug": "Debug mode is active, you can disable Debug mode via the top-right profile dropdown.",
     "readonly": "Bytebase is in readonly mode. You can still view the console, but any change attempt will fail.",
     "external-url": "Bytebase has not configured --external-url",
     "configure-now": "Configure now"
@@ -1022,7 +1032,7 @@
     "from-projects": "Transfer from other projects",
     "transfer-in-db-title": "Transfer in database",
     "transfer-in-db-alert": "Are you sure to transfer \"{ dbName }\" into our project?",
-    "unassigned-db-hint": "Bytebase periodically syncs the instance schema. Newly synced databases are unassigned at first, and they need to be transferred to a project before they can be used.",
+    "unassigned-db-hint": "Newly synced databases start unassigned and must be moved to a project for use.",
     "transfer-out-db": "Transfer out DB",
     "transfer-out-db-title": "Transfer out database",
     "request-query-permission": "Request Query",
@@ -1214,7 +1224,7 @@
     "visit-instance": "@:common.visit @:common.instances",
     "visit-database": "@:common.visit @:common.databases",
     "visit-environment": "@:common.visit @:common.environments",
-    "add-a-member": "Add a member",
+    "visit-member": "@:common.visit @:common.members",
     "use-kbar": "Use kbar ({shortcut})",
     "query-data": "Query data",
     "notice": {
@@ -2214,7 +2224,8 @@
     "confirm-change": "Are you sure to change '{label}' ?",
     "parsed-from-template": "Parsed from {name} by template {template}.",
     "cannot-transfer-template-not-match": "Database '{name}' cannot be transferred to this project. Since its name doesn't match the template {template}.",
-    "add-label": "Add label"
+    "add-label": "Add label",
+    "filter-by-label": "Filter by label"
   },
   "oauth": {
     "unknown-event": "Unexpected event type, OAuth failed."

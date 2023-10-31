@@ -126,6 +126,7 @@ func convertToPlanSpecChangeDatabaseConfig(config *storepb.PlanConfig_Spec_Chang
 			SchemaVersion:   c.SchemaVersion,
 			RollbackEnabled: c.RollbackEnabled,
 			RollbackDetail:  convertToPlanSpecChangeDatabaseConfigRollbackDetail(c.RollbackDetail),
+			GhostFlags:      c.GhostFlags,
 		},
 	}
 }
@@ -253,6 +254,7 @@ func convertPlanSpecChangeDatabaseConfig(config *v1pb.Plan_Spec_ChangeDatabaseCo
 			Type:            storepb.PlanConfig_ChangeDatabaseConfig_Type(c.Type),
 			SchemaVersion:   c.SchemaVersion,
 			RollbackEnabled: c.RollbackEnabled,
+			GhostFlags:      c.GhostFlags,
 		},
 	}
 }
@@ -473,9 +475,10 @@ func convertToTaskRun(stateCfg *state.State, taskRun *store.TaskRunMessage) *v1p
 	}
 
 	if v, ok := stateCfg.TaskRunExecutionStatuses.Load(taskRun.ID); ok {
-		s := v.(state.TaskRunExecutionStatus)
-		t.ExecutionStatus = s.ExecutionStatus
-		t.ExecutionStatusUpdateTime = timestamppb.New(s.UpdateTime)
+		if s, ok := v.(state.TaskRunExecutionStatus); ok {
+			t.ExecutionStatus = s.ExecutionStatus
+			t.ExecutionStatusUpdateTime = timestamppb.New(s.UpdateTime)
+		}
 	}
 
 	return t

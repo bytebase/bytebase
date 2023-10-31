@@ -1,0 +1,149 @@
+package lsp
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"log/slog"
+	"sync"
+
+	"github.com/pkg/errors"
+	"github.com/sourcegraph/go-lsp"
+	"github.com/sourcegraph/jsonrpc2"
+)
+
+type Method string
+
+const (
+	LSPMethodInitialize    Method = "initialize"
+	LSPMethodInitialized   Method = "initialized"
+	LSPMethodShutdown      Method = "shutdown"
+	LSPMethodExit          Method = "exit"
+	LSPMethodCancelRequest Method = "$/cancelRequest"
+
+	LSPMethodTextDocumentDidOpen   Method = "textDocument/didOpen"
+	LSPMethodTextDocumentDidChange Method = "textDocument/didChange"
+	LSPMethodTextDocumentDidClose  Method = "textDocument/didClose"
+	LSPMethodTextDocumentDidSave   Method = "textDocument/didSave"
+)
+
+// NewHandler creates a new Language Server Protocol handler.
+func NewHandler() jsonrpc2.Handler {
+	return lspHandler{jsonrpc2.HandlerWithError((&Handler{}).handle)}
+}
+
+type lspHandler struct {
+	jsonrpc2.Handler
+}
+
+func (h lspHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) {
+	if isFileSystemRequest(req.Method) {
+		h.Handler.Handle(ctx, conn, req)
+		return
+	}
+	go h.Handler.Handle(ctx, conn, req)
+}
+
+// Handler handles Language Server Protocol requests.
+type Handler struct {
+	mu   sync.Mutex
+	fs   *MemFS
+	init *lsp.InitializeParams // set by LSPMethodInitialize request
+
+	shutDown bool
+}
+
+// ShutDown shuts down the handler.
+func (h *Handler) ShutDown() {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if h.shutDown {
+		slog.Warn("server received a shutdown request after it was already shut down.")
+	}
+	h.shutDown = true
+	h.fs = nil
+}
+
+func (h *Handler) checkInitialized(req *jsonrpc2.Request) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if Method(req.Method) != LSPMethodInitialize && h.init == nil {
+		return errors.New("server must be initialized first")
+	}
+	return nil
+}
+
+func (h *Handler) checkReady() error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if h.shutDown {
+		return errors.New("server is shutting down")
+	}
+	return nil
+}
+
+func (h *Handler) reset(params *lsp.InitializeParams) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.init = params
+	h.fs = NewMemFS()
+	return nil
+}
+
+func (h *Handler) handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) (any, error) {
+	if err := h.checkInitialized(req); err != nil {
+		return nil, err
+	}
+	if err := h.checkReady(); err != nil {
+		return nil, err
+	}
+
+	switch Method(req.Method) {
+	case LSPMethodInitialize:
+		if h.init != nil {
+			return nil, errors.New("server is already initialized")
+		}
+		if req.Params == nil {
+			return nil, &jsonrpc2.Error{Code: jsonrpc2.CodeInvalidParams}
+		}
+		var params lsp.InitializeParams
+		if err := json.Unmarshal(*req.Params, &params); err != nil {
+			return nil, err
+		}
+
+		if err := h.reset(&params); err != nil {
+			return nil, err
+		}
+
+		kind := lsp.TDSKIncremental
+		return lsp.InitializeResult{
+			Capabilities: lsp.ServerCapabilities{
+				TextDocumentSync: &lsp.TextDocumentSyncOptionsOrKind{
+					Kind: &kind,
+				},
+				CompletionProvider: &lsp.CompletionOptions{
+					TriggerCharacters: []string{"."},
+				},
+			},
+		}, nil
+	case LSPMethodInitialized:
+		// A notification that the client is ready to receive requests. Ignore.
+		return nil, nil
+	case LSPMethodShutdown:
+		h.ShutDown()
+		return nil, nil
+	case LSPMethodExit:
+		conn.Close()
+		h.ShutDown()
+		return nil, nil
+	case LSPMethodCancelRequest:
+		// Do nothing for now.
+		return nil, nil
+	default:
+		if isFileSystemRequest(req.Method) {
+			_, _, err := h.handleFileSystemRequest(ctx, req)
+			return nil, err
+		}
+		return nil, &jsonrpc2.Error{Code: jsonrpc2.CodeMethodNotFound, Message: fmt.Sprintf("method not supported: %s", req.Method)}
+	}
+}
