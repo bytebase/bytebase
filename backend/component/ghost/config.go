@@ -14,12 +14,12 @@ import (
 )
 
 type UserFlags struct {
-	maxLoad                 string
-	chunkSize               int
-	initiallyDropGhostTable bool
-	maxLagMillis            int
-	allowOnMaster           bool
-	switchToRBR             bool
+	maxLoad                 *string
+	chunkSize               *int
+	initiallyDropGhostTable *bool
+	maxLagMillis            *int
+	allowOnMaster           *bool
+	switchToRBR             *bool
 }
 
 var knownKeys = map[string]bool{
@@ -43,42 +43,42 @@ func GetUserFlags(flags map[string]string) (*UserFlags, error) {
 		if _, err := base.ParseLoadMap(v); err != nil {
 			return nil, errors.Wrapf(err, "failed to parse max-load %q", v)
 		}
-		f.maxLoad = v
+		f.maxLoad = &v
 	}
 	if v, ok := flags["chunk-size"]; ok {
 		chunkSize, err := strconv.Atoi(v)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to convert chunk-size %q to int", v)
 		}
-		f.chunkSize = chunkSize
+		f.chunkSize = &chunkSize
 	}
 	if v, ok := flags["initially-drop-ghost-table"]; ok {
 		initiallyDropGhostTable, err := strconv.ParseBool(v)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to convert initially-drop-ghost-table %q to bool", v)
 		}
-		f.initiallyDropGhostTable = initiallyDropGhostTable
+		f.initiallyDropGhostTable = &initiallyDropGhostTable
 	}
 	if v, ok := flags["max-lag-millis"]; ok {
 		maxLagMillis, err := strconv.Atoi(v)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to convert max-lag-millis %q to int", v)
 		}
-		f.maxLagMillis = maxLagMillis
+		f.maxLagMillis = &maxLagMillis
 	}
 	if v, ok := flags["allow-on-master"]; ok {
 		allowOnMaster, err := strconv.ParseBool(v)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to convert allow-on-master %q to bool", v)
 		}
-		f.allowOnMaster = allowOnMaster
+		f.allowOnMaster = &allowOnMaster
 	}
 	if v, ok := flags["switch-to-rbr"]; ok {
 		switchToRBR, err := strconv.ParseBool(v)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to convert switch-to-rbr %q to bool", v)
 		}
-		f.switchToRBR = switchToRBR
+		f.switchToRBR = &switchToRBR
 	}
 	return f, nil
 }
