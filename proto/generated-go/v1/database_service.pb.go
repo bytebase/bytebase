@@ -1157,9 +1157,8 @@ type GetDatabaseMetadataRequest struct {
 	// The view to return. Defaults to DATABASE_METADATA_VIEW_BASIC.
 	View DatabaseMetadataView `protobuf:"varint,2,opt,name=view,proto3,enum=bytebase.v1.DatabaseMetadataView" json:"view,omitempty"`
 	// The filter used for a specific schema object such as
-	// - schemas/schema-a/tables/table-a
-	// - schemas/schema-a/views/-
-	// - schemas/schema-a/functions/-
+	// "schemas/schema-a/tables/table-a".
+	// The column masking level will only be returned when a table filter is used.
 	Filter string `protobuf:"bytes,3,opt,name=filter,proto3" json:"filter,omitempty"`
 }
 

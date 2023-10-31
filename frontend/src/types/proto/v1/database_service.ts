@@ -239,9 +239,8 @@ export interface GetDatabaseMetadataRequest {
   view: DatabaseMetadataView;
   /**
    * The filter used for a specific schema object such as
-   * - schemas/schema-a/tables/table-a
-   * - schemas/schema-a/views/-
-   * - schemas/schema-a/functions/-
+   * "schemas/schema-a/tables/table-a".
+   * The column masking level will only be returned when a table filter is used.
    */
   filter: string;
 }

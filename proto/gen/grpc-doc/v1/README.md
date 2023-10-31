@@ -2958,7 +2958,7 @@ FunctionMetadata is the metadata for functions.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the database to retrieve metadata. Format: instances/{instance}/databases/{database}/metadata |
 | view | [DatabaseMetadataView](#bytebase-v1-DatabaseMetadataView) |  | The view to return. Defaults to DATABASE_METADATA_VIEW_BASIC. |
-| filter | [string](#string) |  | The filter used for a specific schema object such as - schemas/schema-a/tables/table-a - schemas/schema-a/views/- - schemas/schema-a/functions/- |
+| filter | [string](#string) |  | The filter used for a specific schema object such as &#34;schemas/schema-a/tables/table-a&#34;. The column masking level will only be returned when a table filter is used. |
 
 
 
