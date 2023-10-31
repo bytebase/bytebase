@@ -118,7 +118,7 @@ func prepareSampleDatabaseIfNeeded(ctx context.Context, pgUser, host, port, data
 	}
 
 	// Connect the default database created by initdb.
-	if err := prepareDemoDatabase(ctx, pgUser, host, port, database); err != nil {
+	if err := prepareSampleDatabase(ctx, pgUser, host, port, database); err != nil {
 		return err
 	}
 
@@ -165,7 +165,7 @@ func prepareSampleDatabaseIfNeeded(ctx context.Context, pgUser, host, port, data
 	return nil
 }
 
-func prepareDemoDatabase(ctx context.Context, pgUser, host, port, database string) error {
+func prepareSampleDatabase(ctx context.Context, pgUser, host, port, database string) error {
 	// Connect the default postgres database created by initdb.
 	driver, err := db.Open(
 		ctx,
