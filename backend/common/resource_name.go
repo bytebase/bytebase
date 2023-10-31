@@ -36,6 +36,8 @@ const (
 	SheetIDPrefix                = "sheets/"
 	DatabaseGroupNamePrefix      = "databaseGroups/"
 	SchemaGroupNamePrefix        = "schemaGroups/"
+	SchemaNamePrefix             = "schemas/"
+	TableNamePrefix              = "tables/"
 	ChangeHistoryPrefix          = "changeHistories/"
 	IssueNamePrefix              = "issues/"
 	PipelineNamePrefix           = "pipelines/"
@@ -77,6 +79,15 @@ func GetProjectIDDatabaseGroupIDSchemaGroupID(name string) (string, string, stri
 		return "", "", "", err
 	}
 	return tokens[0], tokens[1], tokens[2], nil
+}
+
+// GetSchemaTableName returns the schema and table names from a resource name.
+func GetSchemaTableName(name string) (string, string, error) {
+	tokens, err := GetNameParentTokens(name, SchemaNamePrefix, TableNamePrefix)
+	if err != nil {
+		return "", "", err
+	}
+	return tokens[0], tokens[1], nil
 }
 
 // GetProjectIDWebhookID returns the project ID and webhook ID from a resource name.
@@ -482,9 +493,6 @@ func GetNameParentTokens(name string, tokenPrefixes ...string) ([]string, error)
 	for i, tokenPrefix := range tokenPrefixes {
 		if fmt.Sprintf("%s/", parts[2*i]) != tokenPrefix {
 			return nil, errors.Errorf("invalid prefix %q in request %q", tokenPrefix, name)
-		}
-		if parts[2*i+1] == "" {
-			return nil, errors.Errorf("invalid request %q with empty prefix %q", name, tokenPrefix)
 		}
 		tokens = append(tokens, parts[2*i+1])
 	}
