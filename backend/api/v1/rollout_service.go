@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/component/ghost"
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -835,8 +836,11 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 					return status.Errorf(codes.Internal, "failed to unmarshal task payload: %v", err)
 				}
-				oldFlags := payload.Flags
 				newFlags := spec.GetChangeDatabaseConfig().GetGhostFlags()
+				if _, err := ghost.GetUserFlags(newFlags); err != nil {
+					return errors.Wrapf(err, "invalid ghost flags %q", newFlags)
+				}
+				oldFlags := payload.Flags
 				if cmp.Equal(oldFlags, newFlags) {
 					return nil
 				}
