@@ -826,6 +826,27 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				continue
 			}
 
+			// Flags for gh-ost.
+			if err := func() error {
+				if task.Type != api.TaskDatabaseSchemaUpdateGhostSync {
+					return nil
+				}
+				payload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
+				if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+					return status.Errorf(codes.Internal, "failed to unmarshal task payload: %v", err)
+				}
+				oldFlags := payload.Flags
+				newFlags := spec.GetChangeDatabaseConfig().GetGhostFlags()
+				if cmp.Equal(oldFlags, newFlags) {
+					return nil
+				}
+				taskPatch.Flags = &newFlags
+				doUpdate = true
+				return nil
+			}(); err != nil {
+				return nil, errors.Wrapf(err, "failed to maybe update flags for task %d", task.ID)
+			}
+
 			// EarliestAllowedTs
 			if spec.EarliestAllowedTime.GetSeconds() != task.EarliestAllowedTs {
 				seconds := spec.EarliestAllowedTime.GetSeconds()
