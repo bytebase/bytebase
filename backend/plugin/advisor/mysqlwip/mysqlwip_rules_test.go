@@ -43,6 +43,8 @@ func TestMySQLWIPRules(t *testing.T) {
 		advisor.SchemaRuleStatementInsertRowLimit,
 		// advisor.SchemaRuleStatementInsertMustSpecifyColumn enforce the insert column specified.
 		advisor.SchemaRuleStatementInsertMustSpecifyColumn,
+		// advisor.SchemaRuleStatementInsertDisallowOrderByRand disallow the order by rand in the INSERT statement.
+		advisor.SchemaRuleStatementInsertDisallowOrderByRand,
 
 		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL support check if the database is empty before users drop it.
 		advisor.SchemaRuleDropEmptyDatabase,
