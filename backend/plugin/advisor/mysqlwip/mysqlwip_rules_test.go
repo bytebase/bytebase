@@ -45,11 +45,22 @@ func TestMySQLWIPRules(t *testing.T) {
 		advisor.SchemaRuleStatementInsertMustSpecifyColumn,
 		// advisor.SchemaRuleStatementInsertDisallowOrderByRand disallow the order by rand in the INSERT statement.
 		advisor.SchemaRuleStatementInsertDisallowOrderByRand,
+		// advisor.SchemaRuleStatementDMLDryRun dry run the dml.
+		advisor.SchemaRuleStatementDMLDryRun,
 
 		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL support check if the database is empty before users drop it.
 		advisor.SchemaRuleDropEmptyDatabase,
 	}
 
+	for _, rule := range mysqlwipRules {
+		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_ENGINE_UNSPECIFIED, false /* record */)
+	}
+}
+
+func TestRules(t *testing.T) {
+	mysqlwipRules := []advisor.SQLReviewRuleType{
+		advisor.SchemaRuleStatementDMLDryRun,
+	}
 	for _, rule := range mysqlwipRules {
 		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_ENGINE_UNSPECIFIED, false /* record */)
 	}

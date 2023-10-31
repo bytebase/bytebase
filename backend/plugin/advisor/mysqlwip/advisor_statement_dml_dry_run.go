@@ -7,16 +7,24 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/pingcap/tidb/parser/ast"
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
+	mysql "github.com/bytebase/mysql-parser"
+
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*StatementDmlDryRunAdvisor)(nil)
-	_ ast.Visitor     = (*statementDmlDryRunChecker)(nil)
 )
+
+func init() {
+	// only for mysqlwip test.
+	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLStatementDMLDryRun, &StatementDmlDryRunAdvisor{})
+}
 
 // StatementDmlDryRunAdvisor is the advisor checking for DML dry run.
 type StatementDmlDryRunAdvisor struct {
@@ -24,9 +32,9 @@ type StatementDmlDryRunAdvisor struct {
 
 // Check checks for DML dry run.
 func (*StatementDmlDryRunAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	stmtList, ok := ctx.AST.([]ast.StmtNode)
+	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to StmtNode")
+		return nil, errors.Errorf("failed to convert to mysql parse result")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -42,9 +50,8 @@ func (*StatementDmlDryRunAdvisor) Check(ctx advisor.Context, _ string) ([]adviso
 
 	if checker.driver != nil {
 		for _, stmt := range stmtList {
-			checker.text = stmt.Text()
-			checker.line = stmt.OriginTextPosition()
-			(stmt).Accept(checker)
+			checker.baseLine = stmt.BaseLine
+			antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 		}
 	}
 
@@ -60,6 +67,9 @@ func (*StatementDmlDryRunAdvisor) Check(ctx advisor.Context, _ string) ([]adviso
 }
 
 type statementDmlDryRunChecker struct {
+	*mysql.BaseMySQLParserListener
+
+	baseLine   int
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
@@ -69,25 +79,34 @@ type statementDmlDryRunChecker struct {
 	ctx        context.Context
 }
 
-// Enter implements the ast.Visitor interface.
-func (checker *statementDmlDryRunChecker) Enter(in ast.Node) (ast.Node, bool) {
-	switch node := in.(type) {
-	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt:
-		if _, err := advisor.Query(checker.ctx, checker.driver, fmt.Sprintf("EXPLAIN %s", node.Text())); err != nil {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
-				Status:  checker.level,
-				Code:    advisor.StatementDMLDryRunFailed,
-				Title:   checker.title,
-				Content: fmt.Sprintf("\"%s\" dry runs failed: %s", node.Text(), err.Error()),
-				Line:    checker.line,
-			})
-		}
-	}
-
-	return in, false
+func (checker *statementDmlDryRunChecker) EnterQuery(ctx *mysql.QueryContext) {
+	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
 }
 
-// Leave implements the ast.Visitor interface.
-func (*statementDmlDryRunChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
+// EnterUpdateStatement is called when production updateStatement is entered.
+func (checker *statementDmlDryRunChecker) EnterUpdateStatement(ctx *mysql.UpdateStatementContext) {
+	checker.handleStmt(ctx.GetStart().GetLine())
+}
+
+// EnterDeleteStatement is called when production deleteStatement is entered.
+func (checker *statementDmlDryRunChecker) EnterDeleteStatement(ctx *mysql.DeleteStatementContext) {
+	checker.handleStmt(ctx.GetStart().GetLine())
+}
+
+// EnterInsertStatement is called when production insertStatement is entered.
+func (checker *statementDmlDryRunChecker) EnterInsertStatement(ctx *mysql.InsertStatementContext) {
+	checker.handleStmt(ctx.GetStart().GetLine())
+}
+
+// Enter implements the ast.Visitor interface.
+func (checker *statementDmlDryRunChecker) handleStmt(lineNumber int) {
+	if _, err := advisor.Query(checker.ctx, checker.driver, fmt.Sprintf("EXPLAIN %s", checker.text)); err != nil {
+		checker.adviceList = append(checker.adviceList, advisor.Advice{
+			Status:  checker.level,
+			Code:    advisor.StatementDMLDryRunFailed,
+			Title:   checker.title,
+			Content: fmt.Sprintf("\"%s\" dry runs failed: %s", checker.text, err.Error()),
+			Line:    checker.line + lineNumber,
+		})
+	}
 }
