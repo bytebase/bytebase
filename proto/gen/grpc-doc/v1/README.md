@@ -202,6 +202,7 @@
     - [ChangeHistory.Status](#bytebase-v1-ChangeHistory-Status)
     - [ChangeHistory.Type](#bytebase-v1-ChangeHistory-Type)
     - [ChangeHistoryView](#bytebase-v1-ChangeHistoryView)
+    - [DatabaseMetadataView](#bytebase-v1-DatabaseMetadataView)
     - [StreamMetadata.Mode](#bytebase-v1-StreamMetadata-Mode)
     - [StreamMetadata.Type](#bytebase-v1-StreamMetadata-Type)
     - [TaskMetadata.State](#bytebase-v1-TaskMetadata-State)
@@ -2956,6 +2957,8 @@ FunctionMetadata is the metadata for functions.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the database to retrieve metadata. Format: instances/{instance}/databases/{database}/metadata |
+| view | [DatabaseMetadataView](#bytebase-v1-DatabaseMetadataView) |  | The view to return. Defaults to DATABASE_METADATA_VIEW_BASIC. |
+| filter | [string](#string) |  | The filter used for a specific schema object such as - schemas/schema-a/tables/table-a - schemas/schema-a/views/- - schemas/schema-a/functions/- |
 
 
 
@@ -3634,6 +3637,19 @@ The type of the backup.
 | CHANGE_HISTORY_VIEW_UNSPECIFIED | 0 | The default / unset value. The API will default to the BASIC view. |
 | CHANGE_HISTORY_VIEW_BASIC | 1 |  |
 | CHANGE_HISTORY_VIEW_FULL | 2 |  |
+
+
+
+<a name="bytebase-v1-DatabaseMetadataView"></a>
+
+### DatabaseMetadataView
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| DATABASE_METADATA_VIEW_UNSPECIFIED | 0 | The default and unset value. The API will default to the BASIC view. |
+| DATABASE_METADATA_VIEW_BASIC | 1 | Include basic information of schema object names such as schema, table, view, function names. |
+| DATABASE_METADATA_VIEW_FULL | 2 | Include everything such as columns and column masking level. |
 
 
 

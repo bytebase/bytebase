@@ -243,10 +243,31 @@ message SyncDatabaseRequest {
 
 message SyncDatabaseResponse {}
 
+enum DatabaseMetadataView {
+  // The default and unset value.
+  // The API will default to the BASIC view.
+  DATABASE_METADATA_VIEW_UNSPECIFIED = 0;
+
+  // Include basic information of schema object names such as schema, table, view, function names.
+  DATABASE_METADATA_VIEW_BASIC = 1;
+
+  // Include everything such as columns and column masking level.
+  DATABASE_METADATA_VIEW_FULL = 2;
+}
+
 message GetDatabaseMetadataRequest {
   // The name of the database to retrieve metadata.
   // Format: instances/{instance}/databases/{database}/metadata
   string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The view to return. Defaults to DATABASE_METADATA_VIEW_BASIC.
+  DatabaseMetadataView view = 2;
+
+  // The filter used for a specific schema object such as
+  // - schemas/schema-a/tables/table-a
+  // - schemas/schema-a/views/-
+  // - schemas/schema-a/functions/-
+  string filter = 3;
 }
 
 message UpdateDatabaseMetadataRequest {
