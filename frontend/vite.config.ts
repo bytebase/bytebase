@@ -54,21 +54,21 @@ export default defineConfig(() => {
       host: "0.0.0.0",
       proxy: {
         "/v1:adminExecute": {
-          target: "ws://localhost:443/",
+          target: "ws://localhost:8080/",
           changeOrigin: true,
           ws: true,
         },
         "/api": {
-          target: "http://localhost:443/api",
+          target: "http://localhost:8080/api",
           changeOrigin: true,
           rewrite: (path: string) => path.replace(/^\/api/, ""),
         },
         "/hook": {
-          target: "http://localhost:443/",
+          target: "http://localhost:8080/",
           changeOrigin: true,
         },
         "/v1": {
-          target: "http://localhost:443/v1",
+          target: "http://localhost:8080/v1",
           changeOrigin: true,
           rewrite: (path: string) => path.replace(/^\/v1/, ""),
         },
