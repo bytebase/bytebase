@@ -69,9 +69,15 @@ func applyContentChanges(uri lsp.DocumentURI, content []byte, changes []lsp.Text
 		// Try avoid doing too many allocations, so use bytes.Buffer
 		b := &bytes.Buffer{}
 		b.Grow(start + len(change.Text) + len(content) - end)
-		b.Write(content[:start])
-		b.WriteString(change.Text)
-		b.Write(content[end:])
+		if _, err := b.Write(content[:start]); err != nil {
+			return nil, err
+		}
+		if _, err := b.WriteString(change.Text); err != nil {
+			return nil, err
+		}
+		if _, err := b.Write(content[end:]); err != nil {
+			return nil, err
+		}
 		content = b.Bytes()
 	}
 	return content, nil
@@ -114,7 +120,7 @@ func uriToMemFSPath(uri lsp.DocumentURI) string {
 // isFileSystemRequest returns if this is an LSP method whose sole
 // purpose is modifying the contents of the overlay file system.
 func isFileSystemRequest(method string) bool {
-	switch LSPMethod(method) {
+	switch Method(method) {
 	case LSPMethodTextDocumentDidOpen, LSPMethodTextDocumentDidChange, LSPMethodTextDocumentDidClose, LSPMethodTextDocumentDidSave:
 		return true
 	default:

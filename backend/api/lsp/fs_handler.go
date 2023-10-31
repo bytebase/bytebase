@@ -18,7 +18,7 @@ func (h *Handler) GetFS() *MemFS {
 	return h.fs
 }
 
-func (h *Handler) readFile(ctx context.Context, uri lsp.DocumentURI) ([]byte, error) {
+func (h *Handler) readFile(_ context.Context, uri lsp.DocumentURI) ([]byte, error) {
 	if !IsURI(uri) {
 		return nil, &os.PathError{Op: "Open", Path: string(uri), Err: errors.New("unable to read out-of-workspace resource from virtual file system")}
 	}
@@ -54,7 +54,7 @@ func (h *Handler) handleFileSystemRequest(ctx context.Context, req *jsonrpc2.Req
 		return uri, !bytes.Equal(before, after), err
 	}
 
-	switch LSPMethod(req.Method) {
+	switch Method(req.Method) {
 	case LSPMethodTextDocumentDidOpen:
 		var params lsp.DidOpenTextDocumentParams
 		if err := json.Unmarshal(*req.Params, &params); err != nil {

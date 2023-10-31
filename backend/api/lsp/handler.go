@@ -12,19 +12,19 @@ import (
 	"github.com/sourcegraph/jsonrpc2"
 )
 
-type LSPMethod string
+type Method string
 
 const (
-	LSPMethodInitialize    LSPMethod = "initialize"
-	LSPMethodInitialized   LSPMethod = "initialized"
-	LSPMethodShutdown      LSPMethod = "shutdown"
-	LSPMethodExit          LSPMethod = "exit"
-	LSPMethodCancelRequest LSPMethod = "$/cancelRequest"
+	LSPMethodInitialize    Method = "initialize"
+	LSPMethodInitialized   Method = "initialized"
+	LSPMethodShutdown      Method = "shutdown"
+	LSPMethodExit          Method = "exit"
+	LSPMethodCancelRequest Method = "$/cancelRequest"
 
-	LSPMethodTextDocumentDidOpen   LSPMethod = "textDocument/didOpen"
-	LSPMethodTextDocumentDidChange LSPMethod = "textDocument/didChange"
-	LSPMethodTextDocumentDidClose  LSPMethod = "textDocument/didClose"
-	LSPMethodTextDocumentDidSave   LSPMethod = "textDocument/didSave"
+	LSPMethodTextDocumentDidOpen   Method = "textDocument/didOpen"
+	LSPMethodTextDocumentDidChange Method = "textDocument/didChange"
+	LSPMethodTextDocumentDidClose  Method = "textDocument/didClose"
+	LSPMethodTextDocumentDidSave   Method = "textDocument/didSave"
 )
 
 // NewHandler creates a new Language Server Protocol handler.
@@ -67,7 +67,7 @@ func (h *Handler) ShutDown() {
 func (h *Handler) checkInitialized(req *jsonrpc2.Request) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	if LSPMethod(req.Method) != LSPMethodInitialize && h.init == nil {
+	if Method(req.Method) != LSPMethodInitialize && h.init == nil {
 		return errors.New("server must be initialized first")
 	}
 	return nil
@@ -98,7 +98,7 @@ func (h *Handler) handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 		return nil, err
 	}
 
-	switch LSPMethod(req.Method) {
+	switch Method(req.Method) {
 	case LSPMethodInitialize:
 		if h.init != nil {
 			return nil, errors.New("server is already initialized")
