@@ -69,6 +69,7 @@ func (m *MaskingAttributes) TransmittedBy(other MaskingAttributes) (changed bool
 	changed = false
 	defaultMasker := masker.NewDefaultFullMasker()
 	if !m.Masker.Equal(other.Masker) && !m.Masker.Equal(defaultMasker) {
+		m.Masker = defaultMasker
 		changed = true
 	}
 	return changed
