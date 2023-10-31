@@ -21,6 +21,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/api/gitops"
+	"github.com/bytebase/bytebase/backend/api/lsp"
 	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/common/stacktrace"
@@ -53,7 +54,9 @@ import (
 
 const (
 	// webhookAPIPrefix is the API prefix for Bytebase webhook.
-	webhookAPIPrefix       = "/hook"
+	webhookAPIPrefix = "/hook"
+	// lspAPI is the API for Bytebase Language Server Protocol.
+	lspAPI                 = "/lsp"
 	maxStacksize           = 1024 * 10240
 	gracefulShutdownPeriod = 10 * time.Second
 )
@@ -80,6 +83,7 @@ type Server struct {
 	profile         config.Profile
 	e               *echo.Echo
 	grpcServer      *grpc.Server
+	lspServer       *lsp.Server
 	store           *store.Store
 	dbFactory       *dbfactory.DBFactory
 	startedTs       int64
@@ -347,6 +351,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	reflection.Register(s.grpcServer)
 
+	s.lspServer = lsp.NewServer(s.store)
+	s.e.GET(lspAPI, s.lspServer.Router)
+
 	serverStarted = true
 	return s, nil
 }
@@ -393,6 +400,7 @@ func (s *Server) Run(ctx context.Context, port int) error {
 			slog.Error("grpc server listen error", log.BBError(err))
 		}
 	}()
+
 	return s.e.Start(fmt.Sprintf(":%d", port))
 }
 

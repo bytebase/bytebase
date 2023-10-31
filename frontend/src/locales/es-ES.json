@@ -400,7 +400,6 @@
     "deploy": "Auto Hospedaje",
     "cloud": "Cloud",
     "request-demo": "Reserve una presentación de producto de 30 minutos con nuestro experto en productos",
-    "debug": "El modo de depuración está activo, puede desactivar el modo de depuración a través del menú desplegable del perfil en la parte superior derecha.",
     "readonly": "Bytebase está en modo de solo lectura. Todavía puede ver la consola, pero cualquier intento de cambio fallará.",
     "external-url": "Bytebase no ha configurado --external-url",
     "configure-now": "Configurar ahora"
@@ -1032,7 +1031,7 @@
     "from-projects": "Transfer from other projects",
     "transfer-in-db-title": "Transferir base de datos",
     "transfer-in-db-alert": "¿Estás seguro de transferir \"{dbName}\" a nuestro proyecto?",
-    "unassigned-db-hint": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas no están asignadas al principio y deben transferirse a un proyecto antes de que puedan usarse.",
+    "unassigned-db-hint": "Las bases de datos recién sincronizadas comienzan sin asignar y deben ser asignadas a un proyecto para su uso.",
     "transfer-out-db": "Transferir base de datos",
     "transfer-out-db-title": "Transferir la base de datos",
     "request-export-permission": "Solicitar exportación",

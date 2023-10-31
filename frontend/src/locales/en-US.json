@@ -400,7 +400,6 @@
     "deploy": "Self Host",
     "cloud": "Cloud",
     "request-demo": "Book a 30 min product walkthrough with our product expert",
-    "debug": "Debug mode is active, you can disable Debug mode via the top-right profile dropdown.",
     "readonly": "Bytebase is in readonly mode. You can still view the console, but any change attempt will fail.",
     "external-url": "Bytebase has not configured --external-url",
     "configure-now": "Configure now"
@@ -1033,7 +1032,7 @@
     "from-projects": "Transfer from other projects",
     "transfer-in-db-title": "Transfer in database",
     "transfer-in-db-alert": "Are you sure to transfer \"{ dbName }\" into our project?",
-    "unassigned-db-hint": "Bytebase periodically syncs the instance schema. Newly synced databases are unassigned at first, and they need to be transferred to a project before they can be used.",
+    "unassigned-db-hint": "Newly synced databases start unassigned and must be moved to a project for use.",
     "transfer-out-db": "Transfer out DB",
     "transfer-out-db-title": "Transfer out database",
     "request-query-permission": "Request Query",

@@ -398,7 +398,6 @@
     "deploy": "本地部署",
     "cloud": "云服务",
     "request-demo": "和我们的产品专家预约 30 分钟产品演示",
-    "debug": "Debug 模式已开启，您可以通过右上角头像下拉框关闭 Debug。",
     "readonly": "Bytebase 处于只读模式。您仍然可以查看控制台，但任何尝试更改的请求都会失败。",
     "external-url": "Bytebase 还没有配置 --external-url",
     "configure-now": "现在配置"
@@ -1030,7 +1029,7 @@
     "from-projects": "从其他项目转移",
     "transfer-in-db-title": "转进数据库",
     "transfer-in-db-alert": "您确定要转进 \"{ dbName }\" 到我们的项目中吗？",
-    "unassigned-db-hint": "Bytebase 会定期同步实例的 Schema。新同步的数据库起先是未分配的状态。需要把数据库转移到项目后，才能使用。",
+    "unassigned-db-hint": "新同步的数据库起先是未分配的状态，必须移至一个项目以供使用。",
     "transfer-out-db": "转出数据库",
     "transfer-out-db-title": "转出数据库",
     "request-query-permission": "申请查询权限",
