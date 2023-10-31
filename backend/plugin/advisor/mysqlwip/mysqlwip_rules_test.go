@@ -46,6 +46,9 @@ func TestMySQLWIPRules(t *testing.T) {
 		// advisor.SchemaRuleStatementInsertDisallowOrderByRand disallow the order by rand in the INSERT statement.
 		advisor.SchemaRuleStatementInsertDisallowOrderByRand,
 
+		// advisor.SchemaRuleTableRequirePK require the table to have a primary key.
+		advisor.SchemaRuleTableRequirePK,
+
 		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL support check if the database is empty before users drop it.
 		advisor.SchemaRuleDropEmptyDatabase,
 	}
