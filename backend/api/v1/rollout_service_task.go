@@ -394,6 +394,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 			SpecID:        spec.Id,
 			SheetID:       sheetUID,
 			SchemaVersion: c.SchemaVersion,
+			Flags:         c.GhostFlags,
 		}
 		bytesSync, err := json.Marshal(payloadSync)
 		if err != nil {
