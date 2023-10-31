@@ -193,17 +193,9 @@ func (s *Store) GetDBSchema(ctx context.Context, databaseID int) (*DBSchema, err
 		return nil, err
 	}
 
-	var databaseSchema storepb.DatabaseSchemaMetadata
-	var databaseConfig storepb.DatabaseConfig
-	decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
-	if err := decoder.Unmarshal(metadata, &databaseSchema); err != nil {
+	if err := convertMetadataAndConfig(dbSchema, metadata, config); err != nil {
 		return nil, err
 	}
-	if err := decoder.Unmarshal(config, &databaseConfig); err != nil {
-		return nil, err
-	}
-	dbSchema.Metadata = &databaseSchema
-	dbSchema.Config = &databaseConfig
 
 	s.dbSchemaCache.SetWithTTL(databaseID, dbSchema, int64(len(dbSchema.Schema)), 1*time.Hour)
 	return dbSchema, nil
@@ -228,7 +220,7 @@ func (s *Store) UpsertDBSchema(ctx context.Context, databaseID int, dbSchema *DB
 		ON CONFLICT(database_id) DO UPDATE SET
 			metadata = EXCLUDED.metadata,
 			raw_dump = EXCLUDED.raw_dump
-		RETURNING metadata, raw_dump
+		RETURNING metadata, raw_dump, config
 	`
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -236,13 +228,19 @@ func (s *Store) UpsertDBSchema(ctx context.Context, databaseID int, dbSchema *DB
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.ExecContext(ctx, query,
+	updatedDBSchema := &DBSchema{}
+	var metadata, config []byte
+	if err := tx.QueryRowContext(ctx, query,
 		updaterID,
 		updaterID,
 		databaseID,
 		metadataBytes,
 		// Convert to string because []byte{} is null which violates db schema constraints.
 		string(dbSchema.Schema),
+	).Scan(
+		&metadata,
+		&updatedDBSchema.Schema,
+		&config,
 	); err != nil {
 		return err
 	}
@@ -250,7 +248,11 @@ func (s *Store) UpsertDBSchema(ctx context.Context, databaseID int, dbSchema *DB
 		return err
 	}
 
-	s.dbSchemaCache.SetWithTTL(databaseID, dbSchema, int64(len(dbSchema.Schema)), 1*time.Hour)
+	if err := convertMetadataAndConfig(updatedDBSchema, metadata, config); err != nil {
+		return err
+	}
+
+	s.dbSchemaCache.SetWithTTL(databaseID, updatedDBSchema, int64(len(dbSchema.Schema)), 1*time.Hour)
 	return nil
 }
 
@@ -284,5 +286,21 @@ func (s *Store) UpdateDBSchema(ctx context.Context, databaseID int, patch *Updat
 	}
 	// Invalid the cache and read the value again.
 	s.dbSchemaCache.Del(databaseID)
+	return nil
+}
+
+func convertMetadataAndConfig(dbSchema *DBSchema, metadata, config []byte) error {
+	var databaseSchema storepb.DatabaseSchemaMetadata
+	var databaseConfig storepb.DatabaseConfig
+	decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
+	if err := decoder.Unmarshal(metadata, &databaseSchema); err != nil {
+		return err
+	}
+	if err := decoder.Unmarshal(config, &databaseConfig); err != nil {
+		return err
+	}
+	dbSchema.Metadata = &databaseSchema
+	dbSchema.Config = &databaseConfig
+
 	return nil
 }
