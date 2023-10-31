@@ -6,16 +6,24 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/pingcap/tidb/parser/ast"
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
+	mysql "github.com/bytebase/mysql-parser"
+
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*StatementMergeAlterTableAdvisor)(nil)
-	_ ast.Visitor     = (*statementMergeAlterTableChecker)(nil)
 )
+
+func init() {
+	// only for mysqlwip test.
+	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLMergeAlterTable, &StatementMergeAlterTableAdvisor{})
+}
 
 // StatementMergeAlterTableAdvisor is the advisor checking for merging ALTER TABLE statements.
 type StatementMergeAlterTableAdvisor struct {
@@ -23,9 +31,9 @@ type StatementMergeAlterTableAdvisor struct {
 
 // Check checks for merging ALTER TABLE statements.
 func (*StatementMergeAlterTableAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	stmtList, ok := ctx.AST.([]ast.StmtNode)
+	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to StmtNode")
+		return nil, errors.Errorf("failed to convert to mysql parse result")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -39,20 +47,21 @@ func (*StatementMergeAlterTableAdvisor) Check(ctx advisor.Context, _ string) ([]
 	}
 
 	for _, stmt := range stmtList {
-		checker.text = stmt.Text()
-		checker.line = stmt.OriginTextPosition()
-		(stmt).Accept(checker)
+		checker.baseLine = stmt.BaseLine
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
 	return checker.generateAdvice(), nil
 }
 
 type statementMergeAlterTableChecker struct {
+	*mysql.BaseMySQLParserListener
+
+	baseLine   int
+	text       string
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
-	text       string
-	line       int
 	tableMap   map[string]tableStatement
 }
 
@@ -62,35 +71,40 @@ type tableStatement struct {
 	lastLine int
 }
 
-// Enter implements the ast.Visitor interface.
-func (checker *statementMergeAlterTableChecker) Enter(in ast.Node) (ast.Node, bool) {
-	switch node := in.(type) {
-	case *ast.CreateTableStmt:
-		data := tableStatement{
-			name:     node.Table.Name.O,
-			count:    1,
-			lastLine: checker.line,
-		}
-		checker.tableMap[node.Table.Name.O] = data
-	case *ast.AlterTableStmt:
-		data, ok := checker.tableMap[node.Table.Name.O]
-		if !ok {
-			data = tableStatement{
-				name:  node.Table.Name.O,
-				count: 0,
-			}
-		}
-		data.count++
-		data.lastLine = checker.line
-		checker.tableMap[node.Table.Name.O] = data
-	}
-
-	return in, false
+func (checker *statementMergeAlterTableChecker) EnterQuery(ctx *mysql.QueryContext) {
+	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
 }
 
-// Leave implements the ast.Visitor interface.
-func (*statementMergeAlterTableChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
+// EnterCreateTable is called when production createTable is entered.
+func (checker *statementMergeAlterTableChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if ctx.TableName() == nil {
+		return
+	}
+
+	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
+	checker.tableMap[tableName] = tableStatement{
+		name:     tableName,
+		count:    1,
+		lastLine: checker.baseLine + ctx.GetStart().GetLine(),
+	}
+}
+
+// EnterAlterTable is called when production alterTable is entered.
+func (checker *statementMergeAlterTableChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if ctx.TableRef() == nil {
+		return
+	}
+	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
+	table, ok := checker.tableMap[tableName]
+	if !ok {
+		table = tableStatement{
+			name:  tableName,
+			count: 0,
+		}
+	}
+	table.count++
+	table.lastLine = checker.baseLine + ctx.GetStart().GetLine()
+	checker.tableMap[tableName] = table
 }
 
 func (checker *statementMergeAlterTableChecker) generateAdvice() []advisor.Advice {
