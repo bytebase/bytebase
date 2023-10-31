@@ -169,6 +169,15 @@
       line: 0
       details: ""
 - statement: |-
+    ALTER TABLE tech_book DROP COLUMN name, DROP COLUMN id;
+  want:
+    - status: WARN
+      code: 601
+      title: table.require-pk
+      content: Table `tech_book` requires PRIMARY KEY
+      line: 1
+      details: ""
+- statement: |-
     ALTER TABLE tech_book CHANGE COLUMN id uid int;
     ALTER TABLE tech_book ADD COLUMN a int, DROP COLUMN uid, DROP COLUMN name;
   want:
