@@ -5,16 +5,24 @@ package mysqlwip
 import (
 	"fmt"
 
-	"github.com/pingcap/tidb/parser/ast"
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
+	mysql "github.com/bytebase/mysql-parser"
+
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*InsertMustSpecifyColumnAdvisor)(nil)
-	_ ast.Visitor     = (*insertMustSpecifyColumnChecker)(nil)
 )
+
+func init() {
+	// only for mysqlwip test.
+	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLInsertMustSpecifyColumn, &InsertMustSpecifyColumnAdvisor{})
+}
 
 // InsertMustSpecifyColumnAdvisor is the advisor checking for to enforce column specified.
 type InsertMustSpecifyColumnAdvisor struct {
@@ -22,9 +30,9 @@ type InsertMustSpecifyColumnAdvisor struct {
 
 // Check checks for to enforce column specified.
 func (*InsertMustSpecifyColumnAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	stmtList, ok := ctx.AST.([]ast.StmtNode)
+	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to StmtNode")
+		return nil, errors.Errorf("failed to convert to mysql parse result")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -37,9 +45,8 @@ func (*InsertMustSpecifyColumnAdvisor) Check(ctx advisor.Context, _ string) ([]a
 	}
 
 	for _, stmt := range stmtList {
-		checker.text = stmt.Text()
-		checker.line = stmt.OriginTextPosition()
-		(stmt).Accept(checker)
+		checker.baseLine = stmt.BaseLine
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -54,31 +61,34 @@ func (*InsertMustSpecifyColumnAdvisor) Check(ctx advisor.Context, _ string) ([]a
 }
 
 type insertMustSpecifyColumnChecker struct {
+	*mysql.BaseMySQLParserListener
+
+	baseLine   int
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
 	text       string
-	line       int
 }
 
-// Enter implements the ast.Visitor interface.
-func (checker *insertMustSpecifyColumnChecker) Enter(in ast.Node) (ast.Node, bool) {
-	if node, ok := in.(*ast.InsertStmt); ok {
-		if node.Columns == nil {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
-				Status:  checker.level,
-				Code:    advisor.InsertNotSpecifyColumn,
-				Title:   checker.title,
-				Content: fmt.Sprintf("The INSERT statement must specify columns but \"%s\" does not", checker.text),
-				Line:    checker.line,
-			})
-		}
+func (checker *insertMustSpecifyColumnChecker) EnterQuery(ctx *mysql.QueryContext) {
+	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+}
+
+// EnterInsertStatement is called when production insertStatement is entered.
+func (checker *insertMustSpecifyColumnChecker) EnterInsertStatement(ctx *mysql.InsertStatementContext) {
+	if ctx.InsertFromConstructor() == nil {
+		return
 	}
 
-	return in, false
-}
-
-// Leave implements the ast.Visitor interface.
-func (*insertMustSpecifyColumnChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
+	if ctx.InsertFromConstructor() != nil && ctx.InsertFromConstructor().Fields() != nil && len(ctx.InsertFromConstructor().Fields().AllInsertIdentifier()) > 0 {
+		// has columns.
+		return
+	}
+	checker.adviceList = append(checker.adviceList, advisor.Advice{
+		Status:  checker.level,
+		Code:    advisor.InsertNotSpecifyColumn,
+		Title:   checker.title,
+		Content: fmt.Sprintf("The INSERT statement must specify columns but \"%s\" does not", checker.text),
+		Line:    checker.baseLine + ctx.GetStart().GetLine(),
+	})
 }
