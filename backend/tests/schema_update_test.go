@@ -1819,20 +1819,18 @@ func TestGetLatestSchema(t *testing.T) {
 								DataSize:  16384,
 								Columns: []*v1pb.ColumnMetadata{
 									{
-										Name:                  "id",
-										Position:              1,
-										Nullable:              true,
-										Type:                  "int",
-										EffectiveMaskingLevel: v1pb.MaskingLevel_NONE,
+										Name:     "id",
+										Position: 1,
+										Nullable: true,
+										Type:     "int",
 									},
 									{
-										Name:                  "name",
-										Position:              2,
-										Nullable:              true,
-										Type:                  "text",
-										CharacterSet:          "utf8mb4",
-										Collation:             "utf8mb4_general_ci",
-										EffectiveMaskingLevel: v1pb.MaskingLevel_NONE,
+										Name:         "name",
+										Position:     2,
+										Nullable:     true,
+										Type:         "text",
+										CharacterSet: "utf8mb4",
+										Collation:    "utf8mb4_general_ci",
 									},
 								},
 							},
@@ -1882,8 +1880,8 @@ CREATE TABLE public.book (
 								Name:     "book",
 								DataSize: 8192,
 								Columns: []*v1pb.ColumnMetadata{
-									{Name: "id", Position: 1, Nullable: true, Type: "integer", EffectiveMaskingLevel: v1pb.MaskingLevel_NONE},
-									{Name: "name", Position: 2, Nullable: true, Type: "text", EffectiveMaskingLevel: v1pb.MaskingLevel_NONE},
+									{Name: "id", Position: 1, Nullable: true, Type: "integer"},
+									{Name: "name", Position: 2, Nullable: true, Type: "text"},
 								},
 							},
 						},
@@ -1994,6 +1992,7 @@ CREATE TABLE public.book (
 			}
 			latestSchemaMetadata, err := ctl.databaseServiceClient.GetDatabaseMetadata(ctx, &v1pb.GetDatabaseMetadataRequest{
 				Name: fmt.Sprintf("%s/metadata", database.Name),
+				View: v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL,
 			})
 			a.NoError(err)
 			diff := cmp.Diff(test.wantDatabaseMetadata, latestSchemaMetadata, protocmp.Transform())
