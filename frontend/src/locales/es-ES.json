@@ -382,7 +382,10 @@
     "cancel-task": "Cancelar tarea | Cancelar tareas",
     "created": "Creado",
     "online-migration": {
-      "self": "Migración en línea"
+      "self": "Migración en línea",
+      "configure-ghost-parameters-for-db": "Configurar los parámetros de gh-ost para la base de datos '{db}'",
+      "configure-ghost-parameters": "Configurar los parámetros de gh-ost",
+      "ghost-parameters": "parámetros de gh-ost"
     }
   },
   "task-run": {

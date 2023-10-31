@@ -395,15 +395,18 @@ import {
   extractInstanceResourceName,
   instanceV1Slug,
   calcUpdateMask,
+  onlyAllowNumber,
 } from "@/utils";
 import { extractGrpcErrorMessage, getErrorCode } from "@/utils/grpcweb";
 import DataSourceSection from "./DataSourceSection/DataSourceSection.vue";
-import { onlyAllowNumber } from "./DataSourceSection/common";
 import OracleSyncModeInput from "./OracleSyncModeInput.vue";
 import ScanIntervalInput from "./ScanIntervalInput.vue";
 import SpannerHostInput from "./SpannerHostInput.vue";
-import { EditDataSource, extractDataSourceEditState } from "./common";
-import { extractBasicInfo } from "./common";
+import {
+  EditDataSource,
+  extractBasicInfo,
+  extractDataSourceEditState,
+} from "./common";
 import {
   MongoDBConnectionStringSchemaList,
   SnowflakeExtraLinkPlaceHolder,

@@ -7,10 +7,14 @@ import {
   specForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
+import { ComposedIssue } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
+import { IssueStatus } from "@/types/proto/v1/issue_service";
 import {
   Plan_ChangeDatabaseConfig_Type,
   Plan_Spec,
+  Task,
+  Task_Status,
   Task_Type,
 } from "@/types/proto/v1/rollout_service";
 import {
@@ -57,7 +61,6 @@ export const provideIssueGhostContext = () => {
     if (
       ![
         Task_Type.DATABASE_SCHEMA_UPDATE,
-        Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER,
         Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC,
       ].includes(task.value.type)
     ) {
@@ -105,4 +108,13 @@ export const provideIssueGhostContext = () => {
   provide(KEY, context);
 
   return context;
+};
+
+export const allowChangeTaskGhostFlags = (issue: ComposedIssue, task: Task) => {
+  if (issue.status !== IssueStatus.OPEN) return false;
+  return [
+    Task_Status.NOT_STARTED,
+    Task_Status.FAILED,
+    Task_Status.CANCELED,
+  ].includes(task.status);
 };
