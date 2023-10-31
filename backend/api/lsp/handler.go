@@ -15,11 +15,12 @@ import (
 type Method string
 
 const (
-	LSPMethodInitialize    Method = "initialize"
-	LSPMethodInitialized   Method = "initialized"
-	LSPMethodShutdown      Method = "shutdown"
-	LSPMethodExit          Method = "exit"
-	LSPMethodCancelRequest Method = "$/cancelRequest"
+	LSPMethodInitialize     Method = "initialize"
+	LSPMethodInitialized    Method = "initialized"
+	LSPMethodShutdown       Method = "shutdown"
+	LSPMethodExit           Method = "exit"
+	LSPMethodCancelRequest  Method = "$/cancelRequest"
+	LSPMethodExecuteCommand Method = "workspace/executeCommand"
 
 	LSPMethodTextDocumentDidOpen   Method = "textDocument/didOpen"
 	LSPMethodTextDocumentDidChange Method = "textDocument/didChange"
@@ -46,9 +47,10 @@ func (h lspHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrp
 
 // Handler handles Language Server Protocol requests.
 type Handler struct {
-	mu   sync.Mutex
-	fs   *MemFS
-	init *lsp.InitializeParams // set by LSPMethodInitialize request
+	mu       sync.Mutex
+	fs       *MemFS
+	init     *lsp.InitializeParams // set by LSPMethodInitialize request
+	metadata *SetMetadataCommandArguments
 
 	shutDown bool
 }
@@ -62,6 +64,12 @@ func (h *Handler) ShutDown() {
 	}
 	h.shutDown = true
 	h.fs = nil
+}
+
+func (h *Handler) setMetadata(arg SetMetadataCommandArguments) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.metadata = &arg
 }
 
 func (h *Handler) checkInitialized(req *jsonrpc2.Request) error {
@@ -124,6 +132,9 @@ func (h *Handler) handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 				CompletionProvider: &lsp.CompletionOptions{
 					TriggerCharacters: []string{"."},
 				},
+				ExecuteCommandProvider: &lsp.ExecuteCommandOptions{
+					Commands: []string{string(CommandNameSetMetadata)},
+				},
 			},
 		}, nil
 	case LSPMethodInitialized:
@@ -139,6 +150,29 @@ func (h *Handler) handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 	case LSPMethodCancelRequest:
 		// Do nothing for now.
 		return nil, nil
+	case LSPMethodExecuteCommand:
+		if req.Params == nil {
+			return nil, &jsonrpc2.Error{Code: jsonrpc2.CodeInvalidParams}
+		}
+		var params lsp.ExecuteCommandParams
+		if err := json.Unmarshal(*req.Params, &params); err != nil {
+			return nil, err
+		}
+
+		switch CommandName(params.Command) {
+		case CommandNameSetMetadata:
+			var setMetadataParams SetMetadataCommandParams
+			if err := json.Unmarshal(*req.Params, &setMetadataParams); err != nil {
+				return nil, err
+			}
+			if len(setMetadataParams.Arguments) != 1 {
+				return nil, &jsonrpc2.Error{Code: jsonrpc2.CodeInvalidParams, Message: "expected exactly one argument"}
+			}
+			h.setMetadata(setMetadataParams.Arguments[0])
+			return nil, nil
+		default:
+			return nil, &jsonrpc2.Error{Code: jsonrpc2.CodeInvalidParams, Message: fmt.Sprintf("command not supported: %s", params.Command)}
+		}
 	default:
 		if isFileSystemRequest(req.Method) {
 			_, _, err := h.handleFileSystemRequest(ctx, req)
