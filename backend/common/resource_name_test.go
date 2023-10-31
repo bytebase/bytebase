@@ -15,6 +15,18 @@ func TestGetInstanceDatabaseID(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestGetSchemaTableName(t *testing.T) {
+	schema, table, err := GetSchemaTableName("schemas/a/tables/b")
+	require.NoError(t, err)
+	require.Equal(t, "a", schema)
+	require.Equal(t, "b", table)
+
+	schema, table, err = GetSchemaTableName("schemas//tables/b")
+	require.NoError(t, err)
+	require.Equal(t, "", schema)
+	require.Equal(t, "b", table)
+}
+
 func TestGetRiskID(t *testing.T) {
 	tests := []struct {
 		name string
