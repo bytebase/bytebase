@@ -2,11 +2,11 @@
   <NButton
     quaternary
     size="small"
-    style="--n-padding: 0 6px"
+    style="--n-padding: 0 5px"
     @click="showFlagsPanel = true"
   >
     <template #icon>
-      <Wrench />
+      <Wrench class="w-4 h-4" />
     </template>
   </NButton>
 </template>
