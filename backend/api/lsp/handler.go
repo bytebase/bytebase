@@ -21,6 +21,7 @@ const (
 	LSPMethodExit           Method = "exit"
 	LSPMethodCancelRequest  Method = "$/cancelRequest"
 	LSPMethodExecuteCommand Method = "workspace/executeCommand"
+	LSPMethodCompletion     Method = "textDocument/completion"
 
 	LSPMethodTextDocumentDidOpen   Method = "textDocument/didOpen"
 	LSPMethodTextDocumentDidChange Method = "textDocument/didChange"
@@ -173,6 +174,15 @@ func (h *Handler) handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 		default:
 			return nil, &jsonrpc2.Error{Code: jsonrpc2.CodeInvalidParams, Message: fmt.Sprintf("command not supported: %s", params.Command)}
 		}
+	case LSPMethodCompletion:
+		if req.Params == nil {
+			return nil, &jsonrpc2.Error{Code: jsonrpc2.CodeInvalidParams}
+		}
+		var params lsp.CompletionParams
+		if err := json.Unmarshal(*req.Params, &params); err != nil {
+			return nil, err
+		}
+		return h.handleTextDocumentCompletion(ctx, conn, req, params)
 	default:
 		if isFileSystemRequest(req.Method) {
 			_, _, err := h.handleFileSystemRequest(ctx, req)
