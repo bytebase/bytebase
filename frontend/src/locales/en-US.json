@@ -1224,7 +1224,7 @@
     "visit-instance": "@:common.visit @:common.instances",
     "visit-database": "@:common.visit @:common.databases",
     "visit-environment": "@:common.visit @:common.environments",
-    "add-a-member": "Add a member",
+    "visit-member": "@:common.visit @:common.members",
     "use-kbar": "Use kbar ({shortcut})",
     "query-data": "Query data",
     "notice": {
