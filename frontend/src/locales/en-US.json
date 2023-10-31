@@ -380,7 +380,10 @@
     "action-failed-in-current-stage": "{action} failed tasks in current stage",
     "action-all-tasks-in-current-stage": "{action} all tasks in current stage",
     "cancel-task": "Cancel task | Cancel tasks",
-    "created": "Created"
+    "created": "Created",
+    "online-migration": {
+      "self": "Online migration"
+    }
   },
   "task-run": {
     "status": {
