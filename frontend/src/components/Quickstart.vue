@@ -112,12 +112,7 @@
 import { useKBarHandler, useKBarEventOnce } from "@bytebase/vue-kbar";
 import { computed, unref, Ref } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  pushNotification,
-  useActuatorV1Store,
-  useCurrentUserV1,
-  useUIStateStore,
-} from "@/store";
+import { pushNotification, useCurrentUserV1, useUIStateStore } from "@/store";
 import { hasWorkspacePermissionV1 } from "@/utils";
 
 type IntroItem = {
@@ -128,7 +123,6 @@ type IntroItem = {
 };
 
 const uiStateStore = useUIStateStore();
-const actuatorStore = useActuatorV1Store();
 const { t } = useI18n();
 const kbarHandler = useKBarHandler();
 
