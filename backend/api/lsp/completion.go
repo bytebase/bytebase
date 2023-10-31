@@ -9,7 +9,7 @@ import (
 	"github.com/sourcegraph/jsonrpc2"
 )
 
-func (h *Handler) handleTextDocumentCompletion(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request, params lsp.CompletionParams) (*lsp.CompletionList, error) {
+func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.Conn, _ *jsonrpc2.Request, params lsp.CompletionParams) (*lsp.CompletionList, error) {
 	if !IsURI(params.TextDocument.URI) {
 		return nil, &jsonrpc2.Error{
 			Code:    jsonrpc2.CodeInvalidParams,
