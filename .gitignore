@@ -23,9 +23,6 @@ mysql-*.tar*
 # Frontend asset
 dist
 
-# Dev database
-data
-
 # build folder
 bytebase-build
 
