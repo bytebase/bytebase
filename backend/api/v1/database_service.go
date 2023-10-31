@@ -482,8 +482,12 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 		dbSchema = newDBSchema
 	}
 
-	v1pbMetadata := convertDatabaseMetadata(database, dbSchema.Metadata, dbSchema.Config)
-	// backfill the effective masking level.
+	v1pbMetadata, err := convertDatabaseMetadata(database, dbSchema.Metadata, dbSchema.Config, request.View, request.Filter)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set effective masking level.
 	dataClassificationSetting, err := s.store.GetDataClassificationSetting(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get data classification setting, error: %v", err)
@@ -593,8 +597,8 @@ func (s *DatabaseService) UpdateDatabaseMetadata(ctx context.Context, request *v
 		return nil, status.Errorf(codes.NotFound, "database schema %q not found", databaseName)
 	}
 
-	v1pbMetadata := convertDatabaseMetadata(database, dbSchema.Metadata, dbSchema.Config)
-	return v1pbMetadata, nil
+	v1pbMetadata, err := convertDatabaseMetadata(database, dbSchema.Metadata, dbSchema.Config, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_BASIC, "" /* filter */)
+	return v1pbMetadata, err
 }
 
 // GetDatabaseSchema gets the schema of a database.
@@ -1954,67 +1958,98 @@ func convertToDatabase(database *store.DatabaseMessage) *v1pb.Database {
 	}
 }
 
-func convertDatabaseMetadata(database *store.DatabaseMessage, metadata *storepb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig) *v1pb.DatabaseMetadata {
+func convertDatabaseMetadata(database *store.DatabaseMessage, metadata *storepb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig, requestView v1pb.DatabaseMetadataView, filter string) (*v1pb.DatabaseMetadata, error) {
+	var schemaFilter, tableFilter string
+	if filter != "" {
+		schema, table, err := common.GetSchemaTableName(filter)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid filter %q", filter)
+		}
+		schemaFilter, tableFilter = schema, table
+	}
+
 	m := &v1pb.DatabaseMetadata{
 		Name:         fmt.Sprintf("%s%s/%s%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName, common.MetadataSuffix),
 		CharacterSet: metadata.CharacterSet,
 		Collation:    metadata.Collation,
 	}
 	for _, schema := range metadata.Schemas {
+		if filter != "" && schemaFilter != schema.Name {
+			continue
+		}
 		s := &v1pb.SchemaMetadata{
 			Name: schema.Name,
 		}
 		for _, table := range schema.Tables {
-			s.Tables = append(s.Tables, convertTableMetadata(table))
+			if filter != "" && tableFilter != table.Name {
+				continue
+			}
+			s.Tables = append(s.Tables, convertTableMetadata(table, requestView))
+		}
+		// Only return table for request with a filter.
+		if filter != "" {
+			continue
 		}
 		for _, view := range schema.Views {
-			var dependentColumnList []*v1pb.DependentColumn
-			for _, dependentColumn := range view.DependentColumns {
-				dependentColumnList = append(dependentColumnList, &v1pb.DependentColumn{
-					Schema: dependentColumn.Schema,
-					Table:  dependentColumn.Table,
-					Column: dependentColumn.Column,
-				})
+			v1View := &v1pb.ViewMetadata{
+				Name: view.Name,
+			}
+			if requestView == v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL {
+				var dependentColumnList []*v1pb.DependentColumn
+				for _, dependentColumn := range view.DependentColumns {
+					dependentColumnList = append(dependentColumnList, &v1pb.DependentColumn{
+						Schema: dependentColumn.Schema,
+						Table:  dependentColumn.Table,
+						Column: dependentColumn.Column,
+					})
+				}
+				v1View.Definition = view.Definition
+				v1View.Comment = view.Comment
+				v1View.DependentColumns = dependentColumnList
 			}
 
-			s.Views = append(s.Views, &v1pb.ViewMetadata{
-				Name:             view.Name,
-				Definition:       view.Definition,
-				Comment:          view.Comment,
-				DependentColumns: dependentColumnList,
-			})
+			s.Views = append(s.Views, v1View)
 		}
 		for _, function := range schema.Functions {
-			s.Functions = append(s.Functions, &v1pb.FunctionMetadata{
-				Name:       function.Name,
-				Definition: function.Definition,
-			})
+			v1Func := &v1pb.FunctionMetadata{
+				Name: function.Name,
+			}
+			if requestView == v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL {
+				v1Func.Definition = function.Definition
+			}
+			s.Functions = append(s.Functions, v1Func)
 		}
 		for _, task := range schema.Tasks {
-			s.Tasks = append(s.Tasks, &v1pb.TaskMetadata{
-				Name:         task.Name,
-				Id:           task.Id,
-				Owner:        task.Owner,
-				Comment:      task.Comment,
-				Warehouse:    task.Warehouse,
-				Schedule:     task.Schedule,
-				Predecessors: task.Predecessors,
-				State:        v1pb.TaskMetadata_State(task.State),
-				Condition:    task.Condition,
-				Definition:   task.Definition,
-			})
+			v1Task := &v1pb.TaskMetadata{
+				Name: task.Name,
+			}
+			if requestView == v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL {
+				v1Task.Id = task.Id
+				v1Task.Owner = task.Owner
+				v1Task.Comment = task.Comment
+				v1Task.Warehouse = task.Warehouse
+				v1Task.Schedule = task.Schedule
+				v1Task.Predecessors = task.Predecessors
+				v1Task.State = v1pb.TaskMetadata_State(task.State)
+				v1Task.Condition = task.Condition
+				v1Task.Definition = task.Definition
+			}
+			s.Tasks = append(s.Tasks, v1Task)
 		}
 		for _, stream := range schema.Streams {
-			s.Streams = append(s.Streams, &v1pb.StreamMetadata{
-				Name:       stream.Name,
-				TableName:  stream.TableName,
-				Owner:      stream.Owner,
-				Comment:    stream.Comment,
-				Type:       v1pb.StreamMetadata_Type(stream.Type),
-				Stale:      stream.Stale,
-				Mode:       v1pb.StreamMetadata_Mode(stream.Mode),
-				Definition: stream.Definition,
-			})
+			v1Stream := &v1pb.StreamMetadata{
+				Name: stream.Name,
+			}
+			if requestView == v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL {
+				v1Stream.TableName = stream.TableName
+				v1Stream.Owner = stream.Owner
+				v1Stream.Comment = stream.Comment
+				v1Stream.Type = v1pb.StreamMetadata_Type(stream.Type)
+				v1Stream.Stale = stream.Stale
+				v1Stream.Mode = v1pb.StreamMetadata_Mode(stream.Mode)
+				v1Stream.Definition = stream.Definition
+			}
+			s.Streams = append(s.Streams, v1Stream)
 		}
 		m.Schemas = append(m.Schemas, s)
 	}
@@ -2027,30 +2062,49 @@ func convertDatabaseMetadata(database *store.DatabaseMessage, metadata *storepb.
 		})
 	}
 
-	databaseConfig := convertDatabaseConfig(config)
-	if databaseConfig != nil {
-		m.SchemaConfigs = databaseConfig.SchemaConfigs
+	if requestView == v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL {
+		databaseConfig, err := convertDatabaseConfig(config, filter)
+		if err != nil {
+			return nil, err
+		}
+		if databaseConfig != nil {
+			m.SchemaConfigs = databaseConfig.SchemaConfigs
+		}
 	}
-	return m
+	return m, nil
 }
 
-func convertDatabaseConfig(config *storepb.DatabaseConfig) *v1pb.DatabaseConfig {
+func convertDatabaseConfig(config *storepb.DatabaseConfig, filter string) (*v1pb.DatabaseConfig, error) {
 	if config == nil {
-		return nil
+		return nil, nil
+	}
+	var schemaFilter, tableFilter string
+	if filter != "" {
+		schema, table, err := common.GetSchemaTableName(filter)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid filter %q", filter)
+		}
+		schemaFilter, tableFilter = schema, table
 	}
 	databaseConfig := &v1pb.DatabaseConfig{
 		Name: config.Name,
 	}
 	for _, schema := range config.SchemaConfigs {
+		if filter != "" && schemaFilter != schema.Name {
+			continue
+		}
 		s := &v1pb.SchemaConfig{
 			Name: schema.Name,
 		}
 		for _, table := range schema.TableConfigs {
+			if filter != "" && tableFilter != table.Name {
+				continue
+			}
 			s.TableConfigs = append(s.TableConfigs, convertTableConfig(table))
 		}
 		databaseConfig.SchemaConfigs = append(databaseConfig.SchemaConfigs, s)
 	}
-	return databaseConfig
+	return databaseConfig, nil
 }
 
 func convertTableConfig(table *storepb.TableConfig) *v1pb.TableConfig {
@@ -2713,7 +2767,7 @@ func getOpenAIResponse(ctx context.Context, messages []openai.ChatCompletionMess
 	return &result, nil
 }
 
-func convertTableMetadata(table *storepb.TableMetadata) *v1pb.TableMetadata {
+func convertTableMetadata(table *storepb.TableMetadata, view v1pb.DatabaseMetadataView) *v1pb.TableMetadata {
 	if table == nil {
 		return nil
 	}
@@ -2729,6 +2783,10 @@ func convertTableMetadata(table *storepb.TableMetadata) *v1pb.TableMetadata {
 		Comment:        table.Comment,
 		Classification: table.Classification,
 		UserComment:    table.UserComment,
+	}
+	// We only return the table info for basic view.
+	if view != v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL {
+		return t
 	}
 	for _, column := range table.Columns {
 		t.Columns = append(t.Columns, convertColumnMetadata(column))
