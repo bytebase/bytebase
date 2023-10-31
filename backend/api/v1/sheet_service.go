@@ -644,18 +644,10 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 			v1PushEvent = convertToPushEvent(payload.VcsPayload.PushEvent)
 		}
 		if payload.DatabaseConfig != nil && payload.BaselineDatabaseConfig != nil {
-			databaseConfig, err := convertDatabaseConfig(payload.DatabaseConfig, "" /* filter */)
-			if err != nil {
-				return nil, err
-			}
-			baselineDatabaseConfig, err := convertDatabaseConfig(payload.BaselineDatabaseConfig, "" /* filter */)
-			if err != nil {
-				return nil, err
-			}
 			v1SheetPayload = &v1pb.SheetPayload{
 				Type:                   v1pb.SheetPayload_Type(payload.Type),
-				DatabaseConfig:         databaseConfig,
-				BaselineDatabaseConfig: baselineDatabaseConfig,
+				DatabaseConfig:         convertDatabaseConfig(payload.DatabaseConfig, nil /* filter */),
+				BaselineDatabaseConfig: convertDatabaseConfig(payload.BaselineDatabaseConfig, nil /* filter */),
 			}
 		}
 	}

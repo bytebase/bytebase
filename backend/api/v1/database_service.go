@@ -482,49 +482,63 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 		dbSchema = newDBSchema
 	}
 
-	v1pbMetadata, err := convertDatabaseMetadata(database, dbSchema.Metadata, dbSchema.Config, request.View, request.Filter)
-	if err != nil {
-		return nil, err
-	}
-
-	// Set effective masking level.
-	dataClassificationSetting, err := s.store.GetDataClassificationSetting(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get data classification setting, error: %v", err)
-	}
-	maskingRulePolicy, err := s.store.GetMaskingRulePolicy(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get masking rule policy, error: %v", err)
-	}
-	// Convert the maskingPolicy to a map to reduce the time complexity of searching.
-	maskingPolicy, err := s.store.GetMaskingPolicyByDatabaseUID(ctx, database.UID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find masking policy for database %q", databaseName)
-	}
-	maskingPolicyMap := make(map[maskingPolicyKey]*storepb.MaskData)
-	if maskingPolicy != nil {
-		for _, maskData := range maskingPolicy.MaskData {
-			maskingPolicyMap[maskingPolicyKey{
-				schema: maskData.Schema,
-				table:  maskData.Table,
-				column: maskData.Column,
-			}] = maskData
+	var filter *metadataFilter
+	if request.Filter != "" {
+		schema, table, err := common.GetSchemaTableName(request.Filter)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid filter %q", filter)
 		}
+		filter = &metadataFilter{schema: schema, table: table}
 	}
+	v1pbMetadata := convertDatabaseMetadata(database, dbSchema.Metadata, dbSchema.Config, request.View, filter)
 
-	evaluator := newEmptyMaskingLevelEvaluator().withDataClassificationSetting(dataClassificationSetting).withMaskingRulePolicy(maskingRulePolicy)
-	for _, schema := range v1pbMetadata.Schemas {
-		for _, table := range schema.Tables {
-			for _, column := range table.Columns {
-				maskingLevel, err := evaluator.evaluateMaskingLevelOfColumn(database, schema.Name, table.Name, column.Name, column.Classification, project.DataClassificationConfigID, maskingPolicyMap, nil /* Exceptions*/)
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to evaluate masking level of column %q, error: %v", column.Name, err)
+	// Set effective masking level only if filter is set for a table.
+	if filter != nil && request.View == v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL {
+		dataClassificationSetting, err := s.store.GetDataClassificationSetting(ctx)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get data classification setting, error: %v", err)
+		}
+		maskingRulePolicy, err := s.store.GetMaskingRulePolicy(ctx)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get masking rule policy, error: %v", err)
+		}
+		// Convert the maskingPolicy to a map to reduce the time complexity of searching.
+		maskingPolicy, err := s.store.GetMaskingPolicyByDatabaseUID(ctx, database.UID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to find masking policy for database %q", databaseName)
+		}
+		maskingPolicyMap := make(map[maskingPolicyKey]*storepb.MaskData)
+		if maskingPolicy != nil {
+			for _, maskData := range maskingPolicy.MaskData {
+				maskingPolicyMap[maskingPolicyKey{
+					schema: maskData.Schema,
+					table:  maskData.Table,
+					column: maskData.Column,
+				}] = maskData
+			}
+		}
+
+		evaluator := newEmptyMaskingLevelEvaluator().withDataClassificationSetting(dataClassificationSetting).withMaskingRulePolicy(maskingRulePolicy)
+		for _, schema := range v1pbMetadata.Schemas {
+			if filter.schema != schema.Name {
+				continue
+			}
+			for _, table := range schema.Tables {
+				if filter.table != table.Name {
+					continue
 				}
-				v1pbMaskingLevel := convertToV1PBMaskingLevel(maskingLevel)
-				column.EffectiveMaskingLevel = v1pbMaskingLevel
+				for _, column := range table.Columns {
+					maskingLevel, err := evaluator.evaluateMaskingLevelOfColumn(database, schema.Name, table.Name, column.Name, column.Classification, project.DataClassificationConfigID, maskingPolicyMap, nil /* Exceptions*/)
+					if err != nil {
+						return nil, status.Errorf(codes.Internal, "failed to evaluate masking level of column %q, error: %v", column.Name, err)
+					}
+					v1pbMaskingLevel := convertToV1PBMaskingLevel(maskingLevel)
+					column.EffectiveMaskingLevel = v1pbMaskingLevel
+				}
 			}
 		}
 	}
+
 	return v1pbMetadata, nil
 }
 
@@ -597,8 +611,8 @@ func (s *DatabaseService) UpdateDatabaseMetadata(ctx context.Context, request *v
 		return nil, status.Errorf(codes.NotFound, "database schema %q not found", databaseName)
 	}
 
-	v1pbMetadata, err := convertDatabaseMetadata(database, dbSchema.Metadata, dbSchema.Config, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_BASIC, "" /* filter */)
-	return v1pbMetadata, err
+	v1pbMetadata := convertDatabaseMetadata(database, dbSchema.Metadata, dbSchema.Config, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_BASIC, nil /* filter */)
+	return v1pbMetadata, nil
 }
 
 // GetDatabaseSchema gets the schema of a database.
@@ -1958,36 +1972,32 @@ func convertToDatabase(database *store.DatabaseMessage) *v1pb.Database {
 	}
 }
 
-func convertDatabaseMetadata(database *store.DatabaseMessage, metadata *storepb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig, requestView v1pb.DatabaseMetadataView, filter string) (*v1pb.DatabaseMetadata, error) {
-	var schemaFilter, tableFilter string
-	if filter != "" {
-		schema, table, err := common.GetSchemaTableName(filter)
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid filter %q", filter)
-		}
-		schemaFilter, tableFilter = schema, table
-	}
+type metadataFilter struct {
+	schema string
+	table  string
+}
 
+func convertDatabaseMetadata(database *store.DatabaseMessage, metadata *storepb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig, requestView v1pb.DatabaseMetadataView, filter *metadataFilter) *v1pb.DatabaseMetadata {
 	m := &v1pb.DatabaseMetadata{
 		Name:         fmt.Sprintf("%s%s/%s%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName, common.MetadataSuffix),
 		CharacterSet: metadata.CharacterSet,
 		Collation:    metadata.Collation,
 	}
 	for _, schema := range metadata.Schemas {
-		if filter != "" && schemaFilter != schema.Name {
+		if filter != nil && filter.schema != schema.Name {
 			continue
 		}
 		s := &v1pb.SchemaMetadata{
 			Name: schema.Name,
 		}
 		for _, table := range schema.Tables {
-			if filter != "" && tableFilter != table.Name {
+			if filter != nil && filter.table != table.Name {
 				continue
 			}
 			s.Tables = append(s.Tables, convertTableMetadata(table, requestView))
 		}
 		// Only return table for request with a filter.
-		if filter != "" {
+		if filter != nil {
 			continue
 		}
 		for _, view := range schema.Views {
@@ -2063,48 +2073,37 @@ func convertDatabaseMetadata(database *store.DatabaseMessage, metadata *storepb.
 	}
 
 	if requestView == v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL {
-		databaseConfig, err := convertDatabaseConfig(config, filter)
-		if err != nil {
-			return nil, err
-		}
+		databaseConfig := convertDatabaseConfig(config, filter)
 		if databaseConfig != nil {
 			m.SchemaConfigs = databaseConfig.SchemaConfigs
 		}
 	}
-	return m, nil
+	return m
 }
 
-func convertDatabaseConfig(config *storepb.DatabaseConfig, filter string) (*v1pb.DatabaseConfig, error) {
+func convertDatabaseConfig(config *storepb.DatabaseConfig, filter *metadataFilter) *v1pb.DatabaseConfig {
 	if config == nil {
-		return nil, nil
-	}
-	var schemaFilter, tableFilter string
-	if filter != "" {
-		schema, table, err := common.GetSchemaTableName(filter)
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid filter %q", filter)
-		}
-		schemaFilter, tableFilter = schema, table
+		return nil
 	}
 	databaseConfig := &v1pb.DatabaseConfig{
 		Name: config.Name,
 	}
 	for _, schema := range config.SchemaConfigs {
-		if filter != "" && schemaFilter != schema.Name {
+		if filter != nil && filter.schema != schema.Name {
 			continue
 		}
 		s := &v1pb.SchemaConfig{
 			Name: schema.Name,
 		}
 		for _, table := range schema.TableConfigs {
-			if filter != "" && tableFilter != table.Name {
+			if filter != nil && filter.table != table.Name {
 				continue
 			}
 			s.TableConfigs = append(s.TableConfigs, convertTableConfig(table))
 		}
 		databaseConfig.SchemaConfigs = append(databaseConfig.SchemaConfigs, s)
 	}
-	return databaseConfig, nil
+	return databaseConfig
 }
 
 func convertTableConfig(table *storepb.TableConfig) *v1pb.TableConfig {
