@@ -838,7 +838,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				}
 				newFlags := spec.GetChangeDatabaseConfig().GetGhostFlags()
 				if _, err := ghost.GetUserFlags(newFlags); err != nil {
-					return errors.Wrapf(err, "invalid ghost flags %q", newFlags)
+					return status.Errorf(codes.InvalidArgument, "invalid ghost flags %q", newFlags)
 				}
 				oldFlags := payload.Flags
 				if cmp.Equal(oldFlags, newFlags) {
@@ -848,7 +848,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				doUpdate = true
 				return nil
 			}(); err != nil {
-				return nil, errors.Wrapf(err, "failed to maybe update flags for task %d", task.ID)
+				return nil, err
 			}
 
 			// EarliestAllowedTs
