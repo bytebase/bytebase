@@ -126,6 +126,7 @@ func convertToPlanSpecChangeDatabaseConfig(config *storepb.PlanConfig_Spec_Chang
 			SchemaVersion:   c.SchemaVersion,
 			RollbackEnabled: c.RollbackEnabled,
 			RollbackDetail:  convertToPlanSpecChangeDatabaseConfigRollbackDetail(c.RollbackDetail),
+			GhostFlags:      c.GhostFlags,
 		},
 	}
 }
@@ -253,6 +254,7 @@ func convertPlanSpecChangeDatabaseConfig(config *v1pb.Plan_Spec_ChangeDatabaseCo
 			Type:            storepb.PlanConfig_ChangeDatabaseConfig_Type(c.Type),
 			SchemaVersion:   c.SchemaVersion,
 			RollbackEnabled: c.RollbackEnabled,
+			GhostFlags:      c.GhostFlags,
 		},
 	}
 }
