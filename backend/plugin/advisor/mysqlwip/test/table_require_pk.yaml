@@ -21,16 +21,6 @@
       line: 2
       details: ""
 - statement: |-
-    CREATE TABLE t1(id INT, PRIMARY KEY (id));
-    ALTER TABLE t1 DROP PRIMARY;
-  want:
-    - status: WARN
-      code: 601
-      title: table.require-pk
-      content: Table `t2` requires PRIMARY KEY
-      line: 2
-      details: ""
-- statement: |-
     CREATE TABLE t1(id INT PRIMARY KEY);
     CREATE TABLE t2(id INT, PRIMARY KEY (id));
   want:
