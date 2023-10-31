@@ -110,7 +110,6 @@
 
 <script setup lang="ts">
 import { useKBarHandler, useKBarEventOnce } from "@bytebase/vue-kbar";
-import { storeToRefs } from "pinia";
 import { computed, unref, Ref } from "vue";
 import { useI18n } from "vue-i18n";
 import {
@@ -128,17 +127,15 @@ type IntroItem = {
   click?: () => void;
 };
 
-const actuatorStore = useActuatorV1Store();
 const uiStateStore = useUIStateStore();
+const actuatorStore = useActuatorV1Store();
 const { t } = useI18n();
 const kbarHandler = useKBarHandler();
 
 const currentUserV1 = useCurrentUserV1();
-const { isDemo } = storeToRefs(actuatorStore);
 
 const show = computed(() => {
-  // Do not show quickstart in demo mode since we don't expect user to alter the data
-  return !isDemo.value && !uiStateStore.getIntroStateByKey("hidden");
+  return !uiStateStore.getIntroStateByKey("hidden");
 });
 
 const introList = computed(() => {
@@ -206,20 +203,11 @@ const introList = computed(() => {
     done: computed(() => uiStateStore.getIntroStateByKey("database.visit")),
   });
 
-  if (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-member",
-      currentUserV1.value.userRole
-    )
-  ) {
-    introList.push({
-      name: computed(() => t("quick-start.add-a-member")),
-      link: "/setting/member",
-      done: computed(() =>
-        uiStateStore.getIntroStateByKey("member.addOrInvite")
-      ),
-    });
-  }
+  introList.push({
+    name: computed(() => t("quick-start.visit-member")),
+    link: "/setting/member",
+    done: computed(() => uiStateStore.getIntroStateByKey("member.visit")),
+  });
 
   return introList;
 });
