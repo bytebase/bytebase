@@ -390,7 +390,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 			return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
 		}
 		if _, err := ghost.GetUserFlags(c.GhostFlags); err != nil {
-			return nil, nil, errors.Wrapf(err, "invalid ghost flags %q", c.GhostFlags)
+			return nil, nil, errors.Wrapf(err, "invalid ghost flags %q, error: %v", c.GhostFlags, err)
 		}
 		var taskCreateList []*store.TaskMessage
 		// task "sync"
