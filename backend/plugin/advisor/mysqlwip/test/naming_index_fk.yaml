@@ -1,6 +1,4 @@
-- statement: |
-    CREATE TABLE tech_book(id INT);
-    ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_author_id_author_id FOREIGN KEY (author_id) REFERENCES author (id);
+- statement: ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_author_id_author_id FOREIGN KEY (author_id) REFERENCES author (id);
   want:
     - status: SUCCESS
       code: 0
@@ -8,15 +6,13 @@
       content: ""
       line: 0
       details: ""
-- statement: |
-    CREATE TABLE tech_book(id INT);
-    ALTER TABLE tech_book ADD CONSTRAINT fk_author_id FOREIGN KEY (author_id) REFERENCES author (id);
+- statement: ALTER TABLE tech_book ADD CONSTRAINT fk_author_id FOREIGN KEY (author_id) REFERENCES author (id);
   want:
     - status: WARN
       code: 305
       title: naming.index.fk
       content: Foreign key in table `tech_book` mismatches the naming convention, expect "^$|^fk_tech_book_author_id_author_id$" but found `fk_author_id`
-      line: 2
+      line: 1
       details: ""
 - statement: ALTER TABLE tech_book ADD CONSTRAINT rvemempmcmmhutaskvcidmwaldtfjdgmcpkhmibtadfydtkexpuzczrrneucthfwk FOREIGN KEY (author_id) REFERENCES author (id);
   want:

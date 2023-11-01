@@ -8,7 +8,7 @@
       details: ""
 - statement: |-
     ALTER TABLE tech_book ADD COLUMN a int;
-    ALTER TABLE tech_book CHANGE COLUMN b c int;
+    ALTER TABLE tech_book CHANGE COLUMN a c int;
   want:
     - status: WARN
       code: 207
@@ -18,7 +18,7 @@
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
-    ALTER TABLE tech_book ADD COLUMN a int;
+    ALTER TABLE tech_book ADD COLUMN b int;
     ALTER TABLE t ADD COLUMN b int;
     ALTER TABLE tech_book MODIFY COLUMN b varchar(255);
   want:
