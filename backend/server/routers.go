@@ -26,6 +26,20 @@ func configureEchoRouters(e *echo.Echo, grpcServer *grpc.Server, mux *grpcruntim
 	e.HideBanner = true
 	e.HidePort = true
 	e.Use(recoverMiddleware)
+
+	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
+		LogURI:    true,
+		LogMethod: true,
+		LogStatus: true,
+		LogError:  true,
+		LogValuesFunc: func(c echo.Context, values middleware.RequestLoggerValues) error {
+			if values.Error != nil {
+				slog.Error("echo request logger", "method", values.Method, "uri", values.URI, "status", values.Status, log.BBError(values.Error))
+			}
+			return nil
+		},
+	}))
+
 	grpcSkipper := func(c echo.Context) bool {
 		// Skip grpc and webhook calls.
 		return strings.HasPrefix(c.Request().URL.Path, "/bytebase.v1.") ||

@@ -163,7 +163,7 @@ const resetQuickstart = () => {
     "environment.visit",
     "instance.visit",
     "database.visit",
-    "member.addOrInvite",
+    "member.visit",
     "kbar.open",
     "data.query",
     "help.issue.detail",

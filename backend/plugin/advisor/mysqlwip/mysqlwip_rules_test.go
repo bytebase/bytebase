@@ -48,6 +48,8 @@ func TestMySQLWIPRules(t *testing.T) {
 
 		// advisor.SchemaRuleTableRequirePK require the table to have a primary key.
 		advisor.SchemaRuleTableRequirePK,
+		// advisor.SchemaRuleTableNoFK require the table disallow the foreign key.
+		advisor.SchemaRuleTableNoFK,
 
 		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL support check if the database is empty before users drop it.
 		advisor.SchemaRuleDropEmptyDatabase,

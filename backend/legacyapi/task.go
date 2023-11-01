@@ -153,6 +153,8 @@ type TaskDatabaseSchemaUpdateGhostSyncPayload struct {
 
 	SheetID       int    `json:"sheetId,omitempty"`
 	SchemaVersion string `json:"schemaVersion,omitempty"`
+
+	Flags map[string]string `json:"flags,omitempty"`
 	// SocketFileName is the socket file that gh-ost listens on.
 	// The name follows this template,
 	// `./tmp/gh-ost.{{ISSUE_ID}}.{{TASK_ID}}.{{DATABASE_ID}}.{{DATABASE_NAME}}.{{TABLE_NAME}}.sock`
@@ -299,4 +301,7 @@ type TaskPatch struct {
 	// When RollbackEnabled is enabled, RollbackSheetID is kept till it's set to the new sheet ID by the runner.
 	RollbackSheetID *int
 	RollbackError   *string
+
+	// Flags for gh-ost.
+	Flags *map[string]string
 }
