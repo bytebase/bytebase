@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"sort"
 	"strconv"
 
@@ -373,7 +374,9 @@ func NewMD5Masker(salt string) *MD5Masker {
 func (m *MD5Masker) Mask(data *MaskData) *v1pb.RowValue {
 	f := func(s string) string {
 		h := md5.New()
-		h.Write([]byte(s + m.salt))
+		if _, err := h.Write([]byte(s + m.salt)); err != nil {
+			slog.Error("Failed to write to md5 hash: %v", err)
+		}
 		return fmt.Sprintf("%x", h.Sum(nil))
 	}
 
