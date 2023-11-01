@@ -483,10 +483,10 @@ export interface MaskingAlgorithmSetting_Algorithm {
   /** description is the description for masking algorithm. */
   description: string;
   /**
-   * Category is the category for masking algorithm. Currently, it accepts 2 categories only: MASKING and HASHING.
+   * Category is the category for masking algorithm. Currently, it accepts 2 categories only: MASK and HASH.
    * The range of accepted Payload is decided by the category.
-   * Mask: FullMask, RangeMask
-   * Hash: MD5Mask
+   * MASK: FullMask, RangeMask
+   * HASH: MD5Mask
    */
   category: string;
   fullMask?: MaskingAlgorithmSetting_Algorithm_FullMask | undefined;
@@ -515,7 +515,7 @@ export interface MaskingAlgorithmSetting_Algorithm_RangeMask_Slice {
   start: number;
   /** stop is the stop index of the original value, should be less than the length of the original value. */
   end: number;
-  /** OriginalValue[start:end) would be replaced with replace_with. */
+  /** substitution is the string used to replace the OriginalValue[start:end). */
   substitution: string;
 }
 

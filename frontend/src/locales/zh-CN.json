@@ -679,8 +679,34 @@
       },
       "algorithms": {
         "self": "脱敏算法",
+        "add": "添加算法",
         "default": "默认",
-        "default-desc": "使用 *** 为数据遮挡"
+        "default-desc": "使用 *** 为数据遮挡",
+        "table": {
+          "title": "名称",
+          "description": "描述",
+          "masking-type": "算法类型",
+          "delete": "删除该算法？"
+        },
+        "full-mask": {
+          "self": "全遮掩",
+          "substitution": "遮掩字符串",
+          "substitution-label": "遮掩字符串是用来替换原始值的字符串，最大长度不能超过16字节。"
+        },
+        "range-mask": {
+          "self": "范围遮掩",
+          "slice-start": "起始位置",
+          "slice-start-label": "起始位置是原始值的起始索引，从 0 开始且小于结束位置。",
+          "slice-end": "结束位置",
+          "slice-end-label": "结束位置是原始值的停止索引，应小于原始值的长度。",
+          "substitution": "遮掩字符串",
+          "substitution-label": "遮掩字符串是用来替换从起始位置到结束位置的字符串。"
+        },
+        "md5-mask": {
+          "self": "MD5 哈希",
+          "salt": "盐值",
+          "salt-label": "盐值用于计算生成哈希值。"
+        }
       },
       "masking-level": {
         "self": "脱敏程度",
