@@ -8,7 +8,13 @@
 </template>
 
 <script lang="ts" setup>
-import { UserCircle, Building, ShieldCheck, Link } from "lucide-vue-next";
+import {
+  UserCircle,
+  Building,
+  ShieldCheck,
+  Link,
+  Archive,
+} from "lucide-vue-next";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
@@ -195,6 +201,11 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
           path: "/setting/mail-delivery",
         },
       ],
+    },
+    {
+      title: t("common.archived"),
+      icon: h(Archive),
+      path: "/archive",
     },
   ];
 });
