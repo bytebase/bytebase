@@ -1,4 +1,7 @@
-- statement: DROP TABLE IF EXISTS foo_delete
+- statement: |-
+    CREATE TABLE foo(a INT);
+    RENAME TABLE foo to foo_delete;
+    DROP TABLE IF EXISTS foo_delete;
   want:
     - status: SUCCESS
       code: 0
@@ -6,7 +9,9 @@
       content: ""
       line: 0
       details: ""
-- statement: DROP TABLE IF EXISTS foo
+- statement: |-
+    CREATE TABLE foo(a INT);
+    DROP TABLE IF EXISTS foo;
   want:
     - status: WARN
       code: 603
@@ -14,11 +19,15 @@
       content: '`foo` mismatches drop table naming convention, naming format should be "_delete$"'
       line: 2
       details: ""
-- statement: DROP TABLE IF EXISTS foo_delete, bar
+- statement: |-
+    CREATE TABLE foo(a INT);
+    RENAME TABLE foo to foo_delete;
+    CREATE TABLE bar(a INT);
+    DROP TABLE IF EXISTS foo_delete, bar;
   want:
     - status: WARN
       code: 603
       title: table.drop-naming-convention
       content: '`bar` mismatches drop table naming convention, naming format should be "_delete$"'
-      line: 2
+      line: 4
       details: ""
