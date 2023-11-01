@@ -10,6 +10,7 @@ import { defineConfig } from "vite";
 
 const SERVER_PORT = parseInt(process.env.PORT ?? "3000", 10) ?? 3000;
 const HTTPS_PORT = 443;
+const LOCAL_ENDPOINT = "http://localhost:8080";
 
 export default defineConfig(() => {
   // NOTE: the following lines is to solve https://github.com/gitpod-io/gitpod/issues/6719
@@ -59,16 +60,16 @@ export default defineConfig(() => {
           ws: true,
         },
         "/api": {
-          target: "http://localhost:8080/api",
+          target: `${LOCAL_ENDPOINT}/api`,
           changeOrigin: true,
           rewrite: (path: string) => path.replace(/^\/api/, ""),
         },
         "/hook": {
-          target: "http://localhost:8080/",
+          target: LOCAL_ENDPOINT,
           changeOrigin: true,
         },
         "/v1": {
-          target: "http://localhost:8080/v1",
+          target: `${LOCAL_ENDPOINT}/v1`,
           changeOrigin: true,
           rewrite: (path: string) => path.replace(/^\/v1/, ""),
         },
