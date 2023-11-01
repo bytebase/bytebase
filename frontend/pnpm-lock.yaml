@@ -1,4 +1,4 @@
-lockfileVersion: '6.1'
+lockfileVersion: '6.0'
 
 settings:
   autoInstallPeers: true
@@ -230,8 +230,8 @@ devDependencies:
     specifier: 3.0.2
     version: 3.0.2
   '@types/downloadjs':
-    specifier: 1.4.3
-    version: 1.4.3
+    specifier: 1.4.5
+    version: 1.4.5
   '@types/file-saver':
     specifier: ^2.0.5
     version: 2.0.5
@@ -1438,8 +1438,8 @@ packages:
       '@types/trusted-types': 2.0.4
     dev: true
 
-  /@types/downloadjs@1.4.3:
-    resolution: {integrity: sha512-MjJepFle/tLtT2/jmDNth6ZnwWzEhm40L+olE5HKR70ISUCfgT55eqreeHldAzFLY2HDUGsn8zgyto8KygN0CA==}
+  /@types/downloadjs@1.4.5:
+    resolution: {integrity: sha512-pr3zSKY0QwP+1tQumJGNfziGNi1xLVHtGsrclGsgjVpfWSPoW/9He42w6X+GTp4PO5I2wuHDU2wJdxI7dqjW+w==}
     dev: true
 
   /@types/estree@1.0.2:
