@@ -1362,7 +1362,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 				var schemaConfig *storepb.SchemaConfig
 				if dbSchema != nil && dbSchema.Config != nil {
 					for _, c := range dbSchema.Config.SchemaConfigs {
-						if schemaConfig.Name == schema.Name {
+						if c != nil && c.Name == schema.Name {
 							schemaConfig = c
 							break
 						}
@@ -1380,7 +1380,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 					var tableConfig *storepb.TableConfig
 					if schemaConfig != nil {
 						for _, c := range schemaConfig.TableConfigs {
-							if c.Name == table.Name {
+							if c != nil && c.Name == table.Name {
 								tableConfig = c
 								break
 							}
@@ -1395,7 +1395,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 						var columnConfig *storepb.ColumnConfig
 						if tableConfig != nil {
 							for _, c := range tableConfig.ColumnConfigs {
-								if c.Name == column.Name {
+								if c != nil && c.Name == column.Name {
 									columnConfig = c
 									break
 								}
@@ -1437,7 +1437,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 			var schemaConfig *storepb.SchemaConfig
 			if dbSchema != nil && dbSchema.Config != nil {
 				for _, c := range dbSchema.Config.SchemaConfigs {
-					if c.Name == schema.Name {
+					if c != nil && c.Name == schema.Name {
 						schemaConfig = c
 						break
 					}
@@ -1451,7 +1451,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 				var tableConfig *storepb.TableConfig
 				if schemaConfig != nil {
 					for _, c := range schemaConfig.TableConfigs {
-						if c.Name == table.Name {
+						if c != nil && c.Name == table.Name {
 							tableConfig = c
 							break
 						}
@@ -1465,7 +1465,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 					var columnConfig *storepb.ColumnConfig
 					if tableConfig != nil {
 						for _, c := range tableConfig.ColumnConfigs {
-							if c.Name == column.Name {
+							if c != nil && c.Name == column.Name {
 								columnConfig = c
 							}
 						}
