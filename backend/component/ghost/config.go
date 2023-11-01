@@ -29,20 +29,20 @@ var defaultConfig = struct {
 	throttleHTTPIntervalMillis          int64
 	throttleHTTPTimeoutMillis           int64
 }{
-	allowedRunningOnMaster:              true,
-	concurrentCountTableRows:            true,
-	timestampAllTable:                   true,
-	hooksStatusIntervalSec:              60,
-	heartbeatIntervalMilliseconds:       100,
-	niceRatio:                           0,
-	chunkSize:                           1000,
-	dmlBatchSize:                        10,
-	maxLagMillisecondsThrottleThreshold: 1500,
-	defaultNumRetries:                   60,
-	cutoverLockTimeoutSeconds:           60,
-	exponentialBackoffMaxInterval:       64,
-	throttleHTTPIntervalMillis:          100,
-	throttleHTTPTimeoutMillis:           1000,
+	allowedRunningOnMaster:              true, // allow-on-master
+	concurrentCountTableRows:            true, // concurrent-rowcount
+	timestampAllTable:                   true, // doesn't have a gh-ost cli flag counterpart
+	hooksStatusIntervalSec:              60,   // hooks-status-interval
+	heartbeatIntervalMilliseconds:       100,  // heartbreat-interval-millis
+	niceRatio:                           0,    // nice-ration
+	chunkSize:                           1000, // chunk-size
+	dmlBatchSize:                        10,   // dml-batch-size
+	maxLagMillisecondsThrottleThreshold: 1500, // max-lag-millis
+	defaultNumRetries:                   60,   // default-retries
+	cutoverLockTimeoutSeconds:           60,   // cut-over-lock-timeout-seconds
+	exponentialBackoffMaxInterval:       64,   // exponential-backoff-max-interval
+	throttleHTTPIntervalMillis:          100,  // throttle-http-interval-millis
+	throttleHTTPTimeoutMillis:           1000, // throttle-http-timeout-millis
 }
 
 type UserFlags struct {
