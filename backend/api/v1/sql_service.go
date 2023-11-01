@@ -1360,7 +1360,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 		if instance.Engine == storepb.Engine_ORACLE || instance.Engine == storepb.Engine_DM || instance.Engine == storepb.Engine_OCEANBASE_ORACLE {
 			for _, schema := range dbSchema.Metadata.Schemas {
 				var schemaConfig *storepb.SchemaConfig
-				if dataClassificationConfig != nil {
+				if dbSchema != nil && dbSchema.Config != nil {
 					for _, c := range dbSchema.Config.SchemaConfigs {
 						if schemaConfig.Name == schema.Name {
 							schemaConfig = c
@@ -1435,7 +1435,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 		}
 		for _, schema := range dbSchema.Metadata.Schemas {
 			var schemaConfig *storepb.SchemaConfig
-			if dbSchema.Config != nil {
+			if dbSchema != nil && dbSchema.Config != nil {
 				for _, c := range dbSchema.Config.SchemaConfigs {
 					if c.Name == schema.Name {
 						schemaConfig = c
