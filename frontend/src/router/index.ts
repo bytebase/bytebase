@@ -56,6 +56,7 @@ import {
 } from "@/utils";
 import DashboardSidebar from "@/views/DashboardSidebar.vue";
 import Home from "@/views/Home.vue";
+import SettingSidebar from "@/views/SettingSidebar.vue";
 import MultiFactor from "@/views/auth/MultiFactor.vue";
 import Signin from "@/views/auth/Signin.vue";
 import Signup from "@/views/auth/Signup.vue";
@@ -311,10 +312,10 @@ const routes: Array<RouteRecordRaw> = [
           {
             path: "archive",
             name: "workspace.archive",
-            meta: { title: () => t("common.archive") },
+            meta: { title: () => t("common.archived") },
             components: {
               content: () => import("../views/Archive.vue"),
-              leftSidebar: DashboardSidebar,
+              leftSidebar: SettingSidebar,
             },
             props: {
               content: true,
@@ -340,7 +341,7 @@ const routes: Array<RouteRecordRaw> = [
             },
             components: {
               content: () => import("../views/ProfileDashboard.vue"),
-              leftSidebar: () => import("../views/SettingSidebar.vue"),
+              leftSidebar: SettingSidebar,
             },
             props: { content: true },
           },
@@ -350,7 +351,7 @@ const routes: Array<RouteRecordRaw> = [
             meta: { title: () => t("common.settings") },
             components: {
               content: () => import("../layouts/SettingLayout.vue"),
-              leftSidebar: () => import("../views/SettingSidebar.vue"),
+              leftSidebar: SettingSidebar,
             },
             props: {
               content: true,
