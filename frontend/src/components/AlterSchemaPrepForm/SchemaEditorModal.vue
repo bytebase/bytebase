@@ -121,9 +121,6 @@
     </div>
   </BBModal>
 
-  <!-- Select DDL mode for MySQL -->
-  <GhostDialog ref="ghostDialog" />
-
   <!-- Close modal confirm dialog -->
   <ActionConfirmModal
     v-if="state.showActionConfirmModal"
@@ -137,7 +134,7 @@
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { cloneDeep, head, isEqual, uniq } from "lodash-es";
-import { computed, onMounted, PropType, reactive, ref } from "vue";
+import { computed, onMounted, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import ActionConfirmModal from "@/components/SchemaEditorV1/Modals/ActionConfirmModal.vue";
@@ -151,7 +148,6 @@ import {
   useSchemaEditorV1Store,
 } from "@/store";
 import {
-  ComposedDatabase,
   dialectOfEngineV1,
   UNKNOWN_PROJECT_NAME,
   unknownProject,
@@ -159,7 +155,6 @@ import {
 import { Engine } from "@/types/proto/v1/common";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
-import { allowGhostMigrationV1 } from "@/utils";
 import MonacoEditor from "../MonacoEditor";
 import { provideSQLCheckContext } from "../SQLCheck";
 import {
@@ -167,7 +162,6 @@ import {
   mergeSchemaEditToMetadata,
   validateDatabaseMetadata,
 } from "../SchemaEditorV1/utils";
-import GhostDialog from "./GhostDialog.vue";
 import SchemaEditorSQLCheckButton from "./SchemaEditorSQLCheckButton/SchemaEditorSQLCheckButton.vue";
 
 const MAX_UPLOAD_FILE_SIZE_MB = 1;
@@ -210,7 +204,6 @@ const schemaEditorV1Store = useSchemaEditorV1Store();
 const databaseV1Store = useDatabaseV1Store();
 const dbSchemaV1Store = useDBSchemaV1Store();
 const notificationStore = useNotificationStore();
-const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
 const { runSQLCheck } = provideSQLCheckContext();
 
 const allowPreviewIssue = computed(() => {
@@ -281,24 +274,6 @@ const dismissModal = () => {
   } else {
     emit("close");
   }
-};
-
-// 'normal' -> normal migration
-// 'online' -> online migration
-// false -> user clicked cancel button
-const isUsingGhostMigration = async (databaseList: ComposedDatabase[]) => {
-  // check if all selected databases supports gh-ost
-  if (allowGhostMigrationV1(databaseList)) {
-    // open the dialog to ask the user
-    const { result, mode } = await ghostDialog.value!.open();
-    if (!result) {
-      return false; // return false when user clicked the cancel button
-    }
-    return mode;
-  }
-
-  // fallback to normal
-  return "normal";
 };
 
 const handleSyncSQLFromSchemaEditor = async () => {
@@ -460,32 +435,14 @@ const handlePreviewIssue = async () => {
   if (state.selectedTab === "raw-sql") {
     query.sql = state.editStatement;
 
-    // We should show select ghost mode dialog only for altering table statement not create/drop table.
-    // TODO(steven): parse the sql check if there only alter table statement.
-    const actionResult = await isUsingGhostMigration(databaseList.value);
-    if (actionResult === false) {
-      return;
-    }
-    if (actionResult === "online") {
-      query.ghost = 1;
-    }
     query.name = generateIssueName(
       databaseList.value.map((db) => db.databaseName),
-      !!query.ghost
+      false /* !onlineMode */
     );
   } else {
-    // We should show select ghost mode dialog only for altering table statement not create/drop table.
-    // TODO(steven): parse the sql check if there only alter table statement.
-    const actionResult = await isUsingGhostMigration(databaseList.value);
-    if (actionResult === false) {
-      return;
-    }
-    if (actionResult === "online") {
-      query.ghost = 1;
-    }
     query.name = generateIssueName(
       databaseList.value.map((db) => db.databaseName),
-      !!query.ghost
+      false /* !onlineMode */
     );
 
     const statementMap = await fetchStatementMapWithSchemaEditor();

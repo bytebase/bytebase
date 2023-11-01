@@ -380,7 +380,22 @@
     "action-failed-in-current-stage": "{action} failed tasks in current stage",
     "action-all-tasks-in-current-stage": "{action} all tasks in current stage",
     "cancel-task": "Cancel task | Cancel tasks",
-    "created": "Created"
+    "created": "Created",
+    "online-migration": {
+      "self": "Online migration",
+      "configure-ghost-parameters-for-db": "Configure gh-ost parameters for database '{db}'",
+      "configure-ghost-parameters": "Configure gh-ost parameters",
+      "ghost-parameters": "gh-ost parameters",
+      "configure": "Configure",
+      "error": {
+        "some-tasks-are-not-editable-in-batch-mode": "Some tasks are not editable in batch mode",
+        "task-is-not-editable": "This task is not editable",
+        "x-status-task-is-not-editable": "{status} task is not editable",
+        "nothing-changed": "Nothing changed"
+      },
+      "show-default-parameters": "Show default parameters",
+      "hide-default-parameters": "Hide default parameters"
+    }
   },
   "task-run": {
     "status": {
@@ -1030,7 +1045,11 @@
       "sql-review-violations": "SQL Review Violations"
     },
     "no-assignee-candidates": "There is no valid assignee candidates in this project. Please contact the project owner.",
-    "allow-any-following-roles-to-be-assignee": "Allow any following roles to be assignee"
+    "allow-any-following-roles-to-be-assignee": "Allow any following roles to be assignee",
+    "error": {
+      "issue-is-not-open": "The issue is not open",
+      "you-don-have-privilege-to-edit-this-issue": "You don't have privilege to edit this issue"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
