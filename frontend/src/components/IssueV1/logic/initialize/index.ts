@@ -1,5 +1,10 @@
 import { computed, ref, Ref, watch } from "vue";
-import { useRoute, useRouter, _RouteLocationBase } from "vue-router";
+import {
+  useRoute,
+  useRouter,
+  _RouteLocationBase,
+  LocationQuery,
+} from "vue-router";
 import { experimentalFetchIssueByUID } from "@/store";
 import { ComposedIssue, emptyIssue, EMPTY_ID, UNKNOWN_ID } from "@/types";
 import { idFromSlug } from "@/utils";
@@ -25,7 +30,9 @@ export function useInitializeIssue(issueSlug: Ref<string>) {
   const runner = async (uid: string, url: string) => {
     const issue =
       uid === String(EMPTY_ID)
-        ? await createIssueSkeleton(router.resolve(url))
+        ? await createIssueSkeleton(
+            convertRouterQuery(router.resolve(url).query)
+          )
         : await experimentalFetchIssueByUID(uid);
     return {
       issue,
@@ -54,5 +61,27 @@ export function useInitializeIssue(issueSlug: Ref<string>) {
     { immediate: true }
   );
 
-  return { isCreating, issue, isInitializing };
+  const reInitialize = async (overrides: Record<string, string> = {}) => {
+    const url = route.fullPath;
+    const query = convertRouterQuery(router.resolve(url).query);
+    try {
+      const updated = await createIssueSkeleton({ ...query, ...overrides });
+      issue.value = updated;
+    } catch {
+      // Nothing
+    }
+  };
+
+  return { isCreating, issue, isInitializing, reInitialize };
 }
+
+export const convertRouterQuery = (query: LocationQuery) => {
+  const kv: Record<string, string> = {};
+  for (const key in query) {
+    const value = query[key];
+    if (typeof value === "string") {
+      kv[key] = value;
+    }
+  }
+  return kv;
+};

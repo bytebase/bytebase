@@ -95,7 +95,9 @@
           </div>
         </div>
         <div v-if="showExtendedColumns" class="bb-grid-cell">
-          {{ humanizeTs((issue.updateTime?.getTime() ?? 0) / 1000) }}
+          <EllipsisText>
+            {{ humanizeTs((issue.updateTime?.getTime() ?? 0) / 1000) }}
+          </EllipsisText>
         </div>
         <div v-if="showExtendedColumns" class="bb-grid-cell !py-0.5">
           <CurrentApproverV1 :issue="issue" />
@@ -153,6 +155,7 @@ import { reactive, computed, watch, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBGridColumn } from "@/bbkit";
+import EllipsisText from "@/components/EllipsisText.vue";
 import BatchIssueActionsV1 from "@/components/IssueV1/components/BatchIssueActionsV1.vue";
 import CurrentApproverV1 from "@/components/IssueV1/components/CurrentApproverV1.vue";
 import IssueStatusIcon from "@/components/IssueV1/components/IssueStatusIcon.vue";
@@ -188,7 +191,7 @@ const columnList = computed((): BBGridColumn[] => {
     columns.push(
       {
         title: t("issue.table.updated"),
-        width: "minmax(auto, 5rem)",
+        width: "minmax(auto, 7rem)",
       },
       {
         title: t("issue.table.approver"),

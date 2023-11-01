@@ -378,7 +378,22 @@
     "action-failed-in-current-stage": "{action}当前阶段失败的任务",
     "action-all-tasks-in-current-stage": "{action}当前阶段的所有任务",
     "cancel-task": "取消任务",
-    "created": "创建于"
+    "created": "创建于",
+    "online-migration": {
+      "self": "在线迁移",
+      "configure-ghost-parameters-for-db": "为数据库「{db}」配置 gh-ost 参数",
+      "configure-ghost-parameters": "配置 gh-ost 参数",
+      "ghost-parameters": "gh-ost 参数",
+      "configure": "配置",
+      "error": {
+        "some-tasks-are-not-editable-in-batch-mode": "某些任务在批量模式下不可编辑",
+        "task-is-not-editable": "该任务不可编辑",
+        "x-status-task-is-not-editable": "{status} 的任务不可编辑",
+        "nothing-changed": "无任何改变"
+      },
+      "show-default-parameters": "显示默认参数",
+      "hide-default-parameters": "隐藏默认参数"
+    }
   },
   "task-run": {
     "status": {
@@ -1027,7 +1042,11 @@
       "sql-review-violations": "违反的 SQL 审核规则"
     },
     "no-assignee-candidates": "该项目中没有有效的发布人候选人。\n请联系项目所有者。",
-    "allow-any-following-roles-to-be-assignee": "允许以下任何角色作为发布人"
+    "allow-any-following-roles-to-be-assignee": "允许以下任何角色作为发布人",
+    "error": {
+      "issue-is-not-open": "工单不是开启状态",
+      "you-don-have-privilege-to-edit-this-issue": "您没有权限编辑此工单"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",

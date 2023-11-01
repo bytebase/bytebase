@@ -312,7 +312,7 @@ export function filterDatabaseV1ByKeyword(
   return false;
 }
 
-const MIN_GHOST_SUPPORT_MYSQL_VERSION = "5.7.0";
+export const MIN_GHOST_SUPPORT_MYSQL_VERSION = "5.7.0";
 
 export function allowGhostMigrationV1(
   databaseList: ComposedDatabase[]
