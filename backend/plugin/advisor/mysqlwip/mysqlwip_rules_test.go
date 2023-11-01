@@ -52,6 +52,8 @@ func TestMySQLWIPRules(t *testing.T) {
 		advisor.SchemaRuleTableNoFK,
 		// advisor.SchemaRuleTableDropNamingConvention require only the table following the naming convention can be deleted.
 		advisor.SchemaRuleTableDropNamingConvention,
+		// advisor.SchemaRuleTableCommentConvention enforce the table comment convention.
+		advisor.SchemaRuleTableCommentConvention,
 
 		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL support check if the database is empty before users drop it.
 		advisor.SchemaRuleDropEmptyDatabase,
