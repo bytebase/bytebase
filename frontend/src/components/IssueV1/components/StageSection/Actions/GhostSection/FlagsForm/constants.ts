@@ -31,11 +31,6 @@ export const DefaultGhostParameters: GhostParameterWithValue[] = [
     value: "true",
   },
   {
-    key: "timestampAllTable",
-    type: "bool",
-    value: "true",
-  },
-  {
     key: "hooks-status-interval",
     type: "int",
     value: "60",
