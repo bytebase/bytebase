@@ -362,7 +362,7 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 			}
 
 			stmtResults, err := func() ([]*storepb.PlanCheckRunResult_Result, error) {
-				driver, err := e.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, db)
+				driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, db)
 				if err != nil {
 					return nil, err
 				}

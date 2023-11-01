@@ -838,7 +838,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				}
 				newFlags := spec.GetChangeDatabaseConfig().GetGhostFlags()
 				if _, err := ghost.GetUserFlags(newFlags); err != nil {
-					return status.Errorf(codes.InvalidArgument, "invalid ghost flags %q", newFlags)
+					return status.Errorf(codes.InvalidArgument, "invalid ghost flags %q, error %v", newFlags, err)
 				}
 				oldFlags := payload.Flags
 				if cmp.Equal(oldFlags, newFlags) {

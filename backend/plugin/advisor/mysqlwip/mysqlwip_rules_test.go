@@ -46,6 +46,12 @@ func TestMySQLWIPRules(t *testing.T) {
 		// advisor.SchemaRuleStatementInsertDisallowOrderByRand disallow the order by rand in the INSERT statement.
 		advisor.SchemaRuleStatementInsertDisallowOrderByRand,
 
+		// advisor.SchemaRuleTableRequirePK require the table to have a primary key.
+		advisor.SchemaRuleTableRequirePK,
+		// advisor.SchemaRuleTableNoFK require the table disallow the foreign key.
+		advisor.SchemaRuleTableNoFK,
+		// advisor.SchemaRuleTableDropNamingConvention require only the table following the naming convention can be deleted.
+		advisor.SchemaRuleTableDropNamingConvention,
 		// advisor.SchemaRuleTableCommentConvention enforce the table comment convention.
 		advisor.SchemaRuleTableCommentConvention,
 

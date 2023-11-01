@@ -27,7 +27,7 @@
         {{ getColumnDefaultValuePlaceholder(item.column!) }}
       </div>
       <div class="bb-grid-cell">
-        {{ item.column?.comment }}
+        {{ item.column?.userComment }}
       </div>
       <div class="bb-grid-cell">
         <LabelsColumn :labels="item.config?.labels ?? {}" :show-count="2" />
