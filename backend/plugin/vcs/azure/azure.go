@@ -413,6 +413,8 @@ func (p *Provider) getPaginatedDiffFileList(ctx context.Context, oauthCtx common
 			changeType = vcs.FileDiffTypeRemoved
 		case "edit":
 			changeType = vcs.FileDiffTypeModified
+		case "rename":
+			changeType = vcs.FileDiffTypeAdded
 		default:
 			changeType = vcs.FileDiffTypeUnknown
 		}
