@@ -16,7 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 )
 
-// DB represents the database connection.
+// DB represents the metdata database connection.
 type DB struct {
 	metadataDriver dbdriver.Driver
 	db             *sql.DB
