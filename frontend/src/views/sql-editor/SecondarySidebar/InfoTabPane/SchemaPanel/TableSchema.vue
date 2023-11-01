@@ -10,10 +10,7 @@
         <span class="text-sm">{{ table.name }}</span>
       </div>
 
-      <div
-        v-if="sqlEditorStore.mode === 'BUNDLED'"
-        class="flex justify-end gap-x-0.5"
-      >
+      <div v-if="pageMode === 'BUNDLED'" class="flex justify-end gap-x-0.5">
         <ExternalLinkButton
           :link="tableDetailLink"
           :tooltip="$t('common.detail')"
@@ -38,9 +35,10 @@
 </template>
 
 <script lang="ts" setup>
+import { storeToRefs } from "pinia";
 import { stringify } from "qs";
 import { computed } from "vue";
-import { useSQLEditorStore } from "@/store";
+import { useActuatorV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type {
   DatabaseMetadata,
@@ -65,7 +63,8 @@ const emit = defineEmits<{
 }>();
 
 const { events: editorEvents } = useSQLEditorContext();
-const sqlEditorStore = useSQLEditorStore();
+const actuatorStore = useActuatorV1Store();
+const { pageMode } = storeToRefs(actuatorStore);
 
 const tableDetailLink = computed((): string => {
   const { database, schema, table } = props;
