@@ -9,6 +9,7 @@ import {
   TableMetadata,
   ViewMetadata,
   FunctionMetadata,
+  DatabaseMetadataView,
 } from "@/types/proto/v1/database_service";
 import { getInstanceAndDatabaseId } from "./common";
 
@@ -77,6 +78,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", {
         .getDatabaseMetadata(
           {
             name: metadataName,
+            view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
           },
           {
             silent,
