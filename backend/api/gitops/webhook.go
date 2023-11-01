@@ -486,6 +486,9 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 					addedList = append(addedList, change.Item.Path)
 				case "edit":
 					modifiedList = append(modifiedList, change.Item.Path)
+				case "rename":
+					// To be consistent with VCS, we treat rename as delete + add, but we do not need to handle delete here.
+					addedList = append(addedList, change.Item.Path)
 				}
 			}
 

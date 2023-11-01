@@ -405,6 +405,7 @@ func (p *Provider) getPaginatedDiffFileList(ctx context.Context, oauthCtx common
 
 	result := make([]vcs.FileDiff, 0, len(r.Changes))
 	for _, c := range r.Changes {
+		slog.Debug("Get diff file", slog.String("path", c.Item.Path), slog.String("changeType", c.ChangeType))
 		var changeType vcs.FileDiffType
 		switch c.ChangeType {
 		case "add":
@@ -413,6 +414,8 @@ func (p *Provider) getPaginatedDiffFileList(ctx context.Context, oauthCtx common
 			changeType = vcs.FileDiffTypeRemoved
 		case "edit":
 			changeType = vcs.FileDiffTypeModified
+		case "rename":
+			changeType = vcs.FileDiffTypeAdded
 		default:
 			changeType = vcs.FileDiffTypeUnknown
 		}
