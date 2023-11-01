@@ -95,6 +95,12 @@ func (s *Store) ListRoles(ctx context.Context) ([]*RoleMessage, error) {
 		},
 		&RoleMessage{
 			CreatorID:   api.SystemBotID,
+			ResourceID:  api.ProjectViewer.String(),
+			Name:        "Project database viewer",
+			Description: "",
+		},
+		&RoleMessage{
+			CreatorID:   api.SystemBotID,
 			ResourceID:  api.Exporter.String(),
 			Name:        "Project exporter",
 			Description: "",
