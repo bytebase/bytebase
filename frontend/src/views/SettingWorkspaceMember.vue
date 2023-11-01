@@ -6,7 +6,7 @@
     :description="userCountAttention"
   />
 
-  <div class="w-full pb-4">
+  <div class="w-full overflow-x-hidden pb-4">
     <div v-if="allowAddOrInvite" class="w-full flex justify-center mb-6">
       <MemberAddOrInvite />
     </div>

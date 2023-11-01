@@ -35,19 +35,19 @@ const (
 // ProjectPermission returns whether a particular permission is granted to a particular project role in a particular plan.
 func ProjectPermission(permission ProjectPermissionType, plan PlanType, roles map[common.ProjectRole]bool) bool {
 	// a map from the a particular feature to the respective enablement of a project developer and owner.
-	projectPermissionMatrix := map[ProjectPermissionType][2]bool{
-		ProjectPermissionManageGeneral:  {false, true},
-		ProjectPermissionManageMember:   {false, true},
-		ProjectPermissionCreateSheet:    {true, true},
-		ProjectPermissionAdminSheet:     {false, true},
-		ProjectPermissionOrganizeSheet:  {true, true},
-		ProjectPermissionSyncSheet:      {true, true},
-		ProjectPermissionChangeDatabase: {true, true},
-		ProjectPermissionAdminDatabase:  {false, true},
+	projectPermissionMatrix := map[ProjectPermissionType][3]bool{
+		ProjectPermissionManageGeneral:  {false, true, true},
+		ProjectPermissionManageMember:   {false, true, false},
+		ProjectPermissionCreateSheet:    {true, true, false},
+		ProjectPermissionAdminSheet:     {false, true, false},
+		ProjectPermissionOrganizeSheet:  {true, true, false},
+		ProjectPermissionSyncSheet:      {true, true, false},
+		ProjectPermissionChangeDatabase: {true, true, false},
+		ProjectPermissionAdminDatabase:  {false, true, false},
 		// If dba-workflow is disabled, then project developer can also create database.
-		ProjectPermissionCreateDatabase: {!Feature(FeatureDBAWorkflow, plan), true},
+		ProjectPermissionCreateDatabase: {!Feature(FeatureDBAWorkflow, plan), true, false},
 		// If dba-workflow is disabled, then project developer can also transfer database.
-		ProjectPermissionTransferDatabase: {!Feature(FeatureDBAWorkflow, plan), true},
+		ProjectPermissionTransferDatabase: {!Feature(FeatureDBAWorkflow, plan), true, false},
 	}
 
 	for role := range roles {
@@ -58,6 +58,10 @@ func ProjectPermission(permission ProjectPermissionType, plan PlanType, roles ma
 			}
 		case common.ProjectOwner:
 			if projectPermissionMatrix[permission][1] {
+				return true
+			}
+		case common.ProjectViewer:
+			if projectPermissionMatrix[permission][2] {
 				return true
 			}
 		}

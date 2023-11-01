@@ -54,6 +54,11 @@ func TestMySQLWIPRules(t *testing.T) {
 		advisor.SchemaRuleTableDropNamingConvention,
 		// advisor.SchemaRuleTableCommentConvention enforce the table comment convention.
 		advisor.SchemaRuleTableCommentConvention,
+		// advisor.SchemaRuleTableDisallowPartition disallow the table partition.
+		advisor.SchemaRuleTableDisallowPartition,
+
+		// advisor.SchemaRuleRequiredColumn enforce the required columns in each table.
+		advisor.SchemaRuleRequiredColumn,
 
 		// advisor.SchemaRuleColumnNotNull enforce the columns cannot have NULL value.
 		advisor.SchemaRuleColumnNotNull,

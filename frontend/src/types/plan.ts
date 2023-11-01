@@ -60,7 +60,9 @@ export type FeatureType =
   // Plugins
   | "bb.feature.plugin.openai"
   // Instance count limit
-  | "bb.feature.instance-count";
+  | "bb.feature.instance-count"
+  // User count limit
+  | "bb.feature.user-count";
 
 export const instanceLimitFeature = new Set<FeatureType>([
   // Change Workflow

@@ -13,6 +13,7 @@ import {
   useSettingV1Store,
 } from "@/store";
 import { DEFAULT_PROJECT_V1_NAME } from "@/types";
+import { MaskingAlgorithmSetting_Algorithm } from "@/types/proto/v1/setting_service";
 import {
   extractEnvironmentResourceName,
   extractInstanceResourceName,
@@ -83,3 +84,24 @@ export const factorSupportDropdown: Factor[] = [
 export const factorOperatorOverrideMap = new Map<Factor, Operator[]>([
   ["project_id", uniq([...EqualityOperatorList, ...CollectionOperatorList])],
 ]);
+
+export type MaskingType = "full-mask" | "range-mask" | "md5-mask";
+
+export const getMaskingType = (
+  algorithm: MaskingAlgorithmSetting_Algorithm
+): MaskingType | undefined => {
+  switch (algorithm.category) {
+    case "HASH":
+      return "md5-mask";
+    case "MASK":
+      if (algorithm.fullMask) {
+        return "full-mask";
+      } else if (algorithm.rangeMask) {
+        return "range-mask";
+      }
+      break;
+    default:
+      return;
+  }
+  return;
+};

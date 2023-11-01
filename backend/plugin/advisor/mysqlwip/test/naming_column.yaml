@@ -41,7 +41,7 @@
       details: ""
 - statement: |
     ALTER TABLE tech_book RENAME COLUMN id TO creator_id;
-    ALTER TABLE tech_book RENAME COLUMN id TO gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx;
+    ALTER TABLE tech_book RENAME COLUMN creator_id TO gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx;
   want:
     - status: WARN
       code: 302
@@ -64,7 +64,9 @@
       content: '`book`.`creatorId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       line: 7
       details: ""
-- statement: ALTER TABLE tech_book CHANGE COLUMN id creator_id int;
+- statement: |-
+    CREATE TABLE book (id INT);
+    ALTER TABLE book CHANGE COLUMN id creator_id int;
   want:
     - status: SUCCESS
       code: 0

@@ -23,8 +23,8 @@
       line: 1
       details: ""
 - statement: |
-    CREATE TABLE tech_book(a INT);
-    ALTER TABLE tech_book RENAME TO TechBook;
+    CREATE TABLE book(a INT);
+    ALTER TABLE book RENAME TO TechBook;
   want:
     - status: WARN
       code: 301
@@ -33,8 +33,8 @@
       line: 2
       details: ""
 - statement: |
-    CREATE TABLE tech_book(a INT);
-    ALTER TABLE tech_book RENAME TO tech_book_copy;
+    CREATE TABLE book(a INT);
+    ALTER TABLE book RENAME TO tech_book_copy;
   want:
     - status: SUCCESS
       code: 0
@@ -43,8 +43,8 @@
       line: 0
       details: ""
 - statement: |
-    CREATE TABLE tech_book (a INT);
-    RENAME TABLE tech_book TO tech_book_copy, tech_book_copy TO LiteraryBook;
+    CREATE TABLE book (a INT);
+    RENAME TABLE book TO tech_book_copy, tech_book_copy TO LiteraryBook;
   want:
     - status: WARN
       code: 301
@@ -54,8 +54,8 @@
       details: ""
 - statement: |
     CREATE TABLE literary_book(a int);
-    CREATE TABLE tech_book(a int);
-    RENAME TABLE tech_book TO TechBook, literary_book TO LiteraryBook;
+    CREATE TABLE book(a int);
+    RENAME TABLE book TO TechBook, literary_book TO LiteraryBook;
   want:
     - status: WARN
       code: 301
@@ -71,8 +71,8 @@
       details: ""
 - statement: |
     CREATE TABLE literary_book(a int);
-    CREATE TABLE teck_book(a int);
-    RENAME TABLE tech_book TO tech_book_copy, literary_book TO literary_book_copy;
+    CREATE TABLE book(a int);
+    RENAME TABLE book TO tech_book_copy, literary_book TO literary_book_copy;
   want:
     - status: SUCCESS
       code: 0

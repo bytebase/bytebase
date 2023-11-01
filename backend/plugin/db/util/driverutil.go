@@ -152,14 +152,14 @@ func Query(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, statement
 	var fieldMasker []masker.Masker
 	var fieldMaskInfo []bool
 	var fieldSensitiveInfo []bool
+	noneMasker := masker.NewNoneMasker()
 	for i := range columnNames {
-		maskingLevel := storepb.MaskingLevel_NONE
+		var masker masker.Masker = noneMasker
 		if len(fieldList) > i && queryContext.EnableSensitive {
-			maskingLevel = fieldList[i].MaskingAttributes.MaskingLevel
+			masker = fieldList[i].MaskingAttributes.Masker
 		}
-		sensitive := maskingLevel == storepb.MaskingLevel_FULL || maskingLevel == storepb.MaskingLevel_PARTIAL
+		sensitive := !masker.Equal(noneMasker)
 		fieldSensitiveInfo = append(fieldSensitiveInfo, sensitive)
-		masker := buildMaskerByLevel(maskingLevel)
 		fieldMasker = append(fieldMasker, masker)
 		fieldMaskInfo = append(fieldMaskInfo, sensitive && queryContext.EnableSensitive)
 	}
@@ -304,18 +304,6 @@ func rowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
 		ColumnTypeNames: columnTypeNames,
 		Rows:            data,
 	}, nil
-}
-
-func buildMaskerByLevel(lvl storepb.MaskingLevel) masker.Masker {
-	switch lvl {
-	case storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, storepb.MaskingLevel_NONE:
-		return masker.NewNoneMasker()
-	case storepb.MaskingLevel_PARTIAL:
-		return masker.NewDefaultRangeMasker()
-	case storepb.MaskingLevel_FULL:
-		return masker.NewDefaultFullMasker()
-	}
-	return masker.NewNoneMasker()
 }
 
 func readRows(rows *sql.Rows, columnTypeNames []string, fieldMasker []masker.Masker) ([]*v1pb.QueryRow, error) {

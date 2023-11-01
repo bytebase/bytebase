@@ -1317,7 +1317,7 @@ func (extractor *fieldExtractor) mysqlEvalMaskingAttributesInExpr(ctx antlr.Pars
 		}
 		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, field := range fieldList {
-			attributes.TransmittedBy(field.MaskingAttributes)
+			attributes.TransmittedByInExpression(field.MaskingAttributes)
 			if attributes.IsNeverChangeInTransmission() {
 				return "", attributes, nil
 			}
@@ -1359,7 +1359,7 @@ func (extractor *fieldExtractor) mysqlEvalMaskingAttributesInExprList(list []ant
 		if len(list) != 1 {
 			fieldName = ""
 		}
-		finalAttributes.TransmittedBy(attributes)
+		finalAttributes.TransmittedByInExpression(attributes)
 		if finalAttributes.IsNeverChangeInTransmission() {
 			return fieldName, finalAttributes, nil
 		}

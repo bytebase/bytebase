@@ -6,6 +6,12 @@ const SystemBotID = 1
 // SystemBotEmail is the email of the system robot.
 const SystemBotEmail = "support@bytebase.com"
 
+// AllUsersID is the ID of the allUsers robot.
+const AllUsersID = 2
+
+// AllUsers is the email of the pseudo allUsers account.
+const AllUsers = "allUsers"
+
 // PrincipalType is the type of a principal.
 type PrincipalType string
 
