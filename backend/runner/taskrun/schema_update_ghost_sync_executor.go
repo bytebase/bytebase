@@ -56,7 +56,7 @@ func (exec *SchemaUpdateGhostSyncExecutor) RunOnce(ctx context.Context, _ contex
 		return true, nil, err
 	}
 
-	return exec.runGhostMigration(ctx, task, statement)
+	return exec.runGhostMigration(ctx, task, statement, payload.Flags)
 }
 
 type sharedGhostState struct {
@@ -64,7 +64,7 @@ type sharedGhostState struct {
 	errCh            <-chan error
 }
 
-func (exec *SchemaUpdateGhostSyncExecutor) runGhostMigration(ctx context.Context, task *store.TaskMessage, statement string) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *SchemaUpdateGhostSyncExecutor) runGhostMigration(ctx context.Context, task *store.TaskMessage, statement string, flags map[string]string) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	syncDone := make(chan struct{})
 	// set buffer size to 1 to unblock the sender because there is no listner if the task is canceled.
 	// see PR #2919.
@@ -101,7 +101,7 @@ func (exec *SchemaUpdateGhostSyncExecutor) runGhostMigration(ctx context.Context
 	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
 	renderedStatement := utils.RenderStatement(statement, materials)
 
-	migrationContext, err := ghost.NewMigrationContext(task.ID, database, adminDataSource, exec.secret, tableName, renderedStatement, false, 10000000)
+	migrationContext, err := ghost.NewMigrationContext(task.ID, database, adminDataSource, exec.secret, tableName, renderedStatement, false, flags, 10000000)
 	if err != nil {
 		return true, nil, errors.Wrap(err, "failed to init migrationContext for gh-ost")
 	}

@@ -102,7 +102,7 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, config *storepb.PlanCheckRu
 		return nil, common.Wrapf(err, common.Internal, "failed to parse table name from statement, statement: %v", statement)
 	}
 
-	migrationContext, err := ghost.NewMigrationContext(rand.Intn(10000000), database, adminDataSource, e.secret, tableName, renderedStatement, true, 20000000)
+	migrationContext, err := ghost.NewMigrationContext(rand.Intn(10000000), database, adminDataSource, e.secret, tableName, renderedStatement, true, nil, 20000000)
 	if err != nil {
 		return nil, common.Wrapf(err, common.Internal, "failed to create migration context")
 	}
