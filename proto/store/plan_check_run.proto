@@ -14,6 +14,8 @@ message PlanCheckRunConfig {
   // database_group_uid is optional. If it's set, it means the database is part of a database group.
   optional int64 database_group_uid = 5;
 
+  map<string, string> ghost_flags = 6;
+
   enum ChangeDatabaseType {
     CHANGE_DATABASE_TYPE_UNSPECIFIED = 0;
     DDL = 1;
