@@ -327,8 +327,20 @@ func convertToPlanCheckRun(ctx context.Context, s *store.Store, parent string, r
 		Type:       convertToPlanCheckRunType(run.Type),
 		Status:     convertToPlanCheckRunStatus(run.Status),
 		Target:     "",
+		Sheet:      "",
 		Results:    convertToPlanCheckRunResults(run.Result.Results),
 		Error:      run.Result.Error,
+	}
+
+	if sheetUID := int(run.Config.GetSheetUid()); sheetUID != 0 {
+		sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID}, api.SystemBotID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get sheet")
+		}
+		if sheet == nil {
+			return nil, errors.Errorf("sheet not found for uid %d", sheetUID)
+		}
+		converted.Sheet = fmt.Sprintf("%s/%s%d", parent, common.SheetIDPrefix, sheet.UID)
 	}
 
 	instanceUID := int(run.Config.InstanceUid)
