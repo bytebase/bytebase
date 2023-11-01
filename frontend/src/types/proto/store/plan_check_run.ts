@@ -12,6 +12,7 @@ export interface PlanCheckRunConfig {
   databaseName: string;
   /** database_group_uid is optional. If it's set, it means the database is part of a database group. */
   databaseGroupUid?: number | undefined;
+  ghostFlags: { [key: string]: string };
 }
 
 export enum PlanCheckRunConfig_ChangeDatabaseType {
@@ -57,6 +58,11 @@ export function planCheckRunConfig_ChangeDatabaseTypeToJSON(object: PlanCheckRun
     default:
       return "UNRECOGNIZED";
   }
+}
+
+export interface PlanCheckRunConfig_GhostFlagsEntry {
+  key: string;
+  value: string;
 }
 
 export interface PlanCheckRunResult {
@@ -135,7 +141,14 @@ export interface PlanCheckRunResult_Result_SqlReviewReport {
 }
 
 function createBasePlanCheckRunConfig(): PlanCheckRunConfig {
-  return { sheetUid: 0, changeDatabaseType: 0, instanceUid: 0, databaseName: "", databaseGroupUid: undefined };
+  return {
+    sheetUid: 0,
+    changeDatabaseType: 0,
+    instanceUid: 0,
+    databaseName: "",
+    databaseGroupUid: undefined,
+    ghostFlags: {},
+  };
 }
 
 export const PlanCheckRunConfig = {
@@ -155,6 +168,9 @@ export const PlanCheckRunConfig = {
     if (message.databaseGroupUid !== undefined) {
       writer.uint32(40).int64(message.databaseGroupUid);
     }
+    Object.entries(message.ghostFlags).forEach(([key, value]) => {
+      PlanCheckRunConfig_GhostFlagsEntry.encode({ key: key as any, value }, writer.uint32(50).fork()).ldelim();
+    });
     return writer;
   },
 
@@ -200,6 +216,16 @@ export const PlanCheckRunConfig = {
 
           message.databaseGroupUid = longToNumber(reader.int64() as Long);
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          const entry6 = PlanCheckRunConfig_GhostFlagsEntry.decode(reader, reader.uint32());
+          if (entry6.value !== undefined) {
+            message.ghostFlags[entry6.key] = entry6.value;
+          }
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -218,6 +244,12 @@ export const PlanCheckRunConfig = {
       instanceUid: isSet(object.instanceUid) ? Number(object.instanceUid) : 0,
       databaseName: isSet(object.databaseName) ? String(object.databaseName) : "",
       databaseGroupUid: isSet(object.databaseGroupUid) ? Number(object.databaseGroupUid) : undefined,
+      ghostFlags: isObject(object.ghostFlags)
+        ? Object.entries(object.ghostFlags).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+          acc[key] = String(value);
+          return acc;
+        }, {})
+        : {},
     };
   },
 
@@ -229,6 +261,12 @@ export const PlanCheckRunConfig = {
     message.instanceUid !== undefined && (obj.instanceUid = Math.round(message.instanceUid));
     message.databaseName !== undefined && (obj.databaseName = message.databaseName);
     message.databaseGroupUid !== undefined && (obj.databaseGroupUid = Math.round(message.databaseGroupUid));
+    obj.ghostFlags = {};
+    if (message.ghostFlags) {
+      Object.entries(message.ghostFlags).forEach(([k, v]) => {
+        obj.ghostFlags[k] = v;
+      });
+    }
     return obj;
   },
 
@@ -243,6 +281,83 @@ export const PlanCheckRunConfig = {
     message.instanceUid = object.instanceUid ?? 0;
     message.databaseName = object.databaseName ?? "";
     message.databaseGroupUid = object.databaseGroupUid ?? undefined;
+    message.ghostFlags = Object.entries(object.ghostFlags ?? {}).reduce<{ [key: string]: string }>(
+      (acc, [key, value]) => {
+        if (value !== undefined) {
+          acc[key] = String(value);
+        }
+        return acc;
+      },
+      {},
+    );
+    return message;
+  },
+};
+
+function createBasePlanCheckRunConfig_GhostFlagsEntry(): PlanCheckRunConfig_GhostFlagsEntry {
+  return { key: "", value: "" };
+}
+
+export const PlanCheckRunConfig_GhostFlagsEntry = {
+  encode(message: PlanCheckRunConfig_GhostFlagsEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PlanCheckRunConfig_GhostFlagsEntry {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePlanCheckRunConfig_GhostFlagsEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PlanCheckRunConfig_GhostFlagsEntry {
+    return { key: isSet(object.key) ? String(object.key) : "", value: isSet(object.value) ? String(object.value) : "" };
+  },
+
+  toJSON(message: PlanCheckRunConfig_GhostFlagsEntry): unknown {
+    const obj: any = {};
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value);
+    return obj;
+  },
+
+  create(base?: DeepPartial<PlanCheckRunConfig_GhostFlagsEntry>): PlanCheckRunConfig_GhostFlagsEntry {
+    return PlanCheckRunConfig_GhostFlagsEntry.fromPartial(base ?? {});
+  },
+
+  fromPartial(object: DeepPartial<PlanCheckRunConfig_GhostFlagsEntry>): PlanCheckRunConfig_GhostFlagsEntry {
+    const message = createBasePlanCheckRunConfig_GhostFlagsEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
     return message;
   },
 };
@@ -700,6 +815,10 @@ function longToNumber(long: Long): number {
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
   _m0.configure();
+}
+
+function isObject(value: any): boolean {
+  return typeof value === "object" && value !== null;
 }
 
 function isSet(value: any): boolean {
