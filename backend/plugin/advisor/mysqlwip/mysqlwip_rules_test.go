@@ -54,6 +54,8 @@ func TestMySQLWIPRules(t *testing.T) {
 		advisor.SchemaRuleTableDropNamingConvention,
 		// advisor.SchemaRuleTableCommentConvention enforce the table comment convention.
 		advisor.SchemaRuleTableCommentConvention,
+		// advisor.SchemaRuleTableDisallowPartition disallow the table partition.
+		advisor.SchemaRuleTableDisallowPartition,
 
 		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL support check if the database is empty before users drop it.
 		advisor.SchemaRuleDropEmptyDatabase,
