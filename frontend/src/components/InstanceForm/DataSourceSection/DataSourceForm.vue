@@ -216,13 +216,13 @@ import { NButton, NCheckbox, NInput } from "naive-ui";
 import { DataSourceOptions } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { DataSource, DataSourceType } from "@/types/proto/v1/instance_service";
+import { onlyAllowNumber } from "@/utils";
 import { EditDataSource } from "../common";
 import { useInstanceFormContext } from "../context";
 import { useInstanceSpecs } from "../specs";
 import SpannerCredentialInput from "./SpannerCredentialInput.vue";
 import SshConnectionForm from "./SshConnectionForm.vue";
 import SslCertificateForm from "./SslCertificateForm.vue";
-import { onlyAllowNumber } from "./common";
 
 const props = defineProps<{
   dataSource: EditDataSource;

@@ -30,7 +30,7 @@ export function isDatabaseRelatedIssueType(issueType: IssueType): boolean {
 export const generateIssueName = (
   type: "bb.issue.database.schema.update" | "bb.issue.database.data.update",
   databaseNameList: string[],
-  isOnlineMode: boolean
+  isOnlineMode = false
 ) => {
   // Create a user friendly default issue name
   const issueNameParts: string[] = [];
