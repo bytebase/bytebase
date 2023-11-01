@@ -693,6 +693,11 @@ func SQLReviewCheck(statements string, ruleList []*storepb.SQLReviewRule, checkC
 
 	finder := checkContext.Catalog.GetFinder()
 	switch checkContext.DbType {
+	// only for mysqlwip test.
+	case storepb.Engine_ENGINE_UNSPECIFIED:
+		if err := finder.WalkThrough(statements); err != nil {
+			return convertWalkThroughErrorToAdvice(checkContext, err)
+		}
 	case storepb.Engine_TIDB, storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_POSTGRES, storepb.Engine_OCEANBASE:
 		if err := finder.WalkThrough(statements); err != nil {
 			return convertWalkThroughErrorToAdvice(checkContext, err)
@@ -1179,6 +1184,9 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleColumnNotNull:
 		switch engine {
+		// only for mysqlwip test.
+		case storepb.Engine_ENGINE_UNSPECIFIED:
+			return MySQLColumnNoNull, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLColumnNoNull, nil
 		case storepb.Engine_POSTGRES:

@@ -55,6 +55,9 @@ func TestMySQLWIPRules(t *testing.T) {
 		// advisor.SchemaRuleTableCommentConvention enforce the table comment convention.
 		advisor.SchemaRuleTableCommentConvention,
 
+		// advisor.SchemaRuleColumnNotNull enforce the columns cannot have NULL value.
+		advisor.SchemaRuleColumnNotNull,
+
 		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL support check if the database is empty before users drop it.
 		advisor.SchemaRuleDropEmptyDatabase,
 	}
