@@ -17,7 +17,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/demo"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
@@ -94,13 +93,6 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, strictUseDb bool, pgB
 		return nil, errors.Wrap(err, "failed to get current schema version")
 	}
 	slog.Info(fmt.Sprintf("Current schema version after migration: %s", verAfter))
-
-	if err := demo.SetupDemoData(demoName, metadataDriver.GetDB()); err != nil {
-		return nil, errors.Wrapf(err, "failed to setup demo data."+
-			" It could be Bytebase is running against an old Bytebase schema. If you are developing Bytebase, you can remove pgdata"+
-			" directory under the same directory where the Bytebase binary resides. and restart again to let"+
-			" Bytebase create the latest schema. If you are running in production and don't want to reset the data, you can contact support@bytebase.com for help")
-	}
 
 	return &verAfter, nil
 }

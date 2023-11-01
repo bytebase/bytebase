@@ -29,6 +29,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
+	"github.com/bytebase/bytebase/backend/demo"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	enterprisesvc "github.com/bytebase/bytebase/backend/enterprise/service"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -202,6 +203,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	if profile.Readonly {
 		slog.Info("Database is opened in readonly mode. Skip migration and demo data setup.")
 	} else {
+		if err := demo.LoadDemoDataIfNeeded(ctx, storeDB, !profile.UseEmbedDB(), s.pgBinDir, profile.DemoName); err != nil {
+			return nil, errors.Wrapf(err, "failed to load demo data")
+		}
 		if _, err := migrator.MigrateSchema(ctx, storeDB, !profile.UseEmbedDB(), s.pgBinDir, profile.DemoName, profile.Version, profile.Mode); err != nil {
 			return nil, err
 		}

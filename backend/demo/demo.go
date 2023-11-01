@@ -1,6 +1,7 @@
 package demo
 
 import (
+	"context"
 	"database/sql"
 	"embed"
 	"fmt"
@@ -9,13 +10,18 @@ import (
 	"sort"
 
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/store"
+
+	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 //go:embed data
 var demoFS embed.FS
 
-// setupDemoData loads the demo data.
-func SetupDemoData(demoName string, db *sql.DB) error {
+// LoadDemoDataIfNeeded loads the demo data if specified.
+func LoadDemoDataIfNeeded(ctx context.Context, storeDB *store.DB, strictUseDb bool, pgBinDir, demoName string) error {
 	if demoName == "" {
 		slog.Debug("Skip setting up demo data. Demo not specified.")
 		return nil
@@ -23,9 +29,36 @@ func SetupDemoData(demoName string, db *sql.DB) error {
 
 	slog.Info(fmt.Sprintf("Setting up demo %q...", demoName))
 
-	// Reset existing demo data.
-	if err := applyDataFile("data/reset.sql", db); err != nil {
-		return errors.Wrapf(err, "Failed to reset demo data")
+	databaseName := storeDB.ConnCfg.Database
+	if !strictUseDb {
+		// The database storing metadata is the same as user name.
+		databaseName = storeDB.ConnCfg.Username
+	}
+	metadataConnConfig := storeDB.ConnCfg
+	if !strictUseDb {
+		metadataConnConfig.Database = databaseName
+	}
+	metadataDriver, err := dbdriver.Open(
+		ctx,
+		storepb.Engine_POSTGRES,
+		dbdriver.DriverConfig{DbBinDir: pgBinDir},
+		metadataConnConfig,
+		dbdriver.ConnectionContext{},
+	)
+	if err != nil {
+		return err
+	}
+	defer metadataDriver.Close(ctx)
+
+	var exists bool
+	if err := metadataDriver.GetDB().QueryRowContext(ctx,
+		`SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'environment')`,
+	).Scan(&exists); err != nil {
+		return err
+	}
+	if exists {
+		slog.Info("Skip setting up demo data. Data already exists.")
+		return nil
 	}
 
 	names, err := fs.Glob(demoFS, fmt.Sprintf("data/%s/*.sql", demoName))
@@ -41,8 +74,8 @@ func SetupDemoData(demoName string, db *sql.DB) error {
 
 	// Loop over all data files and execute them in order.
 	for _, name := range names {
-		if err := applyDataFile(name, db); err != nil {
-			return errors.Wrapf(err, "Failed to load demo data: %q", name)
+		if err := applyDataFile(name, metadataDriver.GetDB()); err != nil {
+			return errors.Wrapf(err, "Failed to load file: %q", name)
 		}
 	}
 	slog.Info("Completed demo data setup.")
