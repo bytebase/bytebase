@@ -15,17 +15,20 @@
           size="small"
           :value="getIntValue(param.key)"
           :allow-input="onlyAllowNumber"
+          :disabled="readonly"
           @update:value="setIntValue(param.key, parseInt($event, 10))"
         />
         <NCheckbox
           v-if="param.type === 'bool'"
           :checked="getBoolValue(param.key)"
+          :disabled="readonly"
           @update:checked="setBoolValue(param.key, $event)"
         />
         <NInput
           v-if="param.type === 'string'"
           size="small"
           :value="getStringValue(param.key)"
+          :disabled="readonly"
           @update:value="setStringValue(param.key, $event)"
         />
       </div>
@@ -40,6 +43,7 @@ import { SupportedGhostParameters } from "./constants";
 
 const props = defineProps<{
   flags: Record<string, string>;
+  readonly: boolean;
 }>();
 const emit = defineEmits<{
   (event: "update:flags", flags: Record<string, string>): void;

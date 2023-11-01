@@ -390,7 +390,8 @@
       "error": {
         "some-tasks-are-not-editable-in-batch-mode": "Algunas tareas no se pueden editar en modo por lotes",
         "task-is-not-editable": "Esta tarea no es editable",
-        "x-status-task-is-not-editable": "La tarea {status} no es editable"
+        "x-status-task-is-not-editable": "La tarea {status} no es editable",
+        "nothing-changed": "nada ha cambiado"
       }
     }
   },

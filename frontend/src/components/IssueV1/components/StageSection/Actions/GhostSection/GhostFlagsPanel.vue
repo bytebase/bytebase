@@ -39,20 +39,28 @@
           <p class="font-medium text-control">
             {{ $t("task.online-migration.ghost-parameters") }}
           </p>
-          <FlagsForm v-model:flags="flags" />
+          <FlagsForm v-model:flags="flags" :readonly="readonly" />
         </div>
       </template>
       <template #footer>
         <div class="flex flex-row justify-end gap-x-3">
           <NButton @click="close">{{ $t("common.cancel") }}</NButton>
-          <NButton
-            type="primary"
-            :disabled="!isDirty"
-            :loading="isUpdating"
-            @click="trySave"
-          >
-            {{ $t("common.save") }}
-          </NButton>
+
+          <NTooltip :disabled="errors.length === 0">
+            <template #trigger>
+              <NButton
+                type="primary"
+                :disabled="!isDirty"
+                :loading="isUpdating"
+                @click="trySave"
+              >
+                {{ $t("common.save") }}
+              </NButton>
+            </template>
+            <template #default>
+              <ErrorList :errors="errors" />
+            </template>
+          </NTooltip>
         </div>
       </template>
     </DrawerContent>
@@ -61,7 +69,7 @@
 
 <script setup lang="ts">
 import { cloneDeep, isEqual, uniqBy } from "lodash-es";
-import { NButton } from "naive-ui";
+import { NButton, NTooltip } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import {
@@ -72,19 +80,16 @@ import {
   stageForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
+import ErrorList from "@/components/misc/ErrorList.vue";
 import { Drawer, DrawerContent, RichDatabaseName } from "@/components/v2";
 import { rolloutServiceClient } from "@/grpcweb";
 import { pushNotification } from "@/store";
-import {
-  Plan_Spec,
-  Task_Type,
-  UpdatePlanRequest,
-} from "@/types/proto/v1/rollout_service";
+import { Plan_Spec, Task_Type } from "@/types/proto/v1/rollout_service";
 import FlagsForm from "./FlagsForm";
 import { allowChangeTaskGhostFlags, useIssueGhostContext } from "./common";
 
 const { t } = useI18n();
-const { showFlagsPanel } = useIssueGhostContext();
+const { showFlagsPanel, denyEditGhostFlagsReasons } = useIssueGhostContext();
 const {
   isCreating,
   issue,
@@ -114,11 +119,21 @@ const flags = ref<Record<string, string>>({});
 const isDirty = computed(() => {
   return !isEqual(config.value?.ghostFlags ?? {}, flags.value);
 });
+const errors = computed(() => {
+  if (denyEditGhostFlagsReasons.value.length > 0) {
+    return denyEditGhostFlagsReasons.value;
+  }
+  const errors: string[] = [];
+  if (!isDirty.value) {
+    errors.push(t("task.online-migration.error.nothing-changed"));
+  }
+  return errors;
+});
 
-const close = () => {
-  flags.value = cloneDeep(config.value?.ghostFlags ?? {});
-  showFlagsPanel.value = false;
-};
+const readonly = computed(() => {
+  if (isCreating.value) return false;
+  return denyEditGhostFlagsReasons.value.length > 0;
+});
 
 const isDeploymentConfig = computed(() => {
   return !!spec.value?.changeDatabaseConfig?.target?.match(
@@ -143,6 +158,11 @@ const chooseUpdateSpecs = async () => {
     .filter((spec) => !!spec) as Plan_Spec[];
 
   return uniqBy(specs, (spec) => spec.id);
+};
+
+const close = () => {
+  flags.value = cloneDeep(config.value?.ghostFlags ?? {});
+  showFlagsPanel.value = false;
 };
 
 const trySave = async () => {
@@ -177,16 +197,6 @@ const trySave = async () => {
         config.ghostFlags = cloneDeep(flags.value);
       }
 
-      console.log(
-        JSON.stringify(
-          UpdatePlanRequest.toJSON({
-            plan: planPatch,
-            updateMask: ["steps"],
-          }),
-          null,
-          "  "
-        )
-      );
       const updatedPlan = await rolloutServiceClient.updatePlan({
         plan: planPatch,
         updateMask: ["steps"],

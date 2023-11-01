@@ -388,7 +388,8 @@
       "error": {
         "some-tasks-are-not-editable-in-batch-mode": "某些任务在批量模式下不可编辑",
         "task-is-not-editable": "该任务不可编辑",
-        "x-status-task-is-not-editable": "{status} 的任务不可编辑"
+        "x-status-task-is-not-editable": "{status} 的任务不可编辑",
+        "nothing-changed": "无任何改变"
       }
     }
   },

@@ -390,7 +390,8 @@
       "error": {
         "some-tasks-are-not-editable-in-batch-mode": "Some tasks are not editable in batch mode",
         "task-is-not-editable": "This task is not editable",
-        "x-status-task-is-not-editable": "{status} task is not editable"
+        "x-status-task-is-not-editable": "{status} task is not editable",
+        "nothing-changed": "Nothing changed"
       }
     }
   },
