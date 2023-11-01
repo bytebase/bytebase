@@ -15,5 +15,5 @@ const (
 	// Releaser is the RELEASER role.
 	Releaser ProjectRole = "RELEASER"
 	// ProjectViewer is the viewer of a project.
-	ProjectViewer ProjectRole = "DATABASE_VIEWER"
+	ProjectViewer ProjectRole = "VIEWER"
 )

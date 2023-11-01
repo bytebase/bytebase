@@ -4,7 +4,7 @@ export const PresetRoleType = {
   QUERIER: "roles/QUERIER",
   EXPORTER: "roles/EXPORTER",
   RELEASER: "roles/RELEASER",
-  DATABASE_VIEWER: "roles/DATABASE_VIEWER",
+  VIEWER: "roles/VIEWER",
 };
 
 export const PresetRoleTypeList = [
@@ -13,7 +13,7 @@ export const PresetRoleTypeList = [
   PresetRoleType.QUERIER,
   PresetRoleType.EXPORTER,
   PresetRoleType.RELEASER,
-  PresetRoleType.DATABASE_VIEWER,
+  PresetRoleType.VIEWER,
 ];
 
 export const VirtualRoleType = {
