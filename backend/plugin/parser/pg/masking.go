@@ -838,7 +838,7 @@ func (extractor *fieldExtractor) pgExtractColumnRefFromExpressionNode(in *pgquer
 		}
 
 		for _, field := range fieldList {
-			maskingAttributes.TransmittedBy(field.MaskingAttributes)
+			maskingAttributes.TransmittedByInExpression(field.MaskingAttributes)
 			if maskingAttributes.IsNeverChangeInTransmission() {
 				return maskingAttributes, nil
 			}
@@ -875,7 +875,7 @@ func (extractor *fieldExtractor) pgExtractColumnRefFromExpressionNodeList(list [
 		if err != nil {
 			return base.NewDefaultMaskingAttributes(), err
 		}
-		finalAttributes.TransmittedBy(maskingAttributes)
+		finalAttributes.TransmittedByInExpression(maskingAttributes)
 		if finalAttributes.IsNeverChangeInTransmission() {
 			return finalAttributes, nil
 		}

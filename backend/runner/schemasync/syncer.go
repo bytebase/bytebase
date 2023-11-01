@@ -372,8 +372,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 
 	var patchSchemaVersion *model.Version
 	if force {
-		// When there are too many databases, this might have performance issue and will
-		// cause frontend timeout since we set a 30s limit (INSTANCE_OPERATION_TIMEOUT).
+		// When there are too many databases, this might have performance issue.
 		schemaVersion, err := utils.GetLatestSchemaVersion(ctx, s.store, instance.UID, database.UID, databaseMetadata.Name)
 		if err != nil {
 			return err

@@ -139,13 +139,9 @@
             </div>
           </BBContextMenu>
         </div>
-        <a
-          v-if="showQuickstart"
-          class="menu-item"
-          role="menuitem"
-          @click.prevent="resetQuickstart"
-          >{{ $t("quick-start.self") }}</a
-        >
+        <a class="menu-item" role="menuitem" @click.prevent="resetQuickstart">{{
+          $t("quick-start.self")
+        }}</a>
         <a
           href="https://bytebase.com/docs?source=console"
           target="_blank"
@@ -224,8 +220,6 @@ const switchToEnterprise = () => {
   );
 };
 
-const showQuickstart = computed(() => !actuatorStore.isDemo);
-
 const logout = () => {
   authStore.logout().then(() => {
     router.push({ name: "auth.signin" });
@@ -240,7 +234,7 @@ const resetQuickstart = () => {
     "environment.visit",
     "instance.visit",
     "database.visit",
-    "member.addOrInvite",
+    "member.visit",
     "kbar.open",
     "data.query",
     "help.issue.detail",

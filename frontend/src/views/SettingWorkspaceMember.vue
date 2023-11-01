@@ -6,7 +6,7 @@
     :description="userCountAttention"
   />
 
-  <div class="w-full pb-4">
+  <div class="w-full overflow-x-hidden pb-4">
     <div v-if="allowAddOrInvite" class="w-full flex justify-center mb-6">
       <MemberAddOrInvite />
     </div>
@@ -73,7 +73,7 @@
 
 <script lang="ts" setup>
 import { NCheckbox } from "naive-ui";
-import { computed, reactive } from "vue";
+import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { MemberAddOrInvite, UserTable } from "@/components/User/Settings";
 import { SearchBox } from "@/components/v2";
@@ -81,6 +81,7 @@ import {
   useSubscriptionV1Store,
   useCurrentUserV1,
   useUserStore,
+  useUIStateStore,
 } from "@/store";
 import { UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
@@ -102,10 +103,20 @@ const state = reactive<LocalState>({
 const { t } = useI18n();
 const userStore = useUserStore();
 const currentUserV1 = useCurrentUserV1();
+const uiStateStore = useUIStateStore();
 const subscriptionV1Store = useSubscriptionV1Store();
 const hasRBACFeature = computed(() =>
   subscriptionV1Store.hasFeature("bb.feature.rbac")
 );
+
+onMounted(() => {
+  if (!uiStateStore.getIntroStateByKey("member.visit")) {
+    uiStateStore.saveIntroStateByKey({
+      key: "member.visit",
+      newState: true,
+    });
+  }
+});
 
 const activeUserList = computed(() => {
   const list = userStore.userList.filter((user) => user.state === State.ACTIVE);

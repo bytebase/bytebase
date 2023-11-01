@@ -3,7 +3,7 @@ module github.com/bytebase/bytebase
 go 1.21.3
 
 require (
-	cloud.google.com/go/spanner v1.49.0
+	cloud.google.com/go/spanner v1.50.0
 	gitee.com/chunanyong/dm v1.8.12
 	github.com/ClickHouse/clickhouse-go/v2 v2.14.1
 	github.com/antlr4-go/antlr/v4 v4.13.0
@@ -57,6 +57,7 @@ require (
 	github.com/shopspring/decimal v1.3.1
 	github.com/sijms/go-ora/v2 v2.7.18
 	github.com/snowflakedb/gosnowflake v1.6.25
+	github.com/sourcegraph/go-lsp v0.0.0-20200429204803-219e11d77f5d
 	github.com/sourcegraph/jsonrpc2 v0.2.0
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.4
@@ -69,15 +70,15 @@ require (
 	github.com/xuri/excelize/v2 v2.8.0
 	go.mongodb.org/mongo-driver v1.12.1
 	go.uber.org/multierr v1.11.0
-	golang.org/x/crypto v0.13.0
+	golang.org/x/crypto v0.14.0
 	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df
 	golang.org/x/oauth2 v0.12.0
-	golang.org/x/sys v0.12.0
+	golang.org/x/sys v0.13.0
 	golang.org/x/text v0.13.0
 	google.golang.org/api v0.143.0
-	google.golang.org/genproto v0.0.0-20230920204549-e6e6cdab5c13
-	google.golang.org/genproto/googleapis/api v0.0.0-20230920204549-e6e6cdab5c13
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20230920204549-e6e6cdab5c13
+	google.golang.org/genproto v0.0.0-20231016165738-49dd2c1f3d0b
+	google.golang.org/genproto/googleapis/api v0.0.0-20231012201019-e917dd12ba7a
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20231030173426-d783a09b4405
 	google.golang.org/grpc v1.58.3
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -133,16 +134,16 @@ require (
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/mod v0.12.0 // indirect
-	golang.org/x/term v0.12.0 // indirect
+	golang.org/x/term v0.13.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
 require (
 	cloud.google.com/go v0.110.8 // indirect
-	cloud.google.com/go/compute v1.23.0 // indirect
+	cloud.google.com/go/compute v1.23.1 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
-	cloud.google.com/go/iam v1.1.2 // indirect
-	cloud.google.com/go/longrunning v0.5.1 // indirect
+	cloud.google.com/go/iam v1.1.3 // indirect
+	cloud.google.com/go/longrunning v0.5.2 // indirect
 	github.com/BurntSushi/toml v1.2.1 // indirect
 	github.com/ClickHouse/ch-go v0.58.2 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
@@ -262,7 +263,7 @@ require (
 	go.opentelemetry.io/otel v1.18.0 // indirect
 	go.opentelemetry.io/otel/trace v1.18.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	golang.org/x/net v0.15.0 // indirect
+	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/sync v0.3.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.13.0 // indirect

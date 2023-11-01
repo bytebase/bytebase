@@ -813,7 +813,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 				if err != nil {
 					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the expression is sensitive")
 				}
-				finalAttributes.TransmittedBy(maskingAttributes)
+				finalAttributes.TransmittedByInExpression(maskingAttributes)
 				if finalAttributes.IsNeverChangeInTransmission() {
 					return ctx.GetText(), finalAttributes, nil
 				}
@@ -871,7 +871,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 				if err != nil {
 					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the case_expression is sensitive")
 				}
-				finalAttributes.TransmittedBy(maskingAttributes)
+				finalAttributes.TransmittedByInExpression(maskingAttributes)
 				if finalAttributes.IsNeverChangeInTransmission() {
 					return ctx.GetText(), finalAttributes, nil
 				}
@@ -883,7 +883,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 				if err != nil {
 					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the case_expression is sensitive")
 				}
-				finalAttributes.TransmittedBy(maskingAttributes)
+				finalAttributes.TransmittedByInExpression(maskingAttributes)
 				if finalAttributes.IsNeverChangeInTransmission() {
 					return ctx.GetText(), finalAttributes, nil
 				}
@@ -895,7 +895,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 				if err != nil {
 					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the case_expression is sensitive")
 				}
-				finalAttributes.TransmittedBy(maskingAttributes)
+				finalAttributes.TransmittedByInExpression(maskingAttributes)
 				if finalAttributes.IsNeverChangeInTransmission() {
 					return ctx.GetText(), finalAttributes, nil
 				}
@@ -910,7 +910,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 				if err != nil {
 					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the switch_setion is sensitive")
 				}
-				finalAttributes.TransmittedBy(maskingAttributes)
+				finalAttributes.TransmittedByInExpression(maskingAttributes)
 				if finalAttributes.IsNeverChangeInTransmission() {
 					return ctx.GetText(), finalAttributes, nil
 				}
@@ -924,7 +924,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the switch_search_condition_section is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -934,7 +934,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the switch_search_condition_section is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -951,7 +951,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 				if err != nil {
 					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the search_condition is sensitive")
 				}
-				finalAttributes.TransmittedBy(maskingAttributes)
+				finalAttributes.TransmittedByInExpression(maskingAttributes)
 				if finalAttributes.IsNeverChangeInTransmission() {
 					return ctx.GetText(), finalAttributes, nil
 				}
@@ -973,7 +973,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 				if err != nil {
 					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the predicate is sensitive")
 				}
-				finalAttributes.TransmittedBy(maskingAttributes)
+				finalAttributes.TransmittedByInExpression(maskingAttributes)
 				if finalAttributes.IsNeverChangeInTransmission() {
 					return ctx.GetText(), finalAttributes, nil
 				}
@@ -984,7 +984,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the predicate is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -998,7 +998,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 				if err != nil {
 					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the freetext_predicate is sensitive")
 				}
-				finalAttributes.TransmittedBy(maskingAttributes)
+				finalAttributes.TransmittedByInExpression(maskingAttributes)
 				if finalAttributes.IsNeverChangeInTransmission() {
 					return ctx.GetText(), finalAttributes, nil
 				}
@@ -1010,7 +1010,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 				if err != nil {
 					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the freetext_predicate is sensitive")
 				}
-				finalAttributes.TransmittedBy(maskingAttributes)
+				finalAttributes.TransmittedByInExpression(maskingAttributes)
 				if finalAttributes.IsNeverChangeInTransmission() {
 					return ctx.GetText(), finalAttributes, nil
 				}
@@ -1033,7 +1033,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 		}
 		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, field := range fieldInfo {
-			finalAttributes.TransmittedBy(field.MaskingAttributes)
+			finalAttributes.TransmittedByInExpression(field.MaskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1047,7 +1047,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 				if err != nil {
 					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the hierarchyid_call is sensitive")
 				}
-				finalAttributes.TransmittedBy(maskingAttributes)
+				finalAttributes.TransmittedByInExpression(maskingAttributes)
 				if finalAttributes.IsNeverChangeInTransmission() {
 					return ctx.GetText(), finalAttributes, nil
 				}
@@ -1092,7 +1092,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the ranking_windowed_function is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1102,7 +1102,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the ranking_windowed_function is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1115,7 +1115,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the over_clause is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1125,7 +1125,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the over_clause is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1135,7 +1135,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the over_clause is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1148,7 +1148,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the expression_list is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1161,7 +1161,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the order_by_clause is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1197,7 +1197,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 				if err != nil {
 					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the window_frame_extent is sensitive")
 				}
-				finalAttributes.TransmittedBy(maskingAttributes)
+				finalAttributes.TransmittedByInExpression(maskingAttributes)
 				if finalAttributes.IsNeverChangeInTransmission() {
 					return ctx.GetText(), finalAttributes, nil
 				}
@@ -1232,7 +1232,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the aggregate_windowed_function is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1242,7 +1242,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the aggregate_windowed_function is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1252,7 +1252,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the aggregate_windowed_function is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1262,7 +1262,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the aggregate_windowed_function is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1284,7 +1284,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 				if err != nil {
 					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the analytic_windowed_function is sensitive")
 				}
-				finalAttributes.TransmittedBy(maskingAttributes)
+				finalAttributes.TransmittedByInExpression(maskingAttributes)
 				if finalAttributes.IsNeverChangeInTransmission() {
 					return ctx.GetText(), finalAttributes, nil
 				}
@@ -1295,7 +1295,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the analytic_windowed_function is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1305,7 +1305,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the analytic_windowed_function is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1315,7 +1315,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the analytic_windowed_function is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1332,7 +1332,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the applock_mode is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1345,7 +1345,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the applock_test is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1358,7 +1358,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the assemblyproperty is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1371,7 +1371,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the col_length is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1384,7 +1384,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the col_name is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1397,7 +1397,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the columnproperty is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1410,7 +1410,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the databasepropertyex is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1465,7 +1465,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the filegroupproperty is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1478,7 +1478,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the fileproperty is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1491,7 +1491,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the filepropertyex is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1504,7 +1504,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the fulltextcatalogproperty is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1523,7 +1523,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the index_col is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1536,7 +1536,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the indexkey_property is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1549,7 +1549,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the indexproperty is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1568,7 +1568,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the object_id is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1581,7 +1581,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the object_name is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1594,7 +1594,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the object_schema_name is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1607,7 +1607,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the objectproperty is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1620,7 +1620,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the objectpropertyex is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1633,7 +1633,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the parsename is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1664,7 +1664,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the stats_date is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1689,7 +1689,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the typeproperty is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1714,7 +1714,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the charindex is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1727,7 +1727,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the concat is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1740,7 +1740,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the concat_ws is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1753,7 +1753,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the difference is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1766,7 +1766,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the format is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1779,7 +1779,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the left is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1816,7 +1816,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the patindex is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1829,7 +1829,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the quotename is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1842,7 +1842,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the replace is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1855,7 +1855,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the replicate is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1874,7 +1874,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the right is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1905,7 +1905,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the str is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1918,7 +1918,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the stringagg is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1931,7 +1931,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the string_escape is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1944,7 +1944,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the stuff is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1957,7 +1957,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the substring is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1970,7 +1970,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the translate is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -1983,7 +1983,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the trim is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2008,7 +2008,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the binary_checksum is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2021,7 +2021,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the checksum is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2046,7 +2046,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the formatmessage is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2059,7 +2059,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the isnull is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2090,7 +2090,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the convert is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2103,7 +2103,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the coalesce is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2158,7 +2158,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the date_bucket is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2171,7 +2171,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the dateadd is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2184,7 +2184,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the datediff is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2197,7 +2197,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the datediff_big is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2210,7 +2210,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the datefromparts is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2235,7 +2235,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the datetime2fromparts is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2248,7 +2248,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the datetimefromparts is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2261,7 +2261,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the datetimeoffsetfromparts is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2286,7 +2286,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the eomonth is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2311,7 +2311,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the smalldatetimefromparts is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2324,7 +2324,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the switchoffset is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2337,7 +2337,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the timefromparts is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2350,7 +2350,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the todatetimeoffset is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2369,7 +2369,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the nullif is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2382,7 +2382,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the parse is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2395,7 +2395,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the iif is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2408,7 +2408,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the isjson is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2421,7 +2421,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the json_array is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2434,7 +2434,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the json_value is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2447,7 +2447,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the json_query is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2460,7 +2460,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the json_modify is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2473,7 +2473,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the json_path_exists is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2510,7 +2510,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the atn2 is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2559,7 +2559,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the log is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2578,7 +2578,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the power is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2603,7 +2603,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the round is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2670,7 +2670,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the certprivatekey is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2695,7 +2695,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the has_perms_by_name is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2714,7 +2714,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the is_rolemember is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2727,7 +2727,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the is_srvrolemember is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2740,7 +2740,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the loginproperty is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2753,7 +2753,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the permissions is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2772,7 +2772,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the pwdcompare is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2803,7 +2803,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the suser_sid is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2828,7 +2828,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the scalar_function is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2838,7 +2838,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the scalar_function is sensitive")
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -2854,7 +2854,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 				if err != nil {
 					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the freetext_function is sensitive")
 				}
-				finalAttributes.TransmittedBy(maskingAttributes)
+				finalAttributes.TransmittedByInExpression(maskingAttributes)
 				if finalAttributes.IsNeverChangeInTransmission() {
 					return ctx.GetText(), finalAttributes, nil
 				}
@@ -2867,7 +2867,7 @@ func (extractor *fieldExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleCo
 				if err != nil {
 					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the freetext_function is sensitive")
 				}
-				finalAttributes.TransmittedBy(maskingAttributes)
+				finalAttributes.TransmittedByInExpression(maskingAttributes)
 				if finalAttributes.IsNeverChangeInTransmission() {
 					return ctx.GetText(), finalAttributes, nil
 				}
