@@ -528,7 +528,7 @@ func (extractor *fieldExtractor) plsqlEvalMaskingLevelInExpression(ctx antlr.Par
 		}
 		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, field := range fieldList {
-			finalAttributes.TransmittedBy(field.MaskingAttributes)
+			finalAttributes.TransmittedByInExpression(field.MaskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return "", finalAttributes, nil
 			}
@@ -549,7 +549,7 @@ func (extractor *fieldExtractor) plsqlEvalMaskingLevelInExpression(ctx antlr.Par
 		}
 		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, field := range fieldList {
-			finalAttributes.TransmittedBy(field.MaskingAttributes)
+			finalAttributes.TransmittedByInExpression(field.MaskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return "", finalAttributes, nil
 			}
@@ -727,7 +727,7 @@ func (extractor *fieldExtractor) plsqlEvalMaskingLevelInExpression(ctx antlr.Par
 		}
 		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, field := range fieldList {
-			finalAttributes.TransmittedBy(field.MaskingAttributes)
+			finalAttributes.TransmittedByInExpression(field.MaskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return "", finalAttributes, nil
 			}
@@ -978,7 +978,7 @@ func (extractor *fieldExtractor) plsqlEvalMaskingLevelInExpressionList(list []an
 		if len(list) != 1 {
 			fieldName = ""
 		}
-		finalAttributes.TransmittedBy(attributes)
+		finalAttributes.TransmittedByInExpression(attributes)
 		if finalAttributes.IsNeverChangeInTransmission() {
 			return fieldName, finalAttributes, nil
 		}
