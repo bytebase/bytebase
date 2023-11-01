@@ -14,6 +14,10 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+var (
+	_ advisor.Advisor = (*ColumnRequirementAdvisor)(nil)
+)
+
 func init() {
 	// only for mysqlwip test.
 	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLColumnRequirement, &ColumnRequirementAdvisor{})
