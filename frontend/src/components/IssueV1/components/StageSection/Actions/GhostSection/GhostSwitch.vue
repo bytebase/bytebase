@@ -3,6 +3,7 @@
     :value="checked"
     :disabled="!allowChange"
     :loading="isUpdating"
+    class="bb-ghost-switch"
     @update:value="toggleChecked"
   >
     <template #checked>
@@ -43,3 +44,21 @@ const toggleChecked = async (on: boolean) => {
   }
 };
 </script>
+
+<style lang="postcss" scoped>
+.bb-ghost-switch {
+  --n-width: max(
+    var(--n-rail-width),
+    calc(var(--n-rail-width) + var(--n-button-width) - var(--n-rail-height))
+  ) !important;
+}
+.bb-ghost-switch :deep(.n-switch__checked) {
+  padding-right: calc(var(--n-rail-height) - var(--n-offset) + 1px);
+}
+.bb-ghost-switch :deep(.n-switch__unchecked) {
+  padding-left: calc(var(--n-rail-height) - var(--n-offset) + 1px);
+}
+.bb-ghost-switch :deep(.n-switch__button-placeholder) {
+  width: calc(1.25 * var(--n-rail-height));
+}
+</style>

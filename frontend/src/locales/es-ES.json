@@ -385,7 +385,13 @@
       "self": "Migración en línea",
       "configure-ghost-parameters-for-db": "Configurar los parámetros de gh-ost para la base de datos '{db}'",
       "configure-ghost-parameters": "Configurar los parámetros de gh-ost",
-      "ghost-parameters": "parámetros de gh-ost"
+      "ghost-parameters": "parámetros de gh-ost",
+      "configure": "Configurar",
+      "error": {
+        "some-tasks-are-not-editable-in-batch-mode": "Algunas tareas no se pueden editar en modo por lotes",
+        "task-is-not-editable": "Esta tarea no es editable",
+        "x-status-task-is-not-editable": "La tarea {status} no es editable"
+      }
     }
   },
   "task-run": {
@@ -1009,7 +1015,11 @@
       "sql-review-violations": "Infracciones de revisión de SQL"
     },
     "no-assignee-candidates": "No hay candidatos asignados válidos en este proyecto. \nPor favor contacte al propietario del proyecto.",
-    "allow-any-following-roles-to-be-assignee": "Permitir que se asignen los siguientes roles"
+    "allow-any-following-roles-to-be-assignee": "Permitir que se asignen los siguientes roles",
+    "error": {
+      "issue-is-not-open": "El tema no está abierto.",
+      "you-don-have-privilege-to-edit-this-issue": "No tienes privilegios para editar este número."
+    }
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",

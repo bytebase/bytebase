@@ -31,10 +31,6 @@
       </div>
     </div>
   </div>
-
-  <div class="font-mono text-xs whitespace-pre bg-red-100">
-    {{ flags }}
-  </div>
 </template>
 
 <script lang="ts" setup>

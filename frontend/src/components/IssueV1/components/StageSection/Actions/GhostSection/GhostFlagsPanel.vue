@@ -40,11 +40,6 @@
             {{ $t("task.online-migration.ghost-parameters") }}
           </p>
           <FlagsForm v-model:flags="flags" />
-
-          <div>
-            <div>affectedTasks: {{ affectedTasks.length }}</div>
-            <div>isDirty: {{ isDirty }}</div>
-          </div>
         </div>
       </template>
       <template #footer>
@@ -54,7 +49,7 @@
             type="primary"
             :disabled="!isDirty"
             :loading="isUpdating"
-            @click="handleSave"
+            @click="trySave"
           >
             {{ $t("common.save") }}
           </NButton>
@@ -65,25 +60,38 @@
 </template>
 
 <script setup lang="ts">
-import { cloneDeep, isEqual } from "lodash-es";
+import { cloneDeep, isEqual, uniqBy } from "lodash-es";
 import { NButton } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import {
+  chooseUpdateTarget,
   databaseForTask,
+  notifyNotEditableLegacyIssue,
   specForTask,
   stageForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import { Drawer, DrawerContent, RichDatabaseName } from "@/components/v2";
+import { rolloutServiceClient } from "@/grpcweb";
 import { pushNotification } from "@/store";
-import { Task_Type } from "@/types/proto/v1/rollout_service";
-import { flattenTaskV1List } from "@/utils";
+import {
+  Plan_Spec,
+  Task_Type,
+  UpdatePlanRequest,
+} from "@/types/proto/v1/rollout_service";
+import FlagsForm from "./FlagsForm";
 import { allowChangeTaskGhostFlags, useIssueGhostContext } from "./common";
 
 const { t } = useI18n();
 const { showFlagsPanel } = useIssueGhostContext();
-const { isCreating, issue, selectedTask: task } = useIssueContext();
+const {
+  isCreating,
+  issue,
+  selectedTask: task,
+  dialog,
+  events,
+} = useIssueContext();
 const isUpdating = ref(false);
 
 const stage = computed(() => {
@@ -103,18 +111,6 @@ const config = computed(() => {
 });
 const flags = ref<Record<string, string>>({});
 
-const affectedTasks = computed(() => {
-  const spec = specForTask(issue.value.planEntity, task.value);
-  if (!spec) return [];
-  const tasks = flattenTaskV1List(issue.value.rolloutEntity);
-  return tasks
-    .filter((task) => task.specId === spec.id)
-    .filter((task) => allowChangeTaskGhostFlags(issue.value, task))
-    .filter(
-      (task) => task.type === Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC
-    );
-});
-
 const isDirty = computed(() => {
   return !isEqual(config.value?.ghostFlags ?? {}, flags.value);
 });
@@ -124,15 +120,81 @@ const close = () => {
   showFlagsPanel.value = false;
 };
 
-const handleSave = async () => {
+const isDeploymentConfig = computed(() => {
+  return !!spec.value?.changeDatabaseConfig?.target?.match(
+    /\/deploymentConfigs\/[^/]+/
+  );
+});
+
+const chooseUpdateSpecs = async () => {
+  const { tasks } = await chooseUpdateTarget(
+    issue.value,
+    task.value,
+    (task) =>
+      task.type === Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC &&
+      allowChangeTaskGhostFlags(issue.value, task),
+    dialog,
+    t("task.online-migration.ghost-parameters"),
+    isDeploymentConfig.value
+  );
+
+  const specs = tasks
+    .map((task) => specForTask(issue.value.planEntity, task))
+    .filter((spec) => !!spec) as Plan_Spec[];
+
+  return uniqBy(specs, (spec) => spec.id);
+};
+
+const trySave = async () => {
+  const specs = await chooseUpdateSpecs();
+  if (specs.length === 0) return;
+
   if (isCreating.value) {
-    if (!config.value) return;
-    config.value.ghostFlags = cloneDeep(flags.value);
+    specs.forEach((spec) => {
+      const config = spec.changeDatabaseConfig;
+      if (!config) return;
+      config.ghostFlags = cloneDeep(flags.value);
+    });
     close();
   } else {
     isUpdating.value = true;
     try {
-      await new Promise((r) => setTimeout(r, 500));
+      const planPatch = cloneDeep(issue.value.planEntity);
+      if (!planPatch) {
+        notifyNotEditableLegacyIssue();
+        return;
+      }
+
+      const distinctSpecIds = new Set(specs.map((spec) => spec.id));
+      const specsToPatch = planPatch.steps
+        .flatMap((step) => step.specs)
+        .filter((spec) => distinctSpecIds.has(spec.id));
+
+      for (let i = 0; i < specsToPatch.length; i++) {
+        const spec = specsToPatch[i];
+        const config = spec.changeDatabaseConfig;
+        if (!config) continue;
+        config.ghostFlags = cloneDeep(flags.value);
+      }
+
+      console.log(
+        JSON.stringify(
+          UpdatePlanRequest.toJSON({
+            plan: planPatch,
+            updateMask: ["steps"],
+          }),
+          null,
+          "  "
+        )
+      );
+      const updatedPlan = await rolloutServiceClient.updatePlan({
+        plan: planPatch,
+        updateMask: ["steps"],
+      });
+
+      issue.value.planEntity = updatedPlan;
+
+      events.emit("status-changed", { eager: true });
     } finally {
       pushNotification({
         module: "bytebase",

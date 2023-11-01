@@ -7,15 +7,13 @@ import {
   specForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import { ComposedIssue } from "@/types";
+import { ComposedDatabase, ComposedIssue } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import { IssueStatus } from "@/types/proto/v1/issue_service";
 import {
   Plan_ChangeDatabaseConfig_Type,
   Plan_Spec,
   Task,
   Task_Status,
-  Task_Type,
 } from "@/types/proto/v1/rollout_service";
 import {
   MIN_GHOST_SUPPORT_MYSQL_VERSION,
@@ -42,39 +40,8 @@ export const useIssueGhostContext = () => {
 export const provideIssueGhostContext = () => {
   const { issue, selectedTask: task, reInitialize } = useIssueContext();
 
-  const allowGhostForDatabase = computed(() => {
-    const db = databaseForTask(issue.value, task.value);
-    return (
-      db.instanceEntity.engine === Engine.MYSQL &&
-      semverCompare(
-        db.instanceEntity.engineVersion,
-        MIN_GHOST_SUPPORT_MYSQL_VERSION,
-        "gte"
-      )
-    );
-  });
   const viewType = computed((): GhostUIViewType => {
-    if (isGroupingChangeTaskV1(issue.value, task.value)) {
-      return "NONE";
-    }
-
-    if (
-      ![
-        Task_Type.DATABASE_SCHEMA_UPDATE,
-        Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC,
-      ].includes(task.value.type)
-    ) {
-      return "NONE";
-    }
-    if (!allowGhostForDatabase.value) {
-      return "NONE";
-    }
-
-    const spec = specForTask(issue.value.planEntity, task.value);
-    return spec?.changeDatabaseConfig?.type ===
-      Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST
-      ? "ON"
-      : "OFF";
+    return ghostViewTypeForTask(issue.value, task.value);
   });
   const showFlagsPanel = ref(false);
 
@@ -111,10 +78,60 @@ export const provideIssueGhostContext = () => {
 };
 
 export const allowChangeTaskGhostFlags = (issue: ComposedIssue, task: Task) => {
-  if (issue.status !== IssueStatus.OPEN) return false;
   return [
+    Task_Status.STATUS_UNSPECIFIED, // Pending create
     Task_Status.NOT_STARTED,
     Task_Status.FAILED,
     Task_Status.CANCELED,
   ].includes(task.status);
+};
+
+export const allowGhostForDatabase = (database: ComposedDatabase) => {
+  return (
+    database.instanceEntity.engine === Engine.MYSQL &&
+    semverCompare(
+      database.instanceEntity.engineVersion,
+      MIN_GHOST_SUPPORT_MYSQL_VERSION,
+      "gte"
+    )
+  );
+};
+
+export const allowGhostForSpec = (spec: Plan_Spec | undefined) => {
+  const config = spec?.changeDatabaseConfig;
+  if (!config) return false;
+
+  return [
+    Plan_ChangeDatabaseConfig_Type.MIGRATE,
+    Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST,
+  ].includes(config.type);
+};
+
+export const allowGhostForTask = (issue: ComposedIssue, task: Task) => {
+  return (
+    allowGhostForSpec(specForTask(issue.planEntity, task)) &&
+    allowGhostForDatabase(databaseForTask(issue, task))
+  );
+};
+
+export const ghostViewTypeForTask = (
+  issue: ComposedIssue,
+  task: Task
+): GhostUIViewType => {
+  if (isGroupingChangeTaskV1(issue, task)) {
+    return "NONE";
+  }
+
+  const spec = specForTask(issue.planEntity, task);
+  const config = spec?.changeDatabaseConfig;
+  if (!config) {
+    return "NONE";
+  }
+  if (config.type === Plan_ChangeDatabaseConfig_Type.MIGRATE) {
+    return "OFF";
+  }
+  if (config.type === Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST) {
+    return "ON";
+  }
+  return "NONE";
 };

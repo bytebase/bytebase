@@ -36,20 +36,33 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useIssueContext } from "@/components/IssueV1/logic";
+import { flattenTaskV1List } from "@/utils";
 import GhostConfigButton from "./GhostConfigButton.vue";
 import GhostFlagsPanel from "./GhostFlagsPanel.vue";
 import GhostSwitch from "./GhostSwitch.vue";
-import { provideIssueGhostContext } from "./common";
+import {
+  allowGhostForTask,
+  ghostViewTypeForTask,
+  provideIssueGhostContext,
+} from "./common";
 
-const { isCreating } = useIssueContext();
+const { isCreating, issue } = useIssueContext();
 
 const { viewType } = provideIssueGhostContext();
 
 const shouldShowGhostSection = computed(() => {
+  // We need all tasks and specs to be gh-ost-able to enable gh-ost mode.
+  const tasks = flattenTaskV1List(issue.value.rolloutEntity);
   if (isCreating.value) {
-    return viewType.value === "ON" || viewType.value === "OFF";
+    // When an issue is pending create, we should show the gh-ost section
+    // whenever gh-ost is on or off.
+    return tasks.every(
+      (task) =>
+        allowGhostForTask(issue.value, task) &&
+        ghostViewTypeForTask(issue.value, task) !== "NONE"
+    );
+  } else {
+    return viewType.value === "ON";
   }
-
-  return viewType.value === "ON";
 });
 </script>
