@@ -98,13 +98,6 @@
             <div class="flex-1 flex flex-col py-0 overflow-y-auto">
               <router-view name="leftSidebar" />
             </div>
-            <router-link
-              to="/archive"
-              class="outline-item group flex items-center px-4 py-1.5"
-            >
-              <heroicons-outline:archive class="w-5 h-5 mr-2" />
-              {{ $t("common.archive") }}
-            </router-link>
             <div
               class="flex-shrink-0 flex justify-between border-t border-block-border px-3 py-1.5"
             >
