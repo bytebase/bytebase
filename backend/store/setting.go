@@ -143,7 +143,7 @@ func (s *Store) GetMaskingAlgorithmSetting(ctx context.Context) (*storepb.Maskin
 		return nil, errors.Wrapf(err, "failed to get setting %s", settingName)
 	}
 	if setting == nil {
-		return nil, errors.Errorf("cannot find setting %v", settingName)
+		return &storepb.MaskingAlgorithmSetting{}, nil
 	}
 
 	payload := new(storepb.MaskingAlgorithmSetting)
@@ -163,7 +163,7 @@ func (s *Store) GetSemanticTypesSetting(ctx context.Context) (*storepb.SemanticT
 		return nil, errors.Wrapf(err, "failed to get setting %s", settingName)
 	}
 	if setting == nil {
-		return nil, errors.Errorf("cannot find setting %v", settingName)
+		return &storepb.SemanticTypeSetting{}, nil
 	}
 
 	payload := new(storepb.SemanticTypeSetting)
