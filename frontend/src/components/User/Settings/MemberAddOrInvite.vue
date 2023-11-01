@@ -100,12 +100,7 @@ import { cloneDeep } from "lodash-es";
 import { NButton, NInput, NSwitch } from "naive-ui";
 import { computed, reactive } from "vue";
 import { WorkspaceRoleSelect, RoleRadioSelect } from "@/components/v2";
-import {
-  useUIStateStore,
-  featureToRef,
-  useUserStore,
-  useCurrentUserV1,
-} from "@/store";
+import { featureToRef, useUserStore, useCurrentUserV1 } from "@/store";
 import { emptyUser } from "@/types";
 import { User, UserRole, UserType } from "@/types/proto/v1/auth_service";
 import { isValidEmail, hasWorkspacePermissionV1, randomString } from "@/utils";
@@ -236,11 +231,6 @@ const addOrInvite = async () => {
         regenerateTempMfaSecret: false,
       });
     }
-
-    useUIStateStore().saveIntroStateByKey({
-      key: "member.addOrInvite",
-      newState: true,
-    });
   }
   state.userList.forEach((item) => {
     Object.assign(item, emptyUser());

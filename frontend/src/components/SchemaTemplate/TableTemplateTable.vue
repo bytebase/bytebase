@@ -21,7 +21,7 @@
         />
       </div>
       <div class="bb-grid-cell">
-        {{ item.table?.comment }}
+        {{ item.table?.userComment }}
       </div>
       <div class="bb-grid-cell flex items-center justify-start gap-x-2">
         <button

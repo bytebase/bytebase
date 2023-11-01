@@ -1239,7 +1239,7 @@
     "visit-instance": "@:common.visit @:common.instances",
     "visit-database": "@:common.visit @:common.databases",
     "visit-environment": "@:common.visit @:common.environments",
-    "add-a-member": "Agregar un miembro",
+    "visit-member": "@:common.visit @:common.members",
     "use-kbar": "Usar kbar ({shortcut})",
     "query-data": "Consultar datos",
     "notice": {

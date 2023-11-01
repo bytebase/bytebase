@@ -38,9 +38,7 @@ import {
 // Create each grpc service client.
 // Reference: https://github.com/deeplay-io/nice-grpc/blob/master/packages/nice-grpc-web/README.md
 
-const address = import.meta.env.BB_GRPC_LOCAL
-  ? "http://localhost:8080"
-  : window.location.origin;
+const address = import.meta.env.BB_GRPC_LOCAL || window.location.origin;
 
 const channel = createChannel(
   address,

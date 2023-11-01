@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/component/ghost"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
@@ -388,12 +389,16 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
 		}
+		if _, err := ghost.GetUserFlags(c.GhostFlags); err != nil {
+			return nil, nil, errors.Wrapf(err, "invalid ghost flags %q", c.GhostFlags)
+		}
 		var taskCreateList []*store.TaskMessage
 		// task "sync"
 		payloadSync := api.TaskDatabaseSchemaUpdateGhostSyncPayload{
 			SpecID:        spec.Id,
 			SheetID:       sheetUID,
 			SchemaVersion: c.SchemaVersion,
+			Flags:         c.GhostFlags,
 		}
 		bytesSync, err := json.Marshal(payloadSync)
 		if err != nil {

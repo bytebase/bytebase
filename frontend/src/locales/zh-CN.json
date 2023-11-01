@@ -1237,7 +1237,7 @@
     "visit-instance": "@:common.visit@:common.instances",
     "visit-database": "@:common.visit@:common.databases",
     "visit-environment": "@:common.visit@:common.environments",
-    "add-a-member": "添加成员",
+    "visit-member": "@:common.visit@:common.members",
     "use-kbar": "使用 kbar ({shortcut})",
     "query-data": "查询数据",
     "notice": {
