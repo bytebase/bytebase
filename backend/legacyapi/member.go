@@ -28,6 +28,8 @@ const (
 	Querier Role = "QUERIER"
 	// Releaser is the RELEASER role.
 	Releaser Role = "RELEASER"
+	// ProjectViewer is the database viewer role.
+	ProjectViewer Role = "VIEWER"
 	// UnknownRole is the unknown role.
 	UnknownRole Role = "UNKNOWN"
 )

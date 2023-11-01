@@ -1584,7 +1584,7 @@ func (s *DatabaseService) checkDatabasePermission(ctx context.Context, projectID
 	projectRoles := make(map[common.ProjectRole]bool)
 	for _, binding := range policy.Bindings {
 		for _, member := range binding.Members {
-			if member.ID == principalID {
+			if member.ID == principalID || member.Email == api.AllUsers {
 				projectRoles[common.ProjectRole(binding.Role)] = true
 				break
 			}
