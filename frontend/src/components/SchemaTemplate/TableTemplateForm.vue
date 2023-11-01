@@ -125,7 +125,7 @@
               {{ $t("schema-template.form.comment") }}
             </label>
             <textarea
-              v-model="state.table!.comment"
+              v-model="state.table!.userComment"
               rows="3"
               class="textfield block w-full resize-none mt-1 text-sm text-control rounded-md whitespace-pre-wrap"
               :disabled="!allowEdit"
