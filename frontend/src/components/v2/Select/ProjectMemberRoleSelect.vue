@@ -65,8 +65,6 @@ const roleOptions = computed(() => {
   });
 });
 
-console.log("roleOptions", roleOptions.value, roleList.value);
-
 const renderLabel = (option: SelectOption) => {
   const role = (option as ProjectRoleSelectOption).role;
   const label = h("span", {}, option.label as string);

@@ -251,7 +251,6 @@ const allowView = (item: ComposedProjectMember) => {
 };
 
 const getSortedBindingList = (bindingList: Binding[]) => {
-  console.log("bindingList", bindingList);
   let roleMap = new Map<string, Binding[]>();
   for (const binding of bindingList) {
     const role = binding.role;
