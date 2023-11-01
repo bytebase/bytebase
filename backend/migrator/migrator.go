@@ -29,7 +29,7 @@ import (
 var migrationFS embed.FS
 
 // MigrateSchema migrates the schema for metadata database.
-func MigrateSchema(ctx context.Context, storeDB *store.DB, strictUseDb bool, pgBinDir, demoName, serverVersion string, mode common.ReleaseMode) (*semver.Version, error) {
+func MigrateSchema(ctx context.Context, storeDB *store.DB, strictUseDb bool, pgBinDir, serverVersion string, mode common.ReleaseMode) (*semver.Version, error) {
 	databaseName := storeDB.ConnCfg.Database
 	if !strictUseDb {
 		// The database storing metadata is the same as user name.
