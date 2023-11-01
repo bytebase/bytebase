@@ -1,4 +1,6 @@
-- statement: ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_author_id_author_id FOREIGN KEY (author_id) REFERENCES author (id)
+- statement: |-
+    CREATE TABLE book(id INT);
+    ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_author_id_author_id FOREIGN KEY (author_id) REFERENCES author (id);
   want:
     - status: WARN
       code: 602
@@ -6,11 +8,13 @@
       content: Foreign key is not allowed in the table `tech_book`
       line: 2
       details: ""
-- statement: CREATE TABLE book(id INT, author_id INT, FOREIGN KEY fk_book_author_id_author_id (author_id) REFERENCES author (id))
+- statement: |-
+    CREATE TABLE t1 (id INT);
+    CREATE TABLE book(id INT, author_id INT, FOREIGN KEY fk_book_author_id_author_id (author_id) REFERENCES author (id));
   want:
     - status: WARN
       code: 602
       title: table.no-foreign-key
       content: Foreign key is not allowed in the table `book`
-      line: 1
+      line: 2
       details: ""
