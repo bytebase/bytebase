@@ -95,7 +95,7 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { usePolicyV1Store, useUserStore, pushNotification } from "@/store";
-import { ComposedProject } from "@/types";
+import { ComposedProject, getUserEmailInBinding } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
 import { MaskingLevel } from "@/types/proto/v1/common";
 import {
@@ -204,7 +204,7 @@ const getPendingUpdatePolicy = async (
     state.userUidList
       .map((id) => userStore.getUserById(id))
       .filter((u) => u)
-      .map((user) => `user:${user?.email}`)
+      .map((user) => getUserEmailInBinding(user!.email))
   );
 
   for (const column of columnList) {

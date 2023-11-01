@@ -15,7 +15,7 @@
         class="mt-2"
         style="width: 100%"
         :multiple="true"
-        :include-all="false"
+        :include-all-users="true"
       />
     </div>
     <div class="w-full">
@@ -72,7 +72,12 @@ import QuerierDatabaseResourceForm from "@/components/Issue/panel/RequestQueryPa
 import ProjectMemberRoleSelect from "@/components/v2/Select/ProjectMemberRoleSelect.vue";
 import { useUserStore } from "@/store";
 import { getUserId } from "@/store/modules/v1/common";
-import { ComposedProject, DatabaseResource, PresetRoleType } from "@/types";
+import {
+  ComposedProject,
+  DatabaseResource,
+  PresetRoleType,
+  getUserEmailInBinding,
+} from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
 import { Binding } from "@/types/proto/v1/iam_policy";
 import { displayRoleTitle, extractDatabaseResourceName } from "@/utils";
@@ -207,7 +212,7 @@ watch(
     if (state.userUidList) {
       props.binding.members = state.userUidList.map((uid) => {
         const user = userStore.getUserById(uid);
-        return `user:${user!.email}`;
+        return getUserEmailInBinding(user!.email);
       });
     }
     if (state.role) {

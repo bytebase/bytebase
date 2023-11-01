@@ -106,7 +106,7 @@
 
     <div class="mt-2">
       <BBButtonConfirm
-        :disabled="!allowRemoveExpiredRoles"
+        v-if="allowRemoveExpiredRoles"
         :style="'DELETE'"
         :button-text="$t('project.members.clean-up-expired-roles')"
         :require-confirm="true"
@@ -139,6 +139,7 @@ import {
   ComposedProject,
   DEFAULT_PROJECT_V1_NAME,
   PresetRoleType,
+  getUserEmailInBinding,
   unknownUser,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
@@ -398,7 +399,7 @@ const handleRevokeSelectedMembers = () => {
     positiveText: t("common.confirm"),
     onPositiveClick: async () => {
       const userIAMNameList = selectedMembers.map((member) => {
-        return `user:${member!.user.email}`;
+        return getUserEmailInBinding(member!.user.email);
       });
       const policy = cloneDeep(iamPolicy.value);
 
