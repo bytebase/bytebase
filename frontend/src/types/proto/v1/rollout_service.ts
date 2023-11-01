@@ -386,6 +386,8 @@ export interface PlanCheckRun {
   status: PlanCheckRun_Status;
   /** Format: instances/{instance}/databases/{database} */
   target: string;
+  /** Format: project/{project}/sheets/{sheet} */
+  sheet: string;
   results: PlanCheckRun_Result[];
   /** error is set if the Status is FAILED. */
   error: string;
@@ -3175,7 +3177,17 @@ export const BatchCancelTaskRunsResponse = {
 };
 
 function createBasePlanCheckRun(): PlanCheckRun {
-  return { name: "", uid: "", type: 0, status: 0, target: "", results: [], error: "", createTime: undefined };
+  return {
+    name: "",
+    uid: "",
+    type: 0,
+    status: 0,
+    target: "",
+    sheet: "",
+    results: [],
+    error: "",
+    createTime: undefined,
+  };
 }
 
 export const PlanCheckRun = {
@@ -3194,6 +3206,9 @@ export const PlanCheckRun = {
     }
     if (message.target !== "") {
       writer.uint32(42).string(message.target);
+    }
+    if (message.sheet !== "") {
+      writer.uint32(50).string(message.sheet);
     }
     for (const v of message.results) {
       PlanCheckRun_Result.encode(v!, writer.uint32(58).fork()).ldelim();
@@ -3249,6 +3264,13 @@ export const PlanCheckRun = {
 
           message.target = reader.string();
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.sheet = reader.string();
+          continue;
         case 7:
           if (tag !== 58) {
             break;
@@ -3286,6 +3308,7 @@ export const PlanCheckRun = {
       type: isSet(object.type) ? planCheckRun_TypeFromJSON(object.type) : 0,
       status: isSet(object.status) ? planCheckRun_StatusFromJSON(object.status) : 0,
       target: isSet(object.target) ? String(object.target) : "",
+      sheet: isSet(object.sheet) ? String(object.sheet) : "",
       results: Array.isArray(object?.results) ? object.results.map((e: any) => PlanCheckRun_Result.fromJSON(e)) : [],
       error: isSet(object.error) ? String(object.error) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
@@ -3299,6 +3322,7 @@ export const PlanCheckRun = {
     message.type !== undefined && (obj.type = planCheckRun_TypeToJSON(message.type));
     message.status !== undefined && (obj.status = planCheckRun_StatusToJSON(message.status));
     message.target !== undefined && (obj.target = message.target);
+    message.sheet !== undefined && (obj.sheet = message.sheet);
     if (message.results) {
       obj.results = message.results.map((e) => e ? PlanCheckRun_Result.toJSON(e) : undefined);
     } else {
@@ -3320,6 +3344,7 @@ export const PlanCheckRun = {
     message.type = object.type ?? 0;
     message.status = object.status ?? 0;
     message.target = object.target ?? "";
+    message.sheet = object.sheet ?? "";
     message.results = object.results?.map((e) => PlanCheckRun_Result.fromPartial(e)) || [];
     message.error = object.error ?? "";
     message.createTime = object.createTime ?? undefined;
