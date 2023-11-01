@@ -460,20 +460,27 @@ func (s *IssueService) CreateIssue(ctx context.Context, request *v1pb.CreateIssu
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	ok, err := isUserAtLeastProjectDeveloper(ctx, s.store, projectID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to check if the user can create issue, error: %v", err)
-	}
-	if !ok {
-		return nil, status.Errorf(codes.PermissionDenied, "permission denied")
-	}
 
 	switch request.Issue.Type {
 	case v1pb.Issue_TYPE_UNSPECIFIED:
 		return nil, status.Errorf(codes.InvalidArgument, "issue type is required")
 	case v1pb.Issue_GRANT_REQUEST:
+		ok, err := isUserAtLeastProjectViewer(ctx, s.store, projectID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to check if the user can create issue, error: %v", err)
+		}
+		if !ok {
+			return nil, status.Errorf(codes.PermissionDenied, "permission denied")
+		}
 		return s.createIssueGrantRequest(ctx, request)
 	case v1pb.Issue_DATABASE_CHANGE:
+		ok, err := isUserAtLeastProjectDeveloper(ctx, s.store, projectID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to check if the user can create issue, error: %v", err)
+		}
+		if !ok {
+			return nil, status.Errorf(codes.PermissionDenied, "permission denied")
+		}
 		return s.createIssueDatabaseChange(ctx, request)
 	default:
 		return nil, status.Errorf(codes.InvalidArgument, "unknown issue type %q", request.Issue.Type)
@@ -1829,6 +1836,46 @@ func getUserBelongingProjects(ctx context.Context, s *store.Store, userUID int) 
 		}
 	}
 	return projectIDs, nil
+}
+
+func isUserAtLeastProjectViewer(ctx context.Context, s *store.Store, requestProjectID string) (bool, error) {
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return false, status.Errorf(codes.Internal, "principal ID not found")
+	}
+	user, err := s.GetUserByID(ctx, principalID)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get user %d", principalID)
+	}
+
+	if isOwnerOrDBA(user.Role) {
+		return true, nil
+	}
+
+	policy, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &requestProjectID})
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get project iam policy")
+	}
+
+	if isProjectOwnerDeveloperOrViewer(principalID, policy) {
+		return true, nil
+	}
+	return false, nil
+}
+
+// isProjectOwnerDeveloperOrViewer returns whether a principal is a project owner or developer in the project.
+func isProjectOwnerDeveloperOrViewer(principalID int, projectPolicy *store.IAMPolicyMessage) bool {
+	for _, binding := range projectPolicy.Bindings {
+		if binding.Role != api.Owner && binding.Role != api.Developer && binding.Role != api.ProjectViewer {
+			continue
+		}
+		for _, member := range binding.Members {
+			if member.ID == principalID {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func isUserAtLeastProjectDeveloper(ctx context.Context, s *store.Store, requestProjectID string) (bool, error) {

@@ -12,4 +12,8 @@ const (
 	ProjectExporter ProjectRole = "EXPORTER"
 	// ProjectQuerier is the querier of a project.
 	ProjectQuerier ProjectRole = "QUERIER"
+	// Releaser is the RELEASER role.
+	Releaser ProjectRole = "RELEASER"
+	// ProjectViewer is the viewer of a project.
+	ProjectViewer ProjectRole = "DATABASE_VIEWER"
 )
