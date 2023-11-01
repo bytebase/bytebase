@@ -62,23 +62,6 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, strictUseDb bool, pgB
 		return nil, err
 	}
 
-	bytebaseConnConfig := storeDB.ConnCfg
-	if !strictUseDb {
-		// BytebaseDatabase was the database installed in the controlled database server.
-		bytebaseConnConfig.Database = "bytebase"
-	}
-	bytebaseDriver, err := dbdriver.Open(
-		ctx,
-		storepb.Engine_POSTGRES,
-		dbdriver.DriverConfig{DbBinDir: pgBinDir},
-		bytebaseConnConfig,
-		dbdriver.ConnectionContext{},
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer bytebaseDriver.Close(ctx)
-
 	verBefore, err := getLatestVersion(ctx, storeInstance)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get current schema version")
