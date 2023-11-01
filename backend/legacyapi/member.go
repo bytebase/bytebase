@@ -10,6 +10,8 @@ const (
 	Invited MemberStatus = "INVITED"
 	// Active is the member status for ACTIVE.
 	Active MemberStatus = "ACTIVE"
+
+	AllUsers = "allUsers"
 )
 
 // Role is the type of a role.
@@ -28,6 +30,8 @@ const (
 	Querier Role = "QUERIER"
 	// Releaser is the RELEASER role.
 	Releaser Role = "RELEASER"
+	// DatabaseViewer is the database viewer role.
+	DatabaseViewer Role = "DATABASE_VIEWER"
 	// UnknownRole is the unknown role.
 	UnknownRole Role = "UNKNOWN"
 )
