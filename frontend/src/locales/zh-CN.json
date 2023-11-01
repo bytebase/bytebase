@@ -390,7 +390,9 @@
         "task-is-not-editable": "该任务不可编辑",
         "x-status-task-is-not-editable": "{status} 的任务不可编辑",
         "nothing-changed": "无任何改变"
-      }
+      },
+      "show-default-parameters": "显示默认参数",
+      "hide-default-parameters": "隐藏默认参数"
     }
   },
   "task-run": {

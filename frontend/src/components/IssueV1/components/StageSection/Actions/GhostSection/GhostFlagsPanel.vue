@@ -40,6 +40,7 @@
             {{ $t("task.online-migration.ghost-parameters") }}
           </p>
           <FlagsForm v-model:flags="flags" :readonly="readonly" />
+          <DefaultParams />
         </div>
       </template>
       <template #footer>
@@ -85,7 +86,7 @@ import { Drawer, DrawerContent, RichDatabaseName } from "@/components/v2";
 import { rolloutServiceClient } from "@/grpcweb";
 import { pushNotification } from "@/store";
 import { Plan_Spec, Task_Type } from "@/types/proto/v1/rollout_service";
-import FlagsForm from "./FlagsForm";
+import { FlagsForm, DefaultParams } from "./FlagsForm";
 import { allowChangeTaskGhostFlags, useIssueGhostContext } from "./common";
 
 const { t } = useI18n();

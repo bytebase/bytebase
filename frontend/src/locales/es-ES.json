@@ -392,7 +392,9 @@
         "task-is-not-editable": "Esta tarea no es editable",
         "x-status-task-is-not-editable": "La tarea {status} no es editable",
         "nothing-changed": "nada ha cambiado"
-      }
+      },
+      "show-default-parameters": "Mostrar parámetros predeterminados",
+      "hide-default-parameters": "Ocultar parámetros predeterminados"
     }
   },
   "task-run": {

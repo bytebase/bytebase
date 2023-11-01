@@ -392,7 +392,9 @@
         "task-is-not-editable": "This task is not editable",
         "x-status-task-is-not-editable": "{status} task is not editable",
         "nothing-changed": "Nothing changed"
-      }
+      },
+      "show-default-parameters": "Show default parameters",
+      "hide-default-parameters": "Hide default parameters"
     }
   },
   "task-run": {
