@@ -83,7 +83,8 @@
       "member": "Member",
       "exporter": "Exporter",
       "querier": "Querier",
-      "releaser": "Releaser"
+      "releaser": "Releaser",
+      "viewer": "Viewer"
     },
     "assignee": "Assignee",
     "revert": "Revert",

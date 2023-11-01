@@ -1,7 +1,14 @@
 import { isEqual, isUndefined } from "lodash-es";
 import { defineStore } from "pinia";
 import { authServiceClient } from "@/grpcweb";
-import { Principal, PrincipalType, RoleType } from "@/types";
+import {
+  ALL_USERS_USER_ID,
+  ALL_USERS_USER_NAME,
+  Principal,
+  PrincipalType,
+  RoleType,
+  allUsersUser,
+} from "@/types";
 import {
   UpdateUserRequest,
   User,
@@ -99,12 +106,18 @@ export const useUserStore = defineStore("user", {
       );
     },
     getUserById(uid: string) {
+      if (uid === ALL_USERS_USER_ID) {
+        return allUsersUser();
+      }
       return this.userMapByName.get(getUserNameWithUserId(uid));
     },
     getUserByIdentifier(identifier: string) {
       return this.getUserByEmail(getUserEmailFromIdentifier(identifier));
     },
     getUserByEmail(email: string) {
+      if (email === ALL_USERS_USER_NAME) {
+        return allUsersUser();
+      }
       return [...this.userMapByName.values()].find(
         (user) => user.email === email
       );
@@ -128,7 +141,7 @@ export const useUserStore = defineStore("user", {
 
 export const extractUserEmail = (emailResource: string) => {
   const matches = emailResource.match(/^user:(.+)$/);
-  return matches?.[1] ?? "";
+  return matches?.[1] ?? emailResource;
 };
 
 export const getUserNameWithUserId = (userUID: string) => {

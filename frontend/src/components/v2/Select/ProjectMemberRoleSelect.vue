@@ -46,6 +46,7 @@ const FREE_ROLE_LIST = [
   PresetRoleType.DEVELOPER,
   PresetRoleType.QUERIER,
   PresetRoleType.EXPORTER,
+  PresetRoleType.VIEWER,
 ];
 const hasCustomRoleFeature = featureToRef("bb.feature.custom-role");
 const showFeatureModal = ref(false);
