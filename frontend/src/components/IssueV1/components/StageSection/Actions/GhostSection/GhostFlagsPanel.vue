@@ -205,14 +205,14 @@ const trySave = async () => {
       issue.value.planEntity = updatedPlan;
 
       events.emit("status-changed", { eager: true });
-    } finally {
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
         title: t("common.updated"),
       });
-      isUpdating.value = false;
       close();
+    } finally {
+      isUpdating.value = false;
     }
   }
 };
