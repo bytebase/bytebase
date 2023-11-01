@@ -53,29 +53,39 @@
       </BBTableCell>
       <BBTableCell class="bb-grid-cell">
         <h3 v-if="rowData.mode === 'NORMAL'">
-          {{ getAlgorithmById(rowData.item.fullMaskAlgorithmId)?.label }}
+          {{
+            getAlgorithmById(rowData.item.fullMaskAlgorithmId)?.label ??
+            $t("settings.sensitive-data.algorithms.default")
+          }}
         </h3>
         <NSelect
           v-else
           :value="rowData.item.fullMaskAlgorithmId"
+          clearable
           :options="algorithmList"
           :consistent-menu-width="false"
           :placeholder="$t('custom-approval.risk-rule.condition.select-value')"
           size="small"
+          :fallback-option="(_: string) => ({ label: $t('settings.sensitive-data.algorithms.default'), value: '' })"
           style="min-width: 7rem; width: auto; overflow-x: hidden"
           @update:value="(val: string) => onInput(row, (data) => data.item.fullMaskAlgorithmId = val)"
         />
       </BBTableCell>
       <BBTableCell class="bb-grid-cell">
         <h3 v-if="rowData.mode === 'NORMAL'">
-          {{ getAlgorithmById(rowData.item.partialMaskAlgorithmId)?.label }}
+          {{
+            getAlgorithmById(rowData.item.partialMaskAlgorithmId)?.label ??
+            $t("settings.sensitive-data.algorithms.default")
+          }}
         </h3>
         <NSelect
           v-else
           :value="rowData.item.partialMaskAlgorithmId"
+          clearable
           :options="algorithmList"
           :consistent-menu-width="false"
           :placeholder="$t('custom-approval.risk-rule.condition.select-value')"
+          :fallback-option="(_: string) => ({ label: $t('settings.sensitive-data.algorithms.default'), value: '' })"
           size="small"
           style="min-width: 7rem; width: auto; overflow-x: hidden"
           @update:value="(val: string) => onInput(row, (data) => data.item.partialMaskAlgorithmId = val)"
@@ -216,11 +226,7 @@ const getAlgorithmById = (algorithmId: string) => {
 };
 
 const isConfirmDisabled = (data: SemanticItem): boolean => {
-  if (
-    !data.item.title ||
-    !data.item.fullMaskAlgorithmId ||
-    !data.item.partialMaskAlgorithmId
-  ) {
+  if (!data.item.title) {
     return true;
   }
   if (data.mode === "EDIT" && !data.dirty) {

@@ -680,8 +680,34 @@
       },
       "algorithms": {
         "self": "Algoritmo de enmascaramiento",
+        "add": "Agregar algoritmo",
         "default": "Por defecto",
-        "default-desc": "Utilice *** como máscara de datos"
+        "default-desc": "Utilice *** como máscara de datos",
+        "table": {
+          "title": "Título",
+          "description": "Descripción",
+          "masking-type": "Tipo de enmascaramiento",
+          "delete": "¿Eliminar este algoritmo?"
+        },
+        "full-mask": {
+          "self": "Máscara completa",
+          "substitution": "Sustitución",
+          "substitution-label": "La sustitución es la cadena utilizada para reemplazar el valor original, la longitud máxima de la cadena es 16 bytes."
+        },
+        "range-mask": {
+          "self": "Máscara de rango",
+          "slice-start": "Inicio de corte",
+          "slice-start-label": "El inicio del segmento es el índice de inicio del valor original, comienza desde 0 y debe ser menor que detener.",
+          "slice-end": "Fin del corte",
+          "slice-end-label": "La parada de segmento es el índice de parada del valor original y debe ser menor que la longitud del valor original.",
+          "substitution": "Sustitución",
+          "substitution-label": "La sustitución es la cadena utilizada para reemplazar el valor original de principio a fin."
+        },
+        "md5-mask": {
+          "self": "Máscara MD5",
+          "salt": "Sal",
+          "salt-label": "La sal es el valor de la sal para generar un hash diferente al de la palabra sola."
+        }
       },
       "masking-level": {
         "self": "Nivel de enmascaramiento",

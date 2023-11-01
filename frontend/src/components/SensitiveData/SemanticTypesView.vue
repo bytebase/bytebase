@@ -23,7 +23,6 @@
 </template>
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
-import type { SelectOption } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
@@ -60,16 +59,6 @@ const hasPermission = computed(() => {
 });
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
 
-const algorithmList = computed((): SelectOption[] => {
-  return (
-    settingStore.getSettingByName("bb.workspace.masking-algorithm")?.value
-      ?.maskingAlgorithmSettingValue?.algorithms ?? []
-  ).map((algorithm) => ({
-    label: algorithm.title,
-    value: algorithm.id,
-  }));
-});
-
 onMounted(async () => {
   const semanticTypeSetting = await settingStore.getOrFetchSettingByName(
     "bb.workspace.semantic-types",
@@ -87,15 +76,13 @@ onMounted(async () => {
 });
 
 const onAdd = () => {
-  const defaultAlgorithm =
-    algorithmList.value.length > 0 ? algorithmList.value[0].value : "";
   state.semanticItemList.push({
     mode: "CREATE",
     dirty: false,
     item: SemanticTypeSetting_SemanticType.fromJSON({
       id: uuidv4(),
-      fullMaskAlgorithmId: defaultAlgorithm,
-      partialMaskAlgorithmId: defaultAlgorithm,
+      fullMaskAlgorithmId: "",
+      partialMaskAlgorithmId: "",
     }),
   });
 };

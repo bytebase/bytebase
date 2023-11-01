@@ -2321,10 +2321,10 @@ type MaskingAlgorithmSetting_Algorithm struct {
 	Title string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
 	// description is the description for masking algorithm.
 	Description string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
-	// Category is the category for masking algorithm. Currently, it accepts 2 categories only: MASKING and HASHING.
+	// Category is the category for masking algorithm. Currently, it accepts 2 categories only: MASK and HASH.
 	// The range of accepted Payload is decided by the category.
-	// Mask: FullMask, RangeMask
-	// Hash: MD5Mask
+	// MASK: FullMask, RangeMask
+	// HASH: MD5Mask
 	Category string `protobuf:"bytes,4,opt,name=category,proto3" json:"category,omitempty"`
 	// Types that are assignable to Mask:
 	//
@@ -2599,7 +2599,7 @@ type MaskingAlgorithmSetting_Algorithm_RangeMask_Slice struct {
 	Start int32 `protobuf:"varint,1,opt,name=start,proto3" json:"start,omitempty"`
 	// stop is the stop index of the original value, should be less than the length of the original value.
 	End int32 `protobuf:"varint,2,opt,name=end,proto3" json:"end,omitempty"`
-	// OriginalValue[start:end) would be replaced with replace_with.
+	// substitution is the string used to replace the OriginalValue[start:end).
 	Substitution string `protobuf:"bytes,3,opt,name=substitution,proto3" json:"substitution,omitempty"`
 }
 
