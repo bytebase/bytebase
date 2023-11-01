@@ -83,7 +83,8 @@
       "member": "成员",
       "exporter": "数据导出者",
       "querier": "数据查询者",
-      "releaser": "发布者"
+      "releaser": "发布者",
+      "viewer": "查看者"
     },
     "assignee": "发布人",
     "revert": "恢复",

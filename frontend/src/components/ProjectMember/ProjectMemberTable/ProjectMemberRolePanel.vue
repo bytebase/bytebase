@@ -152,7 +152,7 @@
     :project="project"
     :bindings="[
       Binding.fromPartial({
-        members: [`user:${member.user.email}`],
+        members: [getUserEmailInBinding(member.user.email)],
       }),
     ]"
     @close="state.showAddMemberPanel = false"
@@ -184,6 +184,7 @@ import {
   DatabaseResource,
   PresetRoleType,
   PresetRoleTypeList,
+  getUserEmailInBinding,
 } from "@/types";
 import { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
@@ -359,7 +360,7 @@ const handleDeleteRole = (role: string) => {
     positiveText: t("common.revoke"),
     negativeText: t("common.cancel"),
     onPositiveClick: async () => {
-      const user = `user:${props.member.user.email}`;
+      const user = getUserEmailInBinding(props.member.user.email);
       const policy = cloneDeep(iamPolicy.value);
       for (const binding of policy.bindings) {
         if (binding.role !== role) {
@@ -406,7 +407,7 @@ const handleDeleteCondition = async (singleBinding: SingleBinding) => {
     positiveText: t("common.revoke"),
     negativeText: t("common.cancel"),
     onPositiveClick: async () => {
-      const user = `user:${props.member.user.email}`;
+      const user = getUserEmailInBinding(props.member.user.email);
       const policy = cloneDeep(iamPolicy.value);
       const rawBinding = policy.bindings.find((binding) =>
         isEqual(binding, singleBinding.rawBinding)
@@ -451,7 +452,7 @@ const handleDeleteCondition = async (singleBinding: SingleBinding) => {
 };
 
 const handleDeleteMember = async () => {
-  const user = `user:${props.member.user.email}`;
+  const user = getUserEmailInBinding(props.member.user.email);
   const policy = cloneDeep(iamPolicy.value);
   for (const binding of policy.bindings) {
     binding.members = binding.members.filter((member) => {
@@ -534,7 +535,9 @@ watch(
       singleBindingList: SingleBinding[];
     }[] = [];
     const rawBindingList = iamPolicy.value?.bindings?.filter((binding) => {
-      return binding.members.includes(`user:${props.member.user.email}`);
+      return binding.members.includes(
+        getUserEmailInBinding(props.member.user.email)
+      );
     });
     for (const rawBinding of rawBindingList) {
       const singleBindingList = [];

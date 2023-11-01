@@ -137,7 +137,11 @@ import {
   useProjectIamPolicyStore,
   useUserStore,
 } from "@/store";
-import { ComposedProject, DatabaseResource } from "@/types";
+import {
+  ComposedProject,
+  DatabaseResource,
+  getUserEmailInBinding,
+} from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
 import { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
@@ -314,7 +318,7 @@ const handleUpdateRole = async () => {
   newBinding.condition.description = state.description;
   newBinding.members = uniq(
     getUserList().map((user) => {
-      return `user:${user.email}`;
+      return getUserEmailInBinding(user.email);
     })
   );
 

@@ -182,6 +182,8 @@ export function projectRoleName(role: ProjectRoleType): string {
       return "Querier";
     case "EXPORTER":
       return "Exporter";
+    case "VIEWER":
+      return "Viewer";
   }
   return role;
 }
@@ -199,6 +201,7 @@ export const displayRoleTitle = (role: string): string => {
   if (role === PresetRoleType.RELEASER) return t("common.role.releaser");
   if (role === PresetRoleType.EXPORTER) return t("common.role.exporter");
   if (role === PresetRoleType.QUERIER) return t("common.role.querier");
+  if (role === PresetRoleType.VIEWER) return t("common.role.viewer");
   // Use role.title if possible
   const item = useRoleStore().roleList.find((r) => r.name === role);
   // Fallback to extracted resource name otherwise

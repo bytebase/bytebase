@@ -149,7 +149,7 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 		where, args = append(where, fmt.Sprintf("principal.id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Email; v != nil {
-		where, args = append(where, fmt.Sprintf("principal.email = $%d", len(args)+1)), append(args, strings.ToLower(*v))
+		where, args = append(where, fmt.Sprintf("principal.email = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Type; v != nil {
 		where, args = append(where, fmt.Sprintf("principal.type = $%d", len(args)+1)), append(args, *v)

@@ -34,22 +34,32 @@
         <UserAvatar class="mt-1" :user="projectMember.user" />
         <div class="flex flex-col">
           <div class="flex flex-row items-center space-x-2">
-            <router-link
-              :to="`/u/${extractUserUID(projectMember.user.name)}`"
-              class="normal-link"
-              >{{ projectMember.user.title }}</router-link
-            >
-            <span
-              v-if="currentUserV1.name === projectMember.user.name"
-              class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
-              >{{ $t("common.you") }}</span
-            >
+            <template v-if="projectMember.user.email !== ALL_USERS_USER_NAME">
+              <router-link
+                :to="`/u/${extractUserUID(projectMember.user.name)}`"
+                class="normal-link"
+                >{{ projectMember.user.title }}</router-link
+              >
+              <span
+                v-if="currentUserV1.name === projectMember.user.name"
+                class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
+                >{{ $t("common.you") }}</span
+              >
+            </template>
+            <template v-else>
+              <span class="text-gray-800 pt-2.5">{{
+                projectMember.user.title
+              }}</span>
+            </template>
           </div>
-          <span class="textinfolabel">{{ projectMember.user.email }}</span>
+          <span
+            v-if="projectMember.user.email !== ALL_USERS_USER_NAME"
+            class="textinfolabel"
+            >{{ projectMember.user.email }}</span
+          >
         </div>
       </div>
-      <div v-if="hasRBACFeature" class="bb-grid-cell flex-wrap gap-x-2 gap-y-1">
-        <!-- TODO: we need a data table -->
+      <div class="bb-grid-cell flex-wrap gap-x-2 gap-y-1">
         <div class="w-full flex flex-col justify-start items-start">
           <p
             v-for="binding in getSortedBindingList(projectMember.bindingList)"
@@ -76,7 +86,7 @@
           </p>
         </div>
       </div>
-      <div v-if="hasRBACFeature" class="bb-grid-cell flex-wrap gap-x-2 gap-y-1">
+      <div class="bb-grid-cell flex-wrap gap-x-2 gap-y-1">
         <div class="w-full flex flex-col justify-start items-start">
           <p
             v-for="binding in getSortedBindingList(projectMember.bindingList)"
@@ -139,7 +149,11 @@ import { useI18n } from "vue-i18n";
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import { featureToRef, useCurrentUserV1, useProjectIamPolicy } from "@/store";
-import { ComposedProject, PresetRoleTypeList } from "@/types";
+import {
+  ALL_USERS_USER_NAME,
+  ComposedProject,
+  PresetRoleTypeList,
+} from "@/types";
 import { Binding } from "@/types/proto/v1/iam_policy";
 import {
   hasWorkspacePermissionV1,
@@ -237,6 +251,7 @@ const allowView = (item: ComposedProjectMember) => {
 };
 
 const getSortedBindingList = (bindingList: Binding[]) => {
+  console.log("bindingList", bindingList);
   let roleMap = new Map<string, Binding[]>();
   for (const binding of bindingList) {
     const role = binding.role;
