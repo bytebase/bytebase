@@ -55,7 +55,7 @@ export default defineConfig(() => {
       host: "0.0.0.0",
       proxy: {
         "/v1:adminExecute": {
-          target: "ws://localhost:8080/",
+          target: `ws://${LOCAL_ENDPOINT}/`,
           changeOrigin: true,
           ws: true,
         },
