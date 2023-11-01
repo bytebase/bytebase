@@ -9,16 +9,16 @@
           @on-select="onApply($event)"
         />
       </div>
-    </DrawerContent>
-    <template #footer>
-      <div class="w-full flex justify-between items-center">
-        <div class="w-full flex justify-end items-center gap-x-3">
-          <NButton @click.prevent="$emit('dismiss')">
-            {{ $t("common.cancel") }}
-          </NButton>
+      <template #footer>
+        <div class="w-full flex justify-between items-center">
+          <div class="w-full flex justify-end items-center gap-x-3">
+            <NButton @click.prevent="$emit('dismiss')">
+              {{ $t("common.cancel") }}
+            </NButton>
+          </div>
         </div>
-      </div>
-    </template>
+      </template>
+    </DrawerContent>
   </Drawer>
 </template>
 

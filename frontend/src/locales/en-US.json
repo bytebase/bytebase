@@ -647,7 +647,7 @@
     "sensitive-data": {
       "description": "Following columns are explicitly assigned masking levels and take predence over the global masking rule.",
       "remove-sensitive-column-tips": "Expose this column?",
-      "sensitive-column-list": "Explict masked column list",
+      "sensitive-column-list": "Explict Masked Column List",
       "global-masking-rule": "Global Masking Rule",
       "grant-access": "Grant Access",
       "never-expires": "Never expires",
@@ -681,8 +681,34 @@
       },
       "algorithms": {
         "self": "Masking Algorithm",
+        "add": "Add algorithm",
         "default": "Default",
-        "default-desc": "Use *** as data mask"
+        "default-desc": "Use *** as data mask",
+        "table": {
+          "title": "Title",
+          "description": "Description",
+          "masking-type": "Masking type",
+          "delete": "Delete this algorithm?"
+        },
+        "full-mask": {
+          "self": "Full mask",
+          "substitution": "Substitution",
+          "substitution-label": "Substitution is the string used to replace the original value, the max length of the string is 16 bytes."
+        },
+        "range-mask": {
+          "self": "Range mask",
+          "slice-start": "Slice start",
+          "slice-start-label": "Slice start is the start index of the original value, start from 0 and should be less than stop.",
+          "slice-end": "Slice end",
+          "slice-end-label": "Slice stop is the stop index of the original value, should be less than the length of the original value.",
+          "substitution": "Substitution",
+          "substitution-label": "Substitution is the string used to replace the original value from start to end."
+        },
+        "md5-mask": {
+          "self": "MD5 mask",
+          "salt": "Salt",
+          "salt-label": "Salt is the salt value to generate a different hash that with the word alone."
+        }
       },
       "masking-level": {
         "self": "Masking Level",
