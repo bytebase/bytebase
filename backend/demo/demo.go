@@ -21,7 +21,7 @@ import (
 var demoFS embed.FS
 
 // LoadDemoDataIfNeeded loads the demo data if specified.
-func LoadDemoDataIfNeeded(ctx context.Context, storeDB *store.DB, strictUseDb bool, pgBinDir, demoName string) error {
+func LoadDemoDataIfNeeded(ctx context.Context, storeDB *store.DB, pgBinDir, demoName string) error {
 	if demoName == "" {
 		slog.Debug("Skip setting up demo data. Demo not specified.")
 		return nil
@@ -30,12 +30,12 @@ func LoadDemoDataIfNeeded(ctx context.Context, storeDB *store.DB, strictUseDb bo
 	slog.Info(fmt.Sprintf("Setting up demo %q...", demoName))
 
 	databaseName := storeDB.ConnCfg.Database
-	if !strictUseDb {
+	if !storeDB.ConnCfg.StrictUseDb {
 		// The database storing metadata is the same as user name.
 		databaseName = storeDB.ConnCfg.Username
 	}
 	metadataConnConfig := storeDB.ConnCfg
-	if !strictUseDb {
+	if !storeDB.ConnCfg.StrictUseDb {
 		metadataConnConfig.Database = databaseName
 	}
 	metadataDriver, err := dbdriver.Open(
