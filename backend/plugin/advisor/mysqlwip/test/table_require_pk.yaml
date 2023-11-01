@@ -1,4 +1,28 @@
-- statement: CREATE TABLE t(id INT PRIMARY KEY)
+- statement: |
+    CREATE TABLE t1(id INT PRIMARY KEY);
+    CREATE TABLE t2(id INT);
+    ALTER TABLE t2 ADD UNIQUE INDEX uk (id);
+  want:
+    - status: WARN
+      code: 601
+      title: table.require-pk
+      content: Table `t2` requires PRIMARY KEY
+      line: 2
+      details: ""
+- statement: |-
+    CREATE TABLE t1(id INT, PRIMARY KEY (id));
+    CREATE TABLE t2(id INT);
+    ALTER TABLE t2 ADD COLUMN uid INT UNIQUE KEY;
+  want:
+    - status: WARN
+      code: 601
+      title: table.require-pk
+      content: Table `t2` requires PRIMARY KEY
+      line: 2
+      details: ""
+- statement: |-
+    CREATE TABLE t1(id INT PRIMARY KEY);
+    CREATE TABLE t2(id INT, PRIMARY KEY (id));
   want:
     - status: SUCCESS
       code: 0
@@ -6,7 +30,22 @@
       content: ""
       line: 0
       details: ""
-- statement: CREATE TABLE t(id INT, PRIMARY KEY (id))
+- statement: |-
+    CREATE TABLE t1(id INT PRIMARY KEY);
+    CREATE TABLE t2(id INT);
+    DROP TABLE t1;
+  want:
+    - status: WARN
+      code: 601
+      title: table.require-pk
+      content: Table `t2` requires PRIMARY KEY
+      line: 2
+      details: ""
+- statement: |-
+    CREATE TABLE t1(id INT PRIMARY KEY);
+    CREATE TABLE t2(id INT);
+    DROP TABLE t1;
+    DROP TABLE t2;
   want:
     - status: SUCCESS
       code: 0
@@ -14,7 +53,29 @@
       content: ""
       line: 0
       details: ""
-- statement: CREATE TABLE t(id INT)
+- statement: |-
+    CREATE TABLE t(id INT);
+    ALTER TABLE t ADD CONSTRAINT PRIMARY KEY (id);
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |-
+    CREATE TABLE t(id INT PRIMARY KEY);
+    ALTER TABLE t DROP PRIMARY KEY;
+  want:
+    - status: WARN
+      code: 601
+      title: table.require-pk
+      content: Table `t` requires PRIMARY KEY
+      line: 2
+      details: ""
+- statement: |-
+    CREATE TABLE t(id INT PRIMARY KEY);
+    ALTER TABLE t DROP INDEX `PRIMARY`;
   want:
     - status: WARN
       code: 601
@@ -24,7 +85,7 @@
       details: ""
 - statement: |-
     CREATE TABLE t(id INT);
-                DROP TABLE t
+    ALTER TABLE t ADD COLUMN name varchar(30) PRIMARY KEY;
   want:
     - status: SUCCESS
       code: 0
@@ -34,7 +95,7 @@
       details: ""
 - statement: |-
     CREATE TABLE t(id INT);
-                ALTER TABLE t ADD CONSTRAINT PRIMARY KEY (id)
+    ALTER TABLE t CHANGE COLUMN id id INT PRIMARY KEY;
   want:
     - status: SUCCESS
       code: 0
@@ -42,29 +103,7 @@
       content: ""
       line: 0
       details: ""
-- statement: |-
-    CREATE TABLE t(id INT PRIMARY KEY);
-                ALTER TABLE t DROP PRIMARY KEY
-  want:
-    - status: WARN
-      code: 601
-      title: table.require-pk
-      content: Table `t` requires PRIMARY KEY
-      line: 3
-      details: ""
-- statement: |-
-    CREATE TABLE t(id INT PRIMARY KEY);
-    ALTER TABLE t DROP INDEX `PRIMARY`
-  want:
-    - status: WARN
-      code: 601
-      title: table.require-pk
-      content: Table `t` requires PRIMARY KEY
-      line: 3
-      details: ""
-- statement: |-
-    CREATE TABLE t(id INT);
-                ALTER TABLE t ADD COLUMN name varchar(30) PRIMARY KEY
+- statement: ALTER TABLE tech_book CHANGE COLUMN id uid INT;
   want:
     - status: SUCCESS
       code: 0
@@ -74,7 +113,7 @@
       details: ""
 - statement: |-
     CREATE TABLE t(id INT);
-                ALTER TABLE t CHANGE COLUMN id id INT PRIMARY KEY
+    ALTER TABLE t MODIFY COLUMN id INT PRIMARY KEY;
   want:
     - status: SUCCESS
       code: 0
@@ -82,25 +121,7 @@
       content: ""
       line: 0
       details: ""
-- statement: ALTER TABLE tech_book CHANGE COLUMN id uid INT
-  want:
-    - status: SUCCESS
-      code: 0
-      title: OK
-      content: ""
-      line: 0
-      details: ""
-- statement: |-
-    CREATE TABLE t(id INT);
-                ALTER TABLE t MODIFY COLUMN id INT PRIMARY KEY
-  want:
-    - status: SUCCESS
-      code: 0
-      title: OK
-      content: ""
-      line: 0
-      details: ""
-- statement: ALTER TABLE tech_book MODIFY COLUMN id INT
+- statement: ALTER TABLE tech_book MODIFY COLUMN id INT;
   want:
     - status: SUCCESS
       code: 0
@@ -110,7 +131,7 @@
       details: ""
 - statement: |-
     CREATE TABLE t(id INT, name varchar(30), PRIMARY KEY(id, name));
-                ALTER TABLE t DROP COLUMN id
+    ALTER TABLE t DROP COLUMN id;
   want:
     - status: SUCCESS
       code: 0
@@ -120,7 +141,8 @@
       details: ""
 - statement: |-
     CREATE TABLE t(id INT, name varchar(30), comment varchar(255), PRIMARY KEY(id, name));
-                ALTER TABLE t DROP COLUMN id, DROP COLUMN name
+    ALTER TABLE t ADD COLUMN age INT;
+    ALTER TABLE t DROP COLUMN id, DROP COLUMN name;
   want:
     - status: WARN
       code: 601
@@ -128,7 +150,9 @@
       content: Table `t` requires PRIMARY KEY
       line: 3
       details: ""
-- statement: ALTER TABLE tech_book ADD COLUMN a int, DROP COLUMN id, DROP COLUMN name
+- statement: |-
+    ALTER TABLE tech_book ADD COLUMN c INT;
+    ALTER TABLE tech_book ADD COLUMN a int, DROP COLUMN id, DROP COLUMN name;
   want:
     - status: WARN
       code: 601
@@ -136,7 +160,7 @@
       content: Table `tech_book` requires PRIMARY KEY
       line: 2
       details: ""
-- statement: ALTER TABLE tech_book DROP COLUMN name
+- statement: ALTER TABLE tech_book DROP COLUMN name;
   want:
     - status: SUCCESS
       code: 0
@@ -145,12 +169,21 @@
       line: 0
       details: ""
 - statement: |-
-    ALTER TABLE tech_book CHANGE COLUMN id uid int;
-                ALTER TABLE tech_book ADD COLUMN a int, DROP COLUMN uid, DROP COLUMN name
+    ALTER TABLE tech_book DROP COLUMN name, DROP COLUMN id;
   want:
     - status: WARN
       code: 601
       title: table.require-pk
       content: Table `tech_book` requires PRIMARY KEY
-      line: 3
+      line: 1
+      details: ""
+- statement: |-
+    ALTER TABLE tech_book CHANGE COLUMN id uid int;
+    ALTER TABLE tech_book ADD COLUMN a int, DROP COLUMN uid, DROP COLUMN name;
+  want:
+    - status: WARN
+      code: 601
+      title: table.require-pk
+      content: Table `tech_book` requires PRIMARY KEY
+      line: 2
       details: ""
