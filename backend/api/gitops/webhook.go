@@ -486,6 +486,9 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 					addedList = append(addedList, change.Item.Path)
 				case "edit":
 					modifiedList = append(modifiedList, change.Item.Path)
+				case "rename":
+					// To be consistent with VCS, we treat rename as delete + add, but we do not need to handle delete here.
+					addedList = append(addedList, change.Item.Path)
 				}
 			}
 
@@ -1644,7 +1647,7 @@ func (s *Service) createIssueFromMigrationDetailsV2(ctx context.Context, project
 			}
 		}
 	}
-	childCtx := context.WithValue(ctx, common.PrincipalIDContextKey, creatorID)
+	childCtx := context.WithValue(ctx, common.PrincipalIDContextKey, api.SystemBotID)
 	plan, err := s.rolloutService.CreatePlan(childCtx, &v1pb.CreatePlanRequest{
 		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
 		Plan: &v1pb.Plan{

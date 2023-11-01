@@ -1,4 +1,4 @@
-lockfileVersion: '6.1'
+lockfileVersion: '6.0'
 
 settings:
   autoInstallPeers: true
@@ -209,8 +209,8 @@ devDependencies:
     specifier: 2.11.8
     version: 2.11.8
   '@rollup/plugin-yaml':
-    specifier: 4.1.1
-    version: 4.1.1(rollup@3.29.2)
+    specifier: 4.1.2
+    version: 4.1.2(rollup@3.29.2)
   '@tailwindcss/forms':
     specifier: 0.5.6
     version: 0.5.6(tailwindcss@3.3.3)
@@ -230,8 +230,8 @@ devDependencies:
     specifier: 3.0.2
     version: 3.0.2
   '@types/downloadjs':
-    specifier: 1.4.3
-    version: 1.4.3
+    specifier: 1.4.5
+    version: 1.4.5
   '@types/file-saver':
     specifier: ^2.0.5
     version: 2.0.5
@@ -1138,11 +1138,11 @@ packages:
   /@protobufjs/utf8@1.1.0:
     resolution: {integrity: sha512-Vvn3zZrhQZkkBE8LSuW3em98c0FwgO4nxzv6OdSxPKJIEKY2bGbHn+mhGIPerzI4twdxaP8/0+06HBpwf345Lw==}
 
-  /@rollup/plugin-yaml@4.1.1(rollup@3.29.2):
-    resolution: {integrity: sha512-firWc3X2Ea5CWx2tOh/MzrsdxoX8ZUtG8RC+NQ7T04/cOereC64tDo4v1L+adTIJlmNko/Oaqn+uCol/t0qvbw==}
+  /@rollup/plugin-yaml@4.1.2(rollup@3.29.2):
+    resolution: {integrity: sha512-RpupciIeZMUqhgFE97ba0s98mOFS7CWzN3EJNhJkqSv9XLlWYtwVdtE6cDw6ASOF/sZVFS7kRJXftaqM2Vakdw==}
     engines: {node: '>=14.0.0'}
     peerDependencies:
-      rollup: ^1.20.0||^2.0.0||^3.0.0
+      rollup: ^1.20.0||^2.0.0||^3.0.0||^4.0.0
     peerDependenciesMeta:
       rollup:
         optional: true
@@ -1438,8 +1438,8 @@ packages:
       '@types/trusted-types': 2.0.4
     dev: true
 
-  /@types/downloadjs@1.4.3:
-    resolution: {integrity: sha512-MjJepFle/tLtT2/jmDNth6ZnwWzEhm40L+olE5HKR70ISUCfgT55eqreeHldAzFLY2HDUGsn8zgyto8KygN0CA==}
+  /@types/downloadjs@1.4.5:
+    resolution: {integrity: sha512-pr3zSKY0QwP+1tQumJGNfziGNi1xLVHtGsrclGsgjVpfWSPoW/9He42w6X+GTp4PO5I2wuHDU2wJdxI7dqjW+w==}
     dev: true
 
   /@types/estree@1.0.2:

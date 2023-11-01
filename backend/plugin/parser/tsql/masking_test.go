@@ -5,8 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-
+	"github.com/bytebase/bytebase/backend/component/masker"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
@@ -27,19 +26,19 @@ func TestTSQLExtractSensitiveField(t *testing.T) {
 									ColumnList: []base.ColumnInfo{
 										{
 											Name:              "a",
-											MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+											MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 										},
 										{
 											Name:              "b",
-											MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+											MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 										},
 										{
 											Name:              "c",
-											MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+											MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 										},
 										{
 											Name:              "d",
-											MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_PARTIAL),
+											MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultRangeMasker()),
 										},
 									},
 								},
@@ -48,7 +47,7 @@ func TestTSQLExtractSensitiveField(t *testing.T) {
 									ColumnList: []base.ColumnInfo{
 										{
 											Name:              "e",
-											MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+											MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 										},
 									},
 								},
@@ -78,19 +77,19 @@ func TestTSQLExtractSensitiveField(t *testing.T) {
 			fieldList: []base.SensitiveField{
 				{
 					Name:              "c1",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 				{
 					Name:              "c2",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 				{
 					Name:              "c3",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 				{
 					Name:              "n",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 			},
 		},
@@ -111,23 +110,23 @@ SELECT * FROM tt1 JOIN tt2 ON tt1.aa = tt2.cc JOIN tt3 ON tt2.dd = tt3.ee;`,
 			fieldList: []base.SensitiveField{
 				{
 					Name:              "aa",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 				{
 					Name:              "bb",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "cc",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "dd",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_PARTIAL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultRangeMasker()),
 				},
 				{
 					Name:              "ee",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 			},
 		},
@@ -142,11 +141,11 @@ SELECT tt1.aa, bb FROM tt1;`,
 			fieldList: []base.SensitiveField{
 				{
 					Name:              "aa",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 				{
 					Name:              "bb",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 			},
 		},
@@ -157,11 +156,11 @@ SELECT tt1.aa, bb FROM tt1;`,
 			fieldList: []base.SensitiveField{
 				{
 					Name:              "a",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 				{
 					Name:              "b",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 			},
 		},
@@ -172,23 +171,23 @@ SELECT tt1.aa, bb FROM tt1;`,
 			fieldList: []base.SensitiveField{
 				{
 					Name:              "a",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 				{
 					Name:              "b",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "c",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "d",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_PARTIAL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultRangeMasker()),
 				},
 				{
 					Name:              "e",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 			},
 		},
@@ -199,23 +198,23 @@ SELECT tt1.aa, bb FROM tt1;`,
 			fieldList: []base.SensitiveField{
 				{
 					Name:              "a",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 				{
 					Name:              "b",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "c",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "d",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_PARTIAL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultRangeMasker()),
 				},
 				{
 					Name:              "e",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 			},
 		},
@@ -226,7 +225,7 @@ SELECT tt1.aa, bb FROM tt1;`,
 			fieldList: []base.SensitiveField{
 				{
 					Name:              "b",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 			},
 		},
@@ -237,7 +236,7 @@ SELECT tt1.aa, bb FROM tt1;`,
 			fieldList: []base.SensitiveField{
 				{
 					Name:              "SELECTMAX(e)FROMMyTable2",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 			},
 		},
@@ -248,7 +247,7 @@ SELECT tt1.aa, bb FROM tt1;`,
 			fieldList: []base.SensitiveField{
 				{
 					Name:              "a",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 			},
 		},
@@ -259,19 +258,19 @@ SELECT tt1.aa, bb FROM tt1;`,
 			fieldList: []base.SensitiveField{
 				{
 					Name:              "a",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 				{
 					Name:              "b",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "c",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "d",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_PARTIAL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultRangeMasker()),
 				},
 			},
 		},

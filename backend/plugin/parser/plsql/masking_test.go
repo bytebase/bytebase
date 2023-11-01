@@ -5,8 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-
+	"github.com/bytebase/bytebase/backend/component/masker"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
@@ -28,19 +27,19 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 									ColumnList: []base.ColumnInfo{
 										{
 											Name:              "A",
-											MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+											MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 										},
 										{
 											Name:              "B",
-											MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+											MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 										},
 										{
 											Name:              "C",
-											MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+											MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 										},
 										{
 											Name:              "D",
-											MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_PARTIAL),
+											MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultRangeMasker()),
 										},
 									},
 								},
@@ -70,19 +69,19 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			fieldList: []base.SensitiveField{
 				{
 					Name:              "CC1",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 				{
 					Name:              "CC2",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 				{
 					Name:              "CC3",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 				{
 					Name:              "N",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 			},
 		},
@@ -100,19 +99,19 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			fieldList: []base.SensitiveField{
 				{
 					Name:              "C1",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 				{
 					Name:              "C2",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "C3",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_PARTIAL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 				{
 					Name:              "N",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 			},
 		},
@@ -123,19 +122,19 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			fieldList: []base.SensitiveField{
 				{
 					Name:              "D",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 				{
 					Name:              "C",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "B",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "A",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_PARTIAL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultRangeMasker()),
 				},
 			},
 		},
@@ -146,19 +145,19 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			fieldList: []base.SensitiveField{
 				{
 					Name:              "A",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 				{
 					Name:              "B",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "C",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "D",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_PARTIAL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultRangeMasker()),
 				},
 			},
 		},
@@ -169,19 +168,19 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			fieldList: []base.SensitiveField{
 				{
 					Name:              "A",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 				{
 					Name:              "B",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "C",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "D",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_PARTIAL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultRangeMasker()),
 				},
 			},
 		},
@@ -192,7 +191,7 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			fieldList: []base.SensitiveField{
 				{
 					Name:              "MAX(A)",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 			},
 		},
@@ -203,19 +202,19 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			fieldList: []base.SensitiveField{
 				{
 					Name:              "A",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 				{
 					Name:              "B",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "C",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "D",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_PARTIAL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultRangeMasker()),
 				},
 			},
 		},
@@ -226,19 +225,19 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			fieldList: []base.SensitiveField{
 				{
 					Name:              "C1",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 				{
 					Name:              "C2",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "C3",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "4",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_PARTIAL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 			},
 		},
@@ -249,19 +248,19 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			fieldList: []base.SensitiveField{
 				{
 					Name:              "A",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 				{
 					Name:              "B",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "C",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "D",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_PARTIAL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultRangeMasker()),
 				},
 			},
 		},
@@ -272,7 +271,7 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			fieldList: []base.SensitiveField{
 				{
 					Name:              "CONCAT(ROOT.T.A,ROOT.T.B)",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 			},
 		},
@@ -283,11 +282,11 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			fieldList: []base.SensitiveField{
 				{
 					Name:              "A",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 				{
 					Name:              "(SELECTMAX(B)>Y.AFROMTX)",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 			},
 		},
@@ -298,35 +297,35 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			fieldList: []base.SensitiveField{
 				{
 					Name:              "A",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 				{
 					Name:              "B",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "C",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "D",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_PARTIAL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultRangeMasker()),
 				},
 				{
 					Name:              "A",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 				{
 					Name:              "B",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "C",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "D",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_PARTIAL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultRangeMasker()),
 				},
 			},
 		},
@@ -337,19 +336,19 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			fieldList: []base.SensitiveField{
 				{
 					Name:              "A",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 				{
 					Name:              "B",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "C",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "D",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_PARTIAL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultRangeMasker()),
 				},
 			},
 		},
@@ -360,31 +359,31 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			fieldList: []base.SensitiveField{
 				{
 					Name:              "A",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 				{
 					Name:              "B",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "C",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "D",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_PARTIAL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultRangeMasker()),
 				},
 				{
 					Name:              "B",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "C",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "D",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_PARTIAL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultRangeMasker()),
 				},
 			},
 		},
@@ -395,11 +394,11 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			fieldList: []base.SensitiveField{
 				{
 					Name:              "A",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 				{
 					Name:              "(SELECTMAX(A)FROMT)",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 			},
 		},
@@ -410,11 +409,11 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			fieldList: []base.SensitiveField{
 				{
 					Name:              "A-B",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 				{
 					Name:              "C1",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 			},
 		},
@@ -425,11 +424,11 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			fieldList: []base.SensitiveField{
 				{
 					Name:              "MAX(A)",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 				{
 					Name:              "C1",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 			},
 		},
@@ -440,19 +439,19 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			fieldList: []base.SensitiveField{
 				{
 					Name:              "A",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 				{
 					Name:              "B",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "C",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "D",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_PARTIAL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultRangeMasker()),
 				},
 			},
 		},
@@ -463,19 +462,19 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			fieldList: []base.SensitiveField{
 				{
 					Name:              "A",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 				{
 					Name:              "B",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "C",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "D1",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_PARTIAL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 			},
 		},
@@ -486,19 +485,19 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			fieldList: []base.SensitiveField{
 				{
 					Name:              "A",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 				{
 					Name:              "B",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "C",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "D1",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_PARTIAL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 			},
 		},
@@ -508,19 +507,19 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			fieldList: []base.SensitiveField{
 				{
 					Name:              "A",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_FULL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
 				},
 				{
 					Name:              "B",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "C",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
 				},
 				{
 					Name:              "D",
-					MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_PARTIAL),
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultRangeMasker()),
 				},
 			},
 		},
@@ -534,7 +533,7 @@ func TestPLSQLExtractSensitiveField(t *testing.T) {
 			// Test for no FROM DUAL.
 			statement:  "select 1 from dual;",
 			schemaInfo: &base.SensitiveSchemaInfo{},
-			fieldList:  []base.SensitiveField{{Name: "1", MaskingAttributes: base.NewMaskingAttributes(storepb.MaskingLevel_NONE)}},
+			fieldList:  []base.SensitiveField{{Name: "1", MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker())}},
 		},
 	}
 
