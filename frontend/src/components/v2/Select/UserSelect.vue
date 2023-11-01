@@ -28,6 +28,7 @@ import {
   SYSTEM_BOT_USER_NAME,
   UNKNOWN_ID,
   UNKNOWN_USER_NAME,
+  allUsersUser,
   unknownUser,
 } from "@/types";
 import { User, UserRole, UserType } from "@/types/proto/v1/auth_service";
@@ -46,6 +47,8 @@ const props = withDefaults(
     users?: string[];
     project?: string;
     includeAll?: boolean;
+    // allUsers is a special user that represents all users in the project.
+    includeAllUsers?: boolean;
     includeSystemBot?: boolean;
     includeServiceAccount?: boolean;
     includeArchived?: boolean;
@@ -61,6 +64,7 @@ const props = withDefaults(
     users: undefined,
     project: undefined,
     includeAll: false,
+    includeAllUsers: false,
     includeSystemBot: false,
     includeServiceAccount: false,
     includeArchived: false,
@@ -187,6 +191,9 @@ const combinedUserList = computed(() => {
     } else {
       list.unshift(userStore.getUserByName(SYSTEM_BOT_USER_NAME)!);
     }
+  }
+  if (props.includeAllUsers) {
+    list.unshift(allUsersUser());
   }
   if (props.user === String(UNKNOWN_ID) || props.includeAll) {
     const dummyAll = {

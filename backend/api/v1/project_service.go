@@ -2611,7 +2611,11 @@ func convertToIamPolicy(iamPolicy *store.IAMPolicyMessage) (*v1pb.IamPolicy, err
 	for _, binding := range iamPolicy.Bindings {
 		var members []string
 		for _, member := range binding.Members {
-			members = append(members, fmt.Sprintf("user:%s", member.Email))
+			if member.Email == api.AllUsers {
+				members = append(members, api.AllUsers)
+			} else {
+				members = append(members, fmt.Sprintf("user:%s", member.Email))
+			}
 		}
 		v1pbBinding := &v1pb.Binding{
 			Role:      convertToProjectRole(binding.Role),
@@ -2650,7 +2654,12 @@ func (s *ProjectService) convertToIAMPolicyMessage(ctx context.Context, iamPolic
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
 		for _, member := range binding.Members {
-			email := strings.TrimPrefix(member, "user:")
+			email := ""
+			if member == api.AllUsers {
+				email = api.AllUsers
+			} else {
+				email = strings.TrimPrefix(member, "user:")
+			}
 			user, err := s.store.GetUser(ctx, &store.FindUserMessage{
 				Email:       &email,
 				ShowDeleted: true,
@@ -3007,6 +3016,10 @@ func validateBindings(bindings []*v1pb.Binding, roles []*v1pb.Role) error {
 }
 
 func validateMember(member string) error {
+	if member == api.AllUsers {
+		return nil
+	}
+
 	userIdentifierMap := map[string]bool{
 		"user:": true,
 	}

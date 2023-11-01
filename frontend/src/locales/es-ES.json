@@ -81,9 +81,10 @@
       "owner": "Propietario",
       "developer": "Desarrollador",
       "member": "Miembro",
-      "exporter": "exportador",
-      "querier": "querier",
-      "releaser": "liberador"
+      "exporter": "Exportador",
+      "querier": "Querier",
+      "releaser": "Liberador",
+      "viewer": "Espectador"
     },
     "assignee": "Asignado",
     "revert": "Revertir",
