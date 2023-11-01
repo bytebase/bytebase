@@ -219,9 +219,12 @@ const trySave = async () => {
 
 watch(
   () => config.value?.ghostFlags,
-  (updatedFlags) => {
-    flags.value = cloneDeep(updatedFlags ?? {});
+  (newFlags, oldFlags) => {
+    if (isEqual(newFlags, oldFlags)) {
+      return;
+    }
+    flags.value = cloneDeep(newFlags ?? {});
   },
-  { immediate: true }
+  { immediate: true, deep: true }
 );
 </script>
