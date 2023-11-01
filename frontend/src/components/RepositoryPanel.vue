@@ -363,14 +363,14 @@ watch(
 );
 
 const repositoryFormattedFullPath = computed(() => {
-  const fullPath = props.repository.fullPath
+  const fullPath = props.repository.fullPath;
   if (props.vcs.type !== ExternalVersionControl_Type.AZURE_DEVOPS) {
     return fullPath;
   }
   if (!fullPath.includes("@dev.azure.com")) {
     return fullPath;
   }
-  return `https://dev.azure.com${fullPath.split("@dev.azure.com")[1]}`
+  return `https://dev.azure.com${fullPath.split("@dev.azure.com")[1]}`;
 });
 
 const repositoryInfo = computed((): ExternalRepositoryInfo => {
