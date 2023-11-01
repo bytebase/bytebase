@@ -47,9 +47,9 @@ var defaultConfig = struct {
 
 type UserFlags struct {
 	maxLoad                 *string
-	chunkSize               *int
+	chunkSize               *int64
 	initiallyDropGhostTable *bool
-	maxLagMillis            *int
+	maxLagMillis            *int64
 	allowOnMaster           *bool
 	switchToRBR             *bool
 }
@@ -64,13 +64,17 @@ var knownKeys = map[string]bool{
 }
 
 func GetUserFlags(flags map[string]string) (*UserFlags, error) {
+	f := &UserFlags{}
+	if flags == nil {
+		return f, nil
+	}
+
 	for k := range flags {
 		if !knownKeys[k] {
 			return nil, errors.Errorf("unsupported flag: %s", k)
 		}
 	}
 
-	f := &UserFlags{}
 	if v, ok := flags["max-load"]; ok {
 		if _, err := base.ParseLoadMap(v); err != nil {
 			return nil, errors.Wrapf(err, "failed to parse max-load %q", v)
@@ -78,7 +82,7 @@ func GetUserFlags(flags map[string]string) (*UserFlags, error) {
 		f.maxLoad = &v
 	}
 	if v, ok := flags["chunk-size"]; ok {
-		chunkSize, err := strconv.Atoi(v)
+		chunkSize, err := strconv.ParseInt(v, 10, 64)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to convert chunk-size %q to int", v)
 		}
@@ -92,7 +96,7 @@ func GetUserFlags(flags map[string]string) (*UserFlags, error) {
 		f.initiallyDropGhostTable = &initiallyDropGhostTable
 	}
 	if v, ok := flags["max-lag-millis"]; ok {
-		maxLagMillis, err := strconv.Atoi(v)
+		maxLagMillis, err := strconv.ParseInt(v, 10, 64)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to convert max-lag-millis %q to int", v)
 		}
@@ -125,7 +129,7 @@ func GetPostponeFlagFilename(taskID int, databaseID int, databaseName string, ta
 }
 
 // NewMigrationContext is the context for gh-ost migration.
-func NewMigrationContext(taskID int, database *store.DatabaseMessage, dataSource *store.DataSourceMessage, secret string, tableName string, statement string, noop bool, serverIDOffset uint) (*base.MigrationContext, error) {
+func NewMigrationContext(taskID int, database *store.DatabaseMessage, dataSource *store.DataSourceMessage, secret string, tableName string, statement string, noop bool, flags map[string]string, serverIDOffset uint) (*base.MigrationContext, error) {
 	password, err := common.Unobfuscate(dataSource.ObfuscatedPassword, secret)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get password")
@@ -196,6 +200,35 @@ func NewMigrationContext(taskID int, database *store.DatabaseMessage, dataSource
 	}
 	if err := migrationContext.SetExponentialBackoffMaxInterval(defaultConfig.exponentialBackoffMaxInterval); err != nil {
 		return nil, err
+	}
+
+	userFlags, err := GetUserFlags(flags)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get user flags")
+	}
+	if v := userFlags.maxLoad; v != nil {
+		if err := migrationContext.ReadMaxLoad(*v); err != nil {
+			return nil, errors.Wrapf(err, "failed to parse max load %q", *v)
+		}
+	}
+	if v := userFlags.chunkSize; v != nil {
+		migrationContext.SetChunkSize(*v)
+	}
+	if v := userFlags.initiallyDropGhostTable; v != nil {
+		migrationContext.InitiallyDropGhostTable = *v
+	}
+	if v := userFlags.maxLagMillis; v != nil {
+		migrationContext.SetMaxLagMillisecondsThrottleThreshold(*v)
+	}
+	if v := userFlags.allowOnMaster; v != nil {
+		migrationContext.AllowedRunningOnMaster = *v
+	}
+	if v := userFlags.switchToRBR; v != nil {
+		migrationContext.SwitchToRowBinlogFormat = *v
+	}
+
+	if migrationContext.SwitchToRowBinlogFormat && migrationContext.AssumeRBR {
+		return nil, errors.Errorf("switchToRBR and assumeRBR are mutually exclusive")
 	}
 	return migrationContext, nil
 }

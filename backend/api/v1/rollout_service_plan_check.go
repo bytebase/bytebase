@@ -367,6 +367,7 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 				InstanceUid:        int32(instance.UID),
 				DatabaseName:       database.DatabaseName,
 				DatabaseGroupUid:   databaseGroupUID,
+				GhostFlags:         config.GhostFlags,
 			},
 		})
 	}
