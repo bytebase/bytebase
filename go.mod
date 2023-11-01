@@ -3,7 +3,7 @@ module github.com/bytebase/bytebase
 go 1.21.3
 
 require (
-	cloud.google.com/go/spanner v1.50.0
+	cloud.google.com/go/spanner v1.51.0
 	gitee.com/chunanyong/dm v1.8.12
 	github.com/ClickHouse/clickhouse-go/v2 v2.14.1
 	github.com/antlr4-go/antlr/v4 v4.13.0
@@ -76,7 +76,7 @@ require (
 	golang.org/x/sys v0.13.0
 	golang.org/x/text v0.13.0
 	google.golang.org/api v0.143.0
-	google.golang.org/genproto v0.0.0-20231016165738-49dd2c1f3d0b
+	google.golang.org/genproto v0.0.0-20231030173426-d783a09b4405
 	google.golang.org/genproto/googleapis/api v0.0.0-20231030173426-d783a09b4405
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231030173426-d783a09b4405
 	google.golang.org/grpc v1.59.0
@@ -139,11 +139,11 @@ require (
 )
 
 require (
-	cloud.google.com/go v0.110.8 // indirect
-	cloud.google.com/go/compute v1.23.1 // indirect
+	cloud.google.com/go v0.110.9 // indirect
+	cloud.google.com/go/compute v1.23.2 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
-	cloud.google.com/go/iam v1.1.3 // indirect
-	cloud.google.com/go/longrunning v0.5.2 // indirect
+	cloud.google.com/go/iam v1.1.4 // indirect
+	cloud.google.com/go/longrunning v0.5.3 // indirect
 	github.com/BurntSushi/toml v1.2.1 // indirect
 	github.com/ClickHouse/ch-go v0.58.2 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
