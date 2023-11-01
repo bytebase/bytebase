@@ -25,6 +25,13 @@
       >
         <SemanticTypesView />
       </NTabPane>
+      <NTabPane
+        v-if="isDev()"
+        name="masking-algorithms"
+        :tab="$t('settings.sensitive-data.algorithms.self')"
+      >
+        <MaskingAlgorithmsView />
+      </NTabPane>
     </NTabs>
   </div>
 </template>
@@ -41,11 +48,18 @@ import {
 import { featureToRef } from "@/store";
 import { isDev } from "@/utils";
 
+const dataMaskingTabList = [
+  "sensitive-column-list",
+  "global-masking-rule",
+  "semantic-types",
+  "masking-algorithms",
+] as const;
+type DataMaskingTab = typeof dataMaskingTabList[number];
+const isDataMaskingTab = (tab: any): tab is DataMaskingTab =>
+  dataMaskingTabList.includes(tab);
+
 interface LocalState {
-  selectedTab:
-    | "sensitive-column-list"
-    | "global-masking-rule"
-    | "semantic-types";
+  selectedTab: DataMaskingTab;
 }
 
 const state = reactive<LocalState>({
@@ -58,16 +72,11 @@ const route = useRoute();
 watch(
   () => route.hash,
   (hash) => {
-    switch (hash) {
-      case "#semantic-types":
-        state.selectedTab = "semantic-types";
-        break;
-      case "#global-masking-rule":
-        state.selectedTab = "global-masking-rule";
-        break;
-      default:
-        state.selectedTab = "sensitive-column-list";
-        break;
+    const tab = hash.slice(1);
+    if (isDataMaskingTab(tab)) {
+      state.selectedTab = tab;
+    } else {
+      state.selectedTab = "sensitive-column-list";
     }
   },
   {
@@ -78,17 +87,7 @@ watch(
 watch(
   () => state.selectedTab,
   (tab) => {
-    switch (tab) {
-      case "global-masking-rule":
-        router.push({ hash: "#global-masking-rule" });
-        break;
-      case "semantic-types":
-        router.push({ hash: "#semantic-types" });
-        break;
-      default:
-        router.push({ hash: "" });
-        break;
-    }
+    router.push({ hash: `#${tab}` });
   }
 );
 </script>
