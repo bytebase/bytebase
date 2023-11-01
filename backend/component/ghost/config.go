@@ -33,7 +33,7 @@ var defaultConfig = struct {
 	concurrentCountTableRows:            true, // concurrent-rowcount
 	timestampAllTable:                   true, // doesn't have a gh-ost cli flag counterpart
 	hooksStatusIntervalSec:              60,   // hooks-status-interval
-	heartbeatIntervalMilliseconds:       100,  // heartbreat-interval-millis
+	heartbeatIntervalMilliseconds:       100,  // heartbeat-interval-millis
 	niceRatio:                           0,    // nice-ration
 	chunkSize:                           1000, // chunk-size
 	dmlBatchSize:                        10,   // dml-batch-size
