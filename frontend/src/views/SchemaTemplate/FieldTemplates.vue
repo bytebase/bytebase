@@ -169,7 +169,7 @@ const filterTemplateByKeyword = (
   if (template.column?.name.toLowerCase().includes(keyword)) {
     return true;
   }
-  if (template.column?.comment.toLowerCase().includes(keyword)) {
+  if (template.column?.userComment.toLowerCase().includes(keyword)) {
     return true;
   }
   return false;
