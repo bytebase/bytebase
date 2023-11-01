@@ -1,6 +1,6 @@
 - statement: |
-    CREATE TABLE tech_book(id INT);
-    INSERT INTO tech_book(id) values (1);
+    CREATE TABLE book(id INT);
+    INSERT INTO book(id) values (1);
   want:
     - status: SUCCESS
       code: 0
@@ -9,30 +9,30 @@
       line: 0
       details: ""
 - statement: |
-    CREATE TABLE tech_book(id INT);
-    DELETE FROM tech_book;
+    CREATE TABLE book(id INT);
+    DELETE FROM book;
   want:
     - status: WARN
       code: 202
       title: statement.where.require
       content: |-
-        "DELETE FROM tech_book;" requires WHERE clause
+        "DELETE FROM book;" requires WHERE clause
       line: 2
       details: ""
 - statement: |
-    CREATE TABLE tech_book(id INT);
-    UPDATE tech_book SET id = 1;
+    CREATE TABLE book(id INT);
+    UPDATE book SET id = 1;
   want:
     - status: WARN
       code: 202
       title: statement.where.require
       content: |-
-        "UPDATE tech_book SET id = 1;" requires WHERE clause
+        "UPDATE book SET id = 1;" requires WHERE clause
       line: 2
       details: ""
 - statement: |
-    CREATE TABLE tech_book(id INT);
-    DELETE FROM tech_book WHERE id > 0;
+    CREATE TABLE book(id INT);
+    DELETE FROM book WHERE id > 0;
   want:
     - status: SUCCESS
       code: 0
@@ -41,8 +41,8 @@
       line: 0
       details: ""
 - statement: |
-    CREATE TABLE tech_book(id INT);
-    UPDATE tech_book SET id = 1 WHERE id > 10;
+    CREATE TABLE book(id INT);
+    UPDATE book SET id = 1 WHERE id > 10;
   want:
     - status: SUCCESS
       code: 0
@@ -51,19 +51,19 @@
       line: 0
       details: ""
 - statement: |
-    CREATE TABLE tech_book(id INT);
-    SELECT id FROM tech_book;
+    CREATE TABLE book(id INT);
+    SELECT id FROM book;
   want:
     - status: WARN
       code: 202
       title: statement.where.require
       content: |-
-        "SELECT id FROM tech_book;" requires WHERE clause
+        "SELECT id FROM book;" requires WHERE clause
       line: 2
       details: ""
 - statement: |
-    CREATE TABLE tech_book(id INT);
-    SELECT id FROM tech_book WHERE id > 0;
+    CREATE TABLE book(id INT);
+    SELECT id FROM book WHERE id > 0;
   want:
     - status: SUCCESS
       code: 0
@@ -72,12 +72,12 @@
       line: 0
       details: ""
 - statement: |
-    CREATE TABLE tech_book(id INT);
+    CREATE TABLE book(id INT);
     SELECT id
-    FROM tech_book
+    FROM book
     WHERE id > (
       SELECT max(id)
-      FROM tech_book
+      FROM book
       );
   want:
     - status: WARN
@@ -85,10 +85,10 @@
       title: statement.where.require
       content: |-
         "SELECT id
-        FROM tech_book
+        FROM book
         WHERE id > (
           SELECT max(id)
-          FROM tech_book
+          FROM book
           );" requires WHERE clause
       line: 5
       details: ""
