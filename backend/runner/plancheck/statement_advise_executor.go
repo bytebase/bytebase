@@ -64,7 +64,7 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
-				Code:    common.Ok.Int64(),
+				Code:    common.Ok.Int32(),
 				Title:   fmt.Sprintf("Statement advise is not supported for %s", instance.Engine),
 				Content: "",
 			},
@@ -99,7 +99,7 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 					SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
 						Line:   0,
 						Detail: "",
-						Code:   advisor.Unsupported.Int64(),
+						Code:   advisor.Unsupported.Int32(),
 					},
 				},
 			},
@@ -123,7 +123,7 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
-				Code:    common.Ok.Int64(),
+				Code:    common.Ok.Int32(),
 				Title:   "Large SQL review policy is disabled",
 				Content: "",
 			},
@@ -191,9 +191,9 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 			Code:    0,
 			Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
 				SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-					Line:   int64(advice.Line),
-					Column: int64(advice.Column),
-					Code:   advice.Code.Int64(),
+					Line:   int32(advice.Line),
+					Column: int32(advice.Column),
+					Code:   advice.Code.Int32(),
 					Detail: advice.Details,
 				},
 			},
@@ -206,7 +206,7 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
 				Title:   "OK",
 				Content: "",
-				Code:    common.Ok.Int64(),
+				Code:    common.Ok.Int32(),
 				Report:  nil,
 			},
 		}, nil
@@ -265,7 +265,7 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
-				Code:    common.Ok.Int64(),
+				Code:    common.Ok.Int32(),
 				Title:   "Large SQL review policy is disabled",
 				Content: "",
 			},
@@ -313,7 +313,7 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 						SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
 							Line:   0,
 							Detail: "",
-							Code:   advisor.Unsupported.Int64(),
+							Code:   advisor.Unsupported.Int32(),
 						},
 					},
 				},
@@ -403,9 +403,9 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 						Code:    0,
 						Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
 							SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-								Line:   int64(advice.Line),
-								Column: int64(advice.Column),
-								Code:   advice.Code.Int64(),
+								Line:   int32(advice.Line),
+								Column: int32(advice.Column),
+								Code:   advice.Code.Int32(),
 								Detail: advice.Details,
 							},
 						},
@@ -418,7 +418,7 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 					Status:  storepb.PlanCheckRunResult_Result_ERROR,
 					Title:   "Failed to run SQL review",
 					Content: err.Error(),
-					Code:    common.Internal.Int64(),
+					Code:    common.Internal.Int32(),
 					Report:  nil,
 				})
 			} else {
@@ -433,7 +433,7 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
 				Title:   "OK",
 				Content: "",
-				Code:    common.Ok.Int64(),
+				Code:    common.Ok.Int32(),
 				Report:  nil,
 			},
 		}, nil

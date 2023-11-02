@@ -46,7 +46,7 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, config *storepb.PlanCheckRu
 					Status:  storepb.PlanCheckRunResult_Result_ERROR,
 					Title:   "gh-ost dry run failed",
 					Content: panicErr.Error(),
-					Code:    common.Internal.Int64(),
+					Code:    common.Internal.Int32(),
 					Report:  nil,
 				},
 			}
@@ -115,7 +115,7 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, config *storepb.PlanCheckRu
 				Status:  storepb.PlanCheckRunResult_Result_ERROR,
 				Title:   "gh-ost dry run failed",
 				Content: err.Error(),
-				Code:    common.Internal.Int64(),
+				Code:    common.Internal.Int32(),
 				Report:  nil,
 			},
 		}, nil
@@ -126,7 +126,7 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, config *storepb.PlanCheckRu
 			Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
 			Title:   "OK",
 			Content: "gh-ost dry run succeeded",
-			Code:    common.Ok.Int64(),
+			Code:    common.Ok.Int32(),
 			Report:  nil,
 		},
 	}, nil

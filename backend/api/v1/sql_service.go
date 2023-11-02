@@ -1801,8 +1801,8 @@ func validateQueryRequest(instance *store.InstanceMessage, databaseName string, 
 		if ok {
 			querySyntaxError, err := status.New(codes.InvalidArgument, err.Error()).WithDetails(
 				&v1pb.PlanCheckRun_Result_SqlReviewReport{
-					Line:   int64(syntaxErr.Line),
-					Column: int64(syntaxErr.Column),
+					Line:   int32(syntaxErr.Line),
+					Column: int32(syntaxErr.Column),
 					Detail: syntaxErr.Message,
 				},
 			)

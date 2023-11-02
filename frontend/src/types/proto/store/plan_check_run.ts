@@ -455,7 +455,7 @@ export const PlanCheckRunResult_Result = {
       writer.uint32(26).string(message.content);
     }
     if (message.code !== 0) {
-      writer.uint32(32).int64(message.code);
+      writer.uint32(32).int32(message.code);
     }
     if (message.sqlSummaryReport !== undefined) {
       PlanCheckRunResult_Result_SqlSummaryReport.encode(message.sqlSummaryReport, writer.uint32(42).fork()).ldelim();
@@ -499,7 +499,7 @@ export const PlanCheckRunResult_Result = {
             break;
           }
 
-          message.code = longToNumber(reader.int64() as Long);
+          message.code = reader.int32();
           continue;
         case 5:
           if (tag !== 42) {
@@ -581,13 +581,13 @@ function createBasePlanCheckRunResult_Result_SqlSummaryReport(): PlanCheckRunRes
 export const PlanCheckRunResult_Result_SqlSummaryReport = {
   encode(message: PlanCheckRunResult_Result_SqlSummaryReport, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.code !== 0) {
-      writer.uint32(8).int64(message.code);
+      writer.uint32(8).int32(message.code);
     }
     for (const v of message.statementTypes) {
       writer.uint32(18).string(v!);
     }
     if (message.affectedRows !== 0) {
-      writer.uint32(24).int64(message.affectedRows);
+      writer.uint32(24).int32(message.affectedRows);
     }
     if (message.changedResources !== undefined) {
       ChangedResources.encode(message.changedResources, writer.uint32(34).fork()).ldelim();
@@ -607,7 +607,7 @@ export const PlanCheckRunResult_Result_SqlSummaryReport = {
             break;
           }
 
-          message.code = longToNumber(reader.int64() as Long);
+          message.code = reader.int32();
           continue;
         case 2:
           if (tag !== 18) {
@@ -621,7 +621,7 @@ export const PlanCheckRunResult_Result_SqlSummaryReport = {
             break;
           }
 
-          message.affectedRows = longToNumber(reader.int64() as Long);
+          message.affectedRows = reader.int32();
           continue;
         case 4:
           if (tag !== 34) {
@@ -687,16 +687,16 @@ function createBasePlanCheckRunResult_Result_SqlReviewReport(): PlanCheckRunResu
 export const PlanCheckRunResult_Result_SqlReviewReport = {
   encode(message: PlanCheckRunResult_Result_SqlReviewReport, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.line !== 0) {
-      writer.uint32(8).int64(message.line);
+      writer.uint32(8).int32(message.line);
     }
     if (message.column !== 0) {
-      writer.uint32(16).int64(message.column);
+      writer.uint32(16).int32(message.column);
     }
     if (message.detail !== "") {
       writer.uint32(26).string(message.detail);
     }
     if (message.code !== 0) {
-      writer.uint32(32).int64(message.code);
+      writer.uint32(32).int32(message.code);
     }
     return writer;
   },
@@ -713,14 +713,14 @@ export const PlanCheckRunResult_Result_SqlReviewReport = {
             break;
           }
 
-          message.line = longToNumber(reader.int64() as Long);
+          message.line = reader.int32();
           continue;
         case 2:
           if (tag !== 16) {
             break;
           }
 
-          message.column = longToNumber(reader.int64() as Long);
+          message.column = reader.int32();
           continue;
         case 3:
           if (tag !== 26) {
@@ -734,7 +734,7 @@ export const PlanCheckRunResult_Result_SqlReviewReport = {
             break;
           }
 
-          message.code = longToNumber(reader.int64() as Long);
+          message.code = reader.int32();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {

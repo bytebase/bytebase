@@ -288,7 +288,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 	return true, nil
 }
 
-func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, riskLevel int64, riskSource store.RiskSource) (*storepb.ApprovalTemplate, error) {
+func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, riskLevel int32, riskSource store.RiskSource) (*storepb.ApprovalTemplate, error) {
 	e, err := cel.NewEnv(common.ApprovalFactors...)
 	if err != nil {
 		return nil, err
@@ -326,7 +326,7 @@ func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, risk
 	return nil, nil
 }
 
-func getIssueRisk(ctx context.Context, s *store.Store, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, issue *store.IssueMessage, risks []*store.RiskMessage) (int64, store.RiskSource, bool, error) {
+func getIssueRisk(ctx context.Context, s *store.Store, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, issue *store.IssueMessage, risks []*store.RiskMessage) (int32, store.RiskSource, bool, error) {
 	switch issue.Type {
 	case api.IssueGrantRequest:
 		return getGrantRequestIssueRisk(ctx, s, issue, risks)
@@ -337,7 +337,7 @@ func getIssueRisk(ctx context.Context, s *store.Store, licenseService enterprise
 	}
 }
 
-func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, issue *store.IssueMessage, risks []*store.RiskMessage) (int64, store.RiskSource, bool, error) {
+func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, issue *store.IssueMessage, risks []*store.RiskMessage) (int32, store.RiskSource, bool, error) {
 	if issue.PlanUID == nil {
 		return 0, store.RiskSourceUnknown, false, errors.Errorf("expected plan UID in issue %v", issue.UID)
 	}
@@ -413,7 +413,7 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 		return 0, store.RiskSourceUnknown, false, err
 	}
 
-	var maxRiskLevel int64
+	var maxRiskLevel int32
 	for _, stage := range pipelineCreate.Stages {
 		for _, task := range stage.TaskList {
 			instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
@@ -448,7 +448,7 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 				environmentID = database.EffectiveEnvironmentID
 			}
 
-			risk, err := func() (int64, error) {
+			risk, err := func() (int32, error) {
 				for _, risk := range risks {
 					if !risk.Active {
 						continue
@@ -533,7 +533,7 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 	return maxRiskLevel, riskSource, true, nil
 }
 
-func getGrantRequestIssueRisk(ctx context.Context, s *store.Store, issue *store.IssueMessage, risks []*store.RiskMessage) (int64, store.RiskSource, bool, error) {
+func getGrantRequestIssueRisk(ctx context.Context, s *store.Store, issue *store.IssueMessage, risks []*store.RiskMessage) (int32, store.RiskSource, bool, error) {
 	payload := issue.Payload
 	if payload.GrantRequest == nil {
 		return 0, store.RiskSourceUnknown, false, errors.New("grant request payload not found")
@@ -605,7 +605,7 @@ func getGrantRequestIssueRisk(ctx context.Context, s *store.Store, issue *store.
 		}
 	}
 
-	var maxRisk int64
+	var maxRisk int32
 	for _, risk := range risks {
 		if !risk.Active {
 			continue
