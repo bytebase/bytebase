@@ -158,7 +158,7 @@ watch(
     }
     if (
       !!settingV1Store.workspaceProfileSetting?.tokenDuration?.seconds &&
-      settingV1Store.workspaceProfileSetting?.tokenDuration?.seconds !=
+      settingV1Store.workspaceProfileSetting?.tokenDuration?.seconds.toNumber() !=
         defaultTokenDurationInHours * 60 * 60
     ) {
       set.add("bb.feature.secure-token");

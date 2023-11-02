@@ -58,10 +58,10 @@ export function sheetPayload_TypeToJSON(object: SheetPayload_Type): string {
 export interface SheetPayload_VCSPayload {
   fileName: string;
   filePath: string;
-  size: number;
+  size: Long;
   author: string;
   lastCommitId: string;
-  lastSyncTs: number;
+  lastSyncTs: Long;
   pushEvent: PushEvent | undefined;
 }
 
@@ -259,7 +259,15 @@ export const SheetPayload = {
 };
 
 function createBaseSheetPayload_VCSPayload(): SheetPayload_VCSPayload {
-  return { fileName: "", filePath: "", size: 0, author: "", lastCommitId: "", lastSyncTs: 0, pushEvent: undefined };
+  return {
+    fileName: "",
+    filePath: "",
+    size: Long.ZERO,
+    author: "",
+    lastCommitId: "",
+    lastSyncTs: Long.ZERO,
+    pushEvent: undefined,
+  };
 }
 
 export const SheetPayload_VCSPayload = {
@@ -270,7 +278,7 @@ export const SheetPayload_VCSPayload = {
     if (message.filePath !== "") {
       writer.uint32(18).string(message.filePath);
     }
-    if (message.size !== 0) {
+    if (!message.size.isZero()) {
       writer.uint32(24).int64(message.size);
     }
     if (message.author !== "") {
@@ -279,7 +287,7 @@ export const SheetPayload_VCSPayload = {
     if (message.lastCommitId !== "") {
       writer.uint32(42).string(message.lastCommitId);
     }
-    if (message.lastSyncTs !== 0) {
+    if (!message.lastSyncTs.isZero()) {
       writer.uint32(48).int64(message.lastSyncTs);
     }
     if (message.pushEvent !== undefined) {
@@ -314,7 +322,7 @@ export const SheetPayload_VCSPayload = {
             break;
           }
 
-          message.size = longToNumber(reader.int64() as Long);
+          message.size = reader.int64() as Long;
           continue;
         case 4:
           if (tag !== 34) {
@@ -335,7 +343,7 @@ export const SheetPayload_VCSPayload = {
             break;
           }
 
-          message.lastSyncTs = longToNumber(reader.int64() as Long);
+          message.lastSyncTs = reader.int64() as Long;
           continue;
         case 7:
           if (tag !== 58) {
@@ -357,10 +365,10 @@ export const SheetPayload_VCSPayload = {
     return {
       fileName: isSet(object.fileName) ? String(object.fileName) : "",
       filePath: isSet(object.filePath) ? String(object.filePath) : "",
-      size: isSet(object.size) ? Number(object.size) : 0,
+      size: isSet(object.size) ? Long.fromValue(object.size) : Long.ZERO,
       author: isSet(object.author) ? String(object.author) : "",
       lastCommitId: isSet(object.lastCommitId) ? String(object.lastCommitId) : "",
-      lastSyncTs: isSet(object.lastSyncTs) ? Number(object.lastSyncTs) : 0,
+      lastSyncTs: isSet(object.lastSyncTs) ? Long.fromValue(object.lastSyncTs) : Long.ZERO,
       pushEvent: isSet(object.pushEvent) ? PushEvent.fromJSON(object.pushEvent) : undefined,
     };
   },
@@ -369,10 +377,10 @@ export const SheetPayload_VCSPayload = {
     const obj: any = {};
     message.fileName !== undefined && (obj.fileName = message.fileName);
     message.filePath !== undefined && (obj.filePath = message.filePath);
-    message.size !== undefined && (obj.size = Math.round(message.size));
+    message.size !== undefined && (obj.size = (message.size || Long.ZERO).toString());
     message.author !== undefined && (obj.author = message.author);
     message.lastCommitId !== undefined && (obj.lastCommitId = message.lastCommitId);
-    message.lastSyncTs !== undefined && (obj.lastSyncTs = Math.round(message.lastSyncTs));
+    message.lastSyncTs !== undefined && (obj.lastSyncTs = (message.lastSyncTs || Long.ZERO).toString());
     message.pushEvent !== undefined &&
       (obj.pushEvent = message.pushEvent ? PushEvent.toJSON(message.pushEvent) : undefined);
     return obj;
@@ -386,10 +394,12 @@ export const SheetPayload_VCSPayload = {
     const message = createBaseSheetPayload_VCSPayload();
     message.fileName = object.fileName ?? "";
     message.filePath = object.filePath ?? "";
-    message.size = object.size ?? 0;
+    message.size = (object.size !== undefined && object.size !== null) ? Long.fromValue(object.size) : Long.ZERO;
     message.author = object.author ?? "";
     message.lastCommitId = object.lastCommitId ?? "";
-    message.lastSyncTs = object.lastSyncTs ?? 0;
+    message.lastSyncTs = (object.lastSyncTs !== undefined && object.lastSyncTs !== null)
+      ? Long.fromValue(object.lastSyncTs)
+      : Long.ZERO;
     message.pushEvent = (object.pushEvent !== undefined && object.pushEvent !== null)
       ? PushEvent.fromPartial(object.pushEvent)
       : undefined;
@@ -590,38 +600,13 @@ export const SheetPayload_SchemaDesign_Protection = {
   },
 };
 
-declare const self: any | undefined;
-declare const window: any | undefined;
-declare const global: any | undefined;
-const tsProtoGlobalThis: any = (() => {
-  if (typeof globalThis !== "undefined") {
-    return globalThis;
-  }
-  if (typeof self !== "undefined") {
-    return self;
-  }
-  if (typeof window !== "undefined") {
-    return window;
-  }
-  if (typeof global !== "undefined") {
-    return global;
-  }
-  throw "Unable to locate global object";
-})();
-
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends Array<infer U> ? Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
-
-function longToNumber(long: Long): number {
-  if (long.gt(Number.MAX_SAFE_INTEGER)) {
-    throw new tsProtoGlobalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
-  }
-  return long.toNumber();
-}
 
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;

@@ -31,7 +31,7 @@ export interface FloatValue {
  */
 export interface Int64Value {
   /** The int64 value. */
-  value: number;
+  value: Long;
 }
 
 /**
@@ -41,7 +41,7 @@ export interface Int64Value {
  */
 export interface UInt64Value {
   /** The uint64 value. */
-  value: number;
+  value: Long;
 }
 
 /**
@@ -207,12 +207,12 @@ export const FloatValue = {
 };
 
 function createBaseInt64Value(): Int64Value {
-  return { value: 0 };
+  return { value: Long.ZERO };
 }
 
 export const Int64Value = {
   encode(message: Int64Value, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.value !== 0) {
+    if (!message.value.isZero()) {
       writer.uint32(8).int64(message.value);
     }
     return writer;
@@ -230,7 +230,7 @@ export const Int64Value = {
             break;
           }
 
-          message.value = longToNumber(reader.int64() as Long);
+          message.value = reader.int64() as Long;
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -242,12 +242,12 @@ export const Int64Value = {
   },
 
   fromJSON(object: any): Int64Value {
-    return { value: isSet(object.value) ? Number(object.value) : 0 };
+    return { value: isSet(object.value) ? Long.fromValue(object.value) : Long.ZERO };
   },
 
   toJSON(message: Int64Value): unknown {
     const obj: any = {};
-    message.value !== undefined && (obj.value = Math.round(message.value));
+    message.value !== undefined && (obj.value = (message.value || Long.ZERO).toString());
     return obj;
   },
 
@@ -257,18 +257,18 @@ export const Int64Value = {
 
   fromPartial(object: DeepPartial<Int64Value>): Int64Value {
     const message = createBaseInt64Value();
-    message.value = object.value ?? 0;
+    message.value = (object.value !== undefined && object.value !== null) ? Long.fromValue(object.value) : Long.ZERO;
     return message;
   },
 };
 
 function createBaseUInt64Value(): UInt64Value {
-  return { value: 0 };
+  return { value: Long.UZERO };
 }
 
 export const UInt64Value = {
   encode(message: UInt64Value, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.value !== 0) {
+    if (!message.value.isZero()) {
       writer.uint32(8).uint64(message.value);
     }
     return writer;
@@ -286,7 +286,7 @@ export const UInt64Value = {
             break;
           }
 
-          message.value = longToNumber(reader.uint64() as Long);
+          message.value = reader.uint64() as Long;
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -298,12 +298,12 @@ export const UInt64Value = {
   },
 
   fromJSON(object: any): UInt64Value {
-    return { value: isSet(object.value) ? Number(object.value) : 0 };
+    return { value: isSet(object.value) ? Long.fromValue(object.value) : Long.UZERO };
   },
 
   toJSON(message: UInt64Value): unknown {
     const obj: any = {};
-    message.value !== undefined && (obj.value = Math.round(message.value));
+    message.value !== undefined && (obj.value = (message.value || Long.UZERO).toString());
     return obj;
   },
 
@@ -313,7 +313,7 @@ export const UInt64Value = {
 
   fromPartial(object: DeepPartial<UInt64Value>): UInt64Value {
     const message = createBaseUInt64Value();
-    message.value = object.value ?? 0;
+    message.value = (object.value !== undefined && object.value !== null) ? Long.fromValue(object.value) : Long.UZERO;
     return message;
   },
 };
@@ -646,16 +646,10 @@ function base64FromBytes(arr: Uint8Array): string {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends Array<infer U> ? Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
-
-function longToNumber(long: Long): number {
-  if (long.gt(Number.MAX_SAFE_INTEGER)) {
-    throw new tsProtoGlobalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
-  }
-  return long.toNumber();
-}
 
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;

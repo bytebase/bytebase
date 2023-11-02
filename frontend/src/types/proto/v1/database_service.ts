@@ -449,13 +449,13 @@ export interface TableMetadata {
   /** The collation is the collation of a table. */
   collation: string;
   /** The row_count is the estimated number of rows of a table. */
-  rowCount: number;
+  rowCount: Long;
   /** The data_size is the estimated data size of a table. */
-  dataSize: number;
+  dataSize: Long;
   /** The index_size is the estimated index size of a table. */
-  indexSize: number;
+  indexSize: Long;
   /** The data_free is the estimated free data size of a table. */
-  dataFree: number;
+  dataFree: Long;
   /** The create_options is the create option of a table. */
   createOptions: string;
   /**
@@ -3417,10 +3417,10 @@ function createBaseTableMetadata(): TableMetadata {
     indexes: [],
     engine: "",
     collation: "",
-    rowCount: 0,
-    dataSize: 0,
-    indexSize: 0,
-    dataFree: 0,
+    rowCount: Long.ZERO,
+    dataSize: Long.ZERO,
+    indexSize: Long.ZERO,
+    dataFree: Long.ZERO,
     createOptions: "",
     comment: "",
     classification: "",
@@ -3446,16 +3446,16 @@ export const TableMetadata = {
     if (message.collation !== "") {
       writer.uint32(42).string(message.collation);
     }
-    if (message.rowCount !== 0) {
+    if (!message.rowCount.isZero()) {
       writer.uint32(48).int64(message.rowCount);
     }
-    if (message.dataSize !== 0) {
+    if (!message.dataSize.isZero()) {
       writer.uint32(56).int64(message.dataSize);
     }
-    if (message.indexSize !== 0) {
+    if (!message.indexSize.isZero()) {
       writer.uint32(64).int64(message.indexSize);
     }
-    if (message.dataFree !== 0) {
+    if (!message.dataFree.isZero()) {
       writer.uint32(72).int64(message.dataFree);
     }
     if (message.createOptions !== "") {
@@ -3523,28 +3523,28 @@ export const TableMetadata = {
             break;
           }
 
-          message.rowCount = longToNumber(reader.int64() as Long);
+          message.rowCount = reader.int64() as Long;
           continue;
         case 7:
           if (tag !== 56) {
             break;
           }
 
-          message.dataSize = longToNumber(reader.int64() as Long);
+          message.dataSize = reader.int64() as Long;
           continue;
         case 8:
           if (tag !== 64) {
             break;
           }
 
-          message.indexSize = longToNumber(reader.int64() as Long);
+          message.indexSize = reader.int64() as Long;
           continue;
         case 9:
           if (tag !== 72) {
             break;
           }
 
-          message.dataFree = longToNumber(reader.int64() as Long);
+          message.dataFree = reader.int64() as Long;
           continue;
         case 10:
           if (tag !== 82) {
@@ -3597,10 +3597,10 @@ export const TableMetadata = {
       indexes: Array.isArray(object?.indexes) ? object.indexes.map((e: any) => IndexMetadata.fromJSON(e)) : [],
       engine: isSet(object.engine) ? String(object.engine) : "",
       collation: isSet(object.collation) ? String(object.collation) : "",
-      rowCount: isSet(object.rowCount) ? Number(object.rowCount) : 0,
-      dataSize: isSet(object.dataSize) ? Number(object.dataSize) : 0,
-      indexSize: isSet(object.indexSize) ? Number(object.indexSize) : 0,
-      dataFree: isSet(object.dataFree) ? Number(object.dataFree) : 0,
+      rowCount: isSet(object.rowCount) ? Long.fromValue(object.rowCount) : Long.ZERO,
+      dataSize: isSet(object.dataSize) ? Long.fromValue(object.dataSize) : Long.ZERO,
+      indexSize: isSet(object.indexSize) ? Long.fromValue(object.indexSize) : Long.ZERO,
+      dataFree: isSet(object.dataFree) ? Long.fromValue(object.dataFree) : Long.ZERO,
       createOptions: isSet(object.createOptions) ? String(object.createOptions) : "",
       comment: isSet(object.comment) ? String(object.comment) : "",
       classification: isSet(object.classification) ? String(object.classification) : "",
@@ -3626,10 +3626,10 @@ export const TableMetadata = {
     }
     message.engine !== undefined && (obj.engine = message.engine);
     message.collation !== undefined && (obj.collation = message.collation);
-    message.rowCount !== undefined && (obj.rowCount = Math.round(message.rowCount));
-    message.dataSize !== undefined && (obj.dataSize = Math.round(message.dataSize));
-    message.indexSize !== undefined && (obj.indexSize = Math.round(message.indexSize));
-    message.dataFree !== undefined && (obj.dataFree = Math.round(message.dataFree));
+    message.rowCount !== undefined && (obj.rowCount = (message.rowCount || Long.ZERO).toString());
+    message.dataSize !== undefined && (obj.dataSize = (message.dataSize || Long.ZERO).toString());
+    message.indexSize !== undefined && (obj.indexSize = (message.indexSize || Long.ZERO).toString());
+    message.dataFree !== undefined && (obj.dataFree = (message.dataFree || Long.ZERO).toString());
     message.createOptions !== undefined && (obj.createOptions = message.createOptions);
     message.comment !== undefined && (obj.comment = message.comment);
     message.classification !== undefined && (obj.classification = message.classification);
@@ -3653,10 +3653,18 @@ export const TableMetadata = {
     message.indexes = object.indexes?.map((e) => IndexMetadata.fromPartial(e)) || [];
     message.engine = object.engine ?? "";
     message.collation = object.collation ?? "";
-    message.rowCount = object.rowCount ?? 0;
-    message.dataSize = object.dataSize ?? 0;
-    message.indexSize = object.indexSize ?? 0;
-    message.dataFree = object.dataFree ?? 0;
+    message.rowCount = (object.rowCount !== undefined && object.rowCount !== null)
+      ? Long.fromValue(object.rowCount)
+      : Long.ZERO;
+    message.dataSize = (object.dataSize !== undefined && object.dataSize !== null)
+      ? Long.fromValue(object.dataSize)
+      : Long.ZERO;
+    message.indexSize = (object.indexSize !== undefined && object.indexSize !== null)
+      ? Long.fromValue(object.indexSize)
+      : Long.ZERO;
+    message.dataFree = (object.dataFree !== undefined && object.dataFree !== null)
+      ? Long.fromValue(object.dataFree)
+      : Long.ZERO;
     message.createOptions = object.createOptions ?? "";
     message.comment = object.comment ?? "";
     message.classification = object.classification ?? "";
@@ -9147,40 +9155,22 @@ export const DatabaseServiceDefinition = {
   },
 } as const;
 
-declare const self: any | undefined;
-declare const window: any | undefined;
-declare const global: any | undefined;
-const tsProtoGlobalThis: any = (() => {
-  if (typeof globalThis !== "undefined") {
-    return globalThis;
-  }
-  if (typeof self !== "undefined") {
-    return self;
-  }
-  if (typeof window !== "undefined") {
-    return window;
-  }
-  if (typeof global !== "undefined") {
-    return global;
-  }
-  throw "Unable to locate global object";
-})();
-
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends Array<infer U> ? Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
 function toTimestamp(date: Date): Timestamp {
-  const seconds = date.getTime() / 1_000;
+  const seconds = numberToLong(date.getTime() / 1_000);
   const nanos = (date.getTime() % 1_000) * 1_000_000;
   return { seconds, nanos };
 }
 
 function fromTimestamp(t: Timestamp): Date {
-  let millis = (t.seconds || 0) * 1_000;
+  let millis = (t.seconds.toNumber() || 0) * 1_000;
   millis += (t.nanos || 0) / 1_000_000;
   return new Date(millis);
 }
@@ -9195,11 +9185,8 @@ function fromJsonTimestamp(o: any): Date {
   }
 }
 
-function longToNumber(long: Long): number {
-  if (long.gt(Number.MAX_SAFE_INTEGER)) {
-    throw new tsProtoGlobalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
-  }
-  return long.toNumber();
+function numberToLong(number: number) {
+  return Long.fromNumber(number);
 }
 
 if (_m0.util.Long !== Long) {

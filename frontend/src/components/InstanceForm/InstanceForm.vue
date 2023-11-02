@@ -819,8 +819,8 @@ const doUpdate = async () => {
       updateMask.push("options.schema_tenant_mode");
     }
     if (
-      instancePatch.options?.syncInterval?.seconds !==
-      instance.options?.syncInterval?.seconds
+      instancePatch.options?.syncInterval?.seconds?.toNumber() !==
+      instance.options?.syncInterval?.seconds?.toNumber()
     ) {
       updateMask.push("options.sync_interval");
     }
