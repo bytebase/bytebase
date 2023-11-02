@@ -17,6 +17,7 @@ var (
 	resourcesGetters        = make(map[storepb.Engine]ExtractResourceListFunc)
 	splitters               = make(map[storepb.Engine]SplitMultiSQLFunc)
 	schemaDiffers           = make(map[storepb.Engine]SchemaDiffFunc)
+	completers              = make(map[storepb.Engine]CompletionFunc)
 )
 
 type ValidateSQLForEditorFunc func(string) (bool, error)
@@ -25,6 +26,7 @@ type ExtractChangedResourcesFunc func(string, string, string) ([]SchemaResource,
 type ExtractResourceListFunc func(string, string, string) ([]SchemaResource, error)
 type SplitMultiSQLFunc func(string) ([]SingleSQL, error)
 type SchemaDiffFunc func(oldStmt, newStmt string, ignoreCaseSensitivity bool) (string, error)
+type CompletionFunc func(statement string, caretLine int, caretOffset int) ([]Candidate, error)
 
 func RegisterQueryValidator(engine storepb.Engine, f ValidateSQLForEditorFunc) {
 	mux.Lock()
@@ -137,4 +139,23 @@ func SchemaDiff(engine storepb.Engine, oldStmt, newStmt string, ignoreCaseSensit
 		return "", errors.Errorf("engine %s is not supported", engine)
 	}
 	return f(oldStmt, newStmt, ignoreCaseSensitivity)
+}
+
+// RegisterCompleteFunc registers the completion function for the engine.
+func RegisterCompleteFunc(engine storepb.Engine, f CompletionFunc) {
+	mux.Lock()
+	defer mux.Unlock()
+	if _, dup := completers[engine]; dup {
+		panic(fmt.Sprintf("Register called twice %s", engine))
+	}
+	completers[engine] = f
+}
+
+// Completion returns the completion candidates for the statement.
+func Completion(engine storepb.Engine, statement string, caretLine int, caretOffset int) ([]Candidate, error) {
+	f, ok := completers[engine]
+	if !ok {
+		return nil, errors.Errorf("engine %s is not supported", engine)
+	}
+	return f(statement, caretLine, caretOffset)
 }
