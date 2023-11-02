@@ -66,6 +66,7 @@ import { NInput, NButton } from "naive-ui";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { issueServiceClient } from "@/grpcweb";
+import { emitWindowEvent } from "@/plugins";
 import { pushNotification, useCurrentUserV1 } from "@/store";
 import { Issue, IssueStatus } from "@/types/proto/v1/issue_service";
 import {
@@ -158,6 +159,7 @@ const saveEdit = async () => {
       style: "SUCCESS",
       title: t("common.updated"),
     });
+    emitWindowEvent("bb.issue-field-update");
     state.isEditing = false;
   } finally {
     state.isUpdating = false;

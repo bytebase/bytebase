@@ -41,6 +41,7 @@ import {
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import { useSQLCheckContext } from "@/components/SQLCheck";
 import { issueServiceClient, rolloutServiceClient } from "@/grpcweb";
+import { emitWindowEvent } from "@/plugins";
 import { useDatabaseV1Store, useSheetV1Store } from "@/store";
 import { ComposedIssue, dialectOfEngineV1, languageOfEngineV1 } from "@/types";
 import { Issue } from "@/types/proto/v1/issue_service";
@@ -113,6 +114,9 @@ const doCreateIssue = async () => {
       rolloutEntity: createdRollout,
     };
 
+    emitWindowEvent("bb.issue-create", {
+      uid: composedIssue.uid,
+    });
     nextTick(() => {
       router.push(`/issue/${composedIssue.uid}`);
     });
