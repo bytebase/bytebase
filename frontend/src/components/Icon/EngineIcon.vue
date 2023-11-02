@@ -33,11 +33,11 @@ const ICON_PATH_MAP = new Map([
   [Engine.MARIADB, new URL("@/assets/db-mariadb.png", import.meta.url).href],
   [
     Engine.OCEANBASE,
-    new URL("@/assets/db-oceanbase.png", import.meta.url).href,
+    new URL("@/assets/db-oceanbase-mysql.svg", import.meta.url).href,
   ],
   [
     Engine.OCEANBASE_ORACLE,
-    new URL("@/assets/db-oceanbase.png", import.meta.url).href,
+    new URL("@/assets/db-oceanbase-oracle.svg", import.meta.url).href,
   ],
   [
     Engine.RISINGWAVE,
