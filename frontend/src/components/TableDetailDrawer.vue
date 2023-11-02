@@ -122,7 +122,7 @@
                     {{ $t("database.data-size") }}
                   </dt>
                   <dd class="mt-1 text-lg sm:text-xl font-semibold">
-                    {{ bytesToString(table.dataSize) }}
+                    {{ bytesToString(table.dataSize.toNumber()) }}
                   </dd>
                 </div>
 
@@ -135,7 +135,7 @@
                       instanceEngine === Engine.CLICKHOUSE ||
                       instanceEngine === Engine.SNOWFLAKE
                         ? "n/a"
-                        : bytesToString(table.indexSize)
+                        : bytesToString(table.indexSize.toNumber())
                     }}
                   </dd>
                 </div>

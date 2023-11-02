@@ -58,7 +58,7 @@
           {{ table.rowCount }}
         </div>
         <div class="bb-grid-cell" :class="getTableClassList(table, row)">
-          {{ bytesToString(table.dataSize) }}
+          {{ bytesToString(table.dataSize.toNumber()) }}
         </div>
         <div class="bb-grid-cell" :class="getTableClassList(table, row)">
           {{ table.engine }}
