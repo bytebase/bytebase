@@ -246,16 +246,18 @@ const prepareSchemaDesign = async () => {
     const database = databaseStore.getDatabaseByUID(
       state.baselineSchema.databaseId
     );
-    const sheet = await sheetStore.getOrFetchSheetByName(
-      changeHistory.statementSheet
-    );
     const fullSchema = await prepareFullChangeHistorySchema(changeHistory);
     const baselineMetadata = await schemaDesignStore.parseSchemaString(
       fullSchema,
       database.instanceEntity.engine
     );
-    baselineMetadata.schemaConfigs =
-      sheet?.payload?.databaseConfig?.schemaConfigs ?? [];
+    if (changeHistory.statementSheet) {
+      const sheet = await sheetStore.getOrFetchSheetByName(
+        changeHistory.statementSheet
+      );
+      baselineMetadata.schemaConfigs =
+        sheet?.payload?.databaseConfig?.schemaConfigs ?? [];
+    }
     return SchemaDesign.fromPartial({
       engine: database.instanceEntity.engine,
       baselineSchema: fullSchema,
