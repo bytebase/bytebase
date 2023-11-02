@@ -390,7 +390,7 @@ const queryTime = computed(() => {
   if (!latency) return "-";
 
   const { seconds, nanos } = latency;
-  const totalSeconds = seconds + nanos / 1e9;
+  const totalSeconds = seconds.toNumber() + nanos / 1e9;
   if (totalSeconds < 1) {
     const totalMS = Math.round(totalSeconds * 1000);
     return `${totalMS} ms`;

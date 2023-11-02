@@ -32,7 +32,7 @@
   </div>
 
   <FeatureModal
-    :open="state.featureNameForModal"
+    :open="!!state.featureNameForModal"
     :feature="state.featureNameForModal"
     @cancel="state.featureNameForModal = undefined"
   />
@@ -46,6 +46,7 @@ import { useI18n } from "vue-i18n";
 import { featureToRef, pushNotification, useCurrentUserV1 } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { FeatureType, defaultTokenDurationInHours } from "@/types";
+import { Duration } from "@/types/proto/google/protobuf/duration";
 import { hasWorkspacePermissionV1 } from "@/utils";
 
 const getInitialState = (): LocalState => {
@@ -54,7 +55,7 @@ const getInitialState = (): LocalState => {
     timeFormat: "DAYS",
   };
   const seconds =
-    settingV1Store.workspaceProfileSetting?.tokenDuration?.seconds;
+    settingV1Store.workspaceProfileSetting?.tokenDuration?.seconds?.toNumber();
   if (seconds && seconds > 0) {
     if (seconds < 60 * 60 * 24) {
       defaultState.inputValue = Math.floor(seconds / (60 * 60)) || 1;
@@ -103,7 +104,7 @@ const handleFrequencySettingChange = useDebounceFn(async () => {
       ? state.inputValue * 60 * 60
       : state.inputValue * 24 * 60 * 60;
   await settingV1Store.updateWorkspaceProfile({
-    tokenDuration: { seconds: seconds, nanos: 0 },
+    tokenDuration: Duration.fromPartial({ seconds, nanos: 0 }),
   });
   pushNotification({
     module: "bytebase",
