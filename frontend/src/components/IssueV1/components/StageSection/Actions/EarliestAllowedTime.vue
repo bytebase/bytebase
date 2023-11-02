@@ -67,6 +67,7 @@ import {
   useIssueContext,
 } from "@/components/IssueV1";
 import { rolloutServiceClient } from "@/grpcweb";
+import { emitWindowEvent } from "@/plugins";
 import { hasFeature, pushNotification, useCurrentUserV1 } from "@/store";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import {
@@ -214,6 +215,7 @@ const handleUpdateEarliestAllowedTime = async (timestampMS: number | null) => {
         style: "SUCCESS",
         title: t("common.updated"),
       });
+      emitWindowEvent("bb.pipeline-task-earliest-allowed-time-update");
     } finally {
       isUpdating.value = false;
     }
