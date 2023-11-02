@@ -70,7 +70,9 @@
                 :colspan="columnList.length"
                 class="text-center text-gray-400"
               >
-                <slot name="placeholder">-</slot>
+                <slot name="placeholder">
+                  <p class="py-8">{{ $t("common.no-data") }}</p>
+                </slot>
               </td>
             </tr>
           </template>
@@ -98,7 +100,9 @@
         <template v-else>
           <tr v-if="showPlaceholder">
             <td :colspan="columnList.length" class="text-center text-gray-400">
-              <slot name="placeholder">-</slot>
+              <slot name="placeholder">
+                <p class="py-8">{{ $t("common.no-data") }}</p>
+              </slot>
             </td>
           </tr>
         </template>

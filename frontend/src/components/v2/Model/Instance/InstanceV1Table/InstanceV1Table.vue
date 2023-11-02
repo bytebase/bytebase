@@ -7,10 +7,11 @@
       @dismiss="state.selectedInstance.clear()"
     />
     <BBGrid
+      class="border-y"
       :column-list="columnList"
       :data-source="instanceList"
       :custom-header="true"
-      class="mt-2 border-y"
+      :show-placeholder="true"
       @click-row="clickInstance"
     >
       <template #header>

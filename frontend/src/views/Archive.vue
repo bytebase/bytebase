@@ -1,6 +1,6 @@
 <template>
-  <div class="flex flex-col">
-    <div class="px-4 py-2 flex justify-between items-center">
+  <div class="flex px-4 flex-col">
+    <div class="py-2 flex justify-between items-center">
       <BBTabFilter
         :tab-item-list="tabItemList"
         :selected-index="state.selectedIndex"
@@ -17,25 +17,27 @@
         @change-text="(text: string) => changeSearchText(text)"
       />
     </div>
-    <ProjectV1Table
-      v-if="state.selectedIndex == PROJECT_TAB"
-      :project-list="filteredProjectList"
-      class="border-x-0"
-    />
-    <InstanceV1Table
-      v-else-if="state.selectedIndex == INSTANCE_TAB"
-      :allow-selection="false"
-      :can-assign-license="false"
-      :instance-list="filteredInstanceList"
-    />
-    <EnvironmentV1Table
-      v-else-if="state.selectedIndex == ENVIRONMENT_TAB"
-      :environment-list="filteredEnvironmentList"
-    />
-    <IdentityProviderTable
-      v-else-if="state.selectedIndex == SSO_TAB"
-      :identity-provider-list="filteredSSOList(deletedSSOList)"
-    />
+    <div class="border-x">
+      <ProjectV1Table
+        v-if="state.selectedIndex == PROJECT_TAB"
+        :project-list="filteredProjectList"
+        class="border-x-0"
+      />
+      <InstanceV1Table
+        v-else-if="state.selectedIndex == INSTANCE_TAB"
+        :allow-selection="false"
+        :can-assign-license="false"
+        :instance-list="filteredInstanceList"
+      />
+      <EnvironmentV1Table
+        v-else-if="state.selectedIndex == ENVIRONMENT_TAB"
+        :environment-list="filteredEnvironmentList"
+      />
+      <IdentityProviderTable
+        v-else-if="state.selectedIndex == SSO_TAB"
+        :identity-provider-list="filteredSSOList(deletedSSOList)"
+      />
+    </div>
   </div>
 </template>
 
