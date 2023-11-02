@@ -66,9 +66,12 @@
 </template>
 
 <script lang="ts" setup>
+import { useLocalStorage } from "@vueuse/core";
 import { pull } from "lodash-es";
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
+import { getLinkFromActivity } from "@/components/ActivityTable/utils";
 import AnomalyCenterDashboard from "@/components/AnomalyCenter/AnomalyCenterDashboard.vue";
 import ChangelistDashboard from "@/components/Changelist/ChangelistDashboard";
 import ProjectDatabaseGroupPanel from "@/components/DatabaseGroup/ProjectDatabaseGroupPanel.vue";
@@ -90,8 +93,14 @@ import {
   useProjectV1Store,
   useCurrentUserV1,
   hasFeature,
+  pushNotification,
 } from "@/store";
-import { QuickActionType, DEFAULT_PROJECT_V1_NAME, RoleType } from "@/types";
+import {
+  QuickActionType,
+  DEFAULT_PROJECT_V1_NAME,
+  RoleType,
+  activityName,
+} from "@/types";
 import { State } from "@/types/proto/v1/common";
 import {
   idFromSlug,
@@ -118,6 +127,7 @@ const props = defineProps({
 
 const route = useRoute();
 const projectV1Store = useProjectV1Store();
+const { t } = useI18n();
 
 const hash = computed(() => route.hash.replace(/^#?/, "") as ProjectHash);
 
@@ -139,6 +149,44 @@ useSearchDatabaseV1List(
 const databaseV1List = computed(() => {
   const list = useDatabaseV1Store().databaseListByProject(project.value.name);
   return sortDatabaseV1List(list);
+});
+
+const cachedNotifiedActivities = useLocalStorage<string[]>(
+  "bb.project.activities",
+  []
+);
+
+const maximumCachedActivities = 5;
+
+onMounted(() => {
+  projectV1Store
+    .fetchLastNActivities({
+      project: project.value.name,
+      limit: 1,
+    })
+    .then((activities) => {
+      for (const activity of activities) {
+        if (cachedNotifiedActivities.value.includes(activity.name)) {
+          continue;
+        }
+        pushNotification({
+          module: "bytebase",
+          style: "INFO",
+          title: activityName(activity.action),
+          manualHide: true,
+          link: getLinkFromActivity(activity)?.path,
+          linkTitle: t("common.view"),
+          onClose: () => {
+            cachedNotifiedActivities.value.push(activity.name);
+            if (
+              cachedNotifiedActivities.value.length > maximumCachedActivities
+            ) {
+              cachedNotifiedActivities.value.shift();
+            }
+          },
+        });
+      }
+    });
 });
 
 const quickActionMapByRole = computed(() => {
