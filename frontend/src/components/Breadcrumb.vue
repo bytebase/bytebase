@@ -38,21 +38,6 @@
           >
             <TenantIcon class="ml-1 text-control" />
           </span>
-          <button
-            v-if="allowBookmark && index == breadcrumbList.length - 1"
-            class="relative focus:outline-none"
-            type="button"
-            @click.prevent="toggleBookmark"
-          >
-            <heroicons-solid:star
-              v-if="isBookmarked"
-              class="h-5 w-5 text-yellow-400 hover:text-yellow-600"
-            />
-            <heroicons-solid:star
-              v-else
-              class="h-5 w-5 text-control-light hover:text-control-light-hover"
-            />
-          </button>
         </div>
       </div>
     </div>
@@ -73,14 +58,8 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import HelpTriggerIcon from "@/components/HelpTriggerIcon.vue";
 import TenantIcon from "@/components/TenantIcon.vue";
-import {
-  useRouterStore,
-  useBookmarkV1Store,
-  useProjectV1Store,
-  useDatabaseV1Store,
-} from "@/store";
+import { useRouterStore, useProjectV1Store, useDatabaseV1Store } from "@/store";
 import { RouteMapList } from "@/types";
-import { Bookmark } from "@/types/proto/v1/bookmark_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import { databaseV1Slug, idFromSlug, projectV1Slug } from "../utils";
 
@@ -100,7 +79,6 @@ export default defineComponent({
     const routerStore = useRouterStore();
     const currentRoute = useRouter().currentRoute;
     const { t } = useI18n();
-    const bookmarkV1Store = useBookmarkV1Store();
     const projectV1Store = useProjectV1Store();
 
     const documentTitle = useTitle(null, { observe: true });
@@ -117,14 +95,6 @@ export default defineComponent({
       const res = await fetch("/help/routeMapList.json");
       routeHelpNameMapList.value = await res.json();
     });
-
-    const bookmark: ComputedRef<Bookmark | undefined> = computed(() =>
-      bookmarkV1Store.findBookmarkByLink(currentRoute.value.path)
-    );
-
-    const isBookmarked: ComputedRef<boolean> = computed(() => !!bookmark.value);
-
-    const allowBookmark = computed(() => currentRoute.value.meta.allowBookmark);
 
     const isTenantProject: ComputedRef<boolean> = computed(() => {
       const routeSlug = routerStore.routeSlug(currentRoute.value);
@@ -307,24 +277,9 @@ export default defineComponent({
       return list;
     });
 
-    const toggleBookmark = () => {
-      if (bookmark.value) {
-        bookmarkV1Store.deleteBookmark(bookmark.value.name);
-      } else {
-        bookmarkV1Store.createBookmark({
-          title: breadcrumbList.value[breadcrumbList.value.length - 1].name,
-          link: currentRoute.value.path,
-        });
-      }
-    };
-
     return {
-      allowBookmark,
-      bookmark,
-      isBookmarked,
       isTenantProject,
       breadcrumbList,
-      toggleBookmark,
       currentRoute,
       helpName,
     };
