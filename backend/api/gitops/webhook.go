@@ -703,7 +703,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 				commitID = prFile.LastCommitID
 			}
 			if len(mybatisMapperXMLFiles) > 0 {
-				mapperAdvices, err := s.sqlAdviceForMybatisMapperFiles(ctx, oauthContext, mybatisMapperXMLFiles, commitID, repo)
+				mapperAdvices, err := sqlAdviceForMybatisMapperFiles(ctx, oauthContext, mybatisMapperXMLFiles, commitID, repo)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get sql advice for mybatis mapper files").SetInternal(err)
 				}
@@ -735,7 +735,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Service) sqlAdviceForMybatisMapperFiles(ctx context.Context, oauthContext *common.OauthContext, mybatisMapperContent map[string]string, commitID string, repoInfo *repoInfo) (map[string][]advisor.Advice, error) {
+func sqlAdviceForMybatisMapperFiles(ctx context.Context, oauthContext *common.OauthContext, mybatisMapperContent map[string]string, commitID string, repoInfo *repoInfo) (map[string][]advisor.Advice, error) {
 	if len(mybatisMapperContent) == 0 {
 		return map[string][]advisor.Advice{}, nil
 	}
@@ -744,7 +744,7 @@ func (s *Service) sqlAdviceForMybatisMapperFiles(ctx context.Context, oauthConte
 	}
 
 	sqlCheckAdvices := make(map[string][]advisor.Advice)
-	mybatisMapperXMLFileData, err := s.buildMybatisMapperXMLFileData(ctx, oauthContext, repoInfo, commitID, mybatisMapperContent)
+	mybatisMapperXMLFileData, err := buildMybatisMapperXMLFileData(ctx, oauthContext, repoInfo, commitID, mybatisMapperContent)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to build mybatis mapper xml file data")
 	}
@@ -2511,7 +2511,7 @@ type mybatisMapperXMLFileDatum struct {
 //	repo: the repository will be list file tree and get file content from.
 //	commitID: the commitID is the snapshot of the file tree and file content.
 //	mapperFiles: the map of the mybatis mapper XML file path and content.
-func (s *Service) buildMybatisMapperXMLFileData(ctx context.Context, oauthContext *common.OauthContext, repoInfo *repoInfo, commitID string, mapperFiles map[string]string) ([]*mybatisMapperXMLFileDatum, error) {
+func buildMybatisMapperXMLFileData(ctx context.Context, oauthContext *common.OauthContext, repoInfo *repoInfo, commitID string, mapperFiles map[string]string) ([]*mybatisMapperXMLFileDatum, error) {
 	if len(mapperFiles) == 0 {
 		return []*mybatisMapperXMLFileDatum{}, nil
 	}
