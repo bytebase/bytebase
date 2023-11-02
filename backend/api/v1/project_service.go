@@ -626,7 +626,7 @@ func (s *ProjectService) UnsetProjectGitOpsInfo(ctx context.Context, request *v1
 		if err = vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).DeleteWebhook(
 			ctx,
 			// Need to get ApplicationID, Secret from vcs instead of repository.vcs since the latter is not composed.
-			common.OauthContext{
+			&common.OauthContext{
 				ClientID:     vcs.ApplicationID,
 				ClientSecret: vcs.Secret,
 				AccessToken:  repo.AccessToken,
@@ -1149,16 +1149,18 @@ func (s *ProjectService) setupVCSSQLReviewCI(ctx context.Context, repository *st
 		return nil, err
 	}
 
+	oauthContext := &common.OauthContext{
+		ClientID:     vcs.ApplicationID,
+		ClientSecret: vcs.Secret,
+		AccessToken:  repository.AccessToken,
+		RefreshToken: repository.RefreshToken,
+		Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+		RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
+	}
+
 	if err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).UpsertEnvironmentVariable(
 		ctx,
-		common.OauthContext{
-			ClientID:     vcs.ApplicationID,
-			ClientSecret: vcs.Secret,
-			AccessToken:  repository.AccessToken,
-			RefreshToken: repository.RefreshToken,
-			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
-			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
-		},
+		oauthContext,
 		vcs.InstanceURL,
 		repository.ExternalID,
 		vcsPlugin.SQLReviewAPISecretName,
@@ -1190,14 +1192,7 @@ func (s *ProjectService) setupVCSSQLReviewCI(ctx context.Context, repository *st
 
 	return vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).CreatePullRequest(
 		ctx,
-		common.OauthContext{
-			ClientID:     vcs.ApplicationID,
-			ClientSecret: vcs.Secret,
-			AccessToken:  repository.AccessToken,
-			RefreshToken: repository.RefreshToken,
-			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
-			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
-		},
+		oauthContext,
 		vcs.InstanceURL,
 		repository.ExternalID,
 		&vcsPlugin.PullRequestCreate{
@@ -1219,16 +1214,17 @@ func (s *ProjectService) setupVCSSQLReviewBranch(ctx context.Context, repository
 	if setting.ExternalUrl == "" {
 		return nil, status.Errorf(codes.FailedPrecondition, "external url is required")
 	}
+	oauthContext := &common.OauthContext{
+		ClientID:     vcs.ApplicationID,
+		ClientSecret: vcs.Secret,
+		AccessToken:  repository.AccessToken,
+		RefreshToken: repository.RefreshToken,
+		Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+		RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
+	}
 	branch, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).GetBranch(
 		ctx,
-		common.OauthContext{
-			ClientID:     vcs.ApplicationID,
-			ClientSecret: vcs.Secret,
-			AccessToken:  repository.AccessToken,
-			RefreshToken: repository.RefreshToken,
-			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
-			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
-		},
+		oauthContext,
 		vcs.InstanceURL,
 		repository.ExternalID,
 		repository.BranchFilter,
@@ -1244,14 +1240,7 @@ func (s *ProjectService) setupVCSSQLReviewBranch(ctx context.Context, repository
 	}
 	if err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).CreateBranch(
 		ctx,
-		common.OauthContext{
-			ClientID:     vcs.ApplicationID,
-			ClientSecret: vcs.Secret,
-			AccessToken:  repository.AccessToken,
-			RefreshToken: repository.RefreshToken,
-			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
-			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
-		},
+		oauthContext,
 		vcs.InstanceURL,
 		repository.ExternalID,
 		branchCreate,
@@ -1282,16 +1271,17 @@ func (s *ProjectService) setupVCSSQLReviewCIForGitHub(
 		return status.Errorf(codes.FailedPrecondition, "external url is required")
 	}
 
+	oauthContext := &common.OauthContext{
+		ClientID:     vcs.ApplicationID,
+		ClientSecret: vcs.Secret,
+		AccessToken:  repository.AccessToken,
+		RefreshToken: repository.RefreshToken,
+		Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+		RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
+	}
 	fileMeta, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(
 		ctx,
-		common.OauthContext{
-			ClientID:     vcs.ApplicationID,
-			ClientSecret: vcs.Secret,
-			AccessToken:  repository.AccessToken,
-			RefreshToken: repository.RefreshToken,
-			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
-			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
-		},
+		oauthContext,
 		vcs.InstanceURL,
 		repository.ExternalID,
 		github.SQLReviewActionFilePath,
@@ -1315,14 +1305,7 @@ func (s *ProjectService) setupVCSSQLReviewCIForGitHub(
 
 	return vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).CreateFile(
 		ctx,
-		common.OauthContext{
-			ClientID:     vcs.ApplicationID,
-			ClientSecret: vcs.Secret,
-			AccessToken:  repository.AccessToken,
-			RefreshToken: repository.RefreshToken,
-			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
-			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
-		},
+		oauthContext,
 		vcs.InstanceURL,
 		repository.ExternalID,
 		github.SQLReviewActionFilePath,
@@ -1351,6 +1334,15 @@ func (s *ProjectService) setupVCSSQLReviewCIForGitLab(
 	if setting.ExternalUrl == "" {
 		return status.Errorf(codes.FailedPrecondition, "external url is required")
 	}
+
+	oauthContext := &common.OauthContext{
+		ClientID:     vcs.ApplicationID,
+		ClientSecret: vcs.Secret,
+		AccessToken:  repository.AccessToken,
+		RefreshToken: repository.RefreshToken,
+		Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+		RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
+	}
 	// create or update the .gitlab-ci.yml
 	if err := s.createOrUpdateVCSSQLReviewFileForGitLab(ctx, repository, vcs, branch, gitlab.CIFilePath, func(fileMeta *vcsPlugin.FileMeta) (string, error) {
 		content := make(map[string]any)
@@ -1358,14 +1350,7 @@ func (s *ProjectService) setupVCSSQLReviewCIForGitLab(
 		if fileMeta != nil {
 			ciFileContent, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).ReadFileContent(
 				ctx,
-				common.OauthContext{
-					ClientID:     vcs.ApplicationID,
-					ClientSecret: vcs.Secret,
-					AccessToken:  repository.AccessToken,
-					RefreshToken: repository.RefreshToken,
-					Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
-					RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
-				},
+				oauthContext,
 				vcs.InstanceURL,
 				repository.ExternalID,
 				gitlab.CIFilePath,
@@ -1418,16 +1403,18 @@ func (s *ProjectService) setupVCSSQLReviewCIForAzureDevOps(
 		return status.Errorf(codes.FailedPrecondition, "external url is required")
 	}
 
+	oauthContext := &common.OauthContext{
+		ClientID:     vcs.ApplicationID,
+		ClientSecret: vcs.Secret,
+		AccessToken:  repository.AccessToken,
+		RefreshToken: repository.RefreshToken,
+		Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+		RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
+	}
+
 	fileMeta, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(
 		ctx,
-		common.OauthContext{
-			ClientID:     vcs.ApplicationID,
-			ClientSecret: vcs.Secret,
-			AccessToken:  repository.AccessToken,
-			RefreshToken: repository.RefreshToken,
-			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
-			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
-		},
+		oauthContext,
 		vcs.InstanceURL,
 		repository.ExternalID,
 		azure.SQLReviewPipelineFilePath,
@@ -1451,14 +1438,7 @@ func (s *ProjectService) setupVCSSQLReviewCIForAzureDevOps(
 
 	return vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).OverwriteFile(
 		ctx,
-		common.OauthContext{
-			ClientID:     vcs.ApplicationID,
-			ClientSecret: vcs.Secret,
-			AccessToken:  repository.AccessToken,
-			RefreshToken: repository.RefreshToken,
-			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
-			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
-		},
+		oauthContext,
 		vcs.InstanceURL,
 		repository.ExternalID,
 		azure.SQLReviewPipelineFilePath,
@@ -1488,17 +1468,19 @@ func (s *ProjectService) createOrUpdateVCSSQLReviewFileForGitLab(
 	if setting.ExternalUrl == "" {
 		return status.Errorf(codes.FailedPrecondition, "external url is required")
 	}
+	oauthContext := &common.OauthContext{
+		ClientID:     vcs.ApplicationID,
+		ClientSecret: vcs.Secret,
+		AccessToken:  repository.AccessToken,
+		RefreshToken: repository.RefreshToken,
+		Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
+		RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
+	}
+
 	fileExisted := true
 	fileMeta, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(
 		ctx,
-		common.OauthContext{
-			ClientID:     vcs.ApplicationID,
-			ClientSecret: vcs.Secret,
-			AccessToken:  repository.AccessToken,
-			RefreshToken: repository.RefreshToken,
-			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
-			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
-		},
+		oauthContext,
 		vcs.InstanceURL,
 		repository.ExternalID,
 		fileName,
@@ -1529,14 +1511,7 @@ func (s *ProjectService) createOrUpdateVCSSQLReviewFileForGitLab(
 	if fileExisted {
 		return vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).OverwriteFile(
 			ctx,
-			common.OauthContext{
-				ClientID:     vcs.ApplicationID,
-				ClientSecret: vcs.Secret,
-				AccessToken:  repository.AccessToken,
-				RefreshToken: repository.RefreshToken,
-				Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
-				RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
-			},
+			oauthContext,
 			vcs.InstanceURL,
 			repository.ExternalID,
 			fileName,
@@ -1552,14 +1527,7 @@ func (s *ProjectService) createOrUpdateVCSSQLReviewFileForGitLab(
 
 	return vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).CreateFile(
 		ctx,
-		common.OauthContext{
-			ClientID:     vcs.ApplicationID,
-			ClientSecret: vcs.Secret,
-			AccessToken:  repository.AccessToken,
-			RefreshToken: repository.RefreshToken,
-			Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
-			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
-		},
+		oauthContext,
 		vcs.InstanceURL,
 		repository.ExternalID,
 		fileName,
@@ -2989,15 +2957,16 @@ func isBranchNotFound(
 	store *store.Store,
 	webURL, accessToken, refreshToken, externalID, branch, externalURL string,
 ) (bool, error) {
+	oauthContext := &common.OauthContext{
+		ClientID:     vcs.ApplicationID,
+		ClientSecret: vcs.Secret,
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		Refresher:    utils.RefreshToken(ctx, store, webURL),
+		RedirectURL:  fmt.Sprintf("%s/oauth/callback", externalURL),
+	}
 	_, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).GetBranch(ctx,
-		common.OauthContext{
-			ClientID:     vcs.ApplicationID,
-			ClientSecret: vcs.Secret,
-			AccessToken:  accessToken,
-			RefreshToken: refreshToken,
-			Refresher:    utils.RefreshToken(ctx, store, webURL),
-			RedirectURL:  fmt.Sprintf("%s/oauth/callback", externalURL),
-		},
+		oauthContext,
 		vcs.InstanceURL, externalID, branch)
 
 	if common.ErrorCode(err) == common.NotFound {
@@ -3077,7 +3046,7 @@ func createVCSWebhook(ctx context.Context, vcsType vcsPlugin.Type, webhookEndpoi
 	}
 	webhookID, err := vcsPlugin.Get(vcsType, vcsPlugin.ProviderConfig{}).CreateWebhook(
 		ctx,
-		common.OauthContext{
+		&common.OauthContext{
 			AccessToken: accessToken,
 			// We use refreshTokenNoop() because the repository isn't created yet.
 			Refresher: refreshTokenNoop(),
