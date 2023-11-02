@@ -53,6 +53,7 @@ import {
 import ErrorList, { ErrorItem } from "@/components/misc/ErrorList.vue";
 import { UserSelect } from "@/components/v2";
 import { issueServiceClient } from "@/grpcweb";
+import { emitWindowEvent } from "@/plugins";
 import { pushNotification, useCurrentUserV1, useUserStore } from "@/store";
 import {
   PresetRoleType,
@@ -165,6 +166,7 @@ const changeAssigneeUID = async (uid: string | undefined) => {
         style: "SUCCESS",
         title: t("common.updated"),
       });
+      emitWindowEvent("bb.issue-field-update");
     } finally {
       isUpdating.value = false;
     }
