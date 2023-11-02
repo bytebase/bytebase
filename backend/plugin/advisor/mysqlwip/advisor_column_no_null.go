@@ -4,17 +4,24 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/pingcap/tidb/parser/ast"
+	"github.com/antlr4-go/antlr/v4"
+	mysql "github.com/bytebase/mysql-parser"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*ColumnNoNullAdvisor)(nil)
-	_ ast.Visitor     = (*columnNoNullChecker)(nil)
 )
+
+func init() {
+	// only for mysqlwip test.
+	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLColumnNoNull, &ColumnNoNullAdvisor{})
+}
 
 // ColumnNoNullAdvisor is the advisor checking for column no NULL value.
 type ColumnNoNullAdvisor struct {
@@ -22,9 +29,9 @@ type ColumnNoNullAdvisor struct {
 
 // Check checks for column no NULL value.
 func (*ColumnNoNullAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	root, ok := ctx.AST.([]ast.StmtNode)
+	root, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to StmtNode")
+		return nil, errors.Errorf("failed to convert to mysql parser result")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -39,13 +46,27 @@ func (*ColumnNoNullAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advi
 	}
 
 	for _, stmtNode := range root {
-		(stmtNode).Accept(checker)
+		checker.baseLine = stmtNode.BaseLine
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtNode.Tree)
 	}
 
 	return checker.generateAdvice(), nil
 }
 
+type columnName struct {
+	tableName  string
+	columnName string
+	line       int
+}
+
+func (c columnName) name() string {
+	return fmt.Sprintf("%s.%s", c.tableName, c.columnName)
+}
+
 type columnNoNullChecker struct {
+	*mysql.BaseMySQLParserListener
+
+	baseLine   int
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
@@ -53,7 +74,7 @@ type columnNoNullChecker struct {
 	catalog    *catalog.Finder
 }
 
-func (checker columnNoNullChecker) generateAdvice() []advisor.Advice {
+func (checker *columnNoNullChecker) generateAdvice() []advisor.Advice {
 	var columnList []columnName
 	for _, column := range checker.columnSet {
 		columnList = append(columnList, column)
@@ -92,74 +113,89 @@ func (checker columnNoNullChecker) generateAdvice() []advisor.Advice {
 	return checker.adviceList
 }
 
-type columnName struct {
-	tableName  string
-	columnName string
-	line       int
+func (checker *columnNoNullChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if ctx.TableName() == nil {
+		return
+	}
+	if ctx.TableElementList() == nil {
+		return
+	}
+
+	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
+	for _, tableElement := range ctx.TableElementList().AllTableElement() {
+		if tableElement == nil {
+			continue
+		}
+		if tableElement.ColumnDefinition() == nil {
+			continue
+		}
+
+		_, _, column := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
+		if tableElement.ColumnDefinition().FieldDefinition() == nil {
+			continue
+		}
+		col := columnName{
+			tableName:  tableName,
+			columnName: column,
+			line:       checker.baseLine + tableElement.GetStart().GetLine(),
+		}
+		if _, exists := checker.columnSet[col.name()]; !exists {
+			checker.columnSet[col.name()] = col
+		}
+	}
 }
 
-func (c columnName) name() string {
-	return fmt.Sprintf("%s.%s", c.tableName, c.columnName)
-}
+func (checker *columnNoNullChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if ctx.AlterTableActions() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
+		return
+	}
 
-// Enter implements the ast.Visitor interface.
-func (checker *columnNoNullChecker) Enter(in ast.Node) (ast.Node, bool) {
-	switch node := in.(type) {
-	// CREATE TABLE
-	case *ast.CreateTableStmt:
-		for _, column := range node.Cols {
+	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
+	// alter table add column, change column, modify column.
+	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
+		if item == nil {
+			continue
+		}
+
+		var columns []string
+		switch {
+		// add column
+		case item.ADD_SYMBOL() != nil:
+			switch {
+			case item.Identifier() != nil && item.FieldDefinition() != nil:
+				column := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+				columns = append(columns, column)
+			case item.OPEN_PAR_SYMBOL() != nil && item.TableElementList() != nil:
+				for _, tableElement := range item.TableElementList().AllTableElement() {
+					if tableElement.ColumnDefinition() == nil {
+						continue
+					}
+					_, _, column := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
+					columns = append(columns, column)
+				}
+			}
+		// change column
+		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil:
+			// only care new column name.
+			column := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+			columns = append(columns, column)
+		}
+
+		for _, column := range columns {
 			col := columnName{
-				tableName:  node.Table.Name.O,
-				columnName: column.Name.Name.O,
-				line:       column.OriginTextPosition(),
+				tableName:  tableName,
+				columnName: column,
+				line:       checker.baseLine + item.GetStart().GetLine(),
 			}
 			if _, exists := checker.columnSet[col.name()]; !exists {
 				checker.columnSet[col.name()] = col
 			}
 		}
-	// ALTER TABLE
-	case *ast.AlterTableStmt:
-		for _, spec := range node.Specs {
-			switch spec.Tp {
-			// ADD COLUMNS
-			case ast.AlterTableAddColumns:
-				for _, column := range spec.NewColumns {
-					col := columnName{
-						tableName:  node.Table.Name.O,
-						columnName: column.Name.Name.O,
-						line:       node.OriginTextPosition(),
-					}
-					if _, exists := checker.columnSet[col.name()]; !exists {
-						checker.columnSet[col.name()] = col
-					}
-				}
-			// CHANGE COLUMN
-			case ast.AlterTableChangeColumn:
-				col := columnName{
-					tableName:  node.Table.Name.O,
-					columnName: spec.NewColumns[0].Name.Name.O,
-					line:       node.OriginTextPosition(),
-				}
-				if _, exists := checker.columnSet[col.name()]; !exists {
-					checker.columnSet[col.name()] = col
-				}
-			}
-		}
 	}
-
-	return in, false
-}
-
-// Leave implements the ast.Visitor interface.
-func (*columnNoNullChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
-}
-
-func canNull(column *ast.ColumnDef) bool {
-	for _, option := range column.Options {
-		if option.Tp == ast.ColumnOptionNotNull || option.Tp == ast.ColumnOptionPrimaryKey {
-			return false
-		}
-	}
-	return true
 }
