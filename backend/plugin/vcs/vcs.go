@@ -229,7 +229,7 @@ type Provider interface {
 	// instanceURL: VCS instance URL
 	// externalRepositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	// commitID: the commit ID
-	FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, instanceURL, externalRepositoryID, commitID string) (*Commit, error)
+	FetchCommitByID(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, externalRepositoryID, commitID string) (*Commit, error)
 	// Get the diff files list between two commits
 	//
 	// oauthCtx: OAuth context to fetch commit
@@ -237,13 +237,13 @@ type Provider interface {
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	// beforeCommit: the previous commit
 	// afterCommit: the current commit
-	GetDiffFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, beforeCommit, afterCommit string) ([]FileDiff, error)
+	GetDiffFileList(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, beforeCommit, afterCommit string) ([]FileDiff, error)
 
 	// Fetch all repository within a given user's scope
 	//
 	// oauthCtx: OAuth context to write the file content
 	// instanceURL: VCS instance URL
-	FetchAllRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]*Repository, error)
+	FetchAllRepositoryList(ctx context.Context, oauthCtx *common.OauthContext, instanceURL string) ([]*Repository, error)
 
 	// Fetch the repository file list
 	//
@@ -252,7 +252,7 @@ type Provider interface {
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	// ref: the unique name of a repository tree, could be a branch name in GitLab or a tree sha in GitHub
 	// filePath: the path inside repository, used to get content of subdirectories
-	FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, ref, filePath string) ([]*RepositoryTreeNode, error)
+	FetchRepositoryFileList(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, ref, filePath string) ([]*RepositoryTreeNode, error)
 
 	// Commits a new file
 	//
@@ -261,11 +261,11 @@ type Provider interface {
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	// filePath: file path to be written
 	// fileCommit: the new file commit info
-	CreateFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommit FileCommitCreate) error
+	CreateFile(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, filePath string, fileCommit FileCommitCreate) error
 	// Overwrites an existing file
 	//
 	// Similar to CreateFile except it overwrites an existing file. The fileCommit should includes the "LastCommitID" field which is used to detect conflicting writes.
-	OverwriteFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommit FileCommitCreate) error
+	OverwriteFile(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, filePath string, fileCommit FileCommitCreate) error
 	// Reads the file metadata
 	//
 	// oauthCtx: OAuth context to fetch the file metadata
@@ -273,7 +273,7 @@ type Provider interface {
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	// filePath: file path to be read
 	// ref: the specific file version to be read, could be a name of branch, tag or commit
-	ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, refInfo RefInfo) (*FileMeta, error)
+	ReadFileMeta(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, filePath string, refInfo RefInfo) (*FileMeta, error)
 	// Reads the file content
 	//
 	// oauthCtx: OAuth context to read the file content
@@ -281,30 +281,30 @@ type Provider interface {
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	// filePath: file path to be read
 	// ref: the specific file version to be read, could be a name of branch, tag or commit
-	ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, refInfo RefInfo) (string, error)
+	ReadFileContent(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, filePath string, refInfo RefInfo) (string, error)
 	// GetBranch gets the given branch in the repository.
 	//
 	// oauthCtx: OAuth context to create the webhook
 	// instanceURL: VCS instance URL
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	// branchName: the target branch name
-	GetBranch(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, branchName string) (*BranchInfo, error)
+	GetBranch(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, branchName string) (*BranchInfo, error)
 	// CreateBranch creates the branch in the repository.
 	//
 	// oauthCtx: OAuth context to create the webhook
 	// instanceURL: VCS instance URL
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	// branch: the new branch info
-	CreateBranch(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, branch *BranchInfo) error
+	CreateBranch(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID string, branch *BranchInfo) error
 	// CreatePullRequest creates the pull request in the repository.
 	//
 	// oauthCtx: OAuth context to create the webhook
 	// instanceURL: VCS instance URL
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	// pullRequestID: the pull request id
-	ListPullRequestFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, pullRequestID string) ([]*PullRequestFile, error)
+	ListPullRequestFile(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, pullRequestID string) ([]*PullRequestFile, error)
 	// pullRequestCreate: the new pull request info
-	CreatePullRequest(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, pullRequestCreate *PullRequestCreate) (*PullRequest, error)
+	CreatePullRequest(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID string, pullRequestCreate *PullRequestCreate) (*PullRequest, error)
 	// UpsertEnvironmentVariable creates or updates the environment variable in the repository.
 	//
 	// oauthCtx: OAuth context to create the webhook
@@ -312,20 +312,20 @@ type Provider interface {
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	// key: the environment variable name
 	// value: the environment variable value
-	UpsertEnvironmentVariable(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, key, value string) error
+	UpsertEnvironmentVariable(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID string, key, value string) error
 	// Creates a webhook. Returns the created webhook ID on success.
 	//
 	// oauthCtx: OAuth context to create the webhook
 	// instanceURL: VCS instance URL
 	// repositoryID: the repository ID from the external VCS system (note this is NOT the ID of Bytebase's own repository resource)
 	// payload: the webhook payload
-	CreateWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, payload []byte) (string, error)
+	CreateWebhook(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID string, payload []byte) (string, error)
 	// Patches a webhook.
 	//
 	// The payload stores the patched field(s).
-	PatchWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, webhookID string, payload []byte) error
+	PatchWebhook(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, webhookID string, payload []byte) error
 	// Deletes a webhook.
-	DeleteWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, webhookID string) error
+	DeleteWebhook(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, webhookID string) error
 }
 
 var (

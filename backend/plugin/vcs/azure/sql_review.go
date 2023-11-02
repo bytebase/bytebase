@@ -98,7 +98,7 @@ type policy struct {
 }
 
 // EnableSQLReviewCI enables the SQL review pipeline and policy.
-func EnableSQLReviewCI(ctx context.Context, oauthCtx common.OauthContext, repositoryTitle, repositoryID, branch, token string) error {
+func EnableSQLReviewCI(ctx context.Context, oauthCtx *common.OauthContext, repositoryTitle, repositoryID, branch, token string) error {
 	pipeline, err := createSQLReviewPipeline(ctx, oauthCtx, repositoryTitle, repositoryID, token)
 	if err != nil {
 		return err
@@ -109,7 +109,7 @@ func EnableSQLReviewCI(ctx context.Context, oauthCtx common.OauthContext, reposi
 // createSQLReviewPipeline creates the SQL Review pipeline.
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/pipelines/pipelines/create?view=azure-devops-rest-7.1
-func createSQLReviewPipeline(ctx context.Context, oauthCtx common.OauthContext, repositoryTitle, repositoryID, token string) (*pipeline, error) {
+func createSQLReviewPipeline(ctx context.Context, oauthCtx *common.OauthContext, repositoryTitle, repositoryID, token string) (*pipeline, error) {
 	parts := strings.Split(repositoryID, "/")
 	if len(parts) != 3 {
 		return nil, errors.Errorf("invalid repository ID %q", repositoryID)
@@ -178,7 +178,7 @@ func createSQLReviewPipeline(ctx context.Context, oauthCtx common.OauthContext, 
 // createSQLReviewPolicy creates the SQL Review policy.
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/policy/configurations/create?view=azure-devops-rest-7.0
-func createSQLReviewBranchPolicy(ctx context.Context, oauthCtx common.OauthContext, repositoryID, branch string, pipelineID int) error {
+func createSQLReviewBranchPolicy(ctx context.Context, oauthCtx *common.OauthContext, repositoryID, branch string, pipelineID int) error {
 	parts := strings.Split(repositoryID, "/")
 	if len(parts) != 3 {
 		return errors.Errorf("invalid repository ID %q", repositoryID)

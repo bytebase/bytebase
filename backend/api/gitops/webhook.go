@@ -97,8 +97,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			if c.Request().Header.Get("X-Gitlab-Token") != repo.WebhookSecretToken {
 				return false, nil
 			}
-
-			return s.isWebhookEventBranch(pushEvent.Ref, repo.BranchFilter)
+			return isWebhookEventBranch(pushEvent.Ref, repo.BranchFilter)
 		}
 		repositoryList, err := s.filterRepository(ctx, c.Param("id"), repositoryID, filter)
 		if err != nil {
@@ -109,12 +108,21 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			return c.String(http.StatusOK, "OK")
 		}
 
+		repo := repositoryList[0]
+		oauthContext := &common.OauthContext{
+			ClientID:     repo.vcs.ApplicationID,
+			ClientSecret: repo.vcs.Secret,
+			AccessToken:  repo.repository.AccessToken,
+			RefreshToken: repo.repository.RefreshToken,
+			Refresher:    utils.RefreshToken(ctx, s.store, repo.repository.WebURL),
+		}
+
 		baseVCSPushEvent, err := pushEvent.ToVCS()
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to convert GitLab commits").SetInternal(err)
 		}
 
-		createdMessages, err := s.processPushEvent(ctx, repositoryList, baseVCSPushEvent)
+		createdMessages, err := s.processPushEvent(ctx, oauthContext, repositoryList, baseVCSPushEvent)
 		if err != nil {
 			return err
 		}
@@ -170,7 +178,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 				return false, nil
 			}
 
-			return s.isWebhookEventBranch(pushEvent.Ref, repo.BranchFilter)
+			return isWebhookEventBranch(pushEvent.Ref, repo.BranchFilter)
 		}
 		repositoryList, err := s.filterRepository(ctx, c.Param("id"), repositoryID, filter)
 		if err != nil {
@@ -180,10 +188,18 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			slog.Debug("Empty handle repo list. Ignore this push event.")
 			return c.String(http.StatusOK, "OK")
 		}
+		repo := repositoryList[0]
+		oauthContext := &common.OauthContext{
+			ClientID:     repo.vcs.ApplicationID,
+			ClientSecret: repo.vcs.Secret,
+			AccessToken:  repo.repository.AccessToken,
+			RefreshToken: repo.repository.RefreshToken,
+			Refresher:    utils.RefreshToken(ctx, s.store, repo.repository.WebURL),
+		}
 
 		baseVCSPushEvent := pushEvent.ToVCS()
 
-		createdMessages, err := s.processPushEvent(ctx, repositoryList, baseVCSPushEvent)
+		createdMessages, err := s.processPushEvent(ctx, oauthContext, repositoryList, baseVCSPushEvent)
 		if err != nil {
 			return err
 		}
@@ -230,7 +246,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 
 			ref := "refs/heads/" + change.New.Name
 			filter := func(repo *store.RepositoryMessage) (bool, error) {
-				return s.isWebhookEventBranch(ref, repo.BranchFilter)
+				return isWebhookEventBranch(ref, repo.BranchFilter)
 			}
 			repositoryList, err := s.filterRepository(ctx, c.Param("id"), repositoryID, filter)
 			if err != nil {
@@ -242,6 +258,14 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			}
 			repo := repositoryList[0]
 
+			oauthContext := &common.OauthContext{
+				ClientID:     repo.vcs.ApplicationID,
+				ClientSecret: repo.vcs.Secret,
+				AccessToken:  repo.repository.AccessToken,
+				RefreshToken: repo.repository.RefreshToken,
+				Refresher:    utils.RefreshToken(ctx, s.store, repo.repository.WebURL),
+			}
+
 			var commitList []vcs.Commit
 			for _, commit := range nonBytebaseCommitList {
 				before := strings.Repeat("0", 40)
@@ -250,13 +274,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 				}
 				fileDiffList, err := vcs.Get(repo.vcs.Type, vcs.ProviderConfig{}).GetDiffFileList(
 					ctx,
-					common.OauthContext{
-						ClientID:     repo.vcs.ApplicationID,
-						ClientSecret: repo.vcs.Secret,
-						AccessToken:  repo.repository.AccessToken,
-						RefreshToken: repo.repository.RefreshToken,
-						Refresher:    utils.RefreshToken(ctx, s.store, repo.repository.WebURL),
-					},
+					oauthContext,
 					repo.vcs.InstanceURL,
 					repo.repository.ExternalID,
 					before,
@@ -305,6 +323,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 
 			createdMessages, err := s.processPushEvent(
 				ctx,
+				oauthContext,
 				repositoryList,
 				vcs.PushEvent{
 					VCSType:            vcs.Bitbucket,
@@ -376,7 +395,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 		// Filter out the repository which does not match the branch filter.
 		filter := func(repo *store.RepositoryMessage) (bool, error) {
 			refUpdate := pushEvent.Resource.RefUpdates[0]
-			return s.isWebhookEventBranch(refUpdate.Name, repo.BranchFilter)
+			return isWebhookEventBranch(refUpdate.Name, repo.BranchFilter)
 		}
 		repositoryList, err := s.filterRepository(ctx, c.Param("id"), repositoryID, filter)
 		if err != nil {
@@ -392,7 +411,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find workspace setting").SetInternal(err)
 		}
 
-		oauthContext := common.OauthContext{
+		oauthContext := &common.OauthContext{
 			ClientID:     repositoryList[0].vcs.ApplicationID,
 			ClientSecret: repositoryList[0].vcs.Secret,
 			AccessToken:  repositoryList[0].repository.AccessToken,
@@ -550,7 +569,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			CommitList:         backfillCommits,
 		}
 
-		createdMessages, err := s.processPushEvent(ctx, repositoryList, baseVCSPushEvent)
+		createdMessages, err := s.processPushEvent(ctx, oauthContext, repositoryList, baseVCSPushEvent)
 		if err != nil {
 			return err
 		}
@@ -621,16 +640,18 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 		}
 		repo := repositoryList[0]
 
+		oauthContext := &common.OauthContext{
+			ClientID:     repo.vcs.ApplicationID,
+			ClientSecret: repo.vcs.Secret,
+			AccessToken:  repo.repository.AccessToken,
+			RefreshToken: repo.repository.RefreshToken,
+			Refresher:    utils.RefreshToken(ctx, s.store, repo.repository.WebURL),
+			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
+		}
+
 		prFiles, err := vcs.Get(repo.vcs.Type, vcs.ProviderConfig{}).ListPullRequestFile(
 			ctx,
-			common.OauthContext{
-				ClientID:     repo.vcs.ApplicationID,
-				ClientSecret: repo.vcs.Secret,
-				AccessToken:  repo.repository.AccessToken,
-				RefreshToken: repo.repository.RefreshToken,
-				Refresher:    utils.RefreshToken(ctx, s.store, repo.repository.WebURL),
-				RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
-			},
+			oauthContext,
 			repo.vcs.InstanceURL,
 			repo.repository.ExternalID,
 			request.PullRequestID,
@@ -639,7 +660,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to list pull request file").SetInternal(err)
 		}
 
-		sqlFileName2Advice := s.sqlAdviceForSQLFiles(ctx, repositoryList, prFiles, setting.ExternalUrl)
+		sqlFileName2Advice := s.sqlAdviceForSQLFiles(ctx, oauthContext, repositoryList, prFiles, setting.ExternalUrl)
 
 		if s.licenseService.IsFeatureEnabled(api.FeatureMybatisSQLReview) == nil {
 			// If the commit file list contains the file which extension is xml and the content
@@ -663,13 +684,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 				}
 				fileContent, err := vcs.Get(repo.vcs.Type, vcs.ProviderConfig{}).ReadFileContent(
 					ctx,
-					common.OauthContext{
-						ClientID:     repo.vcs.ApplicationID,
-						ClientSecret: repo.vcs.Secret,
-						AccessToken:  repo.repository.AccessToken,
-						RefreshToken: repo.repository.RefreshToken,
-						Refresher:    utils.RefreshToken(ctx, s.store, repo.repository.WebURL),
-					},
+					oauthContext,
 					repo.vcs.InstanceURL,
 					repo.repository.ExternalID,
 					prFile.Path,
@@ -688,7 +703,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 				commitID = prFile.LastCommitID
 			}
 			if len(mybatisMapperXMLFiles) > 0 {
-				mapperAdvices, err := s.sqlAdviceForMybatisMapperFiles(ctx, mybatisMapperXMLFiles, commitID, repo)
+				mapperAdvices, err := s.sqlAdviceForMybatisMapperFiles(ctx, oauthContext, mybatisMapperXMLFiles, commitID, repo)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get sql advice for mybatis mapper files").SetInternal(err)
 				}
@@ -720,7 +735,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Service) sqlAdviceForMybatisMapperFiles(ctx context.Context, mybatisMapperContent map[string]string, commitID string, repoInfo *repoInfo) (map[string][]advisor.Advice, error) {
+func (s *Service) sqlAdviceForMybatisMapperFiles(ctx context.Context, oauthContext *common.OauthContext, mybatisMapperContent map[string]string, commitID string, repoInfo *repoInfo) (map[string][]advisor.Advice, error) {
 	if len(mybatisMapperContent) == 0 {
 		return map[string][]advisor.Advice{}, nil
 	}
@@ -729,7 +744,7 @@ func (s *Service) sqlAdviceForMybatisMapperFiles(ctx context.Context, mybatisMap
 	}
 
 	sqlCheckAdvices := make(map[string][]advisor.Advice)
-	mybatisMapperXMLFileData, err := s.buildMybatisMapperXMLFileData(ctx, repoInfo, commitID, mybatisMapperContent)
+	mybatisMapperXMLFileData, err := buildMybatisMapperXMLFileData(ctx, oauthContext, repoInfo, commitID, mybatisMapperContent)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to build mybatis mapper xml file data")
 	}
@@ -856,6 +871,7 @@ func (s *Service) sqlAdviceForMybatisMapperFile(ctx context.Context, datum *myba
 
 func (s *Service) sqlAdviceForSQLFiles(
 	ctx context.Context,
+	oauthContext *common.OauthContext,
 	repoInfoList []*repoInfo,
 	prFiles []*vcs.PullRequestFile,
 	externalURL string,
@@ -883,7 +899,7 @@ func (s *Service) sqlAdviceForSQLFiles(
 			wg.Add(1)
 			go func(file fileInfo) {
 				defer wg.Done()
-				adviceList, err := s.sqlAdviceForFile(ctx, file, externalURL)
+				adviceList, err := s.sqlAdviceForFile(ctx, oauthContext, file, externalURL)
 				if err != nil {
 					slog.Error(
 						"Failed to take SQL review for file",
@@ -912,6 +928,7 @@ func (s *Service) sqlAdviceForSQLFiles(
 
 func (s *Service) sqlAdviceForFile(
 	ctx context.Context,
+	oauthContext *common.OauthContext,
 	fileInfo fileInfo,
 	externalURL string,
 ) ([]advisor.Advice, error) {
@@ -949,14 +966,7 @@ func (s *Service) sqlAdviceForFile(
 
 	fileContent, err := vcs.Get(fileInfo.repoInfo.vcs.Type, vcs.ProviderConfig{}).ReadFileContent(
 		ctx,
-		common.OauthContext{
-			ClientID:     fileInfo.repoInfo.vcs.ApplicationID,
-			ClientSecret: fileInfo.repoInfo.vcs.Secret,
-			AccessToken:  fileInfo.repoInfo.repository.AccessToken,
-			RefreshToken: fileInfo.repoInfo.repository.RefreshToken,
-			Refresher:    utils.RefreshToken(ctx, s.store, fileInfo.repoInfo.repository.WebURL),
-			RedirectURL:  fmt.Sprintf("%s/oauth/callback", externalURL),
-		},
+		oauthContext,
 		fileInfo.repoInfo.vcs.InstanceURL,
 		fileInfo.repoInfo.repository.ExternalID,
 		fileInfo.item.FileName,
@@ -1132,7 +1142,7 @@ func (s *Service) filterRepository(ctx context.Context, webhookEndpointID string
 	return filteredRepos, nil
 }
 
-func (*Service) isWebhookEventBranch(pushEventRef, branchFilter string) (bool, error) {
+func isWebhookEventBranch(pushEventRef, branchFilter string) (bool, error) {
 	branch, err := parseBranchNameFromRefs(pushEventRef)
 	if err != nil {
 		return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid ref: %s", pushEventRef)).SetInternal(err)
@@ -1180,7 +1190,7 @@ func parseBranchNameFromRefs(ref string) (string, error) {
 	return ref[len(expectedPrefix):], nil
 }
 
-func (s *Service) processPushEvent(ctx context.Context, repoInfoList []*repoInfo, baseVCSPushEvent vcs.PushEvent) ([]string, error) {
+func (s *Service) processPushEvent(ctx context.Context, oauthContext *common.OauthContext, repoInfoList []*repoInfo, baseVCSPushEvent vcs.PushEvent) ([]string, error) {
 	if len(repoInfoList) == 0 {
 		return nil, errors.Errorf("empty repository list")
 	}
@@ -1205,7 +1215,7 @@ func (s *Service) processPushEvent(ctx context.Context, repoInfoList []*repoInfo
 		if baseVCSPushEvent.Before == strings.Repeat("0", 40) {
 			return distinctFileList, nil
 		}
-		return s.filterFilesByCommitsDiff(ctx, repo, distinctFileList, baseVCSPushEvent.Before, baseVCSPushEvent.After)
+		return filterFilesByCommitsDiff(ctx, oauthContext, repo, distinctFileList, baseVCSPushEvent.Before, baseVCSPushEvent.After)
 	}()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to filtered distinct files by commits diff")
@@ -1227,6 +1237,7 @@ func (s *Service) processPushEvent(ctx context.Context, repoInfoList []*repoInfo
 			pushEvent.BaseDirectory = repoInfo.repository.BaseDirectory
 			createdMessage, created, activityCreateList, err := s.processFilesInProject(
 				ctx,
+				oauthContext,
 				pushEvent,
 				repoInfo,
 				fileInfoListSorted,
@@ -1262,21 +1273,16 @@ func (s *Service) processPushEvent(ctx context.Context, repoInfoList []*repoInfo
 // In that case, the commits in the push event contains files which are not added in this PR/MR.
 // We use the compare API to get the file diffs and filter files by the diffs.
 // TODO(dragonly): generate distinct file change list from the commits diff instead of filter.
-func (s *Service) filterFilesByCommitsDiff(
+func filterFilesByCommitsDiff(
 	ctx context.Context,
+	oauthContext *common.OauthContext,
 	repoInfo *repoInfo,
 	distinctFileList []vcs.DistinctFileItem,
 	beforeCommit, afterCommit string,
 ) ([]vcs.DistinctFileItem, error) {
 	fileDiffList, err := vcs.Get(repoInfo.vcs.Type, vcs.ProviderConfig{}).GetDiffFileList(
 		ctx,
-		common.OauthContext{
-			ClientID:     repoInfo.vcs.ApplicationID,
-			ClientSecret: repoInfo.vcs.Secret,
-			AccessToken:  repoInfo.repository.AccessToken,
-			RefreshToken: repoInfo.repository.RefreshToken,
-			Refresher:    utils.RefreshToken(ctx, s.store, repoInfo.repository.WebURL),
-		},
+		oauthContext,
 		repoInfo.vcs.InstanceURL,
 		repoInfo.repository.ExternalID,
 		beforeCommit,
@@ -1433,12 +1439,12 @@ func getFileInfo(fileItem vcs.DistinctFileItem, repoInfoList []*repoInfo) (*db.M
 // It returns "created=true" when new issue(s) has been created,
 // along with the creation message to be presented in the UI. An *echo.HTTPError
 // is returned in case of the error during the process.
-func (s *Service) processFilesInProject(ctx context.Context, pushEvent vcs.PushEvent, repoInfo *repoInfo, fileInfoList []fileInfo) (string, bool, []*store.ActivityMessage, *echo.HTTPError) {
+func (s *Service) processFilesInProject(ctx context.Context, oauthContext *common.OauthContext, pushEvent vcs.PushEvent, repoInfo *repoInfo, fileInfoList []fileInfo) (string, bool, []*store.ActivityMessage, *echo.HTTPError) {
 	if repoInfo.project.TenantMode == api.TenantModeTenant {
 		if err := s.licenseService.IsFeatureEnabled(api.FeatureMultiTenancy); err != nil {
 			return "", false, nil, echo.NewHTTPError(http.StatusForbidden, err.Error())
 		}
-		return s.processFilesInBatchProject(ctx, pushEvent, repoInfo, fileInfoList)
+		return s.processFilesInBatchProject(ctx, oauthContext, pushEvent, repoInfo, fileInfoList)
 	}
 
 	var migrationDetailList []*migrationDetail
@@ -1451,7 +1457,7 @@ func (s *Service) processFilesInProject(ctx context.Context, pushEvent vcs.PushE
 		if fileInfo.fType == fileTypeSchema {
 			if fileInfo.repoInfo.project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
 				// Create one issue per schema file for SDL project.
-				migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromSDLFile(ctx, repoInfo, pushEvent, fileInfo.migrationInfo, fileInfo.item.FileName)
+				migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromSDLFile(ctx, oauthContext, repoInfo, pushEvent, fileInfo.migrationInfo, fileInfo.item.FileName)
 				activityCreateList = append(activityCreateList, activityCreateListForFile...)
 				if len(migrationDetailListForFile) != 0 {
 					databaseName := fileInfo.migrationInfo.Database
@@ -1472,7 +1478,7 @@ func (s *Service) processFilesInProject(ctx context.Context, pushEvent vcs.PushE
 			// 1) DML is always migration-based.
 			// 2) We may have a limitation in SDL implementation.
 			// 3) User just wants to break the glass.
-			migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromFile(ctx, repoInfo, pushEvent, fileInfo)
+			migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromFile(ctx, oauthContext, repoInfo, pushEvent, fileInfo)
 			activityCreateList = append(activityCreateList, activityCreateListForFile...)
 			migrationDetailList = append(migrationDetailList, migrationDetailListForFile...)
 			if len(migrationDetailListForFile) != 0 {
@@ -1507,7 +1513,7 @@ func (s *Service) processFilesInProject(ctx context.Context, pushEvent vcs.PushE
 }
 
 // processFilesInBatchProject creates issues for a batch project.
-func (s *Service) processFilesInBatchProject(ctx context.Context, pushEvent vcs.PushEvent, repoInfo *repoInfo, fileInfoList []fileInfo) (string, bool, []*store.ActivityMessage, *echo.HTTPError) {
+func (s *Service) processFilesInBatchProject(ctx context.Context, oauthContext *common.OauthContext, pushEvent vcs.PushEvent, repoInfo *repoInfo, fileInfoList []fileInfo) (string, bool, []*store.ActivityMessage, *echo.HTTPError) {
 	var activityCreateList []*store.ActivityMessage
 	var createdIssueList []string
 
@@ -1516,7 +1522,7 @@ func (s *Service) processFilesInBatchProject(ctx context.Context, pushEvent vcs.
 		if fileInfo.fType == fileTypeSchema {
 			if fileInfo.repoInfo.project.SchemaChangeType == api.ProjectSchemaChangeTypeSDL {
 				// Create one issue per schema file for SDL project.
-				migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromSDLFile(ctx, repoInfo, pushEvent, fileInfo.migrationInfo, fileInfo.item.FileName)
+				migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromSDLFile(ctx, oauthContext, repoInfo, pushEvent, fileInfo.migrationInfo, fileInfo.item.FileName)
 				activityCreateList = append(activityCreateList, activityCreateListForFile...)
 				if len(migrationDetailListForFile) != 0 {
 					databaseName := fileInfo.migrationInfo.Database
@@ -1531,7 +1537,7 @@ func (s *Service) processFilesInBatchProject(ctx context.Context, pushEvent vcs.
 				slog.Debug("Ignored schema file for non-SDL project", slog.String("fileName", fileInfo.item.FileName), slog.String("type", string(fileInfo.item.ItemType)))
 			}
 		} else { // fileInfo.fType == fileTypeMigration
-			migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromFile(ctx, repoInfo, pushEvent, fileInfo)
+			migrationDetailListForFile, activityCreateListForFile := s.prepareIssueFromFile(ctx, oauthContext, repoInfo, pushEvent, fileInfo)
 			if len(migrationDetailListForFile) != 1 {
 				slog.Error("Unexpected number of file number")
 			}
@@ -1843,7 +1849,7 @@ func getIgnoredFileActivityCreate(projectID int, pushEvent vcs.PushEvent, file s
 }
 
 // readFileContent reads the content of the given file from the given repository.
-func (s *Service) readFileContent(ctx context.Context, pushEvent vcs.PushEvent, repoInfo *repoInfo, file string) (string, error) {
+func (s *Service) readFileContent(ctx context.Context, oauthContext *common.OauthContext, pushEvent vcs.PushEvent, repoInfo *repoInfo, file string) (string, error) {
 	// Retrieve the latest AccessToken and RefreshToken as the previous
 	// ReadFileContent call may have updated the stored token pair. ReadFileContent
 	// will fetch and store the new token pair if the existing token pair has
@@ -1866,13 +1872,7 @@ func (s *Service) readFileContent(ctx context.Context, pushEvent vcs.PushEvent, 
 
 	content, err := vcs.Get(externalVCS.Type, vcs.ProviderConfig{}).ReadFileContent(
 		ctx,
-		common.OauthContext{
-			ClientID:     externalVCS.ApplicationID,
-			ClientSecret: externalVCS.Secret,
-			AccessToken:  repo.AccessToken,
-			RefreshToken: repo.RefreshToken,
-			Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
-		},
+		oauthContext,
 		externalVCS.InstanceURL,
 		repo.ExternalID,
 		file,
@@ -1889,14 +1889,14 @@ func (s *Service) readFileContent(ctx context.Context, pushEvent vcs.PushEvent, 
 
 // prepareIssueFromSDLFile returns the migration info and a list of update
 // schema details derived from the given push event for SDL.
-func (s *Service) prepareIssueFromSDLFile(ctx context.Context, repoInfo *repoInfo, pushEvent vcs.PushEvent, schemaInfo *db.MigrationInfo, file string) ([]*migrationDetail, []*store.ActivityMessage) {
+func (s *Service) prepareIssueFromSDLFile(ctx context.Context, oauthContext *common.OauthContext, repoInfo *repoInfo, pushEvent vcs.PushEvent, schemaInfo *db.MigrationInfo, file string) ([]*migrationDetail, []*store.ActivityMessage) {
 	dbName := schemaInfo.Database
 	if dbName == "" && repoInfo.project.TenantMode == api.TenantModeDisabled {
 		slog.Debug("Ignored schema file without a database name", slog.String("file", file))
 		return nil, nil
 	}
 
-	sdl, err := s.readFileContent(ctx, pushEvent, repoInfo, file)
+	sdl, err := s.readFileContent(ctx, oauthContext, pushEvent, repoInfo, file)
 	if err != nil {
 		activityCreate := getIgnoredFileActivityCreate(repoInfo.project.UID, pushEvent, file, errors.Wrap(err, "Failed to read file content"))
 		return nil, []*store.ActivityMessage{activityCreate}
@@ -1955,11 +1955,12 @@ func (s *Service) prepareIssueFromSDLFile(ctx context.Context, repoInfo *repoInf
 // from the given push event for DDL.
 func (s *Service) prepareIssueFromFile(
 	ctx context.Context,
+	oauthContext *common.OauthContext,
 	repoInfo *repoInfo,
 	pushEvent vcs.PushEvent,
 	fileInfo fileInfo,
 ) ([]*migrationDetail, []*store.ActivityMessage) {
-	content, err := s.readFileContent(ctx, pushEvent, repoInfo, fileInfo.item.FileName)
+	content, err := s.readFileContent(ctx, oauthContext, pushEvent, repoInfo, fileInfo.item.FileName)
 	if err != nil {
 		return nil, []*store.ActivityMessage{
 			getIgnoredFileActivityCreate(
@@ -2510,7 +2511,7 @@ type mybatisMapperXMLFileDatum struct {
 //	repo: the repository will be list file tree and get file content from.
 //	commitID: the commitID is the snapshot of the file tree and file content.
 //	mapperFiles: the map of the mybatis mapper XML file path and content.
-func (s *Service) buildMybatisMapperXMLFileData(ctx context.Context, repoInfo *repoInfo, commitID string, mapperFiles map[string]string) ([]*mybatisMapperXMLFileDatum, error) {
+func buildMybatisMapperXMLFileData(ctx context.Context, oauthContext *common.OauthContext, repoInfo *repoInfo, commitID string, mapperFiles map[string]string) ([]*mybatisMapperXMLFileDatum, error) {
 	if len(mapperFiles) == 0 {
 		return []*mybatisMapperXMLFileDatum{}, nil
 	}
@@ -2547,13 +2548,7 @@ func (s *Service) buildMybatisMapperXMLFileData(ctx context.Context, repoInfo *r
 
 			filesInDir, err := vcs.Get(repoInfo.vcs.Type, vcs.ProviderConfig{}).FetchRepositoryFileList(
 				ctx,
-				common.OauthContext{
-					ClientID:     repoInfo.vcs.ApplicationID,
-					ClientSecret: repoInfo.vcs.Secret,
-					AccessToken:  repoInfo.repository.AccessToken,
-					RefreshToken: repoInfo.repository.RefreshToken,
-					Refresher:    utils.RefreshToken(ctx, s.store, repoInfo.repository.WebURL),
-				},
+				oauthContext,
 				repoInfo.vcs.InstanceURL,
 				repoInfo.repository.ExternalID,
 				commitID,
@@ -2569,13 +2564,7 @@ func (s *Service) buildMybatisMapperXMLFileData(ctx context.Context, repoInfo *r
 				}
 				fileContent, err := vcs.Get(repoInfo.vcs.Type, vcs.ProviderConfig{}).ReadFileContent(
 					ctx,
-					common.OauthContext{
-						ClientID:     repoInfo.vcs.ApplicationID,
-						ClientSecret: repoInfo.vcs.Secret,
-						AccessToken:  repoInfo.repository.AccessToken,
-						RefreshToken: repoInfo.repository.RefreshToken,
-						Refresher:    utils.RefreshToken(ctx, s.store, repoInfo.repository.WebURL),
-					},
+					oauthContext,
 					repoInfo.vcs.InstanceURL,
 					repoInfo.repository.ExternalID,
 					file.Path,

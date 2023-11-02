@@ -171,7 +171,7 @@ func TestProvider_FetchCommitByID(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	got, err := p.FetchCommitByID(ctx, common.OauthContext{}, bitbucketCloudURL, "bitbucket/geordi", "f7591a1")
+	got, err := p.FetchCommitByID(ctx, &common.OauthContext{}, bitbucketCloudURL, "bitbucket/geordi", "f7591a1")
 	require.NoError(t, err)
 
 	want := &vcs.Commit{
@@ -227,7 +227,7 @@ func TestProvider_GetDiffFileList(t *testing.T) {
 	},
 	)
 	ctx := context.Background()
-	got, err := p.GetDiffFileList(ctx, common.OauthContext{}, bitbucketCloudURL, "1", "before_sha", "after_sha")
+	got, err := p.GetDiffFileList(ctx, &common.OauthContext{}, bitbucketCloudURL, "1", "before_sha", "after_sha")
 	require.NoError(t, err)
 
 	want := []vcs.FileDiff{
@@ -275,7 +275,7 @@ func TestProvider_FetchAllRepositoryList(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	got, err := p.FetchAllRepositoryList(ctx, common.OauthContext{}, bitbucketCloudURL)
+	got, err := p.FetchAllRepositoryList(ctx, &common.OauthContext{}, bitbucketCloudURL)
 	require.NoError(t, err)
 
 	want := []*vcs.Repository{
@@ -336,7 +336,7 @@ func TestProvider_FetchRepositoryFileList(t *testing.T) {
 			}, nil
 		})
 
-		got, err := p.FetchRepositoryFileList(ctx, common.OauthContext{}, bitbucketCloudURL, "atlassian/bbql", "eefd5ef", "")
+		got, err := p.FetchRepositoryFileList(ctx, &common.OauthContext{}, bitbucketCloudURL, "atlassian/bbql", "eefd5ef", "")
 		require.NoError(t, err)
 
 		want := []*vcs.RepositoryTreeNode{
@@ -358,7 +358,7 @@ func TestProvider_FetchRepositoryFileList(t *testing.T) {
 			}, nil
 		})
 
-		got, err := p.FetchRepositoryFileList(ctx, common.OauthContext{}, bitbucketCloudURL, "atlassian/bbql", "eefd5ef", "tests")
+		got, err := p.FetchRepositoryFileList(ctx, &common.OauthContext{}, bitbucketCloudURL, "atlassian/bbql", "eefd5ef", "tests")
 		require.NoError(t, err)
 
 		// Non-blob type should be excluded
@@ -390,7 +390,7 @@ func TestProvider_CreateFile(t *testing.T) {
 	ctx := context.Background()
 	err := p.CreateFile(
 		ctx,
-		common.OauthContext{},
+		&common.OauthContext{},
 		bitbucketCloudURL,
 		"username/slug",
 		"repo/path/to/image.png",
@@ -421,7 +421,7 @@ func TestProvider_OverwriteFile(t *testing.T) {
 	ctx := context.Background()
 	err := p.OverwriteFile(
 		ctx,
-		common.OauthContext{},
+		&common.OauthContext{},
 		bitbucketCloudURL,
 		"username/slug",
 		"repo/path/to/image.png",
@@ -474,7 +474,7 @@ func TestProvider_ReadFileMeta(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	got, err := p.ReadFileMeta(ctx, common.OauthContext{}, bitbucketCloudURL, "atlassian/bbql", "tests/__init__.py", vcs.RefInfo{
+	got, err := p.ReadFileMeta(ctx, &common.OauthContext{}, bitbucketCloudURL, "atlassian/bbql", "tests/__init__.py", vcs.RefInfo{
 		RefType: vcs.RefTypeCommit,
 		RefName: "eefd5ef",
 	})
@@ -500,7 +500,7 @@ func TestProvider_ReadFileContent(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	got, err := p.ReadFileContent(ctx, common.OauthContext{}, bitbucketCloudURL, "atlassian/bbql", "tests/__init__.py", vcs.RefInfo{
+	got, err := p.ReadFileContent(ctx, &common.OauthContext{}, bitbucketCloudURL, "atlassian/bbql", "tests/__init__.py", vcs.RefInfo{
 		RefType: vcs.RefTypeCommit,
 		RefName: "eefd5ef",
 	})
@@ -626,7 +626,7 @@ func TestProvider_GetBranch(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	got, err := p.GetBranch(ctx, common.OauthContext{}, bitbucketCloudURL, "atlassian/aui", "master")
+	got, err := p.GetBranch(ctx, &common.OauthContext{}, bitbucketCloudURL, "atlassian/aui", "master")
 	require.NoError(t, err)
 
 	want := &vcs.BranchInfo{
@@ -654,7 +654,7 @@ func TestProvider_CreateBranch(t *testing.T) {
 	ctx := context.Background()
 	err := p.CreateBranch(
 		ctx,
-		common.OauthContext{},
+		&common.OauthContext{},
 		bitbucketCloudURL,
 		"seanfarley/hg",
 		&vcs.BranchInfo{
@@ -710,7 +710,7 @@ func TestProvider_ListPullRequestFile(t *testing.T) {
 	},
 	)
 	ctx := context.Background()
-	got, err := p.ListPullRequestFile(ctx, common.OauthContext{}, bitbucketCloudURL, "1", "10086")
+	got, err := p.ListPullRequestFile(ctx, &common.OauthContext{}, bitbucketCloudURL, "1", "10086")
 	require.NoError(t, err)
 
 	want := []*vcs.PullRequestFile{
@@ -775,7 +775,7 @@ func TestProvider_CreatePullRequest(t *testing.T) {
 	ctx := context.Background()
 	got, err := p.CreatePullRequest(
 		ctx,
-		common.OauthContext{},
+		&common.OauthContext{},
 		bitbucketCloudURL,
 		"octocat/Hello-World",
 		&vcs.PullRequestCreate{
@@ -816,7 +816,7 @@ func TestProvider_CreateWebhook(t *testing.T) {
 	ctx := context.Background()
 	got, err := p.CreateWebhook(
 		ctx,
-		common.OauthContext{},
+		&common.OauthContext{},
 		bitbucketCloudURL,
 		"1",
 		[]byte(`
@@ -847,7 +847,7 @@ func TestProvider_PatchWebhook(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	err := p.PatchWebhook(ctx, common.OauthContext{}, bitbucketCloudURL, "1", "1", []byte(""))
+	err := p.PatchWebhook(ctx, &common.OauthContext{}, bitbucketCloudURL, "1", "1", []byte(""))
 	require.NoError(t, err)
 }
 
@@ -863,7 +863,7 @@ func TestProvider_DeleteWebhook(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	err := p.DeleteWebhook(ctx, common.OauthContext{}, bitbucketCloudURL, "1", "1")
+	err := p.DeleteWebhook(ctx, &common.OauthContext{}, bitbucketCloudURL, "1", "1")
 	require.NoError(t, err)
 }
 

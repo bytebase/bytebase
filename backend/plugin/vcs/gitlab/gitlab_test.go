@@ -58,7 +58,7 @@ func TestProvider_FetchCommitByID(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	got, err := p.FetchCommitByID(ctx, common.OauthContext{}, "", "5", "6104942438c14ec7bd21c6cd5bd995272b3faff6")
+	got, err := p.FetchCommitByID(ctx, &common.OauthContext{}, "", "5", "6104942438c14ec7bd21c6cd5bd995272b3faff6")
 	require.NoError(t, err)
 
 	want := &vcs.Commit{
@@ -151,7 +151,7 @@ func TestProvider_FetchAllRepositoryList(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	got, err := p.FetchAllRepositoryList(ctx, common.OauthContext{}, "")
+	got, err := p.FetchAllRepositoryList(ctx, &common.OauthContext{}, "")
 	require.NoError(t, err)
 
 	want := []*vcs.Repository{
@@ -194,7 +194,7 @@ func TestProvider_FetchRepositoryFileList(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	got, err := p.FetchRepositoryFileList(ctx, common.OauthContext{}, "", "1", "main", "")
+	got, err := p.FetchRepositoryFileList(ctx, &common.OauthContext{}, "", "1", "main", "")
 	require.NoError(t, err)
 
 	// Non-blob type should excluded
@@ -231,7 +231,7 @@ func TestProvider_CreateFile(t *testing.T) {
 	ctx := context.Background()
 	err := p.CreateFile(
 		ctx,
-		common.OauthContext{},
+		&common.OauthContext{},
 		"",
 		"1",
 		"lib/class.rb",
@@ -268,7 +268,7 @@ func TestProvider_OverwriteFile(t *testing.T) {
 	ctx := context.Background()
 	err := p.OverwriteFile(
 		ctx,
-		common.OauthContext{},
+		&common.OauthContext{},
 		"",
 		"1",
 		"lib/class.rb",
@@ -300,7 +300,7 @@ func TestProvider_ReadFileMeta(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	got, err := p.ReadFileMeta(ctx, common.OauthContext{}, "", "1", "app/models/key.rb", vcs.RefInfo{
+	got, err := p.ReadFileMeta(ctx, &common.OauthContext{}, "", "1", "app/models/key.rb", vcs.RefInfo{
 		RefType: vcs.RefTypeBranch,
 		RefName: "master",
 	})
@@ -338,7 +338,7 @@ You can look around to get an idea how to structure your project and, when done,
 	)
 
 	ctx := context.Background()
-	got, err := p.ReadFileContent(ctx, common.OauthContext{}, "", "1", "app/models/key.rb", vcs.RefInfo{
+	got, err := p.ReadFileContent(ctx, &common.OauthContext{}, "", "1", "app/models/key.rb", vcs.RefInfo{
 		RefType: vcs.RefTypeBranch,
 		RefName: "master",
 	})
@@ -389,7 +389,7 @@ func TestProvider_CreateWebhook(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	got, err := p.CreateWebhook(ctx, common.OauthContext{}, "", "1", []byte(""))
+	got, err := p.CreateWebhook(ctx, &common.OauthContext{}, "", "1", []byte(""))
 	require.NoError(t, err)
 	assert.Equal(t, "1", got)
 }
@@ -405,7 +405,7 @@ func TestProvider_PatchWebhook(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	err := p.PatchWebhook(ctx, common.OauthContext{}, "", "1", "1", []byte(""))
+	err := p.PatchWebhook(ctx, &common.OauthContext{}, "", "1", "1", []byte(""))
 	require.NoError(t, err)
 }
 
@@ -420,7 +420,7 @@ func TestProvider_DeleteWebhook(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	err := p.DeleteWebhook(ctx, common.OauthContext{}, "", "1", "1")
+	err := p.DeleteWebhook(ctx, &common.OauthContext{}, "", "1", "1")
 	require.NoError(t, err)
 }
 
@@ -518,7 +518,7 @@ func TestProvider_GetBranch(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	got, err := p.GetBranch(ctx, common.OauthContext{}, "", "1", "main")
+	got, err := p.GetBranch(ctx, &common.OauthContext{}, "", "1", "main")
 	require.NoError(t, err)
 
 	want := &vcs.BranchInfo{
@@ -567,7 +567,7 @@ func TestProvider_CreateBranch(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	err := p.CreateBranch(ctx, common.OauthContext{}, "", "1", &vcs.BranchInfo{
+	err := p.CreateBranch(ctx, &common.OauthContext{}, "", "1", &vcs.BranchInfo{
 		Name:         "newbranch",
 		LastCommitID: "7b5c3cc8be40ee161ae89a06bba6229da1032a0c",
 	})
@@ -670,7 +670,7 @@ func TestProvider_CreatePullRequest(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	res, err := p.CreatePullRequest(ctx, common.OauthContext{}, "", "1", &vcs.PullRequestCreate{
+	res, err := p.CreatePullRequest(ctx, &common.OauthContext{}, "", "1", &vcs.PullRequestCreate{
 		Title:                 "test1",
 		Body:                  "fixed login page css paddings",
 		Head:                  "test1",
@@ -739,7 +739,7 @@ func TestProvider_UpsertEnvironmentVariable(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	err := p.UpsertEnvironmentVariable(ctx, common.OauthContext{}, "", "1", "1", "new value")
+	err := p.UpsertEnvironmentVariable(ctx, &common.OauthContext{}, "", "1", "1", "new value")
 	require.NoError(t, err)
 }
 
@@ -790,7 +790,7 @@ func TestProvider_ListPullRequestFile(t *testing.T) {
 	},
 	)
 	ctx := context.Background()
-	got, err := p.ListPullRequestFile(ctx, common.OauthContext{}, "", "1", "1")
+	got, err := p.ListPullRequestFile(ctx, &common.OauthContext{}, "", "1", "1")
 	require.NoError(t, err)
 
 	want := []*vcs.PullRequestFile{
@@ -847,7 +847,7 @@ func TestProvider_GetDiffFileList(t *testing.T) {
 	},
 	)
 	ctx := context.Background()
-	got, err := p.GetDiffFileList(ctx, common.OauthContext{}, "", "1", "before_sha", "after_sha")
+	got, err := p.GetDiffFileList(ctx, &common.OauthContext{}, "", "1", "before_sha", "after_sha")
 	require.NoError(t, err)
 
 	want := []vcs.FileDiff{
