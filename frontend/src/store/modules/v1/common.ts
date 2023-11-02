@@ -56,6 +56,10 @@ export const getLogId = (name: string): number => {
   return getNumberId(name, logNamePrefix);
 };
 
+export const getIssueId = (name: string): number => {
+  return getNumberId(name, issueNamePrefix);
+};
+
 export const getProjectName = (name: string): string => {
   const tokens = getNameParentTokens(name, [projectNamePrefix]);
   const projectId = tokens[0];
