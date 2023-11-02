@@ -161,7 +161,7 @@ func (s *ExternalVersionControlService) SearchExternalVersionControlProjects(ctx
 
 	apiExternalProjectList, err := vcs.Get(externalVersionControl.Type, vcs.ProviderConfig{}).FetchAllRepositoryList(
 		ctx,
-		common.OauthContext{
+		&common.OauthContext{
 			ClientID:     externalVersionControl.ApplicationID,
 			ClientSecret: externalVersionControl.Secret,
 			AccessToken:  request.AccessToken,
