@@ -189,7 +189,7 @@
           url="https://www.bytebase.com/docs/administration/2fa?source=console"
         />
       </p>
-      <template v-if="isMFAEnabled">
+      <template v-if="showRegenerateRecoveryCodes">
         <div class="w-full flex flex-row justify-between items-center mt-8">
           <span class="text-lg font-medium">{{
             $t("two-factor.recovery-codes.self")
@@ -328,6 +328,14 @@ const isMFAEnabled = computed(() => {
   return authStore.currentUser.mfaEnabled;
 });
 
+// only user can their regenerate recovery-codes.
+const showRegenerateRecoveryCodes = computed(() => {
+  return (
+    authStore.currentUser.mfaEnabled &&
+    user.value.name === currentUserV1.value.name
+  );
+});
+
 const user = computed(() => {
   if (props.principalId) {
     return userStore.getUserById(String(props.principalId)) ?? unknownUser();
@@ -335,9 +343,16 @@ const user = computed(() => {
   return currentUserV1.value;
 });
 
+// User can change her MFA config.
+// Besides, owner can also change anyone's MFA config.
 const showMFAConfig = computed(() => {
-  // Only show MFA config for the user themselves.
-  return user.value.name === currentUserV1.value.name;
+  return (
+    user.value.name === currentUserV1.value.name ||
+    hasWorkspacePermissionV1(
+      "bb.permission.workspace.manage-member",
+      currentUserV1.value.userRole
+    )
+  );
 });
 
 const passwordMismatch = computed(() => {
@@ -433,7 +448,13 @@ const enable2FA = () => {
 };
 
 const disable2FA = () => {
-  if (actuatorStore.serverInfo?.require2fa) {
+  if (
+    actuatorStore.serverInfo?.require2fa &&
+    !hasWorkspacePermissionV1(
+      "bb.permission.workspace.manage-member",
+      currentUserV1.value.userRole
+    )
+  ) {
     pushNotification({
       module: "bytebase",
       style: "WARN",
