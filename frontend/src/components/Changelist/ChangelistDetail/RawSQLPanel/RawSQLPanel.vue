@@ -61,6 +61,7 @@
 </template>
 
 <script setup lang="ts">
+import Long from "long";
 import { zindexable as vZindexable } from "vdirs";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -100,7 +101,9 @@ const show = computed(() => {
 
 const isSheetOversize = computed(() => {
   if (!sheet.value) return false;
-  return getSheetStatement(sheet.value).length < sheet.value.contentSize;
+  return Long.fromNumber(getSheetStatement(sheet.value).length).lt(
+    sheet.value.contentSize
+  );
 });
 
 const dirty = computed(() => {

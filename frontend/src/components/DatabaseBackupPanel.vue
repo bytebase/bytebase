@@ -198,6 +198,7 @@ import {
   POLL_JITTER,
   MINIMUM_POLL_INTERVAL,
 } from "@/types";
+import { Duration } from "@/types/proto/google/protobuf/duration";
 import {
   Backup,
   BackupSetting,
@@ -283,7 +284,7 @@ const assignBackupSetting = (backupSetting: BackupSetting) => {
   state.autoBackupHour = schedule.hourOfDay;
   state.autoBackupDayOfWeek = schedule.dayOfWeek;
   state.autoBackupRetentionPeriodTs =
-    backupSetting.backupRetainDuration?.seconds ?? 0;
+    backupSetting.backupRetainDuration?.seconds?.toNumber() ?? 0;
   state.autoBackupHookUrl = backupSetting.hookUrl;
   state.autoBackupUpdatedHookUrl = backupSetting.hookUrl;
 
@@ -448,10 +449,10 @@ const updateBackupHookUrl = () => {
         dayOfWeek: state.autoBackupDayOfWeek,
       }),
       hookUrl: state.autoBackupUpdatedHookUrl,
-      backupRetainDuration: {
+      backupRetainDuration: Duration.fromPartial({
         seconds: state.autoBackupRetentionPeriodTs,
         nanos: 0,
-      },
+      }),
     })
     .then((backupSetting: BackupSetting) => {
       assignBackupSetting(backupSetting);

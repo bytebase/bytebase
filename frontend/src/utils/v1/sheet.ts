@@ -1,3 +1,4 @@
+import Long from "long";
 import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import {
   getUserEmailFromIdentifier,
@@ -102,7 +103,7 @@ export const isSheetWritableV1 = (sheet: Sheet) => {
 
 export const setSheetStatement = (sheet: Sheet, statement: string) => {
   sheet.content = new TextEncoder().encode(statement);
-  sheet.contentSize = statement.length;
+  sheet.contentSize = Long.fromNumber(statement.length);
 };
 
 export const getSheetStatement = (sheet: Sheet) => {

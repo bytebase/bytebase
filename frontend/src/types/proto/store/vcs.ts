@@ -23,7 +23,7 @@ export interface Commit {
   id: string;
   title: string;
   message: string;
-  createdTs: number;
+  createdTs: Long;
   url: string;
   authorName: string;
   authorEmail: string;
@@ -35,7 +35,7 @@ export interface FileCommit {
   id: string;
   title: string;
   message: string;
-  createdTs: number;
+  createdTs: Long;
   url: string;
   authorName: string;
   authorEmail: string;
@@ -254,7 +254,7 @@ function createBaseCommit(): Commit {
     id: "",
     title: "",
     message: "",
-    createdTs: 0,
+    createdTs: Long.ZERO,
     url: "",
     authorName: "",
     authorEmail: "",
@@ -274,7 +274,7 @@ export const Commit = {
     if (message.message !== "") {
       writer.uint32(26).string(message.message);
     }
-    if (message.createdTs !== 0) {
+    if (!message.createdTs.isZero()) {
       writer.uint32(32).int64(message.createdTs);
     }
     if (message.url !== "") {
@@ -328,7 +328,7 @@ export const Commit = {
             break;
           }
 
-          message.createdTs = longToNumber(reader.int64() as Long);
+          message.createdTs = reader.int64() as Long;
           continue;
         case 5:
           if (tag !== 42) {
@@ -379,7 +379,7 @@ export const Commit = {
       id: isSet(object.id) ? String(object.id) : "",
       title: isSet(object.title) ? String(object.title) : "",
       message: isSet(object.message) ? String(object.message) : "",
-      createdTs: isSet(object.createdTs) ? Number(object.createdTs) : 0,
+      createdTs: isSet(object.createdTs) ? Long.fromValue(object.createdTs) : Long.ZERO,
       url: isSet(object.url) ? String(object.url) : "",
       authorName: isSet(object.authorName) ? String(object.authorName) : "",
       authorEmail: isSet(object.authorEmail) ? String(object.authorEmail) : "",
@@ -393,7 +393,7 @@ export const Commit = {
     message.id !== undefined && (obj.id = message.id);
     message.title !== undefined && (obj.title = message.title);
     message.message !== undefined && (obj.message = message.message);
-    message.createdTs !== undefined && (obj.createdTs = Math.round(message.createdTs));
+    message.createdTs !== undefined && (obj.createdTs = (message.createdTs || Long.ZERO).toString());
     message.url !== undefined && (obj.url = message.url);
     message.authorName !== undefined && (obj.authorName = message.authorName);
     message.authorEmail !== undefined && (obj.authorEmail = message.authorEmail);
@@ -419,7 +419,9 @@ export const Commit = {
     message.id = object.id ?? "";
     message.title = object.title ?? "";
     message.message = object.message ?? "";
-    message.createdTs = object.createdTs ?? 0;
+    message.createdTs = (object.createdTs !== undefined && object.createdTs !== null)
+      ? Long.fromValue(object.createdTs)
+      : Long.ZERO;
     message.url = object.url ?? "";
     message.authorName = object.authorName ?? "";
     message.authorEmail = object.authorEmail ?? "";
@@ -430,7 +432,7 @@ export const Commit = {
 };
 
 function createBaseFileCommit(): FileCommit {
-  return { id: "", title: "", message: "", createdTs: 0, url: "", authorName: "", authorEmail: "", added: "" };
+  return { id: "", title: "", message: "", createdTs: Long.ZERO, url: "", authorName: "", authorEmail: "", added: "" };
 }
 
 export const FileCommit = {
@@ -444,7 +446,7 @@ export const FileCommit = {
     if (message.message !== "") {
       writer.uint32(26).string(message.message);
     }
-    if (message.createdTs !== 0) {
+    if (!message.createdTs.isZero()) {
       writer.uint32(32).int64(message.createdTs);
     }
     if (message.url !== "") {
@@ -495,7 +497,7 @@ export const FileCommit = {
             break;
           }
 
-          message.createdTs = longToNumber(reader.int64() as Long);
+          message.createdTs = reader.int64() as Long;
           continue;
         case 5:
           if (tag !== 42) {
@@ -539,7 +541,7 @@ export const FileCommit = {
       id: isSet(object.id) ? String(object.id) : "",
       title: isSet(object.title) ? String(object.title) : "",
       message: isSet(object.message) ? String(object.message) : "",
-      createdTs: isSet(object.createdTs) ? Number(object.createdTs) : 0,
+      createdTs: isSet(object.createdTs) ? Long.fromValue(object.createdTs) : Long.ZERO,
       url: isSet(object.url) ? String(object.url) : "",
       authorName: isSet(object.authorName) ? String(object.authorName) : "",
       authorEmail: isSet(object.authorEmail) ? String(object.authorEmail) : "",
@@ -552,7 +554,7 @@ export const FileCommit = {
     message.id !== undefined && (obj.id = message.id);
     message.title !== undefined && (obj.title = message.title);
     message.message !== undefined && (obj.message = message.message);
-    message.createdTs !== undefined && (obj.createdTs = Math.round(message.createdTs));
+    message.createdTs !== undefined && (obj.createdTs = (message.createdTs || Long.ZERO).toString());
     message.url !== undefined && (obj.url = message.url);
     message.authorName !== undefined && (obj.authorName = message.authorName);
     message.authorEmail !== undefined && (obj.authorEmail = message.authorEmail);
@@ -569,7 +571,9 @@ export const FileCommit = {
     message.id = object.id ?? "";
     message.title = object.title ?? "";
     message.message = object.message ?? "";
-    message.createdTs = object.createdTs ?? 0;
+    message.createdTs = (object.createdTs !== undefined && object.createdTs !== null)
+      ? Long.fromValue(object.createdTs)
+      : Long.ZERO;
     message.url = object.url ?? "";
     message.authorName = object.authorName ?? "";
     message.authorEmail = object.authorEmail ?? "";
@@ -578,38 +582,13 @@ export const FileCommit = {
   },
 };
 
-declare const self: any | undefined;
-declare const window: any | undefined;
-declare const global: any | undefined;
-const tsProtoGlobalThis: any = (() => {
-  if (typeof globalThis !== "undefined") {
-    return globalThis;
-  }
-  if (typeof self !== "undefined") {
-    return self;
-  }
-  if (typeof window !== "undefined") {
-    return window;
-  }
-  if (typeof global !== "undefined") {
-    return global;
-  }
-  throw "Unable to locate global object";
-})();
-
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends Array<infer U> ? Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
-
-function longToNumber(long: Long): number {
-  if (long.gt(Number.MAX_SAFE_INTEGER)) {
-    throw new tsProtoGlobalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
-  }
-  return long.toNumber();
-}
 
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;

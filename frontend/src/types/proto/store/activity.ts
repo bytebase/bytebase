@@ -33,10 +33,10 @@ export interface ActivityIssueCommentCreatePayload {
  * The task with taskID in IssueID is rollbacked by the task with RollbackByTaskID in RollbackByIssueID.
  */
 export interface ActivityIssueCommentCreatePayload_TaskRollbackBy {
-  issueId: number;
-  taskId: number;
-  rollbackByIssueId: number;
-  rollbackByTaskId: number;
+  issueId: Long;
+  taskId: Long;
+  rollbackByIssueId: Long;
+  rollbackByTaskId: Long;
 }
 
 export interface ActivityIssueCommentCreatePayload_ExternalApprovalEvent {
@@ -363,7 +363,7 @@ export const ActivityIssueCommentCreatePayload = {
 };
 
 function createBaseActivityIssueCommentCreatePayload_TaskRollbackBy(): ActivityIssueCommentCreatePayload_TaskRollbackBy {
-  return { issueId: 0, taskId: 0, rollbackByIssueId: 0, rollbackByTaskId: 0 };
+  return { issueId: Long.ZERO, taskId: Long.ZERO, rollbackByIssueId: Long.ZERO, rollbackByTaskId: Long.ZERO };
 }
 
 export const ActivityIssueCommentCreatePayload_TaskRollbackBy = {
@@ -371,16 +371,16 @@ export const ActivityIssueCommentCreatePayload_TaskRollbackBy = {
     message: ActivityIssueCommentCreatePayload_TaskRollbackBy,
     writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
-    if (message.issueId !== 0) {
+    if (!message.issueId.isZero()) {
       writer.uint32(8).int64(message.issueId);
     }
-    if (message.taskId !== 0) {
+    if (!message.taskId.isZero()) {
       writer.uint32(16).int64(message.taskId);
     }
-    if (message.rollbackByIssueId !== 0) {
+    if (!message.rollbackByIssueId.isZero()) {
       writer.uint32(24).int64(message.rollbackByIssueId);
     }
-    if (message.rollbackByTaskId !== 0) {
+    if (!message.rollbackByTaskId.isZero()) {
       writer.uint32(32).int64(message.rollbackByTaskId);
     }
     return writer;
@@ -398,28 +398,28 @@ export const ActivityIssueCommentCreatePayload_TaskRollbackBy = {
             break;
           }
 
-          message.issueId = longToNumber(reader.int64() as Long);
+          message.issueId = reader.int64() as Long;
           continue;
         case 2:
           if (tag !== 16) {
             break;
           }
 
-          message.taskId = longToNumber(reader.int64() as Long);
+          message.taskId = reader.int64() as Long;
           continue;
         case 3:
           if (tag !== 24) {
             break;
           }
 
-          message.rollbackByIssueId = longToNumber(reader.int64() as Long);
+          message.rollbackByIssueId = reader.int64() as Long;
           continue;
         case 4:
           if (tag !== 32) {
             break;
           }
 
-          message.rollbackByTaskId = longToNumber(reader.int64() as Long);
+          message.rollbackByTaskId = reader.int64() as Long;
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -432,19 +432,21 @@ export const ActivityIssueCommentCreatePayload_TaskRollbackBy = {
 
   fromJSON(object: any): ActivityIssueCommentCreatePayload_TaskRollbackBy {
     return {
-      issueId: isSet(object.issueId) ? Number(object.issueId) : 0,
-      taskId: isSet(object.taskId) ? Number(object.taskId) : 0,
-      rollbackByIssueId: isSet(object.rollbackByIssueId) ? Number(object.rollbackByIssueId) : 0,
-      rollbackByTaskId: isSet(object.rollbackByTaskId) ? Number(object.rollbackByTaskId) : 0,
+      issueId: isSet(object.issueId) ? Long.fromValue(object.issueId) : Long.ZERO,
+      taskId: isSet(object.taskId) ? Long.fromValue(object.taskId) : Long.ZERO,
+      rollbackByIssueId: isSet(object.rollbackByIssueId) ? Long.fromValue(object.rollbackByIssueId) : Long.ZERO,
+      rollbackByTaskId: isSet(object.rollbackByTaskId) ? Long.fromValue(object.rollbackByTaskId) : Long.ZERO,
     };
   },
 
   toJSON(message: ActivityIssueCommentCreatePayload_TaskRollbackBy): unknown {
     const obj: any = {};
-    message.issueId !== undefined && (obj.issueId = Math.round(message.issueId));
-    message.taskId !== undefined && (obj.taskId = Math.round(message.taskId));
-    message.rollbackByIssueId !== undefined && (obj.rollbackByIssueId = Math.round(message.rollbackByIssueId));
-    message.rollbackByTaskId !== undefined && (obj.rollbackByTaskId = Math.round(message.rollbackByTaskId));
+    message.issueId !== undefined && (obj.issueId = (message.issueId || Long.ZERO).toString());
+    message.taskId !== undefined && (obj.taskId = (message.taskId || Long.ZERO).toString());
+    message.rollbackByIssueId !== undefined &&
+      (obj.rollbackByIssueId = (message.rollbackByIssueId || Long.ZERO).toString());
+    message.rollbackByTaskId !== undefined &&
+      (obj.rollbackByTaskId = (message.rollbackByTaskId || Long.ZERO).toString());
     return obj;
   },
 
@@ -458,10 +460,18 @@ export const ActivityIssueCommentCreatePayload_TaskRollbackBy = {
     object: DeepPartial<ActivityIssueCommentCreatePayload_TaskRollbackBy>,
   ): ActivityIssueCommentCreatePayload_TaskRollbackBy {
     const message = createBaseActivityIssueCommentCreatePayload_TaskRollbackBy();
-    message.issueId = object.issueId ?? 0;
-    message.taskId = object.taskId ?? 0;
-    message.rollbackByIssueId = object.rollbackByIssueId ?? 0;
-    message.rollbackByTaskId = object.rollbackByTaskId ?? 0;
+    message.issueId = (object.issueId !== undefined && object.issueId !== null)
+      ? Long.fromValue(object.issueId)
+      : Long.ZERO;
+    message.taskId = (object.taskId !== undefined && object.taskId !== null)
+      ? Long.fromValue(object.taskId)
+      : Long.ZERO;
+    message.rollbackByIssueId = (object.rollbackByIssueId !== undefined && object.rollbackByIssueId !== null)
+      ? Long.fromValue(object.rollbackByIssueId)
+      : Long.ZERO;
+    message.rollbackByTaskId = (object.rollbackByTaskId !== undefined && object.rollbackByTaskId !== null)
+      ? Long.fromValue(object.rollbackByTaskId)
+      : Long.ZERO;
     return message;
   },
 };
@@ -686,38 +696,13 @@ export const ActivityIssueApprovalNotifyPayload = {
   },
 };
 
-declare const self: any | undefined;
-declare const window: any | undefined;
-declare const global: any | undefined;
-const tsProtoGlobalThis: any = (() => {
-  if (typeof globalThis !== "undefined") {
-    return globalThis;
-  }
-  if (typeof self !== "undefined") {
-    return self;
-  }
-  if (typeof window !== "undefined") {
-    return window;
-  }
-  if (typeof global !== "undefined") {
-    return global;
-  }
-  throw "Unable to locate global object";
-})();
-
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends Array<infer U> ? Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
-
-function longToNumber(long: Long): number {
-  if (long.gt(Number.MAX_SAFE_INTEGER)) {
-    throw new tsProtoGlobalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
-  }
-  return long.toNumber();
-}
 
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
