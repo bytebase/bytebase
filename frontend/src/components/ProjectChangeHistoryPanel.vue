@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col space-y-4">
     <template v-if="state.changeHistorySectionList.length > 0">
-      <div class="text-center textinfolabel">
+      <div class="text-left textinfolabel">
         {{ $t("change-history.list-limit") }}
       </div>
       <ChangeHistoryTable

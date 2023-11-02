@@ -3,8 +3,8 @@
     :column-list="columnList"
     :data-source="environmentList"
     :show-header="true"
-    :left-bordered="false"
-    :right-bordered="false"
+    :show-placeholder="true"
+    class="border-y"
     @click-row="clickEnvironment"
   >
     <template #item="{ item: environment }: EnvironmentRow">
