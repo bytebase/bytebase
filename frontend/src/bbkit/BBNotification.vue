@@ -61,10 +61,13 @@
                 <p class="mt-1 text-sm text-gray-500 whitespace-pre-wrap">
                   {{ notification.description }}
                 </p>
-                <div v-if="notification.link" class="mt-2">
+                <div
+                  v-if="notification.link && notification.linkTitle"
+                  class="mt-2"
+                >
                   <button
                     class="bg-white rounded-md text-sm font-medium text-accent hover:text-accent-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
-                    @click.prevent="viewLink(notification.link)"
+                    @click.prevent="viewLink(notification)"
                   >
                     {{ notification.linkTitle }}
                   </button>
@@ -135,9 +138,9 @@ const emit = defineEmits<{
 
 const router = useRouter();
 
-const viewLink = (link: string) => {
-  router.push(link);
-  emit("close");
+const viewLink = (notification: BBNotificationItem) => {
+  router.push(notification.link);
+  emit("close", notification);
 };
 const placementClass = computed(() => placementClassMap.get(props.placement));
 </script>
