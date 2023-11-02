@@ -34,7 +34,7 @@ const (
 // RiskMessage is the message for risks.
 type RiskMessage struct {
 	Source     RiskSource
-	Level      int64
+	Level      int32
 	Name       string
 	Active     bool
 	Expression *expr.Expr // *v1alpha1.ParsedExpr
@@ -48,7 +48,7 @@ type RiskMessage struct {
 type UpdateRiskMessage struct {
 	Name       *string
 	Active     *bool
-	Level      *int64
+	Level      *int32
 	Expression *expr.Expr
 	RowStatus  *api.RowStatus
 }

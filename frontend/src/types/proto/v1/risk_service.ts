@@ -1,5 +1,4 @@
 /* eslint-disable */
-import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
@@ -478,7 +477,7 @@ export const Risk = {
       writer.uint32(34).string(message.title);
     }
     if (message.level !== 0) {
-      writer.uint32(40).int64(message.level);
+      writer.uint32(40).int32(message.level);
     }
     if (message.active === true) {
       writer.uint32(56).bool(message.active);
@@ -529,7 +528,7 @@ export const Risk = {
             break;
           }
 
-          message.level = longToNumber(reader.int64() as Long);
+          message.level = reader.int32();
           continue;
         case 7:
           if (tag !== 56) {
@@ -715,43 +714,12 @@ export const RiskServiceDefinition = {
   },
 } as const;
 
-declare const self: any | undefined;
-declare const window: any | undefined;
-declare const global: any | undefined;
-const tsProtoGlobalThis: any = (() => {
-  if (typeof globalThis !== "undefined") {
-    return globalThis;
-  }
-  if (typeof self !== "undefined") {
-    return self;
-  }
-  if (typeof window !== "undefined") {
-    return window;
-  }
-  if (typeof global !== "undefined") {
-    return global;
-  }
-  throw "Unable to locate global object";
-})();
-
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
   : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
-
-function longToNumber(long: Long): number {
-  if (long.gt(Number.MAX_SAFE_INTEGER)) {
-    throw new tsProtoGlobalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
-  }
-  return long.toNumber();
-}
-
-if (_m0.util.Long !== Long) {
-  _m0.util.Long = Long as any;
-  _m0.configure();
-}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

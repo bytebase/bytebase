@@ -101,7 +101,7 @@ message Risk {
   Source source = 3;
 
   string title = 4;
-  int64 level = 5;
+  int32 level = 5;
   bool active = 7;
   google.type.Expr condition = 8;
 }

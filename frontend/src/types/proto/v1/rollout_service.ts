@@ -1,5 +1,4 @@
 /* eslint-disable */
-import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
@@ -3368,7 +3367,7 @@ export const PlanCheckRun_Result = {
       writer.uint32(26).string(message.content);
     }
     if (message.code !== 0) {
-      writer.uint32(32).int64(message.code);
+      writer.uint32(32).int32(message.code);
     }
     if (message.sqlSummaryReport !== undefined) {
       PlanCheckRun_Result_SqlSummaryReport.encode(message.sqlSummaryReport, writer.uint32(42).fork()).ldelim();
@@ -3412,7 +3411,7 @@ export const PlanCheckRun_Result = {
             break;
           }
 
-          message.code = longToNumber(reader.int64() as Long);
+          message.code = reader.int32();
           continue;
         case 5:
           if (tag !== 42) {
@@ -3494,13 +3493,13 @@ function createBasePlanCheckRun_Result_SqlSummaryReport(): PlanCheckRun_Result_S
 export const PlanCheckRun_Result_SqlSummaryReport = {
   encode(message: PlanCheckRun_Result_SqlSummaryReport, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.code !== 0) {
-      writer.uint32(8).int64(message.code);
+      writer.uint32(8).int32(message.code);
     }
     for (const v of message.statementTypes) {
       writer.uint32(18).string(v!);
     }
     if (message.affectedRows !== 0) {
-      writer.uint32(24).int64(message.affectedRows);
+      writer.uint32(24).int32(message.affectedRows);
     }
     if (message.changedResources !== undefined) {
       ChangedResources.encode(message.changedResources, writer.uint32(34).fork()).ldelim();
@@ -3520,7 +3519,7 @@ export const PlanCheckRun_Result_SqlSummaryReport = {
             break;
           }
 
-          message.code = longToNumber(reader.int64() as Long);
+          message.code = reader.int32();
           continue;
         case 2:
           if (tag !== 18) {
@@ -3534,7 +3533,7 @@ export const PlanCheckRun_Result_SqlSummaryReport = {
             break;
           }
 
-          message.affectedRows = longToNumber(reader.int64() as Long);
+          message.affectedRows = reader.int32();
           continue;
         case 4:
           if (tag !== 34) {
@@ -3598,16 +3597,16 @@ function createBasePlanCheckRun_Result_SqlReviewReport(): PlanCheckRun_Result_Sq
 export const PlanCheckRun_Result_SqlReviewReport = {
   encode(message: PlanCheckRun_Result_SqlReviewReport, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.line !== 0) {
-      writer.uint32(8).int64(message.line);
+      writer.uint32(8).int32(message.line);
     }
     if (message.column !== 0) {
-      writer.uint32(16).int64(message.column);
+      writer.uint32(16).int32(message.column);
     }
     if (message.detail !== "") {
       writer.uint32(26).string(message.detail);
     }
     if (message.code !== 0) {
-      writer.uint32(32).int64(message.code);
+      writer.uint32(32).int32(message.code);
     }
     return writer;
   },
@@ -3624,14 +3623,14 @@ export const PlanCheckRun_Result_SqlReviewReport = {
             break;
           }
 
-          message.line = longToNumber(reader.int64() as Long);
+          message.line = reader.int32();
           continue;
         case 2:
           if (tag !== 16) {
             break;
           }
 
-          message.column = longToNumber(reader.int64() as Long);
+          message.column = reader.int32();
           continue;
         case 3:
           if (tag !== 26) {
@@ -3645,7 +3644,7 @@ export const PlanCheckRun_Result_SqlReviewReport = {
             break;
           }
 
-          message.code = longToNumber(reader.int64() as Long);
+          message.code = reader.int32();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -6332,25 +6331,6 @@ export const RolloutServiceDefinition = {
   },
 } as const;
 
-declare const self: any | undefined;
-declare const window: any | undefined;
-declare const global: any | undefined;
-const tsProtoGlobalThis: any = (() => {
-  if (typeof globalThis !== "undefined") {
-    return globalThis;
-  }
-  if (typeof self !== "undefined") {
-    return self;
-  }
-  if (typeof window !== "undefined") {
-    return window;
-  }
-  if (typeof global !== "undefined") {
-    return global;
-  }
-  throw "Unable to locate global object";
-})();
-
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
@@ -6378,18 +6358,6 @@ function fromJsonTimestamp(o: any): Date {
   } else {
     return fromTimestamp(Timestamp.fromJSON(o));
   }
-}
-
-function longToNumber(long: Long): number {
-  if (long.gt(Number.MAX_SAFE_INTEGER)) {
-    throw new tsProtoGlobalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
-  }
-  return long.toNumber();
-}
-
-if (_m0.util.Long !== Long) {
-  _m0.util.Long = Long as any;
-  _m0.configure();
 }
 
 function isObject(value: any): boolean {
