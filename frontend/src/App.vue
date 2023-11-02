@@ -84,6 +84,7 @@ setInterval(() => {
 
 const removeNotification = (item: BBNotificationItem | undefined) => {
   if (!item) return;
+  item.onClose();
   const index = state.notificationList.indexOf(item);
   if (index >= 0) {
     state.notificationList.splice(index, 1);
@@ -105,6 +106,7 @@ const watchNotification = () => {
       description: notification.description || "",
       link: notification.link || "",
       linkTitle: notification.linkTitle || "",
+      onClose: notification.onClose || (() => {}),
     };
     state.notificationList.unshift(item);
     if (!notification.manualHide) {

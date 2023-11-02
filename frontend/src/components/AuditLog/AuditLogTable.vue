@@ -77,7 +77,7 @@ defineProps({
 });
 
 defineEmits<{
-  (event: "view-detail", log: LogEntity, e: MouseEvent): void;
+  (event: "view-detail", log: LogEntity): void;
 }>();
 
 const { t } = useI18n();
