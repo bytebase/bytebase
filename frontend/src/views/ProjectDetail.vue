@@ -71,7 +71,6 @@ import { pull } from "lodash-es";
 import { computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
-import { getLinkFromActivity } from "@/components/ActivityTable/utils";
 import AnomalyCenterDashboard from "@/components/AnomalyCenter/AnomalyCenterDashboard.vue";
 import ChangelistDashboard from "@/components/Changelist/ChangelistDashboard";
 import ProjectDatabaseGroupPanel from "@/components/DatabaseGroup/ProjectDatabaseGroupPanel.vue";
@@ -103,8 +102,10 @@ import {
   activityName,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
+import { LogEntity_Action } from "@/types/proto/v1/logging_service";
 import {
   idFromSlug,
+  projectV1Slug,
   sortDatabaseV1List,
   isOwnerOfProjectV1,
   hasPermissionInProjectV1,
@@ -168,6 +169,7 @@ onMounted(() => {
       resource: project.value.name,
     })
     .then((resp) => {
+      const firstOpening = cachedNotifiedActivities.value.length == 0;
       for (const activity of resp.logEntities) {
         if (cachedNotifiedActivities.value.includes(activity.name)) {
           continue;
@@ -176,14 +178,21 @@ onMounted(() => {
         if (cachedNotifiedActivities.value.length > maximumCachedActivities) {
           cachedNotifiedActivities.value.shift();
         }
-        pushNotification({
-          module: "bytebase",
-          style: "INFO",
-          title: activityName(activity.action),
-          manualHide: true,
-          link: getLinkFromActivity(activity)?.path,
-          linkTitle: t("common.view"),
-        });
+
+        if (
+          !firstOpening &&
+          activity.action === LogEntity_Action.ACTION_PROJECT_REPOSITORY_PUSH
+        ) {
+          pushNotification({
+            module: "bytebase",
+            style: "INFO",
+            title: activityName(activity.action),
+            manualHide: true,
+            link: `/project/${projectV1Slug(project.value)}#activities`,
+            linkTitle: t("common.view"),
+          });
+          break;
+        }
       }
     });
 });
