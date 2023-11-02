@@ -881,7 +881,7 @@ message SlowQueryStatistics {
   string sql_fingerprint = 1;
 
   // The count of the slow query log.
-  int64 count = 2;
+  int32 count = 2;
 
   // The latest log time of the slow query log.
   google.protobuf.Timestamp latest_log_time = 3;
@@ -893,16 +893,16 @@ message SlowQueryStatistics {
   google.protobuf.Duration maximum_query_time = 5;
 
   // The average rows sent of the slow query log.
-  int64 average_rows_sent = 6;
+  int32 average_rows_sent = 6;
 
   // The maximum rows sent of the slow query log.
-  int64 maximum_rows_sent = 7;
+  int32 maximum_rows_sent = 7;
 
   // The average rows examined of the slow query log.
-  int64 average_rows_examined = 8;
+  int32 average_rows_examined = 8;
 
   // The maximum rows examined of the slow query log.
-  int64 maximum_rows_examined = 9;
+  int32 maximum_rows_examined = 9;
 
   // The percentage of the query time.
   double query_time_percent = 10;
@@ -926,10 +926,10 @@ message SlowQueryDetails {
   google.protobuf.Duration lock_time = 3;
 
   // The rows sent of the slow query log.
-  int64 rows_sent = 4;
+  int32 rows_sent = 4;
 
   // The rows examined of the slow query log.
-  int64 rows_examined = 5;
+  int32 rows_examined = 5;
 
   // The sql text of the slow query log.
   string sql_text = 6;

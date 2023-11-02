@@ -3299,8 +3299,8 @@ SlowQueryDetails is the details of the slow query log.
 | start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The start time of the slow query log. |
 | query_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | The query time of the slow query log. |
 | lock_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | The lock time of the slow query log. |
-| rows_sent | [int64](#int64) |  | The rows sent of the slow query log. |
-| rows_examined | [int64](#int64) |  | The rows examined of the slow query log. |
+| rows_sent | [int32](#int32) |  | The rows sent of the slow query log. |
+| rows_examined | [int32](#int32) |  | The rows examined of the slow query log. |
 | sql_text | [string](#string) |  | The sql text of the slow query log. |
 
 
@@ -3334,14 +3334,14 @@ SlowQueryStatistics is the statistics of the slow query log.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | sql_fingerprint | [string](#string) |  | The fingerprint of the slow query log. |
-| count | [int64](#int64) |  | The count of the slow query log. |
+| count | [int32](#int32) |  | The count of the slow query log. |
 | latest_log_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The latest log time of the slow query log. |
 | average_query_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | The average query time of the slow query log. |
 | maximum_query_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | The maximum query time of the slow query log. |
-| average_rows_sent | [int64](#int64) |  | The average rows sent of the slow query log. |
-| maximum_rows_sent | [int64](#int64) |  | The maximum rows sent of the slow query log. |
-| average_rows_examined | [int64](#int64) |  | The average rows examined of the slow query log. |
-| maximum_rows_examined | [int64](#int64) |  | The maximum rows examined of the slow query log. |
+| average_rows_sent | [int32](#int32) |  | The average rows sent of the slow query log. |
+| maximum_rows_sent | [int32](#int32) |  | The maximum rows sent of the slow query log. |
+| average_rows_examined | [int32](#int32) |  | The average rows examined of the slow query log. |
+| maximum_rows_examined | [int32](#int32) |  | The maximum rows examined of the slow query log. |
 | query_time_percent | [double](#double) |  | The percentage of the query time. |
 | count_percent | [double](#double) |  | The percentage of the count. |
 | samples | [SlowQueryDetails](#bytebase-v1-SlowQueryDetails) | repeated | Samples are details of the sample slow query logs with the same fingerprint. |
@@ -7189,7 +7189,7 @@ When paginating, all other parameters provided to `LiskRisks` must match the cal
 | uid | [string](#string) |  | system-generated unique identifier. |
 | source | [Risk.Source](#bytebase-v1-Risk-Source) |  |  |
 | title | [string](#string) |  |  |
-| level | [int64](#int64) |  |  |
+| level | [int32](#int32) |  |  |
 | active | [bool](#bool) |  |  |
 | condition | [google.type.Expr](#google-type-Expr) |  |  |
 
@@ -7837,7 +7837,7 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | status | [PlanCheckRun.Result.Status](#bytebase-v1-PlanCheckRun-Result-Status) |  |  |
 | title | [string](#string) |  |  |
 | content | [string](#string) |  |  |
-| code | [int64](#int64) |  |  |
+| code | [int32](#int32) |  |  |
 | sql_summary_report | [PlanCheckRun.Result.SqlSummaryReport](#bytebase-v1-PlanCheckRun-Result-SqlSummaryReport) |  |  |
 | sql_review_report | [PlanCheckRun.Result.SqlReviewReport](#bytebase-v1-PlanCheckRun-Result-SqlReviewReport) |  |  |
 
@@ -7854,10 +7854,10 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| line | [int64](#int64) |  |  |
-| column | [int64](#int64) |  |  |
+| line | [int32](#int32) |  |  |
+| column | [int32](#int32) |  |  |
 | detail | [string](#string) |  |  |
-| code | [int64](#int64) |  | Code from sql review. |
+| code | [int32](#int32) |  | Code from sql review. |
 
 
 
@@ -7872,9 +7872,9 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| code | [int64](#int64) |  |  |
+| code | [int32](#int32) |  |  |
 | statement_types | [string](#string) | repeated | statement_types are the types of statements that are found in the sql. |
-| affected_rows | [int64](#int64) |  |  |
+| affected_rows | [int32](#int32) |  |  |
 | changed_resources | [ChangedResources](#bytebase-v1-ChangedResources) |  |  |
 
 
