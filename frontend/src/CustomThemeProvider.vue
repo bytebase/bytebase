@@ -10,19 +10,20 @@
 </template>
 
 <script lang="ts" setup>
-import { useLocalStorage } from "@vueuse/core";
 import { NConfigProvider } from "naive-ui";
 import { watch } from "vue";
 import { useRoute } from "vue-router";
 import { themeOverrides, dateLang, generalLang } from "../naive-ui.config";
 import { provideAppRootContext } from "./AppRootContext";
 import { useLanguage } from "./composables/useLanguage";
-import { applyCustomTheme } from "./utils/customTheme";
+import {
+  customTheme as cachedCustomTheme,
+  applyCustomTheme,
+} from "./utils/customTheme";
 
 const route = useRoute();
 const { key } = provideAppRootContext();
 const { setLocale } = useLanguage();
-const cachedCustomTheme = useLocalStorage<string>("bb.custom-theme", "");
 
 watch(
   () => route.fullPath,
@@ -32,7 +33,6 @@ watch(
     const customTheme =
       searchParams.get("customTheme") || cachedCustomTheme.value;
     if (customTheme) {
-      applyCustomTheme(customTheme);
       if (customTheme !== cachedCustomTheme.value) {
         // Save custom theme to local storage.
         cachedCustomTheme.value = customTheme;
@@ -47,5 +47,13 @@ watch(
   {
     immediate: true,
   }
+);
+
+watch(
+  cachedCustomTheme,
+  () => {
+    applyCustomTheme();
+  },
+  { immediate: true }
 );
 </script>
