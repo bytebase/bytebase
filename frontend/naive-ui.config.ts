@@ -7,9 +7,13 @@ import {
 } from "naive-ui";
 import { computed } from "vue";
 import { callCssVariable } from "@/utils";
+import { customTheme } from "@/utils/customTheme";
 import { curLocale } from "./src/plugins/i18n";
 
 export const themeOverrides = computed((): GlobalThemeOverrides => {
+  // Touch customTheme.value here, so when customTheme changes, this computed
+  // value will be re-evaluated reactively
+  console.debug(customTheme.value);
   return {
     common: {
       primaryColor: callCssVariable("--color-accent"),
@@ -42,6 +46,9 @@ export const themeOverrides = computed((): GlobalThemeOverrides => {
 });
 
 export const darkThemeOverrides = computed((): GlobalThemeOverrides => {
+  // Touch customTheme.value here, so when customTheme changes, this computed
+  // value will be re-evaluated reactively
+  console.debug(customTheme.value);
   return {
     common: {
       primaryColor: callCssVariable("--color-matrix-green"),
