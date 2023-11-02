@@ -179,6 +179,7 @@ import MonacoEditor from "@/components/MonacoEditor";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import UploadProgressButton from "@/components/misc/UploadProgressButton.vue";
 import { rolloutServiceClient } from "@/grpcweb";
+import { emitWindowEvent } from "@/plugins";
 import {
   hasFeature,
   pushNotification,
@@ -641,6 +642,8 @@ const updateStatement = async (statement: string) => {
     style: "SUCCESS",
     title: t("common.updated"),
   });
+
+  emitWindowEvent("bb.pipeline-task-statement-update");
 };
 
 const handleStatementChange = (value: string) => {
