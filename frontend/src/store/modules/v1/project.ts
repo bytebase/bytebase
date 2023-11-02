@@ -17,7 +17,6 @@ import { State } from "@/types/proto/v1/common";
 import { Project } from "@/types/proto/v1/project_service";
 import { hasWorkspacePermissionV1 } from "@/utils";
 import { useCurrentUserV1 } from "../auth";
-import { useActivityV1Store } from "./activity";
 import { projectNamePrefix } from "./common";
 import { useProjectIamPolicyStore } from "./projectIamPolicy";
 
