@@ -703,7 +703,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 				commitID = prFile.LastCommitID
 			}
 			if len(mybatisMapperXMLFiles) > 0 {
-				mapperAdvices, err := sqlAdviceForMybatisMapperFiles(ctx, oauthContext, mybatisMapperXMLFiles, commitID, repo)
+				mapperAdvices, err := s.sqlAdviceForMybatisMapperFiles(ctx, oauthContext, mybatisMapperXMLFiles, commitID, repo)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get sql advice for mybatis mapper files").SetInternal(err)
 				}
@@ -735,7 +735,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 	})
 }
 
-func sqlAdviceForMybatisMapperFiles(ctx context.Context, oauthContext *common.OauthContext, mybatisMapperContent map[string]string, commitID string, repoInfo *repoInfo) (map[string][]advisor.Advice, error) {
+func (s *Service) sqlAdviceForMybatisMapperFiles(ctx context.Context, oauthContext *common.OauthContext, mybatisMapperContent map[string]string, commitID string, repoInfo *repoInfo) (map[string][]advisor.Advice, error) {
 	if len(mybatisMapperContent) == 0 {
 		return map[string][]advisor.Advice{}, nil
 	}
