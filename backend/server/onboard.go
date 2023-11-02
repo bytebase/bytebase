@@ -36,7 +36,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 
 	// Test Sample Instance
 	testInstance, err := s.store.CreateInstanceV2(ctx, &store.InstanceMessage{
-		ResourceID:   postgres.TestSampleInstanceResourceID,
+		ResourceID:   "test-sample-instance",
 		Title:        "Test Sample Instance",
 		Engine:       storepb.Engine_POSTGRES,
 		ExternalLink: "",
@@ -95,7 +95,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 
 	// Prod Sample Instance
 	prodInstance, err := s.store.CreateInstanceV2(ctx, &store.InstanceMessage{
-		ResourceID:   postgres.ProdSampleInstanceResourceID,
+		ResourceID:   "prod-sample-instance",
 		Title:        "Prod Sample Instance",
 		Engine:       storepb.Engine_POSTGRES,
 		ExternalLink: "",
