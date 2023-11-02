@@ -3,7 +3,7 @@
     v-model="state.phoneNumber"
     no-example
     :preferred-countries="['CN', 'US']"
-    default-country-code="CN"
+    :default-country-code="defaultCountryCode"
     size="sm"
     :translations="translation"
     @update="handleUpdate"
@@ -14,6 +14,7 @@
 import MazPhoneNumberInput from "maz-ui/components/MazPhoneNumberInput";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { useLanguage } from "@/composables/useLanguage";
 
 const props = defineProps<{
   value: string;
@@ -28,6 +29,7 @@ interface LocalState {
 }
 
 const { t } = useI18n();
+const { locale } = useLanguage();
 const state = reactive<LocalState>({
   phoneNumber: props.value,
 });
@@ -45,6 +47,10 @@ const translation = computed(() => {
       example: "",
     },
   };
+});
+
+const defaultCountryCode = computed(() => {
+  return locale.value === "zh-CN" ? "CN" : "US";
 });
 
 const handleUpdate = (value: any) => {
