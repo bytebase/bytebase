@@ -92,6 +92,7 @@ import {
   useDatabaseV1Store,
   useProjectV1Store,
   useCurrentUserV1,
+  useActivityV1Store,
   hasFeature,
   pushNotification,
 } from "@/store";
@@ -127,6 +128,7 @@ const props = defineProps({
 
 const route = useRoute();
 const projectV1Store = useProjectV1Store();
+const activityV1Store = useActivityV1Store();
 const { t } = useI18n();
 
 const hash = computed(() => route.hash.replace(/^#?/, "") as ProjectHash);
@@ -159,15 +161,20 @@ const cachedNotifiedActivities = useLocalStorage<string[]>(
 const maximumCachedActivities = 5;
 
 onMounted(() => {
-  projectV1Store
-    .fetchLastNActivities({
-      project: project.value.name,
-      limit: 1,
+  activityV1Store
+    .fetchActivityList({
+      pageSize: 1,
+      order: "desc",
+      resource: project.value.name,
     })
-    .then((activities) => {
-      for (const activity of activities) {
+    .then((resp) => {
+      for (const activity of resp.logEntities) {
         if (cachedNotifiedActivities.value.includes(activity.name)) {
           continue;
+        }
+        cachedNotifiedActivities.value.push(activity.name);
+        if (cachedNotifiedActivities.value.length > maximumCachedActivities) {
+          cachedNotifiedActivities.value.shift();
         }
         pushNotification({
           module: "bytebase",
@@ -176,14 +183,6 @@ onMounted(() => {
           manualHide: true,
           link: getLinkFromActivity(activity)?.path,
           linkTitle: t("common.view"),
-          onClose: () => {
-            cachedNotifiedActivities.value.push(activity.name);
-            if (
-              cachedNotifiedActivities.value.length > maximumCachedActivities
-            ) {
-              cachedNotifiedActivities.value.shift();
-            }
-          },
         });
       }
     });

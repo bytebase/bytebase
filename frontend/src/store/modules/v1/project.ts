@@ -144,21 +144,6 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     project.state = State.ACTIVE;
     await upsertProjectMap([project]);
   };
-  const fetchLastNActivities = async ({
-    project,
-    limit,
-  }: {
-    project: string;
-    limit: number;
-  }) => {
-    return useActivityV1Store()
-      .fetchActivityList({
-        pageSize: limit,
-        order: "desc",
-        resource: project,
-      })
-      .then((resp) => resp.logEntities);
-  };
 
   return {
     reset,
@@ -178,7 +163,6 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     updateProject,
     archiveProject,
     restoreProject,
-    fetchLastNActivities,
   };
 });
 

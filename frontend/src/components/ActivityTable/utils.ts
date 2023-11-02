@@ -4,6 +4,8 @@ import {
   ActivityIssueCreatePayload,
   ActivityProjectRepositoryPushPayload,
   ActivityProjectDatabaseTransferPayload,
+  UNKNOWN_ID,
+  EMPTY_ID,
 } from "@/types";
 import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
 import { Link } from "./types";
@@ -44,9 +46,13 @@ export const getLinkFromActivity = (activity: LogEntity): Link | undefined => {
       const payload = JSON.parse(
         activity.payload
       ) as ActivityIssueCreatePayload;
+      const issueId = getIssueId(activity.resource);
+      if (issueId === UNKNOWN_ID || issueId === EMPTY_ID) {
+        return undefined;
+      }
       return {
         title: payload.issueName,
-        path: `/issue/${getIssueId(activity.resource)}`,
+        path: `/issue/${issueId}`,
         external: false,
       };
     }

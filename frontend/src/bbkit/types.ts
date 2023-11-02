@@ -97,6 +97,7 @@ export type BBNotificationItem = {
   description: string;
   link: string;
   linkTitle: string;
+  onClose: () => void;
 };
 
 export type BBAlertStyle = "INFO" | "SUCCESS" | "WARN" | "CRITICAL";
