@@ -328,6 +328,7 @@ type ConnectionConfig struct {
 	// ReadOnly is only supported for Postgres at the moment.
 	ReadOnly bool
 	// StrictUseDb will only set as true if the user gives only a database instead of a whole instance to access.
+	// This is only used when connecting PG metadata database.
 	StrictUseDb bool
 	// SRV is only supported for MongoDB now.
 	SRV bool
