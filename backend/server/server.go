@@ -180,17 +180,10 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	// Start Postgres sample servers. It is used for onboarding users without requiring them to
 	// configure an external instance.
 	if profile.SampleDatabasePort != 0 {
-		slog.Info("-----Sample Postgres Instance BEGIN-----")
-		for i, v := range []string{postgres.SampleDatabaseTest, postgres.SampleDatabaseProd} {
-			slog.Info(fmt.Sprintf("Start sample instance for %q sampleDatabasePort=%d", v, profile.SampleDatabasePort+i))
-			stopper, err := postgres.StartSampleInstance(ctx, s.pgBinDir, profile.DataDir, v, profile.SampleDatabasePort+i, profile.Mode)
-			if err != nil {
-				slog.Error("failed to init sample instance", log.BBError(err))
-				continue
-			}
-			s.stopper = append(s.stopper, stopper)
-		}
-		slog.Info("-----Sample Postgres Instance END-----")
+		// Only create batch sample databases in demo mode. For normal mode, user starts from the free version
+		// and batch databases are useless because batch requires enterprise license.
+		stopper := postgres.StartAllSampleInstances(ctx, s.pgBinDir, profile.DataDir, profile.SampleDatabasePort, profile.DemoName != "")
+		s.stopper = append(s.stopper, stopper...)
 	}
 
 	// Connect to the instance that stores bytebase's own metadata.
