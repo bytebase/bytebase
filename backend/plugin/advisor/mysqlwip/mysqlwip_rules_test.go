@@ -60,6 +60,8 @@ func TestMySQLWIPRules(t *testing.T) {
 		// advisor.SchemaRuleRequiredColumn enforce the required columns in each table.
 		advisor.SchemaRuleRequiredColumn,
 
+		// advisor.SchemaRuleColumnNotNull enforce the columns cannot have NULL value.
+		advisor.SchemaRuleColumnNotNull,
 		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL support check if the database is empty before users drop it.
 		advisor.SchemaRuleDropEmptyDatabase,
 	}
