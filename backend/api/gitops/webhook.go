@@ -1215,7 +1215,7 @@ func (s *Service) processPushEvent(ctx context.Context, oauthContext *common.Oau
 		if baseVCSPushEvent.Before == strings.Repeat("0", 40) {
 			return distinctFileList, nil
 		}
-		return s.filterFilesByCommitsDiff(ctx, oauthContext, repo, distinctFileList, baseVCSPushEvent.Before, baseVCSPushEvent.After)
+		return filterFilesByCommitsDiff(ctx, oauthContext, repo, distinctFileList, baseVCSPushEvent.Before, baseVCSPushEvent.After)
 	}()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to filtered distinct files by commits diff")
@@ -1273,7 +1273,7 @@ func (s *Service) processPushEvent(ctx context.Context, oauthContext *common.Oau
 // In that case, the commits in the push event contains files which are not added in this PR/MR.
 // We use the compare API to get the file diffs and filter files by the diffs.
 // TODO(dragonly): generate distinct file change list from the commits diff instead of filter.
-func (s *Service) filterFilesByCommitsDiff(
+func filterFilesByCommitsDiff(
 	ctx context.Context,
 	oauthContext *common.OauthContext,
 	repoInfo *repoInfo,
