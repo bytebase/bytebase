@@ -86,13 +86,20 @@ export const useProjectIamPolicyStore = defineStore(
       return getProjectIamPolicy(project);
     };
 
-    const batchGetOrFetchProjectIamPolicy = async (projectList: string[]) => {
-      // BatchFetch policies that missing in the local map.
-      const missingProjectList = projectList.filter(
-        (project) => !policyMap.value.has(project)
-      );
-      if (missingProjectList.length > 0) {
-        await batchFetchIamPolicy(missingProjectList);
+    const batchGetOrFetchProjectIamPolicy = async (
+      projectList: string[],
+      skipCache = false
+    ) => {
+      if (skipCache) {
+        await batchFetchIamPolicy(projectList);
+      } else {
+        // BatchFetch policies that missing in the local map.
+        const missingProjectList = projectList.filter(
+          (project) => !policyMap.value.has(project)
+        );
+        if (missingProjectList.length > 0) {
+          await batchFetchIamPolicy(missingProjectList);
+        }
       }
       return projectList.map(getProjectIamPolicy);
     };
