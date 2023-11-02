@@ -169,6 +169,7 @@ onMounted(() => {
       resource: project.value.name,
     })
     .then((resp) => {
+      const firstOpening = cachedNotifiedActivities.value.length == 0;
       for (const activity of resp.logEntities) {
         if (cachedNotifiedActivities.value.includes(activity.name)) {
           continue;
@@ -179,18 +180,19 @@ onMounted(() => {
         }
 
         if (
-          activity.action !== LogEntity_Action.ACTION_PROJECT_REPOSITORY_PUSH
+          !firstOpening &&
+          activity.action === LogEntity_Action.ACTION_PROJECT_REPOSITORY_PUSH
         ) {
-          continue;
+          pushNotification({
+            module: "bytebase",
+            style: "INFO",
+            title: activityName(activity.action),
+            manualHide: true,
+            link: `/project/${projectV1Slug(project.value)}#activities`,
+            linkTitle: t("common.view"),
+          });
+          break;
         }
-        pushNotification({
-          module: "bytebase",
-          style: "INFO",
-          title: activityName(activity.action),
-          manualHide: true,
-          link: `/project/${projectV1Slug(project.value)}#activities`,
-          linkTitle: t("common.view"),
-        });
       }
     });
 });
