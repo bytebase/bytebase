@@ -63,3 +63,12 @@ func getTemplateRegexp(template string, templateList []string, tokens map[string
 
 	return regexp.Compile(template)
 }
+
+func canNull(column *ast.ColumnDef) bool {
+	for _, option := range column.Options {
+		if option.Tp == ast.ColumnOptionNotNull || option.Tp == ast.ColumnOptionPrimaryKey {
+			return false
+		}
+	}
+	return true
+}
