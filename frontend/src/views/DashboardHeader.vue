@@ -6,13 +6,6 @@
       <div class="hidden md:block">
         <div class="flex items-baseline space-x-1 whitespace-nowrap">
           <router-link
-            to="/issue"
-            class="bar-link px-2 py-1 rounded-md"
-            :class="getRouteLinkClass('/issue')"
-            >{{ $t("common.issues") }}</router-link
-          >
-
-          <router-link
             to="/project"
             class="bar-link px-2 py-1 rounded-md"
             :class="getRouteLinkClass('/project')"
@@ -99,10 +92,6 @@
       Open: "block", closed: "hidden"
   -->
   <div v-if="state.showMobileMenu" class="block md:hidden">
-    <router-link to="/issue" class="bar-link rounded-md block px-3 py-1">
-      {{ $t("common.issues") }}
-    </router-link>
-
     <router-link to="/project" class="bar-link rounded-md block px-3 py-1">
       {{ $t("common.projects") }}
     </router-link>
@@ -119,12 +108,6 @@
       to="/environment"
       class="bar-link rounded-md block px-3 py-1"
       >{{ $t("common.environments") }}</router-link
-    >
-
-    <router-link
-      to="/setting/member"
-      class="bar-link rounded-md block px-3 py-1"
-      >{{ $t("common.settings") }}</router-link
     >
   </div>
   <BBModal
