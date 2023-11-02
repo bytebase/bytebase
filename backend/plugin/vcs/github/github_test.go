@@ -63,7 +63,7 @@ func TestProvider_FetchCommitByID(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	got, err := p.FetchCommitByID(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", "7638417db6d59f3c431d3e1f261cc637155684cd")
+	got, err := p.FetchCommitByID(ctx, &common.OauthContext{}, githubComURL, "octocat/Hello-World", "7638417db6d59f3c431d3e1f261cc637155684cd")
 	require.NoError(t, err)
 
 	want := &vcs.Commit{
@@ -261,7 +261,7 @@ func TestProvider_FetchAllRepositoryList(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	got, err := p.FetchAllRepositoryList(ctx, common.OauthContext{}, githubComURL)
+	got, err := p.FetchAllRepositoryList(ctx, &common.OauthContext{}, githubComURL)
 	require.NoError(t, err)
 
 	// Repositories without admin permissions should be excluded
@@ -328,7 +328,7 @@ func TestProvider_FetchRepositoryFileList(t *testing.T) {
 
 	t.Run("no path prefix", func(t *testing.T) {
 		ctx := context.Background()
-		got, err := p.FetchRepositoryFileList(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", "main", "")
+		got, err := p.FetchRepositoryFileList(ctx, &common.OauthContext{}, githubComURL, "octocat/Hello-World", "main", "")
 		require.NoError(t, err)
 
 		// Non-blob type should excluded
@@ -351,7 +351,7 @@ func TestProvider_FetchRepositoryFileList(t *testing.T) {
 
 	t.Run("has path prefix", func(t *testing.T) {
 		ctx := context.Background()
-		got, err := p.FetchRepositoryFileList(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", "main", "subdir")
+		got, err := p.FetchRepositoryFileList(ctx, &common.OauthContext{}, githubComURL, "octocat/Hello-World", "main", "subdir")
 		require.NoError(t, err)
 
 		// Non-blob type should be excluded
@@ -437,7 +437,7 @@ func TestProvider_CreateFile(t *testing.T) {
 	ctx := context.Background()
 	err := p.CreateFile(
 		ctx,
-		common.OauthContext{},
+		&common.OauthContext{},
 		githubComURL,
 		"octocat/Hello-World",
 		"notes/hello.txt",
@@ -522,7 +522,7 @@ func TestProvider_OverwriteFile(t *testing.T) {
 	ctx := context.Background()
 	err := p.OverwriteFile(
 		ctx,
-		common.OauthContext{},
+		&common.OauthContext{},
 		githubComURL,
 		"octocat/Hello-World",
 		"notes/hello.txt",
@@ -589,7 +589,7 @@ func TestProvider_ReadFileMeta(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	got, err := p.ReadFileMeta(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", "README.md", vcs.RefInfo{
+	got, err := p.ReadFileMeta(ctx, &common.OauthContext{}, githubComURL, "octocat/Hello-World", "README.md", vcs.RefInfo{
 		RefType: vcs.RefTypeBranch,
 		RefName: "master",
 	})
@@ -628,7 +628,7 @@ You can look around to get an idea how to structure your project and, when done,
 	)
 
 	ctx := context.Background()
-	got, err := p.ReadFileContent(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", "README.md", vcs.RefInfo{
+	got, err := p.ReadFileContent(ctx, &common.OauthContext{}, githubComURL, "octocat/Hello-World", "README.md", vcs.RefInfo{
 		RefType: vcs.RefTypeBranch,
 		RefName: "master",
 	})
@@ -676,7 +676,7 @@ func TestProvider_CreateWebhook(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	got, err := p.CreateWebhook(ctx, common.OauthContext{}, githubComURL, "1", []byte(""))
+	got, err := p.CreateWebhook(ctx, &common.OauthContext{}, githubComURL, "1", []byte(""))
 	require.NoError(t, err)
 	assert.Equal(t, "12345678", got)
 }
@@ -692,7 +692,7 @@ func TestProvider_PatchWebhook(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	err := p.PatchWebhook(ctx, common.OauthContext{}, githubComURL, "1", "1", []byte(""))
+	err := p.PatchWebhook(ctx, &common.OauthContext{}, githubComURL, "1", "1", []byte(""))
 	require.NoError(t, err)
 }
 
@@ -707,7 +707,7 @@ func TestProvider_DeleteWebhook(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	err := p.DeleteWebhook(ctx, common.OauthContext{}, githubComURL, "1", "1")
+	err := p.DeleteWebhook(ctx, &common.OauthContext{}, githubComURL, "1", "1")
 	require.NoError(t, err)
 }
 
@@ -791,7 +791,7 @@ func TestProvider_GetBranch(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	got, err := p.GetBranch(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", "featureA")
+	got, err := p.GetBranch(ctx, &common.OauthContext{}, githubComURL, "octocat/Hello-World", "featureA")
 	require.NoError(t, err)
 
 	want := &vcs.BranchInfo{
@@ -825,7 +825,7 @@ func TestProvider_CreateBranch(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	err := p.CreateBranch(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", &vcs.BranchInfo{
+	err := p.CreateBranch(ctx, &common.OauthContext{}, githubComURL, "octocat/Hello-World", &vcs.BranchInfo{
 		Name:         "featureA",
 		LastCommitID: "aa218f56b14c9653891f9e74264a383fa43fefbd",
 	})
@@ -935,7 +935,7 @@ func TestProvider_CreatePullRequest(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	res, err := p.CreatePullRequest(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", &vcs.PullRequestCreate{
+	res, err := p.CreatePullRequest(ctx, &common.OauthContext{}, githubComURL, "octocat/Hello-World", &vcs.PullRequestCreate{
 		Title:                 "Amazing new feature",
 		Body:                  "Please pull these awesome changes in!",
 		Head:                  "new-topic",
@@ -975,7 +975,7 @@ func TestProvider_UpsertEnvironmentVariable(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	err := p.UpsertEnvironmentVariable(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", "1", "new value")
+	err := p.UpsertEnvironmentVariable(ctx, &common.OauthContext{}, githubComURL, "octocat/Hello-World", "1", "new value")
 	require.NoError(t, err)
 }
 
@@ -1011,7 +1011,7 @@ func TestProvider_ListPullRequestFile(t *testing.T) {
 	},
 	)
 	ctx := context.Background()
-	got, err := p.ListPullRequestFile(ctx, common.OauthContext{}, githubComURL, "octocat/Hello-World", "1")
+	got, err := p.ListPullRequestFile(ctx, &common.OauthContext{}, githubComURL, "octocat/Hello-World", "1")
 	require.NoError(t, err)
 
 	want := []*vcs.PullRequestFile{
@@ -1052,7 +1052,7 @@ func TestProvider_GetDiffFileList(t *testing.T) {
 	},
 	)
 	ctx := context.Background()
-	got, err := p.GetDiffFileList(ctx, common.OauthContext{}, "", "1", "before_sha", "after_sha")
+	got, err := p.GetDiffFileList(ctx, &common.OauthContext{}, "", "1", "before_sha", "after_sha")
 	require.NoError(t, err)
 
 	want := []vcs.FileDiff{

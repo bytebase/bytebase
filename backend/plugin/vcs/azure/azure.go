@@ -239,7 +239,7 @@ type ChangesResponse struct {
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/commits/get-changes?view=azure-devops-rest-7.0&tabs=HTTP
 // TODO(zp): We should GET the changes pagenated, otherwise it may hit the Azure DevOps API limit.
-func GetChangesByCommit(ctx context.Context, oauthCtx common.OauthContext, externalRepositoryID, commitID string) (*ChangesResponse, error) {
+func GetChangesByCommit(ctx context.Context, oauthCtx *common.OauthContext, externalRepositoryID, commitID string) (*ChangesResponse, error) {
 	client := &http.Client{}
 	apiURL, err := getRepositoryAPIURL(externalRepositoryID)
 	if err != nil {
@@ -285,7 +285,7 @@ func GetChangesByCommit(ctx context.Context, oauthCtx common.OauthContext, exter
 // FetchCommitByID fetches the commit data by its ID from the repository.
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/commits/get?view=azure-devops-rest-7.0&tabs=HTTP
-func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, _, externalRepositoryID, commitID string) (*vcs.Commit, error) {
+func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx *common.OauthContext, _, externalRepositoryID, commitID string) (*vcs.Commit, error) {
 	apiURL, err := getRepositoryAPIURL(externalRepositoryID)
 	if err != nil {
 		return nil, err
@@ -334,7 +334,7 @@ func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthCon
 // GetDiffFileList gets the diff files list between two commits.
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/diffs/get?view=azure-devops-rest-7.0&tabs=HTTP#between-commit-ids
-func (p *Provider) GetDiffFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, beforeCommit string, afterCommit string) ([]vcs.FileDiff, error) {
+func (p *Provider) GetDiffFileList(ctx context.Context, oauthCtx *common.OauthContext, instanceURL string, repositoryID string, beforeCommit string, afterCommit string) ([]vcs.FileDiff, error) {
 	var result []vcs.FileDiff
 	page := 0
 	for {
@@ -352,7 +352,7 @@ func (p *Provider) GetDiffFileList(ctx context.Context, oauthCtx common.OauthCon
 }
 
 // getPaginatedDiffFileList gets the diff file list between two commits with pagination.
-func (p *Provider) getPaginatedDiffFileList(ctx context.Context, oauthCtx common.OauthContext, _ string, repositoryID string, beforeCommit string, afterCommit string, page int) ([]vcs.FileDiff, bool, error) {
+func (p *Provider) getPaginatedDiffFileList(ctx context.Context, oauthCtx *common.OauthContext, _ string, repositoryID string, beforeCommit string, afterCommit string, page int) ([]vcs.FileDiff, bool, error) {
 	apiURL, err := getRepositoryAPIURL(repositoryID)
 	if err != nil {
 		return nil, false, err
@@ -436,7 +436,7 @@ func (p *Provider) getPaginatedDiffFileList(ctx context.Context, oauthCtx common
 // The request included in this function requires the following scopes:
 // vso.profile, vso.project.
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/repositories/list?view=azure-devops-rest-7.0&tabs=HTTP
-func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.OauthContext, _ string) ([]*vcs.Repository, error) {
+func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx *common.OauthContext, _ string) ([]*vcs.Repository, error) {
 	publicAlias, err := p.getAuthenticatedProfilePublicAlias(ctx, oauthCtx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get authenticated profile public alias")
@@ -516,7 +516,7 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.O
 // profile response.
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/profile/profiles/get?view=azure-devops-rest-7.0&tabs=HTTP
-func (p *Provider) getAuthenticatedProfilePublicAlias(ctx context.Context, oauthCtx common.OauthContext) (string, error) {
+func (p *Provider) getAuthenticatedProfilePublicAlias(ctx context.Context, oauthCtx *common.OauthContext) (string, error) {
 	values := &url.Values{}
 	values.Set("api-version", "7.0")
 	url := fmt.Sprintf("https://app.vssps.visualstudio.com/_apis/profile/profiles/me?%s", values.Encode())
@@ -551,7 +551,7 @@ func (p *Provider) getAuthenticatedProfilePublicAlias(ctx context.Context, oauth
 // listOrganizationsForMember lists all organization for a given member.
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/account/accounts/list?view=azure-devops-rest-7.0&tabs=HTTP
-func (p *Provider) listOrganizationsForMember(ctx context.Context, oauthCtx common.OauthContext, memberID string) ([]string, error) {
+func (p *Provider) listOrganizationsForMember(ctx context.Context, oauthCtx *common.OauthContext, memberID string) ([]string, error) {
 	urlParams := &url.Values{}
 	urlParams.Set("memberId", memberID)
 	urlParams.Set("api-version", "7.0")
@@ -596,7 +596,7 @@ func (p *Provider) listOrganizationsForMember(ctx context.Context, oauthCtx comm
 // FetchRepositoryFileList fetches the all files from the given repository tree recursively.
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/trees/get?view=azure-devops-rest-7.0&tabs=HTTP
-func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, _ string, repositoryID string, ref string, filePath string) ([]*vcs.RepositoryTreeNode, error) {
+func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx *common.OauthContext, _ string, repositoryID string, ref string, filePath string) ([]*vcs.RepositoryTreeNode, error) {
 	apiURL, err := getRepositoryAPIURL(repositoryID)
 	if err != nil {
 		return nil, err
@@ -650,12 +650,12 @@ func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.
 }
 
 // CreateFile creates a file at given path in the repository.
-func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
+func (p *Provider) CreateFile(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
 	return p.createOrUpdateFile(ctx, oauthCtx, instanceURL, repositoryID, filePath, fileCommitCreate, true)
 }
 
 // OverwriteFile overwrites an existing file at given path in the repository.
-func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
+func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
 	create := true
 	if fileCommitCreate.LastCommitID != "" {
 		create = false
@@ -663,7 +663,7 @@ func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthConte
 	return p.createOrUpdateFile(ctx, oauthCtx, instanceURL, repositoryID, filePath, fileCommitCreate, create)
 }
 
-func (p *Provider) getLatestCommitIDOnBranch(ctx context.Context, oauthCtx common.OauthContext, repositoryID, branchName string) (string, error) {
+func (p *Provider) getLatestCommitIDOnBranch(ctx context.Context, oauthCtx *common.OauthContext, repositoryID, branchName string) (string, error) {
 	apiURL, err := getRepositoryAPIURL(repositoryID)
 	if err != nil {
 		return "", err
@@ -707,7 +707,7 @@ func (p *Provider) getLatestCommitIDOnBranch(ctx context.Context, oauthCtx commo
 // createOrUpdateFile update or create the file.
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pushes/create?view=azure-devops-rest-7.0&tabs=HTTP
-func (p *Provider) createOrUpdateFile(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate, create bool) error {
+func (p *Provider) createOrUpdateFile(ctx context.Context, oauthCtx *common.OauthContext, _, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate, create bool) error {
 	apiURL, err := getRepositoryAPIURL(repositoryID)
 	if err != nil {
 		return err
@@ -832,7 +832,7 @@ func (p *Provider) createOrUpdateFile(ctx context.Context, oauthCtx common.Oauth
 // Docs:
 // - https://learn.microsoft.com/en-us/rest/api/azure/devops/git/items/get?view=azure-devops-rest-7.0&tabs=HTTP
 // - https://learn.microsoft.com/en-us/rest/api/azure/devops/git/blobs/get-blob?view=azure-devops-rest-7.0&tabs=HTTP
-func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID, filePath string, refInfo vcs.RefInfo) (*vcs.FileMeta, error) {
+func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx *common.OauthContext, _, repositoryID, filePath string, refInfo vcs.RefInfo) (*vcs.FileMeta, error) {
 	apiURL, err := getRepositoryAPIURL(repositoryID)
 	if err != nil {
 		return nil, err
@@ -941,7 +941,7 @@ func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContex
 // ReadFileContent reads the content of the given file in the repository.
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/items/get?view=azure-devops-rest-7.0&tabs=HTTP
-func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, _ string, repositoryID string, filePath string, refInfo vcs.RefInfo) (string, error) {
+func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx *common.OauthContext, _ string, repositoryID string, filePath string, refInfo vcs.RefInfo) (string, error) {
 	apiURL, err := getRepositoryAPIURL(repositoryID)
 	if err != nil {
 		return "", err
@@ -992,7 +992,7 @@ func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthCon
 // - branchName: The branch name.
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/stats/get?view=azure-devops-rest-7.0&tabs=HTTP
-func (p *Provider) GetBranch(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID, branchName string) (*vcs.BranchInfo, error) {
+func (p *Provider) GetBranch(ctx context.Context, oauthCtx *common.OauthContext, _, repositoryID, branchName string) (*vcs.BranchInfo, error) {
 	if branchName == "" {
 		return nil, errors.New("branch name is required")
 	}
@@ -1043,7 +1043,7 @@ func (p *Provider) GetBranch(ctx context.Context, oauthCtx common.OauthContext, 
 // CreateBranch creates the branch in the repository.
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pushes/create?view=azure-devops-rest-7.1
-func (p *Provider) CreateBranch(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID string, branch *vcs.BranchInfo) error {
+func (p *Provider) CreateBranch(ctx context.Context, oauthCtx *common.OauthContext, _, repositoryID string, branch *vcs.BranchInfo) error {
 	type refUpdate struct {
 		Name        string `json:"name"`
 		OldObjectID string `json:"oldObjectId"`
@@ -1103,7 +1103,7 @@ func (p *Provider) CreateBranch(ctx context.Context, oauthCtx common.OauthContex
 // ListPullRequestFile lists the changed files in the pull request.
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pull-requests/get-pull-request?view=azure-devops-rest-7.1
-func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID, pullRequestID string) ([]*vcs.PullRequestFile, error) {
+func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx *common.OauthContext, _, repositoryID, pullRequestID string) ([]*vcs.PullRequestFile, error) {
 	type mergeCommit struct {
 		CommitID string `json:"commitId"`
 	}
@@ -1168,7 +1168,7 @@ func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx common.Oaut
 // CreatePullRequest creates the pull request in the repository.
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pull-requests/create?view=azure-devops-rest-7.1&tabs=HTTP
-func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID string, pullRequestCreate *vcs.PullRequestCreate) (*vcs.PullRequest, error) {
+func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx *common.OauthContext, _, repositoryID string, pullRequestCreate *vcs.PullRequestCreate) (*vcs.PullRequest, error) {
 	type azurePullRequest struct {
 		Title         string      `json:"title"`
 		Description   string      `json:"description"`
@@ -1240,7 +1240,7 @@ func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthC
 }
 
 // UpsertEnvironmentVariable creates or updates the environment variable in the repository.
-func (*Provider) UpsertEnvironmentVariable(context.Context, common.OauthContext, string, string, string, string) error {
+func (*Provider) UpsertEnvironmentVariable(context.Context, *common.OauthContext, string, string, string, string) error {
 	// We will set the variable in pipeline. Check sql_review.go/createSQLReviewPipeline function.
 	return nil
 }
@@ -1249,7 +1249,7 @@ func (*Provider) UpsertEnvironmentVariable(context.Context, common.OauthContext,
 // API Version 7.0 do not specify the OAuth scope for creating webhook explicitly, but it works.
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/hooks/subscriptions/create?view=azure-devops-rest-7.0&tabs=HTTP
-func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthContext, _, externalRepositoryID string, payload []byte) (string, error) {
+func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx *common.OauthContext, _, externalRepositoryID string, payload []byte) (string, error) {
 	parts := strings.Split(externalRepositoryID, "/")
 	if len(parts) != 3 {
 		return "", errors.Errorf("invalid repository ID %q", externalRepositoryID)
@@ -1296,14 +1296,14 @@ func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthConte
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/hooks/subscriptions/replace-subscription?view=azure-devops-rest-7.0&tabs=HTTP
 // (2023/07/07, zp): It seems that the PatchWebhook API of each provider is not used by Bytebase, should we remove it?
-func (*Provider) PatchWebhook(_ context.Context, _ common.OauthContext, _, _, _ string, _ []byte) error {
+func (*Provider) PatchWebhook(_ context.Context, _ *common.OauthContext, _, _, _ string, _ []byte) error {
 	return errors.New("not implemented")
 }
 
 // DeleteWebhook deletes the webhook in the repository.
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/hooks/subscriptions/delete?view=azure-devops-rest-7.0&tabs=HTTP
-func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthContext, _, _, webhookID string) error {
+func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx *common.OauthContext, _, _, webhookID string) error {
 	// By design, we encode the webhook ID as <organization>/<webhookID> for Azure DevOps.
 	parts := strings.Split(webhookID, "/")
 	if len(parts) != 2 {
@@ -1353,7 +1353,7 @@ type CommitsInPush struct {
 // GetPushCommitsByPushID gets the commits in the push by batch, it is useful when the push contains a lot of commits.
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/commits/get-push-commits?view=azure-devops-rest-7.0&tabs=HTTP
-func GetPushCommitsByPushID(ctx context.Context, oauthCtx common.OauthContext, repositoryID string, pushID uint64) (*CommitsInPush, error) {
+func GetPushCommitsByPushID(ctx context.Context, oauthCtx *common.OauthContext, repositoryID string, pushID uint64) (*CommitsInPush, error) {
 	apiURL, err := getRepositoryAPIURL(repositoryID)
 	if err != nil {
 		return nil, err
@@ -1405,7 +1405,7 @@ type PullRequest struct {
 // QueryPullRequest queries the pull request by the last merge commit.
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pull-request-query/get?view=azure-devops-rest-7.0#gitpullrequestqueryinput
-func QueryPullRequest(ctx context.Context, oauthCtx common.OauthContext, repositoryID string, lastMergeCommit string) ([]*PullRequest, error) {
+func QueryPullRequest(ctx context.Context, oauthCtx *common.OauthContext, repositoryID string, lastMergeCommit string) ([]*PullRequest, error) {
 	apiURL, err := getRepositoryAPIURL(repositoryID)
 	if err != nil {
 		return nil, err
@@ -1501,7 +1501,7 @@ func QueryPullRequest(ctx context.Context, oauthCtx common.OauthContext, reposit
 // GetPullRequestCommits gets the commits in the pull request.
 //
 // Docs: https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pull-request-commits/get-pull-request-commits?view=azure-devops-rest-7.0
-func GetPullRequestCommits(ctx context.Context, oauthCtx common.OauthContext, repositoryID string, pullRequestID uint64) ([]ServiceHookCodePushEventResourceCommit, error) {
+func GetPullRequestCommits(ctx context.Context, oauthCtx *common.OauthContext, repositoryID string, pullRequestID uint64) ([]ServiceHookCodePushEventResourceCommit, error) {
 	apiURL, err := getRepositoryAPIURL(repositoryID)
 	if err != nil {
 		return nil, err

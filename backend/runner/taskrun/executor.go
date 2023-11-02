@@ -657,15 +657,16 @@ func writeBackLatestSchema(
 	mi *db.MigrationInfo,
 	writebackBranch, latestSchemaFile string, schema string, bytebaseURL string,
 ) (string, error) {
+	oauthContext := &common.OauthContext{
+		ClientID:     vcs.ApplicationID,
+		ClientSecret: vcs.Secret,
+		AccessToken:  repository.AccessToken,
+		RefreshToken: repository.RefreshToken,
+		Refresher:    utils.RefreshToken(ctx, storage, repository.WebURL),
+	}
 	schemaFileMeta, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(
 		ctx,
-		common.OauthContext{
-			ClientID:     vcs.ApplicationID,
-			ClientSecret: vcs.Secret,
-			AccessToken:  repository.AccessToken,
-			RefreshToken: repository.RefreshToken,
-			Refresher:    utils.RefreshToken(ctx, storage, repository.WebURL),
-		},
+		oauthContext,
 		vcs.InstanceURL,
 		repository.ExternalID,
 		latestSchemaFile,
@@ -736,13 +737,7 @@ func writeBackLatestSchema(
 
 		err := vcsPlugin.Get(vcs2.Type, vcsPlugin.ProviderConfig{}).CreateFile(
 			ctx,
-			common.OauthContext{
-				ClientID:     vcs2.ApplicationID,
-				ClientSecret: vcs2.Secret,
-				AccessToken:  repo2.AccessToken,
-				RefreshToken: repo2.RefreshToken,
-				Refresher:    utils.RefreshToken(ctx, storage, repo2.WebURL),
-			},
+			oauthContext,
 			vcs2.InstanceURL,
 			repo2.ExternalID,
 			latestSchemaFile,
@@ -760,13 +755,7 @@ func writeBackLatestSchema(
 		schemaFileCommit.SHA = schemaFileMeta.SHA
 		err := vcsPlugin.Get(vcs2.Type, vcsPlugin.ProviderConfig{}).OverwriteFile(
 			ctx,
-			common.OauthContext{
-				ClientID:     vcs2.ApplicationID,
-				ClientSecret: vcs2.Secret,
-				AccessToken:  repo2.AccessToken,
-				RefreshToken: repo2.RefreshToken,
-				Refresher:    utils.RefreshToken(ctx, storage, repo2.WebURL),
-			},
+			oauthContext,
 			vcs2.InstanceURL,
 			repo2.ExternalID,
 			latestSchemaFile,
@@ -788,13 +777,7 @@ func writeBackLatestSchema(
 	// VCS such as GitLab API doesn't return the commit on write, so we have to call ReadFileMeta again
 	schemaFileMeta, err = vcsPlugin.Get(vcs2.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(
 		ctx,
-		common.OauthContext{
-			ClientID:     vcs2.ApplicationID,
-			ClientSecret: vcs2.Secret,
-			AccessToken:  repo2.AccessToken,
-			RefreshToken: repo2.RefreshToken,
-			Refresher:    utils.RefreshToken(ctx, storage, repo2.WebURL),
-		},
+		oauthContext,
 		vcs2.InstanceURL,
 		repo2.ExternalID,
 		latestSchemaFile,

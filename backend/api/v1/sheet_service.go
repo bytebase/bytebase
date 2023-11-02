@@ -489,15 +489,16 @@ func (s *SheetService) SyncSheets(ctx context.Context, request *v1pb.SyncSheetsR
 	basePath := filepath.Dir(repo.SheetPathTemplate)
 	// TODO(Steven): The repo.branchFilter could be `test/*` which cannot be the ref value.
 	// TODO(zp): We may need a need VCS interface to get fetch repository file list for a branch instead of a SHA1.
+	oauthContext := &common.OauthContext{
+		ClientID:     vcs.ApplicationID,
+		ClientSecret: vcs.Secret,
+		AccessToken:  repo.AccessToken,
+		RefreshToken: repo.RefreshToken,
+		Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
+		RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
+	}
 	fileList, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).FetchRepositoryFileList(ctx,
-		common.OauthContext{
-			ClientID:     vcs.ApplicationID,
-			ClientSecret: vcs.Secret,
-			AccessToken:  repo.AccessToken,
-			RefreshToken: repo.RefreshToken,
-			Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
-			RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
-		},
+		oauthContext,
 		vcs.InstanceURL,
 		repo.ExternalID,
 		repo.BranchFilter,
@@ -517,14 +518,7 @@ func (s *SheetService) SyncSheets(ctx context.Context, request *v1pb.SyncSheetsR
 		}
 
 		fileContent, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).ReadFileContent(ctx,
-			common.OauthContext{
-				ClientID:     vcs.ApplicationID,
-				ClientSecret: vcs.Secret,
-				AccessToken:  repo.AccessToken,
-				RefreshToken: repo.RefreshToken,
-				Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
-				RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
-			},
+			oauthContext,
 			vcs.InstanceURL,
 			repo.ExternalID,
 			file.Path,
@@ -538,14 +532,7 @@ func (s *SheetService) SyncSheets(ctx context.Context, request *v1pb.SyncSheetsR
 		}
 
 		fileMeta, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(ctx,
-			common.OauthContext{
-				ClientID:     vcs.ApplicationID,
-				ClientSecret: vcs.Secret,
-				AccessToken:  repo.AccessToken,
-				RefreshToken: repo.RefreshToken,
-				Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
-				RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
-			},
+			oauthContext,
 			vcs.InstanceURL,
 			repo.ExternalID,
 			file.Path,
@@ -559,14 +546,7 @@ func (s *SheetService) SyncSheets(ctx context.Context, request *v1pb.SyncSheetsR
 		}
 
 		lastCommit, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).FetchCommitByID(ctx,
-			common.OauthContext{
-				ClientID:     vcs.ApplicationID,
-				ClientSecret: vcs.Secret,
-				AccessToken:  repo.AccessToken,
-				RefreshToken: repo.RefreshToken,
-				Refresher:    utils.RefreshToken(ctx, s.store, repo.WebURL),
-				RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
-			},
+			oauthContext,
 			vcs.InstanceURL,
 			repo.ExternalID,
 			fileMeta.LastCommitID,

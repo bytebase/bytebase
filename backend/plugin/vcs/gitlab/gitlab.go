@@ -236,7 +236,7 @@ func (p *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, o
 // has a maintainer role, which is required to create webhook in the project.
 //
 // Docs: https://docs.gitlab.com/ee/api/projects.html#list-all-projects
-func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]*vcs.Repository, error) {
+func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx *common.OauthContext, instanceURL string) ([]*vcs.Repository, error) {
 	var gitlabRepos []gitLabRepository
 	page := 1
 	for {
@@ -269,7 +269,7 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.O
 // fetchPaginatedRepositoryList fetches repositories where the authenticated
 // user has a maintainer role in given page. It return the paginated results
 // along with a boolean indicating whether the next page exists.
-func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, page int) (repos []gitLabRepository, hasNextPage bool, err error) {
+func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx *common.OauthContext, instanceURL string, page int) (repos []gitLabRepository, hasNextPage bool, err error) {
 	// We will use user's token to create webhook in the project, which requires the
 	// token owner to be at least the project maintainer(40).
 	url := fmt.Sprintf("%s/projects?membership=true&simple=true&min_access_level=40&page=%d&per_page=%d", p.APIURL(instanceURL), page, apiPageSize)
@@ -315,7 +315,7 @@ func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx co
 }
 
 // FetchCommitByID fetches the commit data by its ID from the repository.
-func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, commitID string) (*vcs.Commit, error) {
+func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, commitID string) (*vcs.Commit, error) {
 	url := fmt.Sprintf("%s/projects/%s/repository/commits/%s", p.APIURL(instanceURL), repositoryID, commitID)
 	code, _, body, err := oauth.Get(
 		ctx,
@@ -358,7 +358,7 @@ func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthCon
 }
 
 // GetDiffFileList gets the diff files list between two commits.
-func (p *Provider) GetDiffFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, beforeCommit, afterCommit string) ([]vcs.FileDiff, error) {
+func (p *Provider) GetDiffFileList(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, beforeCommit, afterCommit string) ([]vcs.FileDiff, error) {
 	url := fmt.Sprintf("%s/projects/%s/repository/compare?from=%s&to=%s", p.APIURL(instanceURL), repositoryID, beforeCommit, afterCommit)
 	code, _, body, err := oauth.Get(
 		ctx,
@@ -416,7 +416,7 @@ func (p *Provider) GetDiffFileList(ctx context.Context, oauthCtx common.OauthCon
 // recursively.
 //
 // Docs: https://docs.gitlab.com/ee/api/repositories.html#list-repository-tree
-func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, ref, filePath string) ([]*vcs.RepositoryTreeNode, error) {
+func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, ref, filePath string) ([]*vcs.RepositoryTreeNode, error) {
 	var gitlabTreeNodes []RepositoryTreeNode
 	page := 1
 	for {
@@ -449,7 +449,7 @@ func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.
 // fetchPaginatedRepositoryFileList fetches files under a repository tree
 // recursively in given page. It return the paginated results along with a
 // boolean indicating whether the next page exists.
-func (p *Provider) fetchPaginatedRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, ref, filePath string, page int) (treeNodes []RepositoryTreeNode, hasNextPage bool, err error) {
+func (p *Provider) fetchPaginatedRepositoryFileList(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, ref, filePath string, page int) (treeNodes []RepositoryTreeNode, hasNextPage bool, err error) {
 	url := fmt.Sprintf("%s/projects/%s/repository/tree?recursive=true&ref=%s&path=%s&page=%d&per_page=%d", p.APIURL(instanceURL), repositoryID, ref, filePath, page, apiPageSize)
 	code, _, body, err := oauth.Get(
 		ctx,
@@ -495,7 +495,7 @@ func (p *Provider) fetchPaginatedRepositoryFileList(ctx context.Context, oauthCt
 // CreateFile creates a file at given path in the repository.
 //
 // Docs: https://docs.gitlab.com/ee/api/repository_files.html#create-new-file-in-repository
-func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
+func (p *Provider) CreateFile(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
 	body, err := json.Marshal(
 		FileCommit{
 			Branch:        fileCommitCreate.Branch,
@@ -545,7 +545,7 @@ func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext,
 // OverwriteFile overwrites an existing file at given path in the repository.
 //
 // Docs: https://docs.gitlab.com/ee/api/repository_files.html#update-existing-file-in-repository
-func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
+func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
 	body, err := json.Marshal(
 		FileCommit{
 			Branch:        fileCommitCreate.Branch,
@@ -596,7 +596,7 @@ func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthConte
 // ReadFileMeta reads the metadata of the given file in the repository.
 //
 // Docs: https://docs.gitlab.com/ee/api/repository_files.html#get-file-from-repository
-func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, refInfo vcs.RefInfo) (*vcs.FileMeta, error) {
+func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, filePath string, refInfo vcs.RefInfo) (*vcs.FileMeta, error) {
 	file, err := p.readFile(ctx, oauthCtx, instanceURL, repositoryID, filePath, refInfo)
 	if err != nil {
 		return nil, errors.Wrap(err, "read file")
@@ -610,7 +610,7 @@ func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContex
 // ReadFileContent reads the content of the given file in the repository.
 //
 // Docs: https://docs.gitlab.com/ee/api/repository_files.html#get-file-from-repository
-func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, refInfo vcs.RefInfo) (string, error) {
+func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, filePath string, refInfo vcs.RefInfo) (string, error) {
 	file, err := p.readFile(ctx, oauthCtx, instanceURL, repositoryID, filePath, refInfo)
 	if err != nil {
 		return "", errors.Wrap(err, "read file")
@@ -635,7 +635,7 @@ type MergeRequestFile struct {
 // ListPullRequestFile lists the changed files in the pull request.
 //
 // Docs: https://docs.gitlab.com/ee/api/merge_requests.html#get-single-mr-changes
-func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, pullRequestID string) ([]*vcs.PullRequestFile, error) {
+func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, pullRequestID string) ([]*vcs.PullRequestFile, error) {
 	url := fmt.Sprintf("%s/projects/%s/merge_requests/%s/changes", p.APIURL(instanceURL), repositoryID, pullRequestID)
 	code, _, body, err := oauth.Get(
 		ctx,
@@ -706,7 +706,7 @@ type MergeRequestCreate struct {
 // GetBranch gets the given branch in the repository.
 //
 // Docs: https://docs.gitlab.com/ee/api/branches.html#get-single-repository-branch
-func (p *Provider) GetBranch(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, branchName string) (*vcs.BranchInfo, error) {
+func (p *Provider) GetBranch(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, branchName string) (*vcs.BranchInfo, error) {
 	url := fmt.Sprintf("%s/projects/%s/repository/branches/%s", p.APIURL(instanceURL), repositoryID, branchName)
 	code, _, body, err := oauth.Get(
 		ctx,
@@ -751,7 +751,7 @@ func (p *Provider) GetBranch(ctx context.Context, oauthCtx common.OauthContext, 
 // CreateBranch creates the branch in the repository.
 //
 // Docs: https://docs.gitlab.com/ee/api/branches.html#create-repository-branch
-func (p *Provider) CreateBranch(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, branch *vcs.BranchInfo) error {
+func (p *Provider) CreateBranch(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID string, branch *vcs.BranchInfo) error {
 	body, err := json.Marshal(
 		BranchCreate{
 			Branch: branch.Name,
@@ -804,7 +804,7 @@ type MergeRequest struct {
 // CreatePullRequest creates the pull request in the repository.
 //
 // Docs: https://docs.gitlab.com/ee/api/merge_requests.html#create-mr
-func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, pullRequestCreate *vcs.PullRequestCreate) (*vcs.PullRequest, error) {
+func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID string, pullRequestCreate *vcs.PullRequestCreate) (*vcs.PullRequest, error) {
 	body, err := json.Marshal(
 		MergeRequestCreate{
 			Title:              pullRequestCreate.Title,
@@ -866,7 +866,7 @@ type EnvironmentVariable struct {
 }
 
 // UpsertEnvironmentVariable creates or updates the environment variable in the repository.
-func (p *Provider) UpsertEnvironmentVariable(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, key, value string) error {
+func (p *Provider) UpsertEnvironmentVariable(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, key, value string) error {
 	_, err := p.getEnvironmentVariable(ctx, oauthCtx, instanceURL, repositoryID, key)
 	if err != nil {
 		if common.ErrorCode(err) == common.NotFound {
@@ -882,7 +882,7 @@ func (p *Provider) UpsertEnvironmentVariable(ctx context.Context, oauthCtx commo
 // getEnvironmentVariable gets the environment variable in the repository.
 //
 // https://docs.gitlab.com/ee/api/project_level_variables.html#get-a-single-variable
-func (p *Provider) getEnvironmentVariable(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, key string) (*EnvironmentVariable, error) {
+func (p *Provider) getEnvironmentVariable(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, key string) (*EnvironmentVariable, error) {
 	url := fmt.Sprintf("%s/projects/%s/variables/%s", p.APIURL(instanceURL), repositoryID, key)
 	code, _, body, err := oauth.Get(
 		ctx,
@@ -925,7 +925,7 @@ func (p *Provider) getEnvironmentVariable(ctx context.Context, oauthCtx common.O
 // createEnvironmentVariable creates the environment variable in the repository.
 //
 // https://docs.gitlab.com/ee/api/project_level_variables.html#create-a-variable
-func (p *Provider) createEnvironmentVariable(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, key, value string) error {
+func (p *Provider) createEnvironmentVariable(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, key, value string) error {
 	url := fmt.Sprintf("%s/projects/%s/variables", p.APIURL(instanceURL), repositoryID)
 	body, err := json.Marshal(
 		EnvironmentVariable{
@@ -970,7 +970,7 @@ func (p *Provider) createEnvironmentVariable(ctx context.Context, oauthCtx commo
 // updateEnvironmentVariable updates the environment variable in the repository.
 //
 // https://docs.gitlab.com/ee/api/project_level_variables.html#update-a-variable
-func (p *Provider) updateEnvironmentVariable(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, key, value string) error {
+func (p *Provider) updateEnvironmentVariable(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, key, value string) error {
 	url := fmt.Sprintf("%s/projects/%s/variables/%s", p.APIURL(instanceURL), repositoryID, key)
 	body, err := json.Marshal(
 		EnvironmentVariable{
@@ -1015,7 +1015,7 @@ func (p *Provider) updateEnvironmentVariable(ctx context.Context, oauthCtx commo
 // CreateWebhook creates a webhook in the repository with given payload.
 //
 // Docs: https://docs.gitlab.com/ee/api/projects.html#add-project-hook
-func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, payload []byte) (string, error) {
+func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID string, payload []byte) (string, error) {
 	url := fmt.Sprintf("%s/projects/%s/hooks", p.APIURL(instanceURL), repositoryID)
 	code, _, body, err := oauth.Post(
 		ctx,
@@ -1066,7 +1066,7 @@ func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthConte
 // PatchWebhook patches the webhook in the repository with given payload.
 //
 // Docs: https://docs.gitlab.com/ee/api/projects.html#edit-project-hook
-func (p *Provider) PatchWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, webhookID string, payload []byte) error {
+func (p *Provider) PatchWebhook(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, webhookID string, payload []byte) error {
 	url := fmt.Sprintf("%s/projects/%s/hooks/%s", p.APIURL(instanceURL), repositoryID, webhookID)
 	code, _, body, err := oauth.Put(
 		ctx,
@@ -1103,7 +1103,7 @@ func (p *Provider) PatchWebhook(ctx context.Context, oauthCtx common.OauthContex
 // DeleteWebhook deletes the webhook from the repository.
 //
 // Docs: https://docs.gitlab.com/ee/api/projects.html#delete-project-hook
-func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, webhookID string) error {
+func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, webhookID string) error {
 	url := fmt.Sprintf("%s/projects/%s/hooks/%s", p.APIURL(instanceURL), repositoryID, webhookID)
 	code, _, body, err := oauth.Delete(
 		ctx,
@@ -1140,7 +1140,7 @@ func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthConte
 //
 // TODO: The same GitLab API endpoint supports using the HEAD request to only
 // get the file metadata.
-func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, refInfo vcs.RefInfo) (*File, error) {
+func (p *Provider) readFile(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, filePath string, refInfo vcs.RefInfo) (*File, error) {
 	// GitLab is often deployed behind a reverse proxy, which may have compression enabled that is transparent to the GitLab instance.
 	// In such cases, the HTTP header "Content-Encoding" will, for example, be changed to "gzip" and makes the value of "Content-Length" untrustworthy.
 	// We can avoid dealing with this type of problem by using the raw API instead of the typical JSON API.

@@ -142,7 +142,7 @@ type Commit struct {
 // FetchCommitByID fetches the commit data by its ID from the repository.
 //
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-commits/#api-repositories-workspace-repo-slug-commit-commit-get
-func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, commitID string) (*vcs.Commit, error) {
+func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, commitID string) (*vcs.Commit, error) {
 	url := fmt.Sprintf("%s/repositories/%s/commit/%s", p.APIURL(instanceURL), url.PathEscape(repositoryID), commitID)
 	code, _, body, err := oauth.Get(
 		ctx,
@@ -198,7 +198,7 @@ type CommitDiffStat struct {
 // GetDiffFileList gets the diff files list between two commits.
 //
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-commits/#api-repositories-workspace-repo-slug-diffstat-spec-get
-func (p *Provider) GetDiffFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, beforeCommit, afterCommit string) ([]vcs.FileDiff, error) {
+func (p *Provider) GetDiffFileList(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, beforeCommit, afterCommit string) ([]vcs.FileDiff, error) {
 	var bbcDiffs []*CommitDiffStat
 	next := fmt.Sprintf("%s/repositories/%s/diffstat/%s..%s?pagelen=%d", p.APIURL(instanceURL), repositoryID, afterCommit, beforeCommit, apiPageSize)
 	for next != "" {
@@ -235,7 +235,7 @@ func (p *Provider) GetDiffFileList(ctx context.Context, oauthCtx common.OauthCon
 	return diffs, nil
 }
 
-func (p *Provider) fetchPaginatedDiffFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, url string) (diffs []*CommitDiffStat, next string, err error) {
+func (p *Provider) fetchPaginatedDiffFileList(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, url string) (diffs []*CommitDiffStat, next string, err error) {
 	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
@@ -293,7 +293,7 @@ type RepositoryPermission struct {
 // has admin permissions, which is required to create webhook in the repository.
 //
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-repositories/#api-user-permissions-repositories-get
-func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]*vcs.Repository, error) {
+func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx *common.OauthContext, instanceURL string) ([]*vcs.Repository, error) {
 	var bbcRepos []*Repository
 	params := url.Values{}
 	params.Add("q", `permission="admin"`)
@@ -326,7 +326,7 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.O
 // fetchPaginatedRepositoryList fetches repositories in given page. It returns
 // the paginated results along with a string indicating the URL of the next page
 // (if exists).
-func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, url string) (repos []*Repository, next string, err error) {
+func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, url string) (repos []*Repository, next string, err error) {
 	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
@@ -390,7 +390,7 @@ type TreeEntry struct {
 // recursively.
 //
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-source/#directory-listings
-func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, ref, filePath string) ([]*vcs.RepositoryTreeNode, error) {
+func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, ref, filePath string) ([]*vcs.RepositoryTreeNode, error) {
 	var bbcTreeEntries []*TreeEntry
 	params := url.Values{}
 	// NOTE: There is no way to ask the Bitbucket Cloud API to return all
@@ -424,7 +424,7 @@ func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.
 // fetchPaginatedRepositoryFileList fetches files under a repository tree
 // recursively in given page. It returns the paginated results along with a
 // string indicating URL of the next page (if exists).
-func (p *Provider) fetchPaginatedRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, url string) (_ []*TreeEntry, next string, err error) {
+func (p *Provider) fetchPaginatedRepositoryFileList(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, url string) (_ []*TreeEntry, next string, err error) {
 	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
@@ -468,7 +468,7 @@ func (p *Provider) fetchPaginatedRepositoryFileList(ctx context.Context, oauthCt
 // CreateFile creates a file at given path in the repository.
 //
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-source/#api-repositories-workspace-repo-slug-src-post
-func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
+func (p *Provider) CreateFile(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
 	var body bytes.Buffer
 	w := multipart.NewWriter(&body)
 	part, err := w.CreateFormField(filePath)
@@ -523,14 +523,14 @@ func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext,
 // OverwriteFile overwrites an existing file at given path in the repository.
 //
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-source/#api-repositories-workspace-repo-slug-src-post
-func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
+func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
 	return p.CreateFile(ctx, oauthCtx, instanceURL, repositoryID, filePath, fileCommitCreate)
 }
 
 // ReadFileMeta reads the metadata of the given file in the repository.
 //
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-source/#file-meta-data
-func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, refInfo vcs.RefInfo) (*vcs.FileMeta, error) {
+func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, filePath string, refInfo vcs.RefInfo) (*vcs.FileMeta, error) {
 	url := fmt.Sprintf("%s/repositories/%s/src/%s/%s?format=meta", p.APIURL(instanceURL), repositoryID, url.PathEscape(refInfo.RefName), url.PathEscape(filePath))
 	code, _, body, err := oauth.Get(
 		ctx,
@@ -582,7 +582,7 @@ func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContex
 // ReadFileContent reads the content of the given file in the repository.
 //
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-source/#raw-file-contents
-func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, refInfo vcs.RefInfo) (string, error) {
+func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, filePath string, refInfo vcs.RefInfo) (string, error) {
 	url := fmt.Sprintf("%s/repositories/%s/src/%s/%s", p.APIURL(instanceURL), repositoryID, url.PathEscape(refInfo.RefName), url.PathEscape(filePath))
 	code, _, body, err := oauth.Get(
 		ctx,
@@ -630,7 +630,7 @@ type Branch struct {
 // GetBranch gets the given branch in the repository.
 //
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-refs/#api-repositories-workspace-repo-slug-refs-branches-name-get
-func (p *Provider) GetBranch(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, branchName string) (*vcs.BranchInfo, error) {
+func (p *Provider) GetBranch(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, branchName string) (*vcs.BranchInfo, error) {
 	url := fmt.Sprintf("%s/repositories/%s/refs/branches/%s", p.APIURL(instanceURL), repositoryID, branchName)
 	code, _, body, err := oauth.Get(
 		ctx,
@@ -684,7 +684,7 @@ type branchCreate struct {
 // CreateBranch creates the branch in the repository.
 //
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-refs/#api-repositories-workspace-repo-slug-refs-branches-post
-func (p *Provider) CreateBranch(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, branch *vcs.BranchInfo) error {
+func (p *Provider) CreateBranch(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID string, branch *vcs.BranchInfo) error {
 	body, err := json.Marshal(
 		branchCreate{
 			Name:   branch.Name,
@@ -731,7 +731,7 @@ func (p *Provider) CreateBranch(ctx context.Context, oauthCtx common.OauthContex
 // ListPullRequestFile lists the changed files in the pull request.
 //
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-pullrequests/#api-repositories-workspace-repo-slug-pullrequests-pull-request-id-diffstat-get
-func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, pullRequestID string) ([]*vcs.PullRequestFile, error) {
+func (p *Provider) ListPullRequestFile(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, pullRequestID string) ([]*vcs.PullRequestFile, error) {
 	var bbcDiffs []*CommitDiffStat
 	next := fmt.Sprintf("%s/repositories/%s/pullrequests/%s/diffstat?pagelen=%d", p.APIURL(instanceURL), url.PathEscape(repositoryID), pullRequestID, apiPageSize)
 	for next != "" {
@@ -786,7 +786,7 @@ type pullRequestCreate struct {
 // CreatePullRequest creates the pull request in the repository.
 //
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-pullrequests/#api-repositories-workspace-repo-slug-pullrequests-post
-func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, create *vcs.PullRequestCreate) (*vcs.PullRequest, error) {
+func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID string, create *vcs.PullRequestCreate) (*vcs.PullRequest, error) {
 	payload, err := json.Marshal(
 		pullRequestCreate{
 			Title:             create.Title,
@@ -854,7 +854,7 @@ func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx common.OauthC
 // UpsertEnvironmentVariable creates or updates the environment variable in the repository.
 //
 // WARNING: This is not supported in Bitbucket Cloud.
-func (*Provider) UpsertEnvironmentVariable(context.Context, common.OauthContext, string, string, string, string) error {
+func (*Provider) UpsertEnvironmentVariable(context.Context, *common.OauthContext, string, string, string, string) error {
 	return errors.New("not supported")
 }
 
@@ -922,7 +922,7 @@ type Webhook struct {
 // CreateWebhook creates a webhook in the repository with given payload.
 //
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-repositories/#api-repositories-workspace-repo-slug-hooks-post
-func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, payload []byte) (string, error) {
+func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID string, payload []byte) (string, error) {
 	url := fmt.Sprintf("%s/repositories/%s/hooks", p.APIURL(instanceURL), repositoryID)
 	code, _, body, err := oauth.Post(
 		ctx,
@@ -968,7 +968,7 @@ func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthConte
 // PatchWebhook patches the webhook in the repository with given payload.
 //
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-repositories/#api-repositories-workspace-repo-slug-hooks-uid-put
-func (p *Provider) PatchWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, webhookID string, payload []byte) error {
+func (p *Provider) PatchWebhook(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, webhookID string, payload []byte) error {
 	url := fmt.Sprintf("%s/repositories/%s/hooks/%s", p.APIURL(instanceURL), repositoryID, webhookID)
 	code, _, body, err := oauth.Put(
 		ctx,
@@ -1005,7 +1005,7 @@ func (p *Provider) PatchWebhook(ctx context.Context, oauthCtx common.OauthContex
 // DeleteWebhook deletes the webhook from the repository.
 //
 // Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-repositories/#api-repositories-workspace-repo-slug-hooks-uid-delete
-func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, webhookID string) error {
+func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, webhookID string) error {
 	url := fmt.Sprintf("%s/repositories/%s/hooks/%s", p.APIURL(instanceURL), repositoryID, webhookID)
 	code, _, body, err := oauth.Delete(
 		ctx,
