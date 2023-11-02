@@ -37,10 +37,10 @@
         {{ table.rowCount }}
       </BBTableCell>
       <BBTableCell class="w-8">
-        {{ bytesToString(table.dataSize) }}
+        {{ bytesToString(table.dataSize.toNumber()) }}
       </BBTableCell>
       <BBTableCell class="w-8">
-        {{ bytesToString(table.indexSize) }}
+        {{ bytesToString(table.indexSize.toNumber()) }}
       </BBTableCell>
       <BBTableCell class="w-16 break-all">
         {{ table.userComment }}

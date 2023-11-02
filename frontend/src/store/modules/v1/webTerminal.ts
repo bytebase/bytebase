@@ -116,11 +116,11 @@ const createStreamingQueryController = (tab: TabInfo) => {
       const payload: any = {
         ...request,
       };
-      const timeout: Duration = {
+      const timeout = Duration.fromPartial({
         seconds: 60,
         nanos: 0,
-      };
-      const seconds = timeout.seconds + timeout.nanos / 1e9;
+      });
+      const seconds = timeout.seconds.toNumber() + timeout.nanos / 1e9;
       payload.timeout = `${seconds}s`;
       console.debug("will send", JSON.stringify(payload));
       ws.send(JSON.stringify(payload));
@@ -321,8 +321,8 @@ export const parseDuration = (str: string): Duration | undefined => {
   if (Number.isNaN(totalSeconds) || totalSeconds < 0) return undefined;
   const seconds = Math.floor(totalSeconds);
   const nanos = (totalSeconds - seconds) * 1e9;
-  return {
+  return Duration.fromPartial({
     seconds,
     nanos,
-  };
+  });
 };

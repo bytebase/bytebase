@@ -1,4 +1,5 @@
 import { isEqual, isUndefined } from "lodash-es";
+import Long from "long";
 import { defineStore } from "pinia";
 import { computed, ref, unref, watch, watchEffect } from "vue";
 import { sheetServiceClient } from "@/grpcweb";
@@ -290,7 +291,7 @@ export const useSheetAndTabStore = defineStore("sheet_and_tab", () => {
 
     // Incomplete sheets should be read-only. e.g. 100MB sheet from issue task.、
     const statement = getSheetStatement(sheet);
-    if (statement.length !== sheet.contentSize) {
+    if (Long.fromNumber(statement.length).ne(sheet.contentSize)) {
       return true;
     }
 

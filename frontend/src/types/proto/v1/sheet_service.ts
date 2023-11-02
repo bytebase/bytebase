@@ -168,7 +168,7 @@ export interface Sheet {
    */
   content: Uint8Array;
   /** content_size is the full size of the content, may not match the size of the `content` field. */
-  contentSize: number;
+  contentSize: Long;
   visibility: Sheet_Visibility;
   /** The source of the sheet. */
   source: Sheet_Source;
@@ -954,7 +954,7 @@ function createBaseSheet(): Sheet {
     createTime: undefined,
     updateTime: undefined,
     content: new Uint8Array(0),
-    contentSize: 0,
+    contentSize: Long.ZERO,
     visibility: 0,
     source: 0,
     type: 0,
@@ -987,7 +987,7 @@ export const Sheet = {
     if (message.content.length !== 0) {
       writer.uint32(58).bytes(message.content);
     }
-    if (message.contentSize !== 0) {
+    if (!message.contentSize.isZero()) {
       writer.uint32(64).int64(message.contentSize);
     }
     if (message.visibility !== 0) {
@@ -1072,7 +1072,7 @@ export const Sheet = {
             break;
           }
 
-          message.contentSize = longToNumber(reader.int64() as Long);
+          message.contentSize = reader.int64() as Long;
           continue;
         case 9:
           if (tag !== 72) {
@@ -1134,7 +1134,7 @@ export const Sheet = {
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
       content: isSet(object.content) ? bytesFromBase64(object.content) : new Uint8Array(0),
-      contentSize: isSet(object.contentSize) ? Number(object.contentSize) : 0,
+      contentSize: isSet(object.contentSize) ? Long.fromValue(object.contentSize) : Long.ZERO,
       visibility: isSet(object.visibility) ? sheet_VisibilityFromJSON(object.visibility) : 0,
       source: isSet(object.source) ? sheet_SourceFromJSON(object.source) : 0,
       type: isSet(object.type) ? sheet_TypeFromJSON(object.type) : 0,
@@ -1154,7 +1154,7 @@ export const Sheet = {
     message.updateTime !== undefined && (obj.updateTime = message.updateTime.toISOString());
     message.content !== undefined &&
       (obj.content = base64FromBytes(message.content !== undefined ? message.content : new Uint8Array(0)));
-    message.contentSize !== undefined && (obj.contentSize = Math.round(message.contentSize));
+    message.contentSize !== undefined && (obj.contentSize = (message.contentSize || Long.ZERO).toString());
     message.visibility !== undefined && (obj.visibility = sheet_VisibilityToJSON(message.visibility));
     message.source !== undefined && (obj.source = sheet_SourceToJSON(message.source));
     message.type !== undefined && (obj.type = sheet_TypeToJSON(message.type));
@@ -1178,7 +1178,9 @@ export const Sheet = {
     message.createTime = object.createTime ?? undefined;
     message.updateTime = object.updateTime ?? undefined;
     message.content = object.content ?? new Uint8Array(0);
-    message.contentSize = object.contentSize ?? 0;
+    message.contentSize = (object.contentSize !== undefined && object.contentSize !== null)
+      ? Long.fromValue(object.contentSize)
+      : Long.ZERO;
     message.visibility = object.visibility ?? 0;
     message.source = object.source ?? 0;
     message.type = object.type ?? 0;
@@ -1719,18 +1721,19 @@ function base64FromBytes(arr: Uint8Array): string {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends Array<infer U> ? Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
 function toTimestamp(date: Date): Timestamp {
-  const seconds = date.getTime() / 1_000;
+  const seconds = numberToLong(date.getTime() / 1_000);
   const nanos = (date.getTime() % 1_000) * 1_000_000;
   return { seconds, nanos };
 }
 
 function fromTimestamp(t: Timestamp): Date {
-  let millis = (t.seconds || 0) * 1_000;
+  let millis = (t.seconds.toNumber() || 0) * 1_000;
   millis += (t.nanos || 0) / 1_000_000;
   return new Date(millis);
 }
@@ -1745,11 +1748,8 @@ function fromJsonTimestamp(o: any): Date {
   }
 }
 
-function longToNumber(long: Long): number {
-  if (long.gt(Number.MAX_SAFE_INTEGER)) {
-    throw new tsProtoGlobalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
-  }
-  return long.toNumber();
+function numberToLong(number: number) {
+  return Long.fromNumber(number);
 }
 
 if (_m0.util.Long !== Long) {

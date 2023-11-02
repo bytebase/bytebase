@@ -138,11 +138,11 @@ export interface RowValue {
   doubleValue?: number | undefined;
   floatValue?: number | undefined;
   int32Value?: number | undefined;
-  int64Value?: number | undefined;
+  int64Value?: Long | undefined;
   stringValue?: string | undefined;
   uint32Value?: number | undefined;
   uint64Value?:
-    | number
+    | Long
     | undefined;
   /** value_value is used for Spanner and TUPLE ARRAY MAP in Clickhouse only. */
   valueValue?: any | undefined;
@@ -1310,7 +1310,7 @@ export const RowValue = {
             break;
           }
 
-          message.int64Value = longToNumber(reader.int64() as Long);
+          message.int64Value = reader.int64() as Long;
           continue;
         case 8:
           if (tag !== 66) {
@@ -1331,7 +1331,7 @@ export const RowValue = {
             break;
           }
 
-          message.uint64Value = longToNumber(reader.uint64() as Long);
+          message.uint64Value = reader.uint64() as Long;
           continue;
         case 11:
           if (tag !== 90) {
@@ -1357,10 +1357,10 @@ export const RowValue = {
       doubleValue: isSet(object.doubleValue) ? Number(object.doubleValue) : undefined,
       floatValue: isSet(object.floatValue) ? Number(object.floatValue) : undefined,
       int32Value: isSet(object.int32Value) ? Number(object.int32Value) : undefined,
-      int64Value: isSet(object.int64Value) ? Number(object.int64Value) : undefined,
+      int64Value: isSet(object.int64Value) ? Long.fromValue(object.int64Value) : undefined,
       stringValue: isSet(object.stringValue) ? String(object.stringValue) : undefined,
       uint32Value: isSet(object.uint32Value) ? Number(object.uint32Value) : undefined,
-      uint64Value: isSet(object.uint64Value) ? Number(object.uint64Value) : undefined,
+      uint64Value: isSet(object.uint64Value) ? Long.fromValue(object.uint64Value) : undefined,
       valueValue: isSet(object?.valueValue) ? object.valueValue : undefined,
     };
   },
@@ -1375,10 +1375,10 @@ export const RowValue = {
     message.doubleValue !== undefined && (obj.doubleValue = message.doubleValue);
     message.floatValue !== undefined && (obj.floatValue = message.floatValue);
     message.int32Value !== undefined && (obj.int32Value = Math.round(message.int32Value));
-    message.int64Value !== undefined && (obj.int64Value = Math.round(message.int64Value));
+    message.int64Value !== undefined && (obj.int64Value = (message.int64Value || undefined).toString());
     message.stringValue !== undefined && (obj.stringValue = message.stringValue);
     message.uint32Value !== undefined && (obj.uint32Value = Math.round(message.uint32Value));
-    message.uint64Value !== undefined && (obj.uint64Value = Math.round(message.uint64Value));
+    message.uint64Value !== undefined && (obj.uint64Value = (message.uint64Value || undefined).toString());
     message.valueValue !== undefined && (obj.valueValue = message.valueValue);
     return obj;
   },
@@ -1395,10 +1395,14 @@ export const RowValue = {
     message.doubleValue = object.doubleValue ?? undefined;
     message.floatValue = object.floatValue ?? undefined;
     message.int32Value = object.int32Value ?? undefined;
-    message.int64Value = object.int64Value ?? undefined;
+    message.int64Value = (object.int64Value !== undefined && object.int64Value !== null)
+      ? Long.fromValue(object.int64Value)
+      : undefined;
     message.stringValue = object.stringValue ?? undefined;
     message.uint32Value = object.uint32Value ?? undefined;
-    message.uint64Value = object.uint64Value ?? undefined;
+    message.uint64Value = (object.uint64Value !== undefined && object.uint64Value !== null)
+      ? Long.fromValue(object.uint64Value)
+      : undefined;
     message.valueValue = object.valueValue ?? undefined;
     return message;
   },
@@ -2064,16 +2068,10 @@ function base64FromBytes(arr: Uint8Array): string {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends Array<infer U> ? Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
-
-function longToNumber(long: Long): number {
-  if (long.gt(Number.MAX_SAFE_INTEGER)) {
-    throw new tsProtoGlobalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
-  }
-  return long.toNumber();
-}
 
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;

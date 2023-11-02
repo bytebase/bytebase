@@ -92,7 +92,7 @@ const resolveEqualityExpr = (expr: CELExpr): EqualityExpr => {
   if (isNumberFactor(factor)) {
     return {
       operator,
-      args: [factor, valueExpr.constExpr!.int64Value! ?? 0],
+      args: [factor, valueExpr.constExpr!.int64Value!.toNumber() ?? 0],
     };
   }
   if (isStringFactor(factor)) {
@@ -111,7 +111,7 @@ const resolveCompareExpr = (expr: CELExpr): CompareExpr => {
   if (isNumberFactor(factor)) {
     return {
       operator,
-      args: [factor, valueExpr.constExpr!.int64Value!],
+      args: [factor, valueExpr.constExpr!.int64Value!.toNumber()],
     };
   }
   if (isTimestampFactor(factor)) {
@@ -146,7 +146,7 @@ const resolveCollectionExpr = (expr: CELExpr): CollectionExpr => {
       args: [
         factor,
         valuesExpr.listExpr?.elements?.map(
-          (constant) => constant.constExpr?.int64Value ?? 0
+          (constant) => constant.constExpr?.int64Value?.toNumber() ?? 0
         ) ?? [],
       ],
     };

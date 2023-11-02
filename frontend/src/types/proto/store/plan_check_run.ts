@@ -11,7 +11,7 @@ export interface PlanCheckRunConfig {
   instanceUid: number;
   databaseName: string;
   /** database_group_uid is optional. If it's set, it means the database is part of a database group. */
-  databaseGroupUid?: number | undefined;
+  databaseGroupUid?: Long | undefined;
   ghostFlags: { [key: string]: string };
 }
 
@@ -214,7 +214,7 @@ export const PlanCheckRunConfig = {
             break;
           }
 
-          message.databaseGroupUid = longToNumber(reader.int64() as Long);
+          message.databaseGroupUid = reader.int64() as Long;
           continue;
         case 6:
           if (tag !== 50) {
@@ -243,7 +243,7 @@ export const PlanCheckRunConfig = {
         : 0,
       instanceUid: isSet(object.instanceUid) ? Number(object.instanceUid) : 0,
       databaseName: isSet(object.databaseName) ? String(object.databaseName) : "",
-      databaseGroupUid: isSet(object.databaseGroupUid) ? Number(object.databaseGroupUid) : undefined,
+      databaseGroupUid: isSet(object.databaseGroupUid) ? Long.fromValue(object.databaseGroupUid) : undefined,
       ghostFlags: isObject(object.ghostFlags)
         ? Object.entries(object.ghostFlags).reduce<{ [key: string]: string }>((acc, [key, value]) => {
           acc[key] = String(value);
@@ -260,7 +260,8 @@ export const PlanCheckRunConfig = {
       (obj.changeDatabaseType = planCheckRunConfig_ChangeDatabaseTypeToJSON(message.changeDatabaseType));
     message.instanceUid !== undefined && (obj.instanceUid = Math.round(message.instanceUid));
     message.databaseName !== undefined && (obj.databaseName = message.databaseName);
-    message.databaseGroupUid !== undefined && (obj.databaseGroupUid = Math.round(message.databaseGroupUid));
+    message.databaseGroupUid !== undefined &&
+      (obj.databaseGroupUid = (message.databaseGroupUid || undefined).toString());
     obj.ghostFlags = {};
     if (message.ghostFlags) {
       Object.entries(message.ghostFlags).forEach(([k, v]) => {
@@ -280,7 +281,9 @@ export const PlanCheckRunConfig = {
     message.changeDatabaseType = object.changeDatabaseType ?? 0;
     message.instanceUid = object.instanceUid ?? 0;
     message.databaseName = object.databaseName ?? "";
-    message.databaseGroupUid = object.databaseGroupUid ?? undefined;
+    message.databaseGroupUid = (object.databaseGroupUid !== undefined && object.databaseGroupUid !== null)
+      ? Long.fromValue(object.databaseGroupUid)
+      : undefined;
     message.ghostFlags = Object.entries(object.ghostFlags ?? {}).reduce<{ [key: string]: string }>(
       (acc, [key, value]) => {
         if (value !== undefined) {
@@ -779,38 +782,13 @@ export const PlanCheckRunResult_Result_SqlReviewReport = {
   },
 };
 
-declare const self: any | undefined;
-declare const window: any | undefined;
-declare const global: any | undefined;
-const tsProtoGlobalThis: any = (() => {
-  if (typeof globalThis !== "undefined") {
-    return globalThis;
-  }
-  if (typeof self !== "undefined") {
-    return self;
-  }
-  if (typeof window !== "undefined") {
-    return window;
-  }
-  if (typeof global !== "undefined") {
-    return global;
-  }
-  throw "Unable to locate global object";
-})();
-
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends Array<infer U> ? Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
-
-function longToNumber(long: Long): number {
-  if (long.gt(Number.MAX_SAFE_INTEGER)) {
-    throw new tsProtoGlobalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
-  }
-  return long.toNumber();
-}
 
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
