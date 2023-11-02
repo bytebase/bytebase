@@ -1,5 +1,4 @@
 /* eslint-disable */
-import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
 import { Timestamp } from "../google/protobuf/timestamp";
@@ -147,7 +146,7 @@ export const SlowQueryStatisticsItem = {
       writer.uint32(10).string(message.sqlFingerprint);
     }
     if (message.count !== 0) {
-      writer.uint32(16).int64(message.count);
+      writer.uint32(16).int32(message.count);
     }
     if (message.latestLogTime !== undefined) {
       Timestamp.encode(toTimestamp(message.latestLogTime), writer.uint32(26).fork()).ldelim();
@@ -159,16 +158,16 @@ export const SlowQueryStatisticsItem = {
       Duration.encode(message.maximumQueryTime, writer.uint32(42).fork()).ldelim();
     }
     if (message.totalRowsSent !== 0) {
-      writer.uint32(48).int64(message.totalRowsSent);
+      writer.uint32(48).int32(message.totalRowsSent);
     }
     if (message.maximumRowsSent !== 0) {
-      writer.uint32(56).int64(message.maximumRowsSent);
+      writer.uint32(56).int32(message.maximumRowsSent);
     }
     if (message.totalRowsExamined !== 0) {
-      writer.uint32(64).int64(message.totalRowsExamined);
+      writer.uint32(64).int32(message.totalRowsExamined);
     }
     if (message.maximumRowsExamined !== 0) {
-      writer.uint32(72).int64(message.maximumRowsExamined);
+      writer.uint32(72).int32(message.maximumRowsExamined);
     }
     for (const v of message.samples) {
       SlowQueryDetails.encode(v!, writer.uint32(82).fork()).ldelim();
@@ -195,7 +194,7 @@ export const SlowQueryStatisticsItem = {
             break;
           }
 
-          message.count = longToNumber(reader.int64() as Long);
+          message.count = reader.int32();
           continue;
         case 3:
           if (tag !== 26) {
@@ -223,28 +222,28 @@ export const SlowQueryStatisticsItem = {
             break;
           }
 
-          message.totalRowsSent = longToNumber(reader.int64() as Long);
+          message.totalRowsSent = reader.int32();
           continue;
         case 7:
           if (tag !== 56) {
             break;
           }
 
-          message.maximumRowsSent = longToNumber(reader.int64() as Long);
+          message.maximumRowsSent = reader.int32();
           continue;
         case 8:
           if (tag !== 64) {
             break;
           }
 
-          message.totalRowsExamined = longToNumber(reader.int64() as Long);
+          message.totalRowsExamined = reader.int32();
           continue;
         case 9:
           if (tag !== 72) {
             break;
           }
 
-          message.maximumRowsExamined = longToNumber(reader.int64() as Long);
+          message.maximumRowsExamined = reader.int32();
           continue;
         case 10:
           if (tag !== 82) {
@@ -338,10 +337,10 @@ export const SlowQueryDetails = {
       Duration.encode(message.lockTime, writer.uint32(26).fork()).ldelim();
     }
     if (message.rowsSent !== 0) {
-      writer.uint32(32).int64(message.rowsSent);
+      writer.uint32(32).int32(message.rowsSent);
     }
     if (message.rowsExamined !== 0) {
-      writer.uint32(40).int64(message.rowsExamined);
+      writer.uint32(40).int32(message.rowsExamined);
     }
     if (message.sqlText !== "") {
       writer.uint32(50).string(message.sqlText);
@@ -382,14 +381,14 @@ export const SlowQueryDetails = {
             break;
           }
 
-          message.rowsSent = longToNumber(reader.int64() as Long);
+          message.rowsSent = reader.int32();
           continue;
         case 5:
           if (tag !== 40) {
             break;
           }
 
-          message.rowsExamined = longToNumber(reader.int64() as Long);
+          message.rowsExamined = reader.int32();
           continue;
         case 6:
           if (tag !== 50) {
@@ -450,25 +449,6 @@ export const SlowQueryDetails = {
   },
 };
 
-declare const self: any | undefined;
-declare const window: any | undefined;
-declare const global: any | undefined;
-const tsProtoGlobalThis: any = (() => {
-  if (typeof globalThis !== "undefined") {
-    return globalThis;
-  }
-  if (typeof self !== "undefined") {
-    return self;
-  }
-  if (typeof window !== "undefined") {
-    return window;
-  }
-  if (typeof global !== "undefined") {
-    return global;
-  }
-  throw "Unable to locate global object";
-})();
-
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
@@ -496,18 +476,6 @@ function fromJsonTimestamp(o: any): Date {
   } else {
     return fromTimestamp(Timestamp.fromJSON(o));
   }
-}
-
-function longToNumber(long: Long): number {
-  if (long.gt(Number.MAX_SAFE_INTEGER)) {
-    throw new tsProtoGlobalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
-  }
-  return long.toNumber();
-}
-
-if (_m0.util.Long !== Long) {
-  _m0.util.Long = Long as any;
-  _m0.configure();
 }
 
 function isSet(value: any): boolean {

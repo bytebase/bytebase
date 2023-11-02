@@ -732,10 +732,10 @@ func (driver *Driver) SyncSlowQuery(ctx context.Context, _ time.Time) (map[strin
 	for slowQueryStatisticsRows.Next() {
 		var database string
 		var fingerprint string
-		var calls int64
+		var calls int32
 		var totalExecTime float64
 		var maxExecTime float64
-		var rows int64
+		var rows int32
 		if err := slowQueryStatisticsRows.Scan(&database, &fingerprint, &calls, &totalExecTime, &maxExecTime, &rows); err != nil {
 			return nil, err
 		}

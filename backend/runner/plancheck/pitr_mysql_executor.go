@@ -67,7 +67,7 @@ func (e *PITRMySQLExecutor) Run(ctx context.Context, config *storepb.PlanCheckRu
 	return []*storepb.PlanCheckRunResult_Result{
 		{
 			Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
-			Code:    common.Ok.Int64(),
+			Code:    common.Ok.Int32(),
 			Title:   "OK",
 			Content: "Ready to do PITR",
 		},
@@ -78,7 +78,7 @@ func convertErrorToResult(err error) []*storepb.PlanCheckRunResult_Result {
 	return []*storepb.PlanCheckRunResult_Result{
 		{
 			Status:  storepb.PlanCheckRunResult_Result_ERROR,
-			Code:    common.Internal.Int64(),
+			Code:    common.Internal.Int32(),
 			Title:   "Error",
 			Content: err.Error(),
 		},

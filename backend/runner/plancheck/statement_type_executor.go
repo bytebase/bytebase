@@ -66,7 +66,7 @@ func (e *StatementTypeExecutor) runForDatabaseTarget(ctx context.Context, config
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
-				Code:    common.Ok.Int64(),
+				Code:    common.Ok.Int32(),
 				Title:   fmt.Sprintf("Statement advise is not supported for %s", instance.Engine),
 				Content: "",
 			},
@@ -101,7 +101,7 @@ func (e *StatementTypeExecutor) runForDatabaseTarget(ctx context.Context, config
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
-				Code:    common.Ok.Int64(),
+				Code:    common.Ok.Int32(),
 				Title:   "Large SQL review policy is disabled",
 				Content: "",
 			},
@@ -148,7 +148,7 @@ func (e *StatementTypeExecutor) runForDatabaseTarget(ctx context.Context, config
 				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
 				Title:   "OK",
 				Content: "",
-				Code:    common.Ok.Int64(),
+				Code:    common.Ok.Int32(),
 				Report:  nil,
 			},
 		}, nil
@@ -209,7 +209,7 @@ func (e *StatementTypeExecutor) runForDatabaseGroupTarget(ctx context.Context, c
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
-				Code:    common.Ok.Int64(),
+				Code:    common.Ok.Int32(),
 				Title:   "Large SQL review policy is disabled",
 				Content: "",
 			},
@@ -311,7 +311,7 @@ func (e *StatementTypeExecutor) runForDatabaseGroupTarget(ctx context.Context, c
 					Status:  storepb.PlanCheckRunResult_Result_ERROR,
 					Title:   "Failed to run statement type check",
 					Content: err.Error(),
-					Code:    common.Internal.Int64(),
+					Code:    common.Internal.Int32(),
 					Report:  nil,
 				})
 			} else {
@@ -326,7 +326,7 @@ func (e *StatementTypeExecutor) runForDatabaseGroupTarget(ctx context.Context, c
 				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
 				Title:   "OK",
 				Content: "",
-				Code:    common.Ok.Int64(),
+				Code:    common.Ok.Int32(),
 				Report:  nil,
 			},
 		}, nil
@@ -364,12 +364,12 @@ func (e *StatementTypeExecutor) mysqlSDLTypeCheck(ctx context.Context, newSchema
 			for _, table := range node.Tables {
 				results = append(results, &storepb.PlanCheckRunResult_Result{
 					Status:  storepb.PlanCheckRunResult_Result_WARNING,
-					Code:    common.TaskTypeDropTable.Int64(),
+					Code:    common.TaskTypeDropTable.Int32(),
 					Title:   "Plan to drop table",
 					Content: fmt.Sprintf("Plan to drop table `%s`", table.Name.O),
 					Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
 						SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-							Line:   int64(stmt.LastLine),
+							Line:   int32(stmt.LastLine),
 							Detail: "",
 							Code:   0,
 						},
@@ -379,12 +379,12 @@ func (e *StatementTypeExecutor) mysqlSDLTypeCheck(ctx context.Context, newSchema
 		case *tidbast.DropIndexStmt:
 			results = append(results, &storepb.PlanCheckRunResult_Result{
 				Status:  storepb.PlanCheckRunResult_Result_WARNING,
-				Code:    common.TaskTypeDropIndex.Int64(),
+				Code:    common.TaskTypeDropIndex.Int32(),
 				Title:   "Plan to drop index",
 				Content: fmt.Sprintf("Plan to drop index `%s` on table `%s`", node.IndexName, node.Table.Name.O),
 				Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
 					SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-						Line:   int64(stmt.LastLine),
+						Line:   int32(stmt.LastLine),
 						Detail: "",
 						Code:   0,
 					},
@@ -396,12 +396,12 @@ func (e *StatementTypeExecutor) mysqlSDLTypeCheck(ctx context.Context, newSchema
 				case tidbast.AlterTableDropColumn:
 					results = append(results, &storepb.PlanCheckRunResult_Result{
 						Status:  storepb.PlanCheckRunResult_Result_WARNING,
-						Code:    common.TaskTypeDropColumn.Int64(),
+						Code:    common.TaskTypeDropColumn.Int32(),
 						Title:   "Plan to drop column",
 						Content: fmt.Sprintf("Plan to drop column `%s` on table `%s`", spec.OldColumnName.Name.O, node.Table.Name.O),
 						Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
 							SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-								Line:   int64(stmt.LastLine),
+								Line:   int32(stmt.LastLine),
 								Detail: "",
 								Code:   0,
 							},
@@ -410,12 +410,12 @@ func (e *StatementTypeExecutor) mysqlSDLTypeCheck(ctx context.Context, newSchema
 				case tidbast.AlterTableDropPrimaryKey:
 					results = append(results, &storepb.PlanCheckRunResult_Result{
 						Status:  storepb.PlanCheckRunResult_Result_WARNING,
-						Code:    common.TaskTypeDropPrimaryKey.Int64(),
+						Code:    common.TaskTypeDropPrimaryKey.Int32(),
 						Title:   "Plan to drop primary key",
 						Content: fmt.Sprintf("Plan to drop primary key on table `%s`", node.Table.Name.O),
 						Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
 							SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-								Line:   int64(stmt.LastLine),
+								Line:   int32(stmt.LastLine),
 								Detail: "",
 								Code:   0,
 							},
@@ -424,12 +424,12 @@ func (e *StatementTypeExecutor) mysqlSDLTypeCheck(ctx context.Context, newSchema
 				case tidbast.AlterTableDropForeignKey:
 					results = append(results, &storepb.PlanCheckRunResult_Result{
 						Status:  storepb.PlanCheckRunResult_Result_WARNING,
-						Code:    common.TaskTypeDropForeignKey.Int64(),
+						Code:    common.TaskTypeDropForeignKey.Int32(),
 						Title:   "Plan to drop foreign key",
 						Content: fmt.Sprintf("Plan to drop foreign key `%s` on table `%s`", spec.Name, node.Table.Name.O),
 						Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
 							SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-								Line:   int64(stmt.LastLine),
+								Line:   int32(stmt.LastLine),
 								Detail: "",
 								Code:   0,
 							},
@@ -438,12 +438,12 @@ func (e *StatementTypeExecutor) mysqlSDLTypeCheck(ctx context.Context, newSchema
 				case tidbast.AlterTableDropCheck:
 					results = append(results, &storepb.PlanCheckRunResult_Result{
 						Status:  storepb.PlanCheckRunResult_Result_WARNING,
-						Code:    common.TaskTypeDropCheck.Int64(),
+						Code:    common.TaskTypeDropCheck.Int32(),
 						Title:   "Plan to drop check constraint",
 						Content: fmt.Sprintf("Plan to drop check constraint `%s` on table `%s`", spec.Constraint.Name, node.Table.Name.O),
 						Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
 							SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-								Line:   int64(stmt.LastLine),
+								Line:   int32(stmt.LastLine),
 								Detail: "",
 								Code:   0,
 							},
@@ -463,14 +463,14 @@ func mysqlCreateAndDropDatabaseCheck(nodeList []tidbast.StmtNode) []*storepb.Pla
 		case *tidbast.DropDatabaseStmt:
 			results = append(results, &storepb.PlanCheckRunResult_Result{
 				Status:  storepb.PlanCheckRunResult_Result_ERROR,
-				Code:    common.TaskTypeDropDatabase.Int64(),
+				Code:    common.TaskTypeDropDatabase.Int32(),
 				Title:   "Cannot drop database",
 				Content: fmt.Sprintf(`The statement "%s" drops database`, node.Text()),
 			})
 		case *tidbast.CreateDatabaseStmt:
 			results = append(results, &storepb.PlanCheckRunResult_Result{
 				Status:  storepb.PlanCheckRunResult_Result_ERROR,
-				Code:    common.TaskTypeCreateDatabase.Int64(),
+				Code:    common.TaskTypeCreateDatabase.Int32(),
 				Title:   "Cannot create database",
 				Content: fmt.Sprintf(`The statement "%s" creates database`, node.Text()),
 			})
@@ -496,7 +496,7 @@ func mysqlStatementTypeCheck(statement string, charset string, collation string,
 					SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
 						Line:   0,
 						Detail: "",
-						Code:   advisor.StatementSyntaxError.Int64(),
+						Code:   advisor.StatementSyntaxError.Int32(),
 					},
 				},
 			},
@@ -524,7 +524,7 @@ func mysqlStatementTypeCheck(statement string, charset string, collation string,
 					SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
 						Line:   0,
 						Detail: "",
-						Code:   advisor.StatementSyntaxError.Int64(),
+						Code:   advisor.StatementSyntaxError.Int32(),
 					},
 				},
 			},
@@ -547,7 +547,7 @@ func mysqlStatementTypeCheck(statement string, charset string, collation string,
 					Status:  storepb.PlanCheckRunResult_Result_WARNING,
 					Title:   "Data change can only run DML",
 					Content: fmt.Sprintf("\"%s\" is not DML", node.Text()),
-					Code:    common.TaskTypeNotDML.Int64(),
+					Code:    common.TaskTypeNotDML.Int32(),
 					Report:  nil,
 				})
 			}
@@ -561,7 +561,7 @@ func mysqlStatementTypeCheck(statement string, charset string, collation string,
 					Status:  storepb.PlanCheckRunResult_Result_WARNING,
 					Title:   "Alter schema can only run DDL",
 					Content: fmt.Sprintf("\"%s\" is not DDL", node.Text()),
-					Code:    common.TaskTypeNotDDL.Int64(),
+					Code:    common.TaskTypeNotDDL.Int32(),
 					Report:  nil,
 				})
 			}
@@ -580,7 +580,7 @@ func postgresqlCreateAndDropDatabaseCheck(nodeList []ast.Node) []*storepb.PlanCh
 		case *ast.DropDatabaseStmt:
 			result = append(result, &storepb.PlanCheckRunResult_Result{
 				Status:  storepb.PlanCheckRunResult_Result_ERROR,
-				Code:    common.TaskTypeDropDatabase.Int64(),
+				Code:    common.TaskTypeDropDatabase.Int32(),
 				Title:   "Cannot drop database",
 				Content: fmt.Sprintf(`The statement "%s" drops database`, node.Text()),
 				Report:  nil,
@@ -588,7 +588,7 @@ func postgresqlCreateAndDropDatabaseCheck(nodeList []ast.Node) []*storepb.PlanCh
 		case *ast.CreateDatabaseStmt:
 			result = append(result, &storepb.PlanCheckRunResult_Result{
 				Status:  storepb.PlanCheckRunResult_Result_ERROR,
-				Code:    common.TaskTypeCreateDatabase.Int64(),
+				Code:    common.TaskTypeCreateDatabase.Int32(),
 				Title:   "Cannot create database",
 				Content: fmt.Sprintf(`The statement "%s" creates database`, node.Text()),
 				Report:  nil,
@@ -612,7 +612,7 @@ func postgresqlStatementTypeCheck(statement string, changeType storepb.PlanCheck
 					SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
 						Line:   0,
 						Detail: "",
-						Code:   advisor.StatementSyntaxError.Int64(),
+						Code:   advisor.StatementSyntaxError.Int32(),
 					},
 				},
 			},
@@ -635,7 +635,7 @@ func postgresqlStatementTypeCheck(statement string, changeType storepb.PlanCheck
 					Status:  storepb.PlanCheckRunResult_Result_WARNING,
 					Title:   "Data change can only run DML",
 					Content: fmt.Sprintf("\"%s\" is not DML", node.Text()),
-					Code:    common.TaskTypeNotDML.Int64(),
+					Code:    common.TaskTypeNotDML.Int32(),
 					Report:  nil,
 				})
 			}
@@ -650,7 +650,7 @@ func postgresqlStatementTypeCheck(statement string, changeType storepb.PlanCheck
 					Status:  storepb.PlanCheckRunResult_Result_WARNING,
 					Title:   "Alter schema can only run DDL",
 					Content: fmt.Sprintf("\"%s\" is not DDL", node.Text()),
-					Code:    common.TaskTypeNotDDL.Int64(),
+					Code:    common.TaskTypeNotDDL.Int32(),
 					Report:  nil,
 				})
 			}

@@ -1600,7 +1600,7 @@ func (s *DatabaseService) checkDatabasePermission(ctx context.Context, projectID
 
 type totalValue struct {
 	totalQueryTime time.Duration
-	totalCount     int64
+	totalCount     int32
 }
 
 // ListSlowQueries lists the slow queries.

@@ -158,8 +158,8 @@ func TestSensitiveData(t *testing.T) {
 	a.Len(st.Details(), 1)
 	report, ok := st.Details()[0].(*v1pb.PlanCheckRun_Result_SqlReviewReport)
 	a.True(ok)
-	a.Equal(int64(1), report.Line)
-	a.Equal(int64(13), report.Column)
+	a.Equal(int32(1), report.Line)
+	a.Equal(int32(13), report.Column)
 	a.Equal("Syntax error at line 1:13 \nrelated text: SELECT hello TO", report.Detail)
 
 	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{

@@ -63,7 +63,7 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, conf
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
-				Code:    common.Ok.Int64(),
+				Code:    common.Ok.Int32(),
 				Title:   fmt.Sprintf("Statement advise is not supported for %s", instance.Engine),
 				Content: "",
 			},
@@ -101,7 +101,7 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, conf
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
-				Code:    common.Ok.Int64(),
+				Code:    common.Ok.Int32(),
 				Title:   "Report for large SQL is not supported",
 				Content: "",
 			},
@@ -149,7 +149,7 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, conf
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
-				Code:    common.Ok.Int64(),
+				Code:    common.Ok.Int32(),
 				Title:   "Not available",
 				Content: fmt.Sprintf("Report is not supported for %s", instance.Engine),
 			},
@@ -206,7 +206,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
-				Code:    common.Ok.Int64(),
+				Code:    common.Ok.Int32(),
 				Title:   "Large SQL review policy is disabled",
 				Content: "",
 			},
@@ -311,7 +311,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 					Status:  storepb.PlanCheckRunResult_Result_ERROR,
 					Title:   "Failed to run report executor",
 					Content: err.Error(),
-					Code:    common.Internal.Int64(),
+					Code:    common.Internal.Int32(),
 					Report:  nil,
 				})
 			} else {
@@ -326,7 +326,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
 				Title:   "OK",
 				Content: "",
-				Code:    common.Ok.Int64(),
+				Code:    common.Ok.Int32(),
 				Report:  nil,
 			},
 		}, nil
@@ -347,7 +347,7 @@ func reportForOracle(databaseName string, schemaName string, statement string) (
 				Code:    0,
 				Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
 					SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
-						Code: advisor.StatementSyntaxError.Int64(),
+						Code: advisor.StatementSyntaxError.Int32(),
 					},
 				},
 			},
@@ -371,7 +371,7 @@ func reportForOracle(databaseName string, schemaName string, statement string) (
 	return []*storepb.PlanCheckRunResult_Result{
 		{
 			Status: storepb.PlanCheckRunResult_Result_SUCCESS,
-			Code:   common.Ok.Int64(),
+			Code:   common.Ok.Int32(),
 			Title:  "OK",
 			Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
 				SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
@@ -399,7 +399,7 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, engine storepb.Engine, d
 				Code:    0,
 				Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
 					SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
-						Code: advisor.StatementSyntaxError.Int64(),
+						Code: advisor.StatementSyntaxError.Int32(),
 					},
 				},
 			},
@@ -461,12 +461,12 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, engine storepb.Engine, d
 	return []*storepb.PlanCheckRunResult_Result{
 		{
 			Status: storepb.PlanCheckRunResult_Result_SUCCESS,
-			Code:   common.Ok.Int64(),
+			Code:   common.Ok.Int32(),
 			Title:  "OK",
 			Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
 				SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
 					StatementTypes:   sqlTypes,
-					AffectedRows:     totalAffectedRows,
+					AffectedRows:     int32(totalAffectedRows),
 					ChangedResources: convertToChangedResources(changedResources),
 				},
 			},
@@ -512,7 +512,7 @@ func reportForPostgres(ctx context.Context, sqlDB *sql.DB, database, statement s
 				Code:    0,
 				Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
 					SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
-						Code: advisor.StatementSyntaxError.Int64(),
+						Code: advisor.StatementSyntaxError.Int32(),
 					},
 				},
 			},
@@ -551,12 +551,12 @@ func reportForPostgres(ctx context.Context, sqlDB *sql.DB, database, statement s
 	return []*storepb.PlanCheckRunResult_Result{
 		{
 			Status: storepb.PlanCheckRunResult_Result_SUCCESS,
-			Code:   common.Ok.Int64(),
+			Code:   common.Ok.Int32(),
 			Title:  "OK",
 			Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
 				SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
 					StatementTypes:   sqlTypes,
-					AffectedRows:     totalAffectedRows,
+					AffectedRows:     int32(totalAffectedRows),
 					ChangedResources: convertToChangedResources(changedResources),
 				},
 			},

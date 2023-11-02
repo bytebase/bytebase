@@ -38,25 +38,25 @@ message PlanCheckRunResult {
     Status status = 1;
     string title = 2;
     string content = 3;
-    int64 code = 4;
+    int32 code = 4;
 
     oneof report {
       SqlSummaryReport sql_summary_report = 5;
       SqlReviewReport sql_review_report = 6;
     }
     message SqlSummaryReport {
-      int64 code = 1;
+      int32 code = 1;
       // statement_types are the types of statements that are found in the sql.
       repeated string statement_types = 2;
-      int64 affected_rows = 3;
+      int32 affected_rows = 3;
       ChangedResources changed_resources = 4;
     }
     message SqlReviewReport {
-      int64 line = 1;
-      int64 column = 2;
+      int32 line = 1;
+      int32 column = 2;
       string detail = 3;
       // Code from sql review.
-      int64 code = 4;
+      int32 code = 4;
     }
   }
 }
