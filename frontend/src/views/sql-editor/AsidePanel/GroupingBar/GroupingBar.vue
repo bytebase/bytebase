@@ -9,7 +9,7 @@
         class="grouping-bar--tabs"
         @update:value="selectPresetFactor"
       >
-        <NTab name="project">{{ $t("common.project") }}</NTab>
+        <NTab name="project">{{ getCustomProjectTitle() }}</NTab>
         <NTab name="instance">{{ $t("common.instance") }}</NTab>
       </NTabs>
       <div
@@ -66,6 +66,7 @@ import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useSQLEditorTreeStore } from "@/store/modules/sqlEditorTree";
 import { StatefulSQLEditorTreeFactor as StatefulFactor } from "@/types";
+import { getCustomProjectTitle } from "@/utils/customTheme";
 import FactorPanel from "./FactorPanel.vue";
 import FactorTag from "./FactorTag.vue";
 
