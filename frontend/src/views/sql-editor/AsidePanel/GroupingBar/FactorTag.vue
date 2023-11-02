@@ -37,6 +37,7 @@ import {
 
 const props = defineProps<{
   factor: StatefulFactor;
+  allowDisable: boolean;
 }>();
 const emit = defineEmits<{
   (event: "toggle-disabled"): void;
@@ -44,11 +45,6 @@ const emit = defineEmits<{
 }>();
 const treeStore = useSQLEditorTreeStore();
 const { factorList, filteredFactorList } = storeToRefs(treeStore);
-
-const allowDisable = computed(() => {
-  // Disallow to disable the only one enabled factor
-  return filteredFactorList.value.length > 1;
-});
 
 const allowRemove = computed(() => {
   const { factor } = props;
@@ -64,7 +60,7 @@ const allowRemove = computed(() => {
 
 const clickable = computed(() => {
   if (props.factor.disabled) return true;
-  return allowDisable.value;
+  return props.allowDisable;
 });
 
 const handleClick = () => {
