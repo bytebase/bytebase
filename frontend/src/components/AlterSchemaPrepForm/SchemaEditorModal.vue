@@ -412,14 +412,12 @@ const handlePreviewIssue = async () => {
   const query: Record<string, any> = {
     template: "bb.issue.database.schema.update",
     project: project.value.uid,
-    mode: "normal",
-    ghost: undefined,
   };
   if (isTenantProject.value) {
     if (props.databaseIdList.length > 1) {
       // A tenant pipeline with 2 or more databases will be generated
       // via deployment config, so we don't need the databaseList parameter.
-      query.mode = "tenant";
+      query.batch = "1";
     } else {
       // A tenant pipeline with only 1 database will be downgraded to
       // a standard pipeline.
