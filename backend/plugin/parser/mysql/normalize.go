@@ -238,3 +238,16 @@ func NormalizeMySQLColumnInternalRef(ctx parser.IColumnInternalRefContext) strin
 	}
 	return ""
 }
+
+// NormalizeMySQLCharsetName noamalizes the given charset name.
+func NormalizeMySQLCharsetName(ctx parser.ICharsetNameContext) string {
+	switch {
+	case ctx.TextOrIdentifier() != nil:
+		return NormalizeMySQLTextOrIdentifier(ctx.TextOrIdentifier())
+	case ctx.DEFAULT_SYMBOL() != nil:
+		return "DEFAULT"
+	case ctx.BINARY_SYMBOL() != nil:
+		return "BINARY"
+	}
+	return ""
+}
