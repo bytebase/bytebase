@@ -237,12 +237,12 @@ export const PlanCheckRunConfig = {
 
   fromJSON(object: any): PlanCheckRunConfig {
     return {
-      sheetUid: isSet(object.sheetUid) ? Number(object.sheetUid) : 0,
+      sheetUid: isSet(object.sheetUid) ? globalThis.Number(object.sheetUid) : 0,
       changeDatabaseType: isSet(object.changeDatabaseType)
         ? planCheckRunConfig_ChangeDatabaseTypeFromJSON(object.changeDatabaseType)
         : 0,
-      instanceUid: isSet(object.instanceUid) ? Number(object.instanceUid) : 0,
-      databaseName: isSet(object.databaseName) ? String(object.databaseName) : "",
+      instanceUid: isSet(object.instanceUid) ? globalThis.Number(object.instanceUid) : 0,
+      databaseName: isSet(object.databaseName) ? globalThis.String(object.databaseName) : "",
       databaseGroupUid: isSet(object.databaseGroupUid) ? Long.fromValue(object.databaseGroupUid) : undefined,
       ghostFlags: isObject(object.ghostFlags)
         ? Object.entries(object.ghostFlags).reduce<{ [key: string]: string }>((acc, [key, value]) => {
@@ -255,18 +255,29 @@ export const PlanCheckRunConfig = {
 
   toJSON(message: PlanCheckRunConfig): unknown {
     const obj: any = {};
-    message.sheetUid !== undefined && (obj.sheetUid = Math.round(message.sheetUid));
-    message.changeDatabaseType !== undefined &&
-      (obj.changeDatabaseType = planCheckRunConfig_ChangeDatabaseTypeToJSON(message.changeDatabaseType));
-    message.instanceUid !== undefined && (obj.instanceUid = Math.round(message.instanceUid));
-    message.databaseName !== undefined && (obj.databaseName = message.databaseName);
-    message.databaseGroupUid !== undefined &&
-      (obj.databaseGroupUid = (message.databaseGroupUid || undefined).toString());
-    obj.ghostFlags = {};
+    if (message.sheetUid !== 0) {
+      obj.sheetUid = Math.round(message.sheetUid);
+    }
+    if (message.changeDatabaseType !== 0) {
+      obj.changeDatabaseType = planCheckRunConfig_ChangeDatabaseTypeToJSON(message.changeDatabaseType);
+    }
+    if (message.instanceUid !== 0) {
+      obj.instanceUid = Math.round(message.instanceUid);
+    }
+    if (message.databaseName !== "") {
+      obj.databaseName = message.databaseName;
+    }
+    if (message.databaseGroupUid !== undefined) {
+      obj.databaseGroupUid = (message.databaseGroupUid || Long.ZERO).toString();
+    }
     if (message.ghostFlags) {
-      Object.entries(message.ghostFlags).forEach(([k, v]) => {
-        obj.ghostFlags[k] = v;
-      });
+      const entries = Object.entries(message.ghostFlags);
+      if (entries.length > 0) {
+        obj.ghostFlags = {};
+        entries.forEach(([k, v]) => {
+          obj.ghostFlags[k] = v;
+        });
+      }
     }
     return obj;
   },
@@ -274,7 +285,6 @@ export const PlanCheckRunConfig = {
   create(base?: DeepPartial<PlanCheckRunConfig>): PlanCheckRunConfig {
     return PlanCheckRunConfig.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<PlanCheckRunConfig>): PlanCheckRunConfig {
     const message = createBasePlanCheckRunConfig();
     message.sheetUid = object.sheetUid ?? 0;
@@ -287,7 +297,7 @@ export const PlanCheckRunConfig = {
     message.ghostFlags = Object.entries(object.ghostFlags ?? {}).reduce<{ [key: string]: string }>(
       (acc, [key, value]) => {
         if (value !== undefined) {
-          acc[key] = String(value);
+          acc[key] = globalThis.String(value);
         }
         return acc;
       },
@@ -343,20 +353,26 @@ export const PlanCheckRunConfig_GhostFlagsEntry = {
   },
 
   fromJSON(object: any): PlanCheckRunConfig_GhostFlagsEntry {
-    return { key: isSet(object.key) ? String(object.key) : "", value: isSet(object.value) ? String(object.value) : "" };
+    return {
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      value: isSet(object.value) ? globalThis.String(object.value) : "",
+    };
   },
 
   toJSON(message: PlanCheckRunConfig_GhostFlagsEntry): unknown {
     const obj: any = {};
-    message.key !== undefined && (obj.key = message.key);
-    message.value !== undefined && (obj.value = message.value);
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.value !== "") {
+      obj.value = message.value;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<PlanCheckRunConfig_GhostFlagsEntry>): PlanCheckRunConfig_GhostFlagsEntry {
     return PlanCheckRunConfig_GhostFlagsEntry.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<PlanCheckRunConfig_GhostFlagsEntry>): PlanCheckRunConfig_GhostFlagsEntry {
     const message = createBasePlanCheckRunConfig_GhostFlagsEntry();
     message.key = object.key ?? "";
@@ -412,28 +428,27 @@ export const PlanCheckRunResult = {
 
   fromJSON(object: any): PlanCheckRunResult {
     return {
-      results: Array.isArray(object?.results)
+      results: globalThis.Array.isArray(object?.results)
         ? object.results.map((e: any) => PlanCheckRunResult_Result.fromJSON(e))
         : [],
-      error: isSet(object.error) ? String(object.error) : "",
+      error: isSet(object.error) ? globalThis.String(object.error) : "",
     };
   },
 
   toJSON(message: PlanCheckRunResult): unknown {
     const obj: any = {};
-    if (message.results) {
-      obj.results = message.results.map((e) => e ? PlanCheckRunResult_Result.toJSON(e) : undefined);
-    } else {
-      obj.results = [];
+    if (message.results?.length) {
+      obj.results = message.results.map((e) => PlanCheckRunResult_Result.toJSON(e));
     }
-    message.error !== undefined && (obj.error = message.error);
+    if (message.error !== "") {
+      obj.error = message.error;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<PlanCheckRunResult>): PlanCheckRunResult {
     return PlanCheckRunResult.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<PlanCheckRunResult>): PlanCheckRunResult {
     const message = createBasePlanCheckRunResult();
     message.results = object.results?.map((e) => PlanCheckRunResult_Result.fromPartial(e)) || [];
@@ -530,9 +545,9 @@ export const PlanCheckRunResult_Result = {
   fromJSON(object: any): PlanCheckRunResult_Result {
     return {
       status: isSet(object.status) ? planCheckRunResult_Result_StatusFromJSON(object.status) : 0,
-      title: isSet(object.title) ? String(object.title) : "",
-      content: isSet(object.content) ? String(object.content) : "",
-      code: isSet(object.code) ? Number(object.code) : 0,
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      content: isSet(object.content) ? globalThis.String(object.content) : "",
+      code: isSet(object.code) ? globalThis.Number(object.code) : 0,
       sqlSummaryReport: isSet(object.sqlSummaryReport)
         ? PlanCheckRunResult_Result_SqlSummaryReport.fromJSON(object.sqlSummaryReport)
         : undefined,
@@ -544,23 +559,30 @@ export const PlanCheckRunResult_Result = {
 
   toJSON(message: PlanCheckRunResult_Result): unknown {
     const obj: any = {};
-    message.status !== undefined && (obj.status = planCheckRunResult_Result_StatusToJSON(message.status));
-    message.title !== undefined && (obj.title = message.title);
-    message.content !== undefined && (obj.content = message.content);
-    message.code !== undefined && (obj.code = Math.round(message.code));
-    message.sqlSummaryReport !== undefined && (obj.sqlSummaryReport = message.sqlSummaryReport
-      ? PlanCheckRunResult_Result_SqlSummaryReport.toJSON(message.sqlSummaryReport)
-      : undefined);
-    message.sqlReviewReport !== undefined && (obj.sqlReviewReport = message.sqlReviewReport
-      ? PlanCheckRunResult_Result_SqlReviewReport.toJSON(message.sqlReviewReport)
-      : undefined);
+    if (message.status !== 0) {
+      obj.status = planCheckRunResult_Result_StatusToJSON(message.status);
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.content !== "") {
+      obj.content = message.content;
+    }
+    if (message.code !== 0) {
+      obj.code = Math.round(message.code);
+    }
+    if (message.sqlSummaryReport !== undefined) {
+      obj.sqlSummaryReport = PlanCheckRunResult_Result_SqlSummaryReport.toJSON(message.sqlSummaryReport);
+    }
+    if (message.sqlReviewReport !== undefined) {
+      obj.sqlReviewReport = PlanCheckRunResult_Result_SqlReviewReport.toJSON(message.sqlReviewReport);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<PlanCheckRunResult_Result>): PlanCheckRunResult_Result {
     return PlanCheckRunResult_Result.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<PlanCheckRunResult_Result>): PlanCheckRunResult_Result {
     const message = createBasePlanCheckRunResult_Result();
     message.status = object.status ?? 0;
@@ -644,31 +666,35 @@ export const PlanCheckRunResult_Result_SqlSummaryReport = {
 
   fromJSON(object: any): PlanCheckRunResult_Result_SqlSummaryReport {
     return {
-      code: isSet(object.code) ? Number(object.code) : 0,
-      statementTypes: Array.isArray(object?.statementTypes) ? object.statementTypes.map((e: any) => String(e)) : [],
-      affectedRows: isSet(object.affectedRows) ? Number(object.affectedRows) : 0,
+      code: isSet(object.code) ? globalThis.Number(object.code) : 0,
+      statementTypes: globalThis.Array.isArray(object?.statementTypes)
+        ? object.statementTypes.map((e: any) => globalThis.String(e))
+        : [],
+      affectedRows: isSet(object.affectedRows) ? globalThis.Number(object.affectedRows) : 0,
       changedResources: isSet(object.changedResources) ? ChangedResources.fromJSON(object.changedResources) : undefined,
     };
   },
 
   toJSON(message: PlanCheckRunResult_Result_SqlSummaryReport): unknown {
     const obj: any = {};
-    message.code !== undefined && (obj.code = Math.round(message.code));
-    if (message.statementTypes) {
-      obj.statementTypes = message.statementTypes.map((e) => e);
-    } else {
-      obj.statementTypes = [];
+    if (message.code !== 0) {
+      obj.code = Math.round(message.code);
     }
-    message.affectedRows !== undefined && (obj.affectedRows = Math.round(message.affectedRows));
-    message.changedResources !== undefined &&
-      (obj.changedResources = message.changedResources ? ChangedResources.toJSON(message.changedResources) : undefined);
+    if (message.statementTypes?.length) {
+      obj.statementTypes = message.statementTypes;
+    }
+    if (message.affectedRows !== 0) {
+      obj.affectedRows = Math.round(message.affectedRows);
+    }
+    if (message.changedResources !== undefined) {
+      obj.changedResources = ChangedResources.toJSON(message.changedResources);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<PlanCheckRunResult_Result_SqlSummaryReport>): PlanCheckRunResult_Result_SqlSummaryReport {
     return PlanCheckRunResult_Result_SqlSummaryReport.fromPartial(base ?? {});
   },
-
   fromPartial(
     object: DeepPartial<PlanCheckRunResult_Result_SqlSummaryReport>,
   ): PlanCheckRunResult_Result_SqlSummaryReport {
@@ -750,26 +776,33 @@ export const PlanCheckRunResult_Result_SqlReviewReport = {
 
   fromJSON(object: any): PlanCheckRunResult_Result_SqlReviewReport {
     return {
-      line: isSet(object.line) ? Number(object.line) : 0,
-      column: isSet(object.column) ? Number(object.column) : 0,
-      detail: isSet(object.detail) ? String(object.detail) : "",
-      code: isSet(object.code) ? Number(object.code) : 0,
+      line: isSet(object.line) ? globalThis.Number(object.line) : 0,
+      column: isSet(object.column) ? globalThis.Number(object.column) : 0,
+      detail: isSet(object.detail) ? globalThis.String(object.detail) : "",
+      code: isSet(object.code) ? globalThis.Number(object.code) : 0,
     };
   },
 
   toJSON(message: PlanCheckRunResult_Result_SqlReviewReport): unknown {
     const obj: any = {};
-    message.line !== undefined && (obj.line = Math.round(message.line));
-    message.column !== undefined && (obj.column = Math.round(message.column));
-    message.detail !== undefined && (obj.detail = message.detail);
-    message.code !== undefined && (obj.code = Math.round(message.code));
+    if (message.line !== 0) {
+      obj.line = Math.round(message.line);
+    }
+    if (message.column !== 0) {
+      obj.column = Math.round(message.column);
+    }
+    if (message.detail !== "") {
+      obj.detail = message.detail;
+    }
+    if (message.code !== 0) {
+      obj.code = Math.round(message.code);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<PlanCheckRunResult_Result_SqlReviewReport>): PlanCheckRunResult_Result_SqlReviewReport {
     return PlanCheckRunResult_Result_SqlReviewReport.fromPartial(base ?? {});
   },
-
   fromPartial(
     object: DeepPartial<PlanCheckRunResult_Result_SqlReviewReport>,
   ): PlanCheckRunResult_Result_SqlReviewReport {
@@ -785,7 +818,7 @@ export const PlanCheckRunResult_Result_SqlReviewReport = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Long ? string | number | Long : T extends Array<infer U> ? Array<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;

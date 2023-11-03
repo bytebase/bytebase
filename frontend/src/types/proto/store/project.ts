@@ -98,7 +98,7 @@ export const Project = {
 
   fromJSON(object: any): Project {
     return {
-      protectionRules: Array.isArray(object?.protectionRules)
+      protectionRules: globalThis.Array.isArray(object?.protectionRules)
         ? object.protectionRules.map((e: any) => ProtectionRule.fromJSON(e))
         : [],
     };
@@ -106,10 +106,8 @@ export const Project = {
 
   toJSON(message: Project): unknown {
     const obj: any = {};
-    if (message.protectionRules) {
-      obj.protectionRules = message.protectionRules.map((e) => e ? ProtectionRule.toJSON(e) : undefined);
-    } else {
-      obj.protectionRules = [];
+    if (message.protectionRules?.length) {
+      obj.protectionRules = message.protectionRules.map((e) => ProtectionRule.toJSON(e));
     }
     return obj;
   },
@@ -117,7 +115,6 @@ export const Project = {
   create(base?: DeepPartial<Project>): Project {
     return Project.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Project>): Project {
     const message = createBaseProject();
     message.protectionRules = object.protectionRules?.map((e) => ProtectionRule.fromPartial(e)) || [];
@@ -192,24 +189,28 @@ export const ProtectionRule = {
 
   fromJSON(object: any): ProtectionRule {
     return {
-      id: isSet(object.id) ? String(object.id) : "",
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
       target: isSet(object.target) ? protectionRule_TargetFromJSON(object.target) : 0,
-      nameFilter: isSet(object.nameFilter) ? String(object.nameFilter) : "",
-      createAllowedRoles: Array.isArray(object?.createAllowedRoles)
-        ? object.createAllowedRoles.map((e: any) => String(e))
+      nameFilter: isSet(object.nameFilter) ? globalThis.String(object.nameFilter) : "",
+      createAllowedRoles: globalThis.Array.isArray(object?.createAllowedRoles)
+        ? object.createAllowedRoles.map((e: any) => globalThis.String(e))
         : [],
     };
   },
 
   toJSON(message: ProtectionRule): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
-    message.target !== undefined && (obj.target = protectionRule_TargetToJSON(message.target));
-    message.nameFilter !== undefined && (obj.nameFilter = message.nameFilter);
-    if (message.createAllowedRoles) {
-      obj.createAllowedRoles = message.createAllowedRoles.map((e) => e);
-    } else {
-      obj.createAllowedRoles = [];
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.target !== 0) {
+      obj.target = protectionRule_TargetToJSON(message.target);
+    }
+    if (message.nameFilter !== "") {
+      obj.nameFilter = message.nameFilter;
+    }
+    if (message.createAllowedRoles?.length) {
+      obj.createAllowedRoles = message.createAllowedRoles;
     }
     return obj;
   },
@@ -217,7 +218,6 @@ export const ProtectionRule = {
   create(base?: DeepPartial<ProtectionRule>): ProtectionRule {
     return ProtectionRule.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ProtectionRule>): ProtectionRule {
     const message = createBaseProtectionRule();
     message.id = object.id ?? "";
@@ -231,7 +231,7 @@ export const ProtectionRule = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Long ? string | number | Long : T extends Array<infer U> ? Array<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
