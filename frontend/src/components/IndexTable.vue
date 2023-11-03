@@ -53,8 +53,8 @@ import { computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBTableSectionDataSource } from "@/bbkit/types";
 import { ComposedDatabase } from "@/types";
-import { IndexMetadata } from "@/types/proto/store/database";
 import { Engine } from "@/types/proto/v1/common";
+import { IndexMetadata } from "@/types/proto/v1/database_service";
 
 const props = defineProps({
   database: {

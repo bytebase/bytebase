@@ -218,10 +218,10 @@ const state = reactive<LocalState>({
   config: {
     vcs: {} as ExternalVersionControl,
     code: "",
-    token: {
+    token: OAuthToken.fromPartial({
       accessToken: "",
       refreshToken: "",
-    },
+    }),
     repositoryInfo: {
       externalId: "",
       name: "",

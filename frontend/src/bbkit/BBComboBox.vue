@@ -139,8 +139,8 @@ const state = reactive<LocalState>({
 
 const dataLabelAttrs = useDataLabelAttrs("", "-item");
 
-const button = ref<HTMLButtonElement | null>(null);
-const popup = ref<HTMLElement | null>(null);
+const button = ref<HTMLButtonElement>();
+const popup = ref<HTMLElement>();
 const itemRefs = ref<HTMLElement[]>([]);
 
 // Sync the popup's width to the button's

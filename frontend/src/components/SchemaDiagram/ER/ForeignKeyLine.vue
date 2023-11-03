@@ -15,7 +15,7 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, ref } from "vue";
-import { TableMetadata } from "@/types/proto/store/database";
+import { TableMetadata } from "@/types/proto/v1/database_service";
 import type { VueClass } from "@/utils";
 import {
   segmentOverlap1D,

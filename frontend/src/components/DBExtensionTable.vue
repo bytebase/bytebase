@@ -27,7 +27,7 @@
 <script lang="ts">
 import { computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
-import { ExtensionMetadata } from "@/types/proto/store/database";
+import { ExtensionMetadata } from "@/types/proto/v1/database_service";
 
 export default {
   name: "DbExtensionTable",

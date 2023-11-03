@@ -25,8 +25,8 @@ import { computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGrid, BBGridColumn, BBGridRow } from "@/bbkit";
 import { ComposedDatabase } from "@/types";
-import { ViewMetadata } from "@/types/proto/store/database";
 import { Engine } from "@/types/proto/v1/common";
+import { ViewMetadata } from "@/types/proto/v1/database_service";
 
 const props = defineProps({
   database: {

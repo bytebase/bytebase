@@ -166,11 +166,11 @@ function maskKey(key: string | undefined): string {
   return key ? key.slice(0, 3) + "***" + key.slice(-4) : "";
 }
 
-const handleOpenAIKeyChange = (event: InputEvent) => {
+const handleOpenAIKeyChange = (event: Event) => {
   state.openAIKey = (event.target as HTMLInputElement).value;
 };
 
-const handleOpenAIEndpointChange = (event: InputEvent) => {
+const handleOpenAIEndpointChange = (event: Event) => {
   state.openAIEndpoint = (event.target as HTMLInputElement).value;
 };
 
