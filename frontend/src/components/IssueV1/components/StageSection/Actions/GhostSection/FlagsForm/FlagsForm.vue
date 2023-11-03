@@ -18,11 +18,12 @@
           :disabled="readonly"
           @update:value="setIntValue(param.key, parseInt($event, 10))"
         />
-        <NCheckbox
+        <BoolFlag
           v-if="param.type === 'bool'"
-          :checked="getBoolValue(param.key)"
+          :value="getBoolValue(param.key)"
+          :defaults="getBoolValueDefaults(param.key)"
           :disabled="readonly"
-          @update:checked="setBoolValue(param.key, $event)"
+          @update:value="setBoolValue(param.key, $event)"
         />
         <NInput
           v-if="param.type === 'string'"
@@ -37,9 +38,10 @@
 </template>
 
 <script lang="ts" setup>
-import { NCheckbox, NInput } from "naive-ui";
+import { NInput } from "naive-ui";
 import { onlyAllowNumber } from "@/utils";
-import { SupportedGhostParameters } from "./constants";
+import BoolFlag from "./BoolFlag.vue";
+import { DefaultGhostParameters, SupportedGhostParameters } from "./constants";
 
 const props = defineProps<{
   flags: Record<string, string>;
@@ -50,7 +52,14 @@ const emit = defineEmits<{
 }>();
 
 const getBoolValue = (key: string) => {
-  return props.flags[key] === "true";
+  const value = props.flags[key];
+  if (value === "true") return "true";
+  if (value === "false") return "false";
+  return "";
+};
+const getBoolValueDefaults = (key: string) => {
+  const defaults = DefaultGhostParameters.find((p) => p.key === key);
+  return defaults?.value === "true" ?? false;
 };
 const getStringValue = (key: string) => {
   return props.flags[key] ?? "";
@@ -61,10 +70,10 @@ const getIntValue = (key: string) => {
   return String(intVal);
 };
 
-const setBoolValue = (key: string, value: boolean) => {
+const setBoolValue = (key: string, value: "true" | "false" | "") => {
   const updated = { ...props.flags };
-  if (value) {
-    updated[key] = "true";
+  if (value !== "") {
+    updated[key] = value;
   } else {
     delete updated[key];
   }
