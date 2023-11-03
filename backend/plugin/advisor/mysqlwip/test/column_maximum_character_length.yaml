@@ -14,35 +14,43 @@
       content: ""
       line: 0
       details: ""
-- statement: CREATE TABLE t(name char(225));
+- statement: |-
+    CREATE TABLE t1(name char(20));
+    CREATE TABLE t2(name char(225));
   want:
     - status: WARN
       code: 415
       title: column.maximum-character-length
-      content: The length of the CHAR column `name` is bigger than 20, please use VARCHAR instead
-      line: 1
-      details: ""
-- statement: ALTER TABLE tech_book ADD COLUMN name_2 char(225)
-  want:
-    - status: WARN
-      code: 415
-      title: column.maximum-character-length
-      content: The length of the CHAR column `name_2` is bigger than 20, please use VARCHAR instead
+      content: The length of the CHAR column `t2.name` is bigger than 20, please use VARCHAR instead
       line: 2
       details: ""
-- statement: ALTER TABLE tech_book CHANGE COLUMN name name char(225)
+- statement: |-
+    ALTER TABLE tech_book ADD COLUMN name_1 char(20);
+    ALTER TABLE tech_book ADD COLUMN name_2 char(225);
   want:
     - status: WARN
       code: 415
       title: column.maximum-character-length
-      content: The length of the CHAR column `name` is bigger than 20, please use VARCHAR instead
+      content: The length of the CHAR column `tech_book.name_2` is bigger than 20, please use VARCHAR instead
       line: 2
       details: ""
-- statement: ALTER TABLE tech_book MODIFY COLUMN name char(225)
+- statement: |-
+    ALTER TABLE tech_book CHANGE COLUMN name name char(20);
+    ALTER TABLE tech_book CHANGE COLUMN name name char(225);
   want:
     - status: WARN
       code: 415
       title: column.maximum-character-length
-      content: The length of the CHAR column `name` is bigger than 20, please use VARCHAR instead
+      content: The length of the CHAR column `tech_book.name` is bigger than 20, please use VARCHAR instead
+      line: 2
+      details: ""
+- statement: |-
+    ALTER TABLE tech_book MODIFY COLUMN name char(20);
+    ALTER TABLE tech_book MODIFY COLUMN name char(225);
+  want:
+    - status: WARN
+      code: 415
+      title: column.maximum-character-length
+      content: The length of the CHAR column `tech_book.name` is bigger than 20, please use VARCHAR instead
       line: 2
       details: ""
