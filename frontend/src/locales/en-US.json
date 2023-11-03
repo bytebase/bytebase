@@ -2967,7 +2967,7 @@
     "send-back": "Send back"
   },
   "slow-query": {
-    "self": "Slow query",
+    "self": "Slow Query",
     "slow-queries": "Slow queries",
     "report": "Report",
     "last-query-time": "Last query time",
@@ -3007,7 +3007,7 @@
     }
   },
   "schema-template": {
-    "self": "Schema template",
+    "self": "Schema Template",
     "field-template": {
       "self": "Field Template",
       "add": "Add field template",
