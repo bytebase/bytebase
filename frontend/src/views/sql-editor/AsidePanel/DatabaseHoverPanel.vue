@@ -98,7 +98,7 @@ const show = computed(
 
 useEventListener(popoverRef, "mouseenter", () => {
   // Reset the value immediately to cancel other pending setting values
-  update(node.value, "before" /* overrideDelay */);
+  update(node.value, "before", 0 /* overrideDelay */);
 });
 useEventListener(popoverRef, "mouseleave", () => {
   update(undefined, "before");
