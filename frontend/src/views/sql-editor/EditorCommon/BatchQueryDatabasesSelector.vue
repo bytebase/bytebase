@@ -78,9 +78,9 @@
         <NDataTable
           size="small"
           :checked-row-keys="selectedDatabaseNames"
-          :columns="(dataTableColumns as any)"
+          :columns="dataTableColumns"
           :data="databaseRows"
-          :row-key="(row) => row.name"
+          :row-key="(row: DatabaseDataTableRow) => row.name"
           @update:checked-row-keys="handleDatabaseRowCheck"
         />
       </div>

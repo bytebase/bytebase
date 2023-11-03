@@ -1,5 +1,5 @@
 import { ProjectRoleType } from "@/types";
-import type { IamPolicy } from "@/types/proto/v1/iam_policy";
+import { Binding, type IamPolicy } from "@/types/proto/v1/iam_policy";
 
 const tidyUpPolicy = (policy: IamPolicy) => {
   policy.bindings = policy.bindings.filter(
@@ -41,8 +41,10 @@ export const addRoleToProjectIamPolicy = (
   user: string,
   role: ProjectRoleType
 ) => {
-  policy.bindings.push({
-    role,
-    members: [user],
-  });
+  policy.bindings.push(
+    Binding.fromPartial({
+      role,
+      members: [user],
+    })
+  );
 };

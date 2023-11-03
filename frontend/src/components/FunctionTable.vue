@@ -30,8 +30,8 @@ import { useI18n } from "vue-i18n";
 import DefinitionView from "@/components/DefinitionView.vue";
 import EllipsisText from "@/components/EllipsisText.vue";
 import { ComposedDatabase } from "@/types";
-import { FunctionMetadata } from "@/types/proto/store/database";
 import { Engine } from "@/types/proto/v1/common";
+import { FunctionMetadata } from "@/types/proto/v1/database_service";
 
 const props = defineProps({
   database: {

@@ -21,7 +21,7 @@ import type { ComposedDatabase } from "@/types";
 import type {
   SchemaMetadata,
   TableMetadata,
-} from "@/types/proto/store/database";
+} from "@/types/proto/v1/database_service";
 
 defineProps<{
   database: ComposedDatabase;
