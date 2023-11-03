@@ -187,25 +187,29 @@ export const CreateChangelistRequest = {
 
   fromJSON(object: any): CreateChangelistRequest {
     return {
-      parent: isSet(object.parent) ? String(object.parent) : "",
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
       changelist: isSet(object.changelist) ? Changelist.fromJSON(object.changelist) : undefined,
-      changelistId: isSet(object.changelistId) ? String(object.changelistId) : "",
+      changelistId: isSet(object.changelistId) ? globalThis.String(object.changelistId) : "",
     };
   },
 
   toJSON(message: CreateChangelistRequest): unknown {
     const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
-    message.changelist !== undefined &&
-      (obj.changelist = message.changelist ? Changelist.toJSON(message.changelist) : undefined);
-    message.changelistId !== undefined && (obj.changelistId = message.changelistId);
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.changelist !== undefined) {
+      obj.changelist = Changelist.toJSON(message.changelist);
+    }
+    if (message.changelistId !== "") {
+      obj.changelistId = message.changelistId;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<CreateChangelistRequest>): CreateChangelistRequest {
     return CreateChangelistRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<CreateChangelistRequest>): CreateChangelistRequest {
     const message = createBaseCreateChangelistRequest();
     message.parent = object.parent ?? "";
@@ -253,19 +257,20 @@ export const GetChangelistRequest = {
   },
 
   fromJSON(object: any): GetChangelistRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: GetChangelistRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<GetChangelistRequest>): GetChangelistRequest {
     return GetChangelistRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<GetChangelistRequest>): GetChangelistRequest {
     const message = createBaseGetChangelistRequest();
     message.name = object.name ?? "";
@@ -330,24 +335,29 @@ export const ListChangelistsRequest = {
 
   fromJSON(object: any): ListChangelistsRequest {
     return {
-      parent: isSet(object.parent) ? String(object.parent) : "",
-      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
     };
   },
 
   toJSON(message: ListChangelistsRequest): unknown {
     const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
-    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
-    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ListChangelistsRequest>): ListChangelistsRequest {
     return ListChangelistsRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ListChangelistsRequest>): ListChangelistsRequest {
     const message = createBaseListChangelistsRequest();
     message.parent = object.parent ?? "";
@@ -404,26 +414,27 @@ export const ListChangelistsResponse = {
 
   fromJSON(object: any): ListChangelistsResponse {
     return {
-      changelists: Array.isArray(object?.changelists) ? object.changelists.map((e: any) => Changelist.fromJSON(e)) : [],
-      nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
+      changelists: globalThis.Array.isArray(object?.changelists)
+        ? object.changelists.map((e: any) => Changelist.fromJSON(e))
+        : [],
+      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
     };
   },
 
   toJSON(message: ListChangelistsResponse): unknown {
     const obj: any = {};
-    if (message.changelists) {
-      obj.changelists = message.changelists.map((e) => e ? Changelist.toJSON(e) : undefined);
-    } else {
-      obj.changelists = [];
+    if (message.changelists?.length) {
+      obj.changelists = message.changelists.map((e) => Changelist.toJSON(e));
     }
-    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ListChangelistsResponse>): ListChangelistsResponse {
     return ListChangelistsResponse.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ListChangelistsResponse>): ListChangelistsResponse {
     const message = createBaseListChangelistsResponse();
     message.changelists = object.changelists?.map((e) => Changelist.fromPartial(e)) || [];
@@ -486,16 +497,18 @@ export const UpdateChangelistRequest = {
 
   toJSON(message: UpdateChangelistRequest): unknown {
     const obj: any = {};
-    message.changelist !== undefined &&
-      (obj.changelist = message.changelist ? Changelist.toJSON(message.changelist) : undefined);
-    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    if (message.changelist !== undefined) {
+      obj.changelist = Changelist.toJSON(message.changelist);
+    }
+    if (message.updateMask !== undefined) {
+      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
+    }
     return obj;
   },
 
   create(base?: DeepPartial<UpdateChangelistRequest>): UpdateChangelistRequest {
     return UpdateChangelistRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<UpdateChangelistRequest>): UpdateChangelistRequest {
     const message = createBaseUpdateChangelistRequest();
     message.changelist = (object.changelist !== undefined && object.changelist !== null)
@@ -542,19 +555,20 @@ export const DeleteChangelistRequest = {
   },
 
   fromJSON(object: any): DeleteChangelistRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: DeleteChangelistRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<DeleteChangelistRequest>): DeleteChangelistRequest {
     return DeleteChangelistRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<DeleteChangelistRequest>): DeleteChangelistRequest {
     const message = createBaseDeleteChangelistRequest();
     message.name = object.name ?? "";
@@ -667,28 +681,40 @@ export const Changelist = {
 
   fromJSON(object: any): Changelist {
     return {
-      name: isSet(object.name) ? String(object.name) : "",
-      description: isSet(object.description) ? String(object.description) : "",
-      creator: isSet(object.creator) ? String(object.creator) : "",
-      updater: isSet(object.updater) ? String(object.updater) : "",
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      description: isSet(object.description) ? globalThis.String(object.description) : "",
+      creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
+      updater: isSet(object.updater) ? globalThis.String(object.updater) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
-      changes: Array.isArray(object?.changes) ? object.changes.map((e: any) => Changelist_Change.fromJSON(e)) : [],
+      changes: globalThis.Array.isArray(object?.changes)
+        ? object.changes.map((e: any) => Changelist_Change.fromJSON(e))
+        : [],
     };
   },
 
   toJSON(message: Changelist): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.description !== undefined && (obj.description = message.description);
-    message.creator !== undefined && (obj.creator = message.creator);
-    message.updater !== undefined && (obj.updater = message.updater);
-    message.createTime !== undefined && (obj.createTime = message.createTime.toISOString());
-    message.updateTime !== undefined && (obj.updateTime = message.updateTime.toISOString());
-    if (message.changes) {
-      obj.changes = message.changes.map((e) => e ? Changelist_Change.toJSON(e) : undefined);
-    } else {
-      obj.changes = [];
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.description !== "") {
+      obj.description = message.description;
+    }
+    if (message.creator !== "") {
+      obj.creator = message.creator;
+    }
+    if (message.updater !== "") {
+      obj.updater = message.updater;
+    }
+    if (message.createTime !== undefined) {
+      obj.createTime = message.createTime.toISOString();
+    }
+    if (message.updateTime !== undefined) {
+      obj.updateTime = message.updateTime.toISOString();
+    }
+    if (message.changes?.length) {
+      obj.changes = message.changes.map((e) => Changelist_Change.toJSON(e));
     }
     return obj;
   },
@@ -696,7 +722,6 @@ export const Changelist = {
   create(base?: DeepPartial<Changelist>): Changelist {
     return Changelist.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Changelist>): Changelist {
     const message = createBaseChangelist();
     message.name = object.name ?? "";
@@ -757,22 +782,25 @@ export const Changelist_Change = {
 
   fromJSON(object: any): Changelist_Change {
     return {
-      sheet: isSet(object.sheet) ? String(object.sheet) : "",
-      source: isSet(object.source) ? String(object.source) : "",
+      sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
+      source: isSet(object.source) ? globalThis.String(object.source) : "",
     };
   },
 
   toJSON(message: Changelist_Change): unknown {
     const obj: any = {};
-    message.sheet !== undefined && (obj.sheet = message.sheet);
-    message.source !== undefined && (obj.source = message.source);
+    if (message.sheet !== "") {
+      obj.sheet = message.sheet;
+    }
+    if (message.source !== "") {
+      obj.source = message.source;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<Changelist_Change>): Changelist_Change {
     return Changelist_Change.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Changelist_Change>): Changelist_Change {
     const message = createBaseChangelist_Change();
     message.sheet = object.sheet ?? "";
@@ -1123,7 +1151,7 @@ export const ChangelistServiceDefinition = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Long ? string | number | Long : T extends Array<infer U> ? Array<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
@@ -1137,14 +1165,14 @@ function toTimestamp(date: Date): Timestamp {
 function fromTimestamp(t: Timestamp): Date {
   let millis = (t.seconds.toNumber() || 0) * 1_000;
   millis += (t.nanos || 0) / 1_000_000;
-  return new Date(millis);
+  return new globalThis.Date(millis);
 }
 
 function fromJsonTimestamp(o: any): Date {
-  if (o instanceof Date) {
+  if (o instanceof globalThis.Date) {
     return o;
   } else if (typeof o === "string") {
-    return new Date(o);
+    return new globalThis.Date(o);
   } else {
     return fromTimestamp(Timestamp.fromJSON(o));
   }

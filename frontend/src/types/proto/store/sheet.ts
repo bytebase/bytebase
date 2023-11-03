@@ -221,23 +221,27 @@ export const SheetPayload = {
 
   toJSON(message: SheetPayload): unknown {
     const obj: any = {};
-    message.type !== undefined && (obj.type = sheetPayload_TypeToJSON(message.type));
-    message.vcsPayload !== undefined &&
-      (obj.vcsPayload = message.vcsPayload ? SheetPayload_VCSPayload.toJSON(message.vcsPayload) : undefined);
-    message.schemaDesign !== undefined &&
-      (obj.schemaDesign = message.schemaDesign ? SheetPayload_SchemaDesign.toJSON(message.schemaDesign) : undefined);
-    message.databaseConfig !== undefined &&
-      (obj.databaseConfig = message.databaseConfig ? DatabaseConfig.toJSON(message.databaseConfig) : undefined);
-    message.baselineDatabaseConfig !== undefined && (obj.baselineDatabaseConfig = message.baselineDatabaseConfig
-      ? DatabaseConfig.toJSON(message.baselineDatabaseConfig)
-      : undefined);
+    if (message.type !== 0) {
+      obj.type = sheetPayload_TypeToJSON(message.type);
+    }
+    if (message.vcsPayload !== undefined) {
+      obj.vcsPayload = SheetPayload_VCSPayload.toJSON(message.vcsPayload);
+    }
+    if (message.schemaDesign !== undefined) {
+      obj.schemaDesign = SheetPayload_SchemaDesign.toJSON(message.schemaDesign);
+    }
+    if (message.databaseConfig !== undefined) {
+      obj.databaseConfig = DatabaseConfig.toJSON(message.databaseConfig);
+    }
+    if (message.baselineDatabaseConfig !== undefined) {
+      obj.baselineDatabaseConfig = DatabaseConfig.toJSON(message.baselineDatabaseConfig);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<SheetPayload>): SheetPayload {
     return SheetPayload.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SheetPayload>): SheetPayload {
     const message = createBaseSheetPayload();
     message.type = object.type ?? 0;
@@ -363,11 +367,11 @@ export const SheetPayload_VCSPayload = {
 
   fromJSON(object: any): SheetPayload_VCSPayload {
     return {
-      fileName: isSet(object.fileName) ? String(object.fileName) : "",
-      filePath: isSet(object.filePath) ? String(object.filePath) : "",
+      fileName: isSet(object.fileName) ? globalThis.String(object.fileName) : "",
+      filePath: isSet(object.filePath) ? globalThis.String(object.filePath) : "",
       size: isSet(object.size) ? Long.fromValue(object.size) : Long.ZERO,
-      author: isSet(object.author) ? String(object.author) : "",
-      lastCommitId: isSet(object.lastCommitId) ? String(object.lastCommitId) : "",
+      author: isSet(object.author) ? globalThis.String(object.author) : "",
+      lastCommitId: isSet(object.lastCommitId) ? globalThis.String(object.lastCommitId) : "",
       lastSyncTs: isSet(object.lastSyncTs) ? Long.fromValue(object.lastSyncTs) : Long.ZERO,
       pushEvent: isSet(object.pushEvent) ? PushEvent.fromJSON(object.pushEvent) : undefined,
     };
@@ -375,21 +379,33 @@ export const SheetPayload_VCSPayload = {
 
   toJSON(message: SheetPayload_VCSPayload): unknown {
     const obj: any = {};
-    message.fileName !== undefined && (obj.fileName = message.fileName);
-    message.filePath !== undefined && (obj.filePath = message.filePath);
-    message.size !== undefined && (obj.size = (message.size || Long.ZERO).toString());
-    message.author !== undefined && (obj.author = message.author);
-    message.lastCommitId !== undefined && (obj.lastCommitId = message.lastCommitId);
-    message.lastSyncTs !== undefined && (obj.lastSyncTs = (message.lastSyncTs || Long.ZERO).toString());
-    message.pushEvent !== undefined &&
-      (obj.pushEvent = message.pushEvent ? PushEvent.toJSON(message.pushEvent) : undefined);
+    if (message.fileName !== "") {
+      obj.fileName = message.fileName;
+    }
+    if (message.filePath !== "") {
+      obj.filePath = message.filePath;
+    }
+    if (!message.size.isZero()) {
+      obj.size = (message.size || Long.ZERO).toString();
+    }
+    if (message.author !== "") {
+      obj.author = message.author;
+    }
+    if (message.lastCommitId !== "") {
+      obj.lastCommitId = message.lastCommitId;
+    }
+    if (!message.lastSyncTs.isZero()) {
+      obj.lastSyncTs = (message.lastSyncTs || Long.ZERO).toString();
+    }
+    if (message.pushEvent !== undefined) {
+      obj.pushEvent = PushEvent.toJSON(message.pushEvent);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<SheetPayload_VCSPayload>): SheetPayload_VCSPayload {
     return SheetPayload_VCSPayload.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SheetPayload_VCSPayload>): SheetPayload_VCSPayload {
     const message = createBaseSheetPayload_VCSPayload();
     message.fileName = object.fileName ?? "";
@@ -503,9 +519,13 @@ export const SheetPayload_SchemaDesign = {
     return {
       type: isSet(object.type) ? sheetPayload_SchemaDesign_TypeFromJSON(object.type) : 0,
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
-      baselineSheetId: isSet(object.baselineSheetId) ? String(object.baselineSheetId) : "",
-      baselineSchemaDesignId: isSet(object.baselineSchemaDesignId) ? String(object.baselineSchemaDesignId) : "",
-      baselineChangeHistoryId: isSet(object.baselineChangeHistoryId) ? String(object.baselineChangeHistoryId) : "",
+      baselineSheetId: isSet(object.baselineSheetId) ? globalThis.String(object.baselineSheetId) : "",
+      baselineSchemaDesignId: isSet(object.baselineSchemaDesignId)
+        ? globalThis.String(object.baselineSchemaDesignId)
+        : "",
+      baselineChangeHistoryId: isSet(object.baselineChangeHistoryId)
+        ? globalThis.String(object.baselineChangeHistoryId)
+        : "",
       protection: isSet(object.protection)
         ? SheetPayload_SchemaDesign_Protection.fromJSON(object.protection)
         : undefined,
@@ -514,22 +534,30 @@ export const SheetPayload_SchemaDesign = {
 
   toJSON(message: SheetPayload_SchemaDesign): unknown {
     const obj: any = {};
-    message.type !== undefined && (obj.type = sheetPayload_SchemaDesign_TypeToJSON(message.type));
-    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
-    message.baselineSheetId !== undefined && (obj.baselineSheetId = message.baselineSheetId);
-    message.baselineSchemaDesignId !== undefined && (obj.baselineSchemaDesignId = message.baselineSchemaDesignId);
-    message.baselineChangeHistoryId !== undefined && (obj.baselineChangeHistoryId = message.baselineChangeHistoryId);
-    message.protection !== undefined &&
-      (obj.protection = message.protection
-        ? SheetPayload_SchemaDesign_Protection.toJSON(message.protection)
-        : undefined);
+    if (message.type !== 0) {
+      obj.type = sheetPayload_SchemaDesign_TypeToJSON(message.type);
+    }
+    if (message.engine !== 0) {
+      obj.engine = engineToJSON(message.engine);
+    }
+    if (message.baselineSheetId !== "") {
+      obj.baselineSheetId = message.baselineSheetId;
+    }
+    if (message.baselineSchemaDesignId !== "") {
+      obj.baselineSchemaDesignId = message.baselineSchemaDesignId;
+    }
+    if (message.baselineChangeHistoryId !== "") {
+      obj.baselineChangeHistoryId = message.baselineChangeHistoryId;
+    }
+    if (message.protection !== undefined) {
+      obj.protection = SheetPayload_SchemaDesign_Protection.toJSON(message.protection);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<SheetPayload_SchemaDesign>): SheetPayload_SchemaDesign {
     return SheetPayload_SchemaDesign.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SheetPayload_SchemaDesign>): SheetPayload_SchemaDesign {
     const message = createBaseSheetPayload_SchemaDesign();
     message.type = object.type ?? 0;
@@ -580,19 +608,20 @@ export const SheetPayload_SchemaDesign_Protection = {
   },
 
   fromJSON(object: any): SheetPayload_SchemaDesign_Protection {
-    return { allowForcePushes: isSet(object.allowForcePushes) ? Boolean(object.allowForcePushes) : false };
+    return { allowForcePushes: isSet(object.allowForcePushes) ? globalThis.Boolean(object.allowForcePushes) : false };
   },
 
   toJSON(message: SheetPayload_SchemaDesign_Protection): unknown {
     const obj: any = {};
-    message.allowForcePushes !== undefined && (obj.allowForcePushes = message.allowForcePushes);
+    if (message.allowForcePushes === true) {
+      obj.allowForcePushes = message.allowForcePushes;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<SheetPayload_SchemaDesign_Protection>): SheetPayload_SchemaDesign_Protection {
     return SheetPayload_SchemaDesign_Protection.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SheetPayload_SchemaDesign_Protection>): SheetPayload_SchemaDesign_Protection {
     const message = createBaseSheetPayload_SchemaDesign_Protection();
     message.allowForcePushes = object.allowForcePushes ?? false;
@@ -603,7 +632,7 @@ export const SheetPayload_SchemaDesign_Protection = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Long ? string | number | Long : T extends Array<infer U> ? Array<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;

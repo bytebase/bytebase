@@ -81,17 +81,18 @@ export const IssuePayload = {
 
   toJSON(message: IssuePayload): unknown {
     const obj: any = {};
-    message.approval !== undefined &&
-      (obj.approval = message.approval ? IssuePayloadApproval.toJSON(message.approval) : undefined);
-    message.grantRequest !== undefined &&
-      (obj.grantRequest = message.grantRequest ? GrantRequest.toJSON(message.grantRequest) : undefined);
+    if (message.approval !== undefined) {
+      obj.approval = IssuePayloadApproval.toJSON(message.approval);
+    }
+    if (message.grantRequest !== undefined) {
+      obj.grantRequest = GrantRequest.toJSON(message.grantRequest);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<IssuePayload>): IssuePayload {
     return IssuePayload.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<IssuePayload>): IssuePayload {
     const message = createBaseIssuePayload();
     message.approval = (object.approval !== undefined && object.approval !== null)
@@ -171,8 +172,8 @@ export const GrantRequest = {
 
   fromJSON(object: any): GrantRequest {
     return {
-      role: isSet(object.role) ? String(object.role) : "",
-      user: isSet(object.user) ? String(object.user) : "",
+      role: isSet(object.role) ? globalThis.String(object.role) : "",
+      user: isSet(object.user) ? globalThis.String(object.user) : "",
       condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
       expiration: isSet(object.expiration) ? Duration.fromJSON(object.expiration) : undefined,
     };
@@ -180,18 +181,24 @@ export const GrantRequest = {
 
   toJSON(message: GrantRequest): unknown {
     const obj: any = {};
-    message.role !== undefined && (obj.role = message.role);
-    message.user !== undefined && (obj.user = message.user);
-    message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
-    message.expiration !== undefined &&
-      (obj.expiration = message.expiration ? Duration.toJSON(message.expiration) : undefined);
+    if (message.role !== "") {
+      obj.role = message.role;
+    }
+    if (message.user !== "") {
+      obj.user = message.user;
+    }
+    if (message.condition !== undefined) {
+      obj.condition = Expr.toJSON(message.condition);
+    }
+    if (message.expiration !== undefined) {
+      obj.expiration = Duration.toJSON(message.expiration);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<GrantRequest>): GrantRequest {
     return GrantRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<GrantRequest>): GrantRequest {
     const message = createBaseGrantRequest();
     message.role = object.role ?? "";
@@ -209,7 +216,7 @@ export const GrantRequest = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Long ? string | number | Long : T extends Array<infer U> ? Array<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
