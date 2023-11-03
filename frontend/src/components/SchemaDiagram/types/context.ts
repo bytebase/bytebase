@@ -1,12 +1,12 @@
 import type Emittery from "emittery";
 import type { Ref } from "vue";
 import type { ComposedDatabase } from "@/types";
-import type {
+import {
+  ColumnMetadata,
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
-  ColumnMetadata,
-} from "@/types/proto/store/database";
+} from "@/types/proto/v1/database_service";
 import type { EditStatus } from "./edit";
 import type { Geometry, Point, Rect } from "./geometry";
 import type { ForeignKey } from "./schema";

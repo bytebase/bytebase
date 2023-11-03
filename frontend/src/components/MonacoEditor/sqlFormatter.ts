@@ -1,4 +1,4 @@
-import { format, FormatOptions } from "sql-formatter";
+import { format, FormatOptionsWithLanguage } from "sql-formatter";
 import { SQLDialect } from "../../types";
 
 type FormatResult = {
@@ -6,7 +6,7 @@ type FormatResult = {
   error: Error | null;
 };
 
-type FormatterLanguage = FormatOptions["language"];
+type FormatterLanguage = FormatOptionsWithLanguage["language"];
 
 const convertDialectToFormatterLanguage = (
   dialect: SQLDialect
@@ -19,7 +19,7 @@ const convertDialectToFormatterLanguage = (
 };
 
 const formatSQL = (sql: string, dialect: SQLDialect): FormatResult => {
-  const options: Partial<FormatOptions> = {
+  const options: Partial<FormatOptionsWithLanguage> = {
     language: convertDialectToFormatterLanguage(dialect),
   };
 

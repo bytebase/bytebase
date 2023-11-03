@@ -135,11 +135,11 @@ const allowSave = computed((): boolean => {
   return externalUrlChanged || gitopsWebhookUrlChanged;
 });
 
-const handleExternalUrlChange = (event: InputEvent) => {
+const handleExternalUrlChange = (event: Event) => {
   state.externalUrl = (event.target as HTMLInputElement).value;
 };
 
-const handleGitOpsWebhookUrlChange = (event: InputEvent) => {
+const handleGitOpsWebhookUrlChange = (event: Event) => {
   state.gitopsWebhookUrl = (event.target as HTMLInputElement).value;
 };
 

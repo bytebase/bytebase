@@ -4,7 +4,6 @@
 import { DataSource } from "./dataSource";
 import { DatabaseId, InstanceId, ProjectId } from "./id";
 import { Instance } from "./instance";
-import { DatabaseLabel } from "./label";
 import { Project } from "./project";
 
 // "OK" means we find the database with the same name.
@@ -28,7 +27,7 @@ export type Database = {
   characterSet: string;
   collation: string;
   schemaVersion: string;
-  labels: DatabaseLabel[];
+  labels: { key: string; value: string }[];
 };
 
 export type DatabaseFind = {
@@ -44,5 +43,5 @@ export type DatabaseFind = {
 export type DatabasePatch = {
   // Related fields
   projectId?: ProjectId;
-  labels?: DatabaseLabel[];
+  labels?: { key: string; value: string }[];
 };

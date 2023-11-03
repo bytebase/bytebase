@@ -2,7 +2,6 @@ import { defineStore } from "pinia";
 import { markRaw } from "vue";
 import {
   Database,
-  DatabaseLabel,
   DatabaseState,
   DataSource,
   Instance,
@@ -54,7 +53,7 @@ function convert(
     }
   }
 
-  const labels: DatabaseLabel[] = [];
+  const labels: { key: string; value: string }[] = [];
   try {
     const array = JSON.parse(database.attributes.labels as any);
     if (Array.isArray(array)) {

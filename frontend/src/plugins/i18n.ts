@@ -9,7 +9,7 @@ const validLocaleList = ["en-US", "zh-CN", "es-ES"];
 const getValidLocale = () => {
   const storage = useLocalStorage("bytebase_options", {}) as any;
 
-  const params = new URL(window.location.href).searchParams;
+  const params = new URL(globalThis.location.href).searchParams;
   let locale = params.get("locale") || "";
   if (validLocaleList.includes(locale)) {
     storage.value = {
@@ -45,14 +45,17 @@ const mergedLocalMessage = Object.entries(
   const name = key.slice(localPathPrefix.length, -5);
   const sections = name.split("/");
   if (sections.length === 1) {
-    map[name] = _.merge(value.default, map[name] || {});
+    map[name] = _.merge((value as any).default, map[name] || {});
   } else {
     const file = sections.slice(-1)[0];
     const sectionsName = sections[0];
     const existed = map[file] || {};
     map[file] = {
       ...existed,
-      [sectionsName]: _.merge(value.default, existed[sectionsName] || {}),
+      [sectionsName]: _.merge(
+        (value as any).default,
+        existed[sectionsName] || {}
+      ),
     };
   }
 

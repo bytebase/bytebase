@@ -48,7 +48,7 @@
         :class="['pl-' + (4 + level * 3), outlineItemClass]"
       >
         <div class="flex flex-row justify-start items-center truncate">
-          <component :is="item.prefix" class="mr-1" />
+          <component :is="item.prefix" v-if="item.prefix" class="mr-1" />
           <span class="truncate" :title="item.name">{{ item.name }}</span>
         </div>
         <button

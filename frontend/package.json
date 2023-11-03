@@ -9,6 +9,7 @@
     "release-docker": "export NODE_OPTIONS=--max_old_space_size=8000 && vite build --mode release",
     "lint": "eslint --cache --ext .js,.ts,.tsx,.vue src",
     "lint:fix": "eslint --cache --ext .js,.ts,.tsx,.vue --fix src",
+    "type-check": "vue-tsc --noEmit --skipLibCheck",
     "test": "vitest run --passWithNoTests",
     "coverage": "vitest --coverage",
     "copy-config-file": "sh ./scripts/copy_config_files.sh"
