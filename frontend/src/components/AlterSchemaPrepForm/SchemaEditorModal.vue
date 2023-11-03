@@ -239,7 +239,9 @@ const isTenantProject = computed(
 
 const prepareDatabaseMetadatas = async () => {
   for (const database of databaseList.value) {
-    await dbSchemaV1Store.getOrFetchDatabaseMetadata(database.name);
+    await dbSchemaV1Store.getOrFetchDatabaseMetadata({
+      database: database.name,
+    });
   }
 };
 

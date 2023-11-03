@@ -48,6 +48,7 @@ import {
   unknownUser,
   UNKNOWN_ID,
 } from "@/types";
+import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import {
   hasWorkspacePermissionV1,
   idFromSlug,
@@ -1400,7 +1401,11 @@ router.beforeEach((to, from, next) => {
       .fetchDatabaseByUID(String(idFromSlug(databaseSlug)))
       .then((database) => {
         dbSchemaStore
-          .getOrFetchDatabaseMetadata(database.name, true)
+          .getOrFetchDatabaseMetadata({
+            database: database.name,
+            skipCache: false,
+            view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
+          })
           .then(() => {
             if (!dataSourceSlug) {
               next();

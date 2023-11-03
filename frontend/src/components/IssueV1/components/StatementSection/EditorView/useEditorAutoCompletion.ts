@@ -23,7 +23,7 @@ export const useEditorAutoCompletion = (
     (list) => {
       list.forEach((db) => {
         if (db.uid !== String(UNKNOWN_ID)) {
-          dbSchemaStore.getOrFetchDatabaseMetadata(db.name);
+          dbSchemaStore.getOrFetchDatabaseMetadata({ database: db.name });
         }
       });
     },

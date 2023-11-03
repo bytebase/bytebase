@@ -300,6 +300,7 @@ import {
   ChangeHistory_Type,
   changeHistory_SourceToJSON,
   changeHistory_TypeToJSON,
+  DatabaseMetadataView,
 } from "@/types/proto/v1/database_service";
 import { PushEvent, VcsType, vcsTypeToJSON } from "@/types/proto/v1/vcs";
 import {
@@ -370,13 +371,19 @@ watch(
     const database = await databaseStore.getOrFetchDatabaseByName(
       changeHistoryParent.value
     );
-    await dbSchemaStore.getOrFetchDatabaseMetadata(database.name);
-    await changeHistoryStore.fetchChangeHistoryList({
-      parent: changeHistoryParent.value,
-    });
-    await changeHistoryStore.fetchChangeHistory({
-      name: changeHistoryName.value,
-    });
+    await Promise.all([
+      dbSchemaStore.getOrFetchDatabaseMetadata({
+        database: database.name,
+        skipCache: false,
+        view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
+      }),
+      changeHistoryStore.fetchChangeHistoryList({
+        parent: changeHistoryParent.value,
+      }),
+      changeHistoryStore.fetchChangeHistory({
+        name: changeHistoryName.value,
+      }),
+    ]);
   },
   { immediate: true }
 );
