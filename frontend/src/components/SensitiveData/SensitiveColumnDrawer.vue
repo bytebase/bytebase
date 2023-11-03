@@ -418,10 +418,10 @@ const onAccessControlUpdate = async (
 const onMaskingLevelUpdate = async (level: MaskingLevel) => {
   state.maskingLevel = level;
   await onColumnMaskingUpdate();
-  await dbSchemaStore.getOrFetchDatabaseMetadata(
-    props.column.database.name,
-    true
-  );
+  await dbSchemaStore.getOrFetchDatabaseMetadata({
+    database: props.column.database.name,
+    skipCache: true,
+  });
 };
 
 const onColumnMaskingUpdate = async () => {

@@ -128,6 +128,7 @@ const treeStore = useSQLEditorTreeStore();
 const tabStore = useTabStore();
 const databaseStore = useDatabaseV1Store();
 const instanceStore = useInstanceV1Store();
+const dbSchemaV1Store = useDBSchemaV1Store();
 const isLoggedIn = useIsLoggedIn();
 const me = useCurrentUserV1();
 const { selectedDatabaseSchemaByDatabaseName, events: editorEvents } =
@@ -343,13 +344,19 @@ const maybeSelectTable = async (node: SQLEditorTreeNode) => {
     connect(target);
     await nextTick();
   }
-  const databaseMetadata =
-    await useDBSchemaV1Store().getOrFetchDatabaseMetadata(database.name);
+
+  const tableMetadata = await dbSchemaV1Store.getOrFetchTableMetadata({
+    database: database.name,
+    schema: schema.name,
+    table: table.name,
+  });
+  const databaseMetadata = dbSchemaV1Store.getDatabaseMetadata(database.name);
+
   selectedDatabaseSchemaByDatabaseName.value.set(database.name, {
     db: database,
     database: databaseMetadata,
     schema,
-    table,
+    table: tableMetadata,
   });
 };
 

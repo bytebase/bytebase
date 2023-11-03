@@ -86,6 +86,7 @@ import { Engine } from "@/types/proto/v1/common";
 import {
   ChangeHistory,
   ChangeHistory_Type,
+  DatabaseMetadataView,
 } from "@/types/proto/v1/database_service";
 
 const props = defineProps<{
@@ -234,7 +235,11 @@ const handleDatabaseSelect = (databaseId?: string) => {
     );
     state.environmentId = environment?.uid ?? "";
     state.databaseId = databaseId;
-    dbSchemaStore.getOrFetchDatabaseMetadata(database.name);
+    dbSchemaStore.getOrFetchDatabaseMetadata({
+      database: database.name,
+      skipCache: false,
+      view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
+    });
   }
 };
 
