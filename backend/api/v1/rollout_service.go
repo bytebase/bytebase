@@ -326,7 +326,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 
 // ListPlanCheckRuns lists plan check runs for the plan.
 func (s *RolloutService) ListPlanCheckRuns(ctx context.Context, request *v1pb.ListPlanCheckRunsRequest) (*v1pb.ListPlanCheckRunsResponse, error) {
-	planUID, err := common.GetPlanID(request.Parent)
+	projectID, planUID, err := common.GetProjectIDPlanID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -336,7 +336,7 @@ func (s *RolloutService) ListPlanCheckRuns(ctx context.Context, request *v1pb.Li
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list plan check runs, error: %v", err)
 	}
-	converted, err := convertToPlanCheckRuns(ctx, s.store, request.Parent, planCheckRuns)
+	converted, err := convertToPlanCheckRuns(ctx, s.store, projectID, planUID, planCheckRuns)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert plan check runs, error: %v", err)
 	}
