@@ -104,14 +104,15 @@ export const CreateBookmarkRequest = {
 
   toJSON(message: CreateBookmarkRequest): unknown {
     const obj: any = {};
-    message.bookmark !== undefined && (obj.bookmark = message.bookmark ? Bookmark.toJSON(message.bookmark) : undefined);
+    if (message.bookmark !== undefined) {
+      obj.bookmark = Bookmark.toJSON(message.bookmark);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<CreateBookmarkRequest>): CreateBookmarkRequest {
     return CreateBookmarkRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<CreateBookmarkRequest>): CreateBookmarkRequest {
     const message = createBaseCreateBookmarkRequest();
     message.bookmark = (object.bookmark !== undefined && object.bookmark !== null)
@@ -157,19 +158,20 @@ export const DeleteBookmarkRequest = {
   },
 
   fromJSON(object: any): DeleteBookmarkRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: DeleteBookmarkRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<DeleteBookmarkRequest>): DeleteBookmarkRequest {
     return DeleteBookmarkRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<DeleteBookmarkRequest>): DeleteBookmarkRequest {
     const message = createBaseDeleteBookmarkRequest();
     message.name = object.name ?? "";
@@ -224,22 +226,25 @@ export const ListBookmarksRequest = {
 
   fromJSON(object: any): ListBookmarksRequest {
     return {
-      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
     };
   },
 
   toJSON(message: ListBookmarksRequest): unknown {
     const obj: any = {};
-    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
-    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ListBookmarksRequest>): ListBookmarksRequest {
     return ListBookmarksRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ListBookmarksRequest>): ListBookmarksRequest {
     const message = createBaseListBookmarksRequest();
     message.pageSize = object.pageSize ?? 0;
@@ -295,26 +300,27 @@ export const ListBookmarksResponse = {
 
   fromJSON(object: any): ListBookmarksResponse {
     return {
-      bookmarks: Array.isArray(object?.bookmarks) ? object.bookmarks.map((e: any) => Bookmark.fromJSON(e)) : [],
-      nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
+      bookmarks: globalThis.Array.isArray(object?.bookmarks)
+        ? object.bookmarks.map((e: any) => Bookmark.fromJSON(e))
+        : [],
+      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
     };
   },
 
   toJSON(message: ListBookmarksResponse): unknown {
     const obj: any = {};
-    if (message.bookmarks) {
-      obj.bookmarks = message.bookmarks.map((e) => e ? Bookmark.toJSON(e) : undefined);
-    } else {
-      obj.bookmarks = [];
+    if (message.bookmarks?.length) {
+      obj.bookmarks = message.bookmarks.map((e) => Bookmark.toJSON(e));
     }
-    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ListBookmarksResponse>): ListBookmarksResponse {
     return ListBookmarksResponse.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ListBookmarksResponse>): ListBookmarksResponse {
     const message = createBaseListBookmarksResponse();
     message.bookmarks = object.bookmarks?.map((e) => Bookmark.fromPartial(e)) || [];
@@ -380,24 +386,29 @@ export const Bookmark = {
 
   fromJSON(object: any): Bookmark {
     return {
-      name: isSet(object.name) ? String(object.name) : "",
-      title: isSet(object.title) ? String(object.title) : "",
-      link: isSet(object.link) ? String(object.link) : "",
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      link: isSet(object.link) ? globalThis.String(object.link) : "",
     };
   },
 
   toJSON(message: Bookmark): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.title !== undefined && (obj.title = message.title);
-    message.link !== undefined && (obj.link = message.link);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.link !== "") {
+      obj.link = message.link;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<Bookmark>): Bookmark {
     return Bookmark.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Bookmark>): Bookmark {
     const message = createBaseBookmark();
     message.name = object.name ?? "";
@@ -517,7 +528,7 @@ export const BookmarkServiceDefinition = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Long ? string | number | Long : T extends Array<infer U> ? Array<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;

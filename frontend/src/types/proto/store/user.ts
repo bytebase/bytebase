@@ -83,28 +83,30 @@ export const MFAConfig = {
 
   fromJSON(object: any): MFAConfig {
     return {
-      otpSecret: isSet(object.otpSecret) ? String(object.otpSecret) : "",
-      tempOtpSecret: isSet(object.tempOtpSecret) ? String(object.tempOtpSecret) : "",
-      recoveryCodes: Array.isArray(object?.recoveryCodes) ? object.recoveryCodes.map((e: any) => String(e)) : [],
-      tempRecoveryCodes: Array.isArray(object?.tempRecoveryCodes)
-        ? object.tempRecoveryCodes.map((e: any) => String(e))
+      otpSecret: isSet(object.otpSecret) ? globalThis.String(object.otpSecret) : "",
+      tempOtpSecret: isSet(object.tempOtpSecret) ? globalThis.String(object.tempOtpSecret) : "",
+      recoveryCodes: globalThis.Array.isArray(object?.recoveryCodes)
+        ? object.recoveryCodes.map((e: any) => globalThis.String(e))
+        : [],
+      tempRecoveryCodes: globalThis.Array.isArray(object?.tempRecoveryCodes)
+        ? object.tempRecoveryCodes.map((e: any) => globalThis.String(e))
         : [],
     };
   },
 
   toJSON(message: MFAConfig): unknown {
     const obj: any = {};
-    message.otpSecret !== undefined && (obj.otpSecret = message.otpSecret);
-    message.tempOtpSecret !== undefined && (obj.tempOtpSecret = message.tempOtpSecret);
-    if (message.recoveryCodes) {
-      obj.recoveryCodes = message.recoveryCodes.map((e) => e);
-    } else {
-      obj.recoveryCodes = [];
+    if (message.otpSecret !== "") {
+      obj.otpSecret = message.otpSecret;
     }
-    if (message.tempRecoveryCodes) {
-      obj.tempRecoveryCodes = message.tempRecoveryCodes.map((e) => e);
-    } else {
-      obj.tempRecoveryCodes = [];
+    if (message.tempOtpSecret !== "") {
+      obj.tempOtpSecret = message.tempOtpSecret;
+    }
+    if (message.recoveryCodes?.length) {
+      obj.recoveryCodes = message.recoveryCodes;
+    }
+    if (message.tempRecoveryCodes?.length) {
+      obj.tempRecoveryCodes = message.tempRecoveryCodes;
     }
     return obj;
   },
@@ -112,7 +114,6 @@ export const MFAConfig = {
   create(base?: DeepPartial<MFAConfig>): MFAConfig {
     return MFAConfig.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<MFAConfig>): MFAConfig {
     const message = createBaseMFAConfig();
     message.otpSecret = object.otpSecret ?? "";
@@ -126,7 +127,7 @@ export const MFAConfig = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Long ? string | number | Long : T extends Array<infer U> ? Array<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
