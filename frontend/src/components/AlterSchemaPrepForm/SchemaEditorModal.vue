@@ -240,16 +240,6 @@ const isTenantProject = computed(
   () => project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED
 );
 
-const prepareDatabaseMetadatas = async () => {
-  for (const database of databaseList.value) {
-    await dbSchemaV1Store.getOrFetchDatabaseMetadata({
-      database: database.name,
-      skipCache: false,
-      view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
-    });
-  }
-};
-
 onMounted(async () => {
   if (
     databaseList.value.length === 0 ||
@@ -263,8 +253,6 @@ onMounted(async () => {
     emit("close");
     return;
   }
-
-  await prepareDatabaseMetadatas();
 });
 
 const handleChangeTab = (tab: TabType) => {
