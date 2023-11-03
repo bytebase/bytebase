@@ -107,7 +107,7 @@
                         type="checkbox"
                         class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
                         :checked="isDatabaseSelected(database as ComposedDatabase)"
-                        @input="
+                        @click.stop="
                           toggleDatabasesSelection(
                             [database as ComposedDatabase],
                             ($event.target as HTMLInputElement).checked
