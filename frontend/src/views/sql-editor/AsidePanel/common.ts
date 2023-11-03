@@ -1,7 +1,10 @@
 import { useDBSchemaV1Store } from "@/store";
 import { mapTreeNodeByType } from "@/store/modules/sqlEditorTree";
 import { ComposedDatabase, SQLEditorTreeNode } from "@/types";
-import { SchemaMetadata } from "@/types/proto/v1/database_service";
+import {
+  SchemaMetadata,
+  DatabaseMetadataView,
+} from "@/types/proto/v1/database_service";
 
 const createDummyTableNode = (
   parent: SQLEditorTreeNode,
@@ -40,7 +43,12 @@ export const fetchDatabaseSubTree = async (
   try {
     const database = node.meta.target;
     const databaseMetadata =
-      await useDBSchemaV1Store().getOrFetchDatabaseMetadata(database.name);
+      await useDBSchemaV1Store().getOrFetchDatabaseMetadata({
+        database: database.name,
+        skipCache: false,
+        view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
+      });
+
     const { schemas } = databaseMetadata;
     if (schemas.length === 0) {
       // Empty database

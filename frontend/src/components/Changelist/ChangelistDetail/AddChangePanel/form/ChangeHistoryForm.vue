@@ -191,11 +191,11 @@ const fetchChangeHistoryList = async () => {
 
   state.isLoading = true;
   const name = db.name;
-  await useDBSchemaV1Store().getOrFetchDatabaseMetadata(
-    name,
-    false /* !skipCache */,
-    true /* silent */
-  );
+  await useDBSchemaV1Store().getOrFetchDatabaseMetadata({
+    database: name,
+    skipCache: false,
+    silent: true,
+  });
   const changeHistoryList =
     await useChangeHistoryStore().getOrFetchChangeHistoryListOfDatabase(name);
   // Check if the state is still valid
