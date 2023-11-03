@@ -169,6 +169,7 @@ import { useRoute } from "vue-router";
 import { useAnomalyV1List, useDBSchemaV1Store } from "@/store";
 import { Anomaly } from "@/types/proto/v1/anomaly_service";
 import { Engine, State } from "@/types/proto/v1/common";
+import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { BBTableSectionDataSource } from "../bbkit/types";
 import AnomalyTable from "../components/AnomalyCenter/AnomalyTable.vue";
 import FunctionTable from "../components/FunctionTable.vue";
@@ -220,7 +221,11 @@ const hasSchemaProperty = computed(() => {
 });
 
 const prepareDatabaseMetadata = async () => {
-  await dbSchemaStore.getOrFetchDatabaseMetadata(props.database.name);
+  await dbSchemaStore.getOrFetchDatabaseMetadata({
+    database: props.database.name,
+    skipCache: false,
+    view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
+  });
   if (hasSchemaProperty.value && schemaList.value.length > 0) {
     const schemaInQuery = route.query.schema as string;
     if (

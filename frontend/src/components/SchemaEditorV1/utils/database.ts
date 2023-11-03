@@ -11,32 +11,32 @@ import {
   convertSchemaMetadataToSchema,
 } from "@/types/v1/schemaEditor";
 
-export const fetchSchemaListByDatabaseName = async (
-  databaseName: string,
-  skipCache = false
-) => {
+export const fetchSchemaListByDatabaseName = async ({
+  database,
+  skipCache = true,
+}: {
+  database: string;
+  skipCache?: boolean;
+}) => {
   const schemaEditorV1Store = useSchemaEditorV1Store();
-  const database = useDatabaseV1Store().getDatabaseByName(databaseName);
+  const db = useDatabaseV1Store().getDatabaseByName(database);
   const databaseMetadata =
-    await useDBSchemaV1Store().getOrFetchDatabaseMetadata(
-      database.name,
-      skipCache
-    );
+    await useDBSchemaV1Store().getOrFetchDatabaseMetadata({
+      database,
+      skipCache,
+    });
   const schemaList = convertSchemaMetadataList(
     databaseMetadata.schemas,
     databaseMetadata.schemaConfigs
   );
-  if (
-    schemaList.length === 0 &&
-    database.instanceEntity.engine === Engine.MYSQL
-  ) {
+  if (schemaList.length === 0 && db.instanceEntity.engine === Engine.MYSQL) {
     schemaList.push(
       convertSchemaMetadataToSchema(SchemaMetadata.fromPartial({}), "normal")
     );
   }
 
-  schemaEditorV1Store.resourceMap.database.set(database.name, {
-    database,
+  schemaEditorV1Store.resourceMap.database.set(database, {
+    database: db,
     schemaList,
     originSchemaList: cloneDeep(schemaList),
   });

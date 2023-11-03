@@ -70,15 +70,15 @@ export const IamPolicy = {
   },
 
   fromJSON(object: any): IamPolicy {
-    return { bindings: Array.isArray(object?.bindings) ? object.bindings.map((e: any) => Binding.fromJSON(e)) : [] };
+    return {
+      bindings: globalThis.Array.isArray(object?.bindings) ? object.bindings.map((e: any) => Binding.fromJSON(e)) : [],
+    };
   },
 
   toJSON(message: IamPolicy): unknown {
     const obj: any = {};
-    if (message.bindings) {
-      obj.bindings = message.bindings.map((e) => e ? Binding.toJSON(e) : undefined);
-    } else {
-      obj.bindings = [];
+    if (message.bindings?.length) {
+      obj.bindings = message.bindings.map((e) => Binding.toJSON(e));
     }
     return obj;
   },
@@ -86,7 +86,6 @@ export const IamPolicy = {
   create(base?: DeepPartial<IamPolicy>): IamPolicy {
     return IamPolicy.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<IamPolicy>): IamPolicy {
     const message = createBaseIamPolicy();
     message.bindings = object.bindings?.map((e) => Binding.fromPartial(e)) || [];
@@ -161,8 +160,8 @@ export const Binding = {
 
   fromJSON(object: any): Binding {
     return {
-      role: isSet(object.role) ? String(object.role) : "",
-      members: Array.isArray(object?.members) ? object.members.map((e: any) => String(e)) : [],
+      role: isSet(object.role) ? globalThis.String(object.role) : "",
+      members: globalThis.Array.isArray(object?.members) ? object.members.map((e: any) => globalThis.String(e)) : [],
       condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
       parsedExpr: isSet(object.parsedExpr) ? ParsedExpr.fromJSON(object.parsedExpr) : undefined,
     };
@@ -170,22 +169,24 @@ export const Binding = {
 
   toJSON(message: Binding): unknown {
     const obj: any = {};
-    message.role !== undefined && (obj.role = message.role);
-    if (message.members) {
-      obj.members = message.members.map((e) => e);
-    } else {
-      obj.members = [];
+    if (message.role !== "") {
+      obj.role = message.role;
     }
-    message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
-    message.parsedExpr !== undefined &&
-      (obj.parsedExpr = message.parsedExpr ? ParsedExpr.toJSON(message.parsedExpr) : undefined);
+    if (message.members?.length) {
+      obj.members = message.members;
+    }
+    if (message.condition !== undefined) {
+      obj.condition = Expr.toJSON(message.condition);
+    }
+    if (message.parsedExpr !== undefined) {
+      obj.parsedExpr = ParsedExpr.toJSON(message.parsedExpr);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<Binding>): Binding {
     return Binding.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Binding>): Binding {
     const message = createBaseBinding();
     message.role = object.role ?? "";
@@ -203,7 +204,7 @@ export const Binding = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Long ? string | number | Long : T extends Array<infer U> ? Array<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;

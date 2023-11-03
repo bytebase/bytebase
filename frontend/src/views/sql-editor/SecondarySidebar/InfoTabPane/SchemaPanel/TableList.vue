@@ -9,11 +9,17 @@
       <template
         #default="{ item: { key, schema, table }, index }: VirtualListItem"
       >
-        <div class="text-sm leading-6 px-2" :data-key="key" :data-index="index">
+        <div
+          class="bb-table-list--table-item text-sm leading-6 px-1"
+          :data-key="key"
+          :data-index="index"
+          @mouseenter="handleMouseEnter($event, schema, table)"
+          @mouseleave="handleMouseLeave($event, schema, table)"
+        >
           <div
-            class="flex items-center text-gray-600 whitespace-pre-wrap break-words rounded-sm"
+            class="flex items-center text-gray-600 whitespace-pre-wrap break-words rounded-sm px-1"
             :class="
-              rowClickable && ['hover:bg-[rgb(243,243,245)]', 'cursor-pointer']
+              rowClickable && ['hover:bg-control-bg-hover/50', 'cursor-pointer']
             "
             @click="handleClickTable(schema, table)"
           >
@@ -29,13 +35,16 @@
 
 <script setup lang="ts">
 import { escape } from "lodash-es";
-import { computed } from "vue";
+import { computed, nextTick } from "vue";
 import { VirtualList } from "vueuc";
+import { ComposedDatabase } from "@/types";
 import {
+  DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import { getHighlightHTMLByRegExp } from "@/utils";
+import { findAncestor, getHighlightHTMLByRegExp } from "@/utils";
+import { useHoverStateContext } from "./HoverPanel";
 import { useSchemaPanelContext } from "./context";
 
 export type SchemaAndTable = {
@@ -50,6 +59,8 @@ export type VirtualListItem = {
 };
 
 const props = defineProps<{
+  db: ComposedDatabase;
+  database: DatabaseMetadata;
   schemaList: SchemaMetadata[];
   rowClickable?: boolean;
 }>();
@@ -59,6 +70,11 @@ const emit = defineEmits<{
 }>();
 
 const { keyword } = useSchemaPanelContext();
+const {
+  state: hoverState,
+  position: hoverPosition,
+  update: updateHoverState,
+} = useHoverStateContext();
 
 const flattenTableList = computed(() => {
   return props.schemaList.flatMap((schema) => {
@@ -105,5 +121,45 @@ const renderTableName = (schema: SchemaMetadata, table: TableMetadata) => {
     escape(keyword.value.trim()),
     false /* !caseSensitive */
   );
+};
+
+const handleMouseEnter = (
+  e: MouseEvent,
+  schema: SchemaMetadata,
+  table: TableMetadata
+) => {
+  const { db, database } = props;
+  if (hoverState.value) {
+    updateHoverState(
+      { db, database, schema, table },
+      "before",
+      0 /* overrideDelay */
+    );
+  } else {
+    updateHoverState({ db, database, schema, table }, "before");
+  }
+  nextTick().then(() => {
+    // Find the node element and put the database panel to the top-left corner
+    // of the node
+    const wrapper = findAncestor(
+      e.target as HTMLElement,
+      ".bb-table-list--table-item"
+    );
+    if (!wrapper) {
+      updateHoverState(undefined, "after", 0 /* overrideDelay */);
+      return;
+    }
+    const bounding = wrapper.getBoundingClientRect();
+    hoverPosition.value.x = bounding.left;
+    hoverPosition.value.y = bounding.top;
+  });
+};
+
+const handleMouseLeave = (
+  e: MouseEvent,
+  schema: SchemaMetadata,
+  table: TableMetadata
+) => {
+  updateHoverState(undefined, "after");
 };
 </script>

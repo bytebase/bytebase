@@ -57,11 +57,11 @@ export const useSchemaEditorSQLCheck = (params: {
         statement: "",
       };
     }
-    const metadata = await dbSchemaV1Store.getOrFetchDatabaseMetadata(
-      db.name,
-      false /* !skipCache */,
-      true /* silent */
-    );
+    const metadata = await dbSchemaV1Store.getOrFetchDatabaseMetadata({
+      database: db.name,
+      skipCache: false,
+      silent: true,
+    });
     const mergedMetadata = mergeSchemaEditToMetadata(
       databaseSchema.schemaList,
       cloneDeep(metadata)

@@ -29,6 +29,35 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", {
     },
     setCache(metadata: DatabaseMetadata) {
       this._databaseMetadataByName.set(metadata.name, metadata);
+      return metadata;
+    },
+    mergeToCache(metadata: DatabaseMetadata) {
+      const existed = this._databaseMetadataByName.get(metadata.name);
+      if (!existed) {
+        return this.setCache(metadata);
+      }
+
+      for (const schema of metadata.schemas) {
+        const schemaIndex = existed.schemas.findIndex(
+          (s) => s.name === schema.name
+        );
+        if (schemaIndex < 0) {
+          existed.schemas.push(schema);
+          continue;
+        }
+        for (const table of schema.tables) {
+          const tableIndex = existed.schemas[schemaIndex].tables.findIndex(
+            (t) => t.name === table.name
+          );
+          if (tableIndex < 0) {
+            existed.schemas[schemaIndex].tables.push(table);
+          } else {
+            existed.schemas[schemaIndex].tables[tableIndex] = table;
+          }
+        }
+      }
+
+      return this.setCache(existed);
     },
     getMedataName(databaseName: string) {
       return `${databaseName}/metadata`;
@@ -41,12 +70,20 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", {
       this.setCache(updated);
       return updated;
     },
-    async getOrFetchDatabaseMetadata(
-      name: string,
+    async getOrFetchDatabaseMetadata({
+      database,
       skipCache = false,
-      silent = false
-    ): Promise<DatabaseMetadata> {
-      const databaseId = getInstanceAndDatabaseId(name)[1];
+      silent = false,
+      view = DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
+      filter = undefined,
+    }: {
+      database: string;
+      skipCache?: boolean;
+      silent?: boolean;
+      view?: DatabaseMetadataView;
+      filter?: string | undefined;
+    }): Promise<DatabaseMetadata> {
+      const databaseId = getInstanceAndDatabaseId(database)[1];
       if (
         Number(databaseId) === UNKNOWN_ID ||
         Number(databaseId) === EMPTY_ID
@@ -56,10 +93,10 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", {
         });
       }
 
-      const metadataName = this.getMedataName(name);
+      const metadataName = this.getMedataName(database);
 
       if (!skipCache) {
-        const existed = this.getFromCache(name);
+        const existed = this.getFromCache(database);
         if (existed) {
           // The metadata entity is stored in local dictionary.
           return existed;
@@ -78,7 +115,8 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", {
         .getDatabaseMetadata(
           {
             name: metadataName,
-            view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
+            filter,
+            view,
           },
           {
             silent,
@@ -97,7 +135,10 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", {
       skipCache = false
     ): Promise<SchemaMetadata[]> {
       if (skipCache || !this.getFromCache(name)) {
-        await this.getOrFetchDatabaseMetadata(name, skipCache);
+        await this.getOrFetchDatabaseMetadata({
+          database: name,
+          skipCache,
+        });
       }
       return this.getSchemaList(name);
     },
@@ -114,7 +155,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", {
     },
     async getOrFetchTableList(name: string): Promise<TableMetadata[]> {
       if (!this.getFromCache(name)) {
-        await this.getOrFetchDatabaseMetadata(name);
+        await this.getOrFetchDatabaseMetadata({ database: name });
       }
       return this.getTableList(name);
     },
@@ -131,6 +172,55 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", {
       }
       return tableList;
     },
+    async getOrFetchTableMetadata({
+      database,
+      schema,
+      table,
+      skipCache = false,
+      silent = false,
+    }: {
+      database: string;
+      schema: string;
+      table: string;
+      skipCache?: boolean;
+      silent?: boolean;
+    }) {
+      if (!skipCache) {
+        const existedTable = this.getTableByName(database, table);
+        if (existedTable && existedTable.columns.length > 0) {
+          return existedTable;
+        }
+      }
+
+      const metadataName = this.getMedataName(database);
+      return databaseServiceClient
+        .getDatabaseMetadata(
+          {
+            name: metadataName,
+            filter: `schemas/${schema || "-"}/tables/${table}`,
+            view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
+          },
+          {
+            silent,
+          }
+        )
+        .then((res) => {
+          let tableMetadata = TableMetadata.fromPartial({});
+          for (const s of res.schemas) {
+            if (s.name !== schema) {
+              continue;
+            }
+            for (const t of s.tables) {
+              if (t.name === table) {
+                tableMetadata = t;
+                break;
+              }
+            }
+          }
+          this.mergeToCache(res);
+          return tableMetadata;
+        });
+    },
     getTableByName(name: string, tableName: string): TableMetadata | undefined {
       const databaseMetadata = this.getFromCache(name);
       if (!databaseMetadata) {
@@ -142,7 +232,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", {
     },
     async getOrFetchViewList(name: string): Promise<ViewMetadata[]> {
       if (!this.getFromCache(name)) {
-        await this.getOrFetchDatabaseMetadata(name);
+        await this.getOrFetchDatabaseMetadata({ database: name });
       }
       return this.getViewList(name);
     },
@@ -161,7 +251,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", {
     },
     async getOrFetchExtensionList(name: string): Promise<ExtensionMetadata[]> {
       if (!this.getFromCache(name)) {
-        await this.getOrFetchDatabaseMetadata(name);
+        await this.getOrFetchDatabaseMetadata({ database: name });
       }
       return this.getExtensionList(name);
     },
@@ -175,7 +265,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", {
     },
     async getOrFetchFunctionList(name: string): Promise<FunctionMetadata[]> {
       if (!this.getFromCache(name)) {
-        await this.getOrFetchDatabaseMetadata(name);
+        await this.getOrFetchDatabaseMetadata({ database: name });
       }
       return this.getFunctionList(name);
     },
@@ -207,7 +297,10 @@ export const useMetadata = (
     const id = unref(name);
     const uid = getInstanceAndDatabaseId(id)[1];
     if (Number(uid) !== UNKNOWN_ID && Number(uid) !== EMPTY_ID) {
-      store.getOrFetchDatabaseMetadata(id, unref(skipCache));
+      store.getOrFetchDatabaseMetadata({
+        database: id,
+        skipCache: unref(skipCache),
+      });
     }
   });
   return computed(() => store.getFromCache(unref(name)));

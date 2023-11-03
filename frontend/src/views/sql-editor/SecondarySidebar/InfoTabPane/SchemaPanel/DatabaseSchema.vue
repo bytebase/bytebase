@@ -39,6 +39,8 @@
 
     <TableList
       class="flex-1 w-full py-1"
+      :db="database"
+      :database="databaseMetadata"
       :schema-list="availableSchemas"
       :row-clickable="rowClickable"
       @select-table="(schema, table) => $emit('select-table', schema, table)"
