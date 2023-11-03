@@ -155,7 +155,7 @@ const databaseV1List = computed(() => {
 });
 
 const cachedNotifiedActivities = useLocalStorage<string[]>(
-  "bb.project.activities",
+  `bb.project.${props.projectSlug}.activities`,
   []
 );
 
