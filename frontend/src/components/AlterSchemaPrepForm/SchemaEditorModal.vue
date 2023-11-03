@@ -153,10 +153,7 @@ import {
   unknownProject,
 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import {
-  DatabaseMetadata,
-  DatabaseMetadataView,
-} from "@/types/proto/v1/database_service";
+import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import MonacoEditor from "../MonacoEditor";
 import { provideSQLCheckContext } from "../SQLCheck";
@@ -240,6 +237,14 @@ const isTenantProject = computed(
   () => project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED
 );
 
+const prepareDatabaseMetadatas = async () => {
+  for (const database of databaseList.value) {
+    await dbSchemaV1Store.getOrFetchDatabaseMetadata({
+      database: database.name,
+    });
+  }
+};
+
 onMounted(async () => {
   if (
     databaseList.value.length === 0 ||
@@ -253,6 +258,8 @@ onMounted(async () => {
     emit("close");
     return;
   }
+
+  await prepareDatabaseMetadatas();
 });
 
 const handleChangeTab = (tab: TabType) => {
