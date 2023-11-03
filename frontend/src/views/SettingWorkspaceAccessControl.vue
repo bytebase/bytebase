@@ -101,9 +101,8 @@ import {
   useEnvironmentV1List,
 } from "@/store";
 import { usePolicyV1Store } from "@/store/modules/v1/policy";
-import { Expr } from "@/types/proto/google/type/expr";
 import { Environment } from "@/types/proto/v1/environment_service";
-import { IamPolicy } from "@/types/proto/v1/iam_policy";
+import { Binding, IamPolicy } from "@/types/proto/v1/iam_policy";
 import {
   PolicyResourceType,
   PolicyType,
@@ -246,26 +245,30 @@ const buildWorkspaceIAMPolicy = (envPolicyList: EnvironmentPolicy[]) => {
     .filter((item) => item.allowExportData)
     .map((item) => item.environment.name);
   if (allowQueryEnvNameList.length > 0) {
-    workspaceIamPolicy.bindings.push({
-      role: "roles/QUERIER",
-      members: ["allUsers"],
-      condition: Expr.fromPartial({
-        expression: `resource.environment_name in ["${allowQueryEnvNameList.join(
-          '", "'
-        )}"]`,
-      }),
-    });
+    workspaceIamPolicy.bindings.push(
+      Binding.fromPartial({
+        role: "roles/QUERIER",
+        members: ["allUsers"],
+        condition: {
+          expression: `resource.environment_name in ["${allowQueryEnvNameList.join(
+            '", "'
+          )}"]`,
+        },
+      })
+    );
   }
   if (allowExportEnvNameList.length > 0) {
-    workspaceIamPolicy.bindings.push({
-      role: "roles/EXPORTER",
-      members: ["allUsers"],
-      condition: Expr.fromPartial({
-        expression: `resource.environment_name in ["${allowExportEnvNameList.join(
-          '", "'
-        )}"]`,
-      }),
-    });
+    workspaceIamPolicy.bindings.push(
+      Binding.fromPartial({
+        role: "roles/EXPORTER",
+        members: ["allUsers"],
+        condition: {
+          expression: `resource.environment_name in ["${allowExportEnvNameList.join(
+            '", "'
+          )}"]`,
+        },
+      })
+    );
   }
   return workspaceIamPolicy;
 };

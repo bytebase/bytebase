@@ -3,7 +3,7 @@
     :show="true"
     width="auto"
     :auto-focus="false"
-    @update:show="(show) => !show && $emit('close')"
+    @update:show="(show: boolean) => !show && $emit('close')"
   >
     <NDrawerContent
       :title="$t('common.database')"

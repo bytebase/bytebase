@@ -34,7 +34,7 @@ import {
   SQLDialect,
   UNKNOWN_ID,
 } from "@/types";
-import { TableMetadata } from "@/types/proto/store/database";
+import { TableMetadata } from "@/types/proto/v1/database_service";
 import { formatEngineV1, useInstanceV1EditorLanguage } from "@/utils";
 import {
   checkCursorAtFirstLine,

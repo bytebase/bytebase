@@ -192,11 +192,11 @@ const allowSave = computed((): boolean => {
   );
 });
 
-const handleAnnouncementContentChange = (event: InputEvent) => {
+const handleAnnouncementContentChange = (event: Event) => {
   state.announcement.text = (event.target as HTMLInputElement).value;
 };
 
-const handleExtraDetailsChange = (event: InputEvent) => {
+const handleExtraDetailsChange = (event: Event) => {
   state.announcement.link = (event.target as HTMLInputElement).value;
 };
 

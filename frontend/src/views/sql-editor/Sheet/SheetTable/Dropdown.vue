@@ -109,15 +109,17 @@ const handleAction = async (key: string) => {
       closeOnEsc: false,
       async onPositiveClick() {
         const project = extractProjectResourceName(sheet.name);
-        await sheetV1Store.createSheet(`projects/${project}`, {
-          title: sheet.title,
-          content: sheet.content,
-          database: sheet.database,
-          visibility: Sheet_Visibility.VISIBILITY_PRIVATE,
-          source: Sheet_Source.SOURCE_BYTEBASE,
-          type: Sheet_Type.TYPE_SQL,
-          payload: "{}",
-        });
+        await sheetV1Store.createSheet(
+          `projects/${project}`,
+          Sheet.fromPartial({
+            title: sheet.title,
+            content: sheet.content,
+            database: sheet.database,
+            visibility: Sheet_Visibility.VISIBILITY_PRIVATE,
+            source: Sheet_Source.SOURCE_BYTEBASE,
+            type: Sheet_Type.TYPE_SQL,
+          })
+        );
         pushNotification({
           module: "bytebase",
           style: "INFO",

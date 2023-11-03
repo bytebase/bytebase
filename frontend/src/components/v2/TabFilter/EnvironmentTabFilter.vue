@@ -2,13 +2,17 @@
   <TabFilter
     :value="environment"
     :items="items"
-    @update:value="$emit('update:environment', $event)"
+    @update:value="$emit('update:environment', $event as string)"
   >
     <template #label="{ item }">
       <template v-if="item.value === UNKNOWN_ENVIRONMENT_NAME">{{
         item.label
       }}</template>
-      <EnvironmentV1Name v-else :environment="item.environment" :link="false" />
+      <EnvironmentV1Name
+        v-else
+        :environment="(item as EnvironmentTabFilterItem).environment"
+        :link="false"
+      />
     </template>
   </TabFilter>
 </template>

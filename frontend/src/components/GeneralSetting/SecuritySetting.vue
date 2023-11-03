@@ -93,7 +93,7 @@
   </div>
 
   <FeatureModal
-    :open="state.featureNameForModal"
+    :open="!!state.featureNameForModal"
     :feature="state.featureNameForModal"
     @cancel="state.featureNameForModal = undefined"
   />

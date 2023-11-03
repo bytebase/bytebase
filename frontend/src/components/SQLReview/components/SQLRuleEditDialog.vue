@@ -182,6 +182,7 @@ import {
   PayloadForEngine,
 } from "./RuleConfigComponents";
 import RuleEngineIcons from "./RuleEngineIcons.vue";
+import RuleEngineTabFilter from "./RuleEngineTabFilter.vue";
 import RuleLevelSwitch from "./RuleLevelSwitch.vue";
 
 type LocalState = {

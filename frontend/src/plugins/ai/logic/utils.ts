@@ -1,8 +1,8 @@
 import { watch } from "vue";
 import { useCurrentTab } from "@/store";
 import type { Connection } from "@/types";
-import { DatabaseMetadata } from "@/types/proto/store/database";
 import { Engine } from "@/types/proto/v1/common";
+import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { engineNameV1 } from "@/utils";
 
 export const onConnectionChanged = (

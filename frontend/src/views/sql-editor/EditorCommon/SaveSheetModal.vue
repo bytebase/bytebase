@@ -72,15 +72,17 @@ const doSaveSheet = async (title: string) => {
       content: new TextEncoder().encode(statement),
     });
   } else {
-    sheet = await sheetV1Store.createSheet(database.project, {
-      title: title,
-      content: new TextEncoder().encode(statement),
-      database: database.name,
-      visibility: Sheet_Visibility.VISIBILITY_PRIVATE,
-      source: Sheet_Source.SOURCE_BYTEBASE,
-      type: Sheet_Type.TYPE_SQL,
-      payload: "{}",
-    });
+    sheet = await sheetV1Store.createSheet(
+      database.project,
+      Sheet.fromPartial({
+        title: title,
+        content: new TextEncoder().encode(statement),
+        database: database.name,
+        visibility: Sheet_Visibility.VISIBILITY_PRIVATE,
+        source: Sheet_Source.SOURCE_BYTEBASE,
+        type: Sheet_Type.TYPE_SQL,
+      })
+    );
   }
 
   if (sheet) {

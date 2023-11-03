@@ -3,7 +3,7 @@
     :show="role !== undefined"
     :auto-focus="false"
     width="auto"
-    @update:show="(show) => !show && $emit('close')"
+    @update:show="(show: boolean) => !show && $emit('close')"
   >
     <NDrawerContent
       :title="mode === 'ADD' ? $t('role.setting.add') : $t('role.setting.edit')"
