@@ -128,7 +128,7 @@ export const buildPlan = async (params: CreateIssueParams) => {
       query.changelist,
       params
     );
-  } else if (query.mode === "tenant") {
+  } else if (query.batch === "1") {
     // in tenant mode, all specs share a unique sheet
     const sheetUID = nextUID();
     // build tenant plan

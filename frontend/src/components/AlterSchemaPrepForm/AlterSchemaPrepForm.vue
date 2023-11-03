@@ -809,7 +809,7 @@ const generateTenant = async () => {
   const query: Record<string, any> = {
     template: props.type,
     project: state.project.uid,
-    mode: "tenant",
+    batch: "1",
   };
   if (state.alterType === "TENANT") {
     const databaseList = databaseV1Store.databaseListByProject(
