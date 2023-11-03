@@ -13,4 +13,8 @@ export const emitWindowEvent = (
     data.params = params;
   }
   window.parent.postMessage(data, "*");
+
+  if (window.opener && typeof window.opener.postMessage === "function") {
+    window.opener.postMessage(data, "*");
+  }
 };
