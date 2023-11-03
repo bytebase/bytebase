@@ -155,7 +155,7 @@ const databaseV1List = computed(() => {
 });
 
 const cachedNotifiedActivities = useLocalStorage<string[]>(
-  "bb.project.activities",
+  `bb.project.${props.projectSlug}.activities`,
   []
 );
 
@@ -166,10 +166,10 @@ onMounted(() => {
     .fetchActivityList({
       pageSize: 1,
       order: "desc",
+      action: [LogEntity_Action.ACTION_PROJECT_REPOSITORY_PUSH],
       resource: project.value.name,
     })
     .then((resp) => {
-      const firstOpening = cachedNotifiedActivities.value.length == 0;
       for (const activity of resp.logEntities) {
         if (cachedNotifiedActivities.value.includes(activity.name)) {
           continue;
@@ -179,20 +179,15 @@ onMounted(() => {
           cachedNotifiedActivities.value.shift();
         }
 
-        if (
-          !firstOpening &&
-          activity.action === LogEntity_Action.ACTION_PROJECT_REPOSITORY_PUSH
-        ) {
-          pushNotification({
-            module: "bytebase",
-            style: "INFO",
-            title: activityName(activity.action),
-            manualHide: true,
-            link: `/project/${projectV1Slug(project.value)}#activities`,
-            linkTitle: t("common.view"),
-          });
-          break;
-        }
+        pushNotification({
+          module: "bytebase",
+          style: "INFO",
+          title: activityName(activity.action),
+          manualHide: true,
+          link: `/project/${projectV1Slug(project.value)}#activities`,
+          linkTitle: t("common.view"),
+        });
+        break;
       }
     });
 });
