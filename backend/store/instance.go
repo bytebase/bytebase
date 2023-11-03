@@ -531,15 +531,19 @@ func (s *Store) CheckActivationLimit(ctx context.Context, maximumActivation int)
 }
 
 func validateDataSourceList(dataSources []*DataSourceMessage) error {
-	dataSourceMap := map[api.DataSourceType]bool{}
+	dataSourceMap := map[string]bool{}
+	adminCount := 0
 	for _, dataSource := range dataSources {
-		if dataSourceMap[dataSource.Type] {
-			return status.Errorf(codes.InvalidArgument, "duplicate data source type %s", dataSource.Type)
+		if dataSourceMap[dataSource.ID] {
+			return status.Errorf(codes.InvalidArgument, "duplicate data source ID %s", dataSource.ID)
 		}
-		dataSourceMap[dataSource.Type] = true
+		dataSourceMap[dataSource.ID] = true
+		if dataSource.Type == api.Admin {
+			adminCount++
+		}
 	}
-	if !dataSourceMap[api.Admin] {
-		return status.Errorf(codes.InvalidArgument, "missing required data source type %s", api.Admin)
+	if adminCount != 1 {
+		return status.Errorf(codes.InvalidArgument, "require exactly one admin data source")
 	}
 	return nil
 }
