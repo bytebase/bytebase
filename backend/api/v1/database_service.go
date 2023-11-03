@@ -1998,6 +1998,7 @@ func convertDatabaseMetadata(database *store.DatabaseMessage, metadata *storepb.
 		}
 		// Only return table for request with a filter.
 		if filter != nil {
+			m.Schemas = append(m.Schemas, s)
 			continue
 		}
 		for _, view := range schema.Views {

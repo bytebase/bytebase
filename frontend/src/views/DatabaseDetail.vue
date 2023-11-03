@@ -265,6 +265,7 @@ import {
   unknownEnvironment,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
+import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import {
   idFromSlug,
   hasWorkspacePermissionV1,
@@ -584,10 +585,11 @@ const syncDatabaseSchema = async () => {
   try {
     await databaseV1Store.syncDatabase(database.value.name);
 
-    dbSchemaStore.getOrFetchDatabaseMetadata(
-      database.value.name,
-      true // skip cache
-    );
+    dbSchemaStore.getOrFetchDatabaseMetadata({
+      database: database.value.name,
+      skipCache: true,
+      view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
+    });
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",

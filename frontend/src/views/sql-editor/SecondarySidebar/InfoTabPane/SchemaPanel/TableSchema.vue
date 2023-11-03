@@ -41,7 +41,6 @@ import { computed } from "vue";
 import { useActuatorV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type {
-  DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
@@ -53,7 +52,6 @@ import ExternalLinkButton from "./ExternalLinkButton.vue";
 
 const props = defineProps<{
   database: ComposedDatabase;
-  databaseMetadata: DatabaseMetadata;
   schema: SchemaMetadata;
   table: TableMetadata;
 }>();

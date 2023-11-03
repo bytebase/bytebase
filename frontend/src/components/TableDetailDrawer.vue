@@ -191,7 +191,6 @@
 
 <script lang="ts" setup>
 import { computed, watch, ref } from "vue";
-import { useRouter } from "vue-router";
 import {
   DatabaseV1Name,
   InstanceV1Name,
@@ -230,7 +229,6 @@ const props = defineProps<{
 
 defineEmits(["dismiss"]);
 
-const router = useRouter();
 const databaseV1Store = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const currentUserV1 = useCurrentUserV1();
@@ -281,12 +279,15 @@ watch(
       (schema) => schema.name === props.schemaName
     );
     if (schema) {
-      table.value = schema.tables.find((table) => table.name === tableName);
-    }
-    if (!table.value) {
-      router.replace({
-        name: "error.404",
-      });
+      dbSchemaStore
+        .getOrFetchTableMetadata({
+          database: props.databaseName,
+          schema: schema?.name,
+          table: tableName,
+          skipCache: false,
+          silent: false,
+        })
+        .then((metadata) => (table.value = metadata));
     }
   }
 );

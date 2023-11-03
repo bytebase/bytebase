@@ -79,9 +79,9 @@ watch(
     });
 
     for (const database of databaseList) {
-      const databaseMetadata = await dbSchemaStore.getOrFetchDatabaseMetadata(
-        database.name
-      );
+      const databaseMetadata = await dbSchemaStore.getOrFetchDatabaseMetadata({
+        database: database.name,
+      });
       databaseResourceMap.value.set(`d-${database.uid}`, {
         databaseName: database.name,
       });

@@ -153,7 +153,10 @@ import {
   unknownProject,
 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import { DatabaseMetadata } from "@/types/proto/v1/database_service";
+import {
+  DatabaseMetadata,
+  DatabaseMetadataView,
+} from "@/types/proto/v1/database_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import MonacoEditor from "../MonacoEditor";
 import { provideSQLCheckContext } from "../SQLCheck";
@@ -239,7 +242,11 @@ const isTenantProject = computed(
 
 const prepareDatabaseMetadatas = async () => {
   for (const database of databaseList.value) {
-    await dbSchemaV1Store.getOrFetchDatabaseMetadata(database.name);
+    await dbSchemaV1Store.getOrFetchDatabaseMetadata({
+      database: database.name,
+      skipCache: false,
+      view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
+    });
   }
 };
 
