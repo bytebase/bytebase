@@ -325,15 +325,12 @@ const hasRBACFeature = featureToRef("bb.feature.rbac");
 const has2FAFeature = featureToRef("bb.feature.2fa");
 
 const isMFAEnabled = computed(() => {
-  return authStore.currentUser.mfaEnabled;
+  return user.value.mfaEnabled;
 });
 
-// only user can their regenerate recovery-codes.
+// only user can regenerate their recovery-codes.
 const showRegenerateRecoveryCodes = computed(() => {
-  return (
-    authStore.currentUser.mfaEnabled &&
-    user.value.name === currentUserV1.value.name
-  );
+  return user.value.mfaEnabled && user.value.name === currentUserV1.value.name;
 });
 
 const user = computed(() => {
@@ -466,17 +463,16 @@ const disable2FA = () => {
 };
 
 const handleDisable2FA = async () => {
-  const user = authStore.currentUser;
   await userStore.updateUser(
     UpdateUserRequest.fromPartial({
       user: {
-        name: user.name,
+        name: user.value.name,
         mfaEnabled: false,
       },
       updateMask: ["mfa_enabled"],
     })
   );
-  await authStore.refreshUserIfNeeded(user.name);
+  await userStore.fetchUser(user.value.name, true /* slient */);
   state.showDisable2FAConfirmModal = false;
   pushNotification({
     module: "bytebase",
