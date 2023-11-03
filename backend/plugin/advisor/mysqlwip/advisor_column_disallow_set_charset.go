@@ -123,7 +123,7 @@ func (checker *columnDisallowSetCharsetChecker) EnterAlterTable(ctx *mysql.Alter
 			continue
 		}
 
-		var charset []string
+		var charsetList []string
 		switch {
 		// add column.
 		case item.ADD_SYMBOL() != nil:
@@ -134,7 +134,7 @@ func (checker *columnDisallowSetCharsetChecker) EnterAlterTable(ctx *mysql.Alter
 				}
 
 				charsetName := checker.getCharSet(item.FieldDefinition().DataType())
-				charset = append(charset, charsetName)
+				charsetList = append(charsetList, charsetName)
 			case item.OPEN_PAR_SYMBOL() != nil && item.TableElementList() != nil:
 				for _, tableElement := range item.TableElementList().AllTableElement() {
 					if tableElement.ColumnDefinition() == nil {
@@ -148,22 +148,22 @@ func (checker *columnDisallowSetCharsetChecker) EnterAlterTable(ctx *mysql.Alter
 					}
 
 					charsetName := checker.getCharSet(tableElement.ColumnDefinition().FieldDefinition().DataType())
-					charset = append(charset, charsetName)
+					charsetList = append(charsetList, charsetName)
 				}
 			}
 		// change column.
 		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil && item.FieldDefinition() != nil:
 			charsetName := checker.getCharSet(item.FieldDefinition().DataType())
-			charset = append(charset, charsetName)
+			charsetList = append(charsetList, charsetName)
 		// modify column.
 		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
 			charsetName := checker.getCharSet(item.FieldDefinition().DataType())
-			charset = append(charset, charsetName)
+			charsetList = append(charsetList, charsetName)
 		default:
 			continue
 		}
 
-		for _, charsetName := range charset {
+		for _, charsetName := range charsetList {
 			if !checker.checkCharset(charsetName) {
 				checker.adviceList = append(checker.adviceList, advisor.Advice{
 					Status:  checker.level,
