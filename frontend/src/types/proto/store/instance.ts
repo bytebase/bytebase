@@ -74,23 +74,25 @@ export const InstanceOptions = {
 
   fromJSON(object: any): InstanceOptions {
     return {
-      schemaTenantMode: isSet(object.schemaTenantMode) ? Boolean(object.schemaTenantMode) : false,
+      schemaTenantMode: isSet(object.schemaTenantMode) ? globalThis.Boolean(object.schemaTenantMode) : false,
       syncInterval: isSet(object.syncInterval) ? Duration.fromJSON(object.syncInterval) : undefined,
     };
   },
 
   toJSON(message: InstanceOptions): unknown {
     const obj: any = {};
-    message.schemaTenantMode !== undefined && (obj.schemaTenantMode = message.schemaTenantMode);
-    message.syncInterval !== undefined &&
-      (obj.syncInterval = message.syncInterval ? Duration.toJSON(message.syncInterval) : undefined);
+    if (message.schemaTenantMode === true) {
+      obj.schemaTenantMode = message.schemaTenantMode;
+    }
+    if (message.syncInterval !== undefined) {
+      obj.syncInterval = Duration.toJSON(message.syncInterval);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<InstanceOptions>): InstanceOptions {
     return InstanceOptions.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<InstanceOptions>): InstanceOptions {
     const message = createBaseInstanceOptions();
     message.schemaTenantMode = object.schemaTenantMode ?? false;
@@ -148,23 +150,27 @@ export const InstanceMetadata = {
 
   fromJSON(object: any): InstanceMetadata {
     return {
-      mysqlLowerCaseTableNames: isSet(object.mysqlLowerCaseTableNames) ? Number(object.mysqlLowerCaseTableNames) : 0,
+      mysqlLowerCaseTableNames: isSet(object.mysqlLowerCaseTableNames)
+        ? globalThis.Number(object.mysqlLowerCaseTableNames)
+        : 0,
       lastSyncTime: isSet(object.lastSyncTime) ? fromJsonTimestamp(object.lastSyncTime) : undefined,
     };
   },
 
   toJSON(message: InstanceMetadata): unknown {
     const obj: any = {};
-    message.mysqlLowerCaseTableNames !== undefined &&
-      (obj.mysqlLowerCaseTableNames = Math.round(message.mysqlLowerCaseTableNames));
-    message.lastSyncTime !== undefined && (obj.lastSyncTime = message.lastSyncTime.toISOString());
+    if (message.mysqlLowerCaseTableNames !== 0) {
+      obj.mysqlLowerCaseTableNames = Math.round(message.mysqlLowerCaseTableNames);
+    }
+    if (message.lastSyncTime !== undefined) {
+      obj.lastSyncTime = message.lastSyncTime.toISOString();
+    }
     return obj;
   },
 
   create(base?: DeepPartial<InstanceMetadata>): InstanceMetadata {
     return InstanceMetadata.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<InstanceMetadata>): InstanceMetadata {
     const message = createBaseInstanceMetadata();
     message.mysqlLowerCaseTableNames = object.mysqlLowerCaseTableNames ?? 0;
@@ -176,7 +182,7 @@ export const InstanceMetadata = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Long ? string | number | Long : T extends Array<infer U> ? Array<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
@@ -190,14 +196,14 @@ function toTimestamp(date: Date): Timestamp {
 function fromTimestamp(t: Timestamp): Date {
   let millis = (t.seconds.toNumber() || 0) * 1_000;
   millis += (t.nanos || 0) / 1_000_000;
-  return new Date(millis);
+  return new globalThis.Date(millis);
 }
 
 function fromJsonTimestamp(o: any): Date {
-  if (o instanceof Date) {
+  if (o instanceof globalThis.Date) {
     return o;
   } else if (typeof o === "string") {
-    return new Date(o);
+    return new globalThis.Date(o);
   } else {
     return fromTimestamp(Timestamp.fromJSON(o));
   }

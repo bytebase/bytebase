@@ -193,19 +193,20 @@ export const GetEnvironmentRequest = {
   },
 
   fromJSON(object: any): GetEnvironmentRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: GetEnvironmentRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<GetEnvironmentRequest>): GetEnvironmentRequest {
     return GetEnvironmentRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<GetEnvironmentRequest>): GetEnvironmentRequest {
     const message = createBaseGetEnvironmentRequest();
     message.name = object.name ?? "";
@@ -270,24 +271,29 @@ export const ListEnvironmentsRequest = {
 
   fromJSON(object: any): ListEnvironmentsRequest {
     return {
-      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
-      showDeleted: isSet(object.showDeleted) ? Boolean(object.showDeleted) : false,
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
+      showDeleted: isSet(object.showDeleted) ? globalThis.Boolean(object.showDeleted) : false,
     };
   },
 
   toJSON(message: ListEnvironmentsRequest): unknown {
     const obj: any = {};
-    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
-    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
-    message.showDeleted !== undefined && (obj.showDeleted = message.showDeleted);
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
+    if (message.showDeleted === true) {
+      obj.showDeleted = message.showDeleted;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ListEnvironmentsRequest>): ListEnvironmentsRequest {
     return ListEnvironmentsRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ListEnvironmentsRequest>): ListEnvironmentsRequest {
     const message = createBaseListEnvironmentsRequest();
     message.pageSize = object.pageSize ?? 0;
@@ -344,28 +350,27 @@ export const ListEnvironmentsResponse = {
 
   fromJSON(object: any): ListEnvironmentsResponse {
     return {
-      environments: Array.isArray(object?.environments)
+      environments: globalThis.Array.isArray(object?.environments)
         ? object.environments.map((e: any) => Environment.fromJSON(e))
         : [],
-      nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
+      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
     };
   },
 
   toJSON(message: ListEnvironmentsResponse): unknown {
     const obj: any = {};
-    if (message.environments) {
-      obj.environments = message.environments.map((e) => e ? Environment.toJSON(e) : undefined);
-    } else {
-      obj.environments = [];
+    if (message.environments?.length) {
+      obj.environments = message.environments.map((e) => Environment.toJSON(e));
     }
-    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ListEnvironmentsResponse>): ListEnvironmentsResponse {
     return ListEnvironmentsResponse.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ListEnvironmentsResponse>): ListEnvironmentsResponse {
     const message = createBaseListEnvironmentsResponse();
     message.environments = object.environments?.map((e) => Environment.fromPartial(e)) || [];
@@ -422,22 +427,24 @@ export const CreateEnvironmentRequest = {
   fromJSON(object: any): CreateEnvironmentRequest {
     return {
       environment: isSet(object.environment) ? Environment.fromJSON(object.environment) : undefined,
-      environmentId: isSet(object.environmentId) ? String(object.environmentId) : "",
+      environmentId: isSet(object.environmentId) ? globalThis.String(object.environmentId) : "",
     };
   },
 
   toJSON(message: CreateEnvironmentRequest): unknown {
     const obj: any = {};
-    message.environment !== undefined &&
-      (obj.environment = message.environment ? Environment.toJSON(message.environment) : undefined);
-    message.environmentId !== undefined && (obj.environmentId = message.environmentId);
+    if (message.environment !== undefined) {
+      obj.environment = Environment.toJSON(message.environment);
+    }
+    if (message.environmentId !== "") {
+      obj.environmentId = message.environmentId;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<CreateEnvironmentRequest>): CreateEnvironmentRequest {
     return CreateEnvironmentRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<CreateEnvironmentRequest>): CreateEnvironmentRequest {
     const message = createBaseCreateEnvironmentRequest();
     message.environment = (object.environment !== undefined && object.environment !== null)
@@ -502,16 +509,18 @@ export const UpdateEnvironmentRequest = {
 
   toJSON(message: UpdateEnvironmentRequest): unknown {
     const obj: any = {};
-    message.environment !== undefined &&
-      (obj.environment = message.environment ? Environment.toJSON(message.environment) : undefined);
-    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    if (message.environment !== undefined) {
+      obj.environment = Environment.toJSON(message.environment);
+    }
+    if (message.updateMask !== undefined) {
+      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
+    }
     return obj;
   },
 
   create(base?: DeepPartial<UpdateEnvironmentRequest>): UpdateEnvironmentRequest {
     return UpdateEnvironmentRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<UpdateEnvironmentRequest>): UpdateEnvironmentRequest {
     const message = createBaseUpdateEnvironmentRequest();
     message.environment = (object.environment !== undefined && object.environment !== null)
@@ -558,19 +567,20 @@ export const DeleteEnvironmentRequest = {
   },
 
   fromJSON(object: any): DeleteEnvironmentRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: DeleteEnvironmentRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<DeleteEnvironmentRequest>): DeleteEnvironmentRequest {
     return DeleteEnvironmentRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<DeleteEnvironmentRequest>): DeleteEnvironmentRequest {
     const message = createBaseDeleteEnvironmentRequest();
     message.name = object.name ?? "";
@@ -614,19 +624,20 @@ export const UndeleteEnvironmentRequest = {
   },
 
   fromJSON(object: any): UndeleteEnvironmentRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: UndeleteEnvironmentRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<UndeleteEnvironmentRequest>): UndeleteEnvironmentRequest {
     return UndeleteEnvironmentRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<UndeleteEnvironmentRequest>): UndeleteEnvironmentRequest {
     const message = createBaseUndeleteEnvironmentRequest();
     message.name = object.name ?? "";
@@ -721,30 +732,41 @@ export const Environment = {
 
   fromJSON(object: any): Environment {
     return {
-      name: isSet(object.name) ? String(object.name) : "",
-      uid: isSet(object.uid) ? String(object.uid) : "",
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
       state: isSet(object.state) ? stateFromJSON(object.state) : 0,
-      title: isSet(object.title) ? String(object.title) : "",
-      order: isSet(object.order) ? Number(object.order) : 0,
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      order: isSet(object.order) ? globalThis.Number(object.order) : 0,
       tier: isSet(object.tier) ? environmentTierFromJSON(object.tier) : 0,
     };
   },
 
   toJSON(message: Environment): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.uid !== undefined && (obj.uid = message.uid);
-    message.state !== undefined && (obj.state = stateToJSON(message.state));
-    message.title !== undefined && (obj.title = message.title);
-    message.order !== undefined && (obj.order = Math.round(message.order));
-    message.tier !== undefined && (obj.tier = environmentTierToJSON(message.tier));
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.uid !== "") {
+      obj.uid = message.uid;
+    }
+    if (message.state !== 0) {
+      obj.state = stateToJSON(message.state);
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.order !== 0) {
+      obj.order = Math.round(message.order);
+    }
+    if (message.tier !== 0) {
+      obj.tier = environmentTierToJSON(message.tier);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<Environment>): Environment {
     return Environment.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Environment>): Environment {
     const message = createBaseEnvironment();
     message.name = object.name ?? "";
@@ -798,15 +820,15 @@ export const UpdateEnvironmentBackupSettingRequest = {
 
   toJSON(message: UpdateEnvironmentBackupSettingRequest): unknown {
     const obj: any = {};
-    message.setting !== undefined &&
-      (obj.setting = message.setting ? EnvironmentBackupSetting.toJSON(message.setting) : undefined);
+    if (message.setting !== undefined) {
+      obj.setting = EnvironmentBackupSetting.toJSON(message.setting);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<UpdateEnvironmentBackupSettingRequest>): UpdateEnvironmentBackupSettingRequest {
     return UpdateEnvironmentBackupSettingRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<UpdateEnvironmentBackupSettingRequest>): UpdateEnvironmentBackupSettingRequest {
     const message = createBaseUpdateEnvironmentBackupSettingRequest();
     message.setting = (object.setting !== undefined && object.setting !== null)
@@ -863,22 +885,25 @@ export const EnvironmentBackupSetting = {
 
   fromJSON(object: any): EnvironmentBackupSetting {
     return {
-      name: isSet(object.name) ? String(object.name) : "",
-      enabled: isSet(object.enabled) ? Boolean(object.enabled) : false,
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      enabled: isSet(object.enabled) ? globalThis.Boolean(object.enabled) : false,
     };
   },
 
   toJSON(message: EnvironmentBackupSetting): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.enabled !== undefined && (obj.enabled = message.enabled);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.enabled === true) {
+      obj.enabled = message.enabled;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<EnvironmentBackupSetting>): EnvironmentBackupSetting {
     return EnvironmentBackupSetting.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<EnvironmentBackupSetting>): EnvironmentBackupSetting {
     const message = createBaseEnvironmentBackupSetting();
     message.name = object.name ?? "";
@@ -1274,7 +1299,7 @@ export const EnvironmentServiceDefinition = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Long ? string | number | Long : T extends Array<infer U> ? Array<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;

@@ -393,22 +393,25 @@ export const CreateSheetRequest = {
 
   fromJSON(object: any): CreateSheetRequest {
     return {
-      parent: isSet(object.parent) ? String(object.parent) : "",
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
       sheet: isSet(object.sheet) ? Sheet.fromJSON(object.sheet) : undefined,
     };
   },
 
   toJSON(message: CreateSheetRequest): unknown {
     const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
-    message.sheet !== undefined && (obj.sheet = message.sheet ? Sheet.toJSON(message.sheet) : undefined);
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.sheet !== undefined) {
+      obj.sheet = Sheet.toJSON(message.sheet);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<CreateSheetRequest>): CreateSheetRequest {
     return CreateSheetRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<CreateSheetRequest>): CreateSheetRequest {
     const message = createBaseCreateSheetRequest();
     message.parent = object.parent ?? "";
@@ -464,22 +467,25 @@ export const GetSheetRequest = {
 
   fromJSON(object: any): GetSheetRequest {
     return {
-      name: isSet(object.name) ? String(object.name) : "",
-      raw: isSet(object.raw) ? Boolean(object.raw) : false,
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      raw: isSet(object.raw) ? globalThis.Boolean(object.raw) : false,
     };
   },
 
   toJSON(message: GetSheetRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.raw !== undefined && (obj.raw = message.raw);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.raw === true) {
+      obj.raw = message.raw;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<GetSheetRequest>): GetSheetRequest {
     return GetSheetRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<GetSheetRequest>): GetSheetRequest {
     const message = createBaseGetSheetRequest();
     message.name = object.name ?? "";
@@ -542,15 +548,18 @@ export const UpdateSheetRequest = {
 
   toJSON(message: UpdateSheetRequest): unknown {
     const obj: any = {};
-    message.sheet !== undefined && (obj.sheet = message.sheet ? Sheet.toJSON(message.sheet) : undefined);
-    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    if (message.sheet !== undefined) {
+      obj.sheet = Sheet.toJSON(message.sheet);
+    }
+    if (message.updateMask !== undefined) {
+      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
+    }
     return obj;
   },
 
   create(base?: DeepPartial<UpdateSheetRequest>): UpdateSheetRequest {
     return UpdateSheetRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<UpdateSheetRequest>): UpdateSheetRequest {
     const message = createBaseUpdateSheetRequest();
     message.sheet = (object.sheet !== undefined && object.sheet !== null) ? Sheet.fromPartial(object.sheet) : undefined;
@@ -613,16 +622,18 @@ export const UpdateSheetOrganizerRequest = {
 
   toJSON(message: UpdateSheetOrganizerRequest): unknown {
     const obj: any = {};
-    message.organizer !== undefined &&
-      (obj.organizer = message.organizer ? SheetOrganizer.toJSON(message.organizer) : undefined);
-    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    if (message.organizer !== undefined) {
+      obj.organizer = SheetOrganizer.toJSON(message.organizer);
+    }
+    if (message.updateMask !== undefined) {
+      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
+    }
     return obj;
   },
 
   create(base?: DeepPartial<UpdateSheetOrganizerRequest>): UpdateSheetOrganizerRequest {
     return UpdateSheetOrganizerRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<UpdateSheetOrganizerRequest>): UpdateSheetOrganizerRequest {
     const message = createBaseUpdateSheetOrganizerRequest();
     message.organizer = (object.organizer !== undefined && object.organizer !== null)
@@ -690,24 +701,29 @@ export const SheetOrganizer = {
 
   fromJSON(object: any): SheetOrganizer {
     return {
-      sheet: isSet(object.sheet) ? String(object.sheet) : "",
-      starred: isSet(object.starred) ? Boolean(object.starred) : false,
-      pinned: isSet(object.pinned) ? Boolean(object.pinned) : false,
+      sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
+      starred: isSet(object.starred) ? globalThis.Boolean(object.starred) : false,
+      pinned: isSet(object.pinned) ? globalThis.Boolean(object.pinned) : false,
     };
   },
 
   toJSON(message: SheetOrganizer): unknown {
     const obj: any = {};
-    message.sheet !== undefined && (obj.sheet = message.sheet);
-    message.starred !== undefined && (obj.starred = message.starred);
-    message.pinned !== undefined && (obj.pinned = message.pinned);
+    if (message.sheet !== "") {
+      obj.sheet = message.sheet;
+    }
+    if (message.starred === true) {
+      obj.starred = message.starred;
+    }
+    if (message.pinned === true) {
+      obj.pinned = message.pinned;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<SheetOrganizer>): SheetOrganizer {
     return SheetOrganizer.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SheetOrganizer>): SheetOrganizer {
     const message = createBaseSheetOrganizer();
     message.sheet = object.sheet ?? "";
@@ -753,19 +769,20 @@ export const DeleteSheetRequest = {
   },
 
   fromJSON(object: any): DeleteSheetRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: DeleteSheetRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<DeleteSheetRequest>): DeleteSheetRequest {
     return DeleteSheetRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<DeleteSheetRequest>): DeleteSheetRequest {
     const message = createBaseDeleteSheetRequest();
     message.name = object.name ?? "";
@@ -840,26 +857,33 @@ export const SearchSheetsRequest = {
 
   fromJSON(object: any): SearchSheetsRequest {
     return {
-      parent: isSet(object.parent) ? String(object.parent) : "",
-      filter: isSet(object.filter) ? String(object.filter) : "",
-      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
+      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
     };
   },
 
   toJSON(message: SearchSheetsRequest): unknown {
     const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
-    message.filter !== undefined && (obj.filter = message.filter);
-    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
-    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.filter !== "") {
+      obj.filter = message.filter;
+    }
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<SearchSheetsRequest>): SearchSheetsRequest {
     return SearchSheetsRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SearchSheetsRequest>): SearchSheetsRequest {
     const message = createBaseSearchSheetsRequest();
     message.parent = object.parent ?? "";
@@ -917,26 +941,25 @@ export const SearchSheetsResponse = {
 
   fromJSON(object: any): SearchSheetsResponse {
     return {
-      sheets: Array.isArray(object?.sheets) ? object.sheets.map((e: any) => Sheet.fromJSON(e)) : [],
-      nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
+      sheets: globalThis.Array.isArray(object?.sheets) ? object.sheets.map((e: any) => Sheet.fromJSON(e)) : [],
+      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
     };
   },
 
   toJSON(message: SearchSheetsResponse): unknown {
     const obj: any = {};
-    if (message.sheets) {
-      obj.sheets = message.sheets.map((e) => e ? Sheet.toJSON(e) : undefined);
-    } else {
-      obj.sheets = [];
+    if (message.sheets?.length) {
+      obj.sheets = message.sheets.map((e) => Sheet.toJSON(e));
     }
-    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<SearchSheetsResponse>): SearchSheetsResponse {
     return SearchSheetsResponse.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SearchSheetsResponse>): SearchSheetsResponse {
     const message = createBaseSearchSheetsResponse();
     message.sheets = object.sheets?.map((e) => Sheet.fromPartial(e)) || [];
@@ -1127,10 +1150,10 @@ export const Sheet = {
 
   fromJSON(object: any): Sheet {
     return {
-      name: isSet(object.name) ? String(object.name) : "",
-      database: isSet(object.database) ? String(object.database) : "",
-      title: isSet(object.title) ? String(object.title) : "",
-      creator: isSet(object.creator) ? String(object.creator) : "",
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      database: isSet(object.database) ? globalThis.String(object.database) : "",
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
       content: isSet(object.content) ? bytesFromBase64(object.content) : new Uint8Array(0),
@@ -1138,7 +1161,7 @@ export const Sheet = {
       visibility: isSet(object.visibility) ? sheet_VisibilityFromJSON(object.visibility) : 0,
       source: isSet(object.source) ? sheet_SourceFromJSON(object.source) : 0,
       type: isSet(object.type) ? sheet_TypeFromJSON(object.type) : 0,
-      starred: isSet(object.starred) ? Boolean(object.starred) : false,
+      starred: isSet(object.starred) ? globalThis.Boolean(object.starred) : false,
       payload: isSet(object.payload) ? SheetPayload.fromJSON(object.payload) : undefined,
       pushEvent: isSet(object.pushEvent) ? PushEvent.fromJSON(object.pushEvent) : undefined,
     };
@@ -1146,29 +1169,54 @@ export const Sheet = {
 
   toJSON(message: Sheet): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.database !== undefined && (obj.database = message.database);
-    message.title !== undefined && (obj.title = message.title);
-    message.creator !== undefined && (obj.creator = message.creator);
-    message.createTime !== undefined && (obj.createTime = message.createTime.toISOString());
-    message.updateTime !== undefined && (obj.updateTime = message.updateTime.toISOString());
-    message.content !== undefined &&
-      (obj.content = base64FromBytes(message.content !== undefined ? message.content : new Uint8Array(0)));
-    message.contentSize !== undefined && (obj.contentSize = (message.contentSize || Long.ZERO).toString());
-    message.visibility !== undefined && (obj.visibility = sheet_VisibilityToJSON(message.visibility));
-    message.source !== undefined && (obj.source = sheet_SourceToJSON(message.source));
-    message.type !== undefined && (obj.type = sheet_TypeToJSON(message.type));
-    message.starred !== undefined && (obj.starred = message.starred);
-    message.payload !== undefined && (obj.payload = message.payload ? SheetPayload.toJSON(message.payload) : undefined);
-    message.pushEvent !== undefined &&
-      (obj.pushEvent = message.pushEvent ? PushEvent.toJSON(message.pushEvent) : undefined);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.database !== "") {
+      obj.database = message.database;
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.creator !== "") {
+      obj.creator = message.creator;
+    }
+    if (message.createTime !== undefined) {
+      obj.createTime = message.createTime.toISOString();
+    }
+    if (message.updateTime !== undefined) {
+      obj.updateTime = message.updateTime.toISOString();
+    }
+    if (message.content.length !== 0) {
+      obj.content = base64FromBytes(message.content);
+    }
+    if (!message.contentSize.isZero()) {
+      obj.contentSize = (message.contentSize || Long.ZERO).toString();
+    }
+    if (message.visibility !== 0) {
+      obj.visibility = sheet_VisibilityToJSON(message.visibility);
+    }
+    if (message.source !== 0) {
+      obj.source = sheet_SourceToJSON(message.source);
+    }
+    if (message.type !== 0) {
+      obj.type = sheet_TypeToJSON(message.type);
+    }
+    if (message.starred === true) {
+      obj.starred = message.starred;
+    }
+    if (message.payload !== undefined) {
+      obj.payload = SheetPayload.toJSON(message.payload);
+    }
+    if (message.pushEvent !== undefined) {
+      obj.pushEvent = PushEvent.toJSON(message.pushEvent);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<Sheet>): Sheet {
     return Sheet.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Sheet>): Sheet {
     const message = createBaseSheet();
     message.name = object.name ?? "";
@@ -1262,19 +1310,21 @@ export const SheetPayload = {
 
   toJSON(message: SheetPayload): unknown {
     const obj: any = {};
-    message.type !== undefined && (obj.type = sheetPayload_TypeToJSON(message.type));
-    message.databaseConfig !== undefined &&
-      (obj.databaseConfig = message.databaseConfig ? DatabaseConfig.toJSON(message.databaseConfig) : undefined);
-    message.baselineDatabaseConfig !== undefined && (obj.baselineDatabaseConfig = message.baselineDatabaseConfig
-      ? DatabaseConfig.toJSON(message.baselineDatabaseConfig)
-      : undefined);
+    if (message.type !== 0) {
+      obj.type = sheetPayload_TypeToJSON(message.type);
+    }
+    if (message.databaseConfig !== undefined) {
+      obj.databaseConfig = DatabaseConfig.toJSON(message.databaseConfig);
+    }
+    if (message.baselineDatabaseConfig !== undefined) {
+      obj.baselineDatabaseConfig = DatabaseConfig.toJSON(message.baselineDatabaseConfig);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<SheetPayload>): SheetPayload {
     return SheetPayload.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SheetPayload>): SheetPayload {
     const message = createBaseSheetPayload();
     message.type = object.type ?? 0;
@@ -1674,30 +1724,11 @@ export const SheetServiceDefinition = {
   },
 } as const;
 
-declare const self: any | undefined;
-declare const window: any | undefined;
-declare const global: any | undefined;
-const tsProtoGlobalThis: any = (() => {
-  if (typeof globalThis !== "undefined") {
-    return globalThis;
-  }
-  if (typeof self !== "undefined") {
-    return self;
-  }
-  if (typeof window !== "undefined") {
-    return window;
-  }
-  if (typeof global !== "undefined") {
-    return global;
-  }
-  throw "Unable to locate global object";
-})();
-
 function bytesFromBase64(b64: string): Uint8Array {
-  if (tsProtoGlobalThis.Buffer) {
-    return Uint8Array.from(tsProtoGlobalThis.Buffer.from(b64, "base64"));
+  if (globalThis.Buffer) {
+    return Uint8Array.from(globalThis.Buffer.from(b64, "base64"));
   } else {
-    const bin = tsProtoGlobalThis.atob(b64);
+    const bin = globalThis.atob(b64);
     const arr = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; ++i) {
       arr[i] = bin.charCodeAt(i);
@@ -1707,21 +1738,21 @@ function bytesFromBase64(b64: string): Uint8Array {
 }
 
 function base64FromBytes(arr: Uint8Array): string {
-  if (tsProtoGlobalThis.Buffer) {
-    return tsProtoGlobalThis.Buffer.from(arr).toString("base64");
+  if (globalThis.Buffer) {
+    return globalThis.Buffer.from(arr).toString("base64");
   } else {
     const bin: string[] = [];
     arr.forEach((byte) => {
-      bin.push(String.fromCharCode(byte));
+      bin.push(globalThis.String.fromCharCode(byte));
     });
-    return tsProtoGlobalThis.btoa(bin.join(""));
+    return globalThis.btoa(bin.join(""));
   }
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Long ? string | number | Long : T extends Array<infer U> ? Array<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
@@ -1735,14 +1766,14 @@ function toTimestamp(date: Date): Timestamp {
 function fromTimestamp(t: Timestamp): Date {
   let millis = (t.seconds.toNumber() || 0) * 1_000;
   millis += (t.nanos || 0) / 1_000_000;
-  return new Date(millis);
+  return new globalThis.Date(millis);
 }
 
 function fromJsonTimestamp(o: any): Date {
-  if (o instanceof Date) {
+  if (o instanceof globalThis.Date) {
     return o;
   } else if (typeof o === "string") {
-    return new Date(o);
+    return new globalThis.Date(o);
   } else {
     return fromTimestamp(Timestamp.fromJSON(o));
   }

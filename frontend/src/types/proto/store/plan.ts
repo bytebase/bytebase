@@ -240,15 +240,15 @@ export const PlanConfig = {
   },
 
   fromJSON(object: any): PlanConfig {
-    return { steps: Array.isArray(object?.steps) ? object.steps.map((e: any) => PlanConfig_Step.fromJSON(e)) : [] };
+    return {
+      steps: globalThis.Array.isArray(object?.steps) ? object.steps.map((e: any) => PlanConfig_Step.fromJSON(e)) : [],
+    };
   },
 
   toJSON(message: PlanConfig): unknown {
     const obj: any = {};
-    if (message.steps) {
-      obj.steps = message.steps.map((e) => e ? PlanConfig_Step.toJSON(e) : undefined);
-    } else {
-      obj.steps = [];
+    if (message.steps?.length) {
+      obj.steps = message.steps.map((e) => PlanConfig_Step.toJSON(e));
     }
     return obj;
   },
@@ -256,7 +256,6 @@ export const PlanConfig = {
   create(base?: DeepPartial<PlanConfig>): PlanConfig {
     return PlanConfig.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<PlanConfig>): PlanConfig {
     const message = createBasePlanConfig();
     message.steps = object.steps?.map((e) => PlanConfig_Step.fromPartial(e)) || [];
@@ -300,15 +299,15 @@ export const PlanConfig_Step = {
   },
 
   fromJSON(object: any): PlanConfig_Step {
-    return { specs: Array.isArray(object?.specs) ? object.specs.map((e: any) => PlanConfig_Spec.fromJSON(e)) : [] };
+    return {
+      specs: globalThis.Array.isArray(object?.specs) ? object.specs.map((e: any) => PlanConfig_Spec.fromJSON(e)) : [],
+    };
   },
 
   toJSON(message: PlanConfig_Step): unknown {
     const obj: any = {};
-    if (message.specs) {
-      obj.specs = message.specs.map((e) => e ? PlanConfig_Spec.toJSON(e) : undefined);
-    } else {
-      obj.specs = [];
+    if (message.specs?.length) {
+      obj.specs = message.specs.map((e) => PlanConfig_Spec.toJSON(e));
     }
     return obj;
   },
@@ -316,7 +315,6 @@ export const PlanConfig_Step = {
   create(base?: DeepPartial<PlanConfig_Step>): PlanConfig_Step {
     return PlanConfig_Step.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<PlanConfig_Step>): PlanConfig_Step {
     const message = createBasePlanConfig_Step();
     message.specs = object.specs?.map((e) => PlanConfig_Spec.fromPartial(e)) || [];
@@ -410,7 +408,7 @@ export const PlanConfig_Spec = {
       earliestAllowedTime: isSet(object.earliestAllowedTime)
         ? fromJsonTimestamp(object.earliestAllowedTime)
         : undefined,
-      id: isSet(object.id) ? String(object.id) : "",
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
       createDatabaseConfig: isSet(object.createDatabaseConfig)
         ? PlanConfig_CreateDatabaseConfig.fromJSON(object.createDatabaseConfig)
         : undefined,
@@ -425,24 +423,27 @@ export const PlanConfig_Spec = {
 
   toJSON(message: PlanConfig_Spec): unknown {
     const obj: any = {};
-    message.earliestAllowedTime !== undefined && (obj.earliestAllowedTime = message.earliestAllowedTime.toISOString());
-    message.id !== undefined && (obj.id = message.id);
-    message.createDatabaseConfig !== undefined && (obj.createDatabaseConfig = message.createDatabaseConfig
-      ? PlanConfig_CreateDatabaseConfig.toJSON(message.createDatabaseConfig)
-      : undefined);
-    message.changeDatabaseConfig !== undefined && (obj.changeDatabaseConfig = message.changeDatabaseConfig
-      ? PlanConfig_ChangeDatabaseConfig.toJSON(message.changeDatabaseConfig)
-      : undefined);
-    message.restoreDatabaseConfig !== undefined && (obj.restoreDatabaseConfig = message.restoreDatabaseConfig
-      ? PlanConfig_RestoreDatabaseConfig.toJSON(message.restoreDatabaseConfig)
-      : undefined);
+    if (message.earliestAllowedTime !== undefined) {
+      obj.earliestAllowedTime = message.earliestAllowedTime.toISOString();
+    }
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.createDatabaseConfig !== undefined) {
+      obj.createDatabaseConfig = PlanConfig_CreateDatabaseConfig.toJSON(message.createDatabaseConfig);
+    }
+    if (message.changeDatabaseConfig !== undefined) {
+      obj.changeDatabaseConfig = PlanConfig_ChangeDatabaseConfig.toJSON(message.changeDatabaseConfig);
+    }
+    if (message.restoreDatabaseConfig !== undefined) {
+      obj.restoreDatabaseConfig = PlanConfig_RestoreDatabaseConfig.toJSON(message.restoreDatabaseConfig);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<PlanConfig_Spec>): PlanConfig_Spec {
     return PlanConfig_Spec.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<PlanConfig_Spec>): PlanConfig_Spec {
     const message = createBasePlanConfig_Spec();
     message.earliestAllowedTime = object.earliestAllowedTime ?? undefined;
@@ -602,15 +603,15 @@ export const PlanConfig_CreateDatabaseConfig = {
 
   fromJSON(object: any): PlanConfig_CreateDatabaseConfig {
     return {
-      target: isSet(object.target) ? String(object.target) : "",
-      database: isSet(object.database) ? String(object.database) : "",
-      table: isSet(object.table) ? String(object.table) : "",
-      characterSet: isSet(object.characterSet) ? String(object.characterSet) : "",
-      collation: isSet(object.collation) ? String(object.collation) : "",
-      cluster: isSet(object.cluster) ? String(object.cluster) : "",
-      owner: isSet(object.owner) ? String(object.owner) : "",
-      backup: isSet(object.backup) ? String(object.backup) : "",
-      environment: isSet(object.environment) ? String(object.environment) : "",
+      target: isSet(object.target) ? globalThis.String(object.target) : "",
+      database: isSet(object.database) ? globalThis.String(object.database) : "",
+      table: isSet(object.table) ? globalThis.String(object.table) : "",
+      characterSet: isSet(object.characterSet) ? globalThis.String(object.characterSet) : "",
+      collation: isSet(object.collation) ? globalThis.String(object.collation) : "",
+      cluster: isSet(object.cluster) ? globalThis.String(object.cluster) : "",
+      owner: isSet(object.owner) ? globalThis.String(object.owner) : "",
+      backup: isSet(object.backup) ? globalThis.String(object.backup) : "",
+      environment: isSet(object.environment) ? globalThis.String(object.environment) : "",
       labels: isObject(object.labels)
         ? Object.entries(object.labels).reduce<{ [key: string]: string }>((acc, [key, value]) => {
           acc[key] = String(value);
@@ -622,20 +623,41 @@ export const PlanConfig_CreateDatabaseConfig = {
 
   toJSON(message: PlanConfig_CreateDatabaseConfig): unknown {
     const obj: any = {};
-    message.target !== undefined && (obj.target = message.target);
-    message.database !== undefined && (obj.database = message.database);
-    message.table !== undefined && (obj.table = message.table);
-    message.characterSet !== undefined && (obj.characterSet = message.characterSet);
-    message.collation !== undefined && (obj.collation = message.collation);
-    message.cluster !== undefined && (obj.cluster = message.cluster);
-    message.owner !== undefined && (obj.owner = message.owner);
-    message.backup !== undefined && (obj.backup = message.backup);
-    message.environment !== undefined && (obj.environment = message.environment);
-    obj.labels = {};
+    if (message.target !== "") {
+      obj.target = message.target;
+    }
+    if (message.database !== "") {
+      obj.database = message.database;
+    }
+    if (message.table !== "") {
+      obj.table = message.table;
+    }
+    if (message.characterSet !== "") {
+      obj.characterSet = message.characterSet;
+    }
+    if (message.collation !== "") {
+      obj.collation = message.collation;
+    }
+    if (message.cluster !== "") {
+      obj.cluster = message.cluster;
+    }
+    if (message.owner !== "") {
+      obj.owner = message.owner;
+    }
+    if (message.backup !== "") {
+      obj.backup = message.backup;
+    }
+    if (message.environment !== "") {
+      obj.environment = message.environment;
+    }
     if (message.labels) {
-      Object.entries(message.labels).forEach(([k, v]) => {
-        obj.labels[k] = v;
-      });
+      const entries = Object.entries(message.labels);
+      if (entries.length > 0) {
+        obj.labels = {};
+        entries.forEach(([k, v]) => {
+          obj.labels[k] = v;
+        });
+      }
     }
     return obj;
   },
@@ -643,7 +665,6 @@ export const PlanConfig_CreateDatabaseConfig = {
   create(base?: DeepPartial<PlanConfig_CreateDatabaseConfig>): PlanConfig_CreateDatabaseConfig {
     return PlanConfig_CreateDatabaseConfig.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<PlanConfig_CreateDatabaseConfig>): PlanConfig_CreateDatabaseConfig {
     const message = createBasePlanConfig_CreateDatabaseConfig();
     message.target = object.target ?? "";
@@ -657,7 +678,7 @@ export const PlanConfig_CreateDatabaseConfig = {
     message.environment = object.environment ?? "";
     message.labels = Object.entries(object.labels ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
       if (value !== undefined) {
-        acc[key] = String(value);
+        acc[key] = globalThis.String(value);
       }
       return acc;
     }, {});
@@ -711,20 +732,26 @@ export const PlanConfig_CreateDatabaseConfig_LabelsEntry = {
   },
 
   fromJSON(object: any): PlanConfig_CreateDatabaseConfig_LabelsEntry {
-    return { key: isSet(object.key) ? String(object.key) : "", value: isSet(object.value) ? String(object.value) : "" };
+    return {
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      value: isSet(object.value) ? globalThis.String(object.value) : "",
+    };
   },
 
   toJSON(message: PlanConfig_CreateDatabaseConfig_LabelsEntry): unknown {
     const obj: any = {};
-    message.key !== undefined && (obj.key = message.key);
-    message.value !== undefined && (obj.value = message.value);
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.value !== "") {
+      obj.value = message.value;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<PlanConfig_CreateDatabaseConfig_LabelsEntry>): PlanConfig_CreateDatabaseConfig_LabelsEntry {
     return PlanConfig_CreateDatabaseConfig_LabelsEntry.fromPartial(base ?? {});
   },
-
   fromPartial(
     object: DeepPartial<PlanConfig_CreateDatabaseConfig_LabelsEntry>,
   ): PlanConfig_CreateDatabaseConfig_LabelsEntry {
@@ -844,11 +871,11 @@ export const PlanConfig_ChangeDatabaseConfig = {
 
   fromJSON(object: any): PlanConfig_ChangeDatabaseConfig {
     return {
-      target: isSet(object.target) ? String(object.target) : "",
-      sheet: isSet(object.sheet) ? String(object.sheet) : "",
+      target: isSet(object.target) ? globalThis.String(object.target) : "",
+      sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
       type: isSet(object.type) ? planConfig_ChangeDatabaseConfig_TypeFromJSON(object.type) : 0,
-      schemaVersion: isSet(object.schemaVersion) ? String(object.schemaVersion) : "",
-      rollbackEnabled: isSet(object.rollbackEnabled) ? Boolean(object.rollbackEnabled) : false,
+      schemaVersion: isSet(object.schemaVersion) ? globalThis.String(object.schemaVersion) : "",
+      rollbackEnabled: isSet(object.rollbackEnabled) ? globalThis.Boolean(object.rollbackEnabled) : false,
       rollbackDetail: isSet(object.rollbackDetail)
         ? PlanConfig_ChangeDatabaseConfig_RollbackDetail.fromJSON(object.rollbackDetail)
         : undefined,
@@ -863,19 +890,32 @@ export const PlanConfig_ChangeDatabaseConfig = {
 
   toJSON(message: PlanConfig_ChangeDatabaseConfig): unknown {
     const obj: any = {};
-    message.target !== undefined && (obj.target = message.target);
-    message.sheet !== undefined && (obj.sheet = message.sheet);
-    message.type !== undefined && (obj.type = planConfig_ChangeDatabaseConfig_TypeToJSON(message.type));
-    message.schemaVersion !== undefined && (obj.schemaVersion = message.schemaVersion);
-    message.rollbackEnabled !== undefined && (obj.rollbackEnabled = message.rollbackEnabled);
-    message.rollbackDetail !== undefined && (obj.rollbackDetail = message.rollbackDetail
-      ? PlanConfig_ChangeDatabaseConfig_RollbackDetail.toJSON(message.rollbackDetail)
-      : undefined);
-    obj.ghostFlags = {};
+    if (message.target !== "") {
+      obj.target = message.target;
+    }
+    if (message.sheet !== "") {
+      obj.sheet = message.sheet;
+    }
+    if (message.type !== 0) {
+      obj.type = planConfig_ChangeDatabaseConfig_TypeToJSON(message.type);
+    }
+    if (message.schemaVersion !== "") {
+      obj.schemaVersion = message.schemaVersion;
+    }
+    if (message.rollbackEnabled === true) {
+      obj.rollbackEnabled = message.rollbackEnabled;
+    }
+    if (message.rollbackDetail !== undefined) {
+      obj.rollbackDetail = PlanConfig_ChangeDatabaseConfig_RollbackDetail.toJSON(message.rollbackDetail);
+    }
     if (message.ghostFlags) {
-      Object.entries(message.ghostFlags).forEach(([k, v]) => {
-        obj.ghostFlags[k] = v;
-      });
+      const entries = Object.entries(message.ghostFlags);
+      if (entries.length > 0) {
+        obj.ghostFlags = {};
+        entries.forEach(([k, v]) => {
+          obj.ghostFlags[k] = v;
+        });
+      }
     }
     return obj;
   },
@@ -883,7 +923,6 @@ export const PlanConfig_ChangeDatabaseConfig = {
   create(base?: DeepPartial<PlanConfig_ChangeDatabaseConfig>): PlanConfig_ChangeDatabaseConfig {
     return PlanConfig_ChangeDatabaseConfig.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<PlanConfig_ChangeDatabaseConfig>): PlanConfig_ChangeDatabaseConfig {
     const message = createBasePlanConfig_ChangeDatabaseConfig();
     message.target = object.target ?? "";
@@ -897,7 +936,7 @@ export const PlanConfig_ChangeDatabaseConfig = {
     message.ghostFlags = Object.entries(object.ghostFlags ?? {}).reduce<{ [key: string]: string }>(
       (acc, [key, value]) => {
         if (value !== undefined) {
-          acc[key] = String(value);
+          acc[key] = globalThis.String(value);
         }
         return acc;
       },
@@ -957,15 +996,19 @@ export const PlanConfig_ChangeDatabaseConfig_RollbackDetail = {
 
   fromJSON(object: any): PlanConfig_ChangeDatabaseConfig_RollbackDetail {
     return {
-      rollbackFromTask: isSet(object.rollbackFromTask) ? String(object.rollbackFromTask) : "",
-      rollbackFromIssue: isSet(object.rollbackFromIssue) ? String(object.rollbackFromIssue) : "",
+      rollbackFromTask: isSet(object.rollbackFromTask) ? globalThis.String(object.rollbackFromTask) : "",
+      rollbackFromIssue: isSet(object.rollbackFromIssue) ? globalThis.String(object.rollbackFromIssue) : "",
     };
   },
 
   toJSON(message: PlanConfig_ChangeDatabaseConfig_RollbackDetail): unknown {
     const obj: any = {};
-    message.rollbackFromTask !== undefined && (obj.rollbackFromTask = message.rollbackFromTask);
-    message.rollbackFromIssue !== undefined && (obj.rollbackFromIssue = message.rollbackFromIssue);
+    if (message.rollbackFromTask !== "") {
+      obj.rollbackFromTask = message.rollbackFromTask;
+    }
+    if (message.rollbackFromIssue !== "") {
+      obj.rollbackFromIssue = message.rollbackFromIssue;
+    }
     return obj;
   },
 
@@ -974,7 +1017,6 @@ export const PlanConfig_ChangeDatabaseConfig_RollbackDetail = {
   ): PlanConfig_ChangeDatabaseConfig_RollbackDetail {
     return PlanConfig_ChangeDatabaseConfig_RollbackDetail.fromPartial(base ?? {});
   },
-
   fromPartial(
     object: DeepPartial<PlanConfig_ChangeDatabaseConfig_RollbackDetail>,
   ): PlanConfig_ChangeDatabaseConfig_RollbackDetail {
@@ -1034,13 +1076,20 @@ export const PlanConfig_ChangeDatabaseConfig_GhostFlagsEntry = {
   },
 
   fromJSON(object: any): PlanConfig_ChangeDatabaseConfig_GhostFlagsEntry {
-    return { key: isSet(object.key) ? String(object.key) : "", value: isSet(object.value) ? String(object.value) : "" };
+    return {
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      value: isSet(object.value) ? globalThis.String(object.value) : "",
+    };
   },
 
   toJSON(message: PlanConfig_ChangeDatabaseConfig_GhostFlagsEntry): unknown {
     const obj: any = {};
-    message.key !== undefined && (obj.key = message.key);
-    message.value !== undefined && (obj.value = message.value);
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.value !== "") {
+      obj.value = message.value;
+    }
     return obj;
   },
 
@@ -1049,7 +1098,6 @@ export const PlanConfig_ChangeDatabaseConfig_GhostFlagsEntry = {
   ): PlanConfig_ChangeDatabaseConfig_GhostFlagsEntry {
     return PlanConfig_ChangeDatabaseConfig_GhostFlagsEntry.fromPartial(base ?? {});
   },
-
   fromPartial(
     object: DeepPartial<PlanConfig_ChangeDatabaseConfig_GhostFlagsEntry>,
   ): PlanConfig_ChangeDatabaseConfig_GhostFlagsEntry {
@@ -1127,30 +1175,35 @@ export const PlanConfig_RestoreDatabaseConfig = {
 
   fromJSON(object: any): PlanConfig_RestoreDatabaseConfig {
     return {
-      target: isSet(object.target) ? String(object.target) : "",
+      target: isSet(object.target) ? globalThis.String(object.target) : "",
       createDatabaseConfig: isSet(object.createDatabaseConfig)
         ? PlanConfig_CreateDatabaseConfig.fromJSON(object.createDatabaseConfig)
         : undefined,
-      backup: isSet(object.backup) ? String(object.backup) : undefined,
+      backup: isSet(object.backup) ? globalThis.String(object.backup) : undefined,
       pointInTime: isSet(object.pointInTime) ? fromJsonTimestamp(object.pointInTime) : undefined,
     };
   },
 
   toJSON(message: PlanConfig_RestoreDatabaseConfig): unknown {
     const obj: any = {};
-    message.target !== undefined && (obj.target = message.target);
-    message.createDatabaseConfig !== undefined && (obj.createDatabaseConfig = message.createDatabaseConfig
-      ? PlanConfig_CreateDatabaseConfig.toJSON(message.createDatabaseConfig)
-      : undefined);
-    message.backup !== undefined && (obj.backup = message.backup);
-    message.pointInTime !== undefined && (obj.pointInTime = message.pointInTime.toISOString());
+    if (message.target !== "") {
+      obj.target = message.target;
+    }
+    if (message.createDatabaseConfig !== undefined) {
+      obj.createDatabaseConfig = PlanConfig_CreateDatabaseConfig.toJSON(message.createDatabaseConfig);
+    }
+    if (message.backup !== undefined) {
+      obj.backup = message.backup;
+    }
+    if (message.pointInTime !== undefined) {
+      obj.pointInTime = message.pointInTime.toISOString();
+    }
     return obj;
   },
 
   create(base?: DeepPartial<PlanConfig_RestoreDatabaseConfig>): PlanConfig_RestoreDatabaseConfig {
     return PlanConfig_RestoreDatabaseConfig.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<PlanConfig_RestoreDatabaseConfig>): PlanConfig_RestoreDatabaseConfig {
     const message = createBasePlanConfig_RestoreDatabaseConfig();
     message.target = object.target ?? "";
@@ -1166,7 +1219,7 @@ export const PlanConfig_RestoreDatabaseConfig = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Long ? string | number | Long : T extends Array<infer U> ? Array<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
@@ -1180,14 +1233,14 @@ function toTimestamp(date: Date): Timestamp {
 function fromTimestamp(t: Timestamp): Date {
   let millis = (t.seconds.toNumber() || 0) * 1_000;
   millis += (t.nanos || 0) / 1_000_000;
-  return new Date(millis);
+  return new globalThis.Date(millis);
 }
 
 function fromJsonTimestamp(o: any): Date {
-  if (o instanceof Date) {
+  if (o instanceof globalThis.Date) {
     return o;
   } else if (typeof o === "string") {
-    return new Date(o);
+    return new globalThis.Date(o);
   } else {
     return fromTimestamp(Timestamp.fromJSON(o));
   }
