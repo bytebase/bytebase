@@ -217,8 +217,6 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", {
               }
             }
           }
-          console.log(`getOrFetchTableMetadata: ${schema}/${table}`);
-          console.log(res);
           this.mergeToCache(res);
           return tableMetadata;
         });
