@@ -273,6 +273,7 @@
     :database-name="database.name"
     :schema-name="selectedAffectedTable?.schema ?? ''"
     :table-name="selectedAffectedTable?.table ?? ''"
+    :classification-config="classificationConfig"
     @dismiss="selectedAffectedTable = undefined"
   />
 </template>
@@ -290,6 +291,7 @@ import {
   useDatabaseV1Store,
   useUserStore,
   useInstanceV1Store,
+  useSettingV1Store,
 } from "@/store";
 import { AffectedTable } from "@/types/changeHistory";
 import { Engine } from "@/types/proto/v1/common";
@@ -322,6 +324,7 @@ const props = defineProps<{
 const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const instanceStore = useInstanceV1Store();
+const settingStore = useSettingV1Store();
 const changeHistoryStore = useChangeHistoryStore();
 const selectedAffectedTable = ref<AffectedTable | undefined>();
 
@@ -333,6 +336,13 @@ const v1Instance = computed(() => {
 const database = computed(() => {
   return databaseStore.getDatabaseByName(changeHistoryParent.value);
 });
+
+const classificationConfig = computed(() => {
+  return settingStore.getProjectClassification(
+    database.value.projectEntity.dataClassificationConfigId
+  );
+});
+
 const changeHistoryParent = computed(() => {
   return `instances/${props.instance}/databases/${props.database}`;
 });
