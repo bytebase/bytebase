@@ -1,13 +1,14 @@
 <template>
   <div class="bb-grid-cell whitespace-nowrap">
     {{ title }}
+    <SystemLabel v-if="!isCustomRole(props.role.name)" class="ml-1" />
   </div>
 
   <div class="bb-grid-cell">
     {{ description }}
   </div>
   <div class="bb-grid-cell gap-x-1">
-    <template v-if="allowEdit">
+    <template v-if="isCustomRole(props.role.name)">
       <NButton size="tiny" :disabled="!allowAdmin" @click="$emit('edit', role)">
         {{ $t("common.edit") }}
       </NButton>
@@ -27,6 +28,7 @@
 import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import SystemLabel from "@/components/SystemLabel.vue";
 import { SpinnerButton } from "@/components/v2";
 import { useRoleStore } from "@/store";
 import { PresetRoleType, isCustomRole } from "@/types";
@@ -63,6 +65,9 @@ const description = computed(() => {
   if (role.name === PresetRoleType.RELEASER) {
     return t("role.releaser.description");
   }
+  if (role.name === PresetRoleType.VIEWER) {
+    return t("role.viewer.description");
+  }
   return role.description;
 });
 
@@ -83,16 +88,15 @@ const title = computed(() => {
   if (role.name === PresetRoleType.RELEASER) {
     return t("common.role.releaser");
   }
+  if (role.name === PresetRoleType.VIEWER) {
+    return t("common.role.viewer");
+  }
   return role.title;
 });
 
 const allowAdmin = useWorkspacePermissionV1(
   "bb.permission.workspace.manage-general"
 );
-
-const allowEdit = computed(() => {
-  return isCustomRole(props.role.name);
-});
 
 const deleteRole = async () => {
   if (!hasCustomRoleFeature.value) {

@@ -9,6 +9,7 @@
     "dingtalk": "DingTalk",
     "feishu": "Feishu",
     "wecom": "WeCom",
+    "system": "System",
     "custom": "Custom",
     "im": "IM",
     "overview": "Overview",
@@ -2882,10 +2883,6 @@
       "description": "For each operation type, configure custom condition, risk and approval flow. ",
       "approval-flows": "Approval Flows",
       "approval-nodes": "Approval nodes",
-      "type": {
-        "system": "System",
-        "custom": "Custom"
-      },
       "delete": "Delete approval flow",
       "search": "Search approval flow",
       "select": "Select approval flow",
@@ -3088,6 +3085,9 @@
     "expired-tip": "The role might has been expired.",
     "releaser": {
       "description": "System defined project releaser role"
+    },
+    "viewer": {
+      "description": "System defined project database viewer role"
     }
   },
   "database-group": {
