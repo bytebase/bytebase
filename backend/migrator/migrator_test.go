@@ -174,7 +174,6 @@ func TestMigrationCompatibility(t *testing.T) {
 
 	metadataConnConfig := connCfg
 	metadataConnConfig.Database = databaseName
-	metadataConnConfig.StrictUseDb = true
 	metadataDriver, err := dbdriver.Open(
 		ctx,
 		storepb.Engine_POSTGRES,

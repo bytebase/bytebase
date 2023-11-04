@@ -60,38 +60,34 @@ func NewDB(connCfg dbdriver.ConnectionConfig, binDir, demoName string, readonly 
 }
 
 // Open opens the database connection.
-func (db *DB) Open(ctx context.Context) error {
-	databaseName := db.ConnCfg.Database
-	if !db.ConnCfg.StrictUseDb {
-		// The database storing metadata is the same as user name.
-		databaseName = db.ConnCfg.Username
-
+func (db *DB) Open(ctx context.Context, createDB bool) error {
+	if createDB {
+		createCfg := db.ConnCfg
+		// connect to the "postgres" as the target database has not been created yet.
+		createCfg.Database = "postgres"
 		// Create the metadata database.
 		defaultDriver, err := dbdriver.Open(
 			ctx,
 			storepb.Engine_POSTGRES,
 			dbdriver.DriverConfig{DbBinDir: db.binDir},
-			db.ConnCfg,
+			createCfg,
 			dbdriver.ConnectionContext{},
 		)
 		if err != nil {
 			return err
 		}
 		defer defaultDriver.Close(ctx)
-		if _, err := defaultDriver.Execute(ctx, fmt.Sprintf("CREATE DATABASE %s", databaseName), true, dbdriver.ExecuteOptions{}); err != nil {
+		// Underlying driver handles the case where database already exists.
+		if _, err := defaultDriver.Execute(ctx, fmt.Sprintf("CREATE DATABASE %s", db.ConnCfg.Database), true, dbdriver.ExecuteOptions{}); err != nil {
 			return err
 		}
 	}
 
-	metadataConnConfig := db.ConnCfg
-	if !db.ConnCfg.StrictUseDb {
-		metadataConnConfig.Database = databaseName
-	}
 	metadataDriver, err := dbdriver.Open(
 		ctx,
 		storepb.Engine_POSTGRES,
 		dbdriver.DriverConfig{DbBinDir: db.binDir},
-		metadataConnConfig,
+		db.ConnCfg,
 		dbdriver.ConnectionContext{},
 	)
 	if err != nil {
