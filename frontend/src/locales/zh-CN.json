@@ -414,7 +414,7 @@
     "extend-trial": "申请延长试用",
     "deploy": "本地部署",
     "cloud": "云服务",
-    "request-demo": "和我们的产品专家预约 30 分钟产品演示",
+    "request-demo": "预约一个 30 分钟的产品演示。",
     "readonly": "Bytebase 处于只读模式。您仍然可以查看控制台，但任何尝试更改的请求都会失败。",
     "external-url": "Bytebase 还没有配置 --external-url",
     "configure-now": "现在配置"
