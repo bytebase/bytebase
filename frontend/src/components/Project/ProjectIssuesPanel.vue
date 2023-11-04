@@ -96,7 +96,6 @@
 <script lang="ts" setup>
 import { reactive, PropType, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
 import WaitingForMyApprovalIssueTableV1 from "@/components/IssueV1/components/WaitingForMyApprovalIssueTableV1.vue";
@@ -129,7 +128,6 @@ const state = reactive<LocalState>({
   isFetchingActivityList: false,
 });
 const { t } = useI18n();
-const router = useRouter();
 const currentUserV1 = useCurrentUserV1();
 
 const hasCustomApprovalFeature = featureToRef("bb.feature.custom-approval");
