@@ -52,7 +52,7 @@
           ...issueFilter,
           statusList: [IssueStatus.OPEN],
         }"
-        :page-size="10"
+        :page-size="50"
       >
         <template #table="{ issueList, loading }">
           <IssueTableV1
@@ -75,7 +75,7 @@
           ...issueFilter,
           statusList: [IssueStatus.DONE, IssueStatus.CANCELED],
         }"
-        :page-size="10"
+        :page-size="50"
       >
         <template #table="{ issueList, loading }">
           <IssueTableV1

@@ -5,34 +5,15 @@
         <TabFilter v-model:value="state.tab" :items="tabItemList" />
       </div>
       <div class="flex flex-row space-x-4 p-0.5">
-        <div class="flex items-center gap-x-1">
-          <p class="font-medium leading-7 text-main">
-            {{ $t("issue.advanced-search.self") }}
-          </p>
-          <button
-            type="button"
-            class="p-1 rounded bg-gray-200 hover:bg-gray-300 border border-gray-300"
-            @click="
-              () => {
-                router.replace({
-                  name: 'workspace.issue',
-                  query: {
-                    project: project.uid,
-                    autofocus: 1,
-                  },
-                });
-              }
-            "
-          >
-            <heroicons-outline:search class="h-3.5 w-3.5 text-control" />
-          </button>
-        </div>
-        <SearchBox
-          :value="state.searchText"
-          :placeholder="$t('common.filter-by-name')"
-          :autofocus="true"
-          @update:value="changeSearchText($event)"
-        />
+        <router-link
+          :to="`/issue?project=${project.uid}`"
+          class="flex space-x-1 items-center normal-link !whitespace-nowrap"
+        >
+          <heroicons-outline:search class="h-4 w-4" />
+          <span class="hidden md:block">{{
+            $t("issue.advanced-search.self")
+          }}</span>
+        </router-link>
       </div>
     </div>
 
@@ -46,7 +27,7 @@
           <IssueTableV1
             :mode="'PROJECT'"
             :show-placeholder="!loading"
-            :issue-list="issueList.filter(keywordFilter)"
+            :issue-list="issueList"
             title=""
           />
         </template>
@@ -62,13 +43,13 @@
           ...commonIssueFilter,
           statusList: [IssueStatus.OPEN],
         }"
-        :page-size="10"
+        :page-size="50"
       >
         <template #table="{ issueList, loading }">
           <IssueTableV1
             class="-mt-px"
             :mode="'PROJECT'"
-            :issue-list="issueList.filter(keywordFilter)"
+            :issue-list="issueList"
             :show-placeholder="!loading"
             title=""
           />
@@ -86,7 +67,7 @@
           ...commonIssueFilter,
           statusList: [IssueStatus.DONE, IssueStatus.CANCELED],
         }"
-        :page-size="5"
+        :page-size="50"
         :hide-load-more="true"
       >
         <template #table="{ issueList, loading }">
@@ -94,7 +75,7 @@
             class="-mt-px"
             :mode="'PROJECT'"
             :title="$t('project.overview.recently-closed')"
-            :issue-list="issueList.filter(keywordFilter)"
+            :issue-list="issueList"
             :show-placeholder="!loading"
           />
         </template>
@@ -115,14 +96,13 @@
 <script lang="ts" setup>
 import { reactive, PropType, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
 import WaitingForMyApprovalIssueTableV1 from "@/components/IssueV1/components/WaitingForMyApprovalIssueTableV1.vue";
 import { TabFilterItem } from "@/components/v2";
 import { featureToRef, useCurrentUserV1 } from "@/store";
 import { userNamePrefix } from "@/store/modules/v1/common";
-import { ComposedIssue, IssueFilter } from "@/types";
+import { IssueFilter } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { Project } from "@/types/proto/v1/project_service";
 import { hasWorkspacePermissionV1 } from "@/utils";
@@ -133,7 +113,6 @@ type TabValue = typeof TABS[number];
 
 interface LocalState {
   tab: TabValue;
-  searchText: string;
   isFetchingActivityList: boolean;
 }
 
@@ -146,11 +125,9 @@ const props = defineProps({
 
 const state = reactive<LocalState>({
   tab: "WAITING_APPROVAL",
-  searchText: "",
   isFetchingActivityList: false,
 });
 const { t } = useI18n();
-const router = useRouter();
 const currentUserV1 = useCurrentUserV1();
 
 const hasCustomApprovalFeature = featureToRef("bb.feature.custom-approval");
@@ -185,20 +162,6 @@ const commonIssueFilter = computed((): IssueFilter => {
     principal,
   };
 });
-
-const keywordFilter = (issue: ComposedIssue) => {
-  const keyword = state.searchText.trim().toLowerCase();
-  if (keyword) {
-    if (!issue.title.toLowerCase().includes(keyword)) {
-      return false;
-    }
-  }
-  return true;
-};
-
-const changeSearchText = (searchText: string) => {
-  state.searchText = searchText;
-};
 
 watch(
   [hasCustomApprovalFeature, () => state.tab],
