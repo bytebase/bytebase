@@ -416,7 +416,7 @@
     "extend-trial": "Extend trialing time",
     "deploy": "Self Host",
     "cloud": "Cloud",
-    "request-demo": "Book a 30 min product walkthrough with our product expert",
+    "request-demo": "Book a 30-minute product demo.",
     "readonly": "Bytebase is in readonly mode. You can still view the console, but any change attempt will fail.",
     "external-url": "Bytebase has not configured --external-url",
     "configure-now": "Configure now"
