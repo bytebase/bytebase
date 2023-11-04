@@ -9,6 +9,7 @@
     "dingtalk": "钉钉",
     "feishu": "飞书",
     "wecom": "企业微信",
+    "system": "系统",
     "custom": "自定义",
     "im": "IM",
     "overview": "概览",
@@ -2876,10 +2877,6 @@
       "description": "对每种操作类型，配置自定义条件、风险和审批流。",
       "approval-flows": "审批流",
       "approval-nodes": "审批节点",
-      "type": {
-        "system": "系统",
-        "custom": "自定义"
-      },
       "delete": "删除审批流",
       "search": "搜索审批流",
       "select": "选择审批流",
@@ -3081,6 +3078,9 @@
     "expired-tip": "该角色可能已经过期。",
     "releaser": {
       "description": "系统定义的项目发布者角色"
+    },
+    "viewer": {
+      "description": "系统定义的项目数据库查看者角色"
     }
   },
   "database-group": {

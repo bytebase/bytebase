@@ -9,6 +9,7 @@
     "dingtalk": "DingTalk",
     "feishu": "Feishu",
     "wecom": "WeCom",
+    "system": "Sistema",
     "custom": "Personalizado",
     "im": "IM",
     "overview": "Resumen",
@@ -2879,10 +2880,6 @@
       "description": "Para cada tipo de operación, configure una condición personalizada, un riesgo y un flujo de aprobación. ",
       "approval-flows": "Flujos de Aprobación",
       "approval-nodes": "Nodos de aprobación",
-      "type": {
-        "system": "Sistema",
-        "custom": "Personalizado"
-      },
       "delete": "Eliminar flujo de aprobación",
       "search": "Buscar flujo de aprobación",
       "select": "Seleccionar flujo de aprobación",
@@ -3085,6 +3082,9 @@
     "expired-tip": "El papel puede haber expirado.",
     "releaser": {
       "description": "Rol de liberador de proyecto definido por el sistema"
+    },
+    "viewer": {
+      "description": "Rol de visor de base de datos de proyecto definido por el sistema"
     }
   },
   "database-group": {
