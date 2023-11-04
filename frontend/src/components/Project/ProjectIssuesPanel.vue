@@ -5,28 +5,15 @@
         <TabFilter v-model:value="state.tab" :items="tabItemList" />
       </div>
       <div class="flex flex-row space-x-4 p-0.5">
-        <div class="flex items-center gap-x-1">
-          <p class="font-medium leading-7 text-main">
-            {{ $t("issue.advanced-search.self") }}
-          </p>
-          <button
-            type="button"
-            class="p-1 rounded bg-gray-200 hover:bg-gray-300 border border-gray-300"
-            @click="
-              () => {
-                router.replace({
-                  name: 'workspace.issue',
-                  query: {
-                    project: project.uid,
-                    autofocus: 1,
-                  },
-                });
-              }
-            "
-          >
-            <heroicons-outline:search class="h-3.5 w-3.5 text-control" />
-          </button>
-        </div>
+        <router-link
+          :to="`/issue?project=${project.uid}`"
+          class="flex space-x-1 items-center normal-link !whitespace-nowrap"
+        >
+          <heroicons-outline:search class="h-4 w-4" />
+          <span class="hidden md:block">{{
+            $t("issue.advanced-search.self")
+          }}</span>
+        </router-link>
       </div>
     </div>
 
