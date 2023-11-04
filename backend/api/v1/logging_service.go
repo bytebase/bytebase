@@ -32,7 +32,7 @@ func NewLoggingService(store *store.Store) *LoggingService {
 	}
 }
 
-var resourceActionTypeMap = map[string][]api.ActivityType{
+var defaultResourceActionTypeMap = map[string][]api.ActivityType{
 	"users": {
 		api.ActivityMemberCreate,
 		api.ActivityMemberRoleUpdate,
@@ -183,11 +183,14 @@ func setActivityFindFilterAndOrder(ctx context.Context, stores *store.Store, act
 			if len(sections) != 2 {
 				return status.Errorf(codes.InvalidArgument, `invalid resource "%s" for filter`, spec.value)
 			}
-			typeList, ok := resourceActionTypeMap[sections[0]]
-			if !ok {
-				return status.Errorf(codes.InvalidArgument, `unsupport resource %s`, spec.value)
+			// Handle the defaultResourceActionType.
+			if len(activityFind.TypeList) == 0 {
+				typeList, ok := defaultResourceActionTypeMap[sections[0]]
+				if !ok {
+					return status.Errorf(codes.InvalidArgument, `unsupport resource %s`, spec.value)
+				}
+				activityFind.TypeList = append(activityFind.TypeList, typeList...)
 			}
-			activityFind.TypeList = append(activityFind.TypeList, typeList...)
 			switch fmt.Sprintf("%s/", sections[0]) {
 			case common.UserNamePrefix:
 				user, err := stores.GetUser(ctx, &store.FindUserMessage{
@@ -248,6 +251,10 @@ func setActivityFindFilterAndOrder(ctx context.Context, stores *store.Store, act
 		case "action":
 			if spec.operator != comparatorTypeEqual {
 				return status.Errorf(codes.InvalidArgument, `only support "=" operation for "action" filter`)
+			}
+			// Handle the defaultResourceActionType.
+			if len(activityFind.TypeList) > 0 {
+				activityFind.TypeList = nil
 			}
 			for _, action := range strings.Split(spec.value, " | ") {
 				activityType, err := convertToActivityType(v1pb.LogEntity_Action(v1pb.LogEntity_Action_value[action]))
