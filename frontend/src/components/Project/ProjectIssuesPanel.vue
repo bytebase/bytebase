@@ -27,12 +27,6 @@
             <heroicons-outline:search class="h-3.5 w-3.5 text-control" />
           </button>
         </div>
-        <SearchBox
-          :value="state.searchText"
-          :placeholder="$t('common.filter-by-name')"
-          :autofocus="true"
-          @update:value="changeSearchText($event)"
-        />
       </div>
     </div>
 
@@ -46,7 +40,7 @@
           <IssueTableV1
             :mode="'PROJECT'"
             :show-placeholder="!loading"
-            :issue-list="issueList.filter(keywordFilter)"
+            :issue-list="issueList"
             title=""
           />
         </template>
@@ -68,7 +62,7 @@
           <IssueTableV1
             class="-mt-px"
             :mode="'PROJECT'"
-            :issue-list="issueList.filter(keywordFilter)"
+            :issue-list="issueList"
             :show-placeholder="!loading"
             title=""
           />
@@ -94,7 +88,7 @@
             class="-mt-px"
             :mode="'PROJECT'"
             :title="$t('project.overview.recently-closed')"
-            :issue-list="issueList.filter(keywordFilter)"
+            :issue-list="issueList"
             :show-placeholder="!loading"
           />
         </template>
@@ -122,7 +116,7 @@ import WaitingForMyApprovalIssueTableV1 from "@/components/IssueV1/components/Wa
 import { TabFilterItem } from "@/components/v2";
 import { featureToRef, useCurrentUserV1 } from "@/store";
 import { userNamePrefix } from "@/store/modules/v1/common";
-import { ComposedIssue, IssueFilter } from "@/types";
+import { IssueFilter } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { Project } from "@/types/proto/v1/project_service";
 import { hasWorkspacePermissionV1 } from "@/utils";
@@ -133,7 +127,6 @@ type TabValue = typeof TABS[number];
 
 interface LocalState {
   tab: TabValue;
-  searchText: string;
   isFetchingActivityList: boolean;
 }
 
@@ -146,7 +139,6 @@ const props = defineProps({
 
 const state = reactive<LocalState>({
   tab: "WAITING_APPROVAL",
-  searchText: "",
   isFetchingActivityList: false,
 });
 const { t } = useI18n();
@@ -185,20 +177,6 @@ const commonIssueFilter = computed((): IssueFilter => {
     principal,
   };
 });
-
-const keywordFilter = (issue: ComposedIssue) => {
-  const keyword = state.searchText.trim().toLowerCase();
-  if (keyword) {
-    if (!issue.title.toLowerCase().includes(keyword)) {
-      return false;
-    }
-  }
-  return true;
-};
-
-const changeSearchText = (searchText: string) => {
-  state.searchText = searchText;
-};
 
 watch(
   [hasCustomApprovalFeature, () => state.tab],
