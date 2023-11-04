@@ -1,4 +1,7 @@
-on: [pull_request]
+on:
+  pull_request:
+    paths:
+      - 'backend/migrator/migration/**.sql'
 
 jobs:
   sql-review:
@@ -11,4 +14,3 @@ jobs:
         with:
           override-file-path: ./sql-review-override.yml
           database-type: POSTGRES
-          file-pattern: ^backend/migrator/migration/.*\.sql$
