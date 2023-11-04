@@ -2284,8 +2284,8 @@ INSERT INTO public.bookmark (id, row_status, creator_id, created_ts, updater_id,
 -- Data for Name: data_source; Type: TABLE DATA; Schema: public; Owner: bbdev
 --
 
-INSERT INTO public.data_source (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database) VALUES (101, 'NORMAL', 101, 1699026391, 101, 1699026391, 101, 'admin', 'ADMIN', 'bbsample', '', '', '', '', '/tmp', '8083', '{}', 'hr_test') ON CONFLICT DO NOTHING;
-INSERT INTO public.data_source (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database) VALUES (102, 'NORMAL', 101, 1699026391, 101, 1699026391, 102, 'admin', 'ADMIN', 'bbsample', '', '', '', '', '/tmp', '8084', '{}', 'hr_prod') ON CONFLICT DO NOTHING;
+INSERT INTO public.data_source (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database) VALUES (101, 'NORMAL', 101, 1699026391, 101, 1699026391, 101, 'admin', 'ADMIN', 'bbsample', '', '', '', '', '/tmp', '8083', '{}', '') ON CONFLICT DO NOTHING;
+INSERT INTO public.data_source (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca, host, port, options, database) VALUES (102, 'NORMAL', 101, 1699026391, 101, 1699026391, 102, 'admin', 'ADMIN', 'bbsample', '', '', '', '', '/tmp', '8084', '{}', '') ON CONFLICT DO NOTHING;
 
 
 --
