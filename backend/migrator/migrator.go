@@ -30,20 +30,11 @@ var migrationFS embed.FS
 
 // MigrateSchema migrates the schema for metadata database.
 func MigrateSchema(ctx context.Context, storeDB *store.DB, pgBinDir, serverVersion string, mode common.ReleaseMode) (*semver.Version, error) {
-	databaseName := storeDB.ConnCfg.Database
-	if !storeDB.ConnCfg.StrictUseDb {
-		// The database storing metadata is the same as user name.
-		databaseName = storeDB.ConnCfg.Username
-	}
-	metadataConnConfig := storeDB.ConnCfg
-	if !storeDB.ConnCfg.StrictUseDb {
-		metadataConnConfig.Database = databaseName
-	}
 	metadataDriver, err := dbdriver.Open(
 		ctx,
 		storepb.Engine_POSTGRES,
 		dbdriver.DriverConfig{DbBinDir: pgBinDir},
-		metadataConnConfig,
+		storeDB.ConnCfg,
 		dbdriver.ConnectionContext{},
 	)
 	if err != nil {
@@ -67,7 +58,7 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, pgBinDir, serverVersi
 		return nil, errors.Wrap(err, "failed to get current schema version")
 	}
 
-	if err := migrate(ctx, storeInstance, metadataDriver, cutoffSchemaVersion, verBefore, mode, serverVersion, databaseName); err != nil {
+	if err := migrate(ctx, storeInstance, metadataDriver, cutoffSchemaVersion, verBefore, mode, serverVersion, storeDB.ConnCfg.Database); err != nil {
 		return nil, errors.Wrap(err, "failed to migrate")
 	}
 

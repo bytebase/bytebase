@@ -29,20 +29,11 @@ func LoadDemoDataIfNeeded(ctx context.Context, storeDB *store.DB, pgBinDir, demo
 
 	slog.Info(fmt.Sprintf("Setting up demo %q...", demoName))
 
-	databaseName := storeDB.ConnCfg.Database
-	if !storeDB.ConnCfg.StrictUseDb {
-		// The database storing metadata is the same as user name.
-		databaseName = storeDB.ConnCfg.Username
-	}
-	metadataConnConfig := storeDB.ConnCfg
-	if !storeDB.ConnCfg.StrictUseDb {
-		metadataConnConfig.Database = databaseName
-	}
 	metadataDriver, err := dbdriver.Open(
 		ctx,
 		storepb.Engine_POSTGRES,
 		dbdriver.DriverConfig{DbBinDir: pgBinDir},
-		metadataConnConfig,
+		storeDB.ConnCfg,
 		dbdriver.ConnectionContext{},
 	)
 	if err != nil {
