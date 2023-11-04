@@ -38,7 +38,7 @@ const (
 
 var dbs = map[string][]string{
 	"test": {SampleDatabaseTest},
-	"prod": {SampleDatabaseProd, SampleDatabaseProd + "_1", SampleDatabaseProd + "_2", SampleDatabaseProd + "_3", SampleDatabaseProd + "_4", SampleDatabaseProd + "_5", SampleDatabaseProd + "_6"},
+	"prod": {SampleDatabaseProd, SampleDatabaseProd + "_vcs", SampleDatabaseProd + "_1", SampleDatabaseProd + "_2", SampleDatabaseProd + "_3", SampleDatabaseProd + "_4", SampleDatabaseProd + "_5", SampleDatabaseProd + "_6"},
 }
 
 // StartAllSampleInstances starts all postgres sample instances.
