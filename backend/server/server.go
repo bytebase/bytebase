@@ -188,7 +188,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	// Connect to the instance that stores bytebase's own metadata.
 	storeDB := store.NewDB(connCfg, s.pgBinDir, profile.DemoName, profile.Readonly, profile.Version, profile.Mode)
-	// For embeded database, we will create the database if it does not exist.
+	// For embedded database, we will create the database if it does not exist.
 	if err := storeDB.Open(ctx, profile.UseEmbedDB() /*createDB*/); err != nil {
 		// return s so that caller can call s.Close() to shut down the postgres server if embedded.
 		return nil, errors.Wrap(err, "cannot open metadb")
