@@ -85,18 +85,18 @@ func applyDataFile(name string, db *sql.DB, mode common.ReleaseMode) error {
 	defer tx.Rollback()
 
 	// Read and execute migration file.
-	if buf, err := fs.ReadFile(demoFS, name); err != nil {
+	var buf []byte
+	if buf, err = fs.ReadFile(demoFS, name); err != nil {
 		return err
-	} else {
-		stmt := string(buf)
-		// The demo dump is generated from dev mode and using "bbdev" as the owner. For release mode,
-		// we need to replace with "bb".
-		if mode == common.ReleaseModeProd {
-			stmt = strings.ReplaceAll(stmt, "bbdev", "bb")
-		}
-		if _, err := tx.Exec(stmt); err != nil {
-			return err
-		}
+	}
+	stmt := string(buf)
+	// The demo dump is generated from dev mode and using "bbdev" as the owner. For release mode,
+	// we need to replace with "bb".
+	if mode == common.ReleaseModeProd {
+		stmt = strings.ReplaceAll(stmt, "bbdev", "bb")
+	}
+	if _, err := tx.Exec(stmt); err != nil {
+		return err
 	}
 
 	return tx.Commit()
