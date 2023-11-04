@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -25,36 +24,23 @@ type DB struct {
 	// The user has superuser privilege to the database.
 	ConnCfg dbdriver.ConnectionConfig
 
-	// Demo name, empty string means do not load demo data.
-	demoName string
-
 	// Dir for postgres and its utility binaries
 	binDir string
 
 	// If true, database will be opened in readonly mode
 	readonly bool
 
-	// Bytebase server release version
-	serverVersion string
-
 	// mode is the mode of the release such as prod or dev.
 	mode common.ReleaseMode
-
-	// Returns the current time. Defaults to time.Now().
-	// Can be mocked for tests.
-	Now func() time.Time
 }
 
 // NewDB returns a new instance of DB associated with the given datasource name.
-func NewDB(connCfg dbdriver.ConnectionConfig, binDir, demoName string, readonly bool, serverVersion string, mode common.ReleaseMode) *DB {
+func NewDB(connCfg dbdriver.ConnectionConfig, binDir string, readonly bool, mode common.ReleaseMode) *DB {
 	db := &DB{
-		ConnCfg:       connCfg,
-		demoName:      demoName,
-		binDir:        binDir,
-		readonly:      readonly,
-		Now:           time.Now,
-		serverVersion: serverVersion,
-		mode:          mode,
+		ConnCfg:  connCfg,
+		binDir:   binDir,
+		readonly: readonly,
+		mode:     mode,
 	}
 	return db
 }
@@ -130,15 +116,11 @@ func (db *DB) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) {
 
 	// Return wrapper Tx that includes the transaction start time.
 	return &Tx{
-		Tx:  ptx,
-		db:  db,
-		now: db.Now().UTC().Truncate(time.Second),
+		Tx: ptx,
 	}, nil
 }
 
 // Tx wraps the SQL Tx object to provide a timestamp at the start of the transaction.
 type Tx struct {
 	*sql.Tx
-	db  *DB
-	now time.Time
 }
