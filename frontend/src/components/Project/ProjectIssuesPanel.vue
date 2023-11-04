@@ -56,7 +56,7 @@
           ...commonIssueFilter,
           statusList: [IssueStatus.OPEN],
         }"
-        :page-size="10"
+        :page-size="50"
       >
         <template #table="{ issueList, loading }">
           <IssueTableV1
@@ -80,7 +80,7 @@
           ...commonIssueFilter,
           statusList: [IssueStatus.DONE, IssueStatus.CANCELED],
         }"
-        :page-size="5"
+        :page-size="50"
         :hide-load-more="true"
       >
         <template #table="{ issueList, loading }">

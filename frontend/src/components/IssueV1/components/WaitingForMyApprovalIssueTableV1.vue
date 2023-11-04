@@ -2,7 +2,7 @@
   <PagedIssueTableV1
     method="LIST"
     :session-key="sessionKey"
-    :page-size="20"
+    :page-size="50"
     :issue-filter="{
       project,
       query: '',

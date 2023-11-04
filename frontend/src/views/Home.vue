@@ -232,8 +232,8 @@ interface LocalState {
   showTrialStartModal: boolean;
 }
 
-const OPEN_ISSUE_LIST_PAGE_SIZE = 10;
-const MAX_CLOSED_ISSUE = 5;
+const OPEN_ISSUE_LIST_PAGE_SIZE = 50;
+const MAX_CLOSED_ISSUE = 50;
 
 const { t } = useI18n();
 const subscriptionStore = useSubscriptionV1Store();
