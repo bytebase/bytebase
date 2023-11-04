@@ -15,11 +15,12 @@ import (
 func GetEmbeddedConnectionConfig(datastorePort int, pgUser string) dbdriver.ConnectionConfig {
 	// Even when Postgres opens Unix domain socket only for connection, it still requires a port as ID to differentiate different Postgres instances.
 	return dbdriver.ConnectionConfig{
-		Username:    pgUser,
-		Password:    "",
-		Host:        common.GetPostgresSocketDir(),
-		Port:        fmt.Sprintf("%d", datastorePort),
-		StrictUseDb: false,
+		Username: pgUser,
+		Password: "",
+		// For embedded database, the database name is the same as the user name.
+		Database: pgUser,
+		Host:     common.GetPostgresSocketDir(),
+		Port:     fmt.Sprintf("%d", datastorePort),
 	}
 }
 
@@ -38,9 +39,7 @@ func GetConnectionConfig(pgURL string) (dbdriver.ConnectionConfig, error) {
 		return dbdriver.ConnectionConfig{}, errors.Errorf("invalid connection protocol: %s", u.Scheme)
 	}
 
-	connCfg := dbdriver.ConnectionConfig{
-		StrictUseDb: true,
-	}
+	connCfg := dbdriver.ConnectionConfig{}
 
 	if u.User != nil {
 		connCfg.Username = u.User.Username()

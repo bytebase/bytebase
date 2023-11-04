@@ -174,7 +174,6 @@ func TestMigrationCompatibility(t *testing.T) {
 
 	metadataConnConfig := connCfg
 	metadataConnConfig.Database = databaseName
-	metadataConnConfig.StrictUseDb = true
 	metadataDriver, err := dbdriver.Open(
 		ctx,
 		storepb.Engine_POSTGRES,
@@ -185,7 +184,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	require.NoError(t, err)
 
 	db := store.NewDB(metadataConnConfig, pgBinDir, "", false, "", common.ReleaseModeDev)
-	err = db.Open(ctx)
+	err = db.Open(ctx, true /* createDB */)
 	require.NoError(t, err)
 	storeInstance := store.New(db)
 
