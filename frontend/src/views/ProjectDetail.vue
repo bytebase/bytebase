@@ -95,6 +95,7 @@ import {
   hasFeature,
   pushNotification,
 } from "@/store";
+import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
 import {
   QuickActionType,
   DEFAULT_PROJECT_V1_NAME,
@@ -109,6 +110,7 @@ import {
   sortDatabaseV1List,
   isOwnerOfProjectV1,
   hasPermissionInProjectV1,
+  hasWorkspacePermissionV1,
   getQuickActionList,
 } from "@/utils";
 
@@ -170,6 +172,7 @@ onMounted(() => {
       resource: project.value.name,
     })
     .then((resp) => {
+      const currentUserV1 = useCurrentUserV1();
       for (const activity of resp.logEntities) {
         if (cachedNotifiedActivities.value.includes(activity.name)) {
           continue;
@@ -179,14 +182,29 @@ onMounted(() => {
           cachedNotifiedActivities.value.shift();
         }
 
-        pushNotification({
-          module: "bytebase",
-          style: "INFO",
-          title: activityName(activity.action),
-          manualHide: true,
-          link: `/project/${projectV1Slug(project.value)}#activities`,
-          linkTitle: t("common.view"),
-        });
+        // Only show notification for issue creator, project owner, workspace owner/DBA.
+        if (
+          getUserEmailFromIdentifier(activity.creator) ===
+            currentUserV1.value.email ||
+          hasWorkspacePermissionV1(
+            "bb.permission.workspace.manage-issue",
+            currentUserV1.value.userRole
+          ) ||
+          hasPermissionInProjectV1(
+            project.value.iamPolicy,
+            currentUserV1.value,
+            "bb.permission.project.change-database"
+          )
+        ) {
+          pushNotification({
+            module: "bytebase",
+            style: "INFO",
+            title: activityName(activity.action),
+            manualHide: true,
+            link: `/project/${projectV1Slug(project.value)}#activities`,
+            linkTitle: t("common.view"),
+          });
+        }
         break;
       }
     });
