@@ -3002,7 +3002,7 @@ func validateMember(member string) error {
 func isProjectMember(userID int, policy *store.IAMPolicyMessage) bool {
 	for _, binding := range policy.Bindings {
 		for _, member := range binding.Members {
-			if member.ID == userID {
+			if member.ID == userID || member.Email == api.AllUsers {
 				return true
 			}
 		}
