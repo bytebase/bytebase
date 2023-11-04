@@ -184,7 +184,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	require.NoError(t, err)
 
 	db := store.NewDB(metadataConnConfig, pgBinDir, "", false, "", common.ReleaseModeDev)
-	err = db.Open(ctx, true /*createDB*/)
+	err = db.Open(ctx, true /* createDB */)
 	require.NoError(t, err)
 	storeInstance := store.New(db)
 
