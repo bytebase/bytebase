@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"google.golang.org/protobuf/proto"
 
@@ -21,19 +22,25 @@ func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*
 		return nil, err
 	}
 
+	statement := request.Statement
+	// In Redshift datashare, Rewrite query used for parser.
+	if maybeDatabase != nil && maybeDatabase.DataShare {
+		statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", maybeDatabase.DatabaseName), "")
+	}
+
 	// Validate the request.
-	if err := validateQueryRequest(instance, request.ConnectionDatabase, request.Statement); err != nil {
+	if err := validateQueryRequest(instance, request.ConnectionDatabase, statement); err != nil {
 		return nil, err
 	}
 
 	// Get query span.
-	_, err = base.GetQuerySpan(ctx, instance.Engine, request.Statement, s.buildGetDatabaseMetadataFunc(instance))
+	_, err = base.GetQuerySpan(ctx, instance.Engine, statement, s.buildGetDatabaseMetadataFunc(instance))
 	if err != nil {
 		return nil, err
 	}
 
 	// Run SQL review.
-	adviceStatus, advices, err := s.sqlReviewCheck(ctx, request.Statement, environment, instance, maybeDatabase)
+	adviceStatus, advices, err := s.sqlReviewCheck(ctx, statement, environment, instance, maybeDatabase)
 	if err != nil {
 		return nil, err
 	}
