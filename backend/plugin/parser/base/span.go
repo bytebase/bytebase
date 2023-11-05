@@ -31,7 +31,7 @@ type ColumnResource struct {
 	Column   string
 }
 
-// Pretty returns the pretty string of the resource.
+// String returns the string format of the column resource.
 func (c ColumnResource) String() string {
 	var list []string
 	if c.Database != "" {
