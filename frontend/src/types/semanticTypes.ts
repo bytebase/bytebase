@@ -17,7 +17,9 @@ export const getSemanticTemplateList = () => {
       title: t(
         `settings.sensitive-data.semantic-types.template.${buildInSemantic.id}.title`
       ),
-      description: "",
+      description: t(
+        `settings.sensitive-data.semantic-types.template.${buildInSemantic.id}.description`
+      ),
       fullMaskAlgorithmId: buildInSemantic.fullMaskAlgorithmId,
       partialMaskAlgorithmId: buildInSemantic.partialMaskAlgorithmId,
     })
