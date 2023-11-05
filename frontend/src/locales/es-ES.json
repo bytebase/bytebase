@@ -704,7 +704,7 @@
             "title": "Número de identificación personal"
           },
           "ipv4_address": {
-            "title": "Dirección IPV4"
+            "title": "Dirección IPv4"
           },
           "license_plate_number": {
             "title": "Número de placa"
