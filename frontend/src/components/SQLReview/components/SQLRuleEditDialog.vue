@@ -1,5 +1,12 @@
 <template>
-  <BBModal :title="$t('sql-review.edit-rule.self')" @close="$emit('cancel')">
+  <BBModal
+    :title="
+      editable
+        ? $t('sql-review.edit-rule.self')
+        : $t('sql-review.edit-rule.readonly')
+    "
+    @close="$emit('cancel')"
+  >
     <div class="space-y-4 w-[calc(100vw-5rem)] sm:w-[40rem] pb-1">
       <div class="space-y-1">
         <h3 class="text-lg text-control font-medium">
@@ -17,13 +24,12 @@
           </a>
         </div>
       </div>
-      <div class="space-y-1">
+      <div v-if="editable" class="space-y-1">
         <h3 class="text-lg text-control font-medium">
           {{ $t("sql-review.rule.active") }}
         </h3>
         <div class="flex items-center gap-x-2 text-sm">
           <BBSwitch
-            :class="[!editable && 'pointer-events-none']"
             :disabled="disabled"
             :value="state.level !== SQLReviewRuleLevel.DISABLED"
             size="small"
@@ -88,8 +94,7 @@
           v-if="config.payload.type === 'STRING'"
           :value="state.payload.get(state.selectedEngine)![index] as string"
           :config="config"
-          :disabled="disabled"
-          :editable="editable"
+          :disabled="disabled || !editable"
           @update:value="
             state.payload.get(state.selectedEngine)![index] = $event
           "
@@ -98,8 +103,7 @@
           v-if="config.payload.type === 'NUMBER'"
           :value="state.payload.get(state.selectedEngine)![index] as number"
           :config="config"
-          :disabled="disabled"
-          :editable="editable"
+          :disabled="disabled || !editable"
           @update:value="
             state.payload.get(state.selectedEngine)![index] = $event
           "
@@ -109,8 +113,7 @@
           :rule="rule"
           :value="state.payload.get(state.selectedEngine)![index] as boolean"
           :config="config"
-          :disabled="disabled"
-          :editable="editable"
+          :disabled="disabled || !editable"
           @update:value="
             state.payload.get(state.selectedEngine)![index] = $event
           "
@@ -133,8 +136,7 @@
           :rule="rule"
           :value="state.payload.get(state.selectedEngine)![index] as string"
           :config="config"
-          :disabled="disabled"
-          :editable="editable"
+          :disabled="disabled || !editable"
           @update:value="
             state.payload.get(state.selectedEngine)![index] = $event
           "

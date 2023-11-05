@@ -2587,7 +2587,8 @@
       }
     },
     "edit-rule": {
-      "self": "Edit SQL Review Rule"
+      "self": "Edit SQL Review Rule",
+      "readonly": "SQL Review Rule"
     },
     "rule": {
       "active": "Active"

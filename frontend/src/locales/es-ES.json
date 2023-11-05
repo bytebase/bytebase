@@ -2583,7 +2583,8 @@
       }
     },
     "edit-rule": {
-      "self": "Editar regla de revisión SQL"
+      "self": "Editar regla de revisión SQL",
+      "readonly": "Regla de revisión de SQL"
     },
     "rule": {
       "active": "Activa"

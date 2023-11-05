@@ -2,7 +2,7 @@
   <BBCheckbox
     :title="title"
     :value="value"
-    :disabled="disabled || !editable"
+    :disabled="disabled"
     @toggle="$emit('update:value', $event)"
   />
 </template>
@@ -19,7 +19,6 @@ const props = defineProps<{
   config: RuleConfigComponent;
   value: boolean;
   disabled: boolean;
-  editable: boolean;
 }>();
 
 defineEmits<{

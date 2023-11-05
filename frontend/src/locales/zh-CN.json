@@ -2583,7 +2583,8 @@
       }
     },
     "edit-rule": {
-      "self": "编辑 SQL 审核规则"
+      "self": "编辑 SQL 审核规则",
+      "readonly": "SQL 审核规则"
     },
     "rule": {
       "active": "开启"
