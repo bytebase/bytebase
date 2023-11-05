@@ -8,6 +8,8 @@ import (
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -20,6 +22,12 @@ func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*
 
 	// Validate the request.
 	if err := validateQueryRequest(instance, request.ConnectionDatabase, request.Statement); err != nil {
+		return nil, err
+	}
+
+	// Get query span.
+	_, err = base.GetQuerySpan(ctx, instance.Engine, request.Statement, s.buildGetDatabaseMetadataFunc(instance))
+	if err != nil {
 		return nil, err
 	}
 
@@ -83,4 +91,21 @@ func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*
 	}
 
 	return response, nil
+}
+
+func (s *SQLService) buildGetDatabaseMetadataFunc(instance *store.InstanceMessage) base.GetDatabaseMetadataFunc {
+	return func(ctx context.Context, databaseName string) (*base.DatabaseMetadata, error) {
+		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+			InstanceID:   &instance.ResourceID,
+			DatabaseName: &databaseName,
+		})
+		if err != nil {
+			return nil, err
+		}
+		databaseMetadata, err := s.store.GetDBSchema(ctx, database.UID)
+		if err != nil {
+			return nil, err
+		}
+		return base.NewDatabaseMetadata(databaseMetadata.Metadata), nil
+	}
 }
