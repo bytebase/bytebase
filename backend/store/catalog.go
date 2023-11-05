@@ -33,7 +33,7 @@ func (s *Store) NewCatalog(ctx context.Context, databaseID int, engineType store
 		return nil, nil
 	}
 
-	c.Finder = catalog.NewFinder(databaseMeta.Metadata, &catalog.FinderContext{CheckIntegrity: true, EngineType: engineType, IgnoreCaseSensitive: ignoreCaseSensitive})
+	c.Finder = catalog.NewFinder(databaseMeta.GetMetadata(), &catalog.FinderContext{CheckIntegrity: true, EngineType: engineType, IgnoreCaseSensitive: ignoreCaseSensitive})
 	return c, nil
 }
 

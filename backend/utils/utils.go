@@ -758,7 +758,7 @@ func GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx context.Context, databas
 }
 
 // GetMatchedAndUnmatchedTablesInSchemaGroup returns the matched and unmatched tables in the given schema group.
-func GetMatchedAndUnmatchedTablesInSchemaGroup(ctx context.Context, dbSchema *store.DBSchema, schemaGroup *store.SchemaGroupMessage) ([]string, []string, error) {
+func GetMatchedAndUnmatchedTablesInSchemaGroup(ctx context.Context, dbSchema *model.DBSchema, schemaGroup *store.SchemaGroupMessage) ([]string, []string, error) {
 	prog, err := common.ValidateGroupCELExpr(schemaGroup.Expression.Expression)
 	if err != nil {
 		return nil, nil, err
@@ -767,7 +767,7 @@ func GetMatchedAndUnmatchedTablesInSchemaGroup(ctx context.Context, dbSchema *st
 	var matched []string
 	var unmatched []string
 
-	for _, schema := range dbSchema.Metadata.Schemas {
+	for _, schema := range dbSchema.GetMetadata().Schemas {
 		for _, table := range schema.Tables {
 			res, _, err := prog.ContextEval(ctx, map[string]any{
 				"resource": map[string]any{

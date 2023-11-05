@@ -39,6 +39,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/backuprun"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -490,7 +491,7 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 		}
 		filter = &metadataFilter{schema: schema, table: table}
 	}
-	v1pbMetadata := convertDatabaseMetadata(database, dbSchema.Metadata, dbSchema.Config, request.View, filter)
+	v1pbMetadata := convertDatabaseMetadata(database, dbSchema.GetMetadata(), dbSchema.GetConfig(), request.View, filter)
 
 	// Set effective masking level only if filter is set for a table.
 	if filter != nil && request.View == v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL {
@@ -611,7 +612,7 @@ func (s *DatabaseService) UpdateDatabaseMetadata(ctx context.Context, request *v
 		return nil, status.Errorf(codes.NotFound, "database schema %q not found", databaseName)
 	}
 
-	v1pbMetadata := convertDatabaseMetadata(database, dbSchema.Metadata, dbSchema.Config, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_BASIC, nil /* filter */)
+	v1pbMetadata := convertDatabaseMetadata(database, dbSchema.GetMetadata(), dbSchema.GetConfig(), v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_BASIC, nil /* filter */)
 	return v1pbMetadata, nil
 }
 
@@ -660,7 +661,7 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.G
 		dbSchema = newDBSchema
 	}
 	// We only support MySQL engine for now.
-	schema := string(dbSchema.Schema)
+	schema := string(dbSchema.GetSchema())
 	if request.SdlFormat {
 		switch instance.Engine {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
@@ -2481,7 +2482,7 @@ func (s *DatabaseService) mysqlAdviseIndex(ctx context.Context, request *v1pb.Ad
 		return nil, status.Errorf(codes.FailedPrecondition, "OpenAI key is not set")
 	}
 
-	var schemas []*store.DBSchema
+	var schemas []*model.DBSchema
 
 	// Deal with the cross database query.
 	resources, err := base.ExtractResourceList(instance.Engine, database.DatabaseName, "", request.Statement)
@@ -2558,9 +2559,9 @@ func (s *DatabaseService) mysqlAdviseIndex(ctx context.Context, request *v1pb.Ad
 			if len(matches) != 4 {
 				return errors.Errorf("failed to extract index name, database name and table name from %s", resp.CurrentIndex)
 			}
-			var dbSchema *store.DBSchema
+			var dbSchema *model.DBSchema
 			for _, schema := range schemas {
-				if schema.Metadata.Name == matches[2] {
+				if schema.GetMetadata().Name == matches[2] {
 					dbSchema = schema
 					break
 				}
