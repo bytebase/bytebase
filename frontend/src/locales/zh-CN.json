@@ -678,12 +678,45 @@
       "semantic-types": {
         "self": "语义类型",
         "add-type": "新增类型",
+        "add-from-template": "从模板添加",
         "table": {
           "semantic-type": "语义类型",
           "description": "描述",
           "full-masking-algorithm": "全脱敏算法",
           "partial-masking-algorithm": "半脱敏算法",
           "delete": "删除这个语义类型？"
+        },
+        "template": {
+          "address": {
+            "title": "中文详细地址"
+          },
+          "secret_key": {
+            "title": "加密 Key"
+          },
+          "card_number": {
+            "title": "银行卡、信用卡"
+          },
+          "email": {
+            "title": "电子邮箱"
+          },
+          "id_number": {
+            "title": "身份证号码"
+          },
+          "ipv4_address": {
+            "title": "IPV4 地址"
+          },
+          "license_plate_number": {
+            "title": "车牌号码"
+          },
+          "mac_address": {
+            "title": "MAC 地址"
+          },
+          "password": {
+            "title": "密码"
+          },
+          "phone": {
+            "title": "电话号码"
+          }
         }
       },
       "column-detail": {

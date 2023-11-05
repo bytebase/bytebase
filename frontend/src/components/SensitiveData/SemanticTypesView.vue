@@ -1,12 +1,18 @@
 <template>
   <div class="w-full mt-4 space-y-4">
-    <div class="flex items-center justify-end">
+    <div class="flex items-center justify-end space-x-2">
       <NButton
         type="primary"
         :disabled="!hasPermission || !hasSensitiveDataFeature"
         @click="onAdd"
       >
         {{ $t("settings.sensitive-data.semantic-types.add-type") }}
+      </NButton>
+      <NButton
+        :disabled="!hasPermission || !hasSensitiveDataFeature"
+        @click="state.showTemplateDrawer = true"
+      >
+        {{ $t("settings.sensitive-data.semantic-types.add-from-template") }}
       </NButton>
     </div>
     <div class="space-y-5 divide-y-2 pb-10 divide-gray-100">
@@ -20,6 +26,11 @@
       />
     </div>
   </div>
+  <SemanticTemplateDrawer
+    :show="state.showTemplateDrawer"
+    @apply="onTemplateApply"
+    @dismiss="state.showTemplateDrawer = false"
+  />
 </template>
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
@@ -41,12 +52,14 @@ import SemanticTypesTable, {
 interface LocalState {
   semanticItemList: SemanticItem[];
   processing: boolean;
+  showTemplateDrawer: boolean;
 }
 
 const { t } = useI18n();
 const state = reactive<LocalState>({
   semanticItemList: [],
   processing: false,
+  showTemplateDrawer: false,
 });
 
 const settingStore = useSettingV1Store();
@@ -158,5 +171,17 @@ const onCancel = (index: number) => {
       dirty: false,
     };
   }
+};
+
+const onTemplateApply = async (template: SemanticTypeSetting_SemanticType) => {
+  state.semanticItemList.push({
+    dirty: false,
+    mode: "NORMAL",
+    item: SemanticTypeSetting_SemanticType.fromPartial({
+      ...template,
+      id: uuidv4(),
+    }),
+  });
+  await onConfirm(state.semanticItemList.length - 1);
 };
 </script>
