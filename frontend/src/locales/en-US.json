@@ -680,12 +680,45 @@
       "semantic-types": {
         "self": "Semantic Types",
         "add-type": "Add type",
+        "add-from-template": "Add from template",
         "table": {
           "semantic-type": "Semantic type",
           "description": "Description",
           "full-masking-algorithm": "Full-masking algorithm",
           "partial-masking-algorithm": "Partial-masking algorithm",
           "delete": "Delete this semantic type?"
+        },
+        "template": {
+          "address": {
+            "title": "Address"
+          },
+          "secret_key": {
+            "title": "Encryption Key"
+          },
+          "card_number": {
+            "title": "Bank card, credit card, etc"
+          },
+          "email": {
+            "title": "Email address"
+          },
+          "id_number": {
+            "title": "Personal ID number"
+          },
+          "ipv4_address": {
+            "title": "IPV4 address"
+          },
+          "license_plate_number": {
+            "title": "Plate number"
+          },
+          "mac_address": {
+            "title": "MAC address"
+          },
+          "password": {
+            "title": "Password"
+          },
+          "phone": {
+            "title": "Phone number"
+          }
         }
       },
       "column-detail": {

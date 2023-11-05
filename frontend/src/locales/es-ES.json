@@ -679,12 +679,45 @@
       "semantic-types": {
         "self": "Tipos semánticos",
         "add-type": "Agregar tipo",
+        "add-from-template": "Agregar desde plantilla",
         "table": {
           "semantic-type": "Tipo semántico",
           "description": "Descripción",
           "full-masking-algorithm": "Algoritmo de enmascaramiento completo",
           "partial-masking-algorithm": "Algoritmo de enmascaramiento parcial",
           "delete": "¿Eliminar este tipo semántico?"
+        },
+        "template": {
+          "address": {
+            "title": "La dirección"
+          },
+          "secret_key": {
+            "title": "Clave de encriptación"
+          },
+          "card_number": {
+            "title": "Tarjeta bancaria, tarjeta de crédito, etc."
+          },
+          "email": {
+            "title": "Dirección de correo electrónico"
+          },
+          "id_number": {
+            "title": "Número de identificación personal"
+          },
+          "ipv4_address": {
+            "title": "Dirección IPV4"
+          },
+          "license_plate_number": {
+            "title": "Número de placa"
+          },
+          "mac_address": {
+            "title": "Dirección MAC"
+          },
+          "password": {
+            "title": "Contraseña"
+          },
+          "phone": {
+            "title": "Número de teléfono"
+          }
         }
       },
       "column-detail": {
