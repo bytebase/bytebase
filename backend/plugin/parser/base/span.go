@@ -2,6 +2,7 @@ package base
 
 import (
 	"context"
+	"strings"
 
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -28,6 +29,24 @@ type ColumnResource struct {
 	Schema   string
 	Table    string
 	Column   string
+}
+
+// Pretty returns the pretty string of the resource.
+func (c ColumnResource) String() string {
+	var list []string
+	if c.Database != "" {
+		list = append(list, c.Database)
+	}
+	if c.Schema != "" {
+		list = append(list, c.Schema)
+	}
+	if c.Table != "" {
+		list = append(list, c.Table)
+	}
+	if c.Column != "" {
+		list = append(list, c.Column)
+	}
+	return strings.Join(list, ".")
 }
 
 // GetDatabaseMetadataFunc is the function to get database metadata.
