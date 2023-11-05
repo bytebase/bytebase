@@ -402,8 +402,8 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	var oldDatabaseMetadata *storepb.DatabaseSchemaMetadata
 	var rawDump []byte
 	if dbSchema != nil {
-		oldDatabaseMetadata = dbSchema.Metadata
-		rawDump = dbSchema.Schema
+		oldDatabaseMetadata = dbSchema.GetMetadata()
+		rawDump = dbSchema.GetSchema()
 	}
 
 	if !cmp.Equal(oldDatabaseMetadata, databaseMetadata, protocmp.Transform()) {
@@ -417,10 +417,11 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 			rawDump = schemaBuf.Bytes()
 		}
 
-		if err := s.store.UpsertDBSchema(ctx, database.UID, &store.DBSchema{
-			Metadata: databaseMetadata,
-			Schema:   rawDump,
-		}, api.SystemBotID); err != nil {
+		if err := s.store.UpsertDBSchema(ctx,
+			database.UID,
+			model.NewDBSchema(databaseMetadata, rawDump, nil /* config */),
+			api.SystemBotID,
+		); err != nil {
 			return err
 		}
 	}

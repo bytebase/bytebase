@@ -161,8 +161,8 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
 	renderedStatement := utils.RenderStatement(statement, materials)
 	adviceList, err := advisor.SQLReviewCheck(renderedStatement, policy.RuleList, advisor.SQLReviewCheckContext{
-		Charset:   dbSchema.Metadata.CharacterSet,
-		Collation: dbSchema.Metadata.Collation,
+		Charset:   dbSchema.GetMetadata().CharacterSet,
+		Collation: dbSchema.GetMetadata().Collation,
 		DbType:    instance.Engine,
 		Catalog:   catalog,
 		Driver:    connection,
@@ -373,8 +373,8 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 				// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
 				renderedStatement := utils.RenderStatement(statement, materials)
 				adviceList, err := advisor.SQLReviewCheck(renderedStatement, policy.RuleList, advisor.SQLReviewCheckContext{
-					Charset:   dbSchema.Metadata.CharacterSet,
-					Collation: dbSchema.Metadata.Collation,
+					Charset:   dbSchema.GetMetadata().CharacterSet,
+					Collation: dbSchema.GetMetadata().Collation,
 					DbType:    instance.Engine,
 					Catalog:   catalog,
 					Driver:    connection,

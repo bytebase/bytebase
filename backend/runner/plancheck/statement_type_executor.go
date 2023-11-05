@@ -126,7 +126,7 @@ func (e *StatementTypeExecutor) runForDatabaseTarget(ctx context.Context, config
 		}
 		results = append(results, checkResults...)
 	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-		checkResults, err := mysqlStatementTypeCheck(renderedStatement, dbSchema.Metadata.CharacterSet, dbSchema.Metadata.Collation, changeType)
+		checkResults, err := mysqlStatementTypeCheck(renderedStatement, dbSchema.GetMetadata().CharacterSet, dbSchema.GetMetadata().Collation, changeType)
 		if err != nil {
 			return nil, err
 		}
@@ -288,7 +288,7 @@ func (e *StatementTypeExecutor) runForDatabaseGroupTarget(ctx context.Context, c
 					}
 					results = append(results, checkResults...)
 				case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-					checkResults, err := mysqlStatementTypeCheck(renderedStatement, dbSchema.Metadata.CharacterSet, dbSchema.Metadata.Collation, changeType)
+					checkResults, err := mysqlStatementTypeCheck(renderedStatement, dbSchema.GetMetadata().CharacterSet, dbSchema.GetMetadata().Collation, changeType)
 					if err != nil {
 						return nil, err
 					}

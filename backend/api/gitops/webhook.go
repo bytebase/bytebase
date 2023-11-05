@@ -1032,8 +1032,8 @@ func (s *Service) sqlAdviceForFile(
 			return nil, errors.Errorf("database schema %v not found", database.UID)
 		}
 		adviceList, err := advisor.SQLReviewCheck(fileContent, policy.RuleList, advisor.SQLReviewCheckContext{
-			Charset:   dbSchema.Metadata.CharacterSet,
-			Collation: dbSchema.Metadata.Collation,
+			Charset:   dbSchema.GetMetadata().CharacterSet,
+			Collation: dbSchema.GetMetadata().Collation,
 			DbType:    instance.Engine,
 			Catalog:   catalog,
 			Driver:    connection,
