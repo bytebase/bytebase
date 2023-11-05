@@ -419,15 +419,6 @@ ruleList:
               - UPDATED_TS
               - CREATOR_ID
               - UPDATER_ID
-      - engine: OCEANBASE_ORACLE
-        payload:
-          list:
-            default:
-              - ID
-              - CREATED_TS
-              - UPDATED_TS
-              - CREATOR_ID
-              - UPDATER_ID
   - type: column.no-null
     category: COLUMN
     engineList:

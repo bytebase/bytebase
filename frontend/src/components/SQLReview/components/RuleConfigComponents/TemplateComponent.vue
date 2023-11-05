@@ -2,7 +2,7 @@
   <InputWithTemplate
     :template-list="templateList"
     :value="value"
-    :disabled="disabled || !editable"
+    :disabled="disabled"
     @change="$emit('update:value', $event)"
   />
 </template>
@@ -26,7 +26,6 @@ const props = defineProps<{
   config: RuleConfigComponent;
   value: string;
   disabled: boolean;
-  editable: boolean;
 }>();
 
 defineEmits<{
