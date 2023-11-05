@@ -119,9 +119,15 @@ func (s *SQLService) buildGetDatabaseMetadataFunc(instance *store.InstanceMessag
 		if err != nil {
 			return nil, err
 		}
+		if database == nil {
+			return nil, nil
+		}
 		databaseMetadata, err := s.store.GetDBSchema(ctx, database.UID)
 		if err != nil {
 			return nil, err
+		}
+		if databaseMetadata == nil {
+			return nil, nil
 		}
 		return databaseMetadata.GetDatabaseMetadata(), nil
 	}
