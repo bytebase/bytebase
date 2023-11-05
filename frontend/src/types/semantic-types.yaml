@@ -1,0 +1,10 @@
+- id: address
+- id: secret_key
+- id: card_number
+- id: email
+- id: id_number
+- id: ipv4_address
+- id: license_plate_number
+- id: mac_address
+- id: password
+- id: phone
