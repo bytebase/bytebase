@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -94,7 +95,7 @@ func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*
 }
 
 func (s *SQLService) buildGetDatabaseMetadataFunc(instance *store.InstanceMessage) base.GetDatabaseMetadataFunc {
-	return func(ctx context.Context, databaseName string) (*base.DatabaseMetadata, error) {
+	return func(ctx context.Context, databaseName string) (*model.DatabaseMetadata, error) {
 		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 			InstanceID:   &instance.ResourceID,
 			DatabaseName: &databaseName,
@@ -106,6 +107,6 @@ func (s *SQLService) buildGetDatabaseMetadataFunc(instance *store.InstanceMessag
 		if err != nil {
 			return nil, err
 		}
-		return base.NewDatabaseMetadata(databaseMetadata.GetMetadata()), nil
+		return databaseMetadata.GetDatabaseMetadata(), nil
 	}
 }
