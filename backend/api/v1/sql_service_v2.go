@@ -106,6 +106,6 @@ func (s *SQLService) buildGetDatabaseMetadataFunc(instance *store.InstanceMessag
 		if err != nil {
 			return nil, err
 		}
-		return base.NewDatabaseMetadata(databaseMetadata.Metadata), nil
+		return base.NewDatabaseMetadata(databaseMetadata.GetMetadata()), nil
 	}
 }
