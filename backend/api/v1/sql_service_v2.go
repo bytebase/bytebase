@@ -37,13 +37,13 @@ func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*
 	}
 
 	// Get query span.
-	span, err := base.GetQuerySpan(ctx, instance.Engine, statement, s.buildGetDatabaseMetadataFunc(instance))
+	spans, err := base.GetQuerySpan(ctx, instance.Engine, statement, s.buildGetDatabaseMetadataFunc(instance))
 	if err != nil {
 		return nil, err
 	}
 
 	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
-		if err := s.accessCheck(ctx, instance, environment, user, request.Statement, span, request.Limit, false /* isAdmin */, false /* isExport */); err != nil {
+		if err := s.accessCheck(ctx, instance, environment, user, request.Statement, spans, request.Limit, false /* isAdmin */, false /* isExport */); err != nil {
 			return nil, err
 		}
 	}
@@ -119,9 +119,15 @@ func (s *SQLService) buildGetDatabaseMetadataFunc(instance *store.InstanceMessag
 		if err != nil {
 			return nil, err
 		}
+		if database == nil {
+			return nil, nil
+		}
 		databaseMetadata, err := s.store.GetDBSchema(ctx, database.UID)
 		if err != nil {
 			return nil, err
+		}
+		if databaseMetadata == nil {
+			return nil, nil
 		}
 		return databaseMetadata.GetDatabaseMetadata(), nil
 	}
@@ -133,12 +139,12 @@ func (s *SQLService) accessCheck(
 	environment *store.EnvironmentMessage,
 	user *store.UserMessage,
 	statement string,
-	span *base.QuerySpan,
+	spans []*base.QuerySpan,
 	limit int32,
 	isAdmin,
 	isExport bool) error {
 	// Check if the caller is admin for exporting with admin mode.
-	if isAdmin && (user.Role != api.Owner && user.Role != api.DBA) {
+	if isAdmin && isExport && (user.Role != api.Owner && user.Role != api.DBA) {
 		return status.Errorf(codes.PermissionDenied, "only workspace owner and DBA can export data using admin mode")
 	}
 
@@ -151,42 +157,44 @@ func (s *SQLService) accessCheck(
 		return nil
 	}
 
-	for column := range span.SourceColumns {
-		databaseResourceURL := fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, column.Database)
-		attributes := map[string]any{
-			"request.time":      time.Now(),
-			"resource.database": databaseResourceURL,
-			"resource.schema":   column.Schema,
-			"resource.table":    column.Table,
-			"request.statement": encodeToBase64String(statement),
-			"request.row_limit": limit,
-		}
+	for _, span := range spans {
+		for column := range span.SourceColumns {
+			databaseResourceURL := fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, column.Database)
+			attributes := map[string]any{
+				"request.time":      time.Now(),
+				"resource.database": databaseResourceURL,
+				"resource.schema":   column.Schema,
+				"resource.table":    column.Table,
+				"request.statement": encodeToBase64String(statement),
+				"request.row_limit": limit,
+			}
 
-		project, database, err := s.getProjectAndDatabaseMessage(ctx, instance, column.Database)
-		if err != nil {
-			return err
-		}
-		if project == nil && database == nil {
-			// If database not found, skip.
-			// TODO(d): re-evaluate this case.
-			continue
-		}
-		if project == nil {
-			// Never happen
-			return status.Errorf(codes.Internal, "project not found for database: %s", column.Database)
-		}
-		// Allow query databases across different projects.
-		projectPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
-		if err != nil {
-			return err
-		}
+			project, database, err := s.getProjectAndDatabaseMessage(ctx, instance, column.Database)
+			if err != nil {
+				return err
+			}
+			if project == nil && database == nil {
+				// If database not found, skip.
+				// TODO(d): re-evaluate this case.
+				continue
+			}
+			if project == nil {
+				// Never happen
+				return status.Errorf(codes.Internal, "project not found for database: %s", column.Database)
+			}
+			// Allow query databases across different projects.
+			projectPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
+			if err != nil {
+				return err
+			}
 
-		ok, err := hasDatabaseAccessRights(user.ID, projectPolicy, attributes, isExport)
-		if err != nil {
-			return status.Errorf(codes.Internal, "failed to check access control for database: %q, error %v", column.Database, err)
-		}
-		if !ok {
-			return status.Errorf(codes.PermissionDenied, "permission denied to access resource: %q", column.String())
+			ok, err := hasDatabaseAccessRights(user.ID, projectPolicy, attributes, isExport)
+			if err != nil {
+				return status.Errorf(codes.Internal, "failed to check access control for database: %q, error %v", column.Database, err)
+			}
+			if !ok {
+				return status.Errorf(codes.PermissionDenied, "permission denied to access resource: %q", column.String())
+			}
 		}
 	}
 
