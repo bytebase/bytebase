@@ -703,7 +703,7 @@
             "title": "身份证号码"
           },
           "ipv4_address": {
-            "title": "IPV4 地址"
+            "title": "IPv4 地址"
           },
           "license_plate_number": {
             "title": "车牌号码"

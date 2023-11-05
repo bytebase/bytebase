@@ -705,7 +705,7 @@
             "title": "Personal ID number"
           },
           "ipv4_address": {
-            "title": "IPV4 address"
+            "title": "IPv4 address"
           },
           "license_plate_number": {
             "title": "Plate number"
