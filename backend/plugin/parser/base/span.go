@@ -6,9 +6,6 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// GetQuerySpan is the interface of getting the query span for a query.
-type GetQuerySpan func(context.Context, string, GetDatabaseMetadataFunc) (*QuerySpan, error)
-
 // QuerySpan is the span for a query.
 type QuerySpan struct {
 	// Results are the result columns of a query span.
