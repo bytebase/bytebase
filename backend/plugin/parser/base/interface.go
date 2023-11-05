@@ -175,10 +175,22 @@ func RegisterGetQuerySpan(engine storepb.Engine, f GetQuerySpanFunc) {
 }
 
 // GetQuerySpan gets the span of a query.
-func GetQuerySpan(ctx context.Context, engine storepb.Engine, query string, getMetadataFunc GetDatabaseMetadataFunc) (*QuerySpan, error) {
+func GetQuerySpan(ctx context.Context, engine storepb.Engine, statement string, getMetadataFunc GetDatabaseMetadataFunc) ([]*QuerySpan, error) {
 	f, ok := spans[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
-	return f(ctx, query, getMetadataFunc)
+	statements, err := SplitMultiSQL(engine, statement)
+	if err != nil {
+		return nil, err
+	}
+	var results []*QuerySpan
+	for _, stmt := range statements {
+		result, err := f(ctx, stmt.Text, getMetadataFunc)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, result)
+	}
+	return results, nil
 }
