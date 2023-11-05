@@ -1,6 +1,7 @@
 package base
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -18,6 +19,7 @@ var (
 	splitters               = make(map[storepb.Engine]SplitMultiSQLFunc)
 	schemaDiffers           = make(map[storepb.Engine]SchemaDiffFunc)
 	completers              = make(map[storepb.Engine]CompletionFunc)
+	spans                   = make(map[storepb.Engine]GetQuerySpanFunc)
 )
 
 type ValidateSQLForEditorFunc func(string) (bool, error)
@@ -27,6 +29,9 @@ type ExtractResourceListFunc func(string, string, string) ([]SchemaResource, err
 type SplitMultiSQLFunc func(string) ([]SingleSQL, error)
 type SchemaDiffFunc func(oldStmt, newStmt string, ignoreCaseSensitivity bool) (string, error)
 type CompletionFunc func(statement string, caretLine int, caretOffset int) ([]Candidate, error)
+
+// GetQuerySpan is the interface of getting the query span for a query.
+type GetQuerySpanFunc func(context.Context, string, GetDatabaseMetadataFunc) (*QuerySpan, error)
 
 func RegisterQueryValidator(engine storepb.Engine, f ValidateSQLForEditorFunc) {
 	mux.Lock()
@@ -158,4 +163,22 @@ func Completion(engine storepb.Engine, statement string, caretLine int, caretOff
 		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
 	return f(statement, caretLine, caretOffset)
+}
+
+func RegisterGetQuerySpan(engine storepb.Engine, f GetQuerySpanFunc) {
+	mux.Lock()
+	defer mux.Unlock()
+	if _, dup := spans[engine]; dup {
+		panic(fmt.Sprintf("Register called twice %s", engine))
+	}
+	spans[engine] = f
+}
+
+// GetQuerySpan gets the span of a query.
+func GetQuerySpan(ctx context.Context, engine storepb.Engine, query string, getMetadataFunc GetDatabaseMetadataFunc) (*QuerySpan, error) {
+	f, ok := spans[engine]
+	if !ok {
+		return nil, errors.Errorf("engine %s is not supported", engine)
+	}
+	return f(ctx, query, getMetadataFunc)
 }
