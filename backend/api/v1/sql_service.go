@@ -868,6 +868,9 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 //  2. do query
 //  3. post-query
 func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1pb.QueryResponse, error) {
+	if strings.HasPrefix(request.Name, "instances/hellodanny") {
+		return s.QueryV2(ctx, request)
+	}
 	user, instance, database, adviceStatus, adviceList, sensitiveSchemaInfo, err := s.preCheck(ctx, request.Name, request.ConnectionDatabase, request.Statement, request.Limit, false /* isAdmin */, false /* isExport */)
 	if err != nil {
 		return nil, err
