@@ -85,7 +85,7 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, conf
 	if dbSchema == nil {
 		return nil, errors.Errorf("database schema not found: %d", database.UID)
 	}
-	if dbSchema.Metadata == nil {
+	if dbSchema.GetMetadata() == nil {
 		return nil, errors.Errorf("database schema metadata not found: %d", database.UID)
 	}
 
@@ -126,7 +126,7 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, conf
 		defer driver.Close(ctx)
 		sqlDB := driver.GetDB()
 
-		return reportForPostgres(ctx, sqlDB, database.DatabaseName, renderedStatement, dbSchema.Metadata)
+		return reportForPostgres(ctx, sqlDB, database.DatabaseName, renderedStatement, dbSchema.GetMetadata())
 	case storepb.Engine_MYSQL, storepb.Engine_OCEANBASE:
 		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 		if err != nil {
@@ -135,7 +135,7 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, conf
 		defer driver.Close(ctx)
 		sqlDB := driver.GetDB()
 
-		return reportForMySQL(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema.Metadata)
+		return reportForMySQL(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema.GetMetadata())
 	case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
 		schema := ""
 		if instance.Options == nil || !instance.Options.SchemaTenantMode {
@@ -247,7 +247,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get db schema %q", database.UID)
 		}
-		if dbSchema.Metadata == nil {
+		if dbSchema.GetMetadata() == nil {
 			return nil, errors.Errorf("database schema metadata not found: %d", database.UID)
 		}
 		schemaGroupsMatchedTables := map[string][]string{}
@@ -283,7 +283,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 					defer driver.Close(ctx)
 					sqlDB := driver.GetDB()
 
-					return reportForPostgres(ctx, sqlDB, database.DatabaseName, renderedStatement, dbSchema.Metadata)
+					return reportForPostgres(ctx, sqlDB, database.DatabaseName, renderedStatement, dbSchema.GetMetadata())
 				case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 					driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 					if err != nil {
@@ -292,7 +292,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 					defer driver.Close(ctx)
 					sqlDB := driver.GetDB()
 
-					return reportForMySQL(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema.Metadata)
+					return reportForMySQL(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema.GetMetadata())
 				case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
 					schema := ""
 					if instance.Options == nil || !instance.Options.SchemaTenantMode {

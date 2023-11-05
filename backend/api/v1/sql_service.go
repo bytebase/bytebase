@@ -1361,10 +1361,10 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 		}
 
 		if instance.Engine == storepb.Engine_ORACLE || instance.Engine == storepb.Engine_DM || instance.Engine == storepb.Engine_OCEANBASE_ORACLE {
-			for _, schema := range dbSchema.Metadata.Schemas {
+			for _, schema := range dbSchema.GetMetadata().Schemas {
 				var schemaConfig *storepb.SchemaConfig
-				if dbSchema != nil && dbSchema.Config != nil {
-					for _, c := range dbSchema.Config.SchemaConfigs {
+				if dbSchema != nil && dbSchema.GetConfig() != nil {
+					for _, c := range dbSchema.GetConfig().SchemaConfigs {
 						if c != nil && c.Name == schema.Name {
 							schemaConfig = c
 							break
@@ -1436,10 +1436,10 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 			Name:       databaseName,
 			SchemaList: []base.SchemaSchema{},
 		}
-		for _, schema := range dbSchema.Metadata.Schemas {
+		for _, schema := range dbSchema.GetMetadata().Schemas {
 			var schemaConfig *storepb.SchemaConfig
-			if dbSchema != nil && dbSchema.Config != nil {
-				for _, c := range dbSchema.Config.SchemaConfigs {
+			if dbSchema != nil && dbSchema.GetConfig() != nil {
+				for _, c := range dbSchema.GetConfig().SchemaConfigs {
 					if c != nil && c.Name == schema.Name {
 						schemaConfig = c
 						break
@@ -1637,8 +1637,8 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, envir
 	adviceLevel, adviceList, err := s.sqlCheck(
 		ctx,
 		instance.Engine,
-		dbSchema.Metadata.CharacterSet,
-		dbSchema.Metadata.Collation,
+		dbSchema.GetMetadata().CharacterSet,
+		dbSchema.GetMetadata().Collation,
 		environment.UID,
 		statement,
 		catalog,
@@ -1855,7 +1855,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 
 		var result []base.SchemaResource
 		for _, resource := range list {
-			if resource.Database != dbSchema.Metadata.Name {
+			if resource.Database != dbSchema.GetMetadata().Name {
 				// MySQL allows cross-database query, we should check the corresponding database.
 				resourceDB, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 					InstanceID:          &instance.ResourceID,
@@ -1913,7 +1913,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 
 		var result []base.SchemaResource
 		for _, resource := range list {
-			if resource.Database != dbSchema.Metadata.Name {
+			if resource.Database != dbSchema.GetMetadata().Name {
 				// Should not happen.
 				continue
 			}
@@ -1966,7 +1966,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 
 		var result []base.SchemaResource
 		for _, resource := range list {
-			if resource.Database != dbSchema.Metadata.Name {
+			if resource.Database != dbSchema.GetMetadata().Name {
 				if instance.Options == nil || !instance.Options.SchemaTenantMode {
 					continue
 				}
@@ -2042,7 +2042,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 
 		var result []base.SchemaResource
 		for _, resource := range list {
-			if resource.Database != dbSchema.Metadata.Name {
+			if resource.Database != dbSchema.GetMetadata().Name {
 				// Snowflake allows cross-database query, we should check the corresponding database.
 				resourceDB, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 					InstanceID:          &instance.ResourceID,
@@ -2115,7 +2115,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 			if resource.LinkedServer != "" {
 				continue
 			}
-			if resource.Database != dbSchema.Metadata.Name {
+			if resource.Database != dbSchema.GetMetadata().Name {
 				// MSSQL allows cross-database query, we should check the corresponding database.
 				resourceDB, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 					InstanceID:          &instance.ResourceID,

@@ -2289,10 +2289,10 @@ func (s *ProjectService) getMatchesAndUnmatchedTables(ctx context.Context, schem
 		if dbSchema == nil {
 			return nil, nil, status.Errorf(codes.Internal, "database %q schema not found", matchesDatabase.DatabaseName)
 		}
-		if dbSchema.Schema == nil {
+		if dbSchema.GetSchema() == nil {
 			return nil, nil, status.Errorf(codes.Internal, "database %q schema is empty", matchesDatabase.DatabaseName)
 		}
-		for _, schema := range dbSchema.Metadata.Schemas {
+		for _, schema := range dbSchema.GetMetadata().Schemas {
 			for _, table := range schema.Tables {
 				res, _, err := prog.ContextEval(ctx, map[string]any{
 					"resource": map[string]any{
