@@ -183,7 +183,7 @@ func (s *SQLService) accessCheck(
 
 		ok, err := hasDatabaseAccessRights(user.ID, projectPolicy, attributes, isExport)
 		if err != nil {
-			return status.Errorf(codes.Internal, "failed to check access control for database: %q", column.Database)
+			return status.Errorf(codes.Internal, "failed to check access control for database: %q, error %v", column.Database, err)
 		}
 		if !ok {
 			return status.Errorf(codes.PermissionDenied, "permission denied to access resource: %q", column.String())
