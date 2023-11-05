@@ -151,7 +151,7 @@ func (s *SQLService) accessCheck(
 		return nil
 	}
 
-	for column, _ := range span.SourceColumns {
+	for column := range span.SourceColumns {
 		databaseResourceURL := fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, column.Database)
 		attributes := map[string]any{
 			"request.time":      time.Now(),
