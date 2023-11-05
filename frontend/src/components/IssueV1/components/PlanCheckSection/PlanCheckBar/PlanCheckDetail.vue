@@ -85,7 +85,7 @@
     :editable="false"
     :rule="state.activeRule.rule"
     :payload="state.activeRule.payload"
-    :disabled="false"
+    :disabled="true"
     @cancel="state.activeRule = undefined"
   />
 
