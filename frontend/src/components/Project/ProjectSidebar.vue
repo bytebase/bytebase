@@ -60,8 +60,11 @@ interface ProjectSidebarItem {
   }[];
 }
 
+const route = useRoute();
+const projectSlug = computed(() => route.params.projectSlug as string);
+
 const cachedLastPage = useLocalStorage<ProjectHash>(
-  "bb.project.page",
+  `bb.project.${projectSlug.value}.page`,
   "databases"
 );
 
@@ -74,7 +77,6 @@ interface LocalState {
 }
 
 const { t } = useI18n();
-const route = useRoute();
 const router = useRouter();
 const projectV1Store = useProjectV1Store();
 
@@ -87,7 +89,6 @@ watch(
   (hash) => (cachedLastPage.value = hash)
 );
 
-const projectSlug = computed(() => route.params.projectSlug as string);
 const project = computed(() => {
   return projectV1Store.getProjectByUID(String(idFromSlug(projectSlug.value)));
 });
