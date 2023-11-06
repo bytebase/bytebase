@@ -35,6 +35,7 @@ export type IssueGhostContext = {
   viewType: Ref<GhostUIViewType>;
   showFlagsPanel: Ref<boolean>;
   denyEditGhostFlagsReasons: Ref<string[]>;
+  showFeatureModal: Ref<boolean>;
   toggleGhost: (spec: Plan_Spec, on: boolean) => Promise<void>;
 };
 
@@ -121,6 +122,8 @@ export const provideIssueGhostContext = () => {
     return errors;
   });
 
+  const showFeatureModal = ref(false);
+
   const toggleGhost = async (spec: Plan_Spec, on: boolean) => {
     const overrides: Record<string, string> = {};
     if (on) {
@@ -146,6 +149,7 @@ export const provideIssueGhostContext = () => {
     viewType,
     showFlagsPanel,
     denyEditGhostFlagsReasons,
+    showFeatureModal,
     toggleGhost,
   };
 
