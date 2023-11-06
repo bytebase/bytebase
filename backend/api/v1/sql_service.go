@@ -1245,7 +1245,6 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 		return nil, errors.Wrapf(err, "failed to find semantic types setting")
 	}
 
-	ctx = context.Background()
 	// Multiple databases may belong to the same project, to reduce the protojson unmarshal cost,
 	// we store the projectResourceID - maskingExceptionPolicy in a map.
 	maskingExceptionPolicyMap := make(map[string]*storepb.MaskingExceptionPolicy)
