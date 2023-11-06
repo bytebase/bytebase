@@ -525,9 +525,11 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 							}
 						}
 					} else if stateColumn.hasDefault {
-						if _, err := g.columnDefine.WriteString(" DEFAUL"); err != nil {
-							g.err = err
-							return in, true
+						if !strings.EqualFold(stateColumn.defaultValue.toString(), "AUTO_INCREMENT") {
+							if _, err := g.columnDefine.WriteString(" DEFAULT"); err != nil {
+								g.err = err
+								return in, true
+							}
 						}
 						if _, err := g.columnDefine.WriteString(" " + stateColumn.defaultValue.toString()); err != nil {
 							g.err = err
