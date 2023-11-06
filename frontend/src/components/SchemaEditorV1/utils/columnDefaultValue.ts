@@ -100,7 +100,7 @@ export const getColumnTypeDefaultValueOptions = (
     ) {
       return [NO_DEFAULT_OPTION, EMPTY_STRING_OPTION, EXPRESSION_OPTION];
     } else if (type === "INTEGER" || type === "BIGINT" || type === "SERIAL") {
-      return [NO_DEFAULT_OPTION, INT_ZERO_OPTION];
+      return [NO_DEFAULT_OPTION, INT_ZERO_OPTION, EXPRESSION_OPTION];
     } else if (type === "BOOLEAN") {
       return [NO_DEFAULT_OPTION, BOOLEAN_TRUE_OPTION, BOOLEAN_FALSE_OPTION];
     }
