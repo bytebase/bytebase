@@ -34,7 +34,7 @@ var defaultConfig = struct {
 	timestampAllTable:                   true, // doesn't have a gh-ost cli flag counterpart
 	hooksStatusIntervalSec:              60,   // hooks-status-interval
 	heartbeatIntervalMilliseconds:       100,  // heartbeat-interval-millis
-	niceRatio:                           0,    // nice-ration
+	niceRatio:                           0,    // nice-ratio
 	chunkSize:                           1000, // chunk-size
 	dmlBatchSize:                        10,   // dml-batch-size
 	maxLagMillisecondsThrottleThreshold: 1500, // max-lag-millis
@@ -55,6 +55,9 @@ type UserFlags struct {
 	maxLagMillis                  *int64
 	allowOnMaster                 *bool
 	switchToRBR                   *bool
+	assumeRBR                     *bool
+	heartbeatIntervalMillis       *int64
+	niceRatio                     *float64
 }
 
 var knownKeys = map[string]bool{
@@ -67,6 +70,9 @@ var knownKeys = map[string]bool{
 	"max-lag-millis":                   true,
 	"allow-on-master":                  true,
 	"switch-to-rbr":                    true,
+	"assume-rbr":                       true,
+	"heartbeat-interval-millis":        true,
+	"nice-ratio":                       true,
 }
 
 func GetUserFlags(flags map[string]string) (*UserFlags, error) {
@@ -142,6 +148,27 @@ func GetUserFlags(flags map[string]string) (*UserFlags, error) {
 			return nil, errors.Wrapf(err, "failed to convert switch-to-rbr %q to bool", v)
 		}
 		f.switchToRBR = &switchToRBR
+	}
+	if v, ok := flags["assume-rbr"]; ok {
+		assumeRBR, err := strconv.ParseBool(v)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert assume-rbr %q to bool", v)
+		}
+		f.switchToRBR = &assumeRBR
+	}
+	if v, ok := flags["heartbeat-interval-millis"]; ok {
+		heartbeatIntervalMillis, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert heartbeat-interval-millis %q to int", v)
+		}
+		f.heartbeatIntervalMillis = &heartbeatIntervalMillis
+	}
+	if v, ok := flags["nice-ratio"]; ok {
+		niceRatio, err := strconv.ParseFloat(v, 64)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert nice-ratio %q to float", v)
+		}
+		f.niceRatio = &niceRatio
 	}
 	return f, nil
 }
@@ -248,10 +275,14 @@ func NewMigrationContext(taskID int, database *store.DatabaseMessage, dataSource
 		migrationContext.SetDefaultNumRetries(*v)
 	}
 	if v := userFlags.cutoverLockTimeoutSeconds; v != nil {
-		migrationContext.SetCutOverLockTimeoutSeconds(*v)
+		if err := migrationContext.SetCutOverLockTimeoutSeconds(*v); err != nil {
+			return nil, errors.Wrapf(err, "failed to set cutover lock timeout %q", *v)
+		}
 	}
 	if v := userFlags.exponentialBackoffMaxInterval; v != nil {
-		migrationContext.SetExponentialBackoffMaxInterval(*v)
+		if err := migrationContext.SetExponentialBackoffMaxInterval(*v); err != nil {
+			return nil, errors.Wrapf(err, "failed to set exponential backoff max interval %q", *v)
+		}
 	}
 	if v := userFlags.maxLagMillis; v != nil {
 		migrationContext.SetMaxLagMillisecondsThrottleThreshold(*v)
@@ -261,6 +292,15 @@ func NewMigrationContext(taskID int, database *store.DatabaseMessage, dataSource
 	}
 	if v := userFlags.switchToRBR; v != nil {
 		migrationContext.SwitchToRowBinlogFormat = *v
+	}
+	if v := userFlags.assumeRBR; v != nil {
+		migrationContext.AssumeRBR = *v
+	}
+	if v := userFlags.heartbeatIntervalMillis; v != nil {
+		migrationContext.SetHeartbeatIntervalMilliseconds(*v)
+	}
+	if v := userFlags.niceRatio; v != nil {
+		migrationContext.SetNiceRatio(*v)
 	}
 
 	if migrationContext.SwitchToRowBinlogFormat && migrationContext.AssumeRBR {
