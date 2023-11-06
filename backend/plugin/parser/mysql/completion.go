@@ -625,8 +625,9 @@ func (c *Completer) collectLeadingTableReferences(caretIndex int, forTableAlter 
 	c.scanner.Push()
 
 	if forTableAlter {
-		// Skip all tokens until FROM
 		for c.scanner.Backward(false /* skipHidden */) && c.scanner.GetTokenType() != mysql.MySQLLexerALTER_SYMBOL {
+			// Skip all tokens until FROM
+			// nolint
 		}
 
 		if c.scanner.GetTokenType() == mysql.MySQLLexerALTER_SYMBOL {
