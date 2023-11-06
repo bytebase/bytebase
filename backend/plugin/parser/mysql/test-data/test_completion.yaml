@@ -1,0 +1,36 @@
+- input: SELECT * FROM |
+  want:
+    - text: db
+      type: DATABASE
+    - text: t1
+      type: TABLE
+    - text: t2
+      type: TABLE
+- input: SELECT | FROM t1
+  want:
+    - text: runtimeFunction()
+      type: FUNCTION
+    - text: db
+      type: DATABASE
+    - text: t1
+      type: TABLE
+    - text: t2
+      type: TABLE
+    - text: c1
+      type: COLUMN
+- input: SELECT | FROM t2 x
+  want:
+    - text: runtimeFunction()
+      type: FUNCTION
+    - text: db
+      type: DATABASE
+    - text: t1
+      type: TABLE
+    - text: t2
+      type: TABLE
+    - text: x
+      type: TABLE
+    - text: c1
+      type: COLUMN
+    - text: c2
+      type: COLUMN

@@ -12,10 +12,10 @@ type CodeCompletionCore struct {
 	IgnoredTokens  map[int]bool
 	PreferredRules map[int]bool
 
-	parser       antlr.Parser
-	atn          *antlr.ATN
-	candidates   *CandidatesCollection
-	setsPerState FollowSetsByState
+	parser            antlr.Parser
+	atn               *antlr.ATN
+	candidates        *CandidatesCollection
+	followSetsByState *FollowSetsByState
 	// shortcutMap     map[int]map[int]RuleEndStatus
 	statesProcessed int
 	tokenStartIndex int
@@ -25,12 +25,13 @@ type CodeCompletionCore struct {
 }
 
 // NewCodeCompletionCore creates a new CodeCompletionCore.
-func NewCodeCompletionCore(parser antlr.Parser) *CodeCompletionCore {
+func NewCodeCompletionCore(parser antlr.Parser, ignoredTokens, preferredRules map[int]bool, followSets *FollowSetsByState) *CodeCompletionCore {
 	return &CodeCompletionCore{
-		IgnoredTokens:  map[int]bool{},
-		PreferredRules: map[int]bool{},
-		parser:         parser,
-		atn:            parser.GetATN(),
+		IgnoredTokens:     ignoredTokens,
+		PreferredRules:    preferredRules,
+		parser:            parser,
+		atn:               parser.GetATN(),
+		followSetsByState: followSets,
 	}
 }
 
@@ -341,9 +342,9 @@ func (c *CodeCompletionCore) CollectCandidates(caretTokenIndex int, context antl
 
 func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenIndex int, indentation string) RuleEndStatus {
 	result := make(RuleEndStatus)
-	c.setsPerState.CollectFollowSets(c.parser, startState, c.IgnoredTokens)
+	c.followSetsByState.CollectFollowSets(c.parser, startState, c.IgnoredTokens)
 
-	followSets := c.setsPerState.Get(startState.GetStateNumber())
+	followSets := c.followSetsByState.Get(startState.GetStateNumber())
 	c.callStack.Push(startState.GetRuleIndex())
 
 	if tokenIndex >= len(c.tokens)-1 {
