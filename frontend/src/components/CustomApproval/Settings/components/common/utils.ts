@@ -146,7 +146,7 @@ const getProjectIdOptions = () => {
     .map<SelectOption>((proj) => {
       const projectId = extractProjectResourceName(proj.name);
       return {
-        label: projectId,
+        label: `${projectId} (${proj.title})`,
         value: projectId,
       };
     });
@@ -221,6 +221,7 @@ export const getFactorOptionsMap = (source: Risk_Source) => {
 
 export const factorSupportDropdown: Factor[] = [
   "environment_id",
+  "project_id",
   "db_engine",
   "sql_type",
   "level",

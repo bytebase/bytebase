@@ -68,7 +68,7 @@ export const getProjectIdOptions = () => {
     .map<SelectOption>((proj) => {
       const projectId = extractProjectResourceName(proj.name);
       return {
-        label: projectId,
+        label: `${projectId} (${proj.title})`,
         value: projectId,
       };
     });
