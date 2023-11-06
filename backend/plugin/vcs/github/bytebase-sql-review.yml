@@ -39,4 +39,4 @@ jobs:
             echo $message
           done <<< "$(echo $content | jq -r '.[]')"
 
-          if [ "$status" == "ERROR" ]; then exit 1; fi
+          if [ "$status" != "SUCCESS" ]; then exit 1; fi
