@@ -95,7 +95,6 @@ import {
   hasFeature,
   pushNotification,
 } from "@/store";
-import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
 import {
   QuickActionType,
   DEFAULT_PROJECT_V1_NAME,
