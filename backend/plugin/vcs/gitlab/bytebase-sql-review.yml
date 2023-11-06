@@ -19,7 +19,7 @@ bytebase-sql-review:
     - msg=$(echo "$content" | jq -r '.[0]')
     - echo $msg >> bytebase-sql-review.xml
     - status=$(echo "$response" | jq -r '.status')
-    - if [ "$status" == "ERROR" ]; then exit 1; fi
+    - if [ "$status" != "SUCCESS" ]; then exit 1; fi
   artifacts:
     when: always
     reports:
