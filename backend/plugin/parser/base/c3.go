@@ -290,15 +290,6 @@ func checkPredicate(parser antlr.Parser, predicateTransition *antlr.PredicateTra
 	return predicateTransition.GetPredicate().Evaluate(parser, antlr.ParserRuleContextEmpty)
 }
 
-func existsInSlice(list []int, want int) bool {
-	for _, item := range list {
-		if item == want {
-			return true
-		}
-	}
-	return false
-}
-
 type RuleEndStatus map[int]bool
 
 // CollectCandidates collects the candidates.
@@ -394,13 +385,13 @@ func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenInde
 
 		c.callStack.Pop()
 		return RuleEndStatus{}
-	} else {
-		currentSymbol := c.tokens[tokenIndex]
-		// If the current token and Epsilon are not in the follow sets, we should stop.
-		if !followSets.combined.Contains(antlr.TokenEpsilon) && !followSets.combined.Contains(currentSymbol) {
-			c.callStack.Pop()
-			return RuleEndStatus{}
-		}
+	}
+
+	// If the current token and Epsilon are not in the follow sets, we should stop.
+	currentSymbol := c.tokens[tokenIndex]
+	if !followSets.combined.Contains(antlr.TokenEpsilon) && !followSets.combined.Contains(currentSymbol) {
+		c.callStack.Pop()
+		return RuleEndStatus{}
 	}
 
 	var statePipeline []PipelineEntry
