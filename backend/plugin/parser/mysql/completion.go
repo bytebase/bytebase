@@ -29,7 +29,7 @@ func init() {
 // Completion is the entry point of MySQL code completion.
 func Completion(statement string, caretLine int, caretOffset int, defaultDatabase string, metadata base.GetDatabaseMetadataFunc) ([]base.Candidate, error) {
 	completer := NewCompleter(statement, caretLine, caretOffset, defaultDatabase, metadata)
-	return completer.completion(defaultDatabase, metadata)
+	return completer.completion()
 }
 
 func newIgnoredTokens() map[int]bool {
@@ -235,7 +235,7 @@ func NewCompleter(statement string, caretLine int, caretOffset int, defaultDatab
 	}
 }
 
-func (c *Completer) completion(defaultDatabase string, metadata base.GetDatabaseMetadataFunc) ([]base.Candidate, error) {
+func (c *Completer) completion() ([]base.Candidate, error) {
 	caretIndex := c.scanner.GetIndex()
 	if caretIndex > 0 && !c.noSeparatorRequired[c.scanner.GetPreviousTokenType(false /* skipHidden */)] {
 		caretIndex--
@@ -625,8 +625,8 @@ func (c *Completer) collectLeadingTableReferences(caretIndex int, forTableAlter 
 	c.scanner.Push()
 
 	if forTableAlter {
+		// Skip all tokens until FROM
 		for c.scanner.Backward(false /* skipHidden */) && c.scanner.GetTokenType() != mysql.MySQLLexerALTER_SYMBOL {
-			// Skip all tokens until FROM
 		}
 
 		if c.scanner.GetTokenType() == mysql.MySQLLexerALTER_SYMBOL {
@@ -744,7 +744,7 @@ func (l *TableRefListener) ExitTableAlias(ctx *mysql.TableAliasContext) {
 	}
 }
 
-func (l *TableRefListener) EnterSubquery(ctx *mysql.SubqueryContext) {
+func (l *TableRefListener) EnterSubquery(_ *mysql.SubqueryContext) {
 	if l.done {
 		return
 	}
@@ -756,7 +756,7 @@ func (l *TableRefListener) EnterSubquery(ctx *mysql.SubqueryContext) {
 	}
 }
 
-func (l *TableRefListener) ExitSubquery(ctx *mysql.SubqueryContext) {
+func (l *TableRefListener) ExitSubquery(_ *mysql.SubqueryContext) {
 	if l.done {
 		return
 	}
@@ -832,7 +832,7 @@ func (m CompletionMap) insertTables(c *Completer, schemas map[string]bool) {
 	}
 }
 
-func (m CompletionMap) insertViews(_ *Completer, _ map[string]bool) {
+func (CompletionMap) insertViews(_ *Completer, _ map[string]bool) {
 	// TODO: load views
 }
 

@@ -47,8 +47,9 @@ func TestCompletion(t *testing.T) {
 			switch r.Type {
 			case base.CandidateTypeKeyword:
 				continue
+			default:
+				filteredResult = append(filteredResult, r)
 			}
-			filteredResult = append(filteredResult, r)
 		}
 		if record {
 			tests[i].Want = filteredResult
