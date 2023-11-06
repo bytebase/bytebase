@@ -6,6 +6,7 @@
 
     <SQLCheckButton
       v-if="database"
+      :key="selectedTask.uid"
       :statement="sheetStatement"
       :database="database"
       :button-props="{
