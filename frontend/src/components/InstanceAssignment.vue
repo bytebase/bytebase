@@ -105,7 +105,16 @@
               />
             </BBTableCell>
             <BBTableCell class="bb-grid-cell">
-              {{ hostPortOfInstanceV1(instance) }}
+              <NTooltip>
+                <template #trigger>
+                  <div class="w-10 truncate">
+                    {{ hostPortOfInstanceV1(instance) }}
+                  </div>
+                </template>
+                <span class="text-sm">
+                  {{ hostPortOfInstanceV1(instance) }}
+                </span>
+              </NTooltip>
             </BBTableCell>
           </template>
         </BBTable>
