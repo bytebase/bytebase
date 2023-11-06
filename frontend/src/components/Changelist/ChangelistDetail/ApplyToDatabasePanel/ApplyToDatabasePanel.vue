@@ -135,11 +135,13 @@ const environmentList = useEnvironmentV1List(false /* !showDeleted */);
 
 const guessedDatabaseChangeType = computed(() => {
   if (
-    changelist.value.changes.some(
-      (change) => guessChangelistChangeType(change) === "DDL"
+    changelist.value.changes.every(
+      (change) => guessChangelistChangeType(change) === "DML"
     )
   ) {
-    return "DDL";
+    // When ALL of the changes are DML, we are confident that the whole
+    // changelist could be a DML
+    return "DML";
   }
   return "DDL";
 });
