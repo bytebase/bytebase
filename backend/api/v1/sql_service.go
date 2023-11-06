@@ -1245,6 +1245,7 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 		return nil, errors.Wrapf(err, "failed to find semantic types setting")
 	}
 
+	ctx = context.Background()
 	// Multiple databases may belong to the same project, to reduce the protojson unmarshal cost,
 	// we store the projectResourceID - maskingExceptionPolicy in a map.
 	maskingExceptionPolicyMap := make(map[string]*storepb.MaskingExceptionPolicy)
@@ -1312,7 +1313,6 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 				if maskingException.Member == currentPrincipal.Email {
 					slog.Debug("hit masking exception for current principal", slog.String("database", databaseName), slog.String("project", database.ProjectID), slog.Any("masking exception", maskingException))
 					maskingExceptionContainsCurrentPrincipal = append(maskingExceptionContainsCurrentPrincipal, maskingException)
-					break
 				}
 			}
 		}
