@@ -11,13 +11,6 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-const (
-	// defaultSchemaName is the default schema name in PostgreSQL like DBMS.
-	defaultSchemaName = "public"
-	// unknownFieldName is the default field name for unknown field in PostgreSQL like DBMS.
-	unknownFieldName = "?column?"
-)
-
 func init() {
 	base.RegisterGetQuerySpan(storepb.Engine_POSTGRES, GetQuerySpan)
 	base.RegisterGetQuerySpan(storepb.Engine_REDSHIFT, GetQuerySpan)
@@ -28,8 +21,8 @@ func init() {
 type querySpanExtractor struct {
 	ctx         context.Context
 	connectedDB string
-	// metaCache is the lazy-load cache for the database metadata, it should not be accessed directly.
-	// Use querySpanExtractor.getDatabaseMetadata to access it.
+	// The metaCache serves as a lazy-load cache for the database metadata
+	// and should not be accessed directly. Instead, use querySpanExtractor.getDatabaseMetadata to access it.
 	metaCache map[string]*model.DatabaseMetadata
 	ast       *pgquery.RawStmt
 	f         base.GetDatabaseMetadataFunc
@@ -45,6 +38,7 @@ func newQuerySpanExtractor(ast *pgquery.RawStmt, connectedDB string, getDatabase
 	}
 }
 
+// nolint: unused
 func (q *querySpanExtractor) getDatabaseMetadata(database string) (*model.DatabaseMetadata, error) {
 	if meta, ok := q.metaCache[database]; ok {
 		return meta, nil
