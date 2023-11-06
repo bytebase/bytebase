@@ -34,6 +34,12 @@ func NewCodeCompletionCore(parser antlr.Parser) *CodeCompletionCore {
 	}
 }
 
+// PipelineEntry is the entry of the pipeline.
+type PipelineEntry struct {
+	State      antlr.ATNState
+	TokenIndex int
+}
+
 // RuleList is the list of rules.
 // Use a bitset to check existence of a rule in the list efficiently.
 type RuleList struct {
@@ -58,6 +64,13 @@ func (l *RuleList) Copy() *RuleList {
 	return &RuleList{
 		rules:  rules,
 		bitSet: bitSet,
+	}
+}
+
+// Append appends the rules from the given RuleList.
+func (l *RuleList) Append(r *RuleList) {
+	for _, rule := range r.rules {
+		l.Push(rule)
 	}
 }
 
@@ -103,6 +116,7 @@ func (l *FollowSetsList) Append(f FollowSetWithPath) {
 	*l = append(*l, f)
 }
 
+// FollowSetsHolder is the holder of follow sets.
 type FollowSetsHolder struct {
 	sets     FollowSetsList
 	combined antlr.IntervalSet
@@ -343,9 +357,158 @@ func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenInde
 
 	if tokenIndex >= len(c.tokens)-1 {
 		if _, exists := c.PreferredRules[startState.GetRuleIndex()]; exists {
+			// If the rule is preferred, we should add it to the candidates.
 			c.translateToRuleIndex(c.callStack)
+		} else {
+			for _, set := range followSets.sets {
+				fullPath := c.callStack.Copy()
+				fullPath.Append(set.path)
+				// translateToRuleIndex will add the rule to the candidates if it is preferred.
+				if !c.translateToRuleIndex(fullPath) {
+					// If the rule is not preferred, we should add the following tokens to the candidates.
+					for _, symbol := range set.intervals.ToList() {
+						if _, exists := c.IgnoredTokens[symbol]; !exists {
+							if _, exists := c.candidates.Tokens[symbol]; !exists {
+								c.candidates.Tokens[symbol] = set.following
+							} else {
+								equal := len(c.candidates.Tokens[symbol]) == len(set.following)
+								if equal {
+									for i, item := range c.candidates.Tokens[symbol] {
+										if item != set.following[i] {
+											equal = false
+											break
+										}
+									}
+								}
+								if !equal {
+									// If the token is already in the candidates, and the following tokens are different,
+									// we use an empty list to indicate that.
+									c.candidates.Tokens[symbol] = []int{}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		c.callStack.Pop()
+		return RuleEndStatus{}
+	} else {
+		currentSymbol := c.tokens[tokenIndex]
+		// If the current token and Epsilon are not in the follow sets, we should stop.
+		if !followSets.combined.Contains(antlr.TokenEpsilon) && !followSets.combined.Contains(currentSymbol) {
+			c.callStack.Pop()
+			return RuleEndStatus{}
 		}
 	}
+
+	var statePipeline []PipelineEntry
+	var currentEntry PipelineEntry
+
+	statePipeline = append(statePipeline, PipelineEntry{
+		State:      startState,
+		TokenIndex: tokenIndex,
+	})
+
+	for len(statePipeline) != 0 {
+		currentEntry = statePipeline[len(statePipeline)-1]
+		statePipeline = statePipeline[:len(statePipeline)-1]
+		c.statesProcessed++
+
+		atCaret := currentEntry.TokenIndex >= len(c.tokens)-1
+
+		switch currentEntry.State.GetStateType() {
+		case antlr.ATNStateRuleStart:
+			indentation += "  "
+		case antlr.ATNStateRuleStop:
+			result[currentEntry.TokenIndex] = true
+			continue
+		}
+
+		for _, t := range currentEntry.State.GetTransitions() {
+			switch transition := t.(type) {
+			case *antlr.RuleTransition:
+				endStatus := c.fetchEndStatus(transition.GetTarget(), currentEntry.TokenIndex, indentation)
+				for status := range endStatus {
+					statePipeline = append(statePipeline, PipelineEntry{
+						State:      transition.GetFollowState(),
+						TokenIndex: status,
+					})
+				}
+			case *antlr.PredicateTransition:
+				if checkPredicate(c.parser, transition) {
+					statePipeline = append(statePipeline, PipelineEntry{
+						State:      transition.GetTarget(),
+						TokenIndex: currentEntry.TokenIndex,
+					})
+				}
+			case *antlr.WildcardTransition:
+				if atCaret {
+					if !c.translateToRuleIndex(c.callStack) {
+						interval := antlr.NewIntervalSet()
+						interval.AddRange(antlr.TokenMinUserTokenType, c.parser.GetATN().GetMaxTokenType())
+						for _, symbol := range interval.ToList() {
+							if _, exists := c.IgnoredTokens[symbol]; !exists {
+								if _, exists := c.candidates.Tokens[symbol]; !exists {
+									c.candidates.Tokens[symbol] = []int{}
+								}
+							}
+						}
+					}
+				} else {
+					statePipeline = append(statePipeline, PipelineEntry{
+						State:      transition.GetTarget(),
+						TokenIndex: currentEntry.TokenIndex + 1,
+					})
+				}
+			default:
+				if transition.GetIsEpsilon() {
+					if atCaret {
+						c.translateToRuleIndex(c.callStack)
+					}
+
+					statePipeline = append(statePipeline, PipelineEntry{
+						State:      transition.GetTarget(),
+						TokenIndex: currentEntry.TokenIndex,
+					})
+				}
+
+				set := transition.GetLabel()
+				if set != nil && set.Length() > 0 {
+					if transition.GetSerializationType() == antlr.TransitionNOTSET {
+						set = set.Complement(antlr.TokenMinUserTokenType, c.parser.GetATN().GetMaxTokenType())
+					}
+					if atCaret {
+						if !c.translateToRuleIndex(c.callStack) {
+							list := set.ToList()
+							addFollowing := len(list) == 1
+							for _, symbol := range list {
+								if _, exists := c.IgnoredTokens[symbol]; !exists {
+									if addFollowing {
+										c.candidates.Tokens[symbol] = getFollowingTokens(transition, c.IgnoredTokens)
+									} else {
+										c.candidates.Tokens[symbol] = []int{}
+									}
+								}
+							}
+						}
+					} else {
+						currentSymbol := c.tokens[currentEntry.TokenIndex]
+						if set.Contains(currentSymbol) {
+							statePipeline = append(statePipeline, PipelineEntry{
+								State:      transition.GetTarget(),
+								TokenIndex: currentEntry.TokenIndex + 1,
+							})
+						}
+					}
+				}
+			}
+		}
+	}
+
+	c.callStack.Pop()
+	return result
 }
 
 func (c *CodeCompletionCore) translateToRuleIndex(ruleStack *RuleList) bool {
