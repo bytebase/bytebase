@@ -37,10 +37,14 @@
           </div>
 
           <p class="font-medium text-control">
-            {{ $t("task.online-migration.ghost-parameters") }}
+            {{ $t("task.online-migration.gho\st-parameters") }}
+
+            <LearnMoreLink
+              class="text-sm ml-1"
+              url="https://github.com/github/gh-ost/blob/master/doc/command-line-flags.md"
+            />
           </p>
           <FlagsForm v-model:flags="flags" :readonly="readonly" />
-          <DefaultParams />
         </div>
       </template>
       <template #footer>
@@ -81,12 +85,13 @@ import {
   stageForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import ErrorList from "@/components/misc/ErrorList.vue";
 import { Drawer, DrawerContent, RichDatabaseName } from "@/components/v2";
 import { rolloutServiceClient } from "@/grpcweb";
 import { pushNotification } from "@/store";
 import { Plan_Spec, Task_Type } from "@/types/proto/v1/rollout_service";
-import { FlagsForm, DefaultParams } from "./FlagsForm";
+import FlagsForm from "./FlagsForm";
 import { allowChangeTaskGhostFlags, useIssueGhostContext } from "./common";
 
 const { t } = useI18n();
