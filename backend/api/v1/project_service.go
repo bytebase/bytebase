@@ -2960,12 +2960,8 @@ func validateBindings(bindings []*v1pb.Binding, roles []*v1pb.Role) error {
 		}
 
 		// Users within each binding must be unique.
-		userMap := make(map[string]bool)
+		binding.Members = uniqueBindingMembers(binding.Members)
 		for _, member := range binding.Members {
-			if _, ok := userMap[member]; ok {
-				return errors.Errorf("duplicate user %s in role %s", member, binding.Role)
-			}
-			userMap[member] = true
 			if err := validateMember(member); err != nil {
 				return err
 			}
@@ -2981,6 +2977,18 @@ func validateBindings(bindings []*v1pb.Binding, roles []*v1pb.Role) error {
 		return errors.Errorf("IAM Policy must have at least one binding with role PROJECT_OWNER")
 	}
 	return nil
+}
+
+func uniqueBindingMembers(members []string) []string {
+	temp := []string{}
+	flag := make(map[string]bool)
+	for _, member := range members {
+		if !flag[member] {
+			temp = append(temp, member)
+			flag[member] = true
+		}
+	}
+	return temp
 }
 
 func validateMember(member string) error {

@@ -1,4 +1,4 @@
-import { isUndefined } from "lodash-es";
+import { isUndefined, uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, ref, unref, watch, watchEffect } from "vue";
 import { projectServiceClient } from "@/grpcweb";
@@ -68,6 +68,11 @@ export const useProjectIamPolicyStore = defineStore(
       project: string,
       policy: IamPolicy
     ) => {
+      policy.bindings.forEach((binding) => {
+        if (binding.members) {
+          binding.members = uniq(binding.members);
+        }
+      });
       const updated = await projectServiceClient.setIamPolicy({
         project,
         policy,
