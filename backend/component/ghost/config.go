@@ -46,18 +46,20 @@ var defaultConfig = struct {
 }
 
 type UserFlags struct {
-	maxLoad       *string
-	chunkSize     *int64
-	dmlBatchSize  *int64
-	maxLagMillis  *int64
-	allowOnMaster *bool
-	switchToRBR   *bool
+	maxLoad        *string
+	chunkSize      *int64
+	dmlBatchSize   *int64
+	defaultRetries *int64
+	maxLagMillis   *int64
+	allowOnMaster  *bool
+	switchToRBR    *bool
 }
 
 var knownKeys = map[string]bool{
 	"max-load":        true,
 	"chunk-size":      true,
 	"dml-batch-size":  true,
+	"default-retries": true,
 	"max-lag-millis":  true,
 	"allow-on-master": true,
 	"switch-to-rbr":   true,
@@ -94,6 +96,13 @@ func GetUserFlags(flags map[string]string) (*UserFlags, error) {
 			return nil, errors.Wrapf(err, "failed to convert dml-batch-size %q to int", v)
 		}
 		f.dmlBatchSize = &dmlBatchSize
+	}
+	if v, ok := flags["default-retries"]; ok {
+		defaultRetries, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert default-retries %q to int", v)
+		}
+		f.defaultRetries = &defaultRetries
 	}
 	if v, ok := flags["max-lag-millis"]; ok {
 		maxLagMillis, err := strconv.ParseInt(v, 10, 64)
@@ -216,6 +225,9 @@ func NewMigrationContext(taskID int, database *store.DatabaseMessage, dataSource
 	}
 	if v := userFlags.dmlBatchSize; v != nil {
 		migrationContext.SetDMLBatchSize(*v)
+	}
+	if v := userFlags.defaultRetries; v != nil {
+		migrationContext.SetDefaultNumRetries(*v)
 	}
 	if v := userFlags.maxLagMillis; v != nil {
 		migrationContext.SetMaxLagMillisecondsThrottleThreshold(*v)
