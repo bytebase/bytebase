@@ -288,4 +288,4 @@ replace github.com/pganalyze/pg_query_go/v4 => github.com/bytebase/pg_query_go/v
 
 replace github.com/mattn/go-oci8 => github.com/bytebase/go-obo v0.0.0-20231026081615-705a7fffbfd2
 
-replace github.com/antlr4-go/antlr/v4 => github.com/bytebase/antlr/v4 v4.0.0-20231102080211-3dcfb4e74031
+replace github.com/antlr4-go/antlr/v4 => github.com/bytebase/antlr/v4 v4.0.0-20231103101006-5fe1a93b199f
