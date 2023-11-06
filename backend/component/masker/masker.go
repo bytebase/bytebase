@@ -154,7 +154,7 @@ type MaskRangeSlice struct {
 	Substitution string
 }
 
-// RangeMasker is the masker that masks the the left and right quarters with "**".
+// RangeMasker is the masker that masks the left and right quarters with "**".
 type RangeMasker struct {
 	// MaskRangeSlice is the slice of the range to be masked.
 	MaskRangeSlice []*MaskRangeSlice
@@ -288,7 +288,7 @@ func (m *RangeMasker) Equal(other Masker) bool {
 	return false
 }
 
-// DefaultRangeMasker is the masker that masks the the left and right quarters with "**".
+// DefaultRangeMasker is the masker that masks the left and right quarters with "**".
 type DefaultRangeMasker struct{}
 
 // NewDefaultRangeMasker returns a new DefaultRangeMasker.

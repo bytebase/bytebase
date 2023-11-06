@@ -30,7 +30,7 @@ type SplitMultiSQLFunc func(string) ([]SingleSQL, error)
 type SchemaDiffFunc func(oldStmt, newStmt string, ignoreCaseSensitivity bool) (string, error)
 type CompletionFunc func(statement string, caretLine int, caretOffset int) ([]Candidate, error)
 
-// GetQuerySpan is the interface of getting the query span for a query.
+// GetQuerySpanFunc is the interface of getting the query span for a query.
 type GetQuerySpanFunc func(context.Context, string, GetDatabaseMetadataFunc) (*QuerySpan, error)
 
 func RegisterQueryValidator(engine storepb.Engine, f ValidateSQLForEditorFunc) {
