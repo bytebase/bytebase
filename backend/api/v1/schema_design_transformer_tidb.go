@@ -526,7 +526,7 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 						}
 					} else if stateColumn.hasDefault {
 						if !strings.EqualFold(stateColumn.defaultValue.toString(), "AUTO_INCREMENT") {
-							if _, err := g.columnDefine.WriteString(" DEFAUL"); err != nil {
+							if _, err := g.columnDefine.WriteString(" DEFAULT"); err != nil {
 								g.err = err
 								return in, true
 							}
