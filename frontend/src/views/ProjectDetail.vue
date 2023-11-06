@@ -164,6 +164,21 @@ const cachedNotifiedActivities = useLocalStorage<string[]>(
 const maximumCachedActivities = 5;
 
 onMounted(() => {
+  const currentUserV1 = useCurrentUserV1();
+
+  if (
+    !hasWorkspacePermissionV1(
+      "bb.permission.workspace.manage-issue",
+      currentUserV1.value.userRole
+    ) &&
+    !hasPermissionInProjectV1(
+      project.value.iamPolicy,
+      currentUserV1.value,
+      "bb.permission.project.change-database"
+    )
+  ) {
+    return;
+  }
   activityV1Store
     .fetchActivityList({
       pageSize: 1,
@@ -172,7 +187,6 @@ onMounted(() => {
       resource: project.value.name,
     })
     .then((resp) => {
-      const currentUserV1 = useCurrentUserV1();
       for (const activity of resp.logEntities) {
         if (cachedNotifiedActivities.value.includes(activity.name)) {
           continue;
@@ -182,29 +196,14 @@ onMounted(() => {
           cachedNotifiedActivities.value.shift();
         }
 
-        // Only show notification for issue creator, project owner, workspace owner/DBA.
-        if (
-          getUserEmailFromIdentifier(activity.creator) ===
-            currentUserV1.value.email ||
-          hasWorkspacePermissionV1(
-            "bb.permission.workspace.manage-issue",
-            currentUserV1.value.userRole
-          ) ||
-          hasPermissionInProjectV1(
-            project.value.iamPolicy,
-            currentUserV1.value,
-            "bb.permission.project.change-database"
-          )
-        ) {
-          pushNotification({
-            module: "bytebase",
-            style: "INFO",
-            title: activityName(activity.action),
-            manualHide: true,
-            link: `/project/${projectV1Slug(project.value)}#activities`,
-            linkTitle: t("common.view"),
-          });
-        }
+        pushNotification({
+          module: "bytebase",
+          style: "INFO",
+          title: activityName(activity.action),
+          manualHide: true,
+          link: `/project/${projectV1Slug(project.value)}#activities`,
+          linkTitle: t("common.view"),
+        });
         break;
       }
     });
