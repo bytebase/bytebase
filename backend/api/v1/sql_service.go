@@ -1312,7 +1312,6 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 				if maskingException.Member == currentPrincipal.Email {
 					slog.Debug("hit masking exception for current principal", slog.String("database", databaseName), slog.String("project", database.ProjectID), slog.Any("masking exception", maskingException))
 					maskingExceptionContainsCurrentPrincipal = append(maskingExceptionContainsCurrentPrincipal, maskingException)
-					break
 				}
 			}
 		}
