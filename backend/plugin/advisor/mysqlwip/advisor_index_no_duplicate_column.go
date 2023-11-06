@@ -161,13 +161,13 @@ func (checker *indexNoDuplicateColumnChecker) EnterCreateIndex(ctx *mysql.Create
 	}
 }
 
-func (checker *indexNoDuplicateColumnChecker) handleConstraintDef(tableName string, ctx mysql.ITableConstraintDefContext) *indexMetaData {
+func (checker *indexNoDuplicateColumnChecker) handleConstraintDef(tableName string, ctx mysql.ITableConstraintDefContext) {
 	var columnList []string
 	indexType := ""
 	switch ctx.GetType_().GetTokenType() {
 	case mysql.MySQLParserINDEX_SYMBOL, mysql.MySQLParserKEY_SYMBOL, mysql.MySQLParserPRIMARY_SYMBOL, mysql.MySQLParserUNIQUE_SYMBOL:
 		if ctx.KeyListVariants() == nil {
-			return nil
+			return
 		}
 		columnList = mysqlparser.NormalizeKeyListVariants(ctx.KeyListVariants())
 		indexType = ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.NewInterval(
@@ -176,13 +176,15 @@ func (checker *indexNoDuplicateColumnChecker) handleConstraintDef(tableName stri
 		))
 	case mysql.MySQLParserFOREIGN_SYMBOL:
 		if ctx.KeyList() == nil {
-			return nil
+			return
 		}
 		columnList = mysqlparser.NormalizeKeyList(ctx.KeyList())
 		indexType = ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.NewInterval(
 			ctx.GetStart().GetTokenIndex(),
 			ctx.KeyList().GetStart().GetTokenIndex()-1,
 		))
+	default:
+		return
 	}
 
 	indexName := ""
@@ -209,7 +211,6 @@ func (checker *indexNoDuplicateColumnChecker) handleConstraintDef(tableName stri
 			Line:    checker.baseLine + ctx.GetStart().GetLine(),
 		})
 	}
-	return nil
 }
 
 func (*indexNoDuplicateColumnChecker) hasDuplicateColumn(keyList []string) (string, bool) {
