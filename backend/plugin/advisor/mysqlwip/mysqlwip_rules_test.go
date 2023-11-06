@@ -70,6 +70,9 @@ func TestMySQLWIPRules(t *testing.T) {
 
 		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL support check if the database is empty before users drop it.
 		advisor.SchemaRuleDropEmptyDatabase,
+
+		// advisor.SchemaRuleIndexNoDuplicateColumn require the index no duplicate column.
+		advisor.SchemaRuleIndexNoDuplicateColumn,
 	}
 
 	for _, rule := range mysqlwipRules {
