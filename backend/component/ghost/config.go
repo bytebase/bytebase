@@ -34,7 +34,7 @@ var defaultConfig = struct {
 	timestampAllTable:                   true, // doesn't have a gh-ost cli flag counterpart
 	hooksStatusIntervalSec:              60,   // hooks-status-interval
 	heartbeatIntervalMilliseconds:       100,  // heartbeat-interval-millis
-	niceRatio:                           0,    // nice-ration
+	niceRatio:                           0,    // nice-ratio
 	chunkSize:                           1000, // chunk-size
 	dmlBatchSize:                        10,   // dml-batch-size
 	maxLagMillisecondsThrottleThreshold: 1500, // max-lag-millis
@@ -46,21 +46,33 @@ var defaultConfig = struct {
 }
 
 type UserFlags struct {
-	maxLoad                 *string
-	chunkSize               *int64
-	initiallyDropGhostTable *bool
-	maxLagMillis            *int64
-	allowOnMaster           *bool
-	switchToRBR             *bool
+	maxLoad                       *string
+	chunkSize                     *int64
+	dmlBatchSize                  *int64
+	defaultRetries                *int64
+	cutoverLockTimeoutSeconds     *int64
+	exponentialBackoffMaxInterval *int64
+	maxLagMillis                  *int64
+	allowOnMaster                 *bool
+	switchToRBR                   *bool
+	assumeRBR                     *bool
+	heartbeatIntervalMillis       *int64
+	niceRatio                     *float64
 }
 
 var knownKeys = map[string]bool{
-	"max-load":                   true,
-	"chunk-size":                 true,
-	"initially-drop-ghost-table": true,
-	"max-lag-millis":             true,
-	"allow-on-master":            true,
-	"switch-to-rbr":              true,
+	"max-load":                         true,
+	"chunk-size":                       true,
+	"dml-batch-size":                   true,
+	"default-retries":                  true,
+	"cut-over-lock-timeout-seconds":    true,
+	"exponential-backoff-max-interval": true,
+	"max-lag-millis":                   true,
+	"allow-on-master":                  true,
+	"switch-to-rbr":                    true,
+	"assume-rbr":                       true,
+	"heartbeat-interval-millis":        true,
+	"nice-ratio":                       true,
 }
 
 func GetUserFlags(flags map[string]string) (*UserFlags, error) {
@@ -88,12 +100,33 @@ func GetUserFlags(flags map[string]string) (*UserFlags, error) {
 		}
 		f.chunkSize = &chunkSize
 	}
-	if v, ok := flags["initially-drop-ghost-table"]; ok {
-		initiallyDropGhostTable, err := strconv.ParseBool(v)
+	if v, ok := flags["dml-batch-size"]; ok {
+		dmlBatchSize, err := strconv.ParseInt(v, 10, 64)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to convert initially-drop-ghost-table %q to bool", v)
+			return nil, errors.Wrapf(err, "failed to convert dml-batch-size %q to int", v)
 		}
-		f.initiallyDropGhostTable = &initiallyDropGhostTable
+		f.dmlBatchSize = &dmlBatchSize
+	}
+	if v, ok := flags["default-retries"]; ok {
+		defaultRetries, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert default-retries %q to int", v)
+		}
+		f.defaultRetries = &defaultRetries
+	}
+	if v, ok := flags["cut-over-lock-timeout-seconds"]; ok {
+		cutoverLockTimeoutSeconds, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert cut-over-lock-timeout-seconds %q to int", v)
+		}
+		f.cutoverLockTimeoutSeconds = &cutoverLockTimeoutSeconds
+	}
+	if v, ok := flags["exponential-backoff-max-interval"]; ok {
+		exponentialBackoffMaxInterval, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert exponential-backoff-max-interval %q to int", v)
+		}
+		f.exponentialBackoffMaxInterval = &exponentialBackoffMaxInterval
 	}
 	if v, ok := flags["max-lag-millis"]; ok {
 		maxLagMillis, err := strconv.ParseInt(v, 10, 64)
@@ -115,6 +148,27 @@ func GetUserFlags(flags map[string]string) (*UserFlags, error) {
 			return nil, errors.Wrapf(err, "failed to convert switch-to-rbr %q to bool", v)
 		}
 		f.switchToRBR = &switchToRBR
+	}
+	if v, ok := flags["assume-rbr"]; ok {
+		assumeRBR, err := strconv.ParseBool(v)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert assume-rbr %q to bool", v)
+		}
+		f.switchToRBR = &assumeRBR
+	}
+	if v, ok := flags["heartbeat-interval-millis"]; ok {
+		heartbeatIntervalMillis, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert heartbeat-interval-millis %q to int", v)
+		}
+		f.heartbeatIntervalMillis = &heartbeatIntervalMillis
+	}
+	if v, ok := flags["nice-ratio"]; ok {
+		niceRatio, err := strconv.ParseFloat(v, 64)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert nice-ratio %q to float", v)
+		}
+		f.niceRatio = &niceRatio
 	}
 	return f, nil
 }
@@ -214,8 +268,21 @@ func NewMigrationContext(taskID int, database *store.DatabaseMessage, dataSource
 	if v := userFlags.chunkSize; v != nil {
 		migrationContext.SetChunkSize(*v)
 	}
-	if v := userFlags.initiallyDropGhostTable; v != nil {
-		migrationContext.InitiallyDropGhostTable = *v
+	if v := userFlags.dmlBatchSize; v != nil {
+		migrationContext.SetDMLBatchSize(*v)
+	}
+	if v := userFlags.defaultRetries; v != nil {
+		migrationContext.SetDefaultNumRetries(*v)
+	}
+	if v := userFlags.cutoverLockTimeoutSeconds; v != nil {
+		if err := migrationContext.SetCutOverLockTimeoutSeconds(*v); err != nil {
+			return nil, errors.Wrapf(err, "failed to set cutover lock timeout %q", *v)
+		}
+	}
+	if v := userFlags.exponentialBackoffMaxInterval; v != nil {
+		if err := migrationContext.SetExponentialBackoffMaxInterval(*v); err != nil {
+			return nil, errors.Wrapf(err, "failed to set exponential backoff max interval %q", *v)
+		}
 	}
 	if v := userFlags.maxLagMillis; v != nil {
 		migrationContext.SetMaxLagMillisecondsThrottleThreshold(*v)
@@ -225,6 +292,15 @@ func NewMigrationContext(taskID int, database *store.DatabaseMessage, dataSource
 	}
 	if v := userFlags.switchToRBR; v != nil {
 		migrationContext.SwitchToRowBinlogFormat = *v
+	}
+	if v := userFlags.assumeRBR; v != nil {
+		migrationContext.AssumeRBR = *v
+	}
+	if v := userFlags.heartbeatIntervalMillis; v != nil {
+		migrationContext.SetHeartbeatIntervalMilliseconds(*v)
+	}
+	if v := userFlags.niceRatio; v != nil {
+		migrationContext.SetNiceRatio(*v)
 	}
 
 	if migrationContext.SwitchToRowBinlogFormat && migrationContext.AssumeRBR {
