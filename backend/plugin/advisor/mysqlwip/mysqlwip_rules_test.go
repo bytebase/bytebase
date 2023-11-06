@@ -70,6 +70,9 @@ func TestMySQLWIPRules(t *testing.T) {
 
 		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL support check if the database is empty before users drop it.
 		advisor.SchemaRuleDropEmptyDatabase,
+
+		// advisor.SchemaRuleIndexKeyNumberLimit enforce the index key number limit.
+		advisor.SchemaRuleIndexKeyNumberLimit,
 	}
 
 	for _, rule := range mysqlwipRules {
