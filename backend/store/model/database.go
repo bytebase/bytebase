@@ -3,6 +3,7 @@ package model
 import (
 	"bytes"
 	"fmt"
+	"sort"
 	"strings"
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -203,6 +204,17 @@ type SchemaMetadata struct {
 // GetTable gets the schema by name.
 func (s *SchemaMetadata) GetTable(name string) *TableMetadata {
 	return s.internal[name]
+}
+
+// ListTableNames lists the table names.
+func (s *SchemaMetadata) ListTableNames() []string {
+	var result []string
+	for tableName := range s.internal {
+		result = append(result, tableName)
+	}
+
+	sort.Strings(result)
+	return result
 }
 
 // TableMetadata is the metadata for a table.
