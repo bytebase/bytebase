@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col">
     <AdvancedSearch
-      custom-class="mx-4 my-2"
+      custom-class="w-full px-4 py-2"
       :params="initSearchParams"
       :autofocus="autofocus"
       @update="onSearchParamsUpdate($event)"
@@ -9,11 +9,11 @@
 
     <FeatureAttention
       v-if="!!state.searchParams.query || state.searchParams.scopes.length > 0"
-      custom-class="mx-4 my-2"
+      custom-class="w-full px-4 py-2"
       feature="bb.feature.issue-advanced-search"
     />
 
-    <div class="px-2 flex items-center">
+    <div class="px-4 flex items-center">
       <div class="flex-1 overflow-hidden">
         <TabFilter v-model:value="state.tab" :items="tabItemList" />
       </div>
