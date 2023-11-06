@@ -6,17 +6,25 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/pingcap/tidb/parser/ast"
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
+
+	mysql "github.com/bytebase/mysql-parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*IndexTotalNumberLimitAdvisor)(nil)
-	_ ast.Visitor     = (*indexTotalNumberLimitChecker)(nil)
 )
+
+func init() {
+	// only for mysqlwip test.
+	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLIndexTotalNumberLimit, &IndexTotalNumberLimitAdvisor{})
+}
 
 // IndexTotalNumberLimitAdvisor is the advisor checking for index total number limit.
 type IndexTotalNumberLimitAdvisor struct {
@@ -24,9 +32,9 @@ type IndexTotalNumberLimitAdvisor struct {
 
 // Check checks for index total number limit.
 func (*IndexTotalNumberLimitAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	stmtList, ok := ctx.AST.([]ast.StmtNode)
+	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to StmtNode")
+		return nil, errors.Errorf("failed to convert to mysql parser result")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -46,20 +54,20 @@ func (*IndexTotalNumberLimitAdvisor) Check(ctx advisor.Context, _ string) ([]adv
 	}
 
 	for _, stmt := range stmtList {
-		checker.text = stmt.Text()
-		checker.line = stmt.OriginTextPosition()
-		(stmt).Accept(checker)
+		checker.baseLine = stmt.BaseLine
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
 	return checker.generateAdvice(), nil
 }
 
 type indexTotalNumberLimitChecker struct {
+	*mysql.BaseMySQLParserListener
+
+	baseLine     int
 	adviceList   []advisor.Advice
 	level        advisor.Status
 	title        string
-	text         string
-	line         int
 	max          int
 	lineForTable map[string]int
 	catalog      *catalog.Finder
@@ -106,63 +114,83 @@ func (checker *indexTotalNumberLimitChecker) generateAdvice() []advisor.Advice {
 	return checker.adviceList
 }
 
-// Enter implements the ast.Visitor interface.
-func (checker *indexTotalNumberLimitChecker) Enter(in ast.Node) (ast.Node, bool) {
-	switch node := in.(type) {
-	case *ast.CreateTableStmt:
-		checker.lineForTable[node.Table.Name.O] = node.OriginTextPosition()
-	case *ast.AlterTableStmt:
-		for _, spec := range node.Specs {
-			switch spec.Tp {
-			case ast.AlterTableAddColumns:
-				for _, column := range spec.NewColumns {
-					if createIndex(column) {
-						checker.lineForTable[node.Table.Name.O] = node.OriginTextPosition()
-						break
+// EnterCreateTable is called when production createTable is entered.
+func (checker *indexTotalNumberLimitChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if ctx.TableName() == nil {
+		return
+	}
+
+	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
+	checker.lineForTable[tableName] = checker.baseLine + ctx.GetStart().GetLine()
+}
+
+func (checker *indexTotalNumberLimitChecker) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
+	if ctx.CreateIndexTarget() == nil || ctx.CreateIndexTarget().TableRef() == nil {
+		return
+	}
+	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.CreateIndexTarget().TableRef())
+	checker.lineForTable[tableName] = checker.baseLine + ctx.GetStart().GetLine()
+}
+
+// EnterAlterTable is called when production alterTable is entered.
+func (checker *indexTotalNumberLimitChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if ctx.AlterTableActions() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
+		return
+	}
+
+	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
+	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
+		if item == nil {
+			continue
+		}
+
+		switch {
+		// add column.
+		case item.ADD_SYMBOL() != nil && item.TableConstraintDef() == nil:
+			switch {
+			case item.Identifier() != nil && item.FieldDefinition() != nil:
+				checker.checkFieldDefinitionContext(tableName, item.FieldDefinition())
+			case item.OPEN_PAR_SYMBOL() != nil && item.TableElementList() != nil:
+				for _, tableElement := range item.TableElementList().AllTableElement() {
+					if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil {
+						continue
 					}
-				}
-			case ast.AlterTableAddConstraint:
-				if createIndex(spec.Constraint) {
-					checker.lineForTable[node.Table.Name.O] = node.OriginTextPosition()
-				}
-			case ast.AlterTableChangeColumn, ast.AlterTableModifyColumn:
-				if createIndex(spec.NewColumns[0]) {
-					checker.lineForTable[node.Table.Name.O] = node.OriginTextPosition()
+					checker.checkFieldDefinitionContext(tableName, item.FieldDefinition())
 				}
 			}
-		}
-	case *ast.CreateIndexStmt:
-		checker.lineForTable[node.Table.Name.O] = node.OriginTextPosition()
-	}
-
-	return in, false
-}
-
-// Leave implements the ast.Visitor interface.
-func (*indexTotalNumberLimitChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
-}
-
-func createIndex(in ast.Node) bool {
-	switch node := in.(type) {
-	case *ast.ColumnDef:
-		for _, option := range node.Options {
-			switch option.Tp {
-			case ast.ColumnOptionPrimaryKey, ast.ColumnOptionUniqKey:
-				return true
-			}
-		}
-	case *ast.Constraint:
-		switch node.Tp {
-		case ast.ConstraintPrimaryKey,
-			ast.ConstraintUniq,
-			ast.ConstraintUniqKey,
-			ast.ConstraintUniqIndex,
-			ast.ConstraintKey,
-			ast.ConstraintIndex,
-			ast.ConstraintFulltext:
-			return true
+		// change column.
+		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil:
+			checker.checkFieldDefinitionContext(tableName, item.FieldDefinition())
+		// modify column.
+		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
+			checker.checkFieldDefinitionContext(tableName, item.FieldDefinition())
+		// add constraint.
+		case item.ADD_SYMBOL() != nil && item.TableConstraintDef() != nil:
+			checker.checkTableConstraintDef(tableName, item.TableConstraintDef())
+		default:
+			continue
 		}
 	}
-	return false
+}
+
+func (checker *indexTotalNumberLimitChecker) checkFieldDefinitionContext(tableName string, ctx mysql.IFieldDefinitionContext) {
+	for _, attr := range ctx.AllColumnAttribute() {
+		switch attr.GetValue().GetTokenType() {
+		case mysql.MySQLParserPRIMARY_SYMBOL, mysql.MySQLParserUNIQUE_SYMBOL:
+			checker.lineForTable[tableName] = checker.baseLine + ctx.GetStart().GetLine()
+		}
+	}
+}
+
+func (checker *indexTotalNumberLimitChecker) checkTableConstraintDef(tableName string, ctx mysql.ITableConstraintDefContext) {
+	switch ctx.GetType_().GetTokenType() {
+	case mysql.MySQLParserPRIMARY_SYMBOL, mysql.MySQLParserUNIQUE_SYMBOL, mysql.MySQLParserKEY_SYMBOL, mysql.MySQLParserINDEX_SYMBOL, mysql.MySQLParserFULLTEXT_SYMBOL:
+		checker.lineForTable[tableName] = checker.baseLine + ctx.GetStart().GetLine()
+	}
 }
