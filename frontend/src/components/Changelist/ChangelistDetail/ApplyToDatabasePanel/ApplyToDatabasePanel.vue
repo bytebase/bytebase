@@ -141,7 +141,7 @@ const guessedDatabaseChangeType = computed(() => {
   ) {
     return "DDL";
   }
-  return "DML";
+  return "DDL";
 });
 
 const databaseList = computed(() => {
