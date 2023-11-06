@@ -46,21 +46,19 @@ var defaultConfig = struct {
 }
 
 type UserFlags struct {
-	maxLoad                 *string
-	chunkSize               *int64
-	initiallyDropGhostTable *bool
-	maxLagMillis            *int64
-	allowOnMaster           *bool
-	switchToRBR             *bool
+	maxLoad       *string
+	chunkSize     *int64
+	maxLagMillis  *int64
+	allowOnMaster *bool
+	switchToRBR   *bool
 }
 
 var knownKeys = map[string]bool{
-	"max-load":                   true,
-	"chunk-size":                 true,
-	"initially-drop-ghost-table": true,
-	"max-lag-millis":             true,
-	"allow-on-master":            true,
-	"switch-to-rbr":              true,
+	"max-load":        true,
+	"chunk-size":      true,
+	"max-lag-millis":  true,
+	"allow-on-master": true,
+	"switch-to-rbr":   true,
 }
 
 func GetUserFlags(flags map[string]string) (*UserFlags, error) {
@@ -87,13 +85,6 @@ func GetUserFlags(flags map[string]string) (*UserFlags, error) {
 			return nil, errors.Wrapf(err, "failed to convert chunk-size %q to int", v)
 		}
 		f.chunkSize = &chunkSize
-	}
-	if v, ok := flags["initially-drop-ghost-table"]; ok {
-		initiallyDropGhostTable, err := strconv.ParseBool(v)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to convert initially-drop-ghost-table %q to bool", v)
-		}
-		f.initiallyDropGhostTable = &initiallyDropGhostTable
 	}
 	if v, ok := flags["max-lag-millis"]; ok {
 		maxLagMillis, err := strconv.ParseInt(v, 10, 64)
@@ -213,9 +204,6 @@ func NewMigrationContext(taskID int, database *store.DatabaseMessage, dataSource
 	}
 	if v := userFlags.chunkSize; v != nil {
 		migrationContext.SetChunkSize(*v)
-	}
-	if v := userFlags.initiallyDropGhostTable; v != nil {
-		migrationContext.InitiallyDropGhostTable = *v
 	}
 	if v := userFlags.maxLagMillis; v != nil {
 		migrationContext.SetMaxLagMillisecondsThrottleThreshold(*v)
