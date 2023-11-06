@@ -1600,8 +1600,6 @@ func tokenRefresher(oauthCtx oauthContext, refresher common.TokenRefresher) oaut
 
 		*oldToken = r.AccessToken
 
-		slog.Debug("token refresh to", slog.String("access_token", r.AccessToken), slog.String("refresh_token", r.RefreshToken), slog.String("expires_in", r.ExpiresIn))
-
 		var expiresIn int64
 		if r.ExpiresIn != "" {
 			expiresAt, _ := strconv.ParseInt(r.ExpiresIn, 10, 64)
