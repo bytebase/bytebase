@@ -90,7 +90,7 @@ func (m *MaskingAttributes) TransmittedByInExpression(other MaskingAttributes) (
 	return changed
 }
 
-// IsNeverChangeInTransmission returns true if the masking attributes would not never change in transmission, it can be used to do the quit early optimization.
+// IsNeverChangeInTransmission returns true if the masking attributes would never change in transmission, it can be used to do the quit early optimization.
 func (m *MaskingAttributes) IsNeverChangeInTransmission() bool {
 	_, ok := m.Masker.(*masker.FullMasker)
 	return ok

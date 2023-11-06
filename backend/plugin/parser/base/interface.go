@@ -30,8 +30,8 @@ type SplitMultiSQLFunc func(string) ([]SingleSQL, error)
 type SchemaDiffFunc func(oldStmt, newStmt string, ignoreCaseSensitivity bool) (string, error)
 type CompletionFunc func(statement string, caretLine int, caretOffset int) ([]Candidate, error)
 
-// GetQuerySpan is the interface of getting the query span for a query.
-type GetQuerySpanFunc func(context.Context, string, GetDatabaseMetadataFunc) (*QuerySpan, error)
+// GetQuerySpanFunc is the interface of getting the query span for a query.
+type GetQuerySpanFunc func(ctx context.Context, statement, database string, metadataFunc GetDatabaseMetadataFunc) (*QuerySpan, error)
 
 func RegisterQueryValidator(engine storepb.Engine, f ValidateSQLForEditorFunc) {
 	mux.Lock()
@@ -175,7 +175,7 @@ func RegisterGetQuerySpan(engine storepb.Engine, f GetQuerySpanFunc) {
 }
 
 // GetQuerySpan gets the span of a query.
-func GetQuerySpan(ctx context.Context, engine storepb.Engine, statement string, getMetadataFunc GetDatabaseMetadataFunc) ([]*QuerySpan, error) {
+func GetQuerySpan(ctx context.Context, engine storepb.Engine, statement, database string, getMetadataFunc GetDatabaseMetadataFunc) ([]*QuerySpan, error) {
 	f, ok := spans[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)
@@ -186,7 +186,7 @@ func GetQuerySpan(ctx context.Context, engine storepb.Engine, statement string, 
 	}
 	var results []*QuerySpan
 	for _, stmt := range statements {
-		result, err := f(ctx, stmt.Text, getMetadataFunc)
+		result, err := f(ctx, stmt.Text, database, getMetadataFunc)
 		if err != nil {
 			return nil, err
 		}
