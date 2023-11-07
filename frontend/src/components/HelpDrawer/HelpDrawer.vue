@@ -1,6 +1,6 @@
 <template>
   <NDrawer
-    :show="active"
+    :show="active && shouldShowHelpDrawer"
     class="!w-96 max-w-full"
     :auto-focus="false"
     @update:show="(show: boolean) => !show && onClose()"
@@ -66,7 +66,7 @@ import { NDrawer, NDrawerContent } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { ref, reactive, watch, computed } from "vue";
 import { useLanguage } from "@/composables/useLanguage";
-import { useUIStateStore, useHelpStore } from "@/store";
+import { useUIStateStore, useHelpStore, useActuatorV1Store } from "@/store";
 import { markdocConfig, DOMPurifyConfig } from "./config";
 
 interface State {
@@ -77,8 +77,14 @@ interface State {
 const active = ref(false);
 const { locale } = useLanguage();
 const uiStateStore = useUIStateStore();
+const actuatorStore = useActuatorV1Store();
 const helpStore = useHelpStore();
 const helpStoreState = storeToRefs(helpStore);
+const { pageMode } = storeToRefs(actuatorStore);
+
+const shouldShowHelpDrawer = computed(() => {
+  return pageMode.value === "BUNDLED";
+});
 const helpId = computed(() => helpStoreState.currHelpId.value);
 const isGuide = computed(() => helpStoreState.openByDefault.value);
 
