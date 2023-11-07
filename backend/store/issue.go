@@ -53,7 +53,7 @@ type IssueMessage struct {
 
 	// Internal fields.
 	projectUID     int
-	assigneeUID    int
+	assigneeUID    *int
 	subscriberUIDs []int
 	creatorUID     int
 	createdTs      int64
@@ -63,10 +63,11 @@ type IssueMessage struct {
 
 // UpdateIssueMessage is the message for updating an issue.
 type UpdateIssueMessage struct {
-	Title       *string
-	Status      *api.IssueStatus
-	Description *string
-	Assignee    *UserMessage
+	Title          *string
+	Status         *api.IssueStatus
+	Description    *string
+	UpdateAssignee bool
+	Assignee       *UserMessage
 	// PayloadUpsert upserts the presented top-level keys.
 	PayloadUpsert *storepb.IssuePayload
 	Subscribers   *[]*UserMessage
@@ -151,7 +152,10 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 	}
 
 	tsVector := getTsVector(fmt.Sprintf("%s %s", create.Title, create.Description))
-
+	var assigneeID *int
+	if create.Assignee != nil {
+		assigneeID = &create.Assignee.ID
+	}
 	query := `
 		INSERT INTO issue (
 			creator_id,
@@ -187,7 +191,7 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 		create.Status,
 		create.Type,
 		create.Description,
-		create.Assignee.ID,
+		assigneeID,
 		payload,
 		tsVector,
 	).Scan(
@@ -235,8 +239,12 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 	if v := patch.Description; v != nil {
 		set, args = append(set, fmt.Sprintf("description = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := patch.Assignee; v != nil {
-		set, args = append(set, fmt.Sprintf("assignee_id = $%d", len(args)+1)), append(args, v.ID)
+	if patch.UpdateAssignee {
+		if v := patch.Assignee; v != nil {
+			set, args = append(set, fmt.Sprintf("assignee_id = $%d", len(args)+1)), append(args, v.ID)
+		} else {
+			set = append(set, "assignee_id = NULL")
+		}
 	}
 	if v := patch.PayloadUpsert; v != nil {
 		p, err := protojson.Marshal(v)
@@ -526,11 +534,13 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			return nil, err
 		}
 		issue.Project = project
-		assignee, err := s.GetUserByID(ctx, issue.assigneeUID)
-		if err != nil {
-			return nil, err
+		if issue.assigneeUID != nil {
+			assignee, err := s.GetUserByID(ctx, *issue.assigneeUID)
+			if err != nil {
+				return nil, err
+			}
+			issue.Assignee = assignee
 		}
-		issue.Assignee = assignee
 		creator, err := s.GetUserByID(ctx, issue.creatorUID)
 		if err != nil {
 			return nil, err
