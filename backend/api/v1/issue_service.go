@@ -1259,12 +1259,16 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 			patch.Subscribers = &subscribers
 
 		case "assignee":
+			oldAssigneeID := ""
+			if issue.Assignee != nil {
+				oldAssigneeID = strconv.Itoa(issue.Assignee.ID)
+			}
 			if request.Issue.Assignee == "" {
 				patch.UpdateAssignee = true
 				patch.Assignee = nil
 				payload := &api.ActivityIssueFieldUpdatePayload{
 					FieldID:   api.IssueFieldAssignee,
-					OldValue:  strconv.Itoa(issue.Assignee.ID),
+					OldValue:  oldAssigneeID,
 					NewValue:  "",
 					IssueName: issue.Title,
 				}
@@ -1296,7 +1300,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 
 				payload := &api.ActivityIssueFieldUpdatePayload{
 					FieldID:   api.IssueFieldAssignee,
-					OldValue:  strconv.Itoa(issue.Assignee.ID),
+					OldValue:  oldAssigneeID,
 					NewValue:  strconv.Itoa(user.ID),
 					IssueName: issue.Title,
 				}
@@ -1312,7 +1316,6 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 					Payload:      string(activityPayload),
 				})
 			}
-
 		}
 	}
 
