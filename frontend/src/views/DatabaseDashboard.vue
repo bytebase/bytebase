@@ -8,7 +8,7 @@
       />
 
       <div class="flex items-center space-x-4">
-        <NTooltip v-if="canVisitUnassignedDatabases">
+        <NTooltip v-if="canVisitUnassignedDatabases && !isStandaloneMode">
           <template #trigger>
             <router-link
               :to="{
@@ -62,6 +62,9 @@
       :database-group-list="filteredDatabaseGroupList"
       :show-placeholder="true"
       :show-selection-column="true"
+      :custom-click="isStandaloneMode"
+      @select-database="(db: ComposedDatabase) =>
+                  toggleDatabasesSelection([db as ComposedDatabase], !isDatabaseSelected(db))"
     >
       <template #selection-all="{ databaseList }">
         <input
@@ -107,6 +110,7 @@
 
 <script lang="ts" setup>
 import { NInputGroup, NTooltip } from "naive-ui";
+import { storeToRefs } from "pinia";
 import { computed, watchEffect, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
@@ -117,6 +121,7 @@ import {
 } from "@/components/v2";
 import { isDatabase } from "@/components/v2/Model/DatabaseV1Table/utils";
 import {
+  useActuatorV1Store,
   useCurrentUserV1,
   useDBGroupStore,
   useDatabaseV1Store,
@@ -159,6 +164,8 @@ const router = useRouter();
 const uiStateStore = useUIStateStore();
 const environmentV1Store = useEnvironmentV1Store();
 const { projectList } = useProjectV1ListByCurrentUser();
+const actuatorStore = useActuatorV1Store();
+const { pageMode } = storeToRefs(actuatorStore);
 
 const state = reactive<LocalState>({
   instanceFilter: String(UNKNOWN_ID),
@@ -183,6 +190,10 @@ const preparePolicyList = () => {
 };
 
 watchEffect(preparePolicyList);
+
+const isStandaloneMode = computed(() => {
+  return pageMode.value === "STANDALONE";
+});
 
 const selectedEnvironment = computed(() => {
   const { environment } = route.query;
