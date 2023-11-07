@@ -75,6 +75,7 @@
 </template>
 
 <script lang="ts" setup>
+import { storeToRefs } from "pinia";
 import { computed, h, VNode, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -92,6 +93,7 @@ import {
   useGracefulRequest,
   useDBSchemaV1Store,
   pushNotification,
+  useActuatorV1Store,
 } from "@/store";
 import { ComposedDatabase, DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { Database } from "@/types/proto/v1/database_service";
@@ -140,12 +142,14 @@ const schemaEditorContext = ref<{
 });
 
 const { t } = useI18n();
+const router = useRouter();
+const actuatorStore = useActuatorV1Store();
 const databaseStore = useDatabaseV1Store();
 const projectStore = useProjectV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const currentUserV1 = useCurrentUserV1();
 const currentUserIamPolicy = useCurrentUserIamPolicy();
-const router = useRouter();
+const { pageMode } = storeToRefs(actuatorStore);
 
 const selectedProjectNames = computed(() => {
   return new Set(props.databases.map((db) => db.project));
@@ -239,7 +243,8 @@ const generateMultiDb = async (
 ) => {
   if (
     type === "bb.issue.database.schema.update" &&
-    allowUsingSchemaEditorV1(props.databases)
+    allowUsingSchemaEditorV1(props.databases) &&
+    pageMode.value === "BUNDLED"
   ) {
     schemaEditorContext.value.databaseIdList = [
       ...selectedDatabaseUidList.value,
@@ -309,21 +314,30 @@ const syncSchema = async () => {
 };
 
 const actions = computed((): DatabaseAction[] => {
-  const resp: DatabaseAction[] = [
-    {
+  const resp: DatabaseAction[] = [];
+  if (pageMode.value === "BUNDLED") {
+    resp.push({
       icon: h(RefreshIcon),
       text: t("common.sync"),
       disabled: props.databases.length < 1,
       click: syncSchema,
-    },
-  ];
-  if (allowTransferProject.value) {
-    resp.unshift({
-      icon: h(SwitchHorizontalIcon),
-      text: t("database.transfer-project"),
-      disabled: !selectedProjectUid.value,
-      click: () => (state.showTransferOutDatabaseForm = true),
     });
+    if (allowTransferProject.value) {
+      resp.unshift({
+        icon: h(SwitchHorizontalIcon),
+        text: t("database.transfer-project"),
+        disabled: !selectedProjectUid.value,
+        click: () => (state.showTransferOutDatabaseForm = true),
+      });
+    }
+    if (allowEditLabels.value) {
+      resp.push({
+        icon: h(TagIcon),
+        text: t("database.edit-labels"),
+        disabled: false,
+        click: () => (state.showLabelEditorDrawer = true),
+      });
+    }
   }
   if (!selectedProjectNames.value.has(DEFAULT_PROJECT_V1_NAME)) {
     if (allowChangeData.value) {
@@ -342,14 +356,6 @@ const actions = computed((): DatabaseAction[] => {
         click: () => generateMultiDb("bb.issue.database.schema.update"),
       });
     }
-  }
-  if (allowEditLabels.value) {
-    resp.push({
-      icon: h(TagIcon),
-      text: t("database.edit-labels"),
-      disabled: false,
-      click: () => (state.showLabelEditorDrawer = true),
-    });
   }
   return resp;
 });
