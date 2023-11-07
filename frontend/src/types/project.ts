@@ -38,7 +38,6 @@ export type Project = {
   workflowType: ProjectWorkflowType;
   visibility: ProjectVisibility;
   tenantMode: ProjectTenantMode;
-  dbNameTemplate: string;
   schemaChangeType: SchemaChangeType;
 };
 
@@ -51,7 +50,6 @@ export type ProjectPatch = {
   key?: string;
   schemaChangeType?: SchemaChangeType;
   workflowType?: ProjectWorkflowType;
-  dbNameTemplate?: string;
   tenantMode?: ProjectTenantMode;
 };
 
