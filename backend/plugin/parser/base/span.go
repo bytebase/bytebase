@@ -25,15 +25,24 @@ type QuerySpanResult struct {
 
 // ColumnResource is the resource key for a column.
 type ColumnResource struct {
+	// Server is the normalized server name, it's empty if the column comes from the connected server.
+	Server string
+	// Database is the normalized database name, it should not be empty.
 	Database string
-	Schema   string
-	Table    string
-	Column   string
+	// Schema is the normalized schema name, it should not be empty for the engines that support schema, and should be empty for the engines that don't support schema.
+	Schema string
+	// Table is the normalized table name, it should not be empty.
+	Table string
+	// Column is the normalized column name, it should not be empty.
+	Column string
 }
 
 // String returns the string format of the column resource.
 func (c ColumnResource) String() string {
 	var list []string
+	if c.Server != "" {
+		list = append(list, c.Server)
+	}
 	if c.Database != "" {
 		list = append(list, c.Database)
 	}
