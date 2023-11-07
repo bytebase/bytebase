@@ -63,10 +63,11 @@ type IssueMessage struct {
 
 // UpdateIssueMessage is the message for updating an issue.
 type UpdateIssueMessage struct {
-	Title       *string
-	Status      *api.IssueStatus
-	Description *string
-	Assignee    *UserMessage
+	Title          *string
+	Status         *api.IssueStatus
+	Description    *string
+	UpdateAssignee bool
+	Assignee       *UserMessage
 	// PayloadUpsert upserts the presented top-level keys.
 	PayloadUpsert *storepb.IssuePayload
 	Subscribers   *[]*UserMessage
@@ -238,8 +239,12 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 	if v := patch.Description; v != nil {
 		set, args = append(set, fmt.Sprintf("description = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := patch.Assignee; v != nil {
-		set, args = append(set, fmt.Sprintf("assignee_id = $%d", len(args)+1)), append(args, v.ID)
+	if patch.UpdateAssignee {
+		if v := patch.Assignee; v != nil {
+			set, args = append(set, fmt.Sprintf("assignee_id = $%d", len(args)+1)), append(args, v.ID)
+		} else {
+			set = append(set, "assignee_id = NULL")
+		}
 	}
 	if v := patch.PayloadUpsert; v != nil {
 		p, err := protojson.Marshal(v)

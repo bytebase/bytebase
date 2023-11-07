@@ -1259,36 +1259,60 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 			patch.Subscribers = &subscribers
 
 		case "assignee":
-			assigneeEmail, err := common.GetUserEmail(request.Issue.Assignee)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "failed to get user email from %v, error: %v", request.Issue.Assignee, err)
-			}
-			user, err := s.store.GetUser(ctx, &store.FindUserMessage{Email: &assigneeEmail})
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to get user %v, error: %v", assigneeEmail, err)
-			}
-			if user == nil {
-				return nil, status.Errorf(codes.NotFound, "user %v not found", request.Issue.Assignee)
-			}
-			patch.Assignee = user
+			if request.Issue.Assignee == "" {
+				patch.UpdateAssignee = true
+				patch.Assignee = nil
+				payload := &api.ActivityIssueFieldUpdatePayload{
+					FieldID:   api.IssueFieldAssignee,
+					OldValue:  strconv.Itoa(issue.Assignee.ID),
+					NewValue:  "",
+					IssueName: issue.Title,
+				}
+				activityPayload, err := json.Marshal(payload)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to marshal activity payload, error: %v", err)
+				}
+				activityCreates = append(activityCreates, &store.ActivityMessage{
+					CreatorUID:   principalID,
+					ContainerUID: issue.UID,
+					Type:         api.ActivityIssueFieldUpdate,
+					Level:        api.ActivityInfo,
+					Payload:      string(activityPayload),
+				})
+			} else {
+				assigneeEmail, err := common.GetUserEmail(request.Issue.Assignee)
+				if err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, "failed to get user email from %v, error: %v", request.Issue.Assignee, err)
+				}
+				user, err := s.store.GetUser(ctx, &store.FindUserMessage{Email: &assigneeEmail})
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to get user %v, error: %v", assigneeEmail, err)
+				}
+				if user == nil {
+					return nil, status.Errorf(codes.NotFound, "user %v not found", request.Issue.Assignee)
+				}
+				patch.UpdateAssignee = true
+				patch.Assignee = user
 
-			payload := &api.ActivityIssueFieldUpdatePayload{
-				FieldID:   api.IssueFieldAssignee,
-				OldValue:  strconv.Itoa(issue.Assignee.ID),
-				NewValue:  strconv.Itoa(user.ID),
-				IssueName: issue.Title,
+				payload := &api.ActivityIssueFieldUpdatePayload{
+					FieldID:   api.IssueFieldAssignee,
+					OldValue:  strconv.Itoa(issue.Assignee.ID),
+					NewValue:  strconv.Itoa(user.ID),
+					IssueName: issue.Title,
+				}
+				activityPayload, err := json.Marshal(payload)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to marshal activity payload, error: %v", err)
+				}
+				activityCreates = append(activityCreates, &store.ActivityMessage{
+					CreatorUID:   principalID,
+					ContainerUID: issue.UID,
+					Type:         api.ActivityIssueFieldUpdate,
+					Level:        api.ActivityInfo,
+					Payload:      string(activityPayload),
+				})
 			}
-			activityPayload, err := json.Marshal(payload)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to marshal activity payload, error: %v", err)
-			}
-			activityCreates = append(activityCreates, &store.ActivityMessage{
-				CreatorUID:   principalID,
-				ContainerUID: issue.UID,
-				Type:         api.ActivityIssueFieldUpdate,
-				Level:        api.ActivityInfo,
-				Payload:      string(activityPayload),
-			})
+
 		}
 	}
 
