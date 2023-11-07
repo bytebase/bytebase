@@ -393,7 +393,10 @@
         "some-tasks-are-not-editable-in-batch-mode": "Algunas tareas no se pueden editar en modo por lotes",
         "task-is-not-editable": "Esta tarea no es editable",
         "x-status-task-is-not-editable": "La tarea {status} no es editable",
-        "nothing-changed": "nada ha cambiado"
+        "nothing-changed": "nada ha cambiado",
+        "not-applicable": {
+          "some-tasks-are-not-applicable-for-online-migration": "Algunas tareas no son aplicables para la migración en línea"
+        }
       },
       "show-default-parameters": "Mostrar parámetros predeterminados",
       "hide-default-parameters": "Ocultar parámetros predeterminados"

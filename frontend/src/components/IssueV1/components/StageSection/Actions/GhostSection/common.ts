@@ -1,3 +1,4 @@
+import { uniqBy } from "lodash-es";
 import { InjectionKey, Ref, computed, inject, provide, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import {
@@ -8,7 +9,7 @@ import {
   specForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import { useCurrentUserV1 } from "@/store";
+import { useCurrentUserV1, useSubscriptionV1Store } from "@/store";
 import { ComposedDatabase, ComposedIssue } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
@@ -36,6 +37,7 @@ export type IssueGhostContext = {
   showFlagsPanel: Ref<boolean>;
   denyEditGhostFlagsReasons: Ref<string[]>;
   showFeatureModal: Ref<boolean>;
+  showMissingInstanceLicense: Ref<boolean>;
   toggleGhost: (spec: Plan_Spec, on: boolean) => Promise<void>;
 };
 
@@ -123,6 +125,21 @@ export const provideIssueGhostContext = () => {
   });
 
   const showFeatureModal = ref(false);
+  const showMissingInstanceLicense = computed(() => {
+    const instances = uniqBy(
+      flattenTaskV1List(issue.value.rolloutEntity).map(
+        (task) => databaseForTask(issue.value, task).instanceEntity
+      ),
+      (instance) => instance.name
+    );
+    const subscriptionStore = useSubscriptionV1Store();
+    return instances.some((instance) => {
+      return subscriptionStore.instanceMissingLicense(
+        "bb.feature.online-migration",
+        instance
+      );
+    });
+  });
 
   const toggleGhost = async (spec: Plan_Spec, on: boolean) => {
     const overrides: Record<string, string> = {};
@@ -150,6 +167,7 @@ export const provideIssueGhostContext = () => {
     showFlagsPanel,
     denyEditGhostFlagsReasons,
     showFeatureModal,
+    showMissingInstanceLicense,
     toggleGhost,
   };
 

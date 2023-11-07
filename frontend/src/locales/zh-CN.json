@@ -391,7 +391,10 @@
         "some-tasks-are-not-editable-in-batch-mode": "某些任务在批量模式下不可编辑",
         "task-is-not-editable": "该任务不可编辑",
         "x-status-task-is-not-editable": "{status} 的任务不可编辑",
-        "nothing-changed": "无任何改变"
+        "nothing-changed": "无任何改变",
+        "not-applicable": {
+          "some-tasks-are-not-applicable-for-online-migration": "部分任务不适用于在线迁移"
+        }
       },
       "show-default-parameters": "显示默认参数",
       "hide-default-parameters": "隐藏默认参数"
