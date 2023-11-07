@@ -1409,7 +1409,7 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 	startPos := typeCtx.GetStop().GetTokenIndex() + 1
 
 	// Column attributes.
-	// todo(zp): refactor column auto_increment.
+	// TODO(zp): refactor column auto_increment.
 	skipSchemaAutoIncrement := false
 	for _, attr := range ctx.FieldDefinition().AllColumnAttribute() {
 		if attr.AUTO_INCREMENT_SYMBOL() != nil || attr.DEFAULT_SYMBOL() != nil {
