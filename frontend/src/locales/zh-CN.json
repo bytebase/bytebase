@@ -87,7 +87,7 @@
       "releaser": "发布者",
       "viewer": "查看者"
     },
-    "assignee": "发布人",
+    "assignee": "指派人",
     "revert": "恢复",
     "apply": "应用",
     "reorder": "排序",
@@ -940,8 +940,8 @@
           "description": "根据工单创建人搜索"
         },
         "assignee": {
-          "title": "发布人",
-          "description": "根据工单发布人搜索"
+          "title": "指派人",
+          "description": "根据工单指派人搜索"
         },
         "subscriber": {
           "title": "订阅人",
@@ -949,7 +949,7 @@
         },
         "principal": {
           "title": "相关用户",
-          "description": "工单的创建人、发布人，或者订阅人"
+          "description": "工单的创建人、指派人，或者订阅人"
         }
       }
     },
@@ -965,7 +965,7 @@
       "updated": "更新于",
       "approver": "审批人",
       "creator": "创建人",
-      "assignee": "发布人"
+      "assignee": "指派人"
     },
     "stage-select": {
       "active": "{name}（活动中）"
@@ -1023,7 +1023,7 @@
       "full-schema": "完整 schema",
       "left-schema-may-change": "左边的 schema 在工单执行前可能会发生变化。"
     },
-    "assignee-tooltip": "发布人可以在审批流完成后进行发布。",
+    "assignee-tooltip": "被指派人是负责处理问题的人，当问题分配给他们时，它会显示在他们的已分配问题列表中。",
     "approval-flow": {
       "self": "审批流",
       "tooltip": "审批人需要按审批流指定的顺序审核和审批工单。只有审批流中所有步骤都完成审批后工单才可以执行。您可以为每个风险级别自定义审批流。"
