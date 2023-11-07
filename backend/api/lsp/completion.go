@@ -7,6 +7,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sourcegraph/go-lsp"
 	"github.com/sourcegraph/jsonrpc2"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/store/model"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.Conn, _ *jsonrpc2.Request, params lsp.CompletionParams) (*lsp.CompletionList, error) {
@@ -25,15 +30,48 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 		return nil, errors.Errorf("invalid position %d:%d (%s)", params.Position.Line, params.Position.Character, why)
 	}
 
-	// TODO: implement
+	defaultDatabase := h.getDefaultDatabase()
+	engine := h.getEngineType(ctx)
+	if engine == storepb.Engine_ENGINE_UNSPECIFIED {
+		return nil, errors.Errorf("engine is not specified")
+	}
+	candidates, err := base.Completion(engine, ctx, string(content), params.Position.Line+1, params.Position.Character, defaultDatabase, h.GetDatabaseMetadataFunc)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get completion candidates")
+	}
+
+	var items []lsp.CompletionItem
+	for _, candidate := range candidates {
+		items = append(items, lsp.CompletionItem{
+			Label:  candidate.Text,
+			Detail: fmt.Sprintf("<%s>", string(candidate.Type)),
+			Kind:   lsp.CIKKeyword,
+		})
+	}
+
 	return &lsp.CompletionList{
 		IsIncomplete: false,
-		Items: []lsp.CompletionItem{
-			{
-				Label:  "hello",
-				Detail: "<world>",
-				Kind:   lsp.CIKKeyword,
-			},
-		},
+		Items:        items,
 	}, nil
+}
+
+func (h *Handler) GetDatabaseMetadataFunc(ctx context.Context, databaseName string) (*model.DatabaseMetadata, error) {
+	// TODO: do ACL check here.
+	instanceID := h.getInstanceID()
+	if instanceID == "" {
+		return nil, errors.Errorf("instance is not specified")
+	}
+
+	database, err := h.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get database")
+	}
+	metadata, err := h.store.GetDBSchema(ctx, database.UID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get database schema")
+	}
+	return metadata.GetDatabaseMetadata(), nil
 }
