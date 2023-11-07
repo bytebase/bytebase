@@ -231,3 +231,87 @@
       PRIMARY KEY (`b`),
       CONSTRAINT `fk1` FOREIGN KEY (`b`) REFERENCES `t4` (`b`)
     );
+- engine: 6
+  baseline: |-
+    CREATE TABLE `t1` (
+      `a` int primary key
+    );
+    CREATE TABLE `t2` (
+      `a` int auto_increment primary key
+    );
+    CREATE TABLE `t3` (
+      `a` int default 1 primary key
+    );
+    CREATE TABLE `t4` (
+      `a` int auto_increment primary key
+    );
+  target: |-
+    {
+      "schemas":  [
+        {
+          "tables":  [
+            {
+              "name":  "t1",
+              "columns":  [
+                {
+                  "name":  "a",
+                  "nullable":  true,
+                  "type":  "int",
+                  "hasDefault": true,
+                  "defaultExpression": "auto_increment"
+                }
+              ]
+            },
+            {
+              "name":  "t2",
+              "columns":  [
+                {
+                  "name":  "a",
+                  "nullable":  true,
+                  "type":  "int",
+                  "hasDefault": true,
+                  "defaultExpression": "auto_increment"
+                }
+              ]
+            },
+            {
+              "name":  "t3",
+              "columns":  [
+                {
+                  "name":  "a",
+                  "nullable":  true,
+                  "type":  "int",
+                  "hasDefault": true,
+                  "defaultExpression": "auto_increment"
+                }
+              ]
+            },
+            {
+              "name":  "t4",
+              "columns":  [
+                {
+                  "name":  "a",
+                  "nullable":  true,
+                  "type":  "int",
+                  "hasDefault": true,
+                  "defaultExpression": "1"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  result: |
+    CREATE TABLE `t1` (
+      `a` int auto_increment PRIMARY KEY
+    );
+    CREATE TABLE `t2` (
+      `a` int auto_increment PRIMARY KEY
+    );
+    CREATE TABLE `t3` (
+      `a` int auto_increment PRIMARY KEY
+    );
+    CREATE TABLE `t4` (
+      `a` int DEFAULT 1 PRIMARY KEY
+    );
