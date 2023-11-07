@@ -116,12 +116,6 @@ const createStreamingQueryController = (tab: TabInfo) => {
       const payload: any = {
         ...request,
       };
-      const timeout = Duration.fromPartial({
-        seconds: 60,
-        nanos: 0,
-      });
-      const seconds = timeout.seconds.toNumber() + timeout.nanos / 1e9;
-      payload.timeout = `${seconds}s`;
       console.debug("will send", JSON.stringify(payload));
       ws.send(JSON.stringify(payload));
     };
