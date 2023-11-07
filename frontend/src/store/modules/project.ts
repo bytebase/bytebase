@@ -26,7 +26,6 @@ function convert(
     workflowType: attrs.workflowType,
     visibility: attrs.visibility,
     tenantMode: attrs.tenantMode,
-    dbNameTemplate: attrs.dbNameTemplate,
     schemaChangeType: attrs.schemaChangeType,
   };
 

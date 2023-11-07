@@ -140,7 +140,6 @@ const makeUnknown = (type: ResourceType) => {
     workflowType: "UI",
     visibility: "PUBLIC",
     tenantMode: "DISABLED",
-    dbNameTemplate: "",
     schemaChangeType: "DDL",
   };
 
@@ -353,7 +352,6 @@ const makeEmpty = (type: ResourceType) => {
     workflowType: "UI",
     visibility: "PUBLIC",
     tenantMode: "DISABLED",
-    dbNameTemplate: "",
     schemaChangeType: "DDL",
   };
 

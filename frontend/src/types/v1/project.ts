@@ -29,7 +29,6 @@ export const emptyProject = (): ComposedProject => {
       workflow: Workflow.UI,
       visibility: Visibility.VISIBILITY_PUBLIC,
       tenantMode: TenantMode.TENANT_MODE_DISABLED,
-      dbNameTemplate: "",
       schemaVersion: SchemaVersion.SCHEMA_VERSION_UNSPECIFIED,
       schemaChange: SchemaChange.DDL,
     }),

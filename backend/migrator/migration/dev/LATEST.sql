@@ -241,9 +241,6 @@ CREATE TABLE project (
     workflow_type TEXT NOT NULL CHECK (workflow_type IN ('UI', 'VCS')),
     visibility TEXT NOT NULL CHECK (visibility IN ('PUBLIC', 'PRIVATE')),
     tenant_mode TEXT NOT NULL CHECK (tenant_mode IN ('DISABLED', 'TENANT')) DEFAULT 'DISABLED',
-    -- db_name_template is only used when a project is in tenant mode.
-    -- Empty value means {{DB_NAME}}.
-    db_name_template TEXT NOT NULL,
     schema_version_type TEXT NOT NULL CHECK (schema_version_type IN ('TIMESTAMP', 'SEMANTIC')) DEFAULT 'TIMESTAMP',
     schema_change_type TEXT NOT NULL CHECK (schema_change_type IN ('DDL', 'SDL')) DEFAULT 'DDL',
     resource_id TEXT NOT NULL,
@@ -265,7 +262,6 @@ INSERT INTO
         workflow_type,
         visibility,
         tenant_mode,
-        db_name_template,
         resource_id
     )
 VALUES
@@ -278,7 +274,6 @@ VALUES
         'UI',
         'PUBLIC',
         'DISABLED',
-        '',
         'default'
     );
 
