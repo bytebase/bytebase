@@ -7,12 +7,29 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
+type SourceColumnSet map[ColumnResource]bool
+
+// MergeSourceColumnSet merges two source column maps, returns true if there is difference.
+func MergeSourceColumnSet(m, n SourceColumnSet) (SourceColumnSet, bool) {
+	r := make(SourceColumnSet)
+	for k := range m {
+		r[k] = true
+	}
+	for k := range n {
+		if _, ok := r[k]; !ok {
+			r[k] = true
+		}
+	}
+
+	return r, len(r) != len(m)
+}
+
 // QuerySpan is the span for a query.
 type QuerySpan struct {
 	// Results are the result columns of a query span.
 	Results []*QuerySpanResult
 	// SourceColumns are the source columns contributing to the span.
-	SourceColumns map[ColumnResource]bool
+	SourceColumns SourceColumnSet
 }
 
 // QuerySpanResult is the result column of a query span.
@@ -20,7 +37,7 @@ type QuerySpanResult struct {
 	// Name is the result name of a query.
 	Name string
 	// SourceColumns are the source columns contributing to the span result.
-	SourceColumns map[ColumnResource]bool
+	SourceColumns SourceColumnSet
 }
 
 // ColumnResource is the resource key for a column.
@@ -35,6 +52,15 @@ type ColumnResource struct {
 	Table string
 	// Column is the normalized column name, it should not be empty.
 	Column string
+}
+
+// TableResource is the resource of table, it's useful for some pseudo/temporary tables likes CTE.
+type TableResource struct {
+	// Name is the normalized table name.
+	Name string
+
+	// Columns are the columns of the table.
+	Columns []*QuerySpanResult
 }
 
 // String returns the string format of the column resource.
