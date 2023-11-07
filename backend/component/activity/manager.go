@@ -862,7 +862,7 @@ func (m *Manager) postInboxIssueActivity(ctx context.Context, issue *store.Issue
 		}
 	}
 
-	if issue.Assignee.ID != api.SystemBotID && issue.Assignee.ID != issue.Creator.ID {
+	if issue.Assignee != nil && issue.Assignee.ID != api.SystemBotID && issue.Assignee.ID != issue.Creator.ID {
 		if _, err := m.store.CreateInbox(ctx, &store.InboxMessage{
 			ReceiverUID: issue.Assignee.ID,
 			ActivityUID: activityID,
@@ -872,7 +872,7 @@ func (m *Manager) postInboxIssueActivity(ctx context.Context, issue *store.Issue
 	}
 
 	for _, subscriber := range issue.Subscribers {
-		if subscriber.ID != api.SystemBotID && subscriber.ID != issue.Creator.ID && subscriber.ID != issue.Assignee.ID {
+		if subscriber.ID != api.SystemBotID && subscriber.ID != issue.Creator.ID && (issue.Assignee == nil || subscriber.ID != issue.Assignee.ID) {
 			if _, err := m.store.CreateInbox(ctx, &store.InboxMessage{
 				ReceiverUID: subscriber.ID,
 				ActivityUID: activityID,
