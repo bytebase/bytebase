@@ -157,7 +157,7 @@ func RegisterCompleteFunc(engine storepb.Engine, f CompletionFunc) {
 }
 
 // Completion returns the completion candidates for the statement.
-func Completion(engine storepb.Engine, ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata GetDatabaseMetadataFunc) ([]Candidate, error) {
+func Completion(ctx context.Context, engine storepb.Engine, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata GetDatabaseMetadataFunc) ([]Candidate, error) {
 	f, ok := completers[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)

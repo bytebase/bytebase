@@ -35,7 +35,7 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 	if engine == storepb.Engine_ENGINE_UNSPECIFIED {
 		return nil, errors.Errorf("engine is not specified")
 	}
-	candidates, err := base.Completion(engine, ctx, string(content), params.Position.Line+1, params.Position.Character, defaultDatabase, h.GetDatabaseMetadataFunc)
+	candidates, err := base.Completion(ctx, engine, string(content), params.Position.Line+1, params.Position.Character, defaultDatabase, h.GetDatabaseMetadataFunc)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get completion candidates")
 	}
