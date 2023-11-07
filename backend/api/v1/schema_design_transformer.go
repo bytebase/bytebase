@@ -1539,11 +1539,10 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 					return
 				}
 			}
+
+		case attribute.AUTO_INCREMENT_SYMBOL() != nil && skipSchemaAutoIncrement:
+			// just skip this condition.
 		default:
-			if attribute.AUTO_INCREMENT_SYMBOL() != nil && skipSchemaAutoIncrement {
-				startPos = attribute.GetStop().GetTokenIndex() + 1
-				continue
-			}
 			if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 				Start: startPos,
 				Stop:  attribute.GetStop().GetTokenIndex(),
