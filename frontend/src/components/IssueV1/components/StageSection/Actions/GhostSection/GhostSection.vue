@@ -26,7 +26,7 @@
       <FeatureBadge feature="bb.feature.online-migration" />
       <FeatureBadgeForInstanceLicense
         feature="bb.feature.online-migration"
-        :show="hasOnlineMigrationFeature"
+        :show="hasOnlineMigrationFeature && showMissingInstanceLicense"
         :instance="instance"
       >
         <LockIcon class="w-4 h-4 text-accent" />
@@ -58,15 +58,12 @@ import { flattenTaskV1List } from "@/utils";
 import GhostConfigButton from "./GhostConfigButton.vue";
 import GhostFlagsPanel from "./GhostFlagsPanel.vue";
 import GhostSwitch from "./GhostSwitch.vue";
-import {
-  allowGhostForTask,
-  ghostViewTypeForTask,
-  provideIssueGhostContext,
-} from "./common";
+import { ghostViewTypeForTask, provideIssueGhostContext } from "./common";
 
 const { isCreating, issue, selectedTask: task } = useIssueContext();
 
-const { viewType, showFeatureModal } = provideIssueGhostContext();
+const { viewType, showFeatureModal, showMissingInstanceLicense } =
+  provideIssueGhostContext();
 
 const shouldShowGhostSection = computed(() => {
   // We need all tasks and specs to be gh-ost-able to enable gh-ost mode.
@@ -75,9 +72,7 @@ const shouldShowGhostSection = computed(() => {
     // When an issue is pending create, we should show the gh-ost section
     // whenever gh-ost is on or off.
     return tasks.every(
-      (task) =>
-        allowGhostForTask(issue.value, task) &&
-        ghostViewTypeForTask(issue.value, task) !== "NONE"
+      (task) => ghostViewTypeForTask(issue.value, task) !== "NONE"
     );
   } else {
     return viewType.value === "ON";
