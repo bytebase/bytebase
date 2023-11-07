@@ -536,7 +536,6 @@ func handleApprovalNodeExternalNode(ctx context.Context, s *store.Store, relayCl
 		Project:     issue.Project.ResourceID,
 		CreateTime:  issue.CreatedTime,
 		Creator:     issue.Creator.Email,
-		Assignee:    issue.Assignee.Email,
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to create external approval")
