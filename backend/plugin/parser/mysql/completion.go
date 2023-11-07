@@ -27,8 +27,8 @@ func init() {
 }
 
 // Completion is the entry point of MySQL code completion.
-func Completion(statement string, caretLine int, caretOffset int, defaultDatabase string, metadata base.GetDatabaseMetadataFunc) ([]base.Candidate, error) {
-	completer := NewCompleter(statement, caretLine, caretOffset, defaultDatabase, metadata)
+func Completion(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata base.GetDatabaseMetadataFunc) ([]base.Candidate, error) {
+	completer := NewCompleter(ctx, statement, caretLine, caretOffset, defaultDatabase, metadata)
 	return completer.completion()
 }
 
@@ -202,6 +202,7 @@ type TableReference struct {
 }
 
 type Completer struct {
+	ctx                 context.Context
 	core                *base.CodeCompletionCore
 	parser              *mysql.MySQLParser
 	lexer               *mysql.MySQLLexer
@@ -218,12 +219,13 @@ type Completer struct {
 	references []*TableReference
 }
 
-func NewCompleter(statement string, caretLine int, caretOffset int, defaultDatabase string, metadata base.GetDatabaseMetadataFunc) *Completer {
+func NewCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata base.GetDatabaseMetadataFunc) *Completer {
 	parser, lexer, scanner := prepareParserAndScanner(statement, caretLine, caretOffset)
 	// For all MySQL completers, we use one global follow sets by state.
 	// The FollowSetsByState is the thread-safe struct.
 	core := base.NewCodeCompletionCore(parser, newIgnoredTokens(), newPreferredRules(), &globalFollowSetsByState)
 	return &Completer{
+		ctx:                 ctx,
 		core:                core,
 		parser:              parser,
 		lexer:               lexer,
@@ -863,7 +865,7 @@ func (c *Completer) listAllDatabases() []string {
 
 func (c *Completer) listTables(database string) []string {
 	if _, exists := c.metadataCache[database]; !exists {
-		metadata, err := c.getMetadata(context.Background(), database)
+		metadata, err := c.getMetadata(c.ctx, database)
 		if err != nil || metadata == nil {
 			return nil
 		}
@@ -877,7 +879,7 @@ func (c *Completer) listColumns(databases, tables map[string]bool) []string {
 	var result []string
 	for database := range databases {
 		if _, exists := c.metadataCache[database]; !exists {
-			metadata, err := c.getMetadata(context.Background(), database)
+			metadata, err := c.getMetadata(c.ctx, database)
 			if err != nil || metadata == nil {
 				continue
 			}
