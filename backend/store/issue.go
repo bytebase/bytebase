@@ -53,7 +53,7 @@ type IssueMessage struct {
 
 	// Internal fields.
 	projectUID     int
-	assigneeUID    int
+	assigneeUID    *int
 	subscriberUIDs []int
 	creatorUID     int
 	createdTs      int64
@@ -151,7 +151,10 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 	}
 
 	tsVector := getTsVector(fmt.Sprintf("%s %s", create.Title, create.Description))
-
+	var assigneeID *int
+	if create.Assignee != nil {
+		assigneeID = &create.Assignee.ID
+	}
 	query := `
 		INSERT INTO issue (
 			creator_id,
@@ -187,7 +190,7 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 		create.Status,
 		create.Type,
 		create.Description,
-		create.Assignee.ID,
+		assigneeID,
 		payload,
 		tsVector,
 	).Scan(
@@ -526,11 +529,13 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			return nil, err
 		}
 		issue.Project = project
-		assignee, err := s.GetUserByID(ctx, issue.assigneeUID)
-		if err != nil {
-			return nil, err
+		if issue.assigneeUID != nil {
+			assignee, err := s.GetUserByID(ctx, *issue.assigneeUID)
+			if err != nil {
+				return nil, err
+			}
+			issue.Assignee = assignee
 		}
-		issue.Assignee = assignee
 		creator, err := s.GetUserByID(ctx, issue.creatorUID)
 		if err != nil {
 			return nil, err
