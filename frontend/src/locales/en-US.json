@@ -1026,7 +1026,7 @@
       "full-schema": "Full schema",
       "left-schema-may-change": "The schema on the left side may change before the issue is applied."
     },
-    "assignee-tooltip": "Allow the assignee to rollout the issue once the approval flow has been passed.",
+    "assignee-tooltip": "The assignees are those responsible for an issue, and when an issue is assigned to them, it shows up in their list of assigned issues.",
     "approval-flow": {
       "self": "Approval flow",
       "tooltip": "The approvers will review and approve the issue in the order specified in the flow. The issue can only be applied after all steps in the flow have been approved. You can configure a custom approval flow for each risk."

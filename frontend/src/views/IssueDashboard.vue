@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col">
     <AdvancedSearch
-      custom-class="mx-4 my-2"
+      custom-class="w-full px-4 py-2"
       :params="initSearchParams"
       :autofocus="autofocus"
       @update="onSearchParamsUpdate($event)"
@@ -9,11 +9,11 @@
 
     <FeatureAttention
       v-if="!!state.searchParams.query || state.searchParams.scopes.length > 0"
-      custom-class="mx-4 my-2"
+      custom-class="w-full px-4 py-2"
       feature="bb.feature.issue-advanced-search"
     />
 
-    <div class="px-2 flex items-center">
+    <div class="px-4 flex items-center">
       <div class="flex-1 overflow-hidden">
         <TabFilter v-model:value="state.tab" :items="tabItemList" />
       </div>
@@ -33,12 +33,6 @@
             clearable
           >
           </NDatePicker>
-          <SearchBox
-            :value="state.filterText"
-            :placeholder="$t('common.filter-by-name')"
-            :autofocus="false"
-            @update:value="state.filterText = $event"
-          />
         </NInputGroup>
       </div>
     </div>
@@ -58,7 +52,7 @@
           <IssueTableV1
             class="border-x-0"
             :show-placeholder="!loading"
-            :issue-list="issueList.filter(filter)"
+            :issue-list="issueList"
             :highlight-text="state.searchParams.query"
             title=""
           />
@@ -81,7 +75,7 @@
           <IssueTableV1
             class="border-x-0"
             :show-placeholder="!loading"
-            :issue-list="issueList.filter(filter)"
+            :issue-list="issueList"
             :highlight-text="state.searchParams.query"
             title=""
           />
@@ -103,7 +97,7 @@ import AdvancedSearch, {
 } from "@/components/AdvancedSearch.vue";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
-import { SearchBox, TabFilterItem } from "@/components/v2";
+import { TabFilterItem } from "@/components/v2";
 import {
   useCurrentUserV1,
   useProjectV1Store,
@@ -116,7 +110,7 @@ import {
   userNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
-import { UNKNOWN_ID, IssueFilter, ComposedIssue } from "@/types";
+import { UNKNOWN_ID, IssueFilter } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import {
   projectV1Slug,
@@ -130,7 +124,6 @@ type TabValue = typeof TABS[number];
 
 interface LocalState {
   tab: TabValue;
-  filterText: string;
   searchParams: SearchParams;
 }
 
@@ -182,7 +175,6 @@ const initSearchParams = computed((): SearchParams => {
 
 const state = reactive<LocalState>({
   tab: "OPEN",
-  filterText: "",
   searchParams: {
     query: "",
     scopes: [],
@@ -256,16 +248,6 @@ const selectedPrincipal = computed(() => {
   }
   return userStore.getUserById(user as string);
 });
-
-const filter = (issue: ComposedIssue) => {
-  const keyword = state.filterText.trim().toLowerCase();
-  if (keyword) {
-    if (!issue.title.toLowerCase().includes(keyword)) {
-      return false;
-    }
-  }
-  return true;
-};
 
 const confirmDatePicker = (value: [number, number]) => {
   router.replace({

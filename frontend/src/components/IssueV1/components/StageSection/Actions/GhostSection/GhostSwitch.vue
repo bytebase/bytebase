@@ -19,10 +19,11 @@
 import { NSwitch } from "naive-ui";
 import { computed, ref } from "vue";
 import { specForTask, useIssueContext } from "@/components/IssueV1/logic";
-import { provideIssueGhostContext } from "./common";
+import { hasFeature } from "@/store";
+import { useIssueGhostContext } from "./common";
 
 const { isCreating, issue, selectedTask: task } = useIssueContext();
-const { viewType, toggleGhost } = provideIssueGhostContext();
+const { viewType, toggleGhost, showFeatureModal } = useIssueGhostContext();
 const isUpdating = ref(false);
 
 const allowChange = computed(() => {
@@ -34,6 +35,11 @@ const checked = computed(() => {
 });
 
 const toggleChecked = async (on: boolean) => {
+  if (!hasFeature("bb.feature.online-migration")) {
+    showFeatureModal.value = true;
+    return;
+  }
+
   const spec = specForTask(issue.value.planEntity, task.value);
   if (!spec) return;
   isUpdating.value = true;

@@ -175,12 +175,11 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 				workflow_type,
 				visibility,
 				tenant_mode,
-				db_name_template,
 				schema_change_type,
 				data_classification_config_id,
 				setting
 			)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 			RETURNING id
 		`,
 		creatorID,
@@ -191,7 +190,6 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		create.Workflow,
 		create.Visibility,
 		create.TenantMode,
-		"",
 		create.SchemaChangeType,
 		create.DataClassificationConfigID,
 		payload,

@@ -460,26 +460,31 @@ func (s *IssueService) CreateIssue(ctx context.Context, request *v1pb.CreateIssu
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
+	_, loopback := ctx.Value(common.LoopbackContextKey).(bool)
 
 	switch request.Issue.Type {
 	case v1pb.Issue_TYPE_UNSPECIFIED:
 		return nil, status.Errorf(codes.InvalidArgument, "issue type is required")
 	case v1pb.Issue_GRANT_REQUEST:
-		ok, err := isUserAtLeastProjectViewer(ctx, s.store, projectID)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to check if the user can create issue, error: %v", err)
-		}
-		if !ok {
-			return nil, status.Errorf(codes.PermissionDenied, "permission denied")
+		if !loopback {
+			ok, err := isUserAtLeastProjectViewer(ctx, s.store, projectID)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to check if the user can create issue, error: %v", err)
+			}
+			if !ok {
+				return nil, status.Errorf(codes.PermissionDenied, "permission denied")
+			}
 		}
 		return s.createIssueGrantRequest(ctx, request)
 	case v1pb.Issue_DATABASE_CHANGE:
-		ok, err := isUserAtLeastProjectDeveloper(ctx, s.store, projectID)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to check if the user can create issue, error: %v", err)
-		}
-		if !ok {
-			return nil, status.Errorf(codes.PermissionDenied, "permission denied")
+		if !loopback {
+			ok, err := isUserAtLeastProjectDeveloper(ctx, s.store, projectID)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to check if the user can create issue, error: %v", err)
+			}
+			if !ok {
+				return nil, status.Errorf(codes.PermissionDenied, "permission denied")
+			}
 		}
 		return s.createIssueDatabaseChange(ctx, request)
 	default:

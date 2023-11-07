@@ -1025,7 +1025,7 @@
       "full-schema": "Esquema completo",
       "left-schema-may-change": "El esquema del lado izquierdo puede cambiar antes de que se aplique la incidencia."
     },
-    "assignee-tooltip": "Permitir al asignado implementar la incidencia una vez que se haya aprobado el flujo de aprobación.",
+    "assignee-tooltip": "Los asignados son responsables de un problema y cuando se les asigna un problema, aparece en su lista de problemas asignados.",
     "approval-flow": {
       "self": "Flujo de aprobación",
       "tooltip": "Los revisores aprobarán y revisarán la incidencia en el orden especificado en el flujo. La incidencia solo se puede aplicar después de que se hayan aprobado todos los pasos del flujo. Puedes configurar un flujo de aprobación personalizado para cada riesgo."

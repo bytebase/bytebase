@@ -23,7 +23,8 @@
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
     CREATE TABLE `rds` (
       `id` bigint(20) NOT NULL,
-      `binlog_format` enum('ROW','MIXED','STATEMENT','')
+      `binlog_format` enum('ROW','MIXED','STATEMENT',''),
+      `c1` int default 1
     );
   target: |-
     {
@@ -42,6 +43,13 @@
                   "name":  "binlog_format",
                   "nullable":  true,
                   "type":  "enum('ROW','MIXED','STATEMENT','')"
+                },
+                {
+                  "name":  "c1",
+                  "nullable":  true,
+                  "type":  "int",
+                  "hasDefault": true,
+                  "defaultExpression": "auto_increment"
                 }
               ],
               "indexes":  [
@@ -199,7 +207,7 @@
     CREATE TABLE `t4` (
       `a` varchar(10) NOT NULL DEFAULT 'default value' COMMENT 'this is comment, aha',
       `c` int NOT NULL DEFAULT 1 COMMENT 'col_b',
-      `e` int NULL DEFAUL 1 COMMENT 'col_e',
+      `e` int NULL DEFAULT 1 COMMENT 'col_e',
       `f` int,
       `b` char(10) NOT NULL,
       PRIMARY KEY (`a`, `b`, `c`),
@@ -213,7 +221,8 @@
     ) ENGINE = InnoDB DEFAULT CHARACTER SET = UTF8MB4 DEFAULT COLLATE = UTF8MB4_BIN COMMENT 'hello';
     CREATE TABLE `rds` (
       `id` bigint(20) NOT NULL COMMENT 'ID',
-      `binlog_format` enum('ROW','MIXED','STATEMENT','')
+      `binlog_format` enum('ROW','MIXED','STATEMENT',''),
+      `c1` int auto_increment
     ) COMMENT 'hello';
 
     CREATE TABLE `t2` (
