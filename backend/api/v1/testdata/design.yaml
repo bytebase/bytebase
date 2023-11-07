@@ -46,7 +46,9 @@
                 },
                 {
                   "name": "c",
-                  "type": "int"
+                  "type": "int",
+                  "hasDefault": true,
+                  "defaultExpression": "auto_increment"
                 },
                 {
                   "name": "e",
@@ -128,7 +130,7 @@
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
     CREATE TABLE `t4` (
       `a` varchar(10) NOT NULL DEFAULT 'default value' COMMENT 'this is comment, aha',
-      `c` int NOT NULL,
+      `c` int NOT NULL auto_increment,
       `e` int  NULL,
       `b` char(10) NOT NULL,
       PRIMARY KEY (`a`, `b`, `c`),
