@@ -1078,8 +1078,6 @@
       "continue-anyway": "De todas maneras, continúe",
       "sql-review-violations": "Infracciones de revisión de SQL"
     },
-    "no-assignee-candidates": "No hay candidatos asignados válidos en este proyecto. \nPor favor contacte al propietario del proyecto.",
-    "allow-any-following-roles-to-be-assignee": "Permitir que se asignen los siguientes roles",
     "error": {
       "issue-is-not-open": "El tema no está abierto.",
       "you-don-have-privilege-to-edit-this-issue": "No tienes privilegios para editar este número."
