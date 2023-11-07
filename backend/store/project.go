@@ -175,7 +175,6 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 				workflow_type,
 				visibility,
 				tenant_mode,
-				db_name_template,
 				schema_change_type,
 				data_classification_config_id,
 				setting
@@ -191,7 +190,6 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		create.Workflow,
 		create.Visibility,
 		create.TenantMode,
-		"",
 		create.SchemaChangeType,
 		create.DataClassificationConfigID,
 		payload,
