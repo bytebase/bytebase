@@ -395,7 +395,7 @@
         "x-status-task-is-not-editable": "La tarea {status} no es editable",
         "nothing-changed": "nada ha cambiado",
         "not-applicable": {
-          "some-tasks-are-not-applicable-for-online-migration": "Algunas tareas no son aplicables para la migración en línea"
+          "some-tasks-dont-meet-ghost-requirement": "Algunas tareas no cumplen con los requisitos de gh-ost."
         }
       },
       "show-default-parameters": "Mostrar parámetros predeterminados",

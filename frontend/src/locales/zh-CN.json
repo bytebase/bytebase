@@ -393,7 +393,7 @@
         "x-status-task-is-not-editable": "{status} 的任务不可编辑",
         "nothing-changed": "无任何改变",
         "not-applicable": {
-          "some-tasks-are-not-applicable-for-online-migration": "部分任务不适用于在线迁移"
+          "some-tasks-dont-meet-ghost-requirement": "部分任务不符合 gh-ost 的要求"
         }
       },
       "show-default-parameters": "显示默认参数",

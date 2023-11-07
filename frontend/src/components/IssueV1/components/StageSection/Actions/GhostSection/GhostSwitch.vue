@@ -72,6 +72,15 @@ const canManageSubscription = computed((): boolean => {
 
 const allowGhostForEveryDatabase = computed(() => {
   const tasks = flattenTaskV1List(issue.value.rolloutEntity);
+  if (
+    tasks.some(
+      (t) =>
+        t.target ===
+        "instances/instance-0e0ee52e/databases/news_management__cn_sh"
+    )
+  ) {
+    return false;
+  }
   return tasks.every((task) => allowGhostForTask(issue.value, task));
 });
 
@@ -88,7 +97,7 @@ const errors = computed(() => {
   if (!allowGhostForEveryDatabase.value) {
     errors.push(
       t(
-        "task.online-migration.error.not-applicable.some-tasks-are-not-applicable-for-online-migration"
+        "task.online-migration.error.not-applicable.some-tasks-dont-meet-ghost-requirement"
       )
     );
     errors.push({
