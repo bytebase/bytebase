@@ -172,3 +172,87 @@
     CREATE TABLE `t` (
       `a` int NOT NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT 'this is comment';
+- engine: 2
+  baseline: |-
+    CREATE TABLE `t1` (
+      `a` int primary key
+    );
+    CREATE TABLE `t2` (
+      `a` int AUTO_INCREMENT primary key
+    );
+    CREATE TABLE `t3` (
+      `a` int default 1 primary key
+    );
+    CREATE TABLE `t4` (
+      `a` int AUTO_INCREMENT primary key
+    );
+  target: |-
+    {
+      "schemas":  [
+        {
+          "tables":  [
+            {
+              "name":  "t1",
+              "columns":  [
+                {
+                  "name":  "a",
+                  "nullable":  true,
+                  "type":  "int",
+                  "hasDefault": true,
+                  "defaultExpression": "auto_increment"
+                }
+              ]
+            },
+            {
+              "name":  "t2",
+              "columns":  [
+                {
+                  "name":  "a",
+                  "nullable":  true,
+                  "type":  "int",
+                  "hasDefault": true,
+                  "defaultExpression": "auto_increment"
+                }
+              ]
+            },
+            {
+              "name":  "t3",
+              "columns":  [
+                {
+                  "name":  "a",
+                  "nullable":  true,
+                  "type":  "int",
+                  "hasDefault": true,
+                  "defaultExpression": "auto_increment"
+                }
+              ]
+            },
+            {
+              "name":  "t4",
+              "columns":  [
+                {
+                  "name":  "a",
+                  "nullable":  true,
+                  "type":  "int",
+                  "hasDefault": true,
+                  "defaultExpression": "1"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  result: |
+    CREATE TABLE `t1` (
+      `a` int primary key auto_increment
+    );
+    CREATE TABLE `t2` (
+      `a` int auto_increment primary key
+    );
+    CREATE TABLE `t3` (
+      `a` int auto_increment primary key
+    );
+    CREATE TABLE `t4` (
+      `a` int DEFAULT 1 primary key
+    );

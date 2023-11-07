@@ -1408,6 +1408,18 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 	}
 	startPos := typeCtx.GetStop().GetTokenIndex() + 1
 
+	// Column attributes.
+	// todo(zp): refactor column auto_increment.
+	skipSchemaAutoIncrement := false
+	for _, attr := range ctx.FieldDefinition().AllColumnAttribute() {
+		if attr.AUTO_INCREMENT_SYMBOL() != nil || attr.DEFAULT_SYMBOL() != nil {
+			// if schema string has default value or auto_increment.
+			// and metdata has default value.
+			// we skip the schema auto_increment and only compare default value.
+			skipSchemaAutoIncrement = column.hasDefault
+			break
+		}
+	}
 	newAttr := extractNewAttrs(column, ctx.FieldDefinition().AllColumnAttribute())
 
 	for _, attribute := range ctx.FieldDefinition().AllColumnAttribute() {
@@ -1528,6 +1540,10 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 				}
 			}
 		default:
+			if attribute.AUTO_INCREMENT_SYMBOL() != nil && skipSchemaAutoIncrement {
+				startPos = attribute.GetStop().GetTokenIndex() + 1
+				continue
+			}
 			if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 				Start: startPos,
 				Stop:  attribute.GetStop().GetTokenIndex(),
