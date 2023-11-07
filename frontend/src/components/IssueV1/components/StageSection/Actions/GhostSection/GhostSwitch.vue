@@ -72,15 +72,6 @@ const canManageSubscription = computed((): boolean => {
 
 const allowGhostForEveryDatabase = computed(() => {
   const tasks = flattenTaskV1List(issue.value.rolloutEntity);
-  if (
-    tasks.some(
-      (t) =>
-        t.target ===
-        "instances/instance-0e0ee52e/databases/news_management__cn_sh"
-    )
-  ) {
-    return false;
-  }
   return tasks.every((task) => allowGhostForTask(issue.value, task));
 });
 
