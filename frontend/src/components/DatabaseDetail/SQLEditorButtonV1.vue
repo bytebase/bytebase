@@ -28,15 +28,10 @@
 
 <script lang="ts" setup>
 import { NTooltip } from "naive-ui";
-import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { reactive } from "vue";
 import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.vue";
-import {
-  useActuatorV1Store,
-  useCurrentUserV1,
-  useSQLEditorTreeStore,
-} from "@/store";
+import { useCurrentUserV1, usePageMode, useSQLEditorTreeStore } from "@/store";
 import {
   ComposedDatabase,
   DEFAULT_PROJECT_V1_NAME,
@@ -68,8 +63,7 @@ const emit = defineEmits<{
 }>();
 
 const currentUserV1 = useCurrentUserV1();
-const actuatorStore = useActuatorV1Store();
-const { pageMode } = storeToRefs(actuatorStore);
+const pageMode = usePageMode();
 const state = reactive<LocalState>({
   showRequestQueryPanel: false,
 });

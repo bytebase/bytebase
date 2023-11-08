@@ -66,7 +66,7 @@ import { NDrawer, NDrawerContent } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { ref, reactive, watch, computed } from "vue";
 import { useLanguage } from "@/composables/useLanguage";
-import { useUIStateStore, useHelpStore, useActuatorV1Store } from "@/store";
+import { useUIStateStore, useHelpStore, usePageMode } from "@/store";
 import { markdocConfig, DOMPurifyConfig } from "./config";
 
 interface State {
@@ -77,10 +77,9 @@ interface State {
 const active = ref(false);
 const { locale } = useLanguage();
 const uiStateStore = useUIStateStore();
-const actuatorStore = useActuatorV1Store();
 const helpStore = useHelpStore();
 const helpStoreState = storeToRefs(helpStore);
-const { pageMode } = storeToRefs(actuatorStore);
+const pageMode = usePageMode();
 
 const shouldShowHelpDrawer = computed(() => {
   return pageMode.value === "BUNDLED";

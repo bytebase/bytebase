@@ -13,14 +13,12 @@
 </template>
 
 <script lang="ts" setup>
-import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import BannersWrapper from "@/components/BannersWrapper.vue";
 import ProvideSQLEditorContext from "@/components/ProvideSQLEditorContext.vue";
-import { useActuatorV1Store } from "@/store";
+import { usePageMode } from "@/store";
 
-const actuatorStore = useActuatorV1Store();
-const { pageMode } = storeToRefs(actuatorStore);
+const pageMode = usePageMode();
 
 const showBanners = computed(() => {
   return pageMode.value === "BUNDLED";
