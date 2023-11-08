@@ -1985,7 +1985,7 @@ func convertDatabaseMetadata(database *store.DatabaseMessage, metadata *storepb.
 		Collation:    metadata.Collation,
 	}
 	for _, schema := range metadata.Schemas {
-		if filter != nil && filter.schema != schema.Name {
+		if filter != nil && (schema.Name != "" && filter.schema != schema.Name) {
 			continue
 		}
 		s := &v1pb.SchemaMetadata{
