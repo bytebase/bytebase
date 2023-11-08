@@ -1,5 +1,6 @@
 export type WindowEventActivityType =
   | "bb.issue-create"
+  | "bb.issue-detail"
   | "bb.issue-field-update"
   | "bb.pipeline-task-statement-update"
   | "bb.pipeline-task-earliest-allowed-time-update";
