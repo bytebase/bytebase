@@ -11,7 +11,7 @@
           ...$attrs,
           ...buttonProps,
         }"
-        @click="$emit('click')"
+        @click="$emit('click', $event)"
       >
         <template #icon>
           <slot name="icon" />
@@ -43,6 +43,6 @@ defineProps<{
 }>();
 
 defineEmits<{
-  (event: "click"): void;
+  (event: "click", e: MouseEvent): void;
 }>();
 </script>
