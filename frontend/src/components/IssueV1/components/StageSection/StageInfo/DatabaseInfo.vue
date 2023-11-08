@@ -40,6 +40,9 @@
           class="hover:underline"
         />
       </template>
+      <span v-else-if="databaseCreationStatus === 'CREATED'">
+        {{ coreDatabaseInfo.databaseName }}
+      </span>
       <span v-else>
         {{ coreDatabaseInfo.databaseName }}
       </span>
@@ -61,6 +64,7 @@
 </template>
 
 <script lang="ts" setup>
+import { computedAsync } from "@vueuse/core";
 import { computed } from "vue";
 import { SQLEditorButtonV1 } from "@/components/DatabaseDetail";
 import {
@@ -120,11 +124,19 @@ const databaseCreationStatus = computed((): DatabaseCreationStatus => {
   return "EXISTED";
 });
 
-const database = computed(() => {
+const database = computedAsync(async () => {
   const maybeExistedDatabase = coreDatabaseInfo.value;
   if (maybeExistedDatabase.uid !== String(UNKNOWN_ID)) {
     return maybeExistedDatabase;
   }
+  if (databaseCreationStatus.value === "CREATED") {
+    const name = coreDatabaseInfo.value.name;
+    const maybeCreatedDatabase =
+      await useDatabaseV1Store().getOrFetchDatabaseByName(name);
+    if (maybeCreatedDatabase.uid !== String(UNKNOWN_ID)) {
+      return maybeCreatedDatabase;
+    }
+  }
   return undefined;
-});
+}, undefined);
 </script>
