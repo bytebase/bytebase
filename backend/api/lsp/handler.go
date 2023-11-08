@@ -151,6 +151,16 @@ func (h *Handler) reset(params *lsp.InitializeParams) error {
 }
 
 func (h *Handler) handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) (any, error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err, ok := r.(error)
+			if !ok {
+				err = errors.Errorf("panic: %v", r)
+			}
+			slog.Error("Panic in LSP handler", log.BBError(err), slog.String("method", req.Method), log.BBStack("panic-stack"))
+		}
+	}()
+
 	if err := h.checkInitialized(req); err != nil {
 		return nil, err
 	}
