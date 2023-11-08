@@ -451,6 +451,23 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 			}
 
 			// TODO: special handling for triggers.
+
+		case mysql.MySQLParserRULE_viewRef:
+			schema, _, flags := c.determineSchemaTableQualifier()
+
+			if flags&ObjectFlagsShowFirst != 0 {
+				schemaEntries.insertDatabases(c)
+			}
+
+			if flags&ObjectFlagsShowSecond != 0 {
+				schemas := make(map[string]bool)
+				if len(schema) != 0 {
+					schemas[schema] = true
+				} else {
+					schemas[c.defaultDatabase] = true
+				}
+				viewEntries.insertViews(c, schemas)
+			}
 		}
 	}
 
@@ -835,8 +852,15 @@ func (m CompletionMap) insertTables(c *Completer, schemas map[string]bool) {
 	}
 }
 
-func (CompletionMap) insertViews(_ *Completer, _ map[string]bool) {
-	// TODO: load views
+func (m CompletionMap) insertViews(c *Completer, schemas map[string]bool) {
+	for schema := range schemas {
+		for _, view := range c.listViews(schema) {
+			m.Insert(base.Candidate{
+				Type: base.CandidateTypeView,
+				Text: view,
+			})
+		}
+	}
 }
 
 func (m CompletionMap) insertColumns(c *Completer, schemas, tables map[string]bool) {
@@ -873,6 +897,18 @@ func (c *Completer) listTables(database string) []string {
 	}
 
 	return c.metadataCache[database].GetSchema("").ListTableNames()
+}
+
+func (c *Completer) listViews(database string) []string {
+	if _, exists := c.metadataCache[database]; !exists {
+		metadata, err := c.getMetadata(c.ctx, database)
+		if err != nil || metadata == nil {
+			return nil
+		}
+		c.metadataCache[database] = metadata
+	}
+
+	return c.metadataCache[database].GetSchema("").ListViewNames()
 }
 
 func (c *Completer) listColumns(databases, tables map[string]bool) []string {

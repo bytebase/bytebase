@@ -6,6 +6,8 @@
       type: TABLE
     - text: t2
       type: TABLE
+    - text: v1
+      type: VIEW
 - input: SELECT | FROM t1
   want:
     - text: runtimeFunction()
@@ -18,6 +20,8 @@
       type: TABLE
     - text: c1
       type: COLUMN
+    - text: v1
+      type: VIEW
 - input: SELECT | FROM t2 x
   want:
     - text: runtimeFunction()
@@ -34,3 +38,5 @@
       type: COLUMN
     - text: c2
       type: COLUMN
+    - text: v1
+      type: VIEW
