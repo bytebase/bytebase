@@ -11,6 +11,8 @@ import {
   useUserStore,
   useProjectV1Store,
   usePolicyV1Store,
+  useDatabaseV1Store,
+  useDBGroupStore,
 } from "@/store";
 import { useInstanceV1Store } from "@/store/modules/v1/instance";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
@@ -24,6 +26,10 @@ export default defineComponent({
       useUserStore().fetchUserList(),
       useEnvironmentV1Store().fetchEnvironments(),
       useInstanceV1Store().fetchInstanceList(),
+      useDatabaseV1Store().searchDatabaseList({
+        parent: "instances/-",
+      }),
+      useDBGroupStore().fetchAllDatabaseGroupList(),
       useProjectV1Store().fetchProjectList(true),
       usePolicyV1Store().getOrFetchPolicyByName("policies/WORKSPACE_IAM"),
       useUIStateStore().restoreState(),
