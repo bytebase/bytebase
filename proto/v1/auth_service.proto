@@ -67,7 +67,7 @@ service AuthService {
 
 message GetUserRequest {
   // The name of the user to retrieve.
-  // Format: users/{user}
+  // Format: users/{user uid or user email}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 

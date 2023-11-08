@@ -12,7 +12,6 @@
 import { computed } from "vue";
 import { useUserStore } from "@/store";
 import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
-import { extractUserUID } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
@@ -36,7 +35,7 @@ const user = computed(() => {
 
 const bindings = computed(() => {
   if (props.link) {
-    const to = user.value ? `/u/${extractUserUID(user.value.name)}` : "/404";
+    const to = user.value ? `/users/${user.value.email}` : "/404";
     return {
       to,
       activeClass: "",

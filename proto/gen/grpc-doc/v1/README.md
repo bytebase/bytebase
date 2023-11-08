@@ -1706,7 +1706,7 @@ DATABASE_BACKUP_POLICY_VIOLATION is the anomaly type for database backup policy 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the user to retrieve. Format: users/{user} |
+| name | [string](#string) |  | The name of the user to retrieve. Format: users/{user uid or user email} |
 
 
 

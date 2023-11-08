@@ -36,7 +36,7 @@
           <div class="flex flex-row items-center space-x-2">
             <template v-if="projectMember.user.email !== ALL_USERS_USER_NAME">
               <router-link
-                :to="`/u/${extractUserUID(projectMember.user.name)}`"
+                :to="`/users/${projectMember.user.email}`"
                 class="normal-link"
                 >{{ projectMember.user.title }}</router-link
               >
@@ -159,7 +159,6 @@ import {
   hasWorkspacePermissionV1,
   displayRoleTitle,
   hasPermissionInProjectV1,
-  extractUserUID,
 } from "@/utils";
 import {
   getExpiredTimeString,

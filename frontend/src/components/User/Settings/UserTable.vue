@@ -54,10 +54,7 @@
             <div class="flex flex-row">
               <div class="flex flex-col">
                 <div class="flex flex-row items-center space-x-2">
-                  <router-link
-                    :to="`/u/${extractUserUID(user.name)}`"
-                    class="normal-link"
-                  >
+                  <router-link :to="`/users/${user.email}`" class="normal-link">
                     {{ user.title }}
                   </router-link>
                   <span
@@ -187,7 +184,7 @@ import {
 import { SYSTEM_BOT_USER_NAME } from "@/types";
 import { User, UserRole, UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
-import { hasWorkspacePermissionV1, extractUserUID } from "@/utils";
+import { hasWorkspacePermissionV1 } from "@/utils";
 import UserAvatar from "../UserAvatar.vue";
 import { copyServiceKeyToClipboardIfNeeded } from "./common";
 

@@ -329,14 +329,15 @@ const routes: Array<RouteRecordRaw> = [
             // perspective, they are more familiar with the "user" concept.
             // We make an exception to use a shorthand here because it's a commonly
             // accessed endpoint, and maybe in the future, we will further provide a
-            // shortlink such as u/<<uid>>
-            path: "u/:principalId",
+            // shortlink such as users/<<email>>
+            path: "users/:principalEmail",
             name: "workspace.profile",
             meta: {
               title: (route: RouteLocationNormalized) => {
-                const userUID = route.params.principalId as string;
+                const principalEmail = route.params.principalEmail as string;
                 const user =
-                  useUserStore().getUserById(userUID) ?? unknownUser();
+                  useUserStore().getUserByEmail(principalEmail) ??
+                  unknownUser();
                 return user.title;
               },
             },
@@ -1246,7 +1247,7 @@ router.beforeEach((to, from, next) => {
   }
 
   const routerSlug = routerStore.routeSlug(to);
-  const principalId = routerSlug.principalId;
+  const principalEmail = routerSlug.principalEmail;
   const environmentSlug = routerSlug.environmentSlug;
   const projectSlug = routerSlug.projectSlug;
   const projectWebhookSlug = routerSlug.projectWebhookSlug;
@@ -1260,9 +1261,9 @@ router.beforeEach((to, from, next) => {
   const ssoName = routerSlug.ssoName;
   const sqlReviewPolicySlug = routerSlug.sqlReviewPolicySlug;
 
-  if (principalId) {
+  if (principalEmail) {
     useUserStore()
-      .getOrFetchUserById(String(principalId))
+      .getOrFetchUserById(principalEmail)
       .then(() => {
         next();
       })
