@@ -273,7 +273,8 @@
     "filter-by-name": "按名称过滤",
     "tenant": "租户",
     "license": "证书",
-    "show-all": "显示全部"
+    "show-all": "显示全部",
+    "view-details": "查看详情"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -863,7 +864,8 @@
       "schema-version": "schema 版本 {version}",
       "xxx-automatically": "自动{verb}",
       "verb-type-target-by-people": "{verb}{type} {target}",
-      "verb-type-target-by-system-bot": "{type} {target} {verb}"
+      "verb-type-target-by-system-bot": "{type} {target} {verb}",
+      "changed-x-link": "修改了 {name}。{link}"
     },
     "subject-prefix": {
       "task": "任务",

@@ -9,7 +9,7 @@
     @mask-click="maskClosable && tryClose()"
   >
     <div v-bind="$attrs" class="bb-modal">
-      <div class="modal-header">
+      <div class="modal-header" :class="headerClass">
         <div class="text-xl text-main mr-2 flex-1 overflow-hidden">
           <slot name="title"><component :is="renderTitle" /></slot>
           <slot name="subtitle"><component :is="renderSubtitle" /></slot>
