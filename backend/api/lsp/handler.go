@@ -110,6 +110,10 @@ func (h *Handler) getEngineType(ctx context.Context) storepb.Engine {
 		slog.Error("Failed to get instance", log.BBError(err))
 		return storepb.Engine_ENGINE_UNSPECIFIED
 	}
+	if instance == nil {
+		slog.Error("Instance not found", slog.String("instanceID", instanceID))
+		return storepb.Engine_ENGINE_UNSPECIFIED
+	}
 	return instance.Engine
 }
 
