@@ -8,6 +8,9 @@ import (
 
 	pgquery "github.com/pganalyze/pg_query_go/v4"
 
+	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
+
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -25,7 +28,9 @@ type querySpanExtractor struct {
 	// cteOuterSchemaInfo is the schema info for the outer query.
 	// It should be reset to the previous state after the query is processed.
 	cteOuterSchemaInfo []base.PseudoTable
-	fromFieldList      []base.TableSource
+	// fromFieldList is the list of table sources from the FROM clause,
+	// all target columns should be resolved to the table sources in this list.
+	fromFieldList []base.TableSource
 }
 
 // newQuerySpanExtractor creates a new query span extractor, the databaseMetadata and the ast are in the read guard.
@@ -66,6 +71,12 @@ func (q *querySpanExtractor) extractTableSourceFromNode(ctx context.Context, nod
 	switch node := node.Node.(type) {
 	case *pgquery.Node_SelectStmt:
 		return q.extractTableSourceFromSelect(ctx, node)
+	case *pgquery.Node_RangeVar:
+		return q.extractTableSourceFromRangeVar(ctx, node)
+	case *pgquery.Node_RangeSubselect:
+		return q.extractTableSourceFromSubselect(ctx, node)
+	case *pgquery.Node_JoinExpr:
+		return q.pgExtractJoin(node)
 	}
 	return nil, nil
 }
@@ -169,8 +180,148 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(ctx context.Context, n
 	}
 
 	// The FROM clause.
+	var fromFieldList []base.TableSource
+	for _, item := range node.SelectStmt.FromClause {
+		tableSource, err := q.extractTableSourceFromNode(ctx, item)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to extract span result from FROM item: %+v", item)
+		}
+		q.fromFieldList = append(q.fromFieldList, tableSource)
+		fromFieldList = append(fromFieldList, tableSource)
+	}
 
-	return nil, nil
+	// The TARGET field list.
+	// The SELECT statement is really create a pseudo table, and this pseudo table will be show as the result.
+	var result base.PseudoTable
+	for _, field := range node.SelectStmt.TargetList {
+		resTarget, ok := field.Node.(*pgquery.Node_ResTarget)
+		if !ok {
+			return nil, errors.Errorf("expect ResTarget for SELECT target, but got %T", field.Node)
+		}
+		switch fieldNode := resTarget.ResTarget.Val.Node.(type) {
+		case *pgquery.Node_ColumnRef:
+			columnRef, err := pgrawparser.ConvertNodeListToColumnNameDef(fieldNode.ColumnRef.Fields)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to convert column ref to column name def: %+v", fieldNode.ColumnRef.Fields)
+			}
+			if columnRef.ColumnName == "*" {
+				// SELECT * FROM ... case
+				if columnRef.Table.Name == "" {
+					var columns []*base.QuerySpanResult
+					for _, tableSource := range fromFieldList {
+						columns = append(columns, tableSource.GetQuerySpanResult()...)
+					}
+					result.Columns = columns
+				} else {
+					schemaName, tableName, _ := extractSchemaTableColumnName(columnRef)
+					for _, tableSource := range fromFieldList {
+						// XXX(zp): We should refactor here to avoid magic code.
+						switch tableSource := tableSource.(type) {
+						case base.PseudoTable:
+							if schemaName == "" && tableSource.Name == tableName {
+								result.Columns = tableSource.GetQuerySpanResult()
+								break
+							}
+						case base.PhysicalTable:
+							if schemaName == tableSource.Schema && tableName == tableSource.Name {
+								result.Columns = tableSource.GetQuerySpanResult()
+								break
+							}
+						}
+					}
+				}
+			} else {
+				sourceColumnSet, err := q.extractSourceColumnSetFromExpressionNode(ctx, resTarget.ResTarget.Val)
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to extract source column set from expression: %+v", resTarget.ResTarget.Val)
+				}
+				// XXX(zp): Should we handle the AS case?
+				columnName := columnRef.ColumnName
+				if resTarget.ResTarget.Name != "" {
+					columnName = resTarget.ResTarget.Name
+				}
+				result.Columns = append(result.Columns, &base.QuerySpanResult{
+					Name:          columnName,
+					SourceColumns: sourceColumnSet,
+				})
+			}
+		default:
+			sourceColumnSet, err := q.extractSourceColumnSetFromExpressionNode(ctx, resTarget.ResTarget.Val)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to extract source column set from expression: %+v", resTarget.ResTarget.Val)
+			}
+			// XXX(zp): Should we handle the AS case?
+			columnName := resTarget.ResTarget.Name
+			if columnName == "" {
+				columnName = fmt.Sprintf("column%d", len(result.Columns)+1)
+			}
+			result.Columns = append(result.Columns, &base.QuerySpanResult{
+				Name:          columnName,
+				SourceColumns: sourceColumnSet,
+			})
+		}
+	}
+
+	return result, nil
+}
+
+func (q *querySpanExtractor) extractTableSourceFromRangeVar(ctx context.Context, node *pgquery.Node_RangeVar) (base.TableSource, error) {
+	tableSource, err := q.findTableSchema(node.RangeVar.Schemaname, node.RangeVar.Relname)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find table schema for range var: %+v", node)
+	}
+
+	if node.RangeVar.Alias == nil {
+		return tableSource, nil
+	}
+
+	// The AS case
+	aliasName, columnNameList, err := pgExtractAlias(node.RangeVar.Alias)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to extract alias from range var: %+v", node)
+	}
+	if len(columnNameList) != 0 && len(columnNameList) != len(tableSource.GetQuerySpanResult()) {
+		return nil, errors.Errorf("expect equal length but found %d and %d", len(node.RangeVar.Alias.Colnames), len(tableSource.GetQuerySpanResult()))
+	}
+
+	result := base.PseudoTable{
+		Name:    aliasName,
+		Columns: tableSource.GetQuerySpanResult(),
+	}
+	for i, columnName := range columnNameList {
+		result.SetColumnName(i, columnName)
+	}
+
+	return result, nil
+}
+
+func (q *querySpanExtractor) extractTableSourceFromSubselect(ctx context.Context, node *pgquery.Node_RangeSubselect) (base.TableSource, error) {
+	tableSource, err := q.extractTableSourceFromNode(ctx, node.RangeSubselect.Subquery)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to extract span result from subselect: %+v", node)
+	}
+	if node.RangeSubselect.Alias == nil {
+		return tableSource, nil
+	}
+
+	// The AS case
+	aliasName, columnNameList, err := pgExtractAlias(node.RangeSubselect.Alias)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to extract alias from range var: %+v", node)
+	}
+	if len(columnNameList) != 0 && len(columnNameList) != len(tableSource.GetQuerySpanResult()) {
+		return nil, errors.Errorf("expect equal length but found %d and %d", len(columnNameList), len(tableSource.GetQuerySpanResult()))
+	}
+
+	result := base.PseudoTable{
+		Name:    aliasName,
+		Columns: tableSource.GetQuerySpanResult(),
+	}
+	for i, columnName := range columnNameList {
+		result.SetColumnName(i, columnName)
+	}
+
+	return result, nil
 }
 
 func (q *querySpanExtractor) extractTemporaryTableResourceFromNonRecursiveCTE(ctx context.Context, cteExpr *pgquery.Node_CommonTableExpr) (base.PseudoTable, error) {
@@ -290,4 +441,69 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpressionNodeList(ctx co
 		result, _ = base.MergeSourceColumnSet(result, sourceColumnSet)
 	}
 	return result, nil
+}
+
+func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string) (base.TableSource, error) {
+	// Each CTE name in one WITH clause must be unique, but we can use the same name in the different level CTE, such as:
+	//
+	//  with tt2 as (
+	//    with tt2 as (select * from t)
+	//    select max(a) from tt2)
+	//  select * from tt2
+	//
+	// This query has two CTE can be called `tt2`, and the FROM clause 'from tt2' uses the closer tt2 CTE.
+	// This is the reason we loop the slice in reversed order.
+	if schemaName == "" {
+		for i := len(q.cteOuterSchemaInfo) - 1; i >= 0; i-- {
+			table := q.cteOuterSchemaInfo[i]
+			if table.Name == tableName {
+				return table, nil
+			}
+		}
+	}
+
+	// FIXME: consider cross database query which is supported in Redshift.
+	dbSchema, err := q.getDatabaseMetadata(q.connectedDB)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", q.connectedDB)
+	}
+	if schemaName == "" {
+		schemaName = "public"
+	}
+	schema := dbSchema.GetSchema(schemaName)
+	table := schema.GetTable(tableName)
+	if table == nil {
+		return nil, errors.Errorf("table %s.%s not found", schemaName, tableName)
+	}
+
+	var columns []string
+	for _, column := range table.GetColumns() {
+		columns = append(columns, column.Name)
+	}
+	return &base.PhysicalTable{
+		Server:   "",
+		Database: q.connectedDB,
+		Schema:   schemaName,
+		Name:     tableName,
+		Columns:  columns,
+	}, nil
+}
+
+func extractSchemaTableColumnName(columnName *ast.ColumnNameDef) (string, string, string) {
+	return columnName.Table.Schema, columnName.Table.Name, columnName.ColumnName
+}
+
+func pgExtractAlias(alias *pgquery.Alias) (string, []string, error) {
+	if alias == nil {
+		return "", nil, nil
+	}
+	var columnNameList []string
+	for _, item := range alias.Colnames {
+		stringNode, yes := item.Node.(*pgquery.Node_String_)
+		if !yes {
+			return "", nil, errors.Errorf("expect Node_String_ but found %T", item.Node)
+		}
+		columnNameList = append(columnNameList, stringNode.String_.Sval)
+	}
+	return alias.Aliasname, columnNameList, nil
 }

@@ -58,13 +58,16 @@ type TableSource interface {
 	// Interface guard to forbid other types outside this package to implement this interface.
 	isTableSource()
 	GetQuerySpanResult() []*QuerySpanResult
+	// SetColumnName sets the i th column name, which is useful in handle AS clause.
+	SetColumnName(i int, name string)
+	GetName() string
 }
 
 // baseTableSource is the base implementation table source.
 type baseTableSource struct {
 }
 
-// IsTableSource implements the TableSource interface.
+// isTableSource implements the TableSource interface.
 func (b baseTableSource) isTableSource() {}
 
 // PseudoTable is the resource of table, it's useful for some pseudo/temporary tables likes CTE, AS.
@@ -87,6 +90,14 @@ func (p PseudoTable) GetQuerySpanResult() []*QuerySpanResult {
 	return result
 }
 
+func (p PseudoTable) GetName() string {
+	return p.Name
+}
+
+func (p PseudoTable) SetColumnName(i int, name string) {
+	p.Columns[i].Name = name
+}
+
 // PhysicalTable is the resource of a physical table.
 type PhysicalTable struct {
 	baseTableSource
@@ -101,6 +112,10 @@ type PhysicalTable struct {
 	Name string
 	// Columns are the columns of the table.
 	Columns []string
+}
+
+func (p PhysicalTable) GetName() string {
+	return p.Name
 }
 
 func (p PhysicalTable) GetQuerySpanResult() []*QuerySpanResult {
@@ -120,6 +135,10 @@ func (p PhysicalTable) GetQuerySpanResult() []*QuerySpanResult {
 		})
 	}
 	return result
+}
+
+func (p PhysicalTable) SetColumnName(i int, name string) {
+	p.Columns[i] = p.Name
 }
 
 // String returns the string format of the column resource.
