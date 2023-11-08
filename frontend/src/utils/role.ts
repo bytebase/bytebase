@@ -207,3 +207,61 @@ export const displayRoleTitle = (role: string): string => {
   // Fallback to extracted resource name otherwise
   return item?.title || extractRoleResourceName(role);
 };
+
+export const hasSettingPagePermission = (
+  routeName: string,
+  role: UserRole
+): boolean => {
+  switch (routeName) {
+    case "setting.workspace.member":
+      return hasWorkspacePermissionV1(
+        "bb.permission.workspace.manage-member",
+        role
+      );
+    case "setting.workspace.project":
+      return hasWorkspacePermissionV1(
+        "bb.permission.workspace.manage-project",
+        role
+      );
+    case "setting.workspace.sensitive-data":
+      return hasWorkspacePermissionV1(
+        "bb.permission.workspace.manage-sensitive-data",
+        role
+      );
+    case "setting.workspace.access-control":
+      return hasWorkspacePermissionV1(
+        "bb.permission.workspace.manage-access-control",
+        role
+      );
+    case "setting.workspace.sso":
+    case "setting.workspace.sso.create":
+    case "setting.workspace.sso.detail":
+      return hasWorkspacePermissionV1(
+        "bb.permission.workspace.manage-sso",
+        role
+      );
+    case "setting.workspace.gitops":
+    case "setting.workspace.gitops.create":
+    case "setting.workspace.gitops.detail":
+      return hasWorkspacePermissionV1(
+        "bb.permission.workspace.manage-vcs-provider",
+        role
+      );
+    case "setting.workspace.debug-log":
+      return hasWorkspacePermissionV1(
+        "bb.permission.workspace.debug-log",
+        role
+      );
+    case "setting.workspace.audit-log":
+      return hasWorkspacePermissionV1(
+        "bb.permission.workspace.audit-log",
+        role
+      );
+    case "setting.workspace.mail-delivery":
+      return hasWorkspacePermissionV1(
+        "bb.permission.workspace.manage-mail-delivery",
+        role
+      );
+  }
+  return true;
+};

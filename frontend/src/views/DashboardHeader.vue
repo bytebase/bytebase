@@ -52,7 +52,7 @@
         <a href="/sql-editor" target="_blank">
           <heroicons-outline:terminal class="w-6 h-6" />
         </a>
-        <router-link to="/setting/member" exact-active-class="">
+        <router-link to="/setting/general" exact-active-class="">
           <Settings class="w-6 h-6" />
         </router-link>
         <router-link to="/inbox" exact-active-class="">
