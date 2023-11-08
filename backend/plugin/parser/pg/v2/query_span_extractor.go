@@ -2,6 +2,7 @@ package v2
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
 
@@ -23,7 +24,8 @@ type querySpanExtractor struct {
 	// Private fields.
 	// cteOuterSchemaInfo is the schema info for the outer query.
 	// It should be reset to the previous state after the query is processed.
-	cteOuterSchemaInfo []base.TableResource
+	cteOuterSchemaInfo []base.PseudoTable
+	fromFieldList      []base.TableSource
 }
 
 // newQuerySpanExtractor creates a new query span extractor, the databaseMetadata and the ast are in the read guard.
@@ -51,23 +53,24 @@ func (q *querySpanExtractor) getDatabaseMetadata(database string) (*model.Databa
 func (q *querySpanExtractor) getQuerySpanResult(ctx context.Context, ast *pgquery.RawStmt) ([]*base.QuerySpanResult, error) {
 	q.ctx = ctx
 
-	return q.extractSpanResultFromNode(ctx, ast.Stmt)
+	return nil, nil
 }
 
-// extractSpanResultFromNode is the entry for recursively extracting the span sources from the given node.
-func (q *querySpanExtractor) extractSpanResultFromNode(ctx context.Context, node *pgquery.Node) ([]*base.QuerySpanResult, error) {
+// extractTableSourceFromNode is the entry for recursively extracting the span sources from the given node.
+// It returns the table source for the given node, which can be a physical table or a down cast temporary table losing the original schema info.
+func (q *querySpanExtractor) extractTableSourceFromNode(ctx context.Context, node *pgquery.Node) (base.TableSource, error) {
 	if node == nil {
 		return nil, nil
 	}
 
 	switch node := node.Node.(type) {
 	case *pgquery.Node_SelectStmt:
-		return q.extractSpanResultFromSelect(ctx, node)
+		return q.extractTableSourceFromSelect(ctx, node)
 	}
 	return nil, nil
 }
 
-func (q *querySpanExtractor) extractSpanResultFromSelect(ctx context.Context, node *pgquery.Node_SelectStmt) ([]*base.QuerySpanResult, error) {
+func (q *querySpanExtractor) extractTableSourceFromSelect(ctx context.Context, node *pgquery.Node_SelectStmt) (base.TableSource, error) {
 	// The WITH clause.
 	if node.SelectStmt.WithClause != nil {
 		previousCteOuterLength := len(q.cteOuterSchemaInfo)
@@ -80,12 +83,12 @@ func (q *querySpanExtractor) extractSpanResultFromSelect(ctx context.Context, no
 			if !ok {
 				return nil, errors.Errorf("expect CommonTableExpr for CTE, but got %T", cte.Node)
 			}
-			var cteTableResource base.TableResource
+			var cteTableResource base.PseudoTable
 			var err error
 			if node.SelectStmt.WithClause.Recursive {
-				cteTableResource, err = q.extractTableResourceFromRecursiveCTE(ctx, cteExpr)
+				cteTableResource, err = q.extractTemporaryTableResourceFromRecursiveCTE(ctx, cteExpr)
 			} else {
-				cteTableResource, err = q.extractTableResourceFromNonRecursiveCTE(ctx, cteExpr)
+				cteTableResource, err = q.extractTemporaryTableResourceFromNonRecursiveCTE(ctx, cteExpr)
 			}
 			if err != nil {
 				return nil, err
@@ -95,82 +98,140 @@ func (q *querySpanExtractor) extractSpanResultFromSelect(ctx context.Context, no
 	}
 
 	// The VALUES case.
+	// https://www.postgresql.org/docs/current/queries-values.html
 	if len(node.SelectStmt.ValuesLists) > 0 {
-		var result []*base.QuerySpanResult
+		var columnSourceSets []base.SourceColumnSet
 		for _, row := range node.SelectStmt.ValuesLists {
 			list, ok := row.Node.(*pgquery.Node_List)
 			if !ok {
 				return nil, errors.Errorf("expect List for VALUES list, but got %T", row.Node)
 			}
-			for _, value := range list.List.Items {
-				spanResult, err := q.extractColumnRefFromExpressionNode(item)
+			for i, value := range list.List.Items {
+				sourceColumnSet, err := q.extractSourceColumnSetFromExpressionNode(ctx, value)
 				if err != nil {
-					return nil, err
+					return nil, errors.Wrapf(err, "failed to extract source column set from VALUES expression: %+v", value)
 				}
-				result = append(result, spanResult)
+				if i >= len(columnSourceSets) {
+					columnSourceSets = append(columnSourceSets, sourceColumnSet)
+				} else {
+					columnSourceSets[i], _ = base.MergeSourceColumnSet(columnSourceSets[i], sourceColumnSet)
+				}
 			}
 		}
+
+		var querySpanResults []*base.QuerySpanResult
+		for i, columnSourceSet := range columnSourceSets {
+			querySpanResults = append(querySpanResults, &base.QuerySpanResult{
+				Name:          fmt.Sprintf("column%d", i+1),
+				SourceColumns: columnSourceSet,
+			})
+		}
+		// FIXME(zp): Consider the alias case to give a name to table.
+		// => SELECT * FROM (VALUES (1, 'one'), (2, 'two'), (3, 'three')) AS t (num,letter);
+		return base.PseudoTable{
+			Name:    "",
+			Columns: querySpanResults,
+		}, nil
 	}
+
+	// UNION/INTERSECT/EXCEPT case.
+	switch node.SelectStmt.Op {
+	case pgquery.SetOperation_SETOP_UNION, pgquery.SetOperation_SETOP_INTERSECT, pgquery.SetOperation_SETOP_EXCEPT:
+		leftSpanResults, err := q.extractTableSourceFromSelect(ctx, &pgquery.Node_SelectStmt{SelectStmt: node.SelectStmt.Larg})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to extract span result from left select: %+v", node.SelectStmt.Larg)
+		}
+		rightSpanResults, err := q.extractTableSourceFromSelect(ctx, &pgquery.Node_SelectStmt{SelectStmt: node.SelectStmt.Rarg})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to extract span result from right select: %+v", node.SelectStmt.Rarg)
+		}
+		leftQuerySpanResult, rightQuerySpanResult := leftSpanResults.GetQuerySpanResult(), rightSpanResults.GetQuerySpanResult()
+		if len(leftQuerySpanResult) != len(leftQuerySpanResult) {
+			return nil, errors.Wrapf(err, "left select has %d columns, but right select has %d columns", len(leftQuerySpanResult), len(leftQuerySpanResult))
+		}
+		var result []*base.QuerySpanResult
+		for i, leftSpanResult := range leftQuerySpanResult {
+			rightSpanResult := rightQuerySpanResult[i]
+			newResourceColumns, _ := base.MergeSourceColumnSet(leftSpanResult.SourceColumns, rightSpanResult.SourceColumns)
+			result = append(result, &base.QuerySpanResult{
+				Name:          leftSpanResult.Name,
+				SourceColumns: newResourceColumns,
+			})
+		}
+		// FIXME(zp): Consider UNION alias.
+		return base.PseudoTable{
+			Name:    "",
+			Columns: result,
+		}, nil
+	case pgquery.SetOperation_SETOP_NONE:
+	default:
+		return nil, errors.Errorf("unsupported set operation: %s", node.SelectStmt.Op)
+	}
+
+	// The FROM clause.
+
 	return nil, nil
 }
 
-func (q *querySpanExtractor) extractTableResourceFromNonRecursiveCTE(ctx context.Context, cteExpr *pgquery.Node_CommonTableExpr) (base.TableResource, error) {
-	querySpanResults, err := q.extractSpanResultFromNode(ctx, cteExpr.CommonTableExpr.Ctequery)
+func (q *querySpanExtractor) extractTemporaryTableResourceFromNonRecursiveCTE(ctx context.Context, cteExpr *pgquery.Node_CommonTableExpr) (base.PseudoTable, error) {
+	tableSource, err := q.extractTableSourceFromNode(ctx, cteExpr.CommonTableExpr.Ctequery)
 	if err != nil {
-		return base.TableResource{}, errors.Wrapf(err, "failed to extract span result from CTE query: %+v", cteExpr.CommonTableExpr.Ctequery)
+		return base.PseudoTable{}, errors.Wrapf(err, "failed to extract span result from CTE query: %+v", cteExpr.CommonTableExpr.Ctequery)
 	}
 
+	querySpanResults := tableSource.GetQuerySpanResult()
 	if len(cteExpr.CommonTableExpr.Aliascolnames) > 0 {
 		if len(cteExpr.CommonTableExpr.Aliascolnames) != len(querySpanResults) {
-			return base.TableResource{}, errors.Errorf("cte table expr has %d columns, but alias has %d columns", len(querySpanResults), len(cteExpr.CommonTableExpr.Aliascolnames))
+			return base.PseudoTable{}, errors.Errorf("cte table expr has %d columns, but alias has %d columns", len(querySpanResults), len(cteExpr.CommonTableExpr.Aliascolnames))
 		}
 		for i, name := range cteExpr.CommonTableExpr.Aliascolnames {
 			stringNode, ok := name.Node.(*pgquery.Node_String_)
 			if !ok {
-				return base.TableResource{}, errors.Errorf("expect string node for alias column name, but got %T", name.Node)
+				return base.PseudoTable{}, errors.Errorf("expect string node for alias column name, but got %T", name.Node)
 			}
 			querySpanResults[i].Name = stringNode.String_.Sval
 		}
 	}
 
-	return base.TableResource{
+	return base.PseudoTable{
 		Name:    cteExpr.CommonTableExpr.Ctename,
 		Columns: querySpanResults,
 	}, nil
 }
 
-func (q *querySpanExtractor) extractTableResourceFromRecursiveCTE(ctx context.Context, cteExpr *pgquery.Node_CommonTableExpr) (base.TableResource, error) {
+func (q *querySpanExtractor) extractTemporaryTableResourceFromRecursiveCTE(ctx context.Context, cteExpr *pgquery.Node_CommonTableExpr) (base.PseudoTable, error) {
 	switch selectNode := cteExpr.CommonTableExpr.Ctequery.Node.(type) {
 	case *pgquery.Node_SelectStmt:
 		if selectNode.SelectStmt.Op != pgquery.SetOperation_SETOP_UNION {
-			return q.extractTableResourceFromNonRecursiveCTE(ctx, cteExpr)
+			return q.extractTemporaryTableResourceFromNonRecursiveCTE(ctx, cteExpr)
 		}
-		// For PostgreSQL, recursive CTE would be an UNION statement, and the left node is the initial part,
+		// For PostgreSQL, recursive CTE would be a UNION statement, and the left node is the initial part,
 		// the right node is the recursive part.
 		// https://www.postgresql.org/docs/15/queries-with.html#QUERIES-WITH-RECURSIVE
-		initialTableResource, err := q.extractSpanResultFromSelect(ctx, &pgquery.Node_SelectStmt{SelectStmt: selectNode.SelectStmt.Larg})
+		initialTableSource, err := q.extractTableSourceFromSelect(ctx, &pgquery.Node_SelectStmt{SelectStmt: selectNode.SelectStmt.Larg})
 		if err != nil {
-			return base.TableResource{}, errors.Wrapf(err, "failed to extract span result from CTE initial query: %+v", selectNode.SelectStmt.Larg)
+			return base.PseudoTable{}, errors.Wrapf(err, "failed to extract span result from CTE initial query: %+v", selectNode.SelectStmt.Larg)
 		}
+		initialQuerySpanResult := initialTableSource.GetQuerySpanResult()
 		if len(cteExpr.CommonTableExpr.Aliascolnames) > 0 {
-			if len(cteExpr.CommonTableExpr.Aliascolnames) != len(initialTableResource) {
-				return base.TableResource{}, errors.Errorf("cte table expr has %d columns, but alias has %d columns", len(initialTableResource), len(cteExpr.CommonTableExpr.Aliascolnames))
+			if len(cteExpr.CommonTableExpr.Aliascolnames) != len(initialQuerySpanResult) {
+				return base.PseudoTable{}, errors.Errorf("cte table expr has %d columns, but alias has %d columns", len(initialQuerySpanResult), len(cteExpr.CommonTableExpr.Aliascolnames))
 			}
 			for i, name := range cteExpr.CommonTableExpr.Aliascolnames {
 				stringNode, ok := name.Node.(*pgquery.Node_String_)
 				if !ok {
-					return base.TableResource{}, errors.Errorf("expect string node for alias column name, but got %T", name.Node)
+					return base.PseudoTable{}, errors.Errorf("expect string node for alias column name, but got %T", name.Node)
 				}
-				initialTableResource[i].Name = stringNode.String_.Sval
+				initialQuerySpanResult[i].Name = stringNode.String_.Sval
 			}
 		}
 
-		cteTableResource := base.TableResource{Name: cteExpr.CommonTableExpr.Ctename, Columns: initialTableResource}
+		cteTableResource := base.PseudoTable{Name: cteExpr.CommonTableExpr.Ctename, Columns: initialQuerySpanResult}
 
 		// Compute dependent closures.
 		// There are two ways to compute dependent closures:
 		//   1. find the all dependent edges, then use graph theory traversal to find the closure.
-		//   2. Iterate to simulate the CTE recursive process, each turn check whether the columns has changed, and stop if not change.
+		//   2. Iterate to simulate the CTE recursive process, each turn check whether the columns have changed, and stop if not change.
 		//
 		// Consider the option 2 can easy to implementation, because the simulate process has been written.
 		// On the other hand, the number of iterations of the entire algorithm will not exceed the length of fields.
@@ -183,30 +244,50 @@ func (q *querySpanExtractor) extractTableResourceFromRecursiveCTE(ctx context.Co
 		}()
 
 		for {
-			spanQueryResults, err := q.extractSpanResultFromSelect(ctx, &pgquery.Node_SelectStmt{SelectStmt: selectNode.SelectStmt.Rarg})
+			recursiveTableSource, err := q.extractTableSourceFromSelect(ctx, &pgquery.Node_SelectStmt{SelectStmt: selectNode.SelectStmt.Rarg})
 			if err != nil {
-				return base.TableResource{}, errors.Wrapf(err, "failed to extract span result from CTE recursive query: %+v", selectNode.SelectStmt.Rarg)
+				return base.PseudoTable{}, errors.Wrapf(err, "failed to extract span result from CTE recursive query: %+v", selectNode.SelectStmt.Rarg)
 			}
-			if len(spanQueryResults) != len(initialTableResource) {
-				return base.TableResource{}, errors.Errorf("cte table expr has %d columns, but recursive query has %d columns", len(initialTableResource), len(spanQueryResults))
+			recursiveQuerySpanResult := recursiveTableSource.GetQuerySpanResult()
+			if len(recursiveQuerySpanResult) != len(initialQuerySpanResult) {
+				return base.PseudoTable{}, errors.Errorf("cte table expr has %d columns, but recursive query has %d columns", len(initialQuerySpanResult), len(recursiveQuerySpanResult))
 			}
 
 			changed := false
-			for i, spanQueryResult := range spanQueryResults {
-				newResourceColumns, hasDiff := base.MergeSourceColumnSet(initialTableResource[i].SourceColumns, spanQueryResult.SourceColumns)
+			for i, spanQueryResult := range recursiveQuerySpanResult {
+				newResourceColumns, hasDiff := base.MergeSourceColumnSet(initialQuerySpanResult[i].SourceColumns, spanQueryResult.SourceColumns)
 				if hasDiff {
 					changed = true
-					initialTableResource[i].SourceColumns = newResourceColumns
+					initialQuerySpanResult[i].SourceColumns = newResourceColumns
 				}
 			}
 
 			if !changed {
 				break
 			}
-			q.cteOuterSchemaInfo[len(q.cteOuterSchemaInfo)-1].Columns = initialTableResource
+			q.cteOuterSchemaInfo[len(q.cteOuterSchemaInfo)-1].Columns = initialQuerySpanResult
 		}
 		return cteTableResource, nil
 	default:
-		return q.extractTableResourceFromNonRecursiveCTE(ctx, cteExpr)
+		return q.extractTemporaryTableResourceFromNonRecursiveCTE(ctx, cteExpr)
 	}
+}
+
+func (q *querySpanExtractor) extractSourceColumnSetFromExpressionNode(ctx context.Context, node *pgquery.Node) (base.SourceColumnSet, error) {
+	// TODO(zp): implement me.
+	return nil, nil
+}
+
+// extractSourceColumnSetFromExpressionNodeList is the helper function to extract the source column set from the given expression node list,
+// which iterates the list and merge each set.
+func (q *querySpanExtractor) extractSourceColumnSetFromExpressionNodeList(ctx context.Context, list []*pgquery.Node) (base.SourceColumnSet, error) {
+	result := make(base.SourceColumnSet)
+	for _, node := range list {
+		sourceColumnSet, err := q.extractSourceColumnSetFromExpressionNode(ctx, node)
+		if err != nil {
+			return nil, err
+		}
+		result, _ = base.MergeSourceColumnSet(result, sourceColumnSet)
+	}
+	return result, nil
 }

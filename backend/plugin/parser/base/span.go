@@ -54,13 +54,72 @@ type ColumnResource struct {
 	Column string
 }
 
-// TableResource is the resource of table, it's useful for some pseudo/temporary tables likes CTE.
-type TableResource struct {
+type TableSource interface {
+	// Interface guard to forbid other types outside this package to implement this interface.
+	isTableSource()
+	GetQuerySpanResult() []*QuerySpanResult
+}
+
+// baseTableSource is the base implementation table source.
+type baseTableSource struct {
+}
+
+// IsTableSource implements the TableSource interface.
+func (b baseTableSource) isTableSource() {}
+
+// PseudoTable is the resource of table, it's useful for some pseudo/temporary tables likes CTE, AS.
+type PseudoTable struct {
+	baseTableSource
+
 	// Name is the normalized table name.
 	Name string
 
 	// Columns are the columns of the table.
 	Columns []*QuerySpanResult
+}
+
+func (p PseudoTable) GetQuerySpanResult() []*QuerySpanResult {
+	result := make([]*QuerySpanResult, 0, len(p.Columns))
+	for _, column := range p.Columns {
+		result = append(result, column)
+	}
+
+	return result
+}
+
+// PhysicalTable is the resource of a physical table.
+type PhysicalTable struct {
+	baseTableSource
+
+	// Server is the normalized server name, it's empty if the column comes from the connected server.
+	Server string
+	// Database is the normalized database name, it should not be empty.
+	Database string
+	// Schema is the normalized schema name, it should not be empty for the engines that support schema, and should be empty for the engines that don't support schema.
+	Schema string
+	// Name is the normalized table name, it should not be empty.
+	Name string
+	// Columns are the columns of the table.
+	Columns []string
+}
+
+func (p PhysicalTable) GetQuerySpanResult() []*QuerySpanResult {
+	result := make([]*QuerySpanResult, 0, len(p.Columns))
+	for _, column := range p.Columns {
+		sourceColumnSet := make(SourceColumnSet, 1)
+		sourceColumnSet[ColumnResource{
+			Server:   p.Server,
+			Database: p.Database,
+			Schema:   p.Schema,
+			Table:    p.Name,
+			Column:   column,
+		}] = true
+		result = append(result, &QuerySpanResult{
+			Name:          column,
+			SourceColumns: sourceColumnSet,
+		})
+	}
+	return result
 }
 
 // String returns the string format of the column resource.

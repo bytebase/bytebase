@@ -501,6 +501,7 @@ func (extractor *fieldExtractor) pgExtractSelect(node *pgquery.Node_SelectStmt) 
 		if err != nil {
 			return nil, err
 		}
+		// FIXME: append
 		extractor.fromFieldList = fromFieldList
 	}
 	defer func() {
