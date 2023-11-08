@@ -1,19 +1,16 @@
 - statement: |-
     ALTER TABLE tech_book MODIFY id int;
-    ALTER TABLE tech_book MODIFY id int(4);
-  want:
-    - status: SUCCESS
-      code: 0
-      title: OK
-      content: ""
-      line: 0
-      details: ""
-- statement: |-
-    ALTER TABLE tech_book MODIFY id int;
     ALTER TABLE tech_book MODIFY id INT;
     ALTER TABLE tech_book MODIFY id INTEGER;
     ALTER TABLE tech_book MODIFY id INTEGER UNSIGNED;
   want:
+    - status: WARN
+      code: 403
+      title: column.disallow-change-type
+      content: |-
+        "ALTER TABLE tech_book MODIFY id INTEGER;" changes column type
+      line: 3
+      details: ""
     - status: WARN
       code: 403
       title: column.disallow-change-type
@@ -25,11 +22,12 @@
     ALTER TABLE tech_book MODIFY id int;
     ALTER TABLE tech_book MODIFY id int(4);
   want:
-    - status: SUCCESS
-      code: 0
-      title: OK
-      content: ""
-      line: 0
+    - status: WARN
+      code: 403
+      title: column.disallow-change-type
+      content: |-
+        "ALTER TABLE tech_book MODIFY id int(4);" changes column type
+      line: 2
       details: ""
 - statement: |-
     ALTER TABLE tech_book MODIFY id bigint;

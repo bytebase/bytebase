@@ -113,30 +113,30 @@ func (checker *columnDisallowChangingTypeChecker) EnterAlterTable(ctx *mysql.Alt
 	}
 }
 
-func normalizeColumnTypeImpl(tp string) string {
-	switch {
-	case strings.HasPrefix(tp, "integer"), strings.HasPrefix(tp, "int"):
-		return "int"
-	case strings.HasPrefix(tp, "tinyint"):
-		return "tinyint"
-	case strings.HasPrefix(tp, "smallint"):
-		return "smallint"
-	case strings.HasPrefix(tp, "mediumint"):
-		return "mediumint"
-	case strings.HasPrefix(tp, "bigint"):
-		return "bigint"
+func normalizeColumnType(tp string) string {
+	switch strings.ToLower(tp) {
+	case "tinyint":
+		return "tinyint(4)"
+	case "tinyint unsigned":
+		return "tinyint(4) unsigned"
+	case "smallint":
+		return "smallint(6)"
+	case "smallint unsigned":
+		return "smallint(6) unsigned"
+	case "mediumint":
+		return "mediumint(9)"
+	case "mediumint unsigned":
+		return "mediumint(9) unsigned"
+	case "int":
+		return "int(11)"
+	case "int unsigned":
+		return "int(11) unsigned"
+	case "bigint":
+		return "bigint(20)"
+	case "bigint unsigned":
+		return "bigint(20) unsigned"
 	default:
 		return strings.ToLower(tp)
-	}
-}
-
-func normalizeColumnType(tp string) string {
-	columnType := strings.ToLower(tp)
-	switch {
-	case strings.Contains(columnType, "unsigned"):
-		return normalizeColumnTypeImpl(tp) + "unsigned"
-	default:
-		return normalizeColumnTypeImpl(columnType)
 	}
 }
 
