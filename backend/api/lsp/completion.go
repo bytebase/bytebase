@@ -69,9 +69,15 @@ func (h *Handler) GetDatabaseMetadataFunc(ctx context.Context, databaseName stri
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get database")
 	}
+	if database == nil {
+		return nil, errors.Errorf("database %s for instance %s not found", databaseName, instanceID)
+	}
 	metadata, err := h.store.GetDBSchema(ctx, database.UID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get database schema")
+	}
+	if metadata == nil {
+		return nil, errors.Errorf("database %s schema for instance %s not found", databaseName, instanceID)
 	}
 	return metadata.GetDatabaseMetadata(), nil
 }
