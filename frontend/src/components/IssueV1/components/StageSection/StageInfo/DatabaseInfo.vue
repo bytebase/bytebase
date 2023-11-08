@@ -40,9 +40,6 @@
           class="hover:underline"
         />
       </template>
-      <span v-else-if="databaseCreationStatus === 'CREATED'">
-        {{ coreDatabaseInfo.databaseName }}
-      </span>
       <span v-else>
         {{ coreDatabaseInfo.databaseName }}
       </span>
