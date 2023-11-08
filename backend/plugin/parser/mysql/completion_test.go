@@ -97,6 +97,15 @@ func getMetadataForTest(_ context.Context, databaseName string) (*model.Database
 						},
 					},
 				},
+				Views: []*storepb.ViewMetadata{
+					{
+						Name: "v1",
+						Definition: `CREATE VIEW v1 AS
+						SELECT *
+						FROM t1
+						`,
+					},
+				},
 			},
 		},
 	}), nil

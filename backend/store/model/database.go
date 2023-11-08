@@ -174,7 +174,8 @@ func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *DatabaseMeta
 	}
 	for _, schema := range metadata.Schemas {
 		schemaMetadata := &SchemaMetadata{
-			internal: make(map[string]*TableMetadata),
+			internalTables: make(map[string]*TableMetadata),
+			internalViews:  make(map[string]*ViewMetadata),
 		}
 		for _, table := range schema.Tables {
 			tableMetadata := &TableMetadata{
@@ -184,7 +185,10 @@ func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *DatabaseMeta
 				tableMetadata.internal[column.Name] = column
 				tableMetadata.columns = append(tableMetadata.columns, column)
 			}
-			schemaMetadata.internal[table.Name] = tableMetadata
+			schemaMetadata.internalTables[table.Name] = tableMetadata
+		}
+		for _, view := range schema.Views {
+			schemaMetadata.internalViews[view.Name] = &ViewMetadata{}
 		}
 		databaseMetadata.internal[schema.Name] = schemaMetadata
 	}
@@ -198,19 +202,31 @@ func (d *DatabaseMetadata) GetSchema(name string) *SchemaMetadata {
 
 // SchemaMetadata is the metadata for a schema.
 type SchemaMetadata struct {
-	internal map[string]*TableMetadata
+	internalTables map[string]*TableMetadata
+	internalViews  map[string]*ViewMetadata
 }
 
 // GetTable gets the schema by name.
 func (s *SchemaMetadata) GetTable(name string) *TableMetadata {
-	return s.internal[name]
+	return s.internalTables[name]
 }
 
 // ListTableNames lists the table names.
 func (s *SchemaMetadata) ListTableNames() []string {
 	var result []string
-	for tableName := range s.internal {
+	for tableName := range s.internalTables {
 		result = append(result, tableName)
+	}
+
+	sort.Strings(result)
+	return result
+}
+
+// ListViewNames lists the view names.
+func (s *SchemaMetadata) ListViewNames() []string {
+	var result []string
+	for viewName := range s.internalViews {
+		result = append(result, viewName)
 	}
 
 	sort.Strings(result)
@@ -231,4 +247,8 @@ func (t *TableMetadata) GetColumn(name string) *storepb.ColumnMetadata {
 // GetColumns gets the columns.
 func (t *TableMetadata) GetColumns() []*storepb.ColumnMetadata {
 	return t.columns
+}
+
+// ViewMetadata is the metadata for a view.
+type ViewMetadata struct {
 }
