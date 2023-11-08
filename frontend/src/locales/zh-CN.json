@@ -3247,5 +3247,14 @@
     "confirm-remove-change": "移除这项变更？",
     "delete-this-changelist": "删除这个变更列表",
     "confirm-delete-changelist": "删除变更列表？"
+  },
+  "export-data": {
+    "self": "导出数据",
+    "export-rows": "导出行数",
+    "error": {
+      "export-rows-required": "需要指定导出行数",
+      "export-rows-must-gt-zero": "导出行数必须大于 0"
+    },
+    "export-format": "导出格式"
   }
 }
