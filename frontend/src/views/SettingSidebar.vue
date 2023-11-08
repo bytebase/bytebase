@@ -20,7 +20,7 @@ import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import { SidebarItem } from "@/components/CommonSidebar.vue";
 import { useCurrentUserV1 } from "@/store";
-import { hasWorkspacePermissionV1 } from "../utils";
+import { hasSettingPagePermission } from "../utils";
 
 const { t } = useI18n();
 const route = useRoute();
@@ -35,66 +35,6 @@ const getItemClass = (path: string | undefined) => {
   }
   return list;
 };
-
-const showProjectItem = computed((): boolean => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-project",
-    currentUserV1.value.userRole
-  );
-});
-
-const showSensitiveDataItem = computed((): boolean => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-sensitive-data",
-    currentUserV1.value.userRole
-  );
-});
-
-const showAccessControlItem = computed((): boolean => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-access-control",
-    currentUserV1.value.userRole
-  );
-});
-
-const showSSOItem = computed((): boolean => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-sso",
-    currentUserV1.value.userRole
-  );
-});
-
-const showVCSItem = computed((): boolean => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-vcs-provider",
-    currentUserV1.value.userRole
-  );
-});
-
-const showIntegrationSection = computed(() => {
-  return showVCSItem.value || showSSOItem.value;
-});
-
-const showDebugLogItem = computed((): boolean => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.debug-log",
-    currentUserV1.value.userRole
-  );
-});
-
-const showAuditLogItem = computed((): boolean => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.audit-log",
-    currentUserV1.value.userRole
-  );
-});
-
-const showMailDeliveryItem = computed((): boolean => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-mail-delivery",
-    currentUserV1.value.userRole
-  );
-});
 
 const settingSidebarItemList = computed((): SidebarItem[] => {
   return [
@@ -119,6 +59,10 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
         {
           title: t("settings.sidebar.members"),
           path: "/setting/member",
+          hide: !hasSettingPagePermission(
+            "setting.workspace.member",
+            currentUserV1.value.userRole
+          ),
         },
         {
           title: t("settings.sidebar.custom-roles"),
@@ -127,7 +71,10 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
         {
           title: t("common.projects"),
           path: "/setting/project",
-          hide: !showProjectItem.value,
+          hide: !hasSettingPagePermission(
+            "setting.workspace.project",
+            currentUserV1.value.userRole
+          ),
         },
         {
           title: t("settings.sidebar.subscription"),
@@ -136,7 +83,10 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
         {
           title: t("settings.sidebar.debug-log"),
           path: "/setting/debug-log",
-          hide: !showDebugLogItem.value,
+          hide: !hasSettingPagePermission(
+            "setting.workspace.debug-log",
+            currentUserV1.value.userRole
+          ),
         },
       ],
     },
@@ -167,38 +117,56 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
         {
           title: t("settings.sidebar.sensitive-data"),
           path: "/setting/sensitive-data",
-          hide: !showSensitiveDataItem.value,
+          hide: !hasSettingPagePermission(
+            "setting.workspace.sensitive-data",
+            currentUserV1.value.userRole
+          ),
         },
         {
           title: t("settings.sidebar.access-control"),
           path: "/setting/access-control",
-          hide: !showAccessControlItem.value,
+          hide: !hasSettingPagePermission(
+            "setting.workspace.access-control",
+            currentUserV1.value.userRole
+          ),
         },
         {
           title: t("settings.sidebar.audit-log"),
           path: "/setting/audit-log",
-          hide: !showAuditLogItem.value,
+          hide: !hasSettingPagePermission(
+            "setting.workspace.audit-log",
+            currentUserV1.value.userRole
+          ),
         },
       ],
     },
     {
       title: t("settings.sidebar.integration"),
       icon: h(Link),
-      hide: !showIntegrationSection.value,
       children: [
         {
           title: t("settings.sidebar.gitops"),
           path: "/setting/gitops",
+          hide: !hasSettingPagePermission(
+            "setting.workspace.gitops",
+            currentUserV1.value.userRole
+          ),
         },
         {
           title: t("settings.sidebar.sso"),
-          hide: !showSSOItem.value,
           path: "/setting/sso",
+          hide: !hasSettingPagePermission(
+            "setting.workspace.sso",
+            currentUserV1.value.userRole
+          ),
         },
         {
           title: t("settings.sidebar.mail-delivery"),
-          hide: !showMailDeliveryItem.value,
           path: "/setting/mail-delivery",
+          hide: !hasSettingPagePermission(
+            "setting.workspace.mail-delivery",
+            currentUserV1.value.userRole
+          ),
         },
       ],
     },
