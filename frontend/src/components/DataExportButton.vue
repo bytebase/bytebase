@@ -2,7 +2,7 @@
   <NDropdown
     trigger="hover"
     :options="exportDropdownOptions"
-    :disabled="allowSpecifyRowCount"
+    :disabled="viewMode === 'DRAWER'"
     @select="tryExportViaDropdown"
   >
     <NButton
@@ -21,7 +21,7 @@
     </NButton>
   </NDropdown>
 
-  <Drawer v-model:show="state.showDrawer">
+  <Drawer v-if="viewMode === 'DRAWER'" v-model:show="state.showDrawer">
     <DrawerContent
       :title="$t('export-data.self')"
       class="w-[30rem] max-w-[100vw] relative"
@@ -142,6 +142,10 @@ const formRef = ref<FormInst>();
 const limitInputRef = ref<InputNumberInst>();
 const formData = ref<FormData>(defaultFormData());
 
+const viewMode = computed(() => {
+  return props.allowSpecifyRowCount ? "DRAWER" : "DROPDOWN";
+});
+
 const rules: FormRules = {
   limit: [
     {
@@ -196,7 +200,7 @@ const formErrors = asyncComputed(() => {
 
 const handleClickExportButton = (e: MouseEvent) => {
   e.preventDefault();
-  if (!props.allowSpecifyRowCount) return;
+  if (viewMode.value === "DROPDOWN") return;
 
   state.showDrawer = true;
 };
