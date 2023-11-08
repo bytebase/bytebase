@@ -55,7 +55,7 @@ export default defineConfig(() => {
       host: "0.0.0.0",
       proxy: {
         "/v1:adminExecute": {
-          target: `ws://${LOCAL_ENDPOINT}/`,
+          target: `ws://${extractHostPort(LOCAL_ENDPOINT)}/`,
           changeOrigin: true,
           ws: true,
         },
@@ -91,3 +91,8 @@ export default defineConfig(() => {
     envPrefix: "BB_",
   };
 });
+
+const extractHostPort = (url: string) => {
+  const parsed = new URL(url);
+  return parsed.host;
+};
