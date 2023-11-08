@@ -75,6 +75,8 @@ func TestMySQLWIPRules(t *testing.T) {
 		advisor.SchemaRuleIndexNoDuplicateColumn,
 		// advisor.SchemaRuleIndexKeyNumberLimit enforce the index key number limit.
 		advisor.SchemaRuleIndexKeyNumberLimit,
+		// advisor.SchemaRuleIndexTotalNumberLimit enforce the index total number limit.
+		advisor.SchemaRuleIndexTotalNumberLimit,
 	}
 
 	for _, rule := range mysqlwipRules {
