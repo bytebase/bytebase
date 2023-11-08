@@ -203,6 +203,7 @@ ruleList:
       - POSTGRES
       - OCEANBASE
       - MARIADB
+      - TIDB
     componentList: []
   - type: statement.disallow-add-column-with-default
     category: STATEMENT
