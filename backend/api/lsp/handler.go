@@ -11,6 +11,7 @@ import (
 	"github.com/sourcegraph/go-lsp"
 	"github.com/sourcegraph/jsonrpc2"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -92,9 +93,15 @@ func (h *Handler) getInstanceID() string {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	if h.metadata == nil {
+		slog.Error("Metadata is not set")
 		return ""
 	}
-	return h.metadata.InstanceID
+	id, err := common.GetInstanceID(h.metadata.InstanceID)
+	if err != nil {
+		slog.Error("Failed to get instance ID", log.BBError(err), slog.String("instanceID", h.metadata.InstanceID))
+		return ""
+	}
+	return id
 }
 
 func (h *Handler) getEngineType(ctx context.Context) storepb.Engine {
