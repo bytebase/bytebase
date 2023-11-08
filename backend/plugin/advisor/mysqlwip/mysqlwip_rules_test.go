@@ -69,6 +69,8 @@ func TestMySQLWIPRules(t *testing.T) {
 		advisor.SchemaRuleColumnMaximumCharacterLength,
 		// advisor.SchemaRuleColumnAutoIncrementInitialValue enforce the initial auto-increment value.
 		advisor.SchemaRuleColumnAutoIncrementInitialValue,
+		// advisor.SchemaRuleColumnRequireDefault enforce the column default.
+		advisor.SchemaRuleColumnRequireDefault,
 
 		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL support check if the database is empty before users drop it.
 		advisor.SchemaRuleDropEmptyDatabase,
