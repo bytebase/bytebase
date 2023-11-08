@@ -4,6 +4,7 @@
     class="flex items-center bg-blue-100 py-3 px-2 text-main"
   >
     <button
+      v-if="!isStandaloneMode"
       class="w-7 h-7 p-1 mr-3 rounded cursor-pointer"
       @click.prevent="$emit('dismiss')"
     >
@@ -75,7 +76,6 @@
 </template>
 
 <script lang="ts" setup>
-import { storeToRefs } from "pinia";
 import { computed, h, VNode, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -93,7 +93,7 @@ import {
   useGracefulRequest,
   useDBSchemaV1Store,
   pushNotification,
-  useActuatorV1Store,
+  usePageMode,
 } from "@/store";
 import { ComposedDatabase, DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { Database } from "@/types/proto/v1/database_service";
@@ -143,13 +143,14 @@ const schemaEditorContext = ref<{
 
 const { t } = useI18n();
 const router = useRouter();
-const actuatorStore = useActuatorV1Store();
 const databaseStore = useDatabaseV1Store();
 const projectStore = useProjectV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const currentUserV1 = useCurrentUserV1();
 const currentUserIamPolicy = useCurrentUserIamPolicy();
-const { pageMode } = storeToRefs(actuatorStore);
+const pageMode = usePageMode();
+
+const isStandaloneMode = computed(() => pageMode.value === "STANDALONE");
 
 const selectedProjectNames = computed(() => {
   return new Set(props.databases.map((db) => db.project));
@@ -244,7 +245,7 @@ const generateMultiDb = async (
   if (
     type === "bb.issue.database.schema.update" &&
     allowUsingSchemaEditorV1(props.databases) &&
-    pageMode.value === "BUNDLED"
+    !isStandaloneMode.value
   ) {
     schemaEditorContext.value.databaseIdList = [
       ...selectedDatabaseUidList.value,
@@ -315,7 +316,7 @@ const syncSchema = async () => {
 
 const actions = computed((): DatabaseAction[] => {
   const resp: DatabaseAction[] = [];
-  if (pageMode.value === "BUNDLED") {
+  if (!isStandaloneMode.value) {
     resp.push({
       icon: h(RefreshIcon),
       text: t("common.sync"),

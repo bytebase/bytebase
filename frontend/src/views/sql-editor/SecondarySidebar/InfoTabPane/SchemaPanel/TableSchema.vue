@@ -41,10 +41,9 @@
 </template>
 
 <script lang="ts" setup>
-import { storeToRefs } from "pinia";
 import { stringify } from "qs";
 import { computed } from "vue";
-import { useActuatorV1Store } from "@/store";
+import { usePageMode } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type {
   DatabaseMetadata,
@@ -69,8 +68,7 @@ const emit = defineEmits<{
 }>();
 
 const { events: editorEvents } = useSQLEditorContext();
-const actuatorStore = useActuatorV1Store();
-const { pageMode } = storeToRefs(actuatorStore);
+const pageMode = usePageMode();
 
 const tableDetailLink = computed((): string => {
   const { db: database, schema, table } = props;
