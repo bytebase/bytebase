@@ -268,7 +268,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			}
 		} else {
 			// TODO(zp): refactor column default value.
-			if strings.Contains(extra, "auto_increment") || strings.Contains(extra, "AUTO_INCREMENT") {
+			if strings.Contains(strings.ToLower(extra), "auto_increment") {
 				column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: "auto_increment"}
 			}
 		}
