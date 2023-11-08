@@ -3254,5 +3254,14 @@
     "confirm-remove-change": "Remove this change?",
     "delete-this-changelist": "Delete this changelist",
     "confirm-delete-changelist": "Delete this changelist?"
+  },
+  "export-data": {
+    "self": "Export Data",
+    "export-rows": "Export rows",
+    "error": {
+      "export-rows-required": "Export rows required",
+      "export-rows-must-gt-zero": "Export rows must greater than 0"
+    },
+    "export-format": "Export format"
   }
 }

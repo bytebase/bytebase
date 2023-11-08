@@ -3252,5 +3252,14 @@
     "confirm-remove-change": "¿Eliminar este cambio?",
     "delete-this-changelist": "Eliminar esta lista de cambios",
     "confirm-delete-changelist": "¿Eliminar esta lista de cambios?"
+  },
+  "export-data": {
+    "self": "Exportar datos",
+    "export-rows": "Exportar filas",
+    "error": {
+      "export-rows-required": "Se requieren filas de exportación",
+      "export-rows-must-gt-zero": "Las filas de exportación deben ser mayores que 0"
+    },
+    "export-format": "Formato de exportación"
   }
 }

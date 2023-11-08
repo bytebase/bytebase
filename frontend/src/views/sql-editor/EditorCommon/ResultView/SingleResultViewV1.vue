@@ -71,6 +71,7 @@
             ExportFormat.SQL,
             ExportFormat.XLSX,
           ]"
+          :allow-specify-row-count="true"
           @export="handleExportBtnClick"
         />
         <NButton v-else @click="state.showRequestExportPanel = true">
@@ -318,7 +319,8 @@ const pageSize = computed(() => {
 
 const handleExportBtnClick = async (
   format: ExportFormat,
-  callback: (content: BinaryLike | Blob, format: ExportFormat) => void
+  callback: (content: BinaryLike | Blob, format: ExportFormat) => void,
+  userSpecifiedLimit: number | undefined
 ) => {
   const { instanceId, databaseId } = tabStore.currentTab.connection;
   const instance = instanceStore.getInstanceByUID(instanceId).name;
@@ -328,7 +330,7 @@ const handleExportBtnClick = async (
       : databaseStore.getDatabaseByUID(databaseId).name;
   const statement = props.result.statement;
   const admin = tabStore.currentTab.mode === TabMode.Admin;
-  const limit = admin ? 0 : RESULT_ROWS_LIMIT;
+  const limit = userSpecifiedLimit ?? (admin ? 0 : RESULT_ROWS_LIMIT);
 
   const content = await exportData({
     database,
