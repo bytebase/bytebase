@@ -58,14 +58,17 @@
           <NButton @click="state.showDrawer = false">
             {{ $t("common.cancel") }}
           </NButton>
-          <NButton
-            type="primary"
-            :loading="state.isRequesting"
-            :disabled="!allowExportViaForm || state.isRequesting"
+          <ErrorTipsButton
+            :button-props="{
+              type: 'primary',
+              loading: state.isRequesting,
+              disabled: formErrors.length > 0 || state.isRequesting,
+            }"
+            :errors="formErrors"
             @click="tryExportViaForm"
           >
             {{ $t("common.confirm") }}
-          </NButton>
+          </ErrorTipsButton>
         </div>
       </template>
     </DrawerContent>
@@ -93,6 +96,7 @@ import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
 import { ExportFormat, exportFormatToJSON } from "@/types/proto/v1/common";
 import { isNullOrUndefined } from "@/utils";
+import { ErrorTipsButton } from "./v2";
 
 interface LocalState {
   isRequesting: boolean;
@@ -175,15 +179,20 @@ const tryExportViaForm = async (e: MouseEvent) => {
     doExport(formData.value.format, formData.value.limit);
   });
 };
-const allowExportViaForm = asyncComputed(async () => {
-  if (!formRef.value) return false;
+const formErrors = asyncComputed(() => {
+  if (!formRef.value) return [];
   try {
-    await formRef.value.validate();
-    return true;
+    return new Promise<string[]>((resolve) => {
+      formRef.value!.validate((errors) => {
+        resolve(
+          errors?.flatMap((err) => err.map((e) => e.message ?? "")) ?? []
+        );
+      });
+    });
   } catch {
-    return false;
+    return [];
   }
-}, false);
+}, []);
 
 const handleClickExportButton = (e: MouseEvent) => {
   e.preventDefault();
