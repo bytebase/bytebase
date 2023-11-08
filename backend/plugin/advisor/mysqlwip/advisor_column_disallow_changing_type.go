@@ -6,17 +6,25 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pingcap/tidb/parser/ast"
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
+
+	mysql "github.com/bytebase/mysql-parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*ColumnDisallowChangingTypeAdvisor)(nil)
-	_ ast.Visitor     = (*columnDisallowChangingTypeChecker)(nil)
 )
+
+func init() {
+	// only for mysqlwip test.
+	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLColumnDisallowChangingType, &ColumnDisallowChangingTypeAdvisor{})
+}
 
 // ColumnDisallowChangingTypeAdvisor is the advisor checking for disallow changing column type..
 type ColumnDisallowChangingTypeAdvisor struct {
@@ -24,9 +32,9 @@ type ColumnDisallowChangingTypeAdvisor struct {
 
 // Check checks for disallow changing column type..
 func (*ColumnDisallowChangingTypeAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	stmtList, ok := ctx.AST.([]ast.StmtNode)
+	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to StmtNode")
+		return nil, errors.Errorf("failed to convert to mysql parser result")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -40,9 +48,8 @@ func (*ColumnDisallowChangingTypeAdvisor) Check(ctx advisor.Context, _ string) (
 	}
 
 	for _, stmt := range stmtList {
-		checker.text = stmt.Text()
-		checker.line = stmt.OriginTextPosition()
-		(stmt).Accept(checker)
+		checker.baseLine = stmt.BaseLine
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -57,85 +64,100 @@ func (*ColumnDisallowChangingTypeAdvisor) Check(ctx advisor.Context, _ string) (
 }
 
 type columnDisallowChangingTypeChecker struct {
+	*mysql.BaseMySQLParserListener
+
+	baseLine   int
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
 	text       string
-	line       int
 	catalog    *catalog.Finder
 }
 
-// Enter implements the ast.Visitor interface.
-func (checker *columnDisallowChangingTypeChecker) Enter(in ast.Node) (ast.Node, bool) {
-	changeType := false
-	if node, ok := in.(*ast.AlterTableStmt); ok {
-		for _, spec := range node.Specs {
-			switch spec.Tp {
-			case ast.AlterTableChangeColumn:
-				changeType = checker.changeColumnType(node.Table.Name.O, spec.OldColumnName.Name.O, spec.NewColumns[0].Tp.String())
-			case ast.AlterTableModifyColumn:
-				changeType = checker.changeColumnType(node.Table.Name.O, spec.NewColumns[0].Name.Name.O, spec.NewColumns[0].Tp.String())
-			}
-			if changeType {
-				break
-			}
+func (checker *columnDisallowChangingTypeChecker) EnterQuery(ctx *mysql.QueryContext) {
+	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+}
+
+// EnterAlterTable is called when production alterTable is entered.
+func (checker *columnDisallowChangingTypeChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if ctx.AlterTableActions() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
+		return
+	}
+
+	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
+	// alter table add column, change column, modify column.
+	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
+		if item == nil {
+			continue
 		}
-	}
 
-	if changeType {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  checker.level,
-			Code:    advisor.ChangeColumnType,
-			Title:   checker.title,
-			Content: fmt.Sprintf("\"%s\" changes column type", checker.text),
-			Line:    checker.line,
-		})
+		var columnName string
+		switch {
+		// change column
+		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil:
+			// only focus on old colunn-name.
+			columnName = mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
+		// MODIFY COLUMN
+		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
+			columnName = mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
+		default:
+			continue
+		}
+		checker.changeColumnType(tableName, columnName, item.FieldDefinition().DataType())
 	}
-
-	return in, false
 }
 
-// Leave implements the ast.Visitor interface.
-func (*columnDisallowChangingTypeChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
-}
-
-func normalizeColumnType(tp string) string {
-	switch strings.ToLower(tp) {
-	case "tinyint":
-		return "tinyint(4)"
-	case "tinyint unsigned":
-		return "tinyint(4) unsigned"
-	case "smallint":
-		return "smallint(6)"
-	case "smallint unsigned":
-		return "smallint(6) unsigned"
-	case "mediumint":
-		return "mediumint(9)"
-	case "mediumint unsigned":
-		return "mediumint(9) unsigned"
-	case "int":
-		return "int(11)"
-	case "int unsigned":
-		return "int(11) unsigned"
-	case "bigint":
-		return "bigint(20)"
-	case "bigint unsigned":
-		return "bigint(20) unsigned"
+func normalizeColumnTypeImpl(tp string) string {
+	switch {
+	case strings.HasPrefix(tp, "integer"), strings.HasPrefix(tp, "int"):
+		return "int"
+	case strings.HasPrefix(tp, "tinyint"):
+		return "tinyint"
+	case strings.HasPrefix(tp, "smallint"):
+		return "smallint"
+	case strings.HasPrefix(tp, "mediumint"):
+		return "mediumint"
+	case strings.HasPrefix(tp, "bigint"):
+		return "bigint"
 	default:
 		return strings.ToLower(tp)
 	}
 }
 
-func (checker *columnDisallowChangingTypeChecker) changeColumnType(tableName string, columName string, newType string) bool {
+func normalizeColumnType(tp string) string {
+	columnType := strings.ToLower(tp)
+	switch {
+	case strings.Contains(columnType, "unsigned"):
+		return normalizeColumnTypeImpl(tp) + "unsigned"
+	default:
+		return normalizeColumnTypeImpl(columnType)
+	}
+}
+
+func (checker *columnDisallowChangingTypeChecker) changeColumnType(tableName, columnName string, dataType mysql.IDataTypeContext) {
+	tp := dataType.GetParser().GetTokenStream().GetTextFromRuleContext(dataType)
 	column := checker.catalog.Origin.FindColumn(&catalog.ColumnFind{
 		TableName:  tableName,
-		ColumnName: columName,
+		ColumnName: columnName,
 	})
 
 	if column == nil {
-		return false
+		return
 	}
 
-	return normalizeColumnType(column.Type()) != normalizeColumnType(newType)
+	if normalizeColumnType(column.Type()) != normalizeColumnType(tp) {
+		checker.adviceList = append(checker.adviceList, advisor.Advice{
+			Status:  checker.level,
+			Code:    advisor.ChangeColumnType,
+			Title:   checker.title,
+			Content: fmt.Sprintf("\"%s\" changes column type", checker.text),
+			Line:    checker.baseLine + dataType.GetStart().GetLine(),
+		})
+	}
 }

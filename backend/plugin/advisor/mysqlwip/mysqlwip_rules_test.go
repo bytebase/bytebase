@@ -61,6 +61,8 @@ func TestMySQLWIPRules(t *testing.T) {
 		advisor.SchemaRuleRequiredColumn,
 		// advisor.SchemaRuleColumnNotNull enforce the columns cannot have NULL value.
 		advisor.SchemaRuleColumnNotNull,
+		// advisor.SchemaRuleColumnDisallowChangeType disallow change column type.
+		advisor.SchemaRuleColumnDisallowChangeType,
 		// advisor.SchemaRuleColumnDisallowSetCharset disallow set column charset.
 		advisor.SchemaRuleColumnDisallowSetCharset,
 		// advisor.SchemaRuleColumnMaximumCharacterLength enforce the maximum character length.
