@@ -161,3 +161,9 @@ export const useDebugLogList = () => {
 
   return storeToRefs(store).debugLogList;
 };
+
+export const usePageMode = () => {
+  const actuatorStore = useActuatorV1Store();
+  const { pageMode } = storeToRefs(actuatorStore);
+  return pageMode;
+};

@@ -50,7 +50,7 @@
     </div>
 
     <DatabaseOperations
-      v-if="selectedDatabases.length > 0"
+      v-if="selectedDatabases.length > 0 || isStandaloneMode"
       class="mb-3"
       :databases="selectedDatabases"
       @dismiss="state.selectedDatabaseIds.clear()"
@@ -110,7 +110,6 @@
 
 <script lang="ts" setup>
 import { NInputGroup, NTooltip } from "naive-ui";
-import { storeToRefs } from "pinia";
 import { computed, watchEffect, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
@@ -121,11 +120,11 @@ import {
 } from "@/components/v2";
 import { isDatabase } from "@/components/v2/Model/DatabaseV1Table/utils";
 import {
-  useActuatorV1Store,
   useCurrentUserV1,
   useDBGroupStore,
   useDatabaseV1Store,
   useEnvironmentV1Store,
+  usePageMode,
   usePolicyV1Store,
   useProjectV1ListByCurrentUser,
   useUIStateStore,
@@ -164,8 +163,7 @@ const router = useRouter();
 const uiStateStore = useUIStateStore();
 const environmentV1Store = useEnvironmentV1Store();
 const { projectList } = useProjectV1ListByCurrentUser();
-const actuatorStore = useActuatorV1Store();
-const { pageMode } = storeToRefs(actuatorStore);
+const pageMode = usePageMode();
 
 const state = reactive<LocalState>({
   instanceFilter: String(UNKNOWN_ID),
