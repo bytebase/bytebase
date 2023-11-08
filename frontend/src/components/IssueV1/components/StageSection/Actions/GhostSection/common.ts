@@ -207,12 +207,6 @@ export const allowGhostForSpec = (spec: Plan_Spec | undefined) => {
 };
 
 export const allowGhostForTask = (issue: ComposedIssue, task: Task) => {
-  if (
-    task.target ===
-    "instances/instance-0e0ee52e/databases/news_management__cn_sh"
-  ) {
-    return false;
-  }
   return (
     allowGhostForSpec(specForTask(issue.planEntity, task)) &&
     allowGhostForDatabase(databaseForTask(issue, task))
