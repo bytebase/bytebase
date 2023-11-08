@@ -54,10 +54,9 @@
 </template>
 
 <script lang="ts" setup>
-import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { InstanceV1Name, EnvironmentV1Name } from "@/components/v2";
-import { useActuatorV1Store, useEnvironmentV1Store } from "@/store";
+import { useEnvironmentV1Store, usePageMode } from "@/store";
 import { ComposedDatabase } from "@/types";
 import { isPITRDatabaseV1 } from "@/utils";
 import LabelsColumn from "./LabelsColumn.vue";
@@ -79,8 +78,7 @@ const props = defineProps<{
 
 defineEmits(["goto-sql-editor-failed"]);
 
-const actuatorStore = useActuatorV1Store();
-const { pageMode } = storeToRefs(actuatorStore);
+const pageMode = usePageMode();
 
 const environment = computed(() => {
   return useEnvironmentV1Store().getEnvironmentByName(
