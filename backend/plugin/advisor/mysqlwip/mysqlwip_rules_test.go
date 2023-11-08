@@ -45,6 +45,9 @@ func TestMySQLWIPRules(t *testing.T) {
 		advisor.SchemaRuleStatementInsertMustSpecifyColumn,
 		// advisor.SchemaRuleStatementInsertDisallowOrderByRand disallow the order by rand in the INSERT statement.
 		advisor.SchemaRuleStatementInsertDisallowOrderByRand,
+		// advisor.SchemaRuleStatementAffectedRowLimit enforce the UPDATE/DELETE affected row limit.
+		// TODO: need more test.
+		advisor.SchemaRuleStatementAffectedRowLimit,
 		// advisor.SchemaRuleStatementDMLDryRun dry run the dml.
 		// TODO: need more test.
 		advisor.SchemaRuleStatementDMLDryRun,
@@ -86,6 +89,15 @@ func TestMySQLWIPRules(t *testing.T) {
 		advisor.SchemaRuleIndexTotalNumberLimit,
 	}
 
+	for _, rule := range mysqlwipRules {
+		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_ENGINE_UNSPECIFIED, false /* record */)
+	}
+}
+
+func TestRules(t *testing.T) {
+	mysqlwipRules := []advisor.SQLReviewRuleType{
+		advisor.SchemaRuleStatementAffectedRowLimit,
+	}
 	for _, rule := range mysqlwipRules {
 		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_ENGINE_UNSPECIFIED, false /* record */)
 	}
