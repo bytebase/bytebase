@@ -24,11 +24,7 @@ import {
   useDBGroupStore,
   useProjectV1ListByCurrentUser,
 } from "@/store";
-import {
-  DEFAULT_PROJECT_V1_NAME,
-  UNKNOWN_ID,
-  UNKNOWN_USER_NAME,
-} from "@/types";
+import { DEFAULT_PROJECT_V1_NAME, UNKNOWN_ID } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import {
   PolicyResourceType,
@@ -136,19 +132,6 @@ const preparePolicyList = () => {
 };
 
 watchEffect(preparePolicyList);
-
-// Prepare database and database group list.
-const prepareDataList = () => {
-  // It will also be called when user logout
-  if (currentUserV1.value.name !== UNKNOWN_USER_NAME) {
-    databaseV1Store.searchDatabaseList({
-      parent: "instances/-",
-    });
-    dbGroupStore.fetchAllDatabaseGroupList();
-  }
-};
-
-watchEffect(prepareDataList);
 
 // Use this to make the list reactive when project is transferred.
 const databaseList = computed(() => {
