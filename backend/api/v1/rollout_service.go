@@ -510,7 +510,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check if the issue is approved, error: %v", err)
 	}
-	if !approved {
+	if !approved && !(user.Role == api.Owner || user.Role == api.DBA) {
 		return nil, status.Errorf(codes.FailedPrecondition, "cannot run the tasks because the issue is not approved")
 	}
 
