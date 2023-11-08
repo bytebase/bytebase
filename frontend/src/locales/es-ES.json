@@ -766,7 +766,7 @@
       "masking-level": {
         "self": "Nivel de enmascaramiento",
         "selet-level": "Selecciona el nivel",
-        "masking_level_unspecified": "Siga las reglas globales de enmascaramiento",
+        "masking_level_unspecified": "Sigue las reglas globales",
         "none": "Ninguna",
         "partial": "Parcial",
         "full": "Llena"
