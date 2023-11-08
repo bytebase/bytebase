@@ -3,6 +3,7 @@ package lsp
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/pkg/errors"
 	"github.com/sourcegraph/go-lsp"
@@ -13,6 +14,13 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
+
+func newEmptyCompletionList() *lsp.CompletionList {
+	return &lsp.CompletionList{
+		IsIncomplete: false,
+		Items:        []lsp.CompletionItem{},
+	}
+}
 
 func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.Conn, _ *jsonrpc2.Request, params lsp.CompletionParams) (*lsp.CompletionList, error) {
 	if !IsURI(params.TextDocument.URI) {
@@ -33,11 +41,15 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 	defaultDatabase := h.getDefaultDatabase()
 	engine := h.getEngineType(ctx)
 	if engine == storepb.Engine_ENGINE_UNSPECIFIED {
-		return nil, errors.Errorf("engine is not specified")
+		// return errors will close the websocket connection, so we just log the error and return empty completion list.
+		slog.Error("Engine is not specified")
+		return newEmptyCompletionList(), nil
 	}
 	candidates, err := base.Completion(ctx, engine, string(content), params.Position.Line+1, params.Position.Character, defaultDatabase, h.GetDatabaseMetadataFunc)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get completion candidates")
+		// return errors will close the websocket connection, so we just log the error and return empty completion list.
+		slog.Error("Failed to get completion candidates", "err", err)
+		return newEmptyCompletionList(), nil
 	}
 
 	var items []lsp.CompletionItem
