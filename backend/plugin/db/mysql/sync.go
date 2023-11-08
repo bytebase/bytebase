@@ -266,6 +266,11 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			} else {
 				column.DefaultValue = &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: defaultStr.String}}
 			}
+		} else {
+			// TODO(zp): refactor column default value.
+			if strings.Contains(extra, "auto_increment") {
+				column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: "auto_increment"}
+			}
 		}
 		isNullBool, err := util.ConvertYesNo(nullable)
 		if err != nil {
