@@ -126,6 +126,7 @@ var (
 		"pg_stat_slru":               true,
 	}
 
+	// SystemSchemaWhereClause is an optimization for getting less schema objects.
 	SystemSchemaWhereClause = func() string {
 		var schemas []string
 		for schema := range systemSchemas {
@@ -146,7 +147,16 @@ func IsSystemDatabase(database string) bool {
 
 func IsSystemSchema(schema string) bool {
 	_, ok := systemSchemas[schema]
-	return ok
+	if ok {
+		return true
+	}
+	if strings.HasPrefix(schema, "pg_temp") {
+		return true
+	}
+	if strings.HasPrefix(schema, "pg_toast") {
+		return true
+	}
+	return false
 }
 
 func IsSystemTable(table string) bool {

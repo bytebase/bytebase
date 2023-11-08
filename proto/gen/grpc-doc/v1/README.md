@@ -6477,7 +6477,6 @@ When paginating, all other parameters provided to `ListSchemaGroups` must match 
 | workflow | [Workflow](#bytebase-v1-Workflow) |  |  |
 | visibility | [Visibility](#bytebase-v1-Visibility) |  |  |
 | tenant_mode | [TenantMode](#bytebase-v1-TenantMode) |  |  |
-| db_name_template | [string](#string) |  |  |
 | schema_change | [SchemaChange](#bytebase-v1-SchemaChange) |  |  |
 | webhooks | [Webhook](#bytebase-v1-Webhook) | repeated |  |
 | data_classification_config_id | [string](#string) |  |  |

@@ -393,7 +393,10 @@
         "some-tasks-are-not-editable-in-batch-mode": "Some tasks are not editable in batch mode",
         "task-is-not-editable": "This task is not editable",
         "x-status-task-is-not-editable": "{status} task is not editable",
-        "nothing-changed": "Nothing changed"
+        "nothing-changed": "Nothing changed",
+        "not-applicable": {
+          "some-tasks-dont-meet-ghost-requirement": "Some tasks don't meet gh-ost's requirement"
+        }
       },
       "show-default-parameters": "Show default parameters",
       "hide-default-parameters": "Hide default parameters"
@@ -1026,7 +1029,7 @@
       "full-schema": "Full schema",
       "left-schema-may-change": "The schema on the left side may change before the issue is applied."
     },
-    "assignee-tooltip": "Allow the assignee to rollout the issue once the approval flow has been passed.",
+    "assignee-tooltip": "The assignees are those responsible for an issue, and when an issue is assigned to them, it shows up in their list of assigned issues.",
     "approval-flow": {
       "self": "Approval flow",
       "tooltip": "The approvers will review and approve the issue in the order specified in the flow. The issue can only be applied after all steps in the flow have been approved. You can configure a custom approval flow for each risk."
@@ -1079,8 +1082,6 @@
       "continue-anyway": "Continue anyway",
       "sql-review-violations": "SQL Review Violations"
     },
-    "no-assignee-candidates": "There is no valid assignee candidates in this project. Please contact the project owner.",
-    "allow-any-following-roles-to-be-assignee": "Allow any following roles to be assignee",
     "error": {
       "issue-is-not-open": "The issue is not open",
       "you-don-have-privilege-to-edit-this-issue": "You don't have privilege to edit this issue"

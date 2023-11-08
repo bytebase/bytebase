@@ -19,6 +19,9 @@ export const SupportedGhostParameters: GhostParameter[] = [
   { key: "assume-rbr", type: "bool", defaults: "false" },
   { key: "heart-beat-interval-millis", type: "int", defaults: "100" },
   { key: "nice-ratio", type: "float", defaults: "0" },
+  { key: "aliyun-rds", type: "bool", defaults: "false" },
+  { key: "azure", type: "bool", defaults: "false" },
+  { key: "gcp", type: "bool", defaults: "false" },
 ];
 
 export const isBoolParameter = (

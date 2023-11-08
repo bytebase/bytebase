@@ -15,12 +15,13 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/common/stacktrace"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 var (
 	upgrader   = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
-	newHandler = func() (jsonrpc2.Handler, io.Closer) {
-		return NewHandler(), io.NopCloser(strings.NewReader(""))
+	newHandler = func(s *store.Store) (jsonrpc2.Handler, io.Closer) {
+		return NewHandler(s), io.NopCloser(strings.NewReader(""))
 	}
 )
 
@@ -40,7 +41,7 @@ func (s *Server) Router(c echo.Context) error {
 	})
 	connectionID := s.connectionCount.Add(1)
 
-	handler, closer := newHandler()
+	handler, closer := newHandler(s.store)
 	ctx := c.Request().Context()
 	<-jsonrpc2.NewConn(ctx, wsjsonrpc2.NewObjectStream(connection), handler, nil /* connOpt */).DisconnectNotify()
 	err = closer.Close()

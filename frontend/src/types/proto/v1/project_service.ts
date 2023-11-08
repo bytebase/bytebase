@@ -554,7 +554,6 @@ export interface Project {
   workflow: Workflow;
   visibility: Visibility;
   tenantMode: TenantMode;
-  dbNameTemplate: string;
   schemaChange: SchemaChange;
   webhooks: Webhook[];
   dataClassificationConfigId: string;
@@ -2700,7 +2699,6 @@ function createBaseProject(): Project {
     workflow: 0,
     visibility: 0,
     tenantMode: 0,
-    dbNameTemplate: "",
     schemaChange: 0,
     webhooks: [],
     dataClassificationConfigId: "",
@@ -2732,9 +2730,6 @@ export const Project = {
     }
     if (message.tenantMode !== 0) {
       writer.uint32(64).int32(message.tenantMode);
-    }
-    if (message.dbNameTemplate !== "") {
-      writer.uint32(74).string(message.dbNameTemplate);
     }
     if (message.schemaChange !== 0) {
       writer.uint32(80).int32(message.schemaChange);
@@ -2811,13 +2806,6 @@ export const Project = {
 
           message.tenantMode = reader.int32() as any;
           continue;
-        case 9:
-          if (tag !== 74) {
-            break;
-          }
-
-          message.dbNameTemplate = reader.string();
-          continue;
         case 10:
           if (tag !== 80) {
             break;
@@ -2858,7 +2846,6 @@ export const Project = {
       workflow: isSet(object.workflow) ? workflowFromJSON(object.workflow) : 0,
       visibility: isSet(object.visibility) ? visibilityFromJSON(object.visibility) : 0,
       tenantMode: isSet(object.tenantMode) ? tenantModeFromJSON(object.tenantMode) : 0,
-      dbNameTemplate: isSet(object.dbNameTemplate) ? globalThis.String(object.dbNameTemplate) : "",
       schemaChange: isSet(object.schemaChange) ? schemaChangeFromJSON(object.schemaChange) : 0,
       webhooks: globalThis.Array.isArray(object?.webhooks) ? object.webhooks.map((e: any) => Webhook.fromJSON(e)) : [],
       dataClassificationConfigId: isSet(object.dataClassificationConfigId)
@@ -2893,9 +2880,6 @@ export const Project = {
     if (message.tenantMode !== 0) {
       obj.tenantMode = tenantModeToJSON(message.tenantMode);
     }
-    if (message.dbNameTemplate !== "") {
-      obj.dbNameTemplate = message.dbNameTemplate;
-    }
     if (message.schemaChange !== 0) {
       obj.schemaChange = schemaChangeToJSON(message.schemaChange);
     }
@@ -2921,7 +2905,6 @@ export const Project = {
     message.workflow = object.workflow ?? 0;
     message.visibility = object.visibility ?? 0;
     message.tenantMode = object.tenantMode ?? 0;
-    message.dbNameTemplate = object.dbNameTemplate ?? "";
     message.schemaChange = object.schemaChange ?? 0;
     message.webhooks = object.webhooks?.map((e) => Webhook.fromPartial(e)) || [];
     message.dataClassificationConfigId = object.dataClassificationConfigId ?? "";

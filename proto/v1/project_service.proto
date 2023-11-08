@@ -405,8 +405,6 @@ message Project {
 
   TenantMode tenant_mode = 8;
 
-  string db_name_template = 9;
-
   SchemaChange schema_change = 10;
 
   repeated Webhook webhooks = 11;

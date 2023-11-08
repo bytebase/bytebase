@@ -135,6 +135,7 @@ import {
   useDatabaseV1Store,
   useCurrentUserV1,
   useEnvironmentV1Store,
+  useInstanceV1Store,
   pushNotification,
   usePolicyV1Store,
   useSubscriptionV1Store,
@@ -185,6 +186,7 @@ const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
 const policyStore = usePolicyV1Store();
 const environmentStore = useEnvironmentV1Store();
 const subscriptionStore = useSubscriptionV1Store();
+const instanceV1Store = useInstanceV1Store();
 
 const policyList = usePolicyListByResourceTypeAndPolicyType({
   resourceType: PolicyResourceType.DATABASE,
@@ -371,7 +373,9 @@ const filteredColumnList = computed(() => {
 
 const findInstanceWithoutLicense = () => {
   for (const column of state.pendingGrantAccessColumn) {
-    const instance = column?.database?.instanceEntity;
+    const instance = instanceV1Store.getInstanceByName(
+      column.database.instance
+    );
     const missingLicense = isMissingLicenseForInstance(instance);
     if (missingLicense) {
       return instance;
@@ -427,6 +431,7 @@ const checkedColumnIndexList = computed(() => {
 });
 
 const updateCheckedColumnList = (indexes: number[]) => {
+  state.pendingGrantAccessColumn = [];
   for (const index of indexes) {
     const col = filteredColumnList.value[index];
     if (col) {

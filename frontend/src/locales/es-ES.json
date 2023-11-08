@@ -393,7 +393,10 @@
         "some-tasks-are-not-editable-in-batch-mode": "Algunas tareas no se pueden editar en modo por lotes",
         "task-is-not-editable": "Esta tarea no es editable",
         "x-status-task-is-not-editable": "La tarea {status} no es editable",
-        "nothing-changed": "nada ha cambiado"
+        "nothing-changed": "nada ha cambiado",
+        "not-applicable": {
+          "some-tasks-dont-meet-ghost-requirement": "Algunas tareas no cumplen con los requisitos de gh-ost."
+        }
       },
       "show-default-parameters": "Mostrar parámetros predeterminados",
       "hide-default-parameters": "Ocultar parámetros predeterminados"
@@ -1025,7 +1028,7 @@
       "full-schema": "Esquema completo",
       "left-schema-may-change": "El esquema del lado izquierdo puede cambiar antes de que se aplique la incidencia."
     },
-    "assignee-tooltip": "Permitir al asignado implementar la incidencia una vez que se haya aprobado el flujo de aprobación.",
+    "assignee-tooltip": "Los asignados son responsables de un problema y cuando se les asigna un problema, aparece en su lista de problemas asignados.",
     "approval-flow": {
       "self": "Flujo de aprobación",
       "tooltip": "Los revisores aprobarán y revisarán la incidencia en el orden especificado en el flujo. La incidencia solo se puede aplicar después de que se hayan aprobado todos los pasos del flujo. Puedes configurar un flujo de aprobación personalizado para cada riesgo."
@@ -1078,8 +1081,6 @@
       "continue-anyway": "De todas maneras, continúe",
       "sql-review-violations": "Infracciones de revisión de SQL"
     },
-    "no-assignee-candidates": "No hay candidatos asignados válidos en este proyecto. \nPor favor contacte al propietario del proyecto.",
-    "allow-any-following-roles-to-be-assignee": "Permitir que se asignen los siguientes roles",
     "error": {
       "issue-is-not-open": "El tema no está abierto.",
       "you-don-have-privilege-to-edit-this-issue": "No tienes privilegios para editar este número."

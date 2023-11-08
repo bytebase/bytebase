@@ -9,7 +9,9 @@
   >
     <NTooltip :show-arrow="true">
       <template #trigger>
-        <heroicons-outline:exclamation class="text-warning w-5 h-5" />
+        <slot name="default">
+          <heroicons-outline:exclamation class="text-warning w-5 h-5" />
+        </slot>
       </template>
       <span class="w-56 text-sm">
         {{
