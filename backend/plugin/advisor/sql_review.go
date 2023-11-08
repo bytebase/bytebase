@@ -1530,6 +1530,9 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleStatementAffectedRowLimit:
 		switch engine {
+		// only for mysqlwip test.
+		case storepb.Engine_ENGINE_UNSPECIFIED:
+			return MySQLStatementAffectedRowLimit, nil
 		case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLStatementAffectedRowLimit, nil
 		case storepb.Engine_POSTGRES:
