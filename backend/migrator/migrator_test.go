@@ -174,7 +174,6 @@ func TestMigrationCompatibility(t *testing.T) {
 
 	metadataConnConfig := connCfg
 	metadataConnConfig.Database = databaseName
-	metadataConnConfig.StrictUseDb = true
 	metadataDriver, err := dbdriver.Open(
 		ctx,
 		storepb.Engine_POSTGRES,
@@ -184,8 +183,8 @@ func TestMigrationCompatibility(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	db := store.NewDB(metadataConnConfig, pgBinDir, "", false, "", common.ReleaseModeDev)
-	err = db.Open(ctx)
+	db := store.NewDB(metadataConnConfig, pgBinDir, false, common.ReleaseModeDev)
+	err = db.Open(ctx, true /* createDB */)
 	require.NoError(t, err)
 	storeInstance := store.New(db)
 
@@ -231,5 +230,5 @@ func TestMigrationCompatibility(t *testing.T) {
 func TestGetCutoffVersion(t *testing.T) {
 	releaseVersion, err := getProdCutoffVersion()
 	require.NoError(t, err)
-	require.Equal(t, semver.MustParse("2.10.3"), releaseVersion)
+	require.Equal(t, semver.MustParse("2.11.1"), releaseVersion)
 }

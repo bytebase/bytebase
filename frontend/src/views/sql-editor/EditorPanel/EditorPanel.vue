@@ -12,7 +12,7 @@
 
     <AIChatToSQL
       v-if="!tabStore.isDisconnected && showAIChatBox"
-      :allow-config="sqlEditorStore.mode === 'BUNDLED'"
+      :allow-config="pageMode === 'BUNDLED'"
       @apply-statement="handleApplyStatement"
     />
 
@@ -29,7 +29,7 @@ import {
   useCurrentTab,
   useInstanceV1Store,
   useTabStore,
-  useSQLEditorStore,
+  usePageMode,
 } from "@/store";
 import type { Connection, ExecuteConfig, ExecuteOption } from "@/types";
 import { formatEngineV1 } from "@/utils";
@@ -45,8 +45,8 @@ import SheetForIssueTipsBar from "./SheetForIssueTipsBar.vue";
 
 const tabStore = useTabStore();
 const tab = useCurrentTab();
-const sqlEditorStore = useSQLEditorStore();
 const { showAIChatBox } = useSQLEditorContext();
+const pageMode = usePageMode();
 
 const { executeReadonly } = useExecuteSQL();
 

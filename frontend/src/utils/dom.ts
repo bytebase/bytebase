@@ -89,3 +89,17 @@ export const readFileAsync = (
     cleanup();
   });
 };
+
+export const getScrollParent = (
+  element: HTMLElement | null | undefined
+): HTMLElement => {
+  if (!element) {
+    return document.body;
+  }
+
+  if (element.scrollHeight > element.clientHeight) {
+    return element;
+  } else {
+    return getScrollParent(element.parentElement);
+  }
+};

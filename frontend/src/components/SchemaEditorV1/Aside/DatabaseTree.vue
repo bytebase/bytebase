@@ -607,10 +607,9 @@ const loadSubTree = async (option: TreeOption) => {
 
     databaseDataLoadedSet.value.add(databaseName);
     try {
-      const schemaList = await fetchSchemaListByDatabaseName(
-        databaseName,
-        true
-      );
+      const schemaList = await fetchSchemaListByDatabaseName({
+        database: databaseName,
+      });
       if (schemaList.length === 0) {
         treeNode.children = [];
         treeNode.isLeaf = true;

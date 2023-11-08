@@ -28,10 +28,6 @@ import (
 var sampleFS embed.FS
 
 const (
-	// TestSampleInstanceResourceID is the resource id for the test sample database.
-	TestSampleInstanceResourceID = "test-sample-instance"
-	// ProdSampleInstanceResourceID is the resource id for the prod sample database.
-	ProdSampleInstanceResourceID = "prod-sample-instance"
 	// SampleUser is the user name for the sample database.
 	SampleUser = "bbsample"
 	// SampleDatabaseTest is the test sample database name.
@@ -40,15 +36,37 @@ const (
 	SampleDatabaseProd = "hr_prod"
 )
 
-// StartSampleInstance starts a postgres sample instance.
-func StartSampleInstance(ctx context.Context, pgBinDir, dataDir, sampleDatabaseName string, port int, mode common.ReleaseMode) (func(), error) {
-	pgDataDir := path.Join(dataDir, "pgdata-sample", sampleDatabaseName)
+var dbs = map[string][]string{
+	"test": {SampleDatabaseTest},
+	"prod": {SampleDatabaseProd, SampleDatabaseProd + "_vcs", SampleDatabaseProd + "_1", SampleDatabaseProd + "_2", SampleDatabaseProd + "_3", SampleDatabaseProd + "_4", SampleDatabaseProd + "_5", SampleDatabaseProd + "_6"},
+}
 
+// StartAllSampleInstances starts all postgres sample instances.
+func StartAllSampleInstances(ctx context.Context, pgBinDir, dataDir string, port int, includeBatch bool) []func() {
+	stoppers := []func(){}
+	slog.Info("-----Sample Postgres Instance BEGIN-----")
+	i := 0
+	for k, v := range dbs {
+		slog.Info(fmt.Sprintf("Start sample instance %v at port %d", k, port+i))
+		stopper, err := startOneSampleInstance(ctx, pgBinDir, path.Join(dataDir, "pgdata-sample", k), v, port+i, includeBatch)
+		if err != nil {
+			slog.Error("failed to init sample instance", log.BBError(err))
+			continue
+		}
+		stoppers = append(stoppers, stopper)
+		i++
+	}
+	slog.Info("-----Sample Postgres Instance END-----")
+	return stoppers
+}
+
+// startOneSampleInstance starts a single postgres sample instance.
+func startOneSampleInstance(ctx context.Context, pgBinDir, pgDataDir string, dbs []string, port int, includeBatch bool) (func(), error) {
 	v, err := getVersion(pgDataDir)
 	if err != nil {
 		return nil, err
 	}
-	if v != currentVersion {
+	if v != "" && v != currentVersion {
 		slog.Warn("delete sample postgres with different version", slog.String("old", v), slog.String("new", currentVersion))
 		err := os.RemoveAll(pgDataDir)
 		if err != nil {
@@ -63,17 +81,23 @@ func StartSampleInstance(ctx context.Context, pgBinDir, dataDir, sampleDatabaseN
 		slog.Warn("Failed to turn on pg_stat_statements", log.BBError(err))
 	}
 
-	if err := start(port, pgBinDir, pgDataDir, mode == common.ReleaseModeDev /* serverLog */); err != nil {
+	if err := start(port, pgBinDir, pgDataDir, false /* serverLog */); err != nil {
 		return nil, errors.Wrapf(err, "failed to start sample instance")
 	}
 
 	host := common.GetPostgresSocketDir()
-	if err := prepareSampleDatabaseIfNeeded(ctx, SampleUser, host, strconv.Itoa(port), sampleDatabaseName); err != nil {
-		return nil, errors.Wrapf(err, "failed to prepare sample database")
+	for _, v := range dbs {
+		if err := prepareSampleDatabaseIfNeeded(ctx, SampleUser, host, strconv.Itoa(port), v); err != nil {
+			return nil, errors.Wrapf(err, fmt.Sprintf("failed to prepare sample database %q", v))
+		}
+		if !includeBatch {
+			break
+		}
 	}
 
-	if err := createPGStatStatementsExtension(ctx, SampleUser, host, strconv.Itoa(port), sampleDatabaseName); err != nil {
-		slog.Warn("Failed to create pg_stat_statements extension", log.BBError(err))
+	// Drop the default postgres database, this is to present a cleaner database list to the user.
+	if err := dropDefaultPostgresDatabase(ctx, SampleUser, host, strconv.Itoa(port), dbs[0]); err != nil {
+		slog.Warn("Failed to drop default postgres database", log.BBError(err))
 	}
 
 	return func() {
@@ -118,8 +142,12 @@ func prepareSampleDatabaseIfNeeded(ctx context.Context, pgUser, host, port, data
 	}
 
 	// Connect the default database created by initdb.
-	if err := prepareDemoDatabase(ctx, pgUser, host, port, database); err != nil {
+	if err := prepareSampleDatabase(ctx, pgUser, host, port, database); err != nil {
 		return err
+	}
+
+	if err := createPGStatStatementsExtension(ctx, pgUser, host, port, database); err != nil {
+		slog.Warn("Failed to create pg_stat_statements extension", log.BBError(err))
 	}
 
 	// Connect the just created sample database to load data.
@@ -157,15 +185,10 @@ func prepareSampleDatabaseIfNeeded(ctx context.Context, pgUser, host, port, data
 		}
 	}
 
-	// Drop the default postgres database, this is to present a cleaner database list to the user.
-	if _, err := driver.Execute(ctx, "DROP DATABASE postgres", true, db.ExecuteOptions{}); err != nil {
-		return errors.Wrapf(err, "failed to drop default postgres database")
-	}
-
 	return nil
 }
 
-func prepareDemoDatabase(ctx context.Context, pgUser, host, port, database string) error {
+func prepareSampleDatabase(ctx context.Context, pgUser, host, port, database string) error {
 	// Connect the default postgres database created by initdb.
 	driver, err := db.Open(
 		ctx,
@@ -189,6 +212,7 @@ func prepareDemoDatabase(ctx context.Context, pgUser, host, port, database strin
 	if _, err := driver.Execute(ctx, fmt.Sprintf("CREATE DATABASE %s", database), true, db.ExecuteOptions{}); err != nil {
 		return errors.Wrapf(err, "failed to create sample database")
 	}
+	slog.Info(fmt.Sprintf("Successfully created database %s", database))
 
 	return nil
 }
@@ -216,6 +240,33 @@ func createPGStatStatementsExtension(ctx context.Context, pgUser, host, port, da
 		return errors.Wrapf(err, "failed to create pg_stat_statements extension")
 	}
 	slog.Info("Successfully created pg_stat_statements extension")
+	return nil
+}
+
+func dropDefaultPostgresDatabase(ctx context.Context, pgUser, host, port, connectingDb string) error {
+	driver, err := db.Open(
+		ctx,
+		storepb.Engine_POSTGRES,
+		db.DriverConfig{},
+		db.ConnectionConfig{
+			Username: pgUser,
+			Password: "",
+			Host:     host,
+			Port:     port,
+			Database: connectingDb,
+		},
+		db.ConnectionContext{},
+	)
+	if err != nil {
+		return errors.Wrapf(err, "failed to connect sample instance")
+	}
+	defer driver.Close(ctx)
+
+	// Drop the default postgres database.
+	if _, err := driver.Execute(ctx, "DROP DATABASE IF EXISTS postgres", true, db.ExecuteOptions{}); err != nil {
+		return errors.Wrapf(err, "failed to drop default postgres database")
+	}
+
 	return nil
 }
 
@@ -252,6 +303,7 @@ func turnOnPGStateStatements(pgDataDir string) error {
 		return errors.Wrapf(err, "failed to scan postgresql.conf file")
 	}
 
+	added := false
 	if !shardPreloadLibraries {
 		if _, err := configFile.WriteString("\nshared_preload_libraries = 'pg_stat_statements'\n"); err != nil {
 			return errors.Wrapf(err, "failed to write shared_preload_libraries = 'pg_stat_statements' to postgresql.conf file")
@@ -264,6 +316,9 @@ func turnOnPGStateStatements(pgDataDir string) error {
 		}
 	}
 
-	slog.Info("Successfully added pg_stat_statements to postgresql.conf file")
+	if added {
+		slog.Debug("Successfully added pg_stat_statements to postgresql.conf file")
+	}
+
 	return nil
 }

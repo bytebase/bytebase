@@ -10,6 +10,7 @@ export type Notification = {
   link?: string;
   linkTitle?: string;
   manualHide?: boolean;
+  onClose?: () => void;
 };
 
 // "id" and "createdTs" is auto generated upon the notification store

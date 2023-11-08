@@ -18,7 +18,7 @@ import { Issue } from "./issue";
 import { Notification } from "./notification";
 import { Principal } from "./principal";
 import { Project } from "./project";
-import { DatabaseMetadata } from "./proto/store/database";
+import { DatabaseMetadata } from "./proto/v1/database_service";
 import { VCS } from "./vcs";
 
 export interface PrincipalState {

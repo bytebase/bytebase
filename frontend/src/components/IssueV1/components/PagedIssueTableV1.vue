@@ -75,7 +75,7 @@ const props = defineProps({
   },
   pageSize: {
     type: Number,
-    default: 10,
+    default: 50,
   },
   hideLoadMore: {
     type: Boolean,

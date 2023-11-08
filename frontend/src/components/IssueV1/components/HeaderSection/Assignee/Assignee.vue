@@ -47,29 +47,23 @@ import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   allowUserToChangeAssignee,
-  getCurrentRolloutPolicyForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import ErrorList, { ErrorItem } from "@/components/misc/ErrorList.vue";
 import { UserSelect } from "@/components/v2";
 import { issueServiceClient } from "@/grpcweb";
+import { emitWindowEvent } from "@/plugins";
 import { pushNotification, useCurrentUserV1, useUserStore } from "@/store";
 import {
-  PresetRoleType,
   SYSTEM_BOT_EMAIL,
   SYSTEM_BOT_ID,
   SYSTEM_BOT_USER_NAME,
   UNKNOWN_ID,
-  VirtualRoleType,
   unknownUser,
 } from "@/types";
 import { User } from "@/types/proto/v1/auth_service";
 import { Issue } from "@/types/proto/v1/issue_service";
-import {
-  activeTaskInRollout,
-  extractUserResourceName,
-  extractUserUID,
-} from "@/utils";
+import { extractUserResourceName, extractUserUID } from "@/utils";
 import AssigneeAttentionButton from "./AssigneeAttentionButton.vue";
 
 const { t } = useI18n();
@@ -103,40 +97,7 @@ const errors = asyncComputed(async () => {
   const errors: ErrorItem[] = [];
   if (!allowChangeAssignee.value) {
     errors.push(t("issue.you-are-not-allowed-to-change-this-value"));
-  } else if (assigneeCandidates.value.length === 0) {
-    errors.push(t("issue.no-assignee-candidates"));
-    const activeOrFirstTask = activeTaskInRollout(issue.value.rolloutEntity);
-    const policy = await getCurrentRolloutPolicyForTask(
-      issue.value,
-      activeOrFirstTask
-    );
-    errors.push(t("issue.allow-any-following-roles-to-be-assignee"));
-    if (policy.workspaceRoles.includes(VirtualRoleType.OWNER)) {
-      errors.push({
-        error: t("policy.rollout.role.workspace-owner"),
-        indent: 1,
-      });
-    }
-    if (policy.workspaceRoles.includes(VirtualRoleType.DBA)) {
-      errors.push({ error: t("policy.rollout.role.dba"), indent: 1 });
-    }
-    if (policy.projectRoles.includes(PresetRoleType.OWNER)) {
-      errors.push({ error: t("policy.rollout.role.project-owner"), indent: 1 });
-    }
-    if (policy.projectRoles.includes(PresetRoleType.RELEASER)) {
-      errors.push({
-        error: t("policy.rollout.role.project-releaser"),
-        indent: 1,
-      });
-    }
-    if (policy.issueRoles.includes(VirtualRoleType.CREATOR)) {
-      errors.push({ error: t("policy.rollout.role.issue-creator"), indent: 1 });
-    }
-    if (policy.issueRoles.includes(VirtualRoleType.LAST_APPROVER)) {
-      errors.push({ error: t("policy.rollout.role.last-approver"), indent: 1 });
-    }
   }
-
   return errors;
 }, []);
 
@@ -165,6 +126,7 @@ const changeAssigneeUID = async (uid: string | undefined) => {
         style: "SUCCESS",
         title: t("common.updated"),
       });
+      emitWindowEvent("bb.issue-field-update");
     } finally {
       isUpdating.value = false;
     }

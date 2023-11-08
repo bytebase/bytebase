@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -16,7 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 )
 
-// DB represents the database connection.
+// DB represents the metdata database connection.
 type DB struct {
 	metadataDriver dbdriver.Driver
 	db             *sql.DB
@@ -25,73 +24,56 @@ type DB struct {
 	// The user has superuser privilege to the database.
 	ConnCfg dbdriver.ConnectionConfig
 
-	// Demo name, empty string means do not load demo data.
-	demoName string
-
 	// Dir for postgres and its utility binaries
 	binDir string
 
 	// If true, database will be opened in readonly mode
 	readonly bool
 
-	// Bytebase server release version
-	serverVersion string
-
 	// mode is the mode of the release such as prod or dev.
 	mode common.ReleaseMode
-
-	// Returns the current time. Defaults to time.Now().
-	// Can be mocked for tests.
-	Now func() time.Time
 }
 
 // NewDB returns a new instance of DB associated with the given datasource name.
-func NewDB(connCfg dbdriver.ConnectionConfig, binDir, demoName string, readonly bool, serverVersion string, mode common.ReleaseMode) *DB {
+func NewDB(connCfg dbdriver.ConnectionConfig, binDir string, readonly bool, mode common.ReleaseMode) *DB {
 	db := &DB{
-		ConnCfg:       connCfg,
-		demoName:      demoName,
-		binDir:        binDir,
-		readonly:      readonly,
-		Now:           time.Now,
-		serverVersion: serverVersion,
-		mode:          mode,
+		ConnCfg:  connCfg,
+		binDir:   binDir,
+		readonly: readonly,
+		mode:     mode,
 	}
 	return db
 }
 
 // Open opens the database connection.
-func (db *DB) Open(ctx context.Context) error {
-	databaseName := db.ConnCfg.Database
-	if !db.ConnCfg.StrictUseDb {
-		// The database storing metadata is the same as user name.
-		databaseName = db.ConnCfg.Username
-
+func (db *DB) Open(ctx context.Context, createDB bool) error {
+	if createDB {
+		createCfg := db.ConnCfg
+		// connect to the "postgres" as the target database has not been created yet.
+		createCfg.Database = "postgres"
 		// Create the metadata database.
 		defaultDriver, err := dbdriver.Open(
 			ctx,
 			storepb.Engine_POSTGRES,
 			dbdriver.DriverConfig{DbBinDir: db.binDir},
-			db.ConnCfg,
+			createCfg,
 			dbdriver.ConnectionContext{},
 		)
 		if err != nil {
 			return err
 		}
 		defer defaultDriver.Close(ctx)
-		if _, err := defaultDriver.Execute(ctx, fmt.Sprintf("CREATE DATABASE %s", databaseName), true, dbdriver.ExecuteOptions{}); err != nil {
+		// Underlying driver handles the case where database already exists.
+		if _, err := defaultDriver.Execute(ctx, fmt.Sprintf("CREATE DATABASE %s", db.ConnCfg.Database), true, dbdriver.ExecuteOptions{}); err != nil {
 			return err
 		}
 	}
 
-	metadataConnConfig := db.ConnCfg
-	if !db.ConnCfg.StrictUseDb {
-		metadataConnConfig.Database = databaseName
-	}
 	metadataDriver, err := dbdriver.Open(
 		ctx,
 		storepb.Engine_POSTGRES,
 		dbdriver.DriverConfig{DbBinDir: db.binDir},
-		metadataConnConfig,
+		db.ConnCfg,
 		dbdriver.ConnectionContext{},
 	)
 	if err != nil {
@@ -134,15 +116,11 @@ func (db *DB) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) {
 
 	// Return wrapper Tx that includes the transaction start time.
 	return &Tx{
-		Tx:  ptx,
-		db:  db,
-		now: db.Now().UTC().Truncate(time.Second),
+		Tx: ptx,
 	}, nil
 }
 
 // Tx wraps the SQL Tx object to provide a timestamp at the start of the transaction.
 type Tx struct {
 	*sql.Tx
-	db  *DB
-	now time.Time
 }

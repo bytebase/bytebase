@@ -2,7 +2,6 @@ package v1
 
 import (
 	"cmp"
-	"log/slog"
 	"time"
 
 	"github.com/pkg/errors"
@@ -105,6 +104,10 @@ func (m *maskingLevelEvaluator) evaluateMaskingAlgorithmOfColumn(databaseMessage
 		}
 	}
 
+	if columnSemanticTypeID == "" {
+		return nil, maskingLevel, nil
+	}
+
 	semanticType, ok := m.semanticTypesMap[columnSemanticTypeID]
 	if !ok {
 		return nil, maskingLevel, errors.Errorf("failed to find the semantic type %q", columnSemanticTypeID)
@@ -152,7 +155,6 @@ func (m *maskingLevelEvaluator) evaluateMaskingLevelOfColumn(databaseMessage *st
 	}
 	maskingData, ok := maskingPolicyMap[key]
 	if (!ok) || (maskingData.MaskingLevel == storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED) {
-		slog.Debug("column set DEFAULT masking level in masking policy or masking policy not set yet", slog.String("column", columnName), slog.Any("masking policy", maskingData))
 		dataClassificationConfig := m.getDataClassificationConfig(databaseProjectDataClassificationID)
 		// If the column has DEFAULT masking level in maskingPolicy or not set yet,
 		// we will eval the maskingRulePolicy to get the maskingLevel.
@@ -174,19 +176,14 @@ func (m *maskingLevelEvaluator) evaluateMaskingLevelOfColumn(databaseMessage *st
 			}
 			if pass {
 				finalLevel = maskingRule.MaskingLevel
-				slog.Debug("hit masking rule", slog.String("column", columnName), slog.Any("masking rule", maskingRule), slog.Any("masking level", maskingRule.MaskingLevel.String()))
 				break
 			}
 		}
 	} else {
-		slog.Debug("column set specific masking level in masking policy", slog.String("column", columnName), slog.Any("masking level", maskingData.MaskingLevel.String()))
 		finalLevel = maskingData.MaskingLevel
 	}
 
 	if finalLevel == storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED || finalLevel == storepb.MaskingLevel_NONE {
-		// After looking up the maskingPolicy and maskingRulePolicy, if the maskingLevel is still MASKING_LEVEL_UNSPECIFIED or NONE,
-		// return the MASKING_LEVEL_NONE, which means no masking and do not need eval exceptions anymore.
-		slog.Debug("After looking up maskingPolicy and maskingRulePolicy, the masking level is UNSPECIFIED or NONE", slog.Any("masking level", finalLevel.String()))
 		return storepb.MaskingLevel_NONE, nil
 	}
 
@@ -213,14 +210,12 @@ func (m *maskingLevelEvaluator) evaluateMaskingLevelOfColumn(databaseMessage *st
 		if !hit {
 			continue
 		}
-		slog.Debug("hit masking exception", slog.String("column", columnName), slog.Any("masking exception", filteredMaskingException), slog.Any("masking level", filteredMaskingException.MaskingLevel.String()))
 		// TODO(zp): Expectedly, a column should hit only one exception,
 		// but we can take the strictest level here to make the whole program more robust.
 		if cmp.Less[storepb.MaskingLevel](filteredMaskingException.MaskingLevel, finalLevel) {
 			finalLevel = filteredMaskingException.MaskingLevel
 		}
 	}
-	slog.Debug("final level of column", slog.String("column", columnName), slog.Any("final level", finalLevel.String()))
 	return finalLevel, nil
 }
 

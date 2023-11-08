@@ -79,7 +79,7 @@ const hasSecretFeature = computed(() => {
 const mode = computed(() => {
   const duration = props.scanInterval;
   if (!duration) return "DEFAULT";
-  if (duration.seconds === 0) return "DEFAULT";
+  if (duration.seconds.toNumber() === 0) return "DEFAULT";
   return "CUSTOM";
 });
 
@@ -91,8 +91,8 @@ const minutes = computed({
   get() {
     const duration = props.scanInterval;
     if (!duration) return undefined;
-    if (duration.seconds === 0) return undefined;
-    return Math.floor(duration.seconds / 60);
+    if (duration.seconds.toNumber() === 0) return undefined;
+    return Math.floor(duration.seconds.toNumber() / 60);
   },
   set(value) {
     if (!value) {

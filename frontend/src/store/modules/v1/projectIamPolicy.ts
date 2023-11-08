@@ -1,4 +1,4 @@
-import { isUndefined } from "lodash-es";
+import { isUndefined, uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, ref, unref, watch, watchEffect } from "vue";
 import { projectServiceClient } from "@/grpcweb";
@@ -68,6 +68,11 @@ export const useProjectIamPolicyStore = defineStore(
       project: string,
       policy: IamPolicy
     ) => {
+      policy.bindings.forEach((binding) => {
+        if (binding.members) {
+          binding.members = uniq(binding.members);
+        }
+      });
       const updated = await projectServiceClient.setIamPolicy({
         project,
         policy,
@@ -86,13 +91,20 @@ export const useProjectIamPolicyStore = defineStore(
       return getProjectIamPolicy(project);
     };
 
-    const batchGetOrFetchProjectIamPolicy = async (projectList: string[]) => {
-      // BatchFetch policies that missing in the local map.
-      const missingProjectList = projectList.filter(
-        (project) => !policyMap.value.has(project)
-      );
-      if (missingProjectList.length > 0) {
-        await batchFetchIamPolicy(missingProjectList);
+    const batchGetOrFetchProjectIamPolicy = async (
+      projectList: string[],
+      skipCache = false
+    ) => {
+      if (skipCache) {
+        await batchFetchIamPolicy(projectList);
+      } else {
+        // BatchFetch policies that missing in the local map.
+        const missingProjectList = projectList.filter(
+          (project) => !policyMap.value.has(project)
+        );
+        if (missingProjectList.length > 0) {
+          await batchFetchIamPolicy(missingProjectList);
+        }
       }
       return projectList.map(getProjectIamPolicy);
     };

@@ -2,7 +2,7 @@
   <TabFilter
     :value="selected"
     :items="items"
-    @update:value="$emit('update:engine', $event)"
+    @update:value="$emit('update:engine', $event as Engine)"
   >
     <template #label="{ item }">
       <div class="flex items-center justify-center gap-x-1">
@@ -23,7 +23,7 @@ import { Engine, engineFromJSON } from "@/types/proto/v1/common";
 import { engineNameV1 } from "@/utils";
 
 const props = defineProps<{
-  selected: string;
+  selected: Engine;
   engineList: Engine[];
   individualEngineList: Engine[];
 }>();

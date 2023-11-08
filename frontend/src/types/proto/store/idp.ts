@@ -1,4 +1,5 @@
 /* eslint-disable */
+import Long from "long";
 import _m0 from "protobufjs/minimal";
 
 export const protobufPackage = "bytebase.store";
@@ -260,19 +261,21 @@ export const IdentityProviderConfig = {
 
   toJSON(message: IdentityProviderConfig): unknown {
     const obj: any = {};
-    message.oauth2Config !== undefined &&
-      (obj.oauth2Config = message.oauth2Config ? OAuth2IdentityProviderConfig.toJSON(message.oauth2Config) : undefined);
-    message.oidcConfig !== undefined &&
-      (obj.oidcConfig = message.oidcConfig ? OIDCIdentityProviderConfig.toJSON(message.oidcConfig) : undefined);
-    message.ldapConfig !== undefined &&
-      (obj.ldapConfig = message.ldapConfig ? LDAPIdentityProviderConfig.toJSON(message.ldapConfig) : undefined);
+    if (message.oauth2Config !== undefined) {
+      obj.oauth2Config = OAuth2IdentityProviderConfig.toJSON(message.oauth2Config);
+    }
+    if (message.oidcConfig !== undefined) {
+      obj.oidcConfig = OIDCIdentityProviderConfig.toJSON(message.oidcConfig);
+    }
+    if (message.ldapConfig !== undefined) {
+      obj.ldapConfig = LDAPIdentityProviderConfig.toJSON(message.ldapConfig);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<IdentityProviderConfig>): IdentityProviderConfig {
     return IdentityProviderConfig.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<IdentityProviderConfig>): IdentityProviderConfig {
     const message = createBaseIdentityProviderConfig();
     message.oauth2Config = (object.oauth2Config !== undefined && object.oauth2Config !== null)
@@ -415,41 +418,53 @@ export const OAuth2IdentityProviderConfig = {
 
   fromJSON(object: any): OAuth2IdentityProviderConfig {
     return {
-      authUrl: isSet(object.authUrl) ? String(object.authUrl) : "",
-      tokenUrl: isSet(object.tokenUrl) ? String(object.tokenUrl) : "",
-      userInfoUrl: isSet(object.userInfoUrl) ? String(object.userInfoUrl) : "",
-      clientId: isSet(object.clientId) ? String(object.clientId) : "",
-      clientSecret: isSet(object.clientSecret) ? String(object.clientSecret) : "",
-      scopes: Array.isArray(object?.scopes) ? object.scopes.map((e: any) => String(e)) : [],
+      authUrl: isSet(object.authUrl) ? globalThis.String(object.authUrl) : "",
+      tokenUrl: isSet(object.tokenUrl) ? globalThis.String(object.tokenUrl) : "",
+      userInfoUrl: isSet(object.userInfoUrl) ? globalThis.String(object.userInfoUrl) : "",
+      clientId: isSet(object.clientId) ? globalThis.String(object.clientId) : "",
+      clientSecret: isSet(object.clientSecret) ? globalThis.String(object.clientSecret) : "",
+      scopes: globalThis.Array.isArray(object?.scopes) ? object.scopes.map((e: any) => globalThis.String(e)) : [],
       fieldMapping: isSet(object.fieldMapping) ? FieldMapping.fromJSON(object.fieldMapping) : undefined,
-      skipTlsVerify: isSet(object.skipTlsVerify) ? Boolean(object.skipTlsVerify) : false,
+      skipTlsVerify: isSet(object.skipTlsVerify) ? globalThis.Boolean(object.skipTlsVerify) : false,
       authStyle: isSet(object.authStyle) ? oAuth2AuthStyleFromJSON(object.authStyle) : 0,
     };
   },
 
   toJSON(message: OAuth2IdentityProviderConfig): unknown {
     const obj: any = {};
-    message.authUrl !== undefined && (obj.authUrl = message.authUrl);
-    message.tokenUrl !== undefined && (obj.tokenUrl = message.tokenUrl);
-    message.userInfoUrl !== undefined && (obj.userInfoUrl = message.userInfoUrl);
-    message.clientId !== undefined && (obj.clientId = message.clientId);
-    message.clientSecret !== undefined && (obj.clientSecret = message.clientSecret);
-    if (message.scopes) {
-      obj.scopes = message.scopes.map((e) => e);
-    } else {
-      obj.scopes = [];
+    if (message.authUrl !== "") {
+      obj.authUrl = message.authUrl;
     }
-    message.fieldMapping !== undefined &&
-      (obj.fieldMapping = message.fieldMapping ? FieldMapping.toJSON(message.fieldMapping) : undefined);
-    message.skipTlsVerify !== undefined && (obj.skipTlsVerify = message.skipTlsVerify);
-    message.authStyle !== undefined && (obj.authStyle = oAuth2AuthStyleToJSON(message.authStyle));
+    if (message.tokenUrl !== "") {
+      obj.tokenUrl = message.tokenUrl;
+    }
+    if (message.userInfoUrl !== "") {
+      obj.userInfoUrl = message.userInfoUrl;
+    }
+    if (message.clientId !== "") {
+      obj.clientId = message.clientId;
+    }
+    if (message.clientSecret !== "") {
+      obj.clientSecret = message.clientSecret;
+    }
+    if (message.scopes?.length) {
+      obj.scopes = message.scopes;
+    }
+    if (message.fieldMapping !== undefined) {
+      obj.fieldMapping = FieldMapping.toJSON(message.fieldMapping);
+    }
+    if (message.skipTlsVerify === true) {
+      obj.skipTlsVerify = message.skipTlsVerify;
+    }
+    if (message.authStyle !== 0) {
+      obj.authStyle = oAuth2AuthStyleToJSON(message.authStyle);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<OAuth2IdentityProviderConfig>): OAuth2IdentityProviderConfig {
     return OAuth2IdentityProviderConfig.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<OAuth2IdentityProviderConfig>): OAuth2IdentityProviderConfig {
     const message = createBaseOAuth2IdentityProviderConfig();
     message.authUrl = object.authUrl ?? "";
@@ -554,31 +569,41 @@ export const OIDCIdentityProviderConfig = {
 
   fromJSON(object: any): OIDCIdentityProviderConfig {
     return {
-      issuer: isSet(object.issuer) ? String(object.issuer) : "",
-      clientId: isSet(object.clientId) ? String(object.clientId) : "",
-      clientSecret: isSet(object.clientSecret) ? String(object.clientSecret) : "",
+      issuer: isSet(object.issuer) ? globalThis.String(object.issuer) : "",
+      clientId: isSet(object.clientId) ? globalThis.String(object.clientId) : "",
+      clientSecret: isSet(object.clientSecret) ? globalThis.String(object.clientSecret) : "",
       fieldMapping: isSet(object.fieldMapping) ? FieldMapping.fromJSON(object.fieldMapping) : undefined,
-      skipTlsVerify: isSet(object.skipTlsVerify) ? Boolean(object.skipTlsVerify) : false,
+      skipTlsVerify: isSet(object.skipTlsVerify) ? globalThis.Boolean(object.skipTlsVerify) : false,
       authStyle: isSet(object.authStyle) ? oAuth2AuthStyleFromJSON(object.authStyle) : 0,
     };
   },
 
   toJSON(message: OIDCIdentityProviderConfig): unknown {
     const obj: any = {};
-    message.issuer !== undefined && (obj.issuer = message.issuer);
-    message.clientId !== undefined && (obj.clientId = message.clientId);
-    message.clientSecret !== undefined && (obj.clientSecret = message.clientSecret);
-    message.fieldMapping !== undefined &&
-      (obj.fieldMapping = message.fieldMapping ? FieldMapping.toJSON(message.fieldMapping) : undefined);
-    message.skipTlsVerify !== undefined && (obj.skipTlsVerify = message.skipTlsVerify);
-    message.authStyle !== undefined && (obj.authStyle = oAuth2AuthStyleToJSON(message.authStyle));
+    if (message.issuer !== "") {
+      obj.issuer = message.issuer;
+    }
+    if (message.clientId !== "") {
+      obj.clientId = message.clientId;
+    }
+    if (message.clientSecret !== "") {
+      obj.clientSecret = message.clientSecret;
+    }
+    if (message.fieldMapping !== undefined) {
+      obj.fieldMapping = FieldMapping.toJSON(message.fieldMapping);
+    }
+    if (message.skipTlsVerify === true) {
+      obj.skipTlsVerify = message.skipTlsVerify;
+    }
+    if (message.authStyle !== 0) {
+      obj.authStyle = oAuth2AuthStyleToJSON(message.authStyle);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<OIDCIdentityProviderConfig>): OIDCIdentityProviderConfig {
     return OIDCIdentityProviderConfig.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<OIDCIdentityProviderConfig>): OIDCIdentityProviderConfig {
     const message = createBaseOIDCIdentityProviderConfig();
     message.issuer = object.issuer ?? "";
@@ -720,37 +745,53 @@ export const LDAPIdentityProviderConfig = {
 
   fromJSON(object: any): LDAPIdentityProviderConfig {
     return {
-      host: isSet(object.host) ? String(object.host) : "",
-      port: isSet(object.port) ? Number(object.port) : 0,
-      skipTlsVerify: isSet(object.skipTlsVerify) ? Boolean(object.skipTlsVerify) : false,
-      bindDn: isSet(object.bindDn) ? String(object.bindDn) : "",
-      bindPassword: isSet(object.bindPassword) ? String(object.bindPassword) : "",
-      baseDn: isSet(object.baseDn) ? String(object.baseDn) : "",
-      userFilter: isSet(object.userFilter) ? String(object.userFilter) : "",
-      securityProtocol: isSet(object.securityProtocol) ? String(object.securityProtocol) : "",
+      host: isSet(object.host) ? globalThis.String(object.host) : "",
+      port: isSet(object.port) ? globalThis.Number(object.port) : 0,
+      skipTlsVerify: isSet(object.skipTlsVerify) ? globalThis.Boolean(object.skipTlsVerify) : false,
+      bindDn: isSet(object.bindDn) ? globalThis.String(object.bindDn) : "",
+      bindPassword: isSet(object.bindPassword) ? globalThis.String(object.bindPassword) : "",
+      baseDn: isSet(object.baseDn) ? globalThis.String(object.baseDn) : "",
+      userFilter: isSet(object.userFilter) ? globalThis.String(object.userFilter) : "",
+      securityProtocol: isSet(object.securityProtocol) ? globalThis.String(object.securityProtocol) : "",
       fieldMapping: isSet(object.fieldMapping) ? FieldMapping.fromJSON(object.fieldMapping) : undefined,
     };
   },
 
   toJSON(message: LDAPIdentityProviderConfig): unknown {
     const obj: any = {};
-    message.host !== undefined && (obj.host = message.host);
-    message.port !== undefined && (obj.port = Math.round(message.port));
-    message.skipTlsVerify !== undefined && (obj.skipTlsVerify = message.skipTlsVerify);
-    message.bindDn !== undefined && (obj.bindDn = message.bindDn);
-    message.bindPassword !== undefined && (obj.bindPassword = message.bindPassword);
-    message.baseDn !== undefined && (obj.baseDn = message.baseDn);
-    message.userFilter !== undefined && (obj.userFilter = message.userFilter);
-    message.securityProtocol !== undefined && (obj.securityProtocol = message.securityProtocol);
-    message.fieldMapping !== undefined &&
-      (obj.fieldMapping = message.fieldMapping ? FieldMapping.toJSON(message.fieldMapping) : undefined);
+    if (message.host !== "") {
+      obj.host = message.host;
+    }
+    if (message.port !== 0) {
+      obj.port = Math.round(message.port);
+    }
+    if (message.skipTlsVerify === true) {
+      obj.skipTlsVerify = message.skipTlsVerify;
+    }
+    if (message.bindDn !== "") {
+      obj.bindDn = message.bindDn;
+    }
+    if (message.bindPassword !== "") {
+      obj.bindPassword = message.bindPassword;
+    }
+    if (message.baseDn !== "") {
+      obj.baseDn = message.baseDn;
+    }
+    if (message.userFilter !== "") {
+      obj.userFilter = message.userFilter;
+    }
+    if (message.securityProtocol !== "") {
+      obj.securityProtocol = message.securityProtocol;
+    }
+    if (message.fieldMapping !== undefined) {
+      obj.fieldMapping = FieldMapping.toJSON(message.fieldMapping);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<LDAPIdentityProviderConfig>): LDAPIdentityProviderConfig {
     return LDAPIdentityProviderConfig.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<LDAPIdentityProviderConfig>): LDAPIdentityProviderConfig {
     const message = createBaseLDAPIdentityProviderConfig();
     message.host = object.host ?? "";
@@ -835,26 +876,33 @@ export const FieldMapping = {
 
   fromJSON(object: any): FieldMapping {
     return {
-      identifier: isSet(object.identifier) ? String(object.identifier) : "",
-      displayName: isSet(object.displayName) ? String(object.displayName) : "",
-      email: isSet(object.email) ? String(object.email) : "",
-      phone: isSet(object.phone) ? String(object.phone) : "",
+      identifier: isSet(object.identifier) ? globalThis.String(object.identifier) : "",
+      displayName: isSet(object.displayName) ? globalThis.String(object.displayName) : "",
+      email: isSet(object.email) ? globalThis.String(object.email) : "",
+      phone: isSet(object.phone) ? globalThis.String(object.phone) : "",
     };
   },
 
   toJSON(message: FieldMapping): unknown {
     const obj: any = {};
-    message.identifier !== undefined && (obj.identifier = message.identifier);
-    message.displayName !== undefined && (obj.displayName = message.displayName);
-    message.email !== undefined && (obj.email = message.email);
-    message.phone !== undefined && (obj.phone = message.phone);
+    if (message.identifier !== "") {
+      obj.identifier = message.identifier;
+    }
+    if (message.displayName !== "") {
+      obj.displayName = message.displayName;
+    }
+    if (message.email !== "") {
+      obj.email = message.email;
+    }
+    if (message.phone !== "") {
+      obj.phone = message.phone;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<FieldMapping>): FieldMapping {
     return FieldMapping.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<FieldMapping>): FieldMapping {
     const message = createBaseFieldMapping();
     message.identifier = object.identifier ?? "";
@@ -932,26 +980,33 @@ export const IdentityProviderUserInfo = {
 
   fromJSON(object: any): IdentityProviderUserInfo {
     return {
-      identifier: isSet(object.identifier) ? String(object.identifier) : "",
-      displayName: isSet(object.displayName) ? String(object.displayName) : "",
-      email: isSet(object.email) ? String(object.email) : "",
-      phone: isSet(object.phone) ? String(object.phone) : "",
+      identifier: isSet(object.identifier) ? globalThis.String(object.identifier) : "",
+      displayName: isSet(object.displayName) ? globalThis.String(object.displayName) : "",
+      email: isSet(object.email) ? globalThis.String(object.email) : "",
+      phone: isSet(object.phone) ? globalThis.String(object.phone) : "",
     };
   },
 
   toJSON(message: IdentityProviderUserInfo): unknown {
     const obj: any = {};
-    message.identifier !== undefined && (obj.identifier = message.identifier);
-    message.displayName !== undefined && (obj.displayName = message.displayName);
-    message.email !== undefined && (obj.email = message.email);
-    message.phone !== undefined && (obj.phone = message.phone);
+    if (message.identifier !== "") {
+      obj.identifier = message.identifier;
+    }
+    if (message.displayName !== "") {
+      obj.displayName = message.displayName;
+    }
+    if (message.email !== "") {
+      obj.email = message.email;
+    }
+    if (message.phone !== "") {
+      obj.phone = message.phone;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<IdentityProviderUserInfo>): IdentityProviderUserInfo {
     return IdentityProviderUserInfo.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<IdentityProviderUserInfo>): IdentityProviderUserInfo {
     const message = createBaseIdentityProviderUserInfo();
     message.identifier = object.identifier ?? "";
@@ -965,9 +1020,15 @@ export const IdentityProviderUserInfo = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+if (_m0.util.Long !== Long) {
+  _m0.util.Long = Long as any;
+  _m0.configure();
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

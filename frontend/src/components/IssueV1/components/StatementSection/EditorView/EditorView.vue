@@ -158,6 +158,7 @@
 
 <script setup lang="ts">
 import { cloneDeep } from "lodash-es";
+import Long from "long";
 import { NButton, NTooltip, useDialog } from "naive-ui";
 import { computed, h, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -179,6 +180,7 @@ import MonacoEditor from "@/components/MonacoEditor";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import UploadProgressButton from "@/components/misc/UploadProgressButton.vue";
 import { rolloutServiceClient } from "@/grpcweb";
+import { emitWindowEvent } from "@/plugins";
 import {
   hasFeature,
   pushNotification,
@@ -302,7 +304,9 @@ const isTaskSheetOversize = computed(() => {
   if (state.isEditing) return false;
   if (!sheetReady.value) return false;
   if (!sheet.value) return false;
-  return getSheetStatement(sheet.value).length < sheet.value.contentSize;
+  return Long.fromNumber(getSheetStatement(sheet.value).length).lt(
+    sheet.value.contentSize
+  );
 });
 
 const denyEditTaskReasons = computed(() => {
@@ -641,6 +645,8 @@ const updateStatement = async (statement: string) => {
     style: "SUCCESS",
     title: t("common.updated"),
   });
+
+  emitWindowEvent("bb.pipeline-task-statement-update");
 };
 
 const handleStatementChange = (value: string) => {

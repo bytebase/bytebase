@@ -1,3 +1,4 @@
+import Long from "long";
 import { v1 as uuidv1 } from "uuid";
 import {
   SchemaMetadata,
@@ -49,8 +50,8 @@ export interface Table {
   name: string;
   engine: string;
   collation: string;
-  rowCount: number;
-  dataSize: number;
+  rowCount: Long;
+  dataSize: Long;
   comment: string;
   userComment: string;
   columnList: Column[];

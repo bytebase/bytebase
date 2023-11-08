@@ -50,7 +50,8 @@ const state = reactive<LocalState>({
 
 const issueSlug = computed(() => props.issueSlug);
 
-const { isCreating, issue, isInitializing } = useInitializeIssue(issueSlug);
+const { isCreating, issue, isInitializing, reInitialize } =
+  useInitializeIssue(issueSlug);
 const ready = computed(() => {
   return !isInitializing.value && !!issue.value;
 });
@@ -61,6 +62,7 @@ provideIssueContext(
     isCreating,
     issue,
     ready,
+    reInitialize,
     ...useBaseIssueContext({
       isCreating,
       ready,

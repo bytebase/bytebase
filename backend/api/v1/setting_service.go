@@ -1056,7 +1056,7 @@ func convertSchemaTemplateSetting(template *storepb.SchemaTemplateSetting) *v1pb
 			Id:       v.Id,
 			Engine:   convertToEngine(v.Engine),
 			Category: v.Category,
-			Table:    convertTableMetadata(v.Table),
+			Table:    convertTableMetadata(v.Table, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL),
 			Config:   convertTableConfig(v.Config),
 		})
 	}

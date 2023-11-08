@@ -1,4 +1,5 @@
 /* eslint-disable */
+import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Duration } from "../protobuf/duration";
 import { LaunchStage, launchStageFromJSON, launchStageToJSON } from "./launch_stage";
@@ -503,8 +504,8 @@ export const CommonLanguageSettings = {
 
   fromJSON(object: any): CommonLanguageSettings {
     return {
-      referenceDocsUri: isSet(object.referenceDocsUri) ? String(object.referenceDocsUri) : "",
-      destinations: Array.isArray(object?.destinations)
+      referenceDocsUri: isSet(object.referenceDocsUri) ? globalThis.String(object.referenceDocsUri) : "",
+      destinations: globalThis.Array.isArray(object?.destinations)
         ? object.destinations.map((e: any) => clientLibraryDestinationFromJSON(e))
         : [],
     };
@@ -512,11 +513,11 @@ export const CommonLanguageSettings = {
 
   toJSON(message: CommonLanguageSettings): unknown {
     const obj: any = {};
-    message.referenceDocsUri !== undefined && (obj.referenceDocsUri = message.referenceDocsUri);
-    if (message.destinations) {
+    if (message.referenceDocsUri !== "") {
+      obj.referenceDocsUri = message.referenceDocsUri;
+    }
+    if (message.destinations?.length) {
       obj.destinations = message.destinations.map((e) => clientLibraryDestinationToJSON(e));
-    } else {
-      obj.destinations = [];
     }
     return obj;
   },
@@ -524,7 +525,6 @@ export const CommonLanguageSettings = {
   create(base?: DeepPartial<CommonLanguageSettings>): CommonLanguageSettings {
     return CommonLanguageSettings.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<CommonLanguageSettings>): CommonLanguageSettings {
     const message = createBaseCommonLanguageSettings();
     message.referenceDocsUri = object.referenceDocsUri ?? "";
@@ -682,9 +682,9 @@ export const ClientLibrarySettings = {
 
   fromJSON(object: any): ClientLibrarySettings {
     return {
-      version: isSet(object.version) ? String(object.version) : "",
+      version: isSet(object.version) ? globalThis.String(object.version) : "",
       launchStage: isSet(object.launchStage) ? launchStageFromJSON(object.launchStage) : 0,
-      restNumericEnums: isSet(object.restNumericEnums) ? Boolean(object.restNumericEnums) : false,
+      restNumericEnums: isSet(object.restNumericEnums) ? globalThis.Boolean(object.restNumericEnums) : false,
       javaSettings: isSet(object.javaSettings) ? JavaSettings.fromJSON(object.javaSettings) : undefined,
       cppSettings: isSet(object.cppSettings) ? CppSettings.fromJSON(object.cppSettings) : undefined,
       phpSettings: isSet(object.phpSettings) ? PhpSettings.fromJSON(object.phpSettings) : undefined,
@@ -698,32 +698,45 @@ export const ClientLibrarySettings = {
 
   toJSON(message: ClientLibrarySettings): unknown {
     const obj: any = {};
-    message.version !== undefined && (obj.version = message.version);
-    message.launchStage !== undefined && (obj.launchStage = launchStageToJSON(message.launchStage));
-    message.restNumericEnums !== undefined && (obj.restNumericEnums = message.restNumericEnums);
-    message.javaSettings !== undefined &&
-      (obj.javaSettings = message.javaSettings ? JavaSettings.toJSON(message.javaSettings) : undefined);
-    message.cppSettings !== undefined &&
-      (obj.cppSettings = message.cppSettings ? CppSettings.toJSON(message.cppSettings) : undefined);
-    message.phpSettings !== undefined &&
-      (obj.phpSettings = message.phpSettings ? PhpSettings.toJSON(message.phpSettings) : undefined);
-    message.pythonSettings !== undefined &&
-      (obj.pythonSettings = message.pythonSettings ? PythonSettings.toJSON(message.pythonSettings) : undefined);
-    message.nodeSettings !== undefined &&
-      (obj.nodeSettings = message.nodeSettings ? NodeSettings.toJSON(message.nodeSettings) : undefined);
-    message.dotnetSettings !== undefined &&
-      (obj.dotnetSettings = message.dotnetSettings ? DotnetSettings.toJSON(message.dotnetSettings) : undefined);
-    message.rubySettings !== undefined &&
-      (obj.rubySettings = message.rubySettings ? RubySettings.toJSON(message.rubySettings) : undefined);
-    message.goSettings !== undefined &&
-      (obj.goSettings = message.goSettings ? GoSettings.toJSON(message.goSettings) : undefined);
+    if (message.version !== "") {
+      obj.version = message.version;
+    }
+    if (message.launchStage !== 0) {
+      obj.launchStage = launchStageToJSON(message.launchStage);
+    }
+    if (message.restNumericEnums === true) {
+      obj.restNumericEnums = message.restNumericEnums;
+    }
+    if (message.javaSettings !== undefined) {
+      obj.javaSettings = JavaSettings.toJSON(message.javaSettings);
+    }
+    if (message.cppSettings !== undefined) {
+      obj.cppSettings = CppSettings.toJSON(message.cppSettings);
+    }
+    if (message.phpSettings !== undefined) {
+      obj.phpSettings = PhpSettings.toJSON(message.phpSettings);
+    }
+    if (message.pythonSettings !== undefined) {
+      obj.pythonSettings = PythonSettings.toJSON(message.pythonSettings);
+    }
+    if (message.nodeSettings !== undefined) {
+      obj.nodeSettings = NodeSettings.toJSON(message.nodeSettings);
+    }
+    if (message.dotnetSettings !== undefined) {
+      obj.dotnetSettings = DotnetSettings.toJSON(message.dotnetSettings);
+    }
+    if (message.rubySettings !== undefined) {
+      obj.rubySettings = RubySettings.toJSON(message.rubySettings);
+    }
+    if (message.goSettings !== undefined) {
+      obj.goSettings = GoSettings.toJSON(message.goSettings);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ClientLibrarySettings>): ClientLibrarySettings {
     return ClientLibrarySettings.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ClientLibrarySettings>): ClientLibrarySettings {
     const message = createBaseClientLibrarySettings();
     message.version = object.version ?? "";
@@ -895,59 +908,65 @@ export const Publishing = {
 
   fromJSON(object: any): Publishing {
     return {
-      methodSettings: Array.isArray(object?.methodSettings)
+      methodSettings: globalThis.Array.isArray(object?.methodSettings)
         ? object.methodSettings.map((e: any) => MethodSettings.fromJSON(e))
         : [],
-      newIssueUri: isSet(object.newIssueUri) ? String(object.newIssueUri) : "",
-      documentationUri: isSet(object.documentationUri) ? String(object.documentationUri) : "",
-      apiShortName: isSet(object.apiShortName) ? String(object.apiShortName) : "",
-      githubLabel: isSet(object.githubLabel) ? String(object.githubLabel) : "",
-      codeownerGithubTeams: Array.isArray(object?.codeownerGithubTeams)
-        ? object.codeownerGithubTeams.map((e: any) => String(e))
+      newIssueUri: isSet(object.newIssueUri) ? globalThis.String(object.newIssueUri) : "",
+      documentationUri: isSet(object.documentationUri) ? globalThis.String(object.documentationUri) : "",
+      apiShortName: isSet(object.apiShortName) ? globalThis.String(object.apiShortName) : "",
+      githubLabel: isSet(object.githubLabel) ? globalThis.String(object.githubLabel) : "",
+      codeownerGithubTeams: globalThis.Array.isArray(object?.codeownerGithubTeams)
+        ? object.codeownerGithubTeams.map((e: any) => globalThis.String(e))
         : [],
-      docTagPrefix: isSet(object.docTagPrefix) ? String(object.docTagPrefix) : "",
+      docTagPrefix: isSet(object.docTagPrefix) ? globalThis.String(object.docTagPrefix) : "",
       organization: isSet(object.organization) ? clientLibraryOrganizationFromJSON(object.organization) : 0,
-      librarySettings: Array.isArray(object?.librarySettings)
+      librarySettings: globalThis.Array.isArray(object?.librarySettings)
         ? object.librarySettings.map((e: any) => ClientLibrarySettings.fromJSON(e))
         : [],
       protoReferenceDocumentationUri: isSet(object.protoReferenceDocumentationUri)
-        ? String(object.protoReferenceDocumentationUri)
+        ? globalThis.String(object.protoReferenceDocumentationUri)
         : "",
     };
   },
 
   toJSON(message: Publishing): unknown {
     const obj: any = {};
-    if (message.methodSettings) {
-      obj.methodSettings = message.methodSettings.map((e) => e ? MethodSettings.toJSON(e) : undefined);
-    } else {
-      obj.methodSettings = [];
+    if (message.methodSettings?.length) {
+      obj.methodSettings = message.methodSettings.map((e) => MethodSettings.toJSON(e));
     }
-    message.newIssueUri !== undefined && (obj.newIssueUri = message.newIssueUri);
-    message.documentationUri !== undefined && (obj.documentationUri = message.documentationUri);
-    message.apiShortName !== undefined && (obj.apiShortName = message.apiShortName);
-    message.githubLabel !== undefined && (obj.githubLabel = message.githubLabel);
-    if (message.codeownerGithubTeams) {
-      obj.codeownerGithubTeams = message.codeownerGithubTeams.map((e) => e);
-    } else {
-      obj.codeownerGithubTeams = [];
+    if (message.newIssueUri !== "") {
+      obj.newIssueUri = message.newIssueUri;
     }
-    message.docTagPrefix !== undefined && (obj.docTagPrefix = message.docTagPrefix);
-    message.organization !== undefined && (obj.organization = clientLibraryOrganizationToJSON(message.organization));
-    if (message.librarySettings) {
-      obj.librarySettings = message.librarySettings.map((e) => e ? ClientLibrarySettings.toJSON(e) : undefined);
-    } else {
-      obj.librarySettings = [];
+    if (message.documentationUri !== "") {
+      obj.documentationUri = message.documentationUri;
     }
-    message.protoReferenceDocumentationUri !== undefined &&
-      (obj.protoReferenceDocumentationUri = message.protoReferenceDocumentationUri);
+    if (message.apiShortName !== "") {
+      obj.apiShortName = message.apiShortName;
+    }
+    if (message.githubLabel !== "") {
+      obj.githubLabel = message.githubLabel;
+    }
+    if (message.codeownerGithubTeams?.length) {
+      obj.codeownerGithubTeams = message.codeownerGithubTeams;
+    }
+    if (message.docTagPrefix !== "") {
+      obj.docTagPrefix = message.docTagPrefix;
+    }
+    if (message.organization !== 0) {
+      obj.organization = clientLibraryOrganizationToJSON(message.organization);
+    }
+    if (message.librarySettings?.length) {
+      obj.librarySettings = message.librarySettings.map((e) => ClientLibrarySettings.toJSON(e));
+    }
+    if (message.protoReferenceDocumentationUri !== "") {
+      obj.protoReferenceDocumentationUri = message.protoReferenceDocumentationUri;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<Publishing>): Publishing {
     return Publishing.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Publishing>): Publishing {
     const message = createBasePublishing();
     message.methodSettings = object.methodSettings?.map((e) => MethodSettings.fromPartial(e)) || [];
@@ -1024,7 +1043,7 @@ export const JavaSettings = {
 
   fromJSON(object: any): JavaSettings {
     return {
-      libraryPackage: isSet(object.libraryPackage) ? String(object.libraryPackage) : "",
+      libraryPackage: isSet(object.libraryPackage) ? globalThis.String(object.libraryPackage) : "",
       serviceClassNames: isObject(object.serviceClassNames)
         ? Object.entries(object.serviceClassNames).reduce<{ [key: string]: string }>((acc, [key, value]) => {
           acc[key] = String(value);
@@ -1037,29 +1056,34 @@ export const JavaSettings = {
 
   toJSON(message: JavaSettings): unknown {
     const obj: any = {};
-    message.libraryPackage !== undefined && (obj.libraryPackage = message.libraryPackage);
-    obj.serviceClassNames = {};
-    if (message.serviceClassNames) {
-      Object.entries(message.serviceClassNames).forEach(([k, v]) => {
-        obj.serviceClassNames[k] = v;
-      });
+    if (message.libraryPackage !== "") {
+      obj.libraryPackage = message.libraryPackage;
     }
-    message.common !== undefined &&
-      (obj.common = message.common ? CommonLanguageSettings.toJSON(message.common) : undefined);
+    if (message.serviceClassNames) {
+      const entries = Object.entries(message.serviceClassNames);
+      if (entries.length > 0) {
+        obj.serviceClassNames = {};
+        entries.forEach(([k, v]) => {
+          obj.serviceClassNames[k] = v;
+        });
+      }
+    }
+    if (message.common !== undefined) {
+      obj.common = CommonLanguageSettings.toJSON(message.common);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<JavaSettings>): JavaSettings {
     return JavaSettings.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<JavaSettings>): JavaSettings {
     const message = createBaseJavaSettings();
     message.libraryPackage = object.libraryPackage ?? "";
     message.serviceClassNames = Object.entries(object.serviceClassNames ?? {}).reduce<{ [key: string]: string }>(
       (acc, [key, value]) => {
         if (value !== undefined) {
-          acc[key] = String(value);
+          acc[key] = globalThis.String(value);
         }
         return acc;
       },
@@ -1118,20 +1142,26 @@ export const JavaSettings_ServiceClassNamesEntry = {
   },
 
   fromJSON(object: any): JavaSettings_ServiceClassNamesEntry {
-    return { key: isSet(object.key) ? String(object.key) : "", value: isSet(object.value) ? String(object.value) : "" };
+    return {
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      value: isSet(object.value) ? globalThis.String(object.value) : "",
+    };
   },
 
   toJSON(message: JavaSettings_ServiceClassNamesEntry): unknown {
     const obj: any = {};
-    message.key !== undefined && (obj.key = message.key);
-    message.value !== undefined && (obj.value = message.value);
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.value !== "") {
+      obj.value = message.value;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<JavaSettings_ServiceClassNamesEntry>): JavaSettings_ServiceClassNamesEntry {
     return JavaSettings_ServiceClassNamesEntry.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<JavaSettings_ServiceClassNamesEntry>): JavaSettings_ServiceClassNamesEntry {
     const message = createBaseJavaSettings_ServiceClassNamesEntry();
     message.key = object.key ?? "";
@@ -1181,15 +1211,15 @@ export const CppSettings = {
 
   toJSON(message: CppSettings): unknown {
     const obj: any = {};
-    message.common !== undefined &&
-      (obj.common = message.common ? CommonLanguageSettings.toJSON(message.common) : undefined);
+    if (message.common !== undefined) {
+      obj.common = CommonLanguageSettings.toJSON(message.common);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<CppSettings>): CppSettings {
     return CppSettings.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<CppSettings>): CppSettings {
     const message = createBaseCppSettings();
     message.common = (object.common !== undefined && object.common !== null)
@@ -1240,15 +1270,15 @@ export const PhpSettings = {
 
   toJSON(message: PhpSettings): unknown {
     const obj: any = {};
-    message.common !== undefined &&
-      (obj.common = message.common ? CommonLanguageSettings.toJSON(message.common) : undefined);
+    if (message.common !== undefined) {
+      obj.common = CommonLanguageSettings.toJSON(message.common);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<PhpSettings>): PhpSettings {
     return PhpSettings.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<PhpSettings>): PhpSettings {
     const message = createBasePhpSettings();
     message.common = (object.common !== undefined && object.common !== null)
@@ -1299,15 +1329,15 @@ export const PythonSettings = {
 
   toJSON(message: PythonSettings): unknown {
     const obj: any = {};
-    message.common !== undefined &&
-      (obj.common = message.common ? CommonLanguageSettings.toJSON(message.common) : undefined);
+    if (message.common !== undefined) {
+      obj.common = CommonLanguageSettings.toJSON(message.common);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<PythonSettings>): PythonSettings {
     return PythonSettings.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<PythonSettings>): PythonSettings {
     const message = createBasePythonSettings();
     message.common = (object.common !== undefined && object.common !== null)
@@ -1358,15 +1388,15 @@ export const NodeSettings = {
 
   toJSON(message: NodeSettings): unknown {
     const obj: any = {};
-    message.common !== undefined &&
-      (obj.common = message.common ? CommonLanguageSettings.toJSON(message.common) : undefined);
+    if (message.common !== undefined) {
+      obj.common = CommonLanguageSettings.toJSON(message.common);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<NodeSettings>): NodeSettings {
     return NodeSettings.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<NodeSettings>): NodeSettings {
     const message = createBaseNodeSettings();
     message.common = (object.common !== undefined && object.common !== null)
@@ -1489,48 +1519,49 @@ export const DotnetSettings = {
           return acc;
         }, {})
         : {},
-      ignoredResources: Array.isArray(object?.ignoredResources)
-        ? object.ignoredResources.map((e: any) => String(e))
+      ignoredResources: globalThis.Array.isArray(object?.ignoredResources)
+        ? object.ignoredResources.map((e: any) => globalThis.String(e))
         : [],
-      forcedNamespaceAliases: Array.isArray(object?.forcedNamespaceAliases)
-        ? object.forcedNamespaceAliases.map((e: any) => String(e))
+      forcedNamespaceAliases: globalThis.Array.isArray(object?.forcedNamespaceAliases)
+        ? object.forcedNamespaceAliases.map((e: any) => globalThis.String(e))
         : [],
-      handwrittenSignatures: Array.isArray(object?.handwrittenSignatures)
-        ? object.handwrittenSignatures.map((e: any) => String(e))
+      handwrittenSignatures: globalThis.Array.isArray(object?.handwrittenSignatures)
+        ? object.handwrittenSignatures.map((e: any) => globalThis.String(e))
         : [],
     };
   },
 
   toJSON(message: DotnetSettings): unknown {
     const obj: any = {};
-    message.common !== undefined &&
-      (obj.common = message.common ? CommonLanguageSettings.toJSON(message.common) : undefined);
-    obj.renamedServices = {};
+    if (message.common !== undefined) {
+      obj.common = CommonLanguageSettings.toJSON(message.common);
+    }
     if (message.renamedServices) {
-      Object.entries(message.renamedServices).forEach(([k, v]) => {
-        obj.renamedServices[k] = v;
-      });
+      const entries = Object.entries(message.renamedServices);
+      if (entries.length > 0) {
+        obj.renamedServices = {};
+        entries.forEach(([k, v]) => {
+          obj.renamedServices[k] = v;
+        });
+      }
     }
-    obj.renamedResources = {};
     if (message.renamedResources) {
-      Object.entries(message.renamedResources).forEach(([k, v]) => {
-        obj.renamedResources[k] = v;
-      });
+      const entries = Object.entries(message.renamedResources);
+      if (entries.length > 0) {
+        obj.renamedResources = {};
+        entries.forEach(([k, v]) => {
+          obj.renamedResources[k] = v;
+        });
+      }
     }
-    if (message.ignoredResources) {
-      obj.ignoredResources = message.ignoredResources.map((e) => e);
-    } else {
-      obj.ignoredResources = [];
+    if (message.ignoredResources?.length) {
+      obj.ignoredResources = message.ignoredResources;
     }
-    if (message.forcedNamespaceAliases) {
-      obj.forcedNamespaceAliases = message.forcedNamespaceAliases.map((e) => e);
-    } else {
-      obj.forcedNamespaceAliases = [];
+    if (message.forcedNamespaceAliases?.length) {
+      obj.forcedNamespaceAliases = message.forcedNamespaceAliases;
     }
-    if (message.handwrittenSignatures) {
-      obj.handwrittenSignatures = message.handwrittenSignatures.map((e) => e);
-    } else {
-      obj.handwrittenSignatures = [];
+    if (message.handwrittenSignatures?.length) {
+      obj.handwrittenSignatures = message.handwrittenSignatures;
     }
     return obj;
   },
@@ -1538,7 +1569,6 @@ export const DotnetSettings = {
   create(base?: DeepPartial<DotnetSettings>): DotnetSettings {
     return DotnetSettings.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<DotnetSettings>): DotnetSettings {
     const message = createBaseDotnetSettings();
     message.common = (object.common !== undefined && object.common !== null)
@@ -1547,7 +1577,7 @@ export const DotnetSettings = {
     message.renamedServices = Object.entries(object.renamedServices ?? {}).reduce<{ [key: string]: string }>(
       (acc, [key, value]) => {
         if (value !== undefined) {
-          acc[key] = String(value);
+          acc[key] = globalThis.String(value);
         }
         return acc;
       },
@@ -1556,7 +1586,7 @@ export const DotnetSettings = {
     message.renamedResources = Object.entries(object.renamedResources ?? {}).reduce<{ [key: string]: string }>(
       (acc, [key, value]) => {
         if (value !== undefined) {
-          acc[key] = String(value);
+          acc[key] = globalThis.String(value);
         }
         return acc;
       },
@@ -1615,20 +1645,26 @@ export const DotnetSettings_RenamedServicesEntry = {
   },
 
   fromJSON(object: any): DotnetSettings_RenamedServicesEntry {
-    return { key: isSet(object.key) ? String(object.key) : "", value: isSet(object.value) ? String(object.value) : "" };
+    return {
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      value: isSet(object.value) ? globalThis.String(object.value) : "",
+    };
   },
 
   toJSON(message: DotnetSettings_RenamedServicesEntry): unknown {
     const obj: any = {};
-    message.key !== undefined && (obj.key = message.key);
-    message.value !== undefined && (obj.value = message.value);
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.value !== "") {
+      obj.value = message.value;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<DotnetSettings_RenamedServicesEntry>): DotnetSettings_RenamedServicesEntry {
     return DotnetSettings_RenamedServicesEntry.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<DotnetSettings_RenamedServicesEntry>): DotnetSettings_RenamedServicesEntry {
     const message = createBaseDotnetSettings_RenamedServicesEntry();
     message.key = object.key ?? "";
@@ -1683,20 +1719,26 @@ export const DotnetSettings_RenamedResourcesEntry = {
   },
 
   fromJSON(object: any): DotnetSettings_RenamedResourcesEntry {
-    return { key: isSet(object.key) ? String(object.key) : "", value: isSet(object.value) ? String(object.value) : "" };
+    return {
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      value: isSet(object.value) ? globalThis.String(object.value) : "",
+    };
   },
 
   toJSON(message: DotnetSettings_RenamedResourcesEntry): unknown {
     const obj: any = {};
-    message.key !== undefined && (obj.key = message.key);
-    message.value !== undefined && (obj.value = message.value);
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.value !== "") {
+      obj.value = message.value;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<DotnetSettings_RenamedResourcesEntry>): DotnetSettings_RenamedResourcesEntry {
     return DotnetSettings_RenamedResourcesEntry.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<DotnetSettings_RenamedResourcesEntry>): DotnetSettings_RenamedResourcesEntry {
     const message = createBaseDotnetSettings_RenamedResourcesEntry();
     message.key = object.key ?? "";
@@ -1746,15 +1788,15 @@ export const RubySettings = {
 
   toJSON(message: RubySettings): unknown {
     const obj: any = {};
-    message.common !== undefined &&
-      (obj.common = message.common ? CommonLanguageSettings.toJSON(message.common) : undefined);
+    if (message.common !== undefined) {
+      obj.common = CommonLanguageSettings.toJSON(message.common);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<RubySettings>): RubySettings {
     return RubySettings.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<RubySettings>): RubySettings {
     const message = createBaseRubySettings();
     message.common = (object.common !== undefined && object.common !== null)
@@ -1805,15 +1847,15 @@ export const GoSettings = {
 
   toJSON(message: GoSettings): unknown {
     const obj: any = {};
-    message.common !== undefined &&
-      (obj.common = message.common ? CommonLanguageSettings.toJSON(message.common) : undefined);
+    if (message.common !== undefined) {
+      obj.common = CommonLanguageSettings.toJSON(message.common);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<GoSettings>): GoSettings {
     return GoSettings.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<GoSettings>): GoSettings {
     const message = createBaseGoSettings();
     message.common = (object.common !== undefined && object.common !== null)
@@ -1870,23 +1912,25 @@ export const MethodSettings = {
 
   fromJSON(object: any): MethodSettings {
     return {
-      selector: isSet(object.selector) ? String(object.selector) : "",
+      selector: isSet(object.selector) ? globalThis.String(object.selector) : "",
       longRunning: isSet(object.longRunning) ? MethodSettings_LongRunning.fromJSON(object.longRunning) : undefined,
     };
   },
 
   toJSON(message: MethodSettings): unknown {
     const obj: any = {};
-    message.selector !== undefined && (obj.selector = message.selector);
-    message.longRunning !== undefined &&
-      (obj.longRunning = message.longRunning ? MethodSettings_LongRunning.toJSON(message.longRunning) : undefined);
+    if (message.selector !== "") {
+      obj.selector = message.selector;
+    }
+    if (message.longRunning !== undefined) {
+      obj.longRunning = MethodSettings_LongRunning.toJSON(message.longRunning);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<MethodSettings>): MethodSettings {
     return MethodSettings.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<MethodSettings>): MethodSettings {
     const message = createBaseMethodSettings();
     message.selector = object.selector ?? "";
@@ -1965,7 +2009,7 @@ export const MethodSettings_LongRunning = {
   fromJSON(object: any): MethodSettings_LongRunning {
     return {
       initialPollDelay: isSet(object.initialPollDelay) ? Duration.fromJSON(object.initialPollDelay) : undefined,
-      pollDelayMultiplier: isSet(object.pollDelayMultiplier) ? Number(object.pollDelayMultiplier) : 0,
+      pollDelayMultiplier: isSet(object.pollDelayMultiplier) ? globalThis.Number(object.pollDelayMultiplier) : 0,
       maxPollDelay: isSet(object.maxPollDelay) ? Duration.fromJSON(object.maxPollDelay) : undefined,
       totalPollTimeout: isSet(object.totalPollTimeout) ? Duration.fromJSON(object.totalPollTimeout) : undefined,
     };
@@ -1973,20 +2017,24 @@ export const MethodSettings_LongRunning = {
 
   toJSON(message: MethodSettings_LongRunning): unknown {
     const obj: any = {};
-    message.initialPollDelay !== undefined &&
-      (obj.initialPollDelay = message.initialPollDelay ? Duration.toJSON(message.initialPollDelay) : undefined);
-    message.pollDelayMultiplier !== undefined && (obj.pollDelayMultiplier = message.pollDelayMultiplier);
-    message.maxPollDelay !== undefined &&
-      (obj.maxPollDelay = message.maxPollDelay ? Duration.toJSON(message.maxPollDelay) : undefined);
-    message.totalPollTimeout !== undefined &&
-      (obj.totalPollTimeout = message.totalPollTimeout ? Duration.toJSON(message.totalPollTimeout) : undefined);
+    if (message.initialPollDelay !== undefined) {
+      obj.initialPollDelay = Duration.toJSON(message.initialPollDelay);
+    }
+    if (message.pollDelayMultiplier !== 0) {
+      obj.pollDelayMultiplier = message.pollDelayMultiplier;
+    }
+    if (message.maxPollDelay !== undefined) {
+      obj.maxPollDelay = Duration.toJSON(message.maxPollDelay);
+    }
+    if (message.totalPollTimeout !== undefined) {
+      obj.totalPollTimeout = Duration.toJSON(message.totalPollTimeout);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<MethodSettings_LongRunning>): MethodSettings_LongRunning {
     return MethodSettings_LongRunning.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<MethodSettings_LongRunning>): MethodSettings_LongRunning {
     const message = createBaseMethodSettings_LongRunning();
     message.initialPollDelay = (object.initialPollDelay !== undefined && object.initialPollDelay !== null)
@@ -2006,9 +2054,15 @@ export const MethodSettings_LongRunning = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+if (_m0.util.Long !== Long) {
+  _m0.util.Long = Long as any;
+  _m0.configure();
+}
 
 function isObject(value: any): boolean {
   return typeof value === "object" && value !== null;

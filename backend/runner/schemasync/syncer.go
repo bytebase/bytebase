@@ -372,8 +372,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 
 	var patchSchemaVersion *model.Version
 	if force {
-		// When there are too many databases, this might have performance issue and will
-		// cause frontend timeout since we set a 30s limit (INSTANCE_OPERATION_TIMEOUT).
+		// When there are too many databases, this might have performance issue.
 		schemaVersion, err := utils.GetLatestSchemaVersion(ctx, s.store, instance.UID, database.UID, databaseMetadata.Name)
 		if err != nil {
 			return err
@@ -403,8 +402,8 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	var oldDatabaseMetadata *storepb.DatabaseSchemaMetadata
 	var rawDump []byte
 	if dbSchema != nil {
-		oldDatabaseMetadata = dbSchema.Metadata
-		rawDump = dbSchema.Schema
+		oldDatabaseMetadata = dbSchema.GetMetadata()
+		rawDump = dbSchema.GetSchema()
 	}
 
 	if !cmp.Equal(oldDatabaseMetadata, databaseMetadata, protocmp.Transform()) {
@@ -418,10 +417,11 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 			rawDump = schemaBuf.Bytes()
 		}
 
-		if err := s.store.UpsertDBSchema(ctx, database.UID, &store.DBSchema{
-			Metadata: databaseMetadata,
-			Schema:   rawDump,
-		}, api.SystemBotID); err != nil {
+		if err := s.store.UpsertDBSchema(ctx,
+			database.UID,
+			model.NewDBSchema(databaseMetadata, rawDump, nil /* config */),
+			api.SystemBotID,
+		); err != nil {
 			return err
 		}
 	}

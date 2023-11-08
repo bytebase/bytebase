@@ -1,4 +1,5 @@
 /* eslint-disable */
+import Long from "long";
 import _m0 from "protobufjs/minimal";
 
 export const protobufPackage = "bytebase.store";
@@ -67,18 +68,20 @@ export const Changelist = {
 
   fromJSON(object: any): Changelist {
     return {
-      description: isSet(object.description) ? String(object.description) : "",
-      changes: Array.isArray(object?.changes) ? object.changes.map((e: any) => Changelist_Change.fromJSON(e)) : [],
+      description: isSet(object.description) ? globalThis.String(object.description) : "",
+      changes: globalThis.Array.isArray(object?.changes)
+        ? object.changes.map((e: any) => Changelist_Change.fromJSON(e))
+        : [],
     };
   },
 
   toJSON(message: Changelist): unknown {
     const obj: any = {};
-    message.description !== undefined && (obj.description = message.description);
-    if (message.changes) {
-      obj.changes = message.changes.map((e) => e ? Changelist_Change.toJSON(e) : undefined);
-    } else {
-      obj.changes = [];
+    if (message.description !== "") {
+      obj.description = message.description;
+    }
+    if (message.changes?.length) {
+      obj.changes = message.changes.map((e) => Changelist_Change.toJSON(e));
     }
     return obj;
   },
@@ -86,7 +89,6 @@ export const Changelist = {
   create(base?: DeepPartial<Changelist>): Changelist {
     return Changelist.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Changelist>): Changelist {
     const message = createBaseChangelist();
     message.description = object.description ?? "";
@@ -142,22 +144,25 @@ export const Changelist_Change = {
 
   fromJSON(object: any): Changelist_Change {
     return {
-      sheet: isSet(object.sheet) ? String(object.sheet) : "",
-      source: isSet(object.source) ? String(object.source) : "",
+      sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
+      source: isSet(object.source) ? globalThis.String(object.source) : "",
     };
   },
 
   toJSON(message: Changelist_Change): unknown {
     const obj: any = {};
-    message.sheet !== undefined && (obj.sheet = message.sheet);
-    message.source !== undefined && (obj.source = message.source);
+    if (message.sheet !== "") {
+      obj.sheet = message.sheet;
+    }
+    if (message.source !== "") {
+      obj.source = message.source;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<Changelist_Change>): Changelist_Change {
     return Changelist_Change.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Changelist_Change>): Changelist_Change {
     const message = createBaseChangelist_Change();
     message.sheet = object.sheet ?? "";
@@ -169,9 +174,15 @@ export const Changelist_Change = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+if (_m0.util.Long !== Long) {
+  _m0.util.Long = Long as any;
+  _m0.configure();
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

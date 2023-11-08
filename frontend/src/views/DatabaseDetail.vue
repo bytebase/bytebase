@@ -202,8 +202,6 @@
     </BBModal>
   </div>
 
-  <GhostDialog ref="ghostDialog" />
-
   <BBModal
     v-if="state.showSchemaDiagram"
     :title="$t('schema-diagram.self')"
@@ -232,12 +230,11 @@
 import dayjs from "dayjs";
 import { startCase } from "lodash-es";
 import { ClientError } from "nice-grpc-web";
-import { computed, onMounted, reactive, watch, ref } from "vue";
+import { computed, onMounted, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useRoute } from "vue-router";
 import { BBTabFilterItem } from "@/bbkit/types";
-import { GhostDialog } from "@/components/AlterSchemaPrepForm";
 import DatabaseBackupPanel from "@/components/DatabaseBackupPanel.vue";
 import DatabaseChangeHistoryPanel from "@/components/DatabaseChangeHistoryPanel.vue";
 import {
@@ -265,15 +262,13 @@ import {
 import {
   UNKNOWN_ID,
   DEFAULT_PROJECT_V1_NAME,
-  ComposedDatabase,
   unknownEnvironment,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import { TenantMode } from "@/types/proto/v1/project_service";
+import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import {
   idFromSlug,
   hasWorkspacePermissionV1,
-  allowGhostMigrationV1,
   isPITRDatabaseV1,
   isArchivedDatabaseV1,
   instanceV1HasBackupRestore,
@@ -310,7 +305,6 @@ const { t } = useI18n();
 const router = useRouter();
 const databaseV1Store = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
-const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
 
 const databaseTabItemList = computed((): DatabaseTabItem[] => {
   if (!allowToChangeDatabase.value) {
@@ -498,34 +492,9 @@ const tryTransferProject = () => {
   state.showTransferDatabaseModal = true;
 };
 
-// 'normal' -> normal migration
-// 'online' -> online migration
-// false -> user clicked cancel button
-const isUsingGhostMigration = async (databaseList: ComposedDatabase[]) => {
-  if (project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED) {
-    // Not available for tenant mode now.
-    return "normal";
-  }
-
-  // check if all selected databases supports gh-ost
-  if (allowGhostMigrationV1(databaseList)) {
-    // open the dialog to ask the user
-    const { result, mode } = await ghostDialog.value!.open();
-    if (!result) {
-      return false; // return false when user clicked the cancel button
-    }
-    return mode;
-  }
-
-  // fallback to normal
-  return "normal";
-};
-
 const createMigration = async (
   type: "bb.issue.database.schema.update" | "bb.issue.database.data.update"
 ) => {
-  type AlterMode = "online" | "normal" | false;
-  let mode: AlterMode = "normal";
   if (type === "bb.issue.database.schema.update") {
     if (
       database.value.syncState === State.ACTIVE &&
@@ -534,24 +503,14 @@ const createMigration = async (
       state.showSchemaEditorModal = true;
       return;
     }
-
-    // Check and show a normal/online selection modal dialog if needed.
-    mode = await isUsingGhostMigration([database.value]);
   }
-  if (mode === false) return;
 
   // Create a user friendly default issue name
   const issueNameParts: string[] = [];
   issueNameParts.push(`[${database.value.databaseName}]`);
-  if (mode === "online") {
-    issueNameParts.push("Online schema change");
-  } else {
-    issueNameParts.push(
-      type === "bb.issue.database.schema.update"
-        ? `Alter schema`
-        : `Change data`
-    );
-  }
+  issueNameParts.push(
+    type === "bb.issue.database.schema.update" ? `Alter schema` : `Change data`
+  );
   const datetime = dayjs().format("@MM-DD HH:mm");
   const tz = "UTC" + dayjs().format("ZZ");
   issueNameParts.push(`${datetime} ${tz}`);
@@ -562,9 +521,6 @@ const createMigration = async (
     project: project.value.uid,
     databaseList: database.value.uid,
   };
-  if (mode === "online") {
-    query.ghost = "1";
-  }
 
   router.push({
     name: "workspace.issue.detail",
@@ -629,10 +585,11 @@ const syncDatabaseSchema = async () => {
   try {
     await databaseV1Store.syncDatabase(database.value.name);
 
-    dbSchemaStore.getOrFetchDatabaseMetadata(
-      database.value.name,
-      true // skip cache
-    );
+    dbSchemaStore.getOrFetchDatabaseMetadata({
+      database: database.value.name,
+      skipCache: true,
+      view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
+    });
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",

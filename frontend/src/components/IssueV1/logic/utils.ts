@@ -1,3 +1,5 @@
+import { NButton } from "naive-ui";
+import { h } from "vue";
 import { t } from "@/plugins/i18n";
 import {
   pushNotification,
@@ -11,7 +13,13 @@ import {
   UNKNOWN_ID,
 } from "@/types";
 import { Plan, Task, Task_Type } from "@/types/proto/v1/rollout_service";
-import { extractDatabaseResourceName, flattenSpecList } from "@/utils";
+import {
+  defer,
+  extractDatabaseResourceName,
+  flattenSpecList,
+  flattenTaskV1List,
+} from "@/utils";
+import { IssueContext } from "./context";
 
 export const databaseForTask = (issue: ComposedIssue, task: Task) => {
   if (
@@ -106,4 +114,120 @@ export const notifyNotEditableLegacyIssue = () => {
     style: "CRITICAL",
     title: t("issue.not-editable-legacy-issue"),
   });
+};
+
+export const chooseUpdateTarget = (
+  issue: ComposedIssue,
+  selectedTask: Task,
+  filter: (task: Task) => boolean,
+  dialog: IssueContext["dialog"],
+  updateType: string,
+  isBatchMode: boolean
+) => {
+  type Target = "CANCELED" | "TASK" | "STAGE" | "ALL";
+  const d = defer<{ target: Target; tasks: Task[] }>();
+
+  const targets: Record<Target, Task[]> = {
+    CANCELED: [],
+    TASK: [selectedTask],
+    STAGE: (stageForTask(issue, selectedTask)?.tasks ?? []).filter(filter),
+    ALL: flattenTaskV1List(issue.rolloutEntity).filter(filter),
+  };
+
+  if (isBatchMode) {
+    dialog.info({
+      title: t("issue.update-statement.self", { type: updateType }),
+      content: t(
+        "issue.update-statement.current-change-will-apply-to-all-tasks-in-batch-mode"
+      ),
+      type: "info",
+      autoFocus: false,
+      closable: false,
+      maskClosable: false,
+      closeOnEsc: false,
+      showIcon: false,
+      positiveText: t("common.confirm"),
+      negativeText: t("common.cancel"),
+      onPositiveClick: () => {
+        d.resolve({ target: "ALL", tasks: targets.ALL });
+      },
+      onNegativeClick: () => {
+        d.resolve({ target: "CANCELED", tasks: [] });
+      },
+    });
+    return d.promise;
+  }
+
+  if (targets.STAGE.length === 1 && targets.ALL.length === 1) {
+    d.resolve({ target: "TASK", tasks: targets.TASK });
+    return d.promise;
+  }
+
+  const $d = dialog.create({
+    title: t("issue.update-statement.self", { type: updateType }),
+    content: t("issue.update-statement.apply-current-change-to"),
+    type: "info",
+    autoFocus: false,
+    closable: false,
+    maskClosable: false,
+    closeOnEsc: false,
+    showIcon: false,
+    action: () => {
+      const finish = (target: Target) => {
+        d.resolve({ target, tasks: targets[target] });
+        $d.destroy();
+      };
+
+      const CANCEL = h(
+        NButton,
+        { size: "small", onClick: () => finish("CANCELED") },
+        {
+          default: () => t("common.cancel"),
+        }
+      );
+      const TASK = h(
+        NButton,
+        { size: "small", onClick: () => finish("TASK") },
+        {
+          default: () => t("issue.update-statement.target.selected-task"),
+        }
+      );
+      const buttons = [CANCEL, TASK];
+      if (targets.STAGE.length > 1) {
+        // More than one editable tasks in stage
+        // Add "Selected stage" option
+        const STAGE = h(
+          NButton,
+          { size: "small", onClick: () => finish("STAGE") },
+          {
+            default: () => t("issue.update-statement.target.selected-stage"),
+          }
+        );
+        buttons.push(STAGE);
+      }
+      if (targets.ALL.length > targets.STAGE.length) {
+        // More editable tasks in other stages
+        // Add "All tasks" option
+        const ALL = h(
+          NButton,
+          { size: "small", onClick: () => finish("ALL") },
+          {
+            default: () => t("issue.update-statement.target.all-tasks"),
+          }
+        );
+        buttons.push(ALL);
+      }
+
+      return h(
+        "div",
+        { class: "flex items-center justify-end gap-x-2" },
+        buttons
+      );
+    },
+    onClose() {
+      d.resolve({ target: "CANCELED", tasks: [] });
+    },
+  });
+
+  return d.promise;
 };

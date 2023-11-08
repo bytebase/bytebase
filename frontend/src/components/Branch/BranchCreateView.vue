@@ -251,6 +251,13 @@ const prepareSchemaDesign = async () => {
       fullSchema,
       database.instanceEntity.engine
     );
+    if (changeHistory.statementSheet) {
+      const sheet = await sheetStore.getOrFetchSheetByName(
+        changeHistory.statementSheet
+      );
+      baselineMetadata.schemaConfigs =
+        sheet?.payload?.databaseConfig?.schemaConfigs ?? [];
+    }
     return SchemaDesign.fromPartial({
       engine: database.instanceEntity.engine,
       baselineSchema: fullSchema,

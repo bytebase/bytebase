@@ -304,7 +304,7 @@ func (extractor *fieldExtractor) evalSnowSQLExprMaskingAttributes(ctx antlr.Rule
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -314,7 +314,7 @@ func (extractor *fieldExtractor) evalSnowSQLExprMaskingAttributes(ctx antlr.Rule
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -353,7 +353,7 @@ func (extractor *fieldExtractor) evalSnowSQLExprMaskingAttributes(ctx antlr.Rule
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -399,7 +399,7 @@ func (extractor *fieldExtractor) evalSnowSQLExprMaskingAttributes(ctx antlr.Rule
 				if err != nil {
 					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", kvPair.GetText(), kvPair.GetStart().GetLine())
 				}
-				finalAttributes.TransmittedBy(maskingAttributes)
+				finalAttributes.TransmittedByInExpression(maskingAttributes)
 				if finalAttributes.IsNeverChangeInTransmission() {
 					return ctx.GetText(), finalAttributes, nil
 				}
@@ -423,7 +423,7 @@ func (extractor *fieldExtractor) evalSnowSQLExprMaskingAttributes(ctx antlr.Rule
 				if err != nil {
 					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", value.GetText(), value.GetStart().GetLine())
 				}
-				finalAttributes.TransmittedBy(maskingAttributes)
+				finalAttributes.TransmittedByInExpression(maskingAttributes)
 				if finalAttributes.IsNeverChangeInTransmission() {
 					return ctx.GetText(), finalAttributes, nil
 				}
@@ -439,7 +439,7 @@ func (extractor *fieldExtractor) evalSnowSQLExprMaskingAttributes(ctx antlr.Rule
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -449,7 +449,7 @@ func (extractor *fieldExtractor) evalSnowSQLExprMaskingAttributes(ctx antlr.Rule
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			return ctx.GetText(), finalAttributes, nil
 		}
 		panic("never reach here")
@@ -460,7 +460,7 @@ func (extractor *fieldExtractor) evalSnowSQLExprMaskingAttributes(ctx antlr.Rule
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -469,7 +469,7 @@ func (extractor *fieldExtractor) evalSnowSQLExprMaskingAttributes(ctx antlr.Rule
 				if err != nil {
 					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
 				}
-				finalAttributes.TransmittedBy(maskingAttributes)
+				finalAttributes.TransmittedByInExpression(maskingAttributes)
 				if finalAttributes.IsNeverChangeInTransmission() {
 					return ctx.GetText(), finalAttributes, nil
 				}
@@ -484,7 +484,7 @@ func (extractor *fieldExtractor) evalSnowSQLExprMaskingAttributes(ctx antlr.Rule
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -495,7 +495,7 @@ func (extractor *fieldExtractor) evalSnowSQLExprMaskingAttributes(ctx antlr.Rule
 				if err != nil {
 					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", switchSection.GetText(), switchSection.GetStart().GetLine())
 				}
-				finalAttributes.TransmittedBy(maskingAttributes)
+				finalAttributes.TransmittedByInExpression(maskingAttributes)
 				if finalAttributes.IsNeverChangeInTransmission() {
 					return ctx.GetText(), finalAttributes, nil
 				}
@@ -508,7 +508,7 @@ func (extractor *fieldExtractor) evalSnowSQLExprMaskingAttributes(ctx antlr.Rule
 				if err != nil {
 					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", switchSearchConditionSection.GetText(), switchSearchConditionSection.GetStart().GetLine())
 				}
-				finalAttributes.TransmittedBy(maskingAttributes)
+				finalAttributes.TransmittedByInExpression(maskingAttributes)
 				if finalAttributes.IsNeverChangeInTransmission() {
 					return ctx.GetText(), finalAttributes, nil
 				}
@@ -524,7 +524,7 @@ func (extractor *fieldExtractor) evalSnowSQLExprMaskingAttributes(ctx antlr.Rule
 				if err != nil {
 					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
 				}
-				finalAttributes.TransmittedBy(maskingAttributes)
+				finalAttributes.TransmittedByInExpression(maskingAttributes)
 				if finalAttributes.IsNeverChangeInTransmission() {
 					return ctx.GetText(), finalAttributes, nil
 				}
@@ -539,7 +539,7 @@ func (extractor *fieldExtractor) evalSnowSQLExprMaskingAttributes(ctx antlr.Rule
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -547,7 +547,7 @@ func (extractor *fieldExtractor) evalSnowSQLExprMaskingAttributes(ctx antlr.Rule
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.Expr().GetText(), ctx.Expr().GetStart().GetLine())
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			return ctx.GetText(), finalAttributes, nil
 		}
 		panic("never reach here")
@@ -558,7 +558,7 @@ func (extractor *fieldExtractor) evalSnowSQLExprMaskingAttributes(ctx antlr.Rule
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.Predicate().GetText(), ctx.Predicate().GetStart().GetLine())
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 		}
 		if v := ctx.AllSearch_condition(); len(v) > 0 {
 			for _, searchCondition := range v {
@@ -566,7 +566,7 @@ func (extractor *fieldExtractor) evalSnowSQLExprMaskingAttributes(ctx antlr.Rule
 				if err != nil {
 					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", searchCondition.GetText(), searchCondition.GetStart().GetLine())
 				}
-				finalAttributes.TransmittedBy(maskingAttributes)
+				finalAttributes.TransmittedByInExpression(maskingAttributes)
 				if finalAttributes.IsNeverChangeInTransmission() {
 					return ctx.GetText(), finalAttributes, nil
 				}
@@ -582,7 +582,7 @@ func (extractor *fieldExtractor) evalSnowSQLExprMaskingAttributes(ctx antlr.Rule
 				if err != nil {
 					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
 				}
-				finalAttributes.TransmittedBy(maskingAttributes)
+				finalAttributes.TransmittedByInExpression(maskingAttributes)
 				if finalAttributes.IsNeverChangeInTransmission() {
 					return ctx.GetText(), finalAttributes, nil
 				}
@@ -593,14 +593,14 @@ func (extractor *fieldExtractor) evalSnowSQLExprMaskingAttributes(ctx antlr.Rule
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 		}
 		if v := ctx.Expr_list(); v != nil {
 			_, maskingAttributes, err := extractor.evalSnowSQLExprMaskingAttributes(v)
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -613,7 +613,7 @@ func (extractor *fieldExtractor) evalSnowSQLExprMaskingAttributes(ctx antlr.Rule
 		}
 		finalAttributes := base.NewDefaultMaskingAttributes()
 		for _, field := range fields {
-			finalAttributes.TransmittedBy(field.MaskingAttributes)
+			finalAttributes.TransmittedByInExpression(field.MaskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -666,7 +666,7 @@ func (extractor *fieldExtractor) evalSnowSQLExprMaskingAttributes(ctx antlr.Rule
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -674,7 +674,7 @@ func (extractor *fieldExtractor) evalSnowSQLExprMaskingAttributes(ctx antlr.Rule
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.Order_by_clause().GetText(), ctx.Order_by_clause().GetStart().GetLine())
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			return ctx.GetText(), finalAttributes, nil
 		}
 		panic("never reach here")
@@ -685,7 +685,7 @@ func (extractor *fieldExtractor) evalSnowSQLExprMaskingAttributes(ctx antlr.Rule
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -695,7 +695,7 @@ func (extractor *fieldExtractor) evalSnowSQLExprMaskingAttributes(ctx antlr.Rule
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			return ctx.GetText(), finalAttributes, nil
 		}
 		panic("never reach here")
@@ -706,7 +706,7 @@ func (extractor *fieldExtractor) evalSnowSQLExprMaskingAttributes(ctx antlr.Rule
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -716,7 +716,7 @@ func (extractor *fieldExtractor) evalSnowSQLExprMaskingAttributes(ctx antlr.Rule
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			return ctx.GetText(), finalAttributes, nil
 		}
 		panic("never reach here")
@@ -740,7 +740,7 @@ func (extractor *fieldExtractor) evalSnowSQLExprMaskingAttributes(ctx antlr.Rule
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}
@@ -754,7 +754,7 @@ func (extractor *fieldExtractor) evalSnowSQLExprMaskingAttributes(ctx antlr.Rule
 			if err != nil {
 				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
 			}
-			finalAttributes.TransmittedBy(maskingAttributes)
+			finalAttributes.TransmittedByInExpression(maskingAttributes)
 			if finalAttributes.IsNeverChangeInTransmission() {
 				return ctx.GetText(), finalAttributes, nil
 			}

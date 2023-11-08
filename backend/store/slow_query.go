@@ -51,8 +51,8 @@ func (s *Store) ListSlowQuery(ctx context.Context, list *ListSlowQueryMessage) (
 type slowQueryLogValue struct {
 	log               *v1pb.SlowQueryLog
 	totalQueryTime    time.Duration
-	totalRowsSent     int64
-	totalRowsExamined int64
+	totalRowsSent     int32
+	totalRowsExamined int32
 }
 
 func (*Store) listSlowQueryImpl(ctx context.Context, tx *Tx, list *ListSlowQueryMessage) ([]*v1pb.SlowQueryLog, error) {
@@ -182,8 +182,8 @@ func (*Store) listSlowQueryImpl(ctx context.Context, tx *Tx, list *ListSlowQuery
 func calculateStatistics(value *slowQueryLogValue) *v1pb.SlowQueryLog {
 	result := value.log
 	result.Statistics.AverageQueryTime = durationpb.New(value.totalQueryTime / time.Duration(result.Statistics.Count))
-	result.Statistics.AverageRowsSent = int64(value.totalRowsSent / result.Statistics.Count)
-	result.Statistics.AverageRowsExamined = int64(value.totalRowsExamined / result.Statistics.Count)
+	result.Statistics.AverageRowsSent = value.totalRowsSent / result.Statistics.Count
+	result.Statistics.AverageRowsExamined = value.totalRowsExamined / result.Statistics.Count
 	return result
 }
 

@@ -65,6 +65,7 @@ export type IssueContext = {
 
   // misc
   dialog: ReturnType<typeof useDialog>;
+  reInitialize: (overrides?: Record<string, string>) => Promise<void>;
 };
 
 const KEY = Symbol("bb.issue.context") as InjectionKey<IssueContext>;

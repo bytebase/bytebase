@@ -273,6 +273,7 @@
     :database-name="database.name"
     :schema-name="selectedAffectedTable?.schema ?? ''"
     :table-name="selectedAffectedTable?.table ?? ''"
+    :classification-config="classificationConfig"
     @dismiss="selectedAffectedTable = undefined"
   />
 </template>
@@ -290,6 +291,7 @@ import {
   useDatabaseV1Store,
   useUserStore,
   useInstanceV1Store,
+  useSettingV1Store,
 } from "@/store";
 import { AffectedTable } from "@/types/changeHistory";
 import { Engine } from "@/types/proto/v1/common";
@@ -298,6 +300,7 @@ import {
   ChangeHistory_Type,
   changeHistory_SourceToJSON,
   changeHistory_TypeToJSON,
+  DatabaseMetadataView,
 } from "@/types/proto/v1/database_service";
 import { PushEvent, VcsType, vcsTypeToJSON } from "@/types/proto/v1/vcs";
 import {
@@ -322,6 +325,7 @@ const props = defineProps<{
 const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const instanceStore = useInstanceV1Store();
+const settingStore = useSettingV1Store();
 const changeHistoryStore = useChangeHistoryStore();
 const selectedAffectedTable = ref<AffectedTable | undefined>();
 
@@ -333,6 +337,13 @@ const v1Instance = computed(() => {
 const database = computed(() => {
   return databaseStore.getDatabaseByName(changeHistoryParent.value);
 });
+
+const classificationConfig = computed(() => {
+  return settingStore.getProjectClassification(
+    database.value.projectEntity.dataClassificationConfigId
+  );
+});
+
 const changeHistoryParent = computed(() => {
   return `instances/${props.instance}/databases/${props.database}`;
 });
@@ -360,13 +371,19 @@ watch(
     const database = await databaseStore.getOrFetchDatabaseByName(
       changeHistoryParent.value
     );
-    await dbSchemaStore.getOrFetchDatabaseMetadata(database.name);
-    await changeHistoryStore.fetchChangeHistoryList({
-      parent: changeHistoryParent.value,
-    });
-    await changeHistoryStore.fetchChangeHistory({
-      name: changeHistoryName.value,
-    });
+    await Promise.all([
+      dbSchemaStore.getOrFetchDatabaseMetadata({
+        database: database.name,
+        skipCache: false,
+        view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
+      }),
+      changeHistoryStore.fetchChangeHistoryList({
+        parent: changeHistoryParent.value,
+      }),
+      changeHistoryStore.fetchChangeHistory({
+        name: changeHistoryName.value,
+      }),
+    ]);
   },
   { immediate: true }
 );

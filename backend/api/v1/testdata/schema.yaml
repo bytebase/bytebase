@@ -2,7 +2,7 @@
   schema: |
     create table t
       (
-        c int,
+        c int auto_increment,
         a int default 1 comment 'abcdefg',
         b varchar(20) default 'NULL' comment '',
         primary key (a, b),
@@ -19,6 +19,8 @@
               "columns": [
                 {
                   "name": "c",
+                  "hasDefault": true,
+                  "defaultExpression": "auto_increment",
                   "nullable": true,
                   "type": "int"
                 },

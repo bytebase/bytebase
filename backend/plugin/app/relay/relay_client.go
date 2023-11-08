@@ -33,7 +33,6 @@ type CreatePayload struct {
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
 	Project     string    `json:"project"`
-	Assignee    string    `json:"assignee"`
 	Statement   string    `json:"statement"`
 	CreateTime  time.Time `json:"createTime"`
 }

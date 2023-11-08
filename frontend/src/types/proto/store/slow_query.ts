@@ -101,16 +101,16 @@ export const SlowQueryStatistics = {
 
   fromJSON(object: any): SlowQueryStatistics {
     return {
-      items: Array.isArray(object?.items) ? object.items.map((e: any) => SlowQueryStatisticsItem.fromJSON(e)) : [],
+      items: globalThis.Array.isArray(object?.items)
+        ? object.items.map((e: any) => SlowQueryStatisticsItem.fromJSON(e))
+        : [],
     };
   },
 
   toJSON(message: SlowQueryStatistics): unknown {
     const obj: any = {};
-    if (message.items) {
-      obj.items = message.items.map((e) => e ? SlowQueryStatisticsItem.toJSON(e) : undefined);
-    } else {
-      obj.items = [];
+    if (message.items?.length) {
+      obj.items = message.items.map((e) => SlowQueryStatisticsItem.toJSON(e));
     }
     return obj;
   },
@@ -118,7 +118,6 @@ export const SlowQueryStatistics = {
   create(base?: DeepPartial<SlowQueryStatistics>): SlowQueryStatistics {
     return SlowQueryStatistics.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SlowQueryStatistics>): SlowQueryStatistics {
     const message = createBaseSlowQueryStatistics();
     message.items = object.items?.map((e) => SlowQueryStatisticsItem.fromPartial(e)) || [];
@@ -147,7 +146,7 @@ export const SlowQueryStatisticsItem = {
       writer.uint32(10).string(message.sqlFingerprint);
     }
     if (message.count !== 0) {
-      writer.uint32(16).int64(message.count);
+      writer.uint32(16).int32(message.count);
     }
     if (message.latestLogTime !== undefined) {
       Timestamp.encode(toTimestamp(message.latestLogTime), writer.uint32(26).fork()).ldelim();
@@ -159,16 +158,16 @@ export const SlowQueryStatisticsItem = {
       Duration.encode(message.maximumQueryTime, writer.uint32(42).fork()).ldelim();
     }
     if (message.totalRowsSent !== 0) {
-      writer.uint32(48).int64(message.totalRowsSent);
+      writer.uint32(48).int32(message.totalRowsSent);
     }
     if (message.maximumRowsSent !== 0) {
-      writer.uint32(56).int64(message.maximumRowsSent);
+      writer.uint32(56).int32(message.maximumRowsSent);
     }
     if (message.totalRowsExamined !== 0) {
-      writer.uint32(64).int64(message.totalRowsExamined);
+      writer.uint32(64).int32(message.totalRowsExamined);
     }
     if (message.maximumRowsExamined !== 0) {
-      writer.uint32(72).int64(message.maximumRowsExamined);
+      writer.uint32(72).int32(message.maximumRowsExamined);
     }
     for (const v of message.samples) {
       SlowQueryDetails.encode(v!, writer.uint32(82).fork()).ldelim();
@@ -195,7 +194,7 @@ export const SlowQueryStatisticsItem = {
             break;
           }
 
-          message.count = longToNumber(reader.int64() as Long);
+          message.count = reader.int32();
           continue;
         case 3:
           if (tag !== 26) {
@@ -223,28 +222,28 @@ export const SlowQueryStatisticsItem = {
             break;
           }
 
-          message.totalRowsSent = longToNumber(reader.int64() as Long);
+          message.totalRowsSent = reader.int32();
           continue;
         case 7:
           if (tag !== 56) {
             break;
           }
 
-          message.maximumRowsSent = longToNumber(reader.int64() as Long);
+          message.maximumRowsSent = reader.int32();
           continue;
         case 8:
           if (tag !== 64) {
             break;
           }
 
-          message.totalRowsExamined = longToNumber(reader.int64() as Long);
+          message.totalRowsExamined = reader.int32();
           continue;
         case 9:
           if (tag !== 72) {
             break;
           }
 
-          message.maximumRowsExamined = longToNumber(reader.int64() as Long);
+          message.maximumRowsExamined = reader.int32();
           continue;
         case 10:
           if (tag !== 82) {
@@ -264,36 +263,52 @@ export const SlowQueryStatisticsItem = {
 
   fromJSON(object: any): SlowQueryStatisticsItem {
     return {
-      sqlFingerprint: isSet(object.sqlFingerprint) ? String(object.sqlFingerprint) : "",
-      count: isSet(object.count) ? Number(object.count) : 0,
+      sqlFingerprint: isSet(object.sqlFingerprint) ? globalThis.String(object.sqlFingerprint) : "",
+      count: isSet(object.count) ? globalThis.Number(object.count) : 0,
       latestLogTime: isSet(object.latestLogTime) ? fromJsonTimestamp(object.latestLogTime) : undefined,
       totalQueryTime: isSet(object.totalQueryTime) ? Duration.fromJSON(object.totalQueryTime) : undefined,
       maximumQueryTime: isSet(object.maximumQueryTime) ? Duration.fromJSON(object.maximumQueryTime) : undefined,
-      totalRowsSent: isSet(object.totalRowsSent) ? Number(object.totalRowsSent) : 0,
-      maximumRowsSent: isSet(object.maximumRowsSent) ? Number(object.maximumRowsSent) : 0,
-      totalRowsExamined: isSet(object.totalRowsExamined) ? Number(object.totalRowsExamined) : 0,
-      maximumRowsExamined: isSet(object.maximumRowsExamined) ? Number(object.maximumRowsExamined) : 0,
-      samples: Array.isArray(object?.samples) ? object.samples.map((e: any) => SlowQueryDetails.fromJSON(e)) : [],
+      totalRowsSent: isSet(object.totalRowsSent) ? globalThis.Number(object.totalRowsSent) : 0,
+      maximumRowsSent: isSet(object.maximumRowsSent) ? globalThis.Number(object.maximumRowsSent) : 0,
+      totalRowsExamined: isSet(object.totalRowsExamined) ? globalThis.Number(object.totalRowsExamined) : 0,
+      maximumRowsExamined: isSet(object.maximumRowsExamined) ? globalThis.Number(object.maximumRowsExamined) : 0,
+      samples: globalThis.Array.isArray(object?.samples)
+        ? object.samples.map((e: any) => SlowQueryDetails.fromJSON(e))
+        : [],
     };
   },
 
   toJSON(message: SlowQueryStatisticsItem): unknown {
     const obj: any = {};
-    message.sqlFingerprint !== undefined && (obj.sqlFingerprint = message.sqlFingerprint);
-    message.count !== undefined && (obj.count = Math.round(message.count));
-    message.latestLogTime !== undefined && (obj.latestLogTime = message.latestLogTime.toISOString());
-    message.totalQueryTime !== undefined &&
-      (obj.totalQueryTime = message.totalQueryTime ? Duration.toJSON(message.totalQueryTime) : undefined);
-    message.maximumQueryTime !== undefined &&
-      (obj.maximumQueryTime = message.maximumQueryTime ? Duration.toJSON(message.maximumQueryTime) : undefined);
-    message.totalRowsSent !== undefined && (obj.totalRowsSent = Math.round(message.totalRowsSent));
-    message.maximumRowsSent !== undefined && (obj.maximumRowsSent = Math.round(message.maximumRowsSent));
-    message.totalRowsExamined !== undefined && (obj.totalRowsExamined = Math.round(message.totalRowsExamined));
-    message.maximumRowsExamined !== undefined && (obj.maximumRowsExamined = Math.round(message.maximumRowsExamined));
-    if (message.samples) {
-      obj.samples = message.samples.map((e) => e ? SlowQueryDetails.toJSON(e) : undefined);
-    } else {
-      obj.samples = [];
+    if (message.sqlFingerprint !== "") {
+      obj.sqlFingerprint = message.sqlFingerprint;
+    }
+    if (message.count !== 0) {
+      obj.count = Math.round(message.count);
+    }
+    if (message.latestLogTime !== undefined) {
+      obj.latestLogTime = message.latestLogTime.toISOString();
+    }
+    if (message.totalQueryTime !== undefined) {
+      obj.totalQueryTime = Duration.toJSON(message.totalQueryTime);
+    }
+    if (message.maximumQueryTime !== undefined) {
+      obj.maximumQueryTime = Duration.toJSON(message.maximumQueryTime);
+    }
+    if (message.totalRowsSent !== 0) {
+      obj.totalRowsSent = Math.round(message.totalRowsSent);
+    }
+    if (message.maximumRowsSent !== 0) {
+      obj.maximumRowsSent = Math.round(message.maximumRowsSent);
+    }
+    if (message.totalRowsExamined !== 0) {
+      obj.totalRowsExamined = Math.round(message.totalRowsExamined);
+    }
+    if (message.maximumRowsExamined !== 0) {
+      obj.maximumRowsExamined = Math.round(message.maximumRowsExamined);
+    }
+    if (message.samples?.length) {
+      obj.samples = message.samples.map((e) => SlowQueryDetails.toJSON(e));
     }
     return obj;
   },
@@ -301,7 +316,6 @@ export const SlowQueryStatisticsItem = {
   create(base?: DeepPartial<SlowQueryStatisticsItem>): SlowQueryStatisticsItem {
     return SlowQueryStatisticsItem.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SlowQueryStatisticsItem>): SlowQueryStatisticsItem {
     const message = createBaseSlowQueryStatisticsItem();
     message.sqlFingerprint = object.sqlFingerprint ?? "";
@@ -338,10 +352,10 @@ export const SlowQueryDetails = {
       Duration.encode(message.lockTime, writer.uint32(26).fork()).ldelim();
     }
     if (message.rowsSent !== 0) {
-      writer.uint32(32).int64(message.rowsSent);
+      writer.uint32(32).int32(message.rowsSent);
     }
     if (message.rowsExamined !== 0) {
-      writer.uint32(40).int64(message.rowsExamined);
+      writer.uint32(40).int32(message.rowsExamined);
     }
     if (message.sqlText !== "") {
       writer.uint32(50).string(message.sqlText);
@@ -382,14 +396,14 @@ export const SlowQueryDetails = {
             break;
           }
 
-          message.rowsSent = longToNumber(reader.int64() as Long);
+          message.rowsSent = reader.int32();
           continue;
         case 5:
           if (tag !== 40) {
             break;
           }
 
-          message.rowsExamined = longToNumber(reader.int64() as Long);
+          message.rowsExamined = reader.int32();
           continue;
         case 6:
           if (tag !== 50) {
@@ -412,28 +426,38 @@ export const SlowQueryDetails = {
       startTime: isSet(object.startTime) ? fromJsonTimestamp(object.startTime) : undefined,
       queryTime: isSet(object.queryTime) ? Duration.fromJSON(object.queryTime) : undefined,
       lockTime: isSet(object.lockTime) ? Duration.fromJSON(object.lockTime) : undefined,
-      rowsSent: isSet(object.rowsSent) ? Number(object.rowsSent) : 0,
-      rowsExamined: isSet(object.rowsExamined) ? Number(object.rowsExamined) : 0,
-      sqlText: isSet(object.sqlText) ? String(object.sqlText) : "",
+      rowsSent: isSet(object.rowsSent) ? globalThis.Number(object.rowsSent) : 0,
+      rowsExamined: isSet(object.rowsExamined) ? globalThis.Number(object.rowsExamined) : 0,
+      sqlText: isSet(object.sqlText) ? globalThis.String(object.sqlText) : "",
     };
   },
 
   toJSON(message: SlowQueryDetails): unknown {
     const obj: any = {};
-    message.startTime !== undefined && (obj.startTime = message.startTime.toISOString());
-    message.queryTime !== undefined &&
-      (obj.queryTime = message.queryTime ? Duration.toJSON(message.queryTime) : undefined);
-    message.lockTime !== undefined && (obj.lockTime = message.lockTime ? Duration.toJSON(message.lockTime) : undefined);
-    message.rowsSent !== undefined && (obj.rowsSent = Math.round(message.rowsSent));
-    message.rowsExamined !== undefined && (obj.rowsExamined = Math.round(message.rowsExamined));
-    message.sqlText !== undefined && (obj.sqlText = message.sqlText);
+    if (message.startTime !== undefined) {
+      obj.startTime = message.startTime.toISOString();
+    }
+    if (message.queryTime !== undefined) {
+      obj.queryTime = Duration.toJSON(message.queryTime);
+    }
+    if (message.lockTime !== undefined) {
+      obj.lockTime = Duration.toJSON(message.lockTime);
+    }
+    if (message.rowsSent !== 0) {
+      obj.rowsSent = Math.round(message.rowsSent);
+    }
+    if (message.rowsExamined !== 0) {
+      obj.rowsExamined = Math.round(message.rowsExamined);
+    }
+    if (message.sqlText !== "") {
+      obj.sqlText = message.sqlText;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<SlowQueryDetails>): SlowQueryDetails {
     return SlowQueryDetails.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SlowQueryDetails>): SlowQueryDetails {
     const message = createBaseSlowQueryDetails();
     message.startTime = object.startTime ?? undefined;
@@ -450,59 +474,38 @@ export const SlowQueryDetails = {
   },
 };
 
-declare const self: any | undefined;
-declare const window: any | undefined;
-declare const global: any | undefined;
-const tsProtoGlobalThis: any = (() => {
-  if (typeof globalThis !== "undefined") {
-    return globalThis;
-  }
-  if (typeof self !== "undefined") {
-    return self;
-  }
-  if (typeof window !== "undefined") {
-    return window;
-  }
-  if (typeof global !== "undefined") {
-    return global;
-  }
-  throw "Unable to locate global object";
-})();
-
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
 function toTimestamp(date: Date): Timestamp {
-  const seconds = date.getTime() / 1_000;
+  const seconds = numberToLong(date.getTime() / 1_000);
   const nanos = (date.getTime() % 1_000) * 1_000_000;
   return { seconds, nanos };
 }
 
 function fromTimestamp(t: Timestamp): Date {
-  let millis = (t.seconds || 0) * 1_000;
+  let millis = (t.seconds.toNumber() || 0) * 1_000;
   millis += (t.nanos || 0) / 1_000_000;
-  return new Date(millis);
+  return new globalThis.Date(millis);
 }
 
 function fromJsonTimestamp(o: any): Date {
-  if (o instanceof Date) {
+  if (o instanceof globalThis.Date) {
     return o;
   } else if (typeof o === "string") {
-    return new Date(o);
+    return new globalThis.Date(o);
   } else {
     return fromTimestamp(Timestamp.fromJSON(o));
   }
 }
 
-function longToNumber(long: Long): number {
-  if (long.gt(Number.MAX_SAFE_INTEGER)) {
-    throw new tsProtoGlobalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
-  }
-  return long.toNumber();
+function numberToLong(number: number) {
+  return Long.fromNumber(number);
 }
 
 if (_m0.util.Long !== Long) {

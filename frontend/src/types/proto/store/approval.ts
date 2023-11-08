@@ -1,4 +1,5 @@
 /* eslint-disable */
+import Long from "long";
 import _m0 from "protobufjs/minimal";
 
 export const protobufPackage = "bytebase.store";
@@ -304,38 +305,37 @@ export const IssuePayloadApproval = {
 
   fromJSON(object: any): IssuePayloadApproval {
     return {
-      approvalTemplates: Array.isArray(object?.approvalTemplates)
+      approvalTemplates: globalThis.Array.isArray(object?.approvalTemplates)
         ? object.approvalTemplates.map((e: any) => ApprovalTemplate.fromJSON(e))
         : [],
-      approvers: Array.isArray(object?.approvers)
+      approvers: globalThis.Array.isArray(object?.approvers)
         ? object.approvers.map((e: any) => IssuePayloadApproval_Approver.fromJSON(e))
         : [],
-      approvalFindingDone: isSet(object.approvalFindingDone) ? Boolean(object.approvalFindingDone) : false,
-      approvalFindingError: isSet(object.approvalFindingError) ? String(object.approvalFindingError) : "",
+      approvalFindingDone: isSet(object.approvalFindingDone) ? globalThis.Boolean(object.approvalFindingDone) : false,
+      approvalFindingError: isSet(object.approvalFindingError) ? globalThis.String(object.approvalFindingError) : "",
     };
   },
 
   toJSON(message: IssuePayloadApproval): unknown {
     const obj: any = {};
-    if (message.approvalTemplates) {
-      obj.approvalTemplates = message.approvalTemplates.map((e) => e ? ApprovalTemplate.toJSON(e) : undefined);
-    } else {
-      obj.approvalTemplates = [];
+    if (message.approvalTemplates?.length) {
+      obj.approvalTemplates = message.approvalTemplates.map((e) => ApprovalTemplate.toJSON(e));
     }
-    if (message.approvers) {
-      obj.approvers = message.approvers.map((e) => e ? IssuePayloadApproval_Approver.toJSON(e) : undefined);
-    } else {
-      obj.approvers = [];
+    if (message.approvers?.length) {
+      obj.approvers = message.approvers.map((e) => IssuePayloadApproval_Approver.toJSON(e));
     }
-    message.approvalFindingDone !== undefined && (obj.approvalFindingDone = message.approvalFindingDone);
-    message.approvalFindingError !== undefined && (obj.approvalFindingError = message.approvalFindingError);
+    if (message.approvalFindingDone === true) {
+      obj.approvalFindingDone = message.approvalFindingDone;
+    }
+    if (message.approvalFindingError !== "") {
+      obj.approvalFindingError = message.approvalFindingError;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<IssuePayloadApproval>): IssuePayloadApproval {
     return IssuePayloadApproval.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<IssuePayloadApproval>): IssuePayloadApproval {
     const message = createBaseIssuePayloadApproval();
     message.approvalTemplates = object.approvalTemplates?.map((e) => ApprovalTemplate.fromPartial(e)) || [];
@@ -394,21 +394,24 @@ export const IssuePayloadApproval_Approver = {
   fromJSON(object: any): IssuePayloadApproval_Approver {
     return {
       status: isSet(object.status) ? issuePayloadApproval_Approver_StatusFromJSON(object.status) : 0,
-      principalId: isSet(object.principalId) ? Number(object.principalId) : 0,
+      principalId: isSet(object.principalId) ? globalThis.Number(object.principalId) : 0,
     };
   },
 
   toJSON(message: IssuePayloadApproval_Approver): unknown {
     const obj: any = {};
-    message.status !== undefined && (obj.status = issuePayloadApproval_Approver_StatusToJSON(message.status));
-    message.principalId !== undefined && (obj.principalId = Math.round(message.principalId));
+    if (message.status !== 0) {
+      obj.status = issuePayloadApproval_Approver_StatusToJSON(message.status);
+    }
+    if (message.principalId !== 0) {
+      obj.principalId = Math.round(message.principalId);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<IssuePayloadApproval_Approver>): IssuePayloadApproval_Approver {
     return IssuePayloadApproval_Approver.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<IssuePayloadApproval_Approver>): IssuePayloadApproval_Approver {
     const message = createBaseIssuePayloadApproval_Approver();
     message.status = object.status ?? 0;
@@ -485,25 +488,32 @@ export const ApprovalTemplate = {
   fromJSON(object: any): ApprovalTemplate {
     return {
       flow: isSet(object.flow) ? ApprovalFlow.fromJSON(object.flow) : undefined,
-      title: isSet(object.title) ? String(object.title) : "",
-      description: isSet(object.description) ? String(object.description) : "",
-      creatorId: isSet(object.creatorId) ? Number(object.creatorId) : 0,
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      description: isSet(object.description) ? globalThis.String(object.description) : "",
+      creatorId: isSet(object.creatorId) ? globalThis.Number(object.creatorId) : 0,
     };
   },
 
   toJSON(message: ApprovalTemplate): unknown {
     const obj: any = {};
-    message.flow !== undefined && (obj.flow = message.flow ? ApprovalFlow.toJSON(message.flow) : undefined);
-    message.title !== undefined && (obj.title = message.title);
-    message.description !== undefined && (obj.description = message.description);
-    message.creatorId !== undefined && (obj.creatorId = Math.round(message.creatorId));
+    if (message.flow !== undefined) {
+      obj.flow = ApprovalFlow.toJSON(message.flow);
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.description !== "") {
+      obj.description = message.description;
+    }
+    if (message.creatorId !== 0) {
+      obj.creatorId = Math.round(message.creatorId);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ApprovalTemplate>): ApprovalTemplate {
     return ApprovalTemplate.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ApprovalTemplate>): ApprovalTemplate {
     const message = createBaseApprovalTemplate();
     message.flow = (object.flow !== undefined && object.flow !== null)
@@ -552,15 +562,15 @@ export const ApprovalFlow = {
   },
 
   fromJSON(object: any): ApprovalFlow {
-    return { steps: Array.isArray(object?.steps) ? object.steps.map((e: any) => ApprovalStep.fromJSON(e)) : [] };
+    return {
+      steps: globalThis.Array.isArray(object?.steps) ? object.steps.map((e: any) => ApprovalStep.fromJSON(e)) : [],
+    };
   },
 
   toJSON(message: ApprovalFlow): unknown {
     const obj: any = {};
-    if (message.steps) {
-      obj.steps = message.steps.map((e) => e ? ApprovalStep.toJSON(e) : undefined);
-    } else {
-      obj.steps = [];
+    if (message.steps?.length) {
+      obj.steps = message.steps.map((e) => ApprovalStep.toJSON(e));
     }
     return obj;
   },
@@ -568,7 +578,6 @@ export const ApprovalFlow = {
   create(base?: DeepPartial<ApprovalFlow>): ApprovalFlow {
     return ApprovalFlow.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ApprovalFlow>): ApprovalFlow {
     const message = createBaseApprovalFlow();
     message.steps = object.steps?.map((e) => ApprovalStep.fromPartial(e)) || [];
@@ -624,17 +633,17 @@ export const ApprovalStep = {
   fromJSON(object: any): ApprovalStep {
     return {
       type: isSet(object.type) ? approvalStep_TypeFromJSON(object.type) : 0,
-      nodes: Array.isArray(object?.nodes) ? object.nodes.map((e: any) => ApprovalNode.fromJSON(e)) : [],
+      nodes: globalThis.Array.isArray(object?.nodes) ? object.nodes.map((e: any) => ApprovalNode.fromJSON(e)) : [],
     };
   },
 
   toJSON(message: ApprovalStep): unknown {
     const obj: any = {};
-    message.type !== undefined && (obj.type = approvalStep_TypeToJSON(message.type));
-    if (message.nodes) {
-      obj.nodes = message.nodes.map((e) => e ? ApprovalNode.toJSON(e) : undefined);
-    } else {
-      obj.nodes = [];
+    if (message.type !== 0) {
+      obj.type = approvalStep_TypeToJSON(message.type);
+    }
+    if (message.nodes?.length) {
+      obj.nodes = message.nodes.map((e) => ApprovalNode.toJSON(e));
     }
     return obj;
   },
@@ -642,7 +651,6 @@ export const ApprovalStep = {
   create(base?: DeepPartial<ApprovalStep>): ApprovalStep {
     return ApprovalStep.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ApprovalStep>): ApprovalStep {
     const message = createBaseApprovalStep();
     message.type = object.type ?? 0;
@@ -720,27 +728,31 @@ export const ApprovalNode = {
     return {
       type: isSet(object.type) ? approvalNode_TypeFromJSON(object.type) : 0,
       groupValue: isSet(object.groupValue) ? approvalNode_GroupValueFromJSON(object.groupValue) : undefined,
-      role: isSet(object.role) ? String(object.role) : undefined,
-      externalNodeId: isSet(object.externalNodeId) ? String(object.externalNodeId) : undefined,
+      role: isSet(object.role) ? globalThis.String(object.role) : undefined,
+      externalNodeId: isSet(object.externalNodeId) ? globalThis.String(object.externalNodeId) : undefined,
     };
   },
 
   toJSON(message: ApprovalNode): unknown {
     const obj: any = {};
-    message.type !== undefined && (obj.type = approvalNode_TypeToJSON(message.type));
-    message.groupValue !== undefined &&
-      (obj.groupValue = message.groupValue !== undefined
-        ? approvalNode_GroupValueToJSON(message.groupValue)
-        : undefined);
-    message.role !== undefined && (obj.role = message.role);
-    message.externalNodeId !== undefined && (obj.externalNodeId = message.externalNodeId);
+    if (message.type !== 0) {
+      obj.type = approvalNode_TypeToJSON(message.type);
+    }
+    if (message.groupValue !== undefined) {
+      obj.groupValue = approvalNode_GroupValueToJSON(message.groupValue);
+    }
+    if (message.role !== undefined) {
+      obj.role = message.role;
+    }
+    if (message.externalNodeId !== undefined) {
+      obj.externalNodeId = message.externalNodeId;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ApprovalNode>): ApprovalNode {
     return ApprovalNode.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ApprovalNode>): ApprovalNode {
     const message = createBaseApprovalNode();
     message.type = object.type ?? 0;
@@ -754,9 +766,15 @@ export const ApprovalNode = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+if (_m0.util.Long !== Long) {
+  _m0.util.Long = Long as any;
+  _m0.configure();
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

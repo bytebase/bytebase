@@ -116,6 +116,7 @@
   
 - [store/plan_check_run.proto](#store_plan_check_run-proto)
     - [PlanCheckRunConfig](#bytebase-store-PlanCheckRunConfig)
+    - [PlanCheckRunConfig.GhostFlagsEntry](#bytebase-store-PlanCheckRunConfig-GhostFlagsEntry)
     - [PlanCheckRunResult](#bytebase-store-PlanCheckRunResult)
     - [PlanCheckRunResult.Result](#bytebase-store-PlanCheckRunResult-Result)
     - [PlanCheckRunResult.Result.SqlReviewReport](#bytebase-store-PlanCheckRunResult-Result-SqlReviewReport)
@@ -1845,6 +1846,23 @@ Type is the database change type.
 | instance_uid | [int32](#int32) |  |  |
 | database_name | [string](#string) |  |  |
 | database_group_uid | [int64](#int64) | optional | database_group_uid is optional. If it&#39;s set, it means the database is part of a database group. |
+| ghost_flags | [PlanCheckRunConfig.GhostFlagsEntry](#bytebase-store-PlanCheckRunConfig-GhostFlagsEntry) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-PlanCheckRunConfig-GhostFlagsEntry"></a>
+
+### PlanCheckRunConfig.GhostFlagsEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
 
 
 
@@ -1878,7 +1896,7 @@ Type is the database change type.
 | status | [PlanCheckRunResult.Result.Status](#bytebase-store-PlanCheckRunResult-Result-Status) |  |  |
 | title | [string](#string) |  |  |
 | content | [string](#string) |  |  |
-| code | [int64](#int64) |  |  |
+| code | [int32](#int32) |  |  |
 | sql_summary_report | [PlanCheckRunResult.Result.SqlSummaryReport](#bytebase-store-PlanCheckRunResult-Result-SqlSummaryReport) |  |  |
 | sql_review_report | [PlanCheckRunResult.Result.SqlReviewReport](#bytebase-store-PlanCheckRunResult-Result-SqlReviewReport) |  |  |
 
@@ -1895,10 +1913,10 @@ Type is the database change type.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| line | [int64](#int64) |  |  |
-| column | [int64](#int64) |  |  |
+| line | [int32](#int32) |  |  |
+| column | [int32](#int32) |  |  |
 | detail | [string](#string) |  |  |
-| code | [int64](#int64) |  | Code from sql review. |
+| code | [int32](#int32) |  | Code from sql review. |
 
 
 
@@ -1913,9 +1931,9 @@ Type is the database change type.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| code | [int64](#int64) |  |  |
+| code | [int32](#int32) |  |  |
 | statement_types | [string](#string) | repeated | statement_types are the types of statements that are found in the sql. |
-| affected_rows | [int64](#int64) |  |  |
+| affected_rows | [int32](#int32) |  |  |
 | changed_resources | [ChangedResources](#bytebase-store-ChangedResources) |  |  |
 
 
@@ -2880,8 +2898,8 @@ SlowQueryDetails is the details of a slow query.
 | start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | start_time is the start time of the slow query. |
 | query_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | query_time is the query time of the slow query. |
 | lock_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | lock_time is the lock time of the slow query. |
-| rows_sent | [int64](#int64) |  | rows_sent is the number of rows sent by the slow query. |
-| rows_examined | [int64](#int64) |  | rows_examined is the number of rows examined by the slow query. |
+| rows_sent | [int32](#int32) |  | rows_sent is the number of rows sent by the slow query. |
+| rows_examined | [int32](#int32) |  | rows_examined is the number of rows examined by the slow query. |
 | sql_text | [string](#string) |  | sql_text is the SQL text of the slow query. |
 
 
@@ -2913,14 +2931,14 @@ SlowQueryStatisticsItem is the item of slow query statistics.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | sql_fingerprint | [string](#string) |  | sql_fingerprint is the fingerprint of the slow query. |
-| count | [int64](#int64) |  | count is the number of slow queries with the same fingerprint. |
+| count | [int32](#int32) |  | count is the number of slow queries with the same fingerprint. |
 | latest_log_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | latest_log_time is the time of the latest slow query with the same fingerprint. |
 | total_query_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | The total query time of the slow query log. |
 | maximum_query_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | The maximum query time of the slow query log. |
-| total_rows_sent | [int64](#int64) |  | The total rows sent of the slow query log. |
-| maximum_rows_sent | [int64](#int64) |  | The maximum rows sent of the slow query log. |
-| total_rows_examined | [int64](#int64) |  | The total rows examined of the slow query log. |
-| maximum_rows_examined | [int64](#int64) |  | The maximum rows examined of the slow query log. |
+| total_rows_sent | [int32](#int32) |  | The total rows sent of the slow query log. |
+| maximum_rows_sent | [int32](#int32) |  | The maximum rows sent of the slow query log. |
+| total_rows_examined | [int32](#int32) |  | The total rows examined of the slow query log. |
+| maximum_rows_examined | [int32](#int32) |  | The maximum rows examined of the slow query log. |
 | samples | [SlowQueryDetails](#bytebase-store-SlowQueryDetails) | repeated | samples are the details of the sample slow queries with the same fingerprint. |
 
 

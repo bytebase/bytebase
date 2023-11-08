@@ -248,7 +248,7 @@ const handleDatabaseSelect = async (databaseId: string | undefined) => {
     state.projectId = database.projectEntity.uid;
     state.environmentId = environment?.uid;
     state.databaseId = databaseId;
-    dbSchemaStore.getOrFetchDatabaseMetadata(database.name);
+    dbSchemaStore.getOrFetchDatabaseMetadata({ database: database.name });
   }
 };
 

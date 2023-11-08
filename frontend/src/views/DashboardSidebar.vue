@@ -61,9 +61,6 @@
         {{ $t("anomaly-center") }}
       </router-link>
       <div>
-        <BookmarkListSidePanel />
-      </div>
-      <div>
         <ProjectListSidePanel />
       </div>
       <div>
@@ -76,7 +73,6 @@
 <script lang="ts" setup>
 import { useKBarHandler } from "@bytebase/vue-kbar";
 import { computed } from "vue";
-import BookmarkListSidePanel from "@/components/BookmarkListSidePanel.vue";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
 import DatabaseListSidePanel from "@/components/DatabaseListSidePanel.vue";
 import ProjectListSidePanel from "@/components/ProjectListSidePanel.vue";

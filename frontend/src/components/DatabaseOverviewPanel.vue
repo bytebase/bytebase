@@ -164,11 +164,12 @@
 
 <script lang="ts" setup>
 import { head } from "lodash-es";
-import { computed, reactive, watchEffect, PropType, onMounted } from "vue";
+import { computed, reactive, watch, PropType } from "vue";
 import { useRoute } from "vue-router";
 import { useAnomalyV1List, useDBSchemaV1Store } from "@/store";
 import { Anomaly } from "@/types/proto/v1/anomaly_service";
 import { Engine, State } from "@/types/proto/v1/common";
+import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { BBTableSectionDataSource } from "../bbkit/types";
 import AnomalyTable from "../components/AnomalyCenter/AnomalyTable.vue";
 import FunctionTable from "../components/FunctionTable.vue";
@@ -194,13 +195,6 @@ const state = reactive<LocalState>({
   selectedSchemaName: "",
 });
 
-onMounted(() => {
-  const schema = route.query.schema as string;
-  if (schema) {
-    state.selectedSchemaName = schema;
-  }
-});
-
 const dbSchemaStore = useDBSchemaV1Store();
 
 const databaseEngine = computed(() => {
@@ -219,29 +213,35 @@ const hasSchemaProperty = computed(() => {
   );
 });
 
-const prepareDatabaseMetadata = async () => {
-  await dbSchemaStore.getOrFetchDatabaseMetadata(props.database.name);
-  if (hasSchemaProperty.value && schemaList.value.length > 0) {
-    const schemaInQuery = route.query.schema as string;
-    if (
-      schemaInQuery &&
-      schemaList.value.find((schema) => schema.name === schemaInQuery)
-    ) {
-      state.selectedSchemaName = schemaInQuery;
-    } else {
-      const publicSchema = schemaList.value.find(
-        (schema) => schema.name.toLowerCase() === "public"
-      );
-      if (publicSchema) {
-        state.selectedSchemaName = publicSchema.name;
+watch(
+  () => props.database.name,
+  async (database) => {
+    await dbSchemaStore.getOrFetchDatabaseMetadata({
+      database: database,
+      skipCache: false,
+      view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
+    });
+    if (schemaList.value.length > 0) {
+      const schemaInQuery = route.query.schema as string;
+      if (
+        schemaInQuery &&
+        schemaList.value.find((schema) => schema.name === schemaInQuery)
+      ) {
+        state.selectedSchemaName = schemaInQuery;
       } else {
-        state.selectedSchemaName = head(schemaList.value)?.name || "";
+        const publicSchema = schemaList.value.find(
+          (schema) => schema.name.toLowerCase() === "public"
+        );
+        if (publicSchema) {
+          state.selectedSchemaName = publicSchema.name;
+        } else {
+          state.selectedSchemaName = head(schemaList.value)?.name || "";
+        }
       }
     }
-  }
-};
-
-watchEffect(prepareDatabaseMetadata);
+  },
+  { immediate: true }
+);
 
 const anomalyList = useAnomalyV1List(
   computed(() => ({ database: props.database.name }))

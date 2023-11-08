@@ -1,4 +1,5 @@
 /* eslint-disable */
+import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Timestamp } from "../google/protobuf/timestamp";
 
@@ -136,7 +137,6 @@ export const GetSubscriptionRequest = {
   create(base?: DeepPartial<GetSubscriptionRequest>): GetSubscriptionRequest {
     return GetSubscriptionRequest.fromPartial(base ?? {});
   },
-
   fromPartial(_: DeepPartial<GetSubscriptionRequest>): GetSubscriptionRequest {
     const message = createBaseGetSubscriptionRequest();
     return message;
@@ -180,7 +180,6 @@ export const GetFeatureMatrixRequest = {
   create(base?: DeepPartial<GetFeatureMatrixRequest>): GetFeatureMatrixRequest {
     return GetFeatureMatrixRequest.fromPartial(base ?? {});
   },
-
   fromPartial(_: DeepPartial<GetFeatureMatrixRequest>): GetFeatureMatrixRequest {
     const message = createBaseGetFeatureMatrixRequest();
     return message;
@@ -228,14 +227,15 @@ export const UpdateSubscriptionRequest = {
 
   toJSON(message: UpdateSubscriptionRequest): unknown {
     const obj: any = {};
-    message.patch !== undefined && (obj.patch = message.patch ? PatchSubscription.toJSON(message.patch) : undefined);
+    if (message.patch !== undefined) {
+      obj.patch = PatchSubscription.toJSON(message.patch);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<UpdateSubscriptionRequest>): UpdateSubscriptionRequest {
     return UpdateSubscriptionRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<UpdateSubscriptionRequest>): UpdateSubscriptionRequest {
     const message = createBaseUpdateSubscriptionRequest();
     message.patch = (object.patch !== undefined && object.patch !== null)
@@ -286,14 +286,15 @@ export const TrialSubscriptionRequest = {
 
   toJSON(message: TrialSubscriptionRequest): unknown {
     const obj: any = {};
-    message.trial !== undefined && (obj.trial = message.trial ? TrialSubscription.toJSON(message.trial) : undefined);
+    if (message.trial !== undefined) {
+      obj.trial = TrialSubscription.toJSON(message.trial);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<TrialSubscriptionRequest>): TrialSubscriptionRequest {
     return TrialSubscriptionRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<TrialSubscriptionRequest>): TrialSubscriptionRequest {
     const message = createBaseTrialSubscriptionRequest();
     message.trial = (object.trial !== undefined && object.trial !== null)
@@ -339,19 +340,20 @@ export const PatchSubscription = {
   },
 
   fromJSON(object: any): PatchSubscription {
-    return { license: isSet(object.license) ? String(object.license) : "" };
+    return { license: isSet(object.license) ? globalThis.String(object.license) : "" };
   },
 
   toJSON(message: PatchSubscription): unknown {
     const obj: any = {};
-    message.license !== undefined && (obj.license = message.license);
+    if (message.license !== "") {
+      obj.license = message.license;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<PatchSubscription>): PatchSubscription {
     return PatchSubscription.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<PatchSubscription>): PatchSubscription {
     const message = createBasePatchSubscription();
     message.license = object.license ?? "";
@@ -417,23 +419,28 @@ export const TrialSubscription = {
   fromJSON(object: any): TrialSubscription {
     return {
       plan: isSet(object.plan) ? planTypeFromJSON(object.plan) : 0,
-      days: isSet(object.days) ? Number(object.days) : 0,
-      instanceCount: isSet(object.instanceCount) ? Number(object.instanceCount) : 0,
+      days: isSet(object.days) ? globalThis.Number(object.days) : 0,
+      instanceCount: isSet(object.instanceCount) ? globalThis.Number(object.instanceCount) : 0,
     };
   },
 
   toJSON(message: TrialSubscription): unknown {
     const obj: any = {};
-    message.plan !== undefined && (obj.plan = planTypeToJSON(message.plan));
-    message.days !== undefined && (obj.days = Math.round(message.days));
-    message.instanceCount !== undefined && (obj.instanceCount = Math.round(message.instanceCount));
+    if (message.plan !== 0) {
+      obj.plan = planTypeToJSON(message.plan);
+    }
+    if (message.days !== 0) {
+      obj.days = Math.round(message.days);
+    }
+    if (message.instanceCount !== 0) {
+      obj.instanceCount = Math.round(message.instanceCount);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<TrialSubscription>): TrialSubscription {
     return TrialSubscription.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<TrialSubscription>): TrialSubscription {
     const message = createBaseTrialSubscription();
     message.plan = object.plan ?? 0;
@@ -548,32 +555,45 @@ export const Subscription = {
 
   fromJSON(object: any): Subscription {
     return {
-      instanceCount: isSet(object.instanceCount) ? Number(object.instanceCount) : 0,
+      instanceCount: isSet(object.instanceCount) ? globalThis.Number(object.instanceCount) : 0,
       expiresTime: isSet(object.expiresTime) ? fromJsonTimestamp(object.expiresTime) : undefined,
       startedTime: isSet(object.startedTime) ? fromJsonTimestamp(object.startedTime) : undefined,
       plan: isSet(object.plan) ? planTypeFromJSON(object.plan) : 0,
-      trialing: isSet(object.trialing) ? Boolean(object.trialing) : false,
-      orgId: isSet(object.orgId) ? String(object.orgId) : "",
-      orgName: isSet(object.orgName) ? String(object.orgName) : "",
+      trialing: isSet(object.trialing) ? globalThis.Boolean(object.trialing) : false,
+      orgId: isSet(object.orgId) ? globalThis.String(object.orgId) : "",
+      orgName: isSet(object.orgName) ? globalThis.String(object.orgName) : "",
     };
   },
 
   toJSON(message: Subscription): unknown {
     const obj: any = {};
-    message.instanceCount !== undefined && (obj.instanceCount = Math.round(message.instanceCount));
-    message.expiresTime !== undefined && (obj.expiresTime = message.expiresTime.toISOString());
-    message.startedTime !== undefined && (obj.startedTime = message.startedTime.toISOString());
-    message.plan !== undefined && (obj.plan = planTypeToJSON(message.plan));
-    message.trialing !== undefined && (obj.trialing = message.trialing);
-    message.orgId !== undefined && (obj.orgId = message.orgId);
-    message.orgName !== undefined && (obj.orgName = message.orgName);
+    if (message.instanceCount !== 0) {
+      obj.instanceCount = Math.round(message.instanceCount);
+    }
+    if (message.expiresTime !== undefined) {
+      obj.expiresTime = message.expiresTime.toISOString();
+    }
+    if (message.startedTime !== undefined) {
+      obj.startedTime = message.startedTime.toISOString();
+    }
+    if (message.plan !== 0) {
+      obj.plan = planTypeToJSON(message.plan);
+    }
+    if (message.trialing === true) {
+      obj.trialing = message.trialing;
+    }
+    if (message.orgId !== "") {
+      obj.orgId = message.orgId;
+    }
+    if (message.orgName !== "") {
+      obj.orgName = message.orgName;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<Subscription>): Subscription {
     return Subscription.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Subscription>): Subscription {
     const message = createBaseSubscription();
     message.instanceCount = object.instanceCount ?? 0;
@@ -623,15 +643,15 @@ export const FeatureMatrix = {
   },
 
   fromJSON(object: any): FeatureMatrix {
-    return { features: Array.isArray(object?.features) ? object.features.map((e: any) => Feature.fromJSON(e)) : [] };
+    return {
+      features: globalThis.Array.isArray(object?.features) ? object.features.map((e: any) => Feature.fromJSON(e)) : [],
+    };
   },
 
   toJSON(message: FeatureMatrix): unknown {
     const obj: any = {};
-    if (message.features) {
-      obj.features = message.features.map((e) => e ? Feature.toJSON(e) : undefined);
-    } else {
-      obj.features = [];
+    if (message.features?.length) {
+      obj.features = message.features.map((e) => Feature.toJSON(e));
     }
     return obj;
   },
@@ -639,7 +659,6 @@ export const FeatureMatrix = {
   create(base?: DeepPartial<FeatureMatrix>): FeatureMatrix {
     return FeatureMatrix.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<FeatureMatrix>): FeatureMatrix {
     const message = createBaseFeatureMatrix();
     message.features = object.features?.map((e) => Feature.fromPartial(e)) || [];
@@ -697,7 +716,7 @@ export const Feature = {
 
   fromJSON(object: any): Feature {
     return {
-      name: isSet(object.name) ? String(object.name) : "",
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
       matrix: isObject(object.matrix)
         ? Object.entries(object.matrix).reduce<{ [key: string]: boolean }>((acc, [key, value]) => {
           acc[key] = Boolean(value);
@@ -709,12 +728,17 @@ export const Feature = {
 
   toJSON(message: Feature): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    obj.matrix = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     if (message.matrix) {
-      Object.entries(message.matrix).forEach(([k, v]) => {
-        obj.matrix[k] = v;
-      });
+      const entries = Object.entries(message.matrix);
+      if (entries.length > 0) {
+        obj.matrix = {};
+        entries.forEach(([k, v]) => {
+          obj.matrix[k] = v;
+        });
+      }
     }
     return obj;
   },
@@ -722,13 +746,12 @@ export const Feature = {
   create(base?: DeepPartial<Feature>): Feature {
     return Feature.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Feature>): Feature {
     const message = createBaseFeature();
     message.name = object.name ?? "";
     message.matrix = Object.entries(object.matrix ?? {}).reduce<{ [key: string]: boolean }>((acc, [key, value]) => {
       if (value !== undefined) {
-        acc[key] = Boolean(value);
+        acc[key] = globalThis.Boolean(value);
       }
       return acc;
     }, {});
@@ -783,22 +806,25 @@ export const Feature_MatrixEntry = {
 
   fromJSON(object: any): Feature_MatrixEntry {
     return {
-      key: isSet(object.key) ? String(object.key) : "",
-      value: isSet(object.value) ? Boolean(object.value) : false,
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      value: isSet(object.value) ? globalThis.Boolean(object.value) : false,
     };
   },
 
   toJSON(message: Feature_MatrixEntry): unknown {
     const obj: any = {};
-    message.key !== undefined && (obj.key = message.key);
-    message.value !== undefined && (obj.value = message.value);
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.value === true) {
+      obj.value = message.value;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<Feature_MatrixEntry>): Feature_MatrixEntry {
     return Feature_MatrixEntry.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Feature_MatrixEntry>): Feature_MatrixEntry {
     const message = createBaseFeature_MatrixEntry();
     message.key = object.key ?? "";
@@ -936,30 +962,40 @@ export const SubscriptionServiceDefinition = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
 function toTimestamp(date: Date): Timestamp {
-  const seconds = date.getTime() / 1_000;
+  const seconds = numberToLong(date.getTime() / 1_000);
   const nanos = (date.getTime() % 1_000) * 1_000_000;
   return { seconds, nanos };
 }
 
 function fromTimestamp(t: Timestamp): Date {
-  let millis = (t.seconds || 0) * 1_000;
+  let millis = (t.seconds.toNumber() || 0) * 1_000;
   millis += (t.nanos || 0) / 1_000_000;
-  return new Date(millis);
+  return new globalThis.Date(millis);
 }
 
 function fromJsonTimestamp(o: any): Date {
-  if (o instanceof Date) {
+  if (o instanceof globalThis.Date) {
     return o;
   } else if (typeof o === "string") {
-    return new Date(o);
+    return new globalThis.Date(o);
   } else {
     return fromTimestamp(Timestamp.fromJSON(o));
   }
+}
+
+function numberToLong(number: number) {
+  return Long.fromNumber(number);
+}
+
+if (_m0.util.Long !== Long) {
+  _m0.util.Long = Long as any;
+  _m0.configure();
 }
 
 function isObject(value: any): boolean {

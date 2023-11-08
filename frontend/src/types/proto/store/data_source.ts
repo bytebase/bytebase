@@ -1,4 +1,5 @@
 /* eslint-disable */
+import Long from "long";
 import _m0 from "protobufjs/minimal";
 
 export const protobufPackage = "bytebase.store";
@@ -153,36 +154,57 @@ export const DataSourceOptions = {
 
   fromJSON(object: any): DataSourceOptions {
     return {
-      srv: isSet(object.srv) ? Boolean(object.srv) : false,
-      authenticationDatabase: isSet(object.authenticationDatabase) ? String(object.authenticationDatabase) : "",
-      sid: isSet(object.sid) ? String(object.sid) : "",
-      serviceName: isSet(object.serviceName) ? String(object.serviceName) : "",
-      sshHost: isSet(object.sshHost) ? String(object.sshHost) : "",
-      sshPort: isSet(object.sshPort) ? String(object.sshPort) : "",
-      sshUser: isSet(object.sshUser) ? String(object.sshUser) : "",
-      sshObfuscatedPassword: isSet(object.sshObfuscatedPassword) ? String(object.sshObfuscatedPassword) : "",
-      sshObfuscatedPrivateKey: isSet(object.sshObfuscatedPrivateKey) ? String(object.sshObfuscatedPrivateKey) : "",
+      srv: isSet(object.srv) ? globalThis.Boolean(object.srv) : false,
+      authenticationDatabase: isSet(object.authenticationDatabase)
+        ? globalThis.String(object.authenticationDatabase)
+        : "",
+      sid: isSet(object.sid) ? globalThis.String(object.sid) : "",
+      serviceName: isSet(object.serviceName) ? globalThis.String(object.serviceName) : "",
+      sshHost: isSet(object.sshHost) ? globalThis.String(object.sshHost) : "",
+      sshPort: isSet(object.sshPort) ? globalThis.String(object.sshPort) : "",
+      sshUser: isSet(object.sshUser) ? globalThis.String(object.sshUser) : "",
+      sshObfuscatedPassword: isSet(object.sshObfuscatedPassword) ? globalThis.String(object.sshObfuscatedPassword) : "",
+      sshObfuscatedPrivateKey: isSet(object.sshObfuscatedPrivateKey)
+        ? globalThis.String(object.sshObfuscatedPrivateKey)
+        : "",
     };
   },
 
   toJSON(message: DataSourceOptions): unknown {
     const obj: any = {};
-    message.srv !== undefined && (obj.srv = message.srv);
-    message.authenticationDatabase !== undefined && (obj.authenticationDatabase = message.authenticationDatabase);
-    message.sid !== undefined && (obj.sid = message.sid);
-    message.serviceName !== undefined && (obj.serviceName = message.serviceName);
-    message.sshHost !== undefined && (obj.sshHost = message.sshHost);
-    message.sshPort !== undefined && (obj.sshPort = message.sshPort);
-    message.sshUser !== undefined && (obj.sshUser = message.sshUser);
-    message.sshObfuscatedPassword !== undefined && (obj.sshObfuscatedPassword = message.sshObfuscatedPassword);
-    message.sshObfuscatedPrivateKey !== undefined && (obj.sshObfuscatedPrivateKey = message.sshObfuscatedPrivateKey);
+    if (message.srv === true) {
+      obj.srv = message.srv;
+    }
+    if (message.authenticationDatabase !== "") {
+      obj.authenticationDatabase = message.authenticationDatabase;
+    }
+    if (message.sid !== "") {
+      obj.sid = message.sid;
+    }
+    if (message.serviceName !== "") {
+      obj.serviceName = message.serviceName;
+    }
+    if (message.sshHost !== "") {
+      obj.sshHost = message.sshHost;
+    }
+    if (message.sshPort !== "") {
+      obj.sshPort = message.sshPort;
+    }
+    if (message.sshUser !== "") {
+      obj.sshUser = message.sshUser;
+    }
+    if (message.sshObfuscatedPassword !== "") {
+      obj.sshObfuscatedPassword = message.sshObfuscatedPassword;
+    }
+    if (message.sshObfuscatedPrivateKey !== "") {
+      obj.sshObfuscatedPrivateKey = message.sshObfuscatedPrivateKey;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<DataSourceOptions>): DataSourceOptions {
     return DataSourceOptions.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<DataSourceOptions>): DataSourceOptions {
     const message = createBaseDataSourceOptions();
     message.srv = object.srv ?? false;
@@ -201,9 +223,15 @@ export const DataSourceOptions = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+if (_m0.util.Long !== Long) {
+  _m0.util.Long = Long as any;
+  _m0.configure();
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

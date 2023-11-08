@@ -1,6 +1,7 @@
 import { asyncComputed } from "@vueuse/core";
 import Emittery from "emittery";
 import { first } from "lodash-es";
+import { useDialog } from "naive-ui";
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useUIStateStore } from "@/store";
@@ -36,6 +37,7 @@ export const useBaseIssueContext = (
   const uiStateStore = useUIStateStore();
   const route = useRoute();
   const router = useRouter();
+  const dialog = useDialog();
 
   const events: IssueEvents = new Emittery();
 
@@ -163,7 +165,7 @@ export const useBaseIssueContext = (
   });
   const isTenantMode = computed((): boolean => {
     // To sync databases schema in tenant mode, we use normal project logic to create issue.
-    if (isCreating.value && route.query.mode !== "tenant") return false;
+    if (isCreating.value && route.query.batch !== "1") return false;
     if (project.value.tenantMode !== TenantMode.TENANT_MODE_ENABLED)
       return false;
 
@@ -198,5 +200,6 @@ export const useBaseIssueContext = (
     selectedStage,
     selectedTask,
     formatOnSave,
+    dialog,
   };
 };

@@ -14,7 +14,7 @@
     </div>
 
     <div class="w-full h-full relative overflow-hidden">
-      <template v-if="databaseMetadata">
+      <template v-if="databaseMetadata && !isLoading">
         <DatabaseSchema
           :database="database"
           :database-metadata="databaseMetadata"
@@ -26,8 +26,8 @@
           <TableSchema
             v-if="selected"
             class="absolute bottom-0 w-full h-[calc(100%-33px)] bg-white"
-            :database="database"
-            :database-metadata="databaseMetadata"
+            :db="database"
+            :database="databaseMetadata"
             :schema="selected.schema"
             :table="selected.table"
             @close="selected = undefined"
@@ -42,20 +42,24 @@
         <BBSpin />
       </div>
     </div>
+
+    <HoverPanel :offset-x="-24" :offset-y="0" />
   </div>
 </template>
 
 <script lang="ts" setup>
+import { asyncComputed } from "@vueuse/core";
 import { storeToRefs } from "pinia";
-import { computed, ref, watch } from "vue";
+import { computed, ref } from "vue";
 import { useDatabaseV1ByUID, useDBSchemaV1Store, useTabStore } from "@/store";
 import {
-  DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
+  DatabaseMetadataView,
 } from "@/types/proto/v1/database_service";
 import { useSQLEditorContext } from "@/views/sql-editor/context";
 import DatabaseSchema from "./DatabaseSchema.vue";
+import { provideHoverStateContext, HoverPanel } from "./HoverPanel";
 import TableSchema from "./TableSchema.vue";
 import { provideSchemaPanelContext } from "./context";
 
@@ -65,9 +69,25 @@ const dbSchemaStore = useDBSchemaV1Store();
 const { currentTab } = storeToRefs(useTabStore());
 const conn = computed(() => currentTab.value.connection);
 const { keyword } = provideSchemaPanelContext();
+provideHoverStateContext();
 
 const { database } = useDatabaseV1ByUID(computed(() => conn.value.databaseId));
-const databaseMetadata = ref<DatabaseMetadata>();
+const isLoading = ref(false);
+const databaseMetadata = asyncComputed(
+  async () => {
+    const { name } = database.value;
+    const databaseMetadata = await dbSchemaStore.getOrFetchDatabaseMetadata({
+      database: name,
+      skipCache: false,
+      view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
+    });
+    return databaseMetadata;
+  },
+  undefined,
+  {
+    evaluating: isLoading,
+  }
+);
 
 const selected = computed({
   get() {
@@ -85,25 +105,24 @@ const selected = computed({
   },
 });
 
-const handleSelectTable = (schema: SchemaMetadata, table: TableMetadata) => {
-  if (!databaseMetadata.value) return;
+const handleSelectTable = async (
+  schema: SchemaMetadata,
+  table: TableMetadata
+) => {
+  const tableMetadata = await dbSchemaStore.getOrFetchTableMetadata({
+    database: database.value.name,
+    schema: schema.name,
+    table: table.name,
+  });
+  const databaseMetadata = useDBSchemaV1Store().getDatabaseMetadata(
+    database.value.name
+  );
+
   selected.value = {
     db: database.value,
-    database: databaseMetadata.value,
+    database: databaseMetadata,
     schema,
-    table,
+    table: tableMetadata,
   };
 };
-
-watch(
-  () => database.value.name,
-  async (name) => {
-    if (!name) return;
-    databaseMetadata.value = await dbSchemaStore.getOrFetchDatabaseMetadata(
-      name,
-      /* !skipCache */ false
-    );
-  },
-  { immediate: true }
-);
 </script>

@@ -10,21 +10,18 @@
         <span class="text-sm">{{ table.name }}</span>
       </div>
 
-      <div
-        v-if="sqlEditorStore.mode === 'BUNDLED'"
-        class="flex justify-end gap-x-0.5"
-      >
+      <div v-if="pageMode === 'BUNDLED'" class="flex justify-end gap-x-0.5">
         <ExternalLinkButton
           :link="tableDetailLink"
           :tooltip="$t('common.detail')"
         />
         <AlterSchemaButton
-          :database="database"
+          :database="db"
           :schema="schema"
           :table="table"
           @click="
             editorEvents.emit('alter-schema', {
-              databaseUID: database.uid,
+              databaseUID: db.uid,
               schema: schema.name,
               table: table.name,
             })
@@ -33,14 +30,20 @@
       </div>
     </div>
 
-    <ColumnList :table="table" class="w-full flex-1 py-1" />
+    <ColumnList
+      :db="db"
+      :database="database"
+      :schema="schema"
+      :table="table"
+      class="w-full flex-1 py-1"
+    />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { stringify } from "qs";
 import { computed } from "vue";
-import { useSQLEditorStore } from "@/store";
+import { usePageMode } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type {
   DatabaseMetadata,
@@ -54,8 +57,8 @@ import ColumnList from "./ColumnList.vue";
 import ExternalLinkButton from "./ExternalLinkButton.vue";
 
 const props = defineProps<{
-  database: ComposedDatabase;
-  databaseMetadata: DatabaseMetadata;
+  db: ComposedDatabase;
+  database: DatabaseMetadata;
   schema: SchemaMetadata;
   table: TableMetadata;
 }>();
@@ -65,10 +68,10 @@ const emit = defineEmits<{
 }>();
 
 const { events: editorEvents } = useSQLEditorContext();
-const sqlEditorStore = useSQLEditorStore();
+const pageMode = usePageMode();
 
 const tableDetailLink = computed((): string => {
-  const { database, schema, table } = props;
+  const { db: database, schema, table } = props;
   const query: Record<string, string> = {
     table: table.name,
   };

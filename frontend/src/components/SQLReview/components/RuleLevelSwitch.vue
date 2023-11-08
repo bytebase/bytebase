@@ -1,5 +1,9 @@
 <template>
-  <div class="flex items-center" :class="[!editable && 'pointer-events-none']">
+  <div
+    v-if="editable"
+    class="flex items-center"
+    :class="[!editable && 'pointer-events-none']"
+  >
     <button
       class="button error"
       :class="[level === SQLReviewRuleLevel.ERROR && 'active']"
@@ -17,10 +21,20 @@
       {{ $t("sql-review.level.warning") }}
     </button>
   </div>
+  <div v-else>
+    <button class="button error active cursor-default">
+      {{
+        $t(`sql-review.level.${sQLReviewRuleLevelToJSON(level).toLowerCase()}`)
+      }}
+    </button>
+  </div>
 </template>
 
 <script lang="ts" setup>
-import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
+import {
+  SQLReviewRuleLevel,
+  sQLReviewRuleLevelToJSON,
+} from "@/types/proto/v1/org_policy_service";
 
 withDefaults(
   defineProps<{

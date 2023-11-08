@@ -1,4 +1,5 @@
 /* eslint-disable */
+import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { ParsedExpr } from "../google/api/expr/v1alpha1/syntax";
 
@@ -56,15 +57,17 @@ export const BatchParseRequest = {
   },
 
   fromJSON(object: any): BatchParseRequest {
-    return { expressions: Array.isArray(object?.expressions) ? object.expressions.map((e: any) => String(e)) : [] };
+    return {
+      expressions: globalThis.Array.isArray(object?.expressions)
+        ? object.expressions.map((e: any) => globalThis.String(e))
+        : [],
+    };
   },
 
   toJSON(message: BatchParseRequest): unknown {
     const obj: any = {};
-    if (message.expressions) {
-      obj.expressions = message.expressions.map((e) => e);
-    } else {
-      obj.expressions = [];
+    if (message.expressions?.length) {
+      obj.expressions = message.expressions;
     }
     return obj;
   },
@@ -72,7 +75,6 @@ export const BatchParseRequest = {
   create(base?: DeepPartial<BatchParseRequest>): BatchParseRequest {
     return BatchParseRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<BatchParseRequest>): BatchParseRequest {
     const message = createBaseBatchParseRequest();
     message.expressions = object.expressions?.map((e) => e) || [];
@@ -117,16 +119,16 @@ export const BatchParseResponse = {
 
   fromJSON(object: any): BatchParseResponse {
     return {
-      expressions: Array.isArray(object?.expressions) ? object.expressions.map((e: any) => ParsedExpr.fromJSON(e)) : [],
+      expressions: globalThis.Array.isArray(object?.expressions)
+        ? object.expressions.map((e: any) => ParsedExpr.fromJSON(e))
+        : [],
     };
   },
 
   toJSON(message: BatchParseResponse): unknown {
     const obj: any = {};
-    if (message.expressions) {
-      obj.expressions = message.expressions.map((e) => e ? ParsedExpr.toJSON(e) : undefined);
-    } else {
-      obj.expressions = [];
+    if (message.expressions?.length) {
+      obj.expressions = message.expressions.map((e) => ParsedExpr.toJSON(e));
     }
     return obj;
   },
@@ -134,7 +136,6 @@ export const BatchParseResponse = {
   create(base?: DeepPartial<BatchParseResponse>): BatchParseResponse {
     return BatchParseResponse.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<BatchParseResponse>): BatchParseResponse {
     const message = createBaseBatchParseResponse();
     message.expressions = object.expressions?.map((e) => ParsedExpr.fromPartial(e)) || [];
@@ -179,16 +180,16 @@ export const BatchDeparseRequest = {
 
   fromJSON(object: any): BatchDeparseRequest {
     return {
-      expressions: Array.isArray(object?.expressions) ? object.expressions.map((e: any) => ParsedExpr.fromJSON(e)) : [],
+      expressions: globalThis.Array.isArray(object?.expressions)
+        ? object.expressions.map((e: any) => ParsedExpr.fromJSON(e))
+        : [],
     };
   },
 
   toJSON(message: BatchDeparseRequest): unknown {
     const obj: any = {};
-    if (message.expressions) {
-      obj.expressions = message.expressions.map((e) => e ? ParsedExpr.toJSON(e) : undefined);
-    } else {
-      obj.expressions = [];
+    if (message.expressions?.length) {
+      obj.expressions = message.expressions.map((e) => ParsedExpr.toJSON(e));
     }
     return obj;
   },
@@ -196,7 +197,6 @@ export const BatchDeparseRequest = {
   create(base?: DeepPartial<BatchDeparseRequest>): BatchDeparseRequest {
     return BatchDeparseRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<BatchDeparseRequest>): BatchDeparseRequest {
     const message = createBaseBatchDeparseRequest();
     message.expressions = object.expressions?.map((e) => ParsedExpr.fromPartial(e)) || [];
@@ -240,15 +240,17 @@ export const BatchDeparseResponse = {
   },
 
   fromJSON(object: any): BatchDeparseResponse {
-    return { expressions: Array.isArray(object?.expressions) ? object.expressions.map((e: any) => String(e)) : [] };
+    return {
+      expressions: globalThis.Array.isArray(object?.expressions)
+        ? object.expressions.map((e: any) => globalThis.String(e))
+        : [],
+    };
   },
 
   toJSON(message: BatchDeparseResponse): unknown {
     const obj: any = {};
-    if (message.expressions) {
-      obj.expressions = message.expressions.map((e) => e);
-    } else {
-      obj.expressions = [];
+    if (message.expressions?.length) {
+      obj.expressions = message.expressions;
     }
     return obj;
   },
@@ -256,7 +258,6 @@ export const BatchDeparseResponse = {
   create(base?: DeepPartial<BatchDeparseResponse>): BatchDeparseResponse {
     return BatchDeparseResponse.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<BatchDeparseResponse>): BatchDeparseResponse {
     const message = createBaseBatchDeparseResponse();
     message.expressions = object.expressions?.map((e) => e) || [];
@@ -355,6 +356,12 @@ export const CelServiceDefinition = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+if (_m0.util.Long !== Long) {
+  _m0.util.Long = Long as any;
+  _m0.configure();
+}

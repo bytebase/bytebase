@@ -9,6 +9,7 @@
     "dingtalk": "钉钉",
     "feishu": "飞书",
     "wecom": "企业微信",
+    "system": "系统",
     "custom": "自定义",
     "im": "IM",
     "overview": "概览",
@@ -83,9 +84,10 @@
       "member": "成员",
       "exporter": "数据导出者",
       "querier": "数据查询者",
-      "releaser": "发布者"
+      "releaser": "发布者",
+      "viewer": "查看者"
     },
-    "assignee": "发布人",
+    "assignee": "指派人",
     "revert": "恢复",
     "apply": "应用",
     "reorder": "排序",
@@ -271,7 +273,8 @@
     "filter-by-name": "按名称过滤",
     "tenant": "租户",
     "license": "证书",
-    "show-all": "显示全部"
+    "show-all": "显示全部",
+    "view-details": "查看详情"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -378,7 +381,25 @@
     "action-failed-in-current-stage": "{action}当前阶段失败的任务",
     "action-all-tasks-in-current-stage": "{action}当前阶段的所有任务",
     "cancel-task": "取消任务",
-    "created": "创建于"
+    "created": "创建于",
+    "online-migration": {
+      "self": "在线迁移",
+      "configure-ghost-parameters-for-db": "为数据库「{db}」配置 gh-ost 参数",
+      "configure-ghost-parameters": "配置 gh-ost 参数",
+      "ghost-parameters": "gh-ost 参数",
+      "configure": "配置",
+      "error": {
+        "some-tasks-are-not-editable-in-batch-mode": "某些任务在批量模式下不可编辑",
+        "task-is-not-editable": "该任务不可编辑",
+        "x-status-task-is-not-editable": "{status} 的任务不可编辑",
+        "nothing-changed": "无任何改变",
+        "not-applicable": {
+          "some-tasks-dont-meet-ghost-requirement": "部分任务不符合 gh-ost 的要求"
+        }
+      },
+      "show-default-parameters": "显示默认参数",
+      "hide-default-parameters": "隐藏默认参数"
+    }
   },
   "task-run": {
     "status": {
@@ -397,7 +418,7 @@
     "extend-trial": "申请延长试用",
     "deploy": "本地部署",
     "cloud": "云服务",
-    "request-demo": "和我们的产品专家预约 30 分钟产品演示",
+    "request-demo": "预约一个 30 分钟的产品演示。",
     "readonly": "Bytebase 处于只读模式。您仍然可以查看控制台，但任何尝试更改的请求都会失败。",
     "external-url": "Bytebase 还没有配置 --external-url",
     "configure-now": "现在配置"
@@ -661,12 +682,45 @@
       "semantic-types": {
         "self": "语义类型",
         "add-type": "新增类型",
+        "add-from-template": "从模板添加",
         "table": {
           "semantic-type": "语义类型",
           "description": "描述",
           "full-masking-algorithm": "全脱敏算法",
           "partial-masking-algorithm": "半脱敏算法",
           "delete": "删除这个语义类型？"
+        },
+        "template": {
+          "address": {
+            "title": "中文详细地址"
+          },
+          "secret_key": {
+            "title": "加密 Key"
+          },
+          "card_number": {
+            "title": "银行卡、信用卡"
+          },
+          "email": {
+            "title": "电子邮箱"
+          },
+          "id_number": {
+            "title": "身份证号码"
+          },
+          "ipv4_address": {
+            "title": "IPv4 地址"
+          },
+          "license_plate_number": {
+            "title": "车牌号码"
+          },
+          "mac_address": {
+            "title": "MAC 地址"
+          },
+          "password": {
+            "title": "密码"
+          },
+          "phone": {
+            "title": "电话号码"
+          }
         }
       },
       "column-detail": {
@@ -679,8 +733,34 @@
       },
       "algorithms": {
         "self": "脱敏算法",
+        "add": "添加算法",
         "default": "默认",
-        "default-desc": "使用 *** 为数据遮挡"
+        "default-desc": "使用 *** 为数据遮挡",
+        "table": {
+          "title": "名称",
+          "description": "描述",
+          "masking-type": "算法类型",
+          "delete": "删除该算法？"
+        },
+        "full-mask": {
+          "self": "全遮掩",
+          "substitution": "遮掩字符串",
+          "substitution-label": "遮掩字符串是用来替换原始值的字符串，最大长度不能超过16字节。"
+        },
+        "range-mask": {
+          "self": "范围遮掩",
+          "slice-start": "起始位置",
+          "slice-start-label": "起始位置是原始值的起始索引，从 0 开始且小于结束位置。",
+          "slice-end": "结束位置",
+          "slice-end-label": "结束位置是原始值的停止索引，应小于原始值的长度。",
+          "substitution": "遮掩字符串",
+          "substitution-label": "遮掩字符串是用来替换从起始位置到结束位置的字符串。"
+        },
+        "md5-mask": {
+          "self": "MD5 哈希",
+          "salt": "盐值",
+          "salt-label": "盐值用于计算生成哈希值。"
+        }
       },
       "masking-level": {
         "self": "脱敏程度",
@@ -784,7 +864,8 @@
       "schema-version": "schema 版本 {version}",
       "xxx-automatically": "自动{verb}",
       "verb-type-target-by-people": "{verb}{type} {target}",
-      "verb-type-target-by-system-bot": "{type} {target} {verb}"
+      "verb-type-target-by-system-bot": "{type} {target} {verb}",
+      "changed-x-link": "修改了 {name}。{link}"
     },
     "subject-prefix": {
       "task": "任务",
@@ -864,8 +945,8 @@
           "description": "根据工单创建人搜索"
         },
         "assignee": {
-          "title": "发布人",
-          "description": "根据工单发布人搜索"
+          "title": "指派人",
+          "description": "根据工单指派人搜索"
         },
         "subscriber": {
           "title": "订阅人",
@@ -873,7 +954,7 @@
         },
         "principal": {
           "title": "相关用户",
-          "description": "工单的创建人、发布人，或者订阅人"
+          "description": "工单的创建人、指派人，或者订阅人"
         }
       }
     },
@@ -889,7 +970,7 @@
       "updated": "更新于",
       "approver": "审批人",
       "creator": "创建人",
-      "assignee": "发布人"
+      "assignee": "指派人"
     },
     "stage-select": {
       "active": "{name}（活动中）"
@@ -947,7 +1028,7 @@
       "full-schema": "完整 schema",
       "left-schema-may-change": "左边的 schema 在工单执行前可能会发生变化。"
     },
-    "assignee-tooltip": "发布人可以在审批流完成后进行发布。",
+    "assignee-tooltip": "被指派人是负责处理问题的人，当问题分配给他们时，它会显示在他们的已分配问题列表中。",
     "approval-flow": {
       "self": "审批流",
       "tooltip": "审批人需要按审批流指定的顺序审核和审批工单。只有审批流中所有步骤都完成审批后工单才可以执行。您可以为每个风险级别自定义审批流。"
@@ -1000,8 +1081,10 @@
       "continue-anyway": "仍然继续",
       "sql-review-violations": "违反的 SQL 审核规则"
     },
-    "no-assignee-candidates": "该项目中没有有效的发布人候选人。\n请联系项目所有者。",
-    "allow-any-following-roles-to-be-assignee": "允许以下任何角色作为发布人"
+    "error": {
+      "issue-is-not-open": "工单不是开启状态",
+      "you-don-have-privilege-to-edit-this-issue": "您没有权限编辑此工单"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
@@ -1221,7 +1304,7 @@
     "visit-instance": "@:common.visit@:common.instances",
     "visit-database": "@:common.visit@:common.databases",
     "visit-environment": "@:common.visit@:common.environments",
-    "add-a-member": "添加成员",
+    "visit-member": "@:common.visit@:common.members",
     "use-kbar": "使用 kbar ({shortcut})",
     "query-data": "查询数据",
     "notice": {
@@ -2536,7 +2619,8 @@
       }
     },
     "edit-rule": {
-      "self": "编辑 SQL 审核规则"
+      "self": "编辑 SQL 审核规则",
+      "readonly": "SQL 审核规则"
     },
     "rule": {
       "active": "开启"
@@ -2830,10 +2914,6 @@
       "description": "对每种操作类型，配置自定义条件、风险和审批流。",
       "approval-flows": "审批流",
       "approval-nodes": "审批节点",
-      "type": {
-        "system": "系统",
-        "custom": "自定义"
-      },
       "delete": "删除审批流",
       "search": "搜索审批流",
       "select": "选择审批流",
@@ -3035,6 +3115,9 @@
     "expired-tip": "该角色可能已经过期。",
     "releaser": {
       "description": "系统定义的项目发布者角色"
+    },
+    "viewer": {
+      "description": "系统定义的项目数据库查看者角色"
     }
   },
   "database-group": {
@@ -3166,5 +3249,14 @@
     "confirm-remove-change": "移除这项变更？",
     "delete-this-changelist": "删除这个变更列表",
     "confirm-delete-changelist": "删除变更列表？"
+  },
+  "export-data": {
+    "self": "导出数据",
+    "export-rows": "导出行数",
+    "error": {
+      "export-rows-required": "需要指定导出行数",
+      "export-rows-must-gt-zero": "导出行数必须大于 0"
+    },
+    "export-format": "导出格式"
   }
 }

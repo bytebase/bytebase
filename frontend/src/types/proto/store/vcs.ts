@@ -23,7 +23,7 @@ export interface Commit {
   id: string;
   title: string;
   message: string;
-  createdTs: number;
+  createdTs: Long;
   url: string;
   authorName: string;
   authorEmail: string;
@@ -35,7 +35,7 @@ export interface FileCommit {
   id: string;
   title: string;
   message: string;
-  createdTs: number;
+  createdTs: Long;
   url: string;
   authorName: string;
   authorEmail: string;
@@ -192,44 +192,60 @@ export const PushEvent = {
   fromJSON(object: any): PushEvent {
     return {
       vcsType: isSet(object.vcsType) ? vcsTypeFromJSON(object.vcsType) : 0,
-      baseDir: isSet(object.baseDir) ? String(object.baseDir) : "",
-      ref: isSet(object.ref) ? String(object.ref) : "",
-      before: isSet(object.before) ? String(object.before) : "",
-      after: isSet(object.after) ? String(object.after) : "",
-      repositoryId: isSet(object.repositoryId) ? String(object.repositoryId) : "",
-      repositoryUrl: isSet(object.repositoryUrl) ? String(object.repositoryUrl) : "",
-      repositoryFullPath: isSet(object.repositoryFullPath) ? String(object.repositoryFullPath) : "",
-      authorName: isSet(object.authorName) ? String(object.authorName) : "",
-      commits: Array.isArray(object?.commits) ? object.commits.map((e: any) => Commit.fromJSON(e)) : [],
+      baseDir: isSet(object.baseDir) ? globalThis.String(object.baseDir) : "",
+      ref: isSet(object.ref) ? globalThis.String(object.ref) : "",
+      before: isSet(object.before) ? globalThis.String(object.before) : "",
+      after: isSet(object.after) ? globalThis.String(object.after) : "",
+      repositoryId: isSet(object.repositoryId) ? globalThis.String(object.repositoryId) : "",
+      repositoryUrl: isSet(object.repositoryUrl) ? globalThis.String(object.repositoryUrl) : "",
+      repositoryFullPath: isSet(object.repositoryFullPath) ? globalThis.String(object.repositoryFullPath) : "",
+      authorName: isSet(object.authorName) ? globalThis.String(object.authorName) : "",
+      commits: globalThis.Array.isArray(object?.commits) ? object.commits.map((e: any) => Commit.fromJSON(e)) : [],
       fileCommit: isSet(object.fileCommit) ? FileCommit.fromJSON(object.fileCommit) : undefined,
     };
   },
 
   toJSON(message: PushEvent): unknown {
     const obj: any = {};
-    message.vcsType !== undefined && (obj.vcsType = vcsTypeToJSON(message.vcsType));
-    message.baseDir !== undefined && (obj.baseDir = message.baseDir);
-    message.ref !== undefined && (obj.ref = message.ref);
-    message.before !== undefined && (obj.before = message.before);
-    message.after !== undefined && (obj.after = message.after);
-    message.repositoryId !== undefined && (obj.repositoryId = message.repositoryId);
-    message.repositoryUrl !== undefined && (obj.repositoryUrl = message.repositoryUrl);
-    message.repositoryFullPath !== undefined && (obj.repositoryFullPath = message.repositoryFullPath);
-    message.authorName !== undefined && (obj.authorName = message.authorName);
-    if (message.commits) {
-      obj.commits = message.commits.map((e) => e ? Commit.toJSON(e) : undefined);
-    } else {
-      obj.commits = [];
+    if (message.vcsType !== 0) {
+      obj.vcsType = vcsTypeToJSON(message.vcsType);
     }
-    message.fileCommit !== undefined &&
-      (obj.fileCommit = message.fileCommit ? FileCommit.toJSON(message.fileCommit) : undefined);
+    if (message.baseDir !== "") {
+      obj.baseDir = message.baseDir;
+    }
+    if (message.ref !== "") {
+      obj.ref = message.ref;
+    }
+    if (message.before !== "") {
+      obj.before = message.before;
+    }
+    if (message.after !== "") {
+      obj.after = message.after;
+    }
+    if (message.repositoryId !== "") {
+      obj.repositoryId = message.repositoryId;
+    }
+    if (message.repositoryUrl !== "") {
+      obj.repositoryUrl = message.repositoryUrl;
+    }
+    if (message.repositoryFullPath !== "") {
+      obj.repositoryFullPath = message.repositoryFullPath;
+    }
+    if (message.authorName !== "") {
+      obj.authorName = message.authorName;
+    }
+    if (message.commits?.length) {
+      obj.commits = message.commits.map((e) => Commit.toJSON(e));
+    }
+    if (message.fileCommit !== undefined) {
+      obj.fileCommit = FileCommit.toJSON(message.fileCommit);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<PushEvent>): PushEvent {
     return PushEvent.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<PushEvent>): PushEvent {
     const message = createBasePushEvent();
     message.vcsType = object.vcsType ?? 0;
@@ -254,7 +270,7 @@ function createBaseCommit(): Commit {
     id: "",
     title: "",
     message: "",
-    createdTs: 0,
+    createdTs: Long.ZERO,
     url: "",
     authorName: "",
     authorEmail: "",
@@ -274,7 +290,7 @@ export const Commit = {
     if (message.message !== "") {
       writer.uint32(26).string(message.message);
     }
-    if (message.createdTs !== 0) {
+    if (!message.createdTs.isZero()) {
       writer.uint32(32).int64(message.createdTs);
     }
     if (message.url !== "") {
@@ -328,7 +344,7 @@ export const Commit = {
             break;
           }
 
-          message.createdTs = longToNumber(reader.int64() as Long);
+          message.createdTs = reader.int64() as Long;
           continue;
         case 5:
           if (tag !== 42) {
@@ -376,36 +392,50 @@ export const Commit = {
 
   fromJSON(object: any): Commit {
     return {
-      id: isSet(object.id) ? String(object.id) : "",
-      title: isSet(object.title) ? String(object.title) : "",
-      message: isSet(object.message) ? String(object.message) : "",
-      createdTs: isSet(object.createdTs) ? Number(object.createdTs) : 0,
-      url: isSet(object.url) ? String(object.url) : "",
-      authorName: isSet(object.authorName) ? String(object.authorName) : "",
-      authorEmail: isSet(object.authorEmail) ? String(object.authorEmail) : "",
-      addedList: Array.isArray(object?.addedList) ? object.addedList.map((e: any) => String(e)) : [],
-      modifiedList: Array.isArray(object?.modifiedList) ? object.modifiedList.map((e: any) => String(e)) : [],
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      createdTs: isSet(object.createdTs) ? Long.fromValue(object.createdTs) : Long.ZERO,
+      url: isSet(object.url) ? globalThis.String(object.url) : "",
+      authorName: isSet(object.authorName) ? globalThis.String(object.authorName) : "",
+      authorEmail: isSet(object.authorEmail) ? globalThis.String(object.authorEmail) : "",
+      addedList: globalThis.Array.isArray(object?.addedList)
+        ? object.addedList.map((e: any) => globalThis.String(e))
+        : [],
+      modifiedList: globalThis.Array.isArray(object?.modifiedList)
+        ? object.modifiedList.map((e: any) => globalThis.String(e))
+        : [],
     };
   },
 
   toJSON(message: Commit): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
-    message.title !== undefined && (obj.title = message.title);
-    message.message !== undefined && (obj.message = message.message);
-    message.createdTs !== undefined && (obj.createdTs = Math.round(message.createdTs));
-    message.url !== undefined && (obj.url = message.url);
-    message.authorName !== undefined && (obj.authorName = message.authorName);
-    message.authorEmail !== undefined && (obj.authorEmail = message.authorEmail);
-    if (message.addedList) {
-      obj.addedList = message.addedList.map((e) => e);
-    } else {
-      obj.addedList = [];
+    if (message.id !== "") {
+      obj.id = message.id;
     }
-    if (message.modifiedList) {
-      obj.modifiedList = message.modifiedList.map((e) => e);
-    } else {
-      obj.modifiedList = [];
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (!message.createdTs.isZero()) {
+      obj.createdTs = (message.createdTs || Long.ZERO).toString();
+    }
+    if (message.url !== "") {
+      obj.url = message.url;
+    }
+    if (message.authorName !== "") {
+      obj.authorName = message.authorName;
+    }
+    if (message.authorEmail !== "") {
+      obj.authorEmail = message.authorEmail;
+    }
+    if (message.addedList?.length) {
+      obj.addedList = message.addedList;
+    }
+    if (message.modifiedList?.length) {
+      obj.modifiedList = message.modifiedList;
     }
     return obj;
   },
@@ -413,13 +443,14 @@ export const Commit = {
   create(base?: DeepPartial<Commit>): Commit {
     return Commit.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Commit>): Commit {
     const message = createBaseCommit();
     message.id = object.id ?? "";
     message.title = object.title ?? "";
     message.message = object.message ?? "";
-    message.createdTs = object.createdTs ?? 0;
+    message.createdTs = (object.createdTs !== undefined && object.createdTs !== null)
+      ? Long.fromValue(object.createdTs)
+      : Long.ZERO;
     message.url = object.url ?? "";
     message.authorName = object.authorName ?? "";
     message.authorEmail = object.authorEmail ?? "";
@@ -430,7 +461,7 @@ export const Commit = {
 };
 
 function createBaseFileCommit(): FileCommit {
-  return { id: "", title: "", message: "", createdTs: 0, url: "", authorName: "", authorEmail: "", added: "" };
+  return { id: "", title: "", message: "", createdTs: Long.ZERO, url: "", authorName: "", authorEmail: "", added: "" };
 }
 
 export const FileCommit = {
@@ -444,7 +475,7 @@ export const FileCommit = {
     if (message.message !== "") {
       writer.uint32(26).string(message.message);
     }
-    if (message.createdTs !== 0) {
+    if (!message.createdTs.isZero()) {
       writer.uint32(32).int64(message.createdTs);
     }
     if (message.url !== "") {
@@ -495,7 +526,7 @@ export const FileCommit = {
             break;
           }
 
-          message.createdTs = longToNumber(reader.int64() as Long);
+          message.createdTs = reader.int64() as Long;
           continue;
         case 5:
           if (tag !== 42) {
@@ -536,40 +567,57 @@ export const FileCommit = {
 
   fromJSON(object: any): FileCommit {
     return {
-      id: isSet(object.id) ? String(object.id) : "",
-      title: isSet(object.title) ? String(object.title) : "",
-      message: isSet(object.message) ? String(object.message) : "",
-      createdTs: isSet(object.createdTs) ? Number(object.createdTs) : 0,
-      url: isSet(object.url) ? String(object.url) : "",
-      authorName: isSet(object.authorName) ? String(object.authorName) : "",
-      authorEmail: isSet(object.authorEmail) ? String(object.authorEmail) : "",
-      added: isSet(object.added) ? String(object.added) : "",
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      createdTs: isSet(object.createdTs) ? Long.fromValue(object.createdTs) : Long.ZERO,
+      url: isSet(object.url) ? globalThis.String(object.url) : "",
+      authorName: isSet(object.authorName) ? globalThis.String(object.authorName) : "",
+      authorEmail: isSet(object.authorEmail) ? globalThis.String(object.authorEmail) : "",
+      added: isSet(object.added) ? globalThis.String(object.added) : "",
     };
   },
 
   toJSON(message: FileCommit): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
-    message.title !== undefined && (obj.title = message.title);
-    message.message !== undefined && (obj.message = message.message);
-    message.createdTs !== undefined && (obj.createdTs = Math.round(message.createdTs));
-    message.url !== undefined && (obj.url = message.url);
-    message.authorName !== undefined && (obj.authorName = message.authorName);
-    message.authorEmail !== undefined && (obj.authorEmail = message.authorEmail);
-    message.added !== undefined && (obj.added = message.added);
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (!message.createdTs.isZero()) {
+      obj.createdTs = (message.createdTs || Long.ZERO).toString();
+    }
+    if (message.url !== "") {
+      obj.url = message.url;
+    }
+    if (message.authorName !== "") {
+      obj.authorName = message.authorName;
+    }
+    if (message.authorEmail !== "") {
+      obj.authorEmail = message.authorEmail;
+    }
+    if (message.added !== "") {
+      obj.added = message.added;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<FileCommit>): FileCommit {
     return FileCommit.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<FileCommit>): FileCommit {
     const message = createBaseFileCommit();
     message.id = object.id ?? "";
     message.title = object.title ?? "";
     message.message = object.message ?? "";
-    message.createdTs = object.createdTs ?? 0;
+    message.createdTs = (object.createdTs !== undefined && object.createdTs !== null)
+      ? Long.fromValue(object.createdTs)
+      : Long.ZERO;
     message.url = object.url ?? "";
     message.authorName = object.authorName ?? "";
     message.authorEmail = object.authorEmail ?? "";
@@ -578,38 +626,13 @@ export const FileCommit = {
   },
 };
 
-declare const self: any | undefined;
-declare const window: any | undefined;
-declare const global: any | undefined;
-const tsProtoGlobalThis: any = (() => {
-  if (typeof globalThis !== "undefined") {
-    return globalThis;
-  }
-  if (typeof self !== "undefined") {
-    return self;
-  }
-  if (typeof window !== "undefined") {
-    return window;
-  }
-  if (typeof global !== "undefined") {
-    return global;
-  }
-  throw "Unable to locate global object";
-})();
-
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
-
-function longToNumber(long: Long): number {
-  if (long.gt(Number.MAX_SAFE_INTEGER)) {
-    throw new tsProtoGlobalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
-  }
-  return long.toNumber();
-}
 
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;

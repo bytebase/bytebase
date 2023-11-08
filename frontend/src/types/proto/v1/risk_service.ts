@@ -177,22 +177,25 @@ export const ListRisksRequest = {
 
   fromJSON(object: any): ListRisksRequest {
     return {
-      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
     };
   },
 
   toJSON(message: ListRisksRequest): unknown {
     const obj: any = {};
-    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
-    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ListRisksRequest>): ListRisksRequest {
     return ListRisksRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ListRisksRequest>): ListRisksRequest {
     const message = createBaseListRisksRequest();
     message.pageSize = object.pageSize ?? 0;
@@ -248,26 +251,25 @@ export const ListRisksResponse = {
 
   fromJSON(object: any): ListRisksResponse {
     return {
-      risks: Array.isArray(object?.risks) ? object.risks.map((e: any) => Risk.fromJSON(e)) : [],
-      nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
+      risks: globalThis.Array.isArray(object?.risks) ? object.risks.map((e: any) => Risk.fromJSON(e)) : [],
+      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
     };
   },
 
   toJSON(message: ListRisksResponse): unknown {
     const obj: any = {};
-    if (message.risks) {
-      obj.risks = message.risks.map((e) => e ? Risk.toJSON(e) : undefined);
-    } else {
-      obj.risks = [];
+    if (message.risks?.length) {
+      obj.risks = message.risks.map((e) => Risk.toJSON(e));
     }
-    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ListRisksResponse>): ListRisksResponse {
     return ListRisksResponse.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ListRisksResponse>): ListRisksResponse {
     const message = createBaseListRisksResponse();
     message.risks = object.risks?.map((e) => Risk.fromPartial(e)) || [];
@@ -317,14 +319,15 @@ export const CreateRiskRequest = {
 
   toJSON(message: CreateRiskRequest): unknown {
     const obj: any = {};
-    message.risk !== undefined && (obj.risk = message.risk ? Risk.toJSON(message.risk) : undefined);
+    if (message.risk !== undefined) {
+      obj.risk = Risk.toJSON(message.risk);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<CreateRiskRequest>): CreateRiskRequest {
     return CreateRiskRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<CreateRiskRequest>): CreateRiskRequest {
     const message = createBaseCreateRiskRequest();
     message.risk = (object.risk !== undefined && object.risk !== null) ? Risk.fromPartial(object.risk) : undefined;
@@ -386,15 +389,18 @@ export const UpdateRiskRequest = {
 
   toJSON(message: UpdateRiskRequest): unknown {
     const obj: any = {};
-    message.risk !== undefined && (obj.risk = message.risk ? Risk.toJSON(message.risk) : undefined);
-    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    if (message.risk !== undefined) {
+      obj.risk = Risk.toJSON(message.risk);
+    }
+    if (message.updateMask !== undefined) {
+      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
+    }
     return obj;
   },
 
   create(base?: DeepPartial<UpdateRiskRequest>): UpdateRiskRequest {
     return UpdateRiskRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<UpdateRiskRequest>): UpdateRiskRequest {
     const message = createBaseUpdateRiskRequest();
     message.risk = (object.risk !== undefined && object.risk !== null) ? Risk.fromPartial(object.risk) : undefined;
@@ -439,19 +445,20 @@ export const DeleteRiskRequest = {
   },
 
   fromJSON(object: any): DeleteRiskRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: DeleteRiskRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<DeleteRiskRequest>): DeleteRiskRequest {
     return DeleteRiskRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<DeleteRiskRequest>): DeleteRiskRequest {
     const message = createBaseDeleteRiskRequest();
     message.name = object.name ?? "";
@@ -478,7 +485,7 @@ export const Risk = {
       writer.uint32(34).string(message.title);
     }
     if (message.level !== 0) {
-      writer.uint32(40).int64(message.level);
+      writer.uint32(40).int32(message.level);
     }
     if (message.active === true) {
       writer.uint32(56).bool(message.active);
@@ -529,7 +536,7 @@ export const Risk = {
             break;
           }
 
-          message.level = longToNumber(reader.int64() as Long);
+          message.level = reader.int32();
           continue;
         case 7:
           if (tag !== 56) {
@@ -556,32 +563,45 @@ export const Risk = {
 
   fromJSON(object: any): Risk {
     return {
-      name: isSet(object.name) ? String(object.name) : "",
-      uid: isSet(object.uid) ? String(object.uid) : "",
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
       source: isSet(object.source) ? risk_SourceFromJSON(object.source) : 0,
-      title: isSet(object.title) ? String(object.title) : "",
-      level: isSet(object.level) ? Number(object.level) : 0,
-      active: isSet(object.active) ? Boolean(object.active) : false,
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      level: isSet(object.level) ? globalThis.Number(object.level) : 0,
+      active: isSet(object.active) ? globalThis.Boolean(object.active) : false,
       condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
     };
   },
 
   toJSON(message: Risk): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.uid !== undefined && (obj.uid = message.uid);
-    message.source !== undefined && (obj.source = risk_SourceToJSON(message.source));
-    message.title !== undefined && (obj.title = message.title);
-    message.level !== undefined && (obj.level = Math.round(message.level));
-    message.active !== undefined && (obj.active = message.active);
-    message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.uid !== "") {
+      obj.uid = message.uid;
+    }
+    if (message.source !== 0) {
+      obj.source = risk_SourceToJSON(message.source);
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.level !== 0) {
+      obj.level = Math.round(message.level);
+    }
+    if (message.active === true) {
+      obj.active = message.active;
+    }
+    if (message.condition !== undefined) {
+      obj.condition = Expr.toJSON(message.condition);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<Risk>): Risk {
     return Risk.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Risk>): Risk {
     const message = createBaseRisk();
     message.name = object.name ?? "";
@@ -715,38 +735,13 @@ export const RiskServiceDefinition = {
   },
 } as const;
 
-declare const self: any | undefined;
-declare const window: any | undefined;
-declare const global: any | undefined;
-const tsProtoGlobalThis: any = (() => {
-  if (typeof globalThis !== "undefined") {
-    return globalThis;
-  }
-  if (typeof self !== "undefined") {
-    return self;
-  }
-  if (typeof window !== "undefined") {
-    return window;
-  }
-  if (typeof global !== "undefined") {
-    return global;
-  }
-  throw "Unable to locate global object";
-})();
-
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
-
-function longToNumber(long: Long): number {
-  if (long.gt(Number.MAX_SAFE_INTEGER)) {
-    throw new tsProtoGlobalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
-  }
-  return long.toNumber();
-}
 
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;

@@ -1,4 +1,5 @@
 /* eslint-disable */
+import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
@@ -496,25 +497,25 @@ export const SchemaDesign = {
 
   fromJSON(object: any): SchemaDesign {
     return {
-      name: isSet(object.name) ? String(object.name) : "",
-      title: isSet(object.title) ? String(object.title) : "",
-      schema: isSet(object.schema) ? String(object.schema) : "",
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      schema: isSet(object.schema) ? globalThis.String(object.schema) : "",
       schemaMetadata: isSet(object.schemaMetadata) ? DatabaseMetadata.fromJSON(object.schemaMetadata) : undefined,
-      baselineSchema: isSet(object.baselineSchema) ? String(object.baselineSchema) : "",
+      baselineSchema: isSet(object.baselineSchema) ? globalThis.String(object.baselineSchema) : "",
       baselineSchemaMetadata: isSet(object.baselineSchemaMetadata)
         ? DatabaseMetadata.fromJSON(object.baselineSchemaMetadata)
         : undefined,
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
-      baselineDatabase: isSet(object.baselineDatabase) ? String(object.baselineDatabase) : "",
-      baselineSheetName: isSet(object.baselineSheetName) ? String(object.baselineSheetName) : "",
+      baselineDatabase: isSet(object.baselineDatabase) ? globalThis.String(object.baselineDatabase) : "",
+      baselineSheetName: isSet(object.baselineSheetName) ? globalThis.String(object.baselineSheetName) : "",
       baselineChangeHistoryId: isSet(object.baselineChangeHistoryId)
-        ? String(object.baselineChangeHistoryId)
+        ? globalThis.String(object.baselineChangeHistoryId)
         : undefined,
       type: isSet(object.type) ? schemaDesign_TypeFromJSON(object.type) : 0,
-      etag: isSet(object.etag) ? String(object.etag) : "",
+      etag: isSet(object.etag) ? globalThis.String(object.etag) : "",
       protection: isSet(object.protection) ? SchemaDesign_Protection.fromJSON(object.protection) : undefined,
-      creator: isSet(object.creator) ? String(object.creator) : "",
-      updater: isSet(object.updater) ? String(object.updater) : "",
+      creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
+      updater: isSet(object.updater) ? globalThis.String(object.updater) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
     };
@@ -522,34 +523,63 @@ export const SchemaDesign = {
 
   toJSON(message: SchemaDesign): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.title !== undefined && (obj.title = message.title);
-    message.schema !== undefined && (obj.schema = message.schema);
-    message.schemaMetadata !== undefined &&
-      (obj.schemaMetadata = message.schemaMetadata ? DatabaseMetadata.toJSON(message.schemaMetadata) : undefined);
-    message.baselineSchema !== undefined && (obj.baselineSchema = message.baselineSchema);
-    message.baselineSchemaMetadata !== undefined && (obj.baselineSchemaMetadata = message.baselineSchemaMetadata
-      ? DatabaseMetadata.toJSON(message.baselineSchemaMetadata)
-      : undefined);
-    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
-    message.baselineDatabase !== undefined && (obj.baselineDatabase = message.baselineDatabase);
-    message.baselineSheetName !== undefined && (obj.baselineSheetName = message.baselineSheetName);
-    message.baselineChangeHistoryId !== undefined && (obj.baselineChangeHistoryId = message.baselineChangeHistoryId);
-    message.type !== undefined && (obj.type = schemaDesign_TypeToJSON(message.type));
-    message.etag !== undefined && (obj.etag = message.etag);
-    message.protection !== undefined &&
-      (obj.protection = message.protection ? SchemaDesign_Protection.toJSON(message.protection) : undefined);
-    message.creator !== undefined && (obj.creator = message.creator);
-    message.updater !== undefined && (obj.updater = message.updater);
-    message.createTime !== undefined && (obj.createTime = message.createTime.toISOString());
-    message.updateTime !== undefined && (obj.updateTime = message.updateTime.toISOString());
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.schema !== "") {
+      obj.schema = message.schema;
+    }
+    if (message.schemaMetadata !== undefined) {
+      obj.schemaMetadata = DatabaseMetadata.toJSON(message.schemaMetadata);
+    }
+    if (message.baselineSchema !== "") {
+      obj.baselineSchema = message.baselineSchema;
+    }
+    if (message.baselineSchemaMetadata !== undefined) {
+      obj.baselineSchemaMetadata = DatabaseMetadata.toJSON(message.baselineSchemaMetadata);
+    }
+    if (message.engine !== 0) {
+      obj.engine = engineToJSON(message.engine);
+    }
+    if (message.baselineDatabase !== "") {
+      obj.baselineDatabase = message.baselineDatabase;
+    }
+    if (message.baselineSheetName !== "") {
+      obj.baselineSheetName = message.baselineSheetName;
+    }
+    if (message.baselineChangeHistoryId !== undefined) {
+      obj.baselineChangeHistoryId = message.baselineChangeHistoryId;
+    }
+    if (message.type !== 0) {
+      obj.type = schemaDesign_TypeToJSON(message.type);
+    }
+    if (message.etag !== "") {
+      obj.etag = message.etag;
+    }
+    if (message.protection !== undefined) {
+      obj.protection = SchemaDesign_Protection.toJSON(message.protection);
+    }
+    if (message.creator !== "") {
+      obj.creator = message.creator;
+    }
+    if (message.updater !== "") {
+      obj.updater = message.updater;
+    }
+    if (message.createTime !== undefined) {
+      obj.createTime = message.createTime.toISOString();
+    }
+    if (message.updateTime !== undefined) {
+      obj.updateTime = message.updateTime.toISOString();
+    }
     return obj;
   },
 
   create(base?: DeepPartial<SchemaDesign>): SchemaDesign {
     return SchemaDesign.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SchemaDesign>): SchemaDesign {
     const message = createBaseSchemaDesign();
     message.name = object.name ?? "";
@@ -616,19 +646,20 @@ export const SchemaDesign_Protection = {
   },
 
   fromJSON(object: any): SchemaDesign_Protection {
-    return { allowForcePushes: isSet(object.allowForcePushes) ? Boolean(object.allowForcePushes) : false };
+    return { allowForcePushes: isSet(object.allowForcePushes) ? globalThis.Boolean(object.allowForcePushes) : false };
   },
 
   toJSON(message: SchemaDesign_Protection): unknown {
     const obj: any = {};
-    message.allowForcePushes !== undefined && (obj.allowForcePushes = message.allowForcePushes);
+    if (message.allowForcePushes === true) {
+      obj.allowForcePushes = message.allowForcePushes;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<SchemaDesign_Protection>): SchemaDesign_Protection {
     return SchemaDesign_Protection.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SchemaDesign_Protection>): SchemaDesign_Protection {
     const message = createBaseSchemaDesign_Protection();
     message.allowForcePushes = object.allowForcePushes ?? false;
@@ -672,19 +703,20 @@ export const GetSchemaDesignRequest = {
   },
 
   fromJSON(object: any): GetSchemaDesignRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: GetSchemaDesignRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<GetSchemaDesignRequest>): GetSchemaDesignRequest {
     return GetSchemaDesignRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<GetSchemaDesignRequest>): GetSchemaDesignRequest {
     const message = createBaseGetSchemaDesignRequest();
     message.name = object.name ?? "";
@@ -769,28 +801,37 @@ export const ListSchemaDesignsRequest = {
 
   fromJSON(object: any): ListSchemaDesignsRequest {
     return {
-      parent: isSet(object.parent) ? String(object.parent) : "",
-      filter: isSet(object.filter) ? String(object.filter) : "",
-      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
+      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
       view: isSet(object.view) ? schemaDesignViewFromJSON(object.view) : 0,
     };
   },
 
   toJSON(message: ListSchemaDesignsRequest): unknown {
     const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
-    message.filter !== undefined && (obj.filter = message.filter);
-    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
-    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
-    message.view !== undefined && (obj.view = schemaDesignViewToJSON(message.view));
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.filter !== "") {
+      obj.filter = message.filter;
+    }
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
+    if (message.view !== 0) {
+      obj.view = schemaDesignViewToJSON(message.view);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ListSchemaDesignsRequest>): ListSchemaDesignsRequest {
     return ListSchemaDesignsRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ListSchemaDesignsRequest>): ListSchemaDesignsRequest {
     const message = createBaseListSchemaDesignsRequest();
     message.parent = object.parent ?? "";
@@ -849,28 +890,27 @@ export const ListSchemaDesignsResponse = {
 
   fromJSON(object: any): ListSchemaDesignsResponse {
     return {
-      schemaDesigns: Array.isArray(object?.schemaDesigns)
+      schemaDesigns: globalThis.Array.isArray(object?.schemaDesigns)
         ? object.schemaDesigns.map((e: any) => SchemaDesign.fromJSON(e))
         : [],
-      nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
+      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
     };
   },
 
   toJSON(message: ListSchemaDesignsResponse): unknown {
     const obj: any = {};
-    if (message.schemaDesigns) {
-      obj.schemaDesigns = message.schemaDesigns.map((e) => e ? SchemaDesign.toJSON(e) : undefined);
-    } else {
-      obj.schemaDesigns = [];
+    if (message.schemaDesigns?.length) {
+      obj.schemaDesigns = message.schemaDesigns.map((e) => SchemaDesign.toJSON(e));
     }
-    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ListSchemaDesignsResponse>): ListSchemaDesignsResponse {
     return ListSchemaDesignsResponse.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ListSchemaDesignsResponse>): ListSchemaDesignsResponse {
     const message = createBaseListSchemaDesignsResponse();
     message.schemaDesigns = object.schemaDesigns?.map((e) => SchemaDesign.fromPartial(e)) || [];
@@ -926,23 +966,25 @@ export const CreateSchemaDesignRequest = {
 
   fromJSON(object: any): CreateSchemaDesignRequest {
     return {
-      parent: isSet(object.parent) ? String(object.parent) : "",
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
       schemaDesign: isSet(object.schemaDesign) ? SchemaDesign.fromJSON(object.schemaDesign) : undefined,
     };
   },
 
   toJSON(message: CreateSchemaDesignRequest): unknown {
     const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
-    message.schemaDesign !== undefined &&
-      (obj.schemaDesign = message.schemaDesign ? SchemaDesign.toJSON(message.schemaDesign) : undefined);
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.schemaDesign !== undefined) {
+      obj.schemaDesign = SchemaDesign.toJSON(message.schemaDesign);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<CreateSchemaDesignRequest>): CreateSchemaDesignRequest {
     return CreateSchemaDesignRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<CreateSchemaDesignRequest>): CreateSchemaDesignRequest {
     const message = createBaseCreateSchemaDesignRequest();
     message.parent = object.parent ?? "";
@@ -1007,16 +1049,18 @@ export const UpdateSchemaDesignRequest = {
 
   toJSON(message: UpdateSchemaDesignRequest): unknown {
     const obj: any = {};
-    message.schemaDesign !== undefined &&
-      (obj.schemaDesign = message.schemaDesign ? SchemaDesign.toJSON(message.schemaDesign) : undefined);
-    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    if (message.schemaDesign !== undefined) {
+      obj.schemaDesign = SchemaDesign.toJSON(message.schemaDesign);
+    }
+    if (message.updateMask !== undefined) {
+      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
+    }
     return obj;
   },
 
   create(base?: DeepPartial<UpdateSchemaDesignRequest>): UpdateSchemaDesignRequest {
     return UpdateSchemaDesignRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<UpdateSchemaDesignRequest>): UpdateSchemaDesignRequest {
     const message = createBaseUpdateSchemaDesignRequest();
     message.schemaDesign = (object.schemaDesign !== undefined && object.schemaDesign !== null)
@@ -1074,22 +1118,25 @@ export const MergeSchemaDesignRequest = {
 
   fromJSON(object: any): MergeSchemaDesignRequest {
     return {
-      name: isSet(object.name) ? String(object.name) : "",
-      targetName: isSet(object.targetName) ? String(object.targetName) : "",
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      targetName: isSet(object.targetName) ? globalThis.String(object.targetName) : "",
     };
   },
 
   toJSON(message: MergeSchemaDesignRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.targetName !== undefined && (obj.targetName = message.targetName);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.targetName !== "") {
+      obj.targetName = message.targetName;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<MergeSchemaDesignRequest>): MergeSchemaDesignRequest {
     return MergeSchemaDesignRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<MergeSchemaDesignRequest>): MergeSchemaDesignRequest {
     const message = createBaseMergeSchemaDesignRequest();
     message.name = object.name ?? "";
@@ -1145,22 +1192,25 @@ export const ParseSchemaStringRequest = {
 
   fromJSON(object: any): ParseSchemaStringRequest {
     return {
-      schemaString: isSet(object.schemaString) ? String(object.schemaString) : "",
+      schemaString: isSet(object.schemaString) ? globalThis.String(object.schemaString) : "",
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
     };
   },
 
   toJSON(message: ParseSchemaStringRequest): unknown {
     const obj: any = {};
-    message.schemaString !== undefined && (obj.schemaString = message.schemaString);
-    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
+    if (message.schemaString !== "") {
+      obj.schemaString = message.schemaString;
+    }
+    if (message.engine !== 0) {
+      obj.engine = engineToJSON(message.engine);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ParseSchemaStringRequest>): ParseSchemaStringRequest {
     return ParseSchemaStringRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ParseSchemaStringRequest>): ParseSchemaStringRequest {
     const message = createBaseParseSchemaStringRequest();
     message.schemaString = object.schemaString ?? "";
@@ -1212,15 +1262,15 @@ export const ParseSchemaStringResponse = {
 
   toJSON(message: ParseSchemaStringResponse): unknown {
     const obj: any = {};
-    message.schemaMetadata !== undefined &&
-      (obj.schemaMetadata = message.schemaMetadata ? DatabaseMetadata.toJSON(message.schemaMetadata) : undefined);
+    if (message.schemaMetadata !== undefined) {
+      obj.schemaMetadata = DatabaseMetadata.toJSON(message.schemaMetadata);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ParseSchemaStringResponse>): ParseSchemaStringResponse {
     return ParseSchemaStringResponse.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ParseSchemaStringResponse>): ParseSchemaStringResponse {
     const message = createBaseParseSchemaStringResponse();
     message.schemaMetadata = (object.schemaMetadata !== undefined && object.schemaMetadata !== null)
@@ -1266,19 +1316,20 @@ export const DeleteSchemaDesignRequest = {
   },
 
   fromJSON(object: any): DeleteSchemaDesignRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: DeleteSchemaDesignRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<DeleteSchemaDesignRequest>): DeleteSchemaDesignRequest {
     return DeleteSchemaDesignRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<DeleteSchemaDesignRequest>): DeleteSchemaDesignRequest {
     const message = createBaseDeleteSchemaDesignRequest();
     message.name = object.name ?? "";
@@ -1351,18 +1402,21 @@ export const DiffMetadataRequest = {
 
   toJSON(message: DiffMetadataRequest): unknown {
     const obj: any = {};
-    message.sourceMetadata !== undefined &&
-      (obj.sourceMetadata = message.sourceMetadata ? DatabaseMetadata.toJSON(message.sourceMetadata) : undefined);
-    message.targetMetadata !== undefined &&
-      (obj.targetMetadata = message.targetMetadata ? DatabaseMetadata.toJSON(message.targetMetadata) : undefined);
-    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
+    if (message.sourceMetadata !== undefined) {
+      obj.sourceMetadata = DatabaseMetadata.toJSON(message.sourceMetadata);
+    }
+    if (message.targetMetadata !== undefined) {
+      obj.targetMetadata = DatabaseMetadata.toJSON(message.targetMetadata);
+    }
+    if (message.engine !== 0) {
+      obj.engine = engineToJSON(message.engine);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<DiffMetadataRequest>): DiffMetadataRequest {
     return DiffMetadataRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<DiffMetadataRequest>): DiffMetadataRequest {
     const message = createBaseDiffMetadataRequest();
     message.sourceMetadata = (object.sourceMetadata !== undefined && object.sourceMetadata !== null)
@@ -1412,19 +1466,20 @@ export const DiffMetadataResponse = {
   },
 
   fromJSON(object: any): DiffMetadataResponse {
-    return { diff: isSet(object.diff) ? String(object.diff) : "" };
+    return { diff: isSet(object.diff) ? globalThis.String(object.diff) : "" };
   },
 
   toJSON(message: DiffMetadataResponse): unknown {
     const obj: any = {};
-    message.diff !== undefined && (obj.diff = message.diff);
+    if (message.diff !== "") {
+      obj.diff = message.diff;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<DiffMetadataResponse>): DiffMetadataResponse {
     return DiffMetadataResponse.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<DiffMetadataResponse>): DiffMetadataResponse {
     const message = createBaseDiffMetadataResponse();
     message.diff = object.diff ?? "";
@@ -1986,30 +2041,40 @@ export const SchemaDesignServiceDefinition = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
 function toTimestamp(date: Date): Timestamp {
-  const seconds = date.getTime() / 1_000;
+  const seconds = numberToLong(date.getTime() / 1_000);
   const nanos = (date.getTime() % 1_000) * 1_000_000;
   return { seconds, nanos };
 }
 
 function fromTimestamp(t: Timestamp): Date {
-  let millis = (t.seconds || 0) * 1_000;
+  let millis = (t.seconds.toNumber() || 0) * 1_000;
   millis += (t.nanos || 0) / 1_000_000;
-  return new Date(millis);
+  return new globalThis.Date(millis);
 }
 
 function fromJsonTimestamp(o: any): Date {
-  if (o instanceof Date) {
+  if (o instanceof globalThis.Date) {
     return o;
   } else if (typeof o === "string") {
-    return new Date(o);
+    return new globalThis.Date(o);
   } else {
     return fromTimestamp(Timestamp.fromJSON(o));
   }
+}
+
+function numberToLong(number: number) {
+  return Long.fromNumber(number);
+}
+
+if (_m0.util.Long !== Long) {
+  _m0.util.Long = Long as any;
+  _m0.configure();
 }
 
 function isSet(value: any): boolean {

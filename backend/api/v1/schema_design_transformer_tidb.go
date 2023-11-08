@@ -80,38 +80,49 @@ func (t *tidbTransformer) Enter(in tidbast.Node) (tidbast.Node, bool) {
 				t.err = errors.New("multiple column names found: " + columnName + " in table " + tableName)
 				return in, true
 			}
-			defaultValue, err := columnDefaultValue(column)
-			if err != nil {
-				t.err = err
-				return in, true
-			}
-			comment, err := columnComment(column)
-			if err != nil {
-				t.err = err
-				return in, true
-			}
+
 			columnState := &columnState{
 				id:       len(table.columns),
 				name:     columnName,
 				tp:       dataType,
-				comment:  comment,
+				comment:  "",
 				nullable: tidbColumnCanNull(column),
 			}
 
-			if defaultValue == nil {
-				columnState.hasDefault = false
-			} else {
-				columnState.hasDefault = true
-				switch {
-				case strings.EqualFold(*defaultValue, "NULL"):
-					columnState.defaultValue = &defaultValueNull{}
-				case strings.HasPrefix(*defaultValue, "'") && strings.HasSuffix(*defaultValue, "'"):
-					columnState.defaultValue = &defaultValueString{value: strings.ReplaceAll((*defaultValue)[1:len(*defaultValue)-1], "''", "'")}
-				default:
-					columnState.defaultValue = &defaultValueExpression{value: *defaultValue}
+			for _, option := range column.Options {
+				switch option.Tp {
+				case tidbast.ColumnOptionDefaultValue:
+					defaultValue, err := columnDefaultValue(column)
+					if err != nil {
+						t.err = err
+						return in, true
+					}
+					if defaultValue == nil {
+						columnState.hasDefault = false
+					} else {
+						columnState.hasDefault = true
+						switch {
+						case strings.EqualFold(*defaultValue, "NULL"):
+							columnState.defaultValue = &defaultValueNull{}
+						case strings.HasPrefix(*defaultValue, "'") && strings.HasSuffix(*defaultValue, "'"):
+							columnState.defaultValue = &defaultValueString{value: strings.ReplaceAll((*defaultValue)[1:len(*defaultValue)-1], "''", "'")}
+						default:
+							columnState.defaultValue = &defaultValueExpression{value: *defaultValue}
+						}
+					}
+				case tidbast.ColumnOptionComment:
+					comment, err := columnComment(column)
+					if err != nil {
+						t.err = err
+						return in, true
+					}
+					columnState.comment = comment
+				case tidbast.ColumnOptionAutoIncrement:
+					defaultValue := "auto_increment"
+					columnState.hasDefault = true
+					columnState.defaultValue = &defaultValueExpression{value: defaultValue}
 				}
 			}
-
 			table.columns[columnName] = columnState
 		}
 		for _, tableOption := range node.Options {
@@ -467,6 +478,17 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 			}
 
 			// Column attributes.
+			// todo(zp): refactor column auto_increment.
+			skipSchemaAutoIncrement := false
+			for _, option := range column.Options {
+				if option.Tp == tidbast.ColumnOptionDefaultValue || option.Tp == tidbast.ColumnOptionAutoIncrement {
+					// if schema string has default value or auto_increment.
+					// and metdata has default value.
+					// we skip the schema auto_increment and only compare default value.
+					skipSchemaAutoIncrement = stateColumn.hasDefault
+					break
+				}
+			}
 			newAttr := tidbExtractNewAttrs(stateColumn, column.Options)
 			for _, option := range column.Options {
 				attrOrder := tidbGetAttrOrder(option)
@@ -525,13 +547,21 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 							}
 						}
 					} else if stateColumn.hasDefault {
-						if _, err := g.columnDefine.WriteString(" DEFAUL"); err != nil {
-							g.err = err
-							return in, true
-						}
-						if _, err := g.columnDefine.WriteString(" " + stateColumn.defaultValue.toString()); err != nil {
-							g.err = err
-							return in, true
+						if strings.EqualFold(stateColumn.defaultValue.toString(), "AUTO_INCREMENT") {
+							skipSchemaAutoIncrement = true
+							if _, err := g.columnDefine.WriteString(" " + stateColumn.defaultValue.toString()); err != nil {
+								g.err = err
+								return in, true
+							}
+						} else {
+							if _, err := g.columnDefine.WriteString(" DEFAULT"); err != nil {
+								g.err = err
+								return in, true
+							}
+							if _, err := g.columnDefine.WriteString(" " + stateColumn.defaultValue.toString()); err != nil {
+								g.err = err
+								return in, true
+							}
 						}
 					}
 				case tidbast.ColumnOptionComment:
@@ -558,6 +588,9 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 						}
 					}
 				default:
+					if skipSchemaAutoIncrement && option.Tp == tidbast.ColumnOptionAutoIncrement {
+						continue
+					}
 					if optionStr, err := tidbRestoreNodeDefault(option); err == nil {
 						if _, err := g.columnDefine.WriteString(" " + optionStr); err != nil {
 							g.err = err
@@ -864,10 +897,18 @@ func tidbExtractNewAttrs(column *columnState, options []*tidbast.ColumnOption) [
 		})
 	}
 	if !defaultExists && column.hasDefault {
-		result = append(result, columnAttr{
-			text:  "DEFAULT " + column.defaultValue.toString(),
-			order: columnAttrOrder["DEFAULT"],
-		})
+		// todo(zp): refactor column attribute.
+		if strings.EqualFold(column.defaultValue.toString(), "AUTO_INCREMENT") {
+			result = append(result, columnAttr{
+				text:  column.defaultValue.toString(),
+				order: columnAttrOrder["DEFAULT"],
+			})
+		} else {
+			result = append(result, columnAttr{
+				text:  "DEFAULT " + column.defaultValue.toString(),
+				order: columnAttrOrder["DEFAULT"],
+			})
+		}
 	}
 	if !commentExists && column.comment != "" {
 		result = append(result, columnAttr{

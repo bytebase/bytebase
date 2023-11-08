@@ -1,4 +1,5 @@
 /* eslint-disable */
+import Long from "long";
 import _m0 from "protobufjs/minimal";
 
 export const protobufPackage = "google.type";
@@ -127,26 +128,33 @@ export const Expr = {
 
   fromJSON(object: any): Expr {
     return {
-      expression: isSet(object.expression) ? String(object.expression) : "",
-      title: isSet(object.title) ? String(object.title) : "",
-      description: isSet(object.description) ? String(object.description) : "",
-      location: isSet(object.location) ? String(object.location) : "",
+      expression: isSet(object.expression) ? globalThis.String(object.expression) : "",
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      description: isSet(object.description) ? globalThis.String(object.description) : "",
+      location: isSet(object.location) ? globalThis.String(object.location) : "",
     };
   },
 
   toJSON(message: Expr): unknown {
     const obj: any = {};
-    message.expression !== undefined && (obj.expression = message.expression);
-    message.title !== undefined && (obj.title = message.title);
-    message.description !== undefined && (obj.description = message.description);
-    message.location !== undefined && (obj.location = message.location);
+    if (message.expression !== "") {
+      obj.expression = message.expression;
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.description !== "") {
+      obj.description = message.description;
+    }
+    if (message.location !== "") {
+      obj.location = message.location;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<Expr>): Expr {
     return Expr.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Expr>): Expr {
     const message = createBaseExpr();
     message.expression = object.expression ?? "";
@@ -160,9 +168,15 @@ export const Expr = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+if (_m0.util.Long !== Long) {
+  _m0.util.Long = Long as any;
+  _m0.configure();
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

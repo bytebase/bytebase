@@ -34,12 +34,6 @@ export const MINIMUM_POLL_INTERVAL = 200;
 // Add jitter to avoid timer from different clients converging to the same polling frequency.
 export const POLL_JITTER = 200;
 
-// It may take a while to perform instance related operations since we are
-// connecting the remote instance. And certain operations just take longer for
-// a particular database type due to its unique property (e.g. create migration schema
-// is a heavier operation in TiDB than traditional RDBMS).
-export const INSTANCE_OPERATION_TIMEOUT = 60000;
-
 // RowStatus
 export type RowStatus = "NORMAL" | "ARCHIVED";
 
@@ -146,7 +140,6 @@ const makeUnknown = (type: ResourceType) => {
     workflowType: "UI",
     visibility: "PUBLIC",
     tenantMode: "DISABLED",
-    dbNameTemplate: "",
     schemaChangeType: "DDL",
   };
 
@@ -359,7 +352,6 @@ const makeEmpty = (type: ResourceType) => {
     workflowType: "UI",
     visibility: "PUBLIC",
     tenantMode: "DISABLED",
-    dbNameTemplate: "",
     schemaChangeType: "DDL",
   };
 

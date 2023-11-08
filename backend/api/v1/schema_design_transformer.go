@@ -522,8 +522,15 @@ func (c *columnState) toString(buf *strings.Builder) error {
 		}
 	}
 	if c.hasDefault {
-		if _, err := buf.WriteString(fmt.Sprintf(" DEFAULT %s", c.defaultValue.toString())); err != nil {
-			return err
+		// todo(zp): refactor column attribute.
+		if strings.EqualFold(c.defaultValue.toString(), "AUTO_INCREMENT") {
+			if _, err := buf.WriteString(fmt.Sprintf(" %s", c.defaultValue.toString())); err != nil {
+				return err
+			}
+		} else {
+			if _, err := buf.WriteString(fmt.Sprintf(" DEFAULT %s", c.defaultValue.toString())); err != nil {
+				return err
+			}
 		}
 	}
 	if c.comment != "" {
@@ -778,6 +785,11 @@ func (t *mysqlTransformer) EnterColumnDefinition(ctx *mysql.ColumnDefinitionCont
 			if comment != `''` && len(comment) > 2 {
 				columnState.comment = comment[1 : len(comment)-1]
 			}
+		// todo(zp): refactor column attribute.
+		case attribute.AUTO_INCREMENT_SYMBOL() != nil:
+			defaultValue := "auto_increment"
+			columnState.hasDefault = true
+			columnState.defaultValue = &defaultValueExpression{value: defaultValue}
 		}
 	}
 
@@ -1196,10 +1208,18 @@ func extractNewAttrs(column *columnState, attrs []mysql.IColumnAttributeContext)
 		})
 	}
 	if !defaultExists && column.hasDefault {
-		result = append(result, columnAttr{
-			text:  "DEFAULT " + column.defaultValue.toString(),
-			order: columnAttrOrder["DEFAULT"],
-		})
+		// todo(zp): refactor column attribute.
+		if strings.EqualFold(column.defaultValue.toString(), "AUTO_INCREMENT") {
+			result = append(result, columnAttr{
+				text:  column.defaultValue.toString(),
+				order: columnAttrOrder["DEFAULT"],
+			})
+		} else {
+			result = append(result, columnAttr{
+				text:  "DEFAULT " + column.defaultValue.toString(),
+				order: columnAttrOrder["DEFAULT"],
+			})
+		}
 	}
 	if !commentExists && column.comment != "" {
 		result = append(result, columnAttr{
@@ -1388,6 +1408,18 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 	}
 	startPos := typeCtx.GetStop().GetTokenIndex() + 1
 
+	// Column attributes.
+	// TODO(zp): refactor column auto_increment.
+	skipSchemaAutoIncrement := false
+	for _, attr := range ctx.FieldDefinition().AllColumnAttribute() {
+		if attr.AUTO_INCREMENT_SYMBOL() != nil || attr.DEFAULT_SYMBOL() != nil {
+			// if schema string has default value or auto_increment.
+			// and metdata has default value.
+			// we skip the schema auto_increment and only compare default value.
+			skipSchemaAutoIncrement = column.hasDefault
+			break
+		}
+	}
 	newAttr := extractNewAttrs(column, ctx.FieldDefinition().AllColumnAttribute())
 
 	for _, attribute := range ctx.FieldDefinition().AllColumnAttribute() {
@@ -1457,12 +1489,23 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 					return
 				}
 			} else if column.hasDefault {
-				if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
-					Start: startPos,
-					Stop:  defaultValueStart - 1,
-				})); err != nil {
-					g.err = err
-					return
+				// todo(zp): refactor column attribute.
+				if strings.EqualFold(column.defaultValue.toString(), "auto_increment") {
+					if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+						Start: startPos,
+						Stop:  attribute.DEFAULT_SYMBOL().GetSymbol().GetTokenIndex() - 1,
+					})); err != nil {
+						g.err = err
+						return
+					}
+				} else {
+					if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+						Start: startPos,
+						Stop:  defaultValueStart - 1,
+					})); err != nil {
+						g.err = err
+						return
+					}
 				}
 				if _, err := g.columnDefine.WriteString(column.defaultValue.toString()); err != nil {
 					g.err = err
@@ -1496,6 +1539,9 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 					return
 				}
 			}
+
+		case attribute.AUTO_INCREMENT_SYMBOL() != nil && skipSchemaAutoIncrement:
+			// just skip this condition.
 		default:
 			if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 				Start: startPos,

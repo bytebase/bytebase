@@ -8,7 +8,7 @@
       />
 
       <div class="flex items-center space-x-4">
-        <NTooltip v-if="canVisitUnassignedDatabases">
+        <NTooltip v-if="canVisitUnassignedDatabases && !isStandaloneMode">
           <template #trigger>
             <router-link
               :to="{
@@ -50,7 +50,7 @@
     </div>
 
     <DatabaseOperations
-      v-if="selectedDatabases.length > 0"
+      v-if="selectedDatabases.length > 0 || isStandaloneMode"
       class="mb-3"
       :databases="selectedDatabases"
       @dismiss="state.selectedDatabaseIds.clear()"
@@ -62,6 +62,9 @@
       :database-group-list="filteredDatabaseGroupList"
       :show-placeholder="true"
       :show-selection-column="true"
+      :custom-click="isStandaloneMode"
+      @select-database="(db: ComposedDatabase) =>
+                  toggleDatabasesSelection([db as ComposedDatabase], !isDatabaseSelected(db))"
     >
       <template #selection-all="{ databaseList }">
         <input
@@ -121,6 +124,7 @@ import {
   useDBGroupStore,
   useDatabaseV1Store,
   useEnvironmentV1Store,
+  usePageMode,
   usePolicyV1Store,
   useProjectV1ListByCurrentUser,
   useUIStateStore,
@@ -159,6 +163,7 @@ const router = useRouter();
 const uiStateStore = useUIStateStore();
 const environmentV1Store = useEnvironmentV1Store();
 const { projectList } = useProjectV1ListByCurrentUser();
+const pageMode = usePageMode();
 
 const state = reactive<LocalState>({
   instanceFilter: String(UNKNOWN_ID),
@@ -183,6 +188,10 @@ const preparePolicyList = () => {
 };
 
 watchEffect(preparePolicyList);
+
+const isStandaloneMode = computed(() => {
+  return pageMode.value === "STANDALONE";
+});
 
 const selectedEnvironment = computed(() => {
   const { environment } = route.query;

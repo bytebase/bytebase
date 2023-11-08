@@ -1,4 +1,5 @@
 /* eslint-disable */
+import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
@@ -110,22 +111,25 @@ export const ListRolesRequest = {
 
   fromJSON(object: any): ListRolesRequest {
     return {
-      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
     };
   },
 
   toJSON(message: ListRolesRequest): unknown {
     const obj: any = {};
-    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
-    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ListRolesRequest>): ListRolesRequest {
     return ListRolesRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ListRolesRequest>): ListRolesRequest {
     const message = createBaseListRolesRequest();
     message.pageSize = object.pageSize ?? 0;
@@ -181,26 +185,25 @@ export const ListRolesResponse = {
 
   fromJSON(object: any): ListRolesResponse {
     return {
-      roles: Array.isArray(object?.roles) ? object.roles.map((e: any) => Role.fromJSON(e)) : [],
-      nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
+      roles: globalThis.Array.isArray(object?.roles) ? object.roles.map((e: any) => Role.fromJSON(e)) : [],
+      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
     };
   },
 
   toJSON(message: ListRolesResponse): unknown {
     const obj: any = {};
-    if (message.roles) {
-      obj.roles = message.roles.map((e) => e ? Role.toJSON(e) : undefined);
-    } else {
-      obj.roles = [];
+    if (message.roles?.length) {
+      obj.roles = message.roles.map((e) => Role.toJSON(e));
     }
-    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ListRolesResponse>): ListRolesResponse {
     return ListRolesResponse.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ListRolesResponse>): ListRolesResponse {
     const message = createBaseListRolesResponse();
     message.roles = object.roles?.map((e) => Role.fromPartial(e)) || [];
@@ -257,21 +260,24 @@ export const CreateRoleRequest = {
   fromJSON(object: any): CreateRoleRequest {
     return {
       role: isSet(object.role) ? Role.fromJSON(object.role) : undefined,
-      roleId: isSet(object.roleId) ? String(object.roleId) : "",
+      roleId: isSet(object.roleId) ? globalThis.String(object.roleId) : "",
     };
   },
 
   toJSON(message: CreateRoleRequest): unknown {
     const obj: any = {};
-    message.role !== undefined && (obj.role = message.role ? Role.toJSON(message.role) : undefined);
-    message.roleId !== undefined && (obj.roleId = message.roleId);
+    if (message.role !== undefined) {
+      obj.role = Role.toJSON(message.role);
+    }
+    if (message.roleId !== "") {
+      obj.roleId = message.roleId;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<CreateRoleRequest>): CreateRoleRequest {
     return CreateRoleRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<CreateRoleRequest>): CreateRoleRequest {
     const message = createBaseCreateRoleRequest();
     message.role = (object.role !== undefined && object.role !== null) ? Role.fromPartial(object.role) : undefined;
@@ -334,15 +340,18 @@ export const UpdateRoleRequest = {
 
   toJSON(message: UpdateRoleRequest): unknown {
     const obj: any = {};
-    message.role !== undefined && (obj.role = message.role ? Role.toJSON(message.role) : undefined);
-    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    if (message.role !== undefined) {
+      obj.role = Role.toJSON(message.role);
+    }
+    if (message.updateMask !== undefined) {
+      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
+    }
     return obj;
   },
 
   create(base?: DeepPartial<UpdateRoleRequest>): UpdateRoleRequest {
     return UpdateRoleRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<UpdateRoleRequest>): UpdateRoleRequest {
     const message = createBaseUpdateRoleRequest();
     message.role = (object.role !== undefined && object.role !== null) ? Role.fromPartial(object.role) : undefined;
@@ -387,19 +396,20 @@ export const DeleteRoleRequest = {
   },
 
   fromJSON(object: any): DeleteRoleRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: DeleteRoleRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<DeleteRoleRequest>): DeleteRoleRequest {
     return DeleteRoleRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<DeleteRoleRequest>): DeleteRoleRequest {
     const message = createBaseDeleteRoleRequest();
     message.name = object.name ?? "";
@@ -464,24 +474,29 @@ export const Role = {
 
   fromJSON(object: any): Role {
     return {
-      name: isSet(object.name) ? String(object.name) : "",
-      title: isSet(object.title) ? String(object.title) : "",
-      description: isSet(object.description) ? String(object.description) : "",
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      description: isSet(object.description) ? globalThis.String(object.description) : "",
     };
   },
 
   toJSON(message: Role): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.title !== undefined && (obj.title = message.title);
-    message.description !== undefined && (obj.description = message.description);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.description !== "") {
+      obj.description = message.description;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<Role>): Role {
     return Role.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Role>): Role {
     const message = createBaseRole();
     message.name = object.name ?? "";
@@ -609,9 +624,15 @@ export const RoleServiceDefinition = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+if (_m0.util.Long !== Long) {
+  _m0.util.Long = Long as any;
+  _m0.configure();
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

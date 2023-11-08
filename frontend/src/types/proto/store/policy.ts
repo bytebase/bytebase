@@ -1,4 +1,5 @@
 /* eslint-disable */
+import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Expr } from "../google/type/expr";
 import { Engine, engineFromJSON, engineToJSON, MaskingLevel, maskingLevelFromJSON, maskingLevelToJSON } from "./common";
@@ -256,30 +257,32 @@ export const RolloutPolicy = {
 
   fromJSON(object: any): RolloutPolicy {
     return {
-      automatic: isSet(object.automatic) ? Boolean(object.automatic) : false,
-      workspaceRoles: Array.isArray(object?.workspaceRoles) ? object.workspaceRoles.map((e: any) => String(e)) : [],
-      projectRoles: Array.isArray(object?.projectRoles) ? object.projectRoles.map((e: any) => String(e)) : [],
-      issueRoles: Array.isArray(object?.issueRoles) ? object.issueRoles.map((e: any) => String(e)) : [],
+      automatic: isSet(object.automatic) ? globalThis.Boolean(object.automatic) : false,
+      workspaceRoles: globalThis.Array.isArray(object?.workspaceRoles)
+        ? object.workspaceRoles.map((e: any) => globalThis.String(e))
+        : [],
+      projectRoles: globalThis.Array.isArray(object?.projectRoles)
+        ? object.projectRoles.map((e: any) => globalThis.String(e))
+        : [],
+      issueRoles: globalThis.Array.isArray(object?.issueRoles)
+        ? object.issueRoles.map((e: any) => globalThis.String(e))
+        : [],
     };
   },
 
   toJSON(message: RolloutPolicy): unknown {
     const obj: any = {};
-    message.automatic !== undefined && (obj.automatic = message.automatic);
-    if (message.workspaceRoles) {
-      obj.workspaceRoles = message.workspaceRoles.map((e) => e);
-    } else {
-      obj.workspaceRoles = [];
+    if (message.automatic === true) {
+      obj.automatic = message.automatic;
     }
-    if (message.projectRoles) {
-      obj.projectRoles = message.projectRoles.map((e) => e);
-    } else {
-      obj.projectRoles = [];
+    if (message.workspaceRoles?.length) {
+      obj.workspaceRoles = message.workspaceRoles;
     }
-    if (message.issueRoles) {
-      obj.issueRoles = message.issueRoles.map((e) => e);
-    } else {
-      obj.issueRoles = [];
+    if (message.projectRoles?.length) {
+      obj.projectRoles = message.projectRoles;
+    }
+    if (message.issueRoles?.length) {
+      obj.issueRoles = message.issueRoles;
     }
     return obj;
   },
@@ -287,7 +290,6 @@ export const RolloutPolicy = {
   create(base?: DeepPartial<RolloutPolicy>): RolloutPolicy {
     return RolloutPolicy.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<RolloutPolicy>): RolloutPolicy {
     const message = createBaseRolloutPolicy();
     message.automatic = object.automatic ?? false;
@@ -334,15 +336,15 @@ export const IamPolicy = {
   },
 
   fromJSON(object: any): IamPolicy {
-    return { bindings: Array.isArray(object?.bindings) ? object.bindings.map((e: any) => Binding.fromJSON(e)) : [] };
+    return {
+      bindings: globalThis.Array.isArray(object?.bindings) ? object.bindings.map((e: any) => Binding.fromJSON(e)) : [],
+    };
   },
 
   toJSON(message: IamPolicy): unknown {
     const obj: any = {};
-    if (message.bindings) {
-      obj.bindings = message.bindings.map((e) => e ? Binding.toJSON(e) : undefined);
-    } else {
-      obj.bindings = [];
+    if (message.bindings?.length) {
+      obj.bindings = message.bindings.map((e) => Binding.toJSON(e));
     }
     return obj;
   },
@@ -350,7 +352,6 @@ export const IamPolicy = {
   create(base?: DeepPartial<IamPolicy>): IamPolicy {
     return IamPolicy.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<IamPolicy>): IamPolicy {
     const message = createBaseIamPolicy();
     message.bindings = object.bindings?.map((e) => Binding.fromPartial(e)) || [];
@@ -415,28 +416,29 @@ export const Binding = {
 
   fromJSON(object: any): Binding {
     return {
-      role: isSet(object.role) ? String(object.role) : "",
-      members: Array.isArray(object?.members) ? object.members.map((e: any) => String(e)) : [],
+      role: isSet(object.role) ? globalThis.String(object.role) : "",
+      members: globalThis.Array.isArray(object?.members) ? object.members.map((e: any) => globalThis.String(e)) : [],
       condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
     };
   },
 
   toJSON(message: Binding): unknown {
     const obj: any = {};
-    message.role !== undefined && (obj.role = message.role);
-    if (message.members) {
-      obj.members = message.members.map((e) => e);
-    } else {
-      obj.members = [];
+    if (message.role !== "") {
+      obj.role = message.role;
     }
-    message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
+    if (message.members?.length) {
+      obj.members = message.members;
+    }
+    if (message.condition !== undefined) {
+      obj.condition = Expr.toJSON(message.condition);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<Binding>): Binding {
     return Binding.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Binding>): Binding {
     const message = createBaseBinding();
     message.role = object.role ?? "";
@@ -484,15 +486,15 @@ export const MaskingPolicy = {
   },
 
   fromJSON(object: any): MaskingPolicy {
-    return { maskData: Array.isArray(object?.maskData) ? object.maskData.map((e: any) => MaskData.fromJSON(e)) : [] };
+    return {
+      maskData: globalThis.Array.isArray(object?.maskData) ? object.maskData.map((e: any) => MaskData.fromJSON(e)) : [],
+    };
   },
 
   toJSON(message: MaskingPolicy): unknown {
     const obj: any = {};
-    if (message.maskData) {
-      obj.maskData = message.maskData.map((e) => e ? MaskData.toJSON(e) : undefined);
-    } else {
-      obj.maskData = [];
+    if (message.maskData?.length) {
+      obj.maskData = message.maskData.map((e) => MaskData.toJSON(e));
     }
     return obj;
   },
@@ -500,7 +502,6 @@ export const MaskingPolicy = {
   create(base?: DeepPartial<MaskingPolicy>): MaskingPolicy {
     return MaskingPolicy.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<MaskingPolicy>): MaskingPolicy {
     const message = createBaseMaskingPolicy();
     message.maskData = object.maskData?.map((e) => MaskData.fromPartial(e)) || [];
@@ -602,33 +603,45 @@ export const MaskData = {
 
   fromJSON(object: any): MaskData {
     return {
-      schema: isSet(object.schema) ? String(object.schema) : "",
-      table: isSet(object.table) ? String(object.table) : "",
-      column: isSet(object.column) ? String(object.column) : "",
+      schema: isSet(object.schema) ? globalThis.String(object.schema) : "",
+      table: isSet(object.table) ? globalThis.String(object.table) : "",
+      column: isSet(object.column) ? globalThis.String(object.column) : "",
       maskingLevel: isSet(object.maskingLevel) ? maskingLevelFromJSON(object.maskingLevel) : 0,
-      fullMaskingAlgorithmId: isSet(object.fullMaskingAlgorithmId) ? String(object.fullMaskingAlgorithmId) : "",
+      fullMaskingAlgorithmId: isSet(object.fullMaskingAlgorithmId)
+        ? globalThis.String(object.fullMaskingAlgorithmId)
+        : "",
       partialMaskingAlgorithmId: isSet(object.partialMaskingAlgorithmId)
-        ? String(object.partialMaskingAlgorithmId)
+        ? globalThis.String(object.partialMaskingAlgorithmId)
         : "",
     };
   },
 
   toJSON(message: MaskData): unknown {
     const obj: any = {};
-    message.schema !== undefined && (obj.schema = message.schema);
-    message.table !== undefined && (obj.table = message.table);
-    message.column !== undefined && (obj.column = message.column);
-    message.maskingLevel !== undefined && (obj.maskingLevel = maskingLevelToJSON(message.maskingLevel));
-    message.fullMaskingAlgorithmId !== undefined && (obj.fullMaskingAlgorithmId = message.fullMaskingAlgorithmId);
-    message.partialMaskingAlgorithmId !== undefined &&
-      (obj.partialMaskingAlgorithmId = message.partialMaskingAlgorithmId);
+    if (message.schema !== "") {
+      obj.schema = message.schema;
+    }
+    if (message.table !== "") {
+      obj.table = message.table;
+    }
+    if (message.column !== "") {
+      obj.column = message.column;
+    }
+    if (message.maskingLevel !== 0) {
+      obj.maskingLevel = maskingLevelToJSON(message.maskingLevel);
+    }
+    if (message.fullMaskingAlgorithmId !== "") {
+      obj.fullMaskingAlgorithmId = message.fullMaskingAlgorithmId;
+    }
+    if (message.partialMaskingAlgorithmId !== "") {
+      obj.partialMaskingAlgorithmId = message.partialMaskingAlgorithmId;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<MaskData>): MaskData {
     return MaskData.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<MaskData>): MaskData {
     const message = createBaseMaskData();
     message.schema = object.schema ?? "";
@@ -678,7 +691,7 @@ export const MaskingExceptionPolicy = {
 
   fromJSON(object: any): MaskingExceptionPolicy {
     return {
-      maskingExceptions: Array.isArray(object?.maskingExceptions)
+      maskingExceptions: globalThis.Array.isArray(object?.maskingExceptions)
         ? object.maskingExceptions.map((e: any) => MaskingExceptionPolicy_MaskingException.fromJSON(e))
         : [],
     };
@@ -686,12 +699,8 @@ export const MaskingExceptionPolicy = {
 
   toJSON(message: MaskingExceptionPolicy): unknown {
     const obj: any = {};
-    if (message.maskingExceptions) {
-      obj.maskingExceptions = message.maskingExceptions.map((e) =>
-        e ? MaskingExceptionPolicy_MaskingException.toJSON(e) : undefined
-      );
-    } else {
-      obj.maskingExceptions = [];
+    if (message.maskingExceptions?.length) {
+      obj.maskingExceptions = message.maskingExceptions.map((e) => MaskingExceptionPolicy_MaskingException.toJSON(e));
     }
     return obj;
   },
@@ -699,7 +708,6 @@ export const MaskingExceptionPolicy = {
   create(base?: DeepPartial<MaskingExceptionPolicy>): MaskingExceptionPolicy {
     return MaskingExceptionPolicy.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<MaskingExceptionPolicy>): MaskingExceptionPolicy {
     const message = createBaseMaskingExceptionPolicy();
     message.maskingExceptions =
@@ -777,24 +785,31 @@ export const MaskingExceptionPolicy_MaskingException = {
     return {
       action: isSet(object.action) ? maskingExceptionPolicy_MaskingException_ActionFromJSON(object.action) : 0,
       maskingLevel: isSet(object.maskingLevel) ? maskingLevelFromJSON(object.maskingLevel) : 0,
-      member: isSet(object.member) ? String(object.member) : "",
+      member: isSet(object.member) ? globalThis.String(object.member) : "",
       condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
     };
   },
 
   toJSON(message: MaskingExceptionPolicy_MaskingException): unknown {
     const obj: any = {};
-    message.action !== undefined && (obj.action = maskingExceptionPolicy_MaskingException_ActionToJSON(message.action));
-    message.maskingLevel !== undefined && (obj.maskingLevel = maskingLevelToJSON(message.maskingLevel));
-    message.member !== undefined && (obj.member = message.member);
-    message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
+    if (message.action !== 0) {
+      obj.action = maskingExceptionPolicy_MaskingException_ActionToJSON(message.action);
+    }
+    if (message.maskingLevel !== 0) {
+      obj.maskingLevel = maskingLevelToJSON(message.maskingLevel);
+    }
+    if (message.member !== "") {
+      obj.member = message.member;
+    }
+    if (message.condition !== undefined) {
+      obj.condition = Expr.toJSON(message.condition);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<MaskingExceptionPolicy_MaskingException>): MaskingExceptionPolicy_MaskingException {
     return MaskingExceptionPolicy_MaskingException.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<MaskingExceptionPolicy_MaskingException>): MaskingExceptionPolicy_MaskingException {
     const message = createBaseMaskingExceptionPolicy_MaskingException();
     message.action = object.action ?? 0;
@@ -844,7 +859,7 @@ export const MaskingRulePolicy = {
 
   fromJSON(object: any): MaskingRulePolicy {
     return {
-      rules: Array.isArray(object?.rules)
+      rules: globalThis.Array.isArray(object?.rules)
         ? object.rules.map((e: any) => MaskingRulePolicy_MaskingRule.fromJSON(e))
         : [],
     };
@@ -852,10 +867,8 @@ export const MaskingRulePolicy = {
 
   toJSON(message: MaskingRulePolicy): unknown {
     const obj: any = {};
-    if (message.rules) {
-      obj.rules = message.rules.map((e) => e ? MaskingRulePolicy_MaskingRule.toJSON(e) : undefined);
-    } else {
-      obj.rules = [];
+    if (message.rules?.length) {
+      obj.rules = message.rules.map((e) => MaskingRulePolicy_MaskingRule.toJSON(e));
     }
     return obj;
   },
@@ -863,7 +876,6 @@ export const MaskingRulePolicy = {
   create(base?: DeepPartial<MaskingRulePolicy>): MaskingRulePolicy {
     return MaskingRulePolicy.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<MaskingRulePolicy>): MaskingRulePolicy {
     const message = createBaseMaskingRulePolicy();
     message.rules = object.rules?.map((e) => MaskingRulePolicy_MaskingRule.fromPartial(e)) || [];
@@ -928,7 +940,7 @@ export const MaskingRulePolicy_MaskingRule = {
 
   fromJSON(object: any): MaskingRulePolicy_MaskingRule {
     return {
-      id: isSet(object.id) ? String(object.id) : "",
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
       condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
       maskingLevel: isSet(object.maskingLevel) ? maskingLevelFromJSON(object.maskingLevel) : 0,
     };
@@ -936,16 +948,21 @@ export const MaskingRulePolicy_MaskingRule = {
 
   toJSON(message: MaskingRulePolicy_MaskingRule): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
-    message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
-    message.maskingLevel !== undefined && (obj.maskingLevel = maskingLevelToJSON(message.maskingLevel));
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.condition !== undefined) {
+      obj.condition = Expr.toJSON(message.condition);
+    }
+    if (message.maskingLevel !== 0) {
+      obj.maskingLevel = maskingLevelToJSON(message.maskingLevel);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<MaskingRulePolicy_MaskingRule>): MaskingRulePolicy_MaskingRule {
     return MaskingRulePolicy_MaskingRule.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<MaskingRulePolicy_MaskingRule>): MaskingRulePolicy_MaskingRule {
     const message = createBaseMaskingRulePolicy_MaskingRule();
     message.id = object.id ?? "";
@@ -1004,18 +1021,20 @@ export const SQLReviewPolicy = {
 
   fromJSON(object: any): SQLReviewPolicy {
     return {
-      name: isSet(object.name) ? String(object.name) : "",
-      ruleList: Array.isArray(object?.ruleList) ? object.ruleList.map((e: any) => SQLReviewRule.fromJSON(e)) : [],
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      ruleList: globalThis.Array.isArray(object?.ruleList)
+        ? object.ruleList.map((e: any) => SQLReviewRule.fromJSON(e))
+        : [],
     };
   },
 
   toJSON(message: SQLReviewPolicy): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    if (message.ruleList) {
-      obj.ruleList = message.ruleList.map((e) => e ? SQLReviewRule.toJSON(e) : undefined);
-    } else {
-      obj.ruleList = [];
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.ruleList?.length) {
+      obj.ruleList = message.ruleList.map((e) => SQLReviewRule.toJSON(e));
     }
     return obj;
   },
@@ -1023,7 +1042,6 @@ export const SQLReviewPolicy = {
   create(base?: DeepPartial<SQLReviewPolicy>): SQLReviewPolicy {
     return SQLReviewPolicy.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SQLReviewPolicy>): SQLReviewPolicy {
     const message = createBaseSQLReviewPolicy();
     message.name = object.name ?? "";
@@ -1109,28 +1127,37 @@ export const SQLReviewRule = {
 
   fromJSON(object: any): SQLReviewRule {
     return {
-      type: isSet(object.type) ? String(object.type) : "",
+      type: isSet(object.type) ? globalThis.String(object.type) : "",
       level: isSet(object.level) ? sQLReviewRuleLevelFromJSON(object.level) : 0,
-      payload: isSet(object.payload) ? String(object.payload) : "",
+      payload: isSet(object.payload) ? globalThis.String(object.payload) : "",
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
-      comment: isSet(object.comment) ? String(object.comment) : "",
+      comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
     };
   },
 
   toJSON(message: SQLReviewRule): unknown {
     const obj: any = {};
-    message.type !== undefined && (obj.type = message.type);
-    message.level !== undefined && (obj.level = sQLReviewRuleLevelToJSON(message.level));
-    message.payload !== undefined && (obj.payload = message.payload);
-    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
-    message.comment !== undefined && (obj.comment = message.comment);
+    if (message.type !== "") {
+      obj.type = message.type;
+    }
+    if (message.level !== 0) {
+      obj.level = sQLReviewRuleLevelToJSON(message.level);
+    }
+    if (message.payload !== "") {
+      obj.payload = message.payload;
+    }
+    if (message.engine !== 0) {
+      obj.engine = engineToJSON(message.engine);
+    }
+    if (message.comment !== "") {
+      obj.comment = message.comment;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<SQLReviewRule>): SQLReviewRule {
     return SQLReviewRule.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SQLReviewRule>): SQLReviewRule {
     const message = createBaseSQLReviewRule();
     message.type = object.type ?? "";
@@ -1145,9 +1172,15 @@ export const SQLReviewRule = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+if (_m0.util.Long !== Long) {
+  _m0.util.Long = Long as any;
+  _m0.configure();
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

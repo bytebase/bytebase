@@ -1,4 +1,4 @@
-- statement: CREATE TABLE t(a int)
+- statement: CREATE TABLE t(a int);
   want:
     - status: SUCCESS
       code: 0
@@ -7,10 +7,11 @@
       line: 0
       details: ""
 - statement: |-
+    CREATE TABLE b(a INT);
     CREATE TABLE t(a int) PARTITION BY RANGE (a) (
             PARTITION p0 VALUES LESS THAN (6),
             PARTITION p1 VALUES LESS THAN (11)
-          )
+          );
   want:
     - status: WARN
       code: 608
@@ -19,15 +20,14 @@
         Table partition is forbidden, but "CREATE TABLE t(a int) PARTITION BY RANGE (a) (
                 PARTITION p0 VALUES LESS THAN (6),
                 PARTITION p1 VALUES LESS THAN (11)
-              )
-        ;" creates
-      line: 5
+              );" creates
+      line: 2
       details: ""
 - statement: |-
     ALTER TABLE tech_book PARTITION BY RANGE (a) (
             PARTITION p0 VALUES LESS THAN (6),
             PARTITION p1 VALUES LESS THAN (11)
-          )
+          );
   want:
     - status: WARN
       code: 608
@@ -36,7 +36,36 @@
         Table partition is forbidden, but "ALTER TABLE tech_book PARTITION BY RANGE (a) (
                 PARTITION p0 VALUES LESS THAN (6),
                 PARTITION p1 VALUES LESS THAN (11)
-              )
-        ;" creates
+              );" creates
+      line: 1
+      details: ""
+- statement: |-
+    CREATE TABLE t(a int) PARTITION BY RANGE (a) (
+            PARTITION p0 VALUES LESS THAN (6),
+            PARTITION p1 VALUES LESS THAN (11)
+          );
+    ALTER TABLE tech_book PARTITION BY RANGE (a) (
+            PARTITION p0 VALUES LESS THAN (6),
+            PARTITION p1 VALUES LESS THAN (11)
+          );
+  want:
+    - status: WARN
+      code: 608
+      title: table.disallow-partition
+      content: |-
+        Table partition is forbidden, but "CREATE TABLE t(a int) PARTITION BY RANGE (a) (
+                PARTITION p0 VALUES LESS THAN (6),
+                PARTITION p1 VALUES LESS THAN (11)
+              );" creates
+      line: 1
+      details: ""
+    - status: WARN
+      code: 608
+      title: table.disallow-partition
+      content: |-
+        Table partition is forbidden, but "ALTER TABLE tech_book PARTITION BY RANGE (a) (
+                PARTITION p0 VALUES LESS THAN (6),
+                PARTITION p1 VALUES LESS THAN (11)
+              );" creates
       line: 5
       details: ""

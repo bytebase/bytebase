@@ -2,10 +2,10 @@
   <input
     :value="value"
     type="number"
-    :disabled="disabled || !editable"
+    :disabled="disabled"
     :class="[
       'shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full border-gray-300 rounded-md',
-      (disabled || !editable) && 'cursor-not-allowed',
+      disabled && 'cursor-not-allowed',
     ]"
     :placeholder="`${config.payload.default}`"
     @change="
@@ -21,7 +21,6 @@ defineProps<{
   config: RuleConfigComponent;
   value: number;
   disabled: boolean;
-  editable: boolean;
 }>();
 
 defineEmits<{

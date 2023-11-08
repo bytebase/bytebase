@@ -300,7 +300,7 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 		Status:     store.PlanCheckRunStatusRunning,
 		Type:       store.PlanCheckDatabaseConnect,
 		Config: &storepb.PlanCheckRunConfig{
-			SheetUid:           0,
+			SheetUid:           int32(sheetUID),
 			ChangeDatabaseType: storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED,
 			InstanceUid:        int32(instance.UID),
 			DatabaseName:       database.DatabaseName,
@@ -367,6 +367,7 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 				InstanceUid:        int32(instance.UID),
 				DatabaseName:       database.DatabaseName,
 				DatabaseGroupUid:   databaseGroupUID,
+				GhostFlags:         config.GhostFlags,
 			},
 		})
 	}

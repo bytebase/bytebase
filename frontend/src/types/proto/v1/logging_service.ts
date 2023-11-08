@@ -1,4 +1,5 @@
 /* eslint-disable */
+import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { ExportFormat, exportFormatFromJSON, exportFormatToJSON } from "./common";
@@ -455,26 +456,33 @@ export const ListLogsRequest = {
 
   fromJSON(object: any): ListLogsRequest {
     return {
-      filter: isSet(object.filter) ? String(object.filter) : "",
-      orderBy: isSet(object.orderBy) ? String(object.orderBy) : "",
-      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
+      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
+      orderBy: isSet(object.orderBy) ? globalThis.String(object.orderBy) : "",
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
     };
   },
 
   toJSON(message: ListLogsRequest): unknown {
     const obj: any = {};
-    message.filter !== undefined && (obj.filter = message.filter);
-    message.orderBy !== undefined && (obj.orderBy = message.orderBy);
-    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
-    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    if (message.filter !== "") {
+      obj.filter = message.filter;
+    }
+    if (message.orderBy !== "") {
+      obj.orderBy = message.orderBy;
+    }
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ListLogsRequest>): ListLogsRequest {
     return ListLogsRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ListLogsRequest>): ListLogsRequest {
     const message = createBaseListLogsRequest();
     message.filter = object.filter ?? "";
@@ -532,26 +540,27 @@ export const ListLogsResponse = {
 
   fromJSON(object: any): ListLogsResponse {
     return {
-      logEntities: Array.isArray(object?.logEntities) ? object.logEntities.map((e: any) => LogEntity.fromJSON(e)) : [],
-      nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
+      logEntities: globalThis.Array.isArray(object?.logEntities)
+        ? object.logEntities.map((e: any) => LogEntity.fromJSON(e))
+        : [],
+      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
     };
   },
 
   toJSON(message: ListLogsResponse): unknown {
     const obj: any = {};
-    if (message.logEntities) {
-      obj.logEntities = message.logEntities.map((e) => e ? LogEntity.toJSON(e) : undefined);
-    } else {
-      obj.logEntities = [];
+    if (message.logEntities?.length) {
+      obj.logEntities = message.logEntities.map((e) => LogEntity.toJSON(e));
     }
-    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ListLogsResponse>): ListLogsResponse {
     return ListLogsResponse.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ListLogsResponse>): ListLogsResponse {
     const message = createBaseListLogsResponse();
     message.logEntities = object.logEntities?.map((e) => LogEntity.fromPartial(e)) || [];
@@ -596,19 +605,20 @@ export const GetLogRequest = {
   },
 
   fromJSON(object: any): GetLogRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: GetLogRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<GetLogRequest>): GetLogRequest {
     return GetLogRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<GetLogRequest>): GetLogRequest {
     const message = createBaseGetLogRequest();
     message.name = object.name ?? "";
@@ -673,24 +683,29 @@ export const ExportLogsRequest = {
 
   fromJSON(object: any): ExportLogsRequest {
     return {
-      filter: isSet(object.filter) ? String(object.filter) : "",
-      orderBy: isSet(object.orderBy) ? String(object.orderBy) : "",
+      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
+      orderBy: isSet(object.orderBy) ? globalThis.String(object.orderBy) : "",
       format: isSet(object.format) ? exportFormatFromJSON(object.format) : 0,
     };
   },
 
   toJSON(message: ExportLogsRequest): unknown {
     const obj: any = {};
-    message.filter !== undefined && (obj.filter = message.filter);
-    message.orderBy !== undefined && (obj.orderBy = message.orderBy);
-    message.format !== undefined && (obj.format = exportFormatToJSON(message.format));
+    if (message.filter !== "") {
+      obj.filter = message.filter;
+    }
+    if (message.orderBy !== "") {
+      obj.orderBy = message.orderBy;
+    }
+    if (message.format !== 0) {
+      obj.format = exportFormatToJSON(message.format);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ExportLogsRequest>): ExportLogsRequest {
     return ExportLogsRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ExportLogsRequest>): ExportLogsRequest {
     const message = createBaseExportLogsRequest();
     message.filter = object.filter ?? "";
@@ -741,15 +756,15 @@ export const ExportLogsResponse = {
 
   toJSON(message: ExportLogsResponse): unknown {
     const obj: any = {};
-    message.content !== undefined &&
-      (obj.content = base64FromBytes(message.content !== undefined ? message.content : new Uint8Array(0)));
+    if (message.content.length !== 0) {
+      obj.content = base64FromBytes(message.content);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ExportLogsResponse>): ExportLogsResponse {
     return ExportLogsResponse.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ExportLogsResponse>): ExportLogsResponse {
     const message = createBaseExportLogsResponse();
     message.content = object.content ?? new Uint8Array(0);
@@ -884,36 +899,53 @@ export const LogEntity = {
 
   fromJSON(object: any): LogEntity {
     return {
-      name: isSet(object.name) ? String(object.name) : "",
-      creator: isSet(object.creator) ? String(object.creator) : "",
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
       action: isSet(object.action) ? logEntity_ActionFromJSON(object.action) : 0,
       level: isSet(object.level) ? logEntity_LevelFromJSON(object.level) : 0,
-      resource: isSet(object.resource) ? String(object.resource) : "",
-      payload: isSet(object.payload) ? String(object.payload) : "",
-      comment: isSet(object.comment) ? String(object.comment) : "",
+      resource: isSet(object.resource) ? globalThis.String(object.resource) : "",
+      payload: isSet(object.payload) ? globalThis.String(object.payload) : "",
+      comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
     };
   },
 
   toJSON(message: LogEntity): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.creator !== undefined && (obj.creator = message.creator);
-    message.createTime !== undefined && (obj.createTime = message.createTime.toISOString());
-    message.updateTime !== undefined && (obj.updateTime = message.updateTime.toISOString());
-    message.action !== undefined && (obj.action = logEntity_ActionToJSON(message.action));
-    message.level !== undefined && (obj.level = logEntity_LevelToJSON(message.level));
-    message.resource !== undefined && (obj.resource = message.resource);
-    message.payload !== undefined && (obj.payload = message.payload);
-    message.comment !== undefined && (obj.comment = message.comment);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.creator !== "") {
+      obj.creator = message.creator;
+    }
+    if (message.createTime !== undefined) {
+      obj.createTime = message.createTime.toISOString();
+    }
+    if (message.updateTime !== undefined) {
+      obj.updateTime = message.updateTime.toISOString();
+    }
+    if (message.action !== 0) {
+      obj.action = logEntity_ActionToJSON(message.action);
+    }
+    if (message.level !== 0) {
+      obj.level = logEntity_LevelToJSON(message.level);
+    }
+    if (message.resource !== "") {
+      obj.resource = message.resource;
+    }
+    if (message.payload !== "") {
+      obj.payload = message.payload;
+    }
+    if (message.comment !== "") {
+      obj.comment = message.comment;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<LogEntity>): LogEntity {
     return LogEntity.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<LogEntity>): LogEntity {
     const message = createBaseLogEntity();
     message.name = object.name ?? "";
@@ -1002,30 +1034,11 @@ export const LoggingServiceDefinition = {
   },
 } as const;
 
-declare const self: any | undefined;
-declare const window: any | undefined;
-declare const global: any | undefined;
-const tsProtoGlobalThis: any = (() => {
-  if (typeof globalThis !== "undefined") {
-    return globalThis;
-  }
-  if (typeof self !== "undefined") {
-    return self;
-  }
-  if (typeof window !== "undefined") {
-    return window;
-  }
-  if (typeof global !== "undefined") {
-    return global;
-  }
-  throw "Unable to locate global object";
-})();
-
 function bytesFromBase64(b64: string): Uint8Array {
-  if (tsProtoGlobalThis.Buffer) {
-    return Uint8Array.from(tsProtoGlobalThis.Buffer.from(b64, "base64"));
+  if (globalThis.Buffer) {
+    return Uint8Array.from(globalThis.Buffer.from(b64, "base64"));
   } else {
-    const bin = tsProtoGlobalThis.atob(b64);
+    const bin = globalThis.atob(b64);
     const arr = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; ++i) {
       arr[i] = bin.charCodeAt(i);
@@ -1035,44 +1048,54 @@ function bytesFromBase64(b64: string): Uint8Array {
 }
 
 function base64FromBytes(arr: Uint8Array): string {
-  if (tsProtoGlobalThis.Buffer) {
-    return tsProtoGlobalThis.Buffer.from(arr).toString("base64");
+  if (globalThis.Buffer) {
+    return globalThis.Buffer.from(arr).toString("base64");
   } else {
     const bin: string[] = [];
     arr.forEach((byte) => {
-      bin.push(String.fromCharCode(byte));
+      bin.push(globalThis.String.fromCharCode(byte));
     });
-    return tsProtoGlobalThis.btoa(bin.join(""));
+    return globalThis.btoa(bin.join(""));
   }
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
 function toTimestamp(date: Date): Timestamp {
-  const seconds = date.getTime() / 1_000;
+  const seconds = numberToLong(date.getTime() / 1_000);
   const nanos = (date.getTime() % 1_000) * 1_000_000;
   return { seconds, nanos };
 }
 
 function fromTimestamp(t: Timestamp): Date {
-  let millis = (t.seconds || 0) * 1_000;
+  let millis = (t.seconds.toNumber() || 0) * 1_000;
   millis += (t.nanos || 0) / 1_000_000;
-  return new Date(millis);
+  return new globalThis.Date(millis);
 }
 
 function fromJsonTimestamp(o: any): Date {
-  if (o instanceof Date) {
+  if (o instanceof globalThis.Date) {
     return o;
   } else if (typeof o === "string") {
-    return new Date(o);
+    return new globalThis.Date(o);
   } else {
     return fromTimestamp(Timestamp.fromJSON(o));
   }
+}
+
+function numberToLong(number: number) {
+  return Long.fromNumber(number);
+}
+
+if (_m0.util.Long !== Long) {
+  _m0.util.Long = Long as any;
+  _m0.configure();
 }
 
 function isSet(value: any): boolean {

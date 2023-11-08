@@ -1,4 +1,5 @@
 /* eslint-disable */
+import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
@@ -291,19 +292,20 @@ export const GetUserRequest = {
   },
 
   fromJSON(object: any): GetUserRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: GetUserRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<GetUserRequest>): GetUserRequest {
     return GetUserRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<GetUserRequest>): GetUserRequest {
     const message = createBaseGetUserRequest();
     message.name = object.name ?? "";
@@ -368,24 +370,29 @@ export const ListUsersRequest = {
 
   fromJSON(object: any): ListUsersRequest {
     return {
-      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
-      showDeleted: isSet(object.showDeleted) ? Boolean(object.showDeleted) : false,
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
+      showDeleted: isSet(object.showDeleted) ? globalThis.Boolean(object.showDeleted) : false,
     };
   },
 
   toJSON(message: ListUsersRequest): unknown {
     const obj: any = {};
-    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
-    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
-    message.showDeleted !== undefined && (obj.showDeleted = message.showDeleted);
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
+    if (message.showDeleted === true) {
+      obj.showDeleted = message.showDeleted;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ListUsersRequest>): ListUsersRequest {
     return ListUsersRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ListUsersRequest>): ListUsersRequest {
     const message = createBaseListUsersRequest();
     message.pageSize = object.pageSize ?? 0;
@@ -442,26 +449,25 @@ export const ListUsersResponse = {
 
   fromJSON(object: any): ListUsersResponse {
     return {
-      users: Array.isArray(object?.users) ? object.users.map((e: any) => User.fromJSON(e)) : [],
-      nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
+      users: globalThis.Array.isArray(object?.users) ? object.users.map((e: any) => User.fromJSON(e)) : [],
+      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
     };
   },
 
   toJSON(message: ListUsersResponse): unknown {
     const obj: any = {};
-    if (message.users) {
-      obj.users = message.users.map((e) => e ? User.toJSON(e) : undefined);
-    } else {
-      obj.users = [];
+    if (message.users?.length) {
+      obj.users = message.users.map((e) => User.toJSON(e));
     }
-    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ListUsersResponse>): ListUsersResponse {
     return ListUsersResponse.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ListUsersResponse>): ListUsersResponse {
     const message = createBaseListUsersResponse();
     message.users = object.users?.map((e) => User.fromPartial(e)) || [];
@@ -511,14 +517,15 @@ export const CreateUserRequest = {
 
   toJSON(message: CreateUserRequest): unknown {
     const obj: any = {};
-    message.user !== undefined && (obj.user = message.user ? User.toJSON(message.user) : undefined);
+    if (message.user !== undefined) {
+      obj.user = User.toJSON(message.user);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<CreateUserRequest>): CreateUserRequest {
     return CreateUserRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<CreateUserRequest>): CreateUserRequest {
     const message = createBaseCreateUserRequest();
     message.user = (object.user !== undefined && object.user !== null) ? User.fromPartial(object.user) : undefined;
@@ -611,26 +618,39 @@ export const UpdateUserRequest = {
     return {
       user: isSet(object.user) ? User.fromJSON(object.user) : undefined,
       updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
-      otpCode: isSet(object.otpCode) ? String(object.otpCode) : undefined,
-      regenerateTempMfaSecret: isSet(object.regenerateTempMfaSecret) ? Boolean(object.regenerateTempMfaSecret) : false,
-      regenerateRecoveryCodes: isSet(object.regenerateRecoveryCodes) ? Boolean(object.regenerateRecoveryCodes) : false,
+      otpCode: isSet(object.otpCode) ? globalThis.String(object.otpCode) : undefined,
+      regenerateTempMfaSecret: isSet(object.regenerateTempMfaSecret)
+        ? globalThis.Boolean(object.regenerateTempMfaSecret)
+        : false,
+      regenerateRecoveryCodes: isSet(object.regenerateRecoveryCodes)
+        ? globalThis.Boolean(object.regenerateRecoveryCodes)
+        : false,
     };
   },
 
   toJSON(message: UpdateUserRequest): unknown {
     const obj: any = {};
-    message.user !== undefined && (obj.user = message.user ? User.toJSON(message.user) : undefined);
-    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
-    message.otpCode !== undefined && (obj.otpCode = message.otpCode);
-    message.regenerateTempMfaSecret !== undefined && (obj.regenerateTempMfaSecret = message.regenerateTempMfaSecret);
-    message.regenerateRecoveryCodes !== undefined && (obj.regenerateRecoveryCodes = message.regenerateRecoveryCodes);
+    if (message.user !== undefined) {
+      obj.user = User.toJSON(message.user);
+    }
+    if (message.updateMask !== undefined) {
+      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
+    }
+    if (message.otpCode !== undefined) {
+      obj.otpCode = message.otpCode;
+    }
+    if (message.regenerateTempMfaSecret === true) {
+      obj.regenerateTempMfaSecret = message.regenerateTempMfaSecret;
+    }
+    if (message.regenerateRecoveryCodes === true) {
+      obj.regenerateRecoveryCodes = message.regenerateRecoveryCodes;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<UpdateUserRequest>): UpdateUserRequest {
     return UpdateUserRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<UpdateUserRequest>): UpdateUserRequest {
     const message = createBaseUpdateUserRequest();
     message.user = (object.user !== undefined && object.user !== null) ? User.fromPartial(object.user) : undefined;
@@ -678,19 +698,20 @@ export const DeleteUserRequest = {
   },
 
   fromJSON(object: any): DeleteUserRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: DeleteUserRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<DeleteUserRequest>): DeleteUserRequest {
     return DeleteUserRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<DeleteUserRequest>): DeleteUserRequest {
     const message = createBaseDeleteUserRequest();
     message.name = object.name ?? "";
@@ -734,19 +755,20 @@ export const UndeleteUserRequest = {
   },
 
   fromJSON(object: any): UndeleteUserRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: UndeleteUserRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<UndeleteUserRequest>): UndeleteUserRequest {
     return UndeleteUserRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<UndeleteUserRequest>): UndeleteUserRequest {
     const message = createBaseUndeleteUserRequest();
     message.name = object.name ?? "";
@@ -870,35 +892,49 @@ export const LoginRequest = {
 
   fromJSON(object: any): LoginRequest {
     return {
-      email: isSet(object.email) ? String(object.email) : "",
-      password: isSet(object.password) ? String(object.password) : "",
-      web: isSet(object.web) ? Boolean(object.web) : false,
-      idpName: isSet(object.idpName) ? String(object.idpName) : "",
+      email: isSet(object.email) ? globalThis.String(object.email) : "",
+      password: isSet(object.password) ? globalThis.String(object.password) : "",
+      web: isSet(object.web) ? globalThis.Boolean(object.web) : false,
+      idpName: isSet(object.idpName) ? globalThis.String(object.idpName) : "",
       idpContext: isSet(object.idpContext) ? IdentityProviderContext.fromJSON(object.idpContext) : undefined,
-      otpCode: isSet(object.otpCode) ? String(object.otpCode) : undefined,
-      recoveryCode: isSet(object.recoveryCode) ? String(object.recoveryCode) : undefined,
-      mfaTempToken: isSet(object.mfaTempToken) ? String(object.mfaTempToken) : undefined,
+      otpCode: isSet(object.otpCode) ? globalThis.String(object.otpCode) : undefined,
+      recoveryCode: isSet(object.recoveryCode) ? globalThis.String(object.recoveryCode) : undefined,
+      mfaTempToken: isSet(object.mfaTempToken) ? globalThis.String(object.mfaTempToken) : undefined,
     };
   },
 
   toJSON(message: LoginRequest): unknown {
     const obj: any = {};
-    message.email !== undefined && (obj.email = message.email);
-    message.password !== undefined && (obj.password = message.password);
-    message.web !== undefined && (obj.web = message.web);
-    message.idpName !== undefined && (obj.idpName = message.idpName);
-    message.idpContext !== undefined &&
-      (obj.idpContext = message.idpContext ? IdentityProviderContext.toJSON(message.idpContext) : undefined);
-    message.otpCode !== undefined && (obj.otpCode = message.otpCode);
-    message.recoveryCode !== undefined && (obj.recoveryCode = message.recoveryCode);
-    message.mfaTempToken !== undefined && (obj.mfaTempToken = message.mfaTempToken);
+    if (message.email !== "") {
+      obj.email = message.email;
+    }
+    if (message.password !== "") {
+      obj.password = message.password;
+    }
+    if (message.web === true) {
+      obj.web = message.web;
+    }
+    if (message.idpName !== "") {
+      obj.idpName = message.idpName;
+    }
+    if (message.idpContext !== undefined) {
+      obj.idpContext = IdentityProviderContext.toJSON(message.idpContext);
+    }
+    if (message.otpCode !== undefined) {
+      obj.otpCode = message.otpCode;
+    }
+    if (message.recoveryCode !== undefined) {
+      obj.recoveryCode = message.recoveryCode;
+    }
+    if (message.mfaTempToken !== undefined) {
+      obj.mfaTempToken = message.mfaTempToken;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<LoginRequest>): LoginRequest {
     return LoginRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<LoginRequest>): LoginRequest {
     const message = createBaseLoginRequest();
     message.email = object.email ?? "";
@@ -971,18 +1007,18 @@ export const IdentityProviderContext = {
 
   toJSON(message: IdentityProviderContext): unknown {
     const obj: any = {};
-    message.oauth2Context !== undefined && (obj.oauth2Context = message.oauth2Context
-      ? OAuth2IdentityProviderContext.toJSON(message.oauth2Context)
-      : undefined);
-    message.oidcContext !== undefined &&
-      (obj.oidcContext = message.oidcContext ? OIDCIdentityProviderContext.toJSON(message.oidcContext) : undefined);
+    if (message.oauth2Context !== undefined) {
+      obj.oauth2Context = OAuth2IdentityProviderContext.toJSON(message.oauth2Context);
+    }
+    if (message.oidcContext !== undefined) {
+      obj.oidcContext = OIDCIdentityProviderContext.toJSON(message.oidcContext);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<IdentityProviderContext>): IdentityProviderContext {
     return IdentityProviderContext.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<IdentityProviderContext>): IdentityProviderContext {
     const message = createBaseIdentityProviderContext();
     message.oauth2Context = (object.oauth2Context !== undefined && object.oauth2Context !== null)
@@ -1031,19 +1067,20 @@ export const OAuth2IdentityProviderContext = {
   },
 
   fromJSON(object: any): OAuth2IdentityProviderContext {
-    return { code: isSet(object.code) ? String(object.code) : "" };
+    return { code: isSet(object.code) ? globalThis.String(object.code) : "" };
   },
 
   toJSON(message: OAuth2IdentityProviderContext): unknown {
     const obj: any = {};
-    message.code !== undefined && (obj.code = message.code);
+    if (message.code !== "") {
+      obj.code = message.code;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<OAuth2IdentityProviderContext>): OAuth2IdentityProviderContext {
     return OAuth2IdentityProviderContext.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<OAuth2IdentityProviderContext>): OAuth2IdentityProviderContext {
     const message = createBaseOAuth2IdentityProviderContext();
     message.code = object.code ?? "";
@@ -1088,7 +1125,6 @@ export const OIDCIdentityProviderContext = {
   create(base?: DeepPartial<OIDCIdentityProviderContext>): OIDCIdentityProviderContext {
     return OIDCIdentityProviderContext.fromPartial(base ?? {});
   },
-
   fromPartial(_: DeepPartial<OIDCIdentityProviderContext>): OIDCIdentityProviderContext {
     const message = createBaseOIDCIdentityProviderContext();
     return message;
@@ -1142,22 +1178,25 @@ export const LoginResponse = {
 
   fromJSON(object: any): LoginResponse {
     return {
-      token: isSet(object.token) ? String(object.token) : "",
-      mfaTempToken: isSet(object.mfaTempToken) ? String(object.mfaTempToken) : undefined,
+      token: isSet(object.token) ? globalThis.String(object.token) : "",
+      mfaTempToken: isSet(object.mfaTempToken) ? globalThis.String(object.mfaTempToken) : undefined,
     };
   },
 
   toJSON(message: LoginResponse): unknown {
     const obj: any = {};
-    message.token !== undefined && (obj.token = message.token);
-    message.mfaTempToken !== undefined && (obj.mfaTempToken = message.mfaTempToken);
+    if (message.token !== "") {
+      obj.token = message.token;
+    }
+    if (message.mfaTempToken !== undefined) {
+      obj.mfaTempToken = message.mfaTempToken;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<LoginResponse>): LoginResponse {
     return LoginResponse.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<LoginResponse>): LoginResponse {
     const message = createBaseLoginResponse();
     message.token = object.token ?? "";
@@ -1203,7 +1242,6 @@ export const LogoutRequest = {
   create(base?: DeepPartial<LogoutRequest>): LogoutRequest {
     return LogoutRequest.fromPartial(base ?? {});
   },
-
   fromPartial(_: DeepPartial<LogoutRequest>): LogoutRequest {
     const message = createBaseLogoutRequest();
     return message;
@@ -1370,46 +1408,67 @@ export const User = {
 
   fromJSON(object: any): User {
     return {
-      name: isSet(object.name) ? String(object.name) : "",
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
       state: isSet(object.state) ? stateFromJSON(object.state) : 0,
-      email: isSet(object.email) ? String(object.email) : "",
-      title: isSet(object.title) ? String(object.title) : "",
+      email: isSet(object.email) ? globalThis.String(object.email) : "",
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
       userType: isSet(object.userType) ? userTypeFromJSON(object.userType) : 0,
       userRole: isSet(object.userRole) ? userRoleFromJSON(object.userRole) : 0,
-      password: isSet(object.password) ? String(object.password) : "",
-      serviceKey: isSet(object.serviceKey) ? String(object.serviceKey) : "",
-      mfaEnabled: isSet(object.mfaEnabled) ? Boolean(object.mfaEnabled) : false,
-      mfaSecret: isSet(object.mfaSecret) ? String(object.mfaSecret) : "",
-      recoveryCodes: Array.isArray(object?.recoveryCodes) ? object.recoveryCodes.map((e: any) => String(e)) : [],
-      phone: isSet(object.phone) ? String(object.phone) : "",
+      password: isSet(object.password) ? globalThis.String(object.password) : "",
+      serviceKey: isSet(object.serviceKey) ? globalThis.String(object.serviceKey) : "",
+      mfaEnabled: isSet(object.mfaEnabled) ? globalThis.Boolean(object.mfaEnabled) : false,
+      mfaSecret: isSet(object.mfaSecret) ? globalThis.String(object.mfaSecret) : "",
+      recoveryCodes: globalThis.Array.isArray(object?.recoveryCodes)
+        ? object.recoveryCodes.map((e: any) => globalThis.String(e))
+        : [],
+      phone: isSet(object.phone) ? globalThis.String(object.phone) : "",
     };
   },
 
   toJSON(message: User): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.state !== undefined && (obj.state = stateToJSON(message.state));
-    message.email !== undefined && (obj.email = message.email);
-    message.title !== undefined && (obj.title = message.title);
-    message.userType !== undefined && (obj.userType = userTypeToJSON(message.userType));
-    message.userRole !== undefined && (obj.userRole = userRoleToJSON(message.userRole));
-    message.password !== undefined && (obj.password = message.password);
-    message.serviceKey !== undefined && (obj.serviceKey = message.serviceKey);
-    message.mfaEnabled !== undefined && (obj.mfaEnabled = message.mfaEnabled);
-    message.mfaSecret !== undefined && (obj.mfaSecret = message.mfaSecret);
-    if (message.recoveryCodes) {
-      obj.recoveryCodes = message.recoveryCodes.map((e) => e);
-    } else {
-      obj.recoveryCodes = [];
+    if (message.name !== "") {
+      obj.name = message.name;
     }
-    message.phone !== undefined && (obj.phone = message.phone);
+    if (message.state !== 0) {
+      obj.state = stateToJSON(message.state);
+    }
+    if (message.email !== "") {
+      obj.email = message.email;
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.userType !== 0) {
+      obj.userType = userTypeToJSON(message.userType);
+    }
+    if (message.userRole !== 0) {
+      obj.userRole = userRoleToJSON(message.userRole);
+    }
+    if (message.password !== "") {
+      obj.password = message.password;
+    }
+    if (message.serviceKey !== "") {
+      obj.serviceKey = message.serviceKey;
+    }
+    if (message.mfaEnabled === true) {
+      obj.mfaEnabled = message.mfaEnabled;
+    }
+    if (message.mfaSecret !== "") {
+      obj.mfaSecret = message.mfaSecret;
+    }
+    if (message.recoveryCodes?.length) {
+      obj.recoveryCodes = message.recoveryCodes;
+    }
+    if (message.phone !== "") {
+      obj.phone = message.phone;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<User>): User {
     return User.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<User>): User {
     const message = createBaseUser();
     message.name = object.name ?? "";
@@ -1685,9 +1744,15 @@ export const AuthServiceDefinition = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+if (_m0.util.Long !== Long) {
+  _m0.util.Long = Long as any;
+  _m0.configure();
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

@@ -8,6 +8,7 @@
 </template>
 
 <script setup lang="ts">
+import { useLocalStorage } from "@vueuse/core";
 import { startCase } from "lodash-es";
 import {
   Database,
@@ -59,22 +60,35 @@ interface ProjectSidebarItem {
   }[];
 }
 
-const defaultHash: ProjectHash = "issues";
+const route = useRoute();
+const projectSlug = computed(() => route.params.projectSlug as string);
+
+const cachedLastPage = useLocalStorage<ProjectHash>(
+  `bb.project.${projectSlug.value}.page`,
+  "databases"
+);
+
+const defaultHash = computed((): ProjectHash => {
+  return cachedLastPage.value;
+});
 
 interface LocalState {
   selectedHash: ProjectHash;
 }
 
 const { t } = useI18n();
-const route = useRoute();
 const router = useRouter();
 const projectV1Store = useProjectV1Store();
 
 const state = reactive<LocalState>({
-  selectedHash: defaultHash,
+  selectedHash: defaultHash.value,
 });
 
-const projectSlug = computed(() => route.params.projectSlug as string);
+watch(
+  () => state.selectedHash,
+  (hash) => (cachedLastPage.value = hash)
+);
+
 const project = computed(() => {
   return projectV1Store.getProjectByUID(String(idFromSlug(projectSlug.value)));
 });
@@ -244,7 +258,7 @@ const selectProjectTabOnHash = () => {
   if (name == "workspace.project.detail") {
     let targetHash = hash.replace(/^#?/g, "");
     if (!isProjectHash(targetHash)) {
-      targetHash = defaultHash;
+      targetHash = defaultHash.value;
     }
     onSelect(targetHash as ProjectHash);
   } else if (

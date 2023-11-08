@@ -40,7 +40,7 @@ export interface Expr {
    * given expression tree. This is used to associate type information and other
    * attributes to a node in the parse tree.
    */
-  id: number;
+  id: Long;
   /** A literal expression. */
   constExpr?:
     | Constant
@@ -169,7 +169,7 @@ export interface Expr_CreateStruct_Entry {
    * in a given expression tree. This is used to associate type
    * information and other attributes to the node.
    */
-  id: number;
+  id: Long;
   /** The field key for a message creator statement. */
   fieldKey?:
     | string
@@ -284,11 +284,11 @@ export interface Constant {
     | undefined;
   /** int64 value. */
   int64Value?:
-    | number
+    | Long
     | undefined;
   /** uint64 value. */
   uint64Value?:
-    | number
+    | Long
     | undefined;
   /** double value. */
   doubleValue?:
@@ -347,7 +347,7 @@ export interface SourceInfo {
    * A map from the parse node id (e.g. `Expr.id`) to the code point offset
    * within the source.
    */
-  positions: { [key: number]: number };
+  positions: Map<Long, number>;
   /**
    * A map from the parse node id where a macro replacement was made to the
    * call `Expr` that resulted in a macro expansion.
@@ -358,16 +358,16 @@ export interface SourceInfo {
    * in the map corresponds to the expression id of the expanded macro, and the
    * value is the call `Expr` that was replaced.
    */
-  macroCalls: { [key: number]: Expr };
+  macroCalls: Map<Long, Expr>;
 }
 
 export interface SourceInfo_PositionsEntry {
-  key: number;
+  key: Long;
   value: number;
 }
 
 export interface SourceInfo_MacroCallsEntry {
-  key: number;
+  key: Long;
   value: Expr | undefined;
 }
 
@@ -443,16 +443,18 @@ export const ParsedExpr = {
 
   toJSON(message: ParsedExpr): unknown {
     const obj: any = {};
-    message.expr !== undefined && (obj.expr = message.expr ? Expr.toJSON(message.expr) : undefined);
-    message.sourceInfo !== undefined &&
-      (obj.sourceInfo = message.sourceInfo ? SourceInfo.toJSON(message.sourceInfo) : undefined);
+    if (message.expr !== undefined) {
+      obj.expr = Expr.toJSON(message.expr);
+    }
+    if (message.sourceInfo !== undefined) {
+      obj.sourceInfo = SourceInfo.toJSON(message.sourceInfo);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ParsedExpr>): ParsedExpr {
     return ParsedExpr.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ParsedExpr>): ParsedExpr {
     const message = createBaseParsedExpr();
     message.expr = (object.expr !== undefined && object.expr !== null) ? Expr.fromPartial(object.expr) : undefined;
@@ -465,7 +467,7 @@ export const ParsedExpr = {
 
 function createBaseExpr(): Expr {
   return {
-    id: 0,
+    id: Long.ZERO,
     constExpr: undefined,
     identExpr: undefined,
     selectExpr: undefined,
@@ -478,7 +480,7 @@ function createBaseExpr(): Expr {
 
 export const Expr = {
   encode(message: Expr, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.id !== 0) {
+    if (!message.id.isZero()) {
       writer.uint32(16).int64(message.id);
     }
     if (message.constExpr !== undefined) {
@@ -517,7 +519,7 @@ export const Expr = {
             break;
           }
 
-          message.id = longToNumber(reader.int64() as Long);
+          message.id = reader.int64() as Long;
           continue;
         case 3:
           if (tag !== 26) {
@@ -579,7 +581,7 @@ export const Expr = {
 
   fromJSON(object: any): Expr {
     return {
-      id: isSet(object.id) ? Number(object.id) : 0,
+      id: isSet(object.id) ? Long.fromValue(object.id) : Long.ZERO,
       constExpr: isSet(object.constExpr) ? Constant.fromJSON(object.constExpr) : undefined,
       identExpr: isSet(object.identExpr) ? Expr_Ident.fromJSON(object.identExpr) : undefined,
       selectExpr: isSet(object.selectExpr) ? Expr_Select.fromJSON(object.selectExpr) : undefined,
@@ -594,32 +596,39 @@ export const Expr = {
 
   toJSON(message: Expr): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = Math.round(message.id));
-    message.constExpr !== undefined &&
-      (obj.constExpr = message.constExpr ? Constant.toJSON(message.constExpr) : undefined);
-    message.identExpr !== undefined &&
-      (obj.identExpr = message.identExpr ? Expr_Ident.toJSON(message.identExpr) : undefined);
-    message.selectExpr !== undefined &&
-      (obj.selectExpr = message.selectExpr ? Expr_Select.toJSON(message.selectExpr) : undefined);
-    message.callExpr !== undefined &&
-      (obj.callExpr = message.callExpr ? Expr_Call.toJSON(message.callExpr) : undefined);
-    message.listExpr !== undefined &&
-      (obj.listExpr = message.listExpr ? Expr_CreateList.toJSON(message.listExpr) : undefined);
-    message.structExpr !== undefined &&
-      (obj.structExpr = message.structExpr ? Expr_CreateStruct.toJSON(message.structExpr) : undefined);
-    message.comprehensionExpr !== undefined && (obj.comprehensionExpr = message.comprehensionExpr
-      ? Expr_Comprehension.toJSON(message.comprehensionExpr)
-      : undefined);
+    if (!message.id.isZero()) {
+      obj.id = (message.id || Long.ZERO).toString();
+    }
+    if (message.constExpr !== undefined) {
+      obj.constExpr = Constant.toJSON(message.constExpr);
+    }
+    if (message.identExpr !== undefined) {
+      obj.identExpr = Expr_Ident.toJSON(message.identExpr);
+    }
+    if (message.selectExpr !== undefined) {
+      obj.selectExpr = Expr_Select.toJSON(message.selectExpr);
+    }
+    if (message.callExpr !== undefined) {
+      obj.callExpr = Expr_Call.toJSON(message.callExpr);
+    }
+    if (message.listExpr !== undefined) {
+      obj.listExpr = Expr_CreateList.toJSON(message.listExpr);
+    }
+    if (message.structExpr !== undefined) {
+      obj.structExpr = Expr_CreateStruct.toJSON(message.structExpr);
+    }
+    if (message.comprehensionExpr !== undefined) {
+      obj.comprehensionExpr = Expr_Comprehension.toJSON(message.comprehensionExpr);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<Expr>): Expr {
     return Expr.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Expr>): Expr {
     const message = createBaseExpr();
-    message.id = object.id ?? 0;
+    message.id = (object.id !== undefined && object.id !== null) ? Long.fromValue(object.id) : Long.ZERO;
     message.constExpr = (object.constExpr !== undefined && object.constExpr !== null)
       ? Constant.fromPartial(object.constExpr)
       : undefined;
@@ -681,19 +690,20 @@ export const Expr_Ident = {
   },
 
   fromJSON(object: any): Expr_Ident {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: Expr_Ident): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<Expr_Ident>): Expr_Ident {
     return Expr_Ident.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Expr_Ident>): Expr_Ident {
     const message = createBaseExpr_Ident();
     message.name = object.name ?? "";
@@ -759,23 +769,28 @@ export const Expr_Select = {
   fromJSON(object: any): Expr_Select {
     return {
       operand: isSet(object.operand) ? Expr.fromJSON(object.operand) : undefined,
-      field: isSet(object.field) ? String(object.field) : "",
-      testOnly: isSet(object.testOnly) ? Boolean(object.testOnly) : false,
+      field: isSet(object.field) ? globalThis.String(object.field) : "",
+      testOnly: isSet(object.testOnly) ? globalThis.Boolean(object.testOnly) : false,
     };
   },
 
   toJSON(message: Expr_Select): unknown {
     const obj: any = {};
-    message.operand !== undefined && (obj.operand = message.operand ? Expr.toJSON(message.operand) : undefined);
-    message.field !== undefined && (obj.field = message.field);
-    message.testOnly !== undefined && (obj.testOnly = message.testOnly);
+    if (message.operand !== undefined) {
+      obj.operand = Expr.toJSON(message.operand);
+    }
+    if (message.field !== "") {
+      obj.field = message.field;
+    }
+    if (message.testOnly === true) {
+      obj.testOnly = message.testOnly;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<Expr_Select>): Expr_Select {
     return Expr_Select.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Expr_Select>): Expr_Select {
     const message = createBaseExpr_Select();
     message.operand = (object.operand !== undefined && object.operand !== null)
@@ -845,19 +860,21 @@ export const Expr_Call = {
   fromJSON(object: any): Expr_Call {
     return {
       target: isSet(object.target) ? Expr.fromJSON(object.target) : undefined,
-      function: isSet(object.function) ? String(object.function) : "",
-      args: Array.isArray(object?.args) ? object.args.map((e: any) => Expr.fromJSON(e)) : [],
+      function: isSet(object.function) ? globalThis.String(object.function) : "",
+      args: globalThis.Array.isArray(object?.args) ? object.args.map((e: any) => Expr.fromJSON(e)) : [],
     };
   },
 
   toJSON(message: Expr_Call): unknown {
     const obj: any = {};
-    message.target !== undefined && (obj.target = message.target ? Expr.toJSON(message.target) : undefined);
-    message.function !== undefined && (obj.function = message.function);
-    if (message.args) {
-      obj.args = message.args.map((e) => e ? Expr.toJSON(e) : undefined);
-    } else {
-      obj.args = [];
+    if (message.target !== undefined) {
+      obj.target = Expr.toJSON(message.target);
+    }
+    if (message.function !== "") {
+      obj.function = message.function;
+    }
+    if (message.args?.length) {
+      obj.args = message.args.map((e) => Expr.toJSON(e));
     }
     return obj;
   },
@@ -865,7 +882,6 @@ export const Expr_Call = {
   create(base?: DeepPartial<Expr_Call>): Expr_Call {
     return Expr_Call.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Expr_Call>): Expr_Call {
     const message = createBaseExpr_Call();
     message.target = (object.target !== undefined && object.target !== null)
@@ -936,22 +952,20 @@ export const Expr_CreateList = {
 
   fromJSON(object: any): Expr_CreateList {
     return {
-      elements: Array.isArray(object?.elements) ? object.elements.map((e: any) => Expr.fromJSON(e)) : [],
-      optionalIndices: Array.isArray(object?.optionalIndices) ? object.optionalIndices.map((e: any) => Number(e)) : [],
+      elements: globalThis.Array.isArray(object?.elements) ? object.elements.map((e: any) => Expr.fromJSON(e)) : [],
+      optionalIndices: globalThis.Array.isArray(object?.optionalIndices)
+        ? object.optionalIndices.map((e: any) => globalThis.Number(e))
+        : [],
     };
   },
 
   toJSON(message: Expr_CreateList): unknown {
     const obj: any = {};
-    if (message.elements) {
-      obj.elements = message.elements.map((e) => e ? Expr.toJSON(e) : undefined);
-    } else {
-      obj.elements = [];
+    if (message.elements?.length) {
+      obj.elements = message.elements.map((e) => Expr.toJSON(e));
     }
-    if (message.optionalIndices) {
+    if (message.optionalIndices?.length) {
       obj.optionalIndices = message.optionalIndices.map((e) => Math.round(e));
-    } else {
-      obj.optionalIndices = [];
     }
     return obj;
   },
@@ -959,7 +973,6 @@ export const Expr_CreateList = {
   create(base?: DeepPartial<Expr_CreateList>): Expr_CreateList {
     return Expr_CreateList.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Expr_CreateList>): Expr_CreateList {
     const message = createBaseExpr_CreateList();
     message.elements = object.elements?.map((e) => Expr.fromPartial(e)) || [];
@@ -1015,8 +1028,8 @@ export const Expr_CreateStruct = {
 
   fromJSON(object: any): Expr_CreateStruct {
     return {
-      messageName: isSet(object.messageName) ? String(object.messageName) : "",
-      entries: Array.isArray(object?.entries)
+      messageName: isSet(object.messageName) ? globalThis.String(object.messageName) : "",
+      entries: globalThis.Array.isArray(object?.entries)
         ? object.entries.map((e: any) => Expr_CreateStruct_Entry.fromJSON(e))
         : [],
     };
@@ -1024,11 +1037,11 @@ export const Expr_CreateStruct = {
 
   toJSON(message: Expr_CreateStruct): unknown {
     const obj: any = {};
-    message.messageName !== undefined && (obj.messageName = message.messageName);
-    if (message.entries) {
-      obj.entries = message.entries.map((e) => e ? Expr_CreateStruct_Entry.toJSON(e) : undefined);
-    } else {
-      obj.entries = [];
+    if (message.messageName !== "") {
+      obj.messageName = message.messageName;
+    }
+    if (message.entries?.length) {
+      obj.entries = message.entries.map((e) => Expr_CreateStruct_Entry.toJSON(e));
     }
     return obj;
   },
@@ -1036,7 +1049,6 @@ export const Expr_CreateStruct = {
   create(base?: DeepPartial<Expr_CreateStruct>): Expr_CreateStruct {
     return Expr_CreateStruct.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Expr_CreateStruct>): Expr_CreateStruct {
     const message = createBaseExpr_CreateStruct();
     message.messageName = object.messageName ?? "";
@@ -1046,12 +1058,12 @@ export const Expr_CreateStruct = {
 };
 
 function createBaseExpr_CreateStruct_Entry(): Expr_CreateStruct_Entry {
-  return { id: 0, fieldKey: undefined, mapKey: undefined, value: undefined, optionalEntry: false };
+  return { id: Long.ZERO, fieldKey: undefined, mapKey: undefined, value: undefined, optionalEntry: false };
 }
 
 export const Expr_CreateStruct_Entry = {
   encode(message: Expr_CreateStruct_Entry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.id !== 0) {
+    if (!message.id.isZero()) {
       writer.uint32(8).int64(message.id);
     }
     if (message.fieldKey !== undefined) {
@@ -1081,7 +1093,7 @@ export const Expr_CreateStruct_Entry = {
             break;
           }
 
-          message.id = longToNumber(reader.int64() as Long);
+          message.id = reader.int64() as Long;
           continue;
         case 2:
           if (tag !== 18) {
@@ -1122,31 +1134,40 @@ export const Expr_CreateStruct_Entry = {
 
   fromJSON(object: any): Expr_CreateStruct_Entry {
     return {
-      id: isSet(object.id) ? Number(object.id) : 0,
-      fieldKey: isSet(object.fieldKey) ? String(object.fieldKey) : undefined,
+      id: isSet(object.id) ? Long.fromValue(object.id) : Long.ZERO,
+      fieldKey: isSet(object.fieldKey) ? globalThis.String(object.fieldKey) : undefined,
       mapKey: isSet(object.mapKey) ? Expr.fromJSON(object.mapKey) : undefined,
       value: isSet(object.value) ? Expr.fromJSON(object.value) : undefined,
-      optionalEntry: isSet(object.optionalEntry) ? Boolean(object.optionalEntry) : false,
+      optionalEntry: isSet(object.optionalEntry) ? globalThis.Boolean(object.optionalEntry) : false,
     };
   },
 
   toJSON(message: Expr_CreateStruct_Entry): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = Math.round(message.id));
-    message.fieldKey !== undefined && (obj.fieldKey = message.fieldKey);
-    message.mapKey !== undefined && (obj.mapKey = message.mapKey ? Expr.toJSON(message.mapKey) : undefined);
-    message.value !== undefined && (obj.value = message.value ? Expr.toJSON(message.value) : undefined);
-    message.optionalEntry !== undefined && (obj.optionalEntry = message.optionalEntry);
+    if (!message.id.isZero()) {
+      obj.id = (message.id || Long.ZERO).toString();
+    }
+    if (message.fieldKey !== undefined) {
+      obj.fieldKey = message.fieldKey;
+    }
+    if (message.mapKey !== undefined) {
+      obj.mapKey = Expr.toJSON(message.mapKey);
+    }
+    if (message.value !== undefined) {
+      obj.value = Expr.toJSON(message.value);
+    }
+    if (message.optionalEntry === true) {
+      obj.optionalEntry = message.optionalEntry;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<Expr_CreateStruct_Entry>): Expr_CreateStruct_Entry {
     return Expr_CreateStruct_Entry.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Expr_CreateStruct_Entry>): Expr_CreateStruct_Entry {
     const message = createBaseExpr_CreateStruct_Entry();
-    message.id = object.id ?? 0;
+    message.id = (object.id !== undefined && object.id !== null) ? Long.fromValue(object.id) : Long.ZERO;
     message.fieldKey = object.fieldKey ?? undefined;
     message.mapKey = (object.mapKey !== undefined && object.mapKey !== null)
       ? Expr.fromPartial(object.mapKey)
@@ -1262,9 +1283,9 @@ export const Expr_Comprehension = {
 
   fromJSON(object: any): Expr_Comprehension {
     return {
-      iterVar: isSet(object.iterVar) ? String(object.iterVar) : "",
+      iterVar: isSet(object.iterVar) ? globalThis.String(object.iterVar) : "",
       iterRange: isSet(object.iterRange) ? Expr.fromJSON(object.iterRange) : undefined,
-      accuVar: isSet(object.accuVar) ? String(object.accuVar) : "",
+      accuVar: isSet(object.accuVar) ? globalThis.String(object.accuVar) : "",
       accuInit: isSet(object.accuInit) ? Expr.fromJSON(object.accuInit) : undefined,
       loopCondition: isSet(object.loopCondition) ? Expr.fromJSON(object.loopCondition) : undefined,
       loopStep: isSet(object.loopStep) ? Expr.fromJSON(object.loopStep) : undefined,
@@ -1274,21 +1295,33 @@ export const Expr_Comprehension = {
 
   toJSON(message: Expr_Comprehension): unknown {
     const obj: any = {};
-    message.iterVar !== undefined && (obj.iterVar = message.iterVar);
-    message.iterRange !== undefined && (obj.iterRange = message.iterRange ? Expr.toJSON(message.iterRange) : undefined);
-    message.accuVar !== undefined && (obj.accuVar = message.accuVar);
-    message.accuInit !== undefined && (obj.accuInit = message.accuInit ? Expr.toJSON(message.accuInit) : undefined);
-    message.loopCondition !== undefined &&
-      (obj.loopCondition = message.loopCondition ? Expr.toJSON(message.loopCondition) : undefined);
-    message.loopStep !== undefined && (obj.loopStep = message.loopStep ? Expr.toJSON(message.loopStep) : undefined);
-    message.result !== undefined && (obj.result = message.result ? Expr.toJSON(message.result) : undefined);
+    if (message.iterVar !== "") {
+      obj.iterVar = message.iterVar;
+    }
+    if (message.iterRange !== undefined) {
+      obj.iterRange = Expr.toJSON(message.iterRange);
+    }
+    if (message.accuVar !== "") {
+      obj.accuVar = message.accuVar;
+    }
+    if (message.accuInit !== undefined) {
+      obj.accuInit = Expr.toJSON(message.accuInit);
+    }
+    if (message.loopCondition !== undefined) {
+      obj.loopCondition = Expr.toJSON(message.loopCondition);
+    }
+    if (message.loopStep !== undefined) {
+      obj.loopStep = Expr.toJSON(message.loopStep);
+    }
+    if (message.result !== undefined) {
+      obj.result = Expr.toJSON(message.result);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<Expr_Comprehension>): Expr_Comprehension {
     return Expr_Comprehension.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Expr_Comprehension>): Expr_Comprehension {
     const message = createBaseExpr_Comprehension();
     message.iterVar = object.iterVar ?? "";
@@ -1384,14 +1417,14 @@ export const Constant = {
             break;
           }
 
-          message.int64Value = longToNumber(reader.int64() as Long);
+          message.int64Value = reader.int64() as Long;
           continue;
         case 4:
           if (tag !== 32) {
             break;
           }
 
-          message.uint64Value = longToNumber(reader.uint64() as Long);
+          message.uint64Value = reader.uint64() as Long;
           continue;
         case 5:
           if (tag !== 41) {
@@ -1440,11 +1473,11 @@ export const Constant = {
   fromJSON(object: any): Constant {
     return {
       nullValue: isSet(object.nullValue) ? nullValueFromJSON(object.nullValue) : undefined,
-      boolValue: isSet(object.boolValue) ? Boolean(object.boolValue) : undefined,
-      int64Value: isSet(object.int64Value) ? Number(object.int64Value) : undefined,
-      uint64Value: isSet(object.uint64Value) ? Number(object.uint64Value) : undefined,
-      doubleValue: isSet(object.doubleValue) ? Number(object.doubleValue) : undefined,
-      stringValue: isSet(object.stringValue) ? String(object.stringValue) : undefined,
+      boolValue: isSet(object.boolValue) ? globalThis.Boolean(object.boolValue) : undefined,
+      int64Value: isSet(object.int64Value) ? Long.fromValue(object.int64Value) : undefined,
+      uint64Value: isSet(object.uint64Value) ? Long.fromValue(object.uint64Value) : undefined,
+      doubleValue: isSet(object.doubleValue) ? globalThis.Number(object.doubleValue) : undefined,
+      stringValue: isSet(object.stringValue) ? globalThis.String(object.stringValue) : undefined,
       bytesValue: isSet(object.bytesValue) ? bytesFromBase64(object.bytesValue) : undefined,
       durationValue: isSet(object.durationValue) ? Duration.fromJSON(object.durationValue) : undefined,
       timestampValue: isSet(object.timestampValue) ? fromJsonTimestamp(object.timestampValue) : undefined,
@@ -1453,31 +1486,49 @@ export const Constant = {
 
   toJSON(message: Constant): unknown {
     const obj: any = {};
-    message.nullValue !== undefined &&
-      (obj.nullValue = message.nullValue !== undefined ? nullValueToJSON(message.nullValue) : undefined);
-    message.boolValue !== undefined && (obj.boolValue = message.boolValue);
-    message.int64Value !== undefined && (obj.int64Value = Math.round(message.int64Value));
-    message.uint64Value !== undefined && (obj.uint64Value = Math.round(message.uint64Value));
-    message.doubleValue !== undefined && (obj.doubleValue = message.doubleValue);
-    message.stringValue !== undefined && (obj.stringValue = message.stringValue);
-    message.bytesValue !== undefined &&
-      (obj.bytesValue = message.bytesValue !== undefined ? base64FromBytes(message.bytesValue) : undefined);
-    message.durationValue !== undefined &&
-      (obj.durationValue = message.durationValue ? Duration.toJSON(message.durationValue) : undefined);
-    message.timestampValue !== undefined && (obj.timestampValue = message.timestampValue.toISOString());
+    if (message.nullValue !== undefined) {
+      obj.nullValue = nullValueToJSON(message.nullValue);
+    }
+    if (message.boolValue !== undefined) {
+      obj.boolValue = message.boolValue;
+    }
+    if (message.int64Value !== undefined) {
+      obj.int64Value = (message.int64Value || Long.ZERO).toString();
+    }
+    if (message.uint64Value !== undefined) {
+      obj.uint64Value = (message.uint64Value || Long.UZERO).toString();
+    }
+    if (message.doubleValue !== undefined) {
+      obj.doubleValue = message.doubleValue;
+    }
+    if (message.stringValue !== undefined) {
+      obj.stringValue = message.stringValue;
+    }
+    if (message.bytesValue !== undefined) {
+      obj.bytesValue = base64FromBytes(message.bytesValue);
+    }
+    if (message.durationValue !== undefined) {
+      obj.durationValue = Duration.toJSON(message.durationValue);
+    }
+    if (message.timestampValue !== undefined) {
+      obj.timestampValue = message.timestampValue.toISOString();
+    }
     return obj;
   },
 
   create(base?: DeepPartial<Constant>): Constant {
     return Constant.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Constant>): Constant {
     const message = createBaseConstant();
     message.nullValue = object.nullValue ?? undefined;
     message.boolValue = object.boolValue ?? undefined;
-    message.int64Value = object.int64Value ?? undefined;
-    message.uint64Value = object.uint64Value ?? undefined;
+    message.int64Value = (object.int64Value !== undefined && object.int64Value !== null)
+      ? Long.fromValue(object.int64Value)
+      : undefined;
+    message.uint64Value = (object.uint64Value !== undefined && object.uint64Value !== null)
+      ? Long.fromValue(object.uint64Value)
+      : undefined;
     message.doubleValue = object.doubleValue ?? undefined;
     message.stringValue = object.stringValue ?? undefined;
     message.bytesValue = object.bytesValue ?? undefined;
@@ -1490,7 +1541,7 @@ export const Constant = {
 };
 
 function createBaseSourceInfo(): SourceInfo {
-  return { syntaxVersion: "", location: "", lineOffsets: [], positions: {}, macroCalls: {} };
+  return { syntaxVersion: "", location: "", lineOffsets: [], positions: new Map(), macroCalls: new Map() };
 }
 
 export const SourceInfo = {
@@ -1506,10 +1557,10 @@ export const SourceInfo = {
       writer.int32(v);
     }
     writer.ldelim();
-    Object.entries(message.positions).forEach(([key, value]) => {
+    message.positions.forEach((value, key) => {
       SourceInfo_PositionsEntry.encode({ key: key as any, value }, writer.uint32(34).fork()).ldelim();
     });
-    Object.entries(message.macroCalls).forEach(([key, value]) => {
+    message.macroCalls.forEach((value, key) => {
       SourceInfo_MacroCallsEntry.encode({ key: key as any, value }, writer.uint32(42).fork()).ldelim();
     });
     return writer;
@@ -1560,7 +1611,7 @@ export const SourceInfo = {
 
           const entry4 = SourceInfo_PositionsEntry.decode(reader, reader.uint32());
           if (entry4.value !== undefined) {
-            message.positions[entry4.key] = entry4.value;
+            message.positions.set(entry4.key, entry4.value);
           }
           continue;
         case 5:
@@ -1570,7 +1621,7 @@ export const SourceInfo = {
 
           const entry5 = SourceInfo_MacroCallsEntry.decode(reader, reader.uint32());
           if (entry5.value !== undefined) {
-            message.macroCalls[entry5.key] = entry5.value;
+            message.macroCalls.set(entry5.key, entry5.value);
           }
           continue;
       }
@@ -1584,43 +1635,47 @@ export const SourceInfo = {
 
   fromJSON(object: any): SourceInfo {
     return {
-      syntaxVersion: isSet(object.syntaxVersion) ? String(object.syntaxVersion) : "",
-      location: isSet(object.location) ? String(object.location) : "",
-      lineOffsets: Array.isArray(object?.lineOffsets) ? object.lineOffsets.map((e: any) => Number(e)) : [],
+      syntaxVersion: isSet(object.syntaxVersion) ? globalThis.String(object.syntaxVersion) : "",
+      location: isSet(object.location) ? globalThis.String(object.location) : "",
+      lineOffsets: globalThis.Array.isArray(object?.lineOffsets)
+        ? object.lineOffsets.map((e: any) => globalThis.Number(e))
+        : [],
       positions: isObject(object.positions)
-        ? Object.entries(object.positions).reduce<{ [key: number]: number }>((acc, [key, value]) => {
-          acc[Number(key)] = Number(value);
+        ? Object.entries(object.positions).reduce<Map<Long, number>>((acc, [key, value]) => {
+          acc.set(Long.fromValue(key), Number(value));
           return acc;
-        }, {})
-        : {},
+        }, new Map())
+        : new Map(),
       macroCalls: isObject(object.macroCalls)
-        ? Object.entries(object.macroCalls).reduce<{ [key: number]: Expr }>((acc, [key, value]) => {
-          acc[Number(key)] = Expr.fromJSON(value);
+        ? Object.entries(object.macroCalls).reduce<Map<Long, Expr>>((acc, [key, value]) => {
+          acc.set(Long.fromValue(key), Expr.fromJSON(value));
           return acc;
-        }, {})
-        : {},
+        }, new Map())
+        : new Map(),
     };
   },
 
   toJSON(message: SourceInfo): unknown {
     const obj: any = {};
-    message.syntaxVersion !== undefined && (obj.syntaxVersion = message.syntaxVersion);
-    message.location !== undefined && (obj.location = message.location);
-    if (message.lineOffsets) {
-      obj.lineOffsets = message.lineOffsets.map((e) => Math.round(e));
-    } else {
-      obj.lineOffsets = [];
+    if (message.syntaxVersion !== "") {
+      obj.syntaxVersion = message.syntaxVersion;
     }
-    obj.positions = {};
-    if (message.positions) {
-      Object.entries(message.positions).forEach(([k, v]) => {
-        obj.positions[k] = Math.round(v);
+    if (message.location !== "") {
+      obj.location = message.location;
+    }
+    if (message.lineOffsets?.length) {
+      obj.lineOffsets = message.lineOffsets.map((e) => Math.round(e));
+    }
+    if (message.positions?.size) {
+      obj.positions = {};
+      message.positions.forEach((v, k) => {
+        obj.positions[longToNumber(k)] = Math.round(v);
       });
     }
-    obj.macroCalls = {};
-    if (message.macroCalls) {
-      Object.entries(message.macroCalls).forEach(([k, v]) => {
-        obj.macroCalls[k] = Expr.toJSON(v);
+    if (message.macroCalls?.size) {
+      obj.macroCalls = {};
+      message.macroCalls.forEach((v, k) => {
+        obj.macroCalls[longToNumber(k)] = Expr.toJSON(v);
       });
     }
     return obj;
@@ -1629,41 +1684,40 @@ export const SourceInfo = {
   create(base?: DeepPartial<SourceInfo>): SourceInfo {
     return SourceInfo.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SourceInfo>): SourceInfo {
     const message = createBaseSourceInfo();
     message.syntaxVersion = object.syntaxVersion ?? "";
     message.location = object.location ?? "";
     message.lineOffsets = object.lineOffsets?.map((e) => e) || [];
-    message.positions = Object.entries(object.positions ?? {}).reduce<{ [key: number]: number }>(
-      (acc, [key, value]) => {
+    message.positions = (() => {
+      const m = new Map();
+      (object.positions as Map<Long, number> ?? new Map()).forEach((value, key) => {
         if (value !== undefined) {
-          acc[Number(key)] = Number(value);
+          m.set(key, globalThis.Number(value));
         }
-        return acc;
-      },
-      {},
-    );
-    message.macroCalls = Object.entries(object.macroCalls ?? {}).reduce<{ [key: number]: Expr }>(
-      (acc, [key, value]) => {
+      });
+      return m;
+    })();
+    message.macroCalls = (() => {
+      const m = new Map();
+      (object.macroCalls as Map<Long, Expr> ?? new Map()).forEach((value, key) => {
         if (value !== undefined) {
-          acc[Number(key)] = Expr.fromPartial(value);
+          m.set(key, Expr.fromPartial(value));
         }
-        return acc;
-      },
-      {},
-    );
+      });
+      return m;
+    })();
     return message;
   },
 };
 
 function createBaseSourceInfo_PositionsEntry(): SourceInfo_PositionsEntry {
-  return { key: 0, value: 0 };
+  return { key: Long.ZERO, value: 0 };
 }
 
 export const SourceInfo_PositionsEntry = {
   encode(message: SourceInfo_PositionsEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.key !== 0) {
+    if (!message.key.isZero()) {
       writer.uint32(8).int64(message.key);
     }
     if (message.value !== 0) {
@@ -1684,7 +1738,7 @@ export const SourceInfo_PositionsEntry = {
             break;
           }
 
-          message.key = longToNumber(reader.int64() as Long);
+          message.key = reader.int64() as Long;
           continue;
         case 2:
           if (tag !== 16) {
@@ -1703,35 +1757,41 @@ export const SourceInfo_PositionsEntry = {
   },
 
   fromJSON(object: any): SourceInfo_PositionsEntry {
-    return { key: isSet(object.key) ? Number(object.key) : 0, value: isSet(object.value) ? Number(object.value) : 0 };
+    return {
+      key: isSet(object.key) ? Long.fromValue(object.key) : Long.ZERO,
+      value: isSet(object.value) ? globalThis.Number(object.value) : 0,
+    };
   },
 
   toJSON(message: SourceInfo_PositionsEntry): unknown {
     const obj: any = {};
-    message.key !== undefined && (obj.key = Math.round(message.key));
-    message.value !== undefined && (obj.value = Math.round(message.value));
+    if (!message.key.isZero()) {
+      obj.key = (message.key || Long.ZERO).toString();
+    }
+    if (message.value !== 0) {
+      obj.value = Math.round(message.value);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<SourceInfo_PositionsEntry>): SourceInfo_PositionsEntry {
     return SourceInfo_PositionsEntry.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SourceInfo_PositionsEntry>): SourceInfo_PositionsEntry {
     const message = createBaseSourceInfo_PositionsEntry();
-    message.key = object.key ?? 0;
+    message.key = (object.key !== undefined && object.key !== null) ? Long.fromValue(object.key) : Long.ZERO;
     message.value = object.value ?? 0;
     return message;
   },
 };
 
 function createBaseSourceInfo_MacroCallsEntry(): SourceInfo_MacroCallsEntry {
-  return { key: 0, value: undefined };
+  return { key: Long.ZERO, value: undefined };
 }
 
 export const SourceInfo_MacroCallsEntry = {
   encode(message: SourceInfo_MacroCallsEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.key !== 0) {
+    if (!message.key.isZero()) {
       writer.uint32(8).int64(message.key);
     }
     if (message.value !== undefined) {
@@ -1752,7 +1812,7 @@ export const SourceInfo_MacroCallsEntry = {
             break;
           }
 
-          message.key = longToNumber(reader.int64() as Long);
+          message.key = reader.int64() as Long;
           continue;
         case 2:
           if (tag !== 18) {
@@ -1772,25 +1832,28 @@ export const SourceInfo_MacroCallsEntry = {
 
   fromJSON(object: any): SourceInfo_MacroCallsEntry {
     return {
-      key: isSet(object.key) ? Number(object.key) : 0,
+      key: isSet(object.key) ? Long.fromValue(object.key) : Long.ZERO,
       value: isSet(object.value) ? Expr.fromJSON(object.value) : undefined,
     };
   },
 
   toJSON(message: SourceInfo_MacroCallsEntry): unknown {
     const obj: any = {};
-    message.key !== undefined && (obj.key = Math.round(message.key));
-    message.value !== undefined && (obj.value = message.value ? Expr.toJSON(message.value) : undefined);
+    if (!message.key.isZero()) {
+      obj.key = (message.key || Long.ZERO).toString();
+    }
+    if (message.value !== undefined) {
+      obj.value = Expr.toJSON(message.value);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<SourceInfo_MacroCallsEntry>): SourceInfo_MacroCallsEntry {
     return SourceInfo_MacroCallsEntry.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SourceInfo_MacroCallsEntry>): SourceInfo_MacroCallsEntry {
     const message = createBaseSourceInfo_MacroCallsEntry();
-    message.key = object.key ?? 0;
+    message.key = (object.key !== undefined && object.key !== null) ? Long.fromValue(object.key) : Long.ZERO;
     message.value = (object.value !== undefined && object.value !== null) ? Expr.fromPartial(object.value) : undefined;
     return message;
   },
@@ -1863,26 +1926,33 @@ export const SourcePosition = {
 
   fromJSON(object: any): SourcePosition {
     return {
-      location: isSet(object.location) ? String(object.location) : "",
-      offset: isSet(object.offset) ? Number(object.offset) : 0,
-      line: isSet(object.line) ? Number(object.line) : 0,
-      column: isSet(object.column) ? Number(object.column) : 0,
+      location: isSet(object.location) ? globalThis.String(object.location) : "",
+      offset: isSet(object.offset) ? globalThis.Number(object.offset) : 0,
+      line: isSet(object.line) ? globalThis.Number(object.line) : 0,
+      column: isSet(object.column) ? globalThis.Number(object.column) : 0,
     };
   },
 
   toJSON(message: SourcePosition): unknown {
     const obj: any = {};
-    message.location !== undefined && (obj.location = message.location);
-    message.offset !== undefined && (obj.offset = Math.round(message.offset));
-    message.line !== undefined && (obj.line = Math.round(message.line));
-    message.column !== undefined && (obj.column = Math.round(message.column));
+    if (message.location !== "") {
+      obj.location = message.location;
+    }
+    if (message.offset !== 0) {
+      obj.offset = Math.round(message.offset);
+    }
+    if (message.line !== 0) {
+      obj.line = Math.round(message.line);
+    }
+    if (message.column !== 0) {
+      obj.column = Math.round(message.column);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<SourcePosition>): SourcePosition {
     return SourcePosition.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SourcePosition>): SourcePosition {
     const message = createBaseSourcePosition();
     message.location = object.location ?? "";
@@ -1893,30 +1963,11 @@ export const SourcePosition = {
   },
 };
 
-declare const self: any | undefined;
-declare const window: any | undefined;
-declare const global: any | undefined;
-const tsProtoGlobalThis: any = (() => {
-  if (typeof globalThis !== "undefined") {
-    return globalThis;
-  }
-  if (typeof self !== "undefined") {
-    return self;
-  }
-  if (typeof window !== "undefined") {
-    return window;
-  }
-  if (typeof global !== "undefined") {
-    return global;
-  }
-  throw "Unable to locate global object";
-})();
-
 function bytesFromBase64(b64: string): Uint8Array {
-  if (tsProtoGlobalThis.Buffer) {
-    return Uint8Array.from(tsProtoGlobalThis.Buffer.from(b64, "base64"));
+  if (globalThis.Buffer) {
+    return Uint8Array.from(globalThis.Buffer.from(b64, "base64"));
   } else {
-    const bin = tsProtoGlobalThis.atob(b64);
+    const bin = globalThis.atob(b64);
     const arr = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; ++i) {
       arr[i] = bin.charCodeAt(i);
@@ -1926,49 +1977,54 @@ function bytesFromBase64(b64: string): Uint8Array {
 }
 
 function base64FromBytes(arr: Uint8Array): string {
-  if (tsProtoGlobalThis.Buffer) {
-    return tsProtoGlobalThis.Buffer.from(arr).toString("base64");
+  if (globalThis.Buffer) {
+    return globalThis.Buffer.from(arr).toString("base64");
   } else {
     const bin: string[] = [];
     arr.forEach((byte) => {
-      bin.push(String.fromCharCode(byte));
+      bin.push(globalThis.String.fromCharCode(byte));
     });
-    return tsProtoGlobalThis.btoa(bin.join(""));
+    return globalThis.btoa(bin.join(""));
   }
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
 function toTimestamp(date: Date): Timestamp {
-  const seconds = date.getTime() / 1_000;
+  const seconds = numberToLong(date.getTime() / 1_000);
   const nanos = (date.getTime() % 1_000) * 1_000_000;
   return { seconds, nanos };
 }
 
 function fromTimestamp(t: Timestamp): Date {
-  let millis = (t.seconds || 0) * 1_000;
+  let millis = (t.seconds.toNumber() || 0) * 1_000;
   millis += (t.nanos || 0) / 1_000_000;
-  return new Date(millis);
+  return new globalThis.Date(millis);
 }
 
 function fromJsonTimestamp(o: any): Date {
-  if (o instanceof Date) {
+  if (o instanceof globalThis.Date) {
     return o;
   } else if (typeof o === "string") {
-    return new Date(o);
+    return new globalThis.Date(o);
   } else {
     return fromTimestamp(Timestamp.fromJSON(o));
   }
 }
 
+function numberToLong(number: number) {
+  return Long.fromNumber(number);
+}
+
 function longToNumber(long: Long): number {
-  if (long.gt(Number.MAX_SAFE_INTEGER)) {
-    throw new tsProtoGlobalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
+  if (long.gt(globalThis.Number.MAX_SAFE_INTEGER)) {
+    throw new globalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
   }
   return long.toNumber();
 }

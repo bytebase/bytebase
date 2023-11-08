@@ -8,6 +8,8 @@ import (
 
 	"github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/format"
+	"github.com/pingcap/tidb/parser/mysql"
+	"github.com/pingcap/tidb/types"
 )
 
 type columnSet map[string]bool
@@ -62,4 +64,31 @@ func getTemplateRegexp(template string, templateList []string, tokens map[string
 	}
 
 	return regexp.Compile(template)
+}
+
+func canNull(column *ast.ColumnDef) bool {
+	for _, option := range column.Options {
+		if option.Tp == ast.ColumnOptionNotNull || option.Tp == ast.ColumnOptionPrimaryKey {
+			return false
+		}
+	}
+	return true
+}
+
+func needDefault(column *ast.ColumnDef) bool {
+	for _, option := range column.Options {
+		switch option.Tp {
+		case ast.ColumnOptionAutoIncrement, ast.ColumnOptionPrimaryKey, ast.ColumnOptionGenerated:
+			return false
+		}
+	}
+
+	if types.IsTypeBlob(column.Tp.GetType()) {
+		return false
+	}
+	switch column.Tp.GetType() {
+	case mysql.TypeJSON, mysql.TypeGeometry:
+		return false
+	}
+	return true
 }

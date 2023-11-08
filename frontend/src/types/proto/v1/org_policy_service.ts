@@ -1,4 +1,5 @@
 /* eslint-disable */
+import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Duration } from "../google/protobuf/duration";
 import { Empty } from "../google/protobuf/empty";
@@ -642,7 +643,7 @@ export const CreatePolicyRequest = {
 
   fromJSON(object: any): CreatePolicyRequest {
     return {
-      parent: isSet(object.parent) ? String(object.parent) : "",
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
       policy: isSet(object.policy) ? Policy.fromJSON(object.policy) : undefined,
       type: isSet(object.type) ? policyTypeFromJSON(object.type) : 0,
     };
@@ -650,16 +651,21 @@ export const CreatePolicyRequest = {
 
   toJSON(message: CreatePolicyRequest): unknown {
     const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
-    message.policy !== undefined && (obj.policy = message.policy ? Policy.toJSON(message.policy) : undefined);
-    message.type !== undefined && (obj.type = policyTypeToJSON(message.type));
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.policy !== undefined) {
+      obj.policy = Policy.toJSON(message.policy);
+    }
+    if (message.type !== 0) {
+      obj.type = policyTypeToJSON(message.type);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<CreatePolicyRequest>): CreatePolicyRequest {
     return CreatePolicyRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<CreatePolicyRequest>): CreatePolicyRequest {
     const message = createBaseCreatePolicyRequest();
     message.parent = object.parent ?? "";
@@ -730,22 +736,27 @@ export const UpdatePolicyRequest = {
     return {
       policy: isSet(object.policy) ? Policy.fromJSON(object.policy) : undefined,
       updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
-      allowMissing: isSet(object.allowMissing) ? Boolean(object.allowMissing) : false,
+      allowMissing: isSet(object.allowMissing) ? globalThis.Boolean(object.allowMissing) : false,
     };
   },
 
   toJSON(message: UpdatePolicyRequest): unknown {
     const obj: any = {};
-    message.policy !== undefined && (obj.policy = message.policy ? Policy.toJSON(message.policy) : undefined);
-    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
-    message.allowMissing !== undefined && (obj.allowMissing = message.allowMissing);
+    if (message.policy !== undefined) {
+      obj.policy = Policy.toJSON(message.policy);
+    }
+    if (message.updateMask !== undefined) {
+      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
+    }
+    if (message.allowMissing === true) {
+      obj.allowMissing = message.allowMissing;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<UpdatePolicyRequest>): UpdatePolicyRequest {
     return UpdatePolicyRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<UpdatePolicyRequest>): UpdatePolicyRequest {
     const message = createBaseUpdatePolicyRequest();
     message.policy = (object.policy !== undefined && object.policy !== null)
@@ -793,19 +804,20 @@ export const DeletePolicyRequest = {
   },
 
   fromJSON(object: any): DeletePolicyRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: DeletePolicyRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<DeletePolicyRequest>): DeletePolicyRequest {
     return DeletePolicyRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<DeletePolicyRequest>): DeletePolicyRequest {
     const message = createBaseDeletePolicyRequest();
     message.name = object.name ?? "";
@@ -849,19 +861,20 @@ export const GetPolicyRequest = {
   },
 
   fromJSON(object: any): GetPolicyRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: GetPolicyRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<GetPolicyRequest>): GetPolicyRequest {
     return GetPolicyRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<GetPolicyRequest>): GetPolicyRequest {
     const message = createBaseGetPolicyRequest();
     message.name = object.name ?? "";
@@ -946,29 +959,37 @@ export const ListPoliciesRequest = {
 
   fromJSON(object: any): ListPoliciesRequest {
     return {
-      parent: isSet(object.parent) ? String(object.parent) : "",
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
       policyType: isSet(object.policyType) ? policyTypeFromJSON(object.policyType) : undefined,
-      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
-      showDeleted: isSet(object.showDeleted) ? Boolean(object.showDeleted) : false,
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
+      showDeleted: isSet(object.showDeleted) ? globalThis.Boolean(object.showDeleted) : false,
     };
   },
 
   toJSON(message: ListPoliciesRequest): unknown {
     const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
-    message.policyType !== undefined &&
-      (obj.policyType = message.policyType !== undefined ? policyTypeToJSON(message.policyType) : undefined);
-    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
-    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
-    message.showDeleted !== undefined && (obj.showDeleted = message.showDeleted);
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.policyType !== undefined) {
+      obj.policyType = policyTypeToJSON(message.policyType);
+    }
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
+    if (message.showDeleted === true) {
+      obj.showDeleted = message.showDeleted;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ListPoliciesRequest>): ListPoliciesRequest {
     return ListPoliciesRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ListPoliciesRequest>): ListPoliciesRequest {
     const message = createBaseListPoliciesRequest();
     message.parent = object.parent ?? "";
@@ -1027,26 +1048,25 @@ export const ListPoliciesResponse = {
 
   fromJSON(object: any): ListPoliciesResponse {
     return {
-      policies: Array.isArray(object?.policies) ? object.policies.map((e: any) => Policy.fromJSON(e)) : [],
-      nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
+      policies: globalThis.Array.isArray(object?.policies) ? object.policies.map((e: any) => Policy.fromJSON(e)) : [],
+      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
     };
   },
 
   toJSON(message: ListPoliciesResponse): unknown {
     const obj: any = {};
-    if (message.policies) {
-      obj.policies = message.policies.map((e) => e ? Policy.toJSON(e) : undefined);
-    } else {
-      obj.policies = [];
+    if (message.policies?.length) {
+      obj.policies = message.policies.map((e) => Policy.toJSON(e));
     }
-    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ListPoliciesResponse>): ListPoliciesResponse {
     return ListPoliciesResponse.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ListPoliciesResponse>): ListPoliciesResponse {
     const message = createBaseListPoliciesResponse();
     message.policies = object.policies?.map((e) => Policy.fromPartial(e)) || [];
@@ -1270,9 +1290,9 @@ export const Policy = {
 
   fromJSON(object: any): Policy {
     return {
-      name: isSet(object.name) ? String(object.name) : "",
-      uid: isSet(object.uid) ? String(object.uid) : "",
-      inheritFromParent: isSet(object.inheritFromParent) ? Boolean(object.inheritFromParent) : false,
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
+      inheritFromParent: isSet(object.inheritFromParent) ? globalThis.Boolean(object.inheritFromParent) : false,
       type: isSet(object.type) ? policyTypeFromJSON(object.type) : 0,
       workspaceIamPolicy: isSet(object.workspaceIamPolicy) ? IamPolicy.fromJSON(object.workspaceIamPolicy) : undefined,
       deploymentApprovalPolicy: isSet(object.deploymentApprovalPolicy)
@@ -1292,52 +1312,71 @@ export const Policy = {
       maskingExceptionPolicy: isSet(object.maskingExceptionPolicy)
         ? MaskingExceptionPolicy.fromJSON(object.maskingExceptionPolicy)
         : undefined,
-      enforce: isSet(object.enforce) ? Boolean(object.enforce) : false,
+      enforce: isSet(object.enforce) ? globalThis.Boolean(object.enforce) : false,
       resourceType: isSet(object.resourceType) ? policyResourceTypeFromJSON(object.resourceType) : 0,
-      resourceUid: isSet(object.resourceUid) ? String(object.resourceUid) : "",
+      resourceUid: isSet(object.resourceUid) ? globalThis.String(object.resourceUid) : "",
     };
   },
 
   toJSON(message: Policy): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.uid !== undefined && (obj.uid = message.uid);
-    message.inheritFromParent !== undefined && (obj.inheritFromParent = message.inheritFromParent);
-    message.type !== undefined && (obj.type = policyTypeToJSON(message.type));
-    message.workspaceIamPolicy !== undefined &&
-      (obj.workspaceIamPolicy = message.workspaceIamPolicy ? IamPolicy.toJSON(message.workspaceIamPolicy) : undefined);
-    message.deploymentApprovalPolicy !== undefined && (obj.deploymentApprovalPolicy = message.deploymentApprovalPolicy
-      ? DeploymentApprovalPolicy.toJSON(message.deploymentApprovalPolicy)
-      : undefined);
-    message.rolloutPolicy !== undefined &&
-      (obj.rolloutPolicy = message.rolloutPolicy ? RolloutPolicy.toJSON(message.rolloutPolicy) : undefined);
-    message.backupPlanPolicy !== undefined &&
-      (obj.backupPlanPolicy = message.backupPlanPolicy ? BackupPlanPolicy.toJSON(message.backupPlanPolicy) : undefined);
-    message.maskingPolicy !== undefined &&
-      (obj.maskingPolicy = message.maskingPolicy ? MaskingPolicy.toJSON(message.maskingPolicy) : undefined);
-    message.sqlReviewPolicy !== undefined &&
-      (obj.sqlReviewPolicy = message.sqlReviewPolicy ? SQLReviewPolicy.toJSON(message.sqlReviewPolicy) : undefined);
-    message.slowQueryPolicy !== undefined &&
-      (obj.slowQueryPolicy = message.slowQueryPolicy ? SlowQueryPolicy.toJSON(message.slowQueryPolicy) : undefined);
-    message.disableCopyDataPolicy !== undefined && (obj.disableCopyDataPolicy = message.disableCopyDataPolicy
-      ? DisableCopyDataPolicy.toJSON(message.disableCopyDataPolicy)
-      : undefined);
-    message.maskingRulePolicy !== undefined && (obj.maskingRulePolicy = message.maskingRulePolicy
-      ? MaskingRulePolicy.toJSON(message.maskingRulePolicy)
-      : undefined);
-    message.maskingExceptionPolicy !== undefined && (obj.maskingExceptionPolicy = message.maskingExceptionPolicy
-      ? MaskingExceptionPolicy.toJSON(message.maskingExceptionPolicy)
-      : undefined);
-    message.enforce !== undefined && (obj.enforce = message.enforce);
-    message.resourceType !== undefined && (obj.resourceType = policyResourceTypeToJSON(message.resourceType));
-    message.resourceUid !== undefined && (obj.resourceUid = message.resourceUid);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.uid !== "") {
+      obj.uid = message.uid;
+    }
+    if (message.inheritFromParent === true) {
+      obj.inheritFromParent = message.inheritFromParent;
+    }
+    if (message.type !== 0) {
+      obj.type = policyTypeToJSON(message.type);
+    }
+    if (message.workspaceIamPolicy !== undefined) {
+      obj.workspaceIamPolicy = IamPolicy.toJSON(message.workspaceIamPolicy);
+    }
+    if (message.deploymentApprovalPolicy !== undefined) {
+      obj.deploymentApprovalPolicy = DeploymentApprovalPolicy.toJSON(message.deploymentApprovalPolicy);
+    }
+    if (message.rolloutPolicy !== undefined) {
+      obj.rolloutPolicy = RolloutPolicy.toJSON(message.rolloutPolicy);
+    }
+    if (message.backupPlanPolicy !== undefined) {
+      obj.backupPlanPolicy = BackupPlanPolicy.toJSON(message.backupPlanPolicy);
+    }
+    if (message.maskingPolicy !== undefined) {
+      obj.maskingPolicy = MaskingPolicy.toJSON(message.maskingPolicy);
+    }
+    if (message.sqlReviewPolicy !== undefined) {
+      obj.sqlReviewPolicy = SQLReviewPolicy.toJSON(message.sqlReviewPolicy);
+    }
+    if (message.slowQueryPolicy !== undefined) {
+      obj.slowQueryPolicy = SlowQueryPolicy.toJSON(message.slowQueryPolicy);
+    }
+    if (message.disableCopyDataPolicy !== undefined) {
+      obj.disableCopyDataPolicy = DisableCopyDataPolicy.toJSON(message.disableCopyDataPolicy);
+    }
+    if (message.maskingRulePolicy !== undefined) {
+      obj.maskingRulePolicy = MaskingRulePolicy.toJSON(message.maskingRulePolicy);
+    }
+    if (message.maskingExceptionPolicy !== undefined) {
+      obj.maskingExceptionPolicy = MaskingExceptionPolicy.toJSON(message.maskingExceptionPolicy);
+    }
+    if (message.enforce === true) {
+      obj.enforce = message.enforce;
+    }
+    if (message.resourceType !== 0) {
+      obj.resourceType = policyResourceTypeToJSON(message.resourceType);
+    }
+    if (message.resourceUid !== "") {
+      obj.resourceUid = message.resourceUid;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<Policy>): Policy {
     return Policy.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Policy>): Policy {
     const message = createBasePolicy();
     message.name = object.name ?? "";
@@ -1432,7 +1471,7 @@ export const DeploymentApprovalPolicy = {
   fromJSON(object: any): DeploymentApprovalPolicy {
     return {
       defaultStrategy: isSet(object.defaultStrategy) ? approvalStrategyFromJSON(object.defaultStrategy) : 0,
-      deploymentApprovalStrategies: Array.isArray(object?.deploymentApprovalStrategies)
+      deploymentApprovalStrategies: globalThis.Array.isArray(object?.deploymentApprovalStrategies)
         ? object.deploymentApprovalStrategies.map((e: any) => DeploymentApprovalStrategy.fromJSON(e))
         : [],
     };
@@ -1440,13 +1479,13 @@ export const DeploymentApprovalPolicy = {
 
   toJSON(message: DeploymentApprovalPolicy): unknown {
     const obj: any = {};
-    message.defaultStrategy !== undefined && (obj.defaultStrategy = approvalStrategyToJSON(message.defaultStrategy));
-    if (message.deploymentApprovalStrategies) {
+    if (message.defaultStrategy !== 0) {
+      obj.defaultStrategy = approvalStrategyToJSON(message.defaultStrategy);
+    }
+    if (message.deploymentApprovalStrategies?.length) {
       obj.deploymentApprovalStrategies = message.deploymentApprovalStrategies.map((e) =>
-        e ? DeploymentApprovalStrategy.toJSON(e) : undefined
+        DeploymentApprovalStrategy.toJSON(e)
       );
-    } else {
-      obj.deploymentApprovalStrategies = [];
     }
     return obj;
   },
@@ -1454,7 +1493,6 @@ export const DeploymentApprovalPolicy = {
   create(base?: DeepPartial<DeploymentApprovalPolicy>): DeploymentApprovalPolicy {
     return DeploymentApprovalPolicy.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<DeploymentApprovalPolicy>): DeploymentApprovalPolicy {
     const message = createBaseDeploymentApprovalPolicy();
     message.defaultStrategy = object.defaultStrategy ?? 0;
@@ -1531,30 +1569,32 @@ export const RolloutPolicy = {
 
   fromJSON(object: any): RolloutPolicy {
     return {
-      automatic: isSet(object.automatic) ? Boolean(object.automatic) : false,
-      workspaceRoles: Array.isArray(object?.workspaceRoles) ? object.workspaceRoles.map((e: any) => String(e)) : [],
-      projectRoles: Array.isArray(object?.projectRoles) ? object.projectRoles.map((e: any) => String(e)) : [],
-      issueRoles: Array.isArray(object?.issueRoles) ? object.issueRoles.map((e: any) => String(e)) : [],
+      automatic: isSet(object.automatic) ? globalThis.Boolean(object.automatic) : false,
+      workspaceRoles: globalThis.Array.isArray(object?.workspaceRoles)
+        ? object.workspaceRoles.map((e: any) => globalThis.String(e))
+        : [],
+      projectRoles: globalThis.Array.isArray(object?.projectRoles)
+        ? object.projectRoles.map((e: any) => globalThis.String(e))
+        : [],
+      issueRoles: globalThis.Array.isArray(object?.issueRoles)
+        ? object.issueRoles.map((e: any) => globalThis.String(e))
+        : [],
     };
   },
 
   toJSON(message: RolloutPolicy): unknown {
     const obj: any = {};
-    message.automatic !== undefined && (obj.automatic = message.automatic);
-    if (message.workspaceRoles) {
-      obj.workspaceRoles = message.workspaceRoles.map((e) => e);
-    } else {
-      obj.workspaceRoles = [];
+    if (message.automatic === true) {
+      obj.automatic = message.automatic;
     }
-    if (message.projectRoles) {
-      obj.projectRoles = message.projectRoles.map((e) => e);
-    } else {
-      obj.projectRoles = [];
+    if (message.workspaceRoles?.length) {
+      obj.workspaceRoles = message.workspaceRoles;
     }
-    if (message.issueRoles) {
-      obj.issueRoles = message.issueRoles.map((e) => e);
-    } else {
-      obj.issueRoles = [];
+    if (message.projectRoles?.length) {
+      obj.projectRoles = message.projectRoles;
+    }
+    if (message.issueRoles?.length) {
+      obj.issueRoles = message.issueRoles;
     }
     return obj;
   },
@@ -1562,7 +1602,6 @@ export const RolloutPolicy = {
   create(base?: DeepPartial<RolloutPolicy>): RolloutPolicy {
     return RolloutPolicy.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<RolloutPolicy>): RolloutPolicy {
     const message = createBaseRolloutPolicy();
     message.automatic = object.automatic ?? false;
@@ -1638,16 +1677,21 @@ export const DeploymentApprovalStrategy = {
 
   toJSON(message: DeploymentApprovalStrategy): unknown {
     const obj: any = {};
-    message.deploymentType !== undefined && (obj.deploymentType = deploymentTypeToJSON(message.deploymentType));
-    message.approvalGroup !== undefined && (obj.approvalGroup = approvalGroupToJSON(message.approvalGroup));
-    message.approvalStrategy !== undefined && (obj.approvalStrategy = approvalStrategyToJSON(message.approvalStrategy));
+    if (message.deploymentType !== 0) {
+      obj.deploymentType = deploymentTypeToJSON(message.deploymentType);
+    }
+    if (message.approvalGroup !== 0) {
+      obj.approvalGroup = approvalGroupToJSON(message.approvalGroup);
+    }
+    if (message.approvalStrategy !== 0) {
+      obj.approvalStrategy = approvalStrategyToJSON(message.approvalStrategy);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<DeploymentApprovalStrategy>): DeploymentApprovalStrategy {
     return DeploymentApprovalStrategy.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<DeploymentApprovalStrategy>): DeploymentApprovalStrategy {
     const message = createBaseDeploymentApprovalStrategy();
     message.deploymentType = object.deploymentType ?? 0;
@@ -1711,16 +1755,18 @@ export const BackupPlanPolicy = {
 
   toJSON(message: BackupPlanPolicy): unknown {
     const obj: any = {};
-    message.schedule !== undefined && (obj.schedule = backupPlanScheduleToJSON(message.schedule));
-    message.retentionDuration !== undefined &&
-      (obj.retentionDuration = message.retentionDuration ? Duration.toJSON(message.retentionDuration) : undefined);
+    if (message.schedule !== 0) {
+      obj.schedule = backupPlanScheduleToJSON(message.schedule);
+    }
+    if (message.retentionDuration !== undefined) {
+      obj.retentionDuration = Duration.toJSON(message.retentionDuration);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<BackupPlanPolicy>): BackupPlanPolicy {
     return BackupPlanPolicy.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<BackupPlanPolicy>): BackupPlanPolicy {
     const message = createBaseBackupPlanPolicy();
     message.schedule = object.schedule ?? 0;
@@ -1767,19 +1813,20 @@ export const SlowQueryPolicy = {
   },
 
   fromJSON(object: any): SlowQueryPolicy {
-    return { active: isSet(object.active) ? Boolean(object.active) : false };
+    return { active: isSet(object.active) ? globalThis.Boolean(object.active) : false };
   },
 
   toJSON(message: SlowQueryPolicy): unknown {
     const obj: any = {};
-    message.active !== undefined && (obj.active = message.active);
+    if (message.active === true) {
+      obj.active = message.active;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<SlowQueryPolicy>): SlowQueryPolicy {
     return SlowQueryPolicy.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SlowQueryPolicy>): SlowQueryPolicy {
     const message = createBaseSlowQueryPolicy();
     message.active = object.active ?? false;
@@ -1823,19 +1870,20 @@ export const DisableCopyDataPolicy = {
   },
 
   fromJSON(object: any): DisableCopyDataPolicy {
-    return { active: isSet(object.active) ? Boolean(object.active) : false };
+    return { active: isSet(object.active) ? globalThis.Boolean(object.active) : false };
   },
 
   toJSON(message: DisableCopyDataPolicy): unknown {
     const obj: any = {};
-    message.active !== undefined && (obj.active = message.active);
+    if (message.active === true) {
+      obj.active = message.active;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<DisableCopyDataPolicy>): DisableCopyDataPolicy {
     return DisableCopyDataPolicy.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<DisableCopyDataPolicy>): DisableCopyDataPolicy {
     const message = createBaseDisableCopyDataPolicy();
     message.active = object.active ?? false;
@@ -1879,15 +1927,15 @@ export const MaskingPolicy = {
   },
 
   fromJSON(object: any): MaskingPolicy {
-    return { maskData: Array.isArray(object?.maskData) ? object.maskData.map((e: any) => MaskData.fromJSON(e)) : [] };
+    return {
+      maskData: globalThis.Array.isArray(object?.maskData) ? object.maskData.map((e: any) => MaskData.fromJSON(e)) : [],
+    };
   },
 
   toJSON(message: MaskingPolicy): unknown {
     const obj: any = {};
-    if (message.maskData) {
-      obj.maskData = message.maskData.map((e) => e ? MaskData.toJSON(e) : undefined);
-    } else {
-      obj.maskData = [];
+    if (message.maskData?.length) {
+      obj.maskData = message.maskData.map((e) => MaskData.toJSON(e));
     }
     return obj;
   },
@@ -1895,7 +1943,6 @@ export const MaskingPolicy = {
   create(base?: DeepPartial<MaskingPolicy>): MaskingPolicy {
     return MaskingPolicy.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<MaskingPolicy>): MaskingPolicy {
     const message = createBaseMaskingPolicy();
     message.maskData = object.maskData?.map((e) => MaskData.fromPartial(e)) || [];
@@ -1997,33 +2044,45 @@ export const MaskData = {
 
   fromJSON(object: any): MaskData {
     return {
-      schema: isSet(object.schema) ? String(object.schema) : "",
-      table: isSet(object.table) ? String(object.table) : "",
-      column: isSet(object.column) ? String(object.column) : "",
+      schema: isSet(object.schema) ? globalThis.String(object.schema) : "",
+      table: isSet(object.table) ? globalThis.String(object.table) : "",
+      column: isSet(object.column) ? globalThis.String(object.column) : "",
       maskingLevel: isSet(object.maskingLevel) ? maskingLevelFromJSON(object.maskingLevel) : 0,
-      fullMaskingAlgorithmId: isSet(object.fullMaskingAlgorithmId) ? String(object.fullMaskingAlgorithmId) : "",
+      fullMaskingAlgorithmId: isSet(object.fullMaskingAlgorithmId)
+        ? globalThis.String(object.fullMaskingAlgorithmId)
+        : "",
       partialMaskingAlgorithmId: isSet(object.partialMaskingAlgorithmId)
-        ? String(object.partialMaskingAlgorithmId)
+        ? globalThis.String(object.partialMaskingAlgorithmId)
         : "",
     };
   },
 
   toJSON(message: MaskData): unknown {
     const obj: any = {};
-    message.schema !== undefined && (obj.schema = message.schema);
-    message.table !== undefined && (obj.table = message.table);
-    message.column !== undefined && (obj.column = message.column);
-    message.maskingLevel !== undefined && (obj.maskingLevel = maskingLevelToJSON(message.maskingLevel));
-    message.fullMaskingAlgorithmId !== undefined && (obj.fullMaskingAlgorithmId = message.fullMaskingAlgorithmId);
-    message.partialMaskingAlgorithmId !== undefined &&
-      (obj.partialMaskingAlgorithmId = message.partialMaskingAlgorithmId);
+    if (message.schema !== "") {
+      obj.schema = message.schema;
+    }
+    if (message.table !== "") {
+      obj.table = message.table;
+    }
+    if (message.column !== "") {
+      obj.column = message.column;
+    }
+    if (message.maskingLevel !== 0) {
+      obj.maskingLevel = maskingLevelToJSON(message.maskingLevel);
+    }
+    if (message.fullMaskingAlgorithmId !== "") {
+      obj.fullMaskingAlgorithmId = message.fullMaskingAlgorithmId;
+    }
+    if (message.partialMaskingAlgorithmId !== "") {
+      obj.partialMaskingAlgorithmId = message.partialMaskingAlgorithmId;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<MaskData>): MaskData {
     return MaskData.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<MaskData>): MaskData {
     const message = createBaseMaskData();
     message.schema = object.schema ?? "";
@@ -2083,18 +2142,18 @@ export const SQLReviewPolicy = {
 
   fromJSON(object: any): SQLReviewPolicy {
     return {
-      name: isSet(object.name) ? String(object.name) : "",
-      rules: Array.isArray(object?.rules) ? object.rules.map((e: any) => SQLReviewRule.fromJSON(e)) : [],
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      rules: globalThis.Array.isArray(object?.rules) ? object.rules.map((e: any) => SQLReviewRule.fromJSON(e)) : [],
     };
   },
 
   toJSON(message: SQLReviewPolicy): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    if (message.rules) {
-      obj.rules = message.rules.map((e) => e ? SQLReviewRule.toJSON(e) : undefined);
-    } else {
-      obj.rules = [];
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.rules?.length) {
+      obj.rules = message.rules.map((e) => SQLReviewRule.toJSON(e));
     }
     return obj;
   },
@@ -2102,7 +2161,6 @@ export const SQLReviewPolicy = {
   create(base?: DeepPartial<SQLReviewPolicy>): SQLReviewPolicy {
     return SQLReviewPolicy.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SQLReviewPolicy>): SQLReviewPolicy {
     const message = createBaseSQLReviewPolicy();
     message.name = object.name ?? "";
@@ -2188,28 +2246,37 @@ export const SQLReviewRule = {
 
   fromJSON(object: any): SQLReviewRule {
     return {
-      type: isSet(object.type) ? String(object.type) : "",
+      type: isSet(object.type) ? globalThis.String(object.type) : "",
       level: isSet(object.level) ? sQLReviewRuleLevelFromJSON(object.level) : 0,
-      payload: isSet(object.payload) ? String(object.payload) : "",
+      payload: isSet(object.payload) ? globalThis.String(object.payload) : "",
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
-      comment: isSet(object.comment) ? String(object.comment) : "",
+      comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
     };
   },
 
   toJSON(message: SQLReviewRule): unknown {
     const obj: any = {};
-    message.type !== undefined && (obj.type = message.type);
-    message.level !== undefined && (obj.level = sQLReviewRuleLevelToJSON(message.level));
-    message.payload !== undefined && (obj.payload = message.payload);
-    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
-    message.comment !== undefined && (obj.comment = message.comment);
+    if (message.type !== "") {
+      obj.type = message.type;
+    }
+    if (message.level !== 0) {
+      obj.level = sQLReviewRuleLevelToJSON(message.level);
+    }
+    if (message.payload !== "") {
+      obj.payload = message.payload;
+    }
+    if (message.engine !== 0) {
+      obj.engine = engineToJSON(message.engine);
+    }
+    if (message.comment !== "") {
+      obj.comment = message.comment;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<SQLReviewRule>): SQLReviewRule {
     return SQLReviewRule.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SQLReviewRule>): SQLReviewRule {
     const message = createBaseSQLReviewRule();
     message.type = object.type ?? "";
@@ -2258,7 +2325,7 @@ export const MaskingExceptionPolicy = {
 
   fromJSON(object: any): MaskingExceptionPolicy {
     return {
-      maskingExceptions: Array.isArray(object?.maskingExceptions)
+      maskingExceptions: globalThis.Array.isArray(object?.maskingExceptions)
         ? object.maskingExceptions.map((e: any) => MaskingExceptionPolicy_MaskingException.fromJSON(e))
         : [],
     };
@@ -2266,12 +2333,8 @@ export const MaskingExceptionPolicy = {
 
   toJSON(message: MaskingExceptionPolicy): unknown {
     const obj: any = {};
-    if (message.maskingExceptions) {
-      obj.maskingExceptions = message.maskingExceptions.map((e) =>
-        e ? MaskingExceptionPolicy_MaskingException.toJSON(e) : undefined
-      );
-    } else {
-      obj.maskingExceptions = [];
+    if (message.maskingExceptions?.length) {
+      obj.maskingExceptions = message.maskingExceptions.map((e) => MaskingExceptionPolicy_MaskingException.toJSON(e));
     }
     return obj;
   },
@@ -2279,7 +2342,6 @@ export const MaskingExceptionPolicy = {
   create(base?: DeepPartial<MaskingExceptionPolicy>): MaskingExceptionPolicy {
     return MaskingExceptionPolicy.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<MaskingExceptionPolicy>): MaskingExceptionPolicy {
     const message = createBaseMaskingExceptionPolicy();
     message.maskingExceptions =
@@ -2357,24 +2419,31 @@ export const MaskingExceptionPolicy_MaskingException = {
     return {
       action: isSet(object.action) ? maskingExceptionPolicy_MaskingException_ActionFromJSON(object.action) : 0,
       maskingLevel: isSet(object.maskingLevel) ? maskingLevelFromJSON(object.maskingLevel) : 0,
-      member: isSet(object.member) ? String(object.member) : "",
+      member: isSet(object.member) ? globalThis.String(object.member) : "",
       condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
     };
   },
 
   toJSON(message: MaskingExceptionPolicy_MaskingException): unknown {
     const obj: any = {};
-    message.action !== undefined && (obj.action = maskingExceptionPolicy_MaskingException_ActionToJSON(message.action));
-    message.maskingLevel !== undefined && (obj.maskingLevel = maskingLevelToJSON(message.maskingLevel));
-    message.member !== undefined && (obj.member = message.member);
-    message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
+    if (message.action !== 0) {
+      obj.action = maskingExceptionPolicy_MaskingException_ActionToJSON(message.action);
+    }
+    if (message.maskingLevel !== 0) {
+      obj.maskingLevel = maskingLevelToJSON(message.maskingLevel);
+    }
+    if (message.member !== "") {
+      obj.member = message.member;
+    }
+    if (message.condition !== undefined) {
+      obj.condition = Expr.toJSON(message.condition);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<MaskingExceptionPolicy_MaskingException>): MaskingExceptionPolicy_MaskingException {
     return MaskingExceptionPolicy_MaskingException.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<MaskingExceptionPolicy_MaskingException>): MaskingExceptionPolicy_MaskingException {
     const message = createBaseMaskingExceptionPolicy_MaskingException();
     message.action = object.action ?? 0;
@@ -2424,7 +2493,7 @@ export const MaskingRulePolicy = {
 
   fromJSON(object: any): MaskingRulePolicy {
     return {
-      rules: Array.isArray(object?.rules)
+      rules: globalThis.Array.isArray(object?.rules)
         ? object.rules.map((e: any) => MaskingRulePolicy_MaskingRule.fromJSON(e))
         : [],
     };
@@ -2432,10 +2501,8 @@ export const MaskingRulePolicy = {
 
   toJSON(message: MaskingRulePolicy): unknown {
     const obj: any = {};
-    if (message.rules) {
-      obj.rules = message.rules.map((e) => e ? MaskingRulePolicy_MaskingRule.toJSON(e) : undefined);
-    } else {
-      obj.rules = [];
+    if (message.rules?.length) {
+      obj.rules = message.rules.map((e) => MaskingRulePolicy_MaskingRule.toJSON(e));
     }
     return obj;
   },
@@ -2443,7 +2510,6 @@ export const MaskingRulePolicy = {
   create(base?: DeepPartial<MaskingRulePolicy>): MaskingRulePolicy {
     return MaskingRulePolicy.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<MaskingRulePolicy>): MaskingRulePolicy {
     const message = createBaseMaskingRulePolicy();
     message.rules = object.rules?.map((e) => MaskingRulePolicy_MaskingRule.fromPartial(e)) || [];
@@ -2508,7 +2574,7 @@ export const MaskingRulePolicy_MaskingRule = {
 
   fromJSON(object: any): MaskingRulePolicy_MaskingRule {
     return {
-      id: isSet(object.id) ? String(object.id) : "",
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
       condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
       maskingLevel: isSet(object.maskingLevel) ? maskingLevelFromJSON(object.maskingLevel) : 0,
     };
@@ -2516,16 +2582,21 @@ export const MaskingRulePolicy_MaskingRule = {
 
   toJSON(message: MaskingRulePolicy_MaskingRule): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
-    message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
-    message.maskingLevel !== undefined && (obj.maskingLevel = maskingLevelToJSON(message.maskingLevel));
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.condition !== undefined) {
+      obj.condition = Expr.toJSON(message.condition);
+    }
+    if (message.maskingLevel !== 0) {
+      obj.maskingLevel = maskingLevelToJSON(message.maskingLevel);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<MaskingRulePolicy_MaskingRule>): MaskingRulePolicy_MaskingRule {
     return MaskingRulePolicy_MaskingRule.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<MaskingRulePolicy_MaskingRule>): MaskingRulePolicy_MaskingRule {
     const message = createBaseMaskingRulePolicy_MaskingRule();
     message.id = object.id ?? "";
@@ -3662,9 +3733,15 @@ export const OrgPolicyServiceDefinition = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+if (_m0.util.Long !== Long) {
+  _m0.util.Long = Long as any;
+  _m0.configure();
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

@@ -198,6 +198,7 @@ func start() {
 			return
 		}
 	}
+
 	if err := checkDataDir(); err != nil {
 		slog.Error(err.Error())
 		return
@@ -205,6 +206,14 @@ func start() {
 
 	if err := checkCloudBackupFlags(); err != nil {
 		slog.Error("invalid flags for cloud backup", log.BBError(err))
+		return
+	}
+
+	// A safety measure to prevent accidentally resetting user's actual data with demo data.
+	// For emebeded mode, we control where data is stored and we put demo data in a separate directory
+	// from the non-demo data.
+	if flags.demoName != "" && flags.pgURL != "" {
+		slog.Error("demo mode is disallowed when storing metadata in external PostgreSQL instance")
 		return
 	}
 

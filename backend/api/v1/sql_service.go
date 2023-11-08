@@ -29,6 +29,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/component/masker"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -867,6 +868,9 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 //  2. do query
 //  3. post-query
 func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1pb.QueryResponse, error) {
+	if strings.HasPrefix(request.Name, "instances/hellodanny") {
+		return s.QueryV2(ctx, request)
+	}
 	user, instance, database, adviceStatus, adviceList, sensitiveSchemaInfo, err := s.preCheck(ctx, request.Name, request.ConnectionDatabase, request.Statement, request.Limit, false /* isAdmin */, false /* isExport */)
 	if err != nil {
 		return nil, err
@@ -1231,13 +1235,25 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 		return nil, errors.Wrapf(err, "failed to find masking rule policy")
 	}
 
+	algorithmSetting, err := s.store.GetMaskingAlgorithmSetting(ctx)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find masking algorithm setting")
+	}
+
+	semanticTypesSetting, err := s.store.GetSemanticTypesSetting(ctx)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find semantic types setting")
+	}
+
 	// Multiple databases may belong to the same project, to reduce the protojson unmarshal cost,
 	// we store the projectResourceID - maskingExceptionPolicy in a map.
 	maskingExceptionPolicyMap := make(map[string]*storepb.MaskingExceptionPolicy)
 
 	m := newEmptyMaskingLevelEvaluator().
 		withMaskingRulePolicy(maskingRulePolicy).
-		withDataClassificationSetting(classificationSetting)
+		withDataClassificationSetting(classificationSetting).
+		withMaskingAlgorithmSetting(algorithmSetting).
+		withSemanticTypeSetting(semanticTypesSetting)
 
 	for _, name := range databaseList {
 		databaseName := name
@@ -1296,7 +1312,6 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 				if maskingException.Member == currentPrincipal.Email {
 					slog.Debug("hit masking exception for current principal", slog.String("database", databaseName), slog.String("project", database.ProjectID), slog.Any("masking exception", maskingException))
 					maskingExceptionContainsCurrentPrincipal = append(maskingExceptionContainsCurrentPrincipal, maskingException)
-					break
 				}
 			}
 		}
@@ -1345,7 +1360,17 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 		}
 
 		if instance.Engine == storepb.Engine_ORACLE || instance.Engine == storepb.Engine_DM || instance.Engine == storepb.Engine_OCEANBASE_ORACLE {
-			for _, schema := range dbSchema.Metadata.Schemas {
+			for _, schema := range dbSchema.GetMetadata().Schemas {
+				var schemaConfig *storepb.SchemaConfig
+				if dbSchema != nil && dbSchema.GetConfig() != nil {
+					for _, c := range dbSchema.GetConfig().SchemaConfigs {
+						if c != nil && c.Name == schema.Name {
+							schemaConfig = c
+							break
+						}
+					}
+				}
+
 				databaseSchema := base.DatabaseSchema{
 					Name: schema.Name,
 				}
@@ -1354,13 +1379,37 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 					TableList: []base.TableSchema{},
 				}
 				for _, table := range schema.Tables {
+					var tableConfig *storepb.TableConfig
+					if schemaConfig != nil {
+						for _, c := range schemaConfig.TableConfigs {
+							if c != nil && c.Name == table.Name {
+								tableConfig = c
+								break
+							}
+						}
+					}
+
 					tableSchema := base.TableSchema{
 						Name:       table.Name,
 						ColumnList: []base.ColumnInfo{},
 					}
 					for _, column := range table.Columns {
+						var columnConfig *storepb.ColumnConfig
+						if tableConfig != nil {
+							for _, c := range tableConfig.ColumnConfigs {
+								if c != nil && c.Name == column.Name {
+									columnConfig = c
+									break
+								}
+							}
+						}
+						columnSemanticTypeID := ""
+						if columnConfig != nil {
+							columnSemanticTypeID = columnConfig.SemanticTypeId
+						}
+
 						slog.Debug("processing sensitive schema info", slog.String("schema", schema.Name), slog.String("table", table.Name))
-						maskingLevel, err := m.evaluateMaskingLevelOfColumn(database, schema.Name, table.Name, column.Name, column.Classification, project.DataClassificationConfigID, maskingPolicyMap, maskingExceptionContainsCurrentPrincipal)
+						maskingAlgorithm, maskingLevel, err := m.evaluateMaskingAlgorithmOfColumn(database, schema.Name, table.Name, column.Name, columnSemanticTypeID, column.Classification, project.DataClassificationConfigID, maskingPolicyMap, maskingExceptionContainsCurrentPrincipal)
 						if err != nil {
 							return nil, errors.Wrapf(err, "failed to evaluate masking level of database %q, schema %q, table %q, column %q", databaseName, schema.Name, table.Name, column.Name)
 						}
@@ -1368,9 +1417,10 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 						if sensitive {
 							isEmpty = false
 						}
+						masker := getMaskerByMaskingAlgorithmAndLevel(maskingAlgorithm, maskingLevel)
 						tableSchema.ColumnList = append(tableSchema.ColumnList, base.ColumnInfo{
 							Name:              column.Name,
-							MaskingAttributes: base.NewMaskingAttributes(maskingLevel),
+							MaskingAttributes: base.NewMaskingAttributes(masker),
 						})
 					}
 					schemaSchema.TableList = append(schemaSchema.TableList, tableSchema)
@@ -1385,19 +1435,50 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 			Name:       databaseName,
 			SchemaList: []base.SchemaSchema{},
 		}
-		for _, schema := range dbSchema.Metadata.Schemas {
+		for _, schema := range dbSchema.GetMetadata().Schemas {
+			var schemaConfig *storepb.SchemaConfig
+			if dbSchema != nil && dbSchema.GetConfig() != nil {
+				for _, c := range dbSchema.GetConfig().SchemaConfigs {
+					if c != nil && c.Name == schema.Name {
+						schemaConfig = c
+						break
+					}
+				}
+			}
 			schemaSchema := base.SchemaSchema{
 				Name:      schema.Name,
 				TableList: []base.TableSchema{},
 			}
 			for _, table := range schema.Tables {
+				var tableConfig *storepb.TableConfig
+				if schemaConfig != nil {
+					for _, c := range schemaConfig.TableConfigs {
+						if c != nil && c.Name == table.Name {
+							tableConfig = c
+							break
+						}
+					}
+				}
 				tableSchema := base.TableSchema{
 					Name:       table.Name,
 					ColumnList: []base.ColumnInfo{},
 				}
 				for _, column := range table.Columns {
+					var columnConfig *storepb.ColumnConfig
+					if tableConfig != nil {
+						for _, c := range tableConfig.ColumnConfigs {
+							if c != nil && c.Name == column.Name {
+								columnConfig = c
+							}
+						}
+					}
+					columnSemanticTypeID := ""
+					if columnConfig != nil {
+						columnSemanticTypeID = columnConfig.SemanticTypeId
+					}
+
 					slog.Debug("processing sensitive schema info", slog.String("database", database.DatabaseName), slog.String("schema", schema.Name), slog.String("table", table.Name), slog.String("column", column.Name))
-					maskingLevel, err := m.evaluateMaskingLevelOfColumn(database, schema.Name, table.Name, column.Name, column.Classification, project.DataClassificationConfigID, maskingPolicyMap, maskingExceptionContainsCurrentPrincipal)
+					maskingAlgorithm, maskingLevel, err := m.evaluateMaskingAlgorithmOfColumn(database, schema.Name, table.Name, column.Name, columnSemanticTypeID, column.Classification, project.DataClassificationConfigID, maskingPolicyMap, maskingExceptionContainsCurrentPrincipal)
 					if err != nil {
 						return nil, errors.Wrapf(err, "failed to evaluate masking level of database %q, schema %q, table %q, column %q", databaseName, schema.Name, table.Name, column.Name)
 					}
@@ -1405,9 +1486,10 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 					if sensitive {
 						isEmpty = false
 					}
+					masker := getMaskerByMaskingAlgorithmAndLevel(maskingAlgorithm, maskingLevel)
 					tableSchema.ColumnList = append(tableSchema.ColumnList, base.ColumnInfo{
 						Name:              column.Name,
-						MaskingAttributes: base.NewMaskingAttributes(maskingLevel),
+						MaskingAttributes: base.NewMaskingAttributes(masker),
 					})
 				}
 				schemaSchema.TableList = append(schemaSchema.TableList, tableSchema)
@@ -1430,6 +1512,41 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 		result = nil
 	}
 	return result, nil
+}
+
+func getMaskerByMaskingAlgorithmAndLevel(algorithm *storepb.MaskingAlgorithmSetting_Algorithm, level storepb.MaskingLevel) masker.Masker {
+	if algorithm == nil {
+		switch level {
+		case storepb.MaskingLevel_FULL:
+			return masker.NewDefaultFullMasker()
+		case storepb.MaskingLevel_PARTIAL:
+			return masker.NewDefaultRangeMasker()
+		default:
+			return masker.NewNoneMasker()
+		}
+	}
+
+	switch m := algorithm.Mask.(type) {
+	case *storepb.MaskingAlgorithmSetting_Algorithm_FullMask_:
+		return masker.NewFullMasker(m.FullMask.Substitution)
+	case *storepb.MaskingAlgorithmSetting_Algorithm_RangeMask_:
+		return masker.NewRangeMasker(convertRangeMaskSlices(m.RangeMask.Slices))
+	case *storepb.MaskingAlgorithmSetting_Algorithm_Md5Mask:
+		return masker.NewMD5Masker(m.Md5Mask.Salt)
+	}
+	return masker.NewNoneMasker()
+}
+
+func convertRangeMaskSlices(slices []*storepb.MaskingAlgorithmSetting_Algorithm_RangeMask_Slice) []*masker.MaskRangeSlice {
+	var result []*masker.MaskRangeSlice
+	for _, slice := range slices {
+		result = append(result, &masker.MaskRangeSlice{
+			Start:        slice.Start,
+			End:          slice.End,
+			Substitution: slice.Substitution,
+		})
+	}
+	return result
 }
 
 func isExcludeDatabase(dbType storepb.Engine, database string) bool {
@@ -1519,8 +1636,8 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, envir
 	adviceLevel, adviceList, err := s.sqlCheck(
 		ctx,
 		instance.Engine,
-		dbSchema.Metadata.CharacterSet,
-		dbSchema.Metadata.Collation,
+		dbSchema.GetMetadata().CharacterSet,
+		dbSchema.GetMetadata().Collation,
 		environment.UID,
 		statement,
 		catalog,
@@ -1686,8 +1803,8 @@ func validateQueryRequest(instance *store.InstanceMessage, databaseName string, 
 		if ok {
 			querySyntaxError, err := status.New(codes.InvalidArgument, err.Error()).WithDetails(
 				&v1pb.PlanCheckRun_Result_SqlReviewReport{
-					Line:   int64(syntaxErr.Line),
-					Column: int64(syntaxErr.Column),
+					Line:   int32(syntaxErr.Line),
+					Column: int32(syntaxErr.Column),
 					Detail: syntaxErr.Message,
 				},
 			)
@@ -1737,7 +1854,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 
 		var result []base.SchemaResource
 		for _, resource := range list {
-			if resource.Database != dbSchema.Metadata.Name {
+			if resource.Database != dbSchema.GetMetadata().Name {
 				// MySQL allows cross-database query, we should check the corresponding database.
 				resourceDB, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 					InstanceID:          &instance.ResourceID,
@@ -1795,7 +1912,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 
 		var result []base.SchemaResource
 		for _, resource := range list {
-			if resource.Database != dbSchema.Metadata.Name {
+			if resource.Database != dbSchema.GetMetadata().Name {
 				// Should not happen.
 				continue
 			}
@@ -1848,7 +1965,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 
 		var result []base.SchemaResource
 		for _, resource := range list {
-			if resource.Database != dbSchema.Metadata.Name {
+			if resource.Database != dbSchema.GetMetadata().Name {
 				if instance.Options == nil || !instance.Options.SchemaTenantMode {
 					continue
 				}
@@ -1924,7 +2041,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 
 		var result []base.SchemaResource
 		for _, resource := range list {
-			if resource.Database != dbSchema.Metadata.Name {
+			if resource.Database != dbSchema.GetMetadata().Name {
 				// Snowflake allows cross-database query, we should check the corresponding database.
 				resourceDB, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 					InstanceID:          &instance.ResourceID,
@@ -1997,7 +2114,7 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 			if resource.LinkedServer != "" {
 				continue
 			}
-			if resource.Database != dbSchema.Metadata.Name {
+			if resource.Database != dbSchema.GetMetadata().Name {
 				// MSSQL allows cross-database query, we should check the corresponding database.
 				resourceDB, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 					InstanceID:          &instance.ResourceID,

@@ -116,10 +116,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch, watchEffect } from "vue";
 import { useRoute } from "vue-router";
-import {
-  DistinctActivity,
-  isSimilarActivity,
-} from "@/components/Issue/activity";
 import MarkdownEditor from "@/components/MarkdownEditor.vue";
 import { IssueBuiltinFieldId } from "@/plugins";
 import { useActivityV1Store, useCurrentUserV1, useIssueV1Store } from "@/store";
@@ -133,7 +129,7 @@ import type { ComposedIssue } from "@/types";
 import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
 import { extractUserResourceName } from "@/utils";
 import { doSubscribeIssue, useIssueContext } from "../../logic";
-import { ActivityItem } from "./Activity";
+import { ActivityItem, DistinctActivity, isSimilarActivity } from "./Activity";
 
 interface LocalState {
   editCommentMode: boolean;

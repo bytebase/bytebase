@@ -107,7 +107,7 @@
                         type="checkbox"
                         class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
                         :checked="isDatabaseSelected(database as ComposedDatabase)"
-                        @input="
+                        @click.stop="
                           toggleDatabasesSelection(
                             [database as ComposedDatabase],
                             ($event.target as HTMLInputElement).checked
@@ -363,8 +363,6 @@
     @cancel="featureModalContext.feature = undefined"
   />
 
-  <GhostDialog ref="ghostDialog" />
-
   <SchemaEditorModal
     v-if="state.showSchemaEditorModal"
     :database-id-list="schemaEditorContext.databaseIdList"
@@ -411,7 +409,6 @@ import {
 import { State } from "@/types/proto/v1/common";
 import { Project, TenantMode } from "@/types/proto/v1/project_service";
 import {
-  allowGhostMigrationV1,
   allowUsingSchemaEditorV1,
   instanceV1HasAlterSchema,
   filterDatabaseV1ByKeyword,
@@ -427,7 +424,6 @@ import {
   ProjectSelect,
 } from "../v2";
 import DatabaseGroupPrevEditorModal from "./DatabaseGroupPrevEditorModal.vue";
-import GhostDialog from "./GhostDialog.vue";
 import ProjectStandardView, {
   ProjectStandardViewState,
 } from "./ProjectStandardView.vue";
@@ -476,7 +472,6 @@ const featureModalContext = ref<{
   feature?: FeatureType;
 }>({});
 
-const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
 const schemaEditorContext = ref<{
   databaseIdList: string[];
 }>({
@@ -658,38 +653,6 @@ const allowGenerateMultiDb = computed(() => {
   }
 });
 
-// 'normal' -> normal migration
-// 'online' -> online migration
-// false -> user clicked cancel button
-const isUsingGhostMigration = async (databaseList: ComposedDatabase[]) => {
-  // Gh-ost is not available for tenant mode yet.
-  if (
-    databaseList.some(
-      (db) => db.projectEntity.tenantMode === TenantMode.TENANT_MODE_ENABLED
-    )
-  ) {
-    return "normal";
-  }
-
-  // never available for "bb.issue.database.data.update"
-  if (props.type === "bb.issue.database.data.update") {
-    return "normal";
-  }
-
-  // check if all selected databases supports gh-ost
-  if (allowGhostMigrationV1(databaseList)) {
-    // open the dialog to ask the user
-    const { result, mode } = await ghostDialog.value!.open();
-    if (!result) {
-      return false; // return false when user clicked the cancel button
-    }
-    return mode;
-  }
-
-  // fallback to normal
-  return "normal";
-};
-
 // Also works when single db selected.
 const generateMultiDb = async () => {
   if (
@@ -715,11 +678,6 @@ const generateMultiDb = async () => {
     return;
   }
 
-  const mode = await isUsingGhostMigration(selectedDatabaseList);
-  if (mode === false) {
-    return;
-  }
-
   if (flattenSelectedProjectSet.value.size !== 1) {
     return;
   }
@@ -728,17 +686,13 @@ const generateMultiDb = async () => {
     template: props.type,
     name: generateIssueName(
       props.type,
-      selectedDatabaseList.map((db) => db.databaseName),
-      mode === "online"
+      selectedDatabaseList.map((db) => db.databaseName)
     ),
     project: [...flattenSelectedProjectSet.value][0],
     // The server-side will sort the databases by environment.
     // So we need not to sort them here.
     databaseList: flattenSelectedDatabaseUidList.value.join(","),
   };
-  if (mode === "online") {
-    query.ghost = "1";
-  }
   router.push({
     name: "workspace.issue.detail",
     params: {
@@ -855,7 +809,7 @@ const generateTenant = async () => {
   const query: Record<string, any> = {
     template: props.type,
     project: state.project.uid,
-    mode: "tenant",
+    batch: "1",
   };
   if (state.alterType === "TENANT") {
     const databaseList = databaseV1Store.databaseListByProject(
@@ -924,25 +878,14 @@ const selectDatabase = async (database: ComposedDatabase) => {
     return;
   }
 
-  const mode = await isUsingGhostMigration([database]);
-  if (mode === false) {
-    return;
-  }
   emit("dismiss");
 
   const query: Record<string, any> = {
     template: props.type,
-    name: generateIssueName(
-      props.type,
-      [database.databaseName],
-      mode === "online"
-    ),
+    name: generateIssueName(props.type, [database.databaseName]),
     project: database.projectEntity.uid,
     databaseList: database.uid,
   };
-  if (mode === "online") {
-    query.ghost = "1";
-  }
   router.push({
     name: "workspace.issue.detail",
     params: {

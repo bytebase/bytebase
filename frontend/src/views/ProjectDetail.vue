@@ -66,8 +66,10 @@
 </template>
 
 <script lang="ts" setup>
+import { useLocalStorage } from "@vueuse/core";
 import { pull } from "lodash-es";
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import AnomalyCenterDashboard from "@/components/AnomalyCenter/AnomalyCenterDashboard.vue";
 import ChangelistDashboard from "@/components/Changelist/ChangelistDashboard";
@@ -89,15 +91,25 @@ import {
   useDatabaseV1Store,
   useProjectV1Store,
   useCurrentUserV1,
+  useActivityV1Store,
   hasFeature,
+  pushNotification,
 } from "@/store";
-import { QuickActionType, DEFAULT_PROJECT_V1_NAME, RoleType } from "@/types";
+import {
+  QuickActionType,
+  DEFAULT_PROJECT_V1_NAME,
+  RoleType,
+  activityName,
+} from "@/types";
 import { State } from "@/types/proto/v1/common";
+import { LogEntity_Action } from "@/types/proto/v1/logging_service";
 import {
   idFromSlug,
+  projectV1Slug,
   sortDatabaseV1List,
   isOwnerOfProjectV1,
   hasPermissionInProjectV1,
+  hasWorkspacePermissionV1,
   getQuickActionList,
 } from "@/utils";
 
@@ -118,6 +130,8 @@ const props = defineProps({
 
 const route = useRoute();
 const projectV1Store = useProjectV1Store();
+const activityV1Store = useActivityV1Store();
+const { t } = useI18n();
 
 const hash = computed(() => route.hash.replace(/^#?/, "") as ProjectHash);
 
@@ -139,6 +153,59 @@ useSearchDatabaseV1List(
 const databaseV1List = computed(() => {
   const list = useDatabaseV1Store().databaseListByProject(project.value.name);
   return sortDatabaseV1List(list);
+});
+
+const cachedNotifiedActivities = useLocalStorage<string[]>(
+  `bb.project.${props.projectSlug}.activities`,
+  []
+);
+
+const maximumCachedActivities = 5;
+
+onMounted(() => {
+  const currentUserV1 = useCurrentUserV1();
+
+  if (
+    !hasWorkspacePermissionV1(
+      "bb.permission.workspace.manage-issue",
+      currentUserV1.value.userRole
+    ) &&
+    !hasPermissionInProjectV1(
+      project.value.iamPolicy,
+      currentUserV1.value,
+      "bb.permission.project.change-database"
+    )
+  ) {
+    return;
+  }
+  activityV1Store
+    .fetchActivityList({
+      pageSize: 1,
+      order: "desc",
+      action: [LogEntity_Action.ACTION_PROJECT_REPOSITORY_PUSH],
+      resource: project.value.name,
+    })
+    .then((resp) => {
+      for (const activity of resp.logEntities) {
+        if (cachedNotifiedActivities.value.includes(activity.name)) {
+          continue;
+        }
+        cachedNotifiedActivities.value.push(activity.name);
+        if (cachedNotifiedActivities.value.length > maximumCachedActivities) {
+          cachedNotifiedActivities.value.shift();
+        }
+
+        pushNotification({
+          module: "bytebase",
+          style: "INFO",
+          title: activityName(activity.action),
+          manualHide: true,
+          link: `/project/${projectV1Slug(project.value)}#activities`,
+          linkTitle: t("common.view"),
+        });
+        break;
+      }
+    });
 });
 
 const quickActionMapByRole = computed(() => {

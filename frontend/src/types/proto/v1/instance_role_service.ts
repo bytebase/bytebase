@@ -1,4 +1,5 @@
 /* eslint-disable */
+import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
@@ -155,19 +156,20 @@ export const GetInstanceRoleRequest = {
   },
 
   fromJSON(object: any): GetInstanceRoleRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: GetInstanceRoleRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<GetInstanceRoleRequest>): GetInstanceRoleRequest {
     return GetInstanceRoleRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<GetInstanceRoleRequest>): GetInstanceRoleRequest {
     const message = createBaseGetInstanceRoleRequest();
     message.name = object.name ?? "";
@@ -242,26 +244,33 @@ export const ListInstanceRolesRequest = {
 
   fromJSON(object: any): ListInstanceRolesRequest {
     return {
-      parent: isSet(object.parent) ? String(object.parent) : "",
-      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
-      refresh: isSet(object.refresh) ? Boolean(object.refresh) : false,
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
+      refresh: isSet(object.refresh) ? globalThis.Boolean(object.refresh) : false,
     };
   },
 
   toJSON(message: ListInstanceRolesRequest): unknown {
     const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
-    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
-    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
-    message.refresh !== undefined && (obj.refresh = message.refresh);
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
+    if (message.refresh === true) {
+      obj.refresh = message.refresh;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ListInstanceRolesRequest>): ListInstanceRolesRequest {
     return ListInstanceRolesRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ListInstanceRolesRequest>): ListInstanceRolesRequest {
     const message = createBaseListInstanceRolesRequest();
     message.parent = object.parent ?? "";
@@ -319,26 +328,25 @@ export const ListInstanceRolesResponse = {
 
   fromJSON(object: any): ListInstanceRolesResponse {
     return {
-      roles: Array.isArray(object?.roles) ? object.roles.map((e: any) => InstanceRole.fromJSON(e)) : [],
-      nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
+      roles: globalThis.Array.isArray(object?.roles) ? object.roles.map((e: any) => InstanceRole.fromJSON(e)) : [],
+      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
     };
   },
 
   toJSON(message: ListInstanceRolesResponse): unknown {
     const obj: any = {};
-    if (message.roles) {
-      obj.roles = message.roles.map((e) => e ? InstanceRole.toJSON(e) : undefined);
-    } else {
-      obj.roles = [];
+    if (message.roles?.length) {
+      obj.roles = message.roles.map((e) => InstanceRole.toJSON(e));
     }
-    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ListInstanceRolesResponse>): ListInstanceRolesResponse {
     return ListInstanceRolesResponse.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ListInstanceRolesResponse>): ListInstanceRolesResponse {
     const message = createBaseListInstanceRolesResponse();
     message.roles = object.roles?.map((e) => InstanceRole.fromPartial(e)) || [];
@@ -394,22 +402,25 @@ export const CreateInstanceRoleRequest = {
 
   fromJSON(object: any): CreateInstanceRoleRequest {
     return {
-      parent: isSet(object.parent) ? String(object.parent) : "",
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
       role: isSet(object.role) ? InstanceRole.fromJSON(object.role) : undefined,
     };
   },
 
   toJSON(message: CreateInstanceRoleRequest): unknown {
     const obj: any = {};
-    message.parent !== undefined && (obj.parent = message.parent);
-    message.role !== undefined && (obj.role = message.role ? InstanceRole.toJSON(message.role) : undefined);
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.role !== undefined) {
+      obj.role = InstanceRole.toJSON(message.role);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<CreateInstanceRoleRequest>): CreateInstanceRoleRequest {
     return CreateInstanceRoleRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<CreateInstanceRoleRequest>): CreateInstanceRoleRequest {
     const message = createBaseCreateInstanceRoleRequest();
     message.parent = object.parent ?? "";
@@ -474,15 +485,18 @@ export const UpdateInstanceRoleRequest = {
 
   toJSON(message: UpdateInstanceRoleRequest): unknown {
     const obj: any = {};
-    message.role !== undefined && (obj.role = message.role ? InstanceRole.toJSON(message.role) : undefined);
-    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    if (message.role !== undefined) {
+      obj.role = InstanceRole.toJSON(message.role);
+    }
+    if (message.updateMask !== undefined) {
+      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
+    }
     return obj;
   },
 
   create(base?: DeepPartial<UpdateInstanceRoleRequest>): UpdateInstanceRoleRequest {
     return UpdateInstanceRoleRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<UpdateInstanceRoleRequest>): UpdateInstanceRoleRequest {
     const message = createBaseUpdateInstanceRoleRequest();
     message.role = (object.role !== undefined && object.role !== null)
@@ -529,19 +543,20 @@ export const DeleteInstanceRoleRequest = {
   },
 
   fromJSON(object: any): DeleteInstanceRoleRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: DeleteInstanceRoleRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<DeleteInstanceRoleRequest>): DeleteInstanceRoleRequest {
     return DeleteInstanceRoleRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<DeleteInstanceRoleRequest>): DeleteInstanceRoleRequest {
     const message = createBaseDeleteInstanceRoleRequest();
     message.name = object.name ?? "";
@@ -585,19 +600,20 @@ export const UndeleteInstanceRoleRequest = {
   },
 
   fromJSON(object: any): UndeleteInstanceRoleRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: UndeleteInstanceRoleRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<UndeleteInstanceRoleRequest>): UndeleteInstanceRoleRequest {
     return UndeleteInstanceRoleRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<UndeleteInstanceRoleRequest>): UndeleteInstanceRoleRequest {
     const message = createBaseUndeleteInstanceRoleRequest();
     message.name = object.name ?? "";
@@ -699,30 +715,41 @@ export const InstanceRole = {
 
   fromJSON(object: any): InstanceRole {
     return {
-      name: isSet(object.name) ? String(object.name) : "",
-      roleName: isSet(object.roleName) ? String(object.roleName) : "",
-      password: isSet(object.password) ? String(object.password) : undefined,
-      connectionLimit: isSet(object.connectionLimit) ? Number(object.connectionLimit) : undefined,
-      validUntil: isSet(object.validUntil) ? String(object.validUntil) : undefined,
-      attribute: isSet(object.attribute) ? String(object.attribute) : undefined,
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      roleName: isSet(object.roleName) ? globalThis.String(object.roleName) : "",
+      password: isSet(object.password) ? globalThis.String(object.password) : undefined,
+      connectionLimit: isSet(object.connectionLimit) ? globalThis.Number(object.connectionLimit) : undefined,
+      validUntil: isSet(object.validUntil) ? globalThis.String(object.validUntil) : undefined,
+      attribute: isSet(object.attribute) ? globalThis.String(object.attribute) : undefined,
     };
   },
 
   toJSON(message: InstanceRole): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.roleName !== undefined && (obj.roleName = message.roleName);
-    message.password !== undefined && (obj.password = message.password);
-    message.connectionLimit !== undefined && (obj.connectionLimit = Math.round(message.connectionLimit));
-    message.validUntil !== undefined && (obj.validUntil = message.validUntil);
-    message.attribute !== undefined && (obj.attribute = message.attribute);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.roleName !== "") {
+      obj.roleName = message.roleName;
+    }
+    if (message.password !== undefined) {
+      obj.password = message.password;
+    }
+    if (message.connectionLimit !== undefined) {
+      obj.connectionLimit = Math.round(message.connectionLimit);
+    }
+    if (message.validUntil !== undefined) {
+      obj.validUntil = message.validUntil;
+    }
+    if (message.attribute !== undefined) {
+      obj.attribute = message.attribute;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<InstanceRole>): InstanceRole {
     return InstanceRole.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<InstanceRole>): InstanceRole {
     const message = createBaseInstanceRole();
     message.name = object.name ?? "";
@@ -1068,9 +1095,15 @@ export const InstanceRoleServiceDefinition = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+if (_m0.util.Long !== Long) {
+  _m0.util.Long = Long as any;
+  _m0.configure();
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

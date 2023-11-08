@@ -45,7 +45,7 @@ export const humanizeDurationV1 = (
 ) => {
   if (!duration) return "-";
   const { seconds, nanos } = duration;
-  const total = seconds + nanos / 1e9;
+  const total = seconds.toNumber() + nanos / 1e9;
   if (brief && total <= 1) {
     return "Less than 1s";
   }
@@ -302,16 +302,6 @@ export const isNullOrUndefined = (value: any) => {
   return value === null || value === undefined;
 };
 
-export const getScrollParent = (
-  element: HTMLElement | null | undefined
-): HTMLElement => {
-  if (!element) {
-    return document.body;
-  }
-
-  if (element.scrollHeight > element.clientHeight) {
-    return element;
-  } else {
-    return getScrollParent(element.parentElement);
-  }
+export const onlyAllowNumber = (value: string) => {
+  return value === "" || /^\d+$/.test(value);
 };

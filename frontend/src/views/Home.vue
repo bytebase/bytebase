@@ -14,12 +14,6 @@
             $t("issue.advanced-search.self")
           }}</span>
         </router-link>
-        <NInput
-          :value="state.searchText"
-          :placeholder="$t('common.filter-by-name')"
-          :autofocus="true"
-          @update:value="changeSearchText($event)"
-        />
       </div>
     </div>
     <div v-show="tab === 'WAITING_APPROVAL'" class="mt-2">
@@ -32,8 +26,7 @@
           <IssueTableV1
             class="border-x-0"
             :show-placeholder="!loading"
-            :issue-list="issueList.filter(keywordFilter)"
-            :highlight-text="state.searchText"
+            :issue-list="issueList"
             title=""
           />
         </template>
@@ -56,8 +49,7 @@
           <IssueTableV1
             class="border-x-0"
             :show-placeholder="!loading"
-            :issue-list="issueList.filter(keywordFilter)"
-            :highlight-text="state.searchText"
+            :issue-list="issueList"
             title=""
           />
         </template>
@@ -80,8 +72,7 @@
           <IssueTableV1
             class="border-x-0"
             :show-placeholder="!loading"
-            :issue-list="issueList.filter(keywordFilter)"
-            :highlight-text="state.searchText"
+            :issue-list="issueList"
             title=""
           />
         </template>
@@ -104,8 +95,7 @@
           <IssueTableV1
             class="border-x-0"
             :show-placeholder="!loading"
-            :issue-list="issueList.filter(keywordFilter)"
-            :highlight-text="state.searchText"
+            :issue-list="issueList"
             title=""
           />
         </template>
@@ -130,8 +120,7 @@
           <IssueTableV1
             class="border-x-0"
             :show-placeholder="!loading"
-            :issue-list="issueList.filter(keywordFilter)"
-            :highlight-text="state.searchText"
+            :issue-list="issueList"
             title=""
           />
         </template>
@@ -226,7 +215,7 @@ import {
 } from "@/store";
 import { userNamePrefix } from "@/store/modules/v1/common";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
-import { ComposedIssue, IssueFilter, planTypeToString } from "../types";
+import { IssueFilter, planTypeToString } from "../types";
 import { extractUserUID } from "../utils";
 
 const TABS = [
@@ -240,12 +229,11 @@ const TABS = [
 type TabValue = typeof TABS[number];
 
 interface LocalState {
-  searchText: string;
   showTrialStartModal: boolean;
 }
 
-const OPEN_ISSUE_LIST_PAGE_SIZE = 10;
-const MAX_CLOSED_ISSUE = 5;
+const OPEN_ISSUE_LIST_PAGE_SIZE = 50;
+const MAX_CLOSED_ISSUE = 50;
 
 const { t } = useI18n();
 const subscriptionStore = useSubscriptionV1Store();
@@ -267,7 +255,6 @@ const tab = useLocalStorage<TabValue>(
 );
 
 const state = reactive<LocalState>({
-  searchText: "",
   showTrialStartModal: false,
 });
 
@@ -310,20 +297,6 @@ const commonIssueFilter = computed((): IssueFilter => {
     query: "",
   };
 });
-
-const keywordFilter = (issue: ComposedIssue) => {
-  const keyword = state.searchText.trim().toLowerCase();
-  if (keyword) {
-    if (!issue.title.toLowerCase().includes(keyword)) {
-      return false;
-    }
-  }
-  return true;
-};
-
-const changeSearchText = (searchText: string) => {
-  state.searchText = searchText;
-};
 
 watch(
   [hasCustomApprovalFeature, tab],

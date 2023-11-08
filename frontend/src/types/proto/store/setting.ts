@@ -1,4 +1,5 @@
 /* eslint-disable */
+import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { ParsedExpr } from "../google/api/expr/v1alpha1/syntax";
 import { Duration } from "../google/protobuf/duration";
@@ -496,11 +497,13 @@ export const WorkspaceProfileSetting = {
 
   fromJSON(object: any): WorkspaceProfileSetting {
     return {
-      externalUrl: isSet(object.externalUrl) ? String(object.externalUrl) : "",
-      disallowSignup: isSet(object.disallowSignup) ? Boolean(object.disallowSignup) : false,
-      require2fa: isSet(object.require2fa) ? Boolean(object.require2fa) : false,
-      outboundIpList: Array.isArray(object?.outboundIpList) ? object.outboundIpList.map((e: any) => String(e)) : [],
-      gitopsWebhookUrl: isSet(object.gitopsWebhookUrl) ? String(object.gitopsWebhookUrl) : "",
+      externalUrl: isSet(object.externalUrl) ? globalThis.String(object.externalUrl) : "",
+      disallowSignup: isSet(object.disallowSignup) ? globalThis.Boolean(object.disallowSignup) : false,
+      require2fa: isSet(object.require2fa) ? globalThis.Boolean(object.require2fa) : false,
+      outboundIpList: globalThis.Array.isArray(object?.outboundIpList)
+        ? object.outboundIpList.map((e: any) => globalThis.String(e))
+        : [],
+      gitopsWebhookUrl: isSet(object.gitopsWebhookUrl) ? globalThis.String(object.gitopsWebhookUrl) : "",
       tokenDuration: isSet(object.tokenDuration) ? Duration.fromJSON(object.tokenDuration) : undefined,
       announcement: isSet(object.announcement) ? Announcement.fromJSON(object.announcement) : undefined,
     };
@@ -508,26 +511,33 @@ export const WorkspaceProfileSetting = {
 
   toJSON(message: WorkspaceProfileSetting): unknown {
     const obj: any = {};
-    message.externalUrl !== undefined && (obj.externalUrl = message.externalUrl);
-    message.disallowSignup !== undefined && (obj.disallowSignup = message.disallowSignup);
-    message.require2fa !== undefined && (obj.require2fa = message.require2fa);
-    if (message.outboundIpList) {
-      obj.outboundIpList = message.outboundIpList.map((e) => e);
-    } else {
-      obj.outboundIpList = [];
+    if (message.externalUrl !== "") {
+      obj.externalUrl = message.externalUrl;
     }
-    message.gitopsWebhookUrl !== undefined && (obj.gitopsWebhookUrl = message.gitopsWebhookUrl);
-    message.tokenDuration !== undefined &&
-      (obj.tokenDuration = message.tokenDuration ? Duration.toJSON(message.tokenDuration) : undefined);
-    message.announcement !== undefined &&
-      (obj.announcement = message.announcement ? Announcement.toJSON(message.announcement) : undefined);
+    if (message.disallowSignup === true) {
+      obj.disallowSignup = message.disallowSignup;
+    }
+    if (message.require2fa === true) {
+      obj.require2fa = message.require2fa;
+    }
+    if (message.outboundIpList?.length) {
+      obj.outboundIpList = message.outboundIpList;
+    }
+    if (message.gitopsWebhookUrl !== "") {
+      obj.gitopsWebhookUrl = message.gitopsWebhookUrl;
+    }
+    if (message.tokenDuration !== undefined) {
+      obj.tokenDuration = Duration.toJSON(message.tokenDuration);
+    }
+    if (message.announcement !== undefined) {
+      obj.announcement = Announcement.toJSON(message.announcement);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<WorkspaceProfileSetting>): WorkspaceProfileSetting {
     return WorkspaceProfileSetting.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<WorkspaceProfileSetting>): WorkspaceProfileSetting {
     const message = createBaseWorkspaceProfileSetting();
     message.externalUrl = object.externalUrl ?? "";
@@ -603,23 +613,28 @@ export const Announcement = {
   fromJSON(object: any): Announcement {
     return {
       level: isSet(object.level) ? announcement_AlertLevelFromJSON(object.level) : 0,
-      text: isSet(object.text) ? String(object.text) : "",
-      link: isSet(object.link) ? String(object.link) : "",
+      text: isSet(object.text) ? globalThis.String(object.text) : "",
+      link: isSet(object.link) ? globalThis.String(object.link) : "",
     };
   },
 
   toJSON(message: Announcement): unknown {
     const obj: any = {};
-    message.level !== undefined && (obj.level = announcement_AlertLevelToJSON(message.level));
-    message.text !== undefined && (obj.text = message.text);
-    message.link !== undefined && (obj.link = message.link);
+    if (message.level !== 0) {
+      obj.level = announcement_AlertLevelToJSON(message.level);
+    }
+    if (message.text !== "") {
+      obj.text = message.text;
+    }
+    if (message.link !== "") {
+      obj.link = message.link;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<Announcement>): Announcement {
     return Announcement.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<Announcement>): Announcement {
     const message = createBaseAnnouncement();
     message.level = object.level ?? 0;
@@ -675,20 +690,26 @@ export const AgentPluginSetting = {
   },
 
   fromJSON(object: any): AgentPluginSetting {
-    return { url: isSet(object.url) ? String(object.url) : "", token: isSet(object.token) ? String(object.token) : "" };
+    return {
+      url: isSet(object.url) ? globalThis.String(object.url) : "",
+      token: isSet(object.token) ? globalThis.String(object.token) : "",
+    };
   },
 
   toJSON(message: AgentPluginSetting): unknown {
     const obj: any = {};
-    message.url !== undefined && (obj.url = message.url);
-    message.token !== undefined && (obj.token = message.token);
+    if (message.url !== "") {
+      obj.url = message.url;
+    }
+    if (message.token !== "") {
+      obj.token = message.token;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<AgentPluginSetting>): AgentPluginSetting {
     return AgentPluginSetting.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<AgentPluginSetting>): AgentPluginSetting {
     const message = createBaseAgentPluginSetting();
     message.url = object.url ?? "";
@@ -734,7 +755,7 @@ export const WorkspaceApprovalSetting = {
 
   fromJSON(object: any): WorkspaceApprovalSetting {
     return {
-      rules: Array.isArray(object?.rules)
+      rules: globalThis.Array.isArray(object?.rules)
         ? object.rules.map((e: any) => WorkspaceApprovalSetting_Rule.fromJSON(e))
         : [],
     };
@@ -742,10 +763,8 @@ export const WorkspaceApprovalSetting = {
 
   toJSON(message: WorkspaceApprovalSetting): unknown {
     const obj: any = {};
-    if (message.rules) {
-      obj.rules = message.rules.map((e) => e ? WorkspaceApprovalSetting_Rule.toJSON(e) : undefined);
-    } else {
-      obj.rules = [];
+    if (message.rules?.length) {
+      obj.rules = message.rules.map((e) => WorkspaceApprovalSetting_Rule.toJSON(e));
     }
     return obj;
   },
@@ -753,7 +772,6 @@ export const WorkspaceApprovalSetting = {
   create(base?: DeepPartial<WorkspaceApprovalSetting>): WorkspaceApprovalSetting {
     return WorkspaceApprovalSetting.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<WorkspaceApprovalSetting>): WorkspaceApprovalSetting {
     const message = createBaseWorkspaceApprovalSetting();
     message.rules = object.rules?.map((e) => WorkspaceApprovalSetting_Rule.fromPartial(e)) || [];
@@ -826,18 +844,21 @@ export const WorkspaceApprovalSetting_Rule = {
 
   toJSON(message: WorkspaceApprovalSetting_Rule): unknown {
     const obj: any = {};
-    message.expression !== undefined &&
-      (obj.expression = message.expression ? ParsedExpr.toJSON(message.expression) : undefined);
-    message.template !== undefined &&
-      (obj.template = message.template ? ApprovalTemplate.toJSON(message.template) : undefined);
-    message.condition !== undefined && (obj.condition = message.condition ? Expr.toJSON(message.condition) : undefined);
+    if (message.expression !== undefined) {
+      obj.expression = ParsedExpr.toJSON(message.expression);
+    }
+    if (message.template !== undefined) {
+      obj.template = ApprovalTemplate.toJSON(message.template);
+    }
+    if (message.condition !== undefined) {
+      obj.condition = Expr.toJSON(message.condition);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<WorkspaceApprovalSetting_Rule>): WorkspaceApprovalSetting_Rule {
     return WorkspaceApprovalSetting_Rule.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<WorkspaceApprovalSetting_Rule>): WorkspaceApprovalSetting_Rule {
     const message = createBaseWorkspaceApprovalSetting_Rule();
     message.expression = (object.expression !== undefined && object.expression !== null)
@@ -890,16 +911,16 @@ export const ExternalApprovalSetting = {
 
   fromJSON(object: any): ExternalApprovalSetting {
     return {
-      nodes: Array.isArray(object?.nodes) ? object.nodes.map((e: any) => ExternalApprovalSetting_Node.fromJSON(e)) : [],
+      nodes: globalThis.Array.isArray(object?.nodes)
+        ? object.nodes.map((e: any) => ExternalApprovalSetting_Node.fromJSON(e))
+        : [],
     };
   },
 
   toJSON(message: ExternalApprovalSetting): unknown {
     const obj: any = {};
-    if (message.nodes) {
-      obj.nodes = message.nodes.map((e) => e ? ExternalApprovalSetting_Node.toJSON(e) : undefined);
-    } else {
-      obj.nodes = [];
+    if (message.nodes?.length) {
+      obj.nodes = message.nodes.map((e) => ExternalApprovalSetting_Node.toJSON(e));
     }
     return obj;
   },
@@ -907,7 +928,6 @@ export const ExternalApprovalSetting = {
   create(base?: DeepPartial<ExternalApprovalSetting>): ExternalApprovalSetting {
     return ExternalApprovalSetting.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ExternalApprovalSetting>): ExternalApprovalSetting {
     const message = createBaseExternalApprovalSetting();
     message.nodes = object.nodes?.map((e) => ExternalApprovalSetting_Node.fromPartial(e)) || [];
@@ -972,24 +992,29 @@ export const ExternalApprovalSetting_Node = {
 
   fromJSON(object: any): ExternalApprovalSetting_Node {
     return {
-      id: isSet(object.id) ? String(object.id) : "",
-      title: isSet(object.title) ? String(object.title) : "",
-      endpoint: isSet(object.endpoint) ? String(object.endpoint) : "",
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      endpoint: isSet(object.endpoint) ? globalThis.String(object.endpoint) : "",
     };
   },
 
   toJSON(message: ExternalApprovalSetting_Node): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
-    message.title !== undefined && (obj.title = message.title);
-    message.endpoint !== undefined && (obj.endpoint = message.endpoint);
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.endpoint !== "") {
+      obj.endpoint = message.endpoint;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ExternalApprovalSetting_Node>): ExternalApprovalSetting_Node {
     return ExternalApprovalSetting_Node.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ExternalApprovalSetting_Node>): ExternalApprovalSetting_Node {
     const message = createBaseExternalApprovalSetting_Node();
     message.id = object.id ?? "";
@@ -1137,41 +1162,59 @@ export const SMTPMailDeliverySetting = {
 
   fromJSON(object: any): SMTPMailDeliverySetting {
     return {
-      server: isSet(object.server) ? String(object.server) : "",
-      port: isSet(object.port) ? Number(object.port) : 0,
+      server: isSet(object.server) ? globalThis.String(object.server) : "",
+      port: isSet(object.port) ? globalThis.Number(object.port) : 0,
       encryption: isSet(object.encryption) ? sMTPMailDeliverySetting_EncryptionFromJSON(object.encryption) : 0,
-      ca: isSet(object.ca) ? String(object.ca) : "",
-      key: isSet(object.key) ? String(object.key) : "",
-      cert: isSet(object.cert) ? String(object.cert) : "",
+      ca: isSet(object.ca) ? globalThis.String(object.ca) : "",
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      cert: isSet(object.cert) ? globalThis.String(object.cert) : "",
       authentication: isSet(object.authentication)
         ? sMTPMailDeliverySetting_AuthenticationFromJSON(object.authentication)
         : 0,
-      username: isSet(object.username) ? String(object.username) : "",
-      password: isSet(object.password) ? String(object.password) : "",
-      from: isSet(object.from) ? String(object.from) : "",
+      username: isSet(object.username) ? globalThis.String(object.username) : "",
+      password: isSet(object.password) ? globalThis.String(object.password) : "",
+      from: isSet(object.from) ? globalThis.String(object.from) : "",
     };
   },
 
   toJSON(message: SMTPMailDeliverySetting): unknown {
     const obj: any = {};
-    message.server !== undefined && (obj.server = message.server);
-    message.port !== undefined && (obj.port = Math.round(message.port));
-    message.encryption !== undefined && (obj.encryption = sMTPMailDeliverySetting_EncryptionToJSON(message.encryption));
-    message.ca !== undefined && (obj.ca = message.ca);
-    message.key !== undefined && (obj.key = message.key);
-    message.cert !== undefined && (obj.cert = message.cert);
-    message.authentication !== undefined &&
-      (obj.authentication = sMTPMailDeliverySetting_AuthenticationToJSON(message.authentication));
-    message.username !== undefined && (obj.username = message.username);
-    message.password !== undefined && (obj.password = message.password);
-    message.from !== undefined && (obj.from = message.from);
+    if (message.server !== "") {
+      obj.server = message.server;
+    }
+    if (message.port !== 0) {
+      obj.port = Math.round(message.port);
+    }
+    if (message.encryption !== 0) {
+      obj.encryption = sMTPMailDeliverySetting_EncryptionToJSON(message.encryption);
+    }
+    if (message.ca !== "") {
+      obj.ca = message.ca;
+    }
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.cert !== "") {
+      obj.cert = message.cert;
+    }
+    if (message.authentication !== 0) {
+      obj.authentication = sMTPMailDeliverySetting_AuthenticationToJSON(message.authentication);
+    }
+    if (message.username !== "") {
+      obj.username = message.username;
+    }
+    if (message.password !== "") {
+      obj.password = message.password;
+    }
+    if (message.from !== "") {
+      obj.from = message.from;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<SMTPMailDeliverySetting>): SMTPMailDeliverySetting {
     return SMTPMailDeliverySetting.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SMTPMailDeliverySetting>): SMTPMailDeliverySetting {
     const message = createBaseSMTPMailDeliverySetting();
     message.server = object.server ?? "";
@@ -1245,13 +1288,13 @@ export const SchemaTemplateSetting = {
 
   fromJSON(object: any): SchemaTemplateSetting {
     return {
-      fieldTemplates: Array.isArray(object?.fieldTemplates)
+      fieldTemplates: globalThis.Array.isArray(object?.fieldTemplates)
         ? object.fieldTemplates.map((e: any) => SchemaTemplateSetting_FieldTemplate.fromJSON(e))
         : [],
-      columnTypes: Array.isArray(object?.columnTypes)
+      columnTypes: globalThis.Array.isArray(object?.columnTypes)
         ? object.columnTypes.map((e: any) => SchemaTemplateSetting_ColumnType.fromJSON(e))
         : [],
-      tableTemplates: Array.isArray(object?.tableTemplates)
+      tableTemplates: globalThis.Array.isArray(object?.tableTemplates)
         ? object.tableTemplates.map((e: any) => SchemaTemplateSetting_TableTemplate.fromJSON(e))
         : [],
     };
@@ -1259,24 +1302,14 @@ export const SchemaTemplateSetting = {
 
   toJSON(message: SchemaTemplateSetting): unknown {
     const obj: any = {};
-    if (message.fieldTemplates) {
-      obj.fieldTemplates = message.fieldTemplates.map((e) =>
-        e ? SchemaTemplateSetting_FieldTemplate.toJSON(e) : undefined
-      );
-    } else {
-      obj.fieldTemplates = [];
+    if (message.fieldTemplates?.length) {
+      obj.fieldTemplates = message.fieldTemplates.map((e) => SchemaTemplateSetting_FieldTemplate.toJSON(e));
     }
-    if (message.columnTypes) {
-      obj.columnTypes = message.columnTypes.map((e) => e ? SchemaTemplateSetting_ColumnType.toJSON(e) : undefined);
-    } else {
-      obj.columnTypes = [];
+    if (message.columnTypes?.length) {
+      obj.columnTypes = message.columnTypes.map((e) => SchemaTemplateSetting_ColumnType.toJSON(e));
     }
-    if (message.tableTemplates) {
-      obj.tableTemplates = message.tableTemplates.map((e) =>
-        e ? SchemaTemplateSetting_TableTemplate.toJSON(e) : undefined
-      );
-    } else {
-      obj.tableTemplates = [];
+    if (message.tableTemplates?.length) {
+      obj.tableTemplates = message.tableTemplates.map((e) => SchemaTemplateSetting_TableTemplate.toJSON(e));
     }
     return obj;
   },
@@ -1284,7 +1317,6 @@ export const SchemaTemplateSetting = {
   create(base?: DeepPartial<SchemaTemplateSetting>): SchemaTemplateSetting {
     return SchemaTemplateSetting.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SchemaTemplateSetting>): SchemaTemplateSetting {
     const message = createBaseSchemaTemplateSetting();
     message.fieldTemplates = object.fieldTemplates?.map((e) => SchemaTemplateSetting_FieldTemplate.fromPartial(e)) ||
@@ -1373,9 +1405,9 @@ export const SchemaTemplateSetting_FieldTemplate = {
 
   fromJSON(object: any): SchemaTemplateSetting_FieldTemplate {
     return {
-      id: isSet(object.id) ? String(object.id) : "",
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
-      category: isSet(object.category) ? String(object.category) : "",
+      category: isSet(object.category) ? globalThis.String(object.category) : "",
       column: isSet(object.column) ? ColumnMetadata.fromJSON(object.column) : undefined,
       config: isSet(object.config) ? ColumnConfig.fromJSON(object.config) : undefined,
     };
@@ -1383,18 +1415,27 @@ export const SchemaTemplateSetting_FieldTemplate = {
 
   toJSON(message: SchemaTemplateSetting_FieldTemplate): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
-    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
-    message.category !== undefined && (obj.category = message.category);
-    message.column !== undefined && (obj.column = message.column ? ColumnMetadata.toJSON(message.column) : undefined);
-    message.config !== undefined && (obj.config = message.config ? ColumnConfig.toJSON(message.config) : undefined);
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.engine !== 0) {
+      obj.engine = engineToJSON(message.engine);
+    }
+    if (message.category !== "") {
+      obj.category = message.category;
+    }
+    if (message.column !== undefined) {
+      obj.column = ColumnMetadata.toJSON(message.column);
+    }
+    if (message.config !== undefined) {
+      obj.config = ColumnConfig.toJSON(message.config);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<SchemaTemplateSetting_FieldTemplate>): SchemaTemplateSetting_FieldTemplate {
     return SchemaTemplateSetting_FieldTemplate.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SchemaTemplateSetting_FieldTemplate>): SchemaTemplateSetting_FieldTemplate {
     const message = createBaseSchemaTemplateSetting_FieldTemplate();
     message.id = object.id ?? "";
@@ -1468,19 +1509,21 @@ export const SchemaTemplateSetting_ColumnType = {
   fromJSON(object: any): SchemaTemplateSetting_ColumnType {
     return {
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
-      enabled: isSet(object.enabled) ? Boolean(object.enabled) : false,
-      types: Array.isArray(object?.types) ? object.types.map((e: any) => String(e)) : [],
+      enabled: isSet(object.enabled) ? globalThis.Boolean(object.enabled) : false,
+      types: globalThis.Array.isArray(object?.types) ? object.types.map((e: any) => globalThis.String(e)) : [],
     };
   },
 
   toJSON(message: SchemaTemplateSetting_ColumnType): unknown {
     const obj: any = {};
-    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
-    message.enabled !== undefined && (obj.enabled = message.enabled);
-    if (message.types) {
-      obj.types = message.types.map((e) => e);
-    } else {
-      obj.types = [];
+    if (message.engine !== 0) {
+      obj.engine = engineToJSON(message.engine);
+    }
+    if (message.enabled === true) {
+      obj.enabled = message.enabled;
+    }
+    if (message.types?.length) {
+      obj.types = message.types;
     }
     return obj;
   },
@@ -1488,7 +1531,6 @@ export const SchemaTemplateSetting_ColumnType = {
   create(base?: DeepPartial<SchemaTemplateSetting_ColumnType>): SchemaTemplateSetting_ColumnType {
     return SchemaTemplateSetting_ColumnType.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SchemaTemplateSetting_ColumnType>): SchemaTemplateSetting_ColumnType {
     const message = createBaseSchemaTemplateSetting_ColumnType();
     message.engine = object.engine ?? 0;
@@ -1575,9 +1617,9 @@ export const SchemaTemplateSetting_TableTemplate = {
 
   fromJSON(object: any): SchemaTemplateSetting_TableTemplate {
     return {
-      id: isSet(object.id) ? String(object.id) : "",
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
-      category: isSet(object.category) ? String(object.category) : "",
+      category: isSet(object.category) ? globalThis.String(object.category) : "",
       table: isSet(object.table) ? TableMetadata.fromJSON(object.table) : undefined,
       config: isSet(object.config) ? TableConfig.fromJSON(object.config) : undefined,
     };
@@ -1585,18 +1627,27 @@ export const SchemaTemplateSetting_TableTemplate = {
 
   toJSON(message: SchemaTemplateSetting_TableTemplate): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
-    message.engine !== undefined && (obj.engine = engineToJSON(message.engine));
-    message.category !== undefined && (obj.category = message.category);
-    message.table !== undefined && (obj.table = message.table ? TableMetadata.toJSON(message.table) : undefined);
-    message.config !== undefined && (obj.config = message.config ? TableConfig.toJSON(message.config) : undefined);
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.engine !== 0) {
+      obj.engine = engineToJSON(message.engine);
+    }
+    if (message.category !== "") {
+      obj.category = message.category;
+    }
+    if (message.table !== undefined) {
+      obj.table = TableMetadata.toJSON(message.table);
+    }
+    if (message.config !== undefined) {
+      obj.config = TableConfig.toJSON(message.config);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<SchemaTemplateSetting_TableTemplate>): SchemaTemplateSetting_TableTemplate {
     return SchemaTemplateSetting_TableTemplate.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SchemaTemplateSetting_TableTemplate>): SchemaTemplateSetting_TableTemplate {
     const message = createBaseSchemaTemplateSetting_TableTemplate();
     message.id = object.id ?? "";
@@ -1649,7 +1700,7 @@ export const DataClassificationSetting = {
 
   fromJSON(object: any): DataClassificationSetting {
     return {
-      configs: Array.isArray(object?.configs)
+      configs: globalThis.Array.isArray(object?.configs)
         ? object.configs.map((e: any) => DataClassificationSetting_DataClassificationConfig.fromJSON(e))
         : [],
     };
@@ -1657,12 +1708,8 @@ export const DataClassificationSetting = {
 
   toJSON(message: DataClassificationSetting): unknown {
     const obj: any = {};
-    if (message.configs) {
-      obj.configs = message.configs.map((e) =>
-        e ? DataClassificationSetting_DataClassificationConfig.toJSON(e) : undefined
-      );
-    } else {
-      obj.configs = [];
+    if (message.configs?.length) {
+      obj.configs = message.configs.map((e) => DataClassificationSetting_DataClassificationConfig.toJSON(e));
     }
     return obj;
   },
@@ -1670,7 +1717,6 @@ export const DataClassificationSetting = {
   create(base?: DeepPartial<DataClassificationSetting>): DataClassificationSetting {
     return DataClassificationSetting.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<DataClassificationSetting>): DataClassificationSetting {
     const message = createBaseDataClassificationSetting();
     message.configs = object.configs?.map((e) => DataClassificationSetting_DataClassificationConfig.fromPartial(e)) ||
@@ -1758,9 +1804,9 @@ export const DataClassificationSetting_DataClassificationConfig = {
 
   fromJSON(object: any): DataClassificationSetting_DataClassificationConfig {
     return {
-      id: isSet(object.id) ? String(object.id) : "",
-      title: isSet(object.title) ? String(object.title) : "",
-      levels: Array.isArray(object?.levels)
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      levels: globalThis.Array.isArray(object?.levels)
         ? object.levels.map((e: any) => DataClassificationSetting_DataClassificationConfig_Level.fromJSON(e))
         : [],
       classification: isObject(object.classification)
@@ -1776,20 +1822,23 @@ export const DataClassificationSetting_DataClassificationConfig = {
 
   toJSON(message: DataClassificationSetting_DataClassificationConfig): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
-    message.title !== undefined && (obj.title = message.title);
-    if (message.levels) {
-      obj.levels = message.levels.map((e) =>
-        e ? DataClassificationSetting_DataClassificationConfig_Level.toJSON(e) : undefined
-      );
-    } else {
-      obj.levels = [];
+    if (message.id !== "") {
+      obj.id = message.id;
     }
-    obj.classification = {};
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.levels?.length) {
+      obj.levels = message.levels.map((e) => DataClassificationSetting_DataClassificationConfig_Level.toJSON(e));
+    }
     if (message.classification) {
-      Object.entries(message.classification).forEach(([k, v]) => {
-        obj.classification[k] = DataClassificationSetting_DataClassificationConfig_DataClassification.toJSON(v);
-      });
+      const entries = Object.entries(message.classification);
+      if (entries.length > 0) {
+        obj.classification = {};
+        entries.forEach(([k, v]) => {
+          obj.classification[k] = DataClassificationSetting_DataClassificationConfig_DataClassification.toJSON(v);
+        });
+      }
     }
     return obj;
   },
@@ -1799,7 +1848,6 @@ export const DataClassificationSetting_DataClassificationConfig = {
   ): DataClassificationSetting_DataClassificationConfig {
     return DataClassificationSetting_DataClassificationConfig.fromPartial(base ?? {});
   },
-
   fromPartial(
     object: DeepPartial<DataClassificationSetting_DataClassificationConfig>,
   ): DataClassificationSetting_DataClassificationConfig {
@@ -1880,17 +1928,23 @@ export const DataClassificationSetting_DataClassificationConfig_Level = {
 
   fromJSON(object: any): DataClassificationSetting_DataClassificationConfig_Level {
     return {
-      id: isSet(object.id) ? String(object.id) : "",
-      title: isSet(object.title) ? String(object.title) : "",
-      description: isSet(object.description) ? String(object.description) : "",
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      description: isSet(object.description) ? globalThis.String(object.description) : "",
     };
   },
 
   toJSON(message: DataClassificationSetting_DataClassificationConfig_Level): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
-    message.title !== undefined && (obj.title = message.title);
-    message.description !== undefined && (obj.description = message.description);
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.description !== "") {
+      obj.description = message.description;
+    }
     return obj;
   },
 
@@ -1899,7 +1953,6 @@ export const DataClassificationSetting_DataClassificationConfig_Level = {
   ): DataClassificationSetting_DataClassificationConfig_Level {
     return DataClassificationSetting_DataClassificationConfig_Level.fromPartial(base ?? {});
   },
-
   fromPartial(
     object: DeepPartial<DataClassificationSetting_DataClassificationConfig_Level>,
   ): DataClassificationSetting_DataClassificationConfig_Level {
@@ -1984,19 +2037,27 @@ export const DataClassificationSetting_DataClassificationConfig_DataClassificati
 
   fromJSON(object: any): DataClassificationSetting_DataClassificationConfig_DataClassification {
     return {
-      id: isSet(object.id) ? String(object.id) : "",
-      title: isSet(object.title) ? String(object.title) : "",
-      description: isSet(object.description) ? String(object.description) : "",
-      levelId: isSet(object.levelId) ? String(object.levelId) : undefined,
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      description: isSet(object.description) ? globalThis.String(object.description) : "",
+      levelId: isSet(object.levelId) ? globalThis.String(object.levelId) : undefined,
     };
   },
 
   toJSON(message: DataClassificationSetting_DataClassificationConfig_DataClassification): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
-    message.title !== undefined && (obj.title = message.title);
-    message.description !== undefined && (obj.description = message.description);
-    message.levelId !== undefined && (obj.levelId = message.levelId);
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.description !== "") {
+      obj.description = message.description;
+    }
+    if (message.levelId !== undefined) {
+      obj.levelId = message.levelId;
+    }
     return obj;
   },
 
@@ -2005,7 +2066,6 @@ export const DataClassificationSetting_DataClassificationConfig_DataClassificati
   ): DataClassificationSetting_DataClassificationConfig_DataClassification {
     return DataClassificationSetting_DataClassificationConfig_DataClassification.fromPartial(base ?? {});
   },
-
   fromPartial(
     object: DeepPartial<DataClassificationSetting_DataClassificationConfig_DataClassification>,
   ): DataClassificationSetting_DataClassificationConfig_DataClassification {
@@ -2077,7 +2137,7 @@ export const DataClassificationSetting_DataClassificationConfig_ClassificationEn
 
   fromJSON(object: any): DataClassificationSetting_DataClassificationConfig_ClassificationEntry {
     return {
-      key: isSet(object.key) ? String(object.key) : "",
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
       value: isSet(object.value)
         ? DataClassificationSetting_DataClassificationConfig_DataClassification.fromJSON(object.value)
         : undefined,
@@ -2086,10 +2146,12 @@ export const DataClassificationSetting_DataClassificationConfig_ClassificationEn
 
   toJSON(message: DataClassificationSetting_DataClassificationConfig_ClassificationEntry): unknown {
     const obj: any = {};
-    message.key !== undefined && (obj.key = message.key);
-    message.value !== undefined && (obj.value = message.value
-      ? DataClassificationSetting_DataClassificationConfig_DataClassification.toJSON(message.value)
-      : undefined);
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.value !== undefined) {
+      obj.value = DataClassificationSetting_DataClassificationConfig_DataClassification.toJSON(message.value);
+    }
     return obj;
   },
 
@@ -2098,7 +2160,6 @@ export const DataClassificationSetting_DataClassificationConfig_ClassificationEn
   ): DataClassificationSetting_DataClassificationConfig_ClassificationEntry {
     return DataClassificationSetting_DataClassificationConfig_ClassificationEntry.fromPartial(base ?? {});
   },
-
   fromPartial(
     object: DeepPartial<DataClassificationSetting_DataClassificationConfig_ClassificationEntry>,
   ): DataClassificationSetting_DataClassificationConfig_ClassificationEntry {
@@ -2148,7 +2209,7 @@ export const SemanticTypeSetting = {
 
   fromJSON(object: any): SemanticTypeSetting {
     return {
-      types: Array.isArray(object?.types)
+      types: globalThis.Array.isArray(object?.types)
         ? object.types.map((e: any) => SemanticTypeSetting_SemanticType.fromJSON(e))
         : [],
     };
@@ -2156,10 +2217,8 @@ export const SemanticTypeSetting = {
 
   toJSON(message: SemanticTypeSetting): unknown {
     const obj: any = {};
-    if (message.types) {
-      obj.types = message.types.map((e) => e ? SemanticTypeSetting_SemanticType.toJSON(e) : undefined);
-    } else {
-      obj.types = [];
+    if (message.types?.length) {
+      obj.types = message.types.map((e) => SemanticTypeSetting_SemanticType.toJSON(e));
     }
     return obj;
   },
@@ -2167,7 +2226,6 @@ export const SemanticTypeSetting = {
   create(base?: DeepPartial<SemanticTypeSetting>): SemanticTypeSetting {
     return SemanticTypeSetting.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SemanticTypeSetting>): SemanticTypeSetting {
     const message = createBaseSemanticTypeSetting();
     message.types = object.types?.map((e) => SemanticTypeSetting_SemanticType.fromPartial(e)) || [];
@@ -2252,28 +2310,39 @@ export const SemanticTypeSetting_SemanticType = {
 
   fromJSON(object: any): SemanticTypeSetting_SemanticType {
     return {
-      id: isSet(object.id) ? String(object.id) : "",
-      title: isSet(object.title) ? String(object.title) : "",
-      description: isSet(object.description) ? String(object.description) : "",
-      partialMaskAlgorithmId: isSet(object.partialMaskAlgorithmId) ? String(object.partialMaskAlgorithmId) : "",
-      fullMaskAlgorithmId: isSet(object.fullMaskAlgorithmId) ? String(object.fullMaskAlgorithmId) : "",
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      description: isSet(object.description) ? globalThis.String(object.description) : "",
+      partialMaskAlgorithmId: isSet(object.partialMaskAlgorithmId)
+        ? globalThis.String(object.partialMaskAlgorithmId)
+        : "",
+      fullMaskAlgorithmId: isSet(object.fullMaskAlgorithmId) ? globalThis.String(object.fullMaskAlgorithmId) : "",
     };
   },
 
   toJSON(message: SemanticTypeSetting_SemanticType): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
-    message.title !== undefined && (obj.title = message.title);
-    message.description !== undefined && (obj.description = message.description);
-    message.partialMaskAlgorithmId !== undefined && (obj.partialMaskAlgorithmId = message.partialMaskAlgorithmId);
-    message.fullMaskAlgorithmId !== undefined && (obj.fullMaskAlgorithmId = message.fullMaskAlgorithmId);
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.description !== "") {
+      obj.description = message.description;
+    }
+    if (message.partialMaskAlgorithmId !== "") {
+      obj.partialMaskAlgorithmId = message.partialMaskAlgorithmId;
+    }
+    if (message.fullMaskAlgorithmId !== "") {
+      obj.fullMaskAlgorithmId = message.fullMaskAlgorithmId;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<SemanticTypeSetting_SemanticType>): SemanticTypeSetting_SemanticType {
     return SemanticTypeSetting_SemanticType.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<SemanticTypeSetting_SemanticType>): SemanticTypeSetting_SemanticType {
     const message = createBaseSemanticTypeSetting_SemanticType();
     message.id = object.id ?? "";
@@ -2322,7 +2391,7 @@ export const MaskingAlgorithmSetting = {
 
   fromJSON(object: any): MaskingAlgorithmSetting {
     return {
-      algorithms: Array.isArray(object?.algorithms)
+      algorithms: globalThis.Array.isArray(object?.algorithms)
         ? object.algorithms.map((e: any) => MaskingAlgorithmSetting_Algorithm.fromJSON(e))
         : [],
     };
@@ -2330,10 +2399,8 @@ export const MaskingAlgorithmSetting = {
 
   toJSON(message: MaskingAlgorithmSetting): unknown {
     const obj: any = {};
-    if (message.algorithms) {
-      obj.algorithms = message.algorithms.map((e) => e ? MaskingAlgorithmSetting_Algorithm.toJSON(e) : undefined);
-    } else {
-      obj.algorithms = [];
+    if (message.algorithms?.length) {
+      obj.algorithms = message.algorithms.map((e) => MaskingAlgorithmSetting_Algorithm.toJSON(e));
     }
     return obj;
   },
@@ -2341,7 +2408,6 @@ export const MaskingAlgorithmSetting = {
   create(base?: DeepPartial<MaskingAlgorithmSetting>): MaskingAlgorithmSetting {
     return MaskingAlgorithmSetting.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<MaskingAlgorithmSetting>): MaskingAlgorithmSetting {
     const message = createBaseMaskingAlgorithmSetting();
     message.algorithms = object.algorithms?.map((e) => MaskingAlgorithmSetting_Algorithm.fromPartial(e)) || [];
@@ -2454,10 +2520,10 @@ export const MaskingAlgorithmSetting_Algorithm = {
 
   fromJSON(object: any): MaskingAlgorithmSetting_Algorithm {
     return {
-      id: isSet(object.id) ? String(object.id) : "",
-      title: isSet(object.title) ? String(object.title) : "",
-      description: isSet(object.description) ? String(object.description) : "",
-      category: isSet(object.category) ? String(object.category) : "",
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      description: isSet(object.description) ? globalThis.String(object.description) : "",
+      category: isSet(object.category) ? globalThis.String(object.category) : "",
       fullMask: isSet(object.fullMask)
         ? MaskingAlgorithmSetting_Algorithm_FullMask.fromJSON(object.fullMask)
         : undefined,
@@ -2470,26 +2536,33 @@ export const MaskingAlgorithmSetting_Algorithm = {
 
   toJSON(message: MaskingAlgorithmSetting_Algorithm): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
-    message.title !== undefined && (obj.title = message.title);
-    message.description !== undefined && (obj.description = message.description);
-    message.category !== undefined && (obj.category = message.category);
-    message.fullMask !== undefined &&
-      (obj.fullMask = message.fullMask
-        ? MaskingAlgorithmSetting_Algorithm_FullMask.toJSON(message.fullMask)
-        : undefined);
-    message.rangeMask !== undefined && (obj.rangeMask = message.rangeMask
-      ? MaskingAlgorithmSetting_Algorithm_RangeMask.toJSON(message.rangeMask)
-      : undefined);
-    message.md5Mask !== undefined &&
-      (obj.md5Mask = message.md5Mask ? MaskingAlgorithmSetting_Algorithm_MD5Mask.toJSON(message.md5Mask) : undefined);
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.description !== "") {
+      obj.description = message.description;
+    }
+    if (message.category !== "") {
+      obj.category = message.category;
+    }
+    if (message.fullMask !== undefined) {
+      obj.fullMask = MaskingAlgorithmSetting_Algorithm_FullMask.toJSON(message.fullMask);
+    }
+    if (message.rangeMask !== undefined) {
+      obj.rangeMask = MaskingAlgorithmSetting_Algorithm_RangeMask.toJSON(message.rangeMask);
+    }
+    if (message.md5Mask !== undefined) {
+      obj.md5Mask = MaskingAlgorithmSetting_Algorithm_MD5Mask.toJSON(message.md5Mask);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<MaskingAlgorithmSetting_Algorithm>): MaskingAlgorithmSetting_Algorithm {
     return MaskingAlgorithmSetting_Algorithm.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<MaskingAlgorithmSetting_Algorithm>): MaskingAlgorithmSetting_Algorithm {
     const message = createBaseMaskingAlgorithmSetting_Algorithm();
     message.id = object.id ?? "";
@@ -2545,19 +2618,20 @@ export const MaskingAlgorithmSetting_Algorithm_FullMask = {
   },
 
   fromJSON(object: any): MaskingAlgorithmSetting_Algorithm_FullMask {
-    return { substitution: isSet(object.substitution) ? String(object.substitution) : "" };
+    return { substitution: isSet(object.substitution) ? globalThis.String(object.substitution) : "" };
   },
 
   toJSON(message: MaskingAlgorithmSetting_Algorithm_FullMask): unknown {
     const obj: any = {};
-    message.substitution !== undefined && (obj.substitution = message.substitution);
+    if (message.substitution !== "") {
+      obj.substitution = message.substitution;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<MaskingAlgorithmSetting_Algorithm_FullMask>): MaskingAlgorithmSetting_Algorithm_FullMask {
     return MaskingAlgorithmSetting_Algorithm_FullMask.fromPartial(base ?? {});
   },
-
   fromPartial(
     object: DeepPartial<MaskingAlgorithmSetting_Algorithm_FullMask>,
   ): MaskingAlgorithmSetting_Algorithm_FullMask {
@@ -2604,7 +2678,7 @@ export const MaskingAlgorithmSetting_Algorithm_RangeMask = {
 
   fromJSON(object: any): MaskingAlgorithmSetting_Algorithm_RangeMask {
     return {
-      slices: Array.isArray(object?.slices)
+      slices: globalThis.Array.isArray(object?.slices)
         ? object.slices.map((e: any) => MaskingAlgorithmSetting_Algorithm_RangeMask_Slice.fromJSON(e))
         : [],
     };
@@ -2612,12 +2686,8 @@ export const MaskingAlgorithmSetting_Algorithm_RangeMask = {
 
   toJSON(message: MaskingAlgorithmSetting_Algorithm_RangeMask): unknown {
     const obj: any = {};
-    if (message.slices) {
-      obj.slices = message.slices.map((e) =>
-        e ? MaskingAlgorithmSetting_Algorithm_RangeMask_Slice.toJSON(e) : undefined
-      );
-    } else {
-      obj.slices = [];
+    if (message.slices?.length) {
+      obj.slices = message.slices.map((e) => MaskingAlgorithmSetting_Algorithm_RangeMask_Slice.toJSON(e));
     }
     return obj;
   },
@@ -2625,7 +2695,6 @@ export const MaskingAlgorithmSetting_Algorithm_RangeMask = {
   create(base?: DeepPartial<MaskingAlgorithmSetting_Algorithm_RangeMask>): MaskingAlgorithmSetting_Algorithm_RangeMask {
     return MaskingAlgorithmSetting_Algorithm_RangeMask.fromPartial(base ?? {});
   },
-
   fromPartial(
     object: DeepPartial<MaskingAlgorithmSetting_Algorithm_RangeMask>,
   ): MaskingAlgorithmSetting_Algorithm_RangeMask {
@@ -2695,17 +2764,23 @@ export const MaskingAlgorithmSetting_Algorithm_RangeMask_Slice = {
 
   fromJSON(object: any): MaskingAlgorithmSetting_Algorithm_RangeMask_Slice {
     return {
-      start: isSet(object.start) ? Number(object.start) : 0,
-      end: isSet(object.end) ? Number(object.end) : 0,
-      substitution: isSet(object.substitution) ? String(object.substitution) : "",
+      start: isSet(object.start) ? globalThis.Number(object.start) : 0,
+      end: isSet(object.end) ? globalThis.Number(object.end) : 0,
+      substitution: isSet(object.substitution) ? globalThis.String(object.substitution) : "",
     };
   },
 
   toJSON(message: MaskingAlgorithmSetting_Algorithm_RangeMask_Slice): unknown {
     const obj: any = {};
-    message.start !== undefined && (obj.start = Math.round(message.start));
-    message.end !== undefined && (obj.end = Math.round(message.end));
-    message.substitution !== undefined && (obj.substitution = message.substitution);
+    if (message.start !== 0) {
+      obj.start = Math.round(message.start);
+    }
+    if (message.end !== 0) {
+      obj.end = Math.round(message.end);
+    }
+    if (message.substitution !== "") {
+      obj.substitution = message.substitution;
+    }
     return obj;
   },
 
@@ -2714,7 +2789,6 @@ export const MaskingAlgorithmSetting_Algorithm_RangeMask_Slice = {
   ): MaskingAlgorithmSetting_Algorithm_RangeMask_Slice {
     return MaskingAlgorithmSetting_Algorithm_RangeMask_Slice.fromPartial(base ?? {});
   },
-
   fromPartial(
     object: DeepPartial<MaskingAlgorithmSetting_Algorithm_RangeMask_Slice>,
   ): MaskingAlgorithmSetting_Algorithm_RangeMask_Slice {
@@ -2762,19 +2836,20 @@ export const MaskingAlgorithmSetting_Algorithm_MD5Mask = {
   },
 
   fromJSON(object: any): MaskingAlgorithmSetting_Algorithm_MD5Mask {
-    return { salt: isSet(object.salt) ? String(object.salt) : "" };
+    return { salt: isSet(object.salt) ? globalThis.String(object.salt) : "" };
   },
 
   toJSON(message: MaskingAlgorithmSetting_Algorithm_MD5Mask): unknown {
     const obj: any = {};
-    message.salt !== undefined && (obj.salt = message.salt);
+    if (message.salt !== "") {
+      obj.salt = message.salt;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<MaskingAlgorithmSetting_Algorithm_MD5Mask>): MaskingAlgorithmSetting_Algorithm_MD5Mask {
     return MaskingAlgorithmSetting_Algorithm_MD5Mask.fromPartial(base ?? {});
   },
-
   fromPartial(
     object: DeepPartial<MaskingAlgorithmSetting_Algorithm_MD5Mask>,
   ): MaskingAlgorithmSetting_Algorithm_MD5Mask {
@@ -2787,9 +2862,15 @@ export const MaskingAlgorithmSetting_Algorithm_MD5Mask = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+if (_m0.util.Long !== Long) {
+  _m0.util.Long = Long as any;
+  _m0.configure();
+}
 
 function isObject(value: any): boolean {
   return typeof value === "object" && value !== null;

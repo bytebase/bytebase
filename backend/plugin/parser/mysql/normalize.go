@@ -87,6 +87,13 @@ func NormalizeMySQLTextOrIdentifier(ctx parser.ITextOrIdentifierContext) string 
 	return textString[1 : len(textString)-1]
 }
 
+// NormalizeMySQLTextStringLiteral normalize the given TextStringLiteral.
+func NormalizeMySQLTextStringLiteral(ctx parser.ITextStringLiteralContext) string {
+	textString := ctx.GetText()
+	// remove the quotations.
+	return textString[1 : len(textString)-1]
+}
+
 // NormalizeMySQLSelectAlias normalizes the given select alias.
 func NormalizeMySQLSelectAlias(selectAlias parser.ISelectAliasContext) string {
 	if selectAlias.Identifier() != nil {
@@ -228,6 +235,19 @@ func NormalizeConstraintName(ctx parser.IConstraintNameContext) string {
 func NormalizeMySQLColumnInternalRef(ctx parser.IColumnInternalRefContext) string {
 	if ctx.Identifier() != nil {
 		return NormalizeMySQLIdentifier(ctx.Identifier())
+	}
+	return ""
+}
+
+// NormalizeMySQLCharsetName noamalizes the given charset name.
+func NormalizeMySQLCharsetName(ctx parser.ICharsetNameContext) string {
+	switch {
+	case ctx.TextOrIdentifier() != nil:
+		return NormalizeMySQLTextOrIdentifier(ctx.TextOrIdentifier())
+	case ctx.DEFAULT_SYMBOL() != nil:
+		return "DEFAULT"
+	case ctx.BINARY_SYMBOL() != nil:
+		return "BINARY"
 	}
 	return ""
 }

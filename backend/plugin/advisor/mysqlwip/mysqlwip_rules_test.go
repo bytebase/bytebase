@@ -48,8 +48,41 @@ func TestMySQLWIPRules(t *testing.T) {
 		// advisor.SchemaRuleStatementDMLDryRun dry run the dml.
 		advisor.SchemaRuleStatementDMLDryRun,
 
+		// advisor.SchemaRuleTableRequirePK require the table to have a primary key.
+		advisor.SchemaRuleTableRequirePK,
+		// advisor.SchemaRuleTableNoFK require the table disallow the foreign key.
+		advisor.SchemaRuleTableNoFK,
+		// advisor.SchemaRuleTableDropNamingConvention require only the table following the naming convention can be deleted.
+		advisor.SchemaRuleTableDropNamingConvention,
+		// advisor.SchemaRuleTableCommentConvention enforce the table comment convention.
+		advisor.SchemaRuleTableCommentConvention,
+		// advisor.SchemaRuleTableDisallowPartition disallow the table partition.
+		advisor.SchemaRuleTableDisallowPartition,
+
+		// advisor.SchemaRuleRequiredColumn enforce the required columns in each table.
+		advisor.SchemaRuleRequiredColumn,
+		// advisor.SchemaRuleColumnNotNull enforce the columns cannot have NULL value.
+		advisor.SchemaRuleColumnNotNull,
+		// advisor.SchemaRuleColumnDisallowChangeType disallow change column type.
+		advisor.SchemaRuleColumnDisallowChangeType,
+		// advisor.SchemaRuleColumnDisallowSetCharset disallow set column charset.
+		advisor.SchemaRuleColumnDisallowSetCharset,
+		// advisor.SchemaRuleColumnMaximumCharacterLength enforce the maximum character length.
+		advisor.SchemaRuleColumnMaximumCharacterLength,
+		// advisor.SchemaRuleColumnAutoIncrementInitialValue enforce the initial auto-increment value.
+		advisor.SchemaRuleColumnAutoIncrementInitialValue,
+		// advisor.SchemaRuleColumnRequireDefault enforce the column default.
+		advisor.SchemaRuleColumnRequireDefault,
+
 		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL support check if the database is empty before users drop it.
 		advisor.SchemaRuleDropEmptyDatabase,
+
+		// advisor.SchemaRuleIndexNoDuplicateColumn require the index no duplicate column.
+		advisor.SchemaRuleIndexNoDuplicateColumn,
+		// advisor.SchemaRuleIndexKeyNumberLimit enforce the index key number limit.
+		advisor.SchemaRuleIndexKeyNumberLimit,
+		// advisor.SchemaRuleIndexTotalNumberLimit enforce the index total number limit.
+		advisor.SchemaRuleIndexTotalNumberLimit,
 	}
 
 	for _, rule := range mysqlwipRules {

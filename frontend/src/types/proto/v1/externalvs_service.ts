@@ -1,4 +1,5 @@
 /* eslint-disable */
+import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
@@ -289,16 +290,15 @@ export const CreateExternalVersionControlRequest = {
 
   toJSON(message: CreateExternalVersionControlRequest): unknown {
     const obj: any = {};
-    message.externalVersionControl !== undefined && (obj.externalVersionControl = message.externalVersionControl
-      ? ExternalVersionControl.toJSON(message.externalVersionControl)
-      : undefined);
+    if (message.externalVersionControl !== undefined) {
+      obj.externalVersionControl = ExternalVersionControl.toJSON(message.externalVersionControl);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<CreateExternalVersionControlRequest>): CreateExternalVersionControlRequest {
     return CreateExternalVersionControlRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<CreateExternalVersionControlRequest>): CreateExternalVersionControlRequest {
     const message = createBaseCreateExternalVersionControlRequest();
     message.externalVersionControl =
@@ -345,19 +345,20 @@ export const GetExternalVersionControlRequest = {
   },
 
   fromJSON(object: any): GetExternalVersionControlRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: GetExternalVersionControlRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<GetExternalVersionControlRequest>): GetExternalVersionControlRequest {
     return GetExternalVersionControlRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<GetExternalVersionControlRequest>): GetExternalVersionControlRequest {
     const message = createBaseGetExternalVersionControlRequest();
     message.name = object.name ?? "";
@@ -412,22 +413,25 @@ export const ListExternalVersionControlsRequest = {
 
   fromJSON(object: any): ListExternalVersionControlsRequest {
     return {
-      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? String(object.pageToken) : "",
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
     };
   },
 
   toJSON(message: ListExternalVersionControlsRequest): unknown {
     const obj: any = {};
-    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
-    message.pageToken !== undefined && (obj.pageToken = message.pageToken);
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ListExternalVersionControlsRequest>): ListExternalVersionControlsRequest {
     return ListExternalVersionControlsRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ListExternalVersionControlsRequest>): ListExternalVersionControlsRequest {
     const message = createBaseListExternalVersionControlsRequest();
     message.pageSize = object.pageSize ?? 0;
@@ -483,30 +487,27 @@ export const ListExternalVersionControlsResponse = {
 
   fromJSON(object: any): ListExternalVersionControlsResponse {
     return {
-      externalVersionControls: Array.isArray(object?.externalVersionControls)
+      externalVersionControls: globalThis.Array.isArray(object?.externalVersionControls)
         ? object.externalVersionControls.map((e: any) => ExternalVersionControl.fromJSON(e))
         : [],
-      nextPageToken: isSet(object.nextPageToken) ? String(object.nextPageToken) : "",
+      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
     };
   },
 
   toJSON(message: ListExternalVersionControlsResponse): unknown {
     const obj: any = {};
-    if (message.externalVersionControls) {
-      obj.externalVersionControls = message.externalVersionControls.map((e) =>
-        e ? ExternalVersionControl.toJSON(e) : undefined
-      );
-    } else {
-      obj.externalVersionControls = [];
+    if (message.externalVersionControls?.length) {
+      obj.externalVersionControls = message.externalVersionControls.map((e) => ExternalVersionControl.toJSON(e));
     }
-    message.nextPageToken !== undefined && (obj.nextPageToken = message.nextPageToken);
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ListExternalVersionControlsResponse>): ListExternalVersionControlsResponse {
     return ListExternalVersionControlsResponse.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ListExternalVersionControlsResponse>): ListExternalVersionControlsResponse {
     const message = createBaseListExternalVersionControlsResponse();
     message.externalVersionControls =
@@ -572,17 +573,18 @@ export const UpdateExternalVersionControlRequest = {
 
   toJSON(message: UpdateExternalVersionControlRequest): unknown {
     const obj: any = {};
-    message.externalVersionControl !== undefined && (obj.externalVersionControl = message.externalVersionControl
-      ? ExternalVersionControl.toJSON(message.externalVersionControl)
-      : undefined);
-    message.updateMask !== undefined && (obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask)));
+    if (message.externalVersionControl !== undefined) {
+      obj.externalVersionControl = ExternalVersionControl.toJSON(message.externalVersionControl);
+    }
+    if (message.updateMask !== undefined) {
+      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
+    }
     return obj;
   },
 
   create(base?: DeepPartial<UpdateExternalVersionControlRequest>): UpdateExternalVersionControlRequest {
     return UpdateExternalVersionControlRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<UpdateExternalVersionControlRequest>): UpdateExternalVersionControlRequest {
     const message = createBaseUpdateExternalVersionControlRequest();
     message.externalVersionControl =
@@ -630,19 +632,20 @@ export const DeleteExternalVersionControlRequest = {
   },
 
   fromJSON(object: any): DeleteExternalVersionControlRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: DeleteExternalVersionControlRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<DeleteExternalVersionControlRequest>): DeleteExternalVersionControlRequest {
     return DeleteExternalVersionControlRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<DeleteExternalVersionControlRequest>): DeleteExternalVersionControlRequest {
     const message = createBaseDeleteExternalVersionControlRequest();
     message.name = object.name ?? "";
@@ -707,24 +710,29 @@ export const SearchExternalVersionControlProjectsRequest = {
 
   fromJSON(object: any): SearchExternalVersionControlProjectsRequest {
     return {
-      name: isSet(object.name) ? String(object.name) : "",
-      accessToken: isSet(object.accessToken) ? String(object.accessToken) : "",
-      refreshToken: isSet(object.refreshToken) ? String(object.refreshToken) : "",
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      accessToken: isSet(object.accessToken) ? globalThis.String(object.accessToken) : "",
+      refreshToken: isSet(object.refreshToken) ? globalThis.String(object.refreshToken) : "",
     };
   },
 
   toJSON(message: SearchExternalVersionControlProjectsRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.accessToken !== undefined && (obj.accessToken = message.accessToken);
-    message.refreshToken !== undefined && (obj.refreshToken = message.refreshToken);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.accessToken !== "") {
+      obj.accessToken = message.accessToken;
+    }
+    if (message.refreshToken !== "") {
+      obj.refreshToken = message.refreshToken;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<SearchExternalVersionControlProjectsRequest>): SearchExternalVersionControlProjectsRequest {
     return SearchExternalVersionControlProjectsRequest.fromPartial(base ?? {});
   },
-
   fromPartial(
     object: DeepPartial<SearchExternalVersionControlProjectsRequest>,
   ): SearchExternalVersionControlProjectsRequest {
@@ -773,7 +781,7 @@ export const SearchExternalVersionControlProjectsResponse = {
 
   fromJSON(object: any): SearchExternalVersionControlProjectsResponse {
     return {
-      projects: Array.isArray(object?.projects)
+      projects: globalThis.Array.isArray(object?.projects)
         ? object.projects.map((e: any) => SearchExternalVersionControlProjectsResponse_Project.fromJSON(e))
         : [],
     };
@@ -781,12 +789,8 @@ export const SearchExternalVersionControlProjectsResponse = {
 
   toJSON(message: SearchExternalVersionControlProjectsResponse): unknown {
     const obj: any = {};
-    if (message.projects) {
-      obj.projects = message.projects.map((e) =>
-        e ? SearchExternalVersionControlProjectsResponse_Project.toJSON(e) : undefined
-      );
-    } else {
-      obj.projects = [];
+    if (message.projects?.length) {
+      obj.projects = message.projects.map((e) => SearchExternalVersionControlProjectsResponse_Project.toJSON(e));
     }
     return obj;
   },
@@ -796,7 +800,6 @@ export const SearchExternalVersionControlProjectsResponse = {
   ): SearchExternalVersionControlProjectsResponse {
     return SearchExternalVersionControlProjectsResponse.fromPartial(base ?? {});
   },
-
   fromPartial(
     object: DeepPartial<SearchExternalVersionControlProjectsResponse>,
   ): SearchExternalVersionControlProjectsResponse {
@@ -877,19 +880,27 @@ export const SearchExternalVersionControlProjectsResponse_Project = {
 
   fromJSON(object: any): SearchExternalVersionControlProjectsResponse_Project {
     return {
-      id: isSet(object.id) ? String(object.id) : "",
-      title: isSet(object.title) ? String(object.title) : "",
-      fullpath: isSet(object.fullpath) ? String(object.fullpath) : "",
-      webUrl: isSet(object.webUrl) ? String(object.webUrl) : "",
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      fullpath: isSet(object.fullpath) ? globalThis.String(object.fullpath) : "",
+      webUrl: isSet(object.webUrl) ? globalThis.String(object.webUrl) : "",
     };
   },
 
   toJSON(message: SearchExternalVersionControlProjectsResponse_Project): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
-    message.title !== undefined && (obj.title = message.title);
-    message.fullpath !== undefined && (obj.fullpath = message.fullpath);
-    message.webUrl !== undefined && (obj.webUrl = message.webUrl);
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.fullpath !== "") {
+      obj.fullpath = message.fullpath;
+    }
+    if (message.webUrl !== "") {
+      obj.webUrl = message.webUrl;
+    }
     return obj;
   },
 
@@ -898,7 +909,6 @@ export const SearchExternalVersionControlProjectsResponse_Project = {
   ): SearchExternalVersionControlProjectsResponse_Project {
     return SearchExternalVersionControlProjectsResponse_Project.fromPartial(base ?? {});
   },
-
   fromPartial(
     object: DeepPartial<SearchExternalVersionControlProjectsResponse_Project>,
   ): SearchExternalVersionControlProjectsResponse_Project {
@@ -947,19 +957,20 @@ export const ListProjectGitOpsInfoRequest = {
   },
 
   fromJSON(object: any): ListProjectGitOpsInfoRequest {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: ListProjectGitOpsInfoRequest): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ListProjectGitOpsInfoRequest>): ListProjectGitOpsInfoRequest {
     return ListProjectGitOpsInfoRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ListProjectGitOpsInfoRequest>): ListProjectGitOpsInfoRequest {
     const message = createBaseListProjectGitOpsInfoRequest();
     message.name = object.name ?? "";
@@ -1004,7 +1015,7 @@ export const ListProjectGitOpsInfoResponse = {
 
   fromJSON(object: any): ListProjectGitOpsInfoResponse {
     return {
-      projectGitopsInfo: Array.isArray(object?.projectGitopsInfo)
+      projectGitopsInfo: globalThis.Array.isArray(object?.projectGitopsInfo)
         ? object.projectGitopsInfo.map((e: any) => ProjectGitOpsInfo.fromJSON(e))
         : [],
     };
@@ -1012,10 +1023,8 @@ export const ListProjectGitOpsInfoResponse = {
 
   toJSON(message: ListProjectGitOpsInfoResponse): unknown {
     const obj: any = {};
-    if (message.projectGitopsInfo) {
-      obj.projectGitopsInfo = message.projectGitopsInfo.map((e) => e ? ProjectGitOpsInfo.toJSON(e) : undefined);
-    } else {
-      obj.projectGitopsInfo = [];
+    if (message.projectGitopsInfo?.length) {
+      obj.projectGitopsInfo = message.projectGitopsInfo.map((e) => ProjectGitOpsInfo.toJSON(e));
     }
     return obj;
   },
@@ -1023,7 +1032,6 @@ export const ListProjectGitOpsInfoResponse = {
   create(base?: DeepPartial<ListProjectGitOpsInfoResponse>): ListProjectGitOpsInfoResponse {
     return ListProjectGitOpsInfoResponse.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ListProjectGitOpsInfoResponse>): ListProjectGitOpsInfoResponse {
     const message = createBaseListProjectGitOpsInfoResponse();
     message.projectGitopsInfo = object.projectGitopsInfo?.map((e) => ProjectGitOpsInfo.fromPartial(e)) || [];
@@ -1128,32 +1136,45 @@ export const ExternalVersionControl = {
 
   fromJSON(object: any): ExternalVersionControl {
     return {
-      name: isSet(object.name) ? String(object.name) : "",
-      title: isSet(object.title) ? String(object.title) : "",
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
       type: isSet(object.type) ? externalVersionControl_TypeFromJSON(object.type) : 0,
-      url: isSet(object.url) ? String(object.url) : "",
-      apiUrl: isSet(object.apiUrl) ? String(object.apiUrl) : "",
-      applicationId: isSet(object.applicationId) ? String(object.applicationId) : "",
-      secret: isSet(object.secret) ? String(object.secret) : "",
+      url: isSet(object.url) ? globalThis.String(object.url) : "",
+      apiUrl: isSet(object.apiUrl) ? globalThis.String(object.apiUrl) : "",
+      applicationId: isSet(object.applicationId) ? globalThis.String(object.applicationId) : "",
+      secret: isSet(object.secret) ? globalThis.String(object.secret) : "",
     };
   },
 
   toJSON(message: ExternalVersionControl): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.title !== undefined && (obj.title = message.title);
-    message.type !== undefined && (obj.type = externalVersionControl_TypeToJSON(message.type));
-    message.url !== undefined && (obj.url = message.url);
-    message.apiUrl !== undefined && (obj.apiUrl = message.apiUrl);
-    message.applicationId !== undefined && (obj.applicationId = message.applicationId);
-    message.secret !== undefined && (obj.secret = message.secret);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.type !== 0) {
+      obj.type = externalVersionControl_TypeToJSON(message.type);
+    }
+    if (message.url !== "") {
+      obj.url = message.url;
+    }
+    if (message.apiUrl !== "") {
+      obj.apiUrl = message.apiUrl;
+    }
+    if (message.applicationId !== "") {
+      obj.applicationId = message.applicationId;
+    }
+    if (message.secret !== "") {
+      obj.secret = message.secret;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ExternalVersionControl>): ExternalVersionControl {
     return ExternalVersionControl.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ExternalVersionControl>): ExternalVersionControl {
     const message = createBaseExternalVersionControl();
     message.name = object.name ?? "";
@@ -1371,50 +1392,81 @@ export const ProjectGitOpsInfo = {
 
   fromJSON(object: any): ProjectGitOpsInfo {
     return {
-      name: isSet(object.name) ? String(object.name) : "",
-      vcsUid: isSet(object.vcsUid) ? String(object.vcsUid) : "",
-      title: isSet(object.title) ? String(object.title) : "",
-      fullPath: isSet(object.fullPath) ? String(object.fullPath) : "",
-      webUrl: isSet(object.webUrl) ? String(object.webUrl) : "",
-      branchFilter: isSet(object.branchFilter) ? String(object.branchFilter) : "",
-      baseDirectory: isSet(object.baseDirectory) ? String(object.baseDirectory) : "",
-      filePathTemplate: isSet(object.filePathTemplate) ? String(object.filePathTemplate) : "",
-      schemaPathTemplate: isSet(object.schemaPathTemplate) ? String(object.schemaPathTemplate) : "",
-      sheetPathTemplate: isSet(object.sheetPathTemplate) ? String(object.sheetPathTemplate) : "",
-      externalId: isSet(object.externalId) ? String(object.externalId) : "",
-      enableSqlReviewCi: isSet(object.enableSqlReviewCi) ? Boolean(object.enableSqlReviewCi) : false,
-      webhookEndpointId: isSet(object.webhookEndpointId) ? String(object.webhookEndpointId) : "",
-      accessToken: isSet(object.accessToken) ? String(object.accessToken) : "",
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      vcsUid: isSet(object.vcsUid) ? globalThis.String(object.vcsUid) : "",
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      fullPath: isSet(object.fullPath) ? globalThis.String(object.fullPath) : "",
+      webUrl: isSet(object.webUrl) ? globalThis.String(object.webUrl) : "",
+      branchFilter: isSet(object.branchFilter) ? globalThis.String(object.branchFilter) : "",
+      baseDirectory: isSet(object.baseDirectory) ? globalThis.String(object.baseDirectory) : "",
+      filePathTemplate: isSet(object.filePathTemplate) ? globalThis.String(object.filePathTemplate) : "",
+      schemaPathTemplate: isSet(object.schemaPathTemplate) ? globalThis.String(object.schemaPathTemplate) : "",
+      sheetPathTemplate: isSet(object.sheetPathTemplate) ? globalThis.String(object.sheetPathTemplate) : "",
+      externalId: isSet(object.externalId) ? globalThis.String(object.externalId) : "",
+      enableSqlReviewCi: isSet(object.enableSqlReviewCi) ? globalThis.Boolean(object.enableSqlReviewCi) : false,
+      webhookEndpointId: isSet(object.webhookEndpointId) ? globalThis.String(object.webhookEndpointId) : "",
+      accessToken: isSet(object.accessToken) ? globalThis.String(object.accessToken) : "",
       expiresTime: isSet(object.expiresTime) ? fromJsonTimestamp(object.expiresTime) : undefined,
-      refreshToken: isSet(object.refreshToken) ? String(object.refreshToken) : "",
+      refreshToken: isSet(object.refreshToken) ? globalThis.String(object.refreshToken) : "",
     };
   },
 
   toJSON(message: ProjectGitOpsInfo): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.vcsUid !== undefined && (obj.vcsUid = message.vcsUid);
-    message.title !== undefined && (obj.title = message.title);
-    message.fullPath !== undefined && (obj.fullPath = message.fullPath);
-    message.webUrl !== undefined && (obj.webUrl = message.webUrl);
-    message.branchFilter !== undefined && (obj.branchFilter = message.branchFilter);
-    message.baseDirectory !== undefined && (obj.baseDirectory = message.baseDirectory);
-    message.filePathTemplate !== undefined && (obj.filePathTemplate = message.filePathTemplate);
-    message.schemaPathTemplate !== undefined && (obj.schemaPathTemplate = message.schemaPathTemplate);
-    message.sheetPathTemplate !== undefined && (obj.sheetPathTemplate = message.sheetPathTemplate);
-    message.externalId !== undefined && (obj.externalId = message.externalId);
-    message.enableSqlReviewCi !== undefined && (obj.enableSqlReviewCi = message.enableSqlReviewCi);
-    message.webhookEndpointId !== undefined && (obj.webhookEndpointId = message.webhookEndpointId);
-    message.accessToken !== undefined && (obj.accessToken = message.accessToken);
-    message.expiresTime !== undefined && (obj.expiresTime = message.expiresTime.toISOString());
-    message.refreshToken !== undefined && (obj.refreshToken = message.refreshToken);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.vcsUid !== "") {
+      obj.vcsUid = message.vcsUid;
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.fullPath !== "") {
+      obj.fullPath = message.fullPath;
+    }
+    if (message.webUrl !== "") {
+      obj.webUrl = message.webUrl;
+    }
+    if (message.branchFilter !== "") {
+      obj.branchFilter = message.branchFilter;
+    }
+    if (message.baseDirectory !== "") {
+      obj.baseDirectory = message.baseDirectory;
+    }
+    if (message.filePathTemplate !== "") {
+      obj.filePathTemplate = message.filePathTemplate;
+    }
+    if (message.schemaPathTemplate !== "") {
+      obj.schemaPathTemplate = message.schemaPathTemplate;
+    }
+    if (message.sheetPathTemplate !== "") {
+      obj.sheetPathTemplate = message.sheetPathTemplate;
+    }
+    if (message.externalId !== "") {
+      obj.externalId = message.externalId;
+    }
+    if (message.enableSqlReviewCi === true) {
+      obj.enableSqlReviewCi = message.enableSqlReviewCi;
+    }
+    if (message.webhookEndpointId !== "") {
+      obj.webhookEndpointId = message.webhookEndpointId;
+    }
+    if (message.accessToken !== "") {
+      obj.accessToken = message.accessToken;
+    }
+    if (message.expiresTime !== undefined) {
+      obj.expiresTime = message.expiresTime.toISOString();
+    }
+    if (message.refreshToken !== "") {
+      obj.refreshToken = message.refreshToken;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ProjectGitOpsInfo>): ProjectGitOpsInfo {
     return ProjectGitOpsInfo.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ProjectGitOpsInfo>): ProjectGitOpsInfo {
     const message = createBaseProjectGitOpsInfo();
     message.name = object.name ?? "";
@@ -1478,15 +1530,15 @@ export const ExchangeTokenRequest = {
 
   toJSON(message: ExchangeTokenRequest): unknown {
     const obj: any = {};
-    message.exchangeToken !== undefined &&
-      (obj.exchangeToken = message.exchangeToken ? ExchangeToken.toJSON(message.exchangeToken) : undefined);
+    if (message.exchangeToken !== undefined) {
+      obj.exchangeToken = ExchangeToken.toJSON(message.exchangeToken);
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ExchangeTokenRequest>): ExchangeTokenRequest {
     return ExchangeTokenRequest.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ExchangeTokenRequest>): ExchangeTokenRequest {
     const message = createBaseExchangeTokenRequest();
     message.exchangeToken = (object.exchangeToken !== undefined && object.exchangeToken !== null)
@@ -1583,30 +1635,41 @@ export const ExchangeToken = {
 
   fromJSON(object: any): ExchangeToken {
     return {
-      name: isSet(object.name) ? String(object.name) : "",
-      code: isSet(object.code) ? String(object.code) : "",
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      code: isSet(object.code) ? globalThis.String(object.code) : "",
       type: isSet(object.type) ? externalVersionControl_TypeFromJSON(object.type) : 0,
-      instanceUrl: isSet(object.instanceUrl) ? String(object.instanceUrl) : "",
-      clientId: isSet(object.clientId) ? String(object.clientId) : "",
-      clientSecret: isSet(object.clientSecret) ? String(object.clientSecret) : "",
+      instanceUrl: isSet(object.instanceUrl) ? globalThis.String(object.instanceUrl) : "",
+      clientId: isSet(object.clientId) ? globalThis.String(object.clientId) : "",
+      clientSecret: isSet(object.clientSecret) ? globalThis.String(object.clientSecret) : "",
     };
   },
 
   toJSON(message: ExchangeToken): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.code !== undefined && (obj.code = message.code);
-    message.type !== undefined && (obj.type = externalVersionControl_TypeToJSON(message.type));
-    message.instanceUrl !== undefined && (obj.instanceUrl = message.instanceUrl);
-    message.clientId !== undefined && (obj.clientId = message.clientId);
-    message.clientSecret !== undefined && (obj.clientSecret = message.clientSecret);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.code !== "") {
+      obj.code = message.code;
+    }
+    if (message.type !== 0) {
+      obj.type = externalVersionControl_TypeToJSON(message.type);
+    }
+    if (message.instanceUrl !== "") {
+      obj.instanceUrl = message.instanceUrl;
+    }
+    if (message.clientId !== "") {
+      obj.clientId = message.clientId;
+    }
+    if (message.clientSecret !== "") {
+      obj.clientSecret = message.clientSecret;
+    }
     return obj;
   },
 
   create(base?: DeepPartial<ExchangeToken>): ExchangeToken {
     return ExchangeToken.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<ExchangeToken>): ExchangeToken {
     const message = createBaseExchangeToken();
     message.name = object.name ?? "";
@@ -1676,24 +1739,29 @@ export const OAuthToken = {
 
   fromJSON(object: any): OAuthToken {
     return {
-      accessToken: isSet(object.accessToken) ? String(object.accessToken) : "",
-      refreshToken: isSet(object.refreshToken) ? String(object.refreshToken) : "",
+      accessToken: isSet(object.accessToken) ? globalThis.String(object.accessToken) : "",
+      refreshToken: isSet(object.refreshToken) ? globalThis.String(object.refreshToken) : "",
       expiresTime: isSet(object.expiresTime) ? fromJsonTimestamp(object.expiresTime) : undefined,
     };
   },
 
   toJSON(message: OAuthToken): unknown {
     const obj: any = {};
-    message.accessToken !== undefined && (obj.accessToken = message.accessToken);
-    message.refreshToken !== undefined && (obj.refreshToken = message.refreshToken);
-    message.expiresTime !== undefined && (obj.expiresTime = message.expiresTime.toISOString());
+    if (message.accessToken !== "") {
+      obj.accessToken = message.accessToken;
+    }
+    if (message.refreshToken !== "") {
+      obj.refreshToken = message.refreshToken;
+    }
+    if (message.expiresTime !== undefined) {
+      obj.expiresTime = message.expiresTime.toISOString();
+    }
     return obj;
   },
 
   create(base?: DeepPartial<OAuthToken>): OAuthToken {
     return OAuthToken.fromPartial(base ?? {});
   },
-
   fromPartial(object: DeepPartial<OAuthToken>): OAuthToken {
     const message = createBaseOAuthToken();
     message.accessToken = object.accessToken ?? "";
@@ -2322,30 +2390,40 @@ export const ExternalVersionControlServiceDefinition = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
 function toTimestamp(date: Date): Timestamp {
-  const seconds = date.getTime() / 1_000;
+  const seconds = numberToLong(date.getTime() / 1_000);
   const nanos = (date.getTime() % 1_000) * 1_000_000;
   return { seconds, nanos };
 }
 
 function fromTimestamp(t: Timestamp): Date {
-  let millis = (t.seconds || 0) * 1_000;
+  let millis = (t.seconds.toNumber() || 0) * 1_000;
   millis += (t.nanos || 0) / 1_000_000;
-  return new Date(millis);
+  return new globalThis.Date(millis);
 }
 
 function fromJsonTimestamp(o: any): Date {
-  if (o instanceof Date) {
+  if (o instanceof globalThis.Date) {
     return o;
   } else if (typeof o === "string") {
-    return new Date(o);
+    return new globalThis.Date(o);
   } else {
     return fromTimestamp(Timestamp.fromJSON(o));
   }
+}
+
+function numberToLong(number: number) {
+  return Long.fromNumber(number);
+}
+
+if (_m0.util.Long !== Long) {
+  _m0.util.Long = Long as any;
+  _m0.configure();
 }
 
 function isSet(value: any): boolean {

@@ -55,9 +55,9 @@ func (c Code) Int() int {
 	return int(c)
 }
 
-// Int64 returns the int64 type of code.
-func (c Code) Int64() int64 {
-	return int64(c)
+// Int32 returns the int32 type of code.
+func (c Code) Int32() int32 {
+	return int32(c)
 }
 
 // Error represents an application-specific error. Application errors can be

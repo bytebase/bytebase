@@ -126,6 +126,7 @@ func convertToPlanSpecChangeDatabaseConfig(config *storepb.PlanConfig_Spec_Chang
 			SchemaVersion:   c.SchemaVersion,
 			RollbackEnabled: c.RollbackEnabled,
 			RollbackDetail:  convertToPlanSpecChangeDatabaseConfigRollbackDetail(c.RollbackDetail),
+			GhostFlags:      c.GhostFlags,
 		},
 	}
 }
@@ -253,6 +254,7 @@ func convertPlanSpecChangeDatabaseConfig(config *v1pb.Plan_Spec_ChangeDatabaseCo
 			Type:            storepb.PlanConfig_ChangeDatabaseConfig_Type(c.Type),
 			SchemaVersion:   c.SchemaVersion,
 			RollbackEnabled: c.RollbackEnabled,
+			GhostFlags:      c.GhostFlags,
 		},
 	}
 }
@@ -305,10 +307,10 @@ func convertDatabaseLabels(labelsMap map[string]string) (string, error) {
 	return string(labelsJSON), nil
 }
 
-func convertToPlanCheckRuns(ctx context.Context, s *store.Store, parent string, runs []*store.PlanCheckRunMessage) ([]*v1pb.PlanCheckRun, error) {
+func convertToPlanCheckRuns(ctx context.Context, s *store.Store, projectID string, planUID int64, runs []*store.PlanCheckRunMessage) ([]*v1pb.PlanCheckRun, error) {
 	var planCheckRuns []*v1pb.PlanCheckRun
 	for _, run := range runs {
-		converted, err := convertToPlanCheckRun(ctx, s, parent, run)
+		converted, err := convertToPlanCheckRun(ctx, s, projectID, planUID, run)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to convert plan check run")
 		}
@@ -317,16 +319,28 @@ func convertToPlanCheckRuns(ctx context.Context, s *store.Store, parent string, 
 	return planCheckRuns, nil
 }
 
-func convertToPlanCheckRun(ctx context.Context, s *store.Store, parent string, run *store.PlanCheckRunMessage) (*v1pb.PlanCheckRun, error) {
+func convertToPlanCheckRun(ctx context.Context, s *store.Store, projectID string, planUID int64, run *store.PlanCheckRunMessage) (*v1pb.PlanCheckRun, error) {
 	converted := &v1pb.PlanCheckRun{
-		Name:       fmt.Sprintf("%s/%s%d", parent, common.PlanCheckRunPrefix, run.UID),
+		Name:       fmt.Sprintf("%s%s/%s%d/%s%d", common.ProjectNamePrefix, projectID, common.PlanPrefix, planUID, common.PlanCheckRunPrefix, run.UID),
 		Uid:        fmt.Sprintf("%d", run.UID),
 		CreateTime: timestamppb.New(time.Unix(run.CreatedTs, 0)),
 		Type:       convertToPlanCheckRunType(run.Type),
 		Status:     convertToPlanCheckRunStatus(run.Status),
 		Target:     "",
+		Sheet:      "",
 		Results:    convertToPlanCheckRunResults(run.Result.Results),
 		Error:      run.Result.Error,
+	}
+
+	if sheetUID := int(run.Config.GetSheetUid()); sheetUID != 0 {
+		sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID}, api.SystemBotID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get sheet")
+		}
+		if sheet == nil {
+			return nil, errors.Errorf("sheet not found for uid %d", sheetUID)
+		}
+		converted.Sheet = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, projectID, common.SheetIDPrefix, sheet.UID)
 	}
 
 	instanceUID := int(run.Config.InstanceUid)

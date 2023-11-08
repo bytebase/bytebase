@@ -29,6 +29,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
+	"github.com/bytebase/bytebase/backend/demo"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	enterprisesvc "github.com/bytebase/bytebase/backend/enterprise/service"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -179,22 +180,16 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	// Start Postgres sample servers. It is used for onboarding users without requiring them to
 	// configure an external instance.
 	if profile.SampleDatabasePort != 0 {
-		slog.Info("-----Sample Postgres Instance BEGIN-----")
-		for i, v := range []string{postgres.SampleDatabaseTest, postgres.SampleDatabaseProd} {
-			slog.Info(fmt.Sprintf("Start sample instance for %q sampleDatabasePort=%d", v, profile.SampleDatabasePort+i))
-			stopper, err := postgres.StartSampleInstance(ctx, s.pgBinDir, profile.DataDir, v, profile.SampleDatabasePort+i, profile.Mode)
-			if err != nil {
-				slog.Error("failed to init sample instance", log.BBError(err))
-				continue
-			}
-			s.stopper = append(s.stopper, stopper)
-		}
-		slog.Info("-----Sample Postgres Instance END-----")
+		// Only create batch sample databases in demo mode. For normal mode, user starts from the free version
+		// and batch databases are useless because batch requires enterprise license.
+		stopper := postgres.StartAllSampleInstances(ctx, s.pgBinDir, profile.DataDir, profile.SampleDatabasePort, profile.DemoName != "")
+		s.stopper = append(s.stopper, stopper...)
 	}
 
 	// Connect to the instance that stores bytebase's own metadata.
-	storeDB := store.NewDB(connCfg, s.pgBinDir, profile.DemoName, profile.Readonly, profile.Version, profile.Mode)
-	if err := storeDB.Open(ctx); err != nil {
+	storeDB := store.NewDB(connCfg, s.pgBinDir, profile.Readonly, profile.Mode)
+	// For embedded database, we will create the database if it does not exist.
+	if err := storeDB.Open(ctx, profile.UseEmbedDB() /* createDB */); err != nil {
 		// return s so that caller can call s.Close() to shut down the postgres server if embedded.
 		return nil, errors.Wrap(err, "cannot open metadb")
 	}
@@ -202,7 +197,10 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	if profile.Readonly {
 		slog.Info("Database is opened in readonly mode. Skip migration and demo data setup.")
 	} else {
-		if _, err := migrator.MigrateSchema(ctx, storeDB, !profile.UseEmbedDB(), s.pgBinDir, profile.DemoName, profile.Version, profile.Mode); err != nil {
+		if err := demo.LoadDemoDataIfNeeded(ctx, storeDB, s.pgBinDir, profile.DemoName, profile.Mode); err != nil {
+			return nil, errors.Wrapf(err, "failed to load demo data")
+		}
+		if _, err := migrator.MigrateSchema(ctx, storeDB, s.pgBinDir, profile.Version, profile.Mode); err != nil {
 			return nil, err
 		}
 	}

@@ -9,6 +9,7 @@
     "dingtalk": "DingTalk",
     "feishu": "Feishu",
     "wecom": "WeCom",
+    "system": "System",
     "custom": "Custom",
     "im": "IM",
     "overview": "Overview",
@@ -83,7 +84,8 @@
       "member": "Member",
       "exporter": "Exporter",
       "querier": "Querier",
-      "releaser": "Releaser"
+      "releaser": "Releaser",
+      "viewer": "Viewer"
     },
     "assignee": "Assignee",
     "revert": "Revert",
@@ -273,7 +275,8 @@
     "filter-by-name": "Filter by name",
     "tenant": "Tenant",
     "license": "License",
-    "show-all": "Show all"
+    "show-all": "Show all",
+    "view-details": "View details"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -380,7 +383,25 @@
     "action-failed-in-current-stage": "{action} failed tasks in current stage",
     "action-all-tasks-in-current-stage": "{action} all tasks in current stage",
     "cancel-task": "Cancel task | Cancel tasks",
-    "created": "Created"
+    "created": "Created",
+    "online-migration": {
+      "self": "Online migration",
+      "configure-ghost-parameters-for-db": "Configure gh-ost parameters for database '{db}'",
+      "configure-ghost-parameters": "Configure gh-ost parameters",
+      "ghost-parameters": "gh-ost parameters",
+      "configure": "Configure",
+      "error": {
+        "some-tasks-are-not-editable-in-batch-mode": "Some tasks are not editable in batch mode",
+        "task-is-not-editable": "This task is not editable",
+        "x-status-task-is-not-editable": "{status} task is not editable",
+        "nothing-changed": "Nothing changed",
+        "not-applicable": {
+          "some-tasks-dont-meet-ghost-requirement": "Some tasks don't meet gh-ost's requirement"
+        }
+      },
+      "show-default-parameters": "Show default parameters",
+      "hide-default-parameters": "Hide default parameters"
+    }
   },
   "task-run": {
     "status": {
@@ -399,7 +420,7 @@
     "extend-trial": "Extend trialing time",
     "deploy": "Self Host",
     "cloud": "Cloud",
-    "request-demo": "Book a 30 min product walkthrough with our product expert",
+    "request-demo": "Book a 30-minute product demo.",
     "readonly": "Bytebase is in readonly mode. You can still view the console, but any change attempt will fail.",
     "external-url": "Bytebase has not configured --external-url",
     "configure-now": "Configure now"
@@ -647,7 +668,7 @@
     "sensitive-data": {
       "description": "Following columns are explicitly assigned masking levels and take predence over the global masking rule.",
       "remove-sensitive-column-tips": "Expose this column?",
-      "sensitive-column-list": "Explict masked column list",
+      "sensitive-column-list": "Explict Masked Column List",
       "global-masking-rule": "Global Masking Rule",
       "grant-access": "Grant Access",
       "never-expires": "Never expires",
@@ -663,12 +684,45 @@
       "semantic-types": {
         "self": "Semantic Types",
         "add-type": "Add type",
+        "add-from-template": "Add from template",
         "table": {
           "semantic-type": "Semantic type",
           "description": "Description",
           "full-masking-algorithm": "Full-masking algorithm",
           "partial-masking-algorithm": "Partial-masking algorithm",
           "delete": "Delete this semantic type?"
+        },
+        "template": {
+          "address": {
+            "title": "Address"
+          },
+          "secret_key": {
+            "title": "Encryption Key"
+          },
+          "card_number": {
+            "title": "Bank card, credit card, etc"
+          },
+          "email": {
+            "title": "Email address"
+          },
+          "id_number": {
+            "title": "Personal ID number"
+          },
+          "ipv4_address": {
+            "title": "IPv4 address"
+          },
+          "license_plate_number": {
+            "title": "Plate number"
+          },
+          "mac_address": {
+            "title": "MAC address"
+          },
+          "password": {
+            "title": "Password"
+          },
+          "phone": {
+            "title": "Phone number"
+          }
         }
       },
       "column-detail": {
@@ -681,8 +735,34 @@
       },
       "algorithms": {
         "self": "Masking Algorithm",
+        "add": "Add algorithm",
         "default": "Default",
-        "default-desc": "Use *** as data mask"
+        "default-desc": "Use *** as data mask",
+        "table": {
+          "title": "Title",
+          "description": "Description",
+          "masking-type": "Masking type",
+          "delete": "Delete this algorithm?"
+        },
+        "full-mask": {
+          "self": "Full mask",
+          "substitution": "Substitution",
+          "substitution-label": "Substitution is the string used to replace the original value, the max length of the string is 16 bytes."
+        },
+        "range-mask": {
+          "self": "Range mask",
+          "slice-start": "Slice start",
+          "slice-start-label": "Slice start is the start index of the original value, start from 0 and should be less than stop.",
+          "slice-end": "Slice end",
+          "slice-end-label": "Slice stop is the stop index of the original value, should be less than the length of the original value.",
+          "substitution": "Substitution",
+          "substitution-label": "Substitution is the string used to replace the original value from start to end."
+        },
+        "md5-mask": {
+          "self": "MD5 mask",
+          "salt": "Salt",
+          "salt-label": "Salt is the salt value to generate a different hash that with the word alone."
+        }
       },
       "masking-level": {
         "self": "Masking Level",
@@ -734,26 +814,26 @@
     "created": "Created",
     "invoker": "Invoker",
     "type": {
-      "issue-create": "create issue",
-      "comment-create": "create comment",
-      "issue-field-update": "update issue field",
-      "issue-status-update": "update issue status",
-      "pipeline-stage-status-update": "update issue stage status",
-      "pipeline-task-status-update": "update issue task status",
-      "pipeline-task-file-commit": "commit file",
+      "issue-create": "Create issue",
+      "comment-create": "Create comment",
+      "issue-field-update": "Update issue field",
+      "issue-status-update": "Update issue status",
+      "pipeline-stage-status-update": "Update issue stage status",
+      "pipeline-task-status-update": "Update issue task status",
+      "pipeline-task-file-commit": "Commit file",
       "pipeline-task-statement-update": "SQL update",
-      "member-create": "create member",
-      "member-role-update": "update role",
-      "member-activate": "activate member",
-      "member-deactivate": "deactivate member",
-      "project-repository-push": "repository push event",
-      "project-database-transfer": "database transfer",
-      "project-member-create": "add project member",
-      "project-member-delete": "delete project member",
-      "project-member-role-update": "change project member role",
-      "pipeline-task-earliest-allowed-time-update": "update earliest allowed time",
-      "database-recovery-pitr-done": "restore database to point in time",
-      "external-approval-rejected": "external approval rejected"
+      "member-create": "Create member",
+      "member-role-update": "Update role",
+      "member-activate": "Activate member",
+      "member-deactivate": "Deactivate member",
+      "project-repository-push": "Repository push event",
+      "project-database-transfer": "Database transfer",
+      "project-member-create": "Add project member",
+      "project-member-delete": "Delete project member",
+      "project-member-role-update": "Change project member role",
+      "pipeline-task-earliest-allowed-time-update": "Update earliest allowed time",
+      "database-recovery-pitr-done": "Restore database to point in time",
+      "external-approval-rejected": "External approval rejected"
     },
     "sentence": {
       "created-issue": "created issue",
@@ -787,7 +867,8 @@
       "schema-version": "schema version {version}",
       "xxx-automatically": "{verb} automatically",
       "verb-type-target-by-people": "{verb} {type} {target}",
-      "verb-type-target-by-system-bot": "{type} {target} {verb}"
+      "verb-type-target-by-system-bot": "{type} {target} {verb}",
+      "changed-x-link": "changed {name}. {link}"
     },
     "subject-prefix": {
       "task": "Task",
@@ -950,7 +1031,7 @@
       "full-schema": "Full schema",
       "left-schema-may-change": "The schema on the left side may change before the issue is applied."
     },
-    "assignee-tooltip": "Allow the assignee to rollout the issue once the approval flow has been passed.",
+    "assignee-tooltip": "The assignees are those responsible for an issue, and when an issue is assigned to them, it shows up in their list of assigned issues.",
     "approval-flow": {
       "self": "Approval flow",
       "tooltip": "The approvers will review and approve the issue in the order specified in the flow. The issue can only be applied after all steps in the flow have been approved. You can configure a custom approval flow for each risk."
@@ -1003,8 +1084,10 @@
       "continue-anyway": "Continue anyway",
       "sql-review-violations": "SQL Review Violations"
     },
-    "no-assignee-candidates": "There is no valid assignee candidates in this project. Please contact the project owner.",
-    "allow-any-following-roles-to-be-assignee": "Allow any following roles to be assignee"
+    "error": {
+      "issue-is-not-open": "The issue is not open",
+      "you-don-have-privilege-to-edit-this-issue": "You don't have privilege to edit this issue"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
@@ -1224,7 +1307,7 @@
     "visit-instance": "@:common.visit @:common.instances",
     "visit-database": "@:common.visit @:common.databases",
     "visit-environment": "@:common.visit @:common.environments",
-    "add-a-member": "Add a member",
+    "visit-member": "@:common.visit @:common.members",
     "use-kbar": "Use kbar ({shortcut})",
     "query-data": "Query data",
     "notice": {
@@ -2540,7 +2623,8 @@
       }
     },
     "edit-rule": {
-      "self": "Edit SQL Review Rule"
+      "self": "Edit SQL Review Rule",
+      "readonly": "SQL Review Rule"
     },
     "rule": {
       "active": "Active"
@@ -2836,10 +2920,6 @@
       "description": "For each operation type, configure custom condition, risk and approval flow. ",
       "approval-flows": "Approval Flows",
       "approval-nodes": "Approval nodes",
-      "type": {
-        "system": "System",
-        "custom": "Custom"
-      },
       "delete": "Delete approval flow",
       "search": "Search approval flow",
       "select": "Select approval flow",
@@ -2921,7 +3001,7 @@
     "send-back": "Send back"
   },
   "slow-query": {
-    "self": "Slow query",
+    "self": "Slow Query",
     "slow-queries": "Slow queries",
     "report": "Report",
     "last-query-time": "Last query time",
@@ -2961,7 +3041,7 @@
     }
   },
   "schema-template": {
-    "self": "Schema template",
+    "self": "Schema Template",
     "field-template": {
       "self": "Field Template",
       "add": "Add field template",
@@ -3042,6 +3122,9 @@
     "expired-tip": "The role might has been expired.",
     "releaser": {
       "description": "System defined project releaser role"
+    },
+    "viewer": {
+      "description": "System defined project database viewer role"
     }
   },
   "database-group": {
@@ -3173,5 +3256,14 @@
     "confirm-remove-change": "Remove this change?",
     "delete-this-changelist": "Delete this changelist",
     "confirm-delete-changelist": "Delete this changelist?"
+  },
+  "export-data": {
+    "self": "Export Data",
+    "export-rows": "Export rows",
+    "error": {
+      "export-rows-required": "Export rows required",
+      "export-rows-must-gt-zero": "Export rows must greater than 0"
+    },
+    "export-format": "Export format"
   }
 }

@@ -721,10 +721,9 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
 	}
-	if config := convertDatabaseConfig(sheet.Payload.DatabaseConfig); config != nil {
+	if config := convertDatabaseConfig(sheet.Payload.DatabaseConfig, nil /* filter */); config != nil {
 		schemaMetadata.SchemaConfigs = config.SchemaConfigs
 	}
-
 	baselineSchema := ""
 	if sheet.Payload.SchemaDesign.BaselineSheetId != "" {
 		sheetUID, err := strconv.Atoi(sheet.Payload.SchemaDesign.BaselineSheetId)
@@ -749,10 +748,9 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
 	}
-	if config := convertDatabaseConfig(sheet.Payload.BaselineDatabaseConfig); config != nil {
+	if config := convertDatabaseConfig(sheet.Payload.BaselineDatabaseConfig, nil /* filter */); config != nil {
 		baselineSchemaMetadata.SchemaConfigs = config.SchemaConfigs
 	}
-
 	schemaDesign.Etag = generateEtag([]byte(schema))
 	schemaDesign.Schema = schema
 	schemaDesign.SchemaMetadata = schemaMetadata

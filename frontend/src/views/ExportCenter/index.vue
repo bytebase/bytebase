@@ -149,7 +149,8 @@ watchEffect(async () => {
   const projectNameList = projectList.value.map((project) => project.name);
   const iamPolicyList =
     await projectIamPolicyStore.batchGetOrFetchProjectIamPolicy(
-      projectNameList
+      projectNameList,
+      true /* skipCache */
     );
 
   const tempExportRecords: ExportRecord[] = [];

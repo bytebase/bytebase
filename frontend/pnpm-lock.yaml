@@ -1,4 +1,4 @@
-lockfileVersion: '6.1'
+lockfileVersion: '6.0'
 
 settings:
   autoInstallPeers: true
@@ -200,8 +200,8 @@ dependencies:
 
 devDependencies:
   '@iconify/json':
-    specifier: 2.2.116
-    version: 2.2.116
+    specifier: 2.2.135
+    version: 2.2.135
   '@intlify/unplugin-vue-i18n':
     specifier: 1.2.0
     version: 1.2.0(rollup@3.29.2)(vue-i18n@9.4.1)
@@ -209,8 +209,8 @@ devDependencies:
     specifier: 2.11.8
     version: 2.11.8
   '@rollup/plugin-yaml':
-    specifier: 4.1.1
-    version: 4.1.1(rollup@3.29.2)
+    specifier: 4.1.2
+    version: 4.1.2(rollup@3.29.2)
   '@tailwindcss/forms':
     specifier: 0.5.6
     version: 0.5.6(tailwindcss@3.3.3)
@@ -230,8 +230,8 @@ devDependencies:
     specifier: 3.0.2
     version: 3.0.2
   '@types/downloadjs':
-    specifier: 1.4.3
-    version: 1.4.3
+    specifier: 1.4.5
+    version: 1.4.5
   '@types/file-saver':
     specifier: ^2.0.5
     version: 2.0.5
@@ -281,8 +281,8 @@ devDependencies:
     specifier: 2.2.1
     version: 2.2.1
   '@types/uuid':
-    specifier: 9.0.4
-    version: 9.0.4
+    specifier: 9.0.6
+    version: 9.0.6
   '@typescript-eslint/eslint-plugin':
     specifier: 6.7.3
     version: 6.7.3(@typescript-eslint/parser@6.7.3)(eslint@8.49.0)(typescript@5.2.2)
@@ -887,8 +887,8 @@ packages:
     resolution: {integrity: sha512-ZnQMnLV4e7hDlUvw8H+U8ASL02SS2Gn6+9Ac3wGGLIe7+je2AeAOxPY+izIPJDfFDb7eDjev0Us8MO1iFRN8hA==}
     dev: true
 
-  /@iconify/json@2.2.116:
-    resolution: {integrity: sha512-CdvzR/yg3dYENV7F6Hi85ubpEWe0noUspNyLkhyyNihs4hrhCj0iJ0q2T9FB3qeJyxFxL6v//Wy7H4pR/CCZFA==}
+  /@iconify/json@2.2.135:
+    resolution: {integrity: sha512-SrssFU+P37j3QhxatYazLgNfvlwP3NVMFRUBlKfb8MvMtXqT46lT1KZsXLsRsORbLjm89+VJqXKOyK4u5K6T8A==}
     dependencies:
       '@iconify/types': 2.0.0
       pathe: 1.1.1
@@ -1138,11 +1138,11 @@ packages:
   /@protobufjs/utf8@1.1.0:
     resolution: {integrity: sha512-Vvn3zZrhQZkkBE8LSuW3em98c0FwgO4nxzv6OdSxPKJIEKY2bGbHn+mhGIPerzI4twdxaP8/0+06HBpwf345Lw==}
 
-  /@rollup/plugin-yaml@4.1.1(rollup@3.29.2):
-    resolution: {integrity: sha512-firWc3X2Ea5CWx2tOh/MzrsdxoX8ZUtG8RC+NQ7T04/cOereC64tDo4v1L+adTIJlmNko/Oaqn+uCol/t0qvbw==}
+  /@rollup/plugin-yaml@4.1.2(rollup@3.29.2):
+    resolution: {integrity: sha512-RpupciIeZMUqhgFE97ba0s98mOFS7CWzN3EJNhJkqSv9XLlWYtwVdtE6cDw6ASOF/sZVFS7kRJXftaqM2Vakdw==}
     engines: {node: '>=14.0.0'}
     peerDependencies:
-      rollup: ^1.20.0||^2.0.0||^3.0.0
+      rollup: ^1.20.0||^2.0.0||^3.0.0||^4.0.0
     peerDependenciesMeta:
       rollup:
         optional: true
@@ -1438,8 +1438,8 @@ packages:
       '@types/trusted-types': 2.0.4
     dev: true
 
-  /@types/downloadjs@1.4.3:
-    resolution: {integrity: sha512-MjJepFle/tLtT2/jmDNth6ZnwWzEhm40L+olE5HKR70ISUCfgT55eqreeHldAzFLY2HDUGsn8zgyto8KygN0CA==}
+  /@types/downloadjs@1.4.5:
+    resolution: {integrity: sha512-pr3zSKY0QwP+1tQumJGNfziGNi1xLVHtGsrclGsgjVpfWSPoW/9He42w6X+GTp4PO5I2wuHDU2wJdxI7dqjW+w==}
     dev: true
 
   /@types/estree@1.0.2:
@@ -1678,8 +1678,8 @@ packages:
     resolution: {integrity: sha512-IDaobHimLQhjwsQ/NMwRVfa/yL7L/wriQPMhw1ZJall0KX6E1oxk29XMDeilW5qTIg5aoiqf5Udy8U/51aNoQQ==}
     dev: true
 
-  /@types/uuid@9.0.4:
-    resolution: {integrity: sha512-zAuJWQflfx6dYJM62vna+Sn5aeSWhh3OB+wfUEACNcqUSc0AGc5JKl+ycL1vrH7frGTXhJchYjE1Hak8L819dA==}
+  /@types/uuid@9.0.6:
+    resolution: {integrity: sha512-BT2Krtx4xaO6iwzwMFUYvWBWkV2pr37zD68Vmp1CDV196MzczBRxuEpD6Pr395HAgebC/co7hOphs53r8V7jew==}
     dev: true
 
   /@types/web-bluetooth@0.0.17:

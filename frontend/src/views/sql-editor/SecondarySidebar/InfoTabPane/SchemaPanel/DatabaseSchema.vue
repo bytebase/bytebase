@@ -16,13 +16,13 @@
           :database-metadata="databaseMetadata"
         />
         <ExternalLinkButton
-          v-if="sqlEditorStore.mode === 'BUNDLED'"
+          v-if="pageMode === 'BUNDLED'"
           :link="`/db/${databaseV1Slug(database)}`"
           :tooltip="$t('common.detail')"
         />
         <AlterSchemaButton
           v-if="
-            sqlEditorStore.mode === 'BUNDLED' &&
+            pageMode === 'BUNDLED' &&
             instanceV1HasAlterSchema(database.instanceEntity)
           "
           :database="database"
@@ -39,6 +39,8 @@
 
     <TableList
       class="flex-1 w-full py-1"
+      :db="database"
+      :database="databaseMetadata"
       :schema-list="availableSchemas"
       :row-clickable="rowClickable"
       @select-table="(schema, table) => $emit('select-table', schema, table)"
@@ -48,8 +50,7 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { useCurrentUserV1 } from "@/store";
-import { useSQLEditorStore } from "@/store";
+import { useCurrentUserV1, usePageMode } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import {
@@ -81,7 +82,7 @@ const emit = defineEmits<{
 
 const { events: editorEvents } = useSQLEditorContext();
 const currentUser = useCurrentUserV1();
-const sqlEditorStore = useSQLEditorStore();
+const pageMode = usePageMode();
 
 const engine = computed(() => props.database.instanceEntity.engine);
 

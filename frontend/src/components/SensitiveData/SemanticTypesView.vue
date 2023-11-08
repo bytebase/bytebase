@@ -1,12 +1,18 @@
 <template>
   <div class="w-full mt-4 space-y-4">
-    <div class="flex items-center justify-end">
+    <div class="flex items-center justify-end space-x-2">
       <NButton
         type="primary"
         :disabled="!hasPermission || !hasSensitiveDataFeature"
         @click="onAdd"
       >
         {{ $t("settings.sensitive-data.semantic-types.add-type") }}
+      </NButton>
+      <NButton
+        :disabled="!hasPermission || !hasSensitiveDataFeature"
+        @click="state.showTemplateDrawer = true"
+      >
+        {{ $t("settings.sensitive-data.semantic-types.add-from-template") }}
       </NButton>
     </div>
     <div class="space-y-5 divide-y-2 pb-10 divide-gray-100">
@@ -20,10 +26,14 @@
       />
     </div>
   </div>
+  <SemanticTemplateDrawer
+    :show="state.showTemplateDrawer"
+    @apply="onTemplateApply"
+    @dismiss="state.showTemplateDrawer = false"
+  />
 </template>
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
-import type { SelectOption } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
@@ -42,12 +52,14 @@ import SemanticTypesTable, {
 interface LocalState {
   semanticItemList: SemanticItem[];
   processing: boolean;
+  showTemplateDrawer: boolean;
 }
 
 const { t } = useI18n();
 const state = reactive<LocalState>({
   semanticItemList: [],
   processing: false,
+  showTemplateDrawer: false,
 });
 
 const settingStore = useSettingV1Store();
@@ -60,42 +72,33 @@ const hasPermission = computed(() => {
 });
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
 
-const algorithmList = computed((): SelectOption[] => {
-  return (
-    settingStore.getSettingByName("bb.workspace.masking-algorithm")?.value
-      ?.maskingAlgorithmSettingValue?.algorithms ?? []
-  ).map((algorithm) => ({
-    label: algorithm.title,
-    value: algorithm.id,
-  }));
+const semanticTypeSettingValue = computed(() => {
+  const semanticTypeSetting = settingStore.getSettingByName(
+    "bb.workspace.semantic-types"
+  );
+  return semanticTypeSetting?.value?.semanticTypeSettingValue?.types ?? [];
 });
 
 onMounted(async () => {
-  const semanticTypeSetting = await settingStore.getOrFetchSettingByName(
-    "bb.workspace.semantic-types",
-    true
+  state.semanticItemList = semanticTypeSettingValue.value.map(
+    (semanticType) => {
+      return {
+        dirty: false,
+        item: semanticType,
+        mode: "NORMAL",
+      };
+    }
   );
-  state.semanticItemList = (
-    semanticTypeSetting?.value?.semanticTypeSettingValue?.types ?? []
-  ).map((semanticType) => {
-    return {
-      dirty: false,
-      item: semanticType,
-      mode: "NORMAL",
-    };
-  });
 });
 
 const onAdd = () => {
-  const defaultAlgorithm =
-    algorithmList.value.length > 0 ? algorithmList.value[0].value : "";
   state.semanticItemList.push({
     mode: "CREATE",
     dirty: false,
     item: SemanticTypeSetting_SemanticType.fromJSON({
       id: uuidv4(),
-      fullMaskAlgorithmId: defaultAlgorithm,
-      partialMaskAlgorithmId: defaultAlgorithm,
+      fullMaskAlgorithmId: "",
+      partialMaskAlgorithmId: "",
     }),
   });
 };
@@ -134,11 +137,21 @@ const onConfirm = async (index: number) => {
     mode: "NORMAL",
   };
 
+  await onUpsert(
+    state.semanticItemList.map((data) => data.item),
+    t(`common.${item.mode === "CREATE" ? "created" : "updated"}`)
+  );
+};
+
+const onUpsert = async (
+  semanticItemList: SemanticTypeSetting_SemanticType[],
+  notification: string
+) => {
   await settingStore.upsertSetting({
     name: "bb.workspace.semantic-types",
     value: {
       semanticTypeSettingValue: {
-        types: state.semanticItemList.map((data) => data.item),
+        types: semanticItemList,
       },
     },
   });
@@ -146,7 +159,7 @@ const onConfirm = async (index: number) => {
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
-    title: t(`common.${item.mode === "CREATE" ? "created" : "updated"}`),
+    title: notification,
   });
 };
 
@@ -171,5 +184,21 @@ const onCancel = (index: number) => {
       dirty: false,
     };
   }
+};
+
+const onTemplateApply = async (template: SemanticTypeSetting_SemanticType) => {
+  const semanticItem: SemanticItem = {
+    dirty: false,
+    mode: "NORMAL",
+    item: SemanticTypeSetting_SemanticType.fromPartial({
+      ...template,
+      id: uuidv4(),
+    }),
+  };
+  state.semanticItemList.push(semanticItem);
+  await onUpsert(
+    [...semanticTypeSettingValue.value, semanticItem.item],
+    t("common.created")
+  );
 };
 </script>

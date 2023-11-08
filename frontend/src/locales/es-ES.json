@@ -9,6 +9,7 @@
     "dingtalk": "DingTalk",
     "feishu": "Feishu",
     "wecom": "WeCom",
+    "system": "Sistema",
     "custom": "Personalizado",
     "im": "IM",
     "overview": "Resumen",
@@ -81,9 +82,10 @@
       "owner": "Propietario",
       "developer": "Desarrollador",
       "member": "Miembro",
-      "exporter": "exportador",
-      "querier": "querier",
-      "releaser": "liberador"
+      "exporter": "Exportador",
+      "querier": "Querier",
+      "releaser": "Liberador",
+      "viewer": "Espectador"
     },
     "assignee": "Asignado",
     "revert": "Revertir",
@@ -273,7 +275,8 @@
     "filter-by-name": "Filtrar por nombre",
     "tenant": "Arrendataria",
     "license": "Licencia",
-    "show-all": "Mostrar todo"
+    "show-all": "Mostrar todo",
+    "view-details": "Ver detalles"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -380,7 +383,25 @@
     "action-failed-in-current-stage": "{action} tareas fallidas en la etapa actual",
     "action-all-tasks-in-current-stage": "{action} todas las tareas en la etapa actual",
     "cancel-task": "Cancelar tarea | Cancelar tareas",
-    "created": "Creado"
+    "created": "Creado",
+    "online-migration": {
+      "self": "Migración en línea",
+      "configure-ghost-parameters-for-db": "Configurar los parámetros de gh-ost para la base de datos '{db}'",
+      "configure-ghost-parameters": "Configurar los parámetros de gh-ost",
+      "ghost-parameters": "parámetros de gh-ost",
+      "configure": "Configurar",
+      "error": {
+        "some-tasks-are-not-editable-in-batch-mode": "Algunas tareas no se pueden editar en modo por lotes",
+        "task-is-not-editable": "Esta tarea no es editable",
+        "x-status-task-is-not-editable": "La tarea {status} no es editable",
+        "nothing-changed": "nada ha cambiado",
+        "not-applicable": {
+          "some-tasks-dont-meet-ghost-requirement": "Algunas tareas no cumplen con los requisitos de gh-ost."
+        }
+      },
+      "show-default-parameters": "Mostrar parámetros predeterminados",
+      "hide-default-parameters": "Ocultar parámetros predeterminados"
+    }
   },
   "task-run": {
     "status": {
@@ -399,7 +420,7 @@
     "extend-trial": "Extender el tiempo de prueba",
     "deploy": "Auto Hospedaje",
     "cloud": "Cloud",
-    "request-demo": "Reserve una presentación de producto de 30 minutos con nuestro experto en productos",
+    "request-demo": "Reserva una demo de producto de 30 minutos.",
     "readonly": "Bytebase está en modo de solo lectura. Todavía puede ver la consola, pero cualquier intento de cambio fallará.",
     "external-url": "Bytebase no ha configurado --external-url",
     "configure-now": "Configurar ahora"
@@ -662,12 +683,45 @@
       "semantic-types": {
         "self": "Tipos semánticos",
         "add-type": "Agregar tipo",
+        "add-from-template": "Agregar desde plantilla",
         "table": {
           "semantic-type": "Tipo semántico",
           "description": "Descripción",
           "full-masking-algorithm": "Algoritmo de enmascaramiento completo",
           "partial-masking-algorithm": "Algoritmo de enmascaramiento parcial",
           "delete": "¿Eliminar este tipo semántico?"
+        },
+        "template": {
+          "address": {
+            "title": "La dirección"
+          },
+          "secret_key": {
+            "title": "Clave de encriptación"
+          },
+          "card_number": {
+            "title": "Tarjeta bancaria, tarjeta de crédito, etc."
+          },
+          "email": {
+            "title": "Dirección de correo electrónico"
+          },
+          "id_number": {
+            "title": "Número de identificación personal"
+          },
+          "ipv4_address": {
+            "title": "Dirección IPv4"
+          },
+          "license_plate_number": {
+            "title": "Número de placa"
+          },
+          "mac_address": {
+            "title": "Dirección MAC"
+          },
+          "password": {
+            "title": "Contraseña"
+          },
+          "phone": {
+            "title": "Número de teléfono"
+          }
         }
       },
       "column-detail": {
@@ -680,8 +734,34 @@
       },
       "algorithms": {
         "self": "Algoritmo de enmascaramiento",
+        "add": "Agregar algoritmo",
         "default": "Por defecto",
-        "default-desc": "Utilice *** como máscara de datos"
+        "default-desc": "Utilice *** como máscara de datos",
+        "table": {
+          "title": "Título",
+          "description": "Descripción",
+          "masking-type": "Tipo de enmascaramiento",
+          "delete": "¿Eliminar este algoritmo?"
+        },
+        "full-mask": {
+          "self": "Máscara completa",
+          "substitution": "Sustitución",
+          "substitution-label": "La sustitución es la cadena utilizada para reemplazar el valor original, la longitud máxima de la cadena es 16 bytes."
+        },
+        "range-mask": {
+          "self": "Máscara de rango",
+          "slice-start": "Inicio de corte",
+          "slice-start-label": "El inicio del segmento es el índice de inicio del valor original, comienza desde 0 y debe ser menor que detener.",
+          "slice-end": "Fin del corte",
+          "slice-end-label": "La parada de segmento es el índice de parada del valor original y debe ser menor que la longitud del valor original.",
+          "substitution": "Sustitución",
+          "substitution-label": "La sustitución es la cadena utilizada para reemplazar el valor original de principio a fin."
+        },
+        "md5-mask": {
+          "self": "Máscara MD5",
+          "salt": "Sal",
+          "salt-label": "La sal es el valor de la sal para generar un hash diferente al de la palabra sola."
+        }
       },
       "masking-level": {
         "self": "Nivel de enmascaramiento",
@@ -786,7 +866,8 @@
       "schema-version": "versión de esquema {version}",
       "xxx-automatically": "{verb} automáticamente",
       "verb-type-target-by-people": "{verb} {type} {target}",
-      "verb-type-target-by-system-bot": "{type} {target} {verb}"
+      "verb-type-target-by-system-bot": "{type} {target} {verb}",
+      "changed-x-link": "cambiado {name}. \n{link}"
     },
     "subject-prefix": {
       "task": "Tarea",
@@ -949,7 +1030,7 @@
       "full-schema": "Esquema completo",
       "left-schema-may-change": "El esquema del lado izquierdo puede cambiar antes de que se aplique la incidencia."
     },
-    "assignee-tooltip": "Permitir al asignado implementar la incidencia una vez que se haya aprobado el flujo de aprobación.",
+    "assignee-tooltip": "Los asignados son responsables de un problema y cuando se les asigna un problema, aparece en su lista de problemas asignados.",
     "approval-flow": {
       "self": "Flujo de aprobación",
       "tooltip": "Los revisores aprobarán y revisarán la incidencia en el orden especificado en el flujo. La incidencia solo se puede aplicar después de que se hayan aprobado todos los pasos del flujo. Puedes configurar un flujo de aprobación personalizado para cada riesgo."
@@ -1002,8 +1083,10 @@
       "continue-anyway": "De todas maneras, continúe",
       "sql-review-violations": "Infracciones de revisión de SQL"
     },
-    "no-assignee-candidates": "No hay candidatos asignados válidos en este proyecto. \nPor favor contacte al propietario del proyecto.",
-    "allow-any-following-roles-to-be-assignee": "Permitir que se asignen los siguientes roles"
+    "error": {
+      "issue-is-not-open": "El tema no está abierto.",
+      "you-don-have-privilege-to-edit-this-issue": "No tienes privilegios para editar este número."
+    }
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",
@@ -1223,7 +1306,7 @@
     "visit-instance": "@:common.visit @:common.instances",
     "visit-database": "@:common.visit @:common.databases",
     "visit-environment": "@:common.visit @:common.environments",
-    "add-a-member": "Agregar un miembro",
+    "visit-member": "@:common.visit @:common.members",
     "use-kbar": "Usar kbar ({shortcut})",
     "query-data": "Consultar datos",
     "notice": {
@@ -2536,7 +2619,8 @@
       }
     },
     "edit-rule": {
-      "self": "Editar regla de revisión SQL"
+      "self": "Editar regla de revisión SQL",
+      "readonly": "Regla de revisión de SQL"
     },
     "rule": {
       "active": "Activa"
@@ -2833,10 +2917,6 @@
       "description": "Para cada tipo de operación, configure una condición personalizada, un riesgo y un flujo de aprobación. ",
       "approval-flows": "Flujos de Aprobación",
       "approval-nodes": "Nodos de aprobación",
-      "type": {
-        "system": "Sistema",
-        "custom": "Personalizado"
-      },
       "delete": "Eliminar flujo de aprobación",
       "search": "Buscar flujo de aprobación",
       "select": "Seleccionar flujo de aprobación",
@@ -3039,6 +3119,9 @@
     "expired-tip": "El papel puede haber expirado.",
     "releaser": {
       "description": "Rol de liberador de proyecto definido por el sistema"
+    },
+    "viewer": {
+      "description": "Rol de visor de base de datos de proyecto definido por el sistema"
     }
   },
   "database-group": {
@@ -3171,5 +3254,14 @@
     "confirm-remove-change": "¿Eliminar este cambio?",
     "delete-this-changelist": "Eliminar esta lista de cambios",
     "confirm-delete-changelist": "¿Eliminar esta lista de cambios?"
+  },
+  "export-data": {
+    "self": "Exportar datos",
+    "export-rows": "Exportar filas",
+    "error": {
+      "export-rows-required": "Se requieren filas de exportación",
+      "export-rows-must-gt-zero": "Las filas de exportación deben ser mayores que 0"
+    },
+    "export-format": "Formato de exportación"
   }
 }

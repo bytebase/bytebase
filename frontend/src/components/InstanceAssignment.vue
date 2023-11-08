@@ -105,7 +105,9 @@
               />
             </BBTableCell>
             <BBTableCell class="bb-grid-cell">
-              {{ hostPortOfInstanceV1(instance) }}
+              <EllipsisText class="w-10">
+                {{ hostPortOfInstanceV1(instance) }}
+              </EllipsisText>
             </BBTableCell>
           </template>
         </BBTable>
@@ -141,6 +143,7 @@ import { storeToRefs } from "pinia";
 import { reactive, computed, watchEffect, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import type { BBTableColumn, BBTableSectionDataSource } from "@/bbkit/types";
+import EllipsisText from "@/components/EllipsisText.vue";
 import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
 import { Drawer, DrawerContent } from "@/components/v2";
 import {
