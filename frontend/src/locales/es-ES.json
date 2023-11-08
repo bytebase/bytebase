@@ -275,7 +275,8 @@
     "filter-by-name": "Filtrar por nombre",
     "tenant": "Arrendataria",
     "license": "Licencia",
-    "show-all": "Mostrar todo"
+    "show-all": "Mostrar todo",
+    "view-details": "Ver detalles"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -865,7 +866,8 @@
       "schema-version": "versión de esquema {version}",
       "xxx-automatically": "{verb} automáticamente",
       "verb-type-target-by-people": "{verb} {type} {target}",
-      "verb-type-target-by-system-bot": "{type} {target} {verb}"
+      "verb-type-target-by-system-bot": "{type} {target} {verb}",
+      "changed-x-link": "cambiado {name}. \n{link}"
     },
     "subject-prefix": {
       "task": "Tarea",
