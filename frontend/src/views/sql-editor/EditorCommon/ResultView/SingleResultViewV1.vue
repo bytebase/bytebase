@@ -61,22 +61,24 @@
             {{ $t("plugin.ai.chat-sql") }}
           </template>
         </NTooltip>
-        <DataExportButton
-          v-if="showExportButton"
-          size="small"
-          :disabled="props.result === null || isEmpty(props.result)"
-          :support-formats="[
-            ExportFormat.CSV,
-            ExportFormat.JSON,
-            ExportFormat.SQL,
-            ExportFormat.XLSX,
-          ]"
-          :allow-specify-row-count="true"
-          @export="handleExportBtnClick"
-        />
-        <NButton v-else @click="state.showRequestExportPanel = true">
-          {{ $t("quick-action.request-export-data") }}
-        </NButton>
+        <template v-if="showExportButton">
+          <DataExportButton
+            v-if="allowToExport"
+            size="small"
+            :disabled="props.result === null || isEmpty(props.result)"
+            :support-formats="[
+              ExportFormat.CSV,
+              ExportFormat.JSON,
+              ExportFormat.SQL,
+              ExportFormat.XLSX,
+            ]"
+            :allow-specify-row-count="true"
+            @export="handleExportBtnClick"
+          />
+          <NButton v-else @click="state.showRequestExportPanel = true">
+            {{ $t("quick-action.request-export-data") }}
+          </NButton>
+        </template>
       </div>
     </div>
 
@@ -172,6 +174,7 @@ import {
   hasWorkspacePermissionV1,
   instanceV1HasStructuredQueryResult,
 } from "@/utils";
+import { customTheme } from "@/utils/customTheme";
 import DataTable from "./DataTable";
 import EmptyView from "./EmptyView.vue";
 import ErrorView from "./ErrorView.vue";
@@ -237,6 +240,10 @@ const showSearchFeature = computed(() => {
 });
 
 const showExportButton = computed(() => {
+  return customTheme.value !== "lixiang";
+});
+
+const allowToExport = computed(() => {
   if (!featureToRef("bb.feature.access-control").value) {
     // The current plan doesn't have access control feature.
     // Fallback to true.
