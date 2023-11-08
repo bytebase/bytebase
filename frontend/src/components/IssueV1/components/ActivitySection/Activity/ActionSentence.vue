@@ -4,10 +4,8 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
-import { defineComponent, h, watch } from "vue";
+import { defineComponent, h } from "vue";
 import { Translation, useI18n } from "vue-i18n";
-import TextOverflowPopover from "@/components/misc/TextOverflowPopover.vue";
-import { useSheetV1Store, useSheetStatementByUID } from "@/store";
 import {
   ActivityIssueCommentCreatePayload,
   ActivityPipelineTaskRunStatusUpdatePayload,
@@ -28,6 +26,7 @@ import {
 } from "@/utils";
 import { extractUserResourceName } from "@/utils";
 import StageName from "./StageName.vue";
+import StatementUpdate from "./StatementUpdate.vue";
 import TaskName from "./TaskName.vue";
 
 type RenderedContent = string | ReturnType<typeof h>;
@@ -38,7 +37,6 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const sheetV1Store = useSheetV1Store();
 
 const renderActionSentence = () => {
   const renderSpan = (content: string, props?: object) => {
@@ -251,24 +249,21 @@ const renderActionSentence = () => {
       const payload = JSON.parse(
         activity.payload
       ) as ActivityTaskStatementUpdatePayload;
-      const oldStatement =
-        useSheetStatementByUID(String(payload.oldSheetId || UNKNOWN_ID))
-          .value || payload.oldStatement;
-      const newStatement =
-        useSheetStatementByUID(String(payload.newSheetId || UNKNOWN_ID))
-          .value || payload.newStatement;
       return h(
         "span",
         {},
         h(
           Translation,
           {
-            keypath: "activity.sentence.changed-from-to",
+            keypath: "activity.sentence.changed-x-link",
           },
           {
             name: () => "SQL",
-            oldValue: () => renderStatement(oldStatement),
-            newValue: () => renderStatement(newStatement),
+            link: () =>
+              h(StatementUpdate, {
+                oldSheetId: String(payload.oldSheetId || UNKNOWN_ID),
+                newSheetId: String(payload.newSheetId || UNKNOWN_ID),
+              }),
           }
         )
       );
@@ -332,40 +327,4 @@ const Renderer = defineComponent({
   name: "ActionSentenceRenderer",
   render: renderActionSentence,
 });
-
-const renderStatement = (content: string) => {
-  return h(TextOverflowPopover, {
-    content,
-    maxLength: 50,
-    width: 400,
-    contentClass: "text-main",
-  });
-};
-
-watch(
-  () => props.activity,
-  async () => {
-    const activity = props.activity;
-    // Prepare sheet data for rendering.
-    if (
-      activity.action === LogEntity_Action.ACTION_PIPELINE_TASK_STATEMENT_UPDATE
-    ) {
-      sheetV1Store.getOrFetchSheetByUID(
-        String(
-          (JSON.parse(activity.payload) as ActivityTaskStatementUpdatePayload)
-            .newSheetId || UNKNOWN_ID
-        )
-      );
-      sheetV1Store.getOrFetchSheetByUID(
-        String(
-          (JSON.parse(activity.payload) as ActivityTaskStatementUpdatePayload)
-            .oldSheetId || UNKNOWN_ID
-        )
-      );
-    }
-  },
-  {
-    immediate: true,
-  }
-);
 </script>

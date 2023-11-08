@@ -275,7 +275,8 @@
     "filter-by-name": "Filter by name",
     "tenant": "Tenant",
     "license": "License",
-    "show-all": "Show all"
+    "show-all": "Show all",
+    "view-details": "View details"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -866,7 +867,8 @@
       "schema-version": "schema version {version}",
       "xxx-automatically": "{verb} automatically",
       "verb-type-target-by-people": "{verb} {type} {target}",
-      "verb-type-target-by-system-bot": "{type} {target} {verb}"
+      "verb-type-target-by-system-bot": "{type} {target} {verb}",
+      "changed-x-link": "changed {name}. {link}"
     },
     "subject-prefix": {
       "task": "Task",
