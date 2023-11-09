@@ -67,6 +67,8 @@ func TestMySQLWIPRules(t *testing.T) {
 		advisor.SchemaRuleRequiredColumn,
 		// advisor.SchemaRuleColumnNotNull enforce the columns cannot have NULL value.
 		advisor.SchemaRuleColumnNotNull,
+		// advisor.SchemaRuleColumnDisallowChange disallow CHANGE COLUMN statement.
+		advisor.SchemaRuleColumnDisallowChange,
 		// advisor.SchemaRuleColumnDisallowChangeType disallow change column type.
 		advisor.SchemaRuleColumnDisallowChangeType,
 		// advisor.SchemaRuleColumnDisallowSetCharset disallow set column charset.
