@@ -276,7 +276,8 @@
     "tenant": "Arrendataria",
     "license": "Licencia",
     "show-all": "Mostrar todo",
-    "view-details": "Ver detalles"
+    "view-details": "Ver detalles",
+    "force-verb": "forzar {verbo}"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
