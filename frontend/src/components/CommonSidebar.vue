@@ -2,17 +2,6 @@
   <nav class="flex-1 flex flex-col overflow-y-hidden">
     <BytebaseLogo class="w-full px-4 shrink-0" />
     <div class="flex-1 overflow-y-auto px-2 pb-4">
-      <button
-        v-if="showGoBack"
-        class="group shrink-0 flex items-center px-2 py-2 text-base leading-5 font-normal rounded-md text-gray-700 hover:opacity-80 focus:outline-none"
-        @click.prevent="goBack"
-      >
-        <heroicons-outline:chevron-left
-          class="mr-1 w-5 h-auto text-gray-500 group-hover:text-gray-500 group-focus:text-gray-600"
-        />
-        {{ $t("common.back") }}
-      </button>
-
       <div v-for="(item, i) in filteredSidebarList" :key="i">
         <router-link
           v-if="type === 'route' && item.path"
@@ -67,8 +56,6 @@
 <script setup lang="ts">
 import { ChevronDown, ChevronUp } from "lucide-vue-next";
 import { computed, VNode, reactive, onMounted } from "vue";
-import { useRouter } from "vue-router";
-import { useRouterStore } from "@/store";
 
 export interface SidebarItem {
   title: string;
@@ -90,11 +77,9 @@ const props = withDefaults(
   defineProps<{
     itemList: SidebarItem[];
     type: "route" | "div";
-    showGoBack?: boolean;
     getItemClass: (path: string | undefined) => string[];
   }>(),
   {
-    showGoBack: false,
     getItemClass: (_: string | undefined) => [],
   }
 );
@@ -103,15 +88,9 @@ const emit = defineEmits<{
   (event: "select", path: string | undefined): void;
 }>();
 
-const routerStore = useRouterStore();
-const router = useRouter();
 const state = reactive<LocalState>({
   expandedSidebar: new Set(),
 });
-
-const goBack = () => {
-  router.push(routerStore.backPath());
-};
 
 const filteredSidebarList = computed(() => {
   return props.itemList
