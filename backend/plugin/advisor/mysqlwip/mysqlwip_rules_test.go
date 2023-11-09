@@ -87,17 +87,9 @@ func TestMySQLWIPRules(t *testing.T) {
 		advisor.SchemaRuleIndexKeyNumberLimit,
 		// advisor.SchemaRuleIndexTotalNumberLimit enforce the index total number limit.
 		advisor.SchemaRuleIndexTotalNumberLimit,
+		advisor.SchemaRuleIndexPrimaryKeyTypeAllowlist,
 	}
 
-	for _, rule := range mysqlwipRules {
-		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_ENGINE_UNSPECIFIED, false /* record */)
-	}
-}
-
-func TestRules(t *testing.T) {
-	mysqlwipRules := []advisor.SQLReviewRuleType{
-		advisor.SchemaRuleStatementAffectedRowLimit,
-	}
 	for _, rule := range mysqlwipRules {
 		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_ENGINE_UNSPECIFIED, false /* record */)
 	}
