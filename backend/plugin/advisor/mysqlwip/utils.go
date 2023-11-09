@@ -117,28 +117,3 @@ func (t tableColumnTypes) delete(tableName string, columnName string) {
 	}
 	delete(t[tableName], columnName)
 }
-
-type columnNameToColumnDef map[string]*ast.ColumnDef
-type tableNewColumn map[string]columnNameToColumnDef
-
-func (t tableNewColumn) set(tableName string, columnName string, colDef *ast.ColumnDef) {
-	if _, ok := t[tableName]; !ok {
-		t[tableName] = make(map[string]*ast.ColumnDef)
-	}
-	t[tableName][columnName] = colDef
-}
-
-func (t tableNewColumn) get(tableName string, columnName string) (colDef *ast.ColumnDef, ok bool) {
-	if _, ok := t[tableName]; !ok {
-		return nil, false
-	}
-	col, ok := t[tableName][columnName]
-	return col, ok
-}
-
-func (t tableNewColumn) delete(tableName string, columnName string) {
-	if _, ok := t[tableName]; !ok {
-		return
-	}
-	delete(t[tableName], columnName)
-}
