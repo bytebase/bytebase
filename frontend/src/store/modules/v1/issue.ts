@@ -137,31 +137,8 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
     };
   };
 
-  const searchIssues = async ({
-    find,
-    pageSize,
-    pageToken,
-  }: ListIssueParams) => {
-    const resp = await issueServiceClient.searchIssues({
-      parent: find.project,
-      query: find.query,
-      filter: buildIssueFilter(find),
-      pageSize,
-      pageToken,
-    });
-
-    const composedIssues = await Promise.all(
-      resp.issues.map((issue) => shallowComposeIssue(issue))
-    );
-    return {
-      nextPageToken: resp.nextPageToken,
-      issues: composedIssues,
-    };
-  };
-
   return {
     listIssues,
-    searchIssues,
     regenerateReviewV1,
     createIssueComment,
     updateIssueComment,
