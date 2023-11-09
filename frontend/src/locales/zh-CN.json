@@ -764,7 +764,7 @@
       },
       "masking-level": {
         "self": "脱敏程度",
-        "masking_level_unspecified": "遵循全局配置",
+        "masking_level_unspecified": "遵循全局",
         "none": "明文",
         "partial": "半脱敏",
         "full": "全脱敏"

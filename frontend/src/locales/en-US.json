@@ -767,7 +767,7 @@
       "masking-level": {
         "self": "Masking Level",
         "selet-level": "Select level",
-        "masking_level_unspecified": "Follow global masking rules",
+        "masking_level_unspecified": "Follow global rules",
         "none": "None",
         "partial": "Partial",
         "full": "Full"
