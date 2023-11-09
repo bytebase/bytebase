@@ -69,12 +69,28 @@ func (s *ProjectService) GetProject(ctx context.Context, request *v1pb.GetProjec
 
 // ListProjects lists all projects.
 func (s *ProjectService) ListProjects(ctx context.Context, request *v1pb.ListProjectsRequest) (*v1pb.ListProjectsResponse, error) {
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+	role, ok := ctx.Value(common.RoleContextKey).(api.Role)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "role not found")
+	}
+
 	projects, err := s.store.ListProjectV2(ctx, &store.FindProjectMessage{ShowDeleted: request.ShowDeleted})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	response := &v1pb.ListProjectsResponse{}
 	for _, project := range projects {
+		policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		if !isOwnerOrDBA(role) && !isProjectMember(principalID, policy) {
+			continue
+		}
 		response.Projects = append(response.Projects, convertToProject(project))
 	}
 	return response, nil
