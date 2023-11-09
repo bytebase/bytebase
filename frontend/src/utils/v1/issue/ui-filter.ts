@@ -5,7 +5,10 @@ import {
 import { ComposedIssue } from "@/types";
 import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
 
-export const UIIssueFilterScopeIdList = ["approver", "review_status"] as const;
+export const UIIssueFilterScopeIdList = [
+  "approver",
+  "approval_status",
+] as const;
 export type UIIssueFilterScopeId = typeof UIIssueFilterScopeIdList[number];
 
 export const IssueReviewStatusList = ["pending_approval", "approved"] as const;
@@ -17,7 +20,7 @@ export const isValidIssueReviewStatus = (s: string): s is IssueReviewStatus => {
 // Use snake_case to keep consistent with the advanced search query string
 export interface UIIssueFilter {
   approver?: string;
-  review_status?: IssueReviewStatus;
+  approval_status?: IssueReviewStatus;
 }
 
 export const filterIssueByApprover = (
@@ -77,5 +80,7 @@ export const applyUIIssueFilter = (
   if (!filter) return list;
   return list
     .filter((issue) => filterIssueByApprover(issue, filter.approver))
-    .filter((issue) => filterIssueByReviewStatus(issue, filter.review_status));
+    .filter((issue) =>
+      filterIssueByReviewStatus(issue, filter.approval_status)
+    );
 };
