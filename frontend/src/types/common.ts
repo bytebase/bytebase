@@ -3,7 +3,7 @@ import { EMPTY_ID, UNKNOWN_ID } from "./const";
 import { DataSource } from "./dataSource";
 import { Database } from "./database";
 import { Environment } from "./environment";
-import { CommandId, CommandRegisterId, PrincipalId } from "./id";
+import { CommandId, CommandRegisterId } from "./id";
 import { Instance } from "./instance";
 import { Issue } from "./issue";
 import { Pipeline, Stage, Task, TaskProgress } from "./pipeline";
@@ -39,7 +39,7 @@ export type RowStatus = "NORMAL" | "ARCHIVED";
 
 // Router
 export type RouterSlug = {
-  principalId?: PrincipalId;
+  principalEmail?: string;
   environmentSlug?: string;
   projectSlug?: string;
   projectWebhookSlug?: string;

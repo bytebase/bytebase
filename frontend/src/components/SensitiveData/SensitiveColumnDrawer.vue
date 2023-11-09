@@ -83,7 +83,7 @@
                   <UserAvatar size="SMALL" :user="item.user" />
                   <div class="flex flex-col">
                     <router-link
-                      :to="`/u/${extractUserUID(item.user.name)}`"
+                      :to="`/users/${item.user.email}`"
                       class="normal-link"
                     >
                       {{ item.user.title }}
@@ -206,7 +206,7 @@ import {
   MaskingExceptionPolicy_MaskingException,
   MaskingExceptionPolicy_MaskingException_Action,
 } from "@/types/proto/v1/org_policy_service";
-import { hasWorkspacePermissionV1, extractUserUID } from "@/utils";
+import { hasWorkspacePermissionV1 } from "@/utils";
 import { SensitiveColumn } from "./types";
 import { getMaskDataIdentifier, isCurrentColumnException } from "./utils";
 
