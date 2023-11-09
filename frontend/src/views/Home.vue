@@ -26,7 +26,7 @@
         }"
         :ui-issue-filter="{
           approver: `users/${currentUserV1.email}`,
-          review_status: 'pending_approval',
+          approval_status: 'pending_approval',
         }"
       >
         <template #table="{ issueList, loading }">
@@ -50,7 +50,7 @@
           assignee: `${userNamePrefix}${currentUserV1.email}`,
         }"
         :ui-issue-filter="{
-          review_status: 'approved',
+          approval_status: 'approved',
         }"
         :page-size="OPEN_ISSUE_LIST_PAGE_SIZE"
       >
