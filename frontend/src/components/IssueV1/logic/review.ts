@@ -1,4 +1,4 @@
-import { Ref, computed, unref } from "vue";
+import { computed, unref } from "vue";
 import {
   candidatesOfApprovalStepV1,
   useAuthStore,
@@ -15,13 +15,13 @@ import { Issue, Issue_Approver_Status } from "@/types/proto/v1/issue_service";
 import { extractUserResourceName } from "@/utils";
 import { ReviewContext } from "./context";
 
-export const extractReviewContext = (issue: Ref<Issue>): ReviewContext => {
+export const extractReviewContext = (issue: MaybeRef<Issue>): ReviewContext => {
   const ready = computed(() => {
-    return issue.value.approvalFindingDone ?? false;
+    return unref(issue).approvalFindingDone ?? false;
   });
   const flow = computed((): ReviewFlow => {
     if (!ready.value) return emptyFlow();
-    const { approvalTemplates, approvers } = issue.value;
+    const { approvalTemplates, approvers } = unref(issue);
     if (approvalTemplates.length === 0) return emptyFlow();
 
     const rejectedIndex = approvers.findIndex(
@@ -40,7 +40,7 @@ export const extractReviewContext = (issue: Ref<Issue>): ReviewContext => {
     if (!ready.value) {
       return Issue_Approver_Status.PENDING;
     }
-    if (issue.value.approvalFindingError) {
+    if (unref(issue).approvalFindingError) {
       return Issue_Approver_Status.PENDING;
     }
 
@@ -73,7 +73,7 @@ export const extractReviewContext = (issue: Ref<Issue>): ReviewContext => {
     return status.value === Issue_Approver_Status.APPROVED;
   });
   const error = computed(() => {
-    return issue.value.approvalFindingError;
+    return unref(issue).approvalFindingError;
   });
 
   return {

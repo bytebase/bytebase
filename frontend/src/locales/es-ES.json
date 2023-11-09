@@ -1087,7 +1087,8 @@
     "error": {
       "issue-is-not-open": "El tema no está abierto.",
       "you-don-have-privilege-to-edit-this-issue": "No tienes privilegios para editar este número."
-    }
+    },
+    "review-requested": "Revisión solicitada"
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",
