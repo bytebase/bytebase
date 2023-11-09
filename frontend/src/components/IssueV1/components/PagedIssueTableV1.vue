@@ -33,7 +33,8 @@ import {
   useIssueV1Store,
   useRefreshIssueList,
 } from "@/store";
-import { IssueFilter, ComposedIssue } from "@/types";
+import { IssueFilter, ComposedIssue, UIIssueFilter } from "@/types";
+import { applyUIIssueFilter } from "@/utils";
 
 type LocalState = {
   loading: boolean;
@@ -72,6 +73,10 @@ const props = defineProps({
   issueFilter: {
     type: Object as PropType<IssueFilter>,
     required: true,
+  },
+  uiIssueFilter: {
+    type: Object as PropType<UIIssueFilter>,
+    default: undefined,
   },
   pageSize: {
     type: Number,
@@ -133,9 +138,11 @@ const fetchData = (refresh = false) => {
   request
     .then(({ nextPageToken, issues }) => {
       if (refresh) {
-        state.issueList = issues;
+        state.issueList = applyUIIssueFilter(issues, props.uiIssueFilter);
       } else {
-        state.issueList.push(...issues);
+        state.issueList.push(
+          ...applyUIIssueFilter(issues, props.uiIssueFilter)
+        );
       }
 
       if (issues.length < expectedRowCount) {
