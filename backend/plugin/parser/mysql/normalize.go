@@ -276,8 +276,6 @@ func NormalizeMySQLDataType(ctx parser.IDataTypeContext, compact bool) string {
 			return "char varying"
 		}
 		return "char"
-	case ctx.Nchar() != nil:
-		return ""
 	default:
 		return strings.ToLower(ctx.GetType_().GetText())
 	}
