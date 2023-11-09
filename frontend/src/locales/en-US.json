@@ -2013,7 +2013,7 @@
       "at-least-one-stage": "At least 1 stage",
       "stage-name-required": "Stage name is required",
       "at-least-one-selector": "At least 1 selector in each stage",
-      "env-in-selector-required": "\"Environment ID\" is required in each stage",
+      "env-in-selector-required": "\"Environment\" is required in each stage",
       "env-selector-must-has-one-value": "\"Environment ID\" must has exactly one value",
       "key-required": "Key is required",
       "values-required": "Values are required"

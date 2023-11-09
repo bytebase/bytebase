@@ -2008,7 +2008,7 @@
       "at-least-one-stage": "至少需要 1 个阶段",
       "stage-name-required": "需要指定阶段名称",
       "at-least-one-selector": "每个阶段至少需要 1 个选择条件",
-      "env-in-selector-required": "每个阶段都需要有 \"Environment ID\" 选择条件",
+      "env-in-selector-required": "每个阶段都需要有 \"Environment\" 选择条件",
       "env-selector-must-has-one-value": "\"Environment ID\" 必须有且只有 1 个值",
       "key-required": "需要指定 Key",
       "values-required": "需要指定值"
