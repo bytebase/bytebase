@@ -276,7 +276,8 @@
     "tenant": "Tenant",
     "license": "License",
     "show-all": "Show all",
-    "view-details": "View details"
+    "view-details": "View details",
+    "force-verb": "Force {verb}"
   },
   "error-page": {
     "go-back-home": "Go back home"
