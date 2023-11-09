@@ -14,7 +14,7 @@
     >
       <template #creator>
         <router-link
-          :to="`/u/${extractUserUID(creator.name)}`"
+          :to="`/users/${creator.email}`"
           class="font-medium text-control hover:underline"
           >{{ creator.title }}</router-link
         >
@@ -30,7 +30,7 @@
 import { computed } from "vue";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { useUserStore } from "@/store";
-import { extractUserResourceName, extractUserUID } from "@/utils";
+import { extractUserResourceName } from "@/utils";
 import { useIssueContext } from "../../logic";
 
 const { isCreating, issue } = useIssueContext();

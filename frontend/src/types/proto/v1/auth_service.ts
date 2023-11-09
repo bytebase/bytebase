@@ -100,7 +100,7 @@ export function userRoleToJSON(object: UserRole): string {
 export interface GetUserRequest {
   /**
    * The name of the user to retrieve.
-   * Format: users/{user}
+   * Format: users/{user uid or user email}
    */
   name: string;
 }

@@ -1,7 +1,7 @@
 <template>
   <router-link
     v-if="userEmail !== SYSTEM_BOT_EMAIL"
-    :to="`/u/${userId}`"
+    :to="`/users/${userEmail}`"
     class="font-medium text-main whitespace-nowrap hover:underline"
     exact-active-class=""
     >{{ user?.title }}</router-link
@@ -23,7 +23,7 @@ import { computed } from "vue";
 import { useUserStore } from "@/store";
 import { SYSTEM_BOT_EMAIL } from "@/types";
 import { LogEntity } from "@/types/proto/v1/logging_service";
-import { extractUserResourceName, extractUserUID } from "@/utils";
+import { extractUserResourceName } from "@/utils";
 
 const props = defineProps<{
   activity: LogEntity;
@@ -35,10 +35,5 @@ const userEmail = computed(() => {
 
 const user = computed(() => {
   return useUserStore().getUserByEmail(userEmail.value);
-});
-
-const userId = computed(() => {
-  const username = user.value?.name ?? "";
-  return extractUserUID(username);
 });
 </script>
