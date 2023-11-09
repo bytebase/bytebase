@@ -44,7 +44,6 @@
       <!-- show OPEN issues with pageSize=10 -->
       <PagedIssueTableV1
         session-key="project-open"
-        method="LIST"
         :issue-filter="{
           ...commonIssueFilter,
           statusList: [IssueStatus.OPEN],
@@ -68,7 +67,6 @@
       <!-- But won't show "Load more", since we have a "View all closed" link below -->
       <PagedIssueTableV1
         session-key="project-closed"
-        method="LIST"
         :issue-filter="{
           ...commonIssueFilter,
           statusList: [IssueStatus.DONE, IssueStatus.CANCELED],
