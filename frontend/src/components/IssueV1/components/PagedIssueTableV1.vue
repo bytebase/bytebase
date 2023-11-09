@@ -125,10 +125,7 @@ const fetchData = (refresh = false) => {
     pageSize: props.pageSize,
     pageToken: state.paginationToken,
   };
-  const request =
-    props.method === "SEARCH"
-      ? issueStore.searchIssues(params)
-      : issueStore.listIssues(params);
+  const request = issueStore.listIssues(params);
 
   request
     .then(({ nextPageToken, issues }) => {
