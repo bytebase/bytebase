@@ -186,7 +186,7 @@
       details: ""
 - statement: |-
     CREATE TABLE t(id int);
-    ALTER TABLE t CHANGE COLUMN id id2 VARCHAR(5) PRIMARY KEY
+    ALTER TABLE t CHANGE COLUMN id id2 VARCHAR(5) PRIMARY KEY;
   want:
     - status: WARN
       code: 803
@@ -196,7 +196,7 @@
       details: ""
 - statement: |-
     CREATE TABLE t(id int);
-    ALTER TABLE t CHANGE COLUMN id id2 INT(5) PRIMARY KEY
+    ALTER TABLE t CHANGE COLUMN id id2 INT(5) PRIMARY KEY;
   want:
     - status: SUCCESS
       code: 0
