@@ -93,16 +93,10 @@ func (checker *columnDisallowChangingOrderChecker) EnterAlterTable(ctx *mysql.Al
 		switch {
 		// modify column.
 		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil:
-			if item.FieldDefinition() == nil {
-				continue
-			}
-
+			// do nothing.
 		// change column
 		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil:
-			if item.FieldDefinition() == nil {
-				continue
-			}
-			// only care new column name.
+			// do nothing.
 		default:
 			continue
 		}
