@@ -25,12 +25,15 @@ type querySpanExtractor struct {
 	f         base.GetDatabaseMetadataFunc
 
 	// Private fields.
-	// cteOuterSchemaInfo is the schema info for the outer query.
-	// It should be reset to the previous state after the query is processed.
-	cteOuterSchemaInfo []base.PseudoTable
-	// fromFieldList is the list of table sources from the FROM clause,
-	// all target columns should be resolved to the table sources in this list.
-	fromFieldList []base.TableSource
+
+	ctes []base.PseudoTable
+
+	// outerTableSource is the list of table sources from the outer query,
+	// it's used to resolve the column name in the correlated subquery.
+	outerTableSources []base.TableSource
+
+	// tableSourcesFrom is the list of table sources from the FROM clause.
+	tableSourcesFrom []base.TableSource
 }
 
 // newQuerySpanExtractor creates a new query span extractor, the databaseMetadata and the ast are in the read guard.
@@ -84,9 +87,9 @@ func (q *querySpanExtractor) extractTableSourceFromNode(ctx context.Context, nod
 func (q *querySpanExtractor) extractTableSourceFromSelect(ctx context.Context, node *pgquery.Node_SelectStmt) (base.TableSource, error) {
 	// The WITH clause.
 	if node.SelectStmt.WithClause != nil {
-		previousCteOuterLength := len(q.cteOuterSchemaInfo)
+		previousCteOuterLength := len(q.ctes)
 		defer func() {
-			q.cteOuterSchemaInfo = q.cteOuterSchemaInfo[:previousCteOuterLength]
+			q.ctes = q.ctes[:previousCteOuterLength]
 		}()
 
 		for _, cte := range node.SelectStmt.WithClause.Ctes {
@@ -104,7 +107,7 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(ctx context.Context, n
 			if err != nil {
 				return nil, err
 			}
-			q.cteOuterSchemaInfo = append(q.cteOuterSchemaInfo, cteTableResource)
+			q.ctes = append(q.ctes, cteTableResource)
 		}
 	}
 
@@ -186,7 +189,7 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(ctx context.Context, n
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to extract span result from FROM item: %+v", item)
 		}
-		q.fromFieldList = append(q.fromFieldList, tableSource)
+		q.tableSourcesFrom = append(q.tableSourcesFrom, tableSource)
 		fromFieldList = append(fromFieldList, tableSource)
 	}
 
@@ -474,9 +477,9 @@ func (q *querySpanExtractor) extractTemporaryTableResourceFromRecursiveCTE(ctx c
 		// In actual use, the length of fields will not be more than 20 generally.
 		// So I think it's OK for now.
 		// If any performance issues in use, optimize here.
-		q.cteOuterSchemaInfo = append(q.cteOuterSchemaInfo, cteTableResource)
+		q.ctes = append(q.ctes, cteTableResource)
 		defer func() {
-			q.cteOuterSchemaInfo = q.cteOuterSchemaInfo[:len(q.cteOuterSchemaInfo)-1]
+			q.ctes = q.ctes[:len(q.ctes)-1]
 		}()
 
 		for {
@@ -501,7 +504,7 @@ func (q *querySpanExtractor) extractTemporaryTableResourceFromRecursiveCTE(ctx c
 			if !changed {
 				break
 			}
-			q.cteOuterSchemaInfo[len(q.cteOuterSchemaInfo)-1].Columns = initialQuerySpanResult
+			q.ctes[len(q.ctes)-1].Columns = initialQuerySpanResult
 		}
 		return cteTableResource, nil
 	default:
@@ -510,7 +513,115 @@ func (q *querySpanExtractor) extractTemporaryTableResourceFromRecursiveCTE(ctx c
 }
 
 func (q *querySpanExtractor) extractSourceColumnSetFromExpressionNode(ctx context.Context, node *pgquery.Node) (base.SourceColumnSet, error) {
-	return nil, nil
+	if node == nil {
+		return base.SourceColumnSet{}, nil
+	}
+
+	switch node := node.Node.(type) {
+	case *pgquery.Node_List:
+		return q.extractSourceColumnSetFromExpressionNodeList(ctx, node.List.Items)
+	case *pgquery.Node_FuncCall:
+		var nodeList []*pgquery.Node
+		nodeList = append(nodeList, node.FuncCall.Args...)
+		nodeList = append(nodeList, node.FuncCall.AggOrder...)
+		nodeList = append(nodeList, node.FuncCall.AggFilter)
+		return q.extractSourceColumnSetFromExpressionNodeList(ctx, nodeList)
+	case *pgquery.Node_SortBy:
+		return q.extractSourceColumnSetFromExpressionNode(ctx, node.SortBy.Node)
+	case *pgquery.Node_XmlExpr:
+		var nodeList []*pgquery.Node
+		nodeList = append(nodeList, node.XmlExpr.Args...)
+		nodeList = append(nodeList, node.XmlExpr.NamedArgs...)
+		return q.extractSourceColumnSetFromExpressionNodeList(ctx, nodeList)
+	case *pgquery.Node_ResTarget:
+		return q.extractSourceColumnSetFromExpressionNode(ctx, node.ResTarget.Val)
+	case *pgquery.Node_TypeCast:
+		return q.extractSourceColumnSetFromExpressionNode(ctx, node.TypeCast.Arg)
+	case *pgquery.Node_AConst:
+		return base.SourceColumnSet{}, nil
+	case *pgquery.Node_ColumnRef:
+		columnNameDef, err := pgrawparser.ConvertNodeListToColumnNameDef(node.ColumnRef.Fields)
+		if err != nil {
+			return base.SourceColumnSet{}, err
+		}
+		return q.getFieldColumnSource(extractSchemaTableColumnName(columnNameDef)), nil
+	case *pgquery.Node_AExpr:
+		var nodeList []*pgquery.Node
+		nodeList = append(nodeList, node.AExpr.Lexpr)
+		nodeList = append(nodeList, node.AExpr.Rexpr)
+		return q.extractSourceColumnSetFromExpressionNodeList(ctx, nodeList)
+	case *pgquery.Node_CaseExpr:
+		var nodeList []*pgquery.Node
+		nodeList = append(nodeList, node.CaseExpr.Arg)
+		nodeList = append(nodeList, node.CaseExpr.Args...)
+		nodeList = append(nodeList, node.CaseExpr.Defresult)
+		return q.extractSourceColumnSetFromExpressionNodeList(ctx, nodeList)
+	case *pgquery.Node_CaseWhen:
+		var nodeList []*pgquery.Node
+		nodeList = append(nodeList, node.CaseWhen.Expr)
+		nodeList = append(nodeList, node.CaseWhen.Result)
+		return q.extractSourceColumnSetFromExpressionNodeList(ctx, nodeList)
+	case *pgquery.Node_AArrayExpr:
+		return q.extractSourceColumnSetFromExpressionNodeList(ctx, node.AArrayExpr.Elements)
+	case *pgquery.Node_NullTest:
+		return q.extractSourceColumnSetFromExpressionNode(ctx, node.NullTest.Arg)
+	case *pgquery.Node_XmlSerialize:
+		return q.extractSourceColumnSetFromExpressionNode(ctx, node.XmlSerialize.Expr)
+	case *pgquery.Node_ParamRef:
+		return base.SourceColumnSet{}, nil
+	case *pgquery.Node_BoolExpr:
+		return q.extractSourceColumnSetFromExpressionNodeList(ctx, node.BoolExpr.Args)
+	case *pgquery.Node_SubLink:
+		sourceColumnSet, err := q.extractSourceColumnSetFromExpressionNode(ctx, node.SubLink.Testexpr)
+		if err != nil {
+			return base.SourceColumnSet{}, err
+		}
+		// Subquery in SELECT fields is special.
+		// It can be the non-associated or associated subquery.
+		// For associated subquery, we should set the fromFieldList as the outerSchemaInfo.
+		// So that the subquery can access the outer schema.
+		// The reason for new extractor is that we still need the current fromFieldList, overriding it is not expected.
+		subqueryExtractor := &querySpanExtractor{
+			ctx:               q.ctx,
+			connectedDB:       q.connectedDB,
+			metaCache:         q.metaCache,
+			f:                 q.f,
+			ctes:              q.ctes,
+			outerTableSources: append(q.outerTableSources, q.tableSourcesFrom...),
+			tableSourcesFrom:  []base.TableSource{},
+		}
+		tableSource, err := subqueryExtractor.extractTableSourceFromNode(ctx, node.SubLink.Subselect)
+		if err != nil {
+			return base.SourceColumnSet{}, errors.Wrapf(err, "failed to extract span result from sublink: %+v", node.SubLink.Subselect)
+		}
+		spanResult := tableSource.GetQuerySpanResult()
+
+		for _, field := range spanResult {
+			sourceColumnSet, _ = base.MergeSourceColumnSet(sourceColumnSet, field.SourceColumns)
+		}
+		return sourceColumnSet, nil
+	case *pgquery.Node_RowExpr:
+		return q.extractSourceColumnSetFromExpressionNodeList(ctx, node.RowExpr.Args)
+	case *pgquery.Node_CoalesceExpr:
+		return q.extractSourceColumnSetFromExpressionNodeList(ctx, node.CoalesceExpr.Args)
+	case *pgquery.Node_SetToDefault:
+		return base.SourceColumnSet{}, nil
+	case *pgquery.Node_AIndirection:
+		return q.extractSourceColumnSetFromExpressionNode(ctx, node.AIndirection.Arg)
+	case *pgquery.Node_CollateClause:
+		return q.extractSourceColumnSetFromExpressionNode(ctx, node.CollateClause.Arg)
+	case *pgquery.Node_CurrentOfExpr:
+		return base.SourceColumnSet{}, nil
+	case *pgquery.Node_SqlvalueFunction:
+		return base.SourceColumnSet{}, nil
+	case *pgquery.Node_MinMaxExpr:
+		return q.extractSourceColumnSetFromExpressionNodeList(ctx, node.MinMaxExpr.Args)
+	case *pgquery.Node_BooleanTest:
+		return q.extractSourceColumnSetFromExpressionNode(ctx, node.BooleanTest.Arg)
+	case *pgquery.Node_GroupingFunc:
+		return q.extractSourceColumnSetFromExpressionNodeList(ctx, node.GroupingFunc.Args)
+	}
+	return base.SourceColumnSet{}, nil
 }
 
 // extractSourceColumnSetFromExpressionNodeList is the helper function to extract the source column set from the given expression node list,
@@ -527,6 +638,57 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpressionNodeList(ctx co
 	return result, nil
 }
 
+func (q *querySpanExtractor) getFieldColumnSource(schemaName, tableName, fieldName string) base.SourceColumnSet {
+	findInTableSource := func(tableSource base.TableSource) (base.SourceColumnSet, bool) {
+		switch tableSource := tableSource.(type) {
+		case base.PseudoTable:
+			if schemaName != "" || tableName != tableSource.Name {
+				return nil, false
+			}
+		case base.PhysicalTable:
+			if schemaName != tableSource.Schema || tableName != tableSource.Name {
+				return nil, false
+			}
+		}
+		querySpanResults := tableSource.GetQuerySpanResult()
+		for _, field := range querySpanResults {
+			if field.Name == fieldName {
+				return field.SourceColumns, true
+			}
+		}
+		return nil, false
+	}
+
+	// One sub-query may have multi-outer schemas and the multi-outer schemas can use the same name, such as:
+	//
+	//  select (
+	//    select (
+	//      select max(a) > x1.a from t
+	//    )
+	//    from t1 as x1
+	//    limit 1
+	//  )
+	//  from t as x1;
+	//
+	// This query has two tables can be called `x1`, and the expression x1.a uses the closer x1 table.
+	// This is the reason we loop the slice in reversed order.
+
+	for i := len(q.outerTableSources) - 1; i >= 0; i-- {
+		if sourceColumnSet, ok := findInTableSource(q.outerTableSources[i]); ok {
+			return sourceColumnSet
+		}
+
+	}
+
+	for _, tableSource := range q.tableSourcesFrom {
+		if sourceColumnSet, ok := findInTableSource(tableSource); ok {
+			return sourceColumnSet
+		}
+	}
+
+	return base.SourceColumnSet{}
+}
+
 func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string) (base.TableSource, error) {
 	// Each CTE name in one WITH clause must be unique, but we can use the same name in the different level CTE, such as:
 	//
@@ -538,8 +700,8 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 	// This query has two CTE can be called `tt2`, and the FROM clause 'from tt2' uses the closer tt2 CTE.
 	// This is the reason we loop the slice in reversed order.
 	if schemaName == "" {
-		for i := len(q.cteOuterSchemaInfo) - 1; i >= 0; i-- {
-			table := q.cteOuterSchemaInfo[i]
+		for i := len(q.ctes) - 1; i >= 0; i-- {
+			table := q.ctes[i]
 			if table.Name == tableName {
 				return table, nil
 			}
