@@ -85,6 +85,8 @@ func TestMySQLWIPRules(t *testing.T) {
 		advisor.SchemaRuleIndexNoDuplicateColumn,
 		// advisor.SchemaRuleIndexKeyNumberLimit enforce the index key number limit.
 		advisor.SchemaRuleIndexKeyNumberLimit,
+		// advisor.SchemaRuleIndexPKTypeLimit enforce the type restriction of columns in primary key.
+		advisor.SchemaRuleIndexPKTypeLimit,
 		// advisor.SchemaRuleIndexTotalNumberLimit enforce the index total number limit.
 		advisor.SchemaRuleIndexTotalNumberLimit,
 		advisor.SchemaRuleIndexPrimaryKeyTypeAllowlist,
