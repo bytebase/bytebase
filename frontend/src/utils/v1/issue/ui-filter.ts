@@ -8,7 +8,7 @@ import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
 export const UIIssueFilterScopeIdList = ["approver", "review_status"] as const;
 export type UIIssueFilterScopeId = typeof UIIssueFilterScopeIdList[number];
 
-export const IssueReviewStatusList = ["pending_review", "approved"] as const;
+export const IssueReviewStatusList = ["pending_approval", "approved"] as const;
 export type IssueReviewStatus = typeof IssueReviewStatusList[number];
 export const isValidIssueReviewStatus = (s: string): s is IssueReviewStatus => {
   return IssueReviewStatusList.includes(s as IssueReviewStatus);
@@ -56,7 +56,7 @@ export const filterIssueByReviewStatus = (
   if (!status) return true;
 
   const reviewContext = extractReviewContext(issue);
-  if (status === "pending_review") {
+  if (status === "pending_approval") {
     return reviewContext.status.value === Issue_Approver_Status.PENDING;
   }
   if (status === "approved") {

@@ -26,7 +26,7 @@
         }"
         :ui-issue-filter="{
           approver: `users/${currentUserV1.email}`,
-          review_status: 'pending_review',
+          review_status: 'pending_approval',
         }"
       >
         <template #table="{ issueList, loading }">
