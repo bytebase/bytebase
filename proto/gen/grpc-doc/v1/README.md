@@ -350,8 +350,6 @@
     - [ListIssuesResponse](#bytebase-v1-ListIssuesResponse)
     - [RejectIssueRequest](#bytebase-v1-RejectIssueRequest)
     - [RequestIssueRequest](#bytebase-v1-RequestIssueRequest)
-    - [SearchIssuesRequest](#bytebase-v1-SearchIssuesRequest)
-    - [SearchIssuesResponse](#bytebase-v1-SearchIssuesResponse)
     - [UpdateIssueCommentRequest](#bytebase-v1-UpdateIssueCommentRequest)
     - [UpdateIssueRequest](#bytebase-v1-UpdateIssueRequest)
   
@@ -5722,6 +5720,7 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 When paginating, all other parameters provided to `ListIssues` must match the call that provided the page token. |
 | filter | [string](#string) |  | Filter is used to filter issues returned in the list. |
+| query | [string](#string) |  | Query is the query statement. |
 
 
 
@@ -5770,43 +5769,6 @@ When paginating, all other parameters provided to `ListIssues` must match the ca
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the issue to request a issue. Format: projects/{project}/issues/{issue} |
 | comment | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SearchIssuesRequest"></a>
-
-### SearchIssuesRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of issues. Format: projects/{project}. Use &#34;projects/-&#34; to search all issues. |
-| page_size | [int32](#int32) |  | The maximum number of issues to return. The service may return fewer than this value. If unspecified, at most 50 issues will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `SearchIssues` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `SearchIssues` must match the call that provided the page token. |
-| query | [string](#string) |  | Query is the query statement. |
-| filter | [string](#string) |  | Filter is used to filter issues returned in the list, follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. Supported field in filter: - principal, example: - principal = &#34;users/{email}&#34; - creator, example: - creator = &#34;users/{email}&#34; - assignee, example: - assignee = &#34;users/{email}&#34; - subscriber, example: - subscriber = &#34;users/{email}&#34; - status, example: - status = &#34;OPEN&#34; - status = &#34;DONE&#34; | &#34;CANCELED&#34; - create_time, example: - create_time &lt;= &#34;2022-01-01T12:00:00.000Z&#34; - create_time &gt;= &#34;2022-01-01T12:00:00.000Z&#34; - instance, example: - instance = &#34;instancs/{resource id}&#34; - database, example: - database = &#34;instancs/{instance resource id}/databases/{database name}&#34; - type, only support &#34;DDL&#34; or &#34;DML&#34;, example: - type = &#34;DDL&#34; |
-
-
-
-
-
-
-<a name="bytebase-v1-SearchIssuesResponse"></a>
-
-### SearchIssuesResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| issues | [Issue](#bytebase-v1-Issue) | repeated | The issues from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
 
 
 
@@ -5955,7 +5917,6 @@ ANY means approving any node will proceed.
 | CreateIssue | [CreateIssueRequest](#bytebase-v1-CreateIssueRequest) | [Issue](#bytebase-v1-Issue) |  |
 | ListIssues | [ListIssuesRequest](#bytebase-v1-ListIssuesRequest) | [ListIssuesResponse](#bytebase-v1-ListIssuesResponse) |  |
 | UpdateIssue | [UpdateIssueRequest](#bytebase-v1-UpdateIssueRequest) | [Issue](#bytebase-v1-Issue) |  |
-| SearchIssues | [SearchIssuesRequest](#bytebase-v1-SearchIssuesRequest) | [SearchIssuesResponse](#bytebase-v1-SearchIssuesResponse) |  |
 | CreateIssueComment | [CreateIssueCommentRequest](#bytebase-v1-CreateIssueCommentRequest) | [IssueComment](#bytebase-v1-IssueComment) |  |
 | UpdateIssueComment | [UpdateIssueCommentRequest](#bytebase-v1-UpdateIssueCommentRequest) | [IssueComment](#bytebase-v1-IssueComment) |  |
 | BatchUpdateIssuesStatus | [BatchUpdateIssuesStatusRequest](#bytebase-v1-BatchUpdateIssuesStatusRequest) | [BatchUpdateIssuesStatusResponse](#bytebase-v1-BatchUpdateIssuesStatusResponse) |  |
