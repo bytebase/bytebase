@@ -2,7 +2,7 @@
   <div class="flex flex-col">
     <AdvancedSearch
       custom-class="w-full px-4 py-2"
-      :params="initSearchParams"
+      :params="state.searchParams"
       :autofocus="autofocus"
       @update="onSearchParamsUpdate($event)"
     />
@@ -148,7 +148,7 @@ const autofocus = computed((): boolean => {
   return !!route.query.autofocus;
 });
 
-const initSearchParams = computed((): SearchParams => {
+const initializeSearchParamsFromQuery = (): SearchParams => {
   const projectName = project.value?.name ?? "";
   const userEmail = selectedPrincipal.value?.email ?? "";
   const query = (route.query.query as string) ?? "";
@@ -172,15 +172,8 @@ const initSearchParams = computed((): SearchParams => {
   }
 
   return params;
-});
+};
 
-const state = reactive<LocalState>({
-  tab: "OPEN",
-  searchParams: {
-    query: "",
-    scopes: [],
-  },
-});
 const hasAdvancedSearchFeature = computed(() => {
   return hasFeature("bb.feature.issue-advanced-search");
 });
@@ -250,6 +243,11 @@ const selectedPrincipal = computed(() => {
   return userStore.getUserById(user as string);
 });
 
+const state = reactive<LocalState>({
+  tab: "OPEN",
+  searchParams: initializeSearchParamsFromQuery(),
+});
+
 const confirmDatePicker = (value: [number, number]) => {
   router.replace({
     name: "workspace.issue",
@@ -293,7 +291,6 @@ onMounted(() => {
   if (status === "CLOSED") {
     state.tab = "CLOSED";
   }
-  state.searchParams = initSearchParams.value;
 });
 
 const onSearchParamsUpdate = (params: SearchParams) => {
