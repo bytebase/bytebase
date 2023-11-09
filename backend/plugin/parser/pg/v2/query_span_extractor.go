@@ -76,7 +76,7 @@ func (q *querySpanExtractor) extractTableSourceFromNode(ctx context.Context, nod
 	case *pgquery.Node_RangeSubselect:
 		return q.extractTableSourceFromSubselect(ctx, node)
 	case *pgquery.Node_JoinExpr:
-		return q.pgExtractJoin(node)
+		return q.extractTableSourceFromJoin(ctx, node)
 	}
 	return nil, nil
 }
@@ -265,6 +265,91 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(ctx context.Context, n
 	return result, nil
 }
 
+func (q *querySpanExtractor) extractTableSourceFromJoin(ctx context.Context, node *pgquery.Node_JoinExpr) (base.PseudoTable, error) {
+	leftTableSource, err := q.extractTableSourceFromNode(ctx, node.JoinExpr.Larg)
+	if err != nil {
+		return base.PseudoTable{}, errors.Wrapf(err, "failed to extract span result from left join: %+v", node.JoinExpr.Larg)
+	}
+	rightTableSource, err := q.extractTableSourceFromNode(ctx, node.JoinExpr.Rarg)
+	if err != nil {
+		return base.PseudoTable{}, errors.Wrapf(err, "failed to extract span result from right join: %+v", node.JoinExpr.Rarg)
+	}
+	return q.mergeJoinTableSource(ctx, node, leftTableSource, rightTableSource)
+}
+
+func (q *querySpanExtractor) mergeJoinTableSource(ctx context.Context, node *pgquery.Node_JoinExpr, left base.TableSource, right base.TableSource) (base.PseudoTable, error) {
+	leftSpanResult, rightSpanResult := left.GetQuerySpanResult(), right.GetQuerySpanResult()
+
+	var result base.PseudoTable
+
+	if node.JoinExpr.IsNatural {
+		leftSpanResultIdx, rightSpanResultIdx := make(map[string]int, len(leftSpanResult)), make(map[string]int, len(rightSpanResult))
+		for i, spanResult := range leftSpanResult {
+			leftSpanResultIdx[spanResult.Name] = i
+		}
+		for i, spanResult := range rightSpanResult {
+			rightSpanResultIdx[spanResult.Name] = i
+		}
+
+		// NaturalJoin will merge the some column name field.
+		for idx, spanResult := range leftSpanResult {
+
+			if _, ok := rightSpanResultIdx[spanResult.Name]; ok {
+				spanResult.SourceColumns, _ = base.MergeSourceColumnSet(spanResult.SourceColumns, rightSpanResult[idx].SourceColumns)
+				result.Columns = append(result.Columns, spanResult)
+				delete(rightSpanResultIdx, spanResult.Name)
+			}
+		}
+		for _, spanResult := range rightSpanResult {
+			if _, ok := leftSpanResultIdx[spanResult.Name]; ok {
+				result.Columns = append(result.Columns, spanResult)
+			}
+		}
+	} else {
+		if len(node.JoinExpr.UsingClause) > 0 {
+			// ... JOIN ... USING (...) will merge the column in USING.
+			usingMap := make(map[string]bool, len(node.JoinExpr.UsingClause))
+			for _, using := range node.JoinExpr.UsingClause {
+				name, ok := using.Node.(*pgquery.Node_String_)
+				if !ok {
+					return base.PseudoTable{}, errors.Errorf("expect Node_String_ for using clause, but got %T", using.Node)
+				}
+				usingMap[name.String_.Sval] = true
+			}
+
+			for _, spanResult := range leftSpanResult {
+				result.Columns = append(result.Columns, spanResult)
+			}
+			for _, spanResult := range rightSpanResult {
+				if _, ok := usingMap[spanResult.Name]; !ok {
+					result.Columns = append(result.Columns, spanResult)
+				}
+			}
+		} else {
+			result.Columns = append(result.Columns, leftSpanResult...)
+			result.Columns = append(result.Columns, rightSpanResult...)
+		}
+	}
+
+	if node.JoinExpr.Alias != nil {
+		// The AS case
+		aliasName, columnNameList, err := pgExtractAlias(node.JoinExpr.Alias)
+		if err != nil {
+			return base.PseudoTable{}, errors.Wrapf(err, "failed to extract alias from join: %+v", node)
+		}
+		if len(columnNameList) != 0 && len(columnNameList) != len(result.Columns) {
+			return base.PseudoTable{}, errors.Errorf("expect equal length but found %d and %d", len(node.JoinExpr.Alias.Colnames), len(result.Columns))
+		}
+		if aliasName != "" {
+			result.Name = aliasName
+		}
+		for i, columnName := range columnNameList {
+			result.SetColumnName(i, columnName)
+		}
+	}
+	return result, nil
+}
+
 func (q *querySpanExtractor) extractTableSourceFromRangeVar(ctx context.Context, node *pgquery.Node_RangeVar) (base.TableSource, error) {
 	tableSource, err := q.findTableSchema(node.RangeVar.Schemaname, node.RangeVar.Relname)
 	if err != nil {
@@ -425,7 +510,6 @@ func (q *querySpanExtractor) extractTemporaryTableResourceFromRecursiveCTE(ctx c
 }
 
 func (q *querySpanExtractor) extractSourceColumnSetFromExpressionNode(ctx context.Context, node *pgquery.Node) (base.SourceColumnSet, error) {
-	// TODO(zp): implement me.
 	return nil, nil
 }
 
