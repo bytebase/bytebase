@@ -256,13 +256,13 @@ const handleSaveAllUnmatchedFieldTemplates = (
     columnTypesForMySQL.value =
       columnTypesForMySQL.value +
       "\n" +
-      fieldTemplates.map((item) => item.column?.type || "").join("\n");
+      uniq(fieldTemplates.map((item) => item.column?.type || "")).join("\n");
     handleMySQLTypesChange();
   } else if (engine === Engine.POSTGRES) {
     columnTypesForPostgreSQL.value =
       columnTypesForPostgreSQL.value +
       "\n" +
-      fieldTemplates.map((item) => item.column?.type || "").join("\n");
+      uniq(fieldTemplates.map((item) => item.column?.type || "")).join("\n");
     handlePostgreSQLTypesChange();
   }
   unmatchedFieldTemplates.value = [];
@@ -300,6 +300,7 @@ const handleMySQLTypesChange = async () => {
     mysqlFieldTemplates
       .map((item) => (item.column?.type || "") as string)
       .filter(Boolean)
+      .map((item) => item.toUpperCase())
   );
   if (columnTypeTemplateForMySQL.value.enabled) {
     // Check if there is any field template that is not covered by the column types.
@@ -314,11 +315,12 @@ const handleMySQLTypesChange = async () => {
 
     // Check if there is any field template that is not covered by the column types.
     const uncoveredTypes = fieldTemplateTypesOfMySQL.filter(
-      (item) => !columnTypeTemplateForMySQL.value.types.includes(item)
+      (item) =>
+        !columnTypeTemplateForMySQL.value.types.includes(item.toUpperCase())
     );
     if (uncoveredTypes.length > 0) {
       unmatchedFieldTemplates.value = mysqlFieldTemplates.filter((item) =>
-        uncoveredTypes.includes(item.column?.type || "")
+        uncoveredTypes.includes((item.column?.type || "").toUpperCase())
       );
       return;
     }
@@ -372,6 +374,7 @@ const handlePostgreSQLTypesChange = async () => {
     postgresFieldTemplates
       .map((item) => (item.column?.type || "") as string)
       .filter(Boolean)
+      .map((item) => item.toUpperCase())
   );
   if (columnTypeTemplateForPostgreSQL.value.enabled) {
     // Check if there is any field template that is not covered by the column types.
@@ -386,11 +389,14 @@ const handlePostgreSQLTypesChange = async () => {
 
     // Check if there is any field template that is not covered by the column types.
     const uncoveredTypes = fieldTemplateTypesOfPostgreSQL.filter(
-      (item) => !columnTypeTemplateForPostgreSQL.value.types.includes(item)
+      (item) =>
+        !columnTypeTemplateForPostgreSQL.value.types.includes(
+          item.toUpperCase()
+        )
     );
     if (uncoveredTypes.length > 0) {
       unmatchedFieldTemplates.value = postgresFieldTemplates.filter((item) =>
-        uncoveredTypes.includes(item.column?.type || "")
+        uncoveredTypes.includes((item.column?.type || "").toUpperCase())
       );
       return;
     }
