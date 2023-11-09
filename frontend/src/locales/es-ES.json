@@ -958,6 +958,18 @@
         "principal": {
           "title": "Director relacionado",
           "description": "Búsqueda por creador del problema, cesionario o suscriptor"
+        },
+        "approver": {
+          "title": "Aprobador",
+          "description": "Búsqueda por aprobador del problema"
+        },
+        "review-status": {
+          "title": "Estado de revisión",
+          "value": {
+            "approved": "Aprobado",
+            "pending_approval": "Aprobación pendiente"
+          },
+          "description": "Buscar por estado de revisión del problema"
         }
       }
     },

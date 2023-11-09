@@ -60,7 +60,7 @@
 </template>
 
 <script lang="ts" setup>
-import { debounce } from "lodash-es";
+import { debounce, orderBy } from "lodash-es";
 import { NInput } from "naive-ui";
 import { reactive, computed, h, watch, VNode, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -77,36 +77,23 @@ import {
   useSearchDatabaseV1List,
   useUserStore,
   useDatabaseV1Store,
+  useCurrentUserV1,
 } from "@/store";
 import {
   projectNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
+import { SYSTEM_BOT_EMAIL } from "@/types";
 import { Workflow } from "@/types/proto/v1/project_service";
 import {
   projectV1Name,
   environmentV1Name,
   extractProjectResourceName,
   extractInstanceResourceName,
+  SearchParams,
+  SearchScopeId,
 } from "@/utils";
-
-export type SearchScopeId =
-  | "project"
-  | "instance"
-  | "database"
-  | "type"
-  | "creator"
-  | "assignee"
-  | "subscriber"
-  | "principal";
-
-export interface SearchParams {
-  query: string;
-  scopes: {
-    id: SearchScopeId;
-    value: string;
-  }[];
-}
+import YouTag from "./misc/YouTag.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -160,6 +147,7 @@ const state = reactive<LocalState>({
   searchText: buildSearchTextByParams(props.params),
   showSearchScopes: props.autofocus,
 });
+const me = useCurrentUserV1();
 const inputRef = ref<InstanceType<typeof NInput>>();
 const userStore = useUserStore();
 const databaseV1Store = useDatabaseV1Store();
@@ -178,13 +166,22 @@ const { databaseList } = useSearchDatabaseV1List({
 });
 
 const principalSearchOptions = computed(() => {
-  return userStore.activeUserList.map((user) => {
+  const sortedUsers = orderBy(
+    userStore.activeUserList,
+    (user) => (user.name === me.value.name ? -1 : 1),
+    "asc"
+  );
+  return sortedUsers.map((user) => {
+    const children = [
+      h(BBAvatar, { size: "TINY", username: user.title }),
+      h("span", {}, user.title),
+    ];
+    if (user.name === me.value.name) {
+      children.push(h(YouTag));
+    }
     return {
       id: user.email,
-      label: h("div", { class: "flex items-center gap-x-1" }, [
-        h(BBAvatar, { size: "TINY", username: user.title }),
-        h("span", { innerHTML: user.title }),
-      ]),
+      label: h("div", { class: "flex items-center gap-x-1" }, children),
     };
   });
 });
@@ -284,11 +281,44 @@ const fullScopes = computed((): SearchScope[] => {
       description: t("issue.advanced-search.scope.principal.description"),
       options: principalSearchOptions.value,
     },
+    {
+      id: "approver",
+      title: t("issue.advanced-search.scope.approver.title"),
+      description: t("issue.advanced-search.scope.approver.description"),
+      options: principalSearchOptions.value.filter(
+        (o) => o.id !== SYSTEM_BOT_EMAIL
+      ),
+    },
+    {
+      id: "review_status",
+      title: t("issue.advanced-search.scope.review-status.title"),
+      description: t("issue.advanced-search.scope.review-status.description"),
+      options: [
+        {
+          id: "pending_approval",
+          label: h(
+            "span",
+            {},
+            t(
+              "issue.advanced-search.scope.review-status.value.pending_approval"
+            )
+          ),
+        },
+        {
+          id: "approved",
+          label: h(
+            "span",
+            {},
+            t("issue.advanced-search.scope.review-status.value.approved")
+          ),
+        },
+      ],
+    },
   ];
   return scopes;
 });
 
-// filteredScopes will filter search options by chosed scope.
+// filteredScopes will filter search options by chosen scope.
 // For example, if users select a specific project, we should only allow them select instances related with this project.
 const filteredScopes = computed((): SearchScope[] => {
   const params = getSearchParamsByText(state.searchText);
@@ -326,7 +356,7 @@ const filteredScopes = computed((): SearchScope[] => {
   return clone;
 });
 
-// searchScopes will hide chosed search scope.
+// searchScopes will hide chosen search scope.
 // For example, if uses already select the instance, we should NOT show the instance scope in the dropdown.
 const searchScopes = computed((): SearchScope[] => {
   const params = getSearchParamsByText(state.searchText);
