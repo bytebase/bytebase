@@ -40,11 +40,7 @@
                 class="normal-link"
                 >{{ projectMember.user.title }}</router-link
               >
-              <span
-                v-if="currentUserV1.name === projectMember.user.name"
-                class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
-                >{{ $t("common.you") }}</span
-              >
+              <YouTag v-if="currentUserV1.name === projectMember.user.name" />
             </template>
             <template v-else>
               <span class="text-gray-800 pt-2.5">{{
@@ -148,6 +144,7 @@ import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
 import UserAvatar from "@/components/User/UserAvatar.vue";
+import YouTag from "@/components/misc/YouTag.vue";
 import { featureToRef, useCurrentUserV1, useProjectIamPolicy } from "@/store";
 import {
   ALL_USERS_USER_NAME,

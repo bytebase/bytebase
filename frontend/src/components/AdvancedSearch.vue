@@ -60,7 +60,7 @@
 </template>
 
 <script lang="ts" setup>
-import { debounce } from "lodash-es";
+import { debounce, orderBy } from "lodash-es";
 import { NInput } from "naive-ui";
 import { reactive, computed, h, watch, VNode, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -77,6 +77,7 @@ import {
   useSearchDatabaseV1List,
   useUserStore,
   useDatabaseV1Store,
+  useCurrentUserV1,
 } from "@/store";
 import {
   projectNamePrefix,
@@ -92,6 +93,7 @@ import {
   SearchParams,
   SearchScopeId,
 } from "@/utils";
+import YouTag from "./misc/YouTag.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -145,6 +147,7 @@ const state = reactive<LocalState>({
   searchText: buildSearchTextByParams(props.params),
   showSearchScopes: props.autofocus,
 });
+const me = useCurrentUserV1();
 const inputRef = ref<InstanceType<typeof NInput>>();
 const userStore = useUserStore();
 const databaseV1Store = useDatabaseV1Store();
@@ -163,13 +166,22 @@ const { databaseList } = useSearchDatabaseV1List({
 });
 
 const principalSearchOptions = computed(() => {
-  return userStore.activeUserList.map((user) => {
+  const sortedUsers = orderBy(
+    userStore.activeUserList,
+    (user) => (user.name === me.value.name ? -1 : 1),
+    "asc"
+  );
+  return sortedUsers.map((user) => {
+    const children = [
+      h(BBAvatar, { size: "TINY", username: user.title }),
+      h("span", {}, user.title),
+    ];
+    if (user.name === me.value.name) {
+      children.push(h(YouTag));
+    }
     return {
       id: user.email,
-      label: h("div", { class: "flex items-center gap-x-1" }, [
-        h(BBAvatar, { size: "TINY", username: user.title }),
-        h("span", { innerHTML: user.title }),
-      ]),
+      label: h("div", { class: "flex items-center gap-x-1" }, children),
     };
   });
 });
