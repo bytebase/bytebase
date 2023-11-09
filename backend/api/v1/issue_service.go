@@ -152,6 +152,9 @@ func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesR
 		Limit:      &limitPlusOne,
 		Offset:     &offset,
 	}
+	if request.Query != "" {
+		issueFind.Query = &request.Query
+	}
 
 	filters, err := parseFilter(request.Filter)
 	if err != nil {
@@ -160,30 +163,45 @@ func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesR
 	for _, spec := range filters {
 		switch spec.key {
 		case "principal":
+			if spec.operator != comparatorTypeEqual {
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "principal" filter`)
+			}
 			user, err := s.getUserByIdentifier(ctx, spec.value)
 			if err != nil {
 				return nil, err
 			}
 			issueFind.PrincipalID = &user.ID
 		case "creator":
+			if spec.operator != comparatorTypeEqual {
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "creator" filter`)
+			}
 			user, err := s.getUserByIdentifier(ctx, spec.value)
 			if err != nil {
 				return nil, err
 			}
 			issueFind.CreatorID = &user.ID
 		case "assignee":
+			if spec.operator != comparatorTypeEqual {
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "assignee" filter`)
+			}
 			user, err := s.getUserByIdentifier(ctx, spec.value)
 			if err != nil {
 				return nil, err
 			}
 			issueFind.AssigneeID = &user.ID
 		case "subscriber":
+			if spec.operator != comparatorTypeEqual {
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "subscriber" filter`)
+			}
 			user, err := s.getUserByIdentifier(ctx, spec.value)
 			if err != nil {
 				return nil, err
 			}
 			issueFind.SubscriberID = &user.ID
 		case "status":
+			if spec.operator != comparatorTypeEqual {
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "status" filter`)
+			}
 			for _, raw := range strings.Split(spec.value, " | ") {
 				newStatus, err := convertToAPIIssueStatus(v1pb.IssueStatus(v1pb.IssueStatus_value[raw]))
 				if err != nil {
@@ -191,13 +209,20 @@ func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesR
 				}
 				issueFind.StatusList = append(issueFind.StatusList, newStatus)
 			}
-		case "create_time_before":
+		case "create_time":
+			if spec.operator != comparatorTypeGreaterEqual && spec.operator != comparatorTypeLessEqual {
+				return nil, status.Errorf(codes.InvalidArgument, `only support "<=" or ">=" operation for "create_time" filter`)
+			}
 			t, err := time.Parse(time.RFC3339, spec.value)
 			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "failed to parse create_time_before %s, err: %v", spec.value, err)
+				return nil, status.Errorf(codes.InvalidArgument, "failed to parse create_time %s, err: %v", spec.value, err)
 			}
 			ts := t.Unix()
-			issueFind.CreatedTsBefore = &ts
+			if spec.operator == comparatorTypeGreaterEqual {
+				issueFind.CreatedTsAfter = &ts
+			} else {
+				issueFind.CreatedTsBefore = &ts
+			}
 		case "create_time_after":
 			t, err := time.Parse(time.RFC3339, spec.value)
 			if err != nil {
@@ -205,7 +230,64 @@ func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesR
 			}
 			ts := t.Unix()
 			issueFind.CreatedTsAfter = &ts
+		case "type":
+			if spec.operator != comparatorTypeEqual {
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "type" filter`)
+			}
+			switch spec.value {
+			case "DDL":
+				issueFind.TaskTypes = &[]api.TaskType{
+					api.TaskDatabaseSchemaUpdate,
+					api.TaskDatabaseSchemaUpdateSDL,
+					api.TaskDatabaseSchemaUpdateGhostSync,
+					api.TaskDatabaseSchemaUpdateGhostCutover,
+				}
+			case "DML":
+				issueFind.TaskTypes = &[]api.TaskType{
+					api.TaskDatabaseDataUpdate,
+				}
+			default:
+				return nil, status.Errorf(codes.InvalidArgument, `unknown value %q`, spec.value)
+			}
+		case "instance":
+			if spec.operator != comparatorTypeEqual {
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "instance" filter`)
+			}
+			instanceResourceID, err := common.GetInstanceID(spec.value)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, `invalid instance resource id "%s": %v`, spec.value, err.Error())
+			}
+			issueFind.InstanceResourceID = &instanceResourceID
+		case "database":
+			if spec.operator != comparatorTypeEqual {
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "database" filter`)
+			}
+			instanceID, databaseName, err := common.GetInstanceDatabaseID(spec.value)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, err.Error())
+			}
+			database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+				InstanceID:   &instanceID,
+				DatabaseName: &databaseName,
+			})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, err.Error())
+			}
+			if database == nil {
+				return nil, status.Errorf(codes.InvalidArgument, `database "%q" not found`, spec.value)
+			}
+			issueFind.DatabaseUID = &database.UID
 		}
+	}
+
+	if err := s.licenseService.IsFeatureEnabled(api.FeatureIssueAdvancedSearch); err != nil {
+		limitedSearchTs := time.Now().AddDate(0, 0, -30).Unix()
+		if v := issueFind.CreatedTsBefore; v != nil {
+			if limitedSearchTs >= *v {
+				return nil, status.Errorf(codes.PermissionDenied, err.Error())
+			}
+		}
+		issueFind.CreatedTsAfter = &limitedSearchTs
 	}
 
 	issues, err := s.store.ListIssueV2(ctx, issueFind)

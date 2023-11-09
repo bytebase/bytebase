@@ -96,6 +96,8 @@ export interface ListIssuesRequest {
   pageToken: string;
   /** Filter is used to filter issues returned in the list. */
   filter: string;
+  /** Query is the query statement. */
+  query: string;
 }
 
 export interface ListIssuesResponse {
@@ -739,7 +741,7 @@ export const CreateIssueRequest = {
 };
 
 function createBaseListIssuesRequest(): ListIssuesRequest {
-  return { parent: "", pageSize: 0, pageToken: "", filter: "" };
+  return { parent: "", pageSize: 0, pageToken: "", filter: "", query: "" };
 }
 
 export const ListIssuesRequest = {
@@ -755,6 +757,9 @@ export const ListIssuesRequest = {
     }
     if (message.filter !== "") {
       writer.uint32(34).string(message.filter);
+    }
+    if (message.query !== "") {
+      writer.uint32(42).string(message.query);
     }
     return writer;
   },
@@ -794,6 +799,13 @@ export const ListIssuesRequest = {
 
           message.filter = reader.string();
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.query = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -809,6 +821,7 @@ export const ListIssuesRequest = {
       pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
       filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
+      query: isSet(object.query) ? globalThis.String(object.query) : "",
     };
   },
 
@@ -826,6 +839,9 @@ export const ListIssuesRequest = {
     if (message.filter !== "") {
       obj.filter = message.filter;
     }
+    if (message.query !== "") {
+      obj.query = message.query;
+    }
     return obj;
   },
 
@@ -838,6 +854,7 @@ export const ListIssuesRequest = {
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
     message.filter = object.filter ?? "";
+    message.query = object.query ?? "";
     return message;
   },
 };

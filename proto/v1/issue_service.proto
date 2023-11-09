@@ -127,6 +127,9 @@ message ListIssuesRequest {
 
   // Filter is used to filter issues returned in the list.
   string filter = 4;
+
+  // Query is the query statement.
+  string query = 5;
 }
 
 message ListIssuesResponse {

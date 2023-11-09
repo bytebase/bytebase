@@ -5722,6 +5722,7 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 When paginating, all other parameters provided to `ListIssues` must match the call that provided the page token. |
 | filter | [string](#string) |  | Filter is used to filter issues returned in the list. |
+| query | [string](#string) |  | Query is the query statement. |
 
 
 
