@@ -876,7 +876,7 @@
   },
   "issue": {
     "my-issues": "我的工单",
-    "waiting-approval": "等待批准",
+    "waiting-approval": "等待审批",
     "waiting-rollout": "等待发布",
     "opened-by-at": "{id} 由 {creator} 开启于 {time}",
     "commit-by-at": "{id} {title} 由 {author} 提交于 {time}",
@@ -1085,7 +1085,8 @@
     "error": {
       "issue-is-not-open": "工单不是开启状态",
       "you-don-have-privilege-to-edit-this-issue": "您没有权限编辑此工单"
-    }
+    },
+    "review-requested": "审批请求"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",

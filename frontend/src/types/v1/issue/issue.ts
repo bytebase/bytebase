@@ -90,3 +90,9 @@ export interface IssueFilter {
   createdTsBefore?: number;
   type?: string;
 }
+export type IssueReviewStatus = "pending_review" | "approved";
+// Use snake_case to keep consistent with the advanced search query string
+export interface UIIssueFilter {
+  approver?: string;
+  review_status?: IssueReviewStatus;
+}

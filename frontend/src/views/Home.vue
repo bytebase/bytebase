@@ -16,11 +16,18 @@
         </router-link>
       </div>
     </div>
-    <div v-show="tab === 'WAITING_APPROVAL'" class="mt-2">
-      <WaitingForMyApprovalIssueTableV1
+    <div v-show="tab === 'REVIEW_REQUESTED'" class="mt-2">
+      <PagedIssueTableV1
         v-if="hasCustomApprovalFeature"
         session-key="home-waiting-approval"
-        :project="commonIssueFilter.project"
+        :issue-filter="{
+          ...commonIssueFilter,
+          statusList: [IssueStatus.OPEN],
+        }"
+        :ui-issue-filter="{
+          approver: currentUserV1.email,
+          review_status: 'pending_review',
+        }"
       >
         <template #table="{ issueList, loading }">
           <IssueTableV1
@@ -30,7 +37,7 @@
             title=""
           />
         </template>
-      </WaitingForMyApprovalIssueTableV1>
+      </PagedIssueTableV1>
     </div>
 
     <div v-show="tab === 'WAITING_ROLLOUT'" class="mt-2">
@@ -42,6 +49,9 @@
           ...commonIssueFilter,
           statusList: [IssueStatus.OPEN],
           assignee: `${userNamePrefix}${currentUserV1.email}`,
+        }"
+        :ui-issue-filter="{
+          review_status: 'approved',
         }"
         :page-size="OPEN_ISSUE_LIST_PAGE_SIZE"
       >
@@ -205,7 +215,6 @@ import { reactive, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
-import WaitingForMyApprovalIssueTableV1 from "@/components/IssueV1/components/WaitingForMyApprovalIssueTableV1.vue";
 import { TabFilter, TabFilterItem } from "@/components/v2";
 import {
   useSubscriptionV1Store,
@@ -219,7 +228,7 @@ import { IssueFilter, planTypeToString } from "../types";
 import { extractUserUID } from "../utils";
 
 const TABS = [
-  "WAITING_APPROVAL",
+  "REVIEW_REQUESTED",
   "WAITING_ROLLOUT",
   "CREATED",
   "SUBSCRIBED",
@@ -240,11 +249,11 @@ const subscriptionStore = useSubscriptionV1Store();
 const onboardingStateStore = useOnboardingStateStore();
 const tab = useLocalStorage<TabValue>(
   "bb.home.issue-list-tab",
-  "WAITING_APPROVAL",
+  "REVIEW_REQUESTED",
   {
     serializer: {
       read(raw: TabValue) {
-        if (!TABS.includes(raw)) return "WAITING_APPROVAL";
+        if (!TABS.includes(raw)) return "REVIEW_REQUESTED";
         return raw;
       },
       write(value) {
@@ -263,11 +272,11 @@ const currentUserUID = computed(() => extractUserUID(currentUserV1.value.name));
 const hasCustomApprovalFeature = featureToRef("bb.feature.custom-approval");
 
 const tabItemList = computed((): TabFilterItem<TabValue>[] => {
-  const WAITING_APPROVAL: TabFilterItem<TabValue> = {
-    value: "WAITING_APPROVAL",
-    label: t("issue.waiting-approval"),
+  const REVIEW_REQUESTED: TabFilterItem<TabValue> = {
+    value: "REVIEW_REQUESTED",
+    label: t("issue.review-requested"),
   };
-  const list = hasCustomApprovalFeature.value ? [WAITING_APPROVAL] : [];
+  const list = hasCustomApprovalFeature.value ? [REVIEW_REQUESTED] : [];
   return [
     ...list,
     { value: "WAITING_ROLLOUT", label: t("issue.waiting-rollout") },
@@ -301,7 +310,7 @@ const commonIssueFilter = computed((): IssueFilter => {
 watch(
   [hasCustomApprovalFeature, tab],
   () => {
-    if (!hasCustomApprovalFeature.value && tab.value === "WAITING_APPROVAL") {
+    if (!hasCustomApprovalFeature.value && tab.value === "REVIEW_REQUESTED") {
       tab.value = "WAITING_ROLLOUT";
     }
   },
