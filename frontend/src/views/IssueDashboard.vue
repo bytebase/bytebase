@@ -346,13 +346,13 @@ const issueFilter = computed((): IssueFilter => {
 const uiIssueFilter = computed((): UIIssueFilter => {
   const { scopes } = state.searchParams;
   const approverScope = scopes.find((s) => s.id === "approver");
-  const reviewStatusScope = scopes.find((s) => s.id === "review_status");
+  const reviewStatusScope = scopes.find((s) => s.id === "status");
   const uiIssueFilter: UIIssueFilter = {};
   if (approverScope && approverScope.value) {
     uiIssueFilter.approver = `users/${approverScope.value}`;
   }
   if (reviewStatusScope && isValidIssueReviewStatus(reviewStatusScope.value)) {
-    uiIssueFilter.review_status = reviewStatusScope.value;
+    uiIssueFilter.status = reviewStatusScope.value;
   }
 
   return uiIssueFilter;

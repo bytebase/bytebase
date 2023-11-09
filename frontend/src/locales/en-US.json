@@ -964,13 +964,13 @@
           "title": "Approver",
           "description": "Search by the issue approver"
         },
-        "review-status": {
-          "title": "Review Status",
+        "status": {
+          "title": "Status",
           "value": {
-            "approved": "Approved",
-            "pending_approval": "Pending approval"
+            "pending_approval": "Pending approval",
+            "pending_rollout": "Pending rollout"
           },
-          "description": "Search by the issue review status"
+          "description": "Search by the issue status"
         }
       }
     },

@@ -5,10 +5,13 @@ import {
 import { ComposedIssue } from "@/types";
 import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
 
-export const UIIssueFilterScopeIdList = ["approver", "review_status"] as const;
+export const UIIssueFilterScopeIdList = ["approver", "status"] as const;
 export type UIIssueFilterScopeId = typeof UIIssueFilterScopeIdList[number];
 
-export const IssueReviewStatusList = ["pending_approval", "approved"] as const;
+export const IssueReviewStatusList = [
+  "pending_approval",
+  "pending_rollout",
+] as const;
 export type IssueReviewStatus = typeof IssueReviewStatusList[number];
 export const isValidIssueReviewStatus = (s: string): s is IssueReviewStatus => {
   return IssueReviewStatusList.includes(s as IssueReviewStatus);
@@ -17,7 +20,7 @@ export const isValidIssueReviewStatus = (s: string): s is IssueReviewStatus => {
 // Use snake_case to keep consistent with the advanced search query string
 export interface UIIssueFilter {
   approver?: string;
-  review_status?: IssueReviewStatus;
+  status?: IssueReviewStatus;
 }
 
 export const filterIssueByApprover = (
@@ -59,7 +62,7 @@ export const filterIssueByReviewStatus = (
   if (status === "pending_approval") {
     return reviewContext.status.value === Issue_Approver_Status.PENDING;
   }
-  if (status === "approved") {
+  if (status === "pending_rollout") {
     return reviewContext.status.value === Issue_Approver_Status.APPROVED;
   }
 
@@ -77,5 +80,5 @@ export const applyUIIssueFilter = (
   if (!filter) return list;
   return list
     .filter((issue) => filterIssueByApprover(issue, filter.approver))
-    .filter((issue) => filterIssueByReviewStatus(issue, filter.review_status));
+    .filter((issue) => filterIssueByReviewStatus(issue, filter.status));
 };
