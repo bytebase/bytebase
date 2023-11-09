@@ -961,7 +961,7 @@
           "title": "审批人",
           "description": "根据工单审批人搜索"
         },
-        "review-status": {
+        "approval-status": {
           "title": "审批状态",
           "value": {
             "approved": "审批通过",
@@ -1098,7 +1098,7 @@
       "issue-is-not-open": "工单不是开启状态",
       "you-don-have-privilege-to-edit-this-issue": "您没有权限编辑此工单"
     },
-    "review-requested": "审批请求"
+    "approval-requested": "审批请求"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
