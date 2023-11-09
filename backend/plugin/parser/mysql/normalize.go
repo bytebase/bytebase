@@ -258,6 +258,9 @@ func NormalizeMySQLCharsetName(ctx parser.ICharsetNameContext) string {
 
 // NormalizeMySQLDataType noamalizes the given dataType.
 // campact for tidb parser compatibility.
+// eg: varchar(5).
+// compact is true, return varchar.
+// compact is false, return varchar(5).
 func NormalizeMySQLDataType(ctx parser.IDataTypeContext, compact bool) string {
 	if !compact {
 		return ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
