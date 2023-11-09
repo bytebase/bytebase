@@ -208,6 +208,78 @@ const fullScopes = computed((): SearchScope[] => {
       }),
     },
     {
+      id: "review_status",
+      title: t("issue.advanced-search.scope.review-status.title"),
+      description: t("issue.advanced-search.scope.review-status.description"),
+      options: [
+        {
+          id: "pending_approval",
+          label: h(
+            "span",
+            {},
+            t(
+              "issue.advanced-search.scope.review-status.value.pending_approval"
+            )
+          ),
+        },
+        {
+          id: "approved",
+          label: h(
+            "span",
+            {},
+            t("issue.advanced-search.scope.review-status.value.approved")
+          ),
+        },
+      ],
+    },
+    {
+      id: "creator",
+      title: t("issue.advanced-search.scope.creator.title"),
+      description: t("issue.advanced-search.scope.creator.description"),
+      options: principalSearchOptions.value,
+    },
+    {
+      id: "assignee",
+      title: t("issue.advanced-search.scope.assignee.title"),
+      description: t("issue.advanced-search.scope.assignee.description"),
+      options: principalSearchOptions.value,
+    },
+    {
+      id: "approver",
+      title: t("issue.advanced-search.scope.approver.title"),
+      description: t("issue.advanced-search.scope.approver.description"),
+      options: principalSearchOptions.value.filter(
+        (o) => o.id !== SYSTEM_BOT_EMAIL
+      ),
+    },
+    {
+      id: "subscriber",
+      title: t("issue.advanced-search.scope.subscriber.title"),
+      description: t("issue.advanced-search.scope.subscriber.description"),
+      options: principalSearchOptions.value,
+    },
+    {
+      id: "principal",
+      title: t("issue.advanced-search.scope.principal.title"),
+      description: t("issue.advanced-search.scope.principal.description"),
+      options: principalSearchOptions.value,
+    },
+    {
+      id: "type",
+      title: t("issue.advanced-search.scope.type.title"),
+      description: t("issue.advanced-search.scope.type.description"),
+      options: [
+        {
+          id: "DDL",
+          label: h("span", { innerHTML: "Data Definition Language" }),
+        },
+        {
+          id: "DML",
+          label: h("span", { innerHTML: "Data Manipulation Language" }),
+        },
+      ],
+    },
+    {
       id: "instance",
       title: t("issue.advanced-search.scope.instance.title"),
       description: t("issue.advanced-search.scope.instance.description"),
@@ -241,78 +313,6 @@ const fullScopes = computed((): SearchScope[] => {
           ]),
         };
       }),
-    },
-    {
-      id: "type",
-      title: t("issue.advanced-search.scope.type.title"),
-      description: t("issue.advanced-search.scope.type.description"),
-      options: [
-        {
-          id: "DDL",
-          label: h("span", { innerHTML: "Data Definition Language" }),
-        },
-        {
-          id: "DML",
-          label: h("span", { innerHTML: "Data Manipulation Language" }),
-        },
-      ],
-    },
-    {
-      id: "creator",
-      title: t("issue.advanced-search.scope.creator.title"),
-      description: t("issue.advanced-search.scope.creator.description"),
-      options: principalSearchOptions.value,
-    },
-    {
-      id: "assignee",
-      title: t("issue.advanced-search.scope.assignee.title"),
-      description: t("issue.advanced-search.scope.assignee.description"),
-      options: principalSearchOptions.value,
-    },
-    {
-      id: "subscriber",
-      title: t("issue.advanced-search.scope.subscriber.title"),
-      description: t("issue.advanced-search.scope.subscriber.description"),
-      options: principalSearchOptions.value,
-    },
-    {
-      id: "principal",
-      title: t("issue.advanced-search.scope.principal.title"),
-      description: t("issue.advanced-search.scope.principal.description"),
-      options: principalSearchOptions.value,
-    },
-    {
-      id: "approver",
-      title: t("issue.advanced-search.scope.approver.title"),
-      description: t("issue.advanced-search.scope.approver.description"),
-      options: principalSearchOptions.value.filter(
-        (o) => o.id !== SYSTEM_BOT_EMAIL
-      ),
-    },
-    {
-      id: "review_status",
-      title: t("issue.advanced-search.scope.review-status.title"),
-      description: t("issue.advanced-search.scope.review-status.description"),
-      options: [
-        {
-          id: "pending_approval",
-          label: h(
-            "span",
-            {},
-            t(
-              "issue.advanced-search.scope.review-status.value.pending_approval"
-            )
-          ),
-        },
-        {
-          id: "approved",
-          label: h(
-            "span",
-            {},
-            t("issue.advanced-search.scope.review-status.value.approved")
-          ),
-        },
-      ],
     },
   ];
   return scopes;
