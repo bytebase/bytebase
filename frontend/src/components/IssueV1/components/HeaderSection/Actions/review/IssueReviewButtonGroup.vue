@@ -10,18 +10,22 @@
     />
 
     <IssueStatusActionButtonGroup
-      :display-mode="issueReviewActionList.length > 0 ? 'DROPDOWN' : 'BUTTON'"
+      :display-mode="displayMode"
       :issue-status-action-list="issueStatusActionList"
-      :extra-action-list="[]"
+      :extra-action-list="forceRolloutActionList"
     />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   IssueReviewAction,
   getApplicableIssueStatusActionList,
+  getApplicableStageRolloutActionList,
+  getApplicableTaskRolloutActionList,
+  taskRolloutActionDisplayName,
   useIssueContext,
 } from "@/components/IssueV1";
 import { useCurrentUserV1 } from "@/store";
@@ -29,12 +33,14 @@ import {
   IssueStatus,
   Issue_Approver_Status,
 } from "@/types/proto/v1/issue_service";
-import { extractUserResourceName } from "@/utils";
-import { IssueStatusActionButtonGroup } from "../common";
+import { extractUserResourceName, hasWorkspacePermissionV1 } from "@/utils";
+import { ExtraActionOption, IssueStatusActionButtonGroup } from "../common";
 import ReviewActionButton from "./ReviewActionButton.vue";
 
+const { t } = useI18n();
 const currentUser = useCurrentUserV1();
-const { issue, phase, reviewContext, events } = useIssueContext();
+const { issue, phase, reviewContext, events, activeTask, activeStage } =
+  useIssueContext();
 const { ready, status, done } = reviewContext;
 
 const shouldShowApproveOrReject = computed(() => {
@@ -86,5 +92,52 @@ const issueReviewActionList = computed(() => {
 
 const issueStatusActionList = computed(() => {
   return getApplicableIssueStatusActionList(issue.value);
+});
+const forceRolloutActionList = computed((): ExtraActionOption[] => {
+  if (
+    !hasWorkspacePermissionV1(
+      "bb.permission.workspace.manage-issue",
+      currentUser.value.userRole
+    )
+  ) {
+    // Only for workspace Owners and DBAs.
+    return [];
+  }
+
+  const taskExtraActionOptions = getApplicableTaskRolloutActionList(
+    issue.value,
+    activeTask.value
+  ).map<ExtraActionOption>((action) => ({
+    type: "TASK",
+    action,
+    target: activeTask.value,
+    label: `${t("common.force-verb", {
+      verb: taskRolloutActionDisplayName(action).toLowerCase(),
+    })}`,
+    key: `force-${action}-task`,
+  }));
+  const stageExtraActionOptions = getApplicableStageRolloutActionList(
+    issue.value,
+    activeStage.value
+  ).map<ExtraActionOption>(({ action, tasks }) => {
+    const taskActionName = taskRolloutActionDisplayName(action);
+    const stageActionName = t("issue.action-to-current-stage", {
+      action: taskActionName,
+    });
+    return {
+      type: "TASK-BATCH",
+      action,
+      target: tasks,
+      label: t("common.force-verb", { verb: stageActionName.toLowerCase() }),
+      key: `force-${action}-stage`,
+    };
+  });
+
+  return [...taskExtraActionOptions, ...stageExtraActionOptions];
+});
+
+const displayMode = computed(() => {
+  if (forceRolloutActionList.value.length > 0) return "DROPDOWN";
+  return issueReviewActionList.value.length > 0 ? "DROPDOWN" : "BUTTON";
 });
 </script>
