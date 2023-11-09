@@ -2,8 +2,23 @@ import {
   extractReviewContext,
   useWrappedReviewStepsV1,
 } from "@/components/IssueV1/logic";
-import { ComposedIssue, IssueReviewStatus, UIIssueFilter } from "@/types";
+import { ComposedIssue } from "@/types";
 import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
+
+export const UIIssueFilterScopeIdList = ["approver", "review_status"] as const;
+export type UIIssueFilterScopeId = typeof UIIssueFilterScopeIdList[number];
+
+export const IssueReviewStatusList = ["pending_approval", "approved"] as const;
+export type IssueReviewStatus = typeof IssueReviewStatusList[number];
+export const isValidIssueReviewStatus = (s: string): s is IssueReviewStatus => {
+  return IssueReviewStatusList.includes(s as IssueReviewStatus);
+};
+
+// Use snake_case to keep consistent with the advanced search query string
+export interface UIIssueFilter {
+  approver?: string;
+  review_status?: IssueReviewStatus;
+}
 
 export const filterIssueByApprover = (
   issue: ComposedIssue,
@@ -19,9 +34,19 @@ export const filterIssueByApprover = (
   // We support "approver:{email}" by now
   // Planning to support "approver:[{email_1}, {email_2}, ...]" and
   // "approver:roles/{role}" in the future
-  return (
-    currentStep.candidates.findIndex((user) => user.email === approver) >= 0
+  if (approver.startsWith("users/")) {
+    return (
+      currentStep.candidates.findIndex(
+        (user) => `users/${user.email}` === approver
+      ) >= 0
+    );
+  }
+
+  console.error(
+    "[filterIssueByApprover] should never reach this line",
+    approver
   );
+  return false;
 };
 
 export const filterIssueByReviewStatus = (
@@ -31,7 +56,7 @@ export const filterIssueByReviewStatus = (
   if (!status) return true;
 
   const reviewContext = extractReviewContext(issue);
-  if (status === "pending_review") {
+  if (status === "pending_approval") {
     return reviewContext.status.value === Issue_Approver_Status.PENDING;
   }
   if (status === "approved") {

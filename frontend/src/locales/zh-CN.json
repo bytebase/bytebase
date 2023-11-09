@@ -956,6 +956,18 @@
         "principal": {
           "title": "相关用户",
           "description": "工单的创建人、指派人，或者订阅人"
+        },
+        "approver": {
+          "title": "审批人",
+          "description": "根据工单审批人搜索"
+        },
+        "review-status": {
+          "title": "审批状态",
+          "value": {
+            "approved": "审批通过",
+            "pending_approval": "待审批"
+          },
+          "description": "按工单的审批状态搜索"
         }
       }
     },
