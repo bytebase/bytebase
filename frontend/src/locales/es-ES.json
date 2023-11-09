@@ -2009,7 +2009,7 @@
       "at-least-one-stage": "Al menos 1 etapa",
       "stage-name-required": "Se requiere el nombre de la etapa",
       "at-least-one-selector": "Al menos 1 selector en cada etapa",
-      "env-in-selector-required": "Se requiere \"Entorno ID\" en cada etapa",
+      "env-in-selector-required": "Se requiere \"Entorno\" en cada etapa",
       "env-selector-must-has-one-value": "\"Entorno ID\" debe tener exactamente un valor",
       "key-required": "Se requiere una clave",
       "values-required": "Se requieren valores"
