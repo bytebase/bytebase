@@ -30,6 +30,7 @@
 
 <script lang="ts" setup>
 import { useSessionStorage } from "@vueuse/core";
+import { isEqual } from "lodash-es";
 import { computed, PropType, reactive, watch } from "vue";
 import {
   ListIssueParams,
@@ -115,6 +116,14 @@ const uiFilteredIssueList = computed(() => {
   return applyUIIssueFilter(state.issueList, props.uiIssueFilter);
 });
 
+const latestParams = computed((): ListIssueParams => {
+  return {
+    find: props.issueFilter,
+    pageSize: props.pageSize,
+    pageToken: state.paginationToken,
+  };
+});
+
 const fetchData = (refresh = false) => {
   if (!isLoggedIn.value) {
     return;
@@ -138,6 +147,12 @@ const fetchData = (refresh = false) => {
 
   request
     .then(({ nextPageToken, issues }) => {
+      if (!isEqual(params, latestParams.value)) {
+        // The search params changed during fetching data
+        // The result is outdated
+        // Give up
+        return;
+      }
       if (refresh) {
         state.issueList = issues;
       } else {
