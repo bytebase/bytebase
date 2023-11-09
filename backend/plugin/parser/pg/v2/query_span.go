@@ -41,10 +41,12 @@ func GetQuerySpan(ctx context.Context, statement, database string, getDatabaseMe
 	// Our querySpanExtractor is based on the pg_query_go library, which does not support listening to or walking the AST.
 	// We separate the logic for querying spans and accessing data.
 	// The second one is achieved using ParseToJson, which is simpler.
-	_, err = extractor.getQuerySpanResult(ctx, ast)
+	querySpanResults, err := extractor.getQuerySpanResult(ctx, ast)
 	// TODO(zp): handle query system schema.
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span from statement: %s", statement)
 	}
-	return nil, nil
+	return &base.QuerySpan{
+		Results: querySpanResults,
+	}, nil
 }

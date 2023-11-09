@@ -3,11 +3,13 @@ package v2
 import (
 	"context"
 	"fmt"
+	"regexp"
 
 	"github.com/pkg/errors"
 
 	pgquery "github.com/pganalyze/pg_query_go/v4"
 
+	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 
@@ -61,7 +63,18 @@ func (q *querySpanExtractor) getDatabaseMetadata(database string) (*model.Databa
 func (q *querySpanExtractor) getQuerySpanResult(ctx context.Context, ast *pgquery.RawStmt) ([]*base.QuerySpanResult, error) {
 	q.ctx = ctx
 
-	return nil, nil
+	tableSource, err := q.extractTableSourceFromNode(ctx, ast.Stmt)
+	if err != nil {
+		tableNotFound := regexp.MustCompile("^Table \"(.*)\\.(.*)\" not found$")
+		content := tableNotFound.FindStringSubmatch(err.Error())
+		if len(content) == 3 && pg.IsSystemSchema(content[1]) {
+			// skip for system schema
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return tableSource.GetQuerySpanResult(), nil
 }
 
 // extractTableSourceFromNode is the entry for recursively extracting the span sources from the given node.
