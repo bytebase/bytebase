@@ -16,7 +16,7 @@
         </router-link>
       </div>
     </div>
-    <div v-show="tab === 'REVIEW_REQUESTED'" class="mt-2">
+    <div v-show="tab === 'APPROVAL_REQUESTED'" class="mt-2">
       <PagedIssueTableV1
         v-if="hasCustomApprovalFeature"
         session-key="home-waiting-approval"
@@ -224,9 +224,9 @@ import { IssueFilter, planTypeToString } from "../types";
 import { extractUserUID } from "../utils";
 
 const TABS = [
-  "REVIEW_REQUESTED",
-  "WAITING_ROLLOUT",
   "CREATED",
+  "APPROVAL_REQUESTED",
+  "WAITING_ROLLOUT",
   "SUBSCRIBED",
   "RECENTLY_CLOSED",
 ] as const;
@@ -245,11 +245,11 @@ const subscriptionStore = useSubscriptionV1Store();
 const onboardingStateStore = useOnboardingStateStore();
 const tab = useLocalStorage<TabValue>(
   "bb.home.issue-list-tab",
-  "REVIEW_REQUESTED",
+  "APPROVAL_REQUESTED",
   {
     serializer: {
       read(raw: TabValue) {
-        if (!TABS.includes(raw)) return "REVIEW_REQUESTED";
+        if (!TABS.includes(raw)) return "APPROVAL_REQUESTED";
         return raw;
       },
       write(value) {
@@ -268,15 +268,15 @@ const currentUserUID = computed(() => extractUserUID(currentUserV1.value.name));
 const hasCustomApprovalFeature = featureToRef("bb.feature.custom-approval");
 
 const tabItemList = computed((): TabFilterItem<TabValue>[] => {
-  const REVIEW_REQUESTED: TabFilterItem<TabValue> = {
-    value: "REVIEW_REQUESTED",
-    label: t("issue.review-requested"),
+  const APPROVAL_REQUESTED: TabFilterItem<TabValue> = {
+    value: "APPROVAL_REQUESTED",
+    label: t("issue.approval-requested"),
   };
-  const list = hasCustomApprovalFeature.value ? [REVIEW_REQUESTED] : [];
+  const list = hasCustomApprovalFeature.value ? [APPROVAL_REQUESTED] : [];
   return [
+    { value: "CREATED", label: t("common.created") },
     ...list,
     { value: "WAITING_ROLLOUT", label: t("issue.waiting-rollout") },
-    { value: "CREATED", label: t("common.created") },
     { value: "SUBSCRIBED", label: t("common.subscribed") },
     { value: "RECENTLY_CLOSED", label: t("project.overview.recently-closed") },
   ];
@@ -306,7 +306,7 @@ const commonIssueFilter = computed((): IssueFilter => {
 watch(
   [hasCustomApprovalFeature, tab],
   () => {
-    if (!hasCustomApprovalFeature.value && tab.value === "REVIEW_REQUESTED") {
+    if (!hasCustomApprovalFeature.value && tab.value === "APPROVAL_REQUESTED") {
       tab.value = "WAITING_ROLLOUT";
     }
   },
