@@ -133,7 +133,7 @@ type GetUserRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The name of the user to retrieve.
-	// Format: users/{user}
+	// Format: users/{user uid or user email}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 }
 
