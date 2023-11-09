@@ -1,6 +1,10 @@
 package mysql
 
-import parser "github.com/bytebase/mysql-parser"
+import (
+	"strings"
+
+	parser "github.com/bytebase/mysql-parser"
+)
 
 // NormalizeMySQLTableName normalizes the given table name.
 func NormalizeMySQLTableName(ctx parser.ITableNameContext) (string, string) {
@@ -250,4 +254,29 @@ func NormalizeMySQLCharsetName(ctx parser.ICharsetNameContext) string {
 		return "BINARY"
 	}
 	return ""
+}
+
+// NormalizeMySQLDataType noamalizes the given dataType.
+// campact for tidb parser compatibility.
+// eg: varchar(5).
+// compact is true, return varchar.
+// compact is false, return varchar(5).
+func NormalizeMySQLDataType(ctx parser.IDataTypeContext, compact bool) string {
+	if !compact {
+		return ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+	}
+	switch ctx.GetType_().GetTokenType() {
+	case parser.MySQLParserDOUBLE_SYMBOL:
+		if ctx.PRECISION_SYMBOL() != nil {
+			return "double precision"
+		}
+		return "double"
+	case parser.MySQLParserCHAR_SYMBOL:
+		if ctx.VARYING_SYMBOL() != nil {
+			return "char varying"
+		}
+		return "char"
+	default:
+		return strings.ToLower(ctx.GetType_().GetText())
+	}
 }

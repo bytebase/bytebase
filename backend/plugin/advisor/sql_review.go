@@ -1461,6 +1461,9 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleIndexPrimaryKeyTypeAllowlist:
 		switch engine {
+		// only for mysqlwip test.
+		case storepb.Engine_ENGINE_UNSPECIFIED:
+			return MySQLPrimaryKeyTypeAllowlist, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_OCEANBASE:
 			return MySQLPrimaryKeyTypeAllowlist, nil
 		case storepb.Engine_POSTGRES:

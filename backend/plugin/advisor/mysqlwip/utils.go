@@ -92,3 +92,28 @@ func needDefault(column *ast.ColumnDef) bool {
 	}
 	return true
 }
+
+// tableName --> columnName --> columnType.
+type tableColumnTypes map[string]map[string]string
+
+func (t tableColumnTypes) set(tableName string, columnName string, columnType string) {
+	if _, ok := t[tableName]; !ok {
+		t[tableName] = make(map[string]string)
+	}
+	t[tableName][columnName] = columnType
+}
+
+func (t tableColumnTypes) get(tableName string, columnName string) (columnType string, ok bool) {
+	if _, ok := t[tableName]; !ok {
+		return "", false
+	}
+	col, ok := t[tableName][columnName]
+	return col, ok
+}
+
+func (t tableColumnTypes) delete(tableName string, columnName string) {
+	if _, ok := t[tableName]; !ok {
+		return
+	}
+	delete(t[tableName], columnName)
+}
