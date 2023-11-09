@@ -233,17 +233,21 @@
       </div>
     </div>
 
-    <Quickstart v-if="pageMode !== 'STANDALONE'" />
+    <HideInStandaloneMode>
+      <Quickstart />
+    </HideInStandaloneMode>
   </div>
 
   <TrialModal
     v-if="state.showTrialModal"
     @cancel="state.showTrialModal = false"
   />
-  <ReleaseRemindModal
-    v-if="state.showReleaseModal"
-    @cancel="state.showReleaseModal = false"
-  />
+  <HideInStandaloneMode>
+    <ReleaseRemindModal
+      v-if="state.showReleaseModal"
+      @cancel="state.showReleaseModal = false"
+    />
+  </HideInStandaloneMode>
 </template>
 
 <script lang="ts" setup>
