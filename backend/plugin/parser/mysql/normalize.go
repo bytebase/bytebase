@@ -265,13 +265,13 @@ func NormalizeMySQLDataType(ctx parser.IDataTypeContext, compact bool) string {
 	if !compact {
 		return ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
 	}
-	switch {
-	case ctx.DOUBLE_SYMBOL() != nil:
+	switch ctx.GetType_().GetTokenType() {
+	case parser.MySQLParserDOUBLE_SYMBOL:
 		if ctx.PRECISION_SYMBOL() != nil {
 			return "double precision"
 		}
 		return "double"
-	case ctx.CHAR_SYMBOL() != nil:
+	case parser.MySQLParserCHAR_SYMBOL:
 		if ctx.VARYING_SYMBOL() != nil {
 			return "char varying"
 		}
