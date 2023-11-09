@@ -25,7 +25,7 @@
           statusList: [IssueStatus.OPEN],
         }"
         :ui-issue-filter="{
-          approver: currentUserV1.email,
+          approver: `users/${currentUserV1.email}`,
           review_status: 'pending_review',
         }"
       >

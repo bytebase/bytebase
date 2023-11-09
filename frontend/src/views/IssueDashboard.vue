@@ -41,11 +41,11 @@
       <!-- show all OPEN issues with pageSize=10  -->
       <PagedIssueTableV1
         session-key="dashboard-open"
-        method="SEARCH"
         :issue-filter="{
           ...issueFilter,
           statusList: [IssueStatus.OPEN],
         }"
+        :ui-issue-filter="uiIssueFilter"
         :page-size="50"
       >
         <template #table="{ issueList, loading }">
@@ -64,11 +64,11 @@
       <!-- show all DONE and CANCELED issues with pageSize=10 -->
       <PagedIssueTableV1
         session-key="dashboard-closed"
-        method="SEARCH"
         :issue-filter="{
           ...issueFilter,
           statusList: [IssueStatus.DONE, IssueStatus.CANCELED],
         }"
+        :ui-issue-filter="uiIssueFilter"
         :page-size="50"
       >
         <template #table="{ issueList, loading }">
@@ -91,10 +91,7 @@ import { NInputGroup, NButton, NDatePicker } from "naive-ui";
 import { reactive, computed, watchEffect, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
-import AdvancedSearch, {
-  SearchParams,
-  SearchScopeId,
-} from "@/components/AdvancedSearch.vue";
+import AdvancedSearch from "@/components/AdvancedSearch.vue";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
 import { TabFilterItem } from "@/components/v2";
@@ -116,6 +113,10 @@ import {
   projectV1Slug,
   extractProjectResourceName,
   hasWorkspacePermissionV1,
+  SearchParams,
+  SearchScopeId,
+  UIIssueFilter,
+  isValidIssueReviewStatus,
 } from "@/utils";
 
 const TABS = ["OPEN", "CLOSED"] as const;
@@ -343,5 +344,20 @@ const issueFilter = computed((): IssueFilter => {
     assignee: getValueFromIssueFilter(userNamePrefix, "assignee"),
     subscriber: getValueFromIssueFilter(userNamePrefix, "subscriber"),
   };
+});
+
+const uiIssueFilter = computed((): UIIssueFilter => {
+  const { scopes } = state.searchParams;
+  const approverScope = scopes.find((s) => s.id === "approver");
+  const reviewStatusScope = scopes.find((s) => s.id === "review_status");
+  const uiIssueFilter: UIIssueFilter = {};
+  if (approverScope && approverScope.value) {
+    uiIssueFilter.approver = `users/${approverScope.value}`;
+  }
+  if (reviewStatusScope && isValidIssueReviewStatus(reviewStatusScope.value)) {
+    uiIssueFilter.review_status = reviewStatusScope.value;
+  }
+
+  return uiIssueFilter;
 });
 </script>

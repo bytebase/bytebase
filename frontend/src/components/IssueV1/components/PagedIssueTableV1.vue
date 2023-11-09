@@ -1,5 +1,9 @@
 <template>
-  <slot name="table" :issue-list="state.issueList" :loading="state.loading" />
+  <slot
+    name="table"
+    :issue-list="uiFilteredIssueList"
+    :loading="state.loading"
+  />
 
   <div
     v-if="state.loading"
@@ -33,8 +37,8 @@ import {
   useIssueV1Store,
   useRefreshIssueList,
 } from "@/store";
-import { IssueFilter, ComposedIssue, UIIssueFilter } from "@/types";
-import { applyUIIssueFilter } from "@/utils";
+import { IssueFilter, ComposedIssue } from "@/types";
+import { applyUIIssueFilter, UIIssueFilter } from "@/utils";
 
 type LocalState = {
   loading: boolean;
@@ -61,10 +65,6 @@ const MAX_PAGE_SIZE = 1000;
 const SESSION_LIFE = 1 * 60 * 1000; // 1 minute
 
 const props = defineProps({
-  method: {
-    type: String as PropType<"SEARCH" | "LIST">,
-    default: "SEARCH",
-  },
   // A unique key to identify the session state.
   sessionKey: {
     type: String,
@@ -111,6 +111,10 @@ const limit = computed(() => {
   return props.pageSize;
 });
 
+const uiFilteredIssueList = computed(() => {
+  return applyUIIssueFilter(state.issueList, props.uiIssueFilter);
+});
+
 const fetchData = (refresh = false) => {
   if (!isLoggedIn.value) {
     return;
@@ -135,11 +139,9 @@ const fetchData = (refresh = false) => {
   request
     .then(({ nextPageToken, issues }) => {
       if (refresh) {
-        state.issueList = applyUIIssueFilter(issues, props.uiIssueFilter);
+        state.issueList = issues;
       } else {
-        state.issueList.push(
-          ...applyUIIssueFilter(issues, props.uiIssueFilter)
-        );
+        state.issueList.push(...issues);
       }
 
       if (issues.length < expectedRowCount) {
