@@ -77,13 +77,6 @@ type indexPkTypeChecker struct {
 	tablesNewColumns tableColumnTypes
 }
 
-type pkData struct {
-	table      string
-	column     string
-	columnType string
-	line       int
-}
-
 func (checker *indexPkTypeChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
 	if ctx.TableName() == nil {
 		return
