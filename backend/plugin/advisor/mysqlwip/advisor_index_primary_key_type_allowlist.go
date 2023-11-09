@@ -108,7 +108,6 @@ func (checker *indexPrimaryKeyTypeAllowlistChecker) EnterCreateTable(ctx *mysql.
 		case tableElement.TableConstraintDef() != nil:
 			checker.checkConstraintDef(tableName, tableElement.TableConstraintDef())
 		}
-
 	}
 }
 
