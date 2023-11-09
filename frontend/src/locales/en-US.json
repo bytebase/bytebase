@@ -959,6 +959,18 @@
         "principal": {
           "title": "Related Principal",
           "description": "Search by the issue creator, assignee or subscriber"
+        },
+        "approver": {
+          "title": "Approver",
+          "description": "Search by the issue approver"
+        },
+        "review-status": {
+          "title": "Review Status",
+          "value": {
+            "approved": "Approved",
+            "pending_approval": "Pending approval"
+          },
+          "description": "Search by the issue review status"
         }
       }
     },

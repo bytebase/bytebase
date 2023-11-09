@@ -25,8 +25,8 @@
           statusList: [IssueStatus.OPEN],
         }"
         :ui-issue-filter="{
-          approver: currentUserV1.email,
-          review_status: 'pending_review',
+          approver: `users/${currentUserV1.email}`,
+          review_status: 'pending_approval',
         }"
       >
         <template #table="{ issueList, loading }">
@@ -43,7 +43,6 @@
     <div v-show="tab === 'WAITING_ROLLOUT'" class="mt-2">
       <!-- show OPEN Assigned issues with pageSize=10 -->
       <PagedIssueTableV1
-        method="LIST"
         session-key="home-assigned"
         :issue-filter="{
           ...commonIssueFilter,
@@ -70,7 +69,6 @@
       <!-- show OPEN Created issues with pageSize=10 -->
       <PagedIssueTableV1
         session-key="home-created"
-        method="LIST"
         :issue-filter="{
           ...commonIssueFilter,
           statusList: [IssueStatus.OPEN],
@@ -93,7 +91,6 @@
       <!-- show OPEN Subscribed issues with pageSize=10 -->
       <PagedIssueTableV1
         session-key="home-subscribed"
-        method="LIST"
         :issue-filter="{
           ...commonIssueFilter,
           statusList: [IssueStatus.OPEN],
@@ -117,7 +114,6 @@
       <!-- But won't show "Load more", since we have a "View all closed" link below -->
       <PagedIssueTableV1
         session-key="home-closed"
-        method="LIST"
         :issue-filter="{
           ...commonIssueFilter,
           statusList: [IssueStatus.DONE, IssueStatus.CANCELED],

@@ -38,15 +38,11 @@
             <div
               v-for="user in getUserList(binding)"
               :key="user.name"
-              class="flex flex-row justify-start items-center border border-gray-200 rounded-md p-1 px-2"
+              class="flex flex-row gap-x-1 justify-start items-center border border-gray-200 rounded-md p-1 px-2"
             >
               <UserAvatar size="TINY" :user="user" />
-              <span class="ml-1">{{ user.title }}</span>
-              <span
-                v-if="currentUserV1.name === user.name"
-                class="ml-1 inline-flex items-center px-1 rounded-md text-xs font-semibold bg-green-100 text-green-800"
-                >{{ $t("common.you") }}</span
-              >
+              <span>{{ user.title }}</span>
+              <YouTag v-if="currentUserV1.name === user.name" />
             </div>
           </div>
         </div>
@@ -83,6 +79,7 @@
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
+import YouTag from "@/components/misc/YouTag.vue";
 import {
   extractUserEmail,
   useCurrentUserV1,

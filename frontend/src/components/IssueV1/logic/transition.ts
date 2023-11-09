@@ -1,5 +1,3 @@
-import { computed } from "vue";
-import { extractIssueReviewContext } from "@/plugins/issue/logic";
 import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import {
   ComposedIssue,
@@ -20,6 +18,7 @@ import {
   isGrantRequestIssue,
   activeTaskInRollout,
 } from "@/utils";
+import { extractReviewContext } from "./review";
 
 // The first transition in the list is the primary action and the rests are
 // the normal action. For now there are at most 1 primary 1 normal action.
@@ -133,6 +132,6 @@ const allowUserToApplyIssueStatusTransition = (
 };
 
 function isIssueReviewDone(issue: ComposedIssue) {
-  const context = extractIssueReviewContext(computed(() => issue));
+  const context = extractReviewContext(issue);
   return context.done.value;
 }
