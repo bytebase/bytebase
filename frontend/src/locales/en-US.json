@@ -965,12 +965,15 @@
           "description": "Search by the issue approver"
         },
         "approval-status": {
-          "title": "Approval Status",
+          "value": {}
+        },
+        "approval": {
           "value": {
-            "approved": "Approved",
-            "pending_approval": "Pending approval"
+            "pending": "Pending approval",
+            "approved": "Approved"
           },
-          "description": "Search by the issue approval status"
+          "description": "Search by the issue approval status",
+          "title": "Approval Status"
         }
       }
     },

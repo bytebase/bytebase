@@ -26,7 +26,7 @@
           statusList: [IssueStatus.OPEN],
         }"
         :ui-issue-filter="{
-          approval_status: 'pending_approval',
+          approval: 'pending',
         }"
       >
         <template #table="{ issueList, loading }">
