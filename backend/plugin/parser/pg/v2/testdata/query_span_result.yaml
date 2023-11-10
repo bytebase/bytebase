@@ -1,4 +1,272 @@
+- description: Test For Explain statements
+  statement: EXPLAIN SELECT 1;
+  connectedDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  spanResult: []
+
+- description: Test for simple select const
+  statement: SELECT 1;
+  connectedDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  spanResult:
+  - name: column1
+    sourcecolumns: {}
+- description: Happy path for a simple select statement
+  statement: SELECT * FROM t
+  connectedDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  spanResult:
+  - name: a
+    sourcecolumns:
+      ? server: ""
+        database: db
+        schema: public
+        table: t
+        column: a
+      : true
+  - name: b
+    sourcecolumns:
+      ? server: ""
+        database: db
+        schema: public
+        table: t
+        column: b
+      : true
+  - name: c
+    sourcecolumns:
+      ? server: ""
+        database: db
+        schema: public
+        table: t
+        column: c
+      : true
+  - name: d
+    sourcecolumns:
+      ? server: ""
+        database: db
+        schema: public
+        table: t
+        column: d
+      : true
+- description: Referenced table fields by different format
+  statement: SELECT a, t.b, public.t.c, db.public.t.d FROM t;
+  connectedDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  spanResult:
+  - name: a
+    sourcecolumns:
+      ? server: ""
+        database: db
+        schema: public
+        table: t
+        column: a
+      : true
+  - name: b
+    sourcecolumns:
+      ? server: ""
+        database: db
+        schema: public
+        table: t
+        column: b
+      : true
+  - name: c
+    sourcecolumns:
+      ? server: ""
+        database: db
+        schema: public
+        table: t
+        column: c
+      : true
+  - name: d
+    sourcecolumns:
+      ? server: ""
+        database: db
+        schema: public
+        table: t
+        column: d
+      : true
+- description: Scalar subquery in select fields
+  statement: SELECT 1 AS col_1, (SELECT(2)) AS col_2, (SELECT AVG(a + b * c) FROM
+    t) AS avg_a_b_c FROM t;
+  connectedDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  spanResult:
+  - name: col_1
+    sourcecolumns: {}
+  - name: col_2
+    sourcecolumns: {}
+  - name: avg_a_b_c
+    sourcecolumns:
+      ? server: ""
+        database: db
+        schema: public
+        table: t
+        column: a
+      : true
+      ? server: ""
+        database: db
+        schema: public
+        table: t
+        column: b
+      : true
+      ? server: ""
+        database: db
+        schema: public
+        table: t
+        column: c
+      : true
 - description: Multiple-Row subquery in where clause
+  statement: SELECT 1 FROM t WHERE a IN (SELECT a FROM t);
+  connectedDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  spanResult:
+  - name: column1
+    sourcecolumns: {}
+- description: Correlated subquery in the where clause.
   statement: SELECT city, (SELECT COUNT(*) FROM paintings p WHERE g.id = p.gallery_id)
     AS total_paintings FROM galleries g;
   connectedDatabase: db
