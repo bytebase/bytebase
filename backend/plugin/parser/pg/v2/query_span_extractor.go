@@ -63,7 +63,7 @@ func (q *querySpanExtractor) getDatabaseMetadata(database string) (*model.Databa
 func (q *querySpanExtractor) getQuerySpanResult(ctx context.Context, ast *pgquery.RawStmt) ([]*base.QuerySpanResult, error) {
 	q.ctx = ctx
 
-	tableSource, err := q.extractTableSourceFromNode(ctx, ast.Stmt)
+	tableSource, err := q.extractTableSourceFromNode(ast.Stmt)
 	if err != nil {
 		tableNotFound := regexp.MustCompile("^Table \"(.*)\\.(.*)\" not found$")
 		content := tableNotFound.FindStringSubmatch(err.Error())
@@ -79,25 +79,30 @@ func (q *querySpanExtractor) getQuerySpanResult(ctx context.Context, ast *pgquer
 
 // extractTableSourceFromNode is the entry for recursively extracting the span sources from the given node.
 // It returns the table source for the given node, which can be a physical table or a down cast temporary table losing the original schema info.
-func (q *querySpanExtractor) extractTableSourceFromNode(ctx context.Context, node *pgquery.Node) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTableSourceFromNode(node *pgquery.Node) (base.TableSource, error) {
 	if node == nil {
 		return nil, nil
 	}
 
 	switch node := node.Node.(type) {
 	case *pgquery.Node_SelectStmt:
-		return q.extractTableSourceFromSelect(ctx, node)
+		return q.extractTableSourceFromSelect(node)
 	case *pgquery.Node_RangeVar:
-		return q.extractTableSourceFromRangeVar(ctx, node)
+		return q.extractTableSourceFromRangeVar(node)
 	case *pgquery.Node_RangeSubselect:
-		return q.extractTableSourceFromSubselect(ctx, node)
+		return q.extractTableSourceFromSubselect(node)
 	case *pgquery.Node_JoinExpr:
-		return q.extractTableSourceFromJoin(ctx, node)
+		return q.extractTableSourceFromJoin(node)
 	}
 	return nil, nil
 }
 
-func (q *querySpanExtractor) extractTableSourceFromSelect(ctx context.Context, node *pgquery.Node_SelectStmt) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTableSourceFromSelect(node *pgquery.Node_SelectStmt) (base.TableSource, error) {
+	// We should reset the table sources from the FROM clause after exit the SELECT statement.
+	defer func() {
+		q.tableSourcesFrom = nil
+	}()
+
 	// The WITH clause.
 	if node.SelectStmt.WithClause != nil {
 		previousCteOuterLength := len(q.ctes)
@@ -113,9 +118,9 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(ctx context.Context, n
 			var cteTableResource base.PseudoTable
 			var err error
 			if node.SelectStmt.WithClause.Recursive {
-				cteTableResource, err = q.extractTemporaryTableResourceFromRecursiveCTE(ctx, cteExpr)
+				cteTableResource, err = q.extractTemporaryTableResourceFromRecursiveCTE(cteExpr)
 			} else {
-				cteTableResource, err = q.extractTemporaryTableResourceFromNonRecursiveCTE(ctx, cteExpr)
+				cteTableResource, err = q.extractTemporaryTableResourceFromNonRecursiveCTE(cteExpr)
 			}
 			if err != nil {
 				return nil, err
@@ -134,7 +139,7 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(ctx context.Context, n
 				return nil, errors.Errorf("expect List for VALUES list, but got %T", row.Node)
 			}
 			for i, value := range list.List.Items {
-				sourceColumnSet, err := q.extractSourceColumnSetFromExpressionNode(ctx, value)
+				sourceColumnSet, err := q.extractSourceColumnSetFromExpressionNode(value)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to extract source column set from VALUES expression: %+v", value)
 				}
@@ -164,11 +169,11 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(ctx context.Context, n
 	// UNION/INTERSECT/EXCEPT case.
 	switch node.SelectStmt.Op {
 	case pgquery.SetOperation_SETOP_UNION, pgquery.SetOperation_SETOP_INTERSECT, pgquery.SetOperation_SETOP_EXCEPT:
-		leftSpanResults, err := q.extractTableSourceFromSelect(ctx, &pgquery.Node_SelectStmt{SelectStmt: node.SelectStmt.Larg})
+		leftSpanResults, err := q.extractTableSourceFromSelect(&pgquery.Node_SelectStmt{SelectStmt: node.SelectStmt.Larg})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to extract span result from left select: %+v", node.SelectStmt.Larg)
 		}
-		rightSpanResults, err := q.extractTableSourceFromSelect(ctx, &pgquery.Node_SelectStmt{SelectStmt: node.SelectStmt.Rarg})
+		rightSpanResults, err := q.extractTableSourceFromSelect(&pgquery.Node_SelectStmt{SelectStmt: node.SelectStmt.Rarg})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to extract span result from right select: %+v", node.SelectStmt.Rarg)
 		}
@@ -198,7 +203,7 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(ctx context.Context, n
 	// The FROM clause.
 	var fromFieldList []base.TableSource
 	for _, item := range node.SelectStmt.FromClause {
-		tableSource, err := q.extractTableSourceFromNode(ctx, item)
+		tableSource, err := q.extractTableSourceFromNode(item)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to extract span result from FROM item: %+v", item)
 		}
@@ -207,7 +212,7 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(ctx context.Context, n
 	}
 
 	// The TARGET field list.
-	// The SELECT statement is really create a pseudo table, and this pseudo table will be show as the result.
+	// The SELECT statement is really create a pseudo table, and this pseudo table will be shown as the result.
 	var result base.PseudoTable
 	for _, field := range node.SelectStmt.TargetList {
 		resTarget, ok := field.Node.(*pgquery.Node_ResTarget)
@@ -247,7 +252,7 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(ctx context.Context, n
 					}
 				}
 			} else {
-				sourceColumnSet, err := q.extractSourceColumnSetFromExpressionNode(ctx, resTarget.ResTarget.Val)
+				sourceColumnSet, err := q.extractSourceColumnSetFromExpressionNode(resTarget.ResTarget.Val)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to extract source column set from expression: %+v", resTarget.ResTarget.Val)
 				}
@@ -262,7 +267,7 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(ctx context.Context, n
 				})
 			}
 		default:
-			sourceColumnSet, err := q.extractSourceColumnSetFromExpressionNode(ctx, resTarget.ResTarget.Val)
+			sourceColumnSet, err := q.extractSourceColumnSetFromExpressionNode(resTarget.ResTarget.Val)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to extract source column set from expression: %+v", resTarget.ResTarget.Val)
 			}
@@ -281,19 +286,19 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(ctx context.Context, n
 	return result, nil
 }
 
-func (q *querySpanExtractor) extractTableSourceFromJoin(ctx context.Context, node *pgquery.Node_JoinExpr) (base.PseudoTable, error) {
-	leftTableSource, err := q.extractTableSourceFromNode(ctx, node.JoinExpr.Larg)
+func (q *querySpanExtractor) extractTableSourceFromJoin(node *pgquery.Node_JoinExpr) (base.PseudoTable, error) {
+	leftTableSource, err := q.extractTableSourceFromNode(node.JoinExpr.Larg)
 	if err != nil {
 		return base.PseudoTable{}, errors.Wrapf(err, "failed to extract span result from left join: %+v", node.JoinExpr.Larg)
 	}
-	rightTableSource, err := q.extractTableSourceFromNode(ctx, node.JoinExpr.Rarg)
+	rightTableSource, err := q.extractTableSourceFromNode(node.JoinExpr.Rarg)
 	if err != nil {
 		return base.PseudoTable{}, errors.Wrapf(err, "failed to extract span result from right join: %+v", node.JoinExpr.Rarg)
 	}
-	return q.mergeJoinTableSource(ctx, node, leftTableSource, rightTableSource)
+	return q.mergeJoinTableSource(node, leftTableSource, rightTableSource)
 }
 
-func (q *querySpanExtractor) mergeJoinTableSource(ctx context.Context, node *pgquery.Node_JoinExpr, left base.TableSource, right base.TableSource) (base.PseudoTable, error) {
+func (q *querySpanExtractor) mergeJoinTableSource(node *pgquery.Node_JoinExpr, left base.TableSource, right base.TableSource) (base.PseudoTable, error) {
 	leftSpanResult, rightSpanResult := left.GetQuerySpanResult(), right.GetQuerySpanResult()
 
 	var result base.PseudoTable
@@ -366,7 +371,7 @@ func (q *querySpanExtractor) mergeJoinTableSource(ctx context.Context, node *pgq
 	return result, nil
 }
 
-func (q *querySpanExtractor) extractTableSourceFromRangeVar(ctx context.Context, node *pgquery.Node_RangeVar) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTableSourceFromRangeVar(node *pgquery.Node_RangeVar) (base.TableSource, error) {
 	tableSource, err := q.findTableSchema(node.RangeVar.Schemaname, node.RangeVar.Relname)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find table schema for range var: %+v", node)
@@ -396,8 +401,8 @@ func (q *querySpanExtractor) extractTableSourceFromRangeVar(ctx context.Context,
 	return result, nil
 }
 
-func (q *querySpanExtractor) extractTableSourceFromSubselect(ctx context.Context, node *pgquery.Node_RangeSubselect) (base.TableSource, error) {
-	tableSource, err := q.extractTableSourceFromNode(ctx, node.RangeSubselect.Subquery)
+func (q *querySpanExtractor) extractTableSourceFromSubselect(node *pgquery.Node_RangeSubselect) (base.TableSource, error) {
+	tableSource, err := q.extractTableSourceFromNode(node.RangeSubselect.Subquery)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract span result from subselect: %+v", node)
 	}
@@ -425,8 +430,8 @@ func (q *querySpanExtractor) extractTableSourceFromSubselect(ctx context.Context
 	return result, nil
 }
 
-func (q *querySpanExtractor) extractTemporaryTableResourceFromNonRecursiveCTE(ctx context.Context, cteExpr *pgquery.Node_CommonTableExpr) (base.PseudoTable, error) {
-	tableSource, err := q.extractTableSourceFromNode(ctx, cteExpr.CommonTableExpr.Ctequery)
+func (q *querySpanExtractor) extractTemporaryTableResourceFromNonRecursiveCTE(cteExpr *pgquery.Node_CommonTableExpr) (base.PseudoTable, error) {
+	tableSource, err := q.extractTableSourceFromNode(cteExpr.CommonTableExpr.Ctequery)
 	if err != nil {
 		return base.PseudoTable{}, errors.Wrapf(err, "failed to extract span result from CTE query: %+v", cteExpr.CommonTableExpr.Ctequery)
 	}
@@ -451,16 +456,16 @@ func (q *querySpanExtractor) extractTemporaryTableResourceFromNonRecursiveCTE(ct
 	}, nil
 }
 
-func (q *querySpanExtractor) extractTemporaryTableResourceFromRecursiveCTE(ctx context.Context, cteExpr *pgquery.Node_CommonTableExpr) (base.PseudoTable, error) {
+func (q *querySpanExtractor) extractTemporaryTableResourceFromRecursiveCTE(cteExpr *pgquery.Node_CommonTableExpr) (base.PseudoTable, error) {
 	switch selectNode := cteExpr.CommonTableExpr.Ctequery.Node.(type) {
 	case *pgquery.Node_SelectStmt:
 		if selectNode.SelectStmt.Op != pgquery.SetOperation_SETOP_UNION {
-			return q.extractTemporaryTableResourceFromNonRecursiveCTE(ctx, cteExpr)
+			return q.extractTemporaryTableResourceFromNonRecursiveCTE(cteExpr)
 		}
 		// For PostgreSQL, recursive CTE would be a UNION statement, and the left node is the initial part,
 		// the right node is the recursive part.
 		// https://www.postgresql.org/docs/15/queries-with.html#QUERIES-WITH-RECURSIVE
-		initialTableSource, err := q.extractTableSourceFromSelect(ctx, &pgquery.Node_SelectStmt{SelectStmt: selectNode.SelectStmt.Larg})
+		initialTableSource, err := q.extractTableSourceFromSelect(&pgquery.Node_SelectStmt{SelectStmt: selectNode.SelectStmt.Larg})
 		if err != nil {
 			return base.PseudoTable{}, errors.Wrapf(err, "failed to extract span result from CTE initial query: %+v", selectNode.SelectStmt.Larg)
 		}
@@ -496,7 +501,7 @@ func (q *querySpanExtractor) extractTemporaryTableResourceFromRecursiveCTE(ctx c
 		}()
 
 		for {
-			recursiveTableSource, err := q.extractTableSourceFromSelect(ctx, &pgquery.Node_SelectStmt{SelectStmt: selectNode.SelectStmt.Rarg})
+			recursiveTableSource, err := q.extractTableSourceFromSelect(&pgquery.Node_SelectStmt{SelectStmt: selectNode.SelectStmt.Rarg})
 			if err != nil {
 				return base.PseudoTable{}, errors.Wrapf(err, "failed to extract span result from CTE recursive query: %+v", selectNode.SelectStmt.Rarg)
 			}
@@ -521,35 +526,35 @@ func (q *querySpanExtractor) extractTemporaryTableResourceFromRecursiveCTE(ctx c
 		}
 		return cteTableResource, nil
 	default:
-		return q.extractTemporaryTableResourceFromNonRecursiveCTE(ctx, cteExpr)
+		return q.extractTemporaryTableResourceFromNonRecursiveCTE(cteExpr)
 	}
 }
 
-func (q *querySpanExtractor) extractSourceColumnSetFromExpressionNode(ctx context.Context, node *pgquery.Node) (base.SourceColumnSet, error) {
+func (q *querySpanExtractor) extractSourceColumnSetFromExpressionNode(node *pgquery.Node) (base.SourceColumnSet, error) {
 	if node == nil {
 		return base.SourceColumnSet{}, nil
 	}
 
 	switch node := node.Node.(type) {
 	case *pgquery.Node_List:
-		return q.extractSourceColumnSetFromExpressionNodeList(ctx, node.List.Items)
+		return q.extractSourceColumnSetFromExpressionNodeList(node.List.Items)
 	case *pgquery.Node_FuncCall:
 		var nodeList []*pgquery.Node
 		nodeList = append(nodeList, node.FuncCall.Args...)
 		nodeList = append(nodeList, node.FuncCall.AggOrder...)
 		nodeList = append(nodeList, node.FuncCall.AggFilter)
-		return q.extractSourceColumnSetFromExpressionNodeList(ctx, nodeList)
+		return q.extractSourceColumnSetFromExpressionNodeList(nodeList)
 	case *pgquery.Node_SortBy:
-		return q.extractSourceColumnSetFromExpressionNode(ctx, node.SortBy.Node)
+		return q.extractSourceColumnSetFromExpressionNode(node.SortBy.Node)
 	case *pgquery.Node_XmlExpr:
 		var nodeList []*pgquery.Node
 		nodeList = append(nodeList, node.XmlExpr.Args...)
 		nodeList = append(nodeList, node.XmlExpr.NamedArgs...)
-		return q.extractSourceColumnSetFromExpressionNodeList(ctx, nodeList)
+		return q.extractSourceColumnSetFromExpressionNodeList(nodeList)
 	case *pgquery.Node_ResTarget:
-		return q.extractSourceColumnSetFromExpressionNode(ctx, node.ResTarget.Val)
+		return q.extractSourceColumnSetFromExpressionNode(node.ResTarget.Val)
 	case *pgquery.Node_TypeCast:
-		return q.extractSourceColumnSetFromExpressionNode(ctx, node.TypeCast.Arg)
+		return q.extractSourceColumnSetFromExpressionNode(node.TypeCast.Arg)
 	case *pgquery.Node_AConst:
 		return base.SourceColumnSet{}, nil
 	case *pgquery.Node_ColumnRef:
@@ -562,30 +567,30 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpressionNode(ctx contex
 		var nodeList []*pgquery.Node
 		nodeList = append(nodeList, node.AExpr.Lexpr)
 		nodeList = append(nodeList, node.AExpr.Rexpr)
-		return q.extractSourceColumnSetFromExpressionNodeList(ctx, nodeList)
+		return q.extractSourceColumnSetFromExpressionNodeList(nodeList)
 	case *pgquery.Node_CaseExpr:
 		var nodeList []*pgquery.Node
 		nodeList = append(nodeList, node.CaseExpr.Arg)
 		nodeList = append(nodeList, node.CaseExpr.Args...)
 		nodeList = append(nodeList, node.CaseExpr.Defresult)
-		return q.extractSourceColumnSetFromExpressionNodeList(ctx, nodeList)
+		return q.extractSourceColumnSetFromExpressionNodeList(nodeList)
 	case *pgquery.Node_CaseWhen:
 		var nodeList []*pgquery.Node
 		nodeList = append(nodeList, node.CaseWhen.Expr)
 		nodeList = append(nodeList, node.CaseWhen.Result)
-		return q.extractSourceColumnSetFromExpressionNodeList(ctx, nodeList)
+		return q.extractSourceColumnSetFromExpressionNodeList(nodeList)
 	case *pgquery.Node_AArrayExpr:
-		return q.extractSourceColumnSetFromExpressionNodeList(ctx, node.AArrayExpr.Elements)
+		return q.extractSourceColumnSetFromExpressionNodeList(node.AArrayExpr.Elements)
 	case *pgquery.Node_NullTest:
-		return q.extractSourceColumnSetFromExpressionNode(ctx, node.NullTest.Arg)
+		return q.extractSourceColumnSetFromExpressionNode(node.NullTest.Arg)
 	case *pgquery.Node_XmlSerialize:
-		return q.extractSourceColumnSetFromExpressionNode(ctx, node.XmlSerialize.Expr)
+		return q.extractSourceColumnSetFromExpressionNode(node.XmlSerialize.Expr)
 	case *pgquery.Node_ParamRef:
 		return base.SourceColumnSet{}, nil
 	case *pgquery.Node_BoolExpr:
-		return q.extractSourceColumnSetFromExpressionNodeList(ctx, node.BoolExpr.Args)
+		return q.extractSourceColumnSetFromExpressionNodeList(node.BoolExpr.Args)
 	case *pgquery.Node_SubLink:
-		sourceColumnSet, err := q.extractSourceColumnSetFromExpressionNode(ctx, node.SubLink.Testexpr)
+		sourceColumnSet, err := q.extractSourceColumnSetFromExpressionNode(node.SubLink.Testexpr)
 		if err != nil {
 			return base.SourceColumnSet{}, err
 		}
@@ -603,7 +608,7 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpressionNode(ctx contex
 			outerTableSources: append(q.outerTableSources, q.tableSourcesFrom...),
 			tableSourcesFrom:  []base.TableSource{},
 		}
-		tableSource, err := subqueryExtractor.extractTableSourceFromNode(ctx, node.SubLink.Subselect)
+		tableSource, err := subqueryExtractor.extractTableSourceFromNode(node.SubLink.Subselect)
 		if err != nil {
 			return base.SourceColumnSet{}, errors.Wrapf(err, "failed to extract span result from sublink: %+v", node.SubLink.Subselect)
 		}
@@ -614,35 +619,35 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpressionNode(ctx contex
 		}
 		return sourceColumnSet, nil
 	case *pgquery.Node_RowExpr:
-		return q.extractSourceColumnSetFromExpressionNodeList(ctx, node.RowExpr.Args)
+		return q.extractSourceColumnSetFromExpressionNodeList(node.RowExpr.Args)
 	case *pgquery.Node_CoalesceExpr:
-		return q.extractSourceColumnSetFromExpressionNodeList(ctx, node.CoalesceExpr.Args)
+		return q.extractSourceColumnSetFromExpressionNodeList(node.CoalesceExpr.Args)
 	case *pgquery.Node_SetToDefault:
 		return base.SourceColumnSet{}, nil
 	case *pgquery.Node_AIndirection:
-		return q.extractSourceColumnSetFromExpressionNode(ctx, node.AIndirection.Arg)
+		return q.extractSourceColumnSetFromExpressionNode(node.AIndirection.Arg)
 	case *pgquery.Node_CollateClause:
-		return q.extractSourceColumnSetFromExpressionNode(ctx, node.CollateClause.Arg)
+		return q.extractSourceColumnSetFromExpressionNode(node.CollateClause.Arg)
 	case *pgquery.Node_CurrentOfExpr:
 		return base.SourceColumnSet{}, nil
 	case *pgquery.Node_SqlvalueFunction:
 		return base.SourceColumnSet{}, nil
 	case *pgquery.Node_MinMaxExpr:
-		return q.extractSourceColumnSetFromExpressionNodeList(ctx, node.MinMaxExpr.Args)
+		return q.extractSourceColumnSetFromExpressionNodeList(node.MinMaxExpr.Args)
 	case *pgquery.Node_BooleanTest:
-		return q.extractSourceColumnSetFromExpressionNode(ctx, node.BooleanTest.Arg)
+		return q.extractSourceColumnSetFromExpressionNode(node.BooleanTest.Arg)
 	case *pgquery.Node_GroupingFunc:
-		return q.extractSourceColumnSetFromExpressionNodeList(ctx, node.GroupingFunc.Args)
+		return q.extractSourceColumnSetFromExpressionNodeList(node.GroupingFunc.Args)
 	}
 	return base.SourceColumnSet{}, nil
 }
 
 // extractSourceColumnSetFromExpressionNodeList is the helper function to extract the source column set from the given expression node list,
 // which iterates the list and merge each set.
-func (q *querySpanExtractor) extractSourceColumnSetFromExpressionNodeList(ctx context.Context, list []*pgquery.Node) (base.SourceColumnSet, error) {
+func (q *querySpanExtractor) extractSourceColumnSetFromExpressionNodeList(list []*pgquery.Node) (base.SourceColumnSet, error) {
 	result := make(base.SourceColumnSet)
 	for _, node := range list {
-		sourceColumnSet, err := q.extractSourceColumnSetFromExpressionNode(ctx, node)
+		sourceColumnSet, err := q.extractSourceColumnSetFromExpressionNode(node)
 		if err != nil {
 			return nil, err
 		}

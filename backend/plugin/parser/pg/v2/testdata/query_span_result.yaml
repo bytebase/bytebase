@@ -1,0 +1,28 @@
+- description: "Happy path for a simple select statement"
+  statement: "SELECT * FROM t"
+  connectedDatabase: "db"
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a",
+                },
+                {
+                  "name":  "b",
+                },
+                {
+                  "name":  "c",
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }

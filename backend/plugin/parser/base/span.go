@@ -68,7 +68,7 @@ type baseTableSource struct {
 }
 
 // isTableSource implements the TableSource interface.
-func (b baseTableSource) isTableSource() {}
+func (baseTableSource) isTableSource() {}
 
 // PseudoTable is the resource of table, it's useful for some pseudo/temporary tables likes CTE, AS.
 type PseudoTable struct {
