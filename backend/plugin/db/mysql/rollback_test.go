@@ -63,19 +63,19 @@ BEGIN
 			},
 			rollbackSQL: `DELETE FROM ` + "`binlog_test`.`user`" + `
 WHERE
-  ` + "`id`" + `=1 AND
-  ` + "`name`" + `='alice' AND
-  ` + "`balance`" + `=100;
+  ` + "`id`" + `<=>1 AND
+  ` + "`name`" + `<=>'alice' AND
+  ` + "`balance`" + `<=>100;
 DELETE FROM ` + "`binlog_test`.`user`" + `
 WHERE
-  ` + "`id`" + `=2 AND
-  ` + "`name`" + `='bob' AND
-  ` + "`balance`" + `=100;
+  ` + "`id`" + `<=>2 AND
+  ` + "`name`" + `<=>'bob' AND
+  ` + "`balance`" + `<=>100;
 DELETE FROM ` + "`binlog_test`.`user`" + `
 WHERE
-  ` + "`id`" + `=3 AND
-  ` + "`name`" + `='cindy' AND
-  ` + "`balance`" + `=100;`,
+  ` + "`id`" + `<=>3 AND
+  ` + "`name`" + `<=>'cindy' AND
+  ` + "`balance`" + `<=>100;`,
 			err: false,
 		},
 		{
@@ -131,18 +131,18 @@ SET
   ` + "`name`" + `='bob',
   ` + "`balance`" + `=100
 WHERE
-  ` + "`id`" + `=2 AND
-  ` + "`name`" + `='bob' AND
-  ` + "`balance`" + `=110;
+  ` + "`id`" + `<=>2 AND
+  ` + "`name`" + `<=>'bob' AND
+  ` + "`balance`" + `<=>110;
 UPDATE ` + "`binlog_test`.`user`" + `
 SET
   ` + "`id`" + `=1,
   ` + "`name`" + `='alice',
   ` + "`balance`" + `=100
 WHERE
-  ` + "`id`" + `=1 AND
-  ` + "`name`" + `='alice' AND
-  ` + "`balance`" + `=90;`,
+  ` + "`id`" + `<=>1 AND
+  ` + "`name`" + `<=>'alice' AND
+  ` + "`balance`" + `<=>90;`,
 			err: false,
 		},
 		{
