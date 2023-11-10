@@ -52,5 +52,10 @@ const formatContent = (
   if (error) {
     return;
   }
+  const pos = editor.getPosition();
   model.setValue(data);
+  if (pos) {
+    // Not that smart but best efforts to keep the cursor position
+    editor.setPosition(pos);
+  }
 };
