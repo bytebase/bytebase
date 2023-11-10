@@ -435,10 +435,9 @@ const onUpsert = async () => {
       style: "SUCCESS",
       title: t("common.updated"),
     });
-
-    emit("dismiss");
   } finally {
     state.processing = false;
+    emit("dismiss");
   }
 };
 
