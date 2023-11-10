@@ -162,15 +162,6 @@ func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesR
 	}
 	for _, spec := range filters {
 		switch spec.key {
-		case "principal":
-			if spec.operator != comparatorTypeEqual {
-				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "principal" filter`)
-			}
-			user, err := s.getUserByIdentifier(ctx, spec.value)
-			if err != nil {
-				return nil, err
-			}
-			issueFind.PrincipalID = &user.ID
 		case "creator":
 			if spec.operator != comparatorTypeEqual {
 				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "creator" filter`)

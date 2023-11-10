@@ -8,7 +8,6 @@ export type SearchScopeId =
   | "creator"
   | "assignee"
   | "subscriber"
-  | "principal"
   | UIIssueFilterScopeId;
 
 export interface SearchParams {

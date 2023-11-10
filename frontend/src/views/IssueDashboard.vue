@@ -150,7 +150,7 @@ const autofocus = computed((): boolean => {
 
 const initializeSearchParamsFromQuery = (): SearchParams => {
   const projectName = project.value?.name ?? "";
-  const userEmail = selectedPrincipal.value?.email ?? "";
+  const { creator, assignee, approver, subscriber } = route.query;
   const query = (route.query.query as string) ?? "";
 
   const params: SearchParams = {
@@ -164,11 +164,44 @@ const initializeSearchParamsFromQuery = (): SearchParams => {
       value: extractProjectResourceName(projectName),
     });
   }
-  if (userEmail && hasPermission.value) {
-    params.scopes.push({
-      id: "principal",
-      value: userEmail,
-    });
+  if (creator && hasPermission.value) {
+    const creatorEmail = userStore.getUserById(creator as string)?.email ?? "";
+    if (creatorEmail) {
+      params.scopes.push({
+        id: "creator",
+        value: creatorEmail,
+      });
+    }
+  }
+  if (assignee && hasPermission.value) {
+    const assigneeEmail =
+      userStore.getUserById(assignee as string)?.email ?? "";
+    if (assigneeEmail) {
+      params.scopes.push({
+        id: "creator",
+        value: assigneeEmail,
+      });
+    }
+  }
+  if (approver && hasPermission.value) {
+    const approverEmail =
+      userStore.getUserById(approver as string)?.email ?? "";
+    if (approverEmail) {
+      params.scopes.push({
+        id: "approver",
+        value: approverEmail,
+      });
+    }
+  }
+  if (subscriber && hasPermission.value) {
+    const subscriberEmail =
+      userStore.getUserById(subscriber as string)?.email ?? "";
+    if (subscriberEmail) {
+      params.scopes.push({
+        id: "subscriber",
+        value: subscriberEmail,
+      });
+    }
   }
 
   return params;
@@ -233,14 +266,6 @@ const isDateDisabled = (ts: number) => {
 const selectedProjectId = computed((): string | undefined => {
   const { project } = route.query;
   return project ? (project as string) : undefined;
-});
-
-const selectedPrincipal = computed(() => {
-  const { user } = route.query;
-  if (!user) {
-    return;
-  }
-  return userStore.getUserById(user as string);
 });
 
 const state = reactive<LocalState>({
@@ -336,7 +361,6 @@ const issueFilter = computed((): IssueFilter => {
       ? selectedTimeRange.value[1]
       : undefined,
     type: typeScope?.value,
-    principal: getValueFromIssueFilter(userNamePrefix, "principal"),
     creator: getValueFromIssueFilter(userNamePrefix, "creator"),
     assignee: getValueFromIssueFilter(userNamePrefix, "assignee"),
     subscriber: getValueFromIssueFilter(userNamePrefix, "subscriber"),
