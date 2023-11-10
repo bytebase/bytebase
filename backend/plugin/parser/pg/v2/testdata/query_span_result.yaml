@@ -1,6 +1,7 @@
-- description: "Happy path for a simple select statement"
-  statement: "SELECT * FROM t"
-  connectedDatabase: "db"
+- description: Multiple-Row subquery in where clause
+  statement: SELECT city, (SELECT COUNT(*) FROM paintings p WHERE g.id = p.gallery_id)
+    AS total_paintings FROM galleries g;
+  connectedDatabase: db
   metadata: |-
     {
       "name":  "db",
@@ -9,16 +10,30 @@
           "name": "public",
           "tables":  [
             {
-              "name":  "t",
+              "name":  "galleries",
               "columns":  [
                 {
-                  "name":  "a",
+                  "name":  "id"
                 },
                 {
-                  "name":  "b",
+                  "name":  "city"
+                }
+              ]
+            },
+            {
+              "name":  "paintings",
+              "columns":  [
+                {
+                  "name":  "gallery_id"
                 },
                 {
-                  "name":  "c",
+                  "name":  "artist_id"
+                },
+                {
+                  "name":  "title"
+                },
+                {
+                  "name":  "price"
                 }
               ]
             }
@@ -26,3 +41,14 @@
         }
       ]
     }
+  spanResult:
+  - name: city
+    sourcecolumns:
+      ? server: ""
+        database: db
+        schema: public
+        table: galleries
+        column: city
+      : true
+  - name: total_paintings
+    sourcecolumns: {}

@@ -27,7 +27,7 @@ func TestGetQuerySpanResult(t *testing.T) {
 	}
 
 	const (
-		record       = false
+		record       = true
 		testDataPath = "testdata/query_span_result.yaml"
 	)
 

@@ -660,9 +660,16 @@ func (q *querySpanExtractor) getFieldColumnSource(schemaName, tableName, fieldNa
 	findInTableSource := func(tableSource base.TableSource) (base.SourceColumnSet, bool) {
 		switch tableSource := tableSource.(type) {
 		case base.PseudoTable:
-			if schemaName != "" || tableName != tableSource.Name {
+			// The pseudo table cannot be referenced by the explicit database/schema name.
+			if schemaName != "" {
 				return nil, false
 			}
+			if tableName != "" && tableName != tableSource.Name {
+				return nil, false
+			}
+
+			// In fact, if the table name is empty, we should check if there are ambiguous fields,
+			// but we can delegate this responsibility to the driver, we do the fail-open strategy here.
 		case base.PhysicalTable:
 			if schemaName != tableSource.Schema || tableName != tableSource.Name {
 				return nil, false
