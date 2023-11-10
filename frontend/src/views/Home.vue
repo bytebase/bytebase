@@ -6,7 +6,7 @@
       </div>
       <div class="flex items-center space-x-2 p-0.5">
         <router-link
-          :to="`/issue?user=${currentUserUID}`"
+          :to="issueLink"
           class="flex space-x-1 items-center normal-link !whitespace-nowrap"
         >
           <heroicons-outline:search class="h-4 w-4" />
@@ -294,6 +294,21 @@ const planImage = computed(() => {
     ).toLowerCase()}.png`,
     import.meta.url
   ).href;
+});
+
+const issueLink = computed(() => {
+  if (tab.value === "CREATED") {
+    return "/issue?creator=" + currentUserUID.value;
+  }
+  if (tab.value === "APPROVAL_REQUESTED") {
+    return "/issue?approver=" + currentUserUID.value;
+  }
+  if (tab.value === "SUBSCRIBED") {
+    return "/issue?subscriber=" + currentUserUID.value;
+  }
+
+  // TODO(d): use closed filter for WAITING_ROLLOUT and RECENTLY_CLOSED.
+  return "/issue";
 });
 
 const commonIssueFilter = computed((): IssueFilter => {

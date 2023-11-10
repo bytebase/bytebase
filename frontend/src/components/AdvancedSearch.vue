@@ -259,12 +259,6 @@ const fullScopes = computed((): SearchScope[] => {
       options: principalSearchOptions.value,
     },
     {
-      id: "principal",
-      title: t("issue.advanced-search.scope.principal.title"),
-      description: t("issue.advanced-search.scope.principal.description"),
-      options: principalSearchOptions.value,
-    },
-    {
       id: "type",
       title: t("issue.advanced-search.scope.type.title"),
       description: t("issue.advanced-search.scope.type.description"),
@@ -367,21 +361,6 @@ const searchScopes = computed((): SearchScope[] => {
   return filteredScopes.value.filter((scope) => {
     if (existedScope.has(scope.id)) {
       return false;
-    }
-    // The principal scope cannot used with creator/assignee/subscriber
-    if (scope.id === "principal") {
-      return (
-        !existedScope.has("creator") &&
-        !existedScope.has("assignee") &&
-        !existedScope.has("subscriber")
-      );
-    }
-    if (
-      scope.id === "creator" ||
-      scope.id === "assignee" ||
-      scope.id === "subscriber"
-    ) {
-      return !existedScope.has("principal");
     }
     return true;
   });
