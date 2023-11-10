@@ -101,32 +101,20 @@ func (checker *compatibilityChecker) EnterCreateTable(ctx *mysql.CreateTableCont
 	checker.lastCreateTable = tableName
 }
 
-// ExitCreateTable is called when production createTable is exited.
-// func (s *BaseMySQLParserListener) ExitCreateTable(ctx *CreateTableContext) {}
-
 // EnterDropDatabase is called when production dropDatabase is entered.
 func (checker *compatibilityChecker) EnterDropDatabase(_ *mysql.DropDatabaseContext) {
 	checker.code = advisor.CompatibilityDropDatabase
 }
-
-// ExitDropDatabase is called when production dropDatabase is exited.
-// func (s *BaseMySQLParserListener) ExitDropDatabase(ctx *DropDatabaseContext) {}
 
 // EnterRenameTableStatement is called when production renameTableStatement is entered.
 func (checker *compatibilityChecker) EnterRenameTableStatement(_ *mysql.RenameTableStatementContext) {
 	checker.code = advisor.CompatibilityRenameTable
 }
 
-// ExitRenameTableStatement is called when production renameTableStatement is exited.
-// func (s *BaseMySQLParserListener) ExitRenameTableStatement(ctx *RenameTableStatementContext) {}
-
 // EnterDropTable is called when production dropTable is entered.
 func (checker *compatibilityChecker) EnterDropTable(_ *mysql.DropTableContext) {
 	checker.code = advisor.CompatibilityDropTable
 }
-
-// ExitDropTable is called when production dropTable is exited.
-// func (s *BaseMySQLParserListener) ExitDropTable(ctx *DropTableContext) {}
 
 func (checker *compatibilityChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
 	if ctx.AlterTableActions() == nil {
@@ -231,6 +219,3 @@ func (checker *compatibilityChecker) EnterCreateIndex(ctx *mysql.CreateIndexCont
 		checker.code = advisor.CompatibilityAddUniqueKey
 	}
 }
-
-// ExitCreateIndex is called when production createIndex is exited.
-// func (s *BaseMySQLParserListener) ExitCreateIndex(ctx *CreateIndexContext) {}
