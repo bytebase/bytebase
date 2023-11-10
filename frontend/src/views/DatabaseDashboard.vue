@@ -322,9 +322,9 @@ const getAllSelectionState = (
     isDatabase(db)
   ) as ComposedDatabase[];
 
-  const checked = filteredDatabases.every((db) =>
-    state.selectedDatabaseIds.has(db.uid)
-  );
+  const checked =
+    state.selectedDatabaseIds.size > 0 &&
+    filteredDatabases.every((db) => state.selectedDatabaseIds.has(db.uid));
   const indeterminate =
     !checked &&
     filteredDatabases.some((db) => state.selectedDatabaseIds.has(db.uid));

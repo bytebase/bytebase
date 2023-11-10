@@ -23,7 +23,9 @@
             class="bb-grid-header-cell capitalize"
             :class="[column.class]"
           >
-            <template v-if="index === 0 && allowSelection">
+            <template
+              v-if="index === 0 && allowSelection && instanceList.length > 0"
+            >
               <input
                 type="checkbox"
                 class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
@@ -176,9 +178,11 @@ const isInstanceSelected = (instance: ComposedInstance): boolean => {
 };
 
 const allSelectionState = computed(() => {
-  const checked = props.instanceList.every((instance) =>
-    state.selectedInstance.has(instance.name)
-  );
+  const checked =
+    state.selectedInstance.size > 0 &&
+    props.instanceList.every((instance) =>
+      state.selectedInstance.has(instance.name)
+    );
   const indeterminate =
     !checked &&
     props.instanceList.some((instance) =>

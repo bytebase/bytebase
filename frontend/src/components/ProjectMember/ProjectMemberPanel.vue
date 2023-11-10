@@ -335,7 +335,9 @@ const isMemeberSelected = (member: ComposedProjectMember) => {
 const getAllSelectionState = (
   memberList: ComposedProjectMember[]
 ): { checked: boolean; indeterminate: boolean } => {
-  const checked = memberList.every((member) => isMemeberSelected(member));
+  const checked =
+    state.selectedMemberNameList.size > 0 &&
+    memberList.every((member) => isMemeberSelected(member));
   const indeterminate =
     !checked && memberList.some((member) => isMemeberSelected(member));
 
