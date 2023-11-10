@@ -37,6 +37,29 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", {
         return this.setCache(metadata);
       }
 
+      for (const schemaConfig of metadata.schemaConfigs) {
+        const schemaConfigIndex = existed.schemaConfigs.findIndex(
+          (s) => s.name === schemaConfig.name
+        );
+        if (schemaConfigIndex < 0) {
+          existed.schemaConfigs.push(schemaConfig);
+          continue;
+        }
+        for (const tableConfig of schemaConfig.tableConfigs) {
+          const tableIndex = existed.schemaConfigs[
+            schemaConfigIndex
+          ].tableConfigs.findIndex((t) => t.name === tableConfig.name);
+          if (tableIndex < 0) {
+            existed.schemaConfigs[schemaConfigIndex].tableConfigs.push(
+              tableConfig
+            );
+          } else {
+            existed.schemaConfigs[schemaConfigIndex].tableConfigs[tableIndex] =
+              tableConfig;
+          }
+        }
+      }
+
       for (const schema of metadata.schemas) {
         const schemaIndex = existed.schemas.findIndex(
           (s) => s.name === schema.name
@@ -123,7 +146,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", {
           }
         )
         .then((res) => {
-          this.setCache(res);
+          this.mergeToCache(res);
           return res;
         });
       this.requestCache.set(metadataName, promise);
