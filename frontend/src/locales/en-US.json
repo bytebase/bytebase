@@ -959,6 +959,18 @@
         "principal": {
           "title": "Related Principal",
           "description": "Search by the issue creator, assignee or subscriber"
+        },
+        "approver": {
+          "title": "Approver",
+          "description": "Search by the issue approver"
+        },
+        "approval-status": {
+          "title": "Approval Status",
+          "value": {
+            "approved": "Approved",
+            "pending_approval": "Pending approval"
+          },
+          "description": "Search by the issue approval status"
         }
       }
     },
@@ -1089,7 +1101,7 @@
       "issue-is-not-open": "The issue is not open",
       "you-don-have-privilege-to-edit-this-issue": "You don't have privilege to edit this issue"
     },
-    "review-requested": "Review Requested"
+    "approval-requested": "Approval Requested"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",

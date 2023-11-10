@@ -81,8 +81,6 @@ type FindIssueMessage struct {
 	ProjectIDs *[]string
 	PlanUID    *int64
 	PipelineID *int
-	// Find issues where principalID is either creator, assignee or subscriber.
-	PrincipalID *int
 	// To support pagination, we add into creator, assignee and subscriber.
 	// Only principleID or one of the following three fields can be set.
 	CreatorID       *int
@@ -394,15 +392,6 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	}
 	if v := find.DatabaseUID; v != nil {
 		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.database_id = $%d)", len(args)+1)), append(args, *v)
-	}
-	if v := find.PrincipalID; v != nil {
-		if find.CreatorID != nil || find.AssigneeID != nil || find.SubscriberID != nil {
-			return nil, &common.Error{Code: common.Invalid, Err: errors.New("principal_id cannot be used with creator_id, assignee_id, or subscriber_id")}
-		}
-		where = append(where, fmt.Sprintf("(issue.creator_id = $%d OR issue.assignee_id = $%d OR EXISTS (SELECT 1 FROM issue_subscriber WHERE issue_subscriber.issue_id = issue.id AND issue_subscriber.subscriber_id = $%d))", len(args)+1, len(args)+2, len(args)+3))
-		args = append(args, *v)
-		args = append(args, *v)
-		args = append(args, *v)
 	}
 	if v := find.CreatorID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.creator_id = $%d", len(args)+1)), append(args, *v)

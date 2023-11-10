@@ -60,7 +60,7 @@
 </template>
 
 <script lang="ts" setup>
-import { debounce } from "lodash-es";
+import { debounce, orderBy } from "lodash-es";
 import { NInput } from "naive-ui";
 import { reactive, computed, h, watch, VNode, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -77,36 +77,23 @@ import {
   useSearchDatabaseV1List,
   useUserStore,
   useDatabaseV1Store,
+  useCurrentUserV1,
 } from "@/store";
 import {
   projectNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
+import { SYSTEM_BOT_EMAIL } from "@/types";
 import { Workflow } from "@/types/proto/v1/project_service";
 import {
   projectV1Name,
   environmentV1Name,
   extractProjectResourceName,
   extractInstanceResourceName,
+  SearchParams,
+  SearchScopeId,
 } from "@/utils";
-
-export type SearchScopeId =
-  | "project"
-  | "instance"
-  | "database"
-  | "type"
-  | "creator"
-  | "assignee"
-  | "subscriber"
-  | "principal";
-
-export interface SearchParams {
-  query: string;
-  scopes: {
-    id: SearchScopeId;
-    value: string;
-  }[];
-}
+import YouTag from "./misc/YouTag.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -160,6 +147,7 @@ const state = reactive<LocalState>({
   searchText: buildSearchTextByParams(props.params),
   showSearchScopes: props.autofocus,
 });
+const me = useCurrentUserV1();
 const inputRef = ref<InstanceType<typeof NInput>>();
 const userStore = useUserStore();
 const databaseV1Store = useDatabaseV1Store();
@@ -178,13 +166,22 @@ const { databaseList } = useSearchDatabaseV1List({
 });
 
 const principalSearchOptions = computed(() => {
-  return userStore.activeUserList.map((user) => {
+  const sortedUsers = orderBy(
+    userStore.activeUserList,
+    (user) => (user.name === me.value.name ? -1 : 1),
+    "asc"
+  );
+  return sortedUsers.map((user) => {
+    const children = [
+      h(BBAvatar, { size: "TINY", username: user.title }),
+      h("span", {}, user.title),
+    ];
+    if (user.name === me.value.name) {
+      children.push(h(YouTag));
+    }
     return {
       id: user.email,
-      label: h("div", { class: "flex items-center gap-x-1" }, [
-        h(BBAvatar, { size: "TINY", username: user.title }),
-        h("span", { innerHTML: user.title }),
-      ]),
+      label: h("div", { class: "flex items-center gap-x-1" }, children),
     };
   });
 });
@@ -209,6 +206,72 @@ const fullScopes = computed((): SearchScope[] => {
           label: h("div", { class: "flex items-center gap-x-2" }, children),
         };
       }),
+    },
+    {
+      id: "approval_status",
+      title: t("issue.advanced-search.scope.approval-status.title"),
+      description: t("issue.advanced-search.scope.approval-status.description"),
+      options: [
+        {
+          id: "pending_approval",
+          label: h(
+            "span",
+            {},
+            t(
+              "issue.advanced-search.scope.approval-status.value.pending_approval"
+            )
+          ),
+        },
+        {
+          id: "approved",
+          label: h(
+            "span",
+            {},
+            t("issue.advanced-search.scope.approval-status.value.approved")
+          ),
+        },
+      ],
+    },
+    {
+      id: "creator",
+      title: t("issue.advanced-search.scope.creator.title"),
+      description: t("issue.advanced-search.scope.creator.description"),
+      options: principalSearchOptions.value,
+    },
+    {
+      id: "assignee",
+      title: t("issue.advanced-search.scope.assignee.title"),
+      description: t("issue.advanced-search.scope.assignee.description"),
+      options: principalSearchOptions.value,
+    },
+    {
+      id: "approver",
+      title: t("issue.advanced-search.scope.approver.title"),
+      description: t("issue.advanced-search.scope.approver.description"),
+      options: principalSearchOptions.value.filter(
+        (o) => o.id !== SYSTEM_BOT_EMAIL
+      ),
+    },
+    {
+      id: "subscriber",
+      title: t("issue.advanced-search.scope.subscriber.title"),
+      description: t("issue.advanced-search.scope.subscriber.description"),
+      options: principalSearchOptions.value,
+    },
+    {
+      id: "type",
+      title: t("issue.advanced-search.scope.type.title"),
+      description: t("issue.advanced-search.scope.type.description"),
+      options: [
+        {
+          id: "DDL",
+          label: h("span", { innerHTML: "Data Definition Language" }),
+        },
+        {
+          id: "DML",
+          label: h("span", { innerHTML: "Data Manipulation Language" }),
+        },
+      ],
     },
     {
       id: "instance",
@@ -245,50 +308,11 @@ const fullScopes = computed((): SearchScope[] => {
         };
       }),
     },
-    {
-      id: "type",
-      title: t("issue.advanced-search.scope.type.title"),
-      description: t("issue.advanced-search.scope.type.description"),
-      options: [
-        {
-          id: "DDL",
-          label: h("span", { innerHTML: "Data Definition Language" }),
-        },
-        {
-          id: "DML",
-          label: h("span", { innerHTML: "Data Manipulation Language" }),
-        },
-      ],
-    },
-    {
-      id: "creator",
-      title: t("issue.advanced-search.scope.creator.title"),
-      description: t("issue.advanced-search.scope.creator.description"),
-      options: principalSearchOptions.value,
-    },
-    {
-      id: "assignee",
-      title: t("issue.advanced-search.scope.assignee.title"),
-      description: t("issue.advanced-search.scope.assignee.description"),
-      options: principalSearchOptions.value,
-    },
-    {
-      id: "subscriber",
-      title: t("issue.advanced-search.scope.subscriber.title"),
-      description: t("issue.advanced-search.scope.subscriber.description"),
-      options: principalSearchOptions.value,
-    },
-    {
-      id: "principal",
-      title: t("issue.advanced-search.scope.principal.title"),
-      description: t("issue.advanced-search.scope.principal.description"),
-      options: principalSearchOptions.value,
-    },
   ];
   return scopes;
 });
 
-// filteredScopes will filter search options by chosed scope.
+// filteredScopes will filter search options by chosen scope.
 // For example, if users select a specific project, we should only allow them select instances related with this project.
 const filteredScopes = computed((): SearchScope[] => {
   const params = getSearchParamsByText(state.searchText);
@@ -326,7 +350,7 @@ const filteredScopes = computed((): SearchScope[] => {
   return clone;
 });
 
-// searchScopes will hide chosed search scope.
+// searchScopes will hide chosen search scope.
 // For example, if uses already select the instance, we should NOT show the instance scope in the dropdown.
 const searchScopes = computed((): SearchScope[] => {
   const params = getSearchParamsByText(state.searchText);
@@ -337,21 +361,6 @@ const searchScopes = computed((): SearchScope[] => {
   return filteredScopes.value.filter((scope) => {
     if (existedScope.has(scope.id)) {
       return false;
-    }
-    // The principal scope cannot used with creator/assignee/subscriber
-    if (scope.id === "principal") {
-      return (
-        !existedScope.has("creator") &&
-        !existedScope.has("assignee") &&
-        !existedScope.has("subscriber")
-      );
-    }
-    if (
-      scope.id === "creator" ||
-      scope.id === "assignee" ||
-      scope.id === "subscriber"
-    ) {
-      return !existedScope.has("principal");
     }
     return true;
   });

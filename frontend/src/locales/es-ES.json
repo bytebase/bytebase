@@ -958,6 +958,18 @@
         "principal": {
           "title": "Director relacionado",
           "description": "Búsqueda por creador del problema, cesionario o suscriptor"
+        },
+        "approver": {
+          "title": "Aprobador",
+          "description": "Búsqueda por aprobador del problema"
+        },
+        "approval-status": {
+          "title": "Estado de aprobación",
+          "value": {
+            "approved": "Aprobado",
+            "pending_approval": "Aprobación pendiente"
+          },
+          "description": "Buscar por estado de revisión del problema"
         }
       }
     },
@@ -1088,7 +1100,7 @@
       "issue-is-not-open": "El tema no está abierto.",
       "you-don-have-privilege-to-edit-this-issue": "No tienes privilegios para editar este número."
     },
-    "review-requested": "Revisión solicitada"
+    "approval-requested": "Aprobación solicitada"
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",

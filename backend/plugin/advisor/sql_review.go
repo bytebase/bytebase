@@ -1213,16 +1213,25 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleColumnSetDefaultForNotNull:
 		switch engine {
+		// only for mysqlwip test.
+		case storepb.Engine_ENGINE_UNSPECIFIED:
+			return MySQLColumnSetDefaultForNotNull, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLColumnSetDefaultForNotNull, nil
 		}
 	case SchemaRuleColumnDisallowChange:
 		switch engine {
+		// only for mysqlwip test.
+		case storepb.Engine_ENGINE_UNSPECIFIED:
+			return MySQLColumnDisallowChanging, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLColumnDisallowChanging, nil
 		}
 	case SchemaRuleColumnDisallowChangingOrder:
 		switch engine {
+		// only for mysqlwip test.
+		case storepb.Engine_ENGINE_UNSPECIFIED:
+			return MySQLColumnDisallowChangingOrder, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLColumnDisallowChangingOrder, nil
 		}
