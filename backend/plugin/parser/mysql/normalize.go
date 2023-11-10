@@ -92,6 +92,13 @@ func NormalizeMySQLTextOrIdentifier(ctx parser.ITextOrIdentifierContext) string 
 }
 
 // NormalizeMySQLTextStringLiteral normalize the given TextStringLiteral.
+func NormalizeMySQLTextLiteral(ctx parser.ITextLiteralContext) string {
+	textString := ctx.GetText()
+	// remove the quotations.
+	return textString[1 : len(textString)-1]
+}
+
+// NormalizeMySQLTextStringLiteral normalize the given TextStringLiteral.
 func NormalizeMySQLTextStringLiteral(ctx parser.ITextStringLiteralContext) string {
 	textString := ctx.GetText()
 	// remove the quotations.
