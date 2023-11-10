@@ -7,7 +7,9 @@
     "oceanbase": "OceanBase",
     "snowflake": "Snowflake",
     "mssql": "SQL Server",
-    "dm":"DM"
+    "dm": "DM",
+    "mariadb": "MariaDB",
+    "oceanbase_oracle": "OceanBase (Oracle)"
   },
   "category": {
     "engine": "Engine",
