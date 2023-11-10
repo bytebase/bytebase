@@ -694,34 +694,44 @@
         },
         "template": {
           "address": {
-            "title": "La dirección"
+            "title": "La dirección",
+            "description": ""
           },
           "secret_key": {
-            "title": "Clave de encriptación"
+            "title": "Clave de encriptación",
+            "description": ""
           },
           "card_number": {
-            "title": "Tarjeta bancaria, tarjeta de crédito, etc."
+            "title": "Tarjeta bancaria, tarjeta de crédito, etc.",
+            "description": ""
           },
           "email": {
-            "title": "Dirección de correo electrónico"
+            "title": "Dirección de correo electrónico",
+            "description": ""
           },
           "id_number": {
-            "title": "Número de identificación personal"
+            "title": "Número de identificación personal",
+            "description": ""
           },
           "ipv4_address": {
-            "title": "Dirección IPv4"
+            "title": "Dirección IPv4",
+            "description": ""
           },
           "license_plate_number": {
-            "title": "Número de placa"
+            "title": "Número de placa",
+            "description": ""
           },
           "mac_address": {
-            "title": "Dirección MAC"
+            "title": "Dirección MAC",
+            "description": ""
           },
           "password": {
-            "title": "Contraseña"
+            "title": "Contraseña",
+            "description": ""
           },
           "phone": {
-            "title": "Número de teléfono"
+            "title": "Número de teléfono",
+            "description": ""
           }
         }
       },

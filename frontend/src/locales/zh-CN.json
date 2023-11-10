@@ -693,34 +693,44 @@
         },
         "template": {
           "address": {
-            "title": "中文详细地址"
+            "title": "中文详细地址",
+            "description": ""
           },
           "secret_key": {
-            "title": "加密 Key"
+            "title": "加密 Key",
+            "description": ""
           },
           "card_number": {
-            "title": "银行卡、信用卡"
+            "title": "银行卡、信用卡",
+            "description": ""
           },
           "email": {
-            "title": "电子邮箱"
+            "title": "电子邮箱",
+            "description": ""
           },
           "id_number": {
-            "title": "身份证号码"
+            "title": "身份证号码",
+            "description": ""
           },
           "ipv4_address": {
-            "title": "IPv4 地址"
+            "title": "IPv4 地址",
+            "description": ""
           },
           "license_plate_number": {
-            "title": "车牌号码"
+            "title": "车牌号码",
+            "description": ""
           },
           "mac_address": {
-            "title": "MAC 地址"
+            "title": "MAC 地址",
+            "description": ""
           },
           "password": {
-            "title": "密码"
+            "title": "密码",
+            "description": ""
           },
           "phone": {
-            "title": "电话号码"
+            "title": "电话号码",
+            "description": ""
           }
         }
       },
