@@ -45,7 +45,7 @@
         </h3>
       </BBTableCell>
       <BBTableCell class="bb-grid-cell w-6">
-        <div class="flex justify-end items-center space-x-2">
+        <div v-if="rowData.id" class="flex justify-end items-center space-x-2">
           <button
             class="p-1 hover:bg-gray-300 rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
             @click.stop="$emit('on-edit', rowData)"
@@ -122,10 +122,18 @@ const tableHeaderList = computed(() => {
 });
 
 const algorithmList = computed((): MaskingAlgorithmSetting_Algorithm[] => {
-  return (
+  const list =
     settingStore.getSettingByName("bb.workspace.masking-algorithm")?.value
-      ?.maskingAlgorithmSettingValue?.algorithms ?? []
-  );
+      ?.maskingAlgorithmSettingValue?.algorithms ?? [];
+
+  return [
+    MaskingAlgorithmSetting_Algorithm.fromPartial({
+      title: t("settings.sensitive-data.algorithms.default"),
+      description: t("settings.sensitive-data.algorithms.default-desc"),
+      category: "MASK",
+    }),
+    ...list,
+  ];
 });
 
 const getAlgorithmMaskingType = (
@@ -136,7 +144,9 @@ const getAlgorithmMaskingType = (
     return t(`settings.sensitive-data.algorithms.${maskingType}.self`);
   }
 
-  return algorithm.category;
+  return t(
+    `settings.sensitive-data.algorithms.${algorithm.category.toLowerCase()}`
+  );
 };
 
 const onRemove = async (index: number) => {
