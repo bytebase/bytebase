@@ -5,22 +5,21 @@ import {
 import { ComposedIssue } from "@/types";
 import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
 
-export const UIIssueFilterScopeIdList = [
-  "approver",
-  "approval_status",
-] as const;
+export const UIIssueFilterScopeIdList = ["approver", "approval"] as const;
 export type UIIssueFilterScopeId = typeof UIIssueFilterScopeIdList[number];
 
-export const IssueReviewStatusList = ["pending_approval", "approved"] as const;
-export type IssueReviewStatus = typeof IssueReviewStatusList[number];
-export const isValidIssueReviewStatus = (s: string): s is IssueReviewStatus => {
-  return IssueReviewStatusList.includes(s as IssueReviewStatus);
+export const IssueApprovalStatusList = ["pending", "approved"] as const;
+export type IssueApprovalStatus = typeof IssueApprovalStatusList[number];
+export const isValidIssueApprovalStatus = (
+  s: string
+): s is IssueApprovalStatus => {
+  return IssueApprovalStatusList.includes(s as IssueApprovalStatus);
 };
 
 // Use snake_case to keep consistent with the advanced search query string
 export interface UIIssueFilter {
   approver?: string;
-  approval_status?: IssueReviewStatus;
+  approval?: IssueApprovalStatus;
 }
 
 export const filterIssueByApprover = (
@@ -52,14 +51,14 @@ export const filterIssueByApprover = (
   return false;
 };
 
-export const filterIssueByReviewStatus = (
+export const filterIssueByApprovalStatus = (
   issue: ComposedIssue,
-  status: IssueReviewStatus | undefined
+  status: IssueApprovalStatus | undefined
 ) => {
   if (!status) return true;
 
   const reviewContext = extractReviewContext(issue);
-  if (status === "pending_approval") {
+  if (status === "pending") {
     return reviewContext.status.value === Issue_Approver_Status.PENDING;
   }
   if (status === "approved") {
@@ -67,7 +66,7 @@ export const filterIssueByReviewStatus = (
   }
 
   console.error(
-    "[filterIssueByReviewStatus] should never reach this line",
+    "[filterIssueByApprovalStatus] should never reach this line",
     status
   );
   return false;
@@ -80,7 +79,5 @@ export const applyUIIssueFilter = (
   if (!filter) return list;
   return list
     .filter((issue) => filterIssueByApprover(issue, filter.approver))
-    .filter((issue) =>
-      filterIssueByReviewStatus(issue, filter.approval_status)
-    );
+    .filter((issue) => filterIssueByApprovalStatus(issue, filter.approval));
 };

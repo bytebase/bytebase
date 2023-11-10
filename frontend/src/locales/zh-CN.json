@@ -971,13 +971,13 @@
           "title": "审批人",
           "description": "根据工单审批人搜索"
         },
-        "approval-status": {
-          "title": "审批状态",
+        "approval": {
           "value": {
-            "approved": "审批通过",
-            "pending_approval": "待审批"
+            "pending": "待审批",
+            "approved": "审批通过"
           },
-          "description": "按工单的审批状态搜索"
+          "description": "按工单的审批状态搜索",
+          "title": "审批状态"
         }
       }
     },
