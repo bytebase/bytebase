@@ -5,9 +5,6 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-
-	"github.com/pingcap/tidb/parser/ast"
-	"github.com/pingcap/tidb/parser/format"
 )
 
 type columnSet map[string]bool
@@ -42,15 +39,6 @@ func (t tablePK) tableList() []string {
 	}
 	sort.Strings(tableList)
 	return tableList
-}
-
-func restoreNode(node ast.Node, flag format.RestoreFlags) (string, error) {
-	var buffer strings.Builder
-	ctx := format.NewRestoreCtx(flag, &buffer)
-	if err := node.Restore(ctx); err != nil {
-		return "", err
-	}
-	return buffer.String(), nil
 }
 
 // getTemplateRegexp formats the template as regex.
