@@ -119,6 +119,7 @@
 
     <div class="whitespace-pre-wrap overflow-hidden border">
       <MonacoEditor
+        v-if="false"
         ref="editorRef"
         class="w-full h-auto max-h-[360px] min-h-[120px]"
         data-label="bb-issue-sql-editor"
@@ -129,6 +130,18 @@
         :dialect="dialect"
         :advices="isEditorReadonly ? markers : []"
         @change="handleStatementChange"
+        @ready="handleMonacoEditorReady"
+      />
+      <MonacoEditorV2
+        class="w-full h-auto max-h-[360px] min-h-[120px]"
+        :filename="`${selectedTask.name}.sql`"
+        :content="state.statement"
+        :language="'sql'"
+        :auto-focus="false"
+        :readonly="isEditorReadonly"
+        :dialect="dialect"
+        :advices="isEditorReadonly ? markers : []"
+        @update:content="handleStatementChange"
         @ready="handleMonacoEditorReady"
       />
     </div>
