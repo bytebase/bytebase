@@ -963,13 +963,13 @@
           "title": "Aprobador",
           "description": "Búsqueda por aprobador del problema"
         },
-        "approval-status": {
-          "title": "Estado de aprobación",
+        "approval": {
           "value": {
-            "approved": "Aprobado",
-            "pending_approval": "Aprobación pendiente"
+            "pending": "Aprobación pendiente",
+            "approved": "Aprobado"
           },
-          "description": "Buscar por estado de revisión del problema"
+          "description": "Buscar por estado de revisión del problema",
+          "title": "Estado de aprobación"
         }
       }
     },

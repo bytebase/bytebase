@@ -208,18 +208,16 @@ const fullScopes = computed((): SearchScope[] => {
       }),
     },
     {
-      id: "approval_status",
-      title: t("issue.advanced-search.scope.approval-status.title"),
-      description: t("issue.advanced-search.scope.approval-status.description"),
+      id: "approval",
+      title: t("issue.advanced-search.scope.approval.title"),
+      description: t("issue.advanced-search.scope.approval.description"),
       options: [
         {
-          id: "pending_approval",
+          id: "pending",
           label: h(
             "span",
             {},
-            t(
-              "issue.advanced-search.scope.approval-status.value.pending_approval"
-            )
+            t("issue.advanced-search.scope.approval.value.pending")
           ),
         },
         {
@@ -227,7 +225,7 @@ const fullScopes = computed((): SearchScope[] => {
           label: h(
             "span",
             {},
-            t("issue.advanced-search.scope.approval-status.value.approved")
+            t("issue.advanced-search.scope.approval.value.approved")
           ),
         },
       ],

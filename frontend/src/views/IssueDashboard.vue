@@ -116,7 +116,7 @@ import {
   SearchParams,
   SearchScopeId,
   UIIssueFilter,
-  isValidIssueReviewStatus,
+  isValidIssueApprovalStatus,
 } from "@/utils";
 
 const TABS = ["OPEN", "CLOSED"] as const;
@@ -370,13 +370,13 @@ const issueFilter = computed((): IssueFilter => {
 const uiIssueFilter = computed((): UIIssueFilter => {
   const { scopes } = state.searchParams;
   const approverScope = scopes.find((s) => s.id === "approver");
-  const reviewStatusScope = scopes.find((s) => s.id === "approval_status");
+  const approvalScope = scopes.find((s) => s.id === "approval");
   const uiIssueFilter: UIIssueFilter = {};
   if (approverScope && approverScope.value) {
     uiIssueFilter.approver = `users/${approverScope.value}`;
   }
-  if (reviewStatusScope && isValidIssueReviewStatus(reviewStatusScope.value)) {
-    uiIssueFilter.approval_status = reviewStatusScope.value;
+  if (approvalScope && isValidIssueApprovalStatus(approvalScope.value)) {
+    uiIssueFilter.approval = approvalScope.value;
   }
 
   return uiIssueFilter;
