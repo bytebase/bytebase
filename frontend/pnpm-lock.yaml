@@ -1,4 +1,4 @@
-lockfileVersion: '6.0'
+lockfileVersion: '6.1'
 
 settings:
   autoInstallPeers: true
@@ -8,9 +8,6 @@ dependencies:
   '@bytebase/vue-kbar':
     specifier: 0.1.8
     version: 0.1.8(vue@3.2.47)
-  '@codingame/monaco-vscode-api':
-    specifier: 1.69.12
-    version: 1.69.12(vscode-oniguruma@1.6.2)(vscode-textmate@7.0.4)
   '@joe-re/sql-parser':
     specifier: ^1.7.0
     version: 1.7.0
@@ -105,11 +102,14 @@ dependencies:
     specifier: ^3.17.0
     version: 3.17.0(dayjs@1.11.9)(libphonenumber-js@1.10.47)(typescript@5.2.2)(vue-router@4.2.4)(vue@3.2.47)
   monaco-editor:
-    specifier: 0.34.1
-    version: 0.34.1
+    specifier: 0.41.0
+    version: 0.41.0
+  monaco-editor-workers:
+    specifier: 0.41.0
+    version: 0.41.0(monaco-editor@0.41.0)
   monaco-languageclient:
-    specifier: 4.0.1
-    version: 4.0.1(vscode-oniguruma@1.6.2)(vscode-textmate@7.0.4)
+    specifier: 6.4.6
+    version: 6.4.6(@codingame/monaco-vscode-api@1.81.7)(monaco-editor@0.41.0)
   naive-ui:
     specifier: 2.35.0
     version: 2.35.0(vue@3.2.47)
@@ -176,6 +176,12 @@ dependencies:
   vdirs:
     specifier: ^0.1.8
     version: 0.1.8(vue@3.2.47)
+  vscode:
+    specifier: npm:@codingame/monaco-vscode-api@1.81.7
+    version: /@codingame/monaco-vscode-api@1.81.7(@vscode/vscode-languagedetection@1.0.22)(monaco-editor@0.41.0)(vscode-oniguruma@1.7.0)(vscode-textmate@9.0.0)(xterm-addon-canvas@0.4.0)(xterm-addon-image@0.4.1)(xterm-addon-search@0.12.0)(xterm-addon-serialize@0.10.0)(xterm-addon-unicode11@0.5.0)(xterm-addon-webgl@0.15.0)(xterm@5.2.1)(yauzl@2.10.0)
+  vscode-languageclient:
+    specifier: 8.1.0
+    version: 8.1.0
   vscode-languageserver:
     specifier: 8.0.2
     version: 8.0.2
@@ -188,6 +194,9 @@ dependencies:
   vscode-languageserver-types:
     specifier: 3.17.3
     version: 3.17.3
+  vscode-ws-jsonrpc:
+    specifier: 3.0.0
+    version: 3.0.0
   vue:
     specifier: 3.2.47
     version: 3.2.47
@@ -283,6 +292,9 @@ devDependencies:
   '@types/uuid':
     specifier: 9.0.6
     version: 9.0.6
+  '@types/vscode':
+    specifier: 1.83.1
+    version: 1.83.1
   '@typescript-eslint/eslint-plugin':
     specifier: 6.7.3
     version: 6.7.3(@typescript-eslint/parser@6.7.3)(eslint@8.49.0)(typescript@5.2.2)
@@ -364,12 +376,6 @@ devDependencies:
   vitest:
     specifier: 0.34.4
     version: 0.34.4
-  vscode-oniguruma:
-    specifier: 1.6.2
-    version: 1.6.2
-  vscode-textmate:
-    specifier: 7.0.4
-    version: 7.0.4
   vue-i18n:
     specifier: 9.4.1
     version: 9.4.1(vue@3.2.47)
@@ -553,15 +559,35 @@ packages:
     bundledDependencies:
       - is-unicode-supported
 
-  /@codingame/monaco-vscode-api@1.69.12(vscode-oniguruma@1.6.2)(vscode-textmate@7.0.4):
-    resolution: {integrity: sha512-ES1xRnU232t82tcdM2ImikkjGfAMgJtrF0XkLa4poEnvcUH0SFqUhYvcqk5CFggQWh16jqxifVvozcu0/mbH7A==}
+  /@codingame/monaco-vscode-api@1.81.7(@vscode/vscode-languagedetection@1.0.22)(monaco-editor@0.41.0)(vscode-oniguruma@1.7.0)(vscode-textmate@9.0.0)(xterm-addon-canvas@0.4.0)(xterm-addon-image@0.4.1)(xterm-addon-search@0.12.0)(xterm-addon-serialize@0.10.0)(xterm-addon-unicode11@0.5.0)(xterm-addon-webgl@0.15.0)(xterm@5.2.1)(yauzl@2.10.0):
+    resolution: {integrity: sha512-PX9kEKUoZAP6Qs5253D4koeT5crJGExQ7Sg8RJRLLss9l9sxJNN8me2oVYu+T8Cp54xf/UrdGucV2uIYAfYc+g==}
+    hasBin: true
     peerDependencies:
-      vscode-oniguruma: ^1.6.2
-      vscode-textmate: ^7.0.1
+      '@vscode/vscode-languagedetection': ^1.0.22
+      monaco-editor: 0.41.0
+      vscode-oniguruma: ^1.7.0
+      vscode-textmate: ^9.0.0
+      xterm: 5.2.1
+      xterm-addon-canvas: 0.4.0
+      xterm-addon-image: 0.4.1
+      xterm-addon-search: 0.12.0
+      xterm-addon-serialize: 0.10.0
+      xterm-addon-unicode11: 0.5.0
+      xterm-addon-webgl: 0.15.0
+      yauzl: ^2.10.0
     dependencies:
-      monaco-editor: 0.34.1
-      vscode-oniguruma: 1.6.2
-      vscode-textmate: 7.0.4
+      '@vscode/vscode-languagedetection': 1.0.22
+      monaco-editor: 0.41.0
+      vscode-oniguruma: 1.7.0
+      vscode-textmate: 9.0.0
+      xterm: 5.2.1
+      xterm-addon-canvas: 0.4.0(xterm@5.2.1)
+      xterm-addon-image: 0.4.1(xterm@5.2.1)
+      xterm-addon-search: 0.12.0(xterm@5.2.1)
+      xterm-addon-serialize: 0.10.0(xterm@5.2.1)
+      xterm-addon-unicode11: 0.5.0(xterm@5.2.1)
+      xterm-addon-webgl: 0.15.0(xterm@5.2.1)
+      yauzl: 2.10.0
     dev: false
 
   /@css-render/plugin-bem@0.15.12(css-render@0.15.12):
@@ -1682,6 +1708,10 @@ packages:
     resolution: {integrity: sha512-BT2Krtx4xaO6iwzwMFUYvWBWkV2pr37zD68Vmp1CDV196MzczBRxuEpD6Pr395HAgebC/co7hOphs53r8V7jew==}
     dev: true
 
+  /@types/vscode@1.83.1:
+    resolution: {integrity: sha512-BHu51NaNKOtDf3BOonY3sKFFmZKEpRkzqkZVpSYxowLbs5JqjOQemYFob7Gs5rpxE5tiGhfpnMpcdF/oKrLg4w==}
+    dev: true
+
   /@types/web-bluetooth@0.0.17:
     resolution: {integrity: sha512-4p9vcSmxAayx72yn70joFoL44c9MO/0+iVEBIQXe3v2h2SiAsEIo/G5v6ObFWvNKRFjbrVadNf9LqEEZeQPzdA==}
     dev: false
@@ -1887,6 +1917,11 @@ packages:
     dependencies:
       '@volar/language-core': 1.10.3
     dev: true
+
+  /@vscode/vscode-languagedetection@1.0.22:
+    resolution: {integrity: sha512-rQ/BgMyLuIXSmbA0MSkIPHtcOw14QkeDbAq19sjvaS9LTRr905yij0S8lsyqN5JgOsbtIx7pAcyOxFMzPmqhZQ==}
+    hasBin: true
+    dev: false
 
   /@vue/compiler-core@3.2.47:
     resolution: {integrity: sha512-p4D7FDnQb7+YJmO2iPEv0SQNeNzcbHdGByJDsT4lynf63AFkOTFN07HsiRSvjGo0QrxR/o3d0hUyNCUnBU2Tig==}
@@ -2336,12 +2371,12 @@ packages:
     dependencies:
       balanced-match: 1.0.2
       concat-map: 0.0.1
+    dev: true
 
   /brace-expansion@2.0.1:
     resolution: {integrity: sha512-XnAIvQ8eM+kC6aULx6wuQiwVsnzsi9d3WxzV3FpWTGA19F621kwdbsAcFKXgKUHZWsy+mY6iL1sHTxWEFCytDA==}
     dependencies:
       balanced-match: 1.0.2
-    dev: true
 
   /braces@3.0.2:
     resolution: {integrity: sha512-b8um+L1RzM3WDSzvhm6gIz1yfTbBt6YTlcEKAvsmqCZZFw46z626lVj9j1yEPW33H5H+lBQpZMP1k8l+78Ha0A==}
@@ -2359,6 +2394,10 @@ packages:
       node-releases: 2.0.13
       update-browserslist-db: 1.0.13(browserslist@4.22.1)
     dev: true
+
+  /buffer-crc32@0.2.13:
+    resolution: {integrity: sha512-VO9Ht/+p3SN7SKWqcrgEzjGbRSJYTx+Q1pTQC0wrWqHx0vpJraQ6GtHx8tvcg1rlK1byhU5gccxgOgj7B0TDkQ==}
+    dev: false
 
   /buffer-from@1.1.2:
     resolution: {integrity: sha512-E+XQCRwSbaaiChtv6k6Dwgc+bx+Bs6vuKJHHl5kox/BaKbhiXzqQOwK4cO22yElGp2OCmjwVhT3HmxgyPGnJfQ==}
@@ -2576,6 +2615,7 @@ packages:
 
   /concat-map@0.0.1:
     resolution: {integrity: sha512-/Srv4dswyQNBfohGpz9o6Yb3Gz3SrUDqBH5rTuhGR7ahtlbYKnVxw2bCFMRljaA7EXHaXZ8wsHdodFvbkhKmqg==}
+    dev: true
 
   /core-util-is@1.0.3:
     resolution: {integrity: sha512-ZQBvi1DcpJ4GDqanjucZ2Hj3wEO5pZDS89BWbkcrvdxksJorwUDDZamX9ldFkp9aw2lmBDLgkObEA4DWNJ9FYQ==}
@@ -3383,6 +3423,12 @@ packages:
       reusify: 1.0.4
     dev: true
 
+  /fd-slicer@1.1.0:
+    resolution: {integrity: sha512-cE1qsB/VwyQozZ+q1dGxR8LBYNZeofhEdUNGSMbQD3Gw2lAzX9Zb3uIU6Ebc/Fmyjo9AWWfnn0AUCHqtevs/8g==}
+    dependencies:
+      pend: 1.2.0
+    dev: false
+
   /fetch-cookie@0.11.0:
     resolution: {integrity: sha512-BQm7iZLFhMWFy5CZ/162sAGjBfdNWb7a8LEqqnzsHFhxT/X/SVj/z2t2nu3aJvjlbQkrAlTUApplPRjWyH4mhA==}
     engines: {node: '>=8'}
@@ -4147,6 +4193,14 @@ packages:
     resolution: {integrity: sha512-J7p63hRiAjw1NDEww1W7i37+ByIrOWO5XQQAzZ3VOcL0PNybwpfmV/N05zFAzwQ9USyEcX6t3UO+K5aqBQOIHw==}
     dependencies:
       brace-expansion: 1.1.11
+    dev: true
+
+  /minimatch@5.1.6:
+    resolution: {integrity: sha512-lKwV/1brpG6mBUFHtb7NUmtABCb2WZZmm2wNiOA5hAb8VdCS4B3dtMWyvcoViccwAW/COERjXLt0zP1zXUN26g==}
+    engines: {node: '>=10'}
+    dependencies:
+      brace-expansion: 2.0.1
+    dev: false
 
   /minimatch@9.0.3:
     resolution: {integrity: sha512-RHiac9mvaRw0x3AYRgDC1CxAP7HTcNrrECeA8YYJeWnpo+2Q5CegtZjaotWTWxDG3UeGA1coE05iH1mPjT/2mg==}
@@ -4175,20 +4229,30 @@ packages:
       ufo: 1.3.1
     dev: true
 
-  /monaco-editor@0.34.1:
-    resolution: {integrity: sha512-FKc80TyiMaruhJKKPz5SpJPIjL+dflGvz4CpuThaPMc94AyN7SeC9HQ8hrvaxX7EyHdJcUY5i4D0gNyJj1vSZQ==}
+  /monaco-editor-workers@0.41.0(monaco-editor@0.41.0):
+    resolution: {integrity: sha512-suMPJA44bk/WapkSxbY3ELUQbznpvPHf23oz600Su9dSD75BZMjEQdCuZ9gVvligffMLnyNFJJEx5sSb75LiwQ==}
+    peerDependencies:
+      monaco-editor: ~0.41.0
+    dependencies:
+      monaco-editor: 0.41.0
     dev: false
 
-  /monaco-languageclient@4.0.1(vscode-oniguruma@1.6.2)(vscode-textmate@7.0.4):
-    resolution: {integrity: sha512-mUIq/7gQM/8CyOBVGv0thLRAR80vk49Ur0ROJveoh6R0/uwaUoyri+5OBslxsa5BICftLTsC8/Y+at6/iW50Ww==}
-    engines: {node: '>=16.11.0', npm: '>=8.0.0'}
+  /monaco-editor@0.41.0:
+    resolution: {integrity: sha512-1o4olnZJsiLmv5pwLEAmzHTE/5geLKQ07BrGxlF4Ri/AXAc2yyDGZwHjiTqD8D/ROKUZmwMA28A+yEowLNOEcA==}
+    dev: false
+
+  /monaco-languageclient@6.4.6(@codingame/monaco-vscode-api@1.81.7)(monaco-editor@0.41.0):
+    resolution: {integrity: sha512-I5+YSH6j2LwNKvI0jio5916jjF+wsyINWc3uZE+JRwtq03QWCcgx5Natf+lv9si9hW0PXKb5KoJm3ykve6OM5Q==}
+    engines: {node: '>=16.11.0', npm: '>=9.0.0'}
+    requiresBuild: true
+    peerDependencies:
+      monaco-editor: ~0.41.0
+      vscode: npm:@codingame/monaco-vscode-api@1.81.7
     dependencies:
-      vscode: /@codingame/monaco-vscode-api@1.69.12(vscode-oniguruma@1.6.2)(vscode-textmate@7.0.4)
-      vscode-jsonrpc: 8.0.2
-      vscode-languageclient: 8.0.2
-    transitivePeerDependencies:
-      - vscode-oniguruma
-      - vscode-textmate
+      monaco-editor: 0.41.0
+      vscode: /@codingame/monaco-vscode-api@1.81.7(@vscode/vscode-languagedetection@1.0.22)(monaco-editor@0.41.0)(vscode-oniguruma@1.7.0)(vscode-textmate@9.0.0)(xterm-addon-canvas@0.4.0)(xterm-addon-image@0.4.1)(xterm-addon-search@0.12.0)(xterm-addon-serialize@0.10.0)(xterm-addon-unicode11@0.5.0)(xterm-addon-webgl@0.15.0)(xterm@5.2.1)(yauzl@2.10.0)
+      vscode-jsonrpc: 8.1.0
+      vscode-languageclient: 8.1.0
     dev: false
 
   /moo@0.5.2:
@@ -4487,6 +4551,10 @@ packages:
     dependencies:
       commander: 10.0.1
       source-map-generator: 0.8.0
+    dev: false
+
+  /pend@1.2.0:
+    resolution: {integrity: sha512-F3asv42UuXchdzt+xXqfW1OGlVBe+mxa2mqI0pg5yAHZPvFmY3Y6drSf/GQ1A86WgWEN9Kzh/WrgKa6iGcHXLg==}
     dev: false
 
   /pev2@1.8.0(jquery@3.7.1)(popper.js@1.16.1):
@@ -5696,13 +5764,13 @@ packages:
     engines: {node: '>=14.0.0'}
     dev: false
 
-  /vscode-languageclient@8.0.2:
-    resolution: {integrity: sha512-lHlthJtphG9gibGb/y72CKqQUxwPsMXijJVpHEC2bvbFqxmkj9LwQ3aGU9dwjBLqsX1S4KjShYppLvg1UJDF/Q==}
+  /vscode-languageclient@8.1.0:
+    resolution: {integrity: sha512-GL4QdbYUF/XxQlAsvYWZRV3V34kOkpRlvV60/72ghHfsYFnS/v2MANZ9P6sHmxFcZKOse8O+L9G7Czg0NUWing==}
     engines: {vscode: ^1.67.0}
     dependencies:
-      minimatch: 3.1.2
+      minimatch: 5.1.6
       semver: 7.5.4
-      vscode-languageserver-protocol: 3.17.2
+      vscode-languageserver-protocol: 3.17.3
     dev: false
 
   /vscode-languageserver-protocol@3.17.2:
@@ -5738,11 +5806,20 @@ packages:
       vscode-languageserver-protocol: 3.17.2
     dev: false
 
-  /vscode-oniguruma@1.6.2:
-    resolution: {integrity: sha512-KH8+KKov5eS/9WhofZR8M8dMHWN2gTxjMsG4jd04YhpbPR91fUj7rYQ2/XjeHCJWbg7X++ApRIU9NUwM2vTvLA==}
+  /vscode-oniguruma@1.7.0:
+    resolution: {integrity: sha512-L9WMGRfrjOhgHSdOYgCt/yRMsXzLDJSL7BPrOZt73gU0iWO4mpqzqQzOz5srxqTvMBaR0XZTSrVWo4j55Rc6cA==}
+    dev: false
 
-  /vscode-textmate@7.0.4:
-    resolution: {integrity: sha512-9hJp0xL7HW1Q5OgGe03NACo7yiCTMEk3WU/rtKXUbncLtdg6rVVNJnHwD88UhbIYU2KoxY0Dih0x+kIsmUKn2A==}
+  /vscode-textmate@9.0.0:
+    resolution: {integrity: sha512-Cl65diFGxz7gpwbav10HqiY/eVYTO1sjQpmRmV991Bj7wAoOAjGQ97PpQcXorDE2Uc4hnGWLY17xme+5t6MlSg==}
+    dev: false
+
+  /vscode-ws-jsonrpc@3.0.0:
+    resolution: {integrity: sha512-22IbVb2K691np9pOubyahNBj1BicsbtlbiaHOJu5/rvyWDqmqPMAqpAfojwGjdBztp8EtO8TAO7lmyY6hnmYAA==}
+    engines: {node: '>=16.11.0', npm: '>=8.0.0'}
+    dependencies:
+      vscode-jsonrpc: 8.1.0
+    dev: false
 
   /vue-clipboard3@2.0.0:
     resolution: {integrity: sha512-Q9S7dzWGax7LN5iiSPcu/K1GGm2gcBBlYwmMsUc5/16N6w90cbKow3FnPmPs95sungns4yvd9/+JhbAznECS2A==}
@@ -5965,6 +6042,58 @@ packages:
     engines: {node: '>=0.4'}
     dev: false
 
+  /xterm-addon-canvas@0.4.0(xterm@5.2.1):
+    resolution: {integrity: sha512-iTC8CdjX9+hGX7jiEuiDMXzHsY/FKJdVnbjep5xjRXNu7RKOk15xuecIkJ7HZORqMVPpr4DGS3jyd9XUoBuxqw==}
+    peerDependencies:
+      xterm: ^5.0.0
+    dependencies:
+      xterm: 5.2.1
+    dev: false
+
+  /xterm-addon-image@0.4.1(xterm@5.2.1):
+    resolution: {integrity: sha512-iJpYyvtbHg4oXSv+D6J73ZfCjnboZpbZ567MLplXDBlYSUknv3kvPTfVMPJATV7Zsx7+bDgyXboCh9vsDf/m/w==}
+    peerDependencies:
+      xterm: ~5.2.0
+    dependencies:
+      xterm: 5.2.1
+    dev: false
+
+  /xterm-addon-search@0.12.0(xterm@5.2.1):
+    resolution: {integrity: sha512-hXAuO7Ts2+Jf9K8mZrUx8IFd7c/Flgks/jyqA1L4reymyfmXtcsd+WDLel8R9Tgy2CLyKABVBP09/Ua/FmXcvg==}
+    peerDependencies:
+      xterm: ^5.0.0
+    dependencies:
+      xterm: 5.2.1
+    dev: false
+
+  /xterm-addon-serialize@0.10.0(xterm@5.2.1):
+    resolution: {integrity: sha512-Syp9eSBypn70iAczcJ+kAi0foQIepAvFS6x53JwI4XylTBHn87Ep9fovslhwmUV3rwH2yMnpdDjXH5W/whx2lA==}
+    peerDependencies:
+      xterm: ^5.0.0
+    dependencies:
+      xterm: 5.2.1
+    dev: false
+
+  /xterm-addon-unicode11@0.5.0(xterm@5.2.1):
+    resolution: {integrity: sha512-Jm4/g4QiTxiKiTbYICQgC791ubhIZyoIwxAIgOW8z8HWFNY+lwk+dwaKEaEeGBfM48Vk8fklsUW9u/PlenYEBg==}
+    peerDependencies:
+      xterm: ^5.0.0
+    dependencies:
+      xterm: 5.2.1
+    dev: false
+
+  /xterm-addon-webgl@0.15.0(xterm@5.2.1):
+    resolution: {integrity: sha512-ZLcqogMFHr4g/YRhcCh3xE8tTklnyut/M+O/XhVsFBRB/YCvYhPdLQ5/AQk54V0wjWAQpa8CF3W8DVR9OqyMCg==}
+    peerDependencies:
+      xterm: ^5.0.0
+    dependencies:
+      xterm: 5.2.1
+    dev: false
+
+  /xterm@5.2.1:
+    resolution: {integrity: sha512-cs5Y1fFevgcdoh2hJROMVIWwoBHD80P1fIP79gopLHJIE4kTzzblanoivxTiQ4+92YM9IxS36H1q0MxIJXQBcA==}
+    dev: false
+
   /y18n@4.0.3:
     resolution: {integrity: sha512-JKhqTOwSrqNA1NY5lSztJ1GrBiUodLMmIZuLiDaMRJ+itFd+ABVE8XBjOvIWL+rSqNDC74LCSFmlb/U4UZ4hJQ==}
     dev: false
@@ -6009,6 +6138,13 @@ packages:
       which-module: 2.0.1
       y18n: 4.0.3
       yargs-parser: 18.1.3
+    dev: false
+
+  /yauzl@2.10.0:
+    resolution: {integrity: sha512-p4a9I6X6nu6IhoGmBqAcbJy1mlC4j27vEPZX9F4L4/vZT3Lyq1VkFHw/V/PUcB9Buo+DG3iHkT0x3Qya58zc3g==}
+    dependencies:
+      buffer-crc32: 0.2.13
+      fd-slicer: 1.1.0
     dev: false
 
   /yocto-queue@0.1.0:
