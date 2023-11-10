@@ -230,7 +230,9 @@ const getAllSelectionStateForEnvironment = (
       .filter((db) => db.effectiveEnvironment === environment.name)
       .map((db) => db.uid)
   );
-  const checked = databaseList.every((db) => set.has(db.uid));
+  const checked =
+    state.selectedDatabaseList.length > 0 &&
+    databaseList.every((db) => set.has(db.uid));
   const indeterminate = !checked && databaseList.some((db) => set.has(db.uid));
 
   return {

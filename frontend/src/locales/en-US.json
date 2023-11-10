@@ -755,6 +755,8 @@
           "masking-type": "Masking type",
           "delete": "Delete this algorithm?"
         },
+        "mask": "Mask",
+        "hash": "Hash",
         "full-mask": {
           "self": "Full mask",
           "substitution": "Substitution",
@@ -762,12 +764,13 @@
         },
         "range-mask": {
           "self": "Range mask",
+          "label": "Range mask will replace the original value from start index to end index (end not included) with the substitution.",
           "slice-start": "Slice start",
           "slice-start-label": "Slice start is the start index of the original value, start from 0 and should be less than stop.",
           "slice-end": "Slice end",
           "slice-end-label": "Slice stop is the stop index of the original value, should be less than the length of the original value.",
           "substitution": "Substitution",
-          "substitution-label": "Substitution is the string used to replace the original value from start to end."
+          "substitution-label": "Substitution is the string used to replace the original value [start:end)."
         },
         "md5-mask": {
           "self": "MD5 mask",

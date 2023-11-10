@@ -86,12 +86,12 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", {
       return `${databaseName}/metadata`;
     },
     async updateDatabaseSchemaConfigs(metadata: DatabaseMetadata) {
-      const updated = await databaseServiceClient.updateDatabaseMetadata({
+      await databaseServiceClient.updateDatabaseMetadata({
         databaseMetadata: metadata,
         updateMask: ["schema_configs"],
       });
-      this.setCache(updated);
-      return updated;
+      this.mergeToCache(metadata);
+      return metadata;
     },
     async getOrFetchDatabaseMetadata({
       database,

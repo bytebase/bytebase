@@ -205,9 +205,9 @@ const environment = computed(() => {
 const getAllSelectionState = (
   databaseList: ComposedDatabase[]
 ): { checked: boolean; indeterminate: boolean } => {
-  const checked = databaseList.every((db) =>
-    state.selectedDatabaseIds.has(db.uid)
-  );
+  const checked =
+    state.selectedDatabaseIds.size > 0 &&
+    databaseList.every((db) => state.selectedDatabaseIds.has(db.uid));
   const indeterminate =
     !checked &&
     databaseList.some((db) => state.selectedDatabaseIds.has(db.uid));

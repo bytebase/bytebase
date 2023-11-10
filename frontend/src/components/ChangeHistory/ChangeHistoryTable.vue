@@ -253,9 +253,9 @@ const allSelectionState = computed(() => {
       (changeHistory) => allowToSelectChangeHistory(changeHistory) === true
     );
 
-  const checked = list.every((changeHistory) =>
-    set.includes(changeHistory.name)
-  );
+  const checked =
+    set.length > 0 &&
+    list.every((changeHistory) => set.includes(changeHistory.name));
 
   const indeterminate =
     !checked && list.some((changeHistory) => set.includes(changeHistory.name));

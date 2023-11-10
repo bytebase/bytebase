@@ -753,6 +753,8 @@
           "masking-type": "算法类型",
           "delete": "删除该算法？"
         },
+        "mask": "遮掩",
+        "hash": "哈希",
         "full-mask": {
           "self": "全遮掩",
           "substitution": "遮掩字符串",
@@ -760,6 +762,7 @@
         },
         "range-mask": {
           "self": "范围遮掩",
+          "label": "范围遮掩使用遮掩字符串来替换从起始索引到结束索引（不包含结束索引）的原始值。",
           "slice-start": "起始位置",
           "slice-start-label": "起始位置是原始值的起始索引，从 0 开始且小于结束位置。",
           "slice-end": "结束位置",
