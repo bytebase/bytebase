@@ -75,9 +75,10 @@ func TestMySQLWIPRules(t *testing.T) {
 		advisor.SchemaRuleColumnDisallowChange,
 		// advisor.SchemaRuleColumnDisallowChangingOrder disallow changing column order.
 		advisor.SchemaRuleColumnDisallowChangingOrder,
+		// advisor.SchemaRuleColumnDisallowDropIndex disallow drop index column.
+		advisor.SchemaRuleColumnDisallowDropInIndex,
 		// advisor.SchemaRuleColumnCommentConvention enforce the column comment convention.
 		advisor.SchemaRuleColumnCommentConvention,
-
 		// advisor.SchemaRuleColumnDisallowSetCharset disallow set column charset.
 		advisor.SchemaRuleColumnDisallowSetCharset,
 		// advisor.SchemaRuleColumnMaximumCharacterLength enforce the maximum character length.
