@@ -218,7 +218,9 @@ const tableHeaderList = computed(() => {
 });
 
 const allSelectionState = computed(() => {
-  const checked = checkedColumnIndex.value.size === props.columnList.length;
+  const checked =
+    checkedColumnIndex.value.size > 0 &&
+    checkedColumnIndex.value.size === props.columnList.length;
   const indeterminate =
     !checked &&
     props.columnList.some((_, i) => checkedColumnIndex.value.has(i));

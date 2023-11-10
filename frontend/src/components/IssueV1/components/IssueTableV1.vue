@@ -281,7 +281,8 @@ const isIssueSelected = (issue: ComposedIssue): boolean => {
 const allSelectionState = computed(() => {
   const set = state.selectedIssueIdList;
 
-  const checked = props.issueList.every((issue) => set.has(issue.uid));
+  const checked =
+    set.size > 0 && props.issueList.every((issue) => set.has(issue.uid));
   const indeterminate =
     !checked && props.issueList.some((issue) => set.has(issue.uid));
 

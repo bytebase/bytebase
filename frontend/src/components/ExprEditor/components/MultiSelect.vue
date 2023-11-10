@@ -47,9 +47,11 @@ const options = useSelectOptions(toRef(props, "expr"));
 
 const checkAllState = computed(() => {
   const selected = new Set<any>(props.value);
-  const checked = options.value.every((opt) => {
-    return selected.has(opt.value);
-  });
+  const checked =
+    selected.size > 0 &&
+    options.value.every((opt) => {
+      return selected.has(opt.value);
+    });
   const indeterminate = props.value.length > 0 && !checked;
   return {
     checked,
