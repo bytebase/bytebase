@@ -5,14 +5,6 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-
-	"github.com/pingcap/tidb/parser/ast"
-<<<<<<< HEAD
-	"github.com/pingcap/tidb/parser/mysql"
-	"github.com/pingcap/tidb/types"
-=======
-	"github.com/pingcap/tidb/parser/format"
->>>>>>> bbmain
 )
 
 type columnSet map[string]bool
