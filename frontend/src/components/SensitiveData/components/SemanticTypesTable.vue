@@ -64,7 +64,7 @@
           clearable
           :options="algorithmList"
           :consistent-menu-width="false"
-          :placeholder="$t('custom-approval.risk-rule.condition.select-value')"
+          :placeholder="$t('settings.sensitive-data.algorithms.default')"
           size="small"
           :fallback-option="(_: string) => ({ label: $t('settings.sensitive-data.algorithms.default'), value: '' })"
           style="min-width: 7rem; width: auto; overflow-x: hidden"
@@ -84,7 +84,7 @@
           clearable
           :options="algorithmList"
           :consistent-menu-width="false"
-          :placeholder="$t('custom-approval.risk-rule.condition.select-value')"
+          :placeholder="$t('settings.sensitive-data.algorithms.default')"
           :fallback-option="(_: string) => ({ label: $t('settings.sensitive-data.algorithms.default'), value: '' })"
           size="small"
           style="min-width: 7rem; width: auto; overflow-x: hidden"
@@ -212,13 +212,20 @@ const onInput = (index: number, callback: (item: SemanticItem) => void) => {
 };
 
 const algorithmList = computed((): SelectOption[] => {
-  return (
+  const list = (
     settingStore.getSettingByName("bb.workspace.masking-algorithm")?.value
       ?.maskingAlgorithmSettingValue?.algorithms ?? []
   ).map((algorithm) => ({
     label: algorithm.title,
     value: algorithm.id,
   }));
+
+  list.unshift({
+    label: t("settings.sensitive-data.algorithms.default"),
+    value: "",
+  });
+
+  return list;
 });
 
 const getAlgorithmById = (algorithmId: string) => {
