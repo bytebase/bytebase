@@ -9,7 +9,7 @@ type FormatResult = {
 type FormatterLanguage = FormatOptionsWithLanguage["language"];
 
 const convertDialectToFormatterLanguage = (
-  dialect: SQLDialect
+  dialect: SQLDialect | undefined
 ): FormatterLanguage => {
   if (dialect === "MYSQL" || dialect === "TIDB" || dialect === "OCEANBASE")
     return "mysql";
@@ -18,7 +18,10 @@ const convertDialectToFormatterLanguage = (
   return "sql";
 };
 
-const formatSQL = (sql: string, dialect: SQLDialect): FormatResult => {
+const formatSQL = (
+  sql: string,
+  dialect: SQLDialect | undefined
+): FormatResult => {
   const options: Partial<FormatOptionsWithLanguage> = {
     language: convertDialectToFormatterLanguage(dialect),
   };
