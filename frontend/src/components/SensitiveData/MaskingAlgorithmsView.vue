@@ -56,9 +56,6 @@ const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
 
 const onDrawerDismiss = () => {
   state.showCreateDrawer = false;
-  state.pendingEditData = MaskingAlgorithmSetting_Algorithm.fromPartial({
-    id: uuidv4(),
-  });
 };
 
 const onEdit = (data: MaskingAlgorithmSetting_Algorithm) => {
