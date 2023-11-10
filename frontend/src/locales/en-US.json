@@ -964,9 +964,6 @@
           "title": "Approver",
           "description": "Search by the issue approver"
         },
-        "approval-status": {
-          "value": {}
-        },
         "approval": {
           "value": {
             "pending": "Pending approval",
