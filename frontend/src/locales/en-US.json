@@ -669,7 +669,7 @@
     "sensitive-data": {
       "description": "Following columns are explicitly assigned masking levels and take predence over the global masking rule.",
       "remove-sensitive-column-tips": "Expose this column?",
-      "sensitive-column-list": "Explict Masked Column List",
+      "sensitive-column-list": "Explicit Masked Columns",
       "global-masking-rule": "Global Masking Rule",
       "grant-access": "Grant Access",
       "never-expires": "Never expires",
