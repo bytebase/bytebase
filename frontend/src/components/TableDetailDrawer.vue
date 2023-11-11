@@ -30,50 +30,6 @@
                   </div>
                 </div>
               </div>
-              <dl
-                class="flex flex-col space-y-1 md:space-y-0 md:flex-row md:flex-wrap"
-              >
-                <dt class="sr-only">{{ $t("common.environment") }}</dt>
-                <dd class="flex items-center text-sm md:mr-4">
-                  <span class="textlabel"
-                    >{{ $t("common.environment") }}&nbsp;-&nbsp;</span
-                  >
-                  <EnvironmentV1Name
-                    :environment="database.effectiveEnvironmentEntity"
-                    icon-class="textinfolabel"
-                  />
-                </dd>
-                <dt class="sr-only">{{ $t("common.instance") }}</dt>
-                <dd class="flex items-center text-sm md:mr-4">
-                  <span class="ml-1 textlabel"
-                    >{{ $t("common.instance") }}&nbsp;-&nbsp;</span
-                  >
-                  <InstanceV1Name :instance="database.instanceEntity" />
-                </dd>
-                <dt class="sr-only">{{ $t("common.project") }}</dt>
-                <dd class="flex items-center text-sm md:mr-4">
-                  <span class="textlabel"
-                    >{{ $t("common.project") }}&nbsp;-&nbsp;</span
-                  >
-                  <ProjectV1Name
-                    :project="database.projectEntity"
-                    hash="#databases"
-                  />
-                </dd>
-                <dt class="sr-only">{{ $t("common.database") }}</dt>
-                <dd class="flex items-center text-sm md:mr-4">
-                  <span class="textlabel"
-                    >{{ $t("common.database") }}&nbsp;-&nbsp;</span
-                  >
-                  <DatabaseV1Name :database="database" />
-                </dd>
-                <SQLEditorButtonV1
-                  class="text-sm md:mr-4"
-                  :database="database"
-                  :label="true"
-                  :disabled="!allowQuery"
-                />
-              </dl>
             </div>
           </div>
 
@@ -82,10 +38,10 @@
               <!-- Description list -->
               <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-3">
                 <div class="col-span-1">
-                  <dt class="text-sm text-control-light">
+                  <dt class="text-sm font-medium text-control-light">
                     {{ $t("database.engine") }}
                   </dt>
-                  <dd class="mt-1 text-lg sm:text-xl font-semibold">
+                  <dd class="mt-1 text-sm text-main">
                     {{
                       instanceEngine === Engine.POSTGRES ||
                       instanceEngine === Engine.SNOWFLAKE
@@ -109,28 +65,28 @@
                 </div>
 
                 <div class="col-span-1">
-                  <dt class="text-sm text-control-light">
+                  <dt class="text-sm font-medium text-control-light">
                     {{ $t("database.row-count-estimate") }}
                   </dt>
-                  <dd class="mt-1 text-lg sm:text-xl font-semibold">
+                  <dd class="mt-1 text-sm text-main">
                     {{ table.rowCount }}
                   </dd>
                 </div>
 
                 <div class="col-span-1">
-                  <dt class="text-sm text-control-light">
+                  <dt class="text-sm font-medium text-control-light">
                     {{ $t("database.data-size") }}
                   </dt>
-                  <dd class="mt-1 text-lg sm:text-xl font-semibold">
+                  <dd class="mt-1 text-sm text-main">
                     {{ bytesToString(table.dataSize.toNumber()) }}
                   </dd>
                 </div>
 
                 <div class="col-span-1">
-                  <dt class="text-sm text-control-light">
+                  <dt class="text-sm font-medium text-control-light">
                     {{ $t("database.index-size") }}
                   </dt>
-                  <dd class="mt-1 text-lg sm:text-xl font-semibold">
+                  <dd class="mt-1 text-sm text-main">
                     {{
                       instanceEngine === Engine.CLICKHOUSE ||
                       instanceEngine === Engine.SNOWFLAKE
@@ -147,10 +103,10 @@
                   "
                 >
                   <div class="col-span-1">
-                    <dt class="text-sm text-control-light">
+                    <dt class="text-sm font-medium text-control-light">
                       {{ $t("db.collation") }}
                     </dt>
-                    <dd class="mt-1 text-lg sm:text-xl font-semibold">
+                    <dd class="mt-1 text-sm text-main">
                       {{
                         instanceEngine === Engine.POSTGRES
                           ? "n/a"
@@ -191,31 +147,15 @@
 
 <script lang="ts" setup>
 import { computed, watch, ref } from "vue";
-import {
-  DatabaseV1Name,
-  InstanceV1Name,
-  Drawer,
-  DrawerContent,
-} from "@/components/v2";
-import {
-  useCurrentUserV1,
-  useDatabaseV1Store,
-  useDBSchemaV1Store,
-} from "@/store";
+import { Drawer, DrawerContent } from "@/components/v2";
+import { useDatabaseV1Store, useDBSchemaV1Store } from "@/store";
 import { usePolicyByParentAndType } from "@/store/modules/v1/policy";
-import { DEFAULT_PROJECT_V1_NAME, EMPTY_PROJECT_NAME } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { TableMetadata } from "@/types/proto/v1/database_service";
 import { PolicyType, MaskData } from "@/types/proto/v1/org_policy_service";
 import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
-import {
-  bytesToString,
-  hasWorkspacePermissionV1,
-  isDatabaseV1Queryable,
-  isGhostTable,
-} from "@/utils";
+import { bytesToString, isGhostTable } from "@/utils";
 import ColumnTable from "./ColumnTable.vue";
-import { SQLEditorButtonV1 } from "./DatabaseDetail";
 import IndexTable from "./IndexTable.vue";
 
 const props = defineProps<{
@@ -231,7 +171,6 @@ defineEmits(["dismiss"]);
 
 const databaseV1Store = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
-const currentUserV1 = useCurrentUserV1();
 const table = ref<TableMetadata>();
 
 const database = computed(() => {
@@ -241,18 +180,6 @@ const instanceEngine = computed(() => {
   return database.value.instanceEntity.engine;
 });
 
-const allowQuery = computed(() => {
-  if (
-    database.value.project === EMPTY_PROJECT_NAME ||
-    database.value.project === DEFAULT_PROJECT_V1_NAME
-  ) {
-    return hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-database",
-      currentUserV1.value.userRole
-    );
-  }
-  return isDatabaseV1Queryable(database.value, currentUserV1.value);
-});
 const hasSchemaProperty = computed(
   () =>
     instanceEngine.value === Engine.POSTGRES ||
