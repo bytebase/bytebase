@@ -38,10 +38,10 @@
               <!-- Description list -->
               <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-3">
                 <div class="col-span-1">
-                  <dt class="text-sm text-control-light">
+                  <dt class="text-sm font-medium text-control-light">
                     {{ $t("database.engine") }}
                   </dt>
-                  <dd class="mt-1 text-lg sm:text-xl font-semibold">
+                  <dd class="mt-1 text-sm text-main">
                     {{
                       instanceEngine === Engine.POSTGRES ||
                       instanceEngine === Engine.SNOWFLAKE
@@ -65,28 +65,28 @@
                 </div>
 
                 <div class="col-span-1">
-                  <dt class="text-sm text-control-light">
+                  <dt class="text-sm font-medium text-control-light">
                     {{ $t("database.row-count-estimate") }}
                   </dt>
-                  <dd class="mt-1 text-lg sm:text-xl font-semibold">
+                  <dd class="mt-1 text-sm text-main">
                     {{ table.rowCount }}
                   </dd>
                 </div>
 
                 <div class="col-span-1">
-                  <dt class="text-sm text-control-light">
+                  <dt class="text-sm font-medium text-control-light">
                     {{ $t("database.data-size") }}
                   </dt>
-                  <dd class="mt-1 text-lg sm:text-xl font-semibold">
+                  <dd class="mt-1 text-sm text-main">
                     {{ bytesToString(table.dataSize.toNumber()) }}
                   </dd>
                 </div>
 
                 <div class="col-span-1">
-                  <dt class="text-sm text-control-light">
+                  <dt class="text-sm font-medium text-control-light">
                     {{ $t("database.index-size") }}
                   </dt>
-                  <dd class="mt-1 text-lg sm:text-xl font-semibold">
+                  <dd class="mt-1 text-sm text-main">
                     {{
                       instanceEngine === Engine.CLICKHOUSE ||
                       instanceEngine === Engine.SNOWFLAKE
@@ -103,10 +103,10 @@
                   "
                 >
                   <div class="col-span-1">
-                    <dt class="text-sm text-control-light">
+                    <dt class="text-sm font-medium text-control-light">
                       {{ $t("db.collation") }}
                     </dt>
-                    <dd class="mt-1 text-lg sm:text-xl font-semibold">
+                    <dd class="mt-1 text-sm text-main">
                       {{
                         instanceEngine === Engine.POSTGRES
                           ? "n/a"
