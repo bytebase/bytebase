@@ -1111,9 +1111,18 @@ func validateMaskingAlgorithm(algorithm *v1pb.MaskingAlgorithmSetting_Algorithm)
 		if algorithm.Mask == nil {
 			return nil
 		}
-		switch algorithm.Mask.(type) {
+		switch m := algorithm.Mask.(type) {
 		case *v1pb.MaskingAlgorithmSetting_Algorithm_FullMask_:
 		case *v1pb.MaskingAlgorithmSetting_Algorithm_RangeMask_:
+			for i, slice := range m.RangeMask.Slices {
+				for j := 0; j < i; j++ {
+					pre := m.RangeMask.Slices[j]
+					if slice.Start >= pre.End || pre.Start >= slice.End {
+						continue
+					}
+					return status.Errorf(codes.InvalidArgument, "the slice range cannot overlap: [%d,%d) and [%d,%d)", pre.Start, pre.End, slice.Start, slice.End)
+				}
+			}
 		default:
 			return status.Errorf(codes.InvalidArgument, "mismatch masking algorithm category and mask type: %T, %s", algorithm.Mask, algorithm.Category)
 		}
