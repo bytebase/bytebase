@@ -134,7 +134,7 @@ func (s *Store) GetIssueV2(ctx context.Context, find *FindIssueMessage) (*IssueM
 	issue := issues[0]
 
 	s.issueCache.Store(issue.UID, issue)
-	s.issueByPipelineCache.Store(issue.PipelineUID, issue)
+	s.issueByPipelineCache.Store(*issue.PipelineUID, issue)
 	return issue, nil
 }
 
