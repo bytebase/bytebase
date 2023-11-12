@@ -83,7 +83,7 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
-import { NInputGroup, NButton, NDatePicker } from "naive-ui";
+import { NInputGroup, NDatePicker } from "naive-ui";
 import { reactive, computed, watchEffect, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
@@ -106,7 +106,6 @@ import {
 import { UNKNOWN_ID, IssueFilter } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import {
-  projectV1Slug,
   extractProjectResourceName,
   hasWorkspacePermissionV1,
   SearchParams,
@@ -287,16 +286,6 @@ const clearDatePicker = () => {
       ...route.query,
       createdTsAfter: 0,
       createdTsBefore: Date.now(),
-    },
-  });
-};
-
-const goProject = () => {
-  if (!project.value) return;
-  router.push({
-    name: "workspace.project.detail",
-    params: {
-      projectSlug: projectV1Slug(project.value),
     },
   });
 };
