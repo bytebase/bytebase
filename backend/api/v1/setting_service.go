@@ -1115,6 +1115,9 @@ func validateMaskingAlgorithm(algorithm *v1pb.MaskingAlgorithmSetting_Algorithm)
 		case *v1pb.MaskingAlgorithmSetting_Algorithm_FullMask_:
 		case *v1pb.MaskingAlgorithmSetting_Algorithm_RangeMask_:
 			for i, slice := range m.RangeMask.Slices {
+				if slice.Start >= slice.End {
+					return status.Errorf(codes.InvalidArgument, "the slice end must smaller than the start: [%d,%d)", slice.Start, slice.End)
+				}
 				for j := 0; j < i; j++ {
 					pre := m.RangeMask.Slices[j]
 					if slice.Start >= pre.End || pre.Start >= slice.End {
