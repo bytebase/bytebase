@@ -615,7 +615,7 @@ func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, issueUIDs []int, s
 		}
 	}
 	if err := rows.Err(); err != nil {
-		return errors.Wrapf(err, "failed to scan")
+		return errors.Wrapf(err, "failed to scan issues")
 	}
 
 	if err := tx.Commit(); err != nil {
