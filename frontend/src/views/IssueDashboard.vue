@@ -18,10 +18,6 @@
         <TabFilter v-model:value="state.tab" :items="tabItemList" />
       </div>
       <div class="flex flex-row space-x-4 p-0.5">
-        <NButton v-if="project" @click="goProject">
-          {{ project.key }}
-        </NButton>
-
         <NInputGroup style="width: auto">
           <NDatePicker
             v-model:value="selectedTimeRange"
