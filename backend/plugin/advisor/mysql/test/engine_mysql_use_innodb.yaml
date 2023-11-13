@@ -1,4 +1,4 @@
-- statement: CREATE TABLE book(id int) ENGINE = INNODB
+- statement: CREATE TABLE book(id int) ENGINE = INNODB;
   want:
     - status: SUCCESS
       code: 0
@@ -6,7 +6,7 @@
       content: ""
       line: 0
       details: ""
-- statement: CREATE TABLE book(id int)
+- statement: CREATE TABLE book(id int);
   want:
     - status: SUCCESS
       code: 0
@@ -14,17 +14,40 @@
       content: ""
       line: 0
       details: ""
-- statement: CREATE TABLE book(id int) ENGINE = CSV
+- statement: |
+    CREATE TABLE book(
+      id INT,
+      price INT
+    ) ENGINE = CSV;
   want:
     - status: WARN
       code: 501
       title: engine.mysql.use-innodb
       content: |-
-        "CREATE TABLE book(id int) ENGINE = CSV
-        ;" doesn't use InnoDB engine
-      line: 2
+        "CREATE TABLE book(
+          id INT,
+          price INT
+        ) ENGINE = CSV;" doesn't use InnoDB engine
+      line: 4
       details: ""
-- statement: ALTER TABLE tech_book ENGINE = INNODB
+- statement: |
+    CREATE TABLE teck_book(a INT);
+    CREATE TABLE book(
+      id INT,
+      price INT
+    ) ENGINE = CSV;
+  want:
+    - status: WARN
+      code: 501
+      title: engine.mysql.use-innodb
+      content: |-
+        "CREATE TABLE book(
+          id INT,
+          price INT
+        ) ENGINE = CSV;" doesn't use InnoDB engine
+      line: 5
+      details: ""
+- statement: ALTER TABLE tech_book ENGINE = INNODB;
   want:
     - status: SUCCESS
       code: 0
@@ -32,17 +55,19 @@
       content: ""
       line: 0
       details: ""
-- statement: ALTER TABLE tech_book ENGINE = CSV
+- statement: |
+    CREATE TABLE teck_book(a INT);
+    CREATE TABLE book(a INT);
+    ALTER TABLE tech_book ENGINE = CSV;
   want:
     - status: WARN
       code: 501
       title: engine.mysql.use-innodb
       content: |-
-        "ALTER TABLE tech_book ENGINE = CSV
-        ;" doesn't use InnoDB engine
-      line: 2
+        "ALTER TABLE tech_book ENGINE = CSV;" doesn't use InnoDB engine
+      line: 3
       details: ""
-- statement: SET default_storage_engine=INNODB
+- statement: SET default_storage_engine=INNODB;
   want:
     - status: SUCCESS
       code: 0
@@ -50,13 +75,14 @@
       content: ""
       line: 0
       details: ""
-- statement: SET default_storage_engine=CSV
+- statement: |
+    CREATE TABLE book(a INT);
+    SET default_storage_engine=CSV;
   want:
     - status: WARN
       code: 501
       title: engine.mysql.use-innodb
       content: |-
-        "SET default_storage_engine=CSV
-        ;" doesn't use InnoDB engine
+        "SET default_storage_engine=CSV;" doesn't use InnoDB engine
       line: 2
       details: ""

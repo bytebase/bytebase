@@ -1,0 +1,43 @@
+- statement: CREATE TABLE t(a timestamp, b timestamp)
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |-
+    CREATE TABLE t(
+      a timestamp default now(),
+      b timestamp default current_timestamp(),
+      c timestamp default localtime
+    )
+  want:
+    - status: WARN
+      code: 418
+      title: column.current-time-count-limit
+      content: Table `t` has 3 DEFAULT CURRENT_TIMESTAMP() columns. The count greater than 2.
+      line: 6
+      details: ""
+- statement: |-
+    CREATE TABLE t(
+      a timestamp default now() on update localtime,
+      b timestamp default current_timestamp() on update localtimestamp()
+    )
+  want:
+    - status: WARN
+      code: 419
+      title: column.current-time-count-limit
+      content: Table `t` has 2 ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than 1.
+      line: 5
+      details: ""
+- statement: |-
+    ALTER TABLE tech_book ADD COLUMN a timestamp default now() on update localtime;
+    ALTER TABLE tech_book ADD COLUMN b timestamp default current_timestamp() on update localtimestamp();
+  want:
+    - status: WARN
+      code: 419
+      title: column.current-time-count-limit
+      content: Table `tech_book` has 2 ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than 1.
+      line: 3
+      details: ""

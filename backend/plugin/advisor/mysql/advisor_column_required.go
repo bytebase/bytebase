@@ -5,23 +5,23 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/pingcap/tidb/parser/ast"
+	"github.com/antlr4-go/antlr/v4"
+	mysql "github.com/bytebase/mysql-parser"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*ColumnRequirementAdvisor)(nil)
-	_ ast.Visitor     = (*columnRequirementChecker)(nil)
 )
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLColumnRequirement, &ColumnRequirementAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLColumnRequirement, &ColumnRequirementAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLColumnRequirement, &ColumnRequirementAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnRequirement, &ColumnRequirementAdvisor{})
 }
 
 // ColumnRequirementAdvisor is the advisor checking for column requirement.
@@ -30,15 +30,16 @@ type ColumnRequirementAdvisor struct {
 
 // Check checks for the column requirement.
 func (*ColumnRequirementAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	root, ok := ctx.AST.([]ast.StmtNode)
+	list, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to StmtNode")
+		return nil, errors.Errorf("failed to convert to mysql parser result")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
+
 	columnList, err := advisor.UnmarshalRequiredColumnList(ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
@@ -47,6 +48,7 @@ func (*ColumnRequirementAdvisor) Check(ctx advisor.Context, _ string) ([]advisor
 	for _, column := range columnList {
 		requiredColumns[column] = true
 	}
+
 	checker := &columnRequirementChecker{
 		level:           level,
 		title:           string(ctx.Rule.Type),
@@ -55,14 +57,18 @@ func (*ColumnRequirementAdvisor) Check(ctx advisor.Context, _ string) ([]advisor
 		line:            make(map[string]int),
 	}
 
-	for _, stmtNode := range root {
-		(stmtNode).Accept(checker)
+	for _, stmt := range list {
+		checker.baseLine = stmt.BaseLine
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
 	return checker.generateAdviceList(), nil
 }
 
 type columnRequirementChecker struct {
+	*mysql.BaseMySQLParserListener
+
+	baseLine        int
 	adviceList      []advisor.Advice
 	level           advisor.Status
 	title           string
@@ -71,154 +77,199 @@ type columnRequirementChecker struct {
 	line            map[string]int
 }
 
-// Enter implements the ast.Visitor interface.
-func (v *columnRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
-	switch node := in.(type) {
-	// CREATE TABLE
-	case *ast.CreateTableStmt:
-		v.createTable(node)
-	// DROP TABLE
-	case *ast.DropTableStmt:
-		for _, table := range node.Tables {
-			delete(v.tables, table.Name.String())
+// EnterCreateDatabase is called when production createDatabase is entered.
+func (checker *columnRequirementChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	checker.createTable(ctx)
+}
+
+// EnterDropTable is called when production dropTable is entered.
+func (checker *columnRequirementChecker) EnterDropTable(ctx *mysql.DropTableContext) {
+	if ctx.TableRefList() == nil {
+		return
+	}
+
+	for _, tableRef := range ctx.TableRefList().AllTableRef() {
+		_, tableName := mysqlparser.NormalizeMySQLTableRef(tableRef)
+		delete(checker.tables, tableName)
+	}
+}
+
+// EnterAlterTable is called when production alterTable is entered.
+func (checker *columnRequirementChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if ctx.AlterTableActions() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
+		return
+	}
+
+	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
+	// alter table add column, change column, modify column.
+	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
+		if item == nil {
+			continue
 		}
-	// ALTER TABLE
-	case *ast.AlterTableStmt:
-		table := node.Table.Name.O
-		for _, spec := range node.Specs {
-			switch spec.Tp {
-			// RENAME COLUMN
-			case ast.AlterTableRenameColumn:
-				v.renameColumn(table, spec.OldColumnName.Name.O, spec.NewColumnName.Name.O)
-				v.line[table] = node.OriginTextPosition()
-			// ADD COLUMNS
-			case ast.AlterTableAddColumns:
-				for _, column := range spec.NewColumns {
-					v.addColumn(table, column.Name.Name.O)
+
+		lineNumber := checker.baseLine + item.GetStart().GetLine()
+		switch {
+		// add column
+		case item.ADD_SYMBOL() != nil:
+			switch {
+			case item.Identifier() != nil && item.FieldDefinition() != nil:
+				columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+				checker.addColumn(tableName, columnName)
+			case item.OPEN_PAR_SYMBOL() != nil && item.TableElementList() != nil:
+				for _, tableElement := range item.TableElementList().AllTableElement() {
+					if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().ColumnName() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil {
+						continue
+					}
+					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
+					checker.addColumn(tableName, columnName)
 				}
-			// DROP COLUMN
-			case ast.AlterTableDropColumn:
-				if v.dropColumn(table, spec.OldColumnName.Name.O) {
-					v.line[table] = node.OriginTextPosition()
-				}
-			// CHANGE COLUMN
-			case ast.AlterTableChangeColumn:
-				if v.renameColumn(table, spec.OldColumnName.Name.O, spec.NewColumns[0].Name.Name.O) {
-					v.line[table] = node.OriginTextPosition()
-				}
+			}
+		// drop column
+		case item.DROP_SYMBOL() != nil && item.ColumnInternalRef() != nil:
+			columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
+			if checker.dropColumn(tableName, columnName) {
+				checker.line[tableName] = lineNumber
+			}
+		// rename column
+		case item.RENAME_SYMBOL() != nil && item.COLUMN_SYMBOL() != nil:
+			oldColumnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
+			newColumnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+			checker.renameColumn(tableName, oldColumnName, newColumnName)
+			checker.line[tableName] = lineNumber
+		// change column
+		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil:
+			oldColumnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
+			newColumnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+			if checker.renameColumn(tableName, oldColumnName, newColumnName) {
+				checker.line[tableName] = lineNumber
 			}
 		}
 	}
-	return in, false
 }
 
-// Leave implements the ast.Visitor interface.
-func (*columnRequirementChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
-}
-
-func (v *columnRequirementChecker) generateAdviceList() []advisor.Advice {
+func (checker *columnRequirementChecker) generateAdviceList() []advisor.Advice {
 	// Order it cause the random iteration order in Go, see https://go.dev/blog/maps
-	tableList := v.tables.tableList()
+	tableList := checker.tables.tableList()
 	for _, tableName := range tableList {
-		table := v.tables[tableName]
+		table := checker.tables[tableName]
 		var missingColumns []string
-		for column := range v.requiredColumns {
-			if exist, ok := table[column]; !ok || !exist {
-				missingColumns = append(missingColumns, column)
+		for columnName := range checker.requiredColumns {
+			if exists, ok := table[columnName]; !ok || !exists {
+				missingColumns = append(missingColumns, columnName)
 			}
 		}
+
 		if len(missingColumns) > 0 {
 			// Order it cause the random iteration order in Go, see https://go.dev/blog/maps
 			sort.Strings(missingColumns)
-			v.adviceList = append(v.adviceList, advisor.Advice{
-				Status:  v.level,
+			checker.adviceList = append(checker.adviceList, advisor.Advice{
+				Status:  checker.level,
 				Code:    advisor.NoRequiredColumn,
-				Title:   v.title,
+				Title:   checker.title,
 				Content: fmt.Sprintf("Table `%s` requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
-				Line:    v.line[tableName],
+				Line:    checker.line[tableName],
 			})
 		}
 	}
 
-	if len(v.adviceList) == 0 {
-		v.adviceList = append(v.adviceList, advisor.Advice{
+	if len(checker.adviceList) == 0 {
+		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  advisor.Success,
 			Code:    advisor.Ok,
 			Title:   "OK",
 			Content: "",
 		})
 	}
-	return v.adviceList
+	return checker.adviceList
 }
 
-// initEmptyTable will initialize a table without any required columns.
-func (v *columnRequirementChecker) initEmptyTable(name string) columnSet {
-	v.tables[name] = make(columnSet)
-	return v.tables[name]
-}
+func (checker *columnRequirementChecker) createTable(ctx *mysql.CreateTableContext) {
+	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
+	checker.line[tableName] = checker.baseLine + ctx.GetStart().GetLine()
+	checker.initEmptyTable(tableName)
 
-// initFullTable will initialize a table with all required columns.
-func (v *columnRequirementChecker) initFullTable(name string) columnSet {
-	table := v.initEmptyTable(name)
-	for column := range v.requiredColumns {
-		table[column] = true
+	if ctx.TableElementList() == nil {
+		return
 	}
-	return table
+
+	for _, tableElement := range ctx.TableElementList().AllTableElement() {
+		if tableElement.ColumnDefinition() == nil {
+			continue
+		}
+		_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
+		checker.addColumn(tableName, columnName)
+	}
 }
 
-func (v *columnRequirementChecker) renameColumn(table string, oldColumn string, newColumn string) bool {
-	_, oldNeed := v.requiredColumns[oldColumn]
-	_, newNeed := v.requiredColumns[newColumn]
-	if !oldNeed && !newNeed {
+func (checker *columnRequirementChecker) initEmptyTable(tableName string) columnSet {
+	checker.tables[tableName] = make(columnSet)
+	return checker.tables[tableName]
+}
+
+// add a column.
+func (checker *columnRequirementChecker) addColumn(tableName string, columnName string) {
+	if _, ok := checker.requiredColumns[columnName]; !ok {
+		return
+	}
+
+	if table, ok := checker.tables[tableName]; !ok {
+		// We do not retrospectively check.
+		// So we assume it contains all required columns.
+		checker.initFullTable(tableName)
+	} else {
+		table[columnName] = true
+	}
+}
+
+// drop a column
+// return true if the colum was successfully dropped from requirement list.
+func (checker *columnRequirementChecker) dropColumn(tableName string, columnName string) bool {
+	if _, ok := checker.requiredColumns[columnName]; !ok {
 		return false
 	}
-	t, ok := v.tables[table]
+	table, ok := checker.tables[tableName]
 	if !ok {
 		// We do not retrospectively check.
 		// So we assume it contains all required columns.
-		t = v.initFullTable(table)
+		table = checker.initFullTable(tableName)
+	}
+	table[columnName] = false
+	return true
+}
+
+// rename a column
+// return if the old column was dropped from requirement list.
+func (checker *columnRequirementChecker) renameColumn(tableName string, oldColumn string, newColumn string) bool {
+	_, oldNeed := checker.requiredColumns[oldColumn]
+	_, newNeed := checker.requiredColumns[newColumn]
+	if !oldNeed && !newNeed {
+		return false
+	}
+	table, ok := checker.tables[tableName]
+	if !ok {
+		// We do not retrospectively check.
+		// So we assume it contains all required columns.
+		table = checker.initFullTable(tableName)
 	}
 	if oldNeed {
-		t[oldColumn] = false
+		table[oldColumn] = false
 	}
 	if newNeed {
-		t[newColumn] = true
+		table[newColumn] = true
 	}
 	return oldNeed
 }
 
-func (v *columnRequirementChecker) dropColumn(table string, column string) bool {
-	if _, ok := v.requiredColumns[column]; !ok {
-		return false
+func (checker *columnRequirementChecker) initFullTable(tableName string) columnSet {
+	table := checker.initEmptyTable(tableName)
+	for column := range checker.requiredColumns {
+		table[column] = true
 	}
-	t, ok := v.tables[table]
-	if !ok {
-		// We do not retrospectively check.
-		// So we assume it contains all required columns.
-		t = v.initFullTable(table)
-	}
-	t[column] = false
-	return true
-}
-
-func (v *columnRequirementChecker) addColumn(table string, column string) {
-	if _, ok := v.requiredColumns[column]; !ok {
-		return
-	}
-	if t, ok := v.tables[table]; !ok {
-		// We do not retrospectively check.
-		// So we assume it contains all required columns.
-		v.initFullTable(table)
-	} else {
-		t[column] = true
-	}
-}
-
-func (v *columnRequirementChecker) createTable(node *ast.CreateTableStmt) {
-	v.line[node.Table.Name.O] = node.OriginTextPosition()
-	v.initEmptyTable(node.Table.Name.O)
-	for _, column := range node.Cols {
-		v.addColumn(node.Table.Name.O, column.Name.Name.O)
-	}
+	return table
 }

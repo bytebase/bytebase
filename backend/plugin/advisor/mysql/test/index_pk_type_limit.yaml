@@ -1,4 +1,4 @@
-- statement: CREATE TABLE t(id VARCHAR(5) PRIMARY KEY)
+- statement: CREATE TABLE t(id VARCHAR(5) PRIMARY KEY);
   want:
     - status: WARN
       code: 803
@@ -6,7 +6,7 @@
       content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
       line: 1
       details: ""
-- statement: CREATE TABLE t(id INT PRIMARY KEY)
+- statement: CREATE TABLE t(id INT PRIMARY KEY);
   want:
     - status: SUCCESS
       code: 0
@@ -14,7 +14,7 @@
       content: ""
       line: 0
       details: ""
-- statement: CREATE TABLE t(id VARCHAR(5), PRIMARY KEY(id))
+- statement: CREATE TABLE t(id VARCHAR(5), PRIMARY KEY(id));
   want:
     - status: WARN
       code: 803
@@ -22,7 +22,7 @@
       content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
       line: 1
       details: ""
-- statement: CREATE TABLE t(id INT, id2 VARCHAR(5), id3 VARCHAR(5), PRIMARY KEY(id, id2, id3))
+- statement: CREATE TABLE t(id INT, id2 VARCHAR(5), id3 VARCHAR(5), PRIMARY KEY(id, id2, id3));
   want:
     - status: WARN
       code: 803
@@ -36,7 +36,7 @@
       content: Columns in primary key must be INT/BIGINT but `t`.`id3` is varchar(5)
       line: 1
       details: ""
-- statement: CREATE TABLE t(id INT, id2 BIGINT, PRIMARY KEY(id, id2))
+- statement: CREATE TABLE t(id INT, id2 BIGINT, PRIMARY KEY(id, id2));
   want:
     - status: SUCCESS
       code: 0
@@ -44,7 +44,7 @@
       content: ""
       line: 0
       details: ""
-- statement: CREATE TABLE t(id INT, PRIMARY KEY(id))
+- statement: CREATE TABLE t(id INT, PRIMARY KEY(id));
   want:
     - status: SUCCESS
       code: 0
@@ -54,17 +54,17 @@
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
-    ALTER TABLE t ADD COLUMN id VARCHAR(5) PRIMARY KEY
+    ALTER TABLE t ADD COLUMN id VARCHAR(5) PRIMARY KEY;
   want:
     - status: WARN
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
-      line: 3
+      line: 2
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
-    ALTER TABLE t ADD COLUMN id INT PRIMARY KEY
+    ALTER TABLE t ADD COLUMN id INT PRIMARY KEY;
   want:
     - status: SUCCESS
       code: 0
@@ -74,33 +74,33 @@
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
-    ALTER TABLE t ADD COLUMN id VARCHAR(5), ADD PRIMARY KEY (id)
+    ALTER TABLE t ADD COLUMN id VARCHAR(5), ADD PRIMARY KEY (id);
   want:
     - status: WARN
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
-      line: 3
+      line: 2
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
-    ALTER TABLE t ADD COLUMN id INT, ADD COLUMN id2 VARCHAR(5), ADD COLUMN id3 VARCHAR(5), ADD PRIMARY KEY (id, id2, id3)
+    ALTER TABLE t ADD COLUMN id INT, ADD COLUMN id2 VARCHAR(5), ADD COLUMN id3 VARCHAR(5), ADD PRIMARY KEY (id, id2, id3);
   want:
     - status: WARN
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)
-      line: 3
+      line: 2
       details: ""
     - status: WARN
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id3` is varchar(5)
-      line: 3
+      line: 2
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
-    ALTER TABLE t ADD COLUMN id INT, ADD COLUMN id2 BIGINT, ADD PRIMARY KEY (id, id2)
+    ALTER TABLE t ADD COLUMN id INT, ADD COLUMN id2 BIGINT, ADD PRIMARY KEY (id, id2);
   want:
     - status: SUCCESS
       code: 0
@@ -110,7 +110,7 @@
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
-    ALTER TABLE t ADD COLUMN id BIGINT, ADD PRIMARY KEY (id)
+    ALTER TABLE t ADD COLUMN id BIGINT, ADD PRIMARY KEY (id);
   want:
     - status: SUCCESS
       code: 0
@@ -120,33 +120,33 @@
       details: ""
 - statement: |-
     CREATE TABLE t(id VARCHAR(5));
-            ALTER TABLE t ADD PRIMARY KEY(id);
+    ALTER TABLE t ADD PRIMARY KEY(id);
   want:
     - status: WARN
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
-      line: 3
+      line: 2
       details: ""
 - statement: |-
     CREATE TABLE t(id INT, id2 VARCHAR(5), id3 VARCHAR(5));
-            ALTER TABLE t ADD PRIMARY KEY(id, id2, id3);
+    ALTER TABLE t ADD PRIMARY KEY(id, id2, id3);
   want:
     - status: WARN
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)
-      line: 3
+      line: 2
       details: ""
     - status: WARN
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id3` is varchar(5)
-      line: 3
+      line: 2
       details: ""
 - statement: |-
     CREATE TABLE t(id INT, id2 BIGINT);
-            ALTER TABLE t ADD PRIMARY KEY(id, id2);
+    ALTER TABLE t ADD PRIMARY KEY(id, id2);
   want:
     - status: SUCCESS
       code: 0
@@ -156,7 +156,7 @@
       details: ""
 - statement: |-
     CREATE TABLE t(id BIGINT);
-          ALTER TABLE t ADD PRIMARY KEY(id);
+    ALTER TABLE t ADD PRIMARY KEY(id);
   want:
     - status: SUCCESS
       code: 0
@@ -172,7 +172,7 @@
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
-      line: 3
+      line: 2
       details: ""
 - statement: |-
     CREATE TABLE t(id int);
@@ -186,17 +186,17 @@
       details: ""
 - statement: |-
     CREATE TABLE t(id int);
-    ALTER TABLE t CHANGE COLUMN id id2 VARCHAR(5) PRIMARY KEY
+    ALTER TABLE t CHANGE COLUMN id id2 VARCHAR(5) PRIMARY KEY;
   want:
     - status: WARN
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)
-      line: 3
+      line: 2
       details: ""
 - statement: |-
     CREATE TABLE t(id int);
-    ALTER TABLE t CHANGE COLUMN id id2 INT(5) PRIMARY KEY
+    ALTER TABLE t CHANGE COLUMN id id2 INT(5) PRIMARY KEY;
   want:
     - status: SUCCESS
       code: 0

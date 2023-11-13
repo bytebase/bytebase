@@ -3,23 +3,23 @@ package mysql
 import (
 	"fmt"
 
-	"github.com/pingcap/tidb/parser/ast"
+	"github.com/antlr4-go/antlr/v4"
+	mysql "github.com/bytebase/mysql-parser"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*NoSelectAllAdvisor)(nil)
-	_ ast.Visitor     = (*noSelectAllChecker)(nil)
 )
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLNoSelectAll, &NoSelectAllAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLNoSelectAll, &NoSelectAllAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLNoSelectAll, &NoSelectAllAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLNoSelectAll, &NoSelectAllAdvisor{})
 }
 
 // NoSelectAllAdvisor is the advisor checking for no "select *".
@@ -28,9 +28,9 @@ type NoSelectAllAdvisor struct {
 
 // Check checks for no "select *".
 func (*NoSelectAllAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	root, ok := ctx.AST.([]ast.StmtNode)
+	root, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to StmtNode")
+		return nil, errors.Errorf("failed to convert to mysql parse result")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -42,9 +42,8 @@ func (*NoSelectAllAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advic
 		title: string(ctx.Rule.Type),
 	}
 	for _, stmtNode := range root {
-		checker.text = stmtNode.Text()
-		checker.line = stmtNode.OriginTextPosition()
-		(stmtNode).Accept(checker)
+		checker.baseLine = stmtNode.BaseLine
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtNode.Tree)
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -59,33 +58,27 @@ func (*NoSelectAllAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advic
 }
 
 type noSelectAllChecker struct {
+	*mysql.BaseMySQLParserListener
+
+	baseLine   int
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
 	text       string
-	line       int
 }
 
-// Enter implements the ast.Visitor interface.
-func (v *noSelectAllChecker) Enter(in ast.Node) (ast.Node, bool) {
-	if node, ok := in.(*ast.SelectStmt); ok {
-		for _, field := range node.Fields.Fields {
-			if field.WildCard != nil {
-				v.adviceList = append(v.adviceList, advisor.Advice{
-					Status:  v.level,
-					Code:    advisor.StatementSelectAll,
-					Title:   v.title,
-					Content: fmt.Sprintf("\"%s\" uses SELECT all", v.text),
-					Line:    v.line,
-				})
-				break
-			}
-		}
+func (checker *noSelectAllChecker) EnterQuery(ctx *mysql.QueryContext) {
+	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+}
+
+func (checker *noSelectAllChecker) EnterSelectItemList(ctx *mysql.SelectItemListContext) {
+	if ctx.MULT_OPERATOR() != nil {
+		checker.adviceList = append(checker.adviceList, advisor.Advice{
+			Status:  checker.level,
+			Code:    advisor.StatementSelectAll,
+			Title:   checker.title,
+			Content: fmt.Sprintf("\"%s\" uses SELECT all", checker.text),
+			Line:    checker.baseLine + ctx.GetStart().GetLine(),
+		})
 	}
-	return in, false
-}
-
-// Leave implements the ast.Visitor interface.
-func (*noSelectAllChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
 }

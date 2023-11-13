@@ -1,4 +1,4 @@
-- statement: CREATE TABLE t(a int COMMENT 'comments')
+- statement: CREATE TABLE t(a int COMMENT 'comments');
   want:
     - status: SUCCESS
       code: 0
@@ -8,9 +8,10 @@
       details: ""
 - statement: |-
     CREATE TABLE t(
-            a int COMMENT 'some comments',
-            b int,
-            c int)
+      a int COMMENT 'some comments',
+      b int,
+      c int
+    );
   want:
     - status: WARN
       code: 409
@@ -32,17 +33,33 @@
       details: ""
 - statement: |-
     CREATE TABLE t(a int COMMENT 'comment');
-    ALTER TABLE t ADD COLUMN b int
+    ALTER TABLE t ADD COLUMN b int;
   want:
     - status: WARN
       code: 408
       title: column.comment
       content: Column `t`.`b` requires comments
-      line: 3
+      line: 2
+      details: ""
+- statement: |-
+    CREATE TABLE t(a int COMMENT 'comment');
+    ALTER TABLE t ADD COLUMN (b int, c int);
+  want:
+    - status: WARN
+      code: 408
+      title: column.comment
+      content: Column `t`.`b` requires comments
+      line: 2
+      details: ""
+    - status: WARN
+      code: 408
+      title: column.comment
+      content: Column `t`.`c` requires comments
+      line: 2
       details: ""
 - statement: |-
     CREATE TABLE t(a int COMMENT 'this is comment');
-    ALTER TABLE t CHANGE COLUMN a b int
+    ALTER TABLE t CHANGE COLUMN a b int;
   want:
     - status: WARN
       code: 409
@@ -54,11 +71,11 @@
       code: 408
       title: column.comment
       content: Column `t`.`b` requires comments
-      line: 3
+      line: 2
       details: ""
 - statement: |-
     CREATE TABLE t(b int COMMENT 'It is comment');
-    ALTER TABLE t MODIFY COLUMN b int
+    ALTER TABLE t MODIFY COLUMN b int;
   want:
     - status: WARN
       code: 409
@@ -70,11 +87,11 @@
       code: 408
       title: column.comment
       content: Column `t`.`b` requires comments
-      line: 3
+      line: 2
       details: ""
 - statement: |-
     CREATE TABLE t(b int COMMENT 'It is COMMENT');
-    ALTER TABLE t MODIFY COLUMN b int COMMENT 'abcdefghiakljhakljdsfalugelkhnabsdguelkadf'
+    ALTER TABLE t MODIFY COLUMN b int COMMENT 'abcdefghiakljhakljdsfalugelkhnabsdguelkadf';
   want:
     - status: WARN
       code: 409
@@ -86,5 +103,5 @@
       code: 409
       title: column.comment
       content: The length of column `t`.`b` comment should be within 10 characters
-      line: 3
+      line: 2
       details: ""

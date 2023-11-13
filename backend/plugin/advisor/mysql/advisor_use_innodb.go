@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pingcap/tidb/parser/ast"
-	"github.com/pingcap/tidb/parser/format"
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
+	mysql "github.com/bytebase/mysql-parser"
+
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -17,10 +19,7 @@ const (
 	defaultStorageEngin string = "default_storage_engine"
 )
 
-var (
-	_ advisor.Advisor = (*UseInnoDBAdvisor)(nil)
-	_ ast.Visitor     = (*useInnoDBChecker)(nil)
-)
+var _ advisor.Advisor = (*UseInnoDBAdvisor)(nil)
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLUseInnoDB, &UseInnoDBAdvisor{})
@@ -33,9 +32,9 @@ type UseInnoDBAdvisor struct {
 
 // Check checks for using InnoDB engine.
 func (*UseInnoDBAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	root, ok := ctx.AST.([]ast.StmtNode)
+	list, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to StmtNode")
+		return nil, errors.Errorf("failed to convert to Tree")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -48,8 +47,9 @@ func (*UseInnoDBAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice,
 		title: string(ctx.Rule.Type),
 	}
 
-	for _, stmtNode := range root {
-		(stmtNode).Accept(checker)
+	for _, stmt := range list {
+		checker.baseLine = stmt.BaseLine
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -64,72 +64,87 @@ func (*UseInnoDBAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice,
 }
 
 type useInnoDBChecker struct {
+	*mysql.BaseMySQLParserListener
+
+	baseLine   int
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
 }
 
-// Enter implements the ast.Visitor interface.
-func (v *useInnoDBChecker) Enter(in ast.Node) (ast.Node, bool) {
-	code := advisor.Ok
-	switch node := in.(type) {
-	// CREATE TABLE
-	case *ast.CreateTableStmt:
-		for _, option := range node.Options {
-			if option.Tp == ast.TableOptionEngine && strings.ToLower(option.StrValue) != innoDB {
-				code = advisor.NotInnoDBEngine
+// EnterCreateTable is called when production createTable is entered.
+func (c *useInnoDBChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if ctx.CreateTableOptions() == nil {
+		return
+	}
+	for _, tableOption := range ctx.CreateTableOptions().AllCreateTableOption() {
+		if tableOption.ENGINE_SYMBOL() != nil && tableOption.EngineRef() != nil {
+			engine := mysqlparser.NormalizeMySQLTextOrIdentifier(tableOption.EngineRef().TextOrIdentifier())
+			if strings.ToLower(engine) != innoDB {
+				content := "CREATE " + ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+				line := tableOption.GetStart().GetLine()
+				c.addAdvice(content, line)
 				break
 			}
 		}
-	// ALTER TABLE
-	case *ast.AlterTableStmt:
-		for _, spec := range node.Specs {
-			// TABLE OPTION
-			if spec.Tp == ast.AlterTableOption {
-				for _, option := range spec.Options {
-					if option.Tp == ast.TableOptionEngine && strings.ToLower(option.StrValue) != innoDB {
-						code = advisor.NotInnoDBEngine
-						break
-					}
-				}
-			}
-		}
-	// SET
-	case *ast.SetStmt:
-		for _, variable := range node.Variables {
-			if strings.ToLower(variable.Name) == defaultStorageEngin {
-				// Return lowercase
-				text, err := restoreNode(variable.Value, format.RestoreNameLowercase)
-				if err != nil {
-					v.adviceList = append(v.adviceList, advisor.Advice{
-						Status:  v.level,
-						Code:    advisor.Internal,
-						Title:   "Internal error for use InnoDB rule",
-						Content: fmt.Sprintf("\"%s\" meet internal error %q", in.Text(), err.Error()),
-					})
-					continue
-				}
-				if text != innoDB {
+	}
+}
+
+func (c *useInnoDBChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	code := advisor.Ok
+	for _, option := range ctx.AlterTableActions().AlterCommandList().AlterList().AllCreateTableOptionsSpaceSeparated() {
+		for _, op := range option.AllCreateTableOption() {
+			switch {
+			case op.ENGINE_SYMBOL() != nil:
+				engine := op.EngineRef().GetText()
+				if strings.ToLower(engine) != innoDB {
 					code = advisor.NotInnoDBEngine
 					break
 				}
+			default:
 			}
 		}
 	}
 
 	if code != advisor.Ok {
-		v.adviceList = append(v.adviceList, advisor.Advice{
-			Status:  v.level,
-			Code:    code,
-			Title:   v.title,
-			Content: fmt.Sprintf("\"%s\" doesn't use InnoDB engine", in.Text()),
-			Line:    in.OriginTextPosition(),
-		})
+		content := "ALTER " + ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+		line := ctx.GetStart().GetLine()
+		c.addAdvice(content, line)
 	}
-	return in, false
 }
 
-// Leave implements the ast.Visitor interface.
-func (*useInnoDBChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
+func (c *useInnoDBChecker) EnterSetStatement(ctx *mysql.SetStatementContext) {
+	code := advisor.Ok
+	if ctx.StartOptionValueList() == nil {
+		return
+	}
+
+	startOptionValueList := ctx.StartOptionValueList()
+	if startOptionValueList.OptionValueNoOptionType() == nil {
+		return
+	}
+	optionValueNoOptionType := startOptionValueList.OptionValueNoOptionType()
+	if optionValueNoOptionType.SetExprOrDefault() != nil {
+		engine := optionValueNoOptionType.SetExprOrDefault().GetText()
+		if strings.ToLower(engine) != innoDB {
+			code = advisor.NotInnoDBEngine
+		}
+	}
+
+	if code != advisor.Ok {
+		content := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+		line := ctx.GetStart().GetLine()
+		c.addAdvice(content, line)
+	}
+}
+
+func (c *useInnoDBChecker) addAdvice(content string, lineNumber int) {
+	lineNumber += c.baseLine
+	c.adviceList = append(c.adviceList, advisor.Advice{
+		Status:  c.level,
+		Code:    advisor.NotInnoDBEngine,
+		Title:   c.title,
+		Content: fmt.Sprintf("\"%s;\" doesn't use InnoDB engine", content),
+		Line:    lineNumber,
+	})
 }

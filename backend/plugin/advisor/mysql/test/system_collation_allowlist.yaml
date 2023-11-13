@@ -1,14 +1,13 @@
-- statement: CREATE TABLE t(a int) COLLATE utf8mb4_polish_ci
+- statement: CREATE TABLE t(a int) COLLATE utf8mb4_polish_ci;
   want:
     - status: WARN
       code: 1201
       title: system.collation.allowlist
       content: |-
-        "CREATE TABLE t(a int) COLLATE utf8mb4_polish_ci
-        ;" used disabled collation 'utf8mb4_polish_ci'
-      line: 2
+        "CREATE TABLE t(a int) COLLATE utf8mb4_polish_ci;" used disabled collation 'utf8mb4_polish_ci'
+      line: 1
       details: ""
-- statement: CREATE TABLE t(a varchar(255))
+- statement: CREATE TABLE t(a varchar(255));
   want:
     - status: SUCCESS
       code: 0
@@ -16,85 +15,74 @@
       content: ""
       line: 0
       details: ""
-- statement: CREATE TABLE t(a int) COLLATE latin1_bin
+- statement: CREATE TABLE t(a int) COLLATE latin1_bin;
   want:
     - status: WARN
       code: 1201
       title: system.collation.allowlist
       content: |-
-        "CREATE TABLE t(a int) COLLATE latin1_bin
-        ;" used disabled collation 'latin1_bin'
-      line: 2
+        "CREATE TABLE t(a int) COLLATE latin1_bin;" used disabled collation 'latin1_bin'
+      line: 1
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
-    ALTER TABLE t COLLATE latin1_bin
+    ALTER TABLE t COLLATE latin1_bin;
   want:
     - status: WARN
       code: 1201
       title: system.collation.allowlist
       content: |-
-        "
-        ALTER TABLE t COLLATE latin1_bin
-        ;" used disabled collation 'latin1_bin'
-      line: 3
-      details: ""
-- statement: ALTER DATABASE test COLLATE latin1_bin
-  want:
-    - status: WARN
-      code: 1201
-      title: system.collation.allowlist
-      content: |-
-        "ALTER DATABASE test COLLATE latin1_bin
-        ;" used disabled collation 'latin1_bin'
+        "ALTER TABLE t COLLATE latin1_bin;" used disabled collation 'latin1_bin'
       line: 2
       details: ""
-- statement: CREATE TABLE t(a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin)
+- statement: ALTER DATABASE test COLLATE latin1_bin;
   want:
     - status: WARN
       code: 1201
       title: system.collation.allowlist
       content: |-
-        "CREATE TABLE t(a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin)
-        ;" used disabled collation 'latin1_bin'
+        "ALTER DATABASE test COLLATE latin1_bin;" used disabled collation 'latin1_bin'
+      line: 1
+      details: ""
+- statement: CREATE TABLE t(a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin);
+  want:
+    - status: WARN
+      code: 1201
+      title: system.collation.allowlist
+      content: |-
+        "CREATE TABLE t(a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin);" used disabled collation 'latin1_bin'
       line: 1
       details: ""
 - statement: |-
     CREATE TABLE t(b int);
-    ALTER TABLE t ADD COLUMN a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin
+    ALTER TABLE t ADD COLUMN a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin;
   want:
     - status: WARN
       code: 1201
       title: system.collation.allowlist
       content: |-
-        "
-        ALTER TABLE t ADD COLUMN a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin
-        ;" used disabled collation 'latin1_bin'
-      line: 3
+        "ALTER TABLE t ADD COLUMN a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin;" used disabled collation 'latin1_bin'
+      line: 2
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
-    ALTER TABLE t MODIFY COLUMN a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin
+    ALTER TABLE t MODIFY COLUMN a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin;
   want:
     - status: WARN
       code: 1201
       title: system.collation.allowlist
       content: |-
-        "
-        ALTER TABLE t MODIFY COLUMN a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin
-        ;" used disabled collation 'latin1_bin'
-      line: 3
+        "ALTER TABLE t MODIFY COLUMN a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin;" used disabled collation 'latin1_bin'
+      line: 2
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
-    ALTER TABLE t CHANGE COLUMN a a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin
+    ALTER TABLE t CHANGE COLUMN a a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin;
   want:
     - status: WARN
       code: 1201
       title: system.collation.allowlist
       content: |-
-        "
-        ALTER TABLE t CHANGE COLUMN a a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin
-        ;" used disabled collation 'latin1_bin'
-      line: 3
+        "ALTER TABLE t CHANGE COLUMN a a varchar(255) CHARACTER SET latin1 COLLATE latin1_bin;" used disabled collation 'latin1_bin'
+      line: 2
       details: ""

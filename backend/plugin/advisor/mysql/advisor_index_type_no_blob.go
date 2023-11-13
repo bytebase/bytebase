@@ -6,26 +6,25 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pingcap/tidb/parser/ast"
-	"github.com/pingcap/tidb/parser/mysql"
-	"github.com/pingcap/tidb/parser/types"
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
+
+	mysql "github.com/bytebase/mysql-parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*IndexTypeNoBlobAdvisor)(nil)
-	_ ast.Visitor     = (*indexTypeNoBlobChecker)(nil)
 )
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLIndexTypeNoBlob, &IndexTypeNoBlobAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLIndexTypeNoBlob, &IndexTypeNoBlobAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLIndexTypeNoBlob, &IndexTypeNoBlobAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLIndexTypeNoBlob, &IndexTypeNoBlobAdvisor{})
 }
 
 // IndexTypeNoBlobAdvisor is the advisor checking for index type no blob.
@@ -34,9 +33,9 @@ type IndexTypeNoBlobAdvisor struct {
 
 // Check checks for index type no blob.
 func (*IndexTypeNoBlobAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	stmtList, ok := ctx.AST.([]ast.StmtNode)
+	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to StmtNode")
+		return nil, errors.Errorf("failed to convert to mysql parse result")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -47,13 +46,12 @@ func (*IndexTypeNoBlobAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.A
 		level:            level,
 		title:            string(ctx.Rule.Type),
 		catalog:          ctx.Catalog,
-		tablesNewColumns: make(map[string]columnNameToColumnDef),
+		tablesNewColumns: make(tableColumnTypes),
 	}
 
 	for _, stmt := range stmtList {
-		checker.text = stmt.Text()
-		checker.line = stmt.OriginTextPosition()
-		(stmt).Accept(checker)
+		checker.baseLine = stmt.BaseLine
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -68,161 +66,187 @@ func (*IndexTypeNoBlobAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.A
 }
 
 type indexTypeNoBlobChecker struct {
+	*mysql.BaseMySQLParserListener
+
+	baseLine         int
 	adviceList       []advisor.Advice
 	level            advisor.Status
 	title            string
-	text             string
-	line             int
 	catalog          *catalog.Finder
-	tablesNewColumns tableNewColumn
+	tablesNewColumns tableColumnTypes
 }
 
-// Enter implements the ast.Visitor interface.
-func (v *indexTypeNoBlobChecker) Enter(in ast.Node) (ast.Node, bool) {
-	var pkDataList []pkData
-	switch node := in.(type) {
-	case *ast.CreateTableStmt:
-		tableName := node.Table.Name.String()
-		for _, column := range node.Cols {
-			pds := v.addNewColumn(tableName, column.OriginTextPosition(), column)
-			pkDataList = append(pkDataList, pds...)
-		}
-		for _, constraint := range node.Constraints {
-			pds := v.addConstraint(tableName, constraint.OriginTextPosition(), constraint)
-			pkDataList = append(pkDataList, pds...)
-		}
-	case *ast.AlterTableStmt:
-		tableName := node.Table.Name.String()
-		for _, spec := range node.Specs {
-			switch spec.Tp {
-			case ast.AlterTableAddColumns:
-				for _, column := range spec.NewColumns {
-					pds := v.addNewColumn(tableName, node.OriginTextPosition(), column)
-					pkDataList = append(pkDataList, pds...)
-				}
-			case ast.AlterTableAddConstraint:
-				pds := v.addConstraint(tableName, node.OriginTextPosition(), spec.Constraint)
-				pkDataList = append(pkDataList, pds...)
-			case ast.AlterTableChangeColumn, ast.AlterTableModifyColumn:
-				newColumnDef := spec.NewColumns[0]
-				oldColumnName := newColumnDef.Name.Name.String()
-				if spec.OldColumnName != nil {
-					oldColumnName = spec.OldColumnName.Name.String()
-				}
-				pds := v.changeColumn(tableName, oldColumnName, node.OriginTextPosition(), newColumnDef)
-				pkDataList = append(pkDataList, pds...)
-			}
-		}
-	case *ast.CreateIndexStmt:
-		tableName := node.Table.Name.String()
-		for _, indexSpec := range node.IndexPartSpecifications {
-			pds := v.addIndex(tableName, node.OriginTextPosition(), indexSpec)
-			pkDataList = append(pkDataList, pds...)
-		}
+func (checker *indexTypeNoBlobChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if ctx.TableName() == nil {
+		return
 	}
-	for _, pd := range pkDataList {
-		v.adviceList = append(v.adviceList, advisor.Advice{
-			Status:  v.level,
-			Code:    advisor.IndexTypeNoBlob,
-			Title:   v.title,
-			Content: fmt.Sprintf("Columns in index must not be BLOB but `%s`.`%s` is %s", pd.table, pd.column, pd.columnType),
-			Line:    pd.line,
-		})
+	if ctx.TableElementList() == nil {
+		return
 	}
-	return in, false
-}
 
-// Leave implements the ast.Visitor interface.
-func (*indexTypeNoBlobChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
-}
-
-func (v *indexTypeNoBlobChecker) addNewColumn(tableName string, line int, colDef *ast.ColumnDef) []pkData {
-	var pkDataList []pkData
-	for _, option := range colDef.Options {
-		if option.Tp == ast.ColumnOptionUniqKey {
-			tp := v.getBlobStr(colDef.Tp)
-			if v.isBlob(tp) {
-				pkDataList = append(pkDataList, pkData{
-					table:      tableName,
-					column:     colDef.Name.String(),
-					columnType: tp,
-					line:       line,
-				})
-			}
+	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
+	for _, tableElement := range ctx.TableElementList().AllTableElement() {
+		if tableElement == nil {
+			continue
 		}
-	}
-	v.tablesNewColumns.set(tableName, colDef.Name.String(), colDef)
-	return pkDataList
-}
-
-func (v *indexTypeNoBlobChecker) addIndex(tableName string, line int, indexSpec *ast.IndexPartSpecification) []pkData {
-	var pkDataList []pkData
-	columnName := indexSpec.Column.Name.String()
-	columnType, err := v.getColumnType(tableName, columnName)
-	if err != nil {
-		return nil
-	}
-	if v.isBlob(columnType) {
-		pkDataList = append(pkDataList, pkData{
-			table:      tableName,
-			column:     columnName,
-			columnType: columnType,
-			line:       line,
-		})
-	}
-	return pkDataList
-}
-
-func (v *indexTypeNoBlobChecker) changeColumn(tableName, oldColumnName string, line int, newColumnDef *ast.ColumnDef) []pkData {
-	var pkDataList []pkData
-	v.tablesNewColumns.delete(tableName, oldColumnName)
-	for _, option := range newColumnDef.Options {
-		if option.Tp == ast.ColumnOptionPrimaryKey || option.Tp == ast.ColumnOptionUniqKey {
-			tp := v.getBlobStr(newColumnDef.Tp)
-			if v.isBlob(tp) {
-				pkDataList = append(pkDataList, pkData{
-					table:      tableName,
-					column:     newColumnDef.Name.String(),
-					columnType: tp,
-					line:       line,
-				})
-			}
-		}
-	}
-	v.tablesNewColumns.set(tableName, newColumnDef.Name.String(), newColumnDef)
-	return pkDataList
-}
-
-func (v *indexTypeNoBlobChecker) addConstraint(tableName string, line int, constraint *ast.Constraint) []pkData {
-	var pkDataList []pkData
-	if constraint.Tp == ast.ConstraintPrimaryKey || constraint.Tp == ast.ConstraintUniqKey || constraint.Tp == ast.ConstraintKey ||
-		constraint.Tp == ast.ConstraintIndex || constraint.Tp == ast.ConstraintUniqIndex || constraint.Tp == ast.ConstraintUniq {
-		for _, key := range constraint.Keys {
-			columnName := key.Column.Name.String()
-			columnType, err := v.getColumnType(tableName, columnName)
-			if err != nil {
+		switch {
+		case tableElement.ColumnDefinition() != nil:
+			if tableElement.ColumnDefinition().FieldDefinition() == nil {
 				continue
 			}
-			if v.isBlob(columnType) {
-				pkDataList = append(pkDataList, pkData{
-					table:      tableName,
-					column:     columnName,
-					columnType: columnType,
-					line:       line,
-				})
-			}
+			_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
+			checker.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
+		case tableElement.TableConstraintDef() != nil:
+			checker.checkConstraintDef(tableName, tableElement.TableConstraintDef())
 		}
 	}
-	return pkDataList
 }
 
-// getPKColumnType gets the column type string from v.tablesNewColumns or catalog, returns empty string and non-nil error if cannot find the column in given table.
-func (v *indexTypeNoBlobChecker) getColumnType(tableName string, columnName string) (string, error) {
-	if colDef, ok := v.tablesNewColumns.get(tableName, columnName); ok {
-		return v.getBlobStr(colDef.Tp), nil
+func (checker *indexTypeNoBlobChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if ctx.AlterTableActions() == nil {
+		return
 	}
-	column := v.catalog.Origin.FindColumn(&catalog.ColumnFind{
+	if ctx.AlterTableActions().AlterCommandList() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
+		return
+	}
+	if ctx.TableRef() == nil {
+		return
+	}
+
+	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
+	for _, alterListItem := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
+		if alterListItem == nil {
+			continue
+		}
+
+		switch {
+		// add column
+		case alterListItem.ADD_SYMBOL() != nil && alterListItem.Identifier() != nil:
+			switch {
+			case alterListItem.Identifier() != nil && alterListItem.FieldDefinition() != nil:
+				columnName := mysqlparser.NormalizeMySQLIdentifier(alterListItem.Identifier())
+				checker.checkFieldDefinition(tableName, columnName, alterListItem.FieldDefinition())
+			case alterListItem.OPEN_PAR_SYMBOL() != nil && alterListItem.TableElementList() != nil:
+				for _, tableElement := range alterListItem.TableElementList().AllTableElement() {
+					if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().ColumnName() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil {
+						continue
+					}
+					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
+					checker.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
+				}
+			}
+		// modify column
+		case alterListItem.MODIFY_SYMBOL() != nil && alterListItem.ColumnInternalRef() != nil:
+			columnName := mysqlparser.NormalizeMySQLColumnInternalRef(alterListItem.ColumnInternalRef())
+			checker.checkFieldDefinition(tableName, columnName, alterListItem.FieldDefinition())
+		// change column
+		case alterListItem.CHANGE_SYMBOL() != nil && alterListItem.ColumnInternalRef() != nil && alterListItem.Identifier() != nil:
+			oldColumnName := mysqlparser.NormalizeMySQLColumnInternalRef(alterListItem.ColumnInternalRef())
+			checker.tablesNewColumns.delete(tableName, oldColumnName)
+			newColumnName := mysqlparser.NormalizeMySQLIdentifier(alterListItem.Identifier())
+			checker.checkFieldDefinition(tableName, newColumnName, alterListItem.FieldDefinition())
+		// add constriant.
+		case alterListItem.ADD_SYMBOL() != nil && alterListItem.TableConstraintDef() != nil:
+			checker.checkConstraintDef(tableName, alterListItem.TableConstraintDef())
+		}
+	}
+}
+
+func (checker *indexTypeNoBlobChecker) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
+	switch ctx.GetType_().GetTokenType() {
+	case mysql.MySQLParserFULLTEXT_SYMBOL, mysql.MySQLParserSPATIAL_SYMBOL, mysql.MySQLParserFOREIGN_SYMBOL:
+		return
+	}
+	if ctx.CreateIndexTarget() == nil || ctx.CreateIndexTarget().TableRef() == nil || ctx.CreateIndexTarget().KeyListVariants() == nil {
+		return
+	}
+
+	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.CreateIndexTarget().TableRef())
+	columnList := mysqlparser.NormalizeKeyListVariants(ctx.CreateIndexTarget().KeyListVariants())
+	for _, columnName := range columnList {
+		columnType, err := checker.getColumnType(tableName, columnName)
+		if err != nil {
+			continue
+		}
+		columnType = strings.ToLower(columnType)
+		checker.addAdvice(tableName, columnName, columnType, ctx.GetStart().GetLine())
+	}
+}
+
+func (checker *indexTypeNoBlobChecker) checkFieldDefinition(tableName, columnName string, ctx mysql.IFieldDefinitionContext) {
+	if ctx.DataType() == nil {
+		return
+	}
+	columnType := mysqlparser.NormalizeMySQLDataType(ctx.DataType(), true /* compact */)
+	for _, attribute := range ctx.AllColumnAttribute() {
+		// the FieldDefinitionContext can only set primary or unique.
+		switch attribute.GetValue().GetTokenType() {
+		case mysql.MySQLParserPRIMARY_SYMBOL, mysql.MySQLParserUNIQUE_SYMBOL:
+			// do nothing
+		default:
+			continue
+		}
+		checker.addAdvice(tableName, columnName, columnType, ctx.GetStart().GetLine())
+	}
+	checker.tablesNewColumns.set(tableName, columnName, columnType)
+}
+
+func (checker *indexTypeNoBlobChecker) checkConstraintDef(tableName string, ctx mysql.ITableConstraintDefContext) {
+	var columnList []string
+	switch ctx.GetType_().GetTokenType() {
+	case mysql.MySQLParserINDEX_SYMBOL, mysql.MySQLParserKEY_SYMBOL, mysql.MySQLParserPRIMARY_SYMBOL, mysql.MySQLParserUNIQUE_SYMBOL:
+		if ctx.KeyListVariants() == nil {
+			return
+		}
+		columnList = mysqlparser.NormalizeKeyListVariants(ctx.KeyListVariants())
+	case mysql.MySQLParserFOREIGN_SYMBOL:
+		if ctx.KeyList() == nil {
+			return
+		}
+		columnList = mysqlparser.NormalizeKeyList(ctx.KeyList())
+	default:
+		return
+	}
+
+	for _, columnName := range columnList {
+		columnType, err := checker.getColumnType(tableName, columnName)
+		if err != nil {
+			continue
+		}
+		columnType = strings.ToLower(columnType)
+		checker.addAdvice(tableName, columnName, columnType, ctx.GetStart().GetLine())
+	}
+}
+
+func (checker *indexTypeNoBlobChecker) addAdvice(tableName, columnName, columnType string, lineNumber int) {
+	if checker.isBlob(columnType) {
+		checker.adviceList = append(checker.adviceList, advisor.Advice{
+			Status:  checker.level,
+			Code:    advisor.IndexTypeNoBlob,
+			Title:   checker.title,
+			Content: fmt.Sprintf("Columns in index must not be BLOB but `%s`.`%s` is %s", tableName, columnName, columnType),
+			Line:    checker.baseLine + lineNumber,
+		})
+	}
+}
+func (*indexTypeNoBlobChecker) isBlob(columnType string) bool {
+	switch strings.ToLower(columnType) {
+	case "blob", "tinyblob", "mediumblob", "longblob":
+		return true
+	default:
+		return false
+	}
+}
+
+// getColumnType gets the column type string from checker.tableColumnTypes or catalog, returns empty string and non-nil error if cannot find the column in given table.
+func (checker *indexTypeNoBlobChecker) getColumnType(tableName string, columnName string) (string, error) {
+	if columnType, ok := checker.tablesNewColumns.get(tableName, columnName); ok {
+		return columnType, nil
+	}
+	column := checker.catalog.Origin.FindColumn(&catalog.ColumnFind{
 		TableName:  tableName,
 		ColumnName: columnName,
 	})
@@ -230,24 +254,4 @@ func (v *indexTypeNoBlobChecker) getColumnType(tableName string, columnName stri
 		return column.Type(), nil
 	}
 	return "", errors.Errorf("cannot find the type of `%s`.`%s`", tableName, columnName)
-}
-
-// getIntOrBigIntStr returns the type string of tp.
-func (*indexTypeNoBlobChecker) getBlobStr(tp *types.FieldType) string {
-	switch tp.GetType() {
-	case mysql.TypeTinyBlob:
-		return "tinyblob"
-	case mysql.TypeBlob:
-		return "blob"
-	case mysql.TypeMediumBlob:
-		return "mediumblob"
-	case mysql.TypeLongBlob:
-		return "longblob"
-	}
-	return tp.String()
-}
-
-func (*indexTypeNoBlobChecker) isBlob(tp string) bool {
-	up := strings.ToUpper(tp)
-	return up == "TINYBLOB" || up == "BLOB" || up == "MEDIUMBLOB" || up == "LONGBLOB"
 }

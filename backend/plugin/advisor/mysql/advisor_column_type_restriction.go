@@ -6,23 +6,24 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pingcap/tidb/parser/ast"
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
+	mysql "github.com/bytebase/mysql-parser"
+
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*ColumnTypeRestrictionAdvisor)(nil)
-	_ ast.Visitor     = (*columnTypeRestrictionChecker)(nil)
 )
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLColumnTypeRestriction, &ColumnTypeRestrictionAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLColumnTypeRestriction, &ColumnTypeRestrictionAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLColumnTypeRestriction, &ColumnTypeRestrictionAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnTypeRestriction, &ColumnTypeRestrictionAdvisor{})
 }
 
 // ColumnTypeRestrictionAdvisor is the advisor checking for column type restriction.
@@ -31,9 +32,9 @@ type ColumnTypeRestrictionAdvisor struct {
 
 // Check checks for column type restriction.
 func (*ColumnTypeRestrictionAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	stmtList, ok := ctx.AST.([]ast.StmtNode)
+	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to StmtNode")
+		return nil, errors.Errorf("failed to convert to mysql parser result")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -54,9 +55,8 @@ func (*ColumnTypeRestrictionAdvisor) Check(ctx advisor.Context, _ string) ([]adv
 	}
 
 	for _, stmt := range stmtList {
-		checker.text = stmt.Text()
-		checker.line = stmt.OriginTextPosition()
-		(stmt).Accept(checker)
+		checker.baseLine = stmt.BaseLine
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -71,78 +71,100 @@ func (*ColumnTypeRestrictionAdvisor) Check(ctx advisor.Context, _ string) ([]adv
 }
 
 type columnTypeRestrictionChecker struct {
+	*mysql.BaseMySQLParserListener
+
+	baseLine        int
 	adviceList      []advisor.Advice
 	level           advisor.Status
 	title           string
-	text            string
-	line            int
 	typeRestriction map[string]bool
 }
 
-type columnTypeData struct {
-	table  string
-	column string
-	tp     string
-	line   int
-}
-
-// Enter implements the ast.Visitor interface.
-func (checker *columnTypeRestrictionChecker) Enter(in ast.Node) (ast.Node, bool) {
-	var columnList []columnTypeData
-	switch node := in.(type) {
-	case *ast.CreateTableStmt:
-		for _, column := range node.Cols {
-			if _, exist := checker.typeRestriction[strings.ToUpper(column.Tp.CompactStr())]; exist {
-				columnList = append(columnList, columnTypeData{
-					table:  node.Table.Name.O,
-					column: column.Name.Name.O,
-					tp:     strings.ToUpper(column.Tp.CompactStr()),
-					line:   column.OriginTextPosition(),
-				})
-			}
-		}
-	case *ast.AlterTableStmt:
-		for _, spec := range node.Specs {
-			switch spec.Tp {
-			case ast.AlterTableAddColumns:
-				for _, column := range spec.NewColumns {
-					if _, exist := checker.typeRestriction[strings.ToUpper(column.Tp.CompactStr())]; exist {
-						columnList = append(columnList, columnTypeData{
-							table:  node.Table.Name.O,
-							column: column.Name.Name.O,
-							tp:     strings.ToUpper(column.Tp.CompactStr()),
-							line:   node.OriginTextPosition(),
-						})
-					}
-				}
-			case ast.AlterTableChangeColumn, ast.AlterTableModifyColumn:
-				column := spec.NewColumns[0]
-				if _, exist := checker.typeRestriction[strings.ToUpper(column.Tp.CompactStr())]; exist {
-					columnList = append(columnList, columnTypeData{
-						table:  node.Table.Name.O,
-						column: column.Name.Name.O,
-						tp:     strings.ToUpper(column.Tp.CompactStr()),
-						line:   node.OriginTextPosition(),
-					})
-				}
-			}
-		}
+func (checker *columnTypeRestrictionChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if ctx.TableName() == nil {
+		return
+	}
+	if ctx.TableElementList() == nil {
+		return
 	}
 
-	for _, column := range columnList {
+	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
+	for _, tableElement := range ctx.TableElementList().AllTableElement() {
+		if tableElement == nil {
+			continue
+		}
+		if tableElement.ColumnDefinition() == nil {
+			continue
+		}
+
+		_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
+		if tableElement.ColumnDefinition().FieldDefinition() == nil {
+			continue
+		}
+		checker.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
+	}
+}
+
+func (checker *columnTypeRestrictionChecker) checkFieldDefinition(tableName, columnName string, ctx mysql.IFieldDefinitionContext) {
+	if ctx.DataType() == nil {
+		return
+	}
+	columnType := mysqlparser.NormalizeMySQLDataType(ctx.DataType(), true /* compact */)
+	columnType = strings.ToUpper(columnType)
+	if _, exists := checker.typeRestriction[columnType]; exists {
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  checker.level,
 			Code:    advisor.DisabledColumnType,
 			Title:   checker.title,
-			Content: fmt.Sprintf("Disallow column type %s but column `%s`.`%s` is", column.tp, column.table, column.column),
-			Line:    column.line,
+			Content: fmt.Sprintf("Disallow column type %s but column `%s`.`%s` is", columnType, tableName, columnName),
+			Line:    checker.baseLine + ctx.GetStart().GetLine(),
 		})
 	}
-
-	return in, false
 }
 
-// Leave implements the ast.Visitor interface.
-func (*columnTypeRestrictionChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
+// EnterAlterTable is called when production alterTable is entered.
+func (checker *columnTypeRestrictionChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if ctx.AlterTableActions() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
+		return
+	}
+
+	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
+	// alter table add column, change column, modify column.
+	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
+		if item == nil {
+			continue
+		}
+
+		switch {
+		// add column
+		case item.ADD_SYMBOL() != nil:
+			switch {
+			case item.Identifier() != nil && item.FieldDefinition() != nil:
+				columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+				checker.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
+			case item.OPEN_PAR_SYMBOL() != nil && item.TableElementList() != nil:
+				for _, tableElement := range item.TableElementList().AllTableElement() {
+					if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().ColumnName() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil {
+						continue
+					}
+					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
+					checker.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
+				}
+			}
+		// modify column
+		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
+			columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
+			checker.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
+		// change column
+		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil && item.FieldDefinition() != nil:
+			columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+			checker.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
+		}
+	}
 }

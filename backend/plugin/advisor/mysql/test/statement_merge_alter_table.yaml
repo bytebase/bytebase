@@ -1,4 +1,4 @@
-- statement: ALTER TABLE tech_book ADD COLUMN a int
+- statement: ALTER TABLE tech_book ADD COLUMN a int;
   want:
     - status: SUCCESS
       code: 0
@@ -8,19 +8,19 @@
       details: ""
 - statement: |-
     ALTER TABLE tech_book ADD COLUMN a int;
-    ALTER TABLE tech_book ADD COLUMN b int;
+    ALTER TABLE tech_book CHANGE COLUMN a c int;
   want:
     - status: WARN
       code: 207
       title: statement.merge-alter-table
       content: There are 2 statements to modify table `tech_book`
-      line: 3
+      line: 2
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
-    ALTER TABLE tech_book ADD COLUMN a int;
-    ALTER TABLE t ADD COLUMN b int;
     ALTER TABLE tech_book ADD COLUMN b int;
+    ALTER TABLE t ADD COLUMN b int;
+    ALTER TABLE tech_book MODIFY COLUMN b varchar(255);
   want:
     - status: WARN
       code: 207
@@ -32,7 +32,7 @@
       code: 207
       title: statement.merge-alter-table
       content: There are 2 statements to modify table `tech_book`
-      line: 5
+      line: 4
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
@@ -50,5 +50,5 @@
       code: 207
       title: statement.merge-alter-table
       content: There are 2 statements to modify table `t`
-      line: 5
+      line: 4
       details: ""

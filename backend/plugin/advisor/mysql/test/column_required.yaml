@@ -1,138 +1,49 @@
-- statement: CREATE TABLE book(id int)
+- statement: |-
+    CREATE TABLE t1(a INT);
+    CREATE TABLE book(id int);
+    CREATE TABLE t2(id INT, creator_id INT);
+    CREATE TABLE t3(id INT, creator_id INT, created_ts timestamp);
+    CREATE TABLE t4(id INT, creator_id INT, created_ts timestamp, updater_id INT);
+    CREATE TABLE t5(id INT, creator_id INT, created_ts timestamp, updater_id INT, updated_ts timestamp);
   want:
     - status: WARN
       code: 401
       title: column.required
-      content: 'Table `book` requires columns: created_ts, creator_id, updated_ts, updater_id'
+      content: "Table `t1` requires columns: created_ts, creator_id, id, updated_ts, updater_id"
+      line: 1
+      details: ""
+    - status: WARN
+      code: 401
+      title: column.required
+      content: "Table `book` requires columns: created_ts, creator_id, updated_ts, updater_id"
       line: 2
       details: ""
-- statement: |-
-    CREATE TABLE book(
-                  id int,
-                  creator_id int,
-                  created_ts timestamp,
-                  updater_id int,
-                  updated_ts timestamp)
-  want:
-    - status: SUCCESS
-      code: 0
-      title: OK
-      content: ""
-      line: 0
-      details: ""
-- statement: |-
-    CREATE TABLE book(
-                  id int,
-                  creator_id int,
-                  created_ts timestamp,
-                  updater_id int,
-                  updated_ts timestamp);
-                ALTER TABLE book RENAME COLUMN creator_id TO creator;
-  want:
     - status: WARN
       code: 401
       title: column.required
-      content: 'Table `book` requires columns: creator_id'
-      line: 8
+      content: "Table `t2` requires columns: created_ts, updated_ts, updater_id"
+      line: 3
       details: ""
-- statement: |-
-    CREATE TABLE book(
-                  id int,
-                  creator int,
-                  created_ts timestamp,
-                  updater_id int,
-                  updated_ts timestamp);
-                ALTER TABLE book RENAME COLUMN creator TO creator_id;
-  want:
-    - status: SUCCESS
-      code: 0
-      title: OK
-      content: ""
-      line: 0
-      details: ""
-- statement: |-
-    CREATE TABLE book(
-                  id int,
-                  creator_id int,
-                  created_ts timestamp,
-                  updater_id int,
-                  updated_ts timestamp);
-                ALTER TABLE book CHANGE COLUMN creator_id creator int;
-  want:
     - status: WARN
       code: 401
       title: column.required
-      content: 'Table `book` requires columns: creator_id'
-      line: 8
+      content: "Table `t3` requires columns: updated_ts, updater_id"
+      line: 4
       details: ""
-- statement: |-
-    CREATE TABLE book(
-                  id int,
-                  creator int,
-                  created_ts timestamp,
-                  updater_id int,
-                  updated_ts timestamp);
-                ALTER TABLE book CHANGE COLUMN creator creator_id int;
-  want:
-    - status: SUCCESS
-      code: 0
-      title: OK
-      content: ""
-      line: 0
-      details: ""
-- statement: |-
-    CREATE TABLE book(
-                  id int,
-                  creator_id int,
-                  created_ts timestamp,
-                  updater_id int,
-                  updated_ts timestamp);
-                ALTER TABLE book DROP COLUMN creator_id;
-  want:
     - status: WARN
       code: 401
       title: column.required
-      content: 'Table `book` requires columns: creator_id'
-      line: 8
-      details: ""
-- statement: |-
-    CREATE TABLE book(
-                  id int,
-                  creator_id int,
-                  created_ts timestamp,
-                  updater_id int,
-                  updated_ts timestamp,
-                  content varchar(255));
-                ALTER TABLE book DROP COLUMN content;
-  want:
-    - status: SUCCESS
-      code: 0
-      title: OK
-      content: ""
-      line: 0
-      details: ""
-- statement: |-
-    CREATE TABLE book(
-                  id int,
-                  creator_id int,
-                  created_ts timestamp,
-                  updated_ts timestamp);
-                ALTER TABLE book ADD COLUMN content varchar(255);
-  want:
-    - status: WARN
-      code: 401
-      title: column.required
-      content: 'Table `book` requires columns: updater_id'
+      content: "Table `t4` requires columns: updated_ts"
       line: 5
       details: ""
 - statement: |-
     CREATE TABLE book(
-                  id int,
-                  creator int,
-                  created_ts timestamp,
-                  updater_id int,
-                  updated_ts timestamp);
-                ALTER TABLE book ADD COLUMN creator_id int;
+      id int,
+      creator_id int,
+      created_ts timestamp,
+      updater_id int,
+      updated_ts timestamp
+    );
   want:
     - status: SUCCESS
       code: 0
@@ -142,35 +53,183 @@
       details: ""
 - statement: |-
     CREATE TABLE book(
-                  id int,
-                  created_ts timestamp,
-                  updater_id int,
-                  updated_ts timestamp);
-                CREATE TABLE student(
-                  id int,
-                  created_ts timestamp,
-                  updated_ts timestamp)
+      id int,
+      creator_id int,
+      created_ts timestamp,
+      updater_id int,
+      updated_ts timestamp
+    );
+    ALTER TABLE book RENAME COLUMN creator_id TO creator;
   want:
     - status: WARN
       code: 401
       title: column.required
-      content: 'Table `book` requires columns: creator_id'
-      line: 5
+      content: "Table `book` requires columns: creator_id"
+      line: 8
+      details: ""
+- statement: |-
+    CREATE TABLE book(
+      id int,
+      creator int,
+      created_ts timestamp,
+      updater_id int,
+      updated_ts timestamp
+    );
+    ALTER TABLE book RENAME COLUMN creator TO creator_id;
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |-
+    CREATE TABLE book(
+      id int,
+      creator_id int,
+      created_ts timestamp,
+      updater_id int,
+      updated_ts timestamp
+    );
+    ALTER TABLE book CHANGE COLUMN creator_id creator int;
+  want:
+    - status: WARN
+      code: 401
+      title: column.required
+      content: "Table `book` requires columns: creator_id"
+      line: 8
+      details: ""
+- statement: |-
+    CREATE TABLE book(
+      id int,
+      creator int,
+      created_ts timestamp,
+      updater_id int,
+      updated_ts timestamp
+    );
+    ALTER TABLE book CHANGE COLUMN creator creator_id int;
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |-
+    CREATE TABLE book(
+      id int,
+      creator_id int,
+      created_ts timestamp,
+      updater_id int,
+      updated_ts timestamp
+    );
+    ALTER TABLE book DROP COLUMN creator_id;
+  want:
+    - status: WARN
+      code: 401
+      title: column.required
+      content: "Table `book` requires columns: creator_id"
+      line: 8
+      details: ""
+- statement: |-
+    CREATE TABLE book(
+      id int,
+      creator_id int,
+      created_ts timestamp,
+      updater_id int,
+      updated_ts timestamp,
+      content varchar(255)
+    );
+    ALTER TABLE book DROP COLUMN content;
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |-
+    CREATE TABLE book(
+      id int,
+      creator_id int,
+      created_ts timestamp,
+      updated_ts timestamp
+    );
+    ALTER TABLE book ADD COLUMN content varchar(255);
+  want:
+    - status: WARN
+      code: 401
+      title: column.required
+      content: "Table `book` requires columns: updater_id"
+      line: 1
+      details: ""
+- statement: |-
+    CREATE TABLE book(
+      id int,
+      creator int,
+      created_ts timestamp,
+      updater_id int,
+      updated_ts timestamp
+    );
+    ALTER TABLE book ADD COLUMN creator_id int;
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |-
+    CREATE TABLE book(
+      id int,
+      created_ts timestamp,
+      updater_id int,
+      updated_ts timestamp
+    );
+    CREATE TABLE student(
+      id int,
+      created_ts timestamp,
+      updated_ts timestamp
+    );
+  want:
+    - status: WARN
+      code: 401
+      title: column.required
+      content: "Table `book` requires columns: creator_id"
+      line: 1
       details: ""
     - status: WARN
       code: 401
       title: column.required
-      content: 'Table `student` requires columns: creator_id, updater_id'
-      line: 10
+      content: "Table `student` requires columns: creator_id, updater_id"
+      line: 7
       details: ""
 - statement: |-
     CREATE TABLE book(
-                  id int,
-                  creator int,
-                  created_ts timestamp,
-                  updater_id int,
-                  updated_ts timestamp);
-                DROP TABLE book;
+      id int,
+      creator int,
+      created_ts timestamp,
+      updater_id int,
+      updated_ts timestamp
+    );
+    DROP TABLE book;
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |-
+    CREATE TABLE book(
+      id int
+    );
+    ALTER TABLE book ADD COLUMN (
+      creator_id int,
+      created_ts timestamp,
+      updater_id int,
+      updated_ts timestamp
+    );
   want:
     - status: SUCCESS
       code: 0

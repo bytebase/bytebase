@@ -403,10 +403,9 @@ type SQLReviewCheckContext struct {
 
 func syntaxCheck(statement string, checkContext SQLReviewCheckContext) (any, []Advice) {
 	switch checkContext.DbType {
-	// only for test mysqlwip.
-	case storepb.Engine_ENGINE_UNSPECIFIED:
-		return mysqlwipSyntaxCheck(statement)
-	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE, storepb.Engine_TIDB:
+	case storepb.Engine_TIDB:
+		return tidbSyntaxCheck(statement)
+	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		return mysqlSyntaxCheck(statement)
 	case storepb.Engine_POSTGRES:
 		return postgresSyntaxCheck(statement)
@@ -581,8 +580,7 @@ func newTiDBParser() *tidbparser.Parser {
 	return p
 }
 
-// only for test mysqlwip.
-func mysqlwipSyntaxCheck(statement string) (any, []Advice) {
+func mysqlSyntaxCheck(statement string) (any, []Advice) {
 	res, err := mysqlparser.ParseMySQL(statement + ";")
 	if err != nil {
 		if syntaxErr, ok := err.(*base.SyntaxError); ok {
@@ -611,7 +609,7 @@ func mysqlwipSyntaxCheck(statement string) (any, []Advice) {
 	return res, nil
 }
 
-func mysqlSyntaxCheck(statement string) (any, []Advice) {
+func tidbSyntaxCheck(statement string) (any, []Advice) {
 	list, err := mysqlparser.SplitSQL(statement)
 	if err != nil {
 		return nil, []Advice{
@@ -693,11 +691,6 @@ func SQLReviewCheck(statements string, ruleList []*storepb.SQLReviewRule, checkC
 
 	finder := checkContext.Catalog.GetFinder()
 	switch checkContext.DbType {
-	// only for mysqlwip test.
-	case storepb.Engine_ENGINE_UNSPECIFIED:
-		if err := finder.WalkThrough(statements); err != nil {
-			return convertWalkThroughErrorToAdvice(checkContext, err)
-		}
 	case storepb.Engine_TIDB, storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_POSTGRES, storepb.Engine_OCEANBASE:
 		if err := finder.WalkThrough(statements); err != nil {
 			return convertWalkThroughErrorToAdvice(checkContext, err)
@@ -1023,9 +1016,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	switch ruleType {
 	case SchemaRuleStatementRequireWhere:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLWhereRequirement, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLWhereRequirement, nil
 		case storepb.Engine_POSTGRES:
@@ -1039,9 +1029,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleStatementNoLeadingWildcardLike:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLNoLeadingWildcardLike, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLNoLeadingWildcardLike, nil
 		case storepb.Engine_POSTGRES:
@@ -1051,9 +1038,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleStatementNoSelectAll:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLNoSelectAll, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLNoSelectAll, nil
 		case storepb.Engine_POSTGRES:
@@ -1067,9 +1051,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleSchemaBackwardCompatibility:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLMigrationCompatibility, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLMigrationCompatibility, nil
 		case storepb.Engine_POSTGRES:
@@ -1081,9 +1062,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleTableNaming:
 		switch engine {
-		// only for test mysqlwip.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLNamingTableConvention, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLNamingTableConvention, nil
 		case storepb.Engine_POSTGRES:
@@ -1097,9 +1075,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleIDXNaming:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLNamingIndexConvention, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLNamingIndexConvention, nil
 		case storepb.Engine_POSTGRES:
@@ -1111,9 +1086,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleUKNaming:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLNamingUKConvention, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLNamingUKConvention, nil
 		case storepb.Engine_POSTGRES:
@@ -1121,9 +1093,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleFKNaming:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLNamingFKConvention, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLNamingFKConvention, nil
 		case storepb.Engine_POSTGRES:
@@ -1131,9 +1100,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleColumnNaming:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLNamingColumnConvention, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLNamingColumnConvention, nil
 		case storepb.Engine_POSTGRES:
@@ -1141,9 +1107,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleAutoIncrementColumnNaming:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLNamingAutoIncrementColumnConvention, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLNamingAutoIncrementColumnConvention, nil
 		}
@@ -1174,9 +1137,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleRequiredColumn:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLColumnRequirement, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLColumnRequirement, nil
 		case storepb.Engine_POSTGRES:
@@ -1190,9 +1150,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleColumnNotNull:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLColumnNoNull, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLColumnNoNull, nil
 		case storepb.Engine_POSTGRES:
@@ -1206,9 +1163,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleColumnDisallowChangeType:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLColumnDisallowChangingType, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLColumnDisallowChangingType, nil
 		case storepb.Engine_POSTGRES:
@@ -1216,57 +1170,36 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleColumnSetDefaultForNotNull:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLColumnSetDefaultForNotNull, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLColumnSetDefaultForNotNull, nil
 		}
 	case SchemaRuleColumnDisallowChange:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLColumnDisallowChanging, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLColumnDisallowChanging, nil
 		}
 	case SchemaRuleColumnDisallowChangingOrder:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLColumnDisallowChangingOrder, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLColumnDisallowChangingOrder, nil
 		}
 	case SchemaRuleColumnDisallowDropInIndex:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLColumnDisallowDropInIndex, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLColumnDisallowDropInIndex, nil
 		}
 	case SchemaRuleColumnCommentConvention:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLColumnCommentConvention, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLColumnCommentConvention, nil
 		}
 	case SchemaRuleColumnAutoIncrementMustInteger:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLAutoIncrementColumnMustInteger, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLAutoIncrementColumnMustInteger, nil
 		}
 	case SchemaRuleColumnTypeDisallowList:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLColumnTypeRestriction, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLColumnTypeRestriction, nil
 		case storepb.Engine_POSTGRES:
@@ -1276,17 +1209,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleColumnDisallowSetCharset:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLDisallowSetColumnCharset, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLDisallowSetColumnCharset, nil
 		}
 	case SchemaRuleColumnMaximumCharacterLength:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLColumnMaximumCharacterLength, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLColumnMaximumCharacterLength, nil
 		case storepb.Engine_POSTGRES:
@@ -1305,33 +1232,21 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleColumnAutoIncrementInitialValue:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLAutoIncrementColumnInitialValue, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLAutoIncrementColumnInitialValue, nil
 		}
 	case SchemaRuleColumnAutoIncrementMustUnsigned:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLAutoIncrementColumnMustUnsigned, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLAutoIncrementColumnMustUnsigned, nil
 		}
 	case SchemaRuleCurrentTimeColumnCountLimit:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLCurrentTimeColumnCountLimit, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLCurrentTimeColumnCountLimit, nil
 		}
 	case SchemaRuleColumnRequireDefault:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLRequireColumnDefault, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLRequireColumnDefault, nil
 		case storepb.Engine_POSTGRES:
@@ -1345,9 +1260,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleTableRequirePK:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLTableRequirePK, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLTableRequirePK, nil
 		case storepb.Engine_POSTGRES:
@@ -1361,9 +1273,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleTableNoFK:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLTableNoFK, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLTableNoFK, nil
 		case storepb.Engine_POSTGRES:
@@ -1377,9 +1286,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleTableDropNamingConvention:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLTableDropNamingConvention, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLTableDropNamingConvention, nil
 		case storepb.Engine_POSTGRES:
@@ -1391,17 +1297,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleTableCommentConvention:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLTableCommentConvention, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLTableCommentConvention, nil
 		}
 	case SchemaRuleTableDisallowPartition:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLTableDisallowPartition, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLTableDisallowPartition, nil
 		case storepb.Engine_POSTGRES:
@@ -1409,25 +1309,16 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleMySQLEngine:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLUseInnoDB, nil
 		case storepb.Engine_MYSQL, storepb.Engine_MARIADB:
 			return MySQLUseInnoDB, nil
 		}
 	case SchemaRuleDropEmptyDatabase:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLDatabaseAllowDropIfEmpty, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLDatabaseAllowDropIfEmpty, nil
 		}
 	case SchemaRuleIndexNoDuplicateColumn:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLIndexNoDuplicateColumn, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLIndexNoDuplicateColumn, nil
 		case storepb.Engine_POSTGRES:
@@ -1435,9 +1326,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleIndexKeyNumberLimit:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLIndexKeyNumberLimit, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLIndexKeyNumberLimit, nil
 		case storepb.Engine_POSTGRES:
@@ -1447,9 +1335,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleIndexTotalNumberLimit:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLIndexTotalNumberLimit, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLIndexTotalNumberLimit, nil
 		case storepb.Engine_POSTGRES:
@@ -1457,9 +1342,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleStatementDisallowCommit:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLStatementDisallowCommit, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLStatementDisallowCommit, nil
 		case storepb.Engine_POSTGRES:
@@ -1467,9 +1349,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleCharsetAllowlist:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLCharsetAllowlist, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLCharsetAllowlist, nil
 		case storepb.Engine_POSTGRES:
@@ -1477,9 +1356,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleCollationAllowlist:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLCollationAllowlist, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLCollationAllowlist, nil
 		case storepb.Engine_POSTGRES:
@@ -1487,25 +1363,16 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleIndexPKTypeLimit:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLIndexPKType, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLIndexPKType, nil
 		}
 	case SchemaRuleIndexTypeNoBlob:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLIndexTypeNoBlob, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLIndexTypeNoBlob, nil
 		}
 	case SchemaRuleIndexPrimaryKeyTypeAllowlist:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLPrimaryKeyTypeAllowlist, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_OCEANBASE:
 			return MySQLPrimaryKeyTypeAllowlist, nil
 		case storepb.Engine_POSTGRES:
@@ -1517,9 +1384,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleStatementInsertRowLimit:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLInsertRowLimit, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLInsertRowLimit, nil
 		case storepb.Engine_POSTGRES:
@@ -1527,9 +1391,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleStatementInsertMustSpecifyColumn:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLInsertMustSpecifyColumn, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLInsertMustSpecifyColumn, nil
 		case storepb.Engine_POSTGRES:
@@ -1539,9 +1400,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleStatementInsertDisallowOrderByRand:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLInsertDisallowOrderByRand, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLInsertDisallowOrderByRand, nil
 		case storepb.Engine_POSTGRES:
@@ -1549,25 +1407,16 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleStatementDisallowLimit:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLDisallowLimit, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLDisallowLimit, nil
 		}
 	case SchemaRuleStatementDisallowOrderBy:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLDisallowOrderBy, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLDisallowOrderBy, nil
 		}
 	case SchemaRuleStatementMergeAlterTable:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLMergeAlterTable, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLMergeAlterTable, nil
 		case storepb.Engine_POSTGRES:
@@ -1575,9 +1424,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleStatementAffectedRowLimit:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLStatementAffectedRowLimit, nil
 		case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLStatementAffectedRowLimit, nil
 		case storepb.Engine_POSTGRES:
@@ -1585,9 +1431,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleStatementDMLDryRun:
 		switch engine {
-		// only for mysqlwip test.
-		case storepb.Engine_ENGINE_UNSPECIFIED:
-			return MySQLStatementDMLDryRun, nil
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLStatementDMLDryRun, nil
 		case storepb.Engine_POSTGRES:

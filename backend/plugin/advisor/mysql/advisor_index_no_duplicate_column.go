@@ -5,23 +5,24 @@ package mysql
 import (
 	"fmt"
 
-	"github.com/pingcap/tidb/parser/ast"
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
+	mysql "github.com/bytebase/mysql-parser"
+
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*IndexNoDuplicateColumnAdvisor)(nil)
-	_ ast.Visitor     = (*indexNoDuplicateColumnChecker)(nil)
 )
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLIndexNoDuplicateColumn, &IndexNoDuplicateColumnAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLIndexNoDuplicateColumn, &IndexNoDuplicateColumnAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLIndexNoDuplicateColumn, &IndexNoDuplicateColumnAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLIndexNoDuplicateColumn, &IndexNoDuplicateColumnAdvisor{})
 }
 
 // IndexNoDuplicateColumnAdvisor is the advisor checking for no duplicate columns in index.
@@ -30,9 +31,9 @@ type IndexNoDuplicateColumnAdvisor struct {
 
 // Check checks for no duplicate columns in index.
 func (*IndexNoDuplicateColumnAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	stmtList, ok := ctx.AST.([]ast.StmtNode)
+	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to StmtNode")
+		return nil, errors.Errorf("failed to convert to mysql parser result")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -45,9 +46,8 @@ func (*IndexNoDuplicateColumnAdvisor) Check(ctx advisor.Context, _ string) ([]ad
 	}
 
 	for _, stmt := range stmtList {
-		checker.text = stmt.Text()
-		checker.line = stmt.OriginTextPosition()
-		(stmt).Accept(checker)
+		checker.baseLine = stmt.BaseLine
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -62,118 +62,166 @@ func (*IndexNoDuplicateColumnAdvisor) Check(ctx advisor.Context, _ string) ([]ad
 }
 
 type indexNoDuplicateColumnChecker struct {
+	*mysql.BaseMySQLParserListener
+
+	baseLine   int
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
-	text       string
-	line       int
 }
 
-// Enter implements the ast.Visitor interface.
-func (checker *indexNoDuplicateColumnChecker) Enter(in ast.Node) (ast.Node, bool) {
-	type duplicateColumn struct {
-		table  string
-		index  string
-		column string
-		line   int
-		tp     string
+func (checker *indexNoDuplicateColumnChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if ctx.TableName() == nil {
+		return
 	}
-	var columnList []duplicateColumn
-	switch node := in.(type) {
-	case *ast.CreateTableStmt:
-		for _, constraint := range node.Constraints {
-			switch constraint.Tp {
-			case ast.ConstraintPrimaryKey,
-				ast.ConstraintUniq,
-				ast.ConstraintUniqIndex,
-				ast.ConstraintIndex,
-				ast.ConstraintForeignKey:
-				if column, duplicate := hasDuplicateColumn(constraint.Keys); duplicate {
-					columnList = append(columnList, duplicateColumn{
-						tp:     indexTypeString(constraint.Tp),
-						table:  node.Table.Name.O,
-						index:  constraint.Name,
-						column: column,
-						line:   constraint.OriginTextPosition(),
-					})
-				}
-			}
-		}
-	case *ast.CreateIndexStmt:
-		if column, duplicate := hasDuplicateColumn(node.IndexPartSpecifications); duplicate {
-			columnList = append(columnList, duplicateColumn{
-				tp:     "INDEX",
-				table:  node.Table.Name.O,
-				index:  node.IndexName,
-				column: column,
-				line:   checker.line,
-			})
-		}
-	case *ast.AlterTableStmt:
-		for _, spec := range node.Specs {
-			if spec.Tp == ast.AlterTableAddConstraint {
-				switch spec.Constraint.Tp {
-				case ast.ConstraintPrimaryKey,
-					ast.ConstraintUniq,
-					ast.ConstraintUniqIndex,
-					ast.ConstraintIndex,
-					ast.ConstraintForeignKey:
-					if column, duplicate := hasDuplicateColumn(spec.Constraint.Keys); duplicate {
-						columnList = append(columnList, duplicateColumn{
-							tp:     indexTypeString(spec.Constraint.Tp),
-							table:  node.Table.Name.O,
-							index:  spec.Constraint.Name,
-							column: column,
-							line:   checker.line,
-						})
-					}
-				}
-			}
-		}
+	if ctx.TableElementList() == nil {
+		return
 	}
 
-	for _, column := range columnList {
+	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
+	for _, tableElement := range ctx.TableElementList().AllTableElement() {
+		if tableElement == nil {
+			continue
+		}
+		if tableElement.TableConstraintDef() == nil {
+			continue
+		}
+		checker.handleConstraintDef(tableName, tableElement.TableConstraintDef())
+	}
+}
+
+func (checker *indexNoDuplicateColumnChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if ctx.AlterTableActions() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
+		return
+	}
+	if ctx.TableRef() == nil {
+		return
+	}
+
+	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
+	for _, alterListItem := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
+		if alterListItem == nil {
+			continue
+		}
+
+		switch {
+		// add index.
+		case alterListItem.ADD_SYMBOL() != nil && alterListItem.TableConstraintDef() != nil:
+			checker.handleConstraintDef(tableName, alterListItem.TableConstraintDef())
+		default:
+			continue
+		}
+	}
+}
+
+func (checker *indexNoDuplicateColumnChecker) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
+	switch ctx.GetType_().GetTokenType() {
+	case mysql.MySQLParserFULLTEXT_SYMBOL, mysql.MySQLParserSPATIAL_SYMBOL:
+		return
+	}
+	if ctx.CreateIndexTarget() == nil || ctx.CreateIndexTarget().TableRef() == nil || ctx.CreateIndexTarget().KeyListVariants() == nil {
+		return
+	}
+	indexType := ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.NewInterval(
+		ctx.GetStart().GetTokenIndex(),
+		ctx.CreateIndexTarget().KeyListVariants().GetStart().GetTokenIndex()-1,
+	))
+
+	indexName := ""
+	if ctx.IndexName() != nil {
+		indexName = mysqlparser.NormalizeIndexName(ctx.IndexName())
+		indexType = ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.NewInterval(
+			ctx.GetStart().GetTokenIndex(),
+			ctx.IndexName().GetStart().GetTokenIndex()-1,
+		))
+	}
+	if ctx.IndexNameAndType() != nil && ctx.IndexNameAndType().IndexName() != nil {
+		indexName = mysqlparser.NormalizeIndexName(ctx.IndexNameAndType().IndexName())
+		indexType = ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.NewInterval(
+			ctx.GetStart().GetTokenIndex(),
+			ctx.IndexNameAndType().GetStart().GetTokenIndex()-1,
+		))
+	}
+
+	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.CreateIndexTarget().TableRef())
+	columnList := mysqlparser.NormalizeKeyListVariants(ctx.CreateIndexTarget().KeyListVariants())
+	if column, duplicate := checker.hasDuplicateColumn(columnList); duplicate {
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  checker.level,
 			Code:    advisor.DuplicateColumnInIndex,
 			Title:   checker.title,
-			Content: fmt.Sprintf("%s `%s` has duplicate column `%s`.`%s`", column.tp, column.index, column.table, column.column),
-			Line:    column.line,
+			Content: fmt.Sprintf("%s`%s` has duplicate column `%s`.`%s`", indexType, indexName, tableName, column),
+			Line:    checker.baseLine + ctx.GetStart().GetLine(),
 		})
 	}
-
-	return in, false
 }
 
-// Leave implements the ast.Visitor interface.
-func (*indexNoDuplicateColumnChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
-}
-
-func hasDuplicateColumn(keyList []*ast.IndexPartSpecification) (string, bool) {
-	checker := make(map[string]bool)
-	for _, key := range keyList {
-		if key.Expr == nil {
-			if _, exists := checker[key.Column.Name.O]; exists {
-				return key.Column.Name.O, true
-			}
-			checker[key.Column.Name.O] = true
+func (checker *indexNoDuplicateColumnChecker) handleConstraintDef(tableName string, ctx mysql.ITableConstraintDefContext) {
+	var columnList []string
+	indexType := ""
+	switch ctx.GetType_().GetTokenType() {
+	case mysql.MySQLParserINDEX_SYMBOL, mysql.MySQLParserKEY_SYMBOL, mysql.MySQLParserPRIMARY_SYMBOL, mysql.MySQLParserUNIQUE_SYMBOL:
+		if ctx.KeyListVariants() == nil {
+			return
 		}
+		columnList = mysqlparser.NormalizeKeyListVariants(ctx.KeyListVariants())
+		indexType = ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.NewInterval(
+			ctx.GetStart().GetTokenIndex(),
+			ctx.KeyListVariants().GetStart().GetTokenIndex()-1,
+		))
+	case mysql.MySQLParserFOREIGN_SYMBOL:
+		if ctx.KeyList() == nil {
+			return
+		}
+		columnList = mysqlparser.NormalizeKeyList(ctx.KeyList())
+		indexType = ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.NewInterval(
+			ctx.GetStart().GetTokenIndex(),
+			ctx.KeyList().GetStart().GetTokenIndex()-1,
+		))
+	default:
+		return
+	}
+
+	indexName := ""
+	if ctx.IndexName() != nil {
+		indexName = mysqlparser.NormalizeIndexName(ctx.IndexName())
+		indexType = ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.NewInterval(
+			ctx.GetStart().GetTokenIndex(),
+			ctx.IndexName().GetStart().GetTokenIndex()-1,
+		))
+	}
+	if ctx.IndexNameAndType() != nil && ctx.IndexNameAndType().IndexName() != nil {
+		indexName = mysqlparser.NormalizeIndexName(ctx.IndexNameAndType().IndexName())
+		indexType = ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.NewInterval(
+			ctx.GetStart().GetTokenIndex(),
+			ctx.IndexNameAndType().GetStart().GetTokenIndex()-1,
+		))
+	}
+	if column, duplicate := checker.hasDuplicateColumn(columnList); duplicate {
+		checker.adviceList = append(checker.adviceList, advisor.Advice{
+			Status:  checker.level,
+			Code:    advisor.DuplicateColumnInIndex,
+			Title:   checker.title,
+			Content: fmt.Sprintf("%s`%s` has duplicate column `%s`.`%s`", indexType, indexName, tableName, column),
+			Line:    checker.baseLine + ctx.GetStart().GetLine(),
+		})
+	}
+}
+
+func (*indexNoDuplicateColumnChecker) hasDuplicateColumn(keyList []string) (string, bool) {
+	listMap := make(map[string]struct{})
+	for _, keyName := range keyList {
+		if _, exists := listMap[keyName]; exists {
+			return keyName, true
+		}
+		listMap[keyName] = struct{}{}
 	}
 
 	return "", false
-}
-
-func indexTypeString(tp ast.ConstraintType) string {
-	switch tp {
-	case ast.ConstraintPrimaryKey:
-		return "PRIMARY KEY"
-	case ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex:
-		return "UNIQUE KEY"
-	case ast.ConstraintForeignKey:
-		return "FOREIGN KEY"
-	case ast.ConstraintIndex:
-		return "INDEX"
-	}
-	return "INDEX"
 }

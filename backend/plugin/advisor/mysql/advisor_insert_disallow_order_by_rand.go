@@ -4,24 +4,28 @@ package mysql
 
 import (
 	"fmt"
+	"strings"
 
-	"github.com/pingcap/tidb/parser/ast"
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
+	mysql "github.com/bytebase/mysql-parser"
+
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*InsertDisallowOrderByRandAdvisor)(nil)
-	_ ast.Visitor     = (*insertDisallowOrderByRandChecker)(nil)
 )
+
+const RandFn = "rand()"
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLInsertDisallowOrderByRand, &InsertDisallowOrderByRandAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLInsertDisallowOrderByRand, &InsertDisallowOrderByRandAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLInsertDisallowOrderByRand, &InsertDisallowOrderByRandAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLInsertDisallowOrderByRand, &InsertDisallowOrderByRandAdvisor{})
 }
 
 // InsertDisallowOrderByRandAdvisor is the advisor checking for to disallow order by rand in INSERT statements.
@@ -30,9 +34,9 @@ type InsertDisallowOrderByRandAdvisor struct {
 
 // Check checks for to disallow order by rand in INSERT statements.
 func (*InsertDisallowOrderByRandAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	stmtList, ok := ctx.AST.([]ast.StmtNode)
+	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to StmtNode")
+		return nil, errors.Errorf("failed to convert to mysql parse result")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -45,9 +49,8 @@ func (*InsertDisallowOrderByRandAdvisor) Check(ctx advisor.Context, _ string) ([
 	}
 
 	for _, stmt := range stmtList {
-		checker.text = stmt.Text()
-		checker.line = stmt.OriginTextPosition()
-		(stmt).Accept(checker)
+		checker.baseLine = stmt.BaseLine
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -62,47 +65,52 @@ func (*InsertDisallowOrderByRandAdvisor) Check(ctx advisor.Context, _ string) ([
 }
 
 type insertDisallowOrderByRandChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
-	title      string
-	text       string
-	line       int
+	*mysql.BaseMySQLParserListener
+
+	isInsertStmt bool
+	baseLine     int
+	adviceList   []advisor.Advice
+	level        advisor.Status
+	title        string
+	text         string
 }
 
-// Enter implements the ast.Visitor interface.
-func (checker *insertDisallowOrderByRandChecker) Enter(in ast.Node) (ast.Node, bool) {
-	code := advisor.Ok
-	if insert, ok := in.(*ast.InsertStmt); ok {
-		if insert.Select != nil {
-			if selectNode, ok := insert.Select.(*ast.SelectStmt); ok {
-				if selectNode.OrderBy != nil {
-					for _, item := range selectNode.OrderBy.Items {
-						if f, ok := item.Expr.(*ast.FuncCallExpr); ok {
-							if f.FnName.L == ast.Rand {
-								code = advisor.InsertUseOrderByRand
-								break
-							}
-						}
-					}
-				}
-			}
+func (checker *insertDisallowOrderByRandChecker) EnterQuery(ctx *mysql.QueryContext) {
+	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+}
+
+// EnterInsertStatement is called when production insertStatement is entered.
+func (checker *insertDisallowOrderByRandChecker) EnterInsertStatement(ctx *mysql.InsertStatementContext) {
+	if ctx.InsertQueryExpression() == nil {
+		return
+	}
+	checker.isInsertStmt = true
+}
+
+func (checker *insertDisallowOrderByRandChecker) ExitInsertStatement(*mysql.InsertStatementContext) {
+	checker.isInsertStmt = false
+}
+
+// EnterQueryExpression is called when production queryExpression is entered.
+func (checker *insertDisallowOrderByRandChecker) EnterQueryExpression(ctx *mysql.QueryExpressionContext) {
+	if !checker.isInsertStmt {
+		return
+	}
+
+	if ctx.OrderClause() == nil || ctx.OrderClause().OrderList() == nil {
+		return
+	}
+
+	for _, expr := range ctx.OrderClause().OrderList().AllOrderExpression() {
+		text := expr.GetText()
+		if strings.EqualFold(text, RandFn) {
+			checker.adviceList = append(checker.adviceList, advisor.Advice{
+				Status:  checker.level,
+				Code:    advisor.InsertUseOrderByRand,
+				Title:   checker.title,
+				Content: fmt.Sprintf("\"%s\" uses ORDER BY RAND in the INSERT statement", checker.text),
+				Line:    checker.baseLine + ctx.GetStart().GetLine(),
+			})
 		}
 	}
-
-	if code != advisor.Ok {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  checker.level,
-			Code:    code,
-			Title:   checker.title,
-			Content: fmt.Sprintf("\"%s\" uses ORDER BY RAND in the INSERT statement", checker.text),
-			Line:    checker.line,
-		})
-	}
-
-	return in, false
-}
-
-// Leave implements the ast.Visitor interface.
-func (*insertDisallowOrderByRandChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
 }
