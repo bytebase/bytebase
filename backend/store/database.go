@@ -72,17 +72,13 @@ type FindDatabaseMessage struct {
 // GetDatabaseV2 gets a database.
 func (s *Store) GetDatabaseV2(ctx context.Context, find *FindDatabaseMessage) (*DatabaseMessage, error) {
 	if find.InstanceID != nil && find.DatabaseName != nil {
-		if database, ok := s.databaseCache.Load(getDatabaseCacheKey(*find.InstanceID, *find.DatabaseName)); ok {
-			if db, ok := database.(*DatabaseMessage); ok {
-				return db, nil
-			}
+		if v, ok := s.databaseCache.Get(getDatabaseCacheKey(*find.InstanceID, *find.DatabaseName)); ok {
+			return v, nil
 		}
 	}
 	if find.UID != nil {
-		if database, ok := s.databaseIDCache.Load(*find.UID); ok {
-			if v, ok := database.(*DatabaseMessage); ok {
-				return v, nil
-			}
+		if v, ok := s.databaseIDCache.Get(*find.UID); ok {
+			return v, nil
 		}
 	}
 
@@ -108,8 +104,8 @@ func (s *Store) GetDatabaseV2(ctx context.Context, find *FindDatabaseMessage) (*
 		return nil, err
 	}
 
-	s.databaseCache.Store(getDatabaseCacheKey(database.InstanceID, database.DatabaseName), database)
-	s.databaseIDCache.Store(database.UID, database)
+	s.databaseCache.Add(getDatabaseCacheKey(database.InstanceID, database.DatabaseName), database)
+	s.databaseIDCache.Add(database.UID, database)
 	return database, nil
 }
 
@@ -131,8 +127,8 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 	}
 
 	for _, database := range databases {
-		s.databaseCache.Store(getDatabaseCacheKey(database.InstanceID, database.DatabaseName), database)
-		s.databaseIDCache.Store(database.UID, database)
+		s.databaseCache.Add(getDatabaseCacheKey(database.InstanceID, database.DatabaseName), database)
+		s.databaseIDCache.Add(database.UID, database)
 	}
 	return databases, nil
 }
@@ -170,8 +166,8 @@ func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessa
 	}
 
 	// Invalidate an update the cache.
-	s.databaseCache.Delete(getDatabaseCacheKey(instance.ResourceID, create.DatabaseName))
-	s.databaseIDCache.Delete(databaseUID)
+	s.databaseCache.Remove(getDatabaseCacheKey(instance.ResourceID, create.DatabaseName))
+	s.databaseIDCache.Remove(databaseUID)
 	if _, err = s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: &databaseUID}); err != nil {
 		return err
 	}
@@ -328,8 +324,8 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 	}
 
 	// Invalidate and update the cache.
-	s.databaseCache.Delete(getDatabaseCacheKey(instance.ResourceID, create.DatabaseName))
-	s.databaseIDCache.Delete(databaseUID)
+	s.databaseCache.Remove(getDatabaseCacheKey(instance.ResourceID, create.DatabaseName))
+	s.databaseIDCache.Remove(databaseUID)
 	return s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: &databaseUID, ShowDeleted: true})
 }
 
@@ -442,8 +438,8 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 	}
 
 	// Invalidate and update the cache.
-	s.databaseCache.Delete(getDatabaseCacheKey(patch.InstanceID, patch.DatabaseName))
-	s.databaseIDCache.Delete(databaseUID)
+	s.databaseCache.Remove(getDatabaseCacheKey(patch.InstanceID, patch.DatabaseName))
+	s.databaseIDCache.Remove(databaseUID)
 	return s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: &databaseUID})
 }
 
@@ -491,8 +487,8 @@ func (s *Store) BatchUpdateDatabaseProject(ctx context.Context, databases []*Dat
 	for _, database := range databases {
 		updatedDatabase := *database
 		updatedDatabase.ProjectID = project.ResourceID
-		s.databaseCache.Store(getDatabaseCacheKey(database.InstanceID, database.DatabaseName), &updatedDatabase)
-		s.databaseIDCache.Store(database.UID, &updatedDatabase)
+		s.databaseCache.Add(getDatabaseCacheKey(database.InstanceID, database.DatabaseName), &updatedDatabase)
+		s.databaseIDCache.Add(database.UID, &updatedDatabase)
 		updatedDatabases = append(updatedDatabases, &updatedDatabase)
 	}
 	return updatedDatabases, nil

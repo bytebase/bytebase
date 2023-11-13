@@ -63,17 +63,13 @@ type FindInstanceMessage struct {
 // GetInstanceV2 gets an instance by the resource_id.
 func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*InstanceMessage, error) {
 	if find.ResourceID != nil {
-		if instance, ok := s.instanceCache.Load(getInstanceCacheKey(*find.ResourceID)); ok {
-			if v, ok := instance.(*InstanceMessage); ok {
-				return v, nil
-			}
+		if v, ok := s.instanceCache.Get(getInstanceCacheKey(*find.ResourceID)); ok {
+			return v, nil
 		}
 	}
 	if find.UID != nil {
-		if instance, ok := s.instanceIDCache.Load(*find.UID); ok {
-			if v, ok := instance.(*InstanceMessage); ok {
-				return v, nil
-			}
+		if v, ok := s.instanceIDCache.Get(*find.UID); ok {
+			return v, nil
 		}
 	}
 
@@ -100,8 +96,8 @@ func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*
 	}
 
 	instance := instances[0]
-	s.instanceCache.Store(getInstanceCacheKey(instance.ResourceID), instance)
-	s.instanceIDCache.Store(instance.UID, instance)
+	s.instanceCache.Add(getInstanceCacheKey(instance.ResourceID), instance)
+	s.instanceIDCache.Add(instance.UID, instance)
 	return instance, nil
 }
 
@@ -123,8 +119,8 @@ func (s *Store) ListInstancesV2(ctx context.Context, find *FindInstanceMessage) 
 	}
 
 	for _, instance := range instances {
-		s.instanceCache.Store(getInstanceCacheKey(instance.ResourceID), instance)
-		s.instanceIDCache.Store(instance.UID, instance)
+		s.instanceCache.Add(getInstanceCacheKey(instance.ResourceID), instance)
+		s.instanceIDCache.Add(instance.UID, instance)
 	}
 	return instances, nil
 }
@@ -226,8 +222,8 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 		Options:       instanceCreate.Options,
 		Metadata:      instanceCreate.Metadata,
 	}
-	s.instanceCache.Store(getInstanceCacheKey(instance.ResourceID), instance)
-	s.instanceIDCache.Store(instance.UID, instance)
+	s.instanceCache.Add(getInstanceCacheKey(instance.ResourceID), instance)
+	s.instanceIDCache.Add(instance.UID, instance)
 	return instance, nil
 }
 
@@ -381,8 +377,8 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		return nil, err
 	}
 
-	s.instanceCache.Store(getInstanceCacheKey(instance.ResourceID), instance)
-	s.instanceIDCache.Store(instance.UID, instance)
+	s.instanceCache.Add(getInstanceCacheKey(instance.ResourceID), instance)
+	s.instanceIDCache.Add(instance.UID, instance)
 	return instance, nil
 }
 

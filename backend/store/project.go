@@ -58,17 +58,13 @@ type UpdateProjectMessage struct {
 // GetProjectV2 gets project by resource ID.
 func (s *Store) GetProjectV2(ctx context.Context, find *FindProjectMessage) (*ProjectMessage, error) {
 	if find.ResourceID != nil {
-		if project, ok := s.projectCache.Load(*find.ResourceID); ok {
-			if v, ok := project.(*ProjectMessage); ok {
-				return v, nil
-			}
+		if v, ok := s.projectCache.Get(*find.ResourceID); ok {
+			return v, nil
 		}
 	}
 	if find.UID != nil {
-		if project, ok := s.projectIDCache.Load(*find.UID); ok {
-			if v, ok := project.(*ProjectMessage); ok {
-				return v, nil
-			}
+		if v, ok := s.projectIDCache.Get(*find.UID); ok {
+			return v, nil
 		}
 	}
 
@@ -415,13 +411,13 @@ func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProject
 }
 
 func (s *Store) storeProjectCache(project *ProjectMessage) {
-	s.projectCache.Store(project.ResourceID, project)
-	s.projectIDCache.Store(project.UID, project)
+	s.projectCache.Add(project.ResourceID, project)
+	s.projectIDCache.Add(project.UID, project)
 }
 
 func (s *Store) removeProjectCache(resourceID string) {
-	if project, ok := s.projectCache.Load(resourceID); ok {
-		s.projectIDCache.Delete(project.(*ProjectMessage).UID)
+	if project, ok := s.projectCache.Get(resourceID); ok {
+		s.projectIDCache.Remove(project.UID)
 	}
-	s.projectCache.Delete(resourceID)
+	s.projectCache.Remove(resourceID)
 }
