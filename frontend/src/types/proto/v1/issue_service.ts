@@ -219,7 +219,14 @@ export interface Issue {
    */
   rollout: string;
   /** Used if the issue type is GRANT_REQUEST. */
-  grantRequest: GrantRequest | undefined;
+  grantRequest:
+    | GrantRequest
+    | undefined;
+  /**
+   * The releasers.
+   * Format: roles/{role}
+   */
+  releasers: string[];
 }
 
 export enum Issue_Type {
@@ -1335,6 +1342,7 @@ function createBaseIssue(): Issue {
     plan: "",
     rollout: "",
     grantRequest: undefined,
+    releasers: [],
   };
 }
 
@@ -1396,6 +1404,9 @@ export const Issue = {
     }
     if (message.grantRequest !== undefined) {
       GrantRequest.encode(message.grantRequest, writer.uint32(154).fork()).ldelim();
+    }
+    for (const v of message.releasers) {
+      writer.uint32(162).string(v!);
     }
     return writer;
   },
@@ -1540,6 +1551,13 @@ export const Issue = {
 
           message.grantRequest = GrantRequest.decode(reader, reader.uint32());
           continue;
+        case 20:
+          if (tag !== 162) {
+            break;
+          }
+
+          message.releasers.push(reader.string());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1576,6 +1594,9 @@ export const Issue = {
       plan: isSet(object.plan) ? globalThis.String(object.plan) : "",
       rollout: isSet(object.rollout) ? globalThis.String(object.rollout) : "",
       grantRequest: isSet(object.grantRequest) ? GrantRequest.fromJSON(object.grantRequest) : undefined,
+      releasers: globalThis.Array.isArray(object?.releasers)
+        ? object.releasers.map((e: any) => globalThis.String(e))
+        : [],
     };
   },
 
@@ -1638,6 +1659,9 @@ export const Issue = {
     if (message.grantRequest !== undefined) {
       obj.grantRequest = GrantRequest.toJSON(message.grantRequest);
     }
+    if (message.releasers?.length) {
+      obj.releasers = message.releasers;
+    }
     return obj;
   },
 
@@ -1667,6 +1691,7 @@ export const Issue = {
     message.grantRequest = (object.grantRequest !== undefined && object.grantRequest !== null)
       ? GrantRequest.fromPartial(object.grantRequest)
       : undefined;
+    message.releasers = object.releasers?.map((e) => e) || [];
     return message;
   },
 };
