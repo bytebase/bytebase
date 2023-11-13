@@ -81,7 +81,6 @@ func (s *LicenseService) LoadSubscription(ctx context.Context) enterprise.Subscr
 
 	license := s.loadLicense(ctx)
 	if license == nil {
-		s.store.RefreshSwap(false)
 		return enterprise.Subscription{
 			Plan: api.FREE,
 			// -1 means not expire, just for free plan
@@ -100,9 +99,6 @@ func (s *LicenseService) LoadSubscription(ctx context.Context) enterprise.Subscr
 		Trialing:      license.Trialing,
 		OrgID:         license.OrgID(),
 		OrgName:       license.OrgName,
-	}
-	if !license.Trialing && license.Plan != api.FREE {
-		s.store.RefreshSwap(true)
 	}
 	return *s.cachedSubscription
 }

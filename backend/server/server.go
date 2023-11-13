@@ -193,7 +193,10 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		// return s so that caller can call s.Close() to shut down the postgres server if embedded.
 		return nil, errors.Wrap(err, "cannot open metadb")
 	}
-	storeInstance := store.New(storeDB)
+	storeInstance, err := store.New(storeDB)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to new store")
+	}
 	if profile.Readonly {
 		slog.Info("Database is opened in readonly mode. Skip migration and demo data setup.")
 	} else {
