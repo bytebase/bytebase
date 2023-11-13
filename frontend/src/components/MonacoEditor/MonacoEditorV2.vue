@@ -4,8 +4,9 @@
 
 <script setup lang="ts">
 import { computed, toRef } from "vue";
+import { Language } from "@/types";
 import MonacoTextModelEditor from "./MonacoTextModelEditor.vue";
-import { Language, useMonacoTextModel } from "./text-model";
+import { useMonacoTextModel } from "./text-model";
 
 const props = defineProps<{
   filename: string;

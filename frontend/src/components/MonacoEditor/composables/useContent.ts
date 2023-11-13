@@ -1,6 +1,6 @@
 import type monaco from "monaco-editor";
 import { ref } from "vue";
-import { MonacoModule } from "../editor";
+import type { MonacoModule } from "../types";
 
 export const useContent = (
   monaco: MonacoModule,

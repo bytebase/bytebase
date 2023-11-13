@@ -1,8 +1,8 @@
 import type monaco from "monaco-editor";
 import { Ref, watchEffect } from "vue";
 import { SQLDialect } from "@/types";
-import { MonacoModule } from "../editor";
 import sqlFormatter from "../sqlFormatter";
+import type { MonacoModule } from "../types";
 import { useTextModelLanguage } from "./common";
 
 export const useFormatContent = async (

@@ -1,10 +1,9 @@
 import { maxBy } from "lodash-es";
 import type monaco from "monaco-editor";
 import { unref, watchEffect } from "vue";
-import { MaybeRef } from "@/types";
+import type { MaybeRef } from "@/types";
 import { callCssVariable, escapeMarkdown } from "@/utils";
-import { MonacoModule } from "../editor";
-import { AdviceOption } from "../types";
+import type { AdviceOption, MonacoModule } from "../types";
 
 export const useAdvices = (
   monaco: MonacoModule,

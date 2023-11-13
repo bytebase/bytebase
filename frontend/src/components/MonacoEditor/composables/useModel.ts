@@ -1,6 +1,6 @@
 import type monaco from "monaco-editor";
 import { Ref, watch } from "vue";
-import { MonacoModule } from "../editor";
+import type { MonacoModule } from "../types";
 
 // Store ViewState (e.g., selection and scroll position) for each TextModel
 export const ViewStateMapByUri = new Map<

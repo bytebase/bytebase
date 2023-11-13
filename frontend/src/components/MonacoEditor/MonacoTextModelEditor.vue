@@ -15,7 +15,7 @@
 </template>
 
 <script lang="ts" setup>
-import type { editor as Editor } from "monaco-editor";
+import type monaco from "monaco-editor";
 import {
   onMounted,
   ref,
@@ -36,16 +36,16 @@ import {
   useSelectedContent,
   useSuggestOptionByLanguage,
 } from "./composables";
-import type { AdviceOption } from "./types";
+import type { AdviceOption, MonacoModule } from "./types";
 
 const props = withDefaults(
   defineProps<{
-    model?: Editor.ITextModel;
+    model?: monaco.editor.ITextModel;
     sqlDialect?: SQLDialect;
     readonly?: boolean;
     autoFocus?: boolean;
     advices?: AdviceOption[];
-    options?: Editor.IStandaloneEditorConstructionOptions;
+    options?: monaco.editor.IStandaloneEditorConstructionOptions;
   }>(),
   {
     model: undefined,
@@ -61,12 +61,16 @@ const emit = defineEmits<{
   (e: "update:content", content: string): void;
   (e: "update:selected-content", content: string): void;
   (e: "save", content: string): void;
-  (e: "ready"): void;
+  (
+    e: "ready",
+    monaco: MonacoModule,
+    editor: monaco.editor.IStandaloneCodeEditor
+  ): void;
 }>();
 
 const containerRef = ref<HTMLDivElement>();
 // use shallowRef to avoid deep conversion which will cause page crash.
-const editorRef = shallowRef<Editor.IStandaloneCodeEditor>();
+const editorRef = shallowRef<monaco.editor.IStandaloneCodeEditor>();
 
 const isEditorLoaded = ref(false);
 
@@ -106,7 +110,7 @@ onMounted(async () => {
 
     isEditorLoaded.value = true;
     await nextTick();
-    emit("ready");
+    emit("ready", monaco, editor);
 
     // set the editor focus when the tab is selected
     if (!props.readonly && props.autoFocus) {

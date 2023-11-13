@@ -1,5 +1,6 @@
 import { buildWorkerDefinition } from "monaco-editor-workers";
 import "monaco-editor/esm/vs/basic-languages/javascript/javascript.contribution.js";
+import "monaco-editor/esm/vs/basic-languages/redis/redis.contribution.js";
 import "monaco-editor/esm/vs/basic-languages/sql/sql.contribution.js";
 import "monaco-editor/esm/vs/basic-languages/typescript/typescript.contribution.js";
 import "monaco-editor/esm/vs/editor/editor.all.js";
@@ -10,9 +11,9 @@ import { defer } from "@/utils";
 import { initializeMonacoServices } from "./services";
 import { getBBTheme } from "./themes/bb";
 import { getBBDarkTheme } from "./themes/bb-dark";
+import type { MonacoModule } from "./types";
 
-export default monaco;
-export type MonacoModule = typeof monaco;
+export default monaco as MonacoModule;
 
 const state = {
   themeInitialized: false,

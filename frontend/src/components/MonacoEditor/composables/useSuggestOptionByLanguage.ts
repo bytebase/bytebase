@@ -1,6 +1,6 @@
 import type monaco from "monaco-editor";
 import { watchEffect } from "vue";
-import { MonacoModule } from "../editor";
+import type { MonacoModule } from "../types";
 import { useTextModelLanguage } from "./common";
 
 export const useSuggestOptionByLanguage = (

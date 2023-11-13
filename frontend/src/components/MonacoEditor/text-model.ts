@@ -1,6 +1,6 @@
 import { Uri, editor } from "monaco-editor";
 import { isRef, markRaw, ref, shallowRef, unref, watch } from "vue";
-import { MaybeRef } from "@/types";
+import { Language, MaybeRef } from "@/types";
 import { MonacoEditorReady } from "./editor";
 
 const ready = ref(false);
@@ -24,8 +24,6 @@ export const createTextModel = (
   TextModelMapByFilename.set(filename, model);
   return model;
 };
-
-export type Language = "sql" | "javascript";
 
 export const useMonacoTextModel = (
   filename: MaybeRef<string>,

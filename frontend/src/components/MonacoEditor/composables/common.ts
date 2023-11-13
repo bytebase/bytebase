@@ -1,7 +1,7 @@
 import type monaco from "monaco-editor";
 import { ref } from "vue";
+import { Language } from "@/types";
 import { SupportedLanguages } from "../services";
-import { Language } from "../text-model";
 
 export const useTextModelLanguage = (
   editor: monaco.editor.IStandaloneCodeEditor

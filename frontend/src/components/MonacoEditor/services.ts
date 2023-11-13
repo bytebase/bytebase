@@ -18,6 +18,12 @@ export const SupportedLanguages: languages.ILanguageExtensionPoint[] = [
     aliases: ["JS", "js"],
     mimetypes: ["application/javascript"],
   },
+  {
+    id: "redis",
+    extensions: [".redis"],
+    aliases: ["REDIS", "redis"],
+    mimetypes: ["application/redis"],
+  },
 ];
 
 const initializeRunner = async () => {

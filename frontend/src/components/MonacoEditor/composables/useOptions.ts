@@ -1,7 +1,7 @@
 import type monaco from "monaco-editor";
 import { Ref, unref, watch, watchEffect } from "vue";
-import { MaybeRef } from "@/types";
-import { MonacoModule } from "../editor";
+import type { MaybeRef } from "@/types";
+import type { MonacoModule } from "../types";
 
 export const useOptions = (
   monaco: MonacoModule,
