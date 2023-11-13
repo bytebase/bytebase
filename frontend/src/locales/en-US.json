@@ -1110,6 +1110,8 @@
       "continue-anyway": "Continue anyway",
       "sql-review-violations": "SQL Review Violations"
     },
+    "no-assignee-candidates": "There is no valid assignee candidates in this project. Please contact the project owner.",
+    "allow-any-following-roles-to-be-assignee": "Allow any following roles to be assignee",
     "error": {
       "issue-is-not-open": "The issue is not open",
       "you-don-have-privilege-to-edit-this-issue": "You don't have privilege to edit this issue"
