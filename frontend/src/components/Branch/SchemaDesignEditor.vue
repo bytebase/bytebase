@@ -48,10 +48,10 @@
         v-show="state.selectedTab === 'raw-sql-preview'"
         class="w-full h-full pt-2 overflow-y-auto"
       >
-        <MonacoEditor
+        <MonacoEditorV2
           class="w-full h-full border rounded-lg overflow-auto"
           data-label="bb-schema-editor-sql-editor"
-          :value="rawSQLPreviewState.value"
+          :content="rawSQLPreviewState.value"
           :readonly="true"
           :auto-focus="false"
         />
@@ -72,6 +72,7 @@ import {
 } from "@/store";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import { ComposedProject } from "@/types/v1";
+import { MonacoEditorV2 } from "../MonacoEditor";
 import {
   mergeSchemaEditToMetadata,
   validateDatabaseMetadata,
