@@ -191,8 +191,8 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 		where = append(where, fmt.Sprintf("task.status in (%s)", strings.Join(list, ",")))
 	}
 	if v := find.LatestTaskRunStatusList; v != nil {
-		where = append(where, fmt.Sprintf("COALESCE(latest_task_run.status, $%d) = ANY($%d)", len(args)+1, len(args)+2))
-		args = append(args, api.TaskRunNotStarted, *v)
+		where = append(where, fmt.Sprintf("latest_task_run.status = ANY($%d)", len(args)+1))
+		args = append(args, *v)
 	}
 	if v := find.TypeList; v != nil {
 		var list []string
@@ -232,19 +232,22 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 			task.database_id,
 			task.name,
 			task.status,
-			COALESCE(latest_task_run.status, $%d) AS latest_task_run_status,
+			latest_task_run.status AS latest_task_run_status,
 			task.type,
 			task.payload,
 			task.earliest_allowed_ts,
 			(SELECT ARRAY_AGG (task_dag.from_task_id) FROM task_dag WHERE task_dag.to_task_id = task.id) blocked_by
 		FROM task
 		LEFT JOIN LATERAL (
-			SELECT
-				task_run.status
-			FROM task_run
-			WHERE task_run.task_id = task.id
-			ORDER BY task_run.id DESC
-			LIMIT 1
+			SELECT COALESCE(
+				(SELECT
+					task_run.status
+				FROM task_run
+				WHERE task_run.task_id = task.id
+				ORDER BY task_run.id DESC
+				LIMIT 1
+				), $%d
+			) AS status
 		) AS latest_task_run ON TRUE
 		WHERE %s
 		ORDER BY task.id ASC`, len(args), strings.Join(where, " AND ")),
