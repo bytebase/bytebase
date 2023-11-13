@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"sync"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -195,16 +194,14 @@ func (s *Store) GetDataClassificationSetting(ctx context.Context) (*storepb.Data
 
 // DeleteCache deletes the cache.
 func (s *Store) DeleteCache() {
-	s.settingCache = sync.Map{}
+	s.settingCache.Purge()
 }
 
 // GetSettingV2 returns the setting by name.
 func (s *Store) GetSettingV2(ctx context.Context, find *FindSettingMessage) (*SettingMessage, error) {
 	if find.Name != nil && !find.Enforce {
-		if setting, ok := s.settingCache.Load(*find.Name); ok {
-			if v, ok := setting.(*SettingMessage); ok {
-				return v, nil
-			}
+		if v, ok := s.settingCache.Get(*find.Name); ok {
+			return v, nil
 		}
 	}
 
@@ -247,7 +244,7 @@ func (s *Store) ListSettingV2(ctx context.Context, find *FindSettingMessage) ([]
 	}
 
 	for _, setting := range settings {
-		s.settingCache.Store(setting.Name, setting)
+		s.settingCache.Add(setting.Name, setting)
 	}
 	return settings, nil
 }
@@ -291,16 +288,14 @@ func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage, 
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrap(err, "failed to commit transaction")
 	}
-	s.settingCache.Store(setting.Name, &setting)
+	s.settingCache.Add(setting.Name, &setting)
 	return &setting, nil
 }
 
 // CreateSettingIfNotExistV2 creates a new setting only if the named setting doesn't exist.
 func (s *Store) CreateSettingIfNotExistV2(ctx context.Context, create *SettingMessage, principalUID int) (*SettingMessage, bool, error) {
-	if setting, ok := s.settingCache.Load(create.Name); ok {
-		if v, ok := setting.(*SettingMessage); ok {
-			return v, false, nil
-		}
+	if v, ok := s.settingCache.Get(create.Name); ok {
+		return v, false, nil
 	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -339,7 +334,7 @@ func (s *Store) CreateSettingIfNotExistV2(ctx context.Context, create *SettingMe
 	if err := tx.Commit(); err != nil {
 		return nil, false, errors.Wrap(err, "failed to commit transaction")
 	}
-	s.settingCache.Store(setting.Name, &setting)
+	s.settingCache.Add(setting.Name, &setting)
 	return &setting, true, nil
 }
 
@@ -359,7 +354,7 @@ func (s *Store) DeleteSettingV2(ctx context.Context, name api.SettingName) error
 		return errors.Wrap(err, "failed to commit transaction")
 	}
 
-	s.settingCache.Delete(name)
+	s.settingCache.Remove(name)
 	return nil
 }
 
