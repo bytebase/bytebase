@@ -8,6 +8,7 @@ import { useContent } from "./useContent";
 export type AutoHeightOptions = {
   min?: number;
   max?: number;
+  padding?: number;
 };
 
 export const useAutoHeight = (
@@ -22,13 +23,14 @@ export const useAutoHeight = (
 
     const container = containerRef.value;
     if (!container) return;
+    const { min, max, padding } = _opts;
 
     container.style.height = `${
       height ??
       minmax(
-        editor.getContentHeight(),
-        _opts.min ?? 0,
-        _opts.max ?? Number.MAX_SAFE_INTEGER
+        editor.getContentHeight() + (padding ?? 0),
+        min ?? 0,
+        max ?? Number.MAX_SAFE_INTEGER
       )
     }px`;
   };
