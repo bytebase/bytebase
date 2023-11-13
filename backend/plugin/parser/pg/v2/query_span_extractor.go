@@ -2,6 +2,7 @@ package v2
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"regexp"
 
@@ -64,8 +65,29 @@ func (q *querySpanExtractor) getDatabaseMetadata(database string) (*model.Databa
 	return meta, nil
 }
 
-func (q *querySpanExtractor) getQuerySpanResult(ctx context.Context, ast *pgquery.RawStmt) ([]*base.QuerySpanResult, error) {
+func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*base.QuerySpan, error) {
 	q.ctx = ctx
+
+	res, err := pgquery.Parse(stmt)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse statement: %s", stmt)
+	}
+	if len(res.Stmts) != 1 {
+		return nil, errors.Errorf("expecting 1 statement, but got %d", len(res.Stmts))
+	}
+	ast := res.Stmts[0]
+
+	switch ast.Stmt.Node.(type) {
+	case *pgquery.Node_SelectStmt:
+	case *pgquery.Node_ExplainStmt:
+		// Skip the EXPLAIN statement.
+		return &base.QuerySpan{
+			Results:       []*base.QuerySpanResult{},
+			SourceColumns: base.SourceColumnSet{},
+		}, nil
+	default:
+		return nil, errors.Wrapf(err, "expect a query statement but found %T", ast.Stmt.Node)
+	}
 
 	tableSource, err := q.extractTableSourceFromNode(ast.Stmt)
 	if err != nil {
@@ -78,7 +100,17 @@ func (q *querySpanExtractor) getQuerySpanResult(ctx context.Context, ast *pgquer
 		return nil, err
 	}
 
-	return tableSource.GetQuerySpanResult(), nil
+	// Our querySpanExtractor is based on the pg_query_go library, which does not support listening to or walking the AST.
+	// We separate the logic for querying spans and accessing data.
+	// The second one is achieved using ParseToJson, which is simpler.
+	accessColumns, err := q.getAccessTables(stmt)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get access columns from statement: %s", stmt)
+	}
+	return &base.QuerySpan{
+		Results:       tableSource.GetQuerySpanResult(),
+		SourceColumns: accessColumns,
+	}, nil
 }
 
 // extractTableSourceFromNode is the entry for recursively extracting the span sources from the given node.
@@ -934,4 +966,95 @@ func pgExtractFieldName(node *pgquery.Node) (string, error) {
 		return "grouping", nil
 	}
 	return pgUnknownFieldName, nil
+}
+
+func (q *querySpanExtractor) getAccessTables(sql string) (base.SourceColumnSet, error) {
+	jsonText, err := pgquery.ParseToJSON(sql)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse sql to json")
+	}
+
+	var jsonData map[string]any
+
+	if err := json.Unmarshal([]byte(jsonText), &jsonData); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal json")
+	}
+
+	accessesMap := make(base.SourceColumnSet)
+
+	result, err := q.getRangeVarsFromJsonRecursive(jsonData, q.connectedDB, "public")
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get range vars from json")
+	}
+	for _, resource := range result {
+		accessesMap[resource] = true
+	}
+
+	return accessesMap, nil
+}
+
+func (q *querySpanExtractor) getRangeVarsFromJsonRecursive(jsonData map[string]any, currentDatabase, currentSchema string) ([]base.ColumnResource, error) {
+	var result []base.ColumnResource
+	if jsonData["RangeVar"] != nil {
+		resource := base.ColumnResource{
+			Server:   "",
+			Database: currentDatabase,
+			Schema:   currentSchema,
+		}
+		rangeVar, ok := jsonData["RangeVar"].(map[string]any)
+		if !ok {
+			return nil, errors.Errorf("failed to convert range var")
+		}
+		if rangeVar["schemaname"] != nil {
+			schema, ok := rangeVar["schemaname"].(string)
+			if !ok {
+				return nil, errors.Errorf("failed to convert schemaname")
+			}
+			resource.Schema = schema
+		}
+		if rangeVar["relname"] != nil {
+			table, ok := rangeVar["relname"].(string)
+			if !ok {
+				return nil, errors.Errorf("failed to convert relname")
+			}
+			resource.Table = table
+		}
+		databaseMetadata, err := q.getDatabaseMetadata(currentDatabase)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", currentDatabase)
+		}
+
+		if databaseMetadata == nil || databaseMetadata.GetSchema(resource.Schema) == nil || databaseMetadata.GetSchema(resource.Schema).GetTable(resource.Table) == nil {
+			return nil, nil
+		}
+		// This is a false-positive behavior, the table we found may not be the table the query actually accesses.
+		// For example, the query is `WITH t1 AS (SELECT 1) SELECT * FROM t1` and we have a physical table `t1` in the database exactly.
+		// We do this because we do not have too much time to implement the real behavior.
+		// XXX(rebelice/zp): Can we pass more information here to make this function know the context and then
+		// figure out whether the table is the table the query actually accesses?
+		result = append(result, resource)
+	}
+
+	for _, value := range jsonData {
+		switch v := value.(type) {
+		case map[string]any:
+			resources, err := q.getRangeVarsFromJsonRecursive(v, currentDatabase, currentSchema)
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, resources...)
+		case []any:
+			for _, item := range v {
+				if m, ok := item.(map[string]any); ok {
+					resources, err := q.getRangeVarsFromJsonRecursive(m, currentDatabase, currentSchema)
+					if err != nil {
+						return nil, err
+					}
+					result = append(result, resources...)
+				}
+			}
+		}
+	}
+
+	return result, nil
 }

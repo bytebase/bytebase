@@ -163,10 +163,6 @@ func (p PhysicalTable) GetQuerySpanResult() []*QuerySpanResult {
 	return result
 }
 
-func (p PhysicalTable) SetColumnName(i int, name string) {
-	p.Columns[i] = p.Name
-}
-
 // String returns the string format of the column resource.
 func (c ColumnResource) String() string {
 	var list []string
