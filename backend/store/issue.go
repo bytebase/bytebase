@@ -134,7 +134,9 @@ func (s *Store) GetIssueV2(ctx context.Context, find *FindIssueMessage) (*IssueM
 	issue := issues[0]
 
 	s.issueCache.Store(issue.UID, issue)
-	s.issueByPipelineCache.Store(issue.PipelineUID, issue)
+	if issue.PipelineUID != nil {
+		s.issueByPipelineCache.Store(*issue.PipelineUID, issue)
+	}
 	return issue, nil
 }
 
@@ -214,7 +216,9 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 	}
 
 	s.issueCache.Store(create.UID, create)
-	s.issueByPipelineCache.Store(create.PipelineUID, create)
+	if create.PipelineUID != nil {
+		s.issueByPipelineCache.Store(*create.PipelineUID, create)
+	}
 	return create, nil
 }
 
@@ -297,7 +301,9 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 
 	// Invalid the cache and read the value again.
 	s.issueCache.Delete(uid)
-	s.issueByPipelineCache.Delete(oldIssue.PipelineUID)
+	if oldIssue.PipelineUID != nil {
+		s.issueByPipelineCache.Delete(*oldIssue.PipelineUID)
+	}
 	return s.GetIssueV2(ctx, &FindIssueMessage{UID: &uid})
 }
 
@@ -562,7 +568,9 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		issue.UpdatedTime = time.Unix(issue.updatedTs, 0)
 
 		s.issueCache.Store(issue.UID, issue)
-		s.issueByPipelineCache.Store(issue.PipelineUID, issue)
+		if issue.PipelineUID != nil {
+			s.issueByPipelineCache.Store(*issue.PipelineUID, issue)
+		}
 	}
 
 	return issues, nil
@@ -607,7 +615,7 @@ func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, issueUIDs []int, s
 		}
 	}
 	if err := rows.Err(); err != nil {
-		return errors.Wrapf(err, "failed to scan")
+		return errors.Wrapf(err, "failed to scan issues")
 	}
 
 	if err := tx.Commit(); err != nil {
