@@ -993,8 +993,15 @@ type Issue struct {
 	Rollout string `protobuf:"bytes,18,opt,name=rollout,proto3" json:"rollout,omitempty"`
 	// Used if the issue type is GRANT_REQUEST.
 	GrantRequest *GrantRequest `protobuf:"bytes,19,opt,name=grant_request,json=grantRequest,proto3" json:"grant_request,omitempty"`
-	// The releasers.
-	// Format: roles/{role}
+	// The releasers of the pending stage of the issue rollout, judging
+	// from the rollout policy.
+	// If the policy is auto rollout, the releasers are the project owners and the issue creator.
+	// Format:
+	// - roles/workspaceOwner
+	// - roles/workspaceDBA
+	// - roles/projectOwner
+	// - roles/projectReleaser
+	// - users/{email}
 	Releasers []string `protobuf:"bytes,20,rep,name=releasers,proto3" json:"releasers,omitempty"`
 }
 
