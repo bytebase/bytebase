@@ -64,6 +64,22 @@
       line: 2
       details: ""
 - statement: |-
+    CREATE TABLE book(a int);
+    ALTER TABLE book ADD COLUMN (b int NOT NULL, c int NOT NULL);
+  want:
+    - status: WARN
+      code: 404
+      title: column.set-default-for-not-null
+      content: Column `book`.`b` is NOT NULL but doesn't have DEFAULT
+      line: 2
+      details: ""
+    - status: WARN
+      code: 404
+      title: column.set-default-for-not-null
+      content: Column `book`.`c` is NOT NULL but doesn't have DEFAULT
+      line: 2
+      details: ""
+- statement: |-
     CREATE TABLE book(id int);
     ALTER TABLE book MODIFY COLUMN id int NOT NULL;
   want:

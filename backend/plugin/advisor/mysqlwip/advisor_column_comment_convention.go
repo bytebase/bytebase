@@ -119,14 +119,11 @@ func (checker *columnCommentConventionChecker) EnterAlterTable(ctx *mysql.AlterT
 		if item == nil {
 			continue
 		}
-		if item.FieldDefinition() == nil {
-			continue
-		}
 
 		var columnName string
 		switch {
 		// add column
-		case item.ADD_SYMBOL() != nil && item.Identifier() != nil:
+		case item.ADD_SYMBOL() != nil:
 			switch {
 			case item.Identifier() != nil && item.FieldDefinition() != nil:
 				columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
@@ -141,11 +138,11 @@ func (checker *columnCommentConventionChecker) EnterAlterTable(ctx *mysql.AlterT
 				}
 			}
 		// modify column
-		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil:
+		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
 			columnName = mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
 			checker.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
 		// change column
-		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil:
+		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil && item.FieldDefinition() != nil:
 			columnName = mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
 			checker.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
 		}
