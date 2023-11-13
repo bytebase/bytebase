@@ -42,7 +42,10 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, pgBinDir, serverVersi
 	}
 	defer metadataDriver.Close(ctx)
 
-	storeInstance := store.New(storeDB)
+	storeInstance, err := store.New(storeDB)
+	if err != nil {
+		return nil, err
+	}
 	// Calculate prod cutoffSchemaVersion.
 	cutoffSchemaVersion, err := getProdCutoffVersion()
 	if err != nil {

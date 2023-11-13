@@ -19,7 +19,6 @@ require (
 	github.com/bytebase/snowsql-parser v0.0.0-20230706111031-cafd8faa2dc9
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/coreos/go-oidc v2.2.1+incompatible
-	github.com/dgraph-io/ristretto v0.1.1
 	github.com/github/gh-ost v1.1.5
 	github.com/go-ego/gse v0.80.2
 	github.com/go-ldap/ldap/v3 v3.4.6
@@ -33,6 +32,7 @@ require (
 	github.com/gosimple/slug v1.13.1
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.0.1
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.18.0
+	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/improbable-eng/grpc-web v0.15.0
 	github.com/jackc/pgtype v1.14.0
 	github.com/jackc/pgx/v4 v4.18.1
@@ -97,14 +97,13 @@ require (
 	github.com/apache/thrift v0.19.0 // indirect
 	github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc // indirect
 	github.com/danieljoos/wincred v1.2.0 // indirect
-	github.com/dustin/go-humanize v1.0.1 // indirect
+	github.com/dgraph-io/ristretto v0.1.1 // indirect
 	github.com/dvsekhvalnov/jose2go v1.5.0 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-asn1-ber/asn1-ber v1.5.5 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9 // indirect
 	github.com/golang-sql/sqlexp v0.1.0 // indirect
-	github.com/golang/glog v1.1.2 // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
