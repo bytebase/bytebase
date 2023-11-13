@@ -43,17 +43,35 @@ type Store struct {
 	idpCache                       sync.Map // map[string]*IdentityProvider
 	projectIDDeploymentConfigCache sync.Map // map[int]*DeploymentConfigMessage
 	risksCache                     sync.Map // []*RiskMessage, use 0 as the key
-	databaseGroupCache             sync.Map // map[string]*DatabaseGroupMessage
-	databaseGroupIDCache           sync.Map // map[int]*DatabaseGroupMessage
-	schemaGroupCache               sync.Map // map[string]*SchemaGroupMessage
-	vcsIDCache                     sync.Map // map[int]*ExternalVersionControlMessage
+	databaseGroupCache             *lru.Cache[string, *DatabaseGroupMessage]
+	databaseGroupIDCache           *lru.Cache[int64, *DatabaseGroupMessage]
+	schemaGroupCache               *lru.Cache[string, *SchemaGroupMessage]
+	vcsIDCache                     *lru.Cache[int, *ExternalVersionControlMessage]
 
+	// Large objects.
 	sheetCache    *lru.Cache[int, string]
 	dbSchemaCache *lru.Cache[int, *model.DBSchema]
 }
 
 // New creates a new instance of Store.
 func New(db *DB) (*Store, error) {
+	databaseGroupCache, err := lru.New[string, *DatabaseGroupMessage](10)
+	if err != nil {
+		return nil, err
+	}
+	databaseGroupIDCache, err := lru.New[int64, *DatabaseGroupMessage](10)
+	if err != nil {
+		return nil, err
+	}
+	schemaGroupCache, err := lru.New[string, *SchemaGroupMessage](10)
+	if err != nil {
+		return nil, err
+	}
+	vcsIDCache, err := lru.New[int, *ExternalVersionControlMessage](10)
+	if err != nil {
+		return nil, err
+	}
+
 	sheetCache, err := lru.New[int, string](10)
 	if err != nil {
 		return nil, err
@@ -65,6 +83,11 @@ func New(db *DB) (*Store, error) {
 
 	return &Store{
 		db: db,
+
+		databaseGroupCache:   databaseGroupCache,
+		databaseGroupIDCache: databaseGroupIDCache,
+		schemaGroupCache:     schemaGroupCache,
+		vcsIDCache:           vcsIDCache,
 
 		sheetCache:    sheetCache,
 		dbSchemaCache: dbSchemaCache,
