@@ -89,6 +89,10 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get tables from database %q", driver.databaseName)
 	}
+	tablePartitionMap, err := getTablePartitions(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get table partitions from database %q", driver.databaseName)
+	}
 	viewMap, err := getViews(txn)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get views from database %q", driver.databaseName)
@@ -115,6 +119,9 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		if tables, exists = tableMap[schemaName]; !exists {
 			tables = []*storepb.TableMetadata{}
 		}
+		for _, table := range tables {
+			table.Partitions = warpTablePartitions(tablePartitionMap, schemaName, table.Name)
+		}
 		if views, exists = viewMap[schemaName]; !exists {
 			views = []*storepb.ViewMetadata{}
 		}
@@ -131,6 +138,18 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	databaseMetadata.Extensions = extensions
 
 	return databaseMetadata, err
+}
+
+func warpTablePartitions(m map[db.TableKey][]*storepb.TablePartitionMetadata, schemaName, tableName string) []*storepb.TablePartitionMetadata {
+	key := db.TableKey{Schema: schemaName, Table: tableName}
+	if partitions, exists := m[key]; exists {
+		defer delete(m, key)
+		for _, partition := range partitions {
+			partition.Subpartitions = warpTablePartitions(m, schemaName, partition.Name)
+		}
+		return partitions
+	}
+	return []*storepb.TablePartitionMetadata{}
 }
 
 var listForeignKeyQuery = `
@@ -361,23 +380,61 @@ SELECT
 	c.relname AS table_name,
 	i2.nspname AS inh_schema_name,
 	i2.relname AS inh_table_name,
+	i2.partstrat AS partition_type,
 	pg_get_expr(c.relpartbound, c.oid) AS rel_part_bound
 FROM
 	pg_catalog.pg_class c
 	LEFT JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
-    LEFT JOIN (pg_inherits i INNER JOIN pg_class c2 ON i.inhparent = c2.oid LEFT JOIN pg_namespace n2 ON n2.oid = c2.relnamespace) i2 ON i2.inhrelid = c.oid 
+    LEFT JOIN (
+		pg_inherits i 
+		INNER JOIN pg_class c2 ON i.inhparent = c2.oid 
+		LEFT JOIN pg_namespace n2 ON n2.oid = c2.relnamespace
+		LEFT JOIN pg_partitioned_table p ON p.partrelid = c2.oid
+	) i2 ON i2.inhrelid = c.oid 
 WHERE
 	((c.relkind = 'r'::"char") OR (c.relkind = 'f'::"char") OR (c.relkind = 'p'::"char"))
 	AND c.relispartition IS TRUE ` + fmt.Sprintf(`
 	AND n.nspname NOT IN (%s)
-ORDER BY n.nspname, c.relname;`, pgparser.SystemSchemaWhereClause)
+ORDER BY c.oid;`, pgparser.SystemSchemaWhereClause)
 
-func getTablePartitions(txn *sql.Tx) (map[string][]*storepb.TablePartitionMetadata, error) {
+func getTablePartitions(txn *sql.Tx) (map[db.TableKey][]*storepb.TablePartitionMetadata, error) {
+	result := make(map[db.TableKey][]*storepb.TablePartitionMetadata)
 	rows, err := txn.Query(listTablePartitionQuery)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
+
+	for rows.Next() {
+		var schemaName, tableName, inhSchemaName, inhTableName, partitionType, relPartBound string
+		if err := rows.Scan(&schemaName, &tableName, &inhSchemaName, &inhTableName, &partitionType, &relPartBound); err != nil {
+			return nil, err
+		}
+		if pgparser.IsSystemTable(tableName) || pgparser.IsSystemTable(inhTableName) {
+			continue
+		}
+		key := db.TableKey{Schema: inhSchemaName, Table: inhTableName}
+		metadata := &storepb.TablePartitionMetadata{
+			Name:       tableName,
+			Expression: relPartBound,
+		}
+		switch strings.ToLower(partitionType) {
+		case "l":
+			metadata.Type = storepb.TablePartitionMetadata_LIST
+		case "r":
+			metadata.Type = storepb.TablePartitionMetadata_RANGE
+		case "h":
+			metadata.Type = storepb.TablePartitionMetadata_HASH
+		default:
+			return nil, errors.Errorf("invalid partition type %q", partitionType)
+		}
+		result[key] = append(result[key], metadata)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
 
 var listColumnQuery = `
