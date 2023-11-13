@@ -258,6 +258,10 @@ message Issue {
 
   // Used if the issue type is GRANT_REQUEST.
   GrantRequest grant_request = 19;
+
+  // The releasers.
+  // Format: roles/{role}
+  repeated string releasers = 20;
 }
 
 message GrantRequest {
