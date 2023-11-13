@@ -116,6 +116,9 @@ func TestMySQLWIPRules(t *testing.T) {
 
 		// advisor.SchemaRuleCharsetAllowlist enforce the charset allowlist.
 		advisor.SchemaRuleCharsetAllowlist,
+
+		// advisor.SchemaRuleCollationAllowlist enforce the collation allowlist.
+		advisor.SchemaRuleCollationAllowlist,
 	}
 
 	for _, rule := range mysqlwipRules {

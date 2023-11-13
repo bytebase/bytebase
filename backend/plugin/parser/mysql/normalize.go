@@ -263,6 +263,19 @@ func NormalizeMySQLCharsetName(ctx parser.ICharsetNameContext) string {
 	return ""
 }
 
+// NormalizeMySQLCollationName noamalizes the given collation name.
+func NormalizeMySQLCollationName(ctx parser.ICollationNameContext) string {
+	switch {
+	case ctx.TextOrIdentifier() != nil:
+		return NormalizeMySQLTextOrIdentifier(ctx.TextOrIdentifier())
+	case ctx.DEFAULT_SYMBOL() != nil:
+		return "DEFAULT"
+	case ctx.BINARY_SYMBOL() != nil:
+		return "BINARY"
+	}
+	return ""
+}
+
 // NormalizeMySQLDataType noamalizes the given dataType.
 // campact for tidb parser compatibility.
 // eg: varchar(5).
