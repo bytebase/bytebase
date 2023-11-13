@@ -250,9 +250,11 @@ const isInstanceSelected = (instance: ComposedInstance): boolean => {
 };
 
 const allSelectionState = computed(() => {
-  const checked = instanceList.value.every((instance) =>
-    state.selectedInstance.has(instance.name)
-  );
+  const checked =
+    state.selectedInstance.size > 0 &&
+    instanceList.value.every((instance) =>
+      state.selectedInstance.has(instance.name)
+    );
   const indeterminate =
     !checked &&
     instanceList.value.some((instance) =>

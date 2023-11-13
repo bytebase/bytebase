@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
-	"time"
 
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -20,17 +19,8 @@ type UpdateDBSchemaMessage struct {
 
 // GetDBSchema gets the schema for a database.
 func (s *Store) GetDBSchema(ctx context.Context, databaseID int) (*model.DBSchema, error) {
-	instanceCount := 0
-	s.instanceCache.Range(func(key, value any) bool {
-		instanceCount++
-		return true
-	})
-	if s.dbSchemaCache.MaxCost() != 1_000_000 || instanceCount <= 10 {
-		if dbSchema, ok := s.dbSchemaCache.Get(databaseID); ok {
-			if v, ok := dbSchema.(*model.DBSchema); ok {
-				return v, nil
-			}
-		}
+	if v, ok := s.dbSchemaCache.Get(databaseID); ok {
+		return v, nil
 	}
 
 	// Build WHERE clause.
@@ -71,7 +61,7 @@ func (s *Store) GetDBSchema(ctx context.Context, databaseID int) (*model.DBSchem
 		return nil, err
 	}
 
-	s.dbSchemaCache.SetWithTTL(databaseID, dbSchema, int64(len(dbSchema.GetSchema())), 1*time.Hour)
+	s.dbSchemaCache.Add(databaseID, dbSchema)
 	return dbSchema, nil
 }
 
@@ -125,7 +115,7 @@ func (s *Store) UpsertDBSchema(ctx context.Context, databaseID int, dbSchema *mo
 		return err
 	}
 
-	s.dbSchemaCache.SetWithTTL(databaseID, updatedDBSchema, int64(len(updatedDBSchema.GetSchema())), 1*time.Hour)
+	s.dbSchemaCache.Add(databaseID, updatedDBSchema)
 	return nil
 }
 
@@ -158,7 +148,7 @@ func (s *Store) UpdateDBSchema(ctx context.Context, databaseID int, patch *Updat
 		return err
 	}
 	// Invalid the cache and read the value again.
-	s.dbSchemaCache.Del(databaseID)
+	s.dbSchemaCache.Remove(databaseID)
 	return nil
 }
 

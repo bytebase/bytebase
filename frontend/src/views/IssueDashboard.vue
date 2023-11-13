@@ -18,10 +18,6 @@
         <TabFilter v-model:value="state.tab" :items="tabItemList" />
       </div>
       <div class="flex flex-row space-x-4 p-0.5">
-        <NButton v-if="project" @click="goProject">
-          {{ project.key }}
-        </NButton>
-
         <NInputGroup style="width: auto">
           <NDatePicker
             v-model:value="selectedTimeRange"
@@ -87,7 +83,7 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
-import { NInputGroup, NButton, NDatePicker } from "naive-ui";
+import { NInputGroup, NDatePicker } from "naive-ui";
 import { reactive, computed, watchEffect, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
@@ -110,13 +106,12 @@ import {
 import { UNKNOWN_ID, IssueFilter } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import {
-  projectV1Slug,
   extractProjectResourceName,
   hasWorkspacePermissionV1,
   SearchParams,
   SearchScopeId,
   UIIssueFilter,
-  isValidIssueReviewStatus,
+  isValidIssueApprovalStatus,
 } from "@/utils";
 
 const TABS = ["OPEN", "CLOSED"] as const;
@@ -295,16 +290,6 @@ const clearDatePicker = () => {
   });
 };
 
-const goProject = () => {
-  if (!project.value) return;
-  router.push({
-    name: "workspace.project.detail",
-    params: {
-      projectSlug: projectV1Slug(project.value),
-    },
-  });
-};
-
 watchEffect(() => {
   if (selectedProjectId.value) {
     projectV1Store.getOrFetchProjectByUID(selectedProjectId.value);
@@ -370,13 +355,13 @@ const issueFilter = computed((): IssueFilter => {
 const uiIssueFilter = computed((): UIIssueFilter => {
   const { scopes } = state.searchParams;
   const approverScope = scopes.find((s) => s.id === "approver");
-  const reviewStatusScope = scopes.find((s) => s.id === "approval_status");
+  const approvalScope = scopes.find((s) => s.id === "approval");
   const uiIssueFilter: UIIssueFilter = {};
   if (approverScope && approverScope.value) {
     uiIssueFilter.approver = `users/${approverScope.value}`;
   }
-  if (reviewStatusScope && isValidIssueReviewStatus(reviewStatusScope.value)) {
-    uiIssueFilter.approval_status = reviewStatusScope.value;
+  if (approvalScope && isValidIssueApprovalStatus(approvalScope.value)) {
+    uiIssueFilter.approval = approvalScope.value;
   }
 
   return uiIssueFilter;

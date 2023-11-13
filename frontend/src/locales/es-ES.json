@@ -668,7 +668,7 @@
     "sensitive-data": {
       "description": "A las siguientes columnas se les asignan niveles de enmascaramiento explícitamente y tienen prioridad sobre la regla de enmascaramiento global.",
       "remove-sensitive-column-tips": "¿Exponer esta columna?",
-      "sensitive-column-list": "Lista de columnas enmascaradas explícitas",
+      "sensitive-column-list": "Columnas Explícitas Enmascaradas",
       "global-masking-rule": "Regla de enmascaramiento global",
       "grant-access": "Autorizará el acceso",
       "never-expires": "Nunca expira",
@@ -694,34 +694,44 @@
         },
         "template": {
           "address": {
-            "title": "La dirección"
+            "title": "La dirección",
+            "description": ""
           },
           "secret_key": {
-            "title": "Clave de encriptación"
+            "title": "Clave de encriptación",
+            "description": ""
           },
           "card_number": {
-            "title": "Tarjeta bancaria, tarjeta de crédito, etc."
+            "title": "Tarjeta bancaria, tarjeta de crédito, etc.",
+            "description": ""
           },
           "email": {
-            "title": "Dirección de correo electrónico"
+            "title": "Dirección de correo electrónico",
+            "description": ""
           },
           "id_number": {
-            "title": "Número de identificación personal"
+            "title": "Número de identificación personal",
+            "description": ""
           },
           "ipv4_address": {
-            "title": "Dirección IPv4"
+            "title": "Dirección IPv4",
+            "description": ""
           },
           "license_plate_number": {
-            "title": "Número de placa"
+            "title": "Número de placa",
+            "description": ""
           },
           "mac_address": {
-            "title": "Dirección MAC"
+            "title": "Dirección MAC",
+            "description": ""
           },
           "password": {
-            "title": "Contraseña"
+            "title": "Contraseña",
+            "description": ""
           },
           "phone": {
-            "title": "Número de teléfono"
+            "title": "Número de teléfono",
+            "description": ""
           }
         }
       },
@@ -744,6 +754,8 @@
           "masking-type": "Tipo de enmascaramiento",
           "delete": "¿Eliminar este algoritmo?"
         },
+        "mask": "Máscara",
+        "hash": "Picadillo",
         "full-mask": {
           "self": "Máscara completa",
           "substitution": "Sustitución",
@@ -751,6 +763,7 @@
         },
         "range-mask": {
           "self": "Máscara de rango",
+          "label": "La máscara de rango reemplazará el valor original desde el índice inicial hasta el índice final (final no incluido) con la sustitución.",
           "slice-start": "Inicio de corte",
           "slice-start-label": "El inicio del segmento es el índice de inicio del valor original, comienza desde 0 y debe ser menor que detener.",
           "slice-end": "Fin del corte",
@@ -963,13 +976,13 @@
           "title": "Aprobador",
           "description": "Búsqueda por aprobador del problema"
         },
-        "approval-status": {
-          "title": "Estado de aprobación",
+        "approval": {
           "value": {
-            "approved": "Aprobado",
-            "pending_approval": "Aprobación pendiente"
+            "pending": "Aprobación pendiente",
+            "approved": "Aprobado"
           },
-          "description": "Buscar por estado de revisión del problema"
+          "description": "Buscar por estado de revisión del problema",
+          "title": "Estado de aprobación"
         }
       }
     },

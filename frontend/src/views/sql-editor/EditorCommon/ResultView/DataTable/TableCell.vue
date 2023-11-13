@@ -1,7 +1,11 @@
+<!-- eslint-disable vue/no-v-html -->
 <template>
   <div class="relative px-2 py-1" :class="classes" @click="handleClick">
-    <!-- eslint-disable-next-line vue/no-v-html -->
-    <div ref="wrapperRef" class="overflow-hidden" v-html="html"></div>
+    <div
+      ref="wrapperRef"
+      class="overflow-hidden whitespace-pre font-mono"
+      v-html="html"
+    ></div>
     <div v-if="clickable" class="absolute right-1 top-1/2 translate-y-[-45%]">
       <NButton size="tiny" circle class="dark:!bg-dark-bg" @click="showDetail">
         <template #icon>

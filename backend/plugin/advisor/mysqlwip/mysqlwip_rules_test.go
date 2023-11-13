@@ -75,17 +75,29 @@ func TestMySQLWIPRules(t *testing.T) {
 		advisor.SchemaRuleColumnDisallowChange,
 		// advisor.SchemaRuleColumnDisallowChangingOrder disallow changing column order.
 		advisor.SchemaRuleColumnDisallowChangingOrder,
+		// advisor.SchemaRuleColumnDisallowDropIndex disallow drop index column.
+		advisor.SchemaRuleColumnDisallowDropInIndex,
 		// advisor.SchemaRuleColumnCommentConvention enforce the column comment convention.
 		advisor.SchemaRuleColumnCommentConvention,
-
+		// advisor.SchemaRuleColumnAutoIncrementMustInteger require the auto-increment column to be integer.
+		advisor.SchemaRuleColumnAutoIncrementMustInteger,
+		// advisor.SchemaRuleColumnTypeDisallowList enforce the column type disallow list.
+		advisor.SchemaRuleColumnTypeDisallowList,
 		// advisor.SchemaRuleColumnDisallowSetCharset disallow set column charset.
 		advisor.SchemaRuleColumnDisallowSetCharset,
 		// advisor.SchemaRuleColumnMaximumCharacterLength enforce the maximum character length.
 		advisor.SchemaRuleColumnMaximumCharacterLength,
 		// advisor.SchemaRuleColumnAutoIncrementInitialValue enforce the initial auto-increment value.
 		advisor.SchemaRuleColumnAutoIncrementInitialValue,
+		// advisor.SchemaRuleColumnAutoIncrementMustUnsigned enforce the auto-increment column to be unsigned.
+		advisor.SchemaRuleColumnAutoIncrementMustUnsigned,
 		// advisor.SchemaRuleColumnRequireDefault enforce the column default.
 		advisor.SchemaRuleColumnRequireDefault,
+
+		// advisor.SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
+		advisor.SchemaRuleSchemaBackwardCompatibility,
+		// advisor.SchemaRuleCurrentTimeColumnCountLimit enforce the current column count limit.
+		advisor.SchemaRuleCurrentTimeColumnCountLimit,
 
 		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL support check if the database is empty before users drop it.
 		advisor.SchemaRuleDropEmptyDatabase,
@@ -101,6 +113,12 @@ func TestMySQLWIPRules(t *testing.T) {
 		// advisor.SchemaRuleIndexTotalNumberLimit enforce the index total number limit.
 		advisor.SchemaRuleIndexTotalNumberLimit,
 		advisor.SchemaRuleIndexPrimaryKeyTypeAllowlist,
+
+		// advisor.SchemaRuleCharsetAllowlist enforce the charset allowlist.
+		advisor.SchemaRuleCharsetAllowlist,
+
+		// advisor.SchemaRuleCollationAllowlist enforce the collation allowlist.
+		advisor.SchemaRuleCollationAllowlist,
 	}
 
 	for _, rule := range mysqlwipRules {

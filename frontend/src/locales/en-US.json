@@ -669,7 +669,7 @@
     "sensitive-data": {
       "description": "Following columns are explicitly assigned masking levels and take predence over the global masking rule.",
       "remove-sensitive-column-tips": "Expose this column?",
-      "sensitive-column-list": "Explict Masked Column List",
+      "sensitive-column-list": "Explicit Masked Columns",
       "global-masking-rule": "Global Masking Rule",
       "grant-access": "Grant Access",
       "never-expires": "Never expires",
@@ -695,34 +695,44 @@
         },
         "template": {
           "address": {
-            "title": "Address"
+            "title": "Address",
+            "description": ""
           },
           "secret_key": {
-            "title": "Encryption Key"
+            "title": "Encryption Key",
+            "description": ""
           },
           "card_number": {
-            "title": "Bank card, credit card, etc"
+            "title": "Bank card, credit card, etc",
+            "description": ""
           },
           "email": {
-            "title": "Email address"
+            "title": "Email address",
+            "description": ""
           },
           "id_number": {
-            "title": "Personal ID number"
+            "title": "Personal ID number",
+            "description": ""
           },
           "ipv4_address": {
-            "title": "IPv4 address"
+            "title": "IPv4 address",
+            "description": ""
           },
           "license_plate_number": {
-            "title": "Plate number"
+            "title": "Plate number",
+            "description": ""
           },
           "mac_address": {
-            "title": "MAC address"
+            "title": "MAC address",
+            "description": ""
           },
           "password": {
-            "title": "Password"
+            "title": "Password",
+            "description": ""
           },
           "phone": {
-            "title": "Phone number"
+            "title": "Phone number",
+            "description": ""
           }
         }
       },
@@ -745,6 +755,8 @@
           "masking-type": "Masking type",
           "delete": "Delete this algorithm?"
         },
+        "mask": "Mask",
+        "hash": "Hash",
         "full-mask": {
           "self": "Full mask",
           "substitution": "Substitution",
@@ -752,12 +764,13 @@
         },
         "range-mask": {
           "self": "Range mask",
+          "label": "Range mask will replace the original value from start index to end index (end not included) with the substitution.",
           "slice-start": "Slice start",
           "slice-start-label": "Slice start is the start index of the original value, start from 0 and should be less than stop.",
           "slice-end": "Slice end",
           "slice-end-label": "Slice stop is the stop index of the original value, should be less than the length of the original value.",
           "substitution": "Substitution",
-          "substitution-label": "Substitution is the string used to replace the original value from start to end."
+          "substitution-label": "Substitution is the string used to replace the original value [start:end)."
         },
         "md5-mask": {
           "self": "MD5 mask",
@@ -964,13 +977,13 @@
           "title": "Approver",
           "description": "Search by the issue approver"
         },
-        "approval-status": {
-          "title": "Approval Status",
+        "approval": {
           "value": {
-            "approved": "Approved",
-            "pending_approval": "Pending approval"
+            "pending": "Pending approval",
+            "approved": "Approved"
           },
-          "description": "Search by the issue approval status"
+          "description": "Search by the issue approval status",
+          "title": "Approval Status"
         }
       }
     },

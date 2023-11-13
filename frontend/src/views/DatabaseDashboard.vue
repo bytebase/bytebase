@@ -147,7 +147,6 @@ import {
   UNKNOWN_USER_NAME,
   ComposedDatabase,
   ComposedDatabaseGroup,
-  DEFAULT_PROJECT_V1_NAME,
 } from "../types";
 
 interface LocalState {
@@ -268,11 +267,9 @@ const changeSearchText = (searchText: string) => {
 };
 
 const filteredDatabaseList = computed(() => {
-  let list = databaseV1List.value
-    .filter((database) => database.project !== DEFAULT_PROJECT_V1_NAME)
-    .filter((database) =>
-      isDatabaseV1Accessible(database, currentUserV1.value)
-    );
+  let list = databaseV1List.value.filter((database) =>
+    isDatabaseV1Accessible(database, currentUserV1.value)
+  );
   const environment = selectedEnvironment.value;
   if (environment && environment.name !== UNKNOWN_ENVIRONMENT_NAME) {
     list = list.filter((db) => db.effectiveEnvironment === environment.name);
@@ -322,9 +319,9 @@ const getAllSelectionState = (
     isDatabase(db)
   ) as ComposedDatabase[];
 
-  const checked = filteredDatabases.every((db) =>
-    state.selectedDatabaseIds.has(db.uid)
-  );
+  const checked =
+    state.selectedDatabaseIds.size > 0 &&
+    filteredDatabases.every((db) => state.selectedDatabaseIds.has(db.uid));
   const indeterminate =
     !checked &&
     filteredDatabases.some((db) => state.selectedDatabaseIds.has(db.uid));

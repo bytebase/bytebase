@@ -251,6 +251,65 @@ export interface TableMetadata {
   userComment: string;
   /** The foreign_keys is the list of foreign keys in a table. */
   foreignKeys: ForeignKeyMetadata[];
+  /** The partitions is the list of partitions in a table. */
+  partitions: TablePartitionMetadata[];
+}
+
+/** TablePartitionMetadata is the metadata for table partitions. */
+export interface TablePartitionMetadata {
+  /** The name is the name of a table partition. */
+  name: string;
+  /** The type of a table partition. */
+  type: TablePartitionMetadata_Type;
+  /** The expression is the expression of a table partition. */
+  expression: string;
+  /** The subpartitions is the list of subpartitions in a table partition. */
+  subpartitions: TablePartitionMetadata[];
+}
+
+export enum TablePartitionMetadata_Type {
+  TYPE_UNSPECIFIED = 0,
+  RANGE = 1,
+  LIST = 2,
+  HASH = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function tablePartitionMetadata_TypeFromJSON(object: any): TablePartitionMetadata_Type {
+  switch (object) {
+    case 0:
+    case "TYPE_UNSPECIFIED":
+      return TablePartitionMetadata_Type.TYPE_UNSPECIFIED;
+    case 1:
+    case "RANGE":
+      return TablePartitionMetadata_Type.RANGE;
+    case 2:
+    case "LIST":
+      return TablePartitionMetadata_Type.LIST;
+    case 3:
+    case "HASH":
+      return TablePartitionMetadata_Type.HASH;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return TablePartitionMetadata_Type.UNRECOGNIZED;
+  }
+}
+
+export function tablePartitionMetadata_TypeToJSON(object: TablePartitionMetadata_Type): string {
+  switch (object) {
+    case TablePartitionMetadata_Type.TYPE_UNSPECIFIED:
+      return "TYPE_UNSPECIFIED";
+    case TablePartitionMetadata_Type.RANGE:
+      return "RANGE";
+    case TablePartitionMetadata_Type.LIST:
+      return "LIST";
+    case TablePartitionMetadata_Type.HASH:
+      return "HASH";
+    case TablePartitionMetadata_Type.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 /** ColumnMetadata is the metadata for columns. */
@@ -1277,6 +1336,7 @@ function createBaseTableMetadata(): TableMetadata {
     classification: "",
     userComment: "",
     foreignKeys: [],
+    partitions: [],
   };
 }
 
@@ -1323,6 +1383,9 @@ export const TableMetadata = {
     }
     for (const v of message.foreignKeys) {
       ForeignKeyMetadata.encode(v!, writer.uint32(98).fork()).ldelim();
+    }
+    for (const v of message.partitions) {
+      TablePartitionMetadata.encode(v!, writer.uint32(122).fork()).ldelim();
     }
     return writer;
   },
@@ -1432,6 +1495,13 @@ export const TableMetadata = {
 
           message.foreignKeys.push(ForeignKeyMetadata.decode(reader, reader.uint32()));
           continue;
+        case 15:
+          if (tag !== 122) {
+            break;
+          }
+
+          message.partitions.push(TablePartitionMetadata.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1462,6 +1532,9 @@ export const TableMetadata = {
       userComment: isSet(object.userComment) ? globalThis.String(object.userComment) : "",
       foreignKeys: globalThis.Array.isArray(object?.foreignKeys)
         ? object.foreignKeys.map((e: any) => ForeignKeyMetadata.fromJSON(e))
+        : [],
+      partitions: globalThis.Array.isArray(object?.partitions)
+        ? object.partitions.map((e: any) => TablePartitionMetadata.fromJSON(e))
         : [],
     };
   },
@@ -1510,6 +1583,9 @@ export const TableMetadata = {
     if (message.foreignKeys?.length) {
       obj.foreignKeys = message.foreignKeys.map((e) => ForeignKeyMetadata.toJSON(e));
     }
+    if (message.partitions?.length) {
+      obj.partitions = message.partitions.map((e) => TablePartitionMetadata.toJSON(e));
+    }
     return obj;
   },
 
@@ -1540,6 +1616,113 @@ export const TableMetadata = {
     message.classification = object.classification ?? "";
     message.userComment = object.userComment ?? "";
     message.foreignKeys = object.foreignKeys?.map((e) => ForeignKeyMetadata.fromPartial(e)) || [];
+    message.partitions = object.partitions?.map((e) => TablePartitionMetadata.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseTablePartitionMetadata(): TablePartitionMetadata {
+  return { name: "", type: 0, expression: "", subpartitions: [] };
+}
+
+export const TablePartitionMetadata = {
+  encode(message: TablePartitionMetadata, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.type !== 0) {
+      writer.uint32(16).int32(message.type);
+    }
+    if (message.expression !== "") {
+      writer.uint32(26).string(message.expression);
+    }
+    for (const v of message.subpartitions) {
+      TablePartitionMetadata.encode(v!, writer.uint32(34).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TablePartitionMetadata {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTablePartitionMetadata();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.type = reader.int32() as any;
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.expression = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.subpartitions.push(TablePartitionMetadata.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TablePartitionMetadata {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      type: isSet(object.type) ? tablePartitionMetadata_TypeFromJSON(object.type) : 0,
+      expression: isSet(object.expression) ? globalThis.String(object.expression) : "",
+      subpartitions: globalThis.Array.isArray(object?.subpartitions)
+        ? object.subpartitions.map((e: any) => TablePartitionMetadata.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: TablePartitionMetadata): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.type !== 0) {
+      obj.type = tablePartitionMetadata_TypeToJSON(message.type);
+    }
+    if (message.expression !== "") {
+      obj.expression = message.expression;
+    }
+    if (message.subpartitions?.length) {
+      obj.subpartitions = message.subpartitions.map((e) => TablePartitionMetadata.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TablePartitionMetadata>): TablePartitionMetadata {
+    return TablePartitionMetadata.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TablePartitionMetadata>): TablePartitionMetadata {
+    const message = createBaseTablePartitionMetadata();
+    message.name = object.name ?? "";
+    message.type = object.type ?? 0;
+    message.expression = object.expression ?? "";
+    message.subpartitions = object.subpartitions?.map((e) => TablePartitionMetadata.fromPartial(e)) || [];
     return message;
   },
 };

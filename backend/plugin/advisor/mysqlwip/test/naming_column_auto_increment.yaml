@@ -68,3 +68,13 @@
       content: ""
       line: 0
       details: ""
+- statement: |
+    CREATE TABLE book(name VARCHAR(255));
+    ALTER TABLE book ADD COLUMN (id int AUTO_INCREMENT, a int, b int, c int, d int);
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""

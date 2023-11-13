@@ -96,9 +96,7 @@ func (checker *namingAutoIncrementColumnChecker) EnterCreateTable(ctx *mysql.Cre
 		}
 
 		_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-		if checker.isAutoIncrement(tableElement.ColumnDefinition().FieldDefinition()) {
-			checker.handleColumn(tableName, columnName, tableElement.GetStart().GetLine())
-		}
+		checker.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
 	}
 }
 
@@ -130,31 +128,46 @@ func (checker *namingAutoIncrementColumnChecker) EnterAlterTable(ctx *mysql.Alte
 			continue
 		}
 
-		var columnName string
 		switch {
 		// add column
-		case item.ADD_SYMBOL() != nil && item.Identifier() != nil:
-			columnName = mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+		case item.ADD_SYMBOL() != nil:
+			switch {
+			case item.Identifier() != nil && item.FieldDefinition() != nil:
+				columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+				checker.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
+			case item.OPEN_PAR_SYMBOL() != nil && item.TableElementList() != nil:
+				for _, tableElement := range item.TableElementList().AllTableElement() {
+					if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().ColumnName() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil {
+						continue
+					}
+					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
+					checker.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
+				}
+			}
 		// modify column
-		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil:
-			columnName = mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
+		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
+			columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
+			checker.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
 		// change column
-		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil:
-			columnName = mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil && item.FieldDefinition() != nil:
+			columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+			checker.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
 		}
-		checker.handleColumn(tableName, columnName, ctx.GetStart().GetLine())
 	}
 }
 
-func (checker *namingAutoIncrementColumnChecker) handleColumn(tableName string, columnName string, lineNumber int) {
-	lineNumber += checker.baseLine
+func (checker *namingAutoIncrementColumnChecker) checkFieldDefinition(tableName, columnName string, ctx mysql.IFieldDefinitionContext) {
+	if !checker.isAutoIncrement(ctx) {
+		return
+	}
+
 	if !checker.format.MatchString(columnName) {
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  checker.level,
 			Code:    advisor.NamingAutoIncrementColumnConventionMismatch,
 			Title:   checker.title,
 			Content: fmt.Sprintf("`%s`.`%s` mismatches auto_increment column naming convention, naming format should be %q", tableName, columnName, checker.format),
-			Line:    lineNumber,
+			Line:    checker.baseLine + ctx.GetStart().GetLine(),
 		})
 	}
 	if checker.maxLength > 0 && len(columnName) > checker.maxLength {
@@ -163,7 +176,7 @@ func (checker *namingAutoIncrementColumnChecker) handleColumn(tableName string, 
 			Code:    advisor.NamingAutoIncrementColumnConventionMismatch,
 			Title:   checker.title,
 			Content: fmt.Sprintf("`%s`.`%s` mismatches auto_increment column naming convention, its length should be within %d characters", tableName, columnName, checker.maxLength),
-			Line:    lineNumber,
+			Line:    checker.baseLine + ctx.GetStart().GetLine(),
 		})
 	}
 }

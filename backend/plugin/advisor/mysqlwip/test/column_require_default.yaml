@@ -76,6 +76,15 @@
       line: 3
       details: ""
 - statement: |-
+    ALTER TABLE tech_book ADD COLUMN (a BLOB, b timestamp);
+  want:
+    - status: WARN
+      code: 420
+      title: column.require-default
+      content: Column `tech_book`.`b` doesn't have DEFAULT.
+      line: 1
+      details: ""
+- statement: |-
     ALTER TABLE tech_book ADD COLUMN a VARCHAR(255) DEFAULT 'default value';
     ALTER TABLE tech_book MODIFY COLUMN a char(25) DEFAULT 'default';
     ALTER TABLE tech_book CHANGE COLUMN a b int;
