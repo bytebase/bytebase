@@ -115,9 +115,20 @@ func (checker *columnRequirementChecker) EnterAlterTable(ctx *mysql.AlterTableCo
 		lineNumber := checker.baseLine + item.GetStart().GetLine()
 		switch {
 		// add column
-		case item.ADD_SYMBOL() != nil && item.Identifier() != nil:
-			columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-			checker.addColumn(tableName, columnName)
+		case item.ADD_SYMBOL() != nil:
+			switch {
+			case item.Identifier() != nil && item.FieldDefinition() != nil:
+				columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+				checker.addColumn(tableName, columnName)
+			case item.OPEN_PAR_SYMBOL() != nil && item.TableElementList() != nil:
+				for _, tableElement := range item.TableElementList().AllTableElement() {
+					if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().ColumnName() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil {
+						continue
+					}
+					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
+					checker.addColumn(tableName, columnName)
+				}
+			}
 		// drop column
 		case item.DROP_SYMBOL() != nil && item.ColumnInternalRef() != nil:
 			columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
