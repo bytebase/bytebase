@@ -6,16 +6,16 @@
     />
     <NTabs v-model:value="state.selectedTab" type="line">
       <NTabPane
-        name="sensitive-column-list"
-        :tab="$t('settings.sensitive-data.sensitive-column-list')"
-      >
-        <SensitiveColumnView />
-      </NTabPane>
-      <NTabPane
         name="global-masking-rule"
         :tab="$t('settings.sensitive-data.global-rules.self')"
       >
         <GlobalMaskingRulesView />
+      </NTabPane>
+      <NTabPane
+        name="sensitive-column-list"
+        :tab="$t('settings.sensitive-data.sensitive-column-list')"
+      >
+        <SensitiveColumnView />
       </NTabPane>
       <NTabPane
         v-if="isDev()"
