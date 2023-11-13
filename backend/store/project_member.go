@@ -117,17 +117,13 @@ func (s *Store) GetProjectPolicy(ctx context.Context, find *GetProjectPolicyMess
 		return nil, errors.Errorf("GetProjectPolicy must set either resource ID or UID")
 	}
 	if find.ProjectID != nil {
-		if policy, ok := s.projectPolicyCache.Load(*find.ProjectID); ok {
-			if v, ok := policy.(*IAMPolicyMessage); ok {
-				return v, nil
-			}
+		if v, ok := s.projectPolicyCache.Get(*find.ProjectID); ok {
+			return v, nil
 		}
 	}
 	if find.UID != nil {
-		if policy, ok := s.projectIDPolicyCache.Load(*find.UID); ok {
-			if v, ok := policy.(*IAMPolicyMessage); ok {
-				return v, nil
-			}
+		if v, ok := s.projectIDPolicyCache.Get(*find.UID); ok {
+			return v, nil
 		}
 	}
 
@@ -161,8 +157,8 @@ func (s *Store) GetProjectPolicy(ctx context.Context, find *GetProjectPolicyMess
 		return nil, err
 	}
 
-	s.projectPolicyCache.Store(project.ResourceID, projectPolicy)
-	s.projectIDPolicyCache.Store(project.UID, projectPolicy)
+	s.projectPolicyCache.Add(project.ResourceID, projectPolicy)
+	s.projectIDPolicyCache.Add(project.UID, projectPolicy)
 	return projectPolicy, nil
 }
 
@@ -190,8 +186,8 @@ func (s *Store) SetProjectIAMPolicy(ctx context.Context, set *IAMPolicyMessage, 
 		return nil, err
 	}
 
-	s.projectPolicyCache.Delete(project.ResourceID)
-	s.projectIDPolicyCache.Delete(project.UID)
+	s.projectPolicyCache.Remove(project.ResourceID)
+	s.projectIDPolicyCache.Remove(project.UID)
 	return s.GetProjectPolicy(ctx, &GetProjectPolicyMessage{UID: &projectUID})
 }
 

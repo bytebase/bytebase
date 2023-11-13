@@ -33,15 +33,15 @@ type Store struct {
 	databaseIDCache        sync.Map // map[int]*DatabaseMessage
 	projectCache           sync.Map // map[string]*ProjectMessage
 	projectIDCache         sync.Map // map[int]*ProjectMessage
-	projectPolicyCache     sync.Map // map[string]*IAMPolicyMessage
-	projectIDPolicyCache   sync.Map // map[int]*IAMPolicyMessage
-	policyCache            sync.Map // map[string]*PolicyMessage
-	issueCache             sync.Map // map[int]*IssueMessage
-	issueByPipelineCache   sync.Map // map[int]*IssueMessage
-	pipelineCache          sync.Map // map[int]*PipelineMessage
+	projectPolicyCache     *lru.Cache[string, *IAMPolicyMessage]
+	projectIDPolicyCache   *lru.Cache[int, *IAMPolicyMessage]
+	projectDeploymentCache *lru.Cache[int, *DeploymentConfigMessage]
+	policyCache            *lru.Cache[string, *PolicyMessage]
+	issueCache             *lru.Cache[int, *IssueMessage]
+	issueByPipelineCache   *lru.Cache[int, *IssueMessage]
+	pipelineCache          *lru.Cache[int, *PipelineMessage]
 	settingCache           *lru.Cache[api.SettingName, *SettingMessage]
 	idpCache               *lru.Cache[string, *IdentityProviderMessage]
-	projectDeploymentCache *lru.Cache[int, *DeploymentConfigMessage]
 	risksCache             *lru.Cache[int, []*RiskMessage] // Use 0 as the key.
 	databaseGroupCache     *lru.Cache[string, *DatabaseGroupMessage]
 	databaseGroupIDCache   *lru.Cache[int64, *DatabaseGroupMessage]
@@ -55,15 +55,39 @@ type Store struct {
 
 // New creates a new instance of Store.
 func New(db *DB) (*Store, error) {
+	projectPolicyCache, err := lru.New[string, *IAMPolicyMessage](128)
+	if err != nil {
+		return nil, err
+	}
+	projectIDPolicyCache, err := lru.New[int, *IAMPolicyMessage](128)
+	if err != nil {
+		return nil, err
+	}
+	projectDeploymentCache, err := lru.New[int, *DeploymentConfigMessage](128)
+	if err != nil {
+		return nil, err
+	}
+	policyCache, err := lru.New[string, *PolicyMessage](128)
+	if err != nil {
+		return nil, err
+	}
+	issueCache, err := lru.New[int, *IssueMessage](256)
+	if err != nil {
+		return nil, err
+	}
+	issueByPipelineCache, err := lru.New[int, *IssueMessage](256)
+	if err != nil {
+		return nil, err
+	}
+	pipelineCache, err := lru.New[int, *PipelineMessage](256)
+	if err != nil {
+		return nil, err
+	}
 	settingCache, err := lru.New[api.SettingName, *SettingMessage](64)
 	if err != nil {
 		return nil, err
 	}
 	idpCache, err := lru.New[string, *IdentityProviderMessage](4)
-	if err != nil {
-		return nil, err
-	}
-	projectDeploymentCache, err := lru.New[int, *DeploymentConfigMessage](128)
 	if err != nil {
 		return nil, err
 	}
@@ -99,9 +123,15 @@ func New(db *DB) (*Store, error) {
 	return &Store{
 		db: db,
 
+		projectPolicyCache:     projectPolicyCache,
+		projectIDPolicyCache:   projectIDPolicyCache,
+		projectDeploymentCache: projectDeploymentCache,
+		policyCache:            policyCache,
+		issueCache:             issueCache,
+		issueByPipelineCache:   issueByPipelineCache,
+		pipelineCache:          pipelineCache,
 		settingCache:           settingCache,
 		idpCache:               idpCache,
-		projectDeploymentCache: projectDeploymentCache,
 		risksCache:             risksCache,
 		databaseGroupCache:     databaseGroupCache,
 		databaseGroupIDCache:   databaseGroupIDCache,
