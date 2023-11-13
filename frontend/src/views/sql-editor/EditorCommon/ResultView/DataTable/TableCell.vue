@@ -3,7 +3,7 @@
   <div class="relative px-2 py-1" :class="classes" @click="handleClick">
     <div
       ref="wrapperRef"
-      class="overflow-hidden whitespace-pre"
+      class="overflow-hidden whitespace-pre font-mono"
       v-html="html"
     ></div>
     <div v-if="clickable" class="absolute right-1 top-1/2 translate-y-[-45%]">
