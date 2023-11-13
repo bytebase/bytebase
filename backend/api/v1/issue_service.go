@@ -1626,7 +1626,7 @@ func convertToIssueReleasers(ctx context.Context, s *store.Store, issue *store.I
 		case "roles/OWNER":
 			releasers = append(releasers, "roles/workspaceOwner")
 		case "roles/DBA":
-			releasers = append(releasers, "roles/workspaceDba")
+			releasers = append(releasers, "roles/workspaceDBA")
 		}
 	}
 	for _, role := range policy.ProjectRoles {

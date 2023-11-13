@@ -228,7 +228,7 @@ export interface Issue {
    * If the policy is auto rollout, the releasers are the project owners and the issue creator.
    * Format:
    * - roles/workspaceOwner
-   * - roles/workspaceDba
+   * - roles/workspaceDBA
    * - roles/projectOwner
    * - roles/projectReleaser
    * - users/{email}
