@@ -225,14 +225,14 @@ func (checker *columnSetDefaultForNotNullChecker) EnterAlterTable(ctx *mysql.Alt
 				}
 			}
 			// modify column
-		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil:
+		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
 			if item.FieldDefinition() == nil {
 				continue
 			}
 			columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
 			checker.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
 		// change column
-		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil:
+		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil && item.FieldDefinition() != nil:
 			if item.FieldDefinition() == nil {
 				continue
 			}

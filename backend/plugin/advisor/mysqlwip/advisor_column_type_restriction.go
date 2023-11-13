@@ -157,11 +157,11 @@ func (checker *columnTypeRestrictionChecker) EnterAlterTable(ctx *mysql.AlterTab
 				}
 			}
 		// modify column
-		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil:
+		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
 			columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
 			checker.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
 		// change column
-		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil:
+		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil && item.FieldDefinition() != nil:
 			columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
 			checker.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
 		}

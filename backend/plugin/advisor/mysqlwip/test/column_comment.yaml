@@ -42,6 +42,22 @@
       line: 2
       details: ""
 - statement: |-
+    CREATE TABLE t(a int COMMENT 'comment');
+    ALTER TABLE t ADD COLUMN (b int, c int);
+  want:
+    - status: WARN
+      code: 408
+      title: column.comment
+      content: Column `t`.`b` requires comments
+      line: 2
+      details: ""
+    - status: WARN
+      code: 408
+      title: column.comment
+      content: Column `t`.`c` requires comments
+      line: 2
+      details: ""
+- statement: |-
     CREATE TABLE t(a int COMMENT 'this is comment');
     ALTER TABLE t CHANGE COLUMN a b int;
   want:
