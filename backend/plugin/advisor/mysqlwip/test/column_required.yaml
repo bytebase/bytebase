@@ -220,3 +220,20 @@
       content: ""
       line: 0
       details: ""
+- statement: |-
+    CREATE TABLE book(
+      id int
+    );
+    ALTER TABLE book ADD COLUMN (
+      creator_id int,
+      created_ts timestamp,
+      updater_id int,
+      updated_ts timestamp
+    );
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
