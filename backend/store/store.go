@@ -6,9 +6,8 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-	"time"
 
-	"github.com/hashicorp/golang-lru/v2/expirable"
+	lru "github.com/hashicorp/golang-lru/v2"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -49,18 +48,27 @@ type Store struct {
 	schemaGroupCache               sync.Map // map[string]*SchemaGroupMessage
 	vcsIDCache                     sync.Map // map[int]*ExternalVersionControlMessage
 
-	sheetCache    *expirable.LRU[int, string]
-	dbSchemaCache *expirable.LRU[int, *model.DBSchema]
+	sheetCache    *lru.Cache[int, string]
+	dbSchemaCache *lru.Cache[int, *model.DBSchema]
 }
 
 // New creates a new instance of Store.
-func New(db *DB) *Store {
+func New(db *DB) (*Store, error) {
+	sheetCache, err := lru.New[int, string](10)
+	if err != nil {
+		return nil, err
+	}
+	dbSchemaCache, err := lru.New[int, *model.DBSchema](100)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Store{
 		db: db,
 
-		sheetCache:    expirable.NewLRU[int, string](10, nil, time.Hour),
-		dbSchemaCache: expirable.NewLRU[int, *model.DBSchema](100, nil, time.Hour),
-	}
+		sheetCache:    sheetCache,
+		dbSchemaCache: dbSchemaCache,
+	}, nil
 }
 
 // Close closes underlying db.
