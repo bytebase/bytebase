@@ -5,9 +5,10 @@ import (
 	"sync"
 	"time"
 
+	lru "github.com/hashicorp/golang-lru/v2"
+
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
-	"github.com/dgraph-io/ristretto"
 	"github.com/pkg/errors"
 )
 
@@ -68,17 +69,13 @@ type State struct {
 	// TaskRunTickleChan is the tickler for task run scheduler.
 	TaskRunTickleChan chan int
 
-	ExpireCache *ristretto.Cache
+	ExpireCache *lru.Cache[string, bool]
 
 	sync.Mutex
 }
 
 func New() (*State, error) {
-	expireCache, err := ristretto.NewCache(&ristretto.Config{
-		NumCounters: 1_000,
-		MaxCost:     1_000, // ~1KB
-		BufferItems: 64,
-	})
+	expireCache, err := lru.New[string, bool](128)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create auth expire cache")
 	}

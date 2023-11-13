@@ -129,10 +129,8 @@ type PatchSheetMessage struct {
 
 // GetSheetStatementByID gets the statement of a sheet by ID.
 func (s *Store) GetSheetStatementByID(ctx context.Context, id int) (string, error) {
-	if statement, ok := s.sheetStatementCache.Get(id); ok {
-		if v, ok := statement.(string); ok {
-			return v, nil
-		}
+	if v, ok := s.sheetCache.Get(id); ok {
+		return v, nil
 	}
 
 	sheets, err := s.ListSheets(ctx, &FindSheetMessage{UID: &id, LoadFull: true}, SystemBotID)
@@ -146,7 +144,7 @@ func (s *Store) GetSheetStatementByID(ctx context.Context, id int) (string, erro
 		return "", errors.Errorf("expected 1 sheet, got %d", len(sheets))
 	}
 	statement := sheets[0].Statement
-	s.sheetStatementCache.SetWithTTL(id, statement, int64(len(statement)), time.Hour)
+	s.sheetCache.Add(id, statement)
 	return statement, nil
 }
 
@@ -396,8 +394,7 @@ func (s *Store) PatchSheet(ctx context.Context, patch *PatchSheetMessage) (*Shee
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
-	s.sheetStatementCache.Del(patch.UID)
-
+	s.sheetCache.Remove(patch.UID)
 	return sheet, nil
 }
 
@@ -417,8 +414,7 @@ func (s *Store) DeleteSheet(ctx context.Context, sheetUID int) error {
 		return err
 	}
 
-	s.sheetStatementCache.Del(sheetUID)
-
+	s.sheetCache.Remove(sheetUID)
 	return nil
 }
 

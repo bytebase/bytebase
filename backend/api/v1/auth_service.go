@@ -675,7 +675,7 @@ func (s *AuthService) Logout(ctx context.Context, _ *v1pb.LogoutRequest) (*empty
 	if err != nil {
 		return nil, status.Errorf(codes.Unauthenticated, err.Error())
 	}
-	s.stateCfg.ExpireCache.Set(accessTokenStr, true, 1)
+	s.stateCfg.ExpireCache.Add(accessTokenStr, true)
 
 	if err := grpc.SetHeader(ctx, metadata.New(map[string]string{
 		auth.GatewayMetadataAccessTokenKey: "",
