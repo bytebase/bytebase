@@ -1,5 +1,12 @@
 <template>
-  <div class="w-full mt-4 space-y-4">
+  <div class="w-full space-y-4">
+    <FeatureAttentionForInstanceLicense
+      v-if="
+        hasSensitiveDataFeature &&
+        findInstanceWithoutLicense(filteredColumnList) !== undefined
+      "
+      feature="bb.feature.sensitive-data"
+    />
     <div>
       <EnvironmentTabFilter
         :environment="state.selectedEnvironmentName"
@@ -82,7 +89,7 @@
   <FeatureModal
     feature="bb.feature.sensitive-data"
     :open="state.showFeatureModal"
-    :instance="findInstanceWithoutLicense()"
+    :instance="findInstanceWithoutLicense(state.pendingGrantAccessColumn)"
     @cancel="state.showFeatureModal = false"
   />
 
@@ -371,8 +378,8 @@ const filteredColumnList = computed(() => {
   });
 });
 
-const findInstanceWithoutLicense = () => {
-  for (const column of state.pendingGrantAccessColumn) {
+const findInstanceWithoutLicense = (columnList: SensitiveColumn[]) => {
+  for (const column of columnList) {
     const instance = instanceV1Store.getInstanceByName(
       column.database.instance
     );
@@ -381,6 +388,7 @@ const findInstanceWithoutLicense = () => {
       return instance;
     }
   }
+  return;
 };
 
 const environment = computed(() => {
@@ -404,7 +412,7 @@ const onDatabaseSelect = (databaseUid: string | undefined) => {
 };
 
 const onGrantAccessButtonClick = () => {
-  const instance = findInstanceWithoutLicense();
+  const instance = findInstanceWithoutLicense(state.pendingGrantAccessColumn);
   if (instance) {
     state.showFeatureModal = true;
     return;
