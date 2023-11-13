@@ -51,14 +51,12 @@
             {{ $t("database.sync-schema.synchronize-statements-description") }}
           </div>
         </div>
-        <MonacoEditor
-          ref="editorRef"
+        <MonacoEditorV2
           class="w-full flex-1 border"
-          :value="statement"
+          :content="statement"
           :auto-focus="false"
           :dialect="dialectOfEngineV1(engine)"
-          @change="onStatementChange"
-          @ready="updateEditorHeight"
+          @update:content="$emit('statement-change', $event)"
         />
       </template>
     </div>
@@ -68,9 +66,9 @@
 <script lang="ts" setup>
 import { NTabs, NTab } from "naive-ui";
 import { ref } from "vue";
-import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
 import { dialectOfEngineV1 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
+import { DiffEditorV2, MonacoEditorV2 } from "../MonacoEditor";
 
 defineProps<{
   statement: string;
@@ -81,27 +79,12 @@ defineProps<{
   previewSchemaChangeMessage: string;
 }>();
 
-const $emit = defineEmits<{
+defineEmits<{
   (event: "statement-change", statement: string): void;
   (event: "copy-statement"): void;
 }>();
 
 const tab = ref<"diff" | "ddl">("diff");
-const editorRef = ref<InstanceType<typeof MonacoEditor>>();
-
-const updateEditorHeight = () => {
-  const contentHeight =
-    editorRef.value?.editorInstance?.getContentHeight() as number;
-  const actualHeight = contentHeight;
-  editorRef.value?.setEditorContentHeight(actualHeight);
-};
-
-const onStatementChange = (statement: string) => {
-  $emit("statement-change", statement);
-  requestAnimationFrame(() => {
-    updateEditorHeight();
-  });
-};
 </script>
 
 <style lang="postcss">

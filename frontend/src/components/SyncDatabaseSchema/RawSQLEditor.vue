@@ -61,14 +61,13 @@
       </template>
     </BBAttention>
     <div class="mt-4 w-full h-96 overflow-hidden">
-      <MonacoEditor
+      <MonacoEditorV2
         class="w-full h-full border"
-        :value="state.editStatement"
+        :content="state.editStatement"
         :auto-focus="true"
-        :language="'sql'"
         :readonly="viewMode"
         :dialect="dialectOfEngineV1(state.engine)"
-        @change="handleStatementChange"
+        @update:content="handleStatementChange"
       />
     </div>
   </div>
@@ -80,7 +79,7 @@ import Long from "long";
 import { NSelect } from "naive-ui";
 import { computed, onMounted, nextTick, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import MonacoEditor from "@/components/MonacoEditor";
+import { MonacoEditorV2 } from "@/components/MonacoEditor";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import { ProjectSelect } from "@/components/v2";
 import { useNotificationStore, useSheetV1Store } from "@/store";
