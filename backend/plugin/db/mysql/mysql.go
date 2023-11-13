@@ -9,7 +9,6 @@ import (
 	"net"
 	"strings"
 	"time"
-	"unicode"
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
@@ -276,24 +275,27 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 }
 
 func updateTiDBExplainResult(result *v1pb.QueryResult) error {
-	for _, row := range result.Rows {
-		if len(row.Values) > 0 {
-			str := row.Values[0].GetStringValue()
-			var sb strings.Builder
-			for i, char := range str {
-				if unicode.IsLetter(char) {
-					if _, err := sb.WriteString(str[i:]); err != nil {
-						return err
-					}
-					break
-				}
-				if _, err := sb.WriteString("-"); err != nil {
+	if len(result.Rows) == 0 || len(result.Rows[0].Values) == 0 {
+		return nil
+	}
+	output := make([]strings.Builder, len(result.Rows[0].Values))
+	for rowIndex, row := range result.Rows {
+		for i := 0; i < len(result.Rows[0].Values); i++ {
+			if _, err := output[i].WriteString(row.Values[i].GetStringValue()); err != nil {
+				return err
+			}
+			if rowIndex != len(result.Rows)-1 {
+				if _, err := output[i].WriteString("\n"); err != nil {
 					return err
 				}
 			}
-			row.Values[0] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: sb.String()}}
 		}
 	}
+	singleRow := &v1pb.QueryRow{}
+	for _, v := range output {
+		singleRow.Values = append(singleRow.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: v.String()}})
+	}
+	result.Rows = []*v1pb.QueryRow{singleRow}
 	return nil
 }
 

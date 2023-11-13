@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -10,28 +11,26 @@ import (
 
 func TestUpdateTiDBExplainResult(t *testing.T) {
 	a := require.New(t)
-	got := &v1pb.QueryResult{
-		Rows: []*v1pb.QueryRow{
-			convertExplainRow("Projection_9", "a"),
-			convertExplainRow("└─IndexJoin_13", "b"),
-			convertExplainRow("├─TableReader_26(Build)", "c"),
-			convertExplainRow("│ └─Selection_25", "d"),
-			convertExplainRow("│   └─TableFullScan_24", "e"),
-			convertExplainRow("└─IndexLookUp_12(Probe)", "f"),
-			convertExplainRow("├─IndexRangeScan_10(Build)", "g"),
-			convertExplainRow("└─TableRowIDScan_11(Probe)", "h"),
-		},
+	firstValues := []string{
+		"Projection_9",
+		"└─IndexJoin_13",
+		"├─TableReader_26(Build)",
+		"│ └─Selection_25",
+		"│   └─TableFullScan_24",
+		"└─IndexLookUp_12(Probe)",
+		"├─IndexRangeScan_10(Build)",
+		"└─TableRowIDScan_11(Probe)",
 	}
+	secondValues := []string{"a", "b", "c", "d", "e", "f", "g", "h"}
+
+	got := &v1pb.QueryResult{}
+	for i := 0; i < len(firstValues); i++ {
+		got.Rows = append(got.Rows, convertExplainRow(firstValues[i], secondValues[i]))
+	}
+
 	want := &v1pb.QueryResult{
 		Rows: []*v1pb.QueryRow{
-			convertExplainRow("Projection_9", "a"),
-			convertExplainRow("--IndexJoin_13", "b"),
-			convertExplainRow("--TableReader_26(Build)", "c"),
-			convertExplainRow("----Selection_25", "d"),
-			convertExplainRow("------TableFullScan_24", "e"),
-			convertExplainRow("--IndexLookUp_12(Probe)", "f"),
-			convertExplainRow("--IndexRangeScan_10(Build)", "g"),
-			convertExplainRow("--TableRowIDScan_11(Probe)", "h"),
+			convertExplainRow(strings.Join(firstValues, "\n"), strings.Join(secondValues, "\n")),
 		},
 	}
 	err := updateTiDBExplainResult(got)
