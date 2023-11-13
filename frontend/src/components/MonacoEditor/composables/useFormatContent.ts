@@ -28,7 +28,7 @@ export const useFormatContent = async (
             monaco.editor.EditorOption.readOnly
           );
           if (readonly) return;
-          formatContent(editor, dialect.value);
+          formatEditorContent(editor, dialect.value);
         },
       });
       onCleanup(() => {
@@ -41,7 +41,7 @@ export const useFormatContent = async (
   });
 };
 
-const formatContent = (
+export const formatEditorContent = (
   editor: monaco.editor.IStandaloneCodeEditor,
   dialect: SQLDialect | undefined
 ) => {

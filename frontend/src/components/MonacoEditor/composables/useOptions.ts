@@ -21,7 +21,7 @@ export const useOptions = <E extends EditorType>(
       if (!opts) return;
       editor.updateOptions(opts);
     },
-    { deep: true }
+    { deep: true, immediate: true }
   );
 };
 

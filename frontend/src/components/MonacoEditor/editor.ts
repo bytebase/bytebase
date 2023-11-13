@@ -6,10 +6,6 @@ import "monaco-editor/esm/vs/basic-languages/typescript/typescript.contribution.
 import "monaco-editor/esm/vs/editor/editor.all.js";
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
 import "monaco-editor/esm/vs/language/typescript/monaco.contribution.js";
-import {
-  createConfiguredDiffEditor,
-  createConfiguredEditor,
-} from "vscode/monaco";
 import { defer } from "@/utils";
 import { initializeMonacoServices } from "./services";
 import { getBBTheme } from "./themes/bb";
@@ -50,10 +46,11 @@ export const createMonacoEditor = async (config: {
   initializeTheme();
 
   // create monaco editor
-  const editor = createConfiguredEditor(config.container, {
+  const options = {
     ...defaultEditorOptions(),
     ...config.options,
-  });
+  };
+  const editor = monaco.editor.create(config.container, options);
 
   MonacoEditorReadyDefer.resolve(undefined);
 
@@ -69,7 +66,7 @@ export const createMonacoDiffEditor = async (config: {
   initializeTheme();
 
   // create monaco editor
-  const editor = createConfiguredDiffEditor(config.container, {
+  const editor = monaco.editor.createDiffEditor(config.container, {
     ...defaultDiffEditorOptions(),
     ...config.options,
   });

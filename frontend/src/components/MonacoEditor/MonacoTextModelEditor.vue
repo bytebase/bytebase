@@ -1,16 +1,11 @@
 <template>
   <div ref="containerRef" v-bind="$attrs" class="relative">
     <div
-      v-if="!isEditorLoaded"
+      v-if="!ready"
       class="absolute inset-0 flex flex-col items-center justify-center"
     >
       <BBSpin />
     </div>
-  </div>
-  <div
-    class="fixed right-0 bottom-0 flex flex-col gap-y-2 text-xs font-mono bg-red-300/50 z-50"
-  >
-    <div>isEditorLoaded: {{ isEditorLoaded }}</div>
   </div>
 </template>
 
@@ -75,9 +70,7 @@ const emit = defineEmits<{
 const containerRef = ref<HTMLDivElement>();
 // use shallowRef to avoid deep conversion which will cause page crash.
 const editorRef = shallowRef<monaco.editor.IStandaloneCodeEditor>();
-
-const isEditorLoaded = ref(false);
-const updateHeightImpl = ref<ReturnType<typeof useAutoHeight>>();
+const ready = ref(false);
 
 onMounted(async () => {
   const { initializeMonacoServices } = await import("./services");
@@ -114,14 +107,9 @@ onMounted(async () => {
     const content = useContent(monaco, editor);
     const selectedContent = useSelectedContent(monaco, editor);
     useAdvices(monaco, editor, toRef(props, "advices"));
-    updateHeightImpl.value = useAutoHeight(
-      monaco,
-      editor,
-      containerRef,
-      toRef(props, "autoHeight")
-    );
+    useAutoHeight(monaco, editor, containerRef, toRef(props, "autoHeight"));
 
-    isEditorLoaded.value = true;
+    ready.value = true;
 
     await nextTick();
     emit("ready", monaco, editor);
@@ -148,8 +136,5 @@ onBeforeUnmount(() => {
 
 defineExpose({
   editorRef,
-  updateHeight: (height?: number | undefined) => {
-    updateHeightImpl.value?.(height);
-  },
 });
 </script>

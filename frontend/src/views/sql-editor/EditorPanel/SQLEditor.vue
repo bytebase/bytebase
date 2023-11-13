@@ -3,7 +3,6 @@
     class="w-full h-auto flex-grow flex flex-col justify-start items-start overflow-auto"
   >
     <MonacoEditorV2
-      ref="editorRef"
       class="w-full h-full"
       :filename="filename"
       :content="content"
@@ -25,8 +24,8 @@ import {
   IStandaloneCodeEditor,
   MonacoEditorV2,
   MonacoModule,
+  formatEditorContent,
 } from "@/components/MonacoEditor";
-import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
 import { extensionNameOfLanguage } from "@/components/MonacoEditor/utils";
 import {
   useTabStore,
@@ -59,8 +58,6 @@ const sheetAndTabStore = useSheetAndTabStore();
 const uiStateStore = useUIStateStore();
 const { events: editorEvents } = useSQLEditorContext();
 
-const editorRef = ref<InstanceType<typeof MonacoEditor>>();
-
 const content = computed(() => tabStore.currentTab.statement);
 const advices = computed((): AdviceOption[] => {
   return (
@@ -77,15 +74,15 @@ const advices = computed((): AdviceOption[] => {
     source: advice.detail,
   }));
 });
-const { instance: selectedInstance } = useInstanceV1ByUID(
+const { instance } = useInstanceV1ByUID(
   computed(() => tabStore.currentTab.connection.instanceId)
 );
 const instanceEngine = computed(() => {
-  return formatEngineV1(selectedInstance.value);
+  return formatEngineV1(instance.value);
 });
-const language = useInstanceV1EditorLanguage(selectedInstance);
+const language = useInstanceV1EditorLanguage(instance);
 const dialect = computed((): SQLDialect => {
-  const engine = selectedInstance.value.engine;
+  const engine = instance.value.engine;
   return dialectOfEngineV1(engine);
 });
 const readonly = computed(() => sheetAndTabStore.isReadOnly);
@@ -102,16 +99,6 @@ watch(currentTabId, () => {
     isSwitchingTab.value = false;
   });
 });
-
-watch(
-  () => sqlEditorStore.shouldFormatContent,
-  () => {
-    if (sqlEditorStore.shouldFormatContent) {
-      editorRef.value?.formatEditorContent();
-      sqlEditorStore.setShouldFormatContent(false);
-    }
-  }
-);
 
 const handleChange = (value: string) => {
   // When we are switching between tabs, the MonacoEditor emits a 'change'
@@ -172,9 +159,21 @@ const handleEditorReady = (
     contextMenuOrder: 0,
     run: () => runQueryAction(true),
   });
-
   editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
     handleSaveSheet();
   });
+
+  watch(
+    () => sqlEditorStore.shouldFormatContent,
+    (shouldFormat) => {
+      if (shouldFormat) {
+        formatEditorContent(editor, dialect.value);
+        sqlEditorStore.setShouldFormatContent(false);
+      }
+    },
+    {
+      immediate: true,
+    }
+  );
 };
 </script>
