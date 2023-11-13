@@ -6,7 +6,7 @@
       </div>
       <div class="flex items-center space-x-2 p-0.5">
         <router-link
-          :to="`/issue?user=${currentUserUID}`"
+          :to="issueLink"
           class="flex space-x-1 items-center normal-link !whitespace-nowrap"
         >
           <heroicons-outline:search class="h-4 w-4" />
@@ -16,11 +16,18 @@
         </router-link>
       </div>
     </div>
-    <div v-show="tab === 'WAITING_APPROVAL'" class="mt-2">
-      <WaitingForMyApprovalIssueTableV1
+    <div v-show="tab === 'APPROVAL_REQUESTED'" class="mt-2">
+      <PagedIssueTableV1
         v-if="hasCustomApprovalFeature"
         session-key="home-waiting-approval"
-        :project="commonIssueFilter.project"
+        :issue-filter="{
+          ...commonIssueFilter,
+          statusList: [IssueStatus.OPEN],
+        }"
+        :ui-issue-filter="{
+          approver: `users/${currentUserV1.email}`,
+          approval: 'pending',
+        }"
       >
         <template #table="{ issueList, loading }">
           <IssueTableV1
@@ -30,18 +37,20 @@
             title=""
           />
         </template>
-      </WaitingForMyApprovalIssueTableV1>
+      </PagedIssueTableV1>
     </div>
 
     <div v-show="tab === 'WAITING_ROLLOUT'" class="mt-2">
       <!-- show OPEN Assigned issues with pageSize=10 -->
       <PagedIssueTableV1
-        method="LIST"
         session-key="home-assigned"
         :issue-filter="{
           ...commonIssueFilter,
           statusList: [IssueStatus.OPEN],
           assignee: `${userNamePrefix}${currentUserV1.email}`,
+        }"
+        :ui-issue-filter="{
+          approval: 'approved',
         }"
         :page-size="OPEN_ISSUE_LIST_PAGE_SIZE"
       >
@@ -60,7 +69,6 @@
       <!-- show OPEN Created issues with pageSize=10 -->
       <PagedIssueTableV1
         session-key="home-created"
-        method="LIST"
         :issue-filter="{
           ...commonIssueFilter,
           statusList: [IssueStatus.OPEN],
@@ -83,7 +91,6 @@
       <!-- show OPEN Subscribed issues with pageSize=10 -->
       <PagedIssueTableV1
         session-key="home-subscribed"
-        method="LIST"
         :issue-filter="{
           ...commonIssueFilter,
           statusList: [IssueStatus.OPEN],
@@ -107,7 +114,6 @@
       <!-- But won't show "Load more", since we have a "View all closed" link below -->
       <PagedIssueTableV1
         session-key="home-closed"
-        method="LIST"
         :issue-filter="{
           ...commonIssueFilter,
           statusList: [IssueStatus.DONE, IssueStatus.CANCELED],
@@ -205,7 +211,6 @@ import { reactive, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
-import WaitingForMyApprovalIssueTableV1 from "@/components/IssueV1/components/WaitingForMyApprovalIssueTableV1.vue";
 import { TabFilter, TabFilterItem } from "@/components/v2";
 import {
   useSubscriptionV1Store,
@@ -219,9 +224,9 @@ import { IssueFilter, planTypeToString } from "../types";
 import { extractUserUID } from "../utils";
 
 const TABS = [
-  "WAITING_APPROVAL",
-  "WAITING_ROLLOUT",
   "CREATED",
+  "APPROVAL_REQUESTED",
+  "WAITING_ROLLOUT",
   "SUBSCRIBED",
   "RECENTLY_CLOSED",
 ] as const;
@@ -240,11 +245,11 @@ const subscriptionStore = useSubscriptionV1Store();
 const onboardingStateStore = useOnboardingStateStore();
 const tab = useLocalStorage<TabValue>(
   "bb.home.issue-list-tab",
-  "WAITING_APPROVAL",
+  "APPROVAL_REQUESTED",
   {
     serializer: {
       read(raw: TabValue) {
-        if (!TABS.includes(raw)) return "WAITING_APPROVAL";
+        if (!TABS.includes(raw)) return "APPROVAL_REQUESTED";
         return raw;
       },
       write(value) {
@@ -263,15 +268,15 @@ const currentUserUID = computed(() => extractUserUID(currentUserV1.value.name));
 const hasCustomApprovalFeature = featureToRef("bb.feature.custom-approval");
 
 const tabItemList = computed((): TabFilterItem<TabValue>[] => {
-  const WAITING_APPROVAL: TabFilterItem<TabValue> = {
-    value: "WAITING_APPROVAL",
-    label: t("issue.waiting-approval"),
+  const APPROVAL_REQUESTED: TabFilterItem<TabValue> = {
+    value: "APPROVAL_REQUESTED",
+    label: t("issue.approval-requested"),
   };
-  const list = hasCustomApprovalFeature.value ? [WAITING_APPROVAL] : [];
+  const list = hasCustomApprovalFeature.value ? [APPROVAL_REQUESTED] : [];
   return [
+    { value: "CREATED", label: t("common.created") },
     ...list,
     { value: "WAITING_ROLLOUT", label: t("issue.waiting-rollout") },
-    { value: "CREATED", label: t("common.created") },
     { value: "SUBSCRIBED", label: t("common.subscribed") },
     { value: "RECENTLY_CLOSED", label: t("project.overview.recently-closed") },
   ];
@@ -291,6 +296,21 @@ const planImage = computed(() => {
   ).href;
 });
 
+const issueLink = computed(() => {
+  if (tab.value === "CREATED") {
+    return "/issue?creator=" + currentUserUID.value;
+  }
+  if (tab.value === "APPROVAL_REQUESTED") {
+    return "/issue?approver=" + currentUserUID.value;
+  }
+  if (tab.value === "SUBSCRIBED") {
+    return "/issue?subscriber=" + currentUserUID.value;
+  }
+
+  // TODO(d): use closed filter for WAITING_ROLLOUT and RECENTLY_CLOSED.
+  return "/issue";
+});
+
 const commonIssueFilter = computed((): IssueFilter => {
   return {
     project: "projects/-",
@@ -301,7 +321,7 @@ const commonIssueFilter = computed((): IssueFilter => {
 watch(
   [hasCustomApprovalFeature, tab],
   () => {
-    if (!hasCustomApprovalFeature.value && tab.value === "WAITING_APPROVAL") {
+    if (!hasCustomApprovalFeature.value && tab.value === "APPROVAL_REQUESTED") {
       tab.value = "WAITING_ROLLOUT";
     }
   },

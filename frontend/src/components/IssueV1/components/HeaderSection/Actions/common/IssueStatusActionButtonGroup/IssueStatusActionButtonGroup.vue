@@ -131,5 +131,11 @@ const handleDropdownSelect = (key: string, dropdownOption: DropdownOption) => {
       tasks: option.target as Task[],
     });
   }
+  if (option.type === "TASK") {
+    events.emit("perform-task-rollout-action", {
+      action: option.action as TaskRolloutAction,
+      tasks: [option.target as Task],
+    });
+  }
 };
 </script>

@@ -1,5 +1,9 @@
 <template>
-  <slot name="table" :issue-list="state.issueList" :loading="state.loading" />
+  <slot
+    name="table"
+    :issue-list="uiFilteredIssueList"
+    :loading="state.loading"
+  />
 
   <div
     v-if="state.loading"
@@ -26,6 +30,7 @@
 
 <script lang="ts" setup>
 import { useSessionStorage } from "@vueuse/core";
+import { isEqual } from "lodash-es";
 import { computed, PropType, reactive, watch } from "vue";
 import {
   ListIssueParams,
@@ -34,6 +39,7 @@ import {
   useRefreshIssueList,
 } from "@/store";
 import { IssueFilter, ComposedIssue } from "@/types";
+import { applyUIIssueFilter, UIIssueFilter } from "@/utils";
 
 type LocalState = {
   loading: boolean;
@@ -60,10 +66,6 @@ const MAX_PAGE_SIZE = 1000;
 const SESSION_LIFE = 1 * 60 * 1000; // 1 minute
 
 const props = defineProps({
-  method: {
-    type: String as PropType<"SEARCH" | "LIST">,
-    default: "SEARCH",
-  },
   // A unique key to identify the session state.
   sessionKey: {
     type: String,
@@ -72,6 +74,10 @@ const props = defineProps({
   issueFilter: {
     type: Object as PropType<IssueFilter>,
     required: true,
+  },
+  uiIssueFilter: {
+    type: Object as PropType<UIIssueFilter>,
+    default: undefined,
   },
   pageSize: {
     type: Number,
@@ -106,6 +112,18 @@ const limit = computed(() => {
   return props.pageSize;
 });
 
+const uiFilteredIssueList = computed(() => {
+  return applyUIIssueFilter(state.issueList, props.uiIssueFilter);
+});
+
+const latestParams = computed((): ListIssueParams => {
+  return {
+    find: props.issueFilter,
+    pageSize: props.pageSize,
+    pageToken: state.paginationToken,
+  };
+});
+
 const fetchData = (refresh = false) => {
   if (!isLoggedIn.value) {
     return;
@@ -125,13 +143,16 @@ const fetchData = (refresh = false) => {
     pageSize: props.pageSize,
     pageToken: state.paginationToken,
   };
-  const request =
-    props.method === "SEARCH"
-      ? issueStore.searchIssues(params)
-      : issueStore.listIssues(params);
+  const request = issueStore.listIssues(params);
 
   request
     .then(({ nextPageToken, issues }) => {
+      if (!isEqual(params, latestParams.value)) {
+        // The search params changed during fetching data
+        // The result is outdated
+        // Give up
+        return;
+      }
       if (refresh) {
         state.issueList = issues;
       } else {

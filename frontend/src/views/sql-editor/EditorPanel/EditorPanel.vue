@@ -23,14 +23,13 @@
 </template>
 
 <script lang="ts" setup>
-import { storeToRefs } from "pinia";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { AIChatToSQL } from "@/plugins/ai";
 import {
   useCurrentTab,
   useInstanceV1Store,
   useTabStore,
-  useActuatorV1Store,
+  usePageMode,
 } from "@/store";
 import type { Connection, ExecuteConfig, ExecuteOption } from "@/types";
 import { formatEngineV1 } from "@/utils";
@@ -47,8 +46,7 @@ import SheetForIssueTipsBar from "./SheetForIssueTipsBar.vue";
 const tabStore = useTabStore();
 const tab = useCurrentTab();
 const { showAIChatBox } = useSQLEditorContext();
-const actuatorStore = useActuatorV1Store();
-const { pageMode } = storeToRefs(actuatorStore);
+const pageMode = usePageMode();
 
 const { executeReadonly } = useExecuteSQL();
 

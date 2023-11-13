@@ -2,7 +2,7 @@
   <div class="flex flex-col">
     <AdvancedSearch
       custom-class="w-full px-4 py-2"
-      :params="initSearchParams"
+      :params="state.searchParams"
       :autofocus="autofocus"
       @update="onSearchParamsUpdate($event)"
     />
@@ -18,10 +18,6 @@
         <TabFilter v-model:value="state.tab" :items="tabItemList" />
       </div>
       <div class="flex flex-row space-x-4 p-0.5">
-        <NButton v-if="project" @click="goProject">
-          {{ project.key }}
-        </NButton>
-
         <NInputGroup style="width: auto">
           <NDatePicker
             v-model:value="selectedTimeRange"
@@ -41,11 +37,11 @@
       <!-- show all OPEN issues with pageSize=10  -->
       <PagedIssueTableV1
         session-key="dashboard-open"
-        method="SEARCH"
         :issue-filter="{
           ...issueFilter,
           statusList: [IssueStatus.OPEN],
         }"
+        :ui-issue-filter="uiIssueFilter"
         :page-size="50"
       >
         <template #table="{ issueList, loading }">
@@ -64,11 +60,11 @@
       <!-- show all DONE and CANCELED issues with pageSize=10 -->
       <PagedIssueTableV1
         session-key="dashboard-closed"
-        method="SEARCH"
         :issue-filter="{
           ...issueFilter,
           statusList: [IssueStatus.DONE, IssueStatus.CANCELED],
         }"
+        :ui-issue-filter="uiIssueFilter"
         :page-size="50"
       >
         <template #table="{ issueList, loading }">
@@ -87,14 +83,11 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
-import { NInputGroup, NButton, NDatePicker } from "naive-ui";
+import { NInputGroup, NDatePicker } from "naive-ui";
 import { reactive, computed, watchEffect, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
-import AdvancedSearch, {
-  SearchParams,
-  SearchScopeId,
-} from "@/components/AdvancedSearch.vue";
+import AdvancedSearch from "@/components/AdvancedSearch.vue";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
 import { TabFilterItem } from "@/components/v2";
@@ -113,9 +106,12 @@ import {
 import { UNKNOWN_ID, IssueFilter } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import {
-  projectV1Slug,
   extractProjectResourceName,
   hasWorkspacePermissionV1,
+  SearchParams,
+  SearchScopeId,
+  UIIssueFilter,
+  isValidIssueApprovalStatus,
 } from "@/utils";
 
 const TABS = ["OPEN", "CLOSED"] as const;
@@ -147,9 +143,9 @@ const autofocus = computed((): boolean => {
   return !!route.query.autofocus;
 });
 
-const initSearchParams = computed((): SearchParams => {
+const initializeSearchParamsFromQuery = (): SearchParams => {
   const projectName = project.value?.name ?? "";
-  const userEmail = selectedPrincipal.value?.email ?? "";
+  const { creator, assignee, approver, subscriber } = route.query;
   const query = (route.query.query as string) ?? "";
 
   const params: SearchParams = {
@@ -163,23 +159,49 @@ const initSearchParams = computed((): SearchParams => {
       value: extractProjectResourceName(projectName),
     });
   }
-  if (userEmail && hasPermission.value) {
-    params.scopes.push({
-      id: "principal",
-      value: userEmail,
-    });
+  if (creator && hasPermission.value) {
+    const creatorEmail = userStore.getUserById(creator as string)?.email ?? "";
+    if (creatorEmail) {
+      params.scopes.push({
+        id: "creator",
+        value: creatorEmail,
+      });
+    }
+  }
+  if (assignee && hasPermission.value) {
+    const assigneeEmail =
+      userStore.getUserById(assignee as string)?.email ?? "";
+    if (assigneeEmail) {
+      params.scopes.push({
+        id: "creator",
+        value: assigneeEmail,
+      });
+    }
+  }
+  if (approver && hasPermission.value) {
+    const approverEmail =
+      userStore.getUserById(approver as string)?.email ?? "";
+    if (approverEmail) {
+      params.scopes.push({
+        id: "approver",
+        value: approverEmail,
+      });
+    }
+  }
+  if (subscriber && hasPermission.value) {
+    const subscriberEmail =
+      userStore.getUserById(subscriber as string)?.email ?? "";
+    if (subscriberEmail) {
+      params.scopes.push({
+        id: "subscriber",
+        value: subscriberEmail,
+      });
+    }
   }
 
   return params;
-});
+};
 
-const state = reactive<LocalState>({
-  tab: "OPEN",
-  searchParams: {
-    query: "",
-    scopes: [],
-  },
-});
 const hasAdvancedSearchFeature = computed(() => {
   return hasFeature("bb.feature.issue-advanced-search");
 });
@@ -241,12 +263,9 @@ const selectedProjectId = computed((): string | undefined => {
   return project ? (project as string) : undefined;
 });
 
-const selectedPrincipal = computed(() => {
-  const { user } = route.query;
-  if (!user) {
-    return;
-  }
-  return userStore.getUserById(user as string);
+const state = reactive<LocalState>({
+  tab: "OPEN",
+  searchParams: initializeSearchParamsFromQuery(),
 });
 
 const confirmDatePicker = (value: [number, number]) => {
@@ -271,16 +290,6 @@ const clearDatePicker = () => {
   });
 };
 
-const goProject = () => {
-  if (!project.value) return;
-  router.push({
-    name: "workspace.project.detail",
-    params: {
-      projectSlug: projectV1Slug(project.value),
-    },
-  });
-};
-
 watchEffect(() => {
   if (selectedProjectId.value) {
     projectV1Store.getOrFetchProjectByUID(selectedProjectId.value);
@@ -292,7 +301,6 @@ onMounted(() => {
   if (status === "CLOSED") {
     state.tab = "CLOSED";
   }
-  state.searchParams = initSearchParams.value;
 });
 
 const onSearchParamsUpdate = (params: SearchParams) => {
@@ -338,10 +346,24 @@ const issueFilter = computed((): IssueFilter => {
       ? selectedTimeRange.value[1]
       : undefined,
     type: typeScope?.value,
-    principal: getValueFromIssueFilter(userNamePrefix, "principal"),
     creator: getValueFromIssueFilter(userNamePrefix, "creator"),
     assignee: getValueFromIssueFilter(userNamePrefix, "assignee"),
     subscriber: getValueFromIssueFilter(userNamePrefix, "subscriber"),
   };
+});
+
+const uiIssueFilter = computed((): UIIssueFilter => {
+  const { scopes } = state.searchParams;
+  const approverScope = scopes.find((s) => s.id === "approver");
+  const approvalScope = scopes.find((s) => s.id === "approval");
+  const uiIssueFilter: UIIssueFilter = {};
+  if (approverScope && approverScope.value) {
+    uiIssueFilter.approver = `users/${approverScope.value}`;
+  }
+  if (approvalScope && isValidIssueApprovalStatus(approvalScope.value)) {
+    uiIssueFilter.approval = approvalScope.value;
+  }
+
+  return uiIssueFilter;
 });
 </script>

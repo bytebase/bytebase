@@ -275,7 +275,9 @@
     "filter-by-name": "Filtrar por nombre",
     "tenant": "Arrendataria",
     "license": "Licencia",
-    "show-all": "Mostrar todo"
+    "show-all": "Mostrar todo",
+    "view-details": "Ver detalles",
+    "force-verb": "forzar {verbo}"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -393,7 +395,10 @@
         "some-tasks-are-not-editable-in-batch-mode": "Algunas tareas no se pueden editar en modo por lotes",
         "task-is-not-editable": "Esta tarea no es editable",
         "x-status-task-is-not-editable": "La tarea {status} no es editable",
-        "nothing-changed": "nada ha cambiado"
+        "nothing-changed": "nada ha cambiado",
+        "not-applicable": {
+          "some-tasks-dont-meet-ghost-requirement": "Algunas tareas no cumplen con los requisitos de gh-ost."
+        }
       },
       "show-default-parameters": "Mostrar parámetros predeterminados",
       "hide-default-parameters": "Ocultar parámetros predeterminados"
@@ -663,7 +668,7 @@
     "sensitive-data": {
       "description": "A las siguientes columnas se les asignan niveles de enmascaramiento explícitamente y tienen prioridad sobre la regla de enmascaramiento global.",
       "remove-sensitive-column-tips": "¿Exponer esta columna?",
-      "sensitive-column-list": "Lista de columnas enmascaradas explícitas",
+      "sensitive-column-list": "Columnas Explícitas Enmascaradas",
       "global-masking-rule": "Regla de enmascaramiento global",
       "grant-access": "Autorizará el acceso",
       "never-expires": "Nunca expira",
@@ -689,34 +694,44 @@
         },
         "template": {
           "address": {
-            "title": "La dirección"
+            "title": "La dirección",
+            "description": ""
           },
           "secret_key": {
-            "title": "Clave de encriptación"
+            "title": "Clave de encriptación",
+            "description": ""
           },
           "card_number": {
-            "title": "Tarjeta bancaria, tarjeta de crédito, etc."
+            "title": "Tarjeta bancaria, tarjeta de crédito, etc.",
+            "description": ""
           },
           "email": {
-            "title": "Dirección de correo electrónico"
+            "title": "Dirección de correo electrónico",
+            "description": ""
           },
           "id_number": {
-            "title": "Número de identificación personal"
+            "title": "Número de identificación personal",
+            "description": ""
           },
           "ipv4_address": {
-            "title": "Dirección IPv4"
+            "title": "Dirección IPv4",
+            "description": ""
           },
           "license_plate_number": {
-            "title": "Número de placa"
+            "title": "Número de placa",
+            "description": ""
           },
           "mac_address": {
-            "title": "Dirección MAC"
+            "title": "Dirección MAC",
+            "description": ""
           },
           "password": {
-            "title": "Contraseña"
+            "title": "Contraseña",
+            "description": ""
           },
           "phone": {
-            "title": "Número de teléfono"
+            "title": "Número de teléfono",
+            "description": ""
           }
         }
       },
@@ -739,6 +754,8 @@
           "masking-type": "Tipo de enmascaramiento",
           "delete": "¿Eliminar este algoritmo?"
         },
+        "mask": "Máscara",
+        "hash": "Picadillo",
         "full-mask": {
           "self": "Máscara completa",
           "substitution": "Sustitución",
@@ -746,6 +763,7 @@
         },
         "range-mask": {
           "self": "Máscara de rango",
+          "label": "La máscara de rango reemplazará el valor original desde el índice inicial hasta el índice final (final no incluido) con la sustitución.",
           "slice-start": "Inicio de corte",
           "slice-start-label": "El inicio del segmento es el índice de inicio del valor original, comienza desde 0 y debe ser menor que detener.",
           "slice-end": "Fin del corte",
@@ -762,7 +780,7 @@
       "masking-level": {
         "self": "Nivel de enmascaramiento",
         "selet-level": "Selecciona el nivel",
-        "masking_level_unspecified": "Siga las reglas globales de enmascaramiento",
+        "masking_level_unspecified": "Sigue las reglas globales",
         "none": "Ninguna",
         "partial": "Parcial",
         "full": "Llena"
@@ -862,7 +880,8 @@
       "schema-version": "versión de esquema {version}",
       "xxx-automatically": "{verb} automáticamente",
       "verb-type-target-by-people": "{verb} {type} {target}",
-      "verb-type-target-by-system-bot": "{type} {target} {verb}"
+      "verb-type-target-by-system-bot": "{type} {target} {verb}",
+      "changed-x-link": "cambiado {name}. \n{link}"
     },
     "subject-prefix": {
       "task": "Tarea",
@@ -952,6 +971,18 @@
         "principal": {
           "title": "Director relacionado",
           "description": "Búsqueda por creador del problema, cesionario o suscriptor"
+        },
+        "approver": {
+          "title": "Aprobador",
+          "description": "Búsqueda por aprobador del problema"
+        },
+        "approval": {
+          "value": {
+            "pending": "Aprobación pendiente",
+            "approved": "Aprobado"
+          },
+          "description": "Buscar por estado de revisión del problema",
+          "title": "Estado de aprobación"
         }
       }
     },
@@ -1078,12 +1109,11 @@
       "continue-anyway": "De todas maneras, continúe",
       "sql-review-violations": "Infracciones de revisión de SQL"
     },
-    "no-assignee-candidates": "No hay candidatos asignados válidos en este proyecto. \nPor favor contacte al propietario del proyecto.",
-    "allow-any-following-roles-to-be-assignee": "Permitir que se asignen los siguientes roles",
     "error": {
       "issue-is-not-open": "El tema no está abierto.",
       "you-don-have-privilege-to-edit-this-issue": "No tienes privilegios para editar este número."
-    }
+    },
+    "approval-requested": "Aprobación solicitada"
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",
@@ -2006,7 +2036,7 @@
       "at-least-one-stage": "Al menos 1 etapa",
       "stage-name-required": "Se requiere el nombre de la etapa",
       "at-least-one-selector": "Al menos 1 selector en cada etapa",
-      "env-in-selector-required": "Se requiere \"Entorno ID\" en cada etapa",
+      "env-in-selector-required": "Se requiere \"Entorno\" en cada etapa",
       "env-selector-must-has-one-value": "\"Entorno ID\" debe tener exactamente un valor",
       "key-required": "Se requiere una clave",
       "values-required": "Se requieren valores"
@@ -3251,5 +3281,14 @@
     "confirm-remove-change": "¿Eliminar este cambio?",
     "delete-this-changelist": "Eliminar esta lista de cambios",
     "confirm-delete-changelist": "¿Eliminar esta lista de cambios?"
+  },
+  "export-data": {
+    "self": "Exportar datos",
+    "export-rows": "Exportar filas",
+    "error": {
+      "export-rows-required": "Se requieren filas de exportación",
+      "export-rows-must-gt-zero": "Las filas de exportación deben ser mayores que 0"
+    },
+    "export-format": "Formato de exportación"
   }
 }

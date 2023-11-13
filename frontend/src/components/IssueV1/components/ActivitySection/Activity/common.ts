@@ -23,10 +23,10 @@ export const isSimilarActivity = (a: LogEntity, b: LogEntity): boolean => {
     const payloadB = JSON.parse(
       b.payload
     ) as ActivityTaskStatementUpdatePayload;
-    if (
-      payloadA.oldStatement === payloadB.oldStatement &&
-      payloadB.newStatement === payloadB.newStatement
-    ) {
+    if (payloadA.newSheetId === payloadB.newSheetId) {
+      // If two "Update statement" activities come from one "Apply to stage"
+      // or "Apply to all tasks" operation, they will share the same newSheetId.
+      // So that we can define they are "similar".
       return true;
     }
   }

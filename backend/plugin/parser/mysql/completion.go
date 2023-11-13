@@ -27,8 +27,8 @@ func init() {
 }
 
 // Completion is the entry point of MySQL code completion.
-func Completion(statement string, caretLine int, caretOffset int, defaultDatabase string, metadata base.GetDatabaseMetadataFunc) ([]base.Candidate, error) {
-	completer := NewCompleter(statement, caretLine, caretOffset, defaultDatabase, metadata)
+func Completion(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata base.GetDatabaseMetadataFunc) ([]base.Candidate, error) {
+	completer := NewCompleter(ctx, statement, caretLine, caretOffset, defaultDatabase, metadata)
 	return completer.completion()
 }
 
@@ -202,6 +202,7 @@ type TableReference struct {
 }
 
 type Completer struct {
+	ctx                 context.Context
 	core                *base.CodeCompletionCore
 	parser              *mysql.MySQLParser
 	lexer               *mysql.MySQLLexer
@@ -218,12 +219,13 @@ type Completer struct {
 	references []*TableReference
 }
 
-func NewCompleter(statement string, caretLine int, caretOffset int, defaultDatabase string, metadata base.GetDatabaseMetadataFunc) *Completer {
+func NewCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata base.GetDatabaseMetadataFunc) *Completer {
 	parser, lexer, scanner := prepareParserAndScanner(statement, caretLine, caretOffset)
 	// For all MySQL completers, we use one global follow sets by state.
 	// The FollowSetsByState is the thread-safe struct.
 	core := base.NewCodeCompletionCore(parser, newIgnoredTokens(), newPreferredRules(), &globalFollowSetsByState)
 	return &Completer{
+		ctx:                 ctx,
 		core:                core,
 		parser:              parser,
 		lexer:               lexer,
@@ -449,6 +451,23 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 			}
 
 			// TODO: special handling for triggers.
+
+		case mysql.MySQLParserRULE_viewRef:
+			schema, _, flags := c.determineSchemaTableQualifier()
+
+			if flags&ObjectFlagsShowFirst != 0 {
+				schemaEntries.insertDatabases(c)
+			}
+
+			if flags&ObjectFlagsShowSecond != 0 {
+				schemas := make(map[string]bool)
+				if len(schema) != 0 {
+					schemas[schema] = true
+				} else {
+					schemas[c.defaultDatabase] = true
+				}
+				viewEntries.insertViews(c, schemas)
+			}
 		}
 	}
 
@@ -833,8 +852,15 @@ func (m CompletionMap) insertTables(c *Completer, schemas map[string]bool) {
 	}
 }
 
-func (CompletionMap) insertViews(_ *Completer, _ map[string]bool) {
-	// TODO: load views
+func (m CompletionMap) insertViews(c *Completer, schemas map[string]bool) {
+	for schema := range schemas {
+		for _, view := range c.listViews(schema) {
+			m.Insert(base.Candidate{
+				Type: base.CandidateTypeView,
+				Text: view,
+			})
+		}
+	}
 }
 
 func (m CompletionMap) insertColumns(c *Completer, schemas, tables map[string]bool) {
@@ -863,7 +889,7 @@ func (c *Completer) listAllDatabases() []string {
 
 func (c *Completer) listTables(database string) []string {
 	if _, exists := c.metadataCache[database]; !exists {
-		metadata, err := c.getMetadata(context.Background(), database)
+		metadata, err := c.getMetadata(c.ctx, database)
 		if err != nil || metadata == nil {
 			return nil
 		}
@@ -873,11 +899,23 @@ func (c *Completer) listTables(database string) []string {
 	return c.metadataCache[database].GetSchema("").ListTableNames()
 }
 
+func (c *Completer) listViews(database string) []string {
+	if _, exists := c.metadataCache[database]; !exists {
+		metadata, err := c.getMetadata(c.ctx, database)
+		if err != nil || metadata == nil {
+			return nil
+		}
+		c.metadataCache[database] = metadata
+	}
+
+	return c.metadataCache[database].GetSchema("").ListViewNames()
+}
+
 func (c *Completer) listColumns(databases, tables map[string]bool) []string {
 	var result []string
 	for database := range databases {
 		if _, exists := c.metadataCache[database]; !exists {
-			metadata, err := c.getMetadata(context.Background(), database)
+			metadata, err := c.getMetadata(c.ctx, database)
 			if err != nil || metadata == nil {
 				continue
 			}

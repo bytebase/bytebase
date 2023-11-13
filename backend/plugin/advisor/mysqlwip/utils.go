@@ -5,9 +5,6 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-
-	"github.com/pingcap/tidb/parser/ast"
-	"github.com/pingcap/tidb/parser/format"
 )
 
 type columnSet map[string]bool
@@ -44,15 +41,6 @@ func (t tablePK) tableList() []string {
 	return tableList
 }
 
-func restoreNode(node ast.Node, flag format.RestoreFlags) (string, error) {
-	var buffer strings.Builder
-	ctx := format.NewRestoreCtx(flag, &buffer)
-	if err := node.Restore(ctx); err != nil {
-		return "", err
-	}
-	return buffer.String(), nil
-}
-
 // getTemplateRegexp formats the template as regex.
 func getTemplateRegexp(template string, templateList []string, tokens map[string]string) (*regexp.Regexp, error) {
 	for _, key := range templateList {
@@ -64,11 +52,34 @@ func getTemplateRegexp(template string, templateList []string, tokens map[string
 	return regexp.Compile(template)
 }
 
-func canNull(column *ast.ColumnDef) bool {
-	for _, option := range column.Options {
-		if option.Tp == ast.ColumnOptionNotNull || option.Tp == ast.ColumnOptionPrimaryKey {
-			return false
-		}
+// tableName --> columnName --> columnType.
+type tableColumnTypes map[string]map[string]string
+
+func (t tableColumnTypes) set(tableName string, columnName string, columnType string) {
+	if _, ok := t[tableName]; !ok {
+		t[tableName] = make(map[string]string)
 	}
-	return true
+	t[tableName][columnName] = columnType
+}
+
+func (t tableColumnTypes) get(tableName string, columnName string) (columnType string, ok bool) {
+	if _, ok := t[tableName]; !ok {
+		return "", false
+	}
+	col, ok := t[tableName][columnName]
+	return col, ok
+}
+
+func (t tableColumnTypes) delete(tableName string, columnName string) {
+	if _, ok := t[tableName]; !ok {
+		return
+	}
+	delete(t[tableName], columnName)
+}
+
+type tableData struct {
+	tableName                string
+	defaultCurrentTimeCount  int
+	onUpdateCurrentTimeCount int
+	line                     int
 }

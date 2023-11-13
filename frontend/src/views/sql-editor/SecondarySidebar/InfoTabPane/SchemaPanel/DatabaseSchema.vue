@@ -49,9 +49,8 @@
 </template>
 
 <script lang="ts" setup>
-import { storeToRefs } from "pinia";
 import { computed } from "vue";
-import { useActuatorV1Store, useCurrentUserV1 } from "@/store";
+import { useCurrentUserV1, usePageMode } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import {
@@ -83,8 +82,7 @@ const emit = defineEmits<{
 
 const { events: editorEvents } = useSQLEditorContext();
 const currentUser = useCurrentUserV1();
-const actuatorStore = useActuatorV1Store();
-const { pageMode } = storeToRefs(actuatorStore);
+const pageMode = usePageMode();
 
 const engine = computed(() => props.database.instanceEntity.engine);
 

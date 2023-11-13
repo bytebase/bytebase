@@ -1,4 +1,4 @@
-- statement: CREATE TABLE t(a int)
+- statement: CREATE TABLE t(a int);
   want:
     - status: SUCCESS
       code: 0
@@ -6,7 +6,7 @@
       content: ""
       line: 0
       details: ""
-- statement: CREATE TABLE t(a JSON, b BLOB, c TEXT)
+- statement: CREATE TABLE t(a JSON, b BLOB, c TEXT);
   want:
     - status: WARN
       code: 411
@@ -16,21 +16,47 @@
       details: ""
 - statement: |-
     CREATE TABLE t(d int);
-    ALTER TABLE t add COLUMN (a JSON, b BLOB, c TEXT)
+    ALTER TABLE t add COLUMN (a JSON, b BLOB, c TEXT);
   want:
     - status: WARN
       code: 411
       title: column.type-disallow-list
       content: Disallow column type JSON but column `t`.`a` is
-      line: 3
+      line: 2
+      details: ""
+- statement: |-
+    CREATE TABLE t(d int);
+    ALTER TABLE t ADD COLUMN (a JSON, b JSON);
+  want:
+    - status: WARN
+      code: 411
+      title: column.type-disallow-list
+      content: Disallow column type JSON but column `t`.`a` is
+      line: 2
+      details: ""
+    - status: WARN
+      code: 411
+      title: column.type-disallow-list
+      content: Disallow column type JSON but column `t`.`b` is
+      line: 2
       details: ""
 - statement: |-
     CREATE TABLE t(c int, b int);
-    ALTER TABLE t CHANGE COLUMN c a JSON, MODIFY b BLOB
+    ALTER TABLE t CHANGE COLUMN c a JSON, MODIFY b BLOB;
   want:
     - status: WARN
       code: 411
       title: column.type-disallow-list
       content: Disallow column type JSON but column `t`.`a` is
-      line: 3
+      line: 2
+      details: ""
+- statement: |-
+    CREATE TABLE t(c int, b int);
+    ALTER TABLE t MODIFY COLUMN c JSON;
+  want:
+    - status: WARN
+      code: 411
+      title: column.type-disallow-list
+      content: Disallow column type JSON but column `t`.`c` is
+      line: 2
       details: ""

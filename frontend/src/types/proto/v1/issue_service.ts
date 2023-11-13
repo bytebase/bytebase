@@ -96,6 +96,8 @@ export interface ListIssuesRequest {
   pageToken: string;
   /** Filter is used to filter issues returned in the list. */
   filter: string;
+  /** Query is the query statement. */
+  query: string;
 }
 
 export interface ListIssuesResponse {
@@ -120,68 +122,6 @@ export interface UpdateIssueRequest {
     | undefined;
   /** The list of fields to update. */
   updateMask: string[] | undefined;
-}
-
-export interface SearchIssuesRequest {
-  /**
-   * The parent, which owns this collection of issues.
-   * Format: projects/{project}.
-   * Use "projects/-" to search all issues.
-   */
-  parent: string;
-  /**
-   * The maximum number of issues to return. The service may return fewer than
-   * this value.
-   * If unspecified, at most 50 issues will be returned.
-   * The maximum value is 1000; values above 1000 will be coerced to 1000.
-   */
-  pageSize: number;
-  /**
-   * A page token, received from a previous `SearchIssues` call.
-   * Provide this to retrieve the subsequent page.
-   *
-   * When paginating, all other parameters provided to `SearchIssues` must match
-   * the call that provided the page token.
-   */
-  pageToken: string;
-  /** Query is the query statement. */
-  query: string;
-  /**
-   * Filter is used to filter issues returned in the list,
-   * follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
-   * Supported field in filter:
-   * - principal, example:
-   *    - principal = "users/{email}"
-   * - creator, example:
-   *    - creator = "users/{email}"
-   * - assignee, example:
-   *    - assignee = "users/{email}"
-   * - subscriber, example:
-   *    - subscriber = "users/{email}"
-   * - status, example:
-   *    - status = "OPEN"
-   *    - status = "DONE" | "CANCELED"
-   * - create_time, example:
-   *    - create_time <= "2022-01-01T12:00:00.000Z"
-   *    - create_time >= "2022-01-01T12:00:00.000Z"
-   * - instance, example:
-   *    - instance = "instancs/{resource id}"
-   * - database, example:
-   *    - database = "instancs/{instance resource id}/databases/{database name}"
-   * - type, only support "DDL" or "DML", example:
-   *    - type = "DDL"
-   */
-  filter: string;
-}
-
-export interface SearchIssuesResponse {
-  /** The issues from the specified request. */
-  issues: Issue[];
-  /**
-   * A token, which can be sent as `page_token` to retrieve the next page.
-   * If this field is omitted, there are no subsequent pages.
-   */
-  nextPageToken: string;
 }
 
 export interface BatchUpdateIssuesStatusRequest {
@@ -739,7 +679,7 @@ export const CreateIssueRequest = {
 };
 
 function createBaseListIssuesRequest(): ListIssuesRequest {
-  return { parent: "", pageSize: 0, pageToken: "", filter: "" };
+  return { parent: "", pageSize: 0, pageToken: "", filter: "", query: "" };
 }
 
 export const ListIssuesRequest = {
@@ -755,6 +695,9 @@ export const ListIssuesRequest = {
     }
     if (message.filter !== "") {
       writer.uint32(34).string(message.filter);
+    }
+    if (message.query !== "") {
+      writer.uint32(42).string(message.query);
     }
     return writer;
   },
@@ -794,6 +737,13 @@ export const ListIssuesRequest = {
 
           message.filter = reader.string();
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.query = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -809,6 +759,7 @@ export const ListIssuesRequest = {
       pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
       filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
+      query: isSet(object.query) ? globalThis.String(object.query) : "",
     };
   },
 
@@ -826,6 +777,9 @@ export const ListIssuesRequest = {
     if (message.filter !== "") {
       obj.filter = message.filter;
     }
+    if (message.query !== "") {
+      obj.query = message.query;
+    }
     return obj;
   },
 
@@ -838,6 +792,7 @@ export const ListIssuesRequest = {
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
     message.filter = object.filter ?? "";
+    message.query = object.query ?? "";
     return message;
   },
 };
@@ -986,199 +941,6 @@ export const UpdateIssueRequest = {
     const message = createBaseUpdateIssueRequest();
     message.issue = (object.issue !== undefined && object.issue !== null) ? Issue.fromPartial(object.issue) : undefined;
     message.updateMask = object.updateMask ?? undefined;
-    return message;
-  },
-};
-
-function createBaseSearchIssuesRequest(): SearchIssuesRequest {
-  return { parent: "", pageSize: 0, pageToken: "", query: "", filter: "" };
-}
-
-export const SearchIssuesRequest = {
-  encode(message: SearchIssuesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.parent !== "") {
-      writer.uint32(10).string(message.parent);
-    }
-    if (message.pageSize !== 0) {
-      writer.uint32(16).int32(message.pageSize);
-    }
-    if (message.pageToken !== "") {
-      writer.uint32(26).string(message.pageToken);
-    }
-    if (message.query !== "") {
-      writer.uint32(34).string(message.query);
-    }
-    if (message.filter !== "") {
-      writer.uint32(42).string(message.filter);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): SearchIssuesRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSearchIssuesRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.parent = reader.string();
-          continue;
-        case 2:
-          if (tag !== 16) {
-            break;
-          }
-
-          message.pageSize = reader.int32();
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.pageToken = reader.string();
-          continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.query = reader.string();
-          continue;
-        case 5:
-          if (tag !== 42) {
-            break;
-          }
-
-          message.filter = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): SearchIssuesRequest {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
-      query: isSet(object.query) ? globalThis.String(object.query) : "",
-      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
-    };
-  },
-
-  toJSON(message: SearchIssuesRequest): unknown {
-    const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.pageSize !== 0) {
-      obj.pageSize = Math.round(message.pageSize);
-    }
-    if (message.pageToken !== "") {
-      obj.pageToken = message.pageToken;
-    }
-    if (message.query !== "") {
-      obj.query = message.query;
-    }
-    if (message.filter !== "") {
-      obj.filter = message.filter;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<SearchIssuesRequest>): SearchIssuesRequest {
-    return SearchIssuesRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<SearchIssuesRequest>): SearchIssuesRequest {
-    const message = createBaseSearchIssuesRequest();
-    message.parent = object.parent ?? "";
-    message.pageSize = object.pageSize ?? 0;
-    message.pageToken = object.pageToken ?? "";
-    message.query = object.query ?? "";
-    message.filter = object.filter ?? "";
-    return message;
-  },
-};
-
-function createBaseSearchIssuesResponse(): SearchIssuesResponse {
-  return { issues: [], nextPageToken: "" };
-}
-
-export const SearchIssuesResponse = {
-  encode(message: SearchIssuesResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.issues) {
-      Issue.encode(v!, writer.uint32(10).fork()).ldelim();
-    }
-    if (message.nextPageToken !== "") {
-      writer.uint32(18).string(message.nextPageToken);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): SearchIssuesResponse {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSearchIssuesResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.issues.push(Issue.decode(reader, reader.uint32()));
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.nextPageToken = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): SearchIssuesResponse {
-    return {
-      issues: globalThis.Array.isArray(object?.issues) ? object.issues.map((e: any) => Issue.fromJSON(e)) : [],
-      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
-    };
-  },
-
-  toJSON(message: SearchIssuesResponse): unknown {
-    const obj: any = {};
-    if (message.issues?.length) {
-      obj.issues = message.issues.map((e) => Issue.toJSON(e));
-    }
-    if (message.nextPageToken !== "") {
-      obj.nextPageToken = message.nextPageToken;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<SearchIssuesResponse>): SearchIssuesResponse {
-    return SearchIssuesResponse.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<SearchIssuesResponse>): SearchIssuesResponse {
-    const message = createBaseSearchIssuesResponse();
-    message.issues = object.issues?.map((e) => Issue.fromPartial(e)) || [];
-    message.nextPageToken = object.nextPageToken ?? "";
     return message;
   },
 };
@@ -2936,62 +2698,6 @@ export const IssueServiceDefinition = {
               47,
               42,
               125,
-            ]),
-          ],
-        },
-      },
-    },
-    searchIssues: {
-      name: "SearchIssues",
-      requestType: SearchIssuesRequest,
-      requestStream: false,
-      responseType: SearchIssuesResponse,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          8410: [new Uint8Array([0])],
-          578365826: [
-            new Uint8Array([
-              39,
-              18,
-              37,
-              47,
-              118,
-              49,
-              47,
-              123,
-              112,
-              97,
-              114,
-              101,
-              110,
-              116,
-              61,
-              112,
-              114,
-              111,
-              106,
-              101,
-              99,
-              116,
-              115,
-              47,
-              42,
-              125,
-              47,
-              105,
-              115,
-              115,
-              117,
-              101,
-              115,
-              58,
-              115,
-              101,
-              97,
-              114,
-              99,
-              104,
             ]),
           ],
         },

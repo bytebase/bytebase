@@ -5,13 +5,15 @@ package mysqlwip
 import (
 	"fmt"
 	"sort"
-	"strings"
 
-	"github.com/pingcap/tidb/parser/ast"
-	"github.com/pingcap/tidb/parser/mysql"
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
+	mysql "github.com/bytebase/mysql-parser"
+
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 const (
@@ -21,8 +23,12 @@ const (
 
 var (
 	_ advisor.Advisor = (*ColumnCurrentTimeCountLimitAdvisor)(nil)
-	_ ast.Visitor     = (*columnCurrentTimeCountLimitChecker)(nil)
 )
+
+func init() {
+	// only for mysqlwip test.
+	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLCurrentTimeColumnCountLimit, &ColumnCurrentTimeCountLimitAdvisor{})
+}
 
 // ColumnCurrentTimeCountLimitAdvisor is the advisor checking for current time column count limit.
 type ColumnCurrentTimeCountLimitAdvisor struct {
@@ -30,9 +36,9 @@ type ColumnCurrentTimeCountLimitAdvisor struct {
 
 // Check checks for current time column count limit.
 func (*ColumnCurrentTimeCountLimitAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	stmtList, ok := ctx.AST.([]ast.StmtNode)
+	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to StmtNode")
+		return nil, errors.Errorf("failed to convert to mysql parse result")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -46,28 +52,145 @@ func (*ColumnCurrentTimeCountLimitAdvisor) Check(ctx advisor.Context, _ string) 
 	}
 
 	for _, stmt := range stmtList {
-		checker.text = stmt.Text()
-		checker.line = stmt.OriginTextPosition()
-		(stmt).Accept(checker)
+		checker.baseLine = stmt.BaseLine
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
 	return checker.generateAdvice(), nil
 }
 
 type columnCurrentTimeCountLimitChecker struct {
+	*mysql.BaseMySQLParserListener
+
+	baseLine   int
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
-	text       string
-	line       int
 	tableSet   map[string]tableData
 }
 
-type tableData struct {
-	tableName                string
-	defaultCurrentTimeCount  int
-	onUpdateCurrentTimeCount int
-	line                     int
+func (checker *columnCurrentTimeCountLimitChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if ctx.TableElementList() == nil || ctx.TableName() == nil {
+		return
+	}
+
+	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
+	for _, tableElement := range ctx.TableElementList().AllTableElement() {
+		if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil || tableElement.ColumnDefinition().FieldDefinition().DataType() == nil {
+			continue
+		}
+		_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
+		checker.checkTime(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
+	}
+}
+
+func (checker *columnCurrentTimeCountLimitChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if ctx.AlterTableActions() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
+		return
+	}
+
+	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
+	if tableName == "" {
+		return
+	}
+	// alter table add column, change column, modify column.
+	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
+		if item == nil {
+			continue
+		}
+
+		var columnName string
+		switch {
+		// add column
+		case item.ADD_SYMBOL() != nil:
+			switch {
+			case item.Identifier() != nil && item.FieldDefinition() != nil:
+				columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+				checker.checkTime(tableName, columnName, item.FieldDefinition())
+			case item.OPEN_PAR_SYMBOL() != nil && item.TableElementList() != nil:
+				for _, tableElement := range item.TableElementList().AllTableElement() {
+					if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().ColumnName() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil {
+						continue
+					}
+					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
+					checker.checkTime(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
+				}
+			}
+		// change column.
+		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil && item.FieldDefinition() != nil:
+			if item.FieldDefinition().DataType() == nil {
+				continue
+			}
+			// only focus on new column name.
+			columnName = mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+			checker.checkTime(tableName, columnName, item.FieldDefinition())
+		// modify column.
+		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
+			if item.FieldDefinition().DataType() == nil {
+				continue
+			}
+			columnName = mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
+			checker.checkTime(tableName, columnName, item.FieldDefinition())
+		default:
+			continue
+		}
+	}
+}
+
+func (checker *columnCurrentTimeCountLimitChecker) checkTime(tableName string, _ string, ctx mysql.IFieldDefinitionContext) {
+	if ctx.DataType() == nil {
+		return
+	}
+
+	switch ctx.DataType().GetType_().GetTokenType() {
+	case mysql.MySQLParserDATETIME_SYMBOL, mysql.MySQLParserTIMESTAMP_SYMBOL:
+		if checker.isDefaultCurrentTime(ctx) {
+			table, exists := checker.tableSet[tableName]
+			if !exists {
+				table = tableData{
+					tableName: tableName,
+				}
+			}
+			table.defaultCurrentTimeCount++
+			table.line = checker.baseLine + ctx.GetStart().GetLine()
+			checker.tableSet[tableName] = table
+		}
+		if checker.isOnUpdateCurrentTime(ctx) {
+			table, exists := checker.tableSet[tableName]
+			if !exists {
+				table = tableData{
+					tableName: tableName,
+				}
+			}
+			table.onUpdateCurrentTimeCount++
+			table.line = checker.baseLine + ctx.GetStart().GetLine()
+			checker.tableSet[tableName] = table
+		}
+	}
+}
+
+func (*columnCurrentTimeCountLimitChecker) isDefaultCurrentTime(ctx mysql.IFieldDefinitionContext) bool {
+	for _, attr := range ctx.AllColumnAttribute() {
+		if attr.GetValue().GetTokenType() == mysql.MySQLParserDEFAULT_SYMBOL && attr.NOW_SYMBOL() != nil {
+			return true
+		}
+	}
+	return false
+}
+
+func (*columnCurrentTimeCountLimitChecker) isOnUpdateCurrentTime(ctx mysql.IFieldDefinitionContext) bool {
+	for _, attr := range ctx.AllColumnAttribute() {
+		if attr.GetValue().GetTokenType() == mysql.MySQLParserON_SYMBOL && attr.NOW_SYMBOL() != nil {
+			return true
+		}
+	}
+	return false
 }
 
 func (checker *columnCurrentTimeCountLimitChecker) generateAdvice() []advisor.Advice {
@@ -107,95 +230,4 @@ func (checker *columnCurrentTimeCountLimitChecker) generateAdvice() []advisor.Ad
 		})
 	}
 	return checker.adviceList
-}
-
-func (checker *columnCurrentTimeCountLimitChecker) count(tableName string, column *ast.ColumnDef, line int) {
-	switch column.Tp.GetType() {
-	case mysql.TypeDatetime, mysql.TypeTimestamp:
-		if isDefaultCurrentTime(column) {
-			table, exists := checker.tableSet[tableName]
-			if !exists {
-				table = tableData{
-					tableName: tableName,
-				}
-			}
-			table.defaultCurrentTimeCount++
-			table.line = line
-			checker.tableSet[tableName] = table
-		}
-		if isOnUpdateCurrentTime(column) {
-			table, exists := checker.tableSet[tableName]
-			if !exists {
-				table = tableData{
-					tableName: tableName,
-				}
-			}
-			table.onUpdateCurrentTimeCount++
-			table.line = line
-			checker.tableSet[tableName] = table
-		}
-	}
-}
-
-// Enter implements the ast.Visitor interface.
-func (checker *columnCurrentTimeCountLimitChecker) Enter(in ast.Node) (ast.Node, bool) {
-	switch node := in.(type) {
-	case *ast.CreateTableStmt:
-		tableName := node.Table.Name.O
-		for _, column := range node.Cols {
-			checker.count(tableName, column, node.OriginTextPosition())
-		}
-	case *ast.AlterTableStmt:
-		tableName := node.Table.Name.O
-		for _, spec := range node.Specs {
-			switch spec.Tp {
-			case ast.AlterTableAddColumns:
-				for _, column := range spec.NewColumns {
-					checker.count(tableName, column, node.OriginTextPosition())
-				}
-			case ast.AlterTableModifyColumn, ast.AlterTableChangeColumn:
-				checker.count(tableName, spec.NewColumns[0], node.OriginTextPosition())
-			}
-		}
-	}
-
-	return in, false
-}
-
-// Leave implements the ast.Visitor interface.
-func (*columnCurrentTimeCountLimitChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
-}
-
-func isOnUpdateCurrentTime(column *ast.ColumnDef) bool {
-	for _, option := range column.Options {
-		if option.Tp == ast.ColumnOptionOnUpdate {
-			if function, ok := option.Expr.(*ast.FuncCallExpr); ok && isCurrentTime(function.FnName.L) {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func isDefaultCurrentTime(column *ast.ColumnDef) bool {
-	for _, option := range column.Options {
-		if option.Tp == ast.ColumnOptionDefaultValue {
-			if function, ok := option.Expr.(*ast.FuncCallExpr); ok && isCurrentTime(function.FnName.L) {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func isCurrentTime(name string) bool {
-	switch strings.ToLower(name) {
-	// Any of the synonyms for CURRENT_TIMESTAMP have the same meaning as CURRENT_TIMESTAMP.
-	// These are CURRENT_TIMESTAMP(), NOW(), LOCALTIME, LOCALTIME(), LOCALTIMESTAMP, and LOCALTIMESTAMP().
-	// See https://dev.mysql.com/doc/refman/8.0/en/timestamp-initialization.html.
-	case "current_timestamp", "now", "localtime", "localtimestamp":
-		return true
-	}
-	return false
 }

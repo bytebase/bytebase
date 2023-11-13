@@ -98,13 +98,16 @@
             </div>
           </template>
           <template v-if="state.maskingType === 'range-mask'">
+            <p class="textinfolabel">
+              {{ $t("settings.sensitive-data.algorithms.range-mask.label") }}
+            </p>
             <div
               v-for="(slice, i) in state.rangeMask.slices"
               :key="i"
               class="flex space-x-2 items-center"
             >
               <div class="flex-none flex flex-col">
-                <label for="slice-start" class="textlabel">
+                <label for="slice-start" class="textlabel flex">
                   {{
                     $t(
                       "settings.sensitive-data.algorithms.range-mask.slice-start"
@@ -375,7 +378,8 @@ const errorMessage = computed(() => {
       if (state.rangeMask.slices.length === 0) {
         return "Slices is required";
       }
-      for (const slice of state.rangeMask.slices) {
+      for (let i = 0; i < state.rangeMask.slices.length; i++) {
+        const slice = state.rangeMask.slices[i];
         if (!slice.substitution) {
           return "Slice substitution is required";
         }
@@ -389,6 +393,14 @@ const errorMessage = computed(() => {
         }
         if (slice.start >= slice.end) {
           return "The slice end must smaller than the start";
+        }
+
+        for (let j = 0; j < i; j++) {
+          const pre = state.rangeMask.slices[j];
+          if (slice.start >= pre.end || pre.start >= slice.end) {
+            continue;
+          }
+          return "The slice range cannot overlap";
         }
       }
   }
@@ -435,7 +447,6 @@ const onUpsert = async () => {
       style: "SUCCESS",
       title: t("common.updated"),
     });
-
     emit("dismiss");
   } finally {
     state.processing = false;

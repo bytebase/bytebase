@@ -50,10 +50,8 @@ type findExternalVersionControlMessage struct {
 
 // GetExternalVersionControlV2 gets an external version control by ID.
 func (s *Store) GetExternalVersionControlV2(ctx context.Context, id int) (*ExternalVersionControlMessage, error) {
-	if vcs, ok := s.vcsIDCache.Load(id); ok {
-		if v, ok := vcs.(*ExternalVersionControlMessage); ok {
-			return v, nil
-		}
+	if v, ok := s.vcsIDCache.Get(id); ok {
+		return v, nil
 	}
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
@@ -76,7 +74,7 @@ func (s *Store) GetExternalVersionControlV2(ctx context.Context, id int) (*Exter
 	}
 
 	vcs := externalVersionControls[0]
-	s.vcsIDCache.Store(vcs.ID, vcs)
+	s.vcsIDCache.Add(vcs.ID, vcs)
 	return vcs, nil
 }
 
@@ -97,7 +95,7 @@ func (s *Store) ListExternalVersionControls(ctx context.Context) ([]*ExternalVer
 	}
 
 	for _, vcs := range externalVersionControls {
-		s.vcsIDCache.Store(vcs.ID, vcs)
+		s.vcsIDCache.Add(vcs.ID, vcs)
 	}
 	return externalVersionControls, nil
 }
@@ -153,7 +151,7 @@ func (s *Store) CreateExternalVersionControlV2(ctx context.Context, principalUID
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 
-	s.vcsIDCache.Store(externalVersionControl.ID, &externalVersionControl)
+	s.vcsIDCache.Add(externalVersionControl.ID, &externalVersionControl)
 	return &externalVersionControl, nil
 }
 
@@ -205,7 +203,7 @@ func (s *Store) UpdateExternalVersionControlV2(ctx context.Context, principalUID
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
-	s.vcsIDCache.Store(externalVersionControl.ID, &externalVersionControl)
+	s.vcsIDCache.Add(externalVersionControl.ID, &externalVersionControl)
 	return &externalVersionControl, nil
 }
 
@@ -225,7 +223,7 @@ func (s *Store) DeleteExternalVersionControlV2(ctx context.Context, externalVers
 		return errors.Wrapf(err, "failed to commit transaction")
 	}
 
-	s.vcsIDCache.Delete(externalVersionControlUID)
+	s.vcsIDCache.Remove(externalVersionControlUID)
 	return nil
 }
 

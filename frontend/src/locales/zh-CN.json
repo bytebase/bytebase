@@ -273,7 +273,9 @@
     "filter-by-name": "按名称过滤",
     "tenant": "租户",
     "license": "证书",
-    "show-all": "显示全部"
+    "show-all": "显示全部",
+    "view-details": "查看详情",
+    "force-verb": "强制{verb}"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -391,7 +393,10 @@
         "some-tasks-are-not-editable-in-batch-mode": "某些任务在批量模式下不可编辑",
         "task-is-not-editable": "该任务不可编辑",
         "x-status-task-is-not-editable": "{status} 的任务不可编辑",
-        "nothing-changed": "无任何改变"
+        "nothing-changed": "无任何改变",
+        "not-applicable": {
+          "some-tasks-dont-meet-ghost-requirement": "部分任务不符合 gh-ost 的要求"
+        }
       },
       "show-default-parameters": "显示默认参数",
       "hide-default-parameters": "隐藏默认参数"
@@ -688,34 +693,44 @@
         },
         "template": {
           "address": {
-            "title": "中文详细地址"
+            "title": "中文详细地址",
+            "description": ""
           },
           "secret_key": {
-            "title": "加密 Key"
+            "title": "加密 Key",
+            "description": ""
           },
           "card_number": {
-            "title": "银行卡、信用卡"
+            "title": "银行卡、信用卡",
+            "description": ""
           },
           "email": {
-            "title": "电子邮箱"
+            "title": "电子邮箱",
+            "description": ""
           },
           "id_number": {
-            "title": "身份证号码"
+            "title": "身份证号码",
+            "description": ""
           },
           "ipv4_address": {
-            "title": "IPv4 地址"
+            "title": "IPv4 地址",
+            "description": ""
           },
           "license_plate_number": {
-            "title": "车牌号码"
+            "title": "车牌号码",
+            "description": ""
           },
           "mac_address": {
-            "title": "MAC 地址"
+            "title": "MAC 地址",
+            "description": ""
           },
           "password": {
-            "title": "密码"
+            "title": "密码",
+            "description": ""
           },
           "phone": {
-            "title": "电话号码"
+            "title": "电话号码",
+            "description": ""
           }
         }
       },
@@ -738,6 +753,8 @@
           "masking-type": "算法类型",
           "delete": "删除该算法？"
         },
+        "mask": "遮掩",
+        "hash": "哈希",
         "full-mask": {
           "self": "全遮掩",
           "substitution": "遮掩字符串",
@@ -745,6 +762,7 @@
         },
         "range-mask": {
           "self": "范围遮掩",
+          "label": "范围遮掩使用遮掩字符串来替换从起始索引到结束索引（不包含结束索引）的原始值。",
           "slice-start": "起始位置",
           "slice-start-label": "起始位置是原始值的起始索引，从 0 开始且小于结束位置。",
           "slice-end": "结束位置",
@@ -760,7 +778,7 @@
       },
       "masking-level": {
         "self": "脱敏程度",
-        "masking_level_unspecified": "遵循全局配置",
+        "masking_level_unspecified": "遵循全局",
         "none": "明文",
         "partial": "半脱敏",
         "full": "全脱敏"
@@ -860,7 +878,8 @@
       "schema-version": "schema 版本 {version}",
       "xxx-automatically": "自动{verb}",
       "verb-type-target-by-people": "{verb}{type} {target}",
-      "verb-type-target-by-system-bot": "{type} {target} {verb}"
+      "verb-type-target-by-system-bot": "{type} {target} {verb}",
+      "changed-x-link": "修改了 {name}。{link}"
     },
     "subject-prefix": {
       "task": "任务",
@@ -870,7 +889,7 @@
   },
   "issue": {
     "my-issues": "我的工单",
-    "waiting-approval": "等待批准",
+    "waiting-approval": "等待审批",
     "waiting-rollout": "等待发布",
     "opened-by-at": "{id} 由 {creator} 开启于 {time}",
     "commit-by-at": "{id} {title} 由 {author} 提交于 {time}",
@@ -950,6 +969,18 @@
         "principal": {
           "title": "相关用户",
           "description": "工单的创建人、指派人，或者订阅人"
+        },
+        "approver": {
+          "title": "审批人",
+          "description": "根据工单审批人搜索"
+        },
+        "approval": {
+          "value": {
+            "pending": "待审批",
+            "approved": "审批通过"
+          },
+          "description": "按工单的审批状态搜索",
+          "title": "审批状态"
         }
       }
     },
@@ -1076,12 +1107,11 @@
       "continue-anyway": "仍然继续",
       "sql-review-violations": "违反的 SQL 审核规则"
     },
-    "no-assignee-candidates": "该项目中没有有效的发布人候选人。\n请联系项目所有者。",
-    "allow-any-following-roles-to-be-assignee": "允许以下任何角色作为发布人",
     "error": {
       "issue-is-not-open": "工单不是开启状态",
       "you-don-have-privilege-to-edit-this-issue": "您没有权限编辑此工单"
-    }
+    },
+    "approval-requested": "审批请求"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
@@ -2005,7 +2035,7 @@
       "at-least-one-stage": "至少需要 1 个阶段",
       "stage-name-required": "需要指定阶段名称",
       "at-least-one-selector": "每个阶段至少需要 1 个选择条件",
-      "env-in-selector-required": "每个阶段都需要有 \"Environment ID\" 选择条件",
+      "env-in-selector-required": "每个阶段都需要有 \"Environment\" 选择条件",
       "env-selector-must-has-one-value": "\"Environment ID\" 必须有且只有 1 个值",
       "key-required": "需要指定 Key",
       "values-required": "需要指定值"
@@ -3246,5 +3276,14 @@
     "confirm-remove-change": "移除这项变更？",
     "delete-this-changelist": "删除这个变更列表",
     "confirm-delete-changelist": "删除变更列表？"
+  },
+  "export-data": {
+    "self": "导出数据",
+    "export-rows": "导出行数",
+    "error": {
+      "export-rows-required": "需要指定导出行数",
+      "export-rows-must-gt-zero": "导出行数必须大于 0"
+    },
+    "export-format": "导出格式"
   }
 }

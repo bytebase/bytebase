@@ -45,6 +45,12 @@ func TestMySQLWIPRules(t *testing.T) {
 		advisor.SchemaRuleStatementInsertMustSpecifyColumn,
 		// advisor.SchemaRuleStatementInsertDisallowOrderByRand disallow the order by rand in the INSERT statement.
 		advisor.SchemaRuleStatementInsertDisallowOrderByRand,
+		// advisor.SchemaRuleStatementAffectedRowLimit enforce the UPDATE/DELETE affected row limit.
+		// TODO: need more test.
+		advisor.SchemaRuleStatementAffectedRowLimit,
+		// advisor.SchemaRuleStatementDMLDryRun dry run the dml.
+		// TODO: need more test.
+		advisor.SchemaRuleStatementDMLDryRun,
 
 		// advisor.SchemaRuleTableRequirePK require the table to have a primary key.
 		advisor.SchemaRuleTableRequirePK,
@@ -61,12 +67,35 @@ func TestMySQLWIPRules(t *testing.T) {
 		advisor.SchemaRuleRequiredColumn,
 		// advisor.SchemaRuleColumnNotNull enforce the columns cannot have NULL value.
 		advisor.SchemaRuleColumnNotNull,
+		// advisor.SchemaRuleColumnDisallowChangeType disallow change column type.
+		advisor.SchemaRuleColumnDisallowChangeType,
+		// advisor.SchemaRuleColumnSetDefaultForNotNull require the not null column to set default value.
+		advisor.SchemaRuleColumnSetDefaultForNotNull,
+		// advisor.SchemaRuleColumnDisallowChange disallow CHANGE COLUMN statement.
+		advisor.SchemaRuleColumnDisallowChange,
+		// advisor.SchemaRuleColumnDisallowChangingOrder disallow changing column order.
+		advisor.SchemaRuleColumnDisallowChangingOrder,
+		// advisor.SchemaRuleColumnDisallowDropIndex disallow drop index column.
+		advisor.SchemaRuleColumnDisallowDropInIndex,
+		// advisor.SchemaRuleColumnCommentConvention enforce the column comment convention.
+		advisor.SchemaRuleColumnCommentConvention,
 		// advisor.SchemaRuleColumnDisallowSetCharset disallow set column charset.
 		advisor.SchemaRuleColumnDisallowSetCharset,
+		// advisor.SchemaRuleColumnTypeDisallowList enforce the column type disallow list.
+		advisor.SchemaRuleColumnTypeDisallowList,
 		// advisor.SchemaRuleColumnMaximumCharacterLength enforce the maximum character length.
 		advisor.SchemaRuleColumnMaximumCharacterLength,
 		// advisor.SchemaRuleColumnAutoIncrementInitialValue enforce the initial auto-increment value.
 		advisor.SchemaRuleColumnAutoIncrementInitialValue,
+		// advisor.SchemaRuleColumnAutoIncrementMustUnsigned enforce the auto-increment column to be unsigned.
+		advisor.SchemaRuleColumnAutoIncrementMustUnsigned,
+		// advisor.SchemaRuleColumnRequireDefault enforce the column default.
+		advisor.SchemaRuleColumnRequireDefault,
+
+		// advisor.SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
+		advisor.SchemaRuleSchemaBackwardCompatibility,
+		// advisor.SchemaRuleCurrentTimeColumnCountLimit enforce the current column count limit.
+		advisor.SchemaRuleCurrentTimeColumnCountLimit,
 
 		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL support check if the database is empty before users drop it.
 		advisor.SchemaRuleDropEmptyDatabase,
@@ -75,6 +104,13 @@ func TestMySQLWIPRules(t *testing.T) {
 		advisor.SchemaRuleIndexNoDuplicateColumn,
 		// advisor.SchemaRuleIndexKeyNumberLimit enforce the index key number limit.
 		advisor.SchemaRuleIndexKeyNumberLimit,
+		// advisor.SchemaRuleIndexPKTypeLimit enforce the type restriction of columns in primary key.
+		advisor.SchemaRuleIndexPKTypeLimit,
+		// advisor.SchemaRuleIndexTypeNoBlob enforce the type restriction of columns in index.
+		advisor.SchemaRuleIndexTypeNoBlob,
+		// advisor.SchemaRuleIndexTotalNumberLimit enforce the index total number limit.
+		advisor.SchemaRuleIndexTotalNumberLimit,
+		advisor.SchemaRuleIndexPrimaryKeyTypeAllowlist,
 	}
 
 	for _, rule := range mysqlwipRules {

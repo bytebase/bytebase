@@ -82,10 +82,10 @@
               <!-- Description list -->
               <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-3">
                 <div class="col-span-1">
-                  <dt class="text-sm text-control-light">
+                  <dt class="text-sm font-medium text-control-light">
                     {{ $t("database.engine") }}
                   </dt>
-                  <dd class="mt-1 text-lg sm:text-xl font-semibold">
+                  <dd class="mt-1 text-sm text-main">
                     {{
                       instanceEngine === Engine.POSTGRES ||
                       instanceEngine === Engine.SNOWFLAKE
@@ -109,28 +109,28 @@
                 </div>
 
                 <div class="col-span-1">
-                  <dt class="text-sm text-control-light">
+                  <dt class="text-sm font-medium text-control-light">
                     {{ $t("database.row-count-estimate") }}
                   </dt>
-                  <dd class="mt-1 text-lg sm:text-xl font-semibold">
+                  <dd class="mt-1 text-sm text-main">
                     {{ table.rowCount }}
                   </dd>
                 </div>
 
                 <div class="col-span-1">
-                  <dt class="text-sm text-control-light">
+                  <dt class="text-sm font-medium text-control-light">
                     {{ $t("database.data-size") }}
                   </dt>
-                  <dd class="mt-1 text-lg sm:text-xl font-semibold">
+                  <dd class="mt-1 text-sm text-main">
                     {{ bytesToString(table.dataSize.toNumber()) }}
                   </dd>
                 </div>
 
                 <div class="col-span-1">
-                  <dt class="text-sm text-control-light">
+                  <dt class="text-sm font-medium text-control-light">
                     {{ $t("database.index-size") }}
                   </dt>
-                  <dd class="mt-1 text-lg sm:text-xl font-semibold">
+                  <dd class="mt-1 text-sm text-main">
                     {{
                       instanceEngine === Engine.CLICKHOUSE ||
                       instanceEngine === Engine.SNOWFLAKE
@@ -147,10 +147,10 @@
                   "
                 >
                   <div class="col-span-1">
-                    <dt class="text-sm text-control-light">
+                    <dt class="text-sm font-medium text-control-light">
                       {{ $t("db.collation") }}
                     </dt>
-                    <dd class="mt-1 text-lg sm:text-xl font-semibold">
+                    <dd class="mt-1 text-sm text-main">
                       {{
                         instanceEngine === Engine.POSTGRES
                           ? "n/a"
@@ -237,6 +237,7 @@ const table = ref<TableMetadata>();
 const database = computed(() => {
   return databaseV1Store.getDatabaseByName(props.databaseName);
 });
+
 const instanceEngine = computed(() => {
   return database.value.instanceEntity.engine;
 });
@@ -253,6 +254,7 @@ const allowQuery = computed(() => {
   }
   return isDatabaseV1Queryable(database.value, currentUserV1.value);
 });
+
 const hasSchemaProperty = computed(
   () =>
     instanceEngine.value === Engine.POSTGRES ||
@@ -269,15 +271,13 @@ const getTableName = (tableName: string) => {
 };
 
 watch(
-  () => props.tableName,
-  (tableName) => {
+  () => [props.tableName, props.schemaName],
+  ([tableName, schemaName]) => {
     if (!tableName) {
       return;
     }
     const schemaList = dbSchemaStore.getSchemaList(database.value.name);
-    const schema = schemaList.find(
-      (schema) => schema.name === props.schemaName
-    );
+    const schema = schemaList.find((schema) => schema.name === schemaName);
     if (schema) {
       dbSchemaStore
         .getOrFetchTableMetadata({

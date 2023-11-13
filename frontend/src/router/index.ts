@@ -50,6 +50,7 @@ import {
 } from "@/types";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import {
+  hasSettingPagePermission,
   hasWorkspacePermissionV1,
   idFromSlug,
   sheetNameFromSlug,
@@ -329,14 +330,15 @@ const routes: Array<RouteRecordRaw> = [
             // perspective, they are more familiar with the "user" concept.
             // We make an exception to use a shorthand here because it's a commonly
             // accessed endpoint, and maybe in the future, we will further provide a
-            // shortlink such as u/<<uid>>
-            path: "u/:principalId",
+            // shortlink such as users/<<email>>
+            path: "users/:principalEmail",
             name: "workspace.profile",
             meta: {
               title: (route: RouteLocationNormalized) => {
-                const userUID = route.params.principalId as string;
+                const principalEmail = route.params.principalEmail as string;
                 const user =
-                  useUserStore().getUserById(userUID) ?? unknownUser();
+                  useUserStore().getUserByEmail(principalEmail) ??
+                  unknownUser();
                 return user.title;
               },
             },
@@ -1099,73 +1101,12 @@ router.beforeEach((to, from, next) => {
     }
   }
 
-  if (to.name?.toString().startsWith("setting.workspace.sso")) {
-    if (
-      !hasWorkspacePermissionV1(
-        "bb.permission.workspace.manage-sso",
-        currentUserV1.value.userRole
-      )
-    ) {
-      next({
-        name: "error.403",
-        replace: false,
-      });
-      return;
-    }
-  }
-
-  if (to.name?.toString().startsWith("setting.workspace.gitops")) {
-    if (
-      !hasWorkspacePermissionV1(
-        "bb.permission.workspace.manage-vcs-provider",
-        currentUserV1.value.userRole
-      )
-    ) {
-      next({
-        name: "error.403",
-        replace: false,
-      });
-      return;
-    }
-  }
-
-  if (to.name?.toString().startsWith("setting.workspace.project")) {
-    if (
-      !hasWorkspacePermissionV1(
-        "bb.permission.workspace.manage-project",
-        currentUserV1.value.userRole
-      )
-    ) {
-      next({
-        name: "error.403",
-        replace: false,
-      });
-      return;
-    }
-  }
-
-  if (to.name?.toString().startsWith("setting.workspace.audit-log")) {
-    if (
-      !hasWorkspacePermissionV1(
-        "bb.permission.workspace.audit-log",
-        currentUserV1.value.userRole
-      )
-    ) {
-      next({
-        name: "error.403",
-        replace: false,
-      });
-      return;
-    }
-  }
-
-  if (to.name?.toString().startsWith("setting.workspace.debug-log")) {
-    if (
-      !hasWorkspacePermissionV1(
-        "bb.permission.workspace.debug-log",
-        currentUserV1.value.userRole
-      )
-    ) {
+  if (to.name?.toString().startsWith("setting.workspace.")) {
+    const hasPermission = hasSettingPagePermission(
+      to.name.toString(),
+      currentUserV1.value.userRole
+    );
+    if (!hasPermission) {
       next({
         name: "error.403",
         replace: false,
@@ -1246,7 +1187,7 @@ router.beforeEach((to, from, next) => {
   }
 
   const routerSlug = routerStore.routeSlug(to);
-  const principalId = routerSlug.principalId;
+  const principalEmail = routerSlug.principalEmail;
   const environmentSlug = routerSlug.environmentSlug;
   const projectSlug = routerSlug.projectSlug;
   const projectWebhookSlug = routerSlug.projectWebhookSlug;
@@ -1260,9 +1201,9 @@ router.beforeEach((to, from, next) => {
   const ssoName = routerSlug.ssoName;
   const sqlReviewPolicySlug = routerSlug.sqlReviewPolicySlug;
 
-  if (principalId) {
+  if (principalEmail) {
     useUserStore()
-      .getOrFetchUserById(String(principalId))
+      .getOrFetchUserById(principalEmail)
       .then(() => {
         next();
       })

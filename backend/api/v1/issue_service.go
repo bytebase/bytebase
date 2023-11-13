@@ -152,130 +152,8 @@ func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesR
 		Limit:      &limitPlusOne,
 		Offset:     &offset,
 	}
-
-	filters, err := parseFilter(request.Filter)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	for _, spec := range filters {
-		switch spec.key {
-		case "principal":
-			user, err := s.getUserByIdentifier(ctx, spec.value)
-			if err != nil {
-				return nil, err
-			}
-			issueFind.PrincipalID = &user.ID
-		case "creator":
-			user, err := s.getUserByIdentifier(ctx, spec.value)
-			if err != nil {
-				return nil, err
-			}
-			issueFind.CreatorID = &user.ID
-		case "assignee":
-			user, err := s.getUserByIdentifier(ctx, spec.value)
-			if err != nil {
-				return nil, err
-			}
-			issueFind.AssigneeID = &user.ID
-		case "subscriber":
-			user, err := s.getUserByIdentifier(ctx, spec.value)
-			if err != nil {
-				return nil, err
-			}
-			issueFind.SubscriberID = &user.ID
-		case "status":
-			for _, raw := range strings.Split(spec.value, " | ") {
-				newStatus, err := convertToAPIIssueStatus(v1pb.IssueStatus(v1pb.IssueStatus_value[raw]))
-				if err != nil {
-					return nil, status.Errorf(codes.InvalidArgument, "failed to convert to issue status, err: %v", err)
-				}
-				issueFind.StatusList = append(issueFind.StatusList, newStatus)
-			}
-		case "create_time_before":
-			t, err := time.Parse(time.RFC3339, spec.value)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "failed to parse create_time_before %s, err: %v", spec.value, err)
-			}
-			ts := t.Unix()
-			issueFind.CreatedTsBefore = &ts
-		case "create_time_after":
-			t, err := time.Parse(time.RFC3339, spec.value)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "failed to parse create_time_after %s, err: %v", spec.value, err)
-			}
-			ts := t.Unix()
-			issueFind.CreatedTsAfter = &ts
-		}
-	}
-
-	issues, err := s.store.ListIssueV2(ctx, issueFind)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to search issue, error: %v", err)
-	}
-
-	if len(issues) == limitPlusOne {
-		nextPageToken, err := getPageToken(limit, offset+limit)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
-		}
-		converted, err := convertToIssues(ctx, s.store, issues[:limit])
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
-		}
-		return &v1pb.ListIssuesResponse{
-			Issues:        converted,
-			NextPageToken: nextPageToken,
-		}, nil
-	}
-
-	// No subsequent pages.
-	converted, err := convertToIssues(ctx, s.store, issues)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
-	}
-	return &v1pb.ListIssuesResponse{
-		Issues:        converted,
-		NextPageToken: "",
-	}, nil
-}
-
-func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIssuesRequest) (*v1pb.SearchIssuesResponse, error) {
-	if request.PageSize < 0 {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("page size must be non-negative: %d", request.PageSize))
-	}
-
-	requestProjectID, err := common.GetProjectID(request.Parent)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-
-	projectIDs, err := getProjectIDsFilter(ctx, s.store, requestProjectID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get project id filter, error: %v", err)
-	}
-
-	limit := int(request.PageSize)
-	offset := 0
-	if request.PageToken != "" {
-		var pageToken storepb.PageToken
-		if err := unmarshalPageToken(request.PageToken, &pageToken); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid page token: %v", err)
-		}
-		offset = int(pageToken.Offset)
-	}
-	if limit == 0 {
-		limit = 10
-	}
-	if limit > 1000 {
-		limit = 1000
-	}
-	limitPlusOne := limit + 1
-
-	issueFind := &store.FindIssueMessage{
-		ProjectIDs: projectIDs,
-		Query:      &request.Query,
-		Limit:      &limitPlusOne,
-		Offset:     &offset,
+	if request.Query != "" {
+		issueFind.Query = &request.Query
 	}
 
 	filters, err := parseFilter(request.Filter)
@@ -284,15 +162,6 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 	}
 	for _, spec := range filters {
 		switch spec.key {
-		case "principal":
-			if spec.operator != comparatorTypeEqual {
-				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "principal" filter`)
-			}
-			user, err := s.getUserByIdentifier(ctx, spec.value)
-			if err != nil {
-				return nil, err
-			}
-			issueFind.PrincipalID = &user.ID
 		case "creator":
 			if spec.operator != comparatorTypeEqual {
 				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "creator" filter`)
@@ -345,6 +214,13 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 			} else {
 				issueFind.CreatedTsBefore = &ts
 			}
+		case "create_time_after":
+			t, err := time.Parse(time.RFC3339, spec.value)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "failed to parse create_time_after %s, err: %v", spec.value, err)
+			}
+			ts := t.Unix()
+			issueFind.CreatedTsAfter = &ts
 		case "type":
 			if spec.operator != comparatorTypeEqual {
 				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "type" filter`)
@@ -419,7 +295,7 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
 		}
-		return &v1pb.SearchIssuesResponse{
+		return &v1pb.ListIssuesResponse{
 			Issues:        converted,
 			NextPageToken: nextPageToken,
 		}, nil
@@ -430,7 +306,7 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
 	}
-	return &v1pb.SearchIssuesResponse{
+	return &v1pb.ListIssuesResponse{
 		Issues:        converted,
 		NextPageToken: "",
 	}, nil
@@ -544,16 +420,20 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 		rolloutUID = &pipeline.ID
 	}
 
-	assigneeEmail, err := common.GetUserEmail(request.Issue.Assignee)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	assignee, err := s.store.GetUser(ctx, &store.FindUserMessage{Email: &assigneeEmail})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get user by email %q, error: %v", assigneeEmail, err)
-	}
-	if assignee == nil {
-		return nil, status.Errorf(codes.NotFound, "assignee not found for email: %q", assigneeEmail)
+	var issueAssignee *store.UserMessage
+	if request.Issue.Assignee != "" {
+		assigneeEmail, err := common.GetUserEmail(request.Issue.Assignee)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		assignee, err := s.store.GetUser(ctx, &store.FindUserMessage{Email: &assigneeEmail})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get user by email %q, error: %v", assigneeEmail, err)
+		}
+		if assignee == nil {
+			return nil, status.Errorf(codes.NotFound, "assignee not found for email: %q", assigneeEmail)
+		}
+		issueAssignee = assignee
 	}
 
 	issueCreateMessage := &store.IssueMessage{
@@ -564,7 +444,7 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 		Status:      api.IssueOpen,
 		Type:        api.IssueDatabaseGeneral,
 		Description: request.Issue.Description,
-		Assignee:    assignee,
+		Assignee:    issueAssignee,
 	}
 
 	issueCreateMessage.Payload = &storepb.IssuePayload{
@@ -628,14 +508,6 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 		return nil, status.Errorf(codes.NotFound, "project not found for id: %v", projectID)
 	}
 
-	assignee, err := s.store.GetUserByID(ctx, api.SystemBotID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get systemBot, error: %v", err)
-	}
-	if assignee == nil {
-		return nil, status.Errorf(codes.Internal, "systemBot not found")
-	}
-
 	if request.Issue.GrantRequest.GetRole() == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "expect grant request role")
 	}
@@ -685,7 +557,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 		Status:      api.IssueOpen,
 		Type:        api.IssueGrantRequest,
 		Description: request.Issue.Description,
-		Assignee:    assignee,
+		Assignee:    nil,
 	}
 
 	convertedGrantRequest, err := convertGrantRequest(ctx, s.store, request.Issue.GrantRequest)
@@ -1263,36 +1135,63 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 			patch.Subscribers = &subscribers
 
 		case "assignee":
-			assigneeEmail, err := common.GetUserEmail(request.Issue.Assignee)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "failed to get user email from %v, error: %v", request.Issue.Assignee, err)
+			oldAssigneeID := ""
+			if issue.Assignee != nil {
+				oldAssigneeID = strconv.Itoa(issue.Assignee.ID)
 			}
-			user, err := s.store.GetUser(ctx, &store.FindUserMessage{Email: &assigneeEmail})
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to get user %v, error: %v", assigneeEmail, err)
-			}
-			if user == nil {
-				return nil, status.Errorf(codes.NotFound, "user %v not found", request.Issue.Assignee)
-			}
-			patch.Assignee = user
+			if request.Issue.Assignee == "" {
+				patch.UpdateAssignee = true
+				patch.Assignee = nil
+				payload := &api.ActivityIssueFieldUpdatePayload{
+					FieldID:   api.IssueFieldAssignee,
+					OldValue:  oldAssigneeID,
+					NewValue:  "",
+					IssueName: issue.Title,
+				}
+				activityPayload, err := json.Marshal(payload)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to marshal activity payload, error: %v", err)
+				}
+				activityCreates = append(activityCreates, &store.ActivityMessage{
+					CreatorUID:   principalID,
+					ContainerUID: issue.UID,
+					Type:         api.ActivityIssueFieldUpdate,
+					Level:        api.ActivityInfo,
+					Payload:      string(activityPayload),
+				})
+			} else {
+				assigneeEmail, err := common.GetUserEmail(request.Issue.Assignee)
+				if err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, "failed to get user email from %v, error: %v", request.Issue.Assignee, err)
+				}
+				user, err := s.store.GetUser(ctx, &store.FindUserMessage{Email: &assigneeEmail})
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to get user %v, error: %v", assigneeEmail, err)
+				}
+				if user == nil {
+					return nil, status.Errorf(codes.NotFound, "user %v not found", request.Issue.Assignee)
+				}
+				patch.UpdateAssignee = true
+				patch.Assignee = user
 
-			payload := &api.ActivityIssueFieldUpdatePayload{
-				FieldID:   api.IssueFieldAssignee,
-				OldValue:  strconv.Itoa(issue.Assignee.ID),
-				NewValue:  strconv.Itoa(user.ID),
-				IssueName: issue.Title,
+				payload := &api.ActivityIssueFieldUpdatePayload{
+					FieldID:   api.IssueFieldAssignee,
+					OldValue:  oldAssigneeID,
+					NewValue:  strconv.Itoa(user.ID),
+					IssueName: issue.Title,
+				}
+				activityPayload, err := json.Marshal(payload)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to marshal activity payload, error: %v", err)
+				}
+				activityCreates = append(activityCreates, &store.ActivityMessage{
+					CreatorUID:   principalID,
+					ContainerUID: issue.UID,
+					Type:         api.ActivityIssueFieldUpdate,
+					Level:        api.ActivityInfo,
+					Payload:      string(activityPayload),
+				})
 			}
-			activityPayload, err := json.Marshal(payload)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to marshal activity payload, error: %v", err)
-			}
-			activityCreates = append(activityCreates, &store.ActivityMessage{
-				CreatorUID:   principalID,
-				ContainerUID: issue.UID,
-				Type:         api.ActivityIssueFieldUpdate,
-				Level:        api.ActivityInfo,
-				Payload:      string(activityPayload),
-			})
 		}
 	}
 
@@ -1633,7 +1532,7 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 		Description:          issue.Description,
 		Type:                 convertToIssueType(issue.Type),
 		Status:               convertToIssueStatus(issue.Status),
-		Assignee:             fmt.Sprintf("%s%s", common.UserNamePrefix, issue.Assignee.Email),
+		Assignee:             "",
 		Approvers:            nil,
 		ApprovalTemplates:    nil,
 		ApprovalFindingDone:  false,
@@ -1652,6 +1551,9 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 	}
 	if issue.PipelineUID != nil {
 		issueV1.Rollout = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, issue.Project.ResourceID, common.RolloutPrefix, *issue.PipelineUID)
+	}
+	if issue.Assignee != nil {
+		issueV1.Assignee = fmt.Sprintf("%s%s", common.UserNamePrefix, issue.Assignee.Email)
 	}
 
 	for _, subscriber := range issue.Subscribers {

@@ -1,4 +1,44 @@
-- statement: CREATE TABLE t(a int primary key, b int default 1)
+- statement: |-
+    CREATE TABLE t(
+      a int auto_increment primary key,
+      b int default 1,
+      c varchar(255) default 'default value',
+      d blob,
+      e json,
+      f geometry
+    );
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |-
+    CREATE TABLE t(
+      a geometry,
+      b point,
+      c linestring,
+      d polygon,
+      e multipoint,
+      f multilinestring,
+      g multipolygon,
+      h geometrycollection
+    );
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |-
+    CREATE TABLE t1(
+      a int primary key
+    );
+    CREATE TABLE t2(
+      a int auto_increment primary key
+    );
   want:
     - status: SUCCESS
       code: 0
@@ -33,5 +73,16 @@
       code: 420
       title: column.require-default
       content: Column `tech_book`.`a` doesn't have DEFAULT.
-      line: 4
+      line: 3
+      details: ""
+- statement: |-
+    ALTER TABLE tech_book ADD COLUMN a VARCHAR(255) DEFAULT 'default value';
+    ALTER TABLE tech_book MODIFY COLUMN a char(25) DEFAULT 'default';
+    ALTER TABLE tech_book CHANGE COLUMN a b int;
+  want:
+    - status: WARN
+      code: 420
+      title: column.require-default
+      content: Column `tech_book`.`b` doesn't have DEFAULT.
+      line: 3
       details: ""

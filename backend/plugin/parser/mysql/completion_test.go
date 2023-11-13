@@ -40,7 +40,7 @@ func TestCompletion(t *testing.T) {
 
 	for i, t := range tests {
 		text, caretOffset := catchCaret(t.Input)
-		result, err := base.Completion(storepb.Engine_MYSQL, text, 1, caretOffset, "db", getMetadataForTest)
+		result, err := base.Completion(context.Background(), storepb.Engine_MYSQL, text, 1, caretOffset, "db", getMetadataForTest)
 		a.NoError(err)
 		var filteredResult []base.Candidate
 		for _, r := range result {
@@ -95,6 +95,15 @@ func getMetadataForTest(_ context.Context, databaseName string) (*model.Database
 								Name: "c2",
 							},
 						},
+					},
+				},
+				Views: []*storepb.ViewMetadata{
+					{
+						Name: "v1",
+						Definition: `CREATE VIEW v1 AS
+						SELECT *
+						FROM t1
+						`,
 					},
 				},
 			},

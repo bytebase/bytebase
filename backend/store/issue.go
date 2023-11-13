@@ -53,7 +53,7 @@ type IssueMessage struct {
 
 	// Internal fields.
 	projectUID     int
-	assigneeUID    int
+	assigneeUID    *int
 	subscriberUIDs []int
 	creatorUID     int
 	createdTs      int64
@@ -63,10 +63,11 @@ type IssueMessage struct {
 
 // UpdateIssueMessage is the message for updating an issue.
 type UpdateIssueMessage struct {
-	Title       *string
-	Status      *api.IssueStatus
-	Description *string
-	Assignee    *UserMessage
+	Title          *string
+	Status         *api.IssueStatus
+	Description    *string
+	UpdateAssignee bool
+	Assignee       *UserMessage
 	// PayloadUpsert upserts the presented top-level keys.
 	PayloadUpsert *storepb.IssuePayload
 	Subscribers   *[]*UserMessage
@@ -80,8 +81,6 @@ type FindIssueMessage struct {
 	ProjectIDs *[]string
 	PlanUID    *int64
 	PipelineID *int
-	// Find issues where principalID is either creator, assignee or subscriber.
-	PrincipalID *int
 	// To support pagination, we add into creator, assignee and subscriber.
 	// Only principleID or one of the following three fields can be set.
 	CreatorID       *int
@@ -133,7 +132,9 @@ func (s *Store) GetIssueV2(ctx context.Context, find *FindIssueMessage) (*IssueM
 	issue := issues[0]
 
 	s.issueCache.Store(issue.UID, issue)
-	s.issueByPipelineCache.Store(issue.PipelineUID, issue)
+	if issue.PipelineUID != nil {
+		s.issueByPipelineCache.Store(*issue.PipelineUID, issue)
+	}
 	return issue, nil
 }
 
@@ -151,7 +152,10 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 	}
 
 	tsVector := getTsVector(fmt.Sprintf("%s %s", create.Title, create.Description))
-
+	var assigneeID *int
+	if create.Assignee != nil {
+		assigneeID = &create.Assignee.ID
+	}
 	query := `
 		INSERT INTO issue (
 			creator_id,
@@ -187,7 +191,7 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 		create.Status,
 		create.Type,
 		create.Description,
-		create.Assignee.ID,
+		assigneeID,
 		payload,
 		tsVector,
 	).Scan(
@@ -210,7 +214,9 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 	}
 
 	s.issueCache.Store(create.UID, create)
-	s.issueByPipelineCache.Store(create.PipelineUID, create)
+	if create.PipelineUID != nil {
+		s.issueByPipelineCache.Store(*create.PipelineUID, create)
+	}
 	return create, nil
 }
 
@@ -235,8 +241,12 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 	if v := patch.Description; v != nil {
 		set, args = append(set, fmt.Sprintf("description = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := patch.Assignee; v != nil {
-		set, args = append(set, fmt.Sprintf("assignee_id = $%d", len(args)+1)), append(args, v.ID)
+	if patch.UpdateAssignee {
+		if v := patch.Assignee; v != nil {
+			set, args = append(set, fmt.Sprintf("assignee_id = $%d", len(args)+1)), append(args, v.ID)
+		} else {
+			set = append(set, "assignee_id = NULL")
+		}
 	}
 	if v := patch.PayloadUpsert; v != nil {
 		p, err := protojson.Marshal(v)
@@ -289,7 +299,9 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 
 	// Invalid the cache and read the value again.
 	s.issueCache.Delete(uid)
-	s.issueByPipelineCache.Delete(oldIssue.PipelineUID)
+	if oldIssue.PipelineUID != nil {
+		s.issueByPipelineCache.Delete(*oldIssue.PipelineUID)
+	}
 	return s.GetIssueV2(ctx, &FindIssueMessage{UID: &uid})
 }
 
@@ -386,15 +398,6 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	}
 	if v := find.DatabaseUID; v != nil {
 		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.database_id = $%d)", len(args)+1)), append(args, *v)
-	}
-	if v := find.PrincipalID; v != nil {
-		if find.CreatorID != nil || find.AssigneeID != nil || find.SubscriberID != nil {
-			return nil, &common.Error{Code: common.Invalid, Err: errors.New("principal_id cannot be used with creator_id, assignee_id, or subscriber_id")}
-		}
-		where = append(where, fmt.Sprintf("(issue.creator_id = $%d OR issue.assignee_id = $%d OR EXISTS (SELECT 1 FROM issue_subscriber WHERE issue_subscriber.issue_id = issue.id AND issue_subscriber.subscriber_id = $%d))", len(args)+1, len(args)+2, len(args)+3))
-		args = append(args, *v)
-		args = append(args, *v)
-		args = append(args, *v)
 	}
 	if v := find.CreatorID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.creator_id = $%d", len(args)+1)), append(args, *v)
@@ -526,11 +529,13 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			return nil, err
 		}
 		issue.Project = project
-		assignee, err := s.GetUserByID(ctx, issue.assigneeUID)
-		if err != nil {
-			return nil, err
+		if issue.assigneeUID != nil {
+			assignee, err := s.GetUserByID(ctx, *issue.assigneeUID)
+			if err != nil {
+				return nil, err
+			}
+			issue.Assignee = assignee
 		}
-		issue.Assignee = assignee
 		creator, err := s.GetUserByID(ctx, issue.creatorUID)
 		if err != nil {
 			return nil, err
@@ -552,7 +557,9 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		issue.UpdatedTime = time.Unix(issue.updatedTs, 0)
 
 		s.issueCache.Store(issue.UID, issue)
-		s.issueByPipelineCache.Store(issue.PipelineUID, issue)
+		if issue.PipelineUID != nil {
+			s.issueByPipelineCache.Store(*issue.PipelineUID, issue)
+		}
 	}
 
 	return issues, nil
@@ -597,7 +604,7 @@ func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, issueUIDs []int, s
 		}
 	}
 	if err := rows.Err(); err != nil {
-		return errors.Wrapf(err, "failed to scan")
+		return errors.Wrapf(err, "failed to scan issues")
 	}
 
 	if err := tx.Commit(); err != nil {

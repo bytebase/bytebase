@@ -61,21 +61,24 @@
             {{ $t("plugin.ai.chat-sql") }}
           </template>
         </NTooltip>
-        <DataExportButton
-          v-if="showExportButton"
-          size="small"
-          :disabled="props.result === null || isEmpty(props.result)"
-          :support-formats="[
-            ExportFormat.CSV,
-            ExportFormat.JSON,
-            ExportFormat.SQL,
-            ExportFormat.XLSX,
-          ]"
-          @export="handleExportBtnClick"
-        />
-        <NButton v-else @click="state.showRequestExportPanel = true">
-          {{ $t("quick-action.request-export-data") }}
-        </NButton>
+        <template v-if="showExportButton">
+          <DataExportButton
+            v-if="allowToExport"
+            size="small"
+            :disabled="props.result === null || isEmpty(props.result)"
+            :support-formats="[
+              ExportFormat.CSV,
+              ExportFormat.JSON,
+              ExportFormat.SQL,
+              ExportFormat.XLSX,
+            ]"
+            :allow-specify-row-count="true"
+            @export="handleExportBtnClick"
+          />
+          <NButton v-else @click="state.showRequestExportPanel = true">
+            {{ $t("quick-action.request-export-data") }}
+          </NButton>
+        </template>
       </div>
     </div>
 
@@ -140,7 +143,6 @@ import { useDebounceFn } from "@vueuse/core";
 import { isEmpty } from "lodash-es";
 import { NInput, NPagination, NTooltip } from "naive-ui";
 import { BinaryLike } from "node:crypto";
-import { storeToRefs } from "pinia";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
@@ -152,7 +154,7 @@ import {
   featureToRef,
   useDatabaseV1Store,
   useCurrentUserV1,
-  useActuatorV1Store,
+  usePageMode,
 } from "@/store";
 import { useExportData } from "@/store/modules/export";
 import {
@@ -171,6 +173,7 @@ import {
   hasWorkspacePermissionV1,
   instanceV1HasStructuredQueryResult,
 } from "@/utils";
+import { customTheme } from "@/utils/customTheme";
 import DataTable from "./DataTable";
 import EmptyView from "./EmptyView.vue";
 import ErrorView from "./ErrorView.vue";
@@ -210,8 +213,7 @@ const databaseStore = useDatabaseV1Store();
 const currentUserV1 = useCurrentUserV1();
 const { exportData } = useExportData();
 const currentTab = computed(() => tabStore.currentTab);
-const actuatorStore = useActuatorV1Store();
-const { pageMode } = storeToRefs(actuatorStore);
+const pageMode = usePageMode();
 
 const viewMode = computed((): ViewMode => {
   const { result } = props;
@@ -236,6 +238,10 @@ const showSearchFeature = computed(() => {
 });
 
 const showExportButton = computed(() => {
+  return customTheme.value !== "lixiang";
+});
+
+const allowToExport = computed(() => {
   if (!featureToRef("bb.feature.access-control").value) {
     // The current plan doesn't have access control feature.
     // Fallback to true.
@@ -318,7 +324,8 @@ const pageSize = computed(() => {
 
 const handleExportBtnClick = async (
   format: ExportFormat,
-  callback: (content: BinaryLike | Blob, format: ExportFormat) => void
+  callback: (content: BinaryLike | Blob, format: ExportFormat) => void,
+  userSpecifiedLimit: number | undefined
 ) => {
   const { instanceId, databaseId } = tabStore.currentTab.connection;
   const instance = instanceStore.getInstanceByUID(instanceId).name;
@@ -328,7 +335,7 @@ const handleExportBtnClick = async (
       : databaseStore.getDatabaseByUID(databaseId).name;
   const statement = props.result.statement;
   const admin = tabStore.currentTab.mode === TabMode.Admin;
-  const limit = admin ? 0 : RESULT_ROWS_LIMIT;
+  const limit = userSpecifiedLimit ?? (admin ? 0 : RESULT_ROWS_LIMIT);
 
   const content = await exportData({
     database,

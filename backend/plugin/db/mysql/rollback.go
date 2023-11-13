@@ -240,6 +240,17 @@ func replacePrefix(line, old, new string) string {
 }
 
 func replaceColumns(columnNames []string, body []string, sepLine, lineSuffix, sectionSuffix string) ([]string, error) {
+	var equal string
+	switch sepLine {
+	case "SET":
+		equal = "="
+	case "WHERE":
+		// Use NULL-safe equal operator.
+		equal = "<=>"
+	default:
+		return nil, errors.Errorf("invalid sepLine %q", sepLine)
+	}
+
 	var ret []string
 	for i := 0; i < len(body); {
 		line := body[i]
@@ -261,9 +272,9 @@ func replaceColumns(columnNames []string, body []string, sepLine, lineSuffix, se
 				return nil, errors.Errorf("invalid value line %q, must starts with %q", line, prefix)
 			}
 			if j == len(columnNames)-1 {
-				ret = append(ret, fmt.Sprintf("  `%s`=%s%s", columnNames[j], strings.TrimPrefix(line, prefix), sectionSuffix))
+				ret = append(ret, fmt.Sprintf("  `%s`%s%s%s", columnNames[j], equal, strings.TrimPrefix(line, prefix), sectionSuffix))
 			} else {
-				ret = append(ret, fmt.Sprintf("  `%s`=%s%s", columnNames[j], strings.TrimPrefix(line, prefix), lineSuffix))
+				ret = append(ret, fmt.Sprintf("  `%s`%s%s%s", columnNames[j], equal, strings.TrimPrefix(line, prefix), lineSuffix))
 			}
 		}
 		i += len(columnNames)

@@ -160,6 +160,7 @@ import BatchIssueActionsV1 from "@/components/IssueV1/components/BatchIssueActio
 import CurrentApproverV1 from "@/components/IssueV1/components/CurrentApproverV1.vue";
 import IssueStatusIcon from "@/components/IssueV1/components/IssueStatusIcon.vue";
 import { useElementVisibilityInScrollParent } from "@/composables/useElementVisibilityInScrollParent";
+import { emitWindowEvent } from "@/plugins";
 import { useCurrentUserV1 } from "@/store";
 import { type ComposedIssue } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
@@ -280,7 +281,8 @@ const isIssueSelected = (issue: ComposedIssue): boolean => {
 const allSelectionState = computed(() => {
   const set = state.selectedIssueIdList;
 
-  const checked = props.issueList.every((issue) => set.has(issue.uid));
+  const checked =
+    set.size > 0 && props.issueList.every((issue) => set.has(issue.uid));
   const indeterminate =
     !checked && props.issueList.some((issue) => set.has(issue.uid));
 
@@ -332,6 +334,9 @@ const clickIssue = (
   row: number,
   e: MouseEvent
 ) => {
+  emitWindowEvent("bb.issue-detail", {
+    uid: issue.uid,
+  });
   const url = `/issue/${issueSlug(issue.title, issue.uid)}`;
   if (e.ctrlKey || e.metaKey) {
     window.open(url, "_blank");

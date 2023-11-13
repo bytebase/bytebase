@@ -18,10 +18,16 @@
     </div>
 
     <div v-show="state.tab === 'WAITING_APPROVAL'" class="mt-2">
-      <WaitingForMyApprovalIssueTableV1
+      <PagedIssueTableV1
         v-if="hasCustomApprovalFeature"
         session-key="project-waiting-approval"
-        :project="commonIssueFilter.project"
+        :issue-filter="{
+          ...commonIssueFilter,
+          statusList: [IssueStatus.OPEN],
+        }"
+        :ui-issue-filter="{
+          approval: 'pending',
+        }"
       >
         <template #table="{ issueList, loading }">
           <IssueTableV1
@@ -31,14 +37,13 @@
             title=""
           />
         </template>
-      </WaitingForMyApprovalIssueTableV1>
+      </PagedIssueTableV1>
     </div>
 
     <div v-show="state.tab === 'OPEN'" class="mt-2">
       <!-- show OPEN issues with pageSize=10 -->
       <PagedIssueTableV1
         session-key="project-open"
-        method="LIST"
         :issue-filter="{
           ...commonIssueFilter,
           statusList: [IssueStatus.OPEN],
@@ -62,7 +67,6 @@
       <!-- But won't show "Load more", since we have a "View all closed" link below -->
       <PagedIssueTableV1
         session-key="project-closed"
-        method="LIST"
         :issue-filter="{
           ...commonIssueFilter,
           statusList: [IssueStatus.DONE, IssueStatus.CANCELED],
@@ -98,7 +102,6 @@ import { reactive, PropType, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
-import WaitingForMyApprovalIssueTableV1 from "@/components/IssueV1/components/WaitingForMyApprovalIssueTableV1.vue";
 import { TabFilterItem } from "@/components/v2";
 import { featureToRef, useCurrentUserV1 } from "@/store";
 import { userNamePrefix } from "@/store/modules/v1/common";

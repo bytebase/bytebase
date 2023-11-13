@@ -275,7 +275,9 @@
     "filter-by-name": "Filter by name",
     "tenant": "Tenant",
     "license": "License",
-    "show-all": "Show all"
+    "show-all": "Show all",
+    "view-details": "View details",
+    "force-verb": "Force {verb}"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -393,7 +395,10 @@
         "some-tasks-are-not-editable-in-batch-mode": "Some tasks are not editable in batch mode",
         "task-is-not-editable": "This task is not editable",
         "x-status-task-is-not-editable": "{status} task is not editable",
-        "nothing-changed": "Nothing changed"
+        "nothing-changed": "Nothing changed",
+        "not-applicable": {
+          "some-tasks-dont-meet-ghost-requirement": "Some tasks don't meet gh-ost's requirement"
+        }
       },
       "show-default-parameters": "Show default parameters",
       "hide-default-parameters": "Hide default parameters"
@@ -664,7 +669,7 @@
     "sensitive-data": {
       "description": "Following columns are explicitly assigned masking levels and take predence over the global masking rule.",
       "remove-sensitive-column-tips": "Expose this column?",
-      "sensitive-column-list": "Explict Masked Column List",
+      "sensitive-column-list": "Explicit Masked Columns",
       "global-masking-rule": "Global Masking Rule",
       "grant-access": "Grant Access",
       "never-expires": "Never expires",
@@ -690,34 +695,44 @@
         },
         "template": {
           "address": {
-            "title": "Address"
+            "title": "Address",
+            "description": ""
           },
           "secret_key": {
-            "title": "Encryption Key"
+            "title": "Encryption Key",
+            "description": ""
           },
           "card_number": {
-            "title": "Bank card, credit card, etc"
+            "title": "Bank card, credit card, etc",
+            "description": ""
           },
           "email": {
-            "title": "Email address"
+            "title": "Email address",
+            "description": ""
           },
           "id_number": {
-            "title": "Personal ID number"
+            "title": "Personal ID number",
+            "description": ""
           },
           "ipv4_address": {
-            "title": "IPv4 address"
+            "title": "IPv4 address",
+            "description": ""
           },
           "license_plate_number": {
-            "title": "Plate number"
+            "title": "Plate number",
+            "description": ""
           },
           "mac_address": {
-            "title": "MAC address"
+            "title": "MAC address",
+            "description": ""
           },
           "password": {
-            "title": "Password"
+            "title": "Password",
+            "description": ""
           },
           "phone": {
-            "title": "Phone number"
+            "title": "Phone number",
+            "description": ""
           }
         }
       },
@@ -740,6 +755,8 @@
           "masking-type": "Masking type",
           "delete": "Delete this algorithm?"
         },
+        "mask": "Mask",
+        "hash": "Hash",
         "full-mask": {
           "self": "Full mask",
           "substitution": "Substitution",
@@ -747,12 +764,13 @@
         },
         "range-mask": {
           "self": "Range mask",
+          "label": "Range mask will replace the original value from start index to end index (end not included) with the substitution.",
           "slice-start": "Slice start",
           "slice-start-label": "Slice start is the start index of the original value, start from 0 and should be less than stop.",
           "slice-end": "Slice end",
           "slice-end-label": "Slice stop is the stop index of the original value, should be less than the length of the original value.",
           "substitution": "Substitution",
-          "substitution-label": "Substitution is the string used to replace the original value from start to end."
+          "substitution-label": "Substitution is the string used to replace the original value [start:end)."
         },
         "md5-mask": {
           "self": "MD5 mask",
@@ -763,7 +781,7 @@
       "masking-level": {
         "self": "Masking Level",
         "selet-level": "Select level",
-        "masking_level_unspecified": "Follow global masking rules",
+        "masking_level_unspecified": "Follow global rules",
         "none": "None",
         "partial": "Partial",
         "full": "Full"
@@ -863,7 +881,8 @@
       "schema-version": "schema version {version}",
       "xxx-automatically": "{verb} automatically",
       "verb-type-target-by-people": "{verb} {type} {target}",
-      "verb-type-target-by-system-bot": "{type} {target} {verb}"
+      "verb-type-target-by-system-bot": "{type} {target} {verb}",
+      "changed-x-link": "changed {name}. {link}"
     },
     "subject-prefix": {
       "task": "Task",
@@ -953,6 +972,18 @@
         "principal": {
           "title": "Related Principal",
           "description": "Search by the issue creator, assignee or subscriber"
+        },
+        "approver": {
+          "title": "Approver",
+          "description": "Search by the issue approver"
+        },
+        "approval": {
+          "value": {
+            "pending": "Pending approval",
+            "approved": "Approved"
+          },
+          "description": "Search by the issue approval status",
+          "title": "Approval Status"
         }
       }
     },
@@ -1079,12 +1110,11 @@
       "continue-anyway": "Continue anyway",
       "sql-review-violations": "SQL Review Violations"
     },
-    "no-assignee-candidates": "There is no valid assignee candidates in this project. Please contact the project owner.",
-    "allow-any-following-roles-to-be-assignee": "Allow any following roles to be assignee",
     "error": {
       "issue-is-not-open": "The issue is not open",
       "you-don-have-privilege-to-edit-this-issue": "You don't have privilege to edit this issue"
-    }
+    },
+    "approval-requested": "Approval Requested"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
@@ -2010,7 +2040,7 @@
       "at-least-one-stage": "At least 1 stage",
       "stage-name-required": "Stage name is required",
       "at-least-one-selector": "At least 1 selector in each stage",
-      "env-in-selector-required": "\"Environment ID\" is required in each stage",
+      "env-in-selector-required": "\"Environment\" is required in each stage",
       "env-selector-must-has-one-value": "\"Environment ID\" must has exactly one value",
       "key-required": "Key is required",
       "values-required": "Values are required"
@@ -3253,5 +3283,14 @@
     "confirm-remove-change": "Remove this change?",
     "delete-this-changelist": "Delete this changelist",
     "confirm-delete-changelist": "Delete this changelist?"
+  },
+  "export-data": {
+    "self": "Export Data",
+    "export-rows": "Export rows",
+    "error": {
+      "export-rows-required": "Export rows required",
+      "export-rows-must-gt-zero": "Export rows must greater than 0"
+    },
+    "export-format": "Export format"
   }
 }

@@ -10,6 +10,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sourcegraph/go-lsp"
 	"github.com/sourcegraph/jsonrpc2"
+
+	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 type Method string
@@ -30,8 +35,8 @@ const (
 )
 
 // NewHandler creates a new Language Server Protocol handler.
-func NewHandler() jsonrpc2.Handler {
-	return lspHandler{jsonrpc2.HandlerWithError((&Handler{}).handle)}
+func NewHandler(s *store.Store) jsonrpc2.Handler {
+	return lspHandler{jsonrpc2.HandlerWithError((&Handler{store: s}).handle)}
 }
 
 type lspHandler struct {
@@ -52,6 +57,7 @@ type Handler struct {
 	fs       *MemFS
 	init     *lsp.InitializeParams // set by LSPMethodInitialize request
 	metadata *SetMetadataCommandArguments
+	store    *store.Store
 
 	shutDown bool
 }
@@ -70,7 +76,52 @@ func (h *Handler) ShutDown() {
 func (h *Handler) setMetadata(arg SetMetadataCommandArguments) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	h.metadata = &arg
+	tmp := arg
+	h.metadata = &tmp
+}
+
+func (h *Handler) getDefaultDatabase() string {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if h.metadata == nil {
+		return ""
+	}
+	return h.metadata.DatabaseName
+}
+
+func (h *Handler) getInstanceID() string {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if h.metadata == nil {
+		slog.Error("Metadata is not set")
+		return ""
+	}
+	id, err := common.GetInstanceID(h.metadata.InstanceID)
+	if err != nil {
+		slog.Error("Failed to get instance ID", log.BBError(err), slog.String("instanceID", h.metadata.InstanceID))
+		return ""
+	}
+	return id
+}
+
+func (h *Handler) getEngineType(ctx context.Context) storepb.Engine {
+	instanceID := h.getInstanceID()
+	if instanceID == "" {
+		return storepb.Engine_ENGINE_UNSPECIFIED
+	}
+
+	instance, err := h.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		ResourceID: &instanceID,
+	})
+	if err != nil {
+		slog.Error("Failed to get instance", log.BBError(err))
+		return storepb.Engine_ENGINE_UNSPECIFIED
+	}
+	if instance == nil {
+		slog.Error("Instance not found", slog.String("instanceID", instanceID))
+		return storepb.Engine_ENGINE_UNSPECIFIED
+	}
+	return instance.Engine
 }
 
 func (h *Handler) checkInitialized(req *jsonrpc2.Request) error {
@@ -100,6 +151,16 @@ func (h *Handler) reset(params *lsp.InitializeParams) error {
 }
 
 func (h *Handler) handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) (any, error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err, ok := r.(error)
+			if !ok {
+				err = errors.Errorf("panic: %v", r)
+			}
+			slog.Error("Panic in LSP handler", log.BBError(err), slog.String("method", req.Method), log.BBStack("panic-stack"))
+		}
+	}()
+
 	if err := h.checkInitialized(req); err != nil {
 		return nil, err
 	}
