@@ -1,10 +1,9 @@
 <template>
   <div class="w-full mt-4 space-y-4">
-    <FeatureAttentionForInstanceLicense
-      v-if="hasSensitiveDataFeature"
+    <FeatureAttention
+      v-if="!hasSensitiveDataFeature"
       feature="bb.feature.sensitive-data"
     />
-    <FeatureAttention v-else feature="bb.feature.sensitive-data" />
     <NTabs v-model:value="state.selectedTab" type="line">
       <NTabPane
         name="sensitive-column-list"
