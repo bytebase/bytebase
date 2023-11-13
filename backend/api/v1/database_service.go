@@ -2815,7 +2815,34 @@ func convertTableMetadata(table *storepb.TableMetadata, view v1pb.DatabaseMetada
 			MatchType:         foreignKey.MatchType,
 		})
 	}
+	for _, partition := range table.Partitions {
+		t.Partitions = append(t.Partitions, convertTablePartitionMetadata(partition))
+	}
 	return t
+}
+
+func convertTablePartitionMetadata(partition *storepb.TablePartitionMetadata) *v1pb.TablePartitionMetadata {
+	if partition == nil {
+		return nil
+	}
+	metadata := &v1pb.TablePartitionMetadata{
+		Name:       partition.Name,
+		Expression: partition.Expression,
+	}
+	switch partition.Type {
+	case storepb.TablePartitionMetadata_RANGE:
+		metadata.Type = v1pb.TablePartitionMetadata_RANGE
+	case storepb.TablePartitionMetadata_LIST:
+		metadata.Type = v1pb.TablePartitionMetadata_LIST
+	case storepb.TablePartitionMetadata_HASH:
+		metadata.Type = v1pb.TablePartitionMetadata_HASH
+	default:
+		metadata.Type = v1pb.TablePartitionMetadata_TYPE_UNSPECIFIED
+	}
+	for _, subpartition := range partition.Subpartitions {
+		metadata.Subpartitions = append(metadata.Subpartitions, convertTablePartitionMetadata(subpartition))
+	}
+	return metadata
 }
 
 func convertColumnMetadata(column *storepb.ColumnMetadata) *v1pb.ColumnMetadata {
