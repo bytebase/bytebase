@@ -16,7 +16,7 @@ const props = withDefaults(
   defineProps<{
     filename?: string;
     content: string;
-    language: Language;
+    language?: Language;
   }>(),
   {
     filename: undefined,
