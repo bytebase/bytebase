@@ -76,3 +76,10 @@ func (t tableColumnTypes) delete(tableName string, columnName string) {
 	}
 	delete(t[tableName], columnName)
 }
+
+type tableData struct {
+	tableName                string
+	defaultCurrentTimeCount  int
+	onUpdateCurrentTimeCount int
+	line                     int
+}

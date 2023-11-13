@@ -92,6 +92,8 @@ func TestMySQLWIPRules(t *testing.T) {
 
 		// advisor.SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
 		advisor.SchemaRuleSchemaBackwardCompatibility,
+		// advisor.SchemaRuleCurrentTimeColumnCountLimit enforce the current column count limit.
+		advisor.SchemaRuleCurrentTimeColumnCountLimit,
 
 		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL support check if the database is empty before users drop it.
 		advisor.SchemaRuleDropEmptyDatabase,
