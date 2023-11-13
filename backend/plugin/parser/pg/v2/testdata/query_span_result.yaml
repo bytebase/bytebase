@@ -217,12 +217,6 @@
         database: db
         schema: public
         table: t
-        column: a
-      : true
-      ? server: ""
-        database: db
-        schema: public
-        table: t
         column: b
       : true
       ? server: ""
@@ -230,6 +224,12 @@
         schema: public
         table: t
         column: c
+      : true
+      ? server: ""
+        database: db
+        schema: public
+        table: t
+        column: a
       : true
 - description: Multiple-Row subquery in where clause
   statement: SELECT 1 FROM t WHERE a IN (SELECT a FROM t);
@@ -366,13 +366,13 @@
         database: db
         schema: public
         table: t
-        column: a
+        column: b
       : true
       ? server: ""
         database: db
         schema: public
         table: t
-        column: b
+        column: a
       : true
   - name: c2
     sourcecolumns:
@@ -394,28 +394,16 @@
         database: db
         schema: public
         table: t
-        column: a
+        column: b
       : true
       ? server: ""
         database: db
         schema: public
         table: t
-        column: b
+        column: a
       : true
   - name: ?column?
     sourcecolumns:
-      ? server: ""
-        database: db
-        schema: public
-        table: t
-        column: b
-      : true
-      ? server: ""
-        database: db
-        schema: public
-        table: t
-        column: a
-      : true
       ? server: ""
         database: db
         schema: public
@@ -427,6 +415,18 @@
         schema: public
         table: t
         column: d
+      : true
+      ? server: ""
+        database: db
+        schema: public
+        table: t
+        column: b
+      : true
+      ? server: ""
+        database: db
+        schema: public
+        table: t
+        column: a
       : true
 - description: Test for JOIN with USING clause
   statement: SELECT * FROM t AS t1 JOIN t AS t2 USING(a);
@@ -725,13 +725,13 @@
         database: db
         schema: public
         table: t
-        column: a
+        column: b
       : true
       ? server: ""
         database: db
         schema: public
         table: t
-        column: b
+        column: a
       : true
   - name: cc2
     sourcecolumns:
@@ -753,12 +753,6 @@
         database: db
         schema: public
         table: t
-        column: b
-      : true
-      ? server: ""
-        database: db
-        schema: public
-        table: t
         column: a
       : true
       ? server: ""
@@ -766,6 +760,12 @@
         schema: public
         table: t
         column: c
+      : true
+      ? server: ""
+        database: db
+        schema: public
+        table: t
+        column: b
       : true
   - name: "n"
     sourcecolumns: {}

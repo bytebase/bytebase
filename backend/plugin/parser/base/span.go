@@ -58,7 +58,11 @@ type TableSource interface {
 	// Interface guard to forbid other types outside this package to implement this interface.
 	isTableSource()
 	GetQuerySpanResult() []*QuerySpanResult
-	GetName() string
+
+	GetTableName() string
+	GetSchemaName() string
+	GetDatabaseName() string
+	GetServerName() string
 }
 
 // baseTableSource is the base implementation table source.
@@ -88,8 +92,20 @@ func (p PseudoTable) GetQuerySpanResult() []*QuerySpanResult {
 	return result
 }
 
-func (p PseudoTable) GetName() string {
+func (p PseudoTable) GetTableName() string {
 	return p.Name
+}
+
+func (p PseudoTable) GetSchemaName() string {
+	return ""
+}
+
+func (p PseudoTable) GetDatabaseName() string {
+	return ""
+}
+
+func (p PseudoTable) GetServerName() string {
+	return ""
 }
 
 func (p PseudoTable) SetColumnName(i int, name string) {
@@ -112,8 +128,20 @@ type PhysicalTable struct {
 	Columns []string
 }
 
-func (p PhysicalTable) GetName() string {
+func (p PhysicalTable) GetTableName() string {
 	return p.Name
+}
+
+func (p PhysicalTable) GetSchemaName() string {
+	return p.Schema
+}
+
+func (p PhysicalTable) GetDatabaseName() string {
+	return p.Database
+}
+
+func (p PhysicalTable) GetServerName() string {
+	return p.Server
 }
 
 func (p PhysicalTable) GetQuerySpanResult() []*QuerySpanResult {
