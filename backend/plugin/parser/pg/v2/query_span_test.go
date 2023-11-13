@@ -21,7 +21,8 @@ func TestGetQuerySpanResult(t *testing.T) {
 		Description       string `yaml:"description"`
 		Statement         string `yaml:"statement"`
 		ConnectedDatabase string `yaml:"connectedDatabase"`
-		// metadata is the protojson encoded storepb.DatabaseSchemaMetadata.
+		// Metadata is the protojson encoded storepb.DatabaseSchemaMetadata,
+		// if it's empty, we will use the defaultDatabaseMetadata.
 		Metadata   string                  `yaml:"metadata"`
 		SpanResult []*base.QuerySpanResult `yaml:"spanResult"`
 	}

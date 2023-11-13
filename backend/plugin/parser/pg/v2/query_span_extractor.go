@@ -17,6 +17,10 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
+const (
+	pgUnknownFieldName = "?column?"
+)
+
 // querySpanExtractor is the extractor to extract the query span from the given pgquery.RawStmt.
 type querySpanExtractor struct {
 	ctx         context.Context
@@ -274,7 +278,9 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(node *pgquery.Node_Sel
 			// XXX(zp): Should we handle the AS case?
 			columnName := resTarget.ResTarget.Name
 			if columnName == "" {
-				columnName = fmt.Sprintf("column%d", len(result.Columns)+1)
+				if columnName, err = pgExtractFieldName(resTarget.ResTarget.Val); err != nil {
+					return nil, errors.Wrapf(err, "failed to extract field name from expression: %+v", resTarget.ResTarget.Val)
+				}
 			}
 			result.Columns = append(result.Columns, &base.QuerySpanResult{
 				Name:          columnName,
@@ -777,4 +783,155 @@ func pgExtractAlias(alias *pgquery.Alias) (string, []string, error) {
 		columnNameList = append(columnNameList, stringNode.String_.Sval)
 	}
 	return alias.Aliasname, columnNameList, nil
+}
+
+func pgExtractFieldName(node *pgquery.Node) (string, error) {
+	if node == nil || node.Node == nil {
+		return pgUnknownFieldName, nil
+	}
+	switch node := node.Node.(type) {
+	case *pgquery.Node_ResTarget:
+		if node.ResTarget.Name != "" {
+			return node.ResTarget.Name, nil
+		}
+		return pgExtractFieldName(node.ResTarget.Val)
+	case *pgquery.Node_ColumnRef:
+		columnRef, err := pgrawparser.ConvertNodeListToColumnNameDef(node.ColumnRef.Fields)
+		if err != nil {
+			return "", err
+		}
+		return columnRef.ColumnName, nil
+	case *pgquery.Node_FuncCall:
+		lastNode, yes := node.FuncCall.Funcname[len(node.FuncCall.Funcname)-1].Node.(*pgquery.Node_String_)
+		if !yes {
+			return "", errors.Errorf("expect Node_string_ but found %T", node.FuncCall.Funcname[len(node.FuncCall.Funcname)-1].Node)
+		}
+		return lastNode.String_.Sval, nil
+	case *pgquery.Node_XmlExpr:
+		switch node.XmlExpr.Op {
+		case pgquery.XmlExprOp_IS_XMLCONCAT:
+			return "xmlconcat", nil
+		case pgquery.XmlExprOp_IS_XMLELEMENT:
+			return "xmlelement", nil
+		case pgquery.XmlExprOp_IS_XMLFOREST:
+			return "xmlforest", nil
+		case pgquery.XmlExprOp_IS_XMLPARSE:
+			return "xmlparse", nil
+		case pgquery.XmlExprOp_IS_XMLPI:
+			return "xmlpi", nil
+		case pgquery.XmlExprOp_IS_XMLROOT:
+			return "xmlroot", nil
+		case pgquery.XmlExprOp_IS_XMLSERIALIZE:
+			return "xmlserialize", nil
+		case pgquery.XmlExprOp_IS_DOCUMENT:
+			return pgUnknownFieldName, nil
+		}
+	case *pgquery.Node_TypeCast:
+		// return the arg name
+		columnName, err := pgExtractFieldName(node.TypeCast.Arg)
+		if err != nil {
+			return "", err
+		}
+		if columnName != pgUnknownFieldName {
+			return columnName, nil
+		}
+		// return the type name
+		if node.TypeCast.TypeName != nil {
+			lastName, yes := node.TypeCast.TypeName.Names[len(node.TypeCast.TypeName.Names)-1].Node.(*pgquery.Node_String_)
+			if !yes {
+				return "", errors.Errorf("expect Node_string_ but found %T", node.TypeCast.TypeName.Names[len(node.TypeCast.TypeName.Names)-1].Node)
+			}
+			return lastName.String_.Sval, nil
+		}
+	case *pgquery.Node_AConst:
+		return pgUnknownFieldName, nil
+	case *pgquery.Node_AExpr:
+		return pgUnknownFieldName, nil
+	case *pgquery.Node_CaseExpr:
+		return "case", nil
+	case *pgquery.Node_AArrayExpr:
+		return "array", nil
+	case *pgquery.Node_NullTest:
+		return pgUnknownFieldName, nil
+	case *pgquery.Node_XmlSerialize:
+		return "xmlserialize", nil
+	case *pgquery.Node_ParamRef:
+		return pgUnknownFieldName, nil
+	case *pgquery.Node_BoolExpr:
+		return pgUnknownFieldName, nil
+	case *pgquery.Node_SubLink:
+		switch node.SubLink.SubLinkType {
+		case pgquery.SubLinkType_EXISTS_SUBLINK:
+			return "exists", nil
+		case pgquery.SubLinkType_ARRAY_SUBLINK:
+			return "array", nil
+		case pgquery.SubLinkType_EXPR_SUBLINK:
+			if node.SubLink.Subselect != nil {
+				selectNode, yes := node.SubLink.Subselect.Node.(*pgquery.Node_SelectStmt)
+				if !yes {
+					return pgUnknownFieldName, nil
+				}
+				if len(selectNode.SelectStmt.TargetList) == 1 {
+					return pgExtractFieldName(selectNode.SelectStmt.TargetList[0])
+				}
+				return pgUnknownFieldName, nil
+			}
+		default:
+			return pgUnknownFieldName, nil
+		}
+	case *pgquery.Node_RowExpr:
+		return "row", nil
+	case *pgquery.Node_CoalesceExpr:
+		return "coalesce", nil
+	case *pgquery.Node_SetToDefault:
+		return pgUnknownFieldName, nil
+	case *pgquery.Node_AIndirection:
+		// TODO(rebelice): we do not deal with the A_Indirection. Fix it.
+		return pgUnknownFieldName, nil
+	case *pgquery.Node_CollateClause:
+		return pgExtractFieldName(node.CollateClause.Arg)
+	case *pgquery.Node_CurrentOfExpr:
+		return pgUnknownFieldName, nil
+	case *pgquery.Node_SqlvalueFunction:
+		switch node.SqlvalueFunction.Op {
+		case pgquery.SQLValueFunctionOp_SVFOP_CURRENT_DATE:
+			return "current_date", nil
+		case pgquery.SQLValueFunctionOp_SVFOP_CURRENT_TIME, pgquery.SQLValueFunctionOp_SVFOP_CURRENT_TIME_N:
+			return "current_time", nil
+		case pgquery.SQLValueFunctionOp_SVFOP_CURRENT_TIMESTAMP, pgquery.SQLValueFunctionOp_SVFOP_CURRENT_TIMESTAMP_N:
+			return "current_timestamp", nil
+		case pgquery.SQLValueFunctionOp_SVFOP_LOCALTIME, pgquery.SQLValueFunctionOp_SVFOP_LOCALTIME_N:
+			return "localtime", nil
+		case pgquery.SQLValueFunctionOp_SVFOP_LOCALTIMESTAMP, pgquery.SQLValueFunctionOp_SVFOP_LOCALTIMESTAMP_N:
+			return "localtimestamp", nil
+		case pgquery.SQLValueFunctionOp_SVFOP_CURRENT_ROLE:
+			return "current_role", nil
+		case pgquery.SQLValueFunctionOp_SVFOP_CURRENT_USER:
+			return "current_user", nil
+		case pgquery.SQLValueFunctionOp_SVFOP_USER:
+			return "user", nil
+		case pgquery.SQLValueFunctionOp_SVFOP_SESSION_USER:
+			return "session_user", nil
+		case pgquery.SQLValueFunctionOp_SVFOP_CURRENT_CATALOG:
+			return "current_catalog", nil
+		case pgquery.SQLValueFunctionOp_SVFOP_CURRENT_SCHEMA:
+			return "current_schema", nil
+		default:
+			return pgUnknownFieldName, nil
+		}
+	case *pgquery.Node_MinMaxExpr:
+		switch node.MinMaxExpr.Op {
+		case pgquery.MinMaxOp_IS_GREATEST:
+			return "greatest", nil
+		case pgquery.MinMaxOp_IS_LEAST:
+			return "least", nil
+		default:
+			return pgUnknownFieldName, nil
+		}
+	case *pgquery.Node_BooleanTest:
+		return pgUnknownFieldName, nil
+	case *pgquery.Node_GroupingFunc:
+		return "grouping", nil
+	}
+	return pgUnknownFieldName, nil
 }

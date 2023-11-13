@@ -569,11 +569,11 @@ func (extractor *fieldExtractor) pgExtractSelect(node *pgquery.Node_SelectStmt) 
 	return result, nil
 }
 
-func pgExtractFieldName(in *pgquery.Node) (string, error) {
-	if in == nil || in.Node == nil {
+func pgExtractFieldName(node *pgquery.Node) (string, error) {
+	if node == nil || node.Node == nil {
 		return pgUnknownFieldName, nil
 	}
-	switch node := in.Node.(type) {
+	switch node := node.Node.(type) {
 	case *pgquery.Node_ResTarget:
 		if node.ResTarget.Name != "" {
 			return node.ResTarget.Name, nil

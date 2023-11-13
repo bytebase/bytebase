@@ -58,8 +58,6 @@ type TableSource interface {
 	// Interface guard to forbid other types outside this package to implement this interface.
 	isTableSource()
 	GetQuerySpanResult() []*QuerySpanResult
-	// SetColumnName sets the i th column name, which is useful in handle AS clause.
-	SetColumnName(i int, name string)
 	GetName() string
 }
 
