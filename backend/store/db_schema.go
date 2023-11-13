@@ -19,11 +19,6 @@ type UpdateDBSchemaMessage struct {
 
 // GetDBSchema gets the schema for a database.
 func (s *Store) GetDBSchema(ctx context.Context, databaseID int) (*model.DBSchema, error) {
-	instanceCount := 0
-	s.instanceCache.Range(func(key, value any) bool {
-		instanceCount++
-		return true
-	})
 	if v, ok := s.dbSchemaCache.Get(databaseID); ok {
 		return v, nil
 	}

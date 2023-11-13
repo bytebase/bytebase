@@ -104,17 +104,15 @@ func (s *Store) ListUsers(ctx context.Context, find *FindUserMessage) ([]*UserMe
 	}
 
 	for _, user := range users {
-		s.userIDCache.Store(user.ID, user)
+		s.userIDCache.Add(user.ID, user)
 	}
 	return users, nil
 }
 
 // GetUserByID gets the user by ID.
 func (s *Store) GetUserByID(ctx context.Context, id int) (*UserMessage, error) {
-	if user, ok := s.userIDCache.Load(id); ok {
-		if v, ok := user.(*UserMessage); ok {
-			return v, nil
-		}
+	if v, ok := s.userIDCache.Get(id); ok {
+		return v, nil
 	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -138,7 +136,7 @@ func (s *Store) GetUserByID(ctx context.Context, id int) (*UserMessage, error) {
 		return nil, err
 	}
 
-	s.userIDCache.Store(user.ID, user)
+	s.userIDCache.Add(user.ID, user)
 	return user, nil
 }
 
@@ -314,7 +312,7 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 		Phone:        create.Phone,
 		Role:         role,
 	}
-	s.userIDCache.Store(user.ID, user)
+	s.userIDCache.Add(user.ID, user)
 	return user, nil
 }
 
@@ -417,7 +415,7 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	s.userIDCache.Store(user.ID, user)
+	s.userIDCache.Add(user.ID, user)
 	if patch.Email != nil && patch.Phone != nil {
 		s.projectIDPolicyCache.Purge()
 		s.projectPolicyCache.Purge()
