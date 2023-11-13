@@ -59,6 +59,11 @@ export default defineConfig(() => {
           changeOrigin: true,
           ws: true,
         },
+        "/lsp": {
+          target: `ws://${extractHostPort(LOCAL_ENDPOINT)}/`,
+          changeOrigin: true,
+          ws: true,
+        },
         "/api": {
           target: `${LOCAL_ENDPOINT}/api`,
           changeOrigin: true,

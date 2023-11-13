@@ -6,3 +6,4 @@ export * from "./useFormatContent";
 export * from "./useSuggestOptionByLanguage";
 export * from "./useAdvices";
 export * from "./useAutoHeight";
+export * from "./useAutoComplete";

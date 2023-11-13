@@ -128,6 +128,10 @@
         :dialect="dialect"
         :advices="isEditorReadonly ? markers : []"
         :auto-height="{ min: 120, max: 360 }"
+        :auto-complete-context="{
+          instance: database.instance,
+          database: database.name,
+        }"
         @update:content="handleStatementChange"
         @ready="handleMonacoEditorReady"
       />
@@ -232,15 +236,15 @@ const editorRef = ref<InstanceType<typeof MonacoEditor>>();
 const { updateEditorAutoCompletionContext } =
   useEditorAutoCompletion(editorRef);
 
-const selectedDatabase = computed(() => {
+const database = computed(() => {
   return databaseForTask(issue.value, selectedTask.value);
 });
 
 const language = useInstanceV1EditorLanguage(
-  computed(() => selectedDatabase.value.instanceEntity)
+  computed(() => database.value.instanceEntity)
 );
 const dialect = computed((): SQLDialect => {
-  const db = selectedDatabase.value;
+  const db = database.value;
   return dialectOfEngineV1(db.instanceEntity.engine);
 });
 const statementTitle = computed(() => {

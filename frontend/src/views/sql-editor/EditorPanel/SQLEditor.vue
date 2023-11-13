@@ -10,6 +10,10 @@
       :dialect="dialect"
       :readonly="readonly"
       :advices="advices"
+      :auto-complete-context="{
+        instance: instance.name,
+        database: database.name,
+      }"
       @update:content="handleChange"
       @select-content="handleChangeSelection"
       @ready="handleEditorReady"
@@ -33,6 +37,7 @@ import {
   useUIStateStore,
   useInstanceV1ByUID,
   useSheetAndTabStore,
+  useDatabaseV1ByUID,
 } from "@/store";
 import {
   dialectOfEngineV1,
@@ -76,6 +81,9 @@ const advices = computed((): AdviceOption[] => {
 });
 const { instance } = useInstanceV1ByUID(
   computed(() => tabStore.currentTab.connection.instanceId)
+);
+const { database } = useDatabaseV1ByUID(
+  computed(() => tabStore.currentTab.connection.databaseId)
 );
 const instanceEngine = computed(() => {
   return formatEngineV1(instance.value);

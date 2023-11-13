@@ -23,8 +23,10 @@ import {
 } from "vue";
 import type { SQLDialect } from "@/types";
 import {
+  AutoCompleteContext,
   AutoHeightOptions,
   useAdvices,
+  useAutoComplete,
   useAutoHeight,
   useContent,
   useFormatContent,
@@ -43,6 +45,7 @@ const props = withDefaults(
     readonly?: boolean;
     autoFocus?: boolean;
     autoHeight?: AutoHeightOptions;
+    autoCompleteContext?: AutoCompleteContext;
     advices?: AdviceOption[];
     options?: monaco.editor.IStandaloneEditorConstructionOptions;
   }>(),
@@ -52,6 +55,7 @@ const props = withDefaults(
     readonly: false,
     autoFocus: true,
     autoHeight: undefined,
+    autoCompleteContext: undefined,
     advices: () => [],
     options: undefined,
   }
@@ -105,6 +109,7 @@ onMounted(async () => {
     const selectedContent = useSelectedContent(monaco, editor);
     useAdvices(monaco, editor, toRef(props, "advices"));
     useAutoHeight(monaco, editor, containerRef, toRef(props, "autoHeight"));
+    useAutoComplete(monaco, editor, toRef(props, "autoCompleteContext"));
 
     ready.value = true;
 

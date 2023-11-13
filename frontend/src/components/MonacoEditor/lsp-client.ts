@@ -2,6 +2,7 @@ import { MonacoLanguageClient } from "monaco-languageclient";
 import {
   CloseAction,
   ErrorAction,
+  ExecuteCommandParams,
   MessageTransports,
 } from "vscode-languageclient";
 import {
@@ -21,7 +22,7 @@ export const createLanguageClient = (
       // disable the default error handler
       errorHandler: {
         error: () => ({ action: ErrorAction.Continue }),
-        closed: () => ({ action: CloseAction.DoNotRestart }),
+        closed: () => ({ action: CloseAction.Restart }),
       },
     },
     // create a language client connection from the JSON RPC connection on demand
@@ -82,12 +83,14 @@ export const createWebSocketAndStartClient = (
 };
 
 const state = {
+  client: undefined as MonacoLanguageClient | undefined,
   clientInitialized: undefined as Promise<MonacoLanguageClient> | undefined,
 };
 
 const initializeRunner = async () => {
-  const url = createUrl("localhost", 23333, "/helloServer");
+  const url = createUrl(location.hostname, parseInt(location.port, 10), "/lsp");
   const client = await createWebSocketAndStartClient(url).languageClient;
+  state.client = client;
   return client;
 };
 
@@ -99,4 +102,30 @@ export const initializeLSPClient = () => {
   const job = initializeRunner();
   state.clientInitialized = job;
   return job;
+};
+
+export const useLSPClient = () => {
+  const { client } = state;
+  if (!client) {
+    throw new Error(
+      "Unexpected `useLSPClient` call before lsp client initialized"
+    );
+  }
+  return client;
+};
+
+export const executeCommand = async (
+  client: MonacoLanguageClient,
+  command: string,
+  args: any[] | undefined
+) => {
+  const executeCommandParams: ExecuteCommandParams = {
+    command,
+    arguments: args,
+  };
+  const result = await client.sendRequest(
+    "workspace/executeCommand",
+    executeCommandParams
+  );
+  return result;
 };
