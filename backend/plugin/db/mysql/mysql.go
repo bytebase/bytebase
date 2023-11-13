@@ -266,37 +266,7 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 	}
 	result.Latency = durationpb.New(time.Since(startTime))
 	result.Statement = statement
-	if isExplain && driver.dbType == storepb.Engine_TIDB {
-		if err := updateTiDBExplainResult(result); err != nil {
-			return nil, err
-		}
-	}
 	return result, nil
-}
-
-func updateTiDBExplainResult(result *v1pb.QueryResult) error {
-	if len(result.Rows) == 0 || len(result.Rows[0].Values) == 0 {
-		return nil
-	}
-	output := make([]strings.Builder, len(result.Rows[0].Values))
-	for rowIndex, row := range result.Rows {
-		for i := 0; i < len(result.Rows[0].Values); i++ {
-			if _, err := output[i].WriteString(row.Values[i].GetStringValue()); err != nil {
-				return err
-			}
-			if rowIndex != len(result.Rows)-1 {
-				if _, err := output[i].WriteString("\n"); err != nil {
-					return err
-				}
-			}
-		}
-	}
-	singleRow := &v1pb.QueryRow{}
-	for _, v := range output {
-		singleRow.Values = append(singleRow.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: v.String()}})
-	}
-	result.Rows = []*v1pb.QueryRow{singleRow}
-	return nil
 }
 
 // RunStatement runs a SQL statement in a given connection.
