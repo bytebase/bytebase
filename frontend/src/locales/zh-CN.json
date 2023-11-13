@@ -1107,8 +1107,6 @@
       "continue-anyway": "仍然继续",
       "sql-review-violations": "违反的 SQL 审核规则"
     },
-    "no-assignee-candidates": "该项目中没有有效的发布人候选人。\n请联系项目所有者。",
-    "allow-any-following-roles-to-be-assignee": "允许以下任何角色作为发布人",
     "error": {
       "issue-is-not-open": "工单不是开启状态",
       "you-don-have-privilege-to-edit-this-issue": "您没有权限编辑此工单"
