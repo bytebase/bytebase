@@ -79,10 +79,12 @@ func TestMySQLWIPRules(t *testing.T) {
 		advisor.SchemaRuleColumnDisallowDropInIndex,
 		// advisor.SchemaRuleColumnCommentConvention enforce the column comment convention.
 		advisor.SchemaRuleColumnCommentConvention,
-		// advisor.SchemaRuleColumnDisallowSetCharset disallow set column charset.
-		advisor.SchemaRuleColumnDisallowSetCharset,
+		// advisor.SchemaRuleColumnAutoIncrementMustInteger require the auto-increment column to be integer.
+		advisor.SchemaRuleColumnAutoIncrementMustInteger,
 		// advisor.SchemaRuleColumnTypeDisallowList enforce the column type disallow list.
 		advisor.SchemaRuleColumnTypeDisallowList,
+		// advisor.SchemaRuleColumnDisallowSetCharset disallow set column charset.
+		advisor.SchemaRuleColumnDisallowSetCharset,
 		// advisor.SchemaRuleColumnMaximumCharacterLength enforce the maximum character length.
 		advisor.SchemaRuleColumnMaximumCharacterLength,
 		// advisor.SchemaRuleColumnAutoIncrementInitialValue enforce the initial auto-increment value.
