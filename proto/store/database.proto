@@ -191,9 +191,9 @@ message TablePartitionMetadata {
 
   enum Type {
     TYPE_UNSPECIFIED = 0;
-    TYPE_RANGE = 1;
-    TYPE_LIST = 2;
-    TYPE_HASH = 3;
+    RANGE = 1;
+    LIST = 2;
+    HASH = 3;
   }
 
   // The type of a table partition.
