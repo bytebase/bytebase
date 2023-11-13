@@ -46,7 +46,7 @@ export const fetchDatabaseSubTree = async (
       await useDBSchemaV1Store().getOrFetchDatabaseMetadata({
         database: database.name,
         skipCache: false,
-        view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
+        view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
       });
 
     const { schemas } = databaseMetadata;
