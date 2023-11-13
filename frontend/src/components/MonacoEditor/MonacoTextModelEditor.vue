@@ -27,7 +27,9 @@ import {
 import { watchEffect } from "vue";
 import type { SQLDialect } from "@/types";
 import {
+  AutoHeightOptions,
   useAdvices,
+  useAutoHeight,
   useContent,
   useFormatContent,
   useModel,
@@ -44,6 +46,7 @@ const props = withDefaults(
     sqlDialect?: SQLDialect;
     readonly?: boolean;
     autoFocus?: boolean;
+    autoHeight?: AutoHeightOptions;
     advices?: AdviceOption[];
     options?: monaco.editor.IStandaloneEditorConstructionOptions;
   }>(),
@@ -52,6 +55,7 @@ const props = withDefaults(
     sqlDialect: undefined,
     readonly: false,
     autoFocus: true,
+    autoHeight: undefined,
     advices: () => [],
     options: undefined,
   }
@@ -106,6 +110,7 @@ onMounted(async () => {
     const content = useContent(monaco, editor);
     const selectedContent = useSelectedContent(monaco, editor);
     useAdvices(monaco, editor, toRef(props, "advices"));
+    useAutoHeight(monaco, editor, containerRef, toRef(props, "autoHeight"));
 
     isEditorLoaded.value = true;
     await nextTick();

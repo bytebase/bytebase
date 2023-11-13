@@ -61,19 +61,21 @@
         />
         <MonacoEditorV2
           v-if="state.tab === 'STATEMENT'"
-          class="w-full border h-auto max-h-[360px]"
+          class="w-full border h-auto"
           data-label="bb-issue-sql-editor"
           :content="sdlState.detail.diffDDL"
           :readonly="true"
           :auto-focus="false"
+          :auto-height="{ min: 120, max: 360 }"
         />
         <MonacoEditorV2
           v-if="state.tab === 'SCHEMA'"
-          class="w-full border h-auto max-h-[360px]"
+          class="w-full border h-auto"
           data-label="bb-issue-sql-editor"
           :content="sdlState.detail.expectedSDL"
           :readonly="true"
           :auto-focus="false"
+          :auto-height="{ min: 120, max: 360 }"
           :advices="markers"
         />
       </template>

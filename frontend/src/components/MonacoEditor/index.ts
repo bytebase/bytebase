@@ -4,6 +4,7 @@ import MonacoTextModelEditor from "./MonacoTextModelEditor.vue";
 
 export * from "./types";
 export * from "./text-model";
+export * from "./composables";
 
 export { MonacoEditor, MonacoTextModelEditor, MonacoEditorV2 };
 
