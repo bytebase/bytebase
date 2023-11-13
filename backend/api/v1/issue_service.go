@@ -1525,6 +1525,11 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 		return nil, errors.Wrapf(err, "failed to convert GrantRequest")
 	}
 
+	releasers, err := convertToIssueReleasers(ctx, s, issue)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get issue releasers")
+	}
+
 	issueV1 := &v1pb.Issue{
 		Name:                 fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, issue.Project.ResourceID, common.IssuePrefix, issue.UID),
 		Uid:                  fmt.Sprintf("%d", issue.UID),
@@ -1544,6 +1549,7 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 		Plan:                 "",
 		Rollout:              "",
 		GrantRequest:         convertedGrantRequest,
+		Releasers:            releasers,
 	}
 
 	if issue.PlanUID != nil {
@@ -1578,6 +1584,77 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 	}
 
 	return issueV1, nil
+}
+
+func convertToIssueReleasers(ctx context.Context, s *store.Store, issue *store.IssueMessage) ([]string, error) {
+	if issue.Type != api.IssueDatabaseGeneral {
+		return nil, nil
+	}
+	if issue.Status != api.IssueOpen {
+		return nil, nil
+	}
+	if issue.PipelineUID == nil {
+		return nil, nil
+	}
+	stages, err := s.ListStageV2(ctx, *issue.PipelineUID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list issue stages")
+	}
+	var activeStage *store.StageMessage
+	for _, stage := range stages {
+		if stage.Active {
+			activeStage = stage
+			break
+		}
+	}
+	if activeStage == nil {
+		return nil, nil
+	}
+	policy, err := s.GetRolloutPolicy(ctx, activeStage.EnvironmentID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get rollout policy")
+	}
+
+	var releasers []string
+	if policy.Automatic {
+		releasers = append(releasers, "roles/projectOwner", common.FormatUserEmail(issue.Creator.Email))
+		return releasers, nil
+	}
+
+	for _, role := range policy.WorkspaceRoles {
+		switch role {
+		case "roles/OWNER":
+			releasers = append(releasers, "roles/workspaceOwner")
+		case "roles/DBA":
+			releasers = append(releasers, "roles/workspaceDba")
+		}
+	}
+	for _, role := range policy.ProjectRoles {
+		switch role {
+		case "roles/OWNER":
+			releasers = append(releasers, "roles/projectOwner")
+		case "roles/RELEASER":
+			releasers = append(releasers, "roles/projectReleaser")
+		}
+	}
+	for _, role := range policy.IssueRoles {
+		switch role {
+		case "roles/CREATOR":
+			releasers = append(releasers, common.FormatUserEmail(issue.Creator.Email))
+		case "roles/LAST_APPROVER":
+			approvers := issue.Payload.GetApproval().GetApprovers()
+			if len(approvers) > 0 {
+				lastApproverUID := approvers[len(approvers)-1].GetPrincipalId()
+				user, err := s.GetUserByID(ctx, int(lastApproverUID))
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to get last approver uid %d", lastApproverUID)
+				}
+				releasers = append(releasers, common.FormatUserEmail(user.Email))
+			}
+		}
+	}
+
+	return releasers, nil
 }
 
 func convertToIssueType(t api.IssueType) v1pb.Issue_Type {
