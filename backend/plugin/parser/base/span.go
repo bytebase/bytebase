@@ -9,7 +9,8 @@ import (
 
 type SourceColumnSet map[ColumnResource]bool
 
-// MergeSourceColumnSet merges two source column maps, returns true if there is difference.
+// MergeSourceColumnSet merges two source column maps, returns true if there is difference,
+// the m and n will not be modified in this function.
 func MergeSourceColumnSet(m, n SourceColumnSet) (SourceColumnSet, bool) {
 	r := make(SourceColumnSet)
 	for k := range m {
@@ -58,7 +59,11 @@ type TableSource interface {
 	// Interface guard to forbid other types outside this package to implement this interface.
 	isTableSource()
 	GetQuerySpanResult() []*QuerySpanResult
-	GetName() string
+
+	GetServerName() string
+	GetDatabaseName() string
+	GetSchemaName() string
+	GetTableName() string
 }
 
 // baseTableSource is the base implementation table source.
@@ -79,7 +84,7 @@ type PseudoTable struct {
 	Columns []*QuerySpanResult
 }
 
-func (p PseudoTable) GetQuerySpanResult() []*QuerySpanResult {
+func (p *PseudoTable) GetQuerySpanResult() []*QuerySpanResult {
 	result := make([]*QuerySpanResult, 0, len(p.Columns))
 	for _, column := range p.Columns {
 		result = append(result, column)
@@ -88,11 +93,23 @@ func (p PseudoTable) GetQuerySpanResult() []*QuerySpanResult {
 	return result
 }
 
-func (p PseudoTable) GetName() string {
+func (p *PseudoTable) GetServerName() string {
+	return ""
+}
+
+func (p *PseudoTable) GetDatabaseName() string {
+	return ""
+}
+
+func (p *PseudoTable) GetSchemaName() string {
+	return ""
+}
+
+func (p *PseudoTable) GetTableName() string {
 	return p.Name
 }
 
-func (p PseudoTable) SetColumnName(i int, name string) {
+func (p *PseudoTable) SetColumnName(i int, name string) {
 	p.Columns[i].Name = name
 }
 
@@ -112,11 +129,23 @@ type PhysicalTable struct {
 	Columns []string
 }
 
-func (p PhysicalTable) GetName() string {
+func (p *PhysicalTable) GetServerName() string {
+	return p.Server
+}
+
+func (p *PhysicalTable) GetDatabaseName() string {
+	return p.Database
+}
+
+func (p *PhysicalTable) GetSchemaName() string {
+	return p.Schema
+}
+
+func (p *PhysicalTable) GetTableName() string {
 	return p.Name
 }
 
-func (p PhysicalTable) GetQuerySpanResult() []*QuerySpanResult {
+func (p *PhysicalTable) GetQuerySpanResult() []*QuerySpanResult {
 	result := make([]*QuerySpanResult, 0, len(p.Columns))
 	for _, column := range p.Columns {
 		sourceColumnSet := make(SourceColumnSet, 1)
@@ -135,7 +164,7 @@ func (p PhysicalTable) GetQuerySpanResult() []*QuerySpanResult {
 	return result
 }
 
-func (p PhysicalTable) SetColumnName(i int, name string) {
+func (p *PhysicalTable) SetColumnName(i int, name string) {
 	p.Columns[i] = p.Name
 }
 

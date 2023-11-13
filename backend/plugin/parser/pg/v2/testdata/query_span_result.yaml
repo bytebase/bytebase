@@ -20,7 +20,6 @@
         }
       ]
     }
-  spanResult: []
 - description: Test for simple select const
   statement: SELECT 1;
   connectedDatabase: db
@@ -143,21 +142,9 @@
     }
   spanResult:
   - name: a
-    sourcecolumns:
-      ? server: ""
-        database: db
-        schema: public
-        table: t
-        column: a
-      : true
+    sourcecolumns: {}
   - name: b
-    sourcecolumns:
-      ? server: ""
-        database: db
-        schema: public
-        table: t
-        column: b
-      : true
+    sourcecolumns: {}
   - name: c
     sourcecolumns:
       ? server: ""
@@ -212,25 +199,7 @@
   - name: col_2
     sourcecolumns: {}
   - name: avg_a_b_c
-    sourcecolumns:
-      ? server: ""
-        database: db
-        schema: public
-        table: t
-        column: a
-      : true
-      ? server: ""
-        database: db
-        schema: public
-        table: t
-        column: b
-      : true
-      ? server: ""
-        database: db
-        schema: public
-        table: t
-        column: c
-      : true
+    sourcecolumns: {}
 - description: Multiple-Row subquery in where clause
   statement: SELECT 1 FROM t WHERE a IN (SELECT a FROM t);
   connectedDatabase: db
@@ -310,13 +279,7 @@
     }
   spanResult:
   - name: city
-    sourcecolumns:
-      ? server: ""
-        database: db
-        schema: public
-        table: galleries
-        column: city
-      : true
+    sourcecolumns: {}
   - name: total_paintings
     sourcecolumns: {}
 - description: Test for functions
@@ -353,81 +316,15 @@
     }
   spanResult:
   - name: max
-    sourcecolumns:
-      ? server: ""
-        database: db
-        schema: public
-        table: t
-        column: a
-      : true
+    sourcecolumns: {}
   - name: c1
-    sourcecolumns:
-      ? server: ""
-        database: db
-        schema: public
-        table: t
-        column: a
-      : true
-      ? server: ""
-        database: db
-        schema: public
-        table: t
-        column: b
-      : true
+    sourcecolumns: {}
   - name: c2
-    sourcecolumns:
-      ? server: ""
-        database: db
-        schema: public
-        table: t
-        column: a
-      : true
-      ? server: ""
-        database: db
-        schema: public
-        table: t
-        column: b
-      : true
+    sourcecolumns: {}
   - name: ?column?
-    sourcecolumns:
-      ? server: ""
-        database: db
-        schema: public
-        table: t
-        column: a
-      : true
-      ? server: ""
-        database: db
-        schema: public
-        table: t
-        column: b
-      : true
+    sourcecolumns: {}
   - name: ?column?
-    sourcecolumns:
-      ? server: ""
-        database: db
-        schema: public
-        table: t
-        column: b
-      : true
-      ? server: ""
-        database: db
-        schema: public
-        table: t
-        column: a
-      : true
-      ? server: ""
-        database: db
-        schema: public
-        table: t
-        column: c
-      : true
-      ? server: ""
-        database: db
-        schema: public
-        table: t
-        column: d
-      : true
+    sourcecolumns: {}
 - description: Test for JOIN with USING clause
   statement: SELECT * FROM t AS t1 JOIN t AS t2 USING(a);
   connectedDatabase: db
@@ -614,13 +511,7 @@
     }
   spanResult:
   - name: max
-    sourcecolumns:
-      ? server: ""
-        database: db
-        schema: public
-        table: t
-        column: a
-      : true
+    sourcecolumns: {}
 - description: Test for CTE rename fields name
   statement: WITH t1(d, c, b, a) AS (SELECT * FROM t) SELECT * FROM t1;
   connectedDatabase: db
@@ -720,53 +611,11 @@
     }
   spanResult:
   - name: cc1
-    sourcecolumns:
-      ? server: ""
-        database: db
-        schema: public
-        table: t
-        column: a
-      : true
-      ? server: ""
-        database: db
-        schema: public
-        table: t
-        column: b
-      : true
+    sourcecolumns: {}
   - name: cc2
-    sourcecolumns:
-      ? server: ""
-        database: db
-        schema: public
-        table: t
-        column: b
-      : true
-      ? server: ""
-        database: db
-        schema: public
-        table: t
-        column: a
-      : true
+    sourcecolumns: {}
   - name: cc3
-    sourcecolumns:
-      ? server: ""
-        database: db
-        schema: public
-        table: t
-        column: b
-      : true
-      ? server: ""
-        database: db
-        schema: public
-        table: t
-        column: a
-      : true
-      ? server: ""
-        database: db
-        schema: public
-        table: t
-        column: c
-      : true
+    sourcecolumns: {}
   - name: "n"
     sourcecolumns: {}
 - description: Test for Non-Recursive Common Table Expression with RECURSIVE key words
@@ -803,34 +652,10 @@
     }
   spanResult:
   - name: c1
-    sourcecolumns:
-      ? server: ""
-        database: db
-        schema: public
-        table: t
-        column: a
-      : true
+    sourcecolumns: {}
   - name: c2
-    sourcecolumns:
-      ? server: ""
-        database: db
-        schema: public
-        table: t
-        column: b
-      : true
+    sourcecolumns: {}
   - name: c3
-    sourcecolumns:
-      ? server: ""
-        database: db
-        schema: public
-        table: t
-        column: d
-      : true
+    sourcecolumns: {}
   - name: c4
-    sourcecolumns:
-      ? server: ""
-        database: db
-        schema: public
-        table: t
-        column: c
-      : true
+    sourcecolumns: {}

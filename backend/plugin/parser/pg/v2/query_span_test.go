@@ -18,17 +18,17 @@ import (
 
 func TestGetQuerySpanResult(t *testing.T) {
 	type testCase struct {
-		Description       string `yaml:"description"`
-		Statement         string `yaml:"statement"`
-		ConnectedDatabase string `yaml:"connectedDatabase"`
+		Description       string `yaml:"description,omitempty"`
+		Statement         string `yaml:"statement,omitempty"`
+		ConnectedDatabase string `yaml:"connectedDatabase,omitempty"`
 		// Metadata is the protojson encoded storepb.DatabaseSchemaMetadata,
 		// if it's empty, we will use the defaultDatabaseMetadata.
-		Metadata   string                  `yaml:"metadata"`
-		SpanResult []*base.QuerySpanResult `yaml:"spanResult"`
+		Metadata   string                  `yaml:"metadata,omitempty"`
+		SpanResult []*base.QuerySpanResult `yaml:"spanResult,omitempty"`
 	}
 
 	const (
-		record       = true
+		record       = false
 		testDataPath = "testdata/query_span_result.yaml"
 	)
 
@@ -51,7 +51,7 @@ func TestGetQuerySpanResult(t *testing.T) {
 		if record {
 			testCases[i].SpanResult = result.Results
 		} else {
-			a.Equal(tc.SpanResult, result.Results)
+			a.Equalf(tc.SpanResult, result.Results, "statement: %q", tc.Statement)
 		}
 	}
 
