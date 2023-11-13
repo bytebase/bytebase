@@ -70,16 +70,14 @@ func (s *Store) CreatePipelineV2(ctx context.Context, create *PipelineMessage, c
 		return nil, err
 	}
 
-	s.pipelineCache.Store(pipeline.ID, pipeline)
+	s.pipelineCache.Add(pipeline.ID, pipeline)
 	return pipeline, nil
 }
 
 // GetPipelineV2ByID gets the pipeline by ID.
 func (s *Store) GetPipelineV2ByID(ctx context.Context, id int) (*PipelineMessage, error) {
-	if pipeline, ok := s.pipelineCache.Load(id); ok {
-		if v, ok := pipeline.(*PipelineMessage); ok {
-			return v, nil
-		}
+	if v, ok := s.pipelineCache.Get(id); ok {
+		return v, nil
 	}
 	pipelines, err := s.ListPipelineV2(ctx, &PipelineFind{ID: &id})
 	if err != nil {
@@ -143,7 +141,7 @@ func (s *Store) ListPipelineV2(ctx context.Context, find *PipelineFind) ([]*Pipe
 	}
 
 	for _, pipeline := range pipelines {
-		s.pipelineCache.Store(pipeline.ID, pipeline)
+		s.pipelineCache.Add(pipeline.ID, pipeline)
 	}
 	return pipelines, nil
 }

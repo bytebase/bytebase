@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
-	"sync"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -420,8 +419,8 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 	}
 	s.userIDCache.Store(user.ID, user)
 	if patch.Email != nil && patch.Phone != nil {
-		s.projectIDPolicyCache = sync.Map{}
-		s.projectPolicyCache = sync.Map{}
+		s.projectIDPolicyCache.Purge()
+		s.projectPolicyCache.Purge()
 	}
 	return user, nil
 }
