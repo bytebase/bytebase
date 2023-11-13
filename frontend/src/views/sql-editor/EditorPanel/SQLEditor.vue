@@ -18,7 +18,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, defineEmits, nextTick, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import {
   AdviceOption,
   IStandaloneCodeEditor,

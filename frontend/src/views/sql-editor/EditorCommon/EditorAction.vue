@@ -109,7 +109,7 @@
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
 import { NButton, NPopover } from "naive-ui";
-import { computed, defineEmits, reactive, ref } from "vue";
+import { computed, reactive, ref } from "vue";
 import {
   useTabStore,
   useSQLEditorStore,
