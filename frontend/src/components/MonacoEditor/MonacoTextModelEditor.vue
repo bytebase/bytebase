@@ -64,7 +64,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (e: "update:content", content: string): void;
-  (e: "selected-content", content: string): void;
+  (e: "select-content", content: string): void;
   (
     e: "ready",
     monaco: MonacoModule,
@@ -135,7 +135,7 @@ onMounted(async () => {
       emit("update:content", content.value);
     });
     watchEffect(() => {
-      emit("selected-content", selectedContent.value);
+      emit("select-content", selectedContent.value);
     });
   } catch (ex) {
     console.error("[MonacoEditorV2] initialize failed", ex);
