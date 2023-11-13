@@ -18,8 +18,7 @@
         $t("database.branch-name")
       }}</span>
       <NInput
-        v-model:value="state.schemaDesignTitle"
-        required
+        v-model:value="branchTitle"
         type="text"
         class="!w-60 text-sm"
         :placeholder="'feature/add-billing'"
@@ -125,7 +124,6 @@ interface BaselineSchema {
 
 interface LocalState {
   projectId?: string;
-  schemaDesignTitle: string;
   baselineSchema: BaselineSchema;
   schemaDesign: SchemaDesign;
   parentBranchName?: string;
@@ -147,7 +145,6 @@ const schemaDesignStore = useSchemaDesignStore();
 const changeHistoryStore = useChangeHistoryStore();
 const sheetStore = useSheetV1Store();
 const state = reactive<LocalState>({
-  schemaDesignTitle: "",
   projectId: props.projectId,
   baselineSchema: {},
   schemaDesign: SchemaDesign.fromPartial({
@@ -155,6 +152,7 @@ const state = reactive<LocalState>({
   }),
   isCreating: false,
 });
+const branchTitle = ref<string>("");
 const showProjectSelector = ref<boolean>(true);
 const refreshId = ref<string>("");
 
@@ -275,7 +273,7 @@ const prepareSchemaDesign = async () => {
 const allowConfirm = computed(() => {
   return (
     state.projectId &&
-    state.schemaDesignTitle &&
+    branchTitle.value &&
     state.baselineSchema.databaseId &&
     !state.isCreating
   );
@@ -311,7 +309,7 @@ const handleConfirm = async () => {
     return;
   }
 
-  if (!validateBranchName(state.schemaDesignTitle)) {
+  if (!validateBranchName(branchTitle.value)) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
@@ -342,7 +340,7 @@ const handleConfirm = async () => {
   const baselineDatabase = `${database.instanceEntity.name}/${databaseNamePrefix}${state.baselineSchema.databaseId}`;
   // Create a baseline sheet for the schema design.
   const baselineSheet = await sheetStore.createSheet(project.value.name, {
-    title: `baseline schema of ${state.schemaDesignTitle}`,
+    title: `baseline schema of ${branchTitle.value}`,
     database: baselineDatabase,
     content: new TextEncoder().encode(state.schemaDesign.baselineSchema),
     visibility: Sheet_Visibility.VISIBILITY_PROJECT,
@@ -355,7 +353,7 @@ const handleConfirm = async () => {
     createdSchemaDesign = await schemaDesignStore.createSchemaDesign(
       project.value.name,
       SchemaDesign.fromPartial({
-        title: state.schemaDesignTitle,
+        title: branchTitle.value,
         // Keep schema empty in frontend. Backend will generate the design schema.
         schema: "",
         schemaMetadata: metadata,
@@ -379,7 +377,7 @@ const handleConfirm = async () => {
     );
     createdSchemaDesign = await schemaDesignStore.createSchemaDesignDraft({
       ...parentBranch,
-      title: state.schemaDesignTitle,
+      title: branchTitle.value,
     });
   }
   state.isCreating = false;
