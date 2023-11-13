@@ -1,4 +1,4 @@
-- statement: CREATE TABLE t(a INT UNSIGNED AUTO_INCREMENT)
+- statement: CREATE TABLE t(a INT UNSIGNED AUTO_INCREMENT);
   want:
     - status: SUCCESS
       code: 0
@@ -6,7 +6,44 @@
       content: ""
       line: 0
       details: ""
-- statement: CREATE TABLE t(a INT AUTO_INCREMENT)
+- statement: CREATE TABLE t(a INT AUTO_INCREMENT);
+  want:
+    - status: WARN
+      code: 417
+      title: column.auto-increment-must-unsigned
+      content: Auto-increment column `t`.`a` is not UNSIGNED type
+      line: 1
+      details: ""
+- statement: CREATE TABLE t(a INT SIGNED AUTO_INCREMENT);
+  want:
+    - status: WARN
+      code: 417
+      title: column.auto-increment-must-unsigned
+      content: Auto-increment column `t`.`a` is not UNSIGNED type
+      line: 1
+      details: ""
+- statement: CREATE TABLE t(a INT ZEROFILL AUTO_INCREMENT);
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |-
+    CREATE TABLE t(b int);
+    ALTER TABLE t ADD COLUMN a INT AUTO_INCREMENT, ADD COLUMN c INT ZEROFILL AUTO_INCREMENT, ADD COLUMN d INT UNSIGNED AUTO_INCREMENT;
+  want:
+    - status: WARN
+      code: 417
+      title: column.auto-increment-must-unsigned
+      content: Auto-increment column `t`.`a` is not UNSIGNED type
+      line: 2
+      details: ""
+- statement: |-
+    CREATE TABLE t(a int, b int);
+    ALTER TABLE t MODIFY COLUMN a INT AUTO_INCREMENT;
+    ALTER TABLE t MODIFY COLUMN a INT UNSIGNED AUTO_INCREMENT;
   want:
     - status: WARN
       code: 417
@@ -16,31 +53,12 @@
       details: ""
 - statement: |-
     CREATE TABLE t(b int);
-    ALTER TABLE t ADD COLUMN a INT AUTO_INCREMENT
+    ALTER TABLE t CHANGE COLUMN b a INT AUTO_INCREMENT;
+    ALTER TABLE t CHANGE COLUMN a c INT UNSIGNED AUTO_INCREMENT;
   want:
     - status: WARN
       code: 417
       title: column.auto-increment-must-unsigned
       content: Auto-increment column `t`.`a` is not UNSIGNED type
-      line: 3
-      details: ""
-- statement: |-
-    CREATE TABLE t(a int);
-    ALTER TABLE t MODIFY COLUMN a INT AUTO_INCREMENT
-  want:
-    - status: WARN
-      code: 417
-      title: column.auto-increment-must-unsigned
-      content: Auto-increment column `t`.`a` is not UNSIGNED type
-      line: 3
-      details: ""
-- statement: |-
-    CREATE TABLE t(b int);
-    ALTER TABLE t CHANGE COLUMN b a INT AUTO_INCREMENT
-  want:
-    - status: WARN
-      code: 417
-      title: column.auto-increment-must-unsigned
-      content: Auto-increment column `t`.`a` is not UNSIGNED type
-      line: 3
+      line: 2
       details: ""

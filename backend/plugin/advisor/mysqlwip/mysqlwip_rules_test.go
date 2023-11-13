@@ -87,6 +87,8 @@ func TestMySQLWIPRules(t *testing.T) {
 		advisor.SchemaRuleColumnMaximumCharacterLength,
 		// advisor.SchemaRuleColumnAutoIncrementInitialValue enforce the initial auto-increment value.
 		advisor.SchemaRuleColumnAutoIncrementInitialValue,
+		// advisor.SchemaRuleColumnAutoIncrementMustUnsigned enforce the auto-increment column to be unsigned.
+		advisor.SchemaRuleColumnAutoIncrementMustUnsigned,
 		// advisor.SchemaRuleColumnRequireDefault enforce the column default.
 		advisor.SchemaRuleColumnRequireDefault,
 
