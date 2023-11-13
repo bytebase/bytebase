@@ -23,7 +23,7 @@ import {
   onBeforeUnmount,
   watchEffect,
 } from "vue";
-import { ComposedDatabase, Database, Language, SQLDialect } from "@/types";
+import { ComposedDatabase, Language, SQLDialect } from "@/types";
 import { TableMetadata } from "@/types/proto/store/database";
 import { useLineDecorations } from "./lineDecorations";
 import { useAdvices } from "./plugins/useAdvices";
@@ -362,29 +362,6 @@ const formatEditorContent = () => {
   });
 };
 
-const setEditorAutoCompletionContext = (
-  databaseMap: Map<Database, TableMetadata[]>,
-  connectionScope: "instance" | "database" = "database"
-) => {
-  const databases = [];
-  for (const [database, tableList] of databaseMap) {
-    databases.push({
-      name: database.name,
-      tables: tableList.map((table) => ({
-        database: database.name,
-        name: table.name,
-        columns: table.columns.map((column) => ({
-          name: column.name,
-        })),
-      })),
-    });
-  }
-  languageClientRef.value?.changeSchema({
-    databases: databases,
-  });
-  languageClientRef.value?.changeConnectionScope(connectionScope);
-};
-
 const setEditorAutoCompletionContextV1 = (
   databaseMap: Map<ComposedDatabase, TableMetadata[]>,
   connectionScope: "instance" | "database" = "database"
@@ -415,7 +392,6 @@ defineExpose({
   setEditorContent,
   getEditorContentHeight,
   setEditorContentHeight,
-  setEditorAutoCompletionContext,
   setEditorAutoCompletionContextV1,
 });
 </script>
