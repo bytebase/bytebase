@@ -17,7 +17,12 @@
 
 <script lang="ts" setup>
 import { intersection } from "lodash-es";
-import { NSelect, SelectOption, SelectProps } from "naive-ui";
+import {
+  NSelect,
+  SelectGroupOption,
+  SelectOption,
+  SelectProps,
+} from "naive-ui";
 import { computed, watch, watchEffect, h } from "vue";
 import { useI18n } from "vue-i18n";
 import UserIcon from "~icons/heroicons-outline/user";
@@ -35,7 +40,7 @@ import { User, UserRole, UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import { extractUserUID, memberListInProjectV1 } from "@/utils";
 
-interface UserSelectOption extends SelectOption {
+export interface UserSelectOption extends SelectOption {
   value: string;
   user: User;
 }
@@ -56,6 +61,7 @@ const props = withDefaults(
     allowedProjectMemberRoleList?: string[];
     autoReset?: boolean;
     filter?: (user: User, index: number) => boolean;
+    mapOptions?: (users: User[]) => (UserSelectOption | SelectGroupOption)[];
     fallbackOption?: SelectProps["fallbackOption"];
   }>(),
   {
@@ -79,6 +85,7 @@ const props = withDefaults(
     ],
     autoReset: true,
     filter: undefined,
+    mapOptions: undefined,
     fallbackOption: false,
   }
 );
@@ -236,6 +243,9 @@ const renderAvatar = (user: User) => {
 };
 
 const renderLabel = (option: SelectOption) => {
+  if (option.type === "group") {
+    return option.label;
+  }
   const { user } = option as UserSelectOption;
   const avatar = renderAvatar(user);
   const title =
@@ -265,6 +275,9 @@ const renderLabel = (option: SelectOption) => {
 };
 
 const options = computed(() => {
+  if (props.mapOptions) {
+    return props.mapOptions(combinedUserList.value);
+  }
   return combinedUserList.value.map<UserSelectOption>((user) => {
     return {
       user,

@@ -28,6 +28,7 @@
           :loading="isUpdating"
           :filter="filterAssignee"
           :include-system-bot="false"
+          :map-options="mapUserOptions"
           :fallback-option="fallbackUser"
           style="width: 14rem"
           @update:user="changeAssigneeUID"
@@ -42,12 +43,14 @@
 
 <script setup lang="ts">
 import { asyncComputed } from "@vueuse/core";
-import { NTooltip } from "naive-ui";
+import { orderBy } from "lodash-es";
+import { NTooltip, SelectGroupOption } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   allowUserToChangeAssignee,
   useIssueContext,
+  useWrappedReviewStepsV1,
 } from "@/components/IssueV1/logic";
 import ErrorList, { ErrorItem } from "@/components/misc/ErrorList.vue";
 import { UserSelect } from "@/components/v2";
@@ -61,14 +64,20 @@ import {
   UNKNOWN_ID,
   unknownUser,
 } from "@/types";
-import { User } from "@/types/proto/v1/auth_service";
+import { User, UserRole } from "@/types/proto/v1/auth_service";
 import { Issue } from "@/types/proto/v1/issue_service";
-import { extractUserResourceName, extractUserUID } from "@/utils";
+import {
+  extractUserResourceName,
+  extractUserUID,
+  isMemberOfProjectV1,
+  isOwnerOfProjectV1,
+} from "@/utils";
 import AssigneeAttentionButton from "./AssigneeAttentionButton.vue";
 
 const { t } = useI18n();
 const userStore = useUserStore();
-const { isCreating, issue, assigneeCandidates } = useIssueContext();
+const { isCreating, issue, reviewContext, assigneeCandidates } =
+  useIssueContext();
 const currentUser = useCurrentUserV1();
 const isUpdating = ref(false);
 
@@ -134,11 +143,145 @@ const changeAssigneeUID = async (uid: string | undefined) => {
 };
 
 const filterAssignee = (user: User): boolean => {
-  return (
-    assigneeCandidates.value.findIndex(
-      (candidate) => candidate.name === user.name
-    ) >= 0
+  return isMemberOfProjectV1(issue.value.projectEntity.iamPolicy, user);
+};
+
+const mapUserOptions = (users: User[]) => {
+  const project = issue.value.projectEntity;
+
+  // Project owners go top
+  users = orderBy(
+    users,
+    [(user) => (isOwnerOfProjectV1(project.iamPolicy, user) ? -1 : 1)],
+    ["asc"]
   );
+
+  const phase = isCreating.value
+    ? "PREVIEW"
+    : reviewContext.done.value
+    ? "CD"
+    : "CI";
+  const groups: SelectGroupOption[] = [];
+
+  const mapUserOption = (user: User) => ({
+    user,
+    value: extractUserUID(user.name),
+    label: user.title,
+  });
+
+  const members = users.filter((user) =>
+    isMemberOfProjectV1(project.iamPolicy, user)
+  );
+
+  if (phase === "PREVIEW") {
+    const owners = members.filter((user) =>
+      isOwnerOfProjectV1(project.iamPolicy, user)
+    );
+    if (owners.length > 0) {
+      groups.push({
+        type: "group",
+        label: t("issue.assignee.project-owners"),
+        key: "project-owners",
+        children: owners.map(mapUserOption),
+      });
+    }
+    const nonOwnerMembers = members.filter(
+      (user) => !isOwnerOfProjectV1(project.iamPolicy, user)
+    );
+    if (owners.length > 0) {
+      groups.push({
+        type: "group",
+        label: t("issue.assignee.project-members"),
+        key: "project-members",
+        children: nonOwnerMembers.map(mapUserOption),
+      });
+    }
+  }
+
+  if (phase === "CI") {
+    const steps = useWrappedReviewStepsV1(issue, reviewContext);
+    const currentStep = steps.value?.find((step) => step.status === "CURRENT");
+    if (currentStep && currentStep.candidates.length > 0) {
+      const approverGroup: SelectGroupOption = {
+        type: "group",
+        label: t("issue.assignee.approvers"),
+        key: "approvers",
+        children: currentStep.candidates.map(mapUserOption),
+      };
+      groups.push(approverGroup);
+    }
+    const nonApprovers = members.filter((user) => {
+      if (!currentStep) return true;
+      return currentStep.candidates.findIndex((c) => c.name === user.name) < 0;
+    });
+    if (nonApprovers.length > 0) {
+      const nonApproverGroup: SelectGroupOption = {
+        type: "group",
+        label: t("issue.assignee.project-members"),
+        key: "project-members",
+        children: nonApprovers.map(mapUserOption),
+      };
+      groups.push(nonApproverGroup);
+    }
+  }
+
+  if (phase === "CD") {
+    const releasers = members.filter((user) => {
+      return (
+        assigneeCandidates.value.findIndex((c) => c.name === user.name) >= 0
+      );
+    });
+    const nonReleasers = members.filter(
+      (user) => releasers.findIndex((r) => r.name === user.name) < 0
+    );
+    if (releasers.length > 0) {
+      const releaserGroup: SelectGroupOption = {
+        type: "group",
+        label: t("issue.assignee.releaser-of-current-stage"),
+        key: "releasers",
+        children: releasers.map(mapUserOption),
+      };
+      groups.push(releaserGroup);
+    }
+    if (nonReleasers.length > 0) {
+      const memberGroup: SelectGroupOption = {
+        type: "group",
+        label: t("issue.assignee.project-members"),
+        key: "members",
+        children: nonReleasers.map(mapUserOption),
+      };
+      groups.push(memberGroup);
+    }
+  }
+
+  const nonMemberWorkspaceOwners = users.filter(
+    (user) =>
+      !isMemberOfProjectV1(project.iamPolicy, user) &&
+      user.userRole === UserRole.OWNER
+  );
+  if (nonMemberWorkspaceOwners.length > 0) {
+    groups.push({
+      type: "group",
+      label: t("issue.assignee.workspace-owners"),
+      key: "workspace-owners",
+      children: nonMemberWorkspaceOwners.map(mapUserOption),
+    });
+  }
+  const nonMemberWorkspaceDBAs = users.filter(
+    (user) =>
+      !isMemberOfProjectV1(project.iamPolicy, user) &&
+      user.userRole === UserRole.DBA
+  );
+  if (nonMemberWorkspaceDBAs.length > 0) {
+    groups.push({
+      type: "group",
+      label: t("issue.assignee.workspace-dbas"),
+      key: "workspace-dbas",
+      children: nonMemberWorkspaceDBAs.map(mapUserOption),
+    });
+  }
+
+  return groups;
 };
 
 const fallbackUser = (uid: string) => {

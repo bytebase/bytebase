@@ -1111,7 +1111,15 @@
       "issue-is-not-open": "工单不是开启状态",
       "you-don-have-privilege-to-edit-this-issue": "您没有权限编辑此工单"
     },
-    "approval-requested": "审批请求"
+    "approval-requested": "审批请求",
+    "assignee": {
+      "project-members": "项目成员",
+      "approvers": "审批人",
+      "releaser-of-current-stage": "当前阶段的发布人",
+      "workspace-owners": "Bytebase 实例所有者",
+      "workspace-dbas": "DBA",
+      "project-owners": "项目所有者"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",

@@ -1114,7 +1114,15 @@
       "issue-is-not-open": "The issue is not open",
       "you-don-have-privilege-to-edit-this-issue": "You don't have privilege to edit this issue"
     },
-    "approval-requested": "Approval Requested"
+    "approval-requested": "Approval Requested",
+    "assignee": {
+      "project-members": "Project members",
+      "approvers": "Approvers",
+      "releaser-of-current-stage": "Releaser of current stage",
+      "workspace-owners": "Workspace owners",
+      "workspace-dbas": "DBA",
+      "project-owners": "Project owners"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
