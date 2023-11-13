@@ -111,6 +111,9 @@ func TestMySQLWIPRules(t *testing.T) {
 		// advisor.SchemaRuleIndexTotalNumberLimit enforce the index total number limit.
 		advisor.SchemaRuleIndexTotalNumberLimit,
 		advisor.SchemaRuleIndexPrimaryKeyTypeAllowlist,
+
+		// advisor.SchemaRuleCharsetAllowlist enforce the charset allowlist.
+		advisor.SchemaRuleCharsetAllowlist,
 	}
 
 	for _, rule := range mysqlwipRules {
