@@ -76,7 +76,7 @@ import AssigneeAttentionButton from "./AssigneeAttentionButton.vue";
 
 const { t } = useI18n();
 const userStore = useUserStore();
-const { isCreating, issue, reviewContext, assigneeCandidates } =
+const { isCreating, issue, reviewContext, releaserCandidates } =
   useIssueContext();
 const currentUser = useCurrentUserV1();
 const isUpdating = ref(false);
@@ -204,7 +204,7 @@ const mapUserOptions = (users: User[]) => {
     if (currentStep && currentStep.candidates.length > 0) {
       const approverGroup: SelectGroupOption = {
         type: "group",
-        label: t("issue.assignee.approvers"),
+        label: t("issue.assignee.approvers-of-current-step"),
         key: "approvers",
         children: currentStep.candidates.map(mapUserOption),
       };
@@ -228,7 +228,7 @@ const mapUserOptions = (users: User[]) => {
   if (phase === "CD") {
     const releasers = members.filter((user) => {
       return (
-        assigneeCandidates.value.findIndex((c) => c.name === user.name) >= 0
+        releaserCandidates.value.findIndex((c) => c.name === user.name) >= 0
       );
     });
     const nonReleasers = members.filter(
@@ -237,7 +237,7 @@ const mapUserOptions = (users: User[]) => {
     if (releasers.length > 0) {
       const releaserGroup: SelectGroupOption = {
         type: "group",
-        label: t("issue.assignee.releaser-of-current-stage"),
+        label: t("issue.assignee.releasers-of-current-stage"),
         key: "releasers",
         children: releasers.map(mapUserOption),
       };

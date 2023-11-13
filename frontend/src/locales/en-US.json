@@ -1112,16 +1112,17 @@
     },
     "error": {
       "issue-is-not-open": "The issue is not open",
-      "you-don-have-privilege-to-edit-this-issue": "You don't have privilege to edit this issue"
+      "you-don-have-privilege-to-edit-this-issue": "You don't have privilege to edit this issue",
+      "you-are-not-allowed-to-perform-this-action": "You are not allowed to perform this action"
     },
     "approval-requested": "Approval Requested",
     "assignee": {
       "project-members": "Project members",
-      "approvers": "Approvers",
-      "releaser-of-current-stage": "Releaser of current stage",
       "workspace-owners": "Workspace owners",
       "workspace-dbas": "DBA",
-      "project-owners": "Project owners"
+      "project-owners": "Project owners",
+      "releasers-of-current-stage": "Releasers of current stage",
+      "approvers-of-current-step": "Approvers of current step"
     }
   },
   "alter-schema": {

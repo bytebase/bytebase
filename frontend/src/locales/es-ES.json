@@ -1111,16 +1111,17 @@
     },
     "error": {
       "issue-is-not-open": "El tema no está abierto.",
-      "you-don-have-privilege-to-edit-this-issue": "No tienes privilegios para editar este número."
+      "you-don-have-privilege-to-edit-this-issue": "No tienes privilegios para editar este número.",
+      "you-are-not-allowed-to-perform-this-action": "No tienes permiso para realizar esta acción."
     },
     "approval-requested": "Aprobación solicitada",
     "assignee": {
       "project-members": "Miembros del proyecto",
-      "approvers": "Aprobadores",
-      "releaser-of-current-stage": "Liberador de la etapa actual.",
       "workspace-owners": "Propietarios del espacio de trabajo",
       "workspace-dbas": "DBA",
-      "project-owners": "Propietarios del proyecto"
+      "project-owners": "Propietarios del proyecto",
+      "releasers-of-current-stage": "Liberadores de la etapa actual.",
+      "approvers-of-current-step": "Aprobadores del paso actual"
     }
   },
   "alter-schema": {

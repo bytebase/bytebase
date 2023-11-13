@@ -1109,16 +1109,17 @@
     },
     "error": {
       "issue-is-not-open": "工单不是开启状态",
-      "you-don-have-privilege-to-edit-this-issue": "您没有权限编辑此工单"
+      "you-don-have-privilege-to-edit-this-issue": "您没有权限编辑此工单",
+      "you-are-not-allowed-to-perform-this-action": "您无权执行此操作"
     },
     "approval-requested": "审批请求",
     "assignee": {
       "project-members": "项目成员",
-      "approvers": "审批人",
-      "releaser-of-current-stage": "当前阶段的发布人",
       "workspace-owners": "Bytebase 实例所有者",
       "workspace-dbas": "DBA",
-      "project-owners": "项目所有者"
+      "project-owners": "项目所有者",
+      "releasers-of-current-stage": "当前阶段的发布人",
+      "approvers-of-current-step": "当前步骤的审批人"
     }
   },
   "alter-schema": {
