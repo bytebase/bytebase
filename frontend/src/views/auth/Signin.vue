@@ -306,7 +306,7 @@ onMounted(async () => {
   }
 
   await identityProviderStore.fetchIdentityProviderList();
-  if (state.email && state.password) {
+  if (isDemo.value && state.email && state.password) {
     await trySignin();
   }
 });
