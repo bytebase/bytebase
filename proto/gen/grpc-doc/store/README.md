@@ -1195,9 +1195,9 @@ ViewMetadata is the metadata for views.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
-| TYPE_RANGE | 1 |  |
-| TYPE_LIST | 2 |  |
-| TYPE_HASH | 3 |  |
+| RANGE | 1 |  |
+| LIST | 2 |  |
+| HASH | 3 |  |
 
 
 

@@ -269,9 +269,9 @@ export interface TablePartitionMetadata {
 
 export enum TablePartitionMetadata_Type {
   TYPE_UNSPECIFIED = 0,
-  TYPE_RANGE = 1,
-  TYPE_LIST = 2,
-  TYPE_HASH = 3,
+  RANGE = 1,
+  LIST = 2,
+  HASH = 3,
   UNRECOGNIZED = -1,
 }
 
@@ -281,14 +281,14 @@ export function tablePartitionMetadata_TypeFromJSON(object: any): TablePartition
     case "TYPE_UNSPECIFIED":
       return TablePartitionMetadata_Type.TYPE_UNSPECIFIED;
     case 1:
-    case "TYPE_RANGE":
-      return TablePartitionMetadata_Type.TYPE_RANGE;
+    case "RANGE":
+      return TablePartitionMetadata_Type.RANGE;
     case 2:
-    case "TYPE_LIST":
-      return TablePartitionMetadata_Type.TYPE_LIST;
+    case "LIST":
+      return TablePartitionMetadata_Type.LIST;
     case 3:
-    case "TYPE_HASH":
-      return TablePartitionMetadata_Type.TYPE_HASH;
+    case "HASH":
+      return TablePartitionMetadata_Type.HASH;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -300,12 +300,12 @@ export function tablePartitionMetadata_TypeToJSON(object: TablePartitionMetadata
   switch (object) {
     case TablePartitionMetadata_Type.TYPE_UNSPECIFIED:
       return "TYPE_UNSPECIFIED";
-    case TablePartitionMetadata_Type.TYPE_RANGE:
-      return "TYPE_RANGE";
-    case TablePartitionMetadata_Type.TYPE_LIST:
-      return "TYPE_LIST";
-    case TablePartitionMetadata_Type.TYPE_HASH:
-      return "TYPE_HASH";
+    case TablePartitionMetadata_Type.RANGE:
+      return "RANGE";
+    case TablePartitionMetadata_Type.LIST:
+      return "LIST";
+    case TablePartitionMetadata_Type.HASH:
+      return "HASH";
     case TablePartitionMetadata_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
