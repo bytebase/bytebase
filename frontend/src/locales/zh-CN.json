@@ -384,7 +384,7 @@
     "cancel-task": "取消任务",
     "created": "创建于",
     "online-migration": {
-      "self": "在线迁移",
+      "self": "在线大表变更",
       "configure-ghost-parameters-for-db": "为数据库「{db}」配置 gh-ost 参数",
       "configure-ghost-parameters": "配置 gh-ost 参数",
       "ghost-parameters": "gh-ost 参数",
@@ -984,7 +984,7 @@
         "description": "直接在目标表上执行 schema 变更，表在整个变更期间会被锁住。"
       },
       "online": {
-        "title": "在线变更 (适用于大数据量的表)",
+        "title": "在线大表变更 (适用于大数据量的表)",
         "description": "基于 gh-ost。对于大表，可以把锁表的时间从小时级降低到秒级 {link}。"
       }
     },
@@ -2465,7 +2465,7 @@
         "desc": "定制 Logo"
       },
       "bb-feature-online-migration": {
-        "title": "在线变更",
+        "title": "在线大表变更",
         "desc": "基于 gh-ost。对于大表，可以把锁表的时间从小时级降低到秒级。"
       },
       "bb-feature-disaster-recovery-pitr": {
