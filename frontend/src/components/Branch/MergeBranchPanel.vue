@@ -59,13 +59,13 @@
           </div>
         </div>
         <div class="w-full h-[calc(100%-14rem)] border relative">
-          <DiffEditor
+          <DiffEditorV2
             v-if="ready"
             :key="state.targetBranchName"
             class="h-full"
             :original="targetBranch.schema"
-            :value="state.editingSchema"
-            @change="state.editingSchema = $event"
+            :modified="state.editingSchema"
+            @update:modified="state.editingSchema = $event"
           />
           <div
             v-else
@@ -93,7 +93,6 @@ import {
 import { Status } from "nice-grpc-common";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import DiffEditor from "@/components/MonacoEditor/DiffEditor.vue";
 import { pushNotification, useSheetV1Store } from "@/store";
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
 import {
@@ -106,6 +105,7 @@ import {
   Sheet_Type,
   Sheet_Visibility,
 } from "@/types/proto/v1/sheet_service";
+import { DiffEditorV2 } from "../MonacoEditor";
 
 interface LocalState {
   targetBranchName: string;

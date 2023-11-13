@@ -18,10 +18,10 @@
           v-if="shouldShowDiff"
           class="w-full flex-1 overflow-y-scroll border"
         >
-          <DiffEditor
+          <DiffEditorV2
             class="h-full"
             :original="targetDatabaseSchema"
-            :value="sourceDatabaseSchema"
+            :modified="sourceDatabaseSchema"
             :readonly="true"
           />
         </div>
@@ -68,7 +68,6 @@
 <script lang="ts" setup>
 import { NTabs, NTab } from "naive-ui";
 import { ref } from "vue";
-import DiffEditor from "@/components/MonacoEditor/DiffEditor.vue";
 import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
 import { dialectOfEngineV1 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
