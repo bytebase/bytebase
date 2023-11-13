@@ -90,7 +90,6 @@
           v-model:content="state.editStatement"
           class="w-full h-full border border-b-0"
           data-label="bb-schema-editor-sql-editor"
-          language="sql"
           :auto-focus="false"
           :dialect="dialectOfEngineV1(databaseEngine)"
         />

@@ -12,11 +12,17 @@ import { useMonacoTextModel } from "./text-model";
 import type { MonacoModule } from "./types";
 import { extensionNameOfLanguage } from "./utils";
 
-const props = defineProps<{
-  filename?: string;
-  content: string;
-  language: Language;
-}>();
+const props = withDefaults(
+  defineProps<{
+    filename?: string;
+    content: string;
+    language: Language;
+  }>(),
+  {
+    filename: undefined,
+    language: "sql",
+  }
+);
 const emit = defineEmits<{
   (event: "update:content", content: string): void;
   (e: "update:selected-content", content: string): void;

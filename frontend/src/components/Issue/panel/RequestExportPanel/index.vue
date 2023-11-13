@@ -51,11 +51,10 @@
               SQL
               <RequiredStar />
             </span>
-            <div class="w-full h-[300px] border rounded">
+            <div class="w-full h-[300px]">
               <MonacoEditorV2
                 v-model:content="state.statement"
-                class="w-full h-full py-2"
-                language="sql"
+                class="w-full h-full rounded border"
                 :auto-focus="false"
                 :dialect="dialect"
               />

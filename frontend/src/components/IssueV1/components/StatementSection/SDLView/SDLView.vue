@@ -67,7 +67,6 @@
           :value="sdlState.detail.diffDDL"
           :readonly="true"
           :auto-focus="false"
-          language="sql"
           @ready="handleMonacoEditorReady"
         />
         <MonacoEditor
