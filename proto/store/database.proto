@@ -179,6 +179,31 @@ message TableMetadata {
 
   // The foreign_keys is the list of foreign keys in a table.
   repeated ForeignKeyMetadata foreign_keys = 12;
+
+  // The partitions is the list of partitions in a table.
+  repeated TablePartitionMetadata partitions = 15;
+}
+
+// TablePartitionMetadata is the metadata for table partitions.
+message TablePartitionMetadata {
+  // The name is the name of a table partition.
+  string name = 1;
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    TYPE_RANGE = 1;
+    TYPE_LIST = 2;
+    TYPE_HASH = 3;
+  }
+
+  // The type of a table partition.
+  Type type = 2;
+
+  // The expression is the expression of a table partition.
+  string expression = 3;
+
+  // The subpartitions is the list of subpartitions in a table partition.
+  repeated TablePartitionMetadata subpartitions = 4;
 }
 
 // ColumnMetadata is the metadata for columns.
