@@ -117,21 +117,7 @@
       </template>
     </BBAttention>
 
-    <div class="whitespace-pre-wrap overflow-hidden border">
-      <MonacoEditor
-        v-if="false"
-        ref="editorRef"
-        class="w-full h-auto max-h-[360px] min-h-[120px]"
-        data-label="bb-issue-sql-editor"
-        :value="state.statement"
-        :readonly="isEditorReadonly"
-        :auto-focus="false"
-        :language="language"
-        :dialect="dialect"
-        :advices="isEditorReadonly ? markers : []"
-        @change="handleStatementChange"
-        @ready="handleMonacoEditorReady"
-      />
+    <div class="whitespace-pre-wrap overflow-hidden border rounded-[3px]">
       <MonacoEditorV2
         class="w-full h-auto max-h-[360px] min-h-[120px]"
         :filename="`${selectedTask.name}.sql`"
@@ -141,6 +127,7 @@
         :readonly="isEditorReadonly"
         :dialect="dialect"
         :advices="isEditorReadonly ? markers : []"
+        :auto-height="{ min: 120, max: 360 }"
         @update:content="handleStatementChange"
         @ready="handleMonacoEditorReady"
       />
@@ -218,7 +205,6 @@ import {
 import { readFileAsync } from "@/utils";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import FormatOnSaveCheckbox from "./FormatOnSaveCheckbox.vue";
-import { useAutoEditorHeight } from "./useAutoEditorHeight";
 import { useEditorAutoCompletion } from "./useEditorAutoCompletion";
 import { EditState, useTempEditState } from "./useTempEditState";
 
@@ -243,7 +229,6 @@ const state = reactive<LocalState>({
 });
 
 const editorRef = ref<InstanceType<typeof MonacoEditor>>();
-const { updateEditorHeight } = useAutoEditorHeight(editorRef);
 const { updateEditorAutoCompletionContext } =
   useEditorAutoCompletion(editorRef);
 
@@ -554,7 +539,6 @@ const handleUploadAndOverwrite = async (event: Event) => {
     }
 
     resetTempEditState();
-    updateEditorHeight();
   } finally {
     state.isUploadingFile = false;
   }
@@ -570,7 +554,6 @@ const handleUploadFile = async (event: Event) => {
     }
 
     resetTempEditState();
-    updateEditorHeight();
   } finally {
     state.isUploadingFile = false;
   }
@@ -673,13 +656,10 @@ const handleStatementChange = (value: string) => {
     if (!sheet.value) return;
     setSheetStatement(sheet.value, value);
   }
-
-  updateEditorHeight();
 };
 
 const handleMonacoEditorReady = () => {
   updateEditorAutoCompletionContext();
-  updateEditorHeight();
 };
 
 watch(
@@ -694,7 +674,6 @@ watch(isCreating, (curr, prev) => {
   // Reset the edit state after creating the issue.
   if (!curr && prev) {
     state.isEditing = false;
-    updateEditorHeight();
   }
 });
 </script>
