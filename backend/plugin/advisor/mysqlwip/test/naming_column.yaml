@@ -99,6 +99,26 @@
 - statement: |-
     CREATE TABLE book(
       id int,
+      creator_id int,
+      created_ts timestamp,
+      updated_ts timestamp);
+    ALTER TABLE book ADD COLUMN (personAge INT, contentString varchar(255));
+  want:
+    - status: WARN
+      code: 302
+      title: naming.column
+      content: '`book`.`contentString` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      line: 6
+      details: ""
+    - status: WARN
+      code: 302
+      title: naming.column
+      content: '`book`.`personAge` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      line: 6
+      details: ""
+- statement: |-
+    CREATE TABLE book(
+      id int,
       createdTs timestamp,
       updaterId int,
       updated_ts timestamp);

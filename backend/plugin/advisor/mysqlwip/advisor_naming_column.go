@@ -121,23 +121,35 @@ func (checker *namingColumnConventionChecker) EnterAlterTable(ctx *mysql.AlterTa
 			continue
 		}
 
-		var columnName string
 		switch {
 		// add column
-		case item.ADD_SYMBOL() != nil && item.Identifier() != nil:
-			columnName = mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+		case item.ADD_SYMBOL() != nil:
+			switch {
+			case item.Identifier() != nil && item.FieldDefinition() != nil:
+				columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+				checker.handleColumn(tableName, columnName, item.GetStart().GetLine())
+			case item.OPEN_PAR_SYMBOL() != nil && item.TableElementList() != nil:
+				for _, tableElement := range item.TableElementList().AllTableElement() {
+					if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().ColumnName() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil {
+						continue
+					}
+					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
+					checker.handleColumn(tableName, columnName, tableElement.GetStart().GetLine())
+				}
+			}
 		// rename column
 		case item.RENAME_SYMBOL() != nil && item.COLUMN_SYMBOL() != nil:
-			// only focus on new colunn-name.
-			columnName = mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+			// only focus on new column-name.
+			columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+			checker.handleColumn(tableName, columnName, item.GetStart().GetLine())
 		// change column
 		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil:
-			// only focus on new colunn-name.
-			columnName = mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+			// only focus on new column-name.
+			columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+			checker.handleColumn(tableName, columnName, item.GetStart().GetLine())
 		default:
 			continue
 		}
-		checker.handleColumn(tableName, columnName, ctx.GetStart().GetLine())
 	}
 }
 
