@@ -3,6 +3,10 @@ import { ref } from "vue";
 import { Language } from "@/types";
 import { SupportedLanguages } from "../services";
 
+export type EditorType =
+  | monaco.editor.IStandaloneCodeEditor
+  | monaco.editor.IStandaloneDiffEditor;
+
 export const useTextModelLanguage = (
   editor: monaco.editor.IStandaloneCodeEditor
 ) => {

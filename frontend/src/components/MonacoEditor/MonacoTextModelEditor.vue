@@ -23,8 +23,8 @@ import {
   nextTick,
   shallowRef,
   onBeforeUnmount,
+  watch,
 } from "vue";
-import { watchEffect } from "vue";
 import type { SQLDialect } from "@/types";
 import {
   AutoHeightOptions,
@@ -82,7 +82,9 @@ onMounted(async () => {
   await initializeMonacoServices();
 
   const { default: monaco, createMonacoEditor } = await import("./editor");
-  if (!containerRef.value) {
+
+  const container = containerRef.value;
+  if (!container) {
     // Give up creating monaco editor if the component has been unmounted
     // very quickly.
     console.debug(
@@ -93,7 +95,7 @@ onMounted(async () => {
 
   try {
     const editor = await createMonacoEditor({
-      container: containerRef.value,
+      container,
       options: {
         readOnly: props.readonly,
         ...props.options,
@@ -121,10 +123,10 @@ onMounted(async () => {
       editor.focus();
     }
 
-    watchEffect(() => {
+    watch(content, () => {
       emit("update:content", content.value);
     });
-    watchEffect(() => {
+    watch(selectedContent, () => {
       emit("update:selected-content", selectedContent.value);
     });
   } catch (ex) {
@@ -140,5 +142,3 @@ defineExpose({
   editorRef,
 });
 </script>
-
-<style lang="postcss" scoped></style>

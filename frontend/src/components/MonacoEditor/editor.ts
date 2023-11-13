@@ -6,7 +6,10 @@ import "monaco-editor/esm/vs/basic-languages/typescript/typescript.contribution.
 import "monaco-editor/esm/vs/editor/editor.all.js";
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
 import "monaco-editor/esm/vs/language/typescript/monaco.contribution.js";
-import { createConfiguredEditor } from "vscode/monaco";
+import {
+  createConfiguredDiffEditor,
+  createConfiguredEditor,
+} from "vscode/monaco";
 import { defer } from "@/utils";
 import { initializeMonacoServices } from "./services";
 import { getBBTheme } from "./themes/bb";
@@ -40,7 +43,7 @@ const initializeTheme = () => {
 
 export const createMonacoEditor = async (config: {
   container: HTMLElement;
-  options: monaco.editor.IStandaloneEditorConstructionOptions | undefined;
+  options?: monaco.editor.IStandaloneEditorConstructionOptions;
 }): Promise<monaco.editor.IStandaloneCodeEditor> => {
   await initializeMonacoServices();
 
@@ -49,6 +52,25 @@ export const createMonacoEditor = async (config: {
   // create monaco editor
   const editor = createConfiguredEditor(config.container, {
     ...defaultEditorOptions(),
+    ...config.options,
+  });
+
+  MonacoEditorReadyDefer.resolve(undefined);
+
+  return editor;
+};
+
+export const createMonacoDiffEditor = async (config: {
+  container: HTMLElement;
+  options?: monaco.editor.IStandaloneDiffEditorConstructionOptions;
+}): Promise<monaco.editor.IStandaloneDiffEditor> => {
+  await initializeMonacoServices();
+
+  initializeTheme();
+
+  // create monaco editor
+  const editor = createConfiguredDiffEditor(config.container, {
+    ...defaultDiffEditorOptions(),
     ...config.options,
   });
 
@@ -67,6 +89,36 @@ export const defaultEditorOptions =
       insertSpaces: true,
       autoClosingQuotes: "always",
       detectIndentation: false,
+      folding: false,
+      automaticLayout: true,
+      minimap: {
+        enabled: false,
+      },
+      wordWrap: "on",
+      fixedOverflowWidgets: true,
+      fontSize: 14,
+      lineHeight: 24,
+      scrollBeyondLastLine: false,
+      padding: {
+        top: 8,
+        bottom: 8,
+      },
+      renderLineHighlight: "none",
+      codeLens: false,
+      scrollbar: {
+        alwaysConsumeMouseWheel: false,
+      },
+    };
+  };
+
+export const defaultDiffEditorOptions =
+  (): monaco.editor.IStandaloneDiffEditorConstructionOptions => {
+    return {
+      // Learn more: https://github.com/microsoft/monaco-editor/issues/311
+      enableSplitViewResizing: false,
+      renderValidationDecorations: "on",
+      theme: "bb",
+      autoClosingQuotes: "always",
       folding: false,
       automaticLayout: true,
       minimap: {

@@ -52,11 +52,11 @@
           </NTab>
         </NTabs>
 
-        <DiffEditor
+        <DiffEditorV2
           v-if="state.tab === 'DIFF'"
           class="h-[64rem] max-h-full border rounded-md overflow-clip"
           :original="sdlState.detail.previousSDL"
-          :value="sdlState.detail.prettyExpectedSDL"
+          :modified="sdlState.detail.prettyExpectedSDL"
           :readonly="true"
         />
         <MonacoEditorV2
@@ -92,8 +92,7 @@
 import { NTabs, NTab, NTooltip } from "naive-ui";
 import { reactive } from "vue";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
-import { MonacoEditorV2 } from "@/components/MonacoEditor";
-import DiffEditor from "@/components/MonacoEditor/DiffEditor.vue";
+import { DiffEditorV2, MonacoEditorV2 } from "@/components/MonacoEditor";
 import { hasFeature, pushNotification } from "@/store";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import { useSDLState } from "./useSDLState";
