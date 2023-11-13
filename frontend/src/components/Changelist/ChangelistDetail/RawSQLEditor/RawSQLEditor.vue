@@ -11,13 +11,12 @@
       class="flex-1 overflow-hidden"
       :data-height="editorWrapperHeight"
     >
-      <MonacoEditor
-        ref="editorRef"
-        :value="statement"
+      <MonacoEditorV2
+        :content="statement"
         :readonly="readonly || isSheetOversize"
         class="border w-full h-full"
-        @change="$emit('update:statement', $event)"
-        @ready="adjustEditorHeight"
+        @update:content="$emit('update:statement', $event)"
+        @ready="handleEditorReady"
       />
     </div>
   </div>
@@ -26,7 +25,11 @@
 <script setup lang="ts">
 import { useElementSize } from "@vueuse/core";
 import { ref, watch } from "vue";
-import MonacoEditor from "@/components/MonacoEditor";
+import {
+  IStandaloneCodeEditor,
+  MonacoEditorV2,
+  MonacoModule,
+} from "@/components/MonacoEditor";
 import UploadProgressButton from "@/components/misc/UploadProgressButton.vue";
 
 defineProps<{
@@ -41,18 +44,23 @@ const emit = defineEmits<{
 }>();
 
 const editorWrapperRef = ref<HTMLDivElement>();
-const editorRef = ref<InstanceType<typeof MonacoEditor>>();
 const { height: editorWrapperHeight } = useElementSize(editorWrapperRef);
 
 const handleUploadFile = async (event: Event) => {
   emit("upload", event);
 };
 
-const adjustEditorHeight = () => {
-  const editor = editorRef.value;
-  if (!editor) return;
-  editor.setEditorContentHeight(editorWrapperHeight.value);
+const handleEditorReady = (
+  monaco: MonacoModule,
+  editor: IStandaloneCodeEditor
+) => {
+  watch(
+    editorWrapperHeight,
+    () => {
+      const container = editor.getContainerDomNode();
+      container.style.height = `${editorWrapperHeight.value}px`;
+    },
+    { immediate: true }
+  );
 };
-
-watch(editorWrapperHeight, adjustEditorHeight);
 </script>

@@ -24,6 +24,7 @@ import {
   shallowRef,
   onBeforeUnmount,
   watch,
+  watchEffect,
 } from "vue";
 import type { SQLDialect } from "@/types";
 import {
@@ -63,7 +64,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (e: "update:content", content: string): void;
-  (e: "update:selected-content", content: string): void;
+  (e: "selected-content", content: string): void;
   (
     e: "ready",
     monaco: MonacoModule,
@@ -76,6 +77,7 @@ const containerRef = ref<HTMLDivElement>();
 const editorRef = shallowRef<monaco.editor.IStandaloneCodeEditor>();
 
 const isEditorLoaded = ref(false);
+const updateHeightImpl = ref<ReturnType<typeof useAutoHeight>>();
 
 onMounted(async () => {
   const { initializeMonacoServices } = await import("./services");
@@ -112,9 +114,15 @@ onMounted(async () => {
     const content = useContent(monaco, editor);
     const selectedContent = useSelectedContent(monaco, editor);
     useAdvices(monaco, editor, toRef(props, "advices"));
-    useAutoHeight(monaco, editor, containerRef, toRef(props, "autoHeight"));
+    updateHeightImpl.value = useAutoHeight(
+      monaco,
+      editor,
+      containerRef,
+      toRef(props, "autoHeight")
+    );
 
     isEditorLoaded.value = true;
+
     await nextTick();
     emit("ready", monaco, editor);
 
@@ -126,8 +134,8 @@ onMounted(async () => {
     watch(content, () => {
       emit("update:content", content.value);
     });
-    watch(selectedContent, () => {
-      emit("update:selected-content", selectedContent.value);
+    watchEffect(() => {
+      emit("selected-content", selectedContent.value);
     });
   } catch (ex) {
     console.error("[MonacoEditorV2] initialize failed", ex);
@@ -140,5 +148,8 @@ onBeforeUnmount(() => {
 
 defineExpose({
   editorRef,
+  updateHeight: (height?: number | undefined) => {
+    updateHeightImpl.value?.(height);
+  },
 });
 </script>
