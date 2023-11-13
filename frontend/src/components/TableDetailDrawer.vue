@@ -269,15 +269,13 @@ const getTableName = (tableName: string) => {
 };
 
 watch(
-  () => props.tableName,
-  (tableName) => {
+  () => [props.tableName, props.schemaName],
+  ([tableName, schemaName]) => {
     if (!tableName) {
       return;
     }
     const schemaList = dbSchemaStore.getSchemaList(database.value.name);
-    const schema = schemaList.find(
-      (schema) => schema.name === props.schemaName
-    );
+    const schema = schemaList.find((schema) => schema.name === schemaName);
     if (schema) {
       dbSchemaStore
         .getOrFetchTableMetadata({
