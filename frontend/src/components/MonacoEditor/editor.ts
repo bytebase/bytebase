@@ -5,8 +5,10 @@ import "monaco-editor/esm/vs/basic-languages/sql/sql.contribution.js";
 import "monaco-editor/esm/vs/basic-languages/typescript/typescript.contribution.js";
 import "monaco-editor/esm/vs/editor/editor.all.js";
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
+import "monaco-editor/esm/vs/editor/standalone/browser/standaloneCodeEditorService";
 import "monaco-editor/esm/vs/language/typescript/monaco.contribution.js";
 import { defer } from "@/utils";
+import { initializeLSPClient } from "./lsp-client";
 import { initializeMonacoServices } from "./services";
 import { getBBTheme } from "./themes/bb";
 import { getBBDarkTheme } from "./themes/bb-dark";
@@ -37,20 +39,24 @@ const initializeTheme = () => {
   state.themeInitialized = true;
 };
 
+const initialize = async () => {
+  await initializeMonacoServices();
+  await initializeLSPClient();
+
+  initializeTheme();
+};
+
 export const createMonacoEditor = async (config: {
   container: HTMLElement;
   options?: monaco.editor.IStandaloneEditorConstructionOptions;
 }): Promise<monaco.editor.IStandaloneCodeEditor> => {
-  await initializeMonacoServices();
-
-  initializeTheme();
+  await initialize();
 
   // create monaco editor
-  const options = {
+  const editor = monaco.editor.create(config.container, {
     ...defaultEditorOptions(),
     ...config.options,
-  };
-  const editor = monaco.editor.create(config.container, options);
+  });
 
   MonacoEditorReadyDefer.resolve(undefined);
 
@@ -61,9 +67,7 @@ export const createMonacoDiffEditor = async (config: {
   container: HTMLElement;
   options?: monaco.editor.IStandaloneDiffEditorConstructionOptions;
 }): Promise<monaco.editor.IStandaloneDiffEditor> => {
-  await initializeMonacoServices();
-
-  initializeTheme();
+  await initialize();
 
   // create monaco editor
   const editor = monaco.editor.createDiffEditor(config.container, {
@@ -71,7 +75,7 @@ export const createMonacoDiffEditor = async (config: {
     ...config.options,
   });
 
-  MonacoEditorReadyDefer.resolve(undefined);
+  MonacoEditorReadyDefer.resolve();
 
   return editor;
 };

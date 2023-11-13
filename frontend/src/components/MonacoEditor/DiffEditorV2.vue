@@ -113,9 +113,6 @@ const getModifiedContent = (editor: monaco.editor.IStandaloneDiffEditor) => {
 };
 
 onMounted(async () => {
-  const { initializeMonacoServices } = await import("./services");
-  await initializeMonacoServices();
-
   const { default: monaco, createMonacoDiffEditor } = await import("./editor");
 
   const container = containerRef.value;

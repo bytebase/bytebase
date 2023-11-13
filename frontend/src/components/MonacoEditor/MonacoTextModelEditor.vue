@@ -73,9 +73,6 @@ const editorRef = shallowRef<monaco.editor.IStandaloneCodeEditor>();
 const ready = ref(false);
 
 onMounted(async () => {
-  const { initializeMonacoServices } = await import("./services");
-  await initializeMonacoServices();
-
   const { default: monaco, createMonacoEditor } = await import("./editor");
 
   const container = containerRef.value;

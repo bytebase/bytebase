@@ -154,5 +154,8 @@
     "jquery": "1.9.1 - 3",
     "popper.js": "^1.16.1",
     "ws": "^8.13.0"
+  },
+  "overrides": {
+    "vscode": "npm:@codingame/monaco-vscode-api@1.81.7"
   }
 }
