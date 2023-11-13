@@ -128,10 +128,8 @@ func (s *Store) GetDeploymentConfigV2(ctx context.Context, projectUID int) (*Dep
 		return s.getDefaultDeploymentConfigV2(ctx)
 	}
 
-	if deploymentConfig, ok := s.projectIDDeploymentConfigCache.Load(projectUID); ok {
-		if v, ok := deploymentConfig.(*DeploymentConfigMessage); ok {
-			return v, nil
-		}
+	if v, ok := s.projectDeploymentCache.Get(projectUID); ok {
+		return v, nil
 	}
 	where, args := []string{"TRUE"}, []any{}
 	where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, projectUID)
@@ -171,7 +169,7 @@ func (s *Store) GetDeploymentConfigV2(ctx context.Context, projectUID int) (*Dep
 	}
 	deploymentConfig.Schedule = &schedule
 
-	s.projectIDDeploymentConfigCache.Store(projectUID, &deploymentConfig)
+	s.projectDeploymentCache.Add(projectUID, &deploymentConfig)
 	return &deploymentConfig, nil
 }
 
@@ -225,7 +223,7 @@ func (s *Store) UpsertDeploymentConfigV2(ctx context.Context, projectUID, princi
 		return nil, err
 	}
 
-	s.projectIDDeploymentConfigCache.Store(projectUID, &deploymentConfig)
+	s.projectDeploymentCache.Add(projectUID, &deploymentConfig)
 	return &deploymentConfig, nil
 }
 
