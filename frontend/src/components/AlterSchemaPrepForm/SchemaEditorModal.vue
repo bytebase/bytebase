@@ -86,13 +86,13 @@
             </button>
           </div>
         </div>
-        <MonacoEditor
+        <MonacoEditorV2
+          v-model:content="state.editStatement"
           class="w-full h-full border border-b-0"
           data-label="bb-schema-editor-sql-editor"
-          :value="state.editStatement"
+          language="sql"
           :auto-focus="false"
           :dialect="dialectOfEngineV1(databaseEngine)"
-          @change="handleStatementChange"
         />
       </div>
     </div>
@@ -155,7 +155,7 @@ import {
 import { Engine } from "@/types/proto/v1/common";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
-import MonacoEditor from "../MonacoEditor";
+import { MonacoEditorV2 } from "../MonacoEditor";
 import { provideSQLCheckContext } from "../SQLCheck";
 import {
   initialSchemaConfigToMetadata,
@@ -264,10 +264,6 @@ onMounted(async () => {
 
 const handleChangeTab = (tab: TabType) => {
   state.selectedTab = tab;
-};
-
-const handleStatementChange = (value: string) => {
-  state.editStatement = value;
 };
 
 const dismissModal = () => {
@@ -508,7 +504,7 @@ const generateIssueName = (
 };
 </script>
 
-<style>
+<style lang="postcss">
 .schema-editor-modal-container > .modal-container {
   @apply w-full h-[46rem] overflow-auto grid;
   grid-template-rows: min-content 1fr min-content;

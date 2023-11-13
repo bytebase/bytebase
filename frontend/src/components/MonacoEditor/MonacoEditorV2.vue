@@ -10,17 +10,13 @@ import type { Language } from "@/types";
 import MonacoTextModelEditor from "./MonacoTextModelEditor.vue";
 import { useMonacoTextModel } from "./text-model";
 import type { MonacoModule } from "./types";
+import { extensionNameOfLanguage } from "./utils";
 
-const props = withDefaults(
-  defineProps<{
-    filename: string;
-    content: string;
-    language: Language;
-  }>(),
-  {
-    filename: () => uuidv4(),
-  }
-);
+const props = defineProps<{
+  filename?: string;
+  content: string;
+  language: Language;
+}>();
 const emit = defineEmits<{
   (event: "update:content", content: string): void;
   (e: "update:selected-content", content: string): void;
@@ -39,9 +35,10 @@ const content = computed({
     emit("update:content", content);
   },
 });
-const model = useMonacoTextModel(
-  toRef(props, "filename"),
-  content,
-  toRef(props, "language")
-);
+const filename = computed(() => {
+  if (props.filename) return props.filename;
+
+  return `${uuidv4()}.${extensionNameOfLanguage(props.language)}`;
+});
+const model = useMonacoTextModel(filename, content, toRef(props, "language"));
 </script>
