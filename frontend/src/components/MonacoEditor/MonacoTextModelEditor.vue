@@ -25,7 +25,7 @@ import {
   onBeforeUnmount,
 } from "vue";
 import { watchEffect } from "vue";
-import { SQLDialect } from "@/types";
+import type { SQLDialect } from "@/types";
 import {
   useAdvices,
   useContent,
@@ -60,7 +60,6 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: "update:content", content: string): void;
   (e: "update:selected-content", content: string): void;
-  (e: "save", content: string): void;
   (
     e: "ready",
     monaco: MonacoModule,

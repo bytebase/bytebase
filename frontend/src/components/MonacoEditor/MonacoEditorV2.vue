@@ -3,10 +3,12 @@
 </template>
 
 <script setup lang="ts">
+import type monaco from "monaco-editor";
 import { computed, toRef } from "vue";
-import { Language } from "@/types";
+import type { Language } from "@/types";
 import MonacoTextModelEditor from "./MonacoTextModelEditor.vue";
 import { useMonacoTextModel } from "./text-model";
+import type { MonacoModule } from "./types";
 
 const props = defineProps<{
   filename: string;
@@ -15,6 +17,12 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{
   (event: "update:content", content: string): void;
+  (e: "update:selected-content", content: string): void;
+  (
+    e: "ready",
+    monaco: MonacoModule,
+    editor: monaco.editor.IStandaloneCodeEditor
+  ): void;
 }>();
 
 const content = computed({
