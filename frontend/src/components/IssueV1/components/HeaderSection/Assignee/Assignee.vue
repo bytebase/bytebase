@@ -166,6 +166,9 @@ const mapUserOptions = (users: User[]) => {
     value: extractUserUID(user.name),
     label: user.title,
   });
+  // `addGroup` ensures that
+  // 1. any users will be added at most once
+  // 2. empty groups will not be added
   const addGroup = (group: SelectGroupOption, users: User[]) => {
     const filteredUsers = users.filter((u) => !added.has(u.name));
     if (filteredUsers.length > 0) {
@@ -174,12 +177,6 @@ const mapUserOptions = (users: User[]) => {
       groups.push(group);
     }
   };
-
-  const projectMembers = users.filter((user) =>
-    isMemberOfProjectV1(project.iamPolicy, user)
-  );
-
-  // Add project members group by releaser roles or project roles
 
   // Groups in order
   // - approvers of current step (CI phase only)
@@ -202,11 +199,8 @@ const mapUserOptions = (users: User[]) => {
     );
   }
   if (phase === "CD") {
-    const releasers = projectMembers.filter((user) => {
-      return (
-        releaserCandidates.value.findIndex((c) => c.name === user.name) >= 0
-      );
-    });
+    const candidates = new Set(releaserCandidates.value.map((c) => c.name));
+    const releasers = users.filter((user) => candidates.has(user.name));
     addGroup(
       {
         type: "group",
@@ -216,7 +210,7 @@ const mapUserOptions = (users: User[]) => {
       releasers
     );
   }
-  const projectOwners = projectMembers.filter((user) =>
+  const projectOwners = users.filter((user) =>
     isOwnerOfProjectV1(project.iamPolicy, user)
   );
   addGroup(
@@ -226,6 +220,9 @@ const mapUserOptions = (users: User[]) => {
       key: "project-owners",
     },
     projectOwners
+  );
+  const projectMembers = users.filter((user) =>
+    isMemberOfProjectV1(project.iamPolicy, user)
   );
   addGroup(
     {
