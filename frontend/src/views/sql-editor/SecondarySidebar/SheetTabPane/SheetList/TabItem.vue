@@ -7,9 +7,11 @@
   >
     <SheetConnectionIcon :tab="item.target" class="shrink-0 w-4 h-6" />
 
-    <div class="flex-1 text-sm leading-6 cursor-pointer truncate">
-      <!-- eslint-disable-next-line vue/no-v-html -->
-      <span v-html="titleHTML(item, keyword)" />
+    <div class="flex-1 text-sm leading-6 h-6 cursor-pointer">
+      <EllipsisText>
+        <!-- eslint-disable-next-line vue/no-v-html -->
+        <span v-html="titleHTML(item, keyword)" />
+      </EllipsisText>
     </div>
 
     <div class="shrink-0 w-6 h-6 flex items-center justify-center" @click.stop>
@@ -27,6 +29,7 @@
 
 <script setup lang="ts">
 import { NTooltip } from "naive-ui";
+import EllipsisText from "@/components/EllipsisText.vue";
 import { SheetConnectionIcon } from "@/views/sql-editor/EditorCommon";
 import { MergedItem, TabItem, domIDForItem, titleHTML } from "./common";
 
