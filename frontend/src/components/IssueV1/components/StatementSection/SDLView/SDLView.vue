@@ -54,14 +54,19 @@
 
         <DiffEditor
           v-if="state.tab === 'DIFF'"
-          class="h-[64rem] max-h-full border rounded-md overflow-clip"
+          class="border rounded-[3px] overflow-clip"
           :original="sdlState.detail.previousSDL"
           :modified="sdlState.detail.prettyExpectedSDL"
           :readonly="true"
+          :auto-height="{
+            alignment: 'modified',
+            min: 120,
+            max: 480,
+          }"
         />
         <MonacoEditor
           v-if="state.tab === 'STATEMENT'"
-          class="w-full border h-auto"
+          class="w-full h-auto border rounded-[3px] overflow-clip"
           data-label="bb-issue-sql-editor"
           :content="sdlState.detail.diffDDL"
           :readonly="true"
@@ -70,7 +75,7 @@
         />
         <MonacoEditor
           v-if="state.tab === 'SCHEMA'"
-          class="w-full border h-auto"
+          class="w-full h-auto border rounded-[3px] overflow-clip"
           data-label="bb-issue-sql-editor"
           :content="sdlState.detail.expectedSDL"
           :readonly="true"

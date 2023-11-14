@@ -23,10 +23,18 @@ import {
   computed,
 } from "vue";
 import { Language } from "@/types";
-import { useOptionByKey } from "./composables";
+import {
+  AutoHeightOptions,
+  useAutoHeight,
+  useOptionByKey,
+} from "./composables";
 import { useMonacoTextModel } from "./text-model";
 import type { MonacoModule } from "./types";
 import { extensionNameOfLanguage } from "./utils";
+
+export type DiffEditorAutoHeightOptions = AutoHeightOptions & {
+  alignment: "original" | "modified";
+};
 
 const props = withDefaults(
   defineProps<{
@@ -34,12 +42,14 @@ const props = withDefaults(
     modified?: string;
     language?: Language;
     readonly?: boolean;
+    autoHeight?: DiffEditorAutoHeightOptions;
   }>(),
   {
     original: "",
     modified: "",
     language: "sql",
     readonly: false,
+    autoHeight: undefined,
   }
 );
 
@@ -130,6 +140,16 @@ onMounted(async () => {
   // Use "plugin" composable features
   useOptionByKey(monaco, editor, "readOnly", toRef(props, "readonly"));
   const modifiedContent = useModifiedContent(monaco, editor);
+  if (props.autoHeight) {
+    useAutoHeight(
+      monaco,
+      props.autoHeight.alignment === "original"
+        ? editor.getOriginalEditor()
+        : editor.getModifiedEditor(),
+      containerRef,
+      toRef(props, "autoHeight")
+    );
+  }
 
   editorRef.value = editor;
   isEditorLoaded.value = true;
