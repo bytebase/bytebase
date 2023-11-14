@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func TestMiddle_Byte(t *testing.T) {
@@ -58,7 +58,7 @@ func TestRangeMask(t *testing.T) {
 		description string
 		input       *MaskData
 		slices      []*MaskRangeSlice
-		want        *v1.RowValue
+		want        *v1pb.RowValue
 	}{
 		{
 			description: "Single slice",
@@ -72,8 +72,8 @@ func TestRangeMask(t *testing.T) {
 					Substitution: "###",
 				},
 			},
-			want: &v1.RowValue{
-				Kind: &v1.RowValue_StringValue{
+			want: &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{
 					StringValue: "0###345678",
 				},
 			},
@@ -95,8 +95,8 @@ func TestRangeMask(t *testing.T) {
 					Substitution: "***",
 				},
 			},
-			want: &v1.RowValue{
-				Kind: &v1.RowValue_StringValue{
+			want: &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{
 					StringValue: "0###34***78",
 				},
 			},
@@ -118,8 +118,8 @@ func TestRangeMask(t *testing.T) {
 					Substitution: "***",
 				},
 			},
-			want: &v1.RowValue{
-				Kind: &v1.RowValue_StringValue{
+			want: &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{
 					StringValue: "0#23",
 				},
 			},
