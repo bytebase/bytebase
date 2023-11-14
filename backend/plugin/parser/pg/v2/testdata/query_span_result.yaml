@@ -238,12 +238,6 @@
           database: db
           schema: public
           table: t
-          column: b
-        : true
-        ? server: ""
-          database: db
-          schema: public
-          table: t
           column: c
         : true
         ? server: ""
@@ -251,6 +245,12 @@
           schema: public
           table: t
           column: a
+        : true
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: b
         : true
     sourcecolumns:
       ? server: ""
@@ -417,13 +417,13 @@
           database: db
           schema: public
           table: t
-          column: b
+          column: a
         : true
         ? server: ""
           database: db
           schema: public
           table: t
-          column: a
+          column: b
         : true
     - name: c2
       sourcecolumns:
@@ -465,6 +465,12 @@
           database: db
           schema: public
           table: t
+          column: d
+        : true
+        ? server: ""
+          database: db
+          schema: public
+          table: t
           column: a
         : true
         ? server: ""
@@ -472,12 +478,6 @@
           schema: public
           table: t
           column: c
-        : true
-        ? server: ""
-          database: db
-          schema: public
-          table: t
-          column: d
         : true
     sourcecolumns:
       ? server: ""
@@ -844,13 +844,13 @@
           database: db
           schema: public
           table: t
-          column: c
+          column: b
         : true
         ? server: ""
           database: db
           schema: public
           table: t
-          column: b
+          column: c
         : true
         ? server: ""
           database: db
