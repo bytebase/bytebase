@@ -124,6 +124,24 @@ func TestRangeMask(t *testing.T) {
 				},
 			},
 		},
+		{
+			description: "Emoji",
+			input: &MaskData{
+				Data: &sql.NullString{String: "😂😠😡😊😂", Valid: true},
+			},
+			slices: []*MaskRangeSlice{
+				{
+					Start:        1,
+					End:          4,
+					Substitution: "😂😂😂",
+				},
+			},
+			want: &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{
+					StringValue: "😂😂😂😂😂",
+				},
+			},
+		},
 	}
 
 	a := require.New(t)
