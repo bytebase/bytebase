@@ -1,5 +1,5 @@
 // Package mysql implements the SQL advisor rules for MySQL.
-package mysqlwip
+package mysql
 
 import (
 	"regexp"
