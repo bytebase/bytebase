@@ -18,8 +18,8 @@ import {
   stageV1Slug,
   taskV1Slug,
 } from "@/utils";
-import { releaserCandidatesForIssue } from "./assignee";
 import { IssueContext, IssueEvents, IssuePhase } from "./context";
+import { releaserCandidatesForIssue } from "./releaser";
 import { extractReviewContext } from "./review";
 import { stageForTask } from "./utils";
 

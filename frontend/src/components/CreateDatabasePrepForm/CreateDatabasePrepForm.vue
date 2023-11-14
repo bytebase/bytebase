@@ -229,7 +229,6 @@ import {
   instanceV1HasCollationAndCharacterSet,
   instanceV1HasCreateDatabase,
 } from "@/utils";
-import { trySetDefaultAssigneeByEnvironment } from "../IssueV1/logic/initialize/assignee";
 
 interface LocalState {
   projectId?: string;
@@ -474,11 +473,6 @@ const createV1 = async () => {
       steps: [{ specs: [spec] }],
       creator: currentUserV1.value.name,
     });
-    await trySetDefaultAssigneeByEnvironment(
-      issueCreate,
-      project.value,
-      environment.name
-    );
     const { createdIssue } = await experimentalCreateIssueByPlan(
       project.value,
       issueCreate,
