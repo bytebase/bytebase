@@ -3,6 +3,7 @@ import { Ref, watchEffect } from "vue";
 import { SQLDialect } from "@/types";
 import sqlFormatter from "../sqlFormatter";
 import type { MonacoModule } from "../types";
+import { trySetContentWithUndo } from "../utils";
 import { useTextModelLanguage } from "./common";
 
 export const useFormatContent = async (
@@ -53,7 +54,9 @@ export const formatEditorContent = (
     return;
   }
   const pos = editor.getPosition();
-  model.setValue(data);
+
+  trySetContentWithUndo(editor, data, "Format content");
+
   if (pos) {
     // Not that smart but best efforts to keep the cursor position
     editor.setPosition(pos);

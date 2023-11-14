@@ -1,3 +1,4 @@
+import { Range } from "monaco-editor";
 import { isRef, unref, watch } from "vue";
 import { Language, MaybeRef } from "@/types";
 import { IStandaloneCodeEditor } from "./types";
@@ -27,4 +28,23 @@ export const useEditorContextKey = <
     watch(valueOrRef, (value) => contextKey?.set(value));
   }
   return contextKey;
+};
+
+export const trySetContentWithUndo = (
+  editor: IStandaloneCodeEditor,
+  content: string,
+  source: string | undefined = undefined
+) => {
+  editor.executeEdits(source, [
+    {
+      range: new Range(1, 1, Number.MAX_SAFE_INTEGER, 1),
+      text: "",
+      forceMoveMarkers: true,
+    },
+    {
+      range: new Range(1, 1, 1, 1),
+      text: content,
+      forceMoveMarkers: true,
+    },
+  ]);
 };
