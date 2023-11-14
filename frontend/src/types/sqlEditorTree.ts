@@ -1,5 +1,6 @@
 import { TreeOption } from "naive-ui";
 import { t } from "@/plugins/i18n";
+import { useSQLEditorTreeStore } from "@/store";
 import { getCustomProjectTitle } from "@/utils/customTheme";
 import { Engine } from "./proto/v1/common";
 import { SchemaMetadata, TableMetadata } from "./proto/v1/database_service";
@@ -108,8 +109,13 @@ export const readableSQLEditorTreeFactor = (
   factor: SQLEditorTreeFactor,
   labelPrefix: string | undefined = ""
 ) => {
+  const treeStore = useSQLEditorTreeStore();
   if (factor === "project") {
-    return getCustomProjectTitle();
+    if (treeStore.projectMode) {
+      return t("common.database");
+    } else {
+      return getCustomProjectTitle();
+    }
   }
   if (factor === "environment") {
     return t("common.environment");

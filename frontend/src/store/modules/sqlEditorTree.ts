@@ -39,14 +39,13 @@ import {
 } from "./v1";
 
 export const ROOT_NODE_ID = "ROOT";
-// export const SQL_EDITOR_TREE_NODE_ID_DELIMITER = "->";
 
-const defaultFactorList = (): StatefulFactor[] => [
-  {
-    factor: "project",
-    disabled: false,
-  },
-];
+const defaultProjectFactor: StatefulFactor = {
+  factor: "project",
+  disabled: false,
+};
+
+const defaultFactorList = (): StatefulFactor[] => [defaultProjectFactor];
 
 const factorListInLocalStorage = useLocalStorage<StatefulFactor[]>(
   "bb.sql-editor.tree-factor-list",
@@ -89,12 +88,29 @@ export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
   const factorList = ref<StatefulFactor[]>(
     cloneDeep(factorListInLocalStorage.value)
   );
-  const filteredFactorList = computed(() => {
-    return factorList.value.filter((sf) => !sf.disabled).map((sf) => sf.factor);
+  const filteredDatabaseList = computed(() => {
+    if (projectMode.value) {
+      return databaseList.value.filter((database) => {
+        return database.project === selectedProject.value?.name;
+      });
+    }
+
+    return databaseList.value;
   });
+  const filteredFactorList = computed(() => {
+    return factorList.value
+      .filter((sf) =>
+        projectMode.value ? sf.factor !== defaultProjectFactor.factor : true
+      )
+      .filter((sf) => !sf.disabled)
+      .map((sf) => sf.factor);
+  });
+  const selectedProject = ref<ComposedProject>();
   const state = ref<TreeState>("UNSET");
   const expandedKeys = ref<string[]>([]); // mixed factor type
   const tree = ref<TreeNode[]>([]);
+
+  const projectMode = computed(() => Boolean(selectedProject.value));
 
   const collectNode = <T extends NodeType>(node: TreeNode<T>) => {
     const { type, target } = node.meta;
@@ -132,7 +148,10 @@ export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
   };
   const buildTree = () => {
     nodeListMapById.clear();
-    tree.value = buildTreeImpl(databaseList.value, filteredFactorList.value);
+    tree.value = buildTreeImpl(
+      filteredDatabaseList.value,
+      filteredFactorList.value
+    );
     const openingDatabaseList = resolveOpeningDatabaseListFromTabList();
     const keys = new Set<string>();
     // Recursively expand opening databases' parent nodes
@@ -195,6 +214,7 @@ export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
   const cleanup = () => {
     accessControlPolicyList.value = [];
     databaseList.value = [];
+    selectedProject.value = undefined;
     tree.value = [];
     expandedKeys.value = [];
     factorList.value = defaultFactorList();
@@ -216,8 +236,10 @@ export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
     databaseList,
     factorList,
     filteredFactorList,
+    selectedProject,
     state,
     tree,
+    projectMode,
     collectNode,
     nodesByTarget,
     expandNodes,
@@ -352,7 +374,7 @@ const buildSubTree = (
     });
   }
 
-  // group (project, instance, project, label) nodes
+  // group (project, instance, environment, label) nodes
   const nodes: TreeNode[] = [];
   const factor = factorList[factorIndex];
 
