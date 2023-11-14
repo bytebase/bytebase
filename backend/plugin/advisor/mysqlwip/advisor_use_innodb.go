@@ -79,6 +79,9 @@ func (c *useInnoDBChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
 	}
 	for _, tableOption := range ctx.CreateTableOptions().AllCreateTableOption() {
 		if tableOption.ENGINE_SYMBOL() != nil && tableOption.EngineRef() != nil {
+			if tableOption.EngineRef().TextOrIdentifier() == nil {
+				continue
+			}
 			engine := mysqlparser.NormalizeMySQLTextOrIdentifier(tableOption.EngineRef().TextOrIdentifier())
 			if strings.ToLower(engine) != innoDB {
 				content := "CREATE " + ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
@@ -91,11 +94,20 @@ func (c *useInnoDBChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
 }
 
 func (c *useInnoDBChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if ctx.AlterTableActions() == nil || ctx.AlterTableActions().AlterCommandList() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
+		return
+	}
 	code := advisor.Ok
 	for _, option := range ctx.AlterTableActions().AlterCommandList().AlterList().AllCreateTableOptionsSpaceSeparated() {
 		for _, op := range option.AllCreateTableOption() {
 			switch {
 			case op.ENGINE_SYMBOL() != nil:
+				if op.EngineRef() == nil {
+					continue
+				}
 				engine := op.EngineRef().GetText()
 				if strings.ToLower(engine) != innoDB {
 					code = advisor.NotInnoDBEngine
