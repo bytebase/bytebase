@@ -15,7 +15,11 @@
           @select-sheet="handleSelectSheet"
         />
       </NTabPane>
-      <NTabPane name="shared" :tab="$t('sheet.shared-with-me')">
+      <NTabPane
+        v-if="!isStandaloneMode"
+        name="shared"
+        :tab="$t('sheet.shared-with-me')"
+      >
         <SheetTable
           view="shared"
           :keyword="keyword"
@@ -40,8 +44,9 @@
 
 <script setup lang="ts">
 import { NButton, NTabs, NTabPane } from "naive-ui";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { SearchBox } from "@/components/v2";
+import { usePageMode } from "@/store";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import { useSheetContext, openSheet, addNewSheet } from "../Sheet";
 import SheetTable from "./SheetTable";
@@ -51,7 +56,10 @@ const emit = defineEmits<{
 }>();
 
 const { view, events } = useSheetContext();
+const pageMode = usePageMode();
 const keyword = ref("");
+
+const isStandaloneMode = computed(() => pageMode.value === "STANDALONE");
 
 const handleSelectSheet = async (sheet: Sheet) => {
   if (await openSheet(sheet)) {
