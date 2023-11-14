@@ -12,7 +12,11 @@
     <NTabPane name="starred" :tab="$t('sheet.starred')">
       <SheetList view="starred" />
     </NTabPane>
-    <NTabPane name="shared" :tab="$t('sheet.shared-with-me')">
+    <NTabPane
+      v-if="!isStandaloneMode"
+      name="shared"
+      :tab="$t('sheet.shared-with-me')"
+    >
       <SheetList view="shared" />
     </NTabPane>
   </NTabs>
@@ -20,12 +24,16 @@
 
 <script setup lang="ts">
 import { NTabs, NTabPane } from "naive-ui";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
+import { usePageMode } from "@/store";
 import { useSheetContext } from "../../Sheet";
 import SheetList from "./SheetList";
 
 const { events: sheetEvents } = useSheetContext();
+const pageMode = usePageMode();
+
+const isStandaloneMode = computed(() => pageMode.value === "STANDALONE");
 
 const sheetTab = ref<"my" | "shared" | "starred">("my");
 

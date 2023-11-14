@@ -20,6 +20,7 @@
 <script setup lang="ts">
 import { NButton, NTooltip } from "naive-ui";
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import { ErrorList } from "@/components/IssueV1/components/common";
 import {
   IssueReviewAction,
@@ -38,6 +39,7 @@ defineEmits<{
   (event: "perform-action", action: IssueReviewAction): void;
 }>();
 
+const { t } = useI18n();
 const { issue, reviewContext } = useIssueContext();
 const currentUser = useCurrentUserV1();
 
@@ -52,7 +54,7 @@ const errors = computed(() => {
       props.action
     )
   ) {
-    errors.push("You are not allowed to perform this action.");
+    errors.push(t("issue.error.you-are-not-allowed-to-perform-this-action"));
   }
   return errors;
 });
