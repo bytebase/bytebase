@@ -19,6 +19,7 @@ import {
   useUserStore,
 } from "@/store";
 import { useSQLEditorTreeStore } from "@/store/modules/sqlEditorTree";
+import { projectNamePrefix } from "@/store/modules/v1/common";
 import { usePolicyV1Store } from "@/store/modules/v1/policy";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { Connection, CoreTabInfo, TabMode, UNKNOWN_USER_NAME } from "@/types";
@@ -45,6 +46,7 @@ const router = useRouter();
 const { t } = useI18n();
 
 const currentUserV1 = useCurrentUserV1();
+const projectStpre = useProjectV1Store();
 const instanceStore = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
 const policyV1Store = usePolicyV1Store();
@@ -87,6 +89,12 @@ const prepareAccessibleDatabaseList = async () => {
 };
 
 const initializeTree = async () => {
+  const project = route.query.project;
+  if (project) {
+    treeStore.selectedProject = await projectStpre.getOrFetchProjectByName(
+      `${projectNamePrefix}${project}`
+    );
+  }
   treeStore.buildTree();
 };
 
