@@ -131,6 +131,11 @@ message QueryRequest {
 
   // The timeout for the request.
   optional google.protobuf.Duration timeout = 5;
+
+  // The id of data source.
+  // It is used for querying admin data source even if the instance has read-only data sources.
+  // Or it can be used to query a specific read-only data source.
+  string data_source_id = 6;
 }
 
 message QueryResponse {
