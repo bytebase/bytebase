@@ -1,7 +1,10 @@
 import type monaco from "monaco-editor";
 import { Ref, computed, watch } from "vue";
 import { UNKNOWN_ID } from "@/types";
-import { extractDatabaseResourceName } from "@/utils";
+import {
+  extractDatabaseResourceName,
+  extractInstanceResourceName,
+} from "@/utils";
 import { executeCommand, useLSPClient } from "../lsp-client";
 import type { MonacoModule } from "../types";
 
@@ -18,12 +21,19 @@ export const useAutoComplete = (
   const client = useLSPClient();
   const params = computed(() => {
     const p = {
-      instanceId: context.value?.instance ?? "instances/-1",
-      database: extractDatabaseResourceName(context.value?.database ?? "")
-        .database,
+      instanceId: "",
+      database: "",
     };
-    if (p.database === String(UNKNOWN_ID)) {
-      p.database = "";
+    const ctx = context.value;
+    if (ctx) {
+      const instance = extractInstanceResourceName(ctx.instance);
+      if (instance && instance !== String(UNKNOWN_ID)) {
+        p.instanceId = ctx.instance;
+      }
+      const database = extractDatabaseResourceName(ctx.database ?? "").database;
+      if (database && database !== String(UNKNOWN_ID)) {
+        p.database = database;
+      }
     }
     return p;
   });
