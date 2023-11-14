@@ -43,7 +43,6 @@
 
 <script setup lang="ts">
 import { asyncComputed } from "@vueuse/core";
-import { orderBy } from "lodash-es";
 import { NTooltip, SelectGroupOption } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -69,6 +68,7 @@ import { Issue } from "@/types/proto/v1/issue_service";
 import {
   extractUserResourceName,
   extractUserUID,
+  hasWorkspacePermissionV1,
   isMemberOfProjectV1,
   isOwnerOfProjectV1,
 } from "@/utils";
@@ -143,143 +143,124 @@ const changeAssigneeUID = async (uid: string | undefined) => {
 };
 
 const filterAssignee = (user: User): boolean => {
-  return isMemberOfProjectV1(issue.value.projectEntity.iamPolicy, user);
+  return (
+    isMemberOfProjectV1(issue.value.projectEntity.iamPolicy, user) ||
+    hasWorkspacePermissionV1(
+      "bb.permission.workspace.manage-issue",
+      user.userRole
+    )
+  );
 };
 
 const mapUserOptions = (users: User[]) => {
   const project = issue.value.projectEntity;
-
-  // Project owners go top
-  users = orderBy(
-    users,
-    [(user) => (isOwnerOfProjectV1(project.iamPolicy, user) ? -1 : 1)],
-    ["asc"]
-  );
-
   const phase = isCreating.value
     ? "PREVIEW"
     : reviewContext.done.value
     ? "CD"
     : "CI";
+  const added = new Set<string>(); // by user.name
   const groups: SelectGroupOption[] = [];
-
   const mapUserOption = (user: User) => ({
     user,
     value: extractUserUID(user.name),
     label: user.title,
   });
+  const addGroup = (group: SelectGroupOption, users: User[]) => {
+    const filteredUsers = users.filter((u) => !added.has(u.name));
+    if (filteredUsers.length > 0) {
+      filteredUsers.forEach((u) => added.add(u.name));
+      group.children = filteredUsers.map(mapUserOption);
+      groups.push(group);
+    }
+  };
 
-  const members = users.filter((user) =>
+  const projectMembers = users.filter((user) =>
     isMemberOfProjectV1(project.iamPolicy, user)
   );
 
-  if (phase === "PREVIEW") {
-    const owners = members.filter((user) =>
-      isOwnerOfProjectV1(project.iamPolicy, user)
-    );
-    if (owners.length > 0) {
-      groups.push({
-        type: "group",
-        label: t("issue.assignee.project-owners"),
-        key: "project-owners",
-        children: owners.map(mapUserOption),
-      });
-    }
-    const nonOwnerMembers = members.filter(
-      (user) => !isOwnerOfProjectV1(project.iamPolicy, user)
-    );
-    if (owners.length > 0) {
-      groups.push({
-        type: "group",
-        label: t("issue.assignee.project-members"),
-        key: "project-members",
-        children: nonOwnerMembers.map(mapUserOption),
-      });
-    }
-  }
+  // Add project members group by releaser roles or project roles
 
+  // Groups in order
+  // - approvers of current step (CI phase only)
+  // - releasers of current stage (CD phase only)
+  // - project owners
+  // - other project members
+  // - other non-member assignee candidates
+  //   - workspace owners
+  //   - workspace DBAs
   if (phase === "CI") {
     const steps = useWrappedReviewStepsV1(issue, reviewContext);
     const currentStep = steps.value?.find((step) => step.status === "CURRENT");
-    if (currentStep && currentStep.candidates.length > 0) {
-      const approverGroup: SelectGroupOption = {
+    addGroup(
+      {
         type: "group",
         label: t("issue.assignee.approvers-of-current-step"),
         key: "approvers",
-        children: currentStep.candidates.map(mapUserOption),
-      };
-      groups.push(approverGroup);
-    }
-    const nonApprovers = members.filter((user) => {
-      if (!currentStep) return true;
-      return currentStep.candidates.findIndex((c) => c.name === user.name) < 0;
-    });
-    if (nonApprovers.length > 0) {
-      const nonApproverGroup: SelectGroupOption = {
-        type: "group",
-        label: t("issue.assignee.project-members"),
-        key: "project-members",
-        children: nonApprovers.map(mapUserOption),
-      };
-      groups.push(nonApproverGroup);
-    }
+      },
+      currentStep?.candidates ?? []
+    );
   }
-
   if (phase === "CD") {
-    const releasers = members.filter((user) => {
+    const releasers = projectMembers.filter((user) => {
       return (
         releaserCandidates.value.findIndex((c) => c.name === user.name) >= 0
       );
     });
-    const nonReleasers = members.filter(
-      (user) => releasers.findIndex((r) => r.name === user.name) < 0
-    );
-    if (releasers.length > 0) {
-      const releaserGroup: SelectGroupOption = {
+    addGroup(
+      {
         type: "group",
         label: t("issue.assignee.releasers-of-current-stage"),
         key: "releasers",
-        children: releasers.map(mapUserOption),
-      };
-      groups.push(releaserGroup);
-    }
-    if (nonReleasers.length > 0) {
-      const memberGroup: SelectGroupOption = {
-        type: "group",
-        label: t("issue.assignee.project-members"),
-        key: "members",
-        children: nonReleasers.map(mapUserOption),
-      };
-      groups.push(memberGroup);
-    }
+      },
+      releasers
+    );
   }
-
-  const nonMemberWorkspaceOwners = users.filter(
-    (user) =>
-      !isMemberOfProjectV1(project.iamPolicy, user) &&
-      user.userRole === UserRole.OWNER
+  const projectOwners = projectMembers.filter((user) =>
+    isOwnerOfProjectV1(project.iamPolicy, user)
   );
-  if (nonMemberWorkspaceOwners.length > 0) {
-    groups.push({
+  addGroup(
+    {
+      type: "group",
+      label: t("issue.assignee.project-owners"),
+      key: "project-owners",
+    },
+    projectOwners
+  );
+  addGroup(
+    {
+      type: "group",
+      label: t("issue.assignee.project-members"),
+      key: "project-members",
+    },
+    projectMembers
+  );
+
+  // Add non-project members (workspace owners and DBAs)
+  const workspaceOwners = users.filter(
+    (user) => user.userRole === UserRole.OWNER
+  );
+  addGroup(
+    {
       type: "group",
       label: t("issue.assignee.workspace-owners"),
       key: "workspace-owners",
-      children: nonMemberWorkspaceOwners.map(mapUserOption),
-    });
-  }
-  const nonMemberWorkspaceDBAs = users.filter(
+    },
+    workspaceOwners
+  );
+  const workspaceDBAs = users.filter(
     (user) =>
       !isMemberOfProjectV1(project.iamPolicy, user) &&
       user.userRole === UserRole.DBA
   );
-  if (nonMemberWorkspaceDBAs.length > 0) {
-    groups.push({
+  addGroup(
+    {
       type: "group",
       label: t("issue.assignee.workspace-dbas"),
       key: "workspace-dbas",
-      children: nonMemberWorkspaceDBAs.map(mapUserOption),
-    });
-  }
+    },
+    workspaceDBAs
+  );
 
   return groups;
 };
