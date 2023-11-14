@@ -22,7 +22,7 @@
     v-show="state.exportMethod === 'SQL'"
     class="w-full h-[300px] border rounded"
   >
-    <MonacoEditorV2
+    <MonacoEditor
       v-model:content="state.statement"
       class="w-full h-full py-2"
       :auto-focus="false"
@@ -49,7 +49,7 @@
 import { isUndefined } from "lodash-es";
 import { NRadioGroup, NRadio, NTooltip } from "naive-ui";
 import { computed, onMounted, reactive, watch } from "vue";
-import { MonacoEditorV2 } from "@/components/MonacoEditor/";
+import { MonacoEditor } from "@/components/MonacoEditor/";
 import { useDatabaseV1Store, useProjectV1Store } from "@/store";
 import {
   DatabaseResource,

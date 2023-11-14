@@ -86,7 +86,7 @@
             </button>
           </div>
         </div>
-        <MonacoEditorV2
+        <MonacoEditor
           v-model:content="state.editStatement"
           class="w-full h-full border border-b-0"
           data-label="bb-schema-editor-sql-editor"
@@ -154,7 +154,7 @@ import {
 import { Engine } from "@/types/proto/v1/common";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
-import { MonacoEditorV2 } from "../MonacoEditor";
+import { MonacoEditor } from "../MonacoEditor";
 import { provideSQLCheckContext } from "../SQLCheck";
 import {
   initialSchemaConfigToMetadata,

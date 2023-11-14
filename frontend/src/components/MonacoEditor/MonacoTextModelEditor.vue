@@ -128,7 +128,7 @@ onMounted(async () => {
       emit("select-content", selectedContent.value);
     });
   } catch (ex) {
-    console.error("[MonacoEditorV2] initialize failed", ex);
+    console.error("[MonacoEditor] initialize failed", ex);
   }
 });
 

@@ -52,7 +52,7 @@
               <RequiredStar />
             </span>
             <div class="w-full h-[300px]">
-              <MonacoEditorV2
+              <MonacoEditor
                 v-model:content="state.statement"
                 class="w-full h-full rounded border"
                 :auto-focus="false"
@@ -142,7 +142,7 @@ import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
-import { MonacoEditorV2 } from "@/components/MonacoEditor";
+import { MonacoEditor } from "@/components/MonacoEditor";
 import RequiredStar from "@/components/RequiredStar.vue";
 import {
   ProjectSelect,

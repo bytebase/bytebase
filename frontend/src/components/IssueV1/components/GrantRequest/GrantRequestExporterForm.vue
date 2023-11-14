@@ -28,7 +28,7 @@
     >
       <span class="flex items-center textlabel mb-2">SQL</span>
       <div class="w-full border rounded">
-        <MonacoEditorV2
+        <MonacoEditor
           class="w-full h-[300px]"
           :content="state.statement"
           :auto-focus="false"
@@ -58,7 +58,7 @@
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { computed, onMounted, reactive, ref } from "vue";
-import { MonacoEditorV2 } from "@/components/MonacoEditor";
+import { MonacoEditor } from "@/components/MonacoEditor";
 import { PresetRoleType } from "@/types";
 import { DatabaseResource } from "@/types";
 import { convertFromCELString } from "@/utils/issue/cel";

@@ -37,7 +37,7 @@
         </div>
       </div>
       <div class="relative w-full h-96 border rounded overflow-clip">
-        <MonacoEditorV2
+        <MonacoEditor
           v-model:content="state.editStatement"
           class="w-full min-h-full"
         />
@@ -77,6 +77,7 @@ import ActionConfirmModal from "@/components/SchemaEditorV1/Modals/ActionConfirm
 import { useDBGroupStore, useNotificationStore } from "@/store";
 import { ComposedDatabaseGroup, ComposedSchemaGroup } from "@/types";
 import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
+import MonacoEditor from "../MonacoEditor";
 
 const MAX_UPLOAD_FILE_SIZE_MB = 1;
 

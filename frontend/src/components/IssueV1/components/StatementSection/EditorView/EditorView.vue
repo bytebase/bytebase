@@ -118,7 +118,7 @@
     </BBAttention>
 
     <div class="whitespace-pre-wrap overflow-hidden border rounded-[3px]">
-      <MonacoEditorV2
+      <MonacoEditor
         class="w-full h-auto max-h-[360px] min-h-[120px]"
         :filename="`${selectedTask.name}.sql`"
         :content="state.statement"
@@ -180,7 +180,7 @@ import {
   notifyNotEditableLegacyIssue,
   isDeploymentConfigChangeTaskV1,
 } from "@/components/IssueV1/logic";
-import MonacoEditor from "@/components/MonacoEditor";
+import { MonacoEditor } from "@/components/MonacoEditor";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import UploadProgressButton from "@/components/misc/UploadProgressButton.vue";
 import { rolloutServiceClient } from "@/grpcweb";

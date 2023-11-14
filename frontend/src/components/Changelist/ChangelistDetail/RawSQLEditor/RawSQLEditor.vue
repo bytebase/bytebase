@@ -11,7 +11,7 @@
       class="flex-1 overflow-hidden"
       :data-height="editorWrapperHeight"
     >
-      <MonacoEditorV2
+      <MonacoEditor
         :content="statement"
         :readonly="readonly || isSheetOversize"
         class="border w-full h-full"
@@ -27,7 +27,7 @@ import { useElementSize } from "@vueuse/core";
 import { ref, watch } from "vue";
 import {
   IStandaloneCodeEditor,
-  MonacoEditorV2,
+  MonacoEditor,
   MonacoModule,
 } from "@/components/MonacoEditor";
 import UploadProgressButton from "@/components/misc/UploadProgressButton.vue";
