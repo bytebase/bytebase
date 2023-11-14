@@ -22,8 +22,8 @@ const (
 var _ advisor.Advisor = (*UseInnoDBAdvisor)(nil)
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLUseInnoDB, &UseInnoDBAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLUseInnoDB, &UseInnoDBAdvisor{})
+	// only for mysqlwip test.
+	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLUseInnoDB, &UseInnoDBAdvisor{})
 }
 
 // UseInnoDBAdvisor is the advisor checking for using InnoDB engine.

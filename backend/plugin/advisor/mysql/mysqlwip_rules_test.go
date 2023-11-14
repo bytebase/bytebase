@@ -1,8 +1,4 @@
-<<<<<<<< HEAD:backend/plugin/advisor/tidb/tidb_rules_test.go
-package tidb
-========
 package mysql
->>>>>>>> bbmain:backend/plugin/advisor/mysql/mysqlwip_rules_test.go
 
 import (
 	"testing"

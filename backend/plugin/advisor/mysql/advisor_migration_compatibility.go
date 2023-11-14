@@ -177,7 +177,7 @@ func (checker *compatibilityChecker) EnterAlterTable(ctx *mysql.AlterTableContex
 
 			// add check enforced.
 			// Check is only supported after 8.0.16 https://dev.mysql.com/doc/refman/8.0/en/create-table-check-constraints.html
-			if item.TableElementList() != nil && item.TableConstraintDef().CheckConstraint() != nil && item.TableConstraintDef().ConstraintEnforcement() != nil {
+			if item.TableConstraintDef() != nil && item.TableConstraintDef().CheckConstraint() != nil && item.TableConstraintDef().ConstraintEnforcement() != nil {
 				checker.code = advisor.CompatibilityAddCheck
 				return
 			}
@@ -212,6 +212,9 @@ func (checker *compatibilityChecker) EnterAlterTable(ctx *mysql.AlterTableContex
 
 // EnterCreateIndex is called when production createIndex is entered.
 func (checker *compatibilityChecker) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
+	if ctx.GetType_() == nil {
+		return
+	}
 	if ctx.GetType_().GetTokenType() != mysql.MySQLParserUNIQUE_SYMBOL {
 		return
 	}
