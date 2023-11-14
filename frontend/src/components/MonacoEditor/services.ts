@@ -1,5 +1,6 @@
 import { languages } from "monaco-editor";
-import { initServices } from "monaco-languageclient";
+import { initialize as initializeExtensions } from "vscode/extensions";
+import { initialize as initializeServices } from "vscode/services";
 
 const state = {
   servicesInitialized: undefined as Promise<void> | undefined,
@@ -27,17 +28,8 @@ export const SupportedLanguages: languages.ILanguageExtensionPoint[] = [
 ];
 
 const initializeRunner = async () => {
-  await initServices({
-    enableThemeService: false,
-    enableTextmateService: false,
-    enableModelService: true,
-    configureEditorOrViewsService: {},
-    // enableKeybindingsService: true,
-    enableLanguagesService: true,
-    enableOutputService: true,
-    enableAccessibilityService: true,
-    debugLogging: false,
-  });
+  await initializeServices({});
+  await initializeExtensions();
 
   SupportedLanguages.forEach((lang) => languages.register(lang));
 };
