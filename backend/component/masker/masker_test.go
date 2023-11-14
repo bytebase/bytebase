@@ -1,9 +1,12 @@
 package masker
 
 import (
+	"database/sql"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func TestMiddle_Byte(t *testing.T) {
@@ -47,5 +50,86 @@ func TestMiddle_Rune(t *testing.T) {
 	for _, tc := range testCases {
 		got := middle(tc.input)
 		a.Equal(tc.want, got)
+	}
+}
+
+func TestRangeMask(t *testing.T) {
+	testCases := []struct {
+		description string
+		input       *MaskData
+		slices      []*MaskRangeSlice
+		want        *v1.RowValue
+	}{
+		{
+			description: "Single slice",
+			input: &MaskData{
+				Data: &sql.NullString{String: "012345678", Valid: true},
+			},
+			slices: []*MaskRangeSlice{
+				{
+					Start:        1,
+					End:          3,
+					Substitution: "###",
+				},
+			},
+			want: &v1.RowValue{
+				Kind: &v1.RowValue_StringValue{
+					StringValue: "0###345678",
+				},
+			},
+		},
+		{
+			description: "Multiple slices",
+			input: &MaskData{
+				Data: &sql.NullString{String: "012345678", Valid: true},
+			},
+			slices: []*MaskRangeSlice{
+				{
+					Start:        1,
+					End:          3,
+					Substitution: "###",
+				},
+				{
+					Start:        5,
+					End:          7,
+					Substitution: "***",
+				},
+			},
+			want: &v1.RowValue{
+				Kind: &v1.RowValue_StringValue{
+					StringValue: "0###34***78",
+				},
+			},
+		},
+		{
+			description: "Mask slices out of data range",
+			input: &MaskData{
+				Data: &sql.NullString{String: "0123", Valid: true},
+			},
+			slices: []*MaskRangeSlice{
+				{
+					Start:        1,
+					End:          2,
+					Substitution: "#",
+				},
+				{
+					Start:        4,
+					End:          10,
+					Substitution: "***",
+				},
+			},
+			want: &v1.RowValue{
+				Kind: &v1.RowValue_StringValue{
+					StringValue: "0#23",
+				},
+			},
+		},
+	}
+
+	a := require.New(t)
+	for _, tc := range testCases {
+		rangeMasker := NewRangeMasker(tc.slices)
+		got := rangeMasker.Mask(tc.input)
+		a.Equal(tc.want, got, "description: %s", tc.description)
 	}
 }
