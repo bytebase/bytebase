@@ -1019,7 +1019,7 @@
     "edit-sql-statement-in-vcs": "该项目开启了基于 VCS 的版本管理。请在对应的 Git 仓库修改 SQL 文件并提交，开启新的工单。",
     "edit-sql-statement": "编辑 SQL 语句",
     "upload-sql": "上传 SQL",
-    "upload-sql-as-sheet": "上传 SQL 至工作表",
+    "upload-sql-as-sheet": "上传 SQL 至工作单",
     "statement-from-sheet-warning": "SQL 过大所以无法直接编辑。你可以上传新的 SQL 文件以将其覆盖。",
     "overwrite-current-statement": "覆盖当前的 SQL 语句",
     "upload-sql-file-max-size-exceeded": "上传文件大小不能超过 {size}。",
@@ -1299,7 +1299,7 @@
     "create-gcp-credentials": "创建凭据的方法见",
     "used-for-testing-connection": "仅作测试连接用",
     "all": "所有实例",
-    "force-archive-description": "强制归档。所有关联的工单都将被解决，所有关联的工作表都将被删除。",
+    "force-archive-description": "强制归档。所有关联的工单都将被解决，所有关联的工作单都将被删除。",
     "sync-mode": {
       "self": "同步模式",
       "database": {
@@ -1687,7 +1687,7 @@
     "schema-writeback-protected-branch": "请保证被变更的分支不是处于保护 (protected) 状态，或者仓库允许他的 maintainer 可以推送变更到保护分支。",
     "if-specified": "如果指定",
     "schema-path-example": "Schema 路径样例",
-    "sheet-path-template": "工作表路径模板",
+    "sheet-path-template": "工作单路径模板",
     "sheet-path-template-description": "Bytebase 仅跟踪文件路径匹配模版 (相对于指定根目录）的文件。匹配的文件将被同步到 SQL Editor 以供使用。",
     "sql-review-ci": "SQL 审核 CI",
     "sql-review-ci-enable": "开启 SQL 审核 CI",
@@ -1867,7 +1867,7 @@
         "description": "已归档的项目将不会显示在日常界面，您可以通过点击页面左下方的 \"归档\"来恢复。",
         "btn-text": "归档这个@:common.project",
         "force": {
-          "description": "强制归档。所有关联的工单都将被解决，所有关联的工作表都将被删除。"
+          "description": "强制归档。所有关联的工单都将被解决，所有关联的工作单都将被删除。"
         }
       },
       "restore": {
@@ -2148,14 +2148,14 @@
     "can-not-execute-query": "加载数据时无法执行查询",
     "rows": "条记录",
     "no-history-found": "暂无历史记录",
-    "no-sheet-found": "暂无工作表",
+    "no-sheet-found": "暂无工作单",
     "search-history": "搜索历史记录",
-    "search-sheets": "搜索工作表",
+    "search-sheets": "搜索工作单",
     "hint-tips": {
       "confirm-to-delete-this-history": "确定删除这条记录？",
       "confirm-to-close-unsaved-sheet": {
-        "title": "确定关闭未保存的工作表？",
-        "content": "关闭当前工作表会丢失所有未保存的数据？"
+        "title": "确定关闭未保存的工作单？",
+        "content": "关闭当前工作单会丢失所有未保存的数据？"
       }
     },
     "please-input-the-tab-label": "请输入标签页名称!",
@@ -2163,22 +2163,22 @@
     "notify": {
       "copy-code-succeed": "代码复制成功",
       "copy-share-link": "分享链接已拷贝到剪贴板",
-      "sheet-is-read-only": "分享的工作表是只读的，无法编辑。"
+      "sheet-is-read-only": "分享的工作单是只读的，无法编辑。"
     },
     "view-all-tabs": "查看所有标签页",
-    "sheets": "工作表",
+    "sheets": "工作单",
     "connection-holder": "先从左侧数据库面板关联一个数据库",
     "link-access": "链接访问权限",
     "private": "私有",
-    "private-desc": "只有您自己可以访问此工作表",
-    "project-desc": "工作表所有者或者项目所有者拥有读、写权限，项目开发者拥有只读权限",
+    "private-desc": "只有您自己可以访问此工作单",
+    "project-desc": "工作单所有者或者项目所有者拥有读、写权限，项目开发者拥有只读权限",
     "public": "公开",
-    "public-desc": "工作表所有者拥有读写权限，其他人只拥有只读权限.",
+    "public-desc": "工作单所有者拥有读写权限，其他人只拥有只读权限.",
     "create-read-only-data-source": "前去创建",
     "go-back": "返回",
-    "save-sheet": "保存工作表",
-    "save-sheet-input-placeholder": "请输入工作表名称",
-    "untitled-sheet": "未命名工作表",
+    "save-sheet": "保存工作单",
+    "save-sheet-input-placeholder": "请输入工作单名称",
+    "untitled-sheet": "未命名工作单",
     "format": "格式化",
     "sql-review-result": "SQL 检查结果",
     "alter-table": "修改表结构",
@@ -2189,7 +2189,7 @@
       "readonly": "只读",
       "admin": "管理员"
     },
-    "close-sheet": "关闭工作表",
+    "close-sheet": "关闭工作单",
     "connect": "连接",
     "connect-in-admin-mode": "以管理员模式连接",
     "admin-mode": {
@@ -2202,8 +2202,8 @@
     "request-query-permission": "申请查询权限",
     "connection-lost": "连接丢失。下一次执行查询时将尝试重新连接。",
     "sheet": {
-      "choose-sheet": "选择工作表",
-      "self": "工作表",
+      "choose-sheet": "选择工作单",
+      "self": "工作单",
       "connection": "连接"
     },
     "tab": {
@@ -2578,8 +2578,8 @@
     "feature-require-subscription": "{feature} 需要 {requiredPlan}。"
   },
   "sheet": {
-    "self": "工作表",
-    "my-sheets": "我的工作表",
+    "self": "工作单",
+    "my-sheets": "我的工作单",
     "mine": "我的",
     "starred": "收藏的",
     "star": "添加收藏",
@@ -2589,19 +2589,19 @@
       "sync-from-vcs": "从 VCS 同步 SQL 脚本"
     },
     "notifications": {
-      "duplicate-success": "已成功拷贝至“我的工作表”"
+      "duplicate-success": "已成功拷贝至“我的工作单”"
     },
     "hint-tips": {
-      "confirm-to-sync-sheet": "确定要同步工作表?",
-      "confirm-to-delete-this-sheet": "确定删除这条工作表?",
-      "confirm-to-duplicate-sheet": "确定要复制这条工作表?"
+      "confirm-to-sync-sheet": "确定要同步工作单?",
+      "confirm-to-delete-this-sheet": "确定删除这条工作单?",
+      "confirm-to-duplicate-sheet": "确定要复制这条工作单?"
     },
     "linked-issue": "关联工单",
-    "from-issue-warning": "这个工作表来自工单 {issue}，处于只读模式。{oversize}",
+    "from-issue-warning": "这个工作单来自工单 {issue}，处于只读模式。{oversize}",
     "content-oversize-warning": "SQL 过大所以无法直接编辑。",
-    "sheets": "工作表",
-    "search-sheets": "搜索工作表",
-    "sheet": "工作表"
+    "sheets": "工作单",
+    "search-sheets": "搜索工作单",
+    "sheet": "工作单"
   },
   "engine": {
     "mysql": "MySQL",
