@@ -197,11 +197,35 @@ func (m *RangeMasker) Mask(data *MaskData) *v1pb.RowValue {
 		if !m.enableMask() {
 			return s
 		}
+
 		var ret []rune
+		prevEnd := 0
 		for _, maskRange := range m.MaskRangeSlice {
-			ret = append(ret, s[:maskRange.Start]...)
+			// First, append the unmasked part.
+			begin, end := prevEnd, int(maskRange.Start)
+			if begin >= len(s) {
+				// If the begin index is out of range, we should stop the masking.
+				break
+			}
+			// To avoid the panic of slice out of range when end is greater than len(s).
+			if end > len(s) {
+				end = len(s)
+			}
+			ret = append(ret, s[begin:end]...)
+			// If the end index is out of range, we should stop the masking.
+			if end == len(s) {
+				prevEnd = end
+				break
+			}
+			// Second, append the masked part.
 			ret = append(ret, []rune(maskRange.Substitution)...)
-			ret = append(ret, s[maskRange.End:]...)
+
+			// Goto the next unmasked part start index.
+			end = min(len(s), int(maskRange.End))
+			prevEnd = end
+		}
+		if prevEnd < len(s) {
+			ret = append(ret, s[prevEnd:]...)
 		}
 		return ret
 	}
@@ -209,11 +233,35 @@ func (m *RangeMasker) Mask(data *MaskData) *v1pb.RowValue {
 		if !m.enableMask() {
 			return s
 		}
+
 		var ret []byte
+		prevEnd := 0
 		for _, maskRange := range m.MaskRangeSlice {
-			ret = append(ret, s[:maskRange.Start]...)
+			// First, append the unmasked part.
+			begin, end := prevEnd, int(maskRange.Start)
+			if begin >= len(s) {
+				// If the begin index is out of range, we should stop the masking.
+				break
+			}
+			// To avoid the panic of slice out of range when end is greater than len(s).
+			if end > len(s) {
+				end = len(s)
+			}
+			ret = append(ret, s[begin:end]...)
+			// If the end index is out of range, we should stop the masking.
+			if end == len(s) {
+				prevEnd = end
+				break
+			}
+			// Second, append the masked part.
 			ret = append(ret, []byte(maskRange.Substitution)...)
-			ret = append(ret, s[maskRange.End:]...)
+
+			// Goto the next unmasked part start index.
+			end = min(len(s), int(maskRange.End))
+			prevEnd = end
+		}
+		if prevEnd < len(s) {
+			ret = append(ret, s[prevEnd:]...)
 		}
 		return ret
 	}
