@@ -160,7 +160,7 @@ func (s *EnvironmentService) DeleteEnvironment(ctx context.Context, request *v1p
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if count > 0 {
-		return nil, status.Errorf(codes.FailedPrecondition, "all instances in the environment should be deleted")
+		return nil, status.Errorf(codes.FailedPrecondition, "all instances in the environment should be deleted first")
 	}
 
 	if _, err := s.store.UpdateEnvironmentV2(ctx, environment.ResourceID, &store.UpdateEnvironmentMessage{Delete: &deletePatch}, principalID); err != nil {
