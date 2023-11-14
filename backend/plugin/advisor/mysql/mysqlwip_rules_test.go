@@ -1,4 +1,4 @@
-package mysqlwip
+package mysql
 
 import (
 	"testing"
