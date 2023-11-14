@@ -1,0 +1,72 @@
+- description: Referenced table fields by different format
+  statement: SELECT a, t.b, public.t.c, db.public.t.d FROM t;
+  connectedDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+    - name: a
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: a
+        : true
+    - name: b
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: b
+        : true
+    - name: c
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: c
+        : true
+    - name: d
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: d
+        : true
+    sourcecolumns:
+      ? server: ""
+        database: db
+        schema: public
+        table: t
+        column: ""
+      : true

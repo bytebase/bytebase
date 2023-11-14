@@ -27,7 +27,7 @@ func MergeSourceColumnSet(m, n SourceColumnSet) (SourceColumnSet, bool) {
 // QuerySpan is the span for a query.
 type QuerySpan struct {
 	// Results are the result columns of a query span.
-	Results []*QuerySpanResult
+	Results []QuerySpanResult
 	// SourceColumns are the source columns contributing to the span.
 	SourceColumns SourceColumnSet
 }
@@ -57,7 +57,7 @@ type ColumnResource struct {
 type TableSource interface {
 	// Interface guard to forbid other types outside this package to implement this interface.
 	isTableSource()
-	GetQuerySpanResult() []*QuerySpanResult
+	GetQuerySpanResult() []QuerySpanResult
 
 	GetTableName() string
 	GetSchemaName() string
@@ -80,11 +80,11 @@ type PseudoTable struct {
 	Name string
 
 	// Columns are the columns of the table.
-	Columns []*QuerySpanResult
+	Columns []QuerySpanResult
 }
 
-func (p PseudoTable) GetQuerySpanResult() []*QuerySpanResult {
-	result := make([]*QuerySpanResult, 0, len(p.Columns))
+func (p PseudoTable) GetQuerySpanResult() []QuerySpanResult {
+	result := make([]QuerySpanResult, 0, len(p.Columns))
 	for _, column := range p.Columns {
 		result = append(result, column)
 	}
@@ -144,8 +144,8 @@ func (p PhysicalTable) GetServerName() string {
 	return p.Server
 }
 
-func (p PhysicalTable) GetQuerySpanResult() []*QuerySpanResult {
-	result := make([]*QuerySpanResult, 0, len(p.Columns))
+func (p PhysicalTable) GetQuerySpanResult() []QuerySpanResult {
+	result := make([]QuerySpanResult, 0, len(p.Columns))
 	for _, column := range p.Columns {
 		sourceColumnSet := make(SourceColumnSet, 1)
 		sourceColumnSet[ColumnResource{
@@ -155,7 +155,7 @@ func (p PhysicalTable) GetQuerySpanResult() []*QuerySpanResult {
 			Table:    p.Name,
 			Column:   column,
 		}] = true
-		result = append(result, &QuerySpanResult{
+		result = append(result, QuerySpanResult{
 			Name:          column,
 			SourceColumns: sourceColumnSet,
 		})

@@ -82,7 +82,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	case *pgquery.Node_ExplainStmt:
 		// Skip the EXPLAIN statement.
 		return &base.QuerySpan{
-			Results:       []*base.QuerySpanResult{},
+			Results:       []base.QuerySpanResult{},
 			SourceColumns: base.SourceColumnSet{},
 		}, nil
 	default:
@@ -187,9 +187,9 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(node *pgquery.Node_Sel
 			}
 		}
 
-		var querySpanResults []*base.QuerySpanResult
+		var querySpanResults []base.QuerySpanResult
 		for i, columnSourceSet := range columnSourceSets {
-			querySpanResults = append(querySpanResults, &base.QuerySpanResult{
+			querySpanResults = append(querySpanResults, base.QuerySpanResult{
 				Name:          fmt.Sprintf("column%d", i+1),
 				SourceColumns: columnSourceSet,
 			})
@@ -217,11 +217,11 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(node *pgquery.Node_Sel
 		if len(leftQuerySpanResult) != len(leftQuerySpanResult) {
 			return nil, errors.Wrapf(err, "left select has %d columns, but right select has %d columns", len(leftQuerySpanResult), len(leftQuerySpanResult))
 		}
-		var result []*base.QuerySpanResult
+		var result []base.QuerySpanResult
 		for i, leftSpanResult := range leftQuerySpanResult {
 			rightSpanResult := rightQuerySpanResult[i]
 			newResourceColumns, _ := base.MergeSourceColumnSet(leftSpanResult.SourceColumns, rightSpanResult.SourceColumns)
-			result = append(result, &base.QuerySpanResult{
+			result = append(result, base.QuerySpanResult{
 				Name:          leftSpanResult.Name,
 				SourceColumns: newResourceColumns,
 			})
@@ -264,7 +264,7 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(node *pgquery.Node_Sel
 			if columnRef.ColumnName == "*" {
 				// SELECT * FROM ... case
 				if columnRef.Table.Name == "" {
-					var columns []*base.QuerySpanResult
+					var columns []base.QuerySpanResult
 					for _, tableSource := range fromFieldList {
 						columns = append(columns, tableSource.GetQuerySpanResult()...)
 					}
@@ -297,7 +297,7 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(node *pgquery.Node_Sel
 				if resTarget.ResTarget.Name != "" {
 					columnName = resTarget.ResTarget.Name
 				}
-				result.Columns = append(result.Columns, &base.QuerySpanResult{
+				result.Columns = append(result.Columns, base.QuerySpanResult{
 					Name:          columnName,
 					SourceColumns: sourceColumnSet,
 				})
@@ -314,7 +314,7 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(node *pgquery.Node_Sel
 					return nil, errors.Wrapf(err, "failed to extract field name from expression: %+v", resTarget.ResTarget.Val)
 				}
 			}
-			result.Columns = append(result.Columns, &base.QuerySpanResult{
+			result.Columns = append(result.Columns, base.QuerySpanResult{
 				Name:          columnName,
 				SourceColumns: sourceColumnSet,
 			})
@@ -350,9 +350,8 @@ func (q *querySpanExtractor) mergeJoinTableSource(node *pgquery.Node_JoinExpr, l
 			rightSpanResultIdx[spanResult.Name] = i
 		}
 
-		// NaturalJoin will merge the some column name field.
+		// NaturalJoin will merge the same column name field.
 		for idx, spanResult := range leftSpanResult {
-
 			if _, ok := rightSpanResultIdx[spanResult.Name]; ok {
 				spanResult.SourceColumns, _ = base.MergeSourceColumnSet(spanResult.SourceColumns, rightSpanResult[idx].SourceColumns)
 				result.Columns = append(result.Columns, spanResult)
@@ -696,25 +695,17 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpressionNodeList(list [
 
 func (q *querySpanExtractor) getFieldColumnSource(schemaName, tableName, fieldName string) base.SourceColumnSet {
 	findInTableSource := func(tableSource base.TableSource) (base.SourceColumnSet, bool) {
-		switch tableSource := tableSource.(type) {
-		case base.PseudoTable:
-			// The pseudo table cannot be referenced by the explicit database/schema name.
-			if schemaName != "" {
-				return nil, false
-			}
-			if tableName != "" && tableName != tableSource.Name {
-				return nil, false
-			}
-
-			// In fact, if the table name is empty, we should check if there are ambiguous fields,
-			// but we can delegate this responsibility to the driver, we do the fail-open strategy here.
-		case base.PhysicalTable:
-			if schemaName != tableSource.Schema || tableName != tableSource.Name {
-				return nil, false
-			}
+		if schemaName != "" && schemaName != tableSource.GetSchemaName() {
+			return nil, false
 		}
-		querySpanResults := tableSource.GetQuerySpanResult()
-		for _, field := range querySpanResults {
+		if tableName != "" && tableName != tableSource.GetTableName() {
+			return nil, false
+		}
+		// If the table name is empty, we should check if there are ambiguous fields,
+		// but we delegate this responsibility to the db-server, we do the fail-open strategy here.
+
+		querySpanResult := tableSource.GetQuerySpanResult()
+		for _, field := range querySpanResult {
 			if field.Name == fieldName {
 				return field.SourceColumns, true
 			}
