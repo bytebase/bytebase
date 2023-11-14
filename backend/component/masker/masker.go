@@ -245,12 +245,12 @@ func (m *RangeMasker) Mask(data *MaskData) *v1pb.RowValue {
 			}
 			// To avoid the panic of slice out of range when end is greater than len(s).
 			if end > len(s) {
-				prevEnd = end
 				end = len(s)
 			}
 			ret = append(ret, s[begin:end]...)
 			// If the end index is out of range, we should stop the masking.
 			if end == len(s) {
+				prevEnd = end
 				break
 			}
 			// Second, append the masked part.
