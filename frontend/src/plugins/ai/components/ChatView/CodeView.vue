@@ -1,7 +1,7 @@
 <template>
   <div class="flex items-start w-full">
     <div class="flex-1 overflow-x-hidden">
-      <MonacoEditorV2
+      <MonacoEditor
         v-model:content="state.code"
         class="border h-auto"
         :readonly="!state.editing"
@@ -107,7 +107,7 @@ import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { NTooltip } from "naive-ui";
 import { reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { MonacoEditorV2 } from "@/components/MonacoEditor";
+import { MonacoEditor } from "@/components/MonacoEditor";
 import { pushNotification } from "@/store";
 import { useAIContext } from "../../logic";
 import { useConversationStore } from "../../store";

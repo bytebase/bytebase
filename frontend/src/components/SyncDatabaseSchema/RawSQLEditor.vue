@@ -61,7 +61,7 @@
       </template>
     </BBAttention>
     <div class="mt-4 w-full h-96 overflow-hidden">
-      <MonacoEditorV2
+      <MonacoEditor
         class="w-full h-full border"
         :content="state.editStatement"
         :auto-focus="true"
@@ -79,7 +79,7 @@ import Long from "long";
 import { NSelect } from "naive-ui";
 import { computed, onMounted, nextTick, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { MonacoEditorV2 } from "@/components/MonacoEditor";
+import { MonacoEditor } from "@/components/MonacoEditor";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import { ProjectSelect } from "@/components/v2";
 import { useNotificationStore, useSheetV1Store } from "@/store";

@@ -52,14 +52,14 @@
           </NTab>
         </NTabs>
 
-        <DiffEditorV2
+        <DiffEditor
           v-if="state.tab === 'DIFF'"
           class="h-[64rem] max-h-full border rounded-md overflow-clip"
           :original="sdlState.detail.previousSDL"
           :modified="sdlState.detail.prettyExpectedSDL"
           :readonly="true"
         />
-        <MonacoEditorV2
+        <MonacoEditor
           v-if="state.tab === 'STATEMENT'"
           class="w-full border h-auto"
           data-label="bb-issue-sql-editor"
@@ -68,7 +68,7 @@
           :auto-focus="false"
           :auto-height="{ min: 120, max: 360 }"
         />
-        <MonacoEditorV2
+        <MonacoEditor
           v-if="state.tab === 'SCHEMA'"
           class="w-full border h-auto"
           data-label="bb-issue-sql-editor"
@@ -92,7 +92,7 @@
 import { NTabs, NTab, NTooltip } from "naive-ui";
 import { reactive } from "vue";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
-import { DiffEditorV2, MonacoEditorV2 } from "@/components/MonacoEditor";
+import { DiffEditor, MonacoEditor } from "@/components/MonacoEditor";
 import { hasFeature, pushNotification } from "@/store";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import { useSDLState } from "./useSDLState";

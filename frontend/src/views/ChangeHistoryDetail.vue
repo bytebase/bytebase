@@ -207,7 +207,7 @@
             </div>
           </div>
 
-          <DiffEditorV2
+          <DiffEditor
             v-if="state.showDiff"
             class="h-[64rem] max-h-full border rounded-md overflow-clip"
             :original="changeHistory.prevSchema"
@@ -249,7 +249,7 @@
         class="space-y-4 flex flex-col overflow-hidden"
         style="width: calc(100vw - 10rem); height: calc(100vh - 12rem)"
       >
-        <DiffEditorV2
+        <DiffEditor
           class="flex-1 w-full border rounded-md overflow-clip"
           :original="previousHistory.schema"
           :modified="changeHistory.schema"

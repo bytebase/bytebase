@@ -60,7 +60,7 @@
       class="space-y-4 flex flex-col overflow-hidden"
       style="width: calc(100vw - 10rem); height: calc(100vh - 12rem)"
     >
-      <DiffEditorV2
+      <DiffEditor
         class="flex-1 w-full border rounded-md overflow-clip"
         :original="schemaDriftDetail.payload?.expectedSchema"
         :modified="schemaDriftDetail.payload?.actualSchema"
@@ -94,7 +94,7 @@ import {
   humanizeTs,
   extractDatabaseResourceName,
 } from "@/utils";
-import { DiffEditorV2 } from "../MonacoEditor";
+import { DiffEditor } from "../MonacoEditor";
 
 type Action = {
   onClick: () => void;

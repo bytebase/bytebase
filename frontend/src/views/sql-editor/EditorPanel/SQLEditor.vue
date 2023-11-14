@@ -2,7 +2,7 @@
   <div
     class="w-full h-auto flex-grow flex flex-col justify-start items-start overflow-auto"
   >
-    <MonacoEditorV2
+    <MonacoEditor
       class="w-full h-full"
       :filename="filename"
       :content="content"
@@ -26,7 +26,7 @@ import { computed, nextTick, ref, watch } from "vue";
 import {
   AdviceOption,
   IStandaloneCodeEditor,
-  MonacoEditorV2,
+  MonacoEditor,
   MonacoModule,
   formatEditorContent,
 } from "@/components/MonacoEditor";

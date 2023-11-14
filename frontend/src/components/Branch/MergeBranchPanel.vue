@@ -59,7 +59,7 @@
           </div>
         </div>
         <div class="w-full h-[calc(100%-14rem)] border relative">
-          <DiffEditorV2
+          <DiffEditor
             v-if="ready"
             :key="state.targetBranchName"
             class="h-full"
@@ -105,7 +105,7 @@ import {
   Sheet_Type,
   Sheet_Visibility,
 } from "@/types/proto/v1/sheet_service";
-import { DiffEditorV2 } from "../MonacoEditor";
+import { DiffEditor } from "../MonacoEditor";
 
 interface LocalState {
   targetBranchName: string;

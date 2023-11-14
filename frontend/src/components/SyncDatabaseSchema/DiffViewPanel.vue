@@ -18,7 +18,7 @@
           v-if="shouldShowDiff"
           class="w-full flex-1 overflow-y-scroll border"
         >
-          <DiffEditorV2
+          <DiffEditor
             class="h-full"
             :original="targetDatabaseSchema"
             :modified="sourceDatabaseSchema"
@@ -51,7 +51,7 @@
             {{ $t("database.sync-schema.synchronize-statements-description") }}
           </div>
         </div>
-        <MonacoEditorV2
+        <MonacoEditor
           class="w-full flex-1 border"
           :content="statement"
           :auto-focus="false"
@@ -68,7 +68,7 @@ import { NTabs, NTab } from "naive-ui";
 import { ref } from "vue";
 import { dialectOfEngineV1 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import { DiffEditorV2, MonacoEditorV2 } from "../MonacoEditor";
+import { DiffEditor, MonacoEditor } from "../MonacoEditor";
 
 defineProps<{
   statement: string;

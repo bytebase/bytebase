@@ -1,6 +1,6 @@
 <template>
   <div class="whitespace-pre-wrap w-full overflow-hidden compact-sql-editor">
-    <MonacoEditorV2
+    <MonacoEditor
       class="w-full h-auto max-h-[360px]"
       :content="sql"
       :language="language"
@@ -23,7 +23,7 @@ import { editor as Editor } from "monaco-editor";
 import { computed, nextTick, ref, toRef, watch } from "vue";
 import {
   IStandaloneCodeEditor,
-  MonacoEditorV2,
+  MonacoEditor,
   MonacoModule,
   formatEditorContent,
 } from "@/components/MonacoEditor";

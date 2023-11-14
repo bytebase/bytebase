@@ -14,7 +14,7 @@
       style="width: calc(100vw - 9rem); height: calc(100vh - 10rem)"
       class="relative"
     >
-      <DiffEditorV2
+      <DiffEditor
         v-if="!isPreparingOldStatement && !isPreparingNewStatement"
         class="w-full h-full border rounded-md overflow-clip"
         :original="oldStatement"
@@ -36,7 +36,7 @@ import { asyncComputed } from "@vueuse/core";
 import { NButton } from "naive-ui";
 import { ref } from "vue";
 import { BBModal, BBSpin } from "@/bbkit";
-import { DiffEditorV2 } from "@/components/MonacoEditor";
+import { DiffEditor } from "@/components/MonacoEditor";
 import { useSheetV1Store } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { getSheetStatement } from "@/utils";
