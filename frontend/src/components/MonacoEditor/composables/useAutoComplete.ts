@@ -13,6 +13,11 @@ export type AutoCompleteContext = {
   database?: string; // instances/{instance}/databases/{database_name}
 };
 
+type SetMetadataParams = {
+  instanceId: string; // instances/{instance}
+  databaseName: string;
+};
+
 export const useAutoComplete = (
   monaco: MonacoModule,
   editor: monaco.editor.IStandaloneCodeEditor,
@@ -20,9 +25,9 @@ export const useAutoComplete = (
 ) => {
   const client = useLSPClient();
   const params = computed(() => {
-    const p = {
+    const p: SetMetadataParams = {
       instanceId: "",
-      database: "",
+      databaseName: "",
     };
     const ctx = context.value;
     if (ctx) {
@@ -30,9 +35,11 @@ export const useAutoComplete = (
       if (instance && instance !== String(UNKNOWN_ID)) {
         p.instanceId = ctx.instance;
       }
-      const database = extractDatabaseResourceName(ctx.database ?? "").database;
-      if (database && database !== String(UNKNOWN_ID)) {
-        p.database = database;
+      const databaseName = extractDatabaseResourceName(
+        ctx.database ?? ""
+      ).database;
+      if (databaseName && databaseName !== String(UNKNOWN_ID)) {
+        p.databaseName = databaseName;
       }
     }
     return p;
