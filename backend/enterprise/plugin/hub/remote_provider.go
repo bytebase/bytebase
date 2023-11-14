@@ -1,4 +1,4 @@
-package service
+package hub
 
 import (
 	"context"
@@ -37,17 +37,17 @@ type internalTokenClaims struct {
 	jwt.RegisteredClaims
 }
 
-// LicenseProvider is the service to fetch license from the hub.
-type LicenseProvider struct {
+// remoteLicenseProvider is the service to fetch license from the hub.
+type remoteLicenseProvider struct {
 	config        *config.Config
 	store         *store.Store
 	client        *http.Client
 	lastFetchTime int64
 }
 
-// NewLicenseProvider will create a new license provider.
-func NewLicenseProvider(config *config.Config, store *store.Store) *LicenseProvider {
-	return &LicenseProvider{
+// newRemoteLicenseProvider will create a new license provider.
+func newRemoteLicenseProvider(config *config.Config, store *store.Store) *remoteLicenseProvider {
+	return &remoteLicenseProvider{
 		store:  store,
 		config: config,
 		client: &http.Client{
@@ -58,7 +58,7 @@ func NewLicenseProvider(config *config.Config, store *store.Store) *LicenseProvi
 }
 
 // FetchLicense will fetch the license from the hub.
-func (p *LicenseProvider) FetchLicense(ctx context.Context) (string, error) {
+func (p *remoteLicenseProvider) FetchLicense(ctx context.Context) (string, error) {
 	nextFetchTime := p.lastFetchTime + int64(fetchLicenseInterval.Seconds())
 	if time.Now().Unix() < nextFetchTime {
 		slog.Debug(fmt.Sprintf("skip fetching license until %d", nextFetchTime))
@@ -90,7 +90,7 @@ func (p *LicenseProvider) FetchLicense(ctx context.Context) (string, error) {
 	return p.requestLicense(ctx, payload.Url, payload.Token)
 }
 
-func (p *LicenseProvider) requestLicense(ctx context.Context, agentURL, agentToken string) (string, error) {
+func (p *remoteLicenseProvider) requestLicense(ctx context.Context, agentURL, agentToken string) (string, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, agentURL, nil)
 	if err != nil {
 		return "", errors.Wrapf(err, "construct GET %s", agentURL)
@@ -120,7 +120,7 @@ func (p *LicenseProvider) requestLicense(ctx context.Context, agentURL, agentTok
 	return response.License, nil
 }
 
-func (p *LicenseProvider) parseJWTToken(tokenStr string) (*internalTokenClaims, error) {
+func (p *remoteLicenseProvider) parseJWTToken(tokenStr string) (*internalTokenClaims, error) {
 	claims := &internalTokenClaims{}
 	if err := parseJWTToken(tokenStr, p.config.Version, p.config.PublicKey, claims); err != nil {
 		return nil, common.Wrap(err, common.Invalid)
