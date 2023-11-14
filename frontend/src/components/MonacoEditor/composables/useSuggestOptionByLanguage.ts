@@ -14,14 +14,15 @@ export const useSuggestOptionByLanguage = (
   };
 
   watchEffect(() => {
-    if (language.value === "sql") {
-      editor.updateOptions({
-        suggest: defaultSuggestOption,
-      });
-    } else {
+    if (language.value === "javascript") {
       // Disable default auto-complete suggestions for javascript (MongoDB)
       editor.updateOptions({
         suggest: overrideAllFields(defaultSuggestOption, false),
+      });
+    } else {
+      // Enable built-in auto-complete suggestions otherwise
+      editor.updateOptions({
+        suggest: defaultSuggestOption,
       });
     }
   });

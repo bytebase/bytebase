@@ -192,6 +192,15 @@ const routes: Array<RouteRecordRaw> = [
             },
           },
           {
+            path: "debug-lsp",
+            name: "workspace.debug-lsp",
+            components: {
+              content: () =>
+                import("../components/misc/TestMonacoEditorV2.vue"),
+              leftSidebar: DashboardSidebar,
+            },
+          },
+          {
             path: "403",
             name: "error.403",
             components: {
@@ -1008,6 +1017,10 @@ router.beforeEach((to, from, next) => {
   // - Setup VCS provider
   // - Setup GitOps workflow in a project
   if (to.name === "oauth-callback" || to.name === "oidc-callback") {
+    next();
+    return;
+  }
+  if (to.name === "workspace.debug-lsp") {
     next();
     return;
   }
