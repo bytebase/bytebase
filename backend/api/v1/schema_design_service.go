@@ -14,6 +14,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -55,11 +56,43 @@ func (s *SchemaDesignService) GetSchemaDesign(ctx context.Context, request *v1pb
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
+	if err := s.checkSchemaDesignPermission(ctx, sheet.ProjectUID); err != nil {
+		return nil, err
+	}
 	schemaDesign, err := s.convertSheetToSchemaDesign(ctx, sheet, v1pb.SchemaDesignView_SCHEMA_DESIGN_VIEW_FULL)
 	if err != nil {
 		return nil, err
 	}
 	return schemaDesign, nil
+}
+
+func (s *SchemaDesignService) checkSchemaDesignPermission(ctx context.Context, projectUID int) error {
+	role, ok := ctx.Value(common.RoleContextKey).(api.Role)
+	if !ok {
+		return status.Errorf(codes.Internal, "role not found")
+	}
+	if isOwnerOrDBA(role) {
+		return nil
+	}
+
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return status.Errorf(codes.Internal, "principal ID not found")
+	}
+	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &projectUID})
+	if err != nil {
+		return status.Errorf(codes.Internal, err.Error())
+	}
+	for _, binding := range policy.Bindings {
+		if binding.Role == api.Developer || binding.Role == api.Owner {
+			for _, member := range binding.Members {
+				if member.ID == principalID || member.Email == api.AllUsers {
+					return nil
+				}
+			}
+		}
+	}
+	return status.Errorf(codes.PermissionDenied, "permission denied")
 }
 
 // ListSchemaDesigns lists schema designs.
@@ -96,6 +129,13 @@ func (s *SchemaDesignService) ListSchemaDesigns(ctx context.Context, request *v1
 
 	schemaDesigns := make([]*v1pb.SchemaDesign, 0)
 	for _, sheet := range sheets {
+		if err := s.checkSchemaDesignPermission(ctx, sheet.ProjectUID); err != nil {
+			st := status.Convert(err)
+			if st.Code() == codes.PermissionDenied {
+				continue
+			}
+			return nil, err
+		}
 		schemaDesign, err := s.convertSheetToSchemaDesign(ctx, sheet, request.View)
 		if err != nil {
 			return nil, err
@@ -123,6 +163,10 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project not found: %v", projectID))
 	}
+	if err := s.checkSchemaDesignPermission(ctx, project.UID); err != nil {
+		return nil, err
+	}
+
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
@@ -330,6 +374,9 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
 	}
+	if err := s.checkSchemaDesignPermission(ctx, sheet.ProjectUID); err != nil {
+		return nil, err
+	}
 
 	sheetUpdate := &store.PatchSheetMessage{
 		UID:       sheetUID,
@@ -519,6 +566,9 @@ func (s *SchemaDesignService) DeleteSchemaDesign(ctx context.Context, request *v
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
+	}
+	if err := s.checkSchemaDesignPermission(ctx, sheet.ProjectUID); err != nil {
+		return nil, err
 	}
 	schemaDesign, err := s.convertSheetToSchemaDesign(ctx, sheet, v1pb.SchemaDesignView_SCHEMA_DESIGN_VIEW_FULL)
 	if err != nil {

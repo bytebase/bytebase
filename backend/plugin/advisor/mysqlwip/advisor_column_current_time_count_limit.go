@@ -177,6 +177,9 @@ func (checker *columnCurrentTimeCountLimitChecker) checkTime(tableName string, _
 
 func (*columnCurrentTimeCountLimitChecker) isDefaultCurrentTime(ctx mysql.IFieldDefinitionContext) bool {
 	for _, attr := range ctx.AllColumnAttribute() {
+		if attr == nil || attr.GetValue() == nil {
+			continue
+		}
 		if attr.GetValue().GetTokenType() == mysql.MySQLParserDEFAULT_SYMBOL && attr.NOW_SYMBOL() != nil {
 			return true
 		}
@@ -186,6 +189,9 @@ func (*columnCurrentTimeCountLimitChecker) isDefaultCurrentTime(ctx mysql.IField
 
 func (*columnCurrentTimeCountLimitChecker) isOnUpdateCurrentTime(ctx mysql.IFieldDefinitionContext) bool {
 	for _, attr := range ctx.AllColumnAttribute() {
+		if attr == nil || attr.GetValue() == nil {
+			continue
+		}
 		if attr.GetValue().GetTokenType() == mysql.MySQLParserON_SYMBOL && attr.NOW_SYMBOL() != nil {
 			return true
 		}
