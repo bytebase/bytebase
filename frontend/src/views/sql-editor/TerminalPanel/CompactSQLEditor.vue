@@ -1,7 +1,11 @@
 <template>
   <div class="whitespace-pre-wrap w-full overflow-hidden compact-sql-editor">
     <MonacoEditor
-      class="w-full h-auto max-h-[360px]"
+      class="w-full h-auto"
+      :style="{
+        'min-height': `${MIN_EDITOR_HEIGHT}px`,
+        'max-height': `${MAX_EDITOR_HEIGHT}px`,
+      }"
       :content="sql"
       :language="language"
       :dialect="dialect"
@@ -9,7 +13,7 @@
       :options="EDITOR_OPTIONS"
       :auto-height="{
         min: MIN_EDITOR_HEIGHT,
-        max: 360,
+        max: MAX_EDITOR_HEIGHT,
       }"
       @update:content="handleChange"
       @select-content="handleChangeSelection"
@@ -67,6 +71,7 @@ const emit = defineEmits<{
 }>();
 
 const MIN_EDITOR_HEIGHT = 40; // ~= 1 line
+const MAX_EDITOR_HEIGHT = 360; // ~= 2 lines
 
 const tabStore = useTabStore();
 const sqlEditorStore = useSQLEditorStore();
