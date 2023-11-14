@@ -62,7 +62,7 @@ type LicenseService interface {
 	// StoreLicense will store license into file.
 	StoreLicense(ctx context.Context, patch *SubscriptionPatch) error
 	// LoadSubscription will load subscription.
-	LoadSubscription(ctx context.Context) Subscription
+	LoadSubscription(ctx context.Context) *Subscription
 	// IsFeatureEnabled returns whether a feature is enabled.
 	IsFeatureEnabled(feature api.FeatureType) error
 	// IsFeatureEnabledForInstance returns whether a feature is enabled for the instance.

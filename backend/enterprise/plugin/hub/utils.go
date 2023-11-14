@@ -1,4 +1,4 @@
-package service
+package hub
 
 import (
 	"github.com/golang-jwt/jwt"
