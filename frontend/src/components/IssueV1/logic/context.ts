@@ -46,7 +46,7 @@ export type IssueContext = {
   isPITRMode: Ref<boolean>;
   isTenantMode: Ref<boolean>;
   isLegacyIssue: Ref<boolean>;
-  assigneeCandidates: Ref<User[]>;
+  releaserCandidates: Ref<User[]>;
 
   // review status
   reviewContext: ReviewContext;

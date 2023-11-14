@@ -258,6 +258,17 @@ message Issue {
 
   // Used if the issue type is GRANT_REQUEST.
   GrantRequest grant_request = 19;
+
+  // The releasers of the pending stage of the issue rollout, judging
+  // from the rollout policy.
+  // If the policy is auto rollout, the releasers are the project owners and the issue creator.
+  // Format:
+  // - roles/workspaceOwner
+  // - roles/workspaceDBA
+  // - roles/projectOwner
+  // - roles/projectReleaser
+  // - users/{email}
+  repeated string releasers = 20;
 }
 
 message GrantRequest {

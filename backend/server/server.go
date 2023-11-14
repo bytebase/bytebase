@@ -334,7 +334,10 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		if firstEndUser {
 			if profile.SampleDatabasePort != 0 {
 				if err := s.generateOnboardingData(ctx, user); err != nil {
-					return status.Errorf(codes.Internal, "failed to prepare onboarding data, error: %v", err)
+					// When running inside docker on mac, we sometimes get database does not exist error.
+					// This is due to the docker overlay storage incompatibility with mac OS file system.
+					// Onboarding error is not critical, so we just emit an error log.
+					slog.Error("failed to prepare onboarding data", log.BBError(err))
 				}
 			}
 		}

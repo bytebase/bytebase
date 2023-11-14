@@ -153,10 +153,12 @@ func (checker *indexTotalNumberLimitChecker) EnterAlterTable(ctx *mysql.AlterTab
 
 		switch {
 		// add column.
-		case item.ADD_SYMBOL() != nil && item.TableConstraintDef() == nil:
+		case item.ADD_SYMBOL() != nil:
 			switch {
+			// add single columns.
 			case item.Identifier() != nil && item.FieldDefinition() != nil:
 				checker.checkFieldDefinitionContext(tableName, item.FieldDefinition())
+			// add multi columns.
 			case item.OPEN_PAR_SYMBOL() != nil && item.TableElementList() != nil:
 				for _, tableElement := range item.TableElementList().AllTableElement() {
 					if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil {
@@ -164,6 +166,9 @@ func (checker *indexTotalNumberLimitChecker) EnterAlterTable(ctx *mysql.AlterTab
 					}
 					checker.checkFieldDefinitionContext(tableName, item.FieldDefinition())
 				}
+				// add constraint.
+			case item.TableConstraintDef() != nil:
+				checker.checkTableConstraintDef(tableName, item.TableConstraintDef())
 			}
 		// change column.
 		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil:
@@ -171,9 +176,6 @@ func (checker *indexTotalNumberLimitChecker) EnterAlterTable(ctx *mysql.AlterTab
 		// modify column.
 		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
 			checker.checkFieldDefinitionContext(tableName, item.FieldDefinition())
-		// add constraint.
-		case item.ADD_SYMBOL() != nil && item.TableConstraintDef() != nil:
-			checker.checkTableConstraintDef(tableName, item.TableConstraintDef())
 		default:
 			continue
 		}
@@ -182,6 +184,9 @@ func (checker *indexTotalNumberLimitChecker) EnterAlterTable(ctx *mysql.AlterTab
 
 func (checker *indexTotalNumberLimitChecker) checkFieldDefinitionContext(tableName string, ctx mysql.IFieldDefinitionContext) {
 	for _, attr := range ctx.AllColumnAttribute() {
+		if attr == nil || attr.GetValue() == nil {
+			continue
+		}
 		switch attr.GetValue().GetTokenType() {
 		case mysql.MySQLParserPRIMARY_SYMBOL, mysql.MySQLParserUNIQUE_SYMBOL:
 			checker.lineForTable[tableName] = checker.baseLine + ctx.GetStart().GetLine()
@@ -190,6 +195,9 @@ func (checker *indexTotalNumberLimitChecker) checkFieldDefinitionContext(tableNa
 }
 
 func (checker *indexTotalNumberLimitChecker) checkTableConstraintDef(tableName string, ctx mysql.ITableConstraintDefContext) {
+	if ctx.GetType_() == nil {
+		return
+	}
 	switch ctx.GetType_().GetTokenType() {
 	case mysql.MySQLParserPRIMARY_SYMBOL, mysql.MySQLParserUNIQUE_SYMBOL, mysql.MySQLParserKEY_SYMBOL, mysql.MySQLParserINDEX_SYMBOL, mysql.MySQLParserFULLTEXT_SYMBOL:
 		checker.lineForTable[tableName] = checker.baseLine + ctx.GetStart().GetLine()

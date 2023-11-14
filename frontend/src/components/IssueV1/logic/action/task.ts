@@ -128,7 +128,7 @@ export const allowUserToApplyTaskRolloutAction = (
   task: Task,
   user: User,
   action: TaskRolloutAction,
-  assigneeCandidates: User[]
+  releaserCandidates: User[]
 ) => {
   if (extractUserResourceName(issue.assignee) === user.email) {
     return true;
@@ -147,7 +147,7 @@ export const allowUserToApplyTaskRolloutAction = (
   // Otherwise anyone might to be assignee can rollout the issue.
   // if the rollout policy is "auto rollout", anyone in the project is allowed.
   if (
-    assigneeCandidates.findIndex((candidate) => candidate.name === user.name) >=
+    releaserCandidates.findIndex((candidate) => candidate.name === user.name) >=
     0
   ) {
     return true;

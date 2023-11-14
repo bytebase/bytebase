@@ -90,15 +90,25 @@ func (checker *columnDisallowDropInIndexChecker) EnterCreateTable(ctx *mysql.Cre
 		if tableElement == nil || tableElement.TableConstraintDef() == nil {
 			continue
 		}
+		if tableElement.TableConstraintDef().GetType_() == nil {
+			continue
+		}
+		switch tableElement.TableConstraintDef().GetType_().GetTokenType() {
+		case mysql.MySQLParserINDEX_SYMBOL, mysql.MySQLParserKEY_SYMBOL:
+			// do nothing.
+		default:
+			continue
+		}
+		if tableElement.TableConstraintDef().KeyListVariants() == nil {
+			continue
+		}
 
-		if tableElement.TableConstraintDef().GetType_().GetTokenType() != mysql.MySQLParserINDEX_SYMBOL || tableElement.TableConstraintDef().GetType_().GetTokenType() != mysql.MySQLParserKEYS_SYMBOL {
-			columnList := mysqlparser.NormalizeKeyListVariants(tableElement.TableConstraintDef().KeyListVariants())
-			for _, column := range columnList {
-				if checker.tables[tableName] == nil {
-					checker.tables[tableName] = make(columnSet)
-				}
-				checker.tables[tableName][column] = true
+		columnList := mysqlparser.NormalizeKeyListVariants(tableElement.TableConstraintDef().KeyListVariants())
+		for _, column := range columnList {
+			if checker.tables[tableName] == nil {
+				checker.tables[tableName] = make(columnSet)
 			}
+			checker.tables[tableName][column] = true
 		}
 	}
 }
@@ -115,7 +125,6 @@ func (checker *columnDisallowDropInIndexChecker) EnterAlterTable(ctx *mysql.Alte
 	}
 
 	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
-	// alter table add column, change column, modify column.
 	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
 		if item == nil || item.DROP_SYMBOL() == nil || item.ColumnInternalRef() == nil {
 			continue

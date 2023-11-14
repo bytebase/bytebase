@@ -123,12 +123,13 @@ func (checker *indexTypeNoBlobChecker) EnterAlterTable(ctx *mysql.AlterTableCont
 		}
 
 		switch {
-		// add column
-		case alterListItem.ADD_SYMBOL() != nil && alterListItem.Identifier() != nil:
+		case alterListItem.ADD_SYMBOL() != nil:
 			switch {
+			// add column.
 			case alterListItem.Identifier() != nil && alterListItem.FieldDefinition() != nil:
 				columnName := mysqlparser.NormalizeMySQLIdentifier(alterListItem.Identifier())
 				checker.checkFieldDefinition(tableName, columnName, alterListItem.FieldDefinition())
+			// add multi column.
 			case alterListItem.OPEN_PAR_SYMBOL() != nil && alterListItem.TableElementList() != nil:
 				for _, tableElement := range alterListItem.TableElementList().AllTableElement() {
 					if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().ColumnName() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil {
@@ -137,6 +138,9 @@ func (checker *indexTypeNoBlobChecker) EnterAlterTable(ctx *mysql.AlterTableCont
 					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
 					checker.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
 				}
+			// add constraint.
+			case alterListItem.TableConstraintDef() != nil:
+				checker.checkConstraintDef(tableName, alterListItem.TableConstraintDef())
 			}
 		// modify column
 		case alterListItem.MODIFY_SYMBOL() != nil && alterListItem.ColumnInternalRef() != nil:
@@ -148,14 +152,14 @@ func (checker *indexTypeNoBlobChecker) EnterAlterTable(ctx *mysql.AlterTableCont
 			checker.tablesNewColumns.delete(tableName, oldColumnName)
 			newColumnName := mysqlparser.NormalizeMySQLIdentifier(alterListItem.Identifier())
 			checker.checkFieldDefinition(tableName, newColumnName, alterListItem.FieldDefinition())
-		// add constriant.
-		case alterListItem.ADD_SYMBOL() != nil && alterListItem.TableConstraintDef() != nil:
-			checker.checkConstraintDef(tableName, alterListItem.TableConstraintDef())
 		}
 	}
 }
 
 func (checker *indexTypeNoBlobChecker) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
+	if ctx.GetType_() == nil {
+		return
+	}
 	switch ctx.GetType_().GetTokenType() {
 	case mysql.MySQLParserFULLTEXT_SYMBOL, mysql.MySQLParserSPATIAL_SYMBOL, mysql.MySQLParserFOREIGN_SYMBOL:
 		return
@@ -182,6 +186,9 @@ func (checker *indexTypeNoBlobChecker) checkFieldDefinition(tableName, columnNam
 	}
 	columnType := mysqlparser.NormalizeMySQLDataType(ctx.DataType(), true /* compact */)
 	for _, attribute := range ctx.AllColumnAttribute() {
+		if attribute == nil || attribute.GetValue() == nil {
+			continue
+		}
 		// the FieldDefinitionContext can only set primary or unique.
 		switch attribute.GetValue().GetTokenType() {
 		case mysql.MySQLParserPRIMARY_SYMBOL, mysql.MySQLParserUNIQUE_SYMBOL:
@@ -195,6 +202,9 @@ func (checker *indexTypeNoBlobChecker) checkFieldDefinition(tableName, columnNam
 }
 
 func (checker *indexTypeNoBlobChecker) checkConstraintDef(tableName string, ctx mysql.ITableConstraintDefContext) {
+	if ctx.GetType_() == nil {
+		return
+	}
 	var columnList []string
 	switch ctx.GetType_().GetTokenType() {
 	case mysql.MySQLParserINDEX_SYMBOL, mysql.MySQLParserKEY_SYMBOL, mysql.MySQLParserPRIMARY_SYMBOL, mysql.MySQLParserUNIQUE_SYMBOL:

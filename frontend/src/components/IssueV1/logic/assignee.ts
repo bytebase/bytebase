@@ -1,14 +1,10 @@
-import { uniqBy } from "lodash-es";
-import { useUserStore } from "@/store";
-import "@/store/modules/v1/policy";
-import { PresetRoleType, ComposedIssue } from "@/types";
-import { User, UserRole } from "@/types/proto/v1/auth_service";
+import { ComposedIssue } from "@/types";
+import { User } from "@/types/proto/v1/auth_service";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import {
   isOwnerOfProjectV1,
   hasWorkspacePermissionV1,
   extractUserResourceName,
-  memberListInProjectV1,
 } from "@/utils";
 
 export const allowUserToChangeAssignee = (user: User, issue: ComposedIssue) => {
@@ -45,28 +41,4 @@ export const allowUserToChangeAssignee = (user: User, issue: ComposedIssue) => {
   }
 
   return false;
-};
-
-export const assigneeCandidatesForIssue = async (issue: ComposedIssue) => {
-  const project = issue.projectEntity;
-  const projectMembers = memberListInProjectV1(project, project.iamPolicy);
-  const workspaceMembers = useUserStore().userList;
-
-  const users: User[] = [];
-  // Put project owners first. We will use uniqBy to deduplicate candidates.
-  users.push(
-    ...projectMembers
-      .filter((member) => member.roleList.includes(PresetRoleType.OWNER))
-      .map((member) => member.user)
-  );
-  users.push(...projectMembers.map((member) => member.user));
-  users.push(
-    ...workspaceMembers.filter(
-      (member) =>
-        member.userRole === UserRole.OWNER || member.userRole === UserRole.DBA
-    )
-  );
-  users.push(...projectMembers.map((member) => member.user));
-
-  return uniqBy(users, (user) => user.name);
 };

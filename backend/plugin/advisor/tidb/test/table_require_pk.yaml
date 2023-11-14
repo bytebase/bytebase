@@ -1,4 +1,67 @@
-- statement: CREATE TABLE t(id INT PRIMARY KEY)
+- statement: |
+    CREATE TABLE userTable(
+      id INT NOT NULL,
+      name VARCHAR(255) CHARSET ascii,
+      roomId INT,
+      time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',
+      time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',
+      content BLOB NOT NULL COMMENT 'comment',
+      json_content JSON NOT NULL COMMENT 'comment',
+      INDEX idx1(name),
+      UNIQUE KEY uk1(id, name),
+      FOREIGN KEY fk1(roomId) REFERENCES room(id),
+      INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;
+  want:
+    - status: WARN
+      code: 601
+      title: table.require-pk
+      content: Table `userTable` requires PRIMARY KEY
+      line: 1
+      details: ""
+- statement: |
+    CREATE TABLE user(
+      id INT PRIMARY KEY COMMENT 'comment',
+      name VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'comment',
+      room_id INT NOT NULL DEFAULT 0 COMMENT 'comment',
+      creator_id INT NOT NULL DEFAULT 0 COMMENT 'comment',
+      created_ts TIMESTAMP NOT NULL DEFAULT NOW() COMMENT 'comment',
+      updater_id INT NOT NULL DEFAULT 0 COMMENT 'comment',
+      updated_ts TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',
+      INDEX idx_user_name(name),
+      UNIQUE KEY uk_user_id_name(id, name)
+    ) ENGINE = INNODB COMMENT 'comment';
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |
+    CREATE TABLE t1(id INT PRIMARY KEY);
+    CREATE TABLE t2(id INT);
+    ALTER TABLE t2 ADD UNIQUE INDEX uk (id);
+  want:
+    - status: WARN
+      code: 601
+      title: table.require-pk
+      content: Table `t2` requires PRIMARY KEY
+      line: 2
+      details: ""
+- statement: |-
+    CREATE TABLE t1(id INT, PRIMARY KEY (id));
+    CREATE TABLE t2(id INT);
+    ALTER TABLE t2 ADD COLUMN uid INT UNIQUE KEY;
+  want:
+    - status: WARN
+      code: 601
+      title: table.require-pk
+      content: Table `t2` requires PRIMARY KEY
+      line: 2
+      details: ""
+- statement: |-
+    CREATE TABLE t1(id INT PRIMARY KEY);
+    CREATE TABLE t2(id INT, PRIMARY KEY (id));
   want:
     - status: SUCCESS
       code: 0

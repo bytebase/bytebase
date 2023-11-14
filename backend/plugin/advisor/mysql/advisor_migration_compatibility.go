@@ -118,13 +118,14 @@ func (checker *compatibilityChecker) EnterDropTable(_ *mysql.DropTableContext) {
 }
 
 func (checker *compatibilityChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
-	if ctx.AlterTableActions() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList() == nil {
+	if ctx.AlterTableActions() == nil || ctx.AlterTableActions().AlterCommandList() == nil {
 		return
 	}
 	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
+		return
+	}
+
+	if ctx.TableRef() == nil {
 		return
 	}
 
@@ -155,6 +156,9 @@ func (checker *compatibilityChecker) EnterAlterTable(ctx *mysql.AlterTableContex
 
 		if item.ADD_SYMBOL() != nil {
 			if item.TableConstraintDef() != nil {
+				if item.TableConstraintDef().GetType_() == nil {
+					continue
+				}
 				switch item.TableConstraintDef().GetType_().GetTokenType() {
 				// add primary key.
 				case mysql.MySQLParserPRIMARY_SYMBOL:
@@ -173,7 +177,7 @@ func (checker *compatibilityChecker) EnterAlterTable(ctx *mysql.AlterTableContex
 
 			// add check enforced.
 			// Check is only supported after 8.0.16 https://dev.mysql.com/doc/refman/8.0/en/create-table-check-constraints.html
-			if item.TableConstraintDef().CheckConstraint() != nil && item.TableConstraintDef().ConstraintEnforcement() != nil {
+			if item.TableElementList() != nil && item.TableConstraintDef().CheckConstraint() != nil && item.TableConstraintDef().ConstraintEnforcement() != nil {
 				checker.code = advisor.CompatibilityAddCheck
 				return
 			}

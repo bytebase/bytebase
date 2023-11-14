@@ -84,6 +84,9 @@ func (checker *tableRequirePKChecker) EnterCreateTable(ctx *mysql.CreateTableCon
 }
 
 func (checker *tableRequirePKChecker) createTable(tableName string, ctx *mysql.CreateTableContext) {
+	if ctx.TableElementList() == nil {
+		return
+	}
 	checker.initEmptyTable(tableName)
 
 	for _, tableElement := range ctx.TableElementList().AllTableElement() {
@@ -104,25 +107,27 @@ func (checker *tableRequirePKChecker) createTable(tableName string, ctx *mysql.C
 
 func (checker *tableRequirePKChecker) handleFieldDefinition(tableName string, columnName string, ctx mysql.IFieldDefinitionContext) {
 	for _, attr := range ctx.AllColumnAttribute() {
-		if attr.GetValue().GetTokenType() == mysql.MySQLLexerKEY_SYMBOL {
-			checker.tables[tableName] = newColumnSet([]string{columnName})
+		if attr == nil || attr.PRIMARY_SYMBOL() == nil {
+			continue
 		}
+		checker.tables[tableName] = newColumnSet([]string{columnName})
 	}
 }
 
 func (checker *tableRequirePKChecker) handleTableConstraintDef(tableName string, ctx mysql.ITableConstraintDefContext) {
 	if ctx.GetType_() != nil {
-		switch strings.ToUpper(ctx.GetType_().GetText()) {
-		case "PRIMARY":
+		if ctx.GetType_().GetTokenType() == mysql.MySQLParserPRIMARY_SYMBOL {
 			list := mysqlparser.NormalizeKeyListVariants(ctx.KeyListVariants())
 			checker.tables[tableName] = newColumnSet(list)
-		default:
 		}
 	}
 }
 
 // EnterDropTable is called when production dropTable is entered.
 func (checker *tableRequirePKChecker) EnterDropTable(ctx *mysql.DropTableContext) {
+	if ctx.TableRefList() == nil {
+		return
+	}
 	for _, tableRef := range ctx.TableRefList().AllTableRef() {
 		_, tableName := mysqlparser.NormalizeMySQLTableRef(tableRef)
 		delete(checker.tables, tableName)
@@ -131,6 +136,12 @@ func (checker *tableRequirePKChecker) EnterDropTable(ctx *mysql.DropTableContext
 
 // EnterAlterTable is called when production alterTable is entered.
 func (checker *tableRequirePKChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if ctx.TableRef() == nil {
+		return
+	}
+	if ctx.AlterTableActions() == nil || ctx.AlterTableActions().AlterCommandList() == nil || ctx.AlterTableActions().AlterCommandList() == nil {
+		return
+	}
 	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
 
 	lineNumber := checker.baseLine + ctx.GetStart().GetLine()
@@ -143,8 +154,8 @@ func (checker *tableRequirePKChecker) EnterAlterTable(ctx *mysql.AlterTableConte
 		case option.DROP_SYMBOL() != nil && option.PRIMARY_SYMBOL() != nil:
 			checker.initEmptyTable(tableName)
 			checker.line[tableName] = lineNumber
-		// DROP INDEX/KEY
-		case option.DROP_SYMBOL() != nil && option.KeyOrIndex() != nil:
+			// DROP INDEX/KEY
+		case option.DROP_SYMBOL() != nil && option.KeyOrIndex() != nil && option.IndexRef() != nil:
 			_, _, indexName := mysqlparser.NormalizeIndexRef(option.IndexRef())
 			if strings.ToUpper(indexName) == primaryKeyName {
 				checker.initEmptyTable(tableName)
@@ -167,7 +178,7 @@ func (checker *tableRequirePKChecker) EnterAlterTable(ctx *mysql.AlterTableConte
 			columnName := mysqlparser.NormalizeMySQLColumnInternalRef(option.ColumnInternalRef())
 			checker.handleFieldDefinition(tableName, columnName, option.FieldDefinition())
 		// DROP COLUMN
-		case option.DROP_SYMBOL() != nil:
+		case option.DROP_SYMBOL() != nil && option.ColumnInternalRef() != nil:
 			columnName := mysqlparser.NormalizeMySQLColumnInternalRef(option.ColumnInternalRef())
 			if checker.dropColumn(tableName, columnName) {
 				checker.line[tableName] = lineNumber
