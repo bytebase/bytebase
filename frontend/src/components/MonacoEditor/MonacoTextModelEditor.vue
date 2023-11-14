@@ -23,8 +23,8 @@ import {
 } from "vue";
 import type { SQLDialect } from "@/types";
 import {
-  AutoCompleteContext,
-  AutoHeightOptions,
+  type AutoCompleteContext,
+  type AutoHeightOptions,
   useAdvices,
   useAutoComplete,
   useAutoHeight,
