@@ -152,7 +152,13 @@ func (checker *columnCommentConventionChecker) EnterAlterTable(ctx *mysql.AlterT
 func (checker *columnCommentConventionChecker) checkFieldDefinition(tableName, columnName string, ctx mysql.IFieldDefinitionContext) {
 	comment := ""
 	for _, attribute := range ctx.AllColumnAttribute() {
+		if attribute == nil || attribute.GetValue() == nil {
+			continue
+		}
 		if attribute.GetValue().GetTokenType() != mysql.MySQLParserCOMMENT_SYMBOL {
+			continue
+		}
+		if attribute.TextLiteral() == nil {
 			continue
 		}
 		comment = mysqlparser.NormalizeMySQLTextLiteral(attribute.TextLiteral())
