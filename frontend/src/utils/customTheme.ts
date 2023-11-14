@@ -1,5 +1,4 @@
 import { useLocalStorage } from "@vueuse/core";
-import { useI18n } from "vue-i18n";
 import { hexToRgb } from "./css";
 
 export const customTheme = useLocalStorage<string>("bb.custom-theme", "");
@@ -24,12 +23,4 @@ export const applyCustomTheme = () => {
     rootElement.style.removeProperty("--color-accent-disabled");
     rootElement.style.removeProperty("--color-accent-hover");
   }
-};
-
-export const getCustomProjectTitle = () => {
-  const { t } = useI18n();
-  if (customTheme.value === "lixiang") {
-    return t("common.tenant");
-  }
-  return t("common.project");
 };
