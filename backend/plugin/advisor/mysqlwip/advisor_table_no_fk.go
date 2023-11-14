@@ -85,8 +85,17 @@ func (checker *tableNoFKChecker) EnterCreateTable(ctx *mysql.CreateTableContext)
 
 // EnterAlterTable is called when production alterTable is entered.
 func (checker *tableNoFKChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if ctx.TableRef() == nil {
+		return
+	}
 	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
 
+	if ctx.AlterTableActions() == nil || ctx.AlterTableActions().AlterCommandList() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
+		return
+	}
 	for _, option := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
 		switch {
 		// ADD CONSTRANIT
