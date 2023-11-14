@@ -30,7 +30,6 @@ func TestGetQuerySpanResult(t *testing.T) {
 	const (
 		record       = false
 		testDataPath = "testdata/query_span_result.yaml"
-		//testDataPath = "testdata/single.yaml"
 	)
 
 	a := require.New(t)
