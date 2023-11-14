@@ -43,7 +43,7 @@ defineEmits<{
 
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
-const { issue, activeTask, assigneeCandidates } = useIssueContext();
+const { issue, activeTask, releaserCandidates } = useIssueContext();
 
 const errors = asyncComputed(async () => {
   const errors: string[] = [];
@@ -53,10 +53,10 @@ const errors = asyncComputed(async () => {
       activeTask.value,
       currentUser.value,
       props.action,
-      assigneeCandidates.value
+      releaserCandidates.value
     ))
   ) {
-    errors.push("You are not the assignee of this issue");
+    errors.push(t("issue.error.you-are-not-allowed-to-perform-this-action"));
   }
   return errors;
 }, []);

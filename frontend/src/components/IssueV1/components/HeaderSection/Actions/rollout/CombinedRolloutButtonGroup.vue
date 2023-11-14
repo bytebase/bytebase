@@ -54,7 +54,7 @@ import { RolloutAction } from "./common";
 
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
-const { issue, activeStage, activeTask, events, assigneeCandidates } =
+const { issue, activeStage, activeTask, events, releaserCandidates } =
   useIssueContext();
 
 const issueStatusActionList = computed(() => {
@@ -91,7 +91,7 @@ const allowUserToSkipTask = asyncComputed(async () => {
         task,
         currentUser.value,
         "SKIP",
-        assigneeCandidates.value
+        releaserCandidates.value
       )
     )
   );
