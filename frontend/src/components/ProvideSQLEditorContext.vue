@@ -89,11 +89,17 @@ const prepareAccessibleDatabaseList = async () => {
 };
 
 const initializeTree = async () => {
-  const project = route.query.project;
-  if (project) {
-    treeStore.selectedProject = await projectStpre.getOrFetchProjectByName(
-      `${projectNamePrefix}${project}`
-    );
+  const projectName = route.query.project;
+  if (projectName) {
+    try {
+      const project = await projectStpre.getOrFetchProjectByName(
+        `${projectNamePrefix}${projectName}`,
+        true /* silent */
+      );
+      treeStore.selectedProject = project;
+    } catch (error) {
+      // do nothing.
+    }
   }
   treeStore.buildTree();
 };
