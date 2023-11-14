@@ -85,9 +85,7 @@ type PseudoTable struct {
 
 func (p *PseudoTable) GetQuerySpanResult() []QuerySpanResult {
 	result := make([]QuerySpanResult, 0, len(p.Columns))
-	for _, column := range p.Columns {
-		result = append(result, column)
-	}
+	result = append(result, p.Columns...)
 
 	return result
 }

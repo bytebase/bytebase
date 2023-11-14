@@ -151,7 +151,7 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(node *pgquery.Node_Sel
 			if !ok {
 				return nil, errors.Errorf("expect CommonTableExpr for CTE, but got %T", cte.Node)
 			}
-			cteTableSource := new(base.PseudoTable)
+			var cteTableSource *base.PseudoTable
 			var err error
 			if node.SelectStmt.WithClause.Recursive {
 				cteTableSource, err = q.extractTemporaryTableResourceFromRecursiveCTE(cteExpr)
@@ -214,7 +214,7 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(node *pgquery.Node_Sel
 			return nil, errors.Wrapf(err, "failed to extract span result from right select: %+v", node.SelectStmt.Rarg)
 		}
 		leftQuerySpanResult, rightQuerySpanResult := leftSpanResults.GetQuerySpanResult(), rightSpanResults.GetQuerySpanResult()
-		if len(leftQuerySpanResult) != len(leftQuerySpanResult) {
+		if len(leftQuerySpanResult) != len(rightQuerySpanResult) {
 			return nil, errors.Wrapf(err, "left select has %d columns, but right select has %d columns", len(leftQuerySpanResult), len(leftQuerySpanResult))
 		}
 		var result []base.QuerySpanResult
@@ -329,7 +329,7 @@ func (q *querySpanExtractor) extractTableSourceFromJoin(node *pgquery.Node_JoinE
 	return q.mergeJoinTableSource(node, leftTableSource, rightTableSource)
 }
 
-func (q *querySpanExtractor) mergeJoinTableSource(node *pgquery.Node_JoinExpr, left base.TableSource, right base.TableSource) (*base.PseudoTable, error) {
+func (*querySpanExtractor) mergeJoinTableSource(node *pgquery.Node_JoinExpr, left base.TableSource, right base.TableSource) (*base.PseudoTable, error) {
 	leftSpanResult, rightSpanResult := left.GetQuerySpanResult(), right.GetQuerySpanResult()
 
 	result := new(base.PseudoTable)
@@ -368,9 +368,7 @@ func (q *querySpanExtractor) mergeJoinTableSource(node *pgquery.Node_JoinExpr, l
 				usingMap[name.String_.Sval] = true
 			}
 
-			for _, spanResult := range leftSpanResult {
-				result.Columns = append(result.Columns, spanResult)
-			}
+			result.Columns = append(result.Columns, leftSpanResult...)
 			for _, spanResult := range rightSpanResult {
 				if _, ok := usingMap[spanResult.Name]; !ok {
 					result.Columns = append(result.Columns, spanResult)
@@ -724,7 +722,6 @@ func (q *querySpanExtractor) getFieldColumnSource(schemaName, tableName, fieldNa
 		if sourceColumnSet, ok := findInTableSource(q.outerTableSources[i]); ok {
 			return sourceColumnSet
 		}
-
 	}
 
 	for _, tableSource := range q.tableSourcesFrom {
@@ -966,7 +963,7 @@ func (q *querySpanExtractor) getAccessTables(sql string) (base.SourceColumnSet, 
 
 	accessesMap := make(base.SourceColumnSet)
 
-	result, err := q.getRangeVarsFromJsonRecursive(jsonData, q.connectedDB, "public")
+	result, err := q.getRangeVarsFromJSONRecursive(jsonData, q.connectedDB, "public")
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get range vars from json")
 	}
@@ -977,7 +974,7 @@ func (q *querySpanExtractor) getAccessTables(sql string) (base.SourceColumnSet, 
 	return accessesMap, nil
 }
 
-func (q *querySpanExtractor) getRangeVarsFromJsonRecursive(jsonData map[string]any, currentDatabase, currentSchema string) ([]base.ColumnResource, error) {
+func (q *querySpanExtractor) getRangeVarsFromJSONRecursive(jsonData map[string]any, currentDatabase, currentSchema string) ([]base.ColumnResource, error) {
 	var result []base.ColumnResource
 	if jsonData["RangeVar"] != nil {
 		resource := base.ColumnResource{
@@ -1022,7 +1019,7 @@ func (q *querySpanExtractor) getRangeVarsFromJsonRecursive(jsonData map[string]a
 	for _, value := range jsonData {
 		switch v := value.(type) {
 		case map[string]any:
-			resources, err := q.getRangeVarsFromJsonRecursive(v, currentDatabase, currentSchema)
+			resources, err := q.getRangeVarsFromJSONRecursive(v, currentDatabase, currentSchema)
 			if err != nil {
 				return nil, err
 			}
@@ -1030,7 +1027,7 @@ func (q *querySpanExtractor) getRangeVarsFromJsonRecursive(jsonData map[string]a
 		case []any:
 			for _, item := range v {
 				if m, ok := item.(map[string]any); ok {
-					resources, err := q.getRangeVarsFromJsonRecursive(m, currentDatabase, currentSchema)
+					resources, err := q.getRangeVarsFromJSONRecursive(m, currentDatabase, currentSchema)
 					if err != nil {
 						return nil, err
 					}
