@@ -84,7 +84,7 @@ func (checker *collationAllowlistChecker) EnterQuery(ctx *mysql.QueryContext) {
 // EnterCreateDatabase is called when production createDatabase is entered.
 func (checker *collationAllowlistChecker) EnterCreateDatabase(ctx *mysql.CreateDatabaseContext) {
 	for _, option := range ctx.AllCreateDatabaseOption() {
-		if option.DefaultCollation() != nil {
+		if option != nil && option.DefaultCollation() != nil && option.DefaultCollation().CollationName() != nil {
 			collation := mysqlparser.NormalizeMySQLCollationName(option.DefaultCollation().CollationName())
 			checker.checkCollation(collation, ctx.GetStart().GetLine())
 		}
@@ -108,9 +108,8 @@ func (checker *collationAllowlistChecker) checkCollation(collation string, lineN
 func (checker *collationAllowlistChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
 	if ctx.CreateTableOptions() != nil {
 		for _, option := range ctx.CreateTableOptions().AllCreateTableOption() {
-			if option.DefaultCollation() != nil {
+			if option != nil && option.DefaultCollation() != nil && option.DefaultCollation().CollationName() != nil {
 				collation := mysqlparser.NormalizeMySQLCollationName(option.DefaultCollation().CollationName())
-				collation = strings.ToLower(collation)
 				checker.checkCollation(collation, option.GetStart().GetLine())
 			}
 		}
@@ -118,22 +117,20 @@ func (checker *collationAllowlistChecker) EnterCreateTable(ctx *mysql.CreateTabl
 
 	if ctx.TableElementList() != nil {
 		for _, tableElement := range ctx.TableElementList().AllTableElement() {
-			if tableElement.ColumnDefinition() != nil {
-				if tableElement.ColumnDefinition() == nil {
-					continue
-				}
-				columnDef := tableElement.ColumnDefinition()
-				if columnDef.FieldDefinition() == nil {
-					continue
-				}
-				if columnDef.FieldDefinition().AllColumnAttribute() == nil {
-					continue
-				}
-				for _, attr := range columnDef.FieldDefinition().AllColumnAttribute() {
-					if attr.Collate() != nil {
-						collation := mysqlparser.NormalizeMySQLCollationName(attr.Collate().CollationName())
-						checker.checkCollation(collation, tableElement.GetStart().GetLine())
-					}
+			if tableElement == nil || tableElement.ColumnDefinition() == nil {
+				continue
+			}
+			columnDef := tableElement.ColumnDefinition()
+			if columnDef.FieldDefinition() == nil {
+				continue
+			}
+			if columnDef.FieldDefinition().AllColumnAttribute() == nil {
+				continue
+			}
+			for _, attr := range columnDef.FieldDefinition().AllColumnAttribute() {
+				if attr != nil && attr.Collate() != nil && attr.Collate().CollationName() != nil {
+					collation := mysqlparser.NormalizeMySQLCollationName(attr.Collate().CollationName())
+					checker.checkCollation(collation, tableElement.GetStart().GetLine())
 				}
 			}
 		}
@@ -143,7 +140,7 @@ func (checker *collationAllowlistChecker) EnterCreateTable(ctx *mysql.CreateTabl
 // EnterAlterDatabase is called when production alterDatabase is entered.
 func (checker *collationAllowlistChecker) EnterAlterDatabase(ctx *mysql.AlterDatabaseContext) {
 	for _, option := range ctx.AllAlterDatabaseOption() {
-		if option.CreateDatabaseOption() == nil || option.CreateDatabaseOption().DefaultCollation() == nil {
+		if option == nil || option.CreateDatabaseOption() == nil || option.CreateDatabaseOption().DefaultCollation() == nil || option.CreateDatabaseOption().DefaultCollation().CollationName() == nil {
 			continue
 		}
 		charset := mysqlparser.NormalizeMySQLCollationName(option.CreateDatabaseOption().DefaultCollation().CollationName())
@@ -164,17 +161,11 @@ func (checker *collationAllowlistChecker) EnterAlterTable(ctx *mysql.AlterTableC
 	}
 
 	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
-		if item.FieldDefinition() == nil {
-			continue
-		}
-		if item.FieldDefinition().DataType() == nil {
-			continue
-		}
-		if item.FieldDefinition().DataType().CharsetWithOptBinary() == nil {
+		if item == nil || item.FieldDefinition() == nil {
 			continue
 		}
 		for _, attr := range item.FieldDefinition().AllColumnAttribute() {
-			if attr.Collate() == nil {
+			if attr == nil || attr.Collate() == nil || attr.Collate().CollationName() == nil {
 				continue
 			}
 			collation := mysqlparser.NormalizeMySQLCollationName(attr.Collate().CollationName())
@@ -190,7 +181,7 @@ func (checker *collationAllowlistChecker) EnterAlterTable(ctx *mysql.AlterTableC
 			if tableOption == nil {
 				continue
 			}
-			if tableOption.DefaultCollation() == nil {
+			if tableOption.DefaultCollation() == nil || tableOption.DefaultCollation().CollationName() == nil {
 				continue
 			}
 			collation := mysqlparser.NormalizeMySQLCollationName(tableOption.DefaultCollation().CollationName())
