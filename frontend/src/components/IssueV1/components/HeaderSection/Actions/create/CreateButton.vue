@@ -69,9 +69,6 @@ const issueCreateErrorList = computed(() => {
   if (issue.value.rolloutEntity.stages.some((stage) => !isValidStage(stage))) {
     errorList.push("Missing SQL statement in some stages");
   }
-  if (!issue.value.assignee) {
-    errorList.push("Assignee is required");
-  }
   return errorList;
 });
 
