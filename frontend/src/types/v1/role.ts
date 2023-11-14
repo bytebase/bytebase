@@ -23,6 +23,13 @@ export const VirtualRoleType = {
   CREATOR: "roles/CREATOR",
 };
 
+export const IssueReleaserRoleType = {
+  WORKSPACE_OWNER: "roles/workspaceOwner",
+  WORKSPACE_DBA: "roles/workspaceDBA",
+  PROJECT_OWNER: "roles/projectOwner",
+  PROJECT_RELEASER: "roles/projectReleaser",
+};
+
 export const isCustomRole = (role: string) => {
   return !PresetRoleTypeList.includes(role);
 };

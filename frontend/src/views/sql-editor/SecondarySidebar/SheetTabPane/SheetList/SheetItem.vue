@@ -7,12 +7,14 @@
     @contextmenu="$emit('contextmenu', item, $event)"
   >
     <SheetConnectionIcon :sheet="item.target" class="shrink-0 w-4 h-6" />
-    <div class="flex-1 text-sm leading-6 cursor-pointer truncate">
-      <!-- eslint-disable-next-line vue/no-v-html -->
-      <span v-if="item.target.title" v-html="titleHTML(item, keyword)" />
-      <span v-else>
-        {{ $t("sql-editor.untitled-sheet") }}
-      </span>
+    <div class="flex-1 text-sm leading-6 h-6 cursor-pointer">
+      <EllipsisText>
+        <!-- eslint-disable-next-line vue/no-v-html -->
+        <span v-if="item.target.title" v-html="titleHTML(item, keyword)" />
+        <span v-else>
+          {{ $t("sql-editor.untitled-sheet") }}
+        </span>
+      </EllipsisText>
     </div>
 
     <div
@@ -37,6 +39,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
+import EllipsisText from "@/components/EllipsisText.vue";
 import { useTabStore } from "@/store";
 import { SheetConnectionIcon } from "@/views/sql-editor/EditorCommon";
 import { Dropdown } from "@/views/sql-editor/Sheet";

@@ -148,22 +148,6 @@
           />
         </div>
       </template>
-
-      <div v-if="showAssigneeSelect" class="w-full">
-        <label for="user" class="textlabel">
-          {{ $t("common.assignee") }} <span class="text-red-600">*</span>
-        </label>
-        <!-- DBA and Owner always have all access, so we only need to grant to developer -->
-        <MemberSelect
-          id="user"
-          class="mt-1 w-full"
-          name="user"
-          :allowed-role-list="[UserRole.OWNER, UserRole.DBA]"
-          :selected-id="state.assigneeId"
-          :placeholder="'Select assignee'"
-          @select-user-id="selectAssignee"
-        />
-      </div>
     </div>
   </div>
 
@@ -187,7 +171,6 @@ import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, PropType } from "vue";
 import { useRouter } from "vue-router";
 import InstanceRoleSelect from "@/components/InstanceRoleSelect.vue";
-import MemberSelect from "@/components/MemberSelect.vue";
 import {
   ProjectSelect,
   EnvironmentSelect,
@@ -203,7 +186,6 @@ import {
   useProjectV1Store,
 } from "@/store";
 import {
-  SYSTEM_BOT_ID,
   defaultCharsetOfEngineV1,
   defaultCollationOfEngineV1,
   UNKNOWN_ID,
@@ -211,7 +193,6 @@ import {
   unknownInstance,
 } from "@/types";
 import { INTERNAL_RDS_INSTANCE_USER_LIST } from "@/types/InstanceUser";
-import { UserRole } from "@/types/proto/v1/auth_service";
 import { Engine } from "@/types/proto/v1/common";
 import { Backup } from "@/types/proto/v1/database_service";
 import { InstanceRole } from "@/types/proto/v1/instance_role_service";
@@ -225,11 +206,9 @@ import {
 import {
   extractBackupResourceName,
   extractDatabaseResourceName,
-  hasWorkspacePermissionV1,
   instanceV1HasCollationAndCharacterSet,
   instanceV1HasCreateDatabase,
 } from "@/utils";
-import { trySetDefaultAssigneeByEnvironment } from "../IssueV1/logic/initialize/assignee";
 
 interface LocalState {
   projectId?: string;
@@ -242,7 +221,6 @@ interface LocalState {
   characterSet: string;
   collation: string;
   cluster: string;
-  assigneeId?: string;
   showFeatureModal: boolean;
   creating: boolean;
 }
@@ -278,15 +256,6 @@ const currentUserV1 = useCurrentUserV1();
 const environmentV1Store = useEnvironmentV1Store();
 const projectV1Store = useProjectV1Store();
 
-const showAssigneeSelect = computed(() => {
-  // If the role can't change assignee after creating the issue, then we will show the
-  // assignee select in the prep stage here to request a particular assignee.
-  return !hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-issue",
-    currentUserV1.value.userRole
-  );
-});
-
 const state = reactive<LocalState>({
   databaseName: "",
   projectId: props.projectId,
@@ -297,7 +266,6 @@ const state = reactive<LocalState>({
   characterSet: "",
   collation: "",
   cluster: "",
-  assigneeId: showAssigneeSelect.value ? undefined : String(SYSTEM_BOT_ID),
   showFeatureModal: false,
   creating: false,
 });
@@ -325,8 +293,7 @@ const allowCreate = computed(() => {
     !isReservedName.value &&
     state.projectId &&
     state.environmentId &&
-    state.instanceId &&
-    state.assigneeId
+    state.instanceId
   );
 });
 
@@ -381,10 +348,6 @@ const selectInstance = (instanceId: string | undefined) => {
 
 const selectInstanceRole = (name?: string) => {
   state.instanceRole = name;
-};
-
-const selectAssignee = (assigneeId: string) => {
-  state.assigneeId = assigneeId;
 };
 
 const filterInstanceRole = (user: InstanceRole) => {
@@ -474,11 +437,6 @@ const createV1 = async () => {
       steps: [{ specs: [spec] }],
       creator: currentUserV1.value.name,
     });
-    await trySetDefaultAssigneeByEnvironment(
-      issueCreate,
-      project.value,
-      environment.name
-    );
     const { createdIssue } = await experimentalCreateIssueByPlan(
       project.value,
       issueCreate,
