@@ -33,7 +33,7 @@ type querySpanExtractor struct {
 
 	// Private fields.
 
-	ctes []base.PseudoTable
+	ctes []*base.PseudoTable
 
 	// outerTableSource is the list of table sources from the outer query,
 	// it's used to resolve the column name in the correlated subquery.
@@ -151,17 +151,17 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(node *pgquery.Node_Sel
 			if !ok {
 				return nil, errors.Errorf("expect CommonTableExpr for CTE, but got %T", cte.Node)
 			}
-			var cteTableResource base.PseudoTable
+			cteTableSource := new(base.PseudoTable)
 			var err error
 			if node.SelectStmt.WithClause.Recursive {
-				cteTableResource, err = q.extractTemporaryTableResourceFromRecursiveCTE(cteExpr)
+				cteTableSource, err = q.extractTemporaryTableResourceFromRecursiveCTE(cteExpr)
 			} else {
-				cteTableResource, err = q.extractTemporaryTableResourceFromNonRecursiveCTE(cteExpr)
+				cteTableSource, err = q.extractTemporaryTableResourceFromNonRecursiveCTE(cteExpr)
 			}
 			if err != nil {
 				return nil, err
 			}
-			q.ctes = append(q.ctes, cteTableResource)
+			q.ctes = append(q.ctes, cteTableSource)
 		}
 	}
 
@@ -196,7 +196,7 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(node *pgquery.Node_Sel
 		}
 		// FIXME(zp): Consider the alias case to give a name to table.
 		// => SELECT * FROM (VALUES (1, 'one'), (2, 'two'), (3, 'three')) AS t (num,letter);
-		return base.PseudoTable{
+		return &base.PseudoTable{
 			Name:    "",
 			Columns: querySpanResults,
 		}, nil
@@ -227,7 +227,7 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(node *pgquery.Node_Sel
 			})
 		}
 		// FIXME(zp): Consider UNION alias.
-		return base.PseudoTable{
+		return &base.PseudoTable{
 			Name:    "",
 			Columns: result,
 		}, nil
@@ -249,7 +249,7 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(node *pgquery.Node_Sel
 
 	// The TARGET field list.
 	// The SELECT statement is really create a pseudo table, and this pseudo table will be shown as the result.
-	var result base.PseudoTable
+	result := new(base.PseudoTable)
 	for _, field := range node.SelectStmt.TargetList {
 		resTarget, ok := field.Node.(*pgquery.Node_ResTarget)
 		if !ok {
@@ -272,16 +272,9 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(node *pgquery.Node_Sel
 				} else {
 					schemaName, tableName, _ := extractSchemaTableColumnName(columnRef)
 					for _, tableSource := range fromFieldList {
-						// XXX(zp): We should refactor here to avoid magic code.
-						switch tableSource := tableSource.(type) {
-						case base.PseudoTable:
-							if schemaName == "" && tableSource.Name == tableName {
-								result.Columns = tableSource.GetQuerySpanResult()
-								break
-							}
-						case base.PhysicalTable:
-							if schemaName == tableSource.Schema && tableName == tableSource.Name {
-								result.Columns = tableSource.GetQuerySpanResult()
+						if schemaName == "" || schemaName == tableSource.GetSchemaName() {
+							if tableName == tableSource.GetTableName() {
+								result.Columns = append(result.Columns, tableSource.GetQuerySpanResult()...)
 								break
 							}
 						}
@@ -324,22 +317,22 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(node *pgquery.Node_Sel
 	return result, nil
 }
 
-func (q *querySpanExtractor) extractTableSourceFromJoin(node *pgquery.Node_JoinExpr) (base.PseudoTable, error) {
+func (q *querySpanExtractor) extractTableSourceFromJoin(node *pgquery.Node_JoinExpr) (*base.PseudoTable, error) {
 	leftTableSource, err := q.extractTableSourceFromNode(node.JoinExpr.Larg)
 	if err != nil {
-		return base.PseudoTable{}, errors.Wrapf(err, "failed to extract span result from left join: %+v", node.JoinExpr.Larg)
+		return nil, errors.Wrapf(err, "failed to extract span result from left join: %+v", node.JoinExpr.Larg)
 	}
 	rightTableSource, err := q.extractTableSourceFromNode(node.JoinExpr.Rarg)
 	if err != nil {
-		return base.PseudoTable{}, errors.Wrapf(err, "failed to extract span result from right join: %+v", node.JoinExpr.Rarg)
+		return nil, errors.Wrapf(err, "failed to extract span result from right join: %+v", node.JoinExpr.Rarg)
 	}
 	return q.mergeJoinTableSource(node, leftTableSource, rightTableSource)
 }
 
-func (q *querySpanExtractor) mergeJoinTableSource(node *pgquery.Node_JoinExpr, left base.TableSource, right base.TableSource) (base.PseudoTable, error) {
+func (q *querySpanExtractor) mergeJoinTableSource(node *pgquery.Node_JoinExpr, left base.TableSource, right base.TableSource) (*base.PseudoTable, error) {
 	leftSpanResult, rightSpanResult := left.GetQuerySpanResult(), right.GetQuerySpanResult()
 
-	var result base.PseudoTable
+	result := new(base.PseudoTable)
 
 	if node.JoinExpr.IsNatural {
 		leftSpanResultIdx, rightSpanResultIdx := make(map[string]int, len(leftSpanResult)), make(map[string]int, len(rightSpanResult))
@@ -370,7 +363,7 @@ func (q *querySpanExtractor) mergeJoinTableSource(node *pgquery.Node_JoinExpr, l
 			for _, using := range node.JoinExpr.UsingClause {
 				name, ok := using.Node.(*pgquery.Node_String_)
 				if !ok {
-					return base.PseudoTable{}, errors.Errorf("expect Node_String_ for using clause, but got %T", using.Node)
+					return nil, errors.Errorf("expect Node_String_ for using clause, but got %T", using.Node)
 				}
 				usingMap[name.String_.Sval] = true
 			}
@@ -393,10 +386,10 @@ func (q *querySpanExtractor) mergeJoinTableSource(node *pgquery.Node_JoinExpr, l
 		// The AS case
 		aliasName, columnNameList, err := pgExtractAlias(node.JoinExpr.Alias)
 		if err != nil {
-			return base.PseudoTable{}, errors.Wrapf(err, "failed to extract alias from join: %+v", node)
+			return nil, errors.Wrapf(err, "failed to extract alias from join: %+v", node)
 		}
 		if len(columnNameList) != 0 && len(columnNameList) != len(result.Columns) {
-			return base.PseudoTable{}, errors.Errorf("expect equal length but found %d and %d", len(node.JoinExpr.Alias.Colnames), len(result.Columns))
+			return nil, errors.Errorf("expect equal length but found %d and %d", len(node.JoinExpr.Alias.Colnames), len(result.Columns))
 		}
 		if aliasName != "" {
 			result.Name = aliasName
@@ -427,7 +420,7 @@ func (q *querySpanExtractor) extractTableSourceFromRangeVar(node *pgquery.Node_R
 		return nil, errors.Errorf("expect equal length but found %d and %d", len(node.RangeVar.Alias.Colnames), len(tableSource.GetQuerySpanResult()))
 	}
 
-	result := base.PseudoTable{
+	result := &base.PseudoTable{
 		Name:    aliasName,
 		Columns: tableSource.GetQuerySpanResult(),
 	}
@@ -456,7 +449,7 @@ func (q *querySpanExtractor) extractTableSourceFromSubselect(node *pgquery.Node_
 		return nil, errors.Errorf("expect equal length but found %d and %d", len(columnNameList), len(tableSource.GetQuerySpanResult()))
 	}
 
-	result := base.PseudoTable{
+	result := &base.PseudoTable{
 		Name:    aliasName,
 		Columns: tableSource.GetQuerySpanResult(),
 	}
@@ -467,33 +460,33 @@ func (q *querySpanExtractor) extractTableSourceFromSubselect(node *pgquery.Node_
 	return result, nil
 }
 
-func (q *querySpanExtractor) extractTemporaryTableResourceFromNonRecursiveCTE(cteExpr *pgquery.Node_CommonTableExpr) (base.PseudoTable, error) {
+func (q *querySpanExtractor) extractTemporaryTableResourceFromNonRecursiveCTE(cteExpr *pgquery.Node_CommonTableExpr) (*base.PseudoTable, error) {
 	tableSource, err := q.extractTableSourceFromNode(cteExpr.CommonTableExpr.Ctequery)
 	if err != nil {
-		return base.PseudoTable{}, errors.Wrapf(err, "failed to extract span result from CTE query: %+v", cteExpr.CommonTableExpr.Ctequery)
+		return nil, errors.Wrapf(err, "failed to extract span result from CTE query: %+v", cteExpr.CommonTableExpr.Ctequery)
 	}
 
 	querySpanResults := tableSource.GetQuerySpanResult()
 	if len(cteExpr.CommonTableExpr.Aliascolnames) > 0 {
 		if len(cteExpr.CommonTableExpr.Aliascolnames) != len(querySpanResults) {
-			return base.PseudoTable{}, errors.Errorf("cte table expr has %d columns, but alias has %d columns", len(querySpanResults), len(cteExpr.CommonTableExpr.Aliascolnames))
+			return nil, errors.Errorf("cte table expr has %d columns, but alias has %d columns", len(querySpanResults), len(cteExpr.CommonTableExpr.Aliascolnames))
 		}
 		for i, name := range cteExpr.CommonTableExpr.Aliascolnames {
 			stringNode, ok := name.Node.(*pgquery.Node_String_)
 			if !ok {
-				return base.PseudoTable{}, errors.Errorf("expect string node for alias column name, but got %T", name.Node)
+				return nil, errors.Errorf("expect string node for alias column name, but got %T", name.Node)
 			}
 			querySpanResults[i].Name = stringNode.String_.Sval
 		}
 	}
 
-	return base.PseudoTable{
+	return &base.PseudoTable{
 		Name:    cteExpr.CommonTableExpr.Ctename,
 		Columns: querySpanResults,
 	}, nil
 }
 
-func (q *querySpanExtractor) extractTemporaryTableResourceFromRecursiveCTE(cteExpr *pgquery.Node_CommonTableExpr) (base.PseudoTable, error) {
+func (q *querySpanExtractor) extractTemporaryTableResourceFromRecursiveCTE(cteExpr *pgquery.Node_CommonTableExpr) (*base.PseudoTable, error) {
 	switch selectNode := cteExpr.CommonTableExpr.Ctequery.Node.(type) {
 	case *pgquery.Node_SelectStmt:
 		if selectNode.SelectStmt.Op != pgquery.SetOperation_SETOP_UNION {
@@ -504,23 +497,23 @@ func (q *querySpanExtractor) extractTemporaryTableResourceFromRecursiveCTE(cteEx
 		// https://www.postgresql.org/docs/15/queries-with.html#QUERIES-WITH-RECURSIVE
 		initialTableSource, err := q.extractTableSourceFromSelect(&pgquery.Node_SelectStmt{SelectStmt: selectNode.SelectStmt.Larg})
 		if err != nil {
-			return base.PseudoTable{}, errors.Wrapf(err, "failed to extract span result from CTE initial query: %+v", selectNode.SelectStmt.Larg)
+			return nil, errors.Wrapf(err, "failed to extract span result from CTE initial query: %+v", selectNode.SelectStmt.Larg)
 		}
 		initialQuerySpanResult := initialTableSource.GetQuerySpanResult()
 		if len(cteExpr.CommonTableExpr.Aliascolnames) > 0 {
 			if len(cteExpr.CommonTableExpr.Aliascolnames) != len(initialQuerySpanResult) {
-				return base.PseudoTable{}, errors.Errorf("cte table expr has %d columns, but alias has %d columns", len(initialQuerySpanResult), len(cteExpr.CommonTableExpr.Aliascolnames))
+				return nil, errors.Errorf("cte table expr has %d columns, but alias has %d columns", len(initialQuerySpanResult), len(cteExpr.CommonTableExpr.Aliascolnames))
 			}
 			for i, name := range cteExpr.CommonTableExpr.Aliascolnames {
 				stringNode, ok := name.Node.(*pgquery.Node_String_)
 				if !ok {
-					return base.PseudoTable{}, errors.Errorf("expect string node for alias column name, but got %T", name.Node)
+					return nil, errors.Errorf("expect string node for alias column name, but got %T", name.Node)
 				}
 				initialQuerySpanResult[i].Name = stringNode.String_.Sval
 			}
 		}
 
-		cteTableResource := base.PseudoTable{Name: cteExpr.CommonTableExpr.Ctename, Columns: initialQuerySpanResult}
+		cteTableResource := &base.PseudoTable{Name: cteExpr.CommonTableExpr.Ctename, Columns: initialQuerySpanResult}
 
 		// Compute dependent closures.
 		// There are two ways to compute dependent closures:
@@ -540,11 +533,11 @@ func (q *querySpanExtractor) extractTemporaryTableResourceFromRecursiveCTE(cteEx
 		for {
 			recursiveTableSource, err := q.extractTableSourceFromSelect(&pgquery.Node_SelectStmt{SelectStmt: selectNode.SelectStmt.Rarg})
 			if err != nil {
-				return base.PseudoTable{}, errors.Wrapf(err, "failed to extract span result from CTE recursive query: %+v", selectNode.SelectStmt.Rarg)
+				return nil, errors.Wrapf(err, "failed to extract span result from CTE recursive query: %+v", selectNode.SelectStmt.Rarg)
 			}
 			recursiveQuerySpanResult := recursiveTableSource.GetQuerySpanResult()
 			if len(recursiveQuerySpanResult) != len(initialQuerySpanResult) {
-				return base.PseudoTable{}, errors.Errorf("cte table expr has %d columns, but recursive query has %d columns", len(initialQuerySpanResult), len(recursiveQuerySpanResult))
+				return nil, errors.Errorf("cte table expr has %d columns, but recursive query has %d columns", len(initialQuerySpanResult), len(recursiveQuerySpanResult))
 			}
 
 			changed := false

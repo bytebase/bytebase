@@ -83,7 +83,7 @@ type PseudoTable struct {
 	Columns []QuerySpanResult
 }
 
-func (p PseudoTable) GetQuerySpanResult() []QuerySpanResult {
+func (p *PseudoTable) GetQuerySpanResult() []QuerySpanResult {
 	result := make([]QuerySpanResult, 0, len(p.Columns))
 	for _, column := range p.Columns {
 		result = append(result, column)
@@ -92,23 +92,23 @@ func (p PseudoTable) GetQuerySpanResult() []QuerySpanResult {
 	return result
 }
 
-func (p PseudoTable) GetTableName() string {
+func (p *PseudoTable) GetTableName() string {
 	return p.Name
 }
 
-func (p PseudoTable) GetSchemaName() string {
+func (*PseudoTable) GetSchemaName() string {
 	return ""
 }
 
-func (p PseudoTable) GetDatabaseName() string {
+func (*PseudoTable) GetDatabaseName() string {
 	return ""
 }
 
-func (p PseudoTable) GetServerName() string {
+func (*PseudoTable) GetServerName() string {
 	return ""
 }
 
-func (p PseudoTable) SetColumnName(i int, name string) {
+func (p *PseudoTable) SetColumnName(i int, name string) {
 	p.Columns[i].Name = name
 }
 
@@ -128,23 +128,23 @@ type PhysicalTable struct {
 	Columns []string
 }
 
-func (p PhysicalTable) GetTableName() string {
+func (p *PhysicalTable) GetTableName() string {
 	return p.Name
 }
 
-func (p PhysicalTable) GetSchemaName() string {
+func (p *PhysicalTable) GetSchemaName() string {
 	return p.Schema
 }
 
-func (p PhysicalTable) GetDatabaseName() string {
+func (p *PhysicalTable) GetDatabaseName() string {
 	return p.Database
 }
 
-func (p PhysicalTable) GetServerName() string {
+func (p *PhysicalTable) GetServerName() string {
 	return p.Server
 }
 
-func (p PhysicalTable) GetQuerySpanResult() []QuerySpanResult {
+func (p *PhysicalTable) GetQuerySpanResult() []QuerySpanResult {
 	result := make([]QuerySpanResult, 0, len(p.Columns))
 	for _, column := range p.Columns {
 		sourceColumnSet := make(SourceColumnSet, 1)
