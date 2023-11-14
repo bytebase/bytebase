@@ -7,8 +7,11 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func TestTiDBRules(t *testing.T) {
-	tidbRules := []advisor.SQLReviewRuleType{
+func TestMySQLRules(t *testing.T) {
+	mysqlRules := []advisor.SQLReviewRuleType{
+		// advisor.SchemaRuleMySQLEngine enforce the innodb engine.
+		advisor.SchemaRuleMySQLEngine,
+
 		// advisor.SchemaRuleTableNaming enforce the table name format.
 		advisor.SchemaRuleTableNaming,
 		// advisor.SchemaRuleColumnNaming enforce the column name format.
@@ -36,11 +39,17 @@ func TestTiDBRules(t *testing.T) {
 		advisor.SchemaRuleStatementDisallowOrderBy,
 		// advisor.SchemaRuleStatementMergeAlterTable disallow redundant ALTER TABLE statements.
 		advisor.SchemaRuleStatementMergeAlterTable,
+		// advisor.SchemaRuleStatementInsertRowLimit enforce the insert row limit.
+		advisor.SchemaRuleStatementInsertRowLimit,
 		// advisor.SchemaRuleStatementInsertMustSpecifyColumn enforce the insert column specified.
 		advisor.SchemaRuleStatementInsertMustSpecifyColumn,
 		// advisor.SchemaRuleStatementInsertDisallowOrderByRand disallow the order by rand in the INSERT statement.
 		advisor.SchemaRuleStatementInsertDisallowOrderByRand,
+		// advisor.SchemaRuleStatementAffectedRowLimit enforce the UPDATE/DELETE affected row limit.
+		// TODO: need more test.
+		advisor.SchemaRuleStatementAffectedRowLimit,
 		// advisor.SchemaRuleStatementDMLDryRun dry run the dml.
+		// TODO: need more test.
 		advisor.SchemaRuleStatementDMLDryRun,
 
 		// advisor.SchemaRuleTableRequirePK require the table to have a primary key.
@@ -82,15 +91,15 @@ func TestTiDBRules(t *testing.T) {
 		advisor.SchemaRuleColumnAutoIncrementInitialValue,
 		// advisor.SchemaRuleColumnAutoIncrementMustUnsigned enforce the auto-increment column to be unsigned.
 		advisor.SchemaRuleColumnAutoIncrementMustUnsigned,
-		// advisor.SchemaRuleCurrentTimeColumnCountLimit enforce the current column count limit.
-		advisor.SchemaRuleCurrentTimeColumnCountLimit,
 		// advisor.SchemaRuleColumnRequireDefault enforce the column default.
 		advisor.SchemaRuleColumnRequireDefault,
 
 		// advisor.SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
 		advisor.SchemaRuleSchemaBackwardCompatibility,
+		// advisor.SchemaRuleCurrentTimeColumnCountLimit enforce the current column count limit.
+		advisor.SchemaRuleCurrentTimeColumnCountLimit,
 
-		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL and TiDB support check if the database is empty before users drop it.
+		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL support check if the database is empty before users drop it.
 		advisor.SchemaRuleDropEmptyDatabase,
 
 		// advisor.SchemaRuleIndexNoDuplicateColumn require the index no duplicate column.
@@ -112,7 +121,7 @@ func TestTiDBRules(t *testing.T) {
 		advisor.SchemaRuleCollationAllowlist,
 	}
 
-	for _, rule := range tidbRules {
-		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_TIDB, false /* record */)
+	for _, rule := range mysqlRules {
+		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_MYSQL, false /* record */)
 	}
 }
