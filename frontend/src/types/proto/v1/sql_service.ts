@@ -90,7 +90,15 @@ export interface QueryRequest {
   /** The maximum number of rows to return. */
   limit: number;
   /** The timeout for the request. */
-  timeout?: Duration | undefined;
+  timeout?:
+    | Duration
+    | undefined;
+  /**
+   * The id of data source.
+   * It is used for querying admin data source even if the instance has read-only data sources.
+   * Or it can be used to query a specific read-only data source.
+   */
+  dataSourceId: string;
 }
 
 export interface QueryResponse {
@@ -759,7 +767,7 @@ export const ExportResponse = {
 };
 
 function createBaseQueryRequest(): QueryRequest {
-  return { name: "", connectionDatabase: "", statement: "", limit: 0, timeout: undefined };
+  return { name: "", connectionDatabase: "", statement: "", limit: 0, timeout: undefined, dataSourceId: "" };
 }
 
 export const QueryRequest = {
@@ -778,6 +786,9 @@ export const QueryRequest = {
     }
     if (message.timeout !== undefined) {
       Duration.encode(message.timeout, writer.uint32(42).fork()).ldelim();
+    }
+    if (message.dataSourceId !== "") {
+      writer.uint32(50).string(message.dataSourceId);
     }
     return writer;
   },
@@ -824,6 +835,13 @@ export const QueryRequest = {
 
           message.timeout = Duration.decode(reader, reader.uint32());
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.dataSourceId = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -840,6 +858,7 @@ export const QueryRequest = {
       statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
       limit: isSet(object.limit) ? globalThis.Number(object.limit) : 0,
       timeout: isSet(object.timeout) ? Duration.fromJSON(object.timeout) : undefined,
+      dataSourceId: isSet(object.dataSourceId) ? globalThis.String(object.dataSourceId) : "",
     };
   },
 
@@ -860,6 +879,9 @@ export const QueryRequest = {
     if (message.timeout !== undefined) {
       obj.timeout = Duration.toJSON(message.timeout);
     }
+    if (message.dataSourceId !== "") {
+      obj.dataSourceId = message.dataSourceId;
+    }
     return obj;
   },
 
@@ -875,6 +897,7 @@ export const QueryRequest = {
     message.timeout = (object.timeout !== undefined && object.timeout !== null)
       ? Duration.fromPartial(object.timeout)
       : undefined;
+    message.dataSourceId = object.dataSourceId ?? "";
     return message;
   },
 };
