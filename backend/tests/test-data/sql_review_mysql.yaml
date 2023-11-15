@@ -369,38 +369,32 @@
         }
       }
   run: false
-- statement: DELETE FROM tech_book WHERE name like `%abc`
+- statement: DELETE FROM tech_book WHERE name like "%abc"
   result:
-    - |-
-      {
-        "status": "ERROR",
-        "title": "statement.where.no-leading-wildcard-like",
-        "content": "\"DELETE FROM tech_book WHERE name like `%abc`\n;\" uses leading wildcard LIKE",
-        "sqlReviewReport": {
-          "line": 2,
-          "code": 204
-        }
-      }
-    - |-
-      {
-        "status": "ERROR",
-        "title": "statement.dml-dry-run",
-        "content": "\"DELETE FROM tech_book WHERE name like `%abc`\n;\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist",
-        "sqlReviewReport": {
-          "line": 2,
-          "code": 208
-        }
-      }
-    - |-
-      {
-        "status": "WARNING",
-        "title": "statement.affected-row-limit",
-        "content": "\"DELETE FROM tech_book WHERE name like `%abc`\n;\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist",
-        "sqlReviewReport": {
-          "line": 2,
-          "code": 209
-        }
-      }
+    - status: 1
+      title: statement.where.no-leading-wildcard-like
+      content: |-
+        "DELETE FROM tech_book WHERE name like "%abc"
+        ;" uses leading wildcard LIKE
+      sql_review_report:
+        code: 204
+        line: 2
+    - status: 1
+      title: statement.dml-dry-run
+      content: |-
+        "DELETE FROM tech_book WHERE name like "%abc"
+        ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist
+      sql_review_report:
+        code: 208
+        line: 2
+    - status: 2
+      title: statement.affected-row-limit
+      content: |-
+        "DELETE FROM tech_book WHERE name like "%abc"
+        ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist
+      sql_review_report:
+        code: 209
+        line: 2
   run: false
 - statement: "        INSERT INTO t_copy SELECT * FROM t"
   result:

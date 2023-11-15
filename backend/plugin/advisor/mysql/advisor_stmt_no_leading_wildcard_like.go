@@ -82,7 +82,7 @@ func (checker *noLeadingWildcardLikeChecker) EnterPredicateExprLike(ctx *mysql.P
 
 	for _, expr := range ctx.AllSimpleExpr() {
 		pattern := expr.GetText()
-		if (strings.HasPrefix(pattern, "'%") && strings.HasSuffix(pattern, "'")) || (strings.HasPrefix(pattern, "`%") && strings.HasSuffix(pattern, "`")) {
+		if (strings.HasPrefix(pattern, "'%") && strings.HasSuffix(pattern, "'")) || (strings.HasPrefix(pattern, "\"%") && strings.HasSuffix(pattern, "\"")) {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
 				Code:    advisor.StatementLeadingWildcardLike,
