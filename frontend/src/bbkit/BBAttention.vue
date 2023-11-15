@@ -33,7 +33,7 @@
             :class="`text-${color}-700`"
           >
             <p class="whitespace-pre-wrap">
-              {{ $t(description) }}
+              {{ $te(description) ? $t(description) : description }}
               <LearnMoreLink v-if="link" :url="link" class="ml-1 text-sm" />
             </p>
           </div>
