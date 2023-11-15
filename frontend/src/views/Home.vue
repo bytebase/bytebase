@@ -369,6 +369,7 @@ const mergeUIIssueFilter = (tab: TabValue): UIIssueFilter => {
     return {
       ...common,
       approval: "approved",
+      releaser: myUserTag,
     };
   }
   return common;

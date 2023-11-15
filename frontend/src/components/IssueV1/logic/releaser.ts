@@ -4,7 +4,7 @@ import { ComposedIssue, IssueReleaserRoleType, PresetRoleType } from "@/types";
 import { User, UserRole } from "@/types/proto/v1/auth_service";
 import { extractUserResourceName, memberListInProjectV1 } from "@/utils";
 
-export const releaserCandidatesForIssue = async (issue: ComposedIssue) => {
+export const releaserCandidatesForIssue = (issue: ComposedIssue) => {
   const users: User[] = [];
 
   const project = issue.projectEntity;

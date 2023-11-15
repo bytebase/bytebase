@@ -2,34 +2,11 @@ import { useDatabaseV1Store } from "@/store";
 import { IssueFilter, UNKNOWN_ID } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import {
-  UIIssueFilter,
-  UIIssueFilterScopeId,
-  isValidIssueApprovalStatus,
-} from "./ui-filter";
-
-export type SemanticIssueStatus = "OPEN" | "CLOSED";
-
-export type SearchScopeId =
-  | "project"
-  | "instance"
-  | "database"
-  | "type"
-  | "creator"
-  | "assignee"
-  | "subscriber"
-  | "status"
-  | "created"
-  | UIIssueFilterScopeId;
-
-export type SearchScope = {
-  id: SearchScopeId;
-  value: string;
-};
-
-export interface SearchParams {
-  query: string;
-  scopes: SearchScope[];
-}
+  SearchParams,
+  SemanticIssueStatus,
+  getTsRangeFromSearchParams,
+  getValueFromSearchParams,
+} from "./common";
 
 export const buildIssueFilterBySearchParams = (params: SearchParams) => {
   const { query, scopes } = params;
@@ -70,33 +47,6 @@ export const buildIssueFilterBySearchParams = (params: SearchParams) => {
   return filter;
 };
 
-export const buildUIIssueFilterBySearchParams = (params: SearchParams) => {
-  const { scopes } = params;
-  const approverScope = scopes.find((s) => s.id === "approver");
-  const approvalScope = scopes.find((s) => s.id === "approval");
-  const uiIssueFilter: UIIssueFilter = {};
-  if (approverScope && approverScope.value) {
-    uiIssueFilter.approver = `users/${approverScope.value}`;
-  }
-  if (approvalScope && isValidIssueApprovalStatus(approvalScope.value)) {
-    uiIssueFilter.approval = approvalScope.value;
-  }
-
-  return uiIssueFilter;
-};
-
-export const getTsRangeFromSearchParams = (
-  params: SearchParams,
-  scopeId: SearchScopeId
-) => {
-  const scope = params.scopes.find((s) => s.id === scopeId);
-  if (!scope) return undefined;
-  const parts = scope.value.split(",");
-  if (parts.length !== 2) return undefined;
-  const range = [parseInt(parts[0], 10), parseInt(parts[1], 10)];
-  return range;
-};
-
 export const getSemanticIssueStatusFromSearchParams = (
   params: SearchParams
 ) => {
@@ -108,23 +58,4 @@ export const getSemanticIssueStatusFromSearchParams = (
   ) as SemanticIssueStatus | "";
   if (!status) return undefined;
   return status;
-};
-
-export const getValueFromSearchParams = (
-  params: SearchParams,
-  scopeId: SearchScopeId,
-  prefix: string = "",
-  validValues: string[] = []
-): string => {
-  const scope = params.scopes.find((s) => s.id === scopeId);
-  if (!scope) {
-    return "";
-  }
-  const value = scope.value;
-  if (validValues.length !== 0) {
-    if (!validValues.includes(value)) {
-      return "";
-    }
-  }
-  return `${prefix}${scope.value}`;
 };

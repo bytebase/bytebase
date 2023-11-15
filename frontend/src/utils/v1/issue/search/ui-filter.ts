@@ -1,12 +1,14 @@
 import {
   extractReviewContext,
+  releaserCandidatesForIssue,
   useWrappedReviewStepsV1,
 } from "@/components/IssueV1/logic";
+import { useUserStore } from "@/store";
 import { ComposedIssue } from "@/types";
 import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
-
-export const UIIssueFilterScopeIdList = ["approver", "approval"] as const;
-export type UIIssueFilterScopeId = typeof UIIssueFilterScopeIdList[number];
+import { hasWorkspacePermissionV1 } from "@/utils";
+import { extractUserResourceName } from "../../user";
+import { SearchParams, getValueFromSearchParams } from "./common";
 
 export const IssueApprovalStatusList = ["pending", "approved"] as const;
 export type IssueApprovalStatus = typeof IssueApprovalStatusList[number];
@@ -19,7 +21,8 @@ export const isValidIssueApprovalStatus = (
 // Use snake_case to keep consistent with the advanced search query string
 export interface UIIssueFilter {
   approver?: string;
-  approval?: IssueApprovalStatus;
+  approval?: IssueApprovalStatus | "";
+  releaser?: string;
 }
 
 export const filterIssueByApprover = (
@@ -51,9 +54,50 @@ export const filterIssueByApprover = (
   return false;
 };
 
+export const filterIssueByReleaser = (
+  issue: ComposedIssue,
+  releaser: string | undefined
+) => {
+  if (!releaser) return true;
+
+  // We support "release:{email}" by now
+  // Planning to support "release:[{email_1}, {email_2}, ...]" and
+  // "release:roles/{role}" in the future
+  if (releaser.startsWith("users/")) {
+    const user = useUserStore().getUserByEmail(
+      extractUserResourceName(releaser)
+    );
+    if (!user) return false;
+
+    if (
+      hasWorkspacePermissionV1(
+        "bb.permission.workspace.manage-issue",
+        user.userRole
+      )
+    ) {
+      // Super users are always allowed to rollout issues.
+      return true;
+    }
+
+    const candidates = releaserCandidatesForIssue(issue);
+    // Otherwise any releasers can rollout the issue.
+    if (candidates.findIndex((c) => c.name === user.name) >= 0) {
+      return true;
+    }
+
+    return false;
+  }
+
+  console.error(
+    "[filterIssueByReleaser] should never reach this line",
+    releaser
+  );
+  return false;
+};
+
 export const filterIssueByApprovalStatus = (
   issue: ComposedIssue,
-  status: IssueApprovalStatus | undefined
+  status: IssueApprovalStatus | "" | undefined
 ) => {
   if (!status) return true;
 
@@ -79,5 +123,21 @@ export const applyUIIssueFilter = (
   if (!filter) return list;
   return list
     .filter((issue) => filterIssueByApprover(issue, filter.approver))
-    .filter((issue) => filterIssueByApprovalStatus(issue, filter.approval));
+    .filter((issue) => filterIssueByApprovalStatus(issue, filter.approval))
+    .filter((issue) => filterIssueByReleaser(issue, filter.releaser));
+};
+
+export const buildUIIssueFilterBySearchParams = (params: SearchParams) => {
+  const uiIssueFilter: UIIssueFilter = {
+    approval: getValueFromSearchParams(
+      params,
+      "approval",
+      "" /* prefix='' */,
+      IssueApprovalStatusList
+    ) as IssueApprovalStatus | "",
+    approver: getValueFromSearchParams(params, "approver", "users/"),
+    releaser: getValueFromSearchParams(params, "releaser", "users/"),
+  };
+
+  return uiIssueFilter;
 };
