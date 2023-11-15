@@ -26,9 +26,9 @@
       {
         "status": "ERROR",
         "title": "engine.mysql.use-innodb",
-        "content": "\"CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin\n;\" doesn't use InnoDB engine",
+        "content": "\"CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;\" doesn't use InnoDB engine",
         "sqlReviewReport": {
-          "line": 2,
+          "line": 1,
           "code": 501
         }
       }
@@ -38,7 +38,7 @@
         "title": "table.require-pk",
         "content": "Table `userTable` requires PRIMARY KEY",
         "sqlReviewReport": {
-          "line": 2,
+          "line": 1,
           "code": 601
         }
       }
@@ -68,7 +68,7 @@
         "title": "naming.table",
         "content": "`userTable` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
         "sqlReviewReport": {
-          "line": 2,
+          "line": 1,
           "code": 301
         }
       }
@@ -118,7 +118,7 @@
         "title": "table.comment",
         "content": "Table `userTable` requires comments",
         "sqlReviewReport": {
-          "line": 2,
+          "line": 1,
           "code": 605
         }
       }
@@ -128,7 +128,7 @@
         "title": "column.required",
         "content": "Table `userTable` requires columns: created_ts, creator_id, updated_ts, updater_id",
         "sqlReviewReport": {
-          "line": 2,
+          "line": 1,
           "code": 401
         }
       }
@@ -196,9 +196,9 @@
       {
         "status": "WARNING",
         "title": "column.disallow-set-charset",
-        "content": "Disallow set column charset but \"CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin\n;\" does",
+        "content": "Disallow set column charset but \"CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;\" does",
         "sqlReviewReport": {
-          "line": 2,
+          "line": 1,
           "code": 414
         }
       }
@@ -208,7 +208,7 @@
         "title": "column.current-time-count-limit",
         "content": "Table `userTable` has 2 ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than 1.",
         "sqlReviewReport": {
-          "line": 2,
+          "line": 1,
           "code": 419
         }
       }
@@ -256,7 +256,7 @@
       {
         "status": "WARNING",
         "title": "system.charset.allowlist",
-        "content": "\"CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin\n;\" used disabled charset 'ascii'",
+        "content": "\"CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;\" used disabled charset 'ascii'",
         "sqlReviewReport": {
           "line": 1,
           "code": 1001
@@ -266,9 +266,9 @@
       {
         "status": "WARNING",
         "title": "system.collation.allowlist",
-        "content": "\"CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin\n;\" used disabled collation 'latin1_bin'",
+        "content": "\"CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;\" used disabled collation 'latin1_bin'",
         "sqlReviewReport": {
-          "line": 2,
+          "line": 1,
           "code": 1201
         }
       }
@@ -281,7 +281,7 @@
         "title": "column.auto-increment-must-integer",
         "content": "Auto-increment column `t_auto`.`auto_id` requires integer type",
         "sqlReviewReport": {
-          "line": 2,
+          "line": 1,
           "code": 410
         }
       }
@@ -301,7 +301,7 @@
         "title": "column.required",
         "content": "Table `t_auto` requires columns: created_ts, creator_id, id, updated_ts, updater_id",
         "sqlReviewReport": {
-          "line": 2,
+          "line": 1,
           "code": 401
         }
       }
@@ -311,7 +311,7 @@
         "title": "column.auto-increment-initial-value",
         "content": "The initial auto-increment value in table `t_auto` is 2, which doesn't equal 20",
         "sqlReviewReport": {
-          "line": 2,
+          "line": 1,
           "code": 416
         }
       }
@@ -321,7 +321,7 @@
         "title": "column.auto-increment-must-unsigned",
         "content": "Auto-increment column `t_auto`.`auto_id` is not UNSIGNED type",
         "sqlReviewReport": {
-          "line": 2,
+          "line": 1,
           "code": 417
         }
       }
@@ -336,15 +336,15 @@
         }
       }
   run: false
-- statement: "        DELETE FROM tech_book"
+- statement: '        DELETE FROM tech_book'
   result:
     - |-
       {
         "status": "ERROR",
         "title": "statement.where.require",
-        "content": "\"        DELETE FROM tech_book\n;\" requires WHERE clause",
+        "content": "\"DELETE FROM tech_book;\" requires WHERE clause",
         "sqlReviewReport": {
-          "line": 2,
+          "line": 1,
           "code": 202
         }
       }
@@ -352,9 +352,9 @@
       {
         "status": "ERROR",
         "title": "statement.dml-dry-run",
-        "content": "\"        DELETE FROM tech_book\n;\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist",
+        "content": "\"DELETE FROM tech_book;\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist",
         "sqlReviewReport": {
-          "line": 2,
+          "line": 1,
           "code": 208
         }
       }
@@ -362,49 +362,55 @@
       {
         "status": "WARNING",
         "title": "statement.affected-row-limit",
-        "content": "\"        DELETE FROM tech_book\n;\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist",
+        "content": "\"DELETE FROM tech_book;\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist",
         "sqlReviewReport": {
-          "line": 2,
+          "line": 1,
           "code": 209
         }
       }
   run: false
 - statement: DELETE FROM tech_book WHERE name like "%abc"
   result:
-    - status: 1
-      title: statement.where.no-leading-wildcard-like
-      content: |-
-        "DELETE FROM tech_book WHERE name like "%abc"
-        ;" uses leading wildcard LIKE
-      sql_review_report:
-        code: 204
-        line: 2
-    - status: 1
-      title: statement.dml-dry-run
-      content: |-
-        "DELETE FROM tech_book WHERE name like "%abc"
-        ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist
-      sql_review_report:
-        code: 208
-        line: 2
-    - status: 2
-      title: statement.affected-row-limit
-      content: |-
-        "DELETE FROM tech_book WHERE name like "%abc"
-        ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist
-      sql_review_report:
-        code: 209
-        line: 2
+    - |-
+      {
+        "status": "ERROR",
+        "title": "statement.where.no-leading-wildcard-like",
+        "content": "\"DELETE FROM tech_book WHERE name like \"%abc\";\" uses leading wildcard LIKE",
+        "sqlReviewReport": {
+          "line": 1,
+          "code": 204
+        }
+      }
+    - |-
+      {
+        "status": "ERROR",
+        "title": "statement.dml-dry-run",
+        "content": "\"DELETE FROM tech_book WHERE name like \"%abc\";\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist",
+        "sqlReviewReport": {
+          "line": 1,
+          "code": 208
+        }
+      }
+    - |-
+      {
+        "status": "WARNING",
+        "title": "statement.affected-row-limit",
+        "content": "\"DELETE FROM tech_book WHERE name like \"%abc\";\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist",
+        "sqlReviewReport": {
+          "line": 1,
+          "code": 209
+        }
+      }
   run: false
-- statement: "        INSERT INTO t_copy SELECT * FROM t"
+- statement: '        INSERT INTO t_copy SELECT * FROM t'
   result:
     - |-
       {
         "status": "ERROR",
         "title": "statement.select.no-select-all",
-        "content": "\"        INSERT INTO t_copy SELECT * FROM t\n;\" uses SELECT all",
+        "content": "\"INSERT INTO t_copy SELECT * FROM t;\" uses SELECT all",
         "sqlReviewReport": {
-          "line": 2,
+          "line": 1,
           "code": 203
         }
       }
@@ -412,9 +418,9 @@
       {
         "status": "ERROR",
         "title": "statement.where.require",
-        "content": "\"        INSERT INTO t_copy SELECT * FROM t\n;\" requires WHERE clause",
+        "content": "\"INSERT INTO t_copy SELECT * FROM t;\" requires WHERE clause",
         "sqlReviewReport": {
-          "line": 2,
+          "line": 1,
           "code": 202
         }
       }
@@ -422,9 +428,9 @@
       {
         "status": "ERROR",
         "title": "statement.dml-dry-run",
-        "content": "\"        INSERT INTO t_copy SELECT * FROM t\n;\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.t_copy' doesn't exist",
+        "content": "\"INSERT INTO t_copy SELECT * FROM t;\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.t_copy' doesn't exist",
         "sqlReviewReport": {
-          "line": 2,
+          "line": 1,
           "code": 208
         }
       }
@@ -432,9 +438,9 @@
       {
         "status": "WARNING",
         "title": "statement.insert.row-limit",
-        "content": "\"        INSERT INTO t_copy SELECT * FROM t\n;\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.t_copy' doesn't exist",
+        "content": "\"INSERT INTO t_copy SELECT * FROM t;\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.t_copy' doesn't exist",
         "sqlReviewReport": {
-          "line": 2,
+          "line": 1,
           "code": 1101
         }
       }
@@ -442,22 +448,22 @@
       {
         "status": "WARNING",
         "title": "statement.insert.must-specify-column",
-        "content": "The INSERT statement must specify columns but \"        INSERT INTO t_copy SELECT * FROM t\n;\" does not",
+        "content": "The INSERT statement must specify columns but \"INSERT INTO t_copy SELECT * FROM t;\" does not",
         "sqlReviewReport": {
-          "line": 2,
+          "line": 1,
           "code": 1107
         }
       }
   run: false
-- statement: "        INSERT INTO t VALUES (1, 1, now(), 1, now())"
+- statement: '        INSERT INTO t VALUES (1, 1, now(), 1, now())'
   result:
     - |-
       {
         "status": "ERROR",
         "title": "statement.dml-dry-run",
-        "content": "\"        INSERT INTO t VALUES (1, 1, now(), 1, now())\n;\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.t' doesn't exist",
+        "content": "\"INSERT INTO t VALUES (1, 1, now(), 1, now());\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.t' doesn't exist",
         "sqlReviewReport": {
-          "line": 2,
+          "line": 1,
           "code": 208
         }
       }
@@ -465,9 +471,9 @@
       {
         "status": "WARNING",
         "title": "statement.insert.must-specify-column",
-        "content": "The INSERT statement must specify columns but \"        INSERT INTO t VALUES (1, 1, now(), 1, now())\n;\" does not",
+        "content": "The INSERT statement must specify columns but \"INSERT INTO t VALUES (1, 1, now(), 1, now());\" does not",
         "sqlReviewReport": {
-          "line": 2,
+          "line": 1,
           "code": 1107
         }
       }
@@ -478,9 +484,9 @@
       {
         "status": "ERROR",
         "title": "statement.dml-dry-run",
-        "content": "\"DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')\n;\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist",
+        "content": "\"DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase');\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist",
         "sqlReviewReport": {
-          "line": 2,
+          "line": 1,
           "code": 208
         }
       }
@@ -488,9 +494,9 @@
       {
         "status": "WARNING",
         "title": "statement.affected-row-limit",
-        "content": "\"DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')\n;\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist",
+        "content": "\"DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase');\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist",
         "sqlReviewReport": {
-          "line": 2,
+          "line": 1,
           "code": 209
         }
       }
@@ -501,9 +507,9 @@
       {
         "status": "ERROR",
         "title": "statement.disallow-commit",
-        "content": "Commit is not allowed, related statement: \"COMMIT\n;\"",
+        "content": "Commit is not allowed, related statement: \"COMMIT;\"",
         "sqlReviewReport": {
-          "line": 2,
+          "line": 1,
           "code": 206
         }
       }
@@ -546,9 +552,9 @@
       {
         "status": "WARNING",
         "title": "statement.affected-row-limit",
-        "content": "\"DELETE FROM user WHERE id <= 10\n;\" affected 10 rows. The count exceeds 5.",
+        "content": "\"DELETE FROM user WHERE id <= 10;\" affected 10 rows. The count exceeds 5.",
         "sqlReviewReport": {
-          "line": 2,
+          "line": 1,
           "code": 209
         }
       }
@@ -569,9 +575,9 @@
       {
         "status": "WARNING",
         "title": "statement.insert.row-limit",
-        "content": "\"INSERT INTO user(id, name) SELECT id, name FROM (SELECT 1 AS id, 'a' AS name WHERE 1=1 UNION ALL\n      SELECT 2 AS id, 'b' AS name WHERE 1=1 UNION ALL\n      SELECT 3 AS id, 'c' AS name WHERE 1=1 UNION ALL\n      SELECT 4 AS id, 'd' AS name WHERE 1=1 UNION ALL\n      SELECT 5 AS id, 'e' AS name WHERE 1=1 UNION ALL\n      SELECT 6 AS id, 'f' AS name WHERE 1=1 UNION ALL\n      SELECT 7 AS id, 'g' AS name WHERE 1=1 UNION ALL\n      SELECT 8 AS id, 'h' AS name WHERE 1=1 UNION ALL\n      SELECT 9 AS id, 'i' AS name WHERE 1=1 UNION ALL\n      SELECT 10 AS id, 'j' AS name WHERE 1=1) value_table WHERE 1=1\n;\" inserts 10 rows. The count exceeds 5.",
+        "content": "\"INSERT INTO user(id, name) SELECT id, name FROM (SELECT 1 AS id, 'a' AS name WHERE 1=1 UNION ALL\n      SELECT 2 AS id, 'b' AS name WHERE 1=1 UNION ALL\n      SELECT 3 AS id, 'c' AS name WHERE 1=1 UNION ALL\n      SELECT 4 AS id, 'd' AS name WHERE 1=1 UNION ALL\n      SELECT 5 AS id, 'e' AS name WHERE 1=1 UNION ALL\n      SELECT 6 AS id, 'f' AS name WHERE 1=1 UNION ALL\n      SELECT 7 AS id, 'g' AS name WHERE 1=1 UNION ALL\n      SELECT 8 AS id, 'h' AS name WHERE 1=1 UNION ALL\n      SELECT 9 AS id, 'i' AS name WHERE 1=1 UNION ALL\n      SELECT 10 AS id, 'j' AS name WHERE 1=1) value_table WHERE 1=1;\" inserts 10 rows. The count exceeds 5.",
         "sqlReviewReport": {
-          "line": 11,
+          "line": 1,
           "code": 1101
         }
       }
@@ -582,22 +588,22 @@
       {
         "status": "WARNING",
         "title": "statement.disallow-limit",
-        "content": "LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but \"INSERT INTO user(id, name) SELECT id, name FROM user WHERE id=1 LIMIT 1\n;\" uses",
+        "content": "LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but \"INSERT INTO user(id, name) SELECT id, name FROM user WHERE id=1 LIMIT 1;\" uses",
         "sqlReviewReport": {
-          "line": 2,
+          "line": 1,
           "code": 1103
         }
       }
   run: false
-- statement: "        ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8;"
+- statement: '        ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8;'
   result:
     - |-
       {
         "status": "WARNING",
         "title": "table.disallow-partition",
-        "content": "Table partition is forbidden, but \"        ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8\n;\" creates",
+        "content": "Table partition is forbidden, but \"ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8;\" creates",
         "sqlReviewReport": {
-          "line": 2,
+          "line": 1,
           "code": 608
         }
       }
@@ -612,7 +618,7 @@
         "title": "statement.merge-alter-table",
         "content": "There are 2 statements to modify table `user`",
         "sqlReviewReport": {
-          "line": 3,
+          "line": 2,
           "code": 207
         }
       }
@@ -657,7 +663,7 @@
         }
       }
   run: false
-- statement: "        DROP TABLE user;"
+- statement: '        DROP TABLE user;'
   result:
     - |-
       {
@@ -665,7 +671,7 @@
         "title": "table.drop-naming-convention",
         "content": "`user` mismatches drop table naming convention, naming format should be \"_delete$\"",
         "sqlReviewReport": {
-          "line": 2,
+          "line": 1,
           "code": 603
         }
       }
@@ -673,9 +679,9 @@
       {
         "status": "WARNING",
         "title": "schema.backward-compatibility",
-        "content": "\"        DROP TABLE user\n;\" may cause incompatibility with the existing data and code",
+        "content": "\"DROP TABLE user;\" may cause incompatibility with the existing data and code",
         "sqlReviewReport": {
-          "line": 2,
+          "line": 1,
           "code": 103
         }
       }
