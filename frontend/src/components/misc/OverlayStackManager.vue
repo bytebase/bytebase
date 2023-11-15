@@ -68,6 +68,7 @@ export function useOverlayStack(show: MaybeRef<boolean> = true) {
       const EXCLUDED_SELECTORS = [
         "input",
         "textarea",
+        ".bb-overlay-stack-ignore-esc",
         ".n-input",
         ".n-base-selection-input",
         ".n-base-selection-tags",
