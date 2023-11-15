@@ -277,7 +277,6 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 		Source:         db.UI,
 		Type:           db.Migrate,
 		Description:    "Create database",
-		Force:          true,
 	}
 	creator, err := exec.store.GetUserByID(ctx, task.CreatorID)
 	if err != nil {

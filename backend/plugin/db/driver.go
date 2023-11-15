@@ -158,10 +158,6 @@ type MigrationInfo struct {
 	Creator        string
 	// Payload contains JSON-encoded string of VCS push event if the migration is triggered by a VCS push event.
 	Payload *storepb.InstanceChangeHistoryPayload
-	// Force is used to execute migration disregarding any migration history with PENDING or FAILED status.
-	// This applies to BASELINE and MIGRATE types of migrations because most of these migrations are retry-able.
-	// We don't use force option for DATA type of migrations yet till there's customer needs.
-	Force bool
 }
 
 // placeholderRegexp is the regexp for placeholder.

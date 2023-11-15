@@ -2300,7 +2300,8 @@
       "schema-not-found": "Esquema no encontrado",
       "failed-to-fetch-database-schema": "Error al obtener el esquema de la base de datos",
       "invalid-schema": "Esquema no válido",
-      "cannot-drop-the-last-column": "No se puede eliminar la última columna"
+      "cannot-drop-the-last-column": "No se puede eliminar la última columna",
+      "cannot-change-config": "La configuración de la base de datos debe cambiarse con el esquema"
     },
     "confirm-to-close": {
       "title": "Confirmar para cerrar",
