@@ -2300,7 +2300,8 @@
       "schema-not-found": "找不到 Schema",
       "failed-to-fetch-database-schema": "请求数据库 Schema 失败",
       "invalid-schema": "无效的 Schema",
-      "cannot-drop-the-last-column": "不能删除最后一列"
+      "cannot-drop-the-last-column": "不能删除最后一列",
+      "cannot-change-config": "数据库配置必须同 Schema 一起变更"
     },
     "confirm-to-close": {
       "title": "确定关闭？",

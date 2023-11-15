@@ -357,6 +357,17 @@ const fetchStatementMapWithSchemaEditor = async () => {
       targetMetadata,
       engine: database.instanceEntity.engine,
     });
+    if (
+      diff === "" &&
+      !isEqual(sourceMetadata.schemaConfigs, targetMetadata.schemaConfigs)
+    ) {
+      pushNotification({
+        module: "bytebase",
+        style: "WARN",
+        title: t("schema-editor.message.cannot-change-config"),
+      });
+      return;
+    }
     statementMap.set(database.uid, diff);
   }
   return statementMap;

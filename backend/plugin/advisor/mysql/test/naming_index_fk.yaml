@@ -1,0 +1,77 @@
+- statement: CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;
+  want:
+    - status: WARN
+      code: 305
+      title: naming.index.fk
+      content: Foreign key in table `userTable` mismatches the naming convention, expect "^$|^fk_userTable_roomId_room_id$" but found `fk1`
+      line: 1
+      details: ""
+- statement: ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_author_id_author_id FOREIGN KEY (author_id) REFERENCES author (id);
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: ALTER TABLE tech_book ADD CONSTRAINT fk_author_id FOREIGN KEY (author_id) REFERENCES author (id);
+  want:
+    - status: WARN
+      code: 305
+      title: naming.index.fk
+      content: Foreign key in table `tech_book` mismatches the naming convention, expect "^$|^fk_tech_book_author_id_author_id$" but found `fk_author_id`
+      line: 1
+      details: ""
+- statement: ALTER TABLE tech_book ADD CONSTRAINT rvemempmcmmhutaskvcidmwaldtfjdgmcpkhmibtadfydtkexpuzczrrneucthfwk FOREIGN KEY (author_id) REFERENCES author (id);
+  want:
+    - status: WARN
+      code: 305
+      title: naming.index.fk
+      content: Foreign key `rvemempmcmmhutaskvcidmwaldtfjdgmcpkhmibtadfydtkexpuzczrrneucthfwk` in table `tech_book` mismatches the naming convention, its length should be within 64 characters
+      line: 1
+      details: ""
+    - status: WARN
+      code: 305
+      title: naming.index.fk
+      content: Foreign key in table `tech_book` mismatches the naming convention, expect "^$|^fk_tech_book_author_id_author_id$" but found `rvemempmcmmhutaskvcidmwaldtfjdgmcpkhmibtadfydtkexpuzczrrneucthfwk`
+      line: 1
+      details: ""
+- statement: |
+    CREATE TABLE book(
+      id INT,
+      author_id INT,
+      FOREIGN KEY  fk_book_author_id_author_id (author_id) REFERENCES author (id)
+    );
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |
+    CREATE TABLE book(
+      id INT,
+      author_id INT,
+      FOREIGN KEY (author_id) REFERENCES author (id)
+    );
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |
+    CREATE TABLE book(
+      id INT,
+      author_id INT,
+      FOREIGN KEY fk_book_author_id (author_id) REFERENCES author (id)
+    );
+  want:
+    - status: WARN
+      code: 305
+      title: naming.index.fk
+      content: Foreign key in table `book` mismatches the naming convention, expect "^$|^fk_book_author_id_author_id$" but found `fk_book_author_id`
+      line: 4
+      details: ""
