@@ -11,18 +11,24 @@
             CONSTRAINT uk_user_id_name UNIQUE (id, name)
             )
   result:
-    - code: 0
-      title: OK
-      status: 3
+    - |-
+      {
+        "status": "SUCCESS",
+        "title": "OK"
+      }
   run: false
 - statement: CREATE TABLE user(id);
   result:
-    - status: 1
-      title: Syntax error
-      content: syntax error at or near "user"
-      sql_review_report:
-        code: 201
-        line: 1
+    - |-
+      {
+        "status": "ERROR",
+        "title": "Syntax error",
+        "content": "syntax error at or near \"user\"",
+        "sqlReviewReport": {
+          "line": 1,
+          "code": 201
+        }
+      }
   run: false
 - statement: |-
     CREATE TABLE "userTable"(
@@ -33,105 +39,148 @@
             CONSTRAINT fk1 FOREIGN KEY ("roomId") REFERENCES room(id)
             )
   result:
-    - status: 1
-      title: table.require-pk
-      content: 'Table "public"."userTable" requires PRIMARY KEY, related statement: "CREATE TABLE \"userTable\"(\n        id INT,\n        name VARCHAR(255),\n        \"roomId\" INT,\n        CONSTRAINT uk1 UNIQUE (id, name),\n        CONSTRAINT fk1 FOREIGN KEY (\"roomId\") REFERENCES room(id)\n        )"'
-      sql_review_report:
-        code: 601
-        line: 7
-    - status: 1
-      title: table.no-foreign-key
-      content: |-
-        Foreign key is not allowed in the table "public"."userTable", related statement: "CREATE TABLE "userTable"(
-                id INT,
-                name VARCHAR(255),
-                "roomId" INT,
-                CONSTRAINT uk1 UNIQUE (id, name),
-                CONSTRAINT fk1 FOREIGN KEY ("roomId") REFERENCES room(id)
-                )"
-      sql_review_report:
-        code: 602
-        line: 7
-    - status: 2
-      title: naming.table
-      content: '"userTable" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      sql_review_report:
-        code: 301
-        line: 7
-    - status: 2
-      title: naming.column
-      content: '"userTable"."roomId" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      sql_review_report:
-        code: 302
-        line: 4
-    - status: 2
-      title: naming.index.uk
-      content: Unique key in table "userTable" mismatches the naming convention, expect "^$|^uk_userTable_id_name$" but found "uk1"
-      sql_review_report:
-        line: 5
-        code: 304
-    - status: 2
-      title: naming.index.fk
-      content: Foreign key in table "userTable" mismatches the naming convention, expect "^$|^fk_userTable_roomId_room_id$" but found "fk1"
-      sql_review_report:
-        code: 305
-        line: 6
-    - status: 2
-      title: column.required
-      content: 'Table "userTable" requires columns: created_ts, creator_id, updated_ts, updater_id'
-      sql_review_report:
-        code: 401
-        line: 7
-    - status: 2
-      title: column.no-null
-      content: Column "id" in "public"."userTable" cannot have NULL value
-      sql_review_report:
-        line: 2
-        code: 402
-    - status: 2
-      title: column.no-null
-      content: Column "name" in "public"."userTable" cannot have NULL value
-      sql_review_report:
-        code: 402
-        line: 3
-    - status: 2
-      title: column.no-null
-      content: Column "roomId" in "public"."userTable" cannot have NULL value
-      sql_review_report:
-        code: 402
-        line: 4
+    - |-
+      {
+        "status": "ERROR",
+        "title": "table.require-pk",
+        "content": "Table \"public\".\"userTable\" requires PRIMARY KEY, related statement: \"CREATE TABLE \\\"userTable\\\"(\\n        id INT,\\n        name VARCHAR(255),\\n        \\\"roomId\\\" INT,\\n        CONSTRAINT uk1 UNIQUE (id, name),\\n        CONSTRAINT fk1 FOREIGN KEY (\\\"roomId\\\") REFERENCES room(id)\\n        )\"",
+        "sqlReviewReport": {
+          "line": 7,
+          "code": 601
+        }
+      }
+    - |-
+      {
+        "status": "ERROR",
+        "title": "table.no-foreign-key",
+        "content": "Foreign key is not allowed in the table \"public\".\"userTable\", related statement: \"CREATE TABLE \"userTable\"(\n        id INT,\n        name VARCHAR(255),\n        \"roomId\" INT,\n        CONSTRAINT uk1 UNIQUE (id, name),\n        CONSTRAINT fk1 FOREIGN KEY (\"roomId\") REFERENCES room(id)\n        )\"",
+        "sqlReviewReport": {
+          "line": 7,
+          "code": 602
+        }
+      }
+    - |-
+      {
+        "status": "WARNING",
+        "title": "naming.table",
+        "content": "\"userTable\" mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
+        "sqlReviewReport": {
+          "line": 7,
+          "code": 301
+        }
+      }
+    - |-
+      {
+        "status": "WARNING",
+        "title": "naming.column",
+        "content": "\"userTable\".\"roomId\" mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
+        "sqlReviewReport": {
+          "line": 4,
+          "code": 302
+        }
+      }
+    - |-
+      {
+        "status": "WARNING",
+        "title": "naming.index.uk",
+        "content": "Unique key in table \"userTable\" mismatches the naming convention, expect \"^$|^uk_userTable_id_name$\" but found \"uk1\"",
+        "sqlReviewReport": {
+          "line": 5,
+          "code": 304
+        }
+      }
+    - |-
+      {
+        "status": "WARNING",
+        "title": "naming.index.fk",
+        "content": "Foreign key in table \"userTable\" mismatches the naming convention, expect \"^$|^fk_userTable_roomId_room_id$\" but found \"fk1\"",
+        "sqlReviewReport": {
+          "line": 6,
+          "code": 305
+        }
+      }
+    - |-
+      {
+        "status": "WARNING",
+        "title": "column.required",
+        "content": "Table \"userTable\" requires columns: created_ts, creator_id, updated_ts, updater_id",
+        "sqlReviewReport": {
+          "line": 7,
+          "code": 401
+        }
+      }
+    - |-
+      {
+        "status": "WARNING",
+        "title": "column.no-null",
+        "content": "Column \"id\" in \"public\".\"userTable\" cannot have NULL value",
+        "sqlReviewReport": {
+          "line": 2,
+          "code": 402
+        }
+      }
+    - |-
+      {
+        "status": "WARNING",
+        "title": "column.no-null",
+        "content": "Column \"name\" in \"public\".\"userTable\" cannot have NULL value",
+        "sqlReviewReport": {
+          "line": 3,
+          "code": 402
+        }
+      }
+    - |-
+      {
+        "status": "WARNING",
+        "title": "column.no-null",
+        "content": "Column \"roomId\" in \"public\".\"userTable\" cannot have NULL value",
+        "sqlReviewReport": {
+          "line": 4,
+          "code": 402
+        }
+      }
   run: false
 - statement: DELETE FROM t
   result:
-    - status: 1
-      title: statement.where.require
-      content: '"DELETE FROM t" requires WHERE clause'
-      sql_review_report:
-        code: 202
-        line: 1
+    - |-
+      {
+        "status": "ERROR",
+        "title": "statement.where.require",
+        "content": "\"DELETE FROM t\" requires WHERE clause",
+        "sqlReviewReport": {
+          "line": 1,
+          "code": 202
+        }
+      }
   run: false
 - statement: DELETE FROM t WHERE a like '%abc'
   result:
-    - status: 1
-      title: statement.where.no-leading-wildcard-like
-      content: '"DELETE FROM t WHERE a like ''%abc''" uses leading wildcard LIKE'
-      sql_review_report:
-        code: 204
-        line: 1
+    - |-
+      {
+        "status": "ERROR",
+        "title": "statement.where.no-leading-wildcard-like",
+        "content": "\"DELETE FROM t WHERE a like '%abc'\" uses leading wildcard LIKE",
+        "sqlReviewReport": {
+          "line": 1,
+          "code": 204
+        }
+      }
   run: false
 - statement: DELETE FROM t WHERE a = (SELECT max(id) FROM "user" WHERE name = 'bytebase')
   result:
-    - code: 0
-      status: 3
-      title: OK
-      content: ""
+    - |-
+      {
+        "status": "SUCCESS",
+        "title": "OK"
+      }
   run: false
 - statement: INSERT INTO t VALUES (1), (2)
   result:
-    - code: 0
-      status: 3
-      title: OK
-      content: ""
+    - |-
+      {
+        "status": "SUCCESS",
+        "title": "OK"
+      }
   run: false
 - statement: |-
     CREATE TABLE tech_book(
@@ -143,17 +192,22 @@
       CONSTRAINT pk_tech_book_id PRIMARY KEY (id)
     )
   result:
-    - code: 0
-      status: 3
-      title: OK
-      content: ""
+    - |-
+      {
+        "status": "SUCCESS",
+        "title": "OK"
+      }
   run: true
 - statement: ALTER INDEX pk_tech_book_id RENAME TO pk1
   result:
-    - status: 2
-      title: naming.index.pk
-      content: Primary key in table "tech_book" mismatches the naming convention, expect "^$|^pk_tech_book_id$" but found "pk1"
-      sql_review_report:
-        code: 306
-        line: 1
+    - |-
+      {
+        "status": "WARNING",
+        "title": "naming.index.pk",
+        "content": "Primary key in table \"tech_book\" mismatches the naming convention, expect \"^$|^pk_tech_book_id$\" but found \"pk1\"",
+        "sqlReviewReport": {
+          "line": 1,
+          "code": 306
+        }
+      }
   run: false
