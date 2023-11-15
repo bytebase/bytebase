@@ -46,10 +46,8 @@ func TestMySQLRules(t *testing.T) {
 		// advisor.SchemaRuleStatementInsertDisallowOrderByRand disallow the order by rand in the INSERT statement.
 		advisor.SchemaRuleStatementInsertDisallowOrderByRand,
 		// advisor.SchemaRuleStatementAffectedRowLimit enforce the UPDATE/DELETE affected row limit.
-		// TODO: need more test.
 		advisor.SchemaRuleStatementAffectedRowLimit,
 		// advisor.SchemaRuleStatementDMLDryRun dry run the dml.
-		// TODO: need more test.
 		advisor.SchemaRuleStatementDMLDryRun,
 
 		// advisor.SchemaRuleTableRequirePK require the table to have a primary key.
