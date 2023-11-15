@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/google/uuid"
 	"github.com/gosimple/slug"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -233,6 +234,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 				{
 					Specs: []*v1pb.Plan_Spec{
 						{
+							Id: uuid.NewString(),
 							Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 								ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 									Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
@@ -246,6 +248,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 				{
 					Specs: []*v1pb.Plan_Spec{
 						{
+							Id: uuid.NewString(),
 							Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 								ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 									Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
