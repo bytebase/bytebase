@@ -16,7 +16,7 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func TestGetQuerySpanResult(t *testing.T) {
+func TestGetQuerySpan(t *testing.T) {
 	type testCase struct {
 		Description       string `yaml:"description,omitempty"`
 		Statement         string `yaml:"statement,omitempty"`
@@ -29,7 +29,7 @@ func TestGetQuerySpanResult(t *testing.T) {
 
 	const (
 		record       = false
-		testDataPath = "testdata/query_span_result.yaml"
+		testDataPath = "testdata/query_span.yaml"
 	)
 
 	a := require.New(t)

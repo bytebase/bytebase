@@ -389,12 +389,20 @@ func (*querySpanExtractor) mergeJoinTableSource(node *pgquery.Node_JoinExpr, lef
 		if len(columnNameList) != 0 && len(columnNameList) != len(result.Columns) {
 			return nil, errors.Errorf("expect equal length but found %d and %d", len(node.JoinExpr.Alias.Colnames), len(result.Columns))
 		}
-		if aliasName != "" {
-			result.Name = aliasName
+
+		result.Name = aliasName
+		if len(columnNameList) == 0 {
+			return result, nil
 		}
+
+		var columns []base.QuerySpanResult
 		for i, columnName := range columnNameList {
-			result.SetColumnName(i, columnName)
+			columns = append(columns, base.QuerySpanResult{
+				Name:          columnName,
+				SourceColumns: result.Columns[i].SourceColumns,
+			})
 		}
+		result.Columns = columns
 	}
 	return result, nil
 }
@@ -414,19 +422,27 @@ func (q *querySpanExtractor) extractTableSourceFromRangeVar(node *pgquery.Node_R
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract alias from range var: %+v", node)
 	}
-	if len(columnNameList) != 0 && len(columnNameList) != len(tableSource.GetQuerySpanResult()) {
+
+	querySpanResult := tableSource.GetQuerySpanResult()
+	if len(columnNameList) != 0 && len(columnNameList) != len(querySpanResult) {
 		return nil, errors.Errorf("expect equal length but found %d and %d", len(node.RangeVar.Alias.Colnames), len(tableSource.GetQuerySpanResult()))
 	}
 
-	result := &base.PseudoTable{
-		Name:    aliasName,
-		Columns: tableSource.GetQuerySpanResult(),
-	}
-	for i, columnName := range columnNameList {
-		result.SetColumnName(i, columnName)
+	tableName := aliasName
+	if len(columnNameList) == 0 {
+		return base.NewPseudoTable(tableName, querySpanResult), nil
 	}
 
-	return result, nil
+	var columns []base.QuerySpanResult
+	if len(columnNameList) > 0 {
+		for i, columnName := range columnNameList {
+			columns = append(columns, base.QuerySpanResult{
+				Name:          columnName,
+				SourceColumns: querySpanResult[i].SourceColumns,
+			})
+		}
+	}
+	return base.NewPseudoTable(tableName, columns), nil
 }
 
 func (q *querySpanExtractor) extractTableSourceFromSubselect(node *pgquery.Node_RangeSubselect) (base.TableSource, error) {
@@ -443,19 +459,24 @@ func (q *querySpanExtractor) extractTableSourceFromSubselect(node *pgquery.Node_
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract alias from range var: %+v", node)
 	}
-	if len(columnNameList) != 0 && len(columnNameList) != len(tableSource.GetQuerySpanResult()) {
+	querySpanResult := tableSource.GetQuerySpanResult()
+	if len(columnNameList) != 0 && len(columnNameList) != len(querySpanResult) {
 		return nil, errors.Errorf("expect equal length but found %d and %d", len(columnNameList), len(tableSource.GetQuerySpanResult()))
 	}
 
-	result := &base.PseudoTable{
-		Name:    aliasName,
-		Columns: tableSource.GetQuerySpanResult(),
-	}
-	for i, columnName := range columnNameList {
-		result.SetColumnName(i, columnName)
+	tableName := aliasName
+	if len(columnNameList) == 0 {
+		return base.NewPseudoTable(tableName, querySpanResult), nil
 	}
 
-	return result, nil
+	var columns []base.QuerySpanResult
+	for i, columnName := range columnNameList {
+		columns = append(columns, base.QuerySpanResult{
+			Name:          columnName,
+			SourceColumns: querySpanResult[i].SourceColumns,
+		})
+	}
+	return base.NewPseudoTable(tableName, columns), nil
 }
 
 func (q *querySpanExtractor) extractTemporaryTableResourceFromNonRecursiveCTE(cteExpr *pgquery.Node_CommonTableExpr) (*base.PseudoTable, error) {

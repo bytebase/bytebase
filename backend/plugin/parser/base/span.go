@@ -62,6 +62,9 @@ type TableSource interface {
 	GetSchemaName() string
 	GetDatabaseName() string
 	GetServerName() string
+	// GetQuerySpanResult returns the query span result of the table, it's callers' responsibility
+	// to call Clone() to avoid modifying the original result.
+	GetQuerySpanResult() []QuerySpanResult
 }
 
 // baseTableSource is the base implementation table source.
@@ -82,6 +85,13 @@ type PseudoTable struct {
 	Columns []QuerySpanResult
 }
 
+func NewPseudoTable(name string, columns []QuerySpanResult) *PseudoTable {
+	return &PseudoTable{
+		Name:    name,
+		Columns: columns,
+	}
+}
+
 func (p *PseudoTable) GetTableName() string {
 	return p.Name
 }
@@ -98,8 +108,8 @@ func (*PseudoTable) GetServerName() string {
 	return ""
 }
 
-func (p *PseudoTable) SetColumnName(i int, name string) {
-	p.Columns[i].Name = name
+func (p *PseudoTable) GetQuerySpanResult() []QuerySpanResult {
+	return p.Columns
 }
 
 // PhysicalTable is the resource of a physical table.
@@ -132,6 +142,25 @@ func (p *PhysicalTable) GetDatabaseName() string {
 
 func (p *PhysicalTable) GetServerName() string {
 	return p.Server
+}
+
+func (p *PhysicalTable) GetQuerySpanResult() []QuerySpanResult {
+	result := make([]QuerySpanResult, 0, len(p.Columns))
+	for _, column := range p.Columns {
+		sourceColumnSet := make(SourceColumnSet, 1)
+		sourceColumnSet[ColumnResource{
+			Server:   p.Server,
+			Database: p.Database,
+			Schema:   p.Schema,
+			Table:    p.Name,
+			Column:   column,
+		}] = true
+		result = append(result, QuerySpanResult{
+			Name:          column,
+			SourceColumns: sourceColumnSet,
+		})
+	}
+	return result
 }
 
 // String returns the string format of the column resource.
