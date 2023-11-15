@@ -7,7 +7,7 @@
         :options="items"
         :value="value"
         :consistent-menu-width="false"
-        @update:value="$emit('update:value', $event)"
+        @update:value="(value: ValueType, option: TabFilterItem<ValueType>) => $emit('update:value', value, option)"
       />
     </div>
     <div
@@ -43,12 +43,13 @@ type ValueType = string | number; // Use generic typed component in the future
 
 const props = withDefaults(
   defineProps<{
-    value: ValueType;
+    value?: ValueType;
     items: TabFilterItem<ValueType>[];
     disabled?: boolean;
     responsive?: boolean;
   }>(),
   {
+    value: undefined,
     disabled: false,
     responsive: true,
   }

@@ -1,10 +1,9 @@
 <template>
   <div class="flex flex-col">
-    <AdvancedSearch
+    <AdvancedSearchBox
+      v-model:params="state.searchParams"
       custom-class="w-full px-4 py-2"
-      :params="state.searchParams"
       :autofocus="autofocus"
-      @update="onSearchParamsUpdate($event)"
     />
 
     <FeatureAttention
@@ -87,7 +86,7 @@ import { NInputGroup, NDatePicker } from "naive-ui";
 import { reactive, computed, watchEffect, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
-import AdvancedSearch from "@/components/AdvancedSearch.vue";
+import { AdvancedSearchBox } from "@/components/IssueV1/components/IssueSearch";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
 import { TabFilterItem } from "@/components/v2";
@@ -302,10 +301,6 @@ onMounted(() => {
     state.tab = "CLOSED";
   }
 });
-
-const onSearchParamsUpdate = (params: SearchParams) => {
-  state.searchParams = params;
-};
 
 const getValueFromIssueFilter = (
   prefix: string,

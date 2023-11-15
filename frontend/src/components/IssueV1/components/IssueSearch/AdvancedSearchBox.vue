@@ -17,7 +17,7 @@
     </NInput>
     <div
       v-if="state.showSearchScopes"
-      class="absolute z-50 pt-1 top-full w-full divide-y divide-block-border bg-white shadow-md"
+      class="absolute z-50 pt-2 mt-0.5 top-full w-full divide-y divide-block-border bg-white shadow-md"
     >
       <div
         v-for="item in searchScopes"
@@ -66,6 +66,7 @@ import { reactive, computed, h, watch, VNode, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import BBAvatar from "@/bbkit/BBAvatar.vue";
 import GitIcon from "@/components/GitIcon.vue";
+import YouTag from "@/components/misc/YouTag.vue";
 import {
   InstanceV1Name,
   InstanceV1EngineIcon,
@@ -93,7 +94,6 @@ import {
   SearchParams,
   SearchScopeId,
 } from "@/utils";
-import YouTag from "./misc/YouTag.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -109,7 +109,7 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  (event: "update", params: SearchParams): void;
+  (event: "update:params", params: SearchParams): void;
 }>();
 
 const { t } = useI18n();
@@ -156,6 +156,13 @@ watch(
   () => state.showSearchScopes,
   (show) => {
     if (show) state.currentScope = undefined;
+  }
+);
+
+watch(
+  () => props.params,
+  (params) => {
+    state.searchText = buildSearchTextByParams(params);
   }
 );
 
@@ -416,7 +423,7 @@ const onClear = () => {
 };
 
 const debouncedUpdate = debounce(() => {
-  emit("update", getSearchParamsByText(state.searchText));
+  emit("update:params", getSearchParamsByText(state.searchText));
 }, 500);
 
 const onUpdate = (value: string) => {
