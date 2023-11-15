@@ -5,6 +5,7 @@
     type="daterange"
     clearable
     style="width: 14rem"
+    class="time-range-picker"
     @update:value="handleUpdate"
   >
   </NDatePicker>
@@ -50,3 +51,10 @@ const handleUpdate = (values: [number, number] | null) => {
   emit("update:params", updated);
 };
 </script>
+
+<style lang="postcss" scoped>
+.time-range-picker :deep(.n-input) {
+  --n-padding-left: 6px !important;
+  --n-padding-right: 6px !important;
+}
+</style>
