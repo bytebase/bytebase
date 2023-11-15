@@ -30,6 +30,7 @@
           :include-system-bot="false"
           :map-options="mapUserOptions"
           :fallback-option="fallbackUser"
+          :clearable="true"
           style="width: 14rem"
           @update:user="changeAssigneeUID"
         />
@@ -112,14 +113,15 @@ const errors = asyncComputed(async () => {
 
 const changeAssigneeUID = async (uid: string | undefined) => {
   if (!uid || uid === String(UNKNOWN_ID)) {
-    return;
-  }
-  const assignee = userStore.getUserById(uid);
-  if (!assignee) {
     issue.value.assignee = "";
-    return;
+  } else {
+    const assignee = userStore.getUserById(uid);
+    if (!assignee) {
+      issue.value.assignee = "";
+    } else {
+      issue.value.assignee = `users/${assignee.email}`;
+    }
   }
-  issue.value.assignee = `users/${assignee.email}`;
 
   if (!isCreating.value) {
     const issuePatch = Issue.fromJSON(issue.value);

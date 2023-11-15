@@ -6,24 +6,24 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pingcap/tidb/parser/ast"
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
+
+	mysql "github.com/bytebase/mysql-parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*ColumnDisallowChangingTypeAdvisor)(nil)
-	_ ast.Visitor     = (*columnDisallowChangingTypeChecker)(nil)
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLColumnDisallowChangingType, &ColumnDisallowChangingTypeAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLColumnDisallowChangingType, &ColumnDisallowChangingTypeAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLColumnDisallowChangingType, &ColumnDisallowChangingTypeAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnDisallowChangingType, &ColumnDisallowChangingTypeAdvisor{})
+	// only for mysqlwip test.
+	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLColumnDisallowChangingType, &ColumnDisallowChangingTypeAdvisor{})
 }
 
 // ColumnDisallowChangingTypeAdvisor is the advisor checking for disallow changing column type..
@@ -32,9 +32,9 @@ type ColumnDisallowChangingTypeAdvisor struct {
 
 // Check checks for disallow changing column type..
 func (*ColumnDisallowChangingTypeAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	stmtList, ok := ctx.AST.([]ast.StmtNode)
+	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to StmtNode")
+		return nil, errors.Errorf("failed to convert to mysql parser result")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -48,9 +48,8 @@ func (*ColumnDisallowChangingTypeAdvisor) Check(ctx advisor.Context, _ string) (
 	}
 
 	for _, stmt := range stmtList {
-		checker.text = stmt.Text()
-		checker.line = stmt.OriginTextPosition()
-		(stmt).Accept(checker)
+		checker.baseLine = stmt.BaseLine
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -65,47 +64,53 @@ func (*ColumnDisallowChangingTypeAdvisor) Check(ctx advisor.Context, _ string) (
 }
 
 type columnDisallowChangingTypeChecker struct {
+	*mysql.BaseMySQLParserListener
+
+	baseLine   int
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
 	text       string
-	line       int
 	catalog    *catalog.Finder
 }
 
-// Enter implements the ast.Visitor interface.
-func (checker *columnDisallowChangingTypeChecker) Enter(in ast.Node) (ast.Node, bool) {
-	changeType := false
-	if node, ok := in.(*ast.AlterTableStmt); ok {
-		for _, spec := range node.Specs {
-			switch spec.Tp {
-			case ast.AlterTableChangeColumn:
-				changeType = checker.changeColumnType(node.Table.Name.O, spec.OldColumnName.Name.O, spec.NewColumns[0].Tp.String())
-			case ast.AlterTableModifyColumn:
-				changeType = checker.changeColumnType(node.Table.Name.O, spec.NewColumns[0].Name.Name.O, spec.NewColumns[0].Tp.String())
-			}
-			if changeType {
-				break
-			}
-		}
-	}
-
-	if changeType {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  checker.level,
-			Code:    advisor.ChangeColumnType,
-			Title:   checker.title,
-			Content: fmt.Sprintf("\"%s\" changes column type", checker.text),
-			Line:    checker.line,
-		})
-	}
-
-	return in, false
+func (checker *columnDisallowChangingTypeChecker) EnterQuery(ctx *mysql.QueryContext) {
+	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
 }
 
-// Leave implements the ast.Visitor interface.
-func (*columnDisallowChangingTypeChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
+// EnterAlterTable is called when production alterTable is entered.
+func (checker *columnDisallowChangingTypeChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if ctx.AlterTableActions() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
+		return
+	}
+
+	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
+	// alter table add column, change column, modify column.
+	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
+		if item == nil {
+			continue
+		}
+
+		var columnName string
+		switch {
+		// change column
+		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil:
+			// only focus on old colunn-name.
+			columnName = mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
+		// MODIFY COLUMN
+		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
+			columnName = mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
+		default:
+			continue
+		}
+		checker.changeColumnType(tableName, columnName, item.FieldDefinition().DataType())
+	}
 }
 
 func normalizeColumnType(tp string) string {
@@ -135,15 +140,24 @@ func normalizeColumnType(tp string) string {
 	}
 }
 
-func (checker *columnDisallowChangingTypeChecker) changeColumnType(tableName string, columName string, newType string) bool {
+func (checker *columnDisallowChangingTypeChecker) changeColumnType(tableName, columnName string, dataType mysql.IDataTypeContext) {
+	tp := dataType.GetParser().GetTokenStream().GetTextFromRuleContext(dataType)
 	column := checker.catalog.Origin.FindColumn(&catalog.ColumnFind{
 		TableName:  tableName,
-		ColumnName: columName,
+		ColumnName: columnName,
 	})
 
 	if column == nil {
-		return false
+		return
 	}
 
-	return normalizeColumnType(column.Type()) != normalizeColumnType(newType)
+	if normalizeColumnType(column.Type()) != normalizeColumnType(tp) {
+		checker.adviceList = append(checker.adviceList, advisor.Advice{
+			Status:  checker.level,
+			Code:    advisor.ChangeColumnType,
+			Title:   checker.title,
+			Content: fmt.Sprintf("\"%s\" changes column type", checker.text),
+			Line:    checker.baseLine + dataType.GetStart().GetLine(),
+		})
+	}
 }

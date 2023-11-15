@@ -5,23 +5,23 @@ package mysql
 import (
 	"fmt"
 
-	"github.com/pingcap/tidb/parser/ast"
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
+	mysql "github.com/bytebase/mysql-parser"
+
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*ColumnDisallowChangingOrderAdvisor)(nil)
-	_ ast.Visitor     = (*columnDisallowChangingOrderChecker)(nil)
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLColumnDisallowChangingOrder, &ColumnDisallowChangingOrderAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLColumnDisallowChangingOrder, &ColumnDisallowChangingOrderAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLColumnDisallowChangingOrder, &ColumnDisallowChangingOrderAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnDisallowChangingOrder, &ColumnDisallowChangingOrderAdvisor{})
+	// only for mysqlwip test.
+	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLColumnDisallowChangingOrder, &ColumnDisallowChangingOrderAdvisor{})
 }
 
 // ColumnDisallowChangingOrderAdvisor is the advisor checking for disallow changing column order.
@@ -30,9 +30,9 @@ type ColumnDisallowChangingOrderAdvisor struct {
 
 // Check checks for disallow changing column order.
 func (*ColumnDisallowChangingOrderAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	stmtList, ok := ctx.AST.([]ast.StmtNode)
+	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to StmtNode")
+		return nil, errors.Errorf("failed to convert to mysql parser result")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -44,10 +44,9 @@ func (*ColumnDisallowChangingOrderAdvisor) Check(ctx advisor.Context, _ string) 
 		title: string(ctx.Rule.Type),
 	}
 
-	for _, stmt := range stmtList {
-		checker.text = stmt.Text()
-		checker.line = stmt.OriginTextPosition()
-		(stmt).Accept(checker)
+	for _, stmtNode := range stmtList {
+		checker.baseLine = stmtNode.BaseLine
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtNode.Tree)
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -62,35 +61,54 @@ func (*ColumnDisallowChangingOrderAdvisor) Check(ctx advisor.Context, _ string) 
 }
 
 type columnDisallowChangingOrderChecker struct {
+	*mysql.BaseMySQLParserListener
+
+	baseLine   int
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
 	text       string
-	line       int
 }
 
-// Enter implements the ast.Visitor interface.
-func (checker *columnDisallowChangingOrderChecker) Enter(in ast.Node) (ast.Node, bool) {
-	if node, ok := in.(*ast.AlterTableStmt); ok {
-		for _, spec := range node.Specs {
-			if (spec.Tp == ast.AlterTableChangeColumn || spec.Tp == ast.AlterTableModifyColumn) &&
-				spec.Position.Tp != ast.ColumnPositionNone {
-				checker.adviceList = append(checker.adviceList, advisor.Advice{
-					Status:  checker.level,
-					Code:    advisor.ChangeColumnOrder,
-					Title:   checker.title,
-					Content: fmt.Sprintf("\"%s\" changes column order", checker.text),
-					Line:    checker.line,
-				})
-				break
-			}
-		}
+func (checker *columnDisallowChangingOrderChecker) EnterQuery(ctx *mysql.QueryContext) {
+	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+}
+
+func (checker *columnDisallowChangingOrderChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if ctx.AlterTableActions() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
+		return
 	}
 
-	return in, false
-}
+	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
+		if item == nil {
+			continue
+		}
 
-// Leave implements the ast.Visitor interface.
-func (*columnDisallowChangingOrderChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
+		switch {
+		// modify column.
+		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil:
+			// do nothing.
+		// change column
+		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil:
+			// do nothing.
+		default:
+			continue
+		}
+
+		if item.Place() != nil {
+			checker.adviceList = append(checker.adviceList, advisor.Advice{
+				Status:  checker.level,
+				Code:    advisor.ChangeColumnOrder,
+				Title:   checker.title,
+				Content: fmt.Sprintf("\"%s\" changes column order", checker.text),
+				Line:    checker.baseLine + item.GetStart().GetLine(),
+			})
+		}
+	}
 }

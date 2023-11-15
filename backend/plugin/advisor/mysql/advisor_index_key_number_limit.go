@@ -5,23 +5,23 @@ package mysql
 import (
 	"fmt"
 
-	"github.com/pingcap/tidb/parser/ast"
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
+	mysql "github.com/bytebase/mysql-parser"
+
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*IndexKeyNumberLimitAdvisor)(nil)
-	_ ast.Visitor     = (*indexKeyNumberLimitChecker)(nil)
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLIndexKeyNumberLimit, &IndexKeyNumberLimitAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLIndexKeyNumberLimit, &IndexKeyNumberLimitAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLIndexKeyNumberLimit, &IndexKeyNumberLimitAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLIndexKeyNumberLimit, &IndexKeyNumberLimitAdvisor{})
+	// only for mysqlwip test.
+	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLIndexKeyNumberLimit, &IndexKeyNumberLimitAdvisor{})
 }
 
 // IndexKeyNumberLimitAdvisor is the advisor checking for index key number limit.
@@ -30,9 +30,9 @@ type IndexKeyNumberLimitAdvisor struct {
 
 // Check checks for index key number limit.
 func (*IndexKeyNumberLimitAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	stmtList, ok := ctx.AST.([]ast.StmtNode)
+	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to StmtNode")
+		return nil, errors.Errorf("failed to convert to mysql parser result")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -50,9 +50,8 @@ func (*IndexKeyNumberLimitAdvisor) Check(ctx advisor.Context, _ string) ([]advis
 	}
 
 	for _, stmt := range stmtList {
-		checker.text = stmt.Text()
-		checker.line = stmt.OriginTextPosition()
-		(stmt).Accept(checker)
+		checker.baseLine = stmt.BaseLine
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -67,81 +66,127 @@ func (*IndexKeyNumberLimitAdvisor) Check(ctx advisor.Context, _ string) ([]advis
 }
 
 type indexKeyNumberLimitChecker struct {
+	*mysql.BaseMySQLParserListener
+
+	baseLine   int
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
-	text       string
-	line       int
 	max        int
 }
 
-type indexData struct {
-	table string
-	index string
-	line  int
+func (checker *indexKeyNumberLimitChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if ctx.TableName() == nil {
+		return
+	}
+	if ctx.TableElementList() == nil {
+		return
+	}
+
+	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
+	for _, tableElement := range ctx.TableElementList().AllTableElement() {
+		if tableElement == nil {
+			continue
+		}
+		if tableElement.TableConstraintDef() == nil {
+			continue
+		}
+		checker.handleConstraintDef(tableName, tableElement.TableConstraintDef())
+	}
 }
 
-// Enter implements the ast.Visitor interface.
-func (checker *indexKeyNumberLimitChecker) Enter(in ast.Node) (ast.Node, bool) {
-	var indexList []indexData
-
-	appendIndexItem := func(table, index string, line int) {
-		indexList = append(indexList, indexData{
-			table: table,
-			index: index,
-			line:  line,
-		})
+func (checker *indexKeyNumberLimitChecker) handleConstraintDef(tableName string, ctx mysql.ITableConstraintDefContext) {
+	var columnList []string
+	switch ctx.GetType_().GetTokenType() {
+	case mysql.MySQLParserINDEX_SYMBOL, mysql.MySQLParserKEY_SYMBOL, mysql.MySQLParserPRIMARY_SYMBOL, mysql.MySQLParserUNIQUE_SYMBOL:
+		if ctx.KeyListVariants() == nil {
+			return
+		}
+		columnList = mysqlparser.NormalizeKeyListVariants(ctx.KeyListVariants())
+	case mysql.MySQLParserFOREIGN_SYMBOL:
+		if ctx.KeyList() == nil {
+			return
+		}
+		columnList = mysqlparser.NormalizeKeyList(ctx.KeyList())
+	default:
+		return
 	}
 
-	switch node := in.(type) {
-	case *ast.CreateTableStmt:
-		for _, constraint := range node.Constraints {
-			if checker.max > 0 && indexKeyNumber(constraint) > checker.max {
-				appendIndexItem(node.Table.Name.O, constraint.Name, constraint.OriginTextPosition())
-			}
-		}
-	case *ast.CreateIndexStmt:
-		if checker.max > 0 && len(node.IndexPartSpecifications) > checker.max {
-			appendIndexItem(node.Table.Name.O, node.IndexName, checker.line)
-		}
-	case *ast.AlterTableStmt:
-		for _, spec := range node.Specs {
-			if spec.Tp == ast.AlterTableAddConstraint {
-				if checker.max > 0 && indexKeyNumber(spec.Constraint) > checker.max {
-					appendIndexItem(node.Table.Name.O, spec.Constraint.Name, checker.line)
-				}
-			}
-		}
+	indexName := ""
+	if ctx.IndexName() != nil {
+		indexName = mysqlparser.NormalizeIndexName(ctx.IndexName())
+	}
+	if ctx.IndexNameAndType() != nil && ctx.IndexNameAndType().IndexName() != nil {
+		indexName = mysqlparser.NormalizeIndexName(ctx.IndexNameAndType().IndexName())
 	}
 
-	for _, index := range indexList {
+	if checker.max > 0 && len(columnList) > checker.max {
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  checker.level,
 			Code:    advisor.IndexKeyNumberExceedsLimit,
 			Title:   checker.title,
-			Content: fmt.Sprintf("The number of index `%s` in table `%s` should be not greater than %d", index.index, index.table, checker.max),
-			Line:    index.line,
+			Content: fmt.Sprintf("The number of index `%s` in table `%s` should be not greater than %d", indexName, tableName, checker.max),
+			Line:    checker.baseLine + ctx.GetStart().GetLine(),
 		})
 	}
-
-	return in, false
 }
 
-// Leave implements the ast.Visitor interface.
-func (*indexKeyNumberLimitChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
+func (checker *indexKeyNumberLimitChecker) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
+	switch ctx.GetType_().GetTokenType() {
+	case mysql.MySQLParserFULLTEXT_SYMBOL, mysql.MySQLParserSPATIAL_SYMBOL:
+		return
+	}
+	if ctx.CreateIndexTarget() == nil || ctx.CreateIndexTarget().TableRef() == nil || ctx.CreateIndexTarget().KeyListVariants() == nil {
+		return
+	}
+
+	indexName := ""
+	if ctx.IndexName() != nil {
+		indexName = mysqlparser.NormalizeIndexName(ctx.IndexName())
+	}
+	if ctx.IndexNameAndType() != nil && ctx.IndexNameAndType().IndexName() != nil {
+		indexName = mysqlparser.NormalizeIndexName(ctx.IndexNameAndType().IndexName())
+	}
+
+	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.CreateIndexTarget().TableRef())
+	columnList := mysqlparser.NormalizeKeyListVariants(ctx.CreateIndexTarget().KeyListVariants())
+	if checker.max > 0 && len(columnList) > checker.max {
+		checker.adviceList = append(checker.adviceList, advisor.Advice{
+			Status:  checker.level,
+			Code:    advisor.IndexKeyNumberExceedsLimit,
+			Title:   checker.title,
+			Content: fmt.Sprintf("The number of index `%s` in table `%s` should be not greater than %d", indexName, tableName, checker.max),
+			Line:    checker.baseLine + ctx.GetStart().GetLine(),
+		})
+	}
 }
 
-func indexKeyNumber(constraint *ast.Constraint) int {
-	switch constraint.Tp {
-	case ast.ConstraintIndex,
-		ast.ConstraintPrimaryKey,
-		ast.ConstraintUniq,
-		ast.ConstraintUniqKey,
-		ast.ConstraintUniqIndex,
-		ast.ConstraintForeignKey:
-		return len(constraint.Keys)
-	default:
-		return 0
+func (checker *indexKeyNumberLimitChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if ctx.AlterTableActions() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
+		return
+	}
+	if ctx.TableRef() == nil {
+		return
+	}
+
+	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
+	for _, alterListItem := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
+		if alterListItem == nil {
+			continue
+		}
+
+		switch {
+		// add index.
+		case alterListItem.ADD_SYMBOL() != nil && alterListItem.TableConstraintDef() != nil:
+			checker.handleConstraintDef(tableName, alterListItem.TableConstraintDef())
+		default:
+			continue
+		}
 	}
 }

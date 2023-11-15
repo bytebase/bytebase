@@ -1,37 +1,38 @@
 - statement: |-
     CREATE TABLE book(
       id int,
-      name varchar(255))
+      name varchar(255)
+    );
   want:
     - status: WARN
       code: 402
       title: column.no-null
-      content: '`book`.`id` cannot have NULL value'
+      content: "`book`.`id` cannot have NULL value"
       line: 2
       details: ""
     - status: WARN
       code: 402
       title: column.no-null
-      content: '`book`.`name` cannot have NULL value'
+      content: "`book`.`name` cannot have NULL value"
       line: 3
       details: ""
-- statement: CREATE TABLE book(id int PRIMARY KEY, name varchar(255))
+- statement: CREATE TABLE book(id int PRIMARY KEY, name varchar(255));
   want:
     - status: WARN
       code: 402
       title: column.no-null
-      content: '`book`.`name` cannot have NULL value'
+      content: "`book`.`name` cannot have NULL value"
       line: 1
       details: ""
-- statement: CREATE TABLE book(id int NOT NULL, name varchar(255))
+- statement: CREATE TABLE book(id int NOT NULL, name varchar(255));
   want:
     - status: WARN
       code: 402
       title: column.no-null
-      content: '`book`.`name` cannot have NULL value'
+      content: "`book`.`name` cannot have NULL value"
       line: 1
       details: ""
-- statement: CREATE TABLE book(id int PRIMARY KEY, name varchar(255) NOT NULL)
+- statement: CREATE TABLE book(id int PRIMARY KEY, name varchar(255) NOT NULL);
   want:
     - status: SUCCESS
       code: 0
@@ -46,12 +47,32 @@
     - status: WARN
       code: 402
       title: column.no-null
-      content: '`book`.`id` cannot have NULL value'
-      line: 3
+      content: "`book`.`id` cannot have NULL value"
+      line: 2
+      details: ""
+- statement: |-
+    CREATE TABLE book(a int NOT NULL);
+    ALTER TABLE book ADD COLUMN id int, ADD COLUMN name varchar(255) NOT NULL;
+  want:
+    - status: WARN
+      code: 402
+      title: column.no-null
+      content: "`book`.`id` cannot have NULL value"
+      line: 2
       details: ""
 - statement: |-
     CREATE TABLE book(a int NOT NULL);
     ALTER TABLE book ADD COLUMN (id int PRIMARY KEY, name varchar(255) NOT NULL);
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |-
+    CREATE TABLE book(a int NOT NULL);
+    ALTER TABLE book ADD COLUMN id int PRIMARY KEY, ADD COLUMN name varchar(255) NOT NULL;
   want:
     - status: SUCCESS
       code: 0
@@ -66,8 +87,8 @@
     - status: WARN
       code: 402
       title: column.no-null
-      content: '`book`.`name` cannot have NULL value'
-      line: 3
+      content: "`book`.`name` cannot have NULL value"
+      line: 2
       details: ""
 - statement: |-
     CREATE TABLE book(id int NOT NULL);

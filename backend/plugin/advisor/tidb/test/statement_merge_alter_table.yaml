@@ -1,0 +1,54 @@
+- statement: ALTER TABLE tech_book ADD COLUMN a int
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |-
+    ALTER TABLE tech_book ADD COLUMN a int;
+    ALTER TABLE tech_book ADD COLUMN b int;
+  want:
+    - status: WARN
+      code: 207
+      title: statement.merge-alter-table
+      content: There are 2 statements to modify table `tech_book`
+      line: 3
+      details: ""
+- statement: |-
+    CREATE TABLE t(a int);
+    ALTER TABLE tech_book ADD COLUMN a int;
+    ALTER TABLE t ADD COLUMN b int;
+    ALTER TABLE tech_book ADD COLUMN b int;
+  want:
+    - status: WARN
+      code: 207
+      title: statement.merge-alter-table
+      content: There are 2 statements to modify table `t`
+      line: 3
+      details: ""
+    - status: WARN
+      code: 207
+      title: statement.merge-alter-table
+      content: There are 2 statements to modify table `tech_book`
+      line: 5
+      details: ""
+- statement: |-
+    CREATE TABLE t(a int);
+    ALTER TABLE tech_book ADD COLUMN a int;
+    ALTER TABLE tech_book ADD COLUMN b int;
+    ALTER TABLE t ADD COLUMN b int;
+  want:
+    - status: WARN
+      code: 207
+      title: statement.merge-alter-table
+      content: There are 2 statements to modify table `tech_book`
+      line: 3
+      details: ""
+    - status: WARN
+      code: 207
+      title: statement.merge-alter-table
+      content: There are 2 statements to modify table `t`
+      line: 5
+      details: ""

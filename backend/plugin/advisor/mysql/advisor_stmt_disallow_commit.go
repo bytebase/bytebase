@@ -5,23 +5,22 @@ package mysql
 import (
 	"fmt"
 
-	"github.com/pingcap/tidb/parser/ast"
+	"github.com/antlr4-go/antlr/v4"
+	mysql "github.com/bytebase/mysql-parser"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*StatementDisallowCommitAdvisor)(nil)
-	_ ast.Visitor     = (*statementDisallowCommitChecker)(nil)
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLStatementDisallowCommit, &StatementDisallowCommitAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLStatementDisallowCommit, &StatementDisallowCommitAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLStatementDisallowCommit, &StatementDisallowCommitAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLStatementDisallowCommit, &StatementDisallowCommitAdvisor{})
+	// only for mysqlwip test.
+	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLStatementDisallowCommit, &StatementDisallowCommitAdvisor{})
 }
 
 // StatementDisallowCommitAdvisor is the advisor checking for index type no blob.
@@ -30,9 +29,9 @@ type StatementDisallowCommitAdvisor struct {
 
 // Check checks for index type no blob.
 func (*StatementDisallowCommitAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	stmtList, ok := ctx.AST.([]ast.StmtNode)
+	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to StmtNode")
+		return nil, errors.Errorf("failed to convert to mysql parser result")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -45,9 +44,8 @@ func (*StatementDisallowCommitAdvisor) Check(ctx advisor.Context, _ string) ([]a
 	}
 
 	for _, stmt := range stmtList {
-		checker.text = stmt.Text()
-		checker.line = stmt.OriginTextPosition()
-		(stmt).Accept(checker)
+		checker.baseLine = stmt.BaseLine
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -62,29 +60,30 @@ func (*StatementDisallowCommitAdvisor) Check(ctx advisor.Context, _ string) ([]a
 }
 
 type statementDisallowCommitChecker struct {
+	*mysql.BaseMySQLParserListener
+
+	baseLine   int
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
 	text       string
-	line       int
 }
 
-// Enter implements the ast.Visitor interface.
-func (c *statementDisallowCommitChecker) Enter(in ast.Node) (ast.Node, bool) {
-	if _, ok := in.(*ast.CommitStmt); ok {
-		c.adviceList = append(c.adviceList, advisor.Advice{
-			Status:  c.level,
-			Code:    advisor.StatementDisallowCommit,
-			Title:   c.title,
-			Content: fmt.Sprintf("Commit is not allowed, related statement: \"%s\"", c.text),
-			Line:    c.line,
-		})
+func (checker *statementDisallowCommitChecker) EnterQuery(ctx *mysql.QueryContext) {
+	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+}
+
+// EnterTransactionStatement is called when production transactionStatement is entered.
+func (checker *statementDisallowCommitChecker) EnterTransactionStatement(ctx *mysql.TransactionStatementContext) {
+	if ctx.COMMIT_SYMBOL() == nil {
+		return
 	}
 
-	return in, false
-}
-
-// Leave implements the ast.Visitor interface.
-func (*statementDisallowCommitChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
+	checker.adviceList = append(checker.adviceList, advisor.Advice{
+		Status:  checker.level,
+		Code:    advisor.StatementDisallowCommit,
+		Title:   checker.title,
+		Content: fmt.Sprintf("Commit is not allowed, related statement: \"%s\"", checker.text),
+		Line:    checker.baseLine + ctx.GetStart().GetLine(),
+	})
 }

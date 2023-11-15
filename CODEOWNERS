@@ -2,8 +2,8 @@
 *                            @d-bytebase @bytebase/bytebase-dev
 
 # API and schema
-proto                        @d-bytebase @ecmadao
-backend/migrator/migration   @d-bytebase @ecmadao
+proto                        @d-bytebase @ecmadao @RainbowDashy
+backend/migrator/migration   @d-bytebase @ecmadao @RainbowDashy
 
 # Backend
 backend                      @d-bytebase @ecmadao @bytebase/bytebase-dev

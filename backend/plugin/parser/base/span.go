@@ -63,7 +63,7 @@ type TableSource interface {
 	GetDatabaseName() string
 	GetServerName() string
 	// GetQuerySpanResult returns the query span result of the table, it's callers' responsibility
-	// to call Clone() to avoid modifying the original result.
+	// to make a copy of the result if they want to modify it.
 	GetQuerySpanResult() []QuerySpanResult
 }
 
