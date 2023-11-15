@@ -1,4 +1,14 @@
 - statement: |
+    DELETE FROM tech_book WHERE name like `%abc`;
+  want:
+    - status: WARN
+      code: 204
+      title: statement.where.no-leading-wildcard-like
+      content: '"DELETE FROM tech_book WHERE name like `%abc`;" uses leading wildcard LIKE'
+      line: 1
+      column: 0
+      details: ""
+- statement: |
     CREATE TABLE t (id INT);
     SELECT * FROM t WHERE a LIKE 'abc%';
   want:

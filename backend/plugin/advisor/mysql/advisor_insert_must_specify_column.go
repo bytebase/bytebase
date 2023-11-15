@@ -65,6 +65,7 @@ type insertMustSpecifyColumnChecker struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine   int
+	hasSelect  bool
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
@@ -77,6 +78,10 @@ func (checker *insertMustSpecifyColumnChecker) EnterQuery(ctx *mysql.QueryContex
 
 // EnterInsertStatement is called when production insertStatement is entered.
 func (checker *insertMustSpecifyColumnChecker) EnterInsertStatement(ctx *mysql.InsertStatementContext) {
+	if ctx.InsertQueryExpression() != nil {
+		checker.hasSelect = true
+	}
+
 	if ctx.InsertFromConstructor() == nil {
 		return
 	}
@@ -92,4 +97,16 @@ func (checker *insertMustSpecifyColumnChecker) EnterInsertStatement(ctx *mysql.I
 		Content: fmt.Sprintf("The INSERT statement must specify columns but \"%s\" does not", checker.text),
 		Line:    checker.baseLine + ctx.GetStart().GetLine(),
 	})
+}
+
+func (checker *insertMustSpecifyColumnChecker) EnterSelectItemList(ctx *mysql.SelectItemListContext) {
+	if checker.hasSelect && ctx.MULT_OPERATOR() != nil {
+		checker.adviceList = append(checker.adviceList, advisor.Advice{
+			Status:  checker.level,
+			Code:    advisor.InsertNotSpecifyColumn,
+			Title:   checker.title,
+			Content: fmt.Sprintf("The INSERT statement must specify columns but \"%s\" does not", checker.text),
+			Line:    checker.baseLine + ctx.GetStart().GetLine(),
+		})
+	}
 }
