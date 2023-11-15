@@ -1,0 +1,942 @@
+- description: Test For Explain statements
+  statement: EXPLAIN SELECT 1;
+  connectedDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results: []
+    sourcecolumns: {}
+- description: Test for simple select const
+  statement: SELECT 1;
+  connectedDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+    - name: ?column?
+      sourcecolumns: {}
+    sourcecolumns: {}
+- description: Happy path for a simple select statement
+  statement: SELECT * FROM t
+  connectedDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+    - name: a
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: a
+        : true
+    - name: b
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: b
+        : true
+    - name: c
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: c
+        : true
+    - name: d
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: d
+        : true
+    sourcecolumns:
+      ? server: ""
+        database: db
+        schema: public
+        table: t
+        column: ""
+      : true
+- description: Referenced table fields by different format
+  statement: SELECT a, t.b, public.t.c, db.public.t.d FROM t;
+  connectedDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+    - name: a
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: a
+        : true
+    - name: b
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: b
+        : true
+    - name: c
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: c
+        : true
+    - name: d
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: d
+        : true
+    sourcecolumns:
+      ? server: ""
+        database: db
+        schema: public
+        table: t
+        column: ""
+      : true
+- description: Scalar subquery in select fields
+  statement: SELECT 1 AS col_1, (SELECT(2)) AS col_2, (SELECT AVG(a + b * c) FROM
+    t) AS avg_a_b_c FROM t;
+  connectedDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+    - name: col_1
+      sourcecolumns: {}
+    - name: col_2
+      sourcecolumns: {}
+    - name: avg_a_b_c
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: a
+        : true
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: c
+        : true
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: b
+        : true
+    sourcecolumns:
+      ? server: ""
+        database: db
+        schema: public
+        table: t
+        column: ""
+      : true
+- description: Multiple-Row subquery in where clause
+  statement: SELECT 1 FROM t WHERE a IN (SELECT a FROM t);
+  connectedDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+    - name: ?column?
+      sourcecolumns: {}
+    sourcecolumns:
+      ? server: ""
+        database: db
+        schema: public
+        table: t
+        column: ""
+      : true
+- description: Correlated subquery in the target field clause.
+  statement: SELECT city, (SELECT COUNT(*) FROM paintings p WHERE g.id = p.gallery_id)
+    AS total_paintings FROM galleries g;
+  connectedDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "galleries",
+              "columns":  [
+                {
+                  "name":  "id"
+                },
+                {
+                  "name":  "city"
+                }
+              ]
+            },
+            {
+              "name":  "paintings",
+              "columns":  [
+                {
+                  "name":  "gallery_id"
+                },
+                {
+                  "name":  "artist_id"
+                },
+                {
+                  "name":  "title"
+                },
+                {
+                  "name":  "price"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+    - name: city
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: galleries
+          column: city
+        : true
+    - name: total_paintings
+      sourcecolumns: {}
+    sourcecolumns:
+      ? server: ""
+        database: db
+        schema: public
+        table: paintings
+        column: ""
+      : true
+      ? server: ""
+        database: db
+        schema: public
+        table: galleries
+        column: ""
+      : true
+- description: Test for functions
+  statement: SELECT max(a), a-b AS c1, a=b AS c2, a>b, b in (a, c, d) from (SELECT
+    * FROM t) result;
+  connectedDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+    - name: max
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: a
+        : true
+    - name: c1
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: a
+        : true
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: b
+        : true
+    - name: c2
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: a
+        : true
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: b
+        : true
+    - name: ?column?
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: a
+        : true
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: b
+        : true
+    - name: ?column?
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: b
+        : true
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: c
+        : true
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: d
+        : true
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: a
+        : true
+    sourcecolumns:
+      ? server: ""
+        database: db
+        schema: public
+        table: t
+        column: ""
+      : true
+- description: Test for JOIN with USING clause
+  statement: SELECT * FROM t AS t1 JOIN t AS t2 USING(a);
+  connectedDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+    - name: a
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: a
+        : true
+    - name: b
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: b
+        : true
+    - name: c
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: c
+        : true
+    - name: d
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: d
+        : true
+    - name: b
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: b
+        : true
+    - name: c
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: c
+        : true
+    - name: d
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: d
+        : true
+    sourcecolumns:
+      ? server: ""
+        database: db
+        schema: public
+        table: t
+        column: ""
+      : true
+- description: Simple CTE
+  statement: WITH t1 AS (SELECT * FROM t) SELECT * FROM t1;
+  connectedDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+    - name: a
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: a
+        : true
+    - name: b
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: b
+        : true
+    - name: c
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: c
+        : true
+    - name: d
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: d
+        : true
+    sourcecolumns:
+      ? server: ""
+        database: db
+        schema: public
+        table: t
+        column: ""
+      : true
+- description: Multi-level CTE
+  statement: WITH tt2 AS (WITH tt2 AS (SELECT * FROM t) SELECT MAX(a) FROM tt2) SELECT
+    * FROM tt2;
+  connectedDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+    - name: max
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: a
+        : true
+    sourcecolumns:
+      ? server: ""
+        database: db
+        schema: public
+        table: t
+        column: ""
+      : true
+- description: Test for CTE rename fields name
+  statement: WITH t1(d, c, b, a) AS (SELECT * FROM t) SELECT * FROM t1;
+  connectedDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+    - name: d
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: a
+        : true
+    - name: c
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: b
+        : true
+    - name: b
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: c
+        : true
+    - name: a
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: d
+        : true
+    sourcecolumns:
+      ? server: ""
+        database: db
+        schema: public
+        table: t
+        column: ""
+      : true
+- description: Test for Recursive Common Table Expression dependent closures
+  statement: WITH RECURSIVE t1(cc1, cc2, cc3, n) AS (SELECT a AS c1, b AS c2, c AS
+    c3, 1 AS n FROM t UNION SELECT cc1*cc2, cc2 + cc1, cc3 * cc2, n+1 FROM t1 WHERE
+    n < 10) SELECT * FROM t1;
+  connectedDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+    - name: cc1
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: a
+        : true
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: b
+        : true
+    - name: cc2
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: b
+        : true
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: a
+        : true
+    - name: cc3
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: b
+        : true
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: c
+        : true
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: a
+        : true
+    - name: "n"
+      sourcecolumns: {}
+    sourcecolumns:
+      ? server: ""
+        database: db
+        schema: public
+        table: t
+        column: ""
+      : true
+- description: Test for Non-Recursive Common Table Expression with RECURSIVE key words
+  statement: WITH RECURSIVE t1 AS (SELECT 1 AS c1, 2 AS c2, 3 AS c3, 4 AS c4 UNION
+    SELECT a, b, d, c FROM t) SELECT * FROM t1;
+  connectedDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+    - name: c1
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: a
+        : true
+    - name: c2
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: b
+        : true
+    - name: c3
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: d
+        : true
+    - name: c4
+      sourcecolumns:
+        ? server: ""
+          database: db
+          schema: public
+          table: t
+          column: c
+        : true
+    sourcecolumns:
+      ? server: ""
+        database: db
+        schema: public
+        table: t
+        column: ""
+      : true
