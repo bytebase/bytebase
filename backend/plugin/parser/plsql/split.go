@@ -83,9 +83,5 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 // The go-ora driver requires semicolon for anonymous block,
 // but does not support semicolon for other statements.
 func needSemicolon(stmt parser.IUnit_statementContext) bool {
-	if stmt.Anonymous_block() != nil {
-		return true
-	}
-
-	return false
+	return stmt.Anonymous_block() != nil
 }
