@@ -78,7 +78,6 @@ watchEffect(() => {
     "projects/"
   );
   if (project) {
-    console.log("maybe fetch project", project);
     useProjectV1Store().getOrFetchProjectByName(project);
   }
 });
