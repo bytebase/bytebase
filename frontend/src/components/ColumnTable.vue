@@ -52,7 +52,7 @@
           </button>
         </div>
       </BBTableCell>
-      <BBTableCell v-if="showSemanticTypeColumn" class="bb-grid-cell">
+      <BBTableCell v-if="showSensitiveColumn" class="bb-grid-cell">
         <div class="flex items-center">
           {{ getColumnSemanticType(column.name)?.title }}
           <button
@@ -401,10 +401,6 @@ const showSensitiveColumn = computed(() => {
   );
 });
 
-const showSemanticTypeColumn = computed(() => {
-  return showSensitiveColumn.value && isDev();
-});
-
 const showClassificationColumn = computed(() => {
   return (
     (engine.value === Engine.MYSQL || engine.value === Engine.POSTGRES) &&
@@ -458,7 +454,7 @@ const NORMAL_COLUMN_LIST = computed(() => {
     },
     {
       title: t("settings.sensitive-data.semantic-types.self"),
-      hide: !showSemanticTypeColumn.value,
+      hide: !showSensitiveColumn.value,
     },
     {
       title: t("database.classification.self"),
@@ -502,7 +498,7 @@ const POSTGRES_COLUMN_LIST = computed(() => {
     },
     {
       title: t("settings.sensitive-data.semantic-types.self"),
-      hide: !showSemanticTypeColumn.value,
+      hide: !showSensitiveColumn.value,
     },
     {
       title: t("database.classification.self"),

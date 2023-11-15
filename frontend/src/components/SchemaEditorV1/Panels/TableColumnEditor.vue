@@ -39,7 +39,7 @@
           />
         </div>
         <div
-          v-if="isDev()"
+          v-if="showSemanticTypeColumn"
           class="bb-grid-cell flex items-center"
           :class="getColumnClassList(column, row)"
         >
@@ -205,7 +205,6 @@
           </button>
         </div>
         <div
-          v-if="isDev()"
           class="bb-grid-cell flex items-center column-cell"
           :class="getColumnClassList(column, row)"
         >
@@ -296,7 +295,7 @@ import { NDropdown } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBCheckbox } from "@/bbkit";
-import { useSettingV1Store } from "@/store/modules";
+import { useSettingV1Store, useSubscriptionV1Store } from "@/store/modules";
 import { Engine } from "@/types/proto/v1/common";
 import { ColumnConfig } from "@/types/proto/v1/database_service";
 import { Table, Column, ForeignKey } from "@/types/v1/schemaEditor";
@@ -359,6 +358,7 @@ const state = reactive<LocalState>({
 });
 
 const { t } = useI18n();
+const subscriptionV1Store = useSubscriptionV1Store();
 const settingStore = useSettingV1Store();
 const editColumnDefaultValueExpressionContext = ref<Column>();
 
@@ -385,6 +385,10 @@ const getColumnSemanticType = (column: Column) => {
   );
 };
 
+const showSemanticTypeColumn = computed(() => {
+  return subscriptionV1Store.hasFeature("bb.feature.sensitive-data");
+});
+
 const columnHeaderList = computed(() => {
   return [
     {
@@ -394,7 +398,7 @@ const columnHeaderList = computed(() => {
     {
       title: t("settings.sensitive-data.semantic-types.self"),
       width: "minmax(auto, 0.8fr)",
-      hide: !isDev(),
+      hide: !showSemanticTypeColumn.value,
     },
     {
       title: t("schema-editor.column.classification"),
@@ -429,7 +433,6 @@ const columnHeaderList = computed(() => {
     {
       title: t("common.labels"),
       width: "minmax(auto, 1fr)",
-      hide: !isDev(),
     },
     {
       title: "",
