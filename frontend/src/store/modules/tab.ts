@@ -156,6 +156,7 @@ export const useTabStore = defineStore("tab", () => {
       () => tab.name,
       () => tab.sheetName,
       () => tab.statement,
+      () => tab.connection,
       () => tab.batchQueryContext,
     ];
     watch(dirtyFields, () => {
