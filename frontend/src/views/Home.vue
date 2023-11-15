@@ -131,7 +131,7 @@
         </template>
       </PagedIssueTableV1>
       <div class="w-full flex justify-end px-4">
-        <router-link :to="recentlyClosedLink" class="normal-link text-sm">
+        <router-link :to="issueLink" class="normal-link text-sm">
           {{ $t("project.overview.view-all-closed") }}
         </router-link>
       </div>
@@ -223,6 +223,7 @@ import {
   buildIssueFilterBySearchParams,
   buildSearchTextBySearchParams,
   buildUIIssueFilterBySearchParams,
+  maybeApplyDefaultTsRange,
   upsertScope,
 } from "@/utils";
 
@@ -264,8 +265,8 @@ const tab = useLocalStorage<TabValue>(
   }
 );
 
-const state = reactive<LocalState>({
-  params: {
+const defaultSearchParams = () => {
+  const params: SearchParams = {
     query: "",
     scopes: [
       {
@@ -273,7 +274,13 @@ const state = reactive<LocalState>({
         value: "OPEN",
       },
     ],
-  },
+  };
+  maybeApplyDefaultTsRange(params, "created", true /* mutate */);
+  return params;
+};
+
+const state = reactive<LocalState>({
+  params: defaultSearchParams(),
   showTrialStartModal: false,
 });
 
@@ -381,15 +388,6 @@ const mergeIssueFilterByTab = (tab: TabValue) => {
 const mergeUIIssueFilterByTab = (tab: TabValue) => {
   return buildUIIssueFilterBySearchParams(mergeSearchParamsByTab(tab));
 };
-
-const recentlyClosedLink = computed(() => {
-  return `/issue?qs=${encodeURIComponent(
-    buildSearchTextBySearchParams({
-      query: "",
-      scopes: [{ id: "status", value: "CLOSED" }],
-    })
-  )}`;
-});
 
 watch(
   tab,

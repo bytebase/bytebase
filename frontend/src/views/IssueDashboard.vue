@@ -30,8 +30,9 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, computed, watchEffect } from "vue";
+import { reactive, computed, watchEffect, watch } from "vue";
 import { useRoute } from "vue-router";
+import { useRouter } from "vue-router";
 import IssueSearch from "@/components/IssueV1/components/IssueSearch";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
@@ -42,6 +43,8 @@ import {
   buildIssueFilterBySearchParams,
   buildUIIssueFilterBySearchParams,
   getValueFromSearchParams,
+  buildSearchTextBySearchParams,
+  maybeApplyDefaultTsRange,
 } from "@/utils";
 
 interface LocalState {
@@ -49,6 +52,7 @@ interface LocalState {
 }
 
 const route = useRoute();
+const router = useRouter();
 
 const autofocus = computed((): boolean => {
   return !!route.query.autofocus;
@@ -56,14 +60,16 @@ const autofocus = computed((): boolean => {
 
 const initializeSearchParamsFromQuery = (): SearchParams => {
   const { qs } = route.query;
-  if (typeof qs === "string" && qs.length > 0) {
-    return buildSearchParamsBySearchText(qs);
-  }
+  const params: SearchParams =
+    typeof qs === "string" && qs.length > 0
+      ? buildSearchParamsBySearchText(qs)
+      : {
+          query: "",
+          scopes: [{ id: "status", value: "OPEN" }],
+        };
+  maybeApplyDefaultTsRange(params, "created", true /* mutate */);
 
-  return {
-    query: "",
-    scopes: [{ id: "status", value: "OPEN" }],
-  };
+  return params;
 };
 
 const paramsFromQuery = initializeSearchParamsFromQuery();
@@ -81,4 +87,16 @@ watchEffect(() => {
     useProjectV1Store().getOrFetchProjectByName(project);
   }
 });
+
+watch(
+  () => state.params,
+  () => {
+    router.replace({
+      query: {
+        qs: buildSearchTextBySearchParams(state.params),
+      },
+    });
+  },
+  { deep: true }
+);
 </script>

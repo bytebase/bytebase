@@ -62,7 +62,16 @@
 <script lang="ts" setup>
 import { debounce, orderBy } from "lodash-es";
 import { NInput } from "naive-ui";
-import { reactive, computed, h, watch, VNode, onMounted, ref } from "vue";
+import {
+  reactive,
+  computed,
+  h,
+  watch,
+  VNode,
+  onMounted,
+  ref,
+  nextTick,
+} from "vue";
 import { useI18n } from "vue-i18n";
 import BBAvatar from "@/bbkit/BBAvatar.vue";
 import GitIcon from "@/components/GitIcon.vue";
@@ -412,15 +421,18 @@ const onOptionSelect = (scopeValue: string) => {
   state.searchText = buildSearchTextByParams(params);
   debouncedUpdate();
   onClear();
-
-  if (params.scopes.length < fullScopes.value.length) {
-    state.showSearchScopes = true;
-  }
 };
 
-const onClear = () => {
-  state.showSearchScopes = false;
-  state.currentScope = undefined;
+const onClear = (immediate = false) => {
+  const clear = () => {
+    state.showSearchScopes = false;
+    state.currentScope = undefined;
+  };
+  if (immediate) {
+    clear();
+  } else {
+    nextTick(clear);
+  }
 };
 
 const debouncedUpdate = debounce(() => {
@@ -513,7 +525,7 @@ const onKeydown = () => {
   }
 
   if (i >= sections.length) {
-    onClear();
+    onClear(true /* immediate */);
     state.showSearchScopes = true;
     return;
   }
@@ -522,7 +534,7 @@ const onKeydown = () => {
   const existed =
     fullScopes.value.findIndex((item) => item.id === currentScope) >= 0;
   if (!existed) {
-    onClear();
+    onClear(true /* immediate */);
     state.showSearchScopes = true;
     return;
   }

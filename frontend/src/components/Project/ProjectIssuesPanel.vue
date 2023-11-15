@@ -77,7 +77,7 @@
       </PagedIssueTableV1>
 
       <div class="w-full flex justify-end">
-        <router-link :to="recentlyClosedLink" class="normal-link text-sm">
+        <router-link :to="issueLink" class="normal-link text-sm">
           {{ $t("project.overview.view-all-closed") }}
         </router-link>
       </div>
@@ -102,6 +102,7 @@ import {
   buildSearchTextBySearchParams,
   buildUIIssueFilterBySearchParams,
   extractProjectResourceName,
+  maybeApplyDefaultTsRange,
   upsertScope,
 } from "@/utils";
 import { IssueSearch } from "../IssueV1/components";
@@ -126,13 +127,20 @@ const props = defineProps({
   },
 });
 
-const state = reactive<LocalState>({
-  params: {
+const defaultSearchParams = () => {
+  const params: SearchParams = {
     query: "",
     scopes: [
+      { id: "status", value: "OPEN" },
       { id: "project", value: extractProjectResourceName(props.project.name) },
     ],
-  },
+  };
+  maybeApplyDefaultTsRange(params, "created", true /* mutate */);
+  return params;
+};
+
+const state = reactive<LocalState>({
+  params: defaultSearchParams(),
   isFetchingActivityList: false,
 });
 const { t } = useI18n();
@@ -206,21 +214,6 @@ const mergeUIIssueFilterByTab = (tab: TabValue) => {
   return buildUIIssueFilterBySearchParams(mergeSearchParamsByTab(tab));
 };
 
-const recentlyClosedLink = computed(() => {
-  return `/issue?qs=${encodeURIComponent(
-    buildSearchTextBySearchParams({
-      query: "",
-      scopes: [
-        {
-          id: "project",
-          value: extractProjectResourceName(props.project.name),
-        },
-        { id: "status", value: "CLOSED" },
-      ],
-    })
-  )}`;
-});
-
 watch(
   tab,
   (tab) => {
@@ -246,5 +239,12 @@ watch(
     }
   },
   { immediate: true }
+);
+
+watch(
+  () => props.project.name,
+  () => {
+    state.params = defaultSearchParams();
+  }
 );
 </script>

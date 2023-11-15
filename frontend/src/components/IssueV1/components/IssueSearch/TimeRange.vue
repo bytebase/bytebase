@@ -16,8 +16,12 @@ import dayjs from "dayjs";
 import { NDatePicker } from "naive-ui";
 import { computed } from "vue";
 import { hasFeature } from "@/store";
-import { SearchParams, getTsRangeFromSearchParams, upsertScope } from "@/utils";
-import { TimeRangeLimitForFreePlanInTs } from "./types";
+import {
+  SearchParams,
+  TimeRangeLimitForFreePlanInTs,
+  getTsRangeFromSearchParams,
+  upsertScope,
+} from "@/utils";
 
 const props = defineProps<{
   params: SearchParams;
