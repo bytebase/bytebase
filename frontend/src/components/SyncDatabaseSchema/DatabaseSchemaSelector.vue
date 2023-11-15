@@ -53,7 +53,6 @@
               ? fallbackSchemaVersionOption
               : false
           "
-          class="bb-schema-version-select"
           @update:value="handleSchemaVersionSelect"
         />
       </div>
@@ -86,14 +85,16 @@ import {
   useSubscriptionV1Store,
   useEnvironmentV1Store,
 } from "@/store";
-import { ComposedDatabase, UNKNOWN_ID } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 import {
   ChangeHistory,
   ChangeHistoryView,
   ChangeHistory_Type,
-  DatabaseSchema,
 } from "@/types/proto/v1/database_service";
-import { extractChangeHistoryUID } from "@/utils";
+import {
+  extractChangeHistoryUID,
+  mockLatestSchemaChangeHistory,
+} from "@/utils";
 import FeatureBadge from "../FeatureGuard/FeatureBadge.vue";
 import HumanizeDate from "../misc/HumanizeDate.vue";
 import { ChangeHistorySourceSchema } from "./types";
@@ -334,7 +335,7 @@ const fallbackSchemaVersionOption = (value: string): SelectOption => {
       const db = databaseStore.getDatabaseByUID(databaseId);
       const changeHistory = mockLatestSchemaChangeHistory(db);
       return {
-        changeHistory: mockLatestSchemaChangeHistory(db),
+        changeHistory,
         index: 0,
         value: changeHistory.name,
         label: changeHistory.name,
@@ -395,19 +396,6 @@ watch(
     }
   }
 );
-
-const mockLatestSchemaChangeHistory = (
-  database: ComposedDatabase,
-  schema: DatabaseSchema | undefined = undefined
-) => {
-  return ChangeHistory.fromPartial({
-    name: `${database.name}/changeHistories/${UNKNOWN_ID}`,
-    uid: String(UNKNOWN_ID),
-    schema: schema?.schema,
-    version: "Latest version",
-    description: "the latest schema of database",
-  });
-};
 
 watch(
   () => [state, fullViewChangeHistoryCache.value],
