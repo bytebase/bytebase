@@ -1,4 +1,43 @@
-- statement: CREATE TABLE t(b BLOB, PRIMARY KEY(b(10)))
+- statement: |
+    CREATE TABLE userTable(
+      id INT NOT NULL,
+      name VARCHAR(255) CHARSET ascii,
+      roomId INT,
+      time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',
+      time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',
+      content BLOB NOT NULL COMMENT 'comment',
+      json_content JSON NOT NULL COMMENT 'comment',
+      INDEX idx1(name),
+      UNIQUE KEY uk1(id, name),
+      FOREIGN KEY fk1(roomId) REFERENCES room(id),
+      INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;
+  want:
+    - status: WARN
+      code: 804
+      title: index.type-no-blob
+      content: Columns in index must not be BLOB but `userTable`.`content` is blob
+      line: 12
+      details: ""
+- statement: |
+    CREATE TABLE user(
+      id INT PRIMARY KEY COMMENT 'comment',
+      name VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'comment',
+      room_id INT NOT NULL DEFAULT 0 COMMENT 'comment',
+      creator_id INT NOT NULL DEFAULT 0 COMMENT 'comment',
+      created_ts TIMESTAMP NOT NULL DEFAULT NOW() COMMENT 'comment',
+      updater_id INT NOT NULL DEFAULT 0 COMMENT 'comment',
+      updated_ts TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',
+      INDEX idx_user_name(name),
+      UNIQUE KEY uk_user_id_name(id, name)
+    ) ENGINE = INNODB COMMENT 'comment';
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: CREATE TABLE t(b BLOB, PRIMARY KEY(b(10)));
   want:
     - status: WARN
       code: 804
@@ -6,7 +45,7 @@
       content: Columns in index must not be BLOB but `t`.`b` is blob
       line: 1
       details: ""
-- statement: CREATE TABLE t(b BLOB, mb MEDIUMBLOB, lb LONGBLOB, id INT, PRIMARY KEY(b(1), mb(2), lb(3), id))
+- statement: CREATE TABLE t(b BLOB, mb MEDIUMBLOB, lb LONGBLOB, id INT, PRIMARY KEY(b(1), mb(2), lb(3), id));
   want:
     - status: WARN
       code: 804
@@ -76,13 +115,13 @@
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
-    ALTER TABLE t ADD COLUMN b BLOB, ADD COLUMN id INT, ADD PRIMARY KEY(b(1), id)
+    ALTER TABLE t ADD COLUMN b BLOB, ADD COLUMN id INT, ADD PRIMARY KEY(b(1), id);
   want:
     - status: WARN
       code: 804
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`b` is blob
-      line: 3
+      line: 2
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
@@ -92,19 +131,19 @@
       code: 804
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`b` is blob
-      line: 3
+      line: 2
       details: ""
     - status: WARN
       code: 804
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`lb` is longblob
-      line: 3
+      line: 2
       details: ""
     - status: WARN
       code: 804
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`mb` is mediumblob
-      line: 3
+      line: 2
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
@@ -114,23 +153,23 @@
       code: 804
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`b` is blob
-      line: 3
+      line: 2
       details: ""
     - status: WARN
       code: 804
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`lb` is longblob
-      line: 3
+      line: 2
       details: ""
     - status: WARN
       code: 804
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `t`.`mb` is mediumblob
-      line: 3
+      line: 2
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
-    ALTER TABLE t ADD COLUMN b BLOB, ADD COLUMN mb MEDIUMBLOB, ADD COLUMN lb LONGBLOB, ADD COLUMN id INT, ADD INDEX(id)
+    ALTER TABLE t ADD COLUMN b BLOB, ADD COLUMN mb MEDIUMBLOB, ADD COLUMN lb LONGBLOB, ADD COLUMN id INT, ADD INDEX(id);
   want:
     - status: SUCCESS
       code: 0
@@ -140,10 +179,10 @@
       details: ""
 - statement: |-
     CREATE TABLE t(b blob, mb mediumblob, lb longblob, id int);
-            CREATE INDEX idx_b ON t(b(5));
-            CREATE INDEX idx_mb ON t(mb(5));
-            CREATE INDEX idx_lb ON t(lb(5));
-            CREATE INDEX idx_id ON t(id);
+    CREATE INDEX idx_b ON t(b(5));
+    CREATE INDEX idx_mb ON t(mb(5));
+    CREATE INDEX idx_lb ON t(lb(5));
+    CREATE INDEX idx_id ON t(id);
   want:
     - status: WARN
       code: 804
@@ -165,11 +204,33 @@
       details: ""
 - statement: |-
     CREATE TABLE t(b blob, mb mediumblob, lb longblob, id int);
-            CREATE INDEX idx_id ON t(id);
+    CREATE INDEX idx_id ON t(id);
   want:
     - status: SUCCESS
       code: 0
       title: OK
       content: ""
       line: 0
+      details: ""
+- statement: |-
+    CREATE TABLE t(b int, mb mediumblob, lb longblob, id int);
+    ALTER TABLE t MODIFY COLUMN b blob;
+    ALTER TABLE t ADD PRIMARY KEY(b);
+  want:
+    - status: WARN
+      code: 804
+      title: index.type-no-blob
+      content: Columns in index must not be BLOB but `t`.`b` is blob
+      line: 3
+      details: ""
+- statement: |-
+    CREATE TABLE t(b int, mb mediumblob, lb longblob, id int);
+    ALTER TABLE t CHANGE COLUMN b d blob;
+    ALTER TABLE t ADD PRIMARY KEY(d);
+  want:
+    - status: WARN
+      code: 804
+      title: index.type-no-blob
+      content: Columns in index must not be BLOB but `t`.`d` is blob
+      line: 3
       details: ""

@@ -351,7 +351,7 @@ func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, 
 		sensitiveSchemaInfo = nil
 	}
 
-	driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database)
+	driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database, "" /* dataSourceID */)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -979,7 +979,7 @@ func (s *SQLService) postQuery(ctx context.Context, activity *store.ActivityMess
 }
 
 func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, instance *store.InstanceMessage, database *store.DatabaseMessage, sensitiveSchemaInfo *base.SensitiveSchemaInfo) ([]*v1pb.QueryResult, int64, error) {
-	driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database)
+	driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database, request.DataSourceId)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -1627,7 +1627,7 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, envir
 		}
 	}
 
-	driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database)
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 	if err != nil {
 		return advisor.Error, nil, status.Errorf(codes.Internal, "Failed to get database driver: %v", err)
 	}

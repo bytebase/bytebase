@@ -177,8 +177,8 @@ func (s *Store) AddDataSourceToInstanceV2(ctx context.Context, instanceUID, crea
 		return errors.New("Failed to commit transaction")
 	}
 
-	s.instanceCache.Delete(getInstanceCacheKey(instanceID))
-	s.instanceIDCache.Delete(instanceUID)
+	s.instanceCache.Remove(getInstanceCacheKey(instanceID))
+	s.instanceIDCache.Remove(instanceUID)
 	return nil
 }
 
@@ -209,8 +209,8 @@ func (s *Store) RemoveDataSourceV2(ctx context.Context, instanceUID int, instanc
 		return errors.Wrap(err, "failed to commit transaction")
 	}
 
-	s.instanceCache.Delete(getInstanceCacheKey(instanceID))
-	s.instanceIDCache.Delete(instanceUID)
+	s.instanceCache.Remove(getInstanceCacheKey(instanceID))
+	s.instanceIDCache.Remove(instanceUID)
 	return nil
 }
 
@@ -304,8 +304,8 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 		return errors.Wrap(err, "failed to commit transaction")
 	}
 
-	s.instanceCache.Delete(getInstanceCacheKey(patch.InstanceID))
-	s.instanceIDCache.Delete(patch.InstanceUID)
+	s.instanceCache.Remove(getInstanceCacheKey(patch.InstanceID))
+	s.instanceIDCache.Remove(patch.InstanceUID)
 	return nil
 }
 

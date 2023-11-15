@@ -5,23 +5,23 @@ package mysql
 import (
 	"fmt"
 
-	"github.com/pingcap/tidb/parser/ast"
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
+	mysql "github.com/bytebase/mysql-parser"
+
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*ColumnDisallowSetCharsetAdvisor)(nil)
-	_ ast.Visitor     = (*columnDisallowSetCharsetChecker)(nil)
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLDisallowSetColumnCharset, &ColumnDisallowSetCharsetAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLDisallowSetColumnCharset, &ColumnDisallowSetCharsetAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLDisallowSetColumnCharset, &ColumnDisallowSetCharsetAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLDisallowSetColumnCharset, &ColumnDisallowSetCharsetAdvisor{})
+	// only for mysqlwip test.
+	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLDisallowSetColumnCharset, &ColumnDisallowSetCharsetAdvisor{})
 }
 
 // ColumnDisallowSetCharsetAdvisor is the advisor checking for disallow set column charset.
@@ -30,9 +30,9 @@ type ColumnDisallowSetCharsetAdvisor struct {
 
 // Check checks for disallow set column charset.
 func (*ColumnDisallowSetCharsetAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	stmtList, ok := ctx.AST.([]ast.StmtNode)
+	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to StmtNode")
+		return nil, errors.Errorf("failed to convert to mysql parse result")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -45,9 +45,8 @@ func (*ColumnDisallowSetCharsetAdvisor) Check(ctx advisor.Context, _ string) ([]
 	}
 
 	for _, stmt := range stmtList {
-		checker.text = stmt.Text()
-		checker.line = stmt.OriginTextPosition()
-		(stmt).Accept(checker)
+		checker.baseLine = stmt.BaseLine
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -62,66 +61,131 @@ func (*ColumnDisallowSetCharsetAdvisor) Check(ctx advisor.Context, _ string) ([]
 }
 
 type columnDisallowSetCharsetChecker struct {
+	*mysql.BaseMySQLParserListener
+
+	baseLine   int
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
 	text       string
-	line       int
 }
 
-// Enter implements the ast.Visitor interface.
-func (checker *columnDisallowSetCharsetChecker) Enter(in ast.Node) (ast.Node, bool) {
-	code := advisor.Ok
-	switch node := in.(type) {
-	case *ast.CreateTableStmt:
-		for _, column := range node.Cols {
-			charset := getColumnCharset(column)
-			if !checkCharset(charset) {
-				code = advisor.SetColumnCharset
-				break
-			}
+func (checker *columnDisallowSetCharsetChecker) EnterQuery(ctx *mysql.QueryContext) {
+	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+}
+
+func (checker *columnDisallowSetCharsetChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if ctx.TableElementList() == nil || ctx.TableName() == nil {
+		return
+	}
+
+	for _, tableElement := range ctx.TableElementList().AllTableElement() {
+		if tableElement.ColumnDefinition() == nil {
+			continue
 		}
-	case *ast.AlterTableStmt:
-		for _, spec := range node.Specs {
-			switch spec.Tp {
-			case ast.AlterTableAddColumns:
-				for _, column := range spec.NewColumns {
-					charset := getColumnCharset(column)
-					if !checkCharset(charset) {
-						code = advisor.SetColumnCharset
+		if tableElement.ColumnDefinition().FieldDefinition() == nil {
+			continue
+		}
+		if tableElement.ColumnDefinition().FieldDefinition().DataType() == nil {
+			continue
+		}
+		charset := checker.getCharSet(tableElement.ColumnDefinition().FieldDefinition().DataType())
+		if !checker.checkCharset(charset) {
+			checker.adviceList = append(checker.adviceList, advisor.Advice{
+				Status:  checker.level,
+				Code:    advisor.SetColumnCharset,
+				Title:   checker.title,
+				Content: fmt.Sprintf("Disallow set column charset but \"%s\" does", checker.text),
+				Line:    checker.baseLine + ctx.GetStart().GetLine(),
+			})
+		}
+	}
+}
+
+func (checker *columnDisallowSetCharsetChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if ctx.AlterTableActions() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
+		return
+	}
+
+	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
+	if tableName == "" {
+		return
+	}
+	// alter table add column, change column, modify column.
+	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
+		if item == nil {
+			continue
+		}
+
+		var charsetList []string
+		switch {
+		// add column.
+		case item.ADD_SYMBOL() != nil:
+			switch {
+			case item.Identifier() != nil && item.FieldDefinition() != nil:
+				if item.FieldDefinition().DataType() == nil {
+					continue
+				}
+
+				charsetName := checker.getCharSet(item.FieldDefinition().DataType())
+				charsetList = append(charsetList, charsetName)
+			case item.OPEN_PAR_SYMBOL() != nil && item.TableElementList() != nil:
+				for _, tableElement := range item.TableElementList().AllTableElement() {
+					if tableElement.ColumnDefinition() == nil {
+						continue
 					}
-				}
-			case ast.AlterTableChangeColumn, ast.AlterTableModifyColumn:
-				charset := getColumnCharset(spec.NewColumns[0])
-				if !checkCharset(charset) {
-					code = advisor.SetColumnCharset
+					if tableElement.ColumnDefinition().FieldDefinition() == nil {
+						continue
+					}
+					if tableElement.ColumnDefinition().FieldDefinition().DataType() == nil {
+						continue
+					}
+
+					charsetName := checker.getCharSet(tableElement.ColumnDefinition().FieldDefinition().DataType())
+					charsetList = append(charsetList, charsetName)
 				}
 			}
-			if code != advisor.Ok {
-				break
+		// change column.
+		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil && item.FieldDefinition() != nil:
+			charsetName := checker.getCharSet(item.FieldDefinition().DataType())
+			charsetList = append(charsetList, charsetName)
+		// modify column.
+		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
+			charsetName := checker.getCharSet(item.FieldDefinition().DataType())
+			charsetList = append(charsetList, charsetName)
+		default:
+			continue
+		}
+
+		for _, charsetName := range charsetList {
+			if !checker.checkCharset(charsetName) {
+				checker.adviceList = append(checker.adviceList, advisor.Advice{
+					Status:  checker.level,
+					Code:    advisor.SetColumnCharset,
+					Title:   checker.title,
+					Content: fmt.Sprintf("Disallow set column charset but \"%s\" does", checker.text),
+					Line:    checker.baseLine + ctx.GetStart().GetLine(),
+				})
 			}
 		}
 	}
+}
 
-	if code != advisor.Ok {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  checker.level,
-			Code:    advisor.SetColumnCharset,
-			Title:   checker.title,
-			Content: fmt.Sprintf("Disallow set column charset but \"%s\" does", checker.text),
-			Line:    checker.line,
-		})
+func (*columnDisallowSetCharsetChecker) getCharSet(ctx mysql.IDataTypeContext) string {
+	if ctx.CharsetWithOptBinary() == nil {
+		return ""
 	}
-
-	return in, false
+	charset := mysqlparser.NormalizeMySQLCharsetName(ctx.CharsetWithOptBinary().CharsetName())
+	return charset
 }
 
-// Leave implements the ast.Visitor interface.
-func (*columnDisallowSetCharsetChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
-}
-
-func checkCharset(charset string) bool {
+func (*columnDisallowSetCharsetChecker) checkCharset(charset string) bool {
 	switch charset {
 	// empty charset or binary for JSON.
 	case "", "binary":

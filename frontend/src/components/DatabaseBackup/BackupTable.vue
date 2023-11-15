@@ -171,7 +171,6 @@ import {
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import { Plan, Plan_Spec } from "@/types/proto/v1/rollout_service";
 import { extractBackupResourceName } from "@/utils";
-import { trySetDefaultAssigneeByEnvironment } from "../IssueV1/logic/initialize/assignee";
 
 export type BackupRow = BBGridRow<Backup>;
 
@@ -359,11 +358,6 @@ const doRestoreInPlaceV1 = async () => {
       type: Issue_Type.DATABASE_CHANGE,
       creator: `users/${me.value.email}`,
     });
-    await trySetDefaultAssigneeByEnvironment(
-      issueCreate,
-      database.projectEntity,
-      database.effectiveEnvironment
-    );
     const { createdIssue } = await experimentalCreateIssueByPlan(
       database.projectEntity,
       issueCreate,

@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"sync"
 
 	lru "github.com/hashicorp/golang-lru/v2"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -24,29 +23,29 @@ var (
 type Store struct {
 	db *DB
 
-	userIDCache                    sync.Map // map[int]*UserMessage
-	environmentCache               sync.Map // map[string]*EnvironmentMessage
-	environmentIDCache             sync.Map // map[int]*EnvironmentMessage
-	instanceCache                  sync.Map // map[string]*InstanceMessage
-	instanceIDCache                sync.Map // map[int]*InstanceMessage
-	databaseCache                  sync.Map // map[string]*DatabaseMessage
-	databaseIDCache                sync.Map // map[int]*DatabaseMessage
-	projectCache                   sync.Map // map[string]*ProjectMessage
-	projectIDCache                 sync.Map // map[int]*ProjectMessage
-	projectPolicyCache             sync.Map // map[string]*IAMPolicyMessage
-	projectIDPolicyCache           sync.Map // map[int]*IAMPolicyMessage
-	policyCache                    sync.Map // map[string]*PolicyMessage
-	issueCache                     sync.Map // map[int]*IssueMessage
-	issueByPipelineCache           sync.Map // map[int]*IssueMessage
-	pipelineCache                  sync.Map // map[int]*PipelineMessage
-	settingCache                   sync.Map // map[string]*SettingMessage
-	idpCache                       sync.Map // map[string]*IdentityProvider
-	projectIDDeploymentConfigCache sync.Map // map[int]*DeploymentConfigMessage
-	risksCache                     sync.Map // []*RiskMessage, use 0 as the key
-	databaseGroupCache             *lru.Cache[string, *DatabaseGroupMessage]
-	databaseGroupIDCache           *lru.Cache[int64, *DatabaseGroupMessage]
-	schemaGroupCache               *lru.Cache[string, *SchemaGroupMessage]
-	vcsIDCache                     *lru.Cache[int, *ExternalVersionControlMessage]
+	userIDCache            *lru.Cache[int, *UserMessage]
+	environmentCache       *lru.Cache[string, *EnvironmentMessage]
+	environmentIDCache     *lru.Cache[int, *EnvironmentMessage]
+	instanceCache          *lru.Cache[string, *InstanceMessage]
+	instanceIDCache        *lru.Cache[int, *InstanceMessage]
+	databaseCache          *lru.Cache[string, *DatabaseMessage]
+	databaseIDCache        *lru.Cache[int, *DatabaseMessage]
+	projectCache           *lru.Cache[string, *ProjectMessage]
+	projectIDCache         *lru.Cache[int, *ProjectMessage]
+	projectPolicyCache     *lru.Cache[string, *IAMPolicyMessage]
+	projectIDPolicyCache   *lru.Cache[int, *IAMPolicyMessage]
+	projectDeploymentCache *lru.Cache[int, *DeploymentConfigMessage]
+	policyCache            *lru.Cache[string, *PolicyMessage]
+	issueCache             *lru.Cache[int, *IssueMessage]
+	issueByPipelineCache   *lru.Cache[int, *IssueMessage]
+	pipelineCache          *lru.Cache[int, *PipelineMessage]
+	settingCache           *lru.Cache[api.SettingName, *SettingMessage]
+	idpCache               *lru.Cache[string, *IdentityProviderMessage]
+	risksCache             *lru.Cache[int, []*RiskMessage] // Use 0 as the key.
+	databaseGroupCache     *lru.Cache[string, *DatabaseGroupMessage]
+	databaseGroupIDCache   *lru.Cache[int64, *DatabaseGroupMessage]
+	schemaGroupCache       *lru.Cache[string, *SchemaGroupMessage]
+	vcsIDCache             *lru.Cache[int, *ExternalVersionControlMessage]
 
 	// Large objects.
 	sheetCache    *lru.Cache[int, string]
@@ -55,6 +54,82 @@ type Store struct {
 
 // New creates a new instance of Store.
 func New(db *DB) (*Store, error) {
+	userIDCache, err := lru.New[int, *UserMessage](2048)
+	if err != nil {
+		return nil, err
+	}
+	environmentCache, err := lru.New[string, *EnvironmentMessage](32)
+	if err != nil {
+		return nil, err
+	}
+	environmentIDCache, err := lru.New[int, *EnvironmentMessage](32)
+	if err != nil {
+		return nil, err
+	}
+	instanceCache, err := lru.New[string, *InstanceMessage](2048)
+	if err != nil {
+		return nil, err
+	}
+	instanceIDCache, err := lru.New[int, *InstanceMessage](2048)
+	if err != nil {
+		return nil, err
+	}
+	databaseCache, err := lru.New[string, *DatabaseMessage](32768)
+	if err != nil {
+		return nil, err
+	}
+	databaseIDCache, err := lru.New[int, *DatabaseMessage](32768)
+	if err != nil {
+		return nil, err
+	}
+	projectCache, err := lru.New[string, *ProjectMessage](128)
+	if err != nil {
+		return nil, err
+	}
+	projectIDCache, err := lru.New[int, *ProjectMessage](128)
+	if err != nil {
+		return nil, err
+	}
+	projectPolicyCache, err := lru.New[string, *IAMPolicyMessage](128)
+	if err != nil {
+		return nil, err
+	}
+	projectIDPolicyCache, err := lru.New[int, *IAMPolicyMessage](128)
+	if err != nil {
+		return nil, err
+	}
+	projectDeploymentCache, err := lru.New[int, *DeploymentConfigMessage](128)
+	if err != nil {
+		return nil, err
+	}
+	policyCache, err := lru.New[string, *PolicyMessage](128)
+	if err != nil {
+		return nil, err
+	}
+	issueCache, err := lru.New[int, *IssueMessage](256)
+	if err != nil {
+		return nil, err
+	}
+	issueByPipelineCache, err := lru.New[int, *IssueMessage](256)
+	if err != nil {
+		return nil, err
+	}
+	pipelineCache, err := lru.New[int, *PipelineMessage](256)
+	if err != nil {
+		return nil, err
+	}
+	settingCache, err := lru.New[api.SettingName, *SettingMessage](64)
+	if err != nil {
+		return nil, err
+	}
+	idpCache, err := lru.New[string, *IdentityProviderMessage](4)
+	if err != nil {
+		return nil, err
+	}
+	risksCache, err := lru.New[int, []*RiskMessage](1)
+	if err != nil {
+		return nil, err
+	}
 	databaseGroupCache, err := lru.New[string, *DatabaseGroupMessage](10)
 	if err != nil {
 		return nil, err
@@ -71,7 +146,6 @@ func New(db *DB) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	sheetCache, err := lru.New[int, string](10)
 	if err != nil {
 		return nil, err
@@ -84,13 +158,32 @@ func New(db *DB) (*Store, error) {
 	return &Store{
 		db: db,
 
-		databaseGroupCache:   databaseGroupCache,
-		databaseGroupIDCache: databaseGroupIDCache,
-		schemaGroupCache:     schemaGroupCache,
-		vcsIDCache:           vcsIDCache,
-
-		sheetCache:    sheetCache,
-		dbSchemaCache: dbSchemaCache,
+		// Cache.
+		userIDCache:            userIDCache,
+		environmentCache:       environmentCache,
+		environmentIDCache:     environmentIDCache,
+		instanceCache:          instanceCache,
+		instanceIDCache:        instanceIDCache,
+		databaseCache:          databaseCache,
+		databaseIDCache:        databaseIDCache,
+		projectCache:           projectCache,
+		projectIDCache:         projectIDCache,
+		projectPolicyCache:     projectPolicyCache,
+		projectIDPolicyCache:   projectIDPolicyCache,
+		projectDeploymentCache: projectDeploymentCache,
+		policyCache:            policyCache,
+		issueCache:             issueCache,
+		issueByPipelineCache:   issueByPipelineCache,
+		pipelineCache:          pipelineCache,
+		settingCache:           settingCache,
+		idpCache:               idpCache,
+		risksCache:             risksCache,
+		databaseGroupCache:     databaseGroupCache,
+		databaseGroupIDCache:   databaseGroupIDCache,
+		schemaGroupCache:       schemaGroupCache,
+		vcsIDCache:             vcsIDCache,
+		sheetCache:             sheetCache,
+		dbSchemaCache:          dbSchemaCache,
 	}, nil
 }
 

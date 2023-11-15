@@ -1,4 +1,4 @@
-- statement: INSERT INTO tech_book values(1, 'a')
+- statement: INSERT INTO tech_book values(1, 'a');
   want:
     - status: SUCCESS
       code: 0
@@ -6,17 +6,18 @@
       content: ""
       line: 0
       details: ""
-- statement: INSERT INTO tech_book values(1, 'a'), (2, 'b'), (3, 'c'), (4, 'd'), (5, 'e'), (6, 'f')
+- statement: |
+    INSERT INTO tech_book values(1, 'a');
+    INSERT INTO tech_book values(1, 'a'), (2, 'b'), (3, 'c'), (4, 'd'), (5, 'e'), (6, 'f');
   want:
     - status: WARN
       code: 1101
       title: statement.insert.row-limit
       content: |-
-        "INSERT INTO tech_book values(1, 'a'), (2, 'b'), (3, 'c'), (4, 'd'), (5, 'e'), (6, 'f')
-        ;" inserts 6 rows. The count exceeds 5.
+        "INSERT INTO tech_book values(1, 'a'), (2, 'b'), (3, 'c'), (4, 'd'), (5, 'e'), (6, 'f');" inserts 6 rows. The count exceeds 5.
       line: 2
       details: ""
-- statement: INSERT INTO tech_book SELECT * FROM tech_book
+- statement: INSERT INTO tech_book SELECT * FROM tech_book;
   want:
     - status: SUCCESS
       code: 0

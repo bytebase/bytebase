@@ -1,4 +1,4 @@
-- statement: CREATE TABLE t(a int)
+- statement: CREATE TABLE t(a int);
   want:
     - status: SUCCESS
       code: 0
@@ -6,7 +6,7 @@
       content: ""
       line: 0
       details: ""
-- statement: CREATE TABLE t(a int auto_increment) auto_increment = 20
+- statement: CREATE TABLE t(a int auto_increment) auto_increment = 20;
   want:
     - status: SUCCESS
       code: 0
@@ -14,11 +14,25 @@
       content: ""
       line: 0
       details: ""
-- statement: CREATE TABLE t(a int auto_increment) auto_increment = 2
+- statement: |-
+    CREATE TABLE t1(a int auto_increment) auto_increment = 20;
+    CREATE TABLE t2(a int auto_increment) auto_increment = 2;
   want:
     - status: WARN
       code: 416
       title: column.auto-increment-initial-value
-      content: The initial auto-increment value in table `t` is 2, which doesn't equal 20
+      content: The initial auto-increment value in table `t2` is 2, which doesn't equal 20
       line: 2
+      details: ""
+- statement: |-
+    CREATE TABLE t(a int auto_increment) auto_increment = 20;
+    ALTER TABLE t COMMENT 'table t';
+    ALTER TABLE t AUTO_INCREMENT = 20;
+    ALTER TABLE t AUTO_INCREMENT = 100;
+  want:
+    - status: WARN
+      code: 416
+      title: column.auto-increment-initial-value
+      content: The initial auto-increment value in table `t` is 100, which doesn't equal 20
+      line: 4
       details: ""

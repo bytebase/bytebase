@@ -1,0 +1,50 @@
+- statement: CREATE TABLE t(a int, b int, primary key (a, b))
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |-
+    CREATE TABLE t(
+            a int,
+            b int,
+            primary key pk (a, b, b, b, b, b, b))
+  want:
+    - status: WARN
+      code: 802
+      title: index.key-number-limit
+      content: The number of index `pk` in table `t` should be not greater than 5
+      line: 4
+      details: ""
+- statement: |-
+    CREATE TABLE t(a int, b int, c int, d int, e int, f int, g int);
+    CREATE INDEX idx ON t(a, b, c, d, e, f, g)
+  want:
+    - status: WARN
+      code: 802
+      title: index.key-number-limit
+      content: The number of index `idx` in table `t` should be not greater than 5
+      line: 3
+      details: ""
+- statement: |-
+    CREATE TABLE t(a int, b int, c int, d int, e int, f int, g int);
+    ALTER TABLE t ADD UNIQUE KEY uk (a, b, c, d, e, f, g)
+  want:
+    - status: WARN
+      code: 802
+      title: index.key-number-limit
+      content: The number of index `uk` in table `t` should be not greater than 5
+      line: 3
+      details: ""
+- statement: |-
+    CREATE TABLE t(a int, b int, c int, d int, e int, f int, g int);
+    ALTER TABLE t ADD FOREIGN KEY uk (a, b, c, d, e, f, g) REFERENCES t1(a, b, c, d, e, f, g)
+  want:
+    - status: WARN
+      code: 802
+      title: index.key-number-limit
+      content: The number of index `uk` in table `t` should be not greater than 5
+      line: 3
+      details: ""

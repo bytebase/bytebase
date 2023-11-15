@@ -168,7 +168,6 @@ import {
   Plan_Spec,
 } from "@/types/proto/v1/rollout_service";
 import RestoreTargetForm from "../DatabaseBackup/RestoreTargetForm.vue";
-import { trySetDefaultAssigneeByEnvironment } from "../IssueV1/logic/initialize/assignee";
 import ChangeHistoryBrief from "./ChangeHistoryBrief.vue";
 import CreatePITRDatabaseForm from "./CreatePITRDatabaseForm.vue";
 import { CreatePITRDatabaseContext } from "./utils";
@@ -399,11 +398,6 @@ const onConfirmV1 = async () => {
       type: Issue_Type.DATABASE_CHANGE,
       creator: `users/${me.value.email}`,
     });
-    await trySetDefaultAssigneeByEnvironment(
-      issueCreate,
-      database.projectEntity,
-      database.effectiveEnvironment
-    );
     const { createdIssue } = await experimentalCreateIssueByPlan(
       database.projectEntity,
       issueCreate,

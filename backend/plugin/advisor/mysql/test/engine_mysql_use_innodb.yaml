@@ -1,30 +1,47 @@
-- statement: CREATE TABLE book(id int) ENGINE = INNODB
-  want:
-    - status: SUCCESS
-      code: 0
-      title: OK
-      content: ""
-      line: 0
-      details: ""
-- statement: CREATE TABLE book(id int)
-  want:
-    - status: SUCCESS
-      code: 0
-      title: OK
-      content: ""
-      line: 0
-      details: ""
-- statement: CREATE TABLE book(id int) ENGINE = CSV
+- statement: |
+    CREATE TABLE userTable(
+      id INT NOT NULL,
+      name VARCHAR(255) CHARSET ascii,
+      roomId INT,
+      time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',
+      time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',
+      content BLOB NOT NULL COMMENT 'comment',
+      json_content JSON NOT NULL COMMENT 'comment',
+      INDEX idx1(name),
+      UNIQUE KEY uk1(id, name),
+      FOREIGN KEY fk1(roomId) REFERENCES room(id),
+      INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;
   want:
     - status: WARN
       code: 501
       title: engine.mysql.use-innodb
       content: |-
-        "CREATE TABLE book(id int) ENGINE = CSV
-        ;" doesn't use InnoDB engine
-      line: 2
+        "CREATE TABLE userTable(
+          id INT NOT NULL,
+          name VARCHAR(255) CHARSET ascii,
+          roomId INT,
+          time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',
+          time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',
+          content BLOB NOT NULL COMMENT 'comment',
+          json_content JSON NOT NULL COMMENT 'comment',
+          INDEX idx1(name),
+          UNIQUE KEY uk1(id, name),
+          FOREIGN KEY fk1(roomId) REFERENCES room(id),
+          INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;" doesn't use InnoDB engine
+      line: 12
       details: ""
-- statement: ALTER TABLE tech_book ENGINE = INNODB
+- statement: |
+    CREATE TABLE user(
+      id INT PRIMARY KEY COMMENT 'comment',
+      name VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'comment',
+      room_id INT NOT NULL DEFAULT 0 COMMENT 'comment',
+      creator_id INT NOT NULL DEFAULT 0 COMMENT 'comment',
+      created_ts TIMESTAMP NOT NULL DEFAULT NOW() COMMENT 'comment',
+      updater_id INT NOT NULL DEFAULT 0 COMMENT 'comment',
+      updated_ts TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',
+      INDEX idx_user_name(name),
+      UNIQUE KEY uk_user_id_name(id, name)
+    ) ENGINE = INNODB COMMENT 'comment';
   want:
     - status: SUCCESS
       code: 0
@@ -32,17 +49,7 @@
       content: ""
       line: 0
       details: ""
-- statement: ALTER TABLE tech_book ENGINE = CSV
-  want:
-    - status: WARN
-      code: 501
-      title: engine.mysql.use-innodb
-      content: |-
-        "ALTER TABLE tech_book ENGINE = CSV
-        ;" doesn't use InnoDB engine
-      line: 2
-      details: ""
-- statement: SET default_storage_engine=INNODB
+- statement: CREATE TABLE book(id int) ENGINE = INNODB;
   want:
     - status: SUCCESS
       code: 0
@@ -50,13 +57,83 @@
       content: ""
       line: 0
       details: ""
-- statement: SET default_storage_engine=CSV
+- statement: CREATE TABLE book(id int);
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |
+    CREATE TABLE book(
+      id INT,
+      price INT
+    ) ENGINE = CSV;
   want:
     - status: WARN
       code: 501
       title: engine.mysql.use-innodb
       content: |-
-        "SET default_storage_engine=CSV
-        ;" doesn't use InnoDB engine
+        "CREATE TABLE book(
+          id INT,
+          price INT
+        ) ENGINE = CSV;" doesn't use InnoDB engine
+      line: 4
+      details: ""
+- statement: |
+    CREATE TABLE teck_book(a INT);
+    CREATE TABLE book(
+      id INT,
+      price INT
+    ) ENGINE = CSV;
+  want:
+    - status: WARN
+      code: 501
+      title: engine.mysql.use-innodb
+      content: |-
+        "CREATE TABLE book(
+          id INT,
+          price INT
+        ) ENGINE = CSV;" doesn't use InnoDB engine
+      line: 5
+      details: ""
+- statement: ALTER TABLE tech_book ENGINE = INNODB;
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |
+    CREATE TABLE teck_book(a INT);
+    CREATE TABLE book(a INT);
+    ALTER TABLE tech_book ENGINE = CSV;
+  want:
+    - status: WARN
+      code: 501
+      title: engine.mysql.use-innodb
+      content: |-
+        "ALTER TABLE tech_book ENGINE = CSV;" doesn't use InnoDB engine
+      line: 3
+      details: ""
+- statement: SET default_storage_engine=INNODB;
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |
+    CREATE TABLE book(a INT);
+    SET default_storage_engine=CSV;
+  want:
+    - status: WARN
+      code: 501
+      title: engine.mysql.use-innodb
+      content: |-
+        "SET default_storage_engine=CSV;" doesn't use InnoDB engine
       line: 2
       details: ""

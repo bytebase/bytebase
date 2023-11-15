@@ -150,7 +150,7 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 		return nil, common.Wrapf(err, common.Internal, "failed to create a catalog")
 	}
 
-	driver, err := e.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database)
+	driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 	if err != nil {
 		return nil, err
 	}

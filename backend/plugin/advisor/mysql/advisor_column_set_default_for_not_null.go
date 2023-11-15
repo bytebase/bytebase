@@ -5,23 +5,23 @@ package mysql
 import (
 	"fmt"
 
-	"github.com/pingcap/tidb/parser/ast"
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
+	mysql "github.com/bytebase/mysql-parser"
+
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*ColumnSetDefaultForNotNullAdvisor)(nil)
-	_ ast.Visitor     = (*columnSetDefaultForNotNullChecker)(nil)
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLColumnSetDefaultForNotNull, &ColumnSetDefaultForNotNullAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLColumnSetDefaultForNotNull, &ColumnSetDefaultForNotNullAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLColumnSetDefaultForNotNull, &ColumnSetDefaultForNotNullAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnSetDefaultForNotNull, &ColumnSetDefaultForNotNullAdvisor{})
+	// only for mysqlwip test.
+	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLColumnSetDefaultForNotNull, &ColumnSetDefaultForNotNullAdvisor{})
 }
 
 // ColumnSetDefaultForNotNullAdvisor is the advisor checking for set default value for not null column.
@@ -30,9 +30,9 @@ type ColumnSetDefaultForNotNullAdvisor struct {
 
 // Check checks for set default value for not null column.
 func (*ColumnSetDefaultForNotNullAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	stmtList, ok := ctx.AST.([]ast.StmtNode)
+	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to StmtNode")
+		return nil, errors.Errorf("failed to convert to mysql parser result")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -44,9 +44,9 @@ func (*ColumnSetDefaultForNotNullAdvisor) Check(ctx advisor.Context, _ string) (
 		title: string(ctx.Rule.Type),
 	}
 
-	for _, stmt := range stmtList {
-		checker.text = stmt.Text()
-		(stmt).Accept(checker)
+	for _, stmtNode := range stmtList {
+		checker.baseLine = stmtNode.BaseLine
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtNode.Tree)
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -61,89 +61,184 @@ func (*ColumnSetDefaultForNotNullAdvisor) Check(ctx advisor.Context, _ string) (
 }
 
 type columnSetDefaultForNotNullChecker struct {
+	*mysql.BaseMySQLParserListener
+
+	baseLine   int
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
-	text       string
 }
 
-// Enter implements the ast.Visitor interface.
-func (checker *columnSetDefaultForNotNullChecker) Enter(in ast.Node) (ast.Node, bool) {
-	var notNullColumnWithNoDefault []columnName
-	switch node := in.(type) {
-	// CREATE TABLE
-	case *ast.CreateTableStmt:
-		pkColumn := make(map[string]bool)
-		for _, cons := range node.Constraints {
-			if cons.Tp == ast.ConstraintPrimaryKey {
-				for _, key := range cons.Keys {
-					pkColumn[key.Column.Name.O] = true
-				}
-			}
+func (checker *columnSetDefaultForNotNullChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if ctx.TableName() == nil {
+		return
+	}
+	if ctx.TableElementList() == nil {
+		return
+	}
+
+	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
+	pkColumn := make(map[string]struct{})
+	for _, tableElement := range ctx.TableElementList().AllTableElement() {
+		if tableElement == nil {
+			continue
+		}
+		if tableElement.TableConstraintDef() == nil {
+			continue
 		}
 
-		for _, column := range node.Cols {
-			_, ok := pkColumn[column.Name.Name.O]
-			notNull := ok || !canNull(column)
-			if notNull && !setDefault(column) && needDefault(column) {
-				notNullColumnWithNoDefault = append(notNullColumnWithNoDefault, columnName{
-					tableName:  node.Table.Name.O,
-					columnName: column.Name.Name.O,
-					line:       column.OriginTextPosition(),
-				})
-			}
+		if tableElement.TableConstraintDef().GetType_().GetTokenType() != mysql.MySQLParserPRIMARY_SYMBOL {
+			continue
 		}
-	// ALTER TABLE
-	case *ast.AlterTableStmt:
-		for _, spec := range node.Specs {
-			switch spec.Tp {
-			// ADD COLUMNS
-			case ast.AlterTableAddColumns:
-				for _, column := range spec.NewColumns {
-					if !canNull(column) && !setDefault(column) && needDefault(column) {
-						notNullColumnWithNoDefault = append(notNullColumnWithNoDefault, columnName{
-							tableName:  node.Table.Name.O,
-							columnName: column.Name.Name.O,
-							line:       node.OriginTextPosition(),
-						})
-					}
-				}
-			// CHANGE COLUMN and MODIFY COLUMN
-			case ast.AlterTableChangeColumn, ast.AlterTableModifyColumn:
-				if !canNull(spec.NewColumns[0]) && !setDefault(spec.NewColumns[0]) && needDefault(spec.NewColumns[0]) {
-					notNullColumnWithNoDefault = append(notNullColumnWithNoDefault, columnName{
-						tableName:  node.Table.Name.O,
-						columnName: spec.NewColumns[0].Name.Name.O,
-						line:       node.OriginTextPosition(),
-					})
-				}
-			}
+		if tableElement.TableConstraintDef().KeyListVariants() == nil {
+			continue
+		}
+		columnList := mysqlparser.NormalizeKeyListVariants(tableElement.TableConstraintDef().KeyListVariants())
+		for _, column := range columnList {
+			pkColumn[column] = struct{}{}
 		}
 	}
 
-	for _, column := range notNullColumnWithNoDefault {
+	for _, tableElement := range ctx.TableElementList().AllTableElement() {
+		if tableElement == nil {
+			continue
+		}
+		if tableElement.ColumnDefinition() == nil {
+			continue
+		}
+		_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
+		if tableElement.ColumnDefinition().FieldDefinition() == nil {
+			continue
+		}
+
+		_, ok := pkColumn[columnName]
+		notNull := ok || !checker.canNull(tableElement.ColumnDefinition().FieldDefinition())
+		if notNull && !checker.hasDefault(tableElement.ColumnDefinition().FieldDefinition()) && checker.needDefault(tableElement.ColumnDefinition().FieldDefinition()) {
+			checker.adviceList = append(checker.adviceList, advisor.Advice{
+				Status:  checker.level,
+				Code:    advisor.NotNullColumnWithNoDefault,
+				Title:   checker.title,
+				Content: fmt.Sprintf("Column `%s`.`%s` is NOT NULL but doesn't have DEFAULT", tableName, columnName),
+				Line:    checker.baseLine + tableElement.GetStart().GetLine(),
+			})
+		}
+	}
+}
+
+func (checker *columnSetDefaultForNotNullChecker) checkFieldDefinition(tableName, columnName string, ctx mysql.IFieldDefinitionContext) {
+	if !checker.canNull(ctx) && checker.needDefault(ctx) && !checker.hasDefault(ctx) {
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  checker.level,
 			Code:    advisor.NotNullColumnWithNoDefault,
 			Title:   checker.title,
-			Content: fmt.Sprintf("Column `%s`.`%s` is NOT NULL but doesn't have DEFAULT", column.tableName, column.columnName),
-			Line:    column.line,
+			Content: fmt.Sprintf("Column `%s`.`%s` is NOT NULL but doesn't have DEFAULT", tableName, columnName),
+			Line:    checker.baseLine + ctx.GetStart().GetLine(),
 		})
 	}
-
-	return in, false
 }
 
-// Leave implements the ast.Visitor interface.
-func (*columnSetDefaultForNotNullChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
+func (*columnSetDefaultForNotNullChecker) canNull(ctx mysql.IFieldDefinitionContext) bool {
+	for _, attribute := range ctx.AllColumnAttribute() {
+		switch {
+		case attribute.NullLiteral() != nil && attribute.NOT_SYMBOL() != nil:
+			return false
+		case attribute.PRIMARY_SYMBOL() != nil:
+			return false
+		}
+	}
+	return true
 }
 
-func setDefault(column *ast.ColumnDef) bool {
-	for _, option := range column.Options {
-		if option.Tp == ast.ColumnOptionDefaultValue {
+func (*columnSetDefaultForNotNullChecker) hasDefault(ctx mysql.IFieldDefinitionContext) bool {
+	for _, attr := range ctx.AllColumnAttribute() {
+		if attr.DEFAULT_SYMBOL() != nil {
 			return true
 		}
 	}
 	return false
+}
+
+func (*columnSetDefaultForNotNullChecker) needDefault(ctx mysql.IFieldDefinitionContext) bool {
+	if ctx.GENERATED_SYMBOL() != nil {
+		return false
+	}
+	for _, attr := range ctx.AllColumnAttribute() {
+		if attr.AUTO_INCREMENT_SYMBOL() != nil || attr.PRIMARY_SYMBOL() != nil {
+			return false
+		}
+	}
+
+	if ctx.DataType() == nil {
+		return false
+	}
+
+	switch ctx.DataType().GetType_().GetTokenType() {
+	case mysql.MySQLParserBLOB_SYMBOL:
+		return false
+	case mysql.MySQLParserJSON_SYMBOL:
+		return false
+	case mysql.MySQLParserGEOMETRY_SYMBOL,
+		mysql.MySQLParserGEOMETRYCOLLECTION_SYMBOL,
+		mysql.MySQLParserPOINT_SYMBOL,
+		mysql.MySQLParserMULTIPOINT_SYMBOL,
+		mysql.MySQLParserLINESTRING_SYMBOL,
+		mysql.MySQLParserMULTILINESTRING_SYMBOL,
+		mysql.MySQLParserPOLYGON_SYMBOL,
+		mysql.MySQLParserMULTIPOLYGON_SYMBOL:
+		return false
+	}
+	return true
+}
+
+func (checker *columnSetDefaultForNotNullChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if ctx.AlterTableActions() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
+		return
+	}
+
+	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
+	// alter table add column, change column, modify column.
+	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
+		if item == nil {
+			continue
+		}
+
+		switch {
+		// add column
+		case item.ADD_SYMBOL() != nil:
+			switch {
+			case item.Identifier() != nil && item.FieldDefinition() != nil:
+				columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+				checker.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
+			case item.OPEN_PAR_SYMBOL() != nil && item.TableElementList() != nil:
+				for _, tableElement := range item.TableElementList().AllTableElement() {
+					if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().ColumnName() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil {
+						continue
+					}
+					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
+					checker.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
+				}
+			}
+			// modify column
+		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
+			if item.FieldDefinition() == nil {
+				continue
+			}
+			columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
+			checker.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
+		// change column
+		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil && item.FieldDefinition() != nil:
+			if item.FieldDefinition() == nil {
+				continue
+			}
+			// only care new column name.
+			columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+			checker.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
+		}
+	}
 }

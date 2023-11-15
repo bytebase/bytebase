@@ -5,24 +5,24 @@ package mysql
 import (
 	"fmt"
 
-	"github.com/pingcap/tidb/parser/ast"
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
+
+	mysql "github.com/bytebase/mysql-parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*ColumnDisallowDropInIndexAdvisor)(nil)
-	_ ast.Visitor     = (*columnDisallowDropInIndexChecker)(nil)
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLColumnDisallowDropInIndex, &ColumnDisallowDropInIndexAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLColumnDisallowDropInIndex, &ColumnDisallowDropInIndexAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLColumnDisallowDropInIndex, &ColumnDisallowDropInIndexAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnDisallowDropInIndex, &ColumnDisallowDropInIndexAdvisor{})
+	// only for mysqlwip test.
+	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLColumnDisallowDropInIndex, &ColumnDisallowDropInIndexAdvisor{})
 }
 
 // ColumnDisallowDropInIndexAdvisor is the advisor checking for disallow DROP COLUMN in index.
@@ -31,9 +31,9 @@ type ColumnDisallowDropInIndexAdvisor struct {
 
 // Check checks for disallow Drop COLUMN in index statement.
 func (*ColumnDisallowDropInIndexAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	stmtList, ok := ctx.AST.([]ast.StmtNode)
+	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to StmtNode")
+		return nil, errors.Errorf("failed to convert to mysql parser result")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -48,10 +48,9 @@ func (*ColumnDisallowDropInIndexAdvisor) Check(ctx advisor.Context, _ string) ([
 		catalog: ctx.Catalog,
 	}
 
-	for _, stmt := range stmtList {
-		checker.text = stmt.Text()
-		checker.line = stmt.OriginTextPosition()
-		(stmt).Accept(checker)
+	for _, stmtNode := range stmtList {
+		checker.baseLine = stmtNode.BaseLine
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtNode.Tree)
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -67,80 +66,95 @@ func (*ColumnDisallowDropInIndexAdvisor) Check(ctx advisor.Context, _ string) ([
 }
 
 type columnDisallowDropInIndexChecker struct {
+	*mysql.BaseMySQLParserListener
+
+	baseLine   int
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
-	text       string
 	tables     tableState // the variable mean whether the column in index.
 	catalog    *catalog.Finder
-	line       int
 }
 
-func (checker *columnDisallowDropInIndexChecker) Enter(in ast.Node) (ast.Node, bool) {
-	switch node := in.(type) {
-	case *ast.CreateTableStmt:
-		checker.addIndexColumn(node)
-	case *ast.AlterTableStmt:
-		return checker.dropColumn(node)
+func (checker *columnDisallowDropInIndexChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if ctx.TableName() == nil {
+		return
 	}
-	return in, false
+	if ctx.TableElementList() == nil {
+		return
+	}
+
+	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
+	for _, tableElement := range ctx.TableElementList().AllTableElement() {
+		if tableElement == nil || tableElement.TableConstraintDef() == nil {
+			continue
+		}
+		if tableElement.TableConstraintDef().GetType_() == nil {
+			continue
+		}
+		switch tableElement.TableConstraintDef().GetType_().GetTokenType() {
+		case mysql.MySQLParserINDEX_SYMBOL, mysql.MySQLParserKEY_SYMBOL:
+			// do nothing.
+		default:
+			continue
+		}
+		if tableElement.TableConstraintDef().KeyListVariants() == nil {
+			continue
+		}
+
+		columnList := mysqlparser.NormalizeKeyListVariants(tableElement.TableConstraintDef().KeyListVariants())
+		for _, column := range columnList {
+			if checker.tables[tableName] == nil {
+				checker.tables[tableName] = make(columnSet)
+			}
+			checker.tables[tableName][column] = true
+		}
+	}
 }
 
-func (*columnDisallowDropInIndexChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
-}
+func (checker *columnDisallowDropInIndexChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if ctx.AlterTableActions() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
+		return
+	}
 
-func (checker *columnDisallowDropInIndexChecker) dropColumn(in ast.Node) (ast.Node, bool) {
-	if node, ok := in.(*ast.AlterTableStmt); ok {
-		for _, spec := range node.Specs {
-			if spec.Tp == ast.AlterTableDropColumn {
-				table := node.Table.Name.O
+	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
+	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
+		if item == nil || item.DROP_SYMBOL() == nil || item.ColumnInternalRef() == nil {
+			continue
+		}
 
-				index := checker.catalog.Origin.Index(&catalog.TableIndexFind{
-					// In MySQL, the SchemaName is "".
-					SchemaName: "",
-					TableName:  table,
-				})
+		index := checker.catalog.Origin.Index(&catalog.TableIndexFind{
+			// In MySQL, the SchemaName is "".
+			SchemaName: "",
+			TableName:  tableName,
+		})
 
-				if index != nil {
-					if checker.tables[table] == nil {
-						checker.tables[table] = make(columnSet)
-					}
-					for _, indexColumn := range *index {
-						for _, column := range indexColumn.ExpressionList() {
-							checker.tables[table][column] = true
-						}
-					}
-				}
-
-				colName := spec.OldColumnName.Name.String()
-				if !checker.canDrop(table, colName) {
-					checker.adviceList = append(checker.adviceList, advisor.Advice{
-						Status:  checker.level,
-						Code:    advisor.DropIndexColumn,
-						Title:   checker.title,
-						Content: fmt.Sprintf("`%s`.`%s` cannot drop index column", table, colName),
-						Line:    checker.line,
-					})
+		if index != nil {
+			if checker.tables[tableName] == nil {
+				checker.tables[tableName] = make(columnSet)
+			}
+			for _, indexColumn := range *index {
+				for _, column := range indexColumn.ExpressionList() {
+					checker.tables[tableName][column] = true
 				}
 			}
 		}
-	}
-	return in, false
-}
 
-func (checker *columnDisallowDropInIndexChecker) addIndexColumn(in ast.Node) {
-	if node, ok := in.(*ast.CreateTableStmt); ok {
-		for _, spec := range node.Constraints {
-			if spec.Tp == ast.ConstraintIndex {
-				for _, key := range spec.Keys {
-					table := node.Table.Name.O
-					if checker.tables[table] == nil {
-						checker.tables[table] = make(columnSet)
-					}
-					checker.tables[table][key.Column.Name.O] = true
-				}
-			}
+		columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
+		if !checker.canDrop(tableName, columnName) {
+			checker.adviceList = append(checker.adviceList, advisor.Advice{
+				Status:  checker.level,
+				Code:    advisor.DropIndexColumn,
+				Title:   checker.title,
+				Content: fmt.Sprintf("`%s`.`%s` cannot drop index column", tableName, columnName),
+				Line:    checker.baseLine + item.GetStart().GetLine(),
+			})
 		}
 	}
 }

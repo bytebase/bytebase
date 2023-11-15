@@ -69,6 +69,7 @@
           </span>
         </NButton>
         <NPopover
+          v-if="!isStandaloneMode"
           trigger="click"
           placement="bottom-end"
           :show-arrow="false"
@@ -117,6 +118,7 @@ import {
   featureToRef,
   useInstanceV1ByUID,
   useWebTerminalV1Store,
+  usePageMode,
 } from "@/store";
 import type { ExecuteConfig, ExecuteOption, FeatureType } from "@/types";
 import { TabMode, UNKNOWN_ID } from "@/types";
@@ -148,6 +150,9 @@ const { events } = useSQLEditorContext();
 const containerRef = ref<HTMLDivElement>();
 const { width: containerWidth } = useElementSize(containerRef);
 const hasSharedSQLScriptFeature = featureToRef("bb.feature.shared-sql-script");
+const pageMode = usePageMode();
+
+const isStandaloneMode = computed(() => pageMode.value === "STANDALONE");
 
 const connection = computed(() => tabStore.currentTab.connection);
 

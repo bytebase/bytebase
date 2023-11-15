@@ -57,7 +57,6 @@ type ColumnResource struct {
 type TableSource interface {
 	// Interface guard to forbid other types outside this package to implement this interface.
 	isTableSource()
-	GetQuerySpanResult() []QuerySpanResult
 
 	GetTableName() string
 	GetSchemaName() string
@@ -81,13 +80,6 @@ type PseudoTable struct {
 
 	// Columns are the columns of the table.
 	Columns []QuerySpanResult
-}
-
-func (p *PseudoTable) GetQuerySpanResult() []QuerySpanResult {
-	result := make([]QuerySpanResult, 0, len(p.Columns))
-	result = append(result, p.Columns...)
-
-	return result
 }
 
 func (p *PseudoTable) GetTableName() string {
@@ -140,25 +132,6 @@ func (p *PhysicalTable) GetDatabaseName() string {
 
 func (p *PhysicalTable) GetServerName() string {
 	return p.Server
-}
-
-func (p *PhysicalTable) GetQuerySpanResult() []QuerySpanResult {
-	result := make([]QuerySpanResult, 0, len(p.Columns))
-	for _, column := range p.Columns {
-		sourceColumnSet := make(SourceColumnSet, 1)
-		sourceColumnSet[ColumnResource{
-			Server:   p.Server,
-			Database: p.Database,
-			Schema:   p.Schema,
-			Table:    p.Name,
-			Column:   column,
-		}] = true
-		result = append(result, QuerySpanResult{
-			Name:          column,
-			SourceColumns: sourceColumnSet,
-		})
-	}
-	return result
 }
 
 // String returns the string format of the column resource.

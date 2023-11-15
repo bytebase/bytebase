@@ -1112,9 +1112,18 @@
     },
     "error": {
       "issue-is-not-open": "The issue is not open",
-      "you-don-have-privilege-to-edit-this-issue": "You don't have privilege to edit this issue"
+      "you-don-have-privilege-to-edit-this-issue": "You don't have privilege to edit this issue",
+      "you-are-not-allowed-to-perform-this-action": "You are not allowed to perform this action"
     },
-    "approval-requested": "Approval Requested"
+    "approval-requested": "Approval Requested",
+    "assignee": {
+      "project-members": "Project members",
+      "workspace-owners": "Workspace owners",
+      "workspace-dbas": "DBA",
+      "project-owners": "Project owners",
+      "releasers-of-current-stage": "Releasers of current stage",
+      "approvers-of-current-step": "Approvers of current step"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",

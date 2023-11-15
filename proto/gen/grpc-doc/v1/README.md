@@ -189,6 +189,7 @@
     - [SyncDatabaseResponse](#bytebase-v1-SyncDatabaseResponse)
     - [TableConfig](#bytebase-v1-TableConfig)
     - [TableMetadata](#bytebase-v1-TableMetadata)
+    - [TablePartitionMetadata](#bytebase-v1-TablePartitionMetadata)
     - [TaskMetadata](#bytebase-v1-TaskMetadata)
     - [UpdateBackupSettingRequest](#bytebase-v1-UpdateBackupSettingRequest)
     - [UpdateDatabaseMetadataRequest](#bytebase-v1-UpdateDatabaseMetadataRequest)
@@ -205,6 +206,7 @@
     - [DatabaseMetadataView](#bytebase-v1-DatabaseMetadataView)
     - [StreamMetadata.Mode](#bytebase-v1-StreamMetadata-Mode)
     - [StreamMetadata.Type](#bytebase-v1-StreamMetadata-Type)
+    - [TablePartitionMetadata.Type](#bytebase-v1-TablePartitionMetadata-Type)
     - [TaskMetadata.State](#bytebase-v1-TaskMetadata-State)
   
     - [DatabaseService](#bytebase-v1-DatabaseService)
@@ -3434,6 +3436,25 @@ TableMetadata is the metadata for tables.
 | classification | [string](#string) |  | The classification is the classification of a table parsed from the comment. |
 | user_comment | [string](#string) |  | The user_comment is the user comment of a table parsed from the comment. |
 | foreign_keys | [ForeignKeyMetadata](#bytebase-v1-ForeignKeyMetadata) | repeated | The foreign_keys is the list of foreign keys in a table. |
+| partitions | [TablePartitionMetadata](#bytebase-v1-TablePartitionMetadata) | repeated | The partitions is the list of partitions in a table. |
+
+
+
+
+
+
+<a name="bytebase-v1-TablePartitionMetadata"></a>
+
+### TablePartitionMetadata
+TablePartitionMetadata is the metadata for table partitions.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a table partition. |
+| type | [TablePartitionMetadata.Type](#bytebase-v1-TablePartitionMetadata-Type) |  | The type of a table partition. |
+| expression | [string](#string) |  | The expression is the expression of a table partition. |
+| subpartitions | [TablePartitionMetadata](#bytebase-v1-TablePartitionMetadata) | repeated | The subpartitions is the list of subpartitions in a table partition. |
 
 
 
@@ -3674,6 +3695,20 @@ The type of the backup.
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
 | TYPE_DELTA | 1 |  |
+
+
+
+<a name="bytebase-v1-TablePartitionMetadata-Type"></a>
+
+### TablePartitionMetadata.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| RANGE | 1 |  |
+| LIST | 2 |  |
+| HASH | 3 |  |
 
 
 
@@ -5665,6 +5700,7 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 | plan | [string](#string) |  | The plan associated with the issue. Can be empty. Format: projects/{project}/plans/{plan} |
 | rollout | [string](#string) |  | The rollout associated with the issue. Can be empty. Format: projects/{project}/rollouts/{rollout} |
 | grant_request | [GrantRequest](#bytebase-v1-GrantRequest) |  | Used if the issue type is GRANT_REQUEST. |
+| releasers | [string](#string) | repeated | The releasers of the pending stage of the issue rollout, judging from the rollout policy. If the policy is auto rollout, the releasers are the project owners and the issue creator. Format: - roles/workspaceOwner - roles/workspaceDBA - roles/projectOwner - roles/projectReleaser - users/{email} |
 
 
 
@@ -9939,6 +9975,7 @@ Type of the SheetPayload.
 | statement | [string](#string) |  | The SQL statement to execute. |
 | limit | [int32](#int32) |  | The maximum number of rows to return. |
 | timeout | [google.protobuf.Duration](#google-protobuf-Duration) | optional | The timeout for the request. |
+| data_source_id | [string](#string) |  | The id of data source. It is used for querying admin data source even if the instance has read-only data sources. Or it can be used to query a specific read-only data source. |
 
 
 

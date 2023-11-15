@@ -4,23 +4,22 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pingcap/tidb/parser/ast"
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
+	mysql "github.com/bytebase/mysql-parser"
+
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*NamingFKConventionAdvisor)(nil)
-	_ ast.Visitor     = (*namingFKConventionChecker)(nil)
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLNamingFKConvention, &NamingFKConventionAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLNamingFKConvention, &NamingFKConventionAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLNamingFKConvention, &NamingFKConventionAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLNamingFKConvention, &NamingFKConventionAdvisor{})
+	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLNamingFKConvention, &NamingFKConventionAdvisor{})
 }
 
 // NamingFKConventionAdvisor is the advisor checking for foreign key naming convention.
@@ -29,9 +28,9 @@ type NamingFKConventionAdvisor struct {
 
 // Check checks for foreign key naming convention.
 func (*NamingFKConventionAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	root, ok := ctx.AST.([]ast.StmtNode)
+	root, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to StmtNode")
+		return nil, errors.Errorf("failed to convert to mysql parse result")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -51,7 +50,8 @@ func (*NamingFKConventionAdvisor) Check(ctx advisor.Context, _ string) ([]adviso
 		templateList: templateList,
 	}
 	for _, stmtNode := range root {
-		(stmtNode).Accept(checker)
+		checker.baseLine = stmtNode.BaseLine
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtNode.Tree)
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -67,6 +67,10 @@ func (*NamingFKConventionAdvisor) Check(ctx advisor.Context, _ string) ([]adviso
 }
 
 type namingFKConventionChecker struct {
+	*mysql.BaseMySQLParserListener
+
+	baseLine     int
+	text         string
 	adviceList   []advisor.Advice
 	level        advisor.Status
 	title        string
@@ -75,10 +79,67 @@ type namingFKConventionChecker struct {
 	templateList []string
 }
 
-// Enter implements the ast.Visitor interface.
-func (checker *namingFKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
-	indexDataList := checker.getMetaDataList(in)
+func (checker *namingFKConventionChecker) EnterQuery(ctx *mysql.QueryContext) {
+	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+}
 
+func (checker *namingFKConventionChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if ctx.TableName() == nil {
+		return
+	}
+	if ctx.TableElementList() == nil {
+		return
+	}
+
+	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
+
+	var indexDataList []*indexMetaData
+	for _, tableElement := range ctx.TableElementList().AllTableElement() {
+		if tableElement == nil {
+			continue
+		}
+		if tableElement.TableConstraintDef() == nil {
+			continue
+		}
+		if metaData := checker.handleConstraintDef(tableName, tableElement.TableConstraintDef()); metaData != nil {
+			indexDataList = append(indexDataList, metaData)
+		}
+	}
+	checker.handleIndexList(indexDataList)
+}
+
+func (checker *namingFKConventionChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if ctx.AlterTableActions() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
+		return
+	}
+	if ctx.TableRef() == nil {
+		return
+	}
+
+	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
+	var indexDataList []*indexMetaData
+	for _, alterListItem := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
+		if alterListItem == nil {
+			continue
+		}
+
+		// add constriant.
+		if alterListItem.ADD_SYMBOL() != nil && alterListItem.TableConstraintDef() != nil {
+			if metaData := checker.handleConstraintDef(tableName, alterListItem.TableConstraintDef()); metaData != nil {
+				indexDataList = append(indexDataList, metaData)
+			}
+		}
+	}
+	checker.handleIndexList(indexDataList)
+}
+
+func (checker *namingFKConventionChecker) handleIndexList(indexDataList []*indexMetaData) {
 	for _, indexData := range indexDataList {
 		regex, err := getTemplateRegexp(checker.format, checker.templateList, indexData.metaData)
 		if err != nil {
@@ -86,7 +147,7 @@ func (checker *namingFKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 				Status:  checker.level,
 				Code:    advisor.Internal,
 				Title:   "Internal error for foreign key naming convention rule",
-				Content: fmt.Sprintf("%q meet internal error %q", in.Text(), err.Error()),
+				Content: fmt.Sprintf("%q meet internal error %q", checker.text, err.Error()),
 			})
 			continue
 		}
@@ -109,74 +170,45 @@ func (checker *namingFKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 			})
 		}
 	}
-
-	return in, false
 }
 
-// Leave implements the ast.Visitor interface.
-func (*namingFKConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
-}
-
-// getMetaDataList returns the list of foreign key with meta data.
-func (*namingFKConventionChecker) getMetaDataList(in ast.Node) []*indexMetaData {
-	var res []*indexMetaData
-
-	switch node := in.(type) {
-	case *ast.CreateTableStmt:
-		for _, constraint := range node.Constraints {
-			if constraint.Tp == ast.ConstraintForeignKey {
-				var referencingColumnList []string
-				for _, key := range constraint.Keys {
-					referencingColumnList = append(referencingColumnList, key.Column.Name.String())
-				}
-				var referencedColumnList []string
-				for _, spec := range constraint.Refer.IndexPartSpecifications {
-					referencedColumnList = append(referencedColumnList, spec.Column.Name.String())
-				}
-
-				metaData := map[string]string{
-					advisor.ReferencingTableNameTemplateToken:  node.Table.Name.String(),
-					advisor.ReferencingColumnNameTemplateToken: strings.Join(referencingColumnList, "_"),
-					advisor.ReferencedTableNameTemplateToken:   constraint.Refer.Table.Name.String(),
-					advisor.ReferencedColumnNameTemplateToken:  strings.Join(referencedColumnList, "_"),
-				}
-
-				res = append(res, &indexMetaData{
-					indexName: constraint.Name,
-					tableName: node.Table.Name.String(),
-					metaData:  metaData,
-					line:      constraint.OriginTextPosition(),
-				})
-			}
-		}
-	case *ast.AlterTableStmt:
-		for _, spec := range node.Specs {
-			if spec.Tp == ast.AlterTableAddConstraint && spec.Constraint.Tp == ast.ConstraintForeignKey {
-				var referencingColumnList []string
-				for _, key := range spec.Constraint.Keys {
-					referencingColumnList = append(referencingColumnList, key.Column.Name.String())
-				}
-				var referencedColumnList []string
-				for _, spec := range spec.Constraint.Refer.IndexPartSpecifications {
-					referencedColumnList = append(referencedColumnList, spec.Column.Name.String())
-				}
-
-				metaData := map[string]string{
-					advisor.ReferencingTableNameTemplateToken:  node.Table.Name.String(),
-					advisor.ReferencingColumnNameTemplateToken: strings.Join(referencingColumnList, "_"),
-					advisor.ReferencedTableNameTemplateToken:   spec.Constraint.Refer.Table.Name.String(),
-					advisor.ReferencedColumnNameTemplateToken:  strings.Join(referencedColumnList, "_"),
-				}
-				res = append(res, &indexMetaData{
-					indexName: spec.Constraint.Name,
-					tableName: node.Table.Name.String(),
-					metaData:  metaData,
-					line:      in.OriginTextPosition(),
-				})
-			}
-		}
+func (checker *namingFKConventionChecker) handleConstraintDef(tableName string, ctx mysql.ITableConstraintDefContext) *indexMetaData {
+	// focus on foreign index.
+	if ctx.FOREIGN_SYMBOL() == nil || ctx.KEY_SYMBOL() == nil || ctx.KeyList() == nil || ctx.References() == nil {
+		return nil
 	}
 
-	return res
+	indexName := ""
+	// for mysql, foreign key use constraint name as unique identifier.
+	if ctx.ConstraintName() != nil {
+		indexName = mysqlparser.NormalizeConstraintName(ctx.ConstraintName())
+	}
+
+	referencingColumnList := mysqlparser.NormalizeKeyList(ctx.KeyList())
+	referencedTable, referencedColumnList := checker.handleReferences(ctx.References())
+	metaData := map[string]string{
+		advisor.ReferencingTableNameTemplateToken:  tableName,
+		advisor.ReferencingColumnNameTemplateToken: strings.Join(referencingColumnList, "_"),
+		advisor.ReferencedTableNameTemplateToken:   referencedTable,
+		advisor.ReferencedColumnNameTemplateToken:  strings.Join(referencedColumnList, "_"),
+	}
+	return &indexMetaData{
+		indexName: indexName,
+		tableName: tableName,
+		metaData:  metaData,
+		line:      checker.baseLine + ctx.GetStart().GetLine(),
+	}
+}
+
+func (*namingFKConventionChecker) handleReferences(ctx mysql.IReferencesContext) (string, []string) {
+	tableName := ""
+	if ctx.TableRef() != nil {
+		_, tableName = mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
+	}
+
+	var columns []string
+	if ctx.IdentifierListWithParentheses() != nil {
+		columns = mysqlparser.NormalizeIdentifierListWithParentheses(ctx.IdentifierListWithParentheses())
+	}
+	return tableName, columns
 }

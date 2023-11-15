@@ -1,22 +1,21 @@
 <template>
   <div class="w-full mt-4 space-y-4">
-    <FeatureAttentionForInstanceLicense
-      v-if="hasSensitiveDataFeature"
+    <FeatureAttention
+      v-if="!hasSensitiveDataFeature"
       feature="bb.feature.sensitive-data"
     />
-    <FeatureAttention v-else feature="bb.feature.sensitive-data" />
     <NTabs v-model:value="state.selectedTab" type="line">
-      <NTabPane
-        name="sensitive-column-list"
-        :tab="$t('settings.sensitive-data.sensitive-column-list')"
-      >
-        <SensitiveColumnView />
-      </NTabPane>
       <NTabPane
         name="global-masking-rule"
         :tab="$t('settings.sensitive-data.global-rules.self')"
       >
         <GlobalMaskingRulesView />
+      </NTabPane>
+      <NTabPane
+        name="sensitive-column-list"
+        :tab="$t('settings.sensitive-data.sensitive-column-list')"
+      >
+        <SensitiveColumnView />
       </NTabPane>
       <NTabPane
         v-if="isDev()"

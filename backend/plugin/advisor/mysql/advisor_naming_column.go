@@ -4,23 +4,20 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/pingcap/tidb/parser/ast"
+	"github.com/antlr4-go/antlr/v4"
+	mysql "github.com/bytebase/mysql-parser"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-var (
-	_ advisor.Advisor = (*NamingColumnConventionAdvisor)(nil)
-	_ ast.Visitor     = (*namingColumnConventionChecker)(nil)
-)
+var _ advisor.Advisor = (*NamingColumnConventionAdvisor)(nil)
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLNamingColumnConvention, &NamingColumnConventionAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLNamingColumnConvention, &NamingColumnConventionAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLNamingColumnConvention, &NamingColumnConventionAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLNamingColumnConvention, &NamingColumnConventionAdvisor{})
+	// only for mysqlwip test.
+	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLNamingColumnConvention, &NamingColumnConventionAdvisor{})
 }
 
 // NamingColumnConventionAdvisor is the advisor checking for column naming convention.
@@ -29,9 +26,9 @@ type NamingColumnConventionAdvisor struct {
 
 // Check checks for column naming convention.
 func (*NamingColumnConventionAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	root, ok := ctx.AST.([]ast.StmtNode)
+	list, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to StmtNode")
+		return nil, errors.Errorf("failed to convert to mysql ParseResult")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -50,8 +47,9 @@ func (*NamingColumnConventionAdvisor) Check(ctx advisor.Context, _ string) ([]ad
 		tables:    make(tableState),
 	}
 
-	for _, stmtNode := range root {
-		(stmtNode).Accept(checker)
+	for _, stmt := range list {
+		checker.baseLine = stmt.BaseLine
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -67,6 +65,9 @@ func (*NamingColumnConventionAdvisor) Check(ctx advisor.Context, _ string) ([]ad
 }
 
 type namingColumnConventionChecker struct {
+	*mysql.BaseMySQLParserListener
+
+	baseLine   int
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
@@ -75,78 +76,102 @@ type namingColumnConventionChecker struct {
 	tables     tableState
 }
 
-// Enter implements the ast.Visitor interface.
-func (v *namingColumnConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
-	type columnData struct {
-		name string
-		line int
+// EnterCreateTable is called when production createTable is entered.
+func (checker *namingColumnConventionChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if ctx.TableName() == nil {
+		return
 	}
-	var columnList []columnData
-	var tableName string
-	switch node := in.(type) {
-	// CREATE TABLE
-	case *ast.CreateTableStmt:
-		tableName = node.Table.Name.O
-		for _, column := range node.Cols {
-			columnList = append(columnList, columnData{
-				name: column.Name.Name.O,
-				line: column.OriginTextPosition(),
-			})
-		}
-	// ALTER TABLE
-	case *ast.AlterTableStmt:
-		tableName = node.Table.Name.O
-		for _, spec := range node.Specs {
-			switch spec.Tp {
-			// RENAME COLUMN
-			case ast.AlterTableRenameColumn:
-				columnList = append(columnList, columnData{
-					name: spec.NewColumnName.Name.O,
-					line: in.OriginTextPosition(),
-				})
-			// ADD COLUMNS
-			case ast.AlterTableAddColumns:
-				for _, column := range spec.NewColumns {
-					columnList = append(columnList, columnData{
-						name: column.Name.Name.O,
-						line: in.OriginTextPosition(),
-					})
-				}
-			// CHANGE COLUMN
-			case ast.AlterTableChangeColumn:
-				columnList = append(columnList, columnData{
-					name: spec.NewColumns[0].Name.Name.O,
-					line: in.OriginTextPosition(),
-				})
-			}
-		}
+	if ctx.TableElementList() == nil {
+		return
 	}
 
-	for _, column := range columnList {
-		if !v.format.MatchString(column.name) {
-			v.adviceList = append(v.adviceList, advisor.Advice{
-				Status:  v.level,
-				Code:    advisor.NamingColumnConventionMismatch,
-				Title:   v.title,
-				Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention, naming format should be %q", tableName, column.name, v.format),
-				Line:    column.line,
-			})
+	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
+	for _, tableElement := range ctx.TableElementList().AllTableElement() {
+		if tableElement == nil {
+			continue
 		}
-		if v.maxLength > 0 && len(column.name) > v.maxLength {
-			v.adviceList = append(v.adviceList, advisor.Advice{
-				Status:  v.level,
-				Code:    advisor.NamingColumnConventionMismatch,
-				Title:   v.title,
-				Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention, its length should be within %d characters", tableName, column.name, v.maxLength),
-				Line:    column.line,
-			})
+		if tableElement.ColumnDefinition() == nil {
+			continue
 		}
-	}
+		if tableElement.ColumnDefinition().ColumnName() == nil {
+			continue
+		}
 
-	return in, false
+		_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
+		checker.handleColumn(tableName, columnName, tableElement.GetStart().GetLine())
+	}
 }
 
-// Leave implements the ast.Visitor interface.
-func (*namingColumnConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
+// EnterAlterTable is called when production alterTable is entered.
+func (checker *namingColumnConventionChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if ctx.AlterTableActions() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
+		return
+	}
+
+	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
+	// alter table add column, change column, modify column.
+	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
+		if item == nil {
+			continue
+		}
+
+		switch {
+		// add column
+		case item.ADD_SYMBOL() != nil:
+			switch {
+			case item.Identifier() != nil && item.FieldDefinition() != nil:
+				columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+				checker.handleColumn(tableName, columnName, item.GetStart().GetLine())
+			case item.OPEN_PAR_SYMBOL() != nil && item.TableElementList() != nil:
+				for _, tableElement := range item.TableElementList().AllTableElement() {
+					if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().ColumnName() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil {
+						continue
+					}
+					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
+					checker.handleColumn(tableName, columnName, tableElement.GetStart().GetLine())
+				}
+			}
+		// rename column
+		case item.RENAME_SYMBOL() != nil && item.COLUMN_SYMBOL() != nil:
+			// only focus on new column-name.
+			columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+			checker.handleColumn(tableName, columnName, item.GetStart().GetLine())
+		// change column
+		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil:
+			// only focus on new column-name.
+			columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+			checker.handleColumn(tableName, columnName, item.GetStart().GetLine())
+		default:
+			continue
+		}
+	}
+}
+
+func (checker *namingColumnConventionChecker) handleColumn(tableName string, columnName string, lineNumber int) {
+	// we need to accumulate line number for each statement and elements of statements.
+	lineNumber += checker.baseLine
+	if !checker.format.MatchString(columnName) {
+		checker.adviceList = append(checker.adviceList, advisor.Advice{
+			Status:  checker.level,
+			Code:    advisor.NamingColumnConventionMismatch,
+			Title:   checker.title,
+			Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention, naming format should be %q", tableName, columnName, checker.format),
+			Line:    lineNumber,
+		})
+	}
+	if checker.maxLength > 0 && len(columnName) > checker.maxLength {
+		checker.adviceList = append(checker.adviceList, advisor.Advice{
+			Status:  checker.level,
+			Code:    advisor.NamingColumnConventionMismatch,
+			Title:   checker.title,
+			Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention, its length should be within %d characters", tableName, columnName, checker.maxLength),
+			Line:    lineNumber,
+		})
+	}
 }

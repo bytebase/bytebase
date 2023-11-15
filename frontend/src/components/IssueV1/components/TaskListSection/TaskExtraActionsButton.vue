@@ -45,7 +45,7 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
-const { events, isCreating, activeTask, issue, assigneeCandidates } =
+const { events, isCreating, activeTask, issue, releaserCandidates } =
   useIssueContext();
 
 const actionList = computed(() => {
@@ -62,7 +62,7 @@ const allowUserToSkipTask = asyncComputed(() => {
     props.task,
     currentUser.value,
     "SKIP",
-    assigneeCandidates.value
+    releaserCandidates.value
   );
 });
 

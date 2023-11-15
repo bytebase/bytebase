@@ -68,12 +68,22 @@ func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *store.
 // GetReadOnlyDatabaseDriver gets the read-only database driver using the instance's read-only data source.
 // If the read-only data source is not defined, we will fallback to admin data source.
 // Upon successful return, caller must call driver.Close(). Otherwise, it will leak the database connection.
-func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage) (db.Driver, error) {
-	dataSource := utils.DataSourceFromInstanceWithType(instance, api.RO)
-	adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
-	// If there are no read-only data source, fall back to admin data source.
-	if dataSource == nil {
-		dataSource = adminDataSource
+func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, dataSourceID string) (db.Driver, error) {
+	var dataSource *store.DataSourceMessage
+	if dataSourceID == "" {
+		dataSource = utils.DataSourceFromInstanceWithType(instance, api.RO)
+		adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
+		// If there are no read-only data source, fall back to admin data source.
+		if dataSource == nil {
+			dataSource = adminDataSource
+		}
+	} else {
+		for _, ds := range instance.DataSources {
+			if ds.ID == dataSourceID {
+				dataSource = ds
+				break
+			}
+		}
 	}
 	if dataSource == nil {
 		return nil, common.Errorf(common.Internal, "data source not found for instance %q", instance.Title)
