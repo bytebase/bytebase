@@ -1,9 +1,9 @@
 <template>
-  <slot />
+  <slot v-if="!isLoading" />
 </template>
 
 <script lang="ts" setup>
-import { onMounted, computed, watch } from "vue";
+import { onMounted, computed, watch, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import {
@@ -44,6 +44,7 @@ import {
 const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
+const isLoading = ref<boolean>(true);
 
 const currentUserV1 = useCurrentUserV1();
 const projectStpre = useProjectV1Store();
@@ -340,5 +341,6 @@ onMounted(async () => {
   await useSettingV1Store().fetchSettingList();
 
   syncURLWithConnection();
+  isLoading.value = false;
 });
 </script>
