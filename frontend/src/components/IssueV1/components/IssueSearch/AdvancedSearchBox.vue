@@ -93,8 +93,7 @@ import {
   extractInstanceResourceName,
   SearchParams,
   SearchScopeId,
-  buildSearchTextBySearchParams,
-  buildSearchParamsBySearchText,
+  isValidSearchScopeId,
 } from "@/utils";
 
 const props = withDefaults(
@@ -134,8 +133,19 @@ interface SearchScope {
   options: SearchOption[];
 }
 
+const buildSearchTextByParams = (params: SearchParams | undefined): string => {
+  const prefix = (params?.scopes ?? [])
+    .map((scope) => `${scope.id}:${scope.value}`)
+    .join(" ");
+  const query = params?.query ?? "";
+  if (!prefix && !query) {
+    return "";
+  }
+  return `${prefix} ${query}`;
+};
+
 const state = reactive<LocalState>({
-  searchText: buildSearchTextBySearchParams(props.params),
+  searchText: buildSearchTextByParams(props.params),
   showSearchScopes: props.autofocus,
 });
 const me = useCurrentUserV1();
@@ -153,7 +163,7 @@ watch(
 watch(
   () => props.params,
   (params) => {
-    state.searchText = buildSearchTextBySearchParams(params);
+    state.searchText = buildSearchTextByParams(params);
   }
 );
 
@@ -311,7 +321,7 @@ const fullScopes = computed((): SearchScope[] => {
 // filteredScopes will filter search options by chosen scope.
 // For example, if users select a specific project, we should only allow them select instances related with this project.
 const filteredScopes = computed((): SearchScope[] => {
-  const params = buildSearchParamsBySearchText(state.searchText);
+  const params = getSearchParamsByText(state.searchText);
   const existedScope = new Map<SearchScopeId, string>(
     params.scopes.map((scope) => [scope.id, scope.value])
   );
@@ -349,7 +359,7 @@ const filteredScopes = computed((): SearchScope[] => {
 // searchScopes will hide chosen search scope.
 // For example, if uses already select the instance, we should NOT show the instance scope in the dropdown.
 const searchScopes = computed((): SearchScope[] => {
-  const params = buildSearchParamsBySearchText(state.searchText);
+  const params = getSearchParamsByText(state.searchText);
   const existedScope = new Set<SearchScopeId>(
     params.scopes.map((scope) => scope.id)
   );
@@ -386,7 +396,7 @@ const onOptionSelect = (scopeValue: string) => {
   if (!scopeId) {
     return;
   }
-  const params = buildSearchParamsBySearchText(state.searchText);
+  const params = getSearchParamsByText(state.searchText);
   const index = params.scopes.findIndex((s) => s.id === scopeId);
   if (index < 0) {
     params.scopes.push({
@@ -399,7 +409,7 @@ const onOptionSelect = (scopeValue: string) => {
       value: scopeValue,
     };
   }
-  state.searchText = buildSearchTextBySearchParams(params);
+  state.searchText = buildSearchTextByParams(params);
   debouncedUpdate();
   onClear();
 
@@ -414,12 +424,43 @@ const onClear = () => {
 };
 
 const debouncedUpdate = debounce(() => {
-  emit("update:params", buildSearchParamsBySearchText(state.searchText));
+  emit("update:params", getSearchParamsByText(state.searchText));
 }, 500);
 
 const onUpdate = (value: string) => {
   state.searchText = value;
   debouncedUpdate();
+};
+
+const query = computed(() => {
+  const sections = state.searchText.split(" ");
+  let i = 0;
+  while (i < sections.length) {
+    const section = sections[i];
+    const keyword = section.split(":")[0];
+    if (!isValidSearchScopeId(keyword)) {
+      break;
+    }
+    i++;
+  }
+  return sections.slice(i).join(" ");
+});
+
+const getSearchParamsByText = (text: string): SearchParams => {
+  const plainQuery = query.value.trim();
+  const scopeText = plainQuery ? text.split(plainQuery)[0] || "" : text;
+  return {
+    query: plainQuery,
+    scopes: scopeText
+      .split(" ")
+      .map((scope) => {
+        return {
+          id: scope.split(":")[0] as SearchScopeId,
+          value: scope.split(":")[1],
+        };
+      })
+      .filter((scope) => scope.id && scope.value),
+  };
 };
 
 onMounted(() => {
