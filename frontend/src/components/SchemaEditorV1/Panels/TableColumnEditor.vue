@@ -299,7 +299,7 @@ import { useSettingV1Store, useSubscriptionV1Store } from "@/store/modules";
 import { Engine } from "@/types/proto/v1/common";
 import { ColumnConfig } from "@/types/proto/v1/database_service";
 import { Table, Column, ForeignKey } from "@/types/v1/schemaEditor";
-import { getDataTypeSuggestionList, isDev } from "@/utils";
+import { getDataTypeSuggestionList } from "@/utils";
 import ColumnDefaultValueExpressionModal from "../Modals/ColumnDefaultValueExpressionModal.vue";
 import {
   getColumnDefaultDisplayString,

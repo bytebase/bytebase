@@ -191,11 +191,7 @@ import {
 } from "@/types/proto/v1/database_service";
 import { MaskData } from "@/types/proto/v1/org_policy_service";
 import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
-import {
-  hasWorkspacePermissionV1,
-  hasPermissionInProjectV1,
-  isDev,
-} from "@/utils";
+import { hasWorkspacePermissionV1, hasPermissionInProjectV1 } from "@/utils";
 
 type LocalState = {
   showFeatureModal: boolean;
