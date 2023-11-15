@@ -158,28 +158,6 @@ export const isDatabaseV1Queryable = (
     // The current plan doesn't have access control feature.
     // Fallback to true.
     return true;
-  } else {
-    const name = `${policyNamePrefix}${policyTypeToJSON(
-      PolicyType.WORKSPACE_IAM
-    )}`;
-    const policy = usePolicyV1Store().getPolicyByName(name);
-    if (policy) {
-      const bindings = policy.workspaceIamPolicy?.bindings;
-      if (bindings) {
-        const querierBinding = bindings.find(
-          (binding) => binding.role === "roles/QUERIER"
-        );
-        if (querierBinding) {
-          const simpleExpr = resolveCELExpr(
-            querierBinding.parsedExpr?.expr || Expr.fromPartial({})
-          );
-          const envNameList = extractEnvironmentNameListFromExpr(simpleExpr);
-          if (envNameList.includes(database.effectiveEnvironment)) {
-            return true;
-          }
-        }
-      }
-    }
   }
 
   if (
@@ -196,6 +174,28 @@ export const isDatabaseV1Queryable = (
   const currentUserIamPolicy = useCurrentUserIamPolicy();
   if (currentUserIamPolicy.allowToQueryDatabaseV1(database)) {
     return true;
+  }
+
+  const name = `${policyNamePrefix}${policyTypeToJSON(
+    PolicyType.WORKSPACE_IAM
+  )}`;
+  const policy = usePolicyV1Store().getPolicyByName(name);
+  if (policy) {
+    const bindings = policy.workspaceIamPolicy?.bindings;
+    if (bindings) {
+      const querierBinding = bindings.find(
+        (binding) => binding.role === "roles/QUERIER"
+      );
+      if (querierBinding) {
+        const simpleExpr = resolveCELExpr(
+          querierBinding.parsedExpr?.expr || Expr.fromPartial({})
+        );
+        const envNameList = extractEnvironmentNameListFromExpr(simpleExpr);
+        if (envNameList.includes(database.effectiveEnvironment)) {
+          return true;
+        }
+      }
+    }
   }
 
   // denied otherwise
