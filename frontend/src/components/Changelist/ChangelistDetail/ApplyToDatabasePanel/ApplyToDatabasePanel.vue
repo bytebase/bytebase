@@ -1,5 +1,5 @@
 <template>
-  <Drawer :show="show" :close-on-esc="true" @close="show = false">
+  <Drawer v-model:show="show">
     <DrawerContent :title="$t('changelist.apply-to-database')">
       <template #default>
         <div

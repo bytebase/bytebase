@@ -4,7 +4,7 @@
     :title="title"
     :subtitle="subtitle"
     :show-close="closable"
-    :esc-closable="closable"
+    :close-on-esc="closable"
     @close="onNegativeClick"
   >
     <slot name="default"></slot>

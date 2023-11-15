@@ -70,12 +70,7 @@
       </template>
     </div>
 
-    <Drawer
-      v-model:show="detail.show"
-      :close-on-esc="true"
-      :trap-focus="true"
-      @close="detail.show = false"
-    >
+    <Drawer v-model:show="detail.show" @close="detail.show = false">
       <DetailPanel v-if="detail.show" :result-set="resultSet" />
     </Drawer>
   </NConfigProvider>

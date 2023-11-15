@@ -1,12 +1,10 @@
 <template>
-  <NDrawer
+  <Drawer
     :show="slowQueryLog !== undefined"
-    :auto-focus="false"
     width="auto"
-    :z-index="30"
     @update:show="(show: boolean) => !show && $emit('close')"
   >
-    <NDrawerContent
+    <DrawerContent
       :title="$t('slow-query.detail')"
       :closable="true"
       class="w-[calc(100vw-2rem)] lg:max-w-[64rem] xl:max-w-[72rem]"
@@ -119,12 +117,12 @@
           </BBGrid>
         </div>
       </div>
-    </NDrawerContent>
-  </NDrawer>
+    </DrawerContent>
+  </Drawer>
 </template>
 
 <script lang="ts" setup>
-import { NButton, NDrawer, NDrawerContent } from "naive-ui";
+import { NButton } from "naive-ui";
 import { computed, shallowRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
@@ -134,6 +132,8 @@ import {
   InstanceV1Name,
   EnvironmentV1Name,
   ProjectV1Name,
+  Drawer,
+  DrawerContent,
 } from "@/components/v2";
 import type { ComposedSlowQueryLog } from "@/types";
 import type { SlowQueryDetails } from "@/types/proto/v1/database_service";

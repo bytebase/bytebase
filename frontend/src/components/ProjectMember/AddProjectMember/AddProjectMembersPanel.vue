@@ -1,11 +1,10 @@
 <template>
-  <NDrawer
+  <Drawer
     :show="true"
     width="auto"
-    :auto-focus="false"
     @update:show="(show: boolean) => !show && $emit('close')"
   >
-    <NDrawerContent
+    <DrawerContent
       :title="$t('project.members.grant-access')"
       :closable="true"
       class="w-[50rem] max-w-[100vw] relative"
@@ -39,15 +38,16 @@
           </NButton>
         </div>
       </template>
-    </NDrawerContent>
-  </NDrawer>
+    </DrawerContent>
+  </Drawer>
 </template>
 
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
-import { NDrawer, NDrawerContent, NButton } from "naive-ui";
+import { NButton } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { Drawer, DrawerContent } from "@/components/v2";
 import {
   pushNotification,
   useProjectIamPolicy,
