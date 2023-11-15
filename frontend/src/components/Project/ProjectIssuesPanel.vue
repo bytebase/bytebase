@@ -1,95 +1,83 @@
 <template>
-  <div class="space-y-2">
-    <div class="flex items-center">
-      <div class="flex-1 overflow-hidden">
-        <TabFilter v-model:value="state.tab" :items="tabItemList" />
-      </div>
-      <div class="flex flex-row space-x-4 p-0.5">
-        <router-link
-          :to="`/issue?project=${project.uid}`"
-          class="flex space-x-1 items-center normal-link !whitespace-nowrap"
-        >
-          <heroicons-outline:search class="h-4 w-4" />
-          <span class="hidden md:block">{{
-            $t("issue.advanced-search.self")
-          }}</span>
-        </router-link>
-      </div>
-    </div>
+  <div class="flex flex-col gap-y-2">
+    <IssueSearch
+      v-model:params="state.params"
+      :components="['status', 'time-range']"
+      :component-props="{
+        status: tab === 'RECENTLY_CLOSED' ? { disabled: true } : undefined,
+      }"
+    >
+      <template #default>
+        <div class="flex items-center gap-x-2">
+          <div class="flex-1 overflow-auto">
+            <TabFilter v-model:value="tab" :items="tabItemList" />
+          </div>
+          <div class="flex items-center">
+            <router-link
+              :to="issueLink"
+              class="flex items-center gap-x-1 normal-link whitespace-nowrap text-sm"
+            >
+              <SearchIcon class="w-4 h-4" />
+              <span class="hidden md:block">
+                {{ $t("issue.advanced-search.self") }}
+              </span>
+            </router-link>
+          </div>
+        </div>
+      </template>
+    </IssueSearch>
 
-    <div v-show="state.tab === 'WAITING_APPROVAL'" class="mt-2">
+    <div v-if="hasCustomApprovalFeature" v-show="tab === 'WAITING_APPROVAL'">
       <PagedIssueTableV1
-        v-if="hasCustomApprovalFeature"
         session-key="project-waiting-approval"
-        :issue-filter="{
-          ...commonIssueFilter,
-          statusList: [IssueStatus.OPEN],
-        }"
-        :ui-issue-filter="{
-          approval: 'pending',
-        }"
+        :issue-filter="mergeIssueFilterByTab('WAITING_APPROVAL')"
+        :ui-issue-filter="mergeUIIssueFilterByTab('WAITING_APPROVAL')"
       >
         <template #table="{ issueList, loading }">
           <IssueTableV1
-            :mode="'PROJECT'"
+            mode="PROJECT"
             :show-placeholder="!loading"
             :issue-list="issueList"
-            title=""
           />
         </template>
       </PagedIssueTableV1>
     </div>
 
-    <div v-show="state.tab === 'OPEN'" class="mt-2">
-      <!-- show OPEN issues with pageSize=10 -->
+    <div v-show="tab === 'WAITING_ROLLOUT'">
       <PagedIssueTableV1
-        session-key="project-open"
-        :issue-filter="{
-          ...commonIssueFilter,
-          statusList: [IssueStatus.OPEN],
-        }"
-        :page-size="50"
+        session-key="project-waiting-rollout"
+        :issue-filter="mergeIssueFilterByTab('WAITING_ROLLOUT')"
+        :ui-issue-filter="mergeUIIssueFilterByTab('WAITING_ROLLOUT')"
       >
         <template #table="{ issueList, loading }">
           <IssueTableV1
-            class="-mt-px"
-            :mode="'PROJECT'"
+            mode="PROJECT"
             :issue-list="issueList"
             :show-placeholder="!loading"
-            title=""
           />
         </template>
       </PagedIssueTableV1>
     </div>
 
-    <div v-show="state.tab === 'RECENTLY_CLOSED'" class="mt-2">
-      <!-- show the first 5 DONE or CANCELED issues -->
-      <!-- But won't show "Load more", since we have a "View all closed" link below -->
+    <div v-show="tab === 'RECENTLY_CLOSED'" class="flex flex-col gap-y-2 pb-2">
+      <!-- Won't show "Load more", since we have a "View all closed" link below -->
       <PagedIssueTableV1
         session-key="project-closed"
-        :issue-filter="{
-          ...commonIssueFilter,
-          statusList: [IssueStatus.DONE, IssueStatus.CANCELED],
-        }"
-        :page-size="50"
+        :issue-filter="mergeIssueFilterByTab('WAITING_ROLLOUT')"
+        :ui-issue-filter="mergeUIIssueFilterByTab('WAITING_ROLLOUT')"
         :hide-load-more="true"
       >
         <template #table="{ issueList, loading }">
           <IssueTableV1
-            class="-mt-px"
-            :mode="'PROJECT'"
-            :title="$t('project.overview.recently-closed')"
+            mode="PROJECT"
             :issue-list="issueList"
             :show-placeholder="!loading"
           />
         </template>
       </PagedIssueTableV1>
 
-      <div class="w-full flex justify-end mt-2 px-4">
-        <router-link
-          :to="`/issue?status=closed&project=${project.uid}`"
-          class="normal-link"
-        >
+      <div class="w-full flex justify-end">
+        <router-link :to="recentlyClosedLink" class="normal-link text-sm">
           {{ $t("project.overview.view-all-closed") }}
         </router-link>
       </div>
@@ -98,24 +86,35 @@
 </template>
 
 <script lang="ts" setup>
+import { useLocalStorage } from "@vueuse/core";
+import { cloneDeep } from "lodash-es";
 import { reactive, PropType, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
 import { TabFilterItem } from "@/components/v2";
-import { featureToRef, useCurrentUserV1 } from "@/store";
-import { userNamePrefix } from "@/store/modules/v1/common";
-import { IssueFilter } from "@/types";
-import { IssueStatus } from "@/types/proto/v1/issue_service";
+import { featureToRef } from "@/store";
 import { Project } from "@/types/proto/v1/project_service";
-import { hasWorkspacePermissionV1 } from "@/utils";
+import {
+  SearchParams,
+  buildIssueFilterBySearchParams,
+  buildSearchTextBySearchParams,
+  buildUIIssueFilterBySearchParams,
+  extractProjectResourceName,
+  upsertScope,
+} from "@/utils";
+import { IssueSearch } from "../IssueV1/components";
 
-const TABS = ["WAITING_APPROVAL", "OPEN", "RECENTLY_CLOSED"] as const;
+const TABS = [
+  "WAITING_APPROVAL",
+  "WAITING_ROLLOUT",
+  "RECENTLY_CLOSED",
+] as const;
 
 type TabValue = typeof TABS[number];
 
 interface LocalState {
-  tab: TabValue;
+  params: SearchParams;
   isFetchingActivityList: boolean;
 }
 
@@ -127,50 +126,122 @@ const props = defineProps({
 });
 
 const state = reactive<LocalState>({
-  tab: "WAITING_APPROVAL",
+  params: {
+    query: "",
+    scopes: [
+      { id: "project", value: extractProjectResourceName(props.project.name) },
+    ],
+  },
   isFetchingActivityList: false,
 });
 const { t } = useI18n();
-const currentUserV1 = useCurrentUserV1();
 
 const hasCustomApprovalFeature = featureToRef("bb.feature.custom-approval");
-const hasPermission = computed(() => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-issue",
-    currentUserV1.value.userRole
-  );
-});
 
 const tabItemList = computed((): TabFilterItem<TabValue>[] => {
-  const WAITING_APPROVAL: TabFilterItem<TabValue> = {
-    value: "WAITING_APPROVAL",
-    label: t("issue.waiting-approval"),
-  };
-  const list = hasCustomApprovalFeature.value ? [WAITING_APPROVAL] : [];
-  return [
-    ...list,
-    { value: "OPEN", label: t("project.overview.in-progress") },
-    { value: "RECENTLY_CLOSED", label: t("project.overview.recently-closed") },
-  ];
+  const items: TabFilterItem<TabValue>[] = [];
+  if (hasCustomApprovalFeature.value) {
+    items.push({
+      value: "WAITING_APPROVAL",
+      label: t("issue.waiting-approval"),
+    });
+  }
+  items.push(
+    { value: "WAITING_ROLLOUT", label: t("issue.waiting-rollout") },
+    { value: "RECENTLY_CLOSED", label: t("project.overview.recently-closed") }
+  );
+  return items;
+});
+const tab = useLocalStorage<TabValue>(
+  "bb.project.issue-list",
+  "WAITING_APPROVAL",
+  {
+    serializer: {
+      read(raw: TabValue) {
+        if (!TABS.includes(raw)) return "WAITING_APPROVAL";
+        return raw;
+      },
+      write(value) {
+        return value;
+      },
+    },
+  }
+);
+
+const mergeSearchParamsByTab = (tab: TabValue) => {
+  const common = cloneDeep(state.params);
+  if (tab === "WAITING_APPROVAL") {
+    return upsertScope(common, {
+      id: "approval",
+      value: "pending",
+    });
+  }
+  if (tab === "WAITING_ROLLOUT") {
+    return upsertScope(common, {
+      id: "approval",
+      value: "approved",
+    });
+  }
+  if (tab === "RECENTLY_CLOSED") {
+    return upsertScope(common, {
+      id: "status",
+      value: "CLOSED",
+    });
+  }
+  return common;
+};
+
+const issueLink = computed(() => {
+  return `/issue?qs=${encodeURIComponent(
+    buildSearchTextBySearchParams(mergeSearchParamsByTab(tab.value))
+  )}`;
 });
 
-const commonIssueFilter = computed((): IssueFilter => {
-  let principal = "";
-  if (!hasPermission.value) {
-    principal = `${userNamePrefix}${currentUserV1.value.email}`;
-  }
-  return {
-    project: props.project.name,
-    query: "",
-    principal,
-  };
+const mergeIssueFilterByTab = (tab: TabValue) => {
+  return buildIssueFilterBySearchParams(mergeSearchParamsByTab(tab));
+};
+
+const mergeUIIssueFilterByTab = (tab: TabValue) => {
+  return buildUIIssueFilterBySearchParams(mergeSearchParamsByTab(tab));
+};
+
+const recentlyClosedLink = computed(() => {
+  return `/issue?qs=${encodeURIComponent(
+    buildSearchTextBySearchParams({
+      query: "",
+      scopes: [
+        {
+          id: "project",
+          value: extractProjectResourceName(props.project.name),
+        },
+        { id: "status", value: "CLOSED" },
+      ],
+    })
+  )}`;
 });
 
 watch(
-  [hasCustomApprovalFeature, () => state.tab],
+  tab,
+  (tab) => {
+    if (tab === "RECENTLY_CLOSED") {
+      upsertScope(
+        state.params,
+        {
+          id: "status",
+          value: "CLOSED",
+        },
+        true /* mutate */
+      );
+    }
+  },
+  { immediate: true }
+);
+
+watch(
+  [hasCustomApprovalFeature, tab],
   () => {
-    if (!hasCustomApprovalFeature.value && state.tab === "WAITING_APPROVAL") {
-      state.tab = "OPEN";
+    if (!hasCustomApprovalFeature.value && tab.value === "WAITING_APPROVAL") {
+      tab.value = "WAITING_ROLLOUT";
     }
   },
   { immediate: true }

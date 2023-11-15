@@ -127,14 +127,20 @@ export const applyUIIssueFilter = (
     .filter((issue) => filterIssueByReleaser(issue, filter.releaser));
 };
 
+export const getIssueApprovalStatusFromSearchParams = (
+  params: SearchParams
+) => {
+  return getValueFromSearchParams(
+    params,
+    "approval",
+    "" /* prefix='' */,
+    IssueApprovalStatusList
+  ) as IssueApprovalStatus | "";
+};
+
 export const buildUIIssueFilterBySearchParams = (params: SearchParams) => {
   const uiIssueFilter: UIIssueFilter = {
-    approval: getValueFromSearchParams(
-      params,
-      "approval",
-      "" /* prefix='' */,
-      IssueApprovalStatusList
-    ) as IssueApprovalStatus | "",
+    approval: getIssueApprovalStatusFromSearchParams(params),
     approver: getValueFromSearchParams(params, "approver", "users/"),
     releaser: getValueFromSearchParams(params, "releaser", "users/"),
   };

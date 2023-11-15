@@ -4,6 +4,7 @@
       v-if="components.includes('searchbox')"
       :params="params"
       :autofocus="autofocus"
+      v-bind="componentProps?.searchbox"
       @update:params="$emit('update:params', $event)"
     />
     <slot name="default" />
@@ -19,6 +20,7 @@
         <Status
           v-if="components.includes('status')"
           :params="params"
+          v-bind="componentProps?.status"
           @update:params="$emit('update:params', $event)"
         />
         <slot name="primary" />
@@ -28,6 +30,7 @@
           <TimeRange
             v-if="components.includes('time-range')"
             :params="params"
+            v-bind="componentProps?.['time-range']"
             @update:params="$emit('update:params', $event)"
           />
           <slot name="secondary" />
@@ -62,10 +65,12 @@ withDefaults(
     autofocus?: boolean;
     components?: SearchComponent[];
     showFeatureAttention?: boolean;
+    componentProps?: Partial<Record<SearchComponent, any>>;
   }>(),
   {
     components: () => ["searchbox", "status", "time-range"],
     showFeatureAttention: false,
+    componentProps: undefined,
   }
 );
 

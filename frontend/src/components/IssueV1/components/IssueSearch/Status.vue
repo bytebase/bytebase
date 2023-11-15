@@ -15,8 +15,8 @@ import {
   SearchParams,
   SemanticIssueStatus,
   getSemanticIssueStatusFromSearchParams,
+  upsertScope,
 } from "@/utils";
-import { upsertScope } from "./utils";
 
 const props = defineProps<{
   params: SearchParams;
