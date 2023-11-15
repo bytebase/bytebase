@@ -153,7 +153,7 @@ import {
   SchemaEditorTabType,
   convertTableMetadataToTable,
 } from "@/types/v1/schemaEditor";
-import { bytesToString, isDev } from "@/utils";
+import { bytesToString } from "@/utils";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import { isTableChanged } from "../utils";
@@ -245,7 +245,7 @@ const onClassificationSelect = (classificationId: string) => {
 };
 
 const supportClassification = computed(() => {
-  return classificationConfig.value && isDev();
+  return classificationConfig.value;
 });
 
 const tableHeaderList = computed(() => {
