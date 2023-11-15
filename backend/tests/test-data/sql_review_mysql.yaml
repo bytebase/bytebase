@@ -336,7 +336,7 @@
         }
       }
   run: false
-- statement: '        DELETE FROM tech_book'
+- statement: "        DELETE FROM tech_book"
   result:
     - |-
       {
@@ -402,7 +402,7 @@
         }
       }
   run: false
-- statement: '        INSERT INTO t_copy SELECT * FROM t'
+- statement: "        INSERT INTO t_copy SELECT * FROM t"
   result:
     - |-
       {
@@ -455,7 +455,7 @@
         }
       }
   run: false
-- statement: '        INSERT INTO t VALUES (1, 1, now(), 1, now())'
+- statement: "        INSERT INTO t VALUES (1, 1, now(), 1, now())"
   result:
     - |-
       {
@@ -571,65 +571,6 @@
           SELECT 9 AS id, 'i' AS name WHERE 1=1 UNION ALL
           SELECT 10 AS id, 'j' AS name WHERE 1=1) value_table WHERE 1=1
   result:
-<<<<<<< HEAD
-    - status: 2
-      title: statement.insert.row-limit
-      content: |-
-        "INSERT INTO user(id, name) SELECT id, name FROM (SELECT 1 AS id, 'a' AS name WHERE 1=1 UNION ALL
-              SELECT 2 AS id, 'b' AS name WHERE 1=1 UNION ALL
-              SELECT 3 AS id, 'c' AS name WHERE 1=1 UNION ALL
-              SELECT 4 AS id, 'd' AS name WHERE 1=1 UNION ALL
-              SELECT 5 AS id, 'e' AS name WHERE 1=1 UNION ALL
-              SELECT 6 AS id, 'f' AS name WHERE 1=1 UNION ALL
-              SELECT 7 AS id, 'g' AS name WHERE 1=1 UNION ALL
-              SELECT 8 AS id, 'h' AS name WHERE 1=1 UNION ALL
-              SELECT 9 AS id, 'i' AS name WHERE 1=1 UNION ALL
-              SELECT 10 AS id, 'j' AS name WHERE 1=1) value_table WHERE 1=1;" dry runs failed: Error 1064 (42000): You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'id, name) SELECT id, name FROM (SELECT 1 AS id, 'a' AS name WHERE 1=1 UNION ALL
-        ' at line 1
-      code: 0
-      report:
-        sqlreviewreport:
-            line: 1
-            column: 0
-            detail: ""
-            code: 1101
-  run: false
-- statement: INSERT INTO user(id, name) SELECT id, name FROM user WHERE id=1 LIMIT 1
-  result:
-    - status: 2
-      title: statement.disallow-limit
-      content: LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but "INSERT INTO user(id, name) SELECT id, name FROM user WHERE id=1 LIMIT 1;" uses
-      code: 0
-      report:
-        sqlreviewreport:
-            line: 1
-            column: 0
-            detail: ""
-            code: 1103
-    - status: 2
-      title: statement.insert.row-limit
-      content: '"INSERT INTO user(id, name) SELECT id, name FROM user WHERE id=1 LIMIT 1;" dry runs failed: Error 1064 (42000): You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ''id, name) SELECT id, name FROM user WHERE id=1 LIMIT 1'' at line 1'
-      code: 0
-      report:
-        sqlreviewreport:
-            line: 1
-            column: 0
-            detail: ""
-            code: 1101
-  run: false
-- statement: '        ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8;'
-  result:
-    - status: 2
-      title: table.disallow-partition
-      content: Table partition is forbidden, but "ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8;" creates
-      code: 0
-      report:
-        sqlreviewreport:
-            line: 1
-            column: 0
-            detail: ""
-            code: 608
-=======
     - |-
       {
         "status": "WARNING",
@@ -654,7 +595,7 @@
         }
       }
   run: false
-- statement: '        ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8;'
+- statement: "        ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8;"
   result:
     - |-
       {
@@ -666,87 +607,11 @@
           "code": 608
         }
       }
->>>>>>> bbmain
   run: false
 - statement: |-
     ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;
     ALTER TABLE user ADD COLUMN c_column int NOT NULL DEFAULT 0 COMMENT 'comment';
   result:
-<<<<<<< HEAD
-    - status: 2
-      title: statement.merge-alter-table
-      content: There are 2 statements to modify table `user`
-      code: 0
-      report:
-        sqlreviewreport:
-            line: 2
-            column: 0
-            detail: ""
-            code: 207
-    - status: 2
-      title: column.disallow-change-type
-      content: '"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '''' COMMENT ''COMMENT'' FIRST;" changes column type'
-      code: 0
-      report:
-        sqlreviewreport:
-            line: 1
-            column: 0
-            detail: ""
-            code: 403
-    - status: 2
-      title: column.disallow-change
-      content: '"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '''' COMMENT ''COMMENT'' FIRST;" contains CHANGE COLUMN statement'
-      code: 0
-      report:
-        sqlreviewreport:
-            line: 1
-            column: 0
-            detail: ""
-            code: 406
-    - status: 2
-      title: column.disallow-changing-order
-      content: '"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '''' COMMENT ''COMMENT'' FIRST;" changes column order'
-      code: 0
-      report:
-        sqlreviewreport:
-            line: 1
-            column: 0
-            detail: ""
-            code: 407
-    - status: 2
-      title: schema.backward-compatibility
-      content: '"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '''' COMMENT ''COMMENT'' FIRST;" may cause incompatibility with the existing data and code'
-      code: 0
-      report:
-        sqlreviewreport:
-            line: 1
-            column: 0
-            detail: ""
-            code: 111
-  run: false
-- statement: '        DROP TABLE user;'
-  result:
-    - status: 1
-      title: table.drop-naming-convention
-      content: '`user` mismatches drop table naming convention, naming format should be "_delete$"'
-      code: 0
-      report:
-        sqlreviewreport:
-            line: 1
-            column: 0
-            detail: ""
-            code: 603
-    - status: 2
-      title: schema.backward-compatibility
-      content: '"DROP TABLE user;" may cause incompatibility with the existing data and code'
-      code: 0
-      report:
-        sqlreviewreport:
-            line: 1
-            column: 0
-            detail: ""
-            code: 103
-=======
     - |-
       {
         "status": "WARNING",
@@ -798,7 +663,7 @@
         }
       }
   run: false
-- statement: '        DROP TABLE user;'
+- statement: "        DROP TABLE user;"
   result:
     - |-
       {
@@ -820,5 +685,4 @@
           "code": 103
         }
       }
->>>>>>> bbmain
   run: false
