@@ -1870,18 +1870,29 @@ func convertDefElemToSeqType(defElem *pgquery.DefElem) (*ast.Integer, error) {
 // ConvertNodeListToColumnNameDef converts the node list to ColumnNameDef.
 func ConvertNodeListToColumnNameDef(in []*pgquery.Node) (*ast.ColumnNameDef, error) {
 	columnName := &ast.ColumnNameDef{Table: &ast.TableDef{}}
-	// There are three cases for column name:
+	// There are four cases for column name:
+	//   0. dbName.schemaName.tableName.columnName
 	//   1. schemaName.tableName.columnName
 	//   2. tableName.columnName
 	//   3. columnName
 	// The pg parser will split them by ".", and use a list to define it.
 	// So we need to consider this three cases.
 	switch len(in) {
-	// schemaName.tableName.columName
+	// dbName.schemaName.tableName.columnName
+	case 4:
+		dbName, ok := in[0].Node.(*pgquery.Node_String_)
+		if !ok {
+			return nil, NewConvertErrorf("expected String but found %T", in[0].Node)
+		}
+		columnName.Table.Database = dbName.String_.Sval
+		// need to convert schemaName.tableName.columnName
+		in = in[1:]
+		fallthrough
+	// schemaName.tableName.columnName
 	case 3:
 		schema, ok := in[0].Node.(*pgquery.Node_String_)
 		if !ok {
-			return nil, NewConvertErrorf("expected String but found %t", in[2].Node)
+			return nil, NewConvertErrorf("expected String but found %T", in[0].Node)
 		}
 		columnName.Table.Schema = schema.String_.Sval
 		// need to convert tableName.columnName
@@ -1891,7 +1902,7 @@ func ConvertNodeListToColumnNameDef(in []*pgquery.Node) (*ast.ColumnNameDef, err
 	case 2:
 		table, ok := in[0].Node.(*pgquery.Node_String_)
 		if !ok {
-			return nil, NewConvertErrorf("expected String but found %t", in[1].Node)
+			return nil, NewConvertErrorf("expected String but found %T", in[0].Node)
 		}
 		columnName.Table.Name = table.String_.Sval
 		// need to convert columnName
@@ -1907,7 +1918,7 @@ func ConvertNodeListToColumnNameDef(in []*pgquery.Node) (*ast.ColumnNameDef, err
 		case *pgquery.Node_AStar:
 			columnName.ColumnName = "*"
 		default:
-			return nil, NewConvertErrorf("expected String or AStar but found %t", in[0].Node)
+			return nil, NewConvertErrorf("expected String or AStar but found %T", in[0].Node)
 		}
 	default:
 		return nil, NewConvertErrorf("failed to convert ColumnRef, column name contains unexpected components: %v", in)
