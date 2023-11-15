@@ -31,6 +31,7 @@
         :environment="state.environmentId"
         :project="state.projectId"
         :placeholder="$t('database.sync-schema.select-database-placeholder')"
+        :fallback-option="false"
         @update:database="handleDatabaseSelect"
       />
     </div>
@@ -38,44 +39,23 @@
       <span class="flex w-40 items-center shrink-0 text-sm">
         {{ $t("database.sync-schema.schema-version.self") }}
       </span>
-      <div
-        class="w-192 flex flex-row justify-start items-center relative"
-        :class="isValidId(state.projectId) ? '' : 'opacity-50'"
-      >
-        <BBSelect
-          class="w-full"
-          :selected-item="state.changeHistory"
-          :item-list="databaseChangeHistoryList(state.databaseId as string)"
+      <div class="w-192 flex flex-row justify-start items-center relative">
+        <NSelect
+          :value="state.changeHistory?.name"
+          :options="schemaVersionOptions"
           :placeholder="$t('change-history.select')"
-          :show-prefix-item="databaseChangeHistoryList(state.databaseId as string).length > 0"
-          @select-item="(changeHistory: ChangeHistory) => handleSchemaVersionSelect(changeHistory)"
-        >
-          <template
-            #menuItem="{
-              item: changeHistory,
-              index,
-            }: {
-              item: ChangeHistory,
-              index: number,
-            }"
-          >
-            <div class="flex justify-between mr-2">
-              <FeatureBadge
-                v-if="index > 0"
-                feature="bb.feature.sync-schema-all-versions"
-                custom-class="mr-1"
-                :instance="database?.instanceEntity"
-              />
-              <NEllipsis class="flex-1 pr-2" :tooltip="false">
-                {{ changeHistory.version }} -
-                {{ changeHistory.description }}
-              </NEllipsis>
-              <span class="text-control-light">
-                {{ humanizeDate(changeHistory.updateTime) }}
-              </span>
-            </div>
-          </template>
-        </BBSelect>
+          :disabled="
+            !isValidId(state.projectId) || schemaVersionOptions.length === 0
+          "
+          :render-label="renderSchemaVersionLabel"
+          :fallback-option="
+            isMockLatestSchemaChangeHistorySelected
+              ? fallbackSchemaVersionOption
+              : false
+          "
+          class="bb-schema-version-select"
+          @update:value="handleSchemaVersionSelect"
+        />
       </div>
     </div>
   </div>
@@ -90,7 +70,10 @@
 
 <script lang="ts" setup>
 import { head, isNull, isUndefined } from "lodash-es";
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { NEllipsis, NSelect, SelectOption } from "naive-ui";
+import { computed, h, onMounted, reactive, ref, watch } from "vue";
+import { VNodeArrayChildren } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   EnvironmentSelect,
   ProjectSelect,
@@ -103,12 +86,16 @@ import {
   useSubscriptionV1Store,
   useEnvironmentV1Store,
 } from "@/store";
-import { UNKNOWN_ID } from "@/types";
+import { ComposedDatabase, UNKNOWN_ID } from "@/types";
 import {
   ChangeHistory,
   ChangeHistoryView,
   ChangeHistory_Type,
+  DatabaseSchema,
 } from "@/types/proto/v1/database_service";
+import { extractChangeHistoryUID } from "@/utils";
+import FeatureBadge from "../FeatureGuard/FeatureBadge.vue";
+import HumanizeDate from "../misc/HumanizeDate.vue";
 import { ChangeHistorySourceSchema } from "./types";
 
 const props = defineProps<{
@@ -131,6 +118,7 @@ interface LocalState {
 const state = reactive<LocalState>({
   showFeatureModal: false,
 });
+const { t } = useI18n();
 const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const changeHistoryStore = useChangeHistoryStore();
@@ -263,7 +251,106 @@ const databaseChangeHistoryList = (databaseId: string) => {
   return list;
 };
 
-const handleSchemaVersionSelect = (changeHistory: ChangeHistory) => {
+const schemaVersionOptions = computed(() => {
+  const { databaseId } = state;
+  if (!databaseId || databaseId === String(UNKNOWN_ID)) {
+    return [];
+  }
+  const changeHistories = databaseChangeHistoryList(databaseId);
+  if (changeHistories.length === 0) return [];
+  const options: SelectOption[] = [
+    {
+      value: "PLACEHOLDER",
+      label: t("change-history.select"),
+      disabled: true,
+      style: "cursor: default",
+    },
+  ];
+  options.push(
+    ...changeHistories.map<SelectOption>((changeHistory, index) => {
+      return {
+        changeHistory,
+        index,
+        value: changeHistory.name,
+        label: changeHistory.name,
+        class: "bb-schema-version-select-option",
+      };
+    })
+  );
+  return options;
+});
+const renderSchemaVersionLabel = (option: SelectOption) => {
+  if (
+    option.value === "PLACEHOLDER" ||
+    option.disabled ||
+    !option.changeHistory
+  ) {
+    return option.label;
+  }
+  const changeHistory = option.changeHistory as ChangeHistory;
+  const index = option.index as number;
+  const children: VNodeArrayChildren = [];
+  if (index > 0) {
+    children.push(
+      h(FeatureBadge, {
+        feature: "bb.feature.sync-schema-all-versions",
+        "custom-class": "mr-1",
+        instance: database.value?.instanceEntity,
+      })
+    );
+  }
+  const { version, description, updateTime } = changeHistory;
+
+  children.push(
+    h(
+      NEllipsis,
+      { class: "flex-1 pr-2", tooltip: false },
+      {
+        default: () => `${version} - ${description}`,
+      }
+    )
+  );
+  if (updateTime) {
+    children.push(
+      h(HumanizeDate, {
+        date: updateTime,
+        class: "text-control-light",
+      })
+    );
+  }
+
+  return h("div", { class: "w-full flex justify-between" }, children);
+};
+const isMockLatestSchemaChangeHistorySelected = computed(() => {
+  if (!state.changeHistory) return false;
+  return (
+    extractChangeHistoryUID(state.changeHistory.name) === String(UNKNOWN_ID)
+  );
+});
+const fallbackSchemaVersionOption = (value: string): SelectOption => {
+  if (extractChangeHistoryUID(value) === String(UNKNOWN_ID)) {
+    const { databaseId } = state;
+    if (databaseId && databaseId !== String(UNKNOWN_ID)) {
+      const db = databaseStore.getDatabaseByUID(databaseId);
+      const changeHistory = mockLatestSchemaChangeHistory(db);
+      return {
+        changeHistory: mockLatestSchemaChangeHistory(db),
+        index: 0,
+        value: changeHistory.name,
+        label: changeHistory.name,
+      };
+    }
+  }
+  return {
+    value: "PLACEHOLDER",
+    disabled: true,
+    label: t("change-history.select"),
+    style: "cursor: default",
+  };
+};
+
+const handleSchemaVersionSelect = (name: string, option: SelectOption) => {
+  const changeHistory = option.changeHistory as ChangeHistory;
   const index = databaseChangeHistoryList(state.databaseId as string).findIndex(
     (history) => history.uid === changeHistory.uid
   );
@@ -301,20 +388,26 @@ watch(
         const schema = await databaseStore.fetchDatabaseSchema(
           `${database.name}/schema`
         );
-        state.changeHistory = {
-          name: `${database.name}/changeHistories/${UNKNOWN_ID}`,
-          uid: String(UNKNOWN_ID),
-          updateTime: new Date(),
-          schema: schema.schema,
-          version: "Latest version",
-          description: "the latest schema of database",
-        } as ChangeHistory;
+        state.changeHistory = mockLatestSchemaChangeHistory(database, schema);
       }
     } else {
       state.changeHistory = undefined;
     }
   }
 );
+
+const mockLatestSchemaChangeHistory = (
+  database: ComposedDatabase,
+  schema: DatabaseSchema | undefined = undefined
+) => {
+  return ChangeHistory.fromPartial({
+    name: `${database.name}/changeHistories/${UNKNOWN_ID}`,
+    uid: String(UNKNOWN_ID),
+    schema: schema?.schema,
+    version: "Latest version",
+    description: "the latest schema of database",
+  });
+};
 
 watch(
   () => [state, fullViewChangeHistoryCache.value],
@@ -330,3 +423,9 @@ watch(
   { deep: true }
 );
 </script>
+
+<style lang="postcss">
+.bb-schema-version-select-option .n-base-select-option__content {
+  @apply w-full;
+}
+</style>
