@@ -352,25 +352,16 @@ func BeginMigration(ctx context.Context, stores *store.Store, m *db.MigrationInf
 			err := errors.Errorf("database %q version %s migration is already in progress", m.Database, m.Version.Version)
 			slog.Debug(err.Error())
 			// For force migration, we will ignore the existing migration history and continue to migration.
-			if m.Force {
-				return migrationHistory.UID, nil
-			}
-			return "", common.Wrap(err, common.MigrationPending)
+			return migrationHistory.UID, nil
 		case db.Failed:
 			err := errors.Errorf("database %q version %s migration has failed, please check your database to make sure things are fine and then start a new migration using a new version ", m.Database, m.Version.Version)
 			slog.Debug(err.Error())
 			// For force migration, we will ignore the existing migration history and continue to migration.
-			if m.Force {
-				return migrationHistory.UID, nil
-			}
-			return "", common.Wrap(err, common.MigrationFailed)
+			return migrationHistory.UID, nil
 		}
 	}
 
 	// Phase 2 - Record migration history as PENDING.
-	// MySQL runs DDL in its own transaction, so we can't commit migration history together with DDL in a single transaction.
-	// Thus we sort of doing a 2-phase commit, where we first write a PENDING migration record, and after migration completes, we then
-	// update the record to DONE together with the updated schema.
 	statementRecord, _ := common.TruncateString(statement, common.MaxSheetSize)
 	insertedID, err := stores.CreatePendingInstanceChangeHistory(ctx, prevSchema, m, statementRecord, sheetID)
 	if err != nil {
