@@ -22,8 +22,9 @@ var (
 )
 
 func init() {
-	// only for mysqlwip test.
-	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLColumnDisallowChangingType, &ColumnDisallowChangingTypeAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLColumnDisallowChangingType, &ColumnDisallowChangingTypeAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLColumnDisallowChangingType, &ColumnDisallowChangingTypeAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLColumnDisallowChangingType, &ColumnDisallowChangingTypeAdvisor{})
 }
 
 // ColumnDisallowChangingTypeAdvisor is the advisor checking for disallow changing column type..

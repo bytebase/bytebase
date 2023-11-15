@@ -22,8 +22,8 @@ var (
 )
 
 func init() {
-	// only for mysqlwip test.
-	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLPrimaryKeyTypeAllowlist, &IndexPrimaryKeyTypeAllowlistAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLPrimaryKeyTypeAllowlist, &IndexPrimaryKeyTypeAllowlistAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLPrimaryKeyTypeAllowlist, &IndexPrimaryKeyTypeAllowlistAdvisor{})
 }
 
 // IndexPrimaryKeyTypeAllowlistAdvisor is the advisor checking for primary key type allowlist.

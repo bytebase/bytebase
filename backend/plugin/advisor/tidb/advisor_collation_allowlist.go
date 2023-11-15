@@ -19,9 +19,6 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLCollationAllowlist, &CollationAllowlistAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLCollationAllowlist, &CollationAllowlistAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLCollationAllowlist, &CollationAllowlistAdvisor{})
 	advisor.Register(storepb.Engine_TIDB, advisor.MySQLCollationAllowlist, &CollationAllowlistAdvisor{})
 }
 

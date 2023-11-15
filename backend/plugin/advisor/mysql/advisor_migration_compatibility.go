@@ -18,8 +18,9 @@ var (
 )
 
 func init() {
-	// only for mysqlwip test.
-	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
 }
 
 // CompatibilityAdvisor is the advisor checking for schema backward compatibility.

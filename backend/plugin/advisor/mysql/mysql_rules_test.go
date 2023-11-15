@@ -7,8 +7,8 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func TestMySQLWIPRules(t *testing.T) {
-	mysqlwipRules := []advisor.SQLReviewRuleType{
+func TestMySQLRules(t *testing.T) {
+	mysqlRules := []advisor.SQLReviewRuleType{
 		// advisor.SchemaRuleMySQLEngine enforce the innodb engine.
 		advisor.SchemaRuleMySQLEngine,
 
@@ -46,10 +46,8 @@ func TestMySQLWIPRules(t *testing.T) {
 		// advisor.SchemaRuleStatementInsertDisallowOrderByRand disallow the order by rand in the INSERT statement.
 		advisor.SchemaRuleStatementInsertDisallowOrderByRand,
 		// advisor.SchemaRuleStatementAffectedRowLimit enforce the UPDATE/DELETE affected row limit.
-		// TODO: need more test.
 		advisor.SchemaRuleStatementAffectedRowLimit,
 		// advisor.SchemaRuleStatementDMLDryRun dry run the dml.
-		// TODO: need more test.
 		advisor.SchemaRuleStatementDMLDryRun,
 
 		// advisor.SchemaRuleTableRequirePK require the table to have a primary key.
@@ -121,7 +119,7 @@ func TestMySQLWIPRules(t *testing.T) {
 		advisor.SchemaRuleCollationAllowlist,
 	}
 
-	for _, rule := range mysqlwipRules {
-		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_ENGINE_UNSPECIFIED, false /* record */)
+	for _, rule := range mysqlRules {
+		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_MYSQL, false /* record */)
 	}
 }

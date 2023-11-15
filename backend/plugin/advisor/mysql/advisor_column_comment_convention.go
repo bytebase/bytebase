@@ -20,8 +20,9 @@ var (
 )
 
 func init() {
-	// only for mysqlwip test.
-	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLColumnCommentConvention, &ColumnCommentConventionAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLColumnCommentConvention, &ColumnCommentConventionAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLColumnCommentConvention, &ColumnCommentConventionAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLColumnCommentConvention, &ColumnCommentConventionAdvisor{})
 }
 
 // ColumnCommentConventionAdvisor is the advisor checking for column comment convention.

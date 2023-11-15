@@ -15,6 +15,7 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 
 	// Advisors.
+	_ "github.com/bytebase/bytebase/backend/plugin/advisor/mysql"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/tidb"
 
 	// Transformers.
