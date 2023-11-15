@@ -22,8 +22,9 @@ var (
 )
 
 func init() {
-	// only for mysqlwip test.
-	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLIndexPKType, &IndexPkTypeAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLIndexPKType, &IndexPkTypeAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLIndexPKType, &IndexPkTypeAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLIndexPKType, &IndexPkTypeAdvisor{})
 }
 
 // IndexPkTypeAdvisor is the advisor checking for correct type of PK.

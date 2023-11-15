@@ -20,8 +20,9 @@ var (
 )
 
 func init() {
-	// only for mysqlwip test.
-	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLDisallowOrderBy, &DisallowOrderByAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLDisallowOrderBy, &DisallowOrderByAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLDisallowOrderBy, &DisallowOrderByAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLDisallowOrderBy, &DisallowOrderByAdvisor{})
 }
 
 // DisallowOrderByAdvisor is the advisor checking for no ORDER BY clause in DELETE/UPDATE statements.
