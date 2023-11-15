@@ -83,7 +83,7 @@ import { useSettingV1Store } from "@/store/modules";
 import { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { TableMetadata } from "@/types/proto/v1/database_service";
-import { bytesToString, isGhostTable, isDev } from "@/utils";
+import { bytesToString, isGhostTable } from "@/utils";
 import TableDetailDrawer from "./TableDetailDrawer.vue";
 
 type LocalState = {
@@ -145,8 +145,7 @@ const hasSchemaProperty = computed(() => {
 const hasClassificationProperty = computed(() => {
   return (
     (engine.value === Engine.MYSQL || engine.value === Engine.POSTGRES) &&
-    classificationConfig.value &&
-    isDev()
+    classificationConfig.value
   );
 });
 
