@@ -18,14 +18,12 @@
         <SensitiveColumnView />
       </NTabPane>
       <NTabPane
-        v-if="isDev()"
         name="semantic-types"
         :tab="$t('settings.sensitive-data.semantic-types.self')"
       >
         <SemanticTypesView />
       </NTabPane>
       <NTabPane
-        v-if="isDev()"
         name="masking-algorithms"
         :tab="$t('settings.sensitive-data.algorithms.self')"
       >
@@ -45,7 +43,6 @@ import {
   SemanticTypesView,
 } from "@/components/SensitiveData";
 import { featureToRef } from "@/store";
-import { isDev } from "@/utils";
 
 const dataMaskingTabList = [
   "sensitive-column-list",

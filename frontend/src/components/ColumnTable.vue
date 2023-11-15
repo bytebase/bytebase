@@ -52,7 +52,7 @@
           </button>
         </div>
       </BBTableCell>
-      <BBTableCell v-if="showSemanticTypeColumn" class="bb-grid-cell">
+      <BBTableCell v-if="showSensitiveColumn" class="bb-grid-cell">
         <div class="flex items-center">
           {{ getColumnSemanticType(column.name)?.title }}
           <button
@@ -191,11 +191,7 @@ import {
 } from "@/types/proto/v1/database_service";
 import { MaskData } from "@/types/proto/v1/org_policy_service";
 import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
-import {
-  hasWorkspacePermissionV1,
-  hasPermissionInProjectV1,
-  isDev,
-} from "@/utils";
+import { hasWorkspacePermissionV1, hasPermissionInProjectV1 } from "@/utils";
 
 type LocalState = {
   showFeatureModal: boolean;
@@ -401,10 +397,6 @@ const showSensitiveColumn = computed(() => {
   );
 });
 
-const showSemanticTypeColumn = computed(() => {
-  return showSensitiveColumn.value && isDev();
-});
-
 const showClassificationColumn = computed(() => {
   return (
     (engine.value === Engine.MYSQL || engine.value === Engine.POSTGRES) &&
@@ -458,7 +450,7 @@ const NORMAL_COLUMN_LIST = computed(() => {
     },
     {
       title: t("settings.sensitive-data.semantic-types.self"),
-      hide: !showSemanticTypeColumn.value,
+      hide: !showSensitiveColumn.value,
     },
     {
       title: t("database.classification.self"),
@@ -502,7 +494,7 @@ const POSTGRES_COLUMN_LIST = computed(() => {
     },
     {
       title: t("settings.sensitive-data.semantic-types.self"),
-      hide: !showSemanticTypeColumn.value,
+      hide: !showSensitiveColumn.value,
     },
     {
       title: t("database.classification.self"),

@@ -558,6 +558,21 @@ const handleSelectedDatabaseIdListChanged = async (
     return;
   }
 
+  if (
+    statement === "" &&
+    !isEqual(
+      schemaDesign.value.baselineSchemaMetadata?.schemaConfigs,
+      schemaDesign.value.schemaMetadata?.schemaConfigs
+    )
+  ) {
+    pushNotification({
+      module: "bytebase",
+      style: "WARN",
+      title: t("schema-editor.message.cannot-change-config"),
+    });
+    return;
+  }
+
   const targetDatabaseList = databaseIdList.map((id) =>
     databaseStore.getDatabaseByUID(id)
   );
