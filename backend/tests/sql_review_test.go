@@ -5,7 +5,6 @@ package tests
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -153,9 +152,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	}
 
 	if record {
-		byteValue, err := yaml.Marshal(tests)
-		a.NoError(err)
-		err = os.WriteFile(filepath, byteValue, 0644)
+		err := writeTestData(filepath, tests)
 		a.NoError(err)
 	}
 
@@ -319,9 +316,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	}
 
 	if record {
-		byteValue, err := yaml.Marshal(tests)
-		a.NoError(err)
-		err = os.WriteFile(filepath, byteValue, 0644)
+		err := writeTestData(filepath, tests)
 		a.NoError(err)
 	}
 
@@ -395,7 +390,7 @@ func readTestData(path string) ([]test, error) {
 	}
 	type yamlStruct struct {
 		Statement string
-		Result    []any
+		Result    []string
 		Run       bool
 	}
 	var yamlTests []yamlStruct
@@ -410,12 +405,8 @@ func readTestData(path string) ([]test, error) {
 			Run:       yamlTest.Run,
 		}
 		for _, r := range yamlTest.Result {
-			jsonData, err := json.MarshalIndent(r, "", "  ")
-			if err != nil {
-				return nil, err
-			}
 			result := &v1pb.PlanCheckRun_Result{}
-			if err := protojson.Unmarshal(jsonData, result); err != nil {
+			if err := protojson.Unmarshal([]byte(r), result); err != nil {
 				return nil, err
 			}
 			t.Result = append(t.Result, result)
@@ -423,6 +414,36 @@ func readTestData(path string) ([]test, error) {
 		tests = append(tests, t)
 	}
 	return tests, nil
+}
+
+func writeTestData(filepath string, tests []test) error {
+	type yamlStruct struct {
+		Statement string
+		Result    []string
+		Run       bool
+	}
+
+	var yamlTests []yamlStruct
+	for _, t := range tests {
+		yamlTest := yamlStruct{
+			Statement: t.Statement,
+			Run:       t.Run,
+		}
+		for _, r := range t.Result {
+			yamlTest.Result = append(yamlTest.Result, protojson.Format(r))
+		}
+		yamlTests = append(yamlTests, yamlTest)
+	}
+
+	byteValue, err := yaml.Marshal(yamlTests)
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(filepath, byteValue, 0644)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func createIssueAndReturnSQLReviewResult(ctx context.Context, a *require.Assertions, ctl *controller, project *v1pb.Project, database *v1pb.Database, statement string, wait bool) []*v1pb.PlanCheckRun_Result {
@@ -492,10 +513,7 @@ func createIssueAndReturnSQLReviewResult(ctx context.Context, a *require.Asserti
 func equalReviewResultProtos(a *require.Assertions, want, got []*v1pb.PlanCheckRun_Result, message string) {
 	a.Equal(len(want), len(got))
 	for i := 0; i < len(want); i++ {
-		wantJSON, err := protojson.Marshal(want[i])
-		a.NoError(err)
-		gotJSON, err := protojson.Marshal(got[i])
-		a.NoError(err)
-		a.Equal(string(wantJSON), string(gotJSON), message)
+		diff := cmp.Diff(want[i], got[i], protocmp.Transform())
+		a.Equal("", diff, message)
 	}
 }

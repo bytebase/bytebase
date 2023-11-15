@@ -4,7 +4,12 @@ import { computed, ref, unref, watch, watchEffect } from "vue";
 import { projectServiceClient } from "@/grpcweb";
 import { resolveCELExpr } from "@/plugins/cel";
 import { hasFeature, usePolicyV1Store } from "@/store";
-import { ComposedDatabase, MaybeRef, PresetRoleType } from "@/types";
+import {
+  ALL_USERS_USER_NAME,
+  ComposedDatabase,
+  MaybeRef,
+  PresetRoleType,
+} from "@/types";
 import { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { IamPolicy } from "@/types/proto/v1/iam_policy";
 import {
@@ -230,7 +235,9 @@ export const useCurrentUserIamPolicy = () => {
       if (
         binding.role === PresetRoleType.OWNER &&
         binding.members.find(
-          (member) => member === `user:${currentUser.value.email}`
+          (member) =>
+            member === ALL_USERS_USER_NAME ||
+            member === `user:${currentUser.value.email}`
         )
       ) {
         return true;
@@ -238,7 +245,9 @@ export const useCurrentUserIamPolicy = () => {
       if (
         binding.role === PresetRoleType.QUERIER &&
         binding.members.find(
-          (member) => member === `user:${currentUser.value.email}`
+          (member) =>
+            member === ALL_USERS_USER_NAME ||
+            member === `user:${currentUser.value.email}`
         )
       ) {
         if (binding.parsedExpr?.expr) {
@@ -290,7 +299,9 @@ export const useCurrentUserIamPolicy = () => {
       if (
         binding.role === PresetRoleType.OWNER &&
         binding.members.find(
-          (member) => member === `user:${currentUser.value.email}`
+          (member) =>
+            member === ALL_USERS_USER_NAME ||
+            member === `user:${currentUser.value.email}`
         )
       ) {
         return true;
@@ -298,7 +309,9 @@ export const useCurrentUserIamPolicy = () => {
       if (
         binding.role === PresetRoleType.EXPORTER &&
         binding.members.find(
-          (member) => member === `user:${currentUser.value.email}`
+          (member) =>
+            member === ALL_USERS_USER_NAME ||
+            member === `user:${currentUser.value.email}`
         )
       ) {
         if (binding.parsedExpr?.expr) {

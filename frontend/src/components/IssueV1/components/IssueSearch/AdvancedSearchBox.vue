@@ -17,7 +17,7 @@
     </NInput>
     <div
       v-if="state.showSearchScopes"
-      class="absolute z-50 pt-1 top-full w-full divide-y divide-block-border bg-white shadow-md"
+      class="absolute z-50 pt-2 mt-0.5 top-full w-full divide-y divide-block-border bg-white shadow-md"
     >
       <div
         v-for="item in searchScopes"
@@ -62,10 +62,20 @@
 <script lang="ts" setup>
 import { debounce, orderBy } from "lodash-es";
 import { NInput } from "naive-ui";
-import { reactive, computed, h, watch, VNode, onMounted, ref } from "vue";
+import {
+  reactive,
+  computed,
+  h,
+  watch,
+  VNode,
+  onMounted,
+  ref,
+  nextTick,
+} from "vue";
 import { useI18n } from "vue-i18n";
 import BBAvatar from "@/bbkit/BBAvatar.vue";
 import GitIcon from "@/components/GitIcon.vue";
+import YouTag from "@/components/misc/YouTag.vue";
 import {
   InstanceV1Name,
   InstanceV1EngineIcon,
@@ -92,8 +102,8 @@ import {
   extractInstanceResourceName,
   SearchParams,
   SearchScopeId,
+  isValidSearchScopeId,
 } from "@/utils";
-import YouTag from "./misc/YouTag.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -109,7 +119,7 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  (event: "update", params: SearchParams): void;
+  (event: "update:params", params: SearchParams): void;
 }>();
 
 const { t } = useI18n();
@@ -156,6 +166,13 @@ watch(
   () => state.showSearchScopes,
   (show) => {
     if (show) state.currentScope = undefined;
+  }
+);
+
+watch(
+  () => props.params,
+  (params) => {
+    state.searchText = buildSearchTextByParams(params);
   }
 );
 
@@ -404,19 +421,22 @@ const onOptionSelect = (scopeValue: string) => {
   state.searchText = buildSearchTextByParams(params);
   debouncedUpdate();
   onClear();
+};
 
-  if (params.scopes.length < fullScopes.value.length) {
-    state.showSearchScopes = true;
+const onClear = (immediate = false) => {
+  const clear = () => {
+    state.showSearchScopes = false;
+    state.currentScope = undefined;
+  };
+  if (immediate) {
+    clear();
+  } else {
+    nextTick(clear);
   }
 };
 
-const onClear = () => {
-  state.showSearchScopes = false;
-  state.currentScope = undefined;
-};
-
 const debouncedUpdate = debounce(() => {
-  emit("update", getSearchParamsByText(state.searchText));
+  emit("update:params", getSearchParamsByText(state.searchText));
 }, 500);
 
 const onUpdate = (value: string) => {
@@ -430,9 +450,7 @@ const query = computed(() => {
   while (i < sections.length) {
     const section = sections[i];
     const keyword = section.split(":")[0];
-    const exist =
-      fullScopes.value.findIndex((item) => item.id === keyword) >= 0;
-    if (!exist) {
+    if (!isValidSearchScopeId(keyword)) {
       break;
     }
     i++;
@@ -507,7 +525,7 @@ const onKeydown = () => {
   }
 
   if (i >= sections.length) {
-    onClear();
+    onClear(true /* immediate */);
     state.showSearchScopes = true;
     return;
   }
@@ -516,7 +534,7 @@ const onKeydown = () => {
   const existed =
     fullScopes.value.findIndex((item) => item.id === currentScope) >= 0;
   if (!existed) {
-    onClear();
+    onClear(true /* immediate */);
     state.showSearchScopes = true;
     return;
   }
