@@ -1,11 +1,10 @@
 <template>
-  <NDrawer
+  <Drawer
     :show="active && shouldShowHelpDrawer"
     class="!w-96 max-w-full"
-    :auto-focus="false"
     @update:show="(show: boolean) => !show && onClose()"
   >
-    <NDrawerContent
+    <DrawerContent
       class="w-full"
       :title="state.frontmatter.title"
       :closable="true"
@@ -54,17 +53,17 @@
           </div>
         </div>
       </template>
-    </NDrawerContent>
-  </NDrawer>
+    </DrawerContent>
+  </Drawer>
 </template>
 
 <script lang="ts" setup>
 import Markdoc, { Node, Tag } from "@markdoc/markdoc";
 import DOMPurify from "dompurify";
 import yaml from "js-yaml";
-import { NDrawer, NDrawerContent } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { ref, reactive, watch, computed } from "vue";
+import { Drawer, DrawerContent } from "@/components/v2";
 import { useLanguage } from "@/composables/useLanguage";
 import { useUIStateStore, useHelpStore, usePageMode } from "@/store";
 import { markdocConfig, DOMPurifyConfig } from "./config";
