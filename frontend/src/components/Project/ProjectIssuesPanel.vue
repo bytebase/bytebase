@@ -88,6 +88,7 @@
 <script lang="ts" setup>
 import { useLocalStorage } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
+import { SearchIcon } from "lucide-vue-next";
 import { reactive, PropType, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
