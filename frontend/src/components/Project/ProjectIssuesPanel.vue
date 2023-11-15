@@ -1,11 +1,11 @@
 <template>
-  <div class="flex flex-col gap-y-2">
+  <div class="flex flex-col gap-y-2 -mt-4">
     <IssueSearch
       v-model:params="state.params"
       :components="['status', 'time-range']"
-      :component-props="{
-        status: tab === 'RECENTLY_CLOSED' ? { disabled: true } : undefined,
-      }"
+      :component-props="
+        statusTabDisabled ? { status: { disabled: true } } : undefined
+      "
     >
       <template #default>
         <div class="flex items-center gap-x-2">
@@ -27,60 +27,31 @@
       </template>
     </IssueSearch>
 
-    <div v-if="hasCustomApprovalFeature" v-show="tab === 'WAITING_APPROVAL'">
-      <PagedIssueTableV1
-        session-key="project-waiting-approval"
-        :issue-filter="mergeIssueFilterByTab('WAITING_APPROVAL')"
-        :ui-issue-filter="mergeUIIssueFilterByTab('WAITING_APPROVAL')"
+    <div class="relative min-h-[20rem]">
+      <div
+        v-if="state.loading && !state.loadingMore"
+        class="absolute inset-0 bg-white/50 pt-[10rem] flex flex-col items-center"
       >
-        <template #table="{ issueList, loading }">
-          <IssueTableV1
-            mode="PROJECT"
-            :show-placeholder="!loading"
-            :issue-list="issueList"
-          />
-        </template>
-      </PagedIssueTableV1>
-    </div>
-
-    <div v-show="tab === 'WAITING_ROLLOUT'">
-      <PagedIssueTableV1
-        session-key="project-waiting-rollout"
-        :issue-filter="mergeIssueFilterByTab('WAITING_ROLLOUT')"
-        :ui-issue-filter="mergeUIIssueFilterByTab('WAITING_ROLLOUT')"
-      >
-        <template #table="{ issueList, loading }">
-          <IssueTableV1
-            mode="PROJECT"
-            :issue-list="issueList"
-            :show-placeholder="!loading"
-          />
-        </template>
-      </PagedIssueTableV1>
-    </div>
-
-    <div v-show="tab === 'RECENTLY_CLOSED'" class="flex flex-col gap-y-2 pb-2">
-      <!-- Won't show "Load more", since we have a "View all closed" link below -->
-      <PagedIssueTableV1
-        session-key="project-closed"
-        :issue-filter="mergeIssueFilterByTab('WAITING_ROLLOUT')"
-        :ui-issue-filter="mergeUIIssueFilterByTab('WAITING_ROLLOUT')"
-        :hide-load-more="true"
-      >
-        <template #table="{ issueList, loading }">
-          <IssueTableV1
-            mode="PROJECT"
-            :issue-list="issueList"
-            :show-placeholder="!loading"
-          />
-        </template>
-      </PagedIssueTableV1>
-
-      <div class="w-full flex justify-end">
-        <router-link :to="issueLink" class="normal-link text-sm">
-          {{ $t("project.overview.view-all-closed") }}
-        </router-link>
+        <BBSpin />
       </div>
+
+      <PagedIssueTableV1
+        :key="keyForTab(tab)"
+        v-model:loading="state.loading"
+        v-model:loading-more="state.loadingMore"
+        :session-key="keyForTab(tab)"
+        :issue-filter="mergeIssueFilterByTab(tab)"
+        :ui-issue-filter="mergeUIIssueFilterByTab(tab)"
+        :page-size="50"
+      >
+        <template #table="{ issueList, loading }">
+          <IssueTableV1
+            mode="PROJECT"
+            :show-placeholder="!loading"
+            :issue-list="issueList"
+          />
+        </template>
+      </PagedIssueTableV1>
     </div>
   </div>
 </template>
@@ -107,17 +78,15 @@ import {
 } from "@/utils";
 import { IssueSearch } from "../IssueV1/components";
 
-const TABS = [
-  "WAITING_APPROVAL",
-  "WAITING_ROLLOUT",
-  "RECENTLY_CLOSED",
-] as const;
+const TABS = ["WAITING_APPROVAL", "WAITING_ROLLOUT", "ALL"] as const;
 
 type TabValue = typeof TABS[number];
 
 interface LocalState {
   params: SearchParams;
   isFetchingActivityList: boolean;
+  loading: boolean;
+  loadingMore: boolean;
 }
 
 const props = defineProps({
@@ -142,10 +111,19 @@ const defaultSearchParams = () => {
 const state = reactive<LocalState>({
   params: defaultSearchParams(),
   isFetchingActivityList: false,
+  loading: false,
+  loadingMore: false,
 });
 const { t } = useI18n();
 
 const hasCustomApprovalFeature = featureToRef("bb.feature.custom-approval");
+const keyForTab = (tab: TabValue) => {
+  if (tab === "WAITING_APPROVAL") return "project-issues-waiting-approval";
+  if (tab === "WAITING_ROLLOUT") return "project-issues-waiting-rollout";
+  if (tab === "ALL") return "project-issues-all";
+
+  return "project-issues-unknown";
+};
 
 const tabItemList = computed((): TabFilterItem<TabValue>[] => {
   const items: TabFilterItem<TabValue>[] = [];
@@ -157,7 +135,7 @@ const tabItemList = computed((): TabFilterItem<TabValue>[] => {
   }
   items.push(
     { value: "WAITING_ROLLOUT", label: t("issue.waiting-rollout") },
-    { value: "RECENTLY_CLOSED", label: t("project.overview.recently-closed") }
+    { value: "ALL", label: t("common.all") }
   );
   return items;
 });
@@ -176,6 +154,9 @@ const tab = useLocalStorage<TabValue>(
     },
   }
 );
+const statusTabDisabled = computed(() => {
+  return ["WAITING_APPROVAL", "WAITING_ROLLOUT"].includes(tab.value);
+});
 
 const mergeSearchParamsByTab = (tab: TabValue) => {
   const common = cloneDeep(state.params);
@@ -191,12 +172,10 @@ const mergeSearchParamsByTab = (tab: TabValue) => {
       value: "approved",
     });
   }
-  if (tab === "RECENTLY_CLOSED") {
-    return upsertScope(common, {
-      id: "status",
-      value: "CLOSED",
-    });
+  if (tab === "ALL") {
+    return common;
   }
+  console.error("[mergeSearchParamsByTab] should never reach this line", tab);
   return common;
 };
 
@@ -217,12 +196,12 @@ const mergeUIIssueFilterByTab = (tab: TabValue) => {
 watch(
   tab,
   (tab) => {
-    if (tab === "RECENTLY_CLOSED") {
+    if (tab === "WAITING_APPROVAL" || tab === "WAITING_ROLLOUT") {
       upsertScope(
         state.params,
         {
           id: "status",
-          value: "CLOSED",
+          value: "OPEN",
         },
         true /* mutate */
       );

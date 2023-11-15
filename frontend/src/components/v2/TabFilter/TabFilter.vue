@@ -22,7 +22,7 @@
         class="rounded-md text-sm px-3 py-1 flex items-center disabled:cursor-not-allowed transition-colors duration-150"
         :class="[
           value === item.value
-            ? 'bg-gray-200 text-gray-800 disabled:bg-gray-100'
+            ? 'bg-gray-200 text-gray-800'
             : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 disabled:text-gray-300 disabled:bg-transparent',
         ]"
         @click.prevent="update(item.value)"

@@ -3,9 +3,9 @@
     <IssueSearch
       v-model:params="state.params"
       :components="['status', 'time-range']"
-      :component-props="{
-        status: tab === 'RECENTLY_CLOSED' ? { disabled: true } : undefined,
-      }"
+      :component-props="
+        statusTabDisabled ? { status: { disabled: true } } : undefined
+      "
       class="px-4 py-2"
     >
       <template #default>
@@ -28,113 +28,31 @@
       </template>
     </IssueSearch>
 
-    <div v-show="tab === 'CREATED'">
-      <PagedIssueTableV1
-        session-key="home-created"
-        :issue-filter="mergeIssueFilterByTab('CREATED')"
-        :ui-issue-filter="mergeUIIssueFilterByTab('CREATED')"
-        :page-size="OPEN_ISSUE_LIST_PAGE_SIZE"
+    <div class="relative min-h-[20rem]">
+      <div
+        v-if="state.loading && !state.loadingMore"
+        class="absolute inset-0 bg-white/50 pt-[10rem] flex flex-col items-center"
       >
-        <template #table="{ issueList, loading }">
-          <IssueTableV1
-            class="border-x-0"
-            :show-placeholder="!loading"
-            :issue-list="issueList"
-          />
-        </template>
-      </PagedIssueTableV1>
-    </div>
-
-    <div v-show="tab === 'ASSIGNED'">
-      <PagedIssueTableV1
-        session-key="home-assigned"
-        :issue-filter="mergeIssueFilterByTab('ASSIGNED')"
-        :ui-issue-filter="mergeUIIssueFilterByTab('ASSIGNED')"
-        :page-size="OPEN_ISSUE_LIST_PAGE_SIZE"
-      >
-        <template #table="{ issueList, loading }">
-          <IssueTableV1
-            class="border-x-0"
-            :show-placeholder="!loading"
-            :issue-list="issueList"
-          />
-        </template>
-      </PagedIssueTableV1>
-    </div>
-
-    <div v-show="tab === 'APPROVAL_REQUESTED' && hasCustomApprovalFeature">
-      <PagedIssueTableV1
-        session-key="home-waiting-approval"
-        :issue-filter="mergeIssueFilterByTab('APPROVAL_REQUESTED')"
-        :ui-issue-filter="mergeUIIssueFilterByTab('APPROVAL_REQUESTED')"
-      >
-        <template #table="{ issueList, loading }">
-          <IssueTableV1
-            class="border-x-0"
-            :show-placeholder="!loading"
-            :issue-list="issueList"
-          />
-        </template>
-      </PagedIssueTableV1>
-    </div>
-
-    <div v-show="tab === 'WAITING_ROLLOUT'">
-      <PagedIssueTableV1
-        session-key="home-awaiting-rollout"
-        :issue-filter="mergeIssueFilterByTab('WAITING_ROLLOUT')"
-        :ui-issue-filter="mergeUIIssueFilterByTab('WAITING_ROLLOUT')"
-        :page-size="OPEN_ISSUE_LIST_PAGE_SIZE"
-      >
-        <template #table="{ issueList, loading }">
-          <IssueTableV1
-            class="border-x-0"
-            :show-placeholder="!loading"
-            :issue-list="issueList"
-          />
-        </template>
-      </PagedIssueTableV1>
-    </div>
-
-    <div v-show="tab === 'SUBSCRIBED'">
-      <PagedIssueTableV1
-        session-key="home-subscribed"
-        :issue-filter="mergeIssueFilterByTab('SUBSCRIBED')"
-        :ui-issue-filter="mergeUIIssueFilterByTab('SUBSCRIBED')"
-        :page-size="OPEN_ISSUE_LIST_PAGE_SIZE"
-      >
-        <template #table="{ issueList, loading }">
-          <IssueTableV1
-            class="border-x-0"
-            :show-placeholder="!loading"
-            :issue-list="issueList"
-          />
-        </template>
-      </PagedIssueTableV1>
-    </div>
-
-    <div v-show="tab === 'RECENTLY_CLOSED'" class="flex flex-col gap-y-2 pb-2">
-      <!-- show the first 5 DONE or CANCELED issues -->
-      <!-- But won't show "Load more", since we have a "View all closed" link below -->
-      <PagedIssueTableV1
-        session-key="home-closed"
-        :issue-filter="mergeIssueFilterByTab('RECENTLY_CLOSED')"
-        :ui-issue-filter="mergeUIIssueFilterByTab('RECENTLY_CLOSED')"
-        :page-size="MAX_CLOSED_ISSUE"
-        :hide-load-more="true"
-      >
-        <template #table="{ issueList, loading }">
-          <IssueTableV1
-            class="border-x-0"
-            :show-placeholder="!loading"
-            :issue-list="issueList"
-          />
-        </template>
-      </PagedIssueTableV1>
-      <div class="w-full flex justify-end px-4">
-        <router-link :to="issueLink" class="normal-link text-sm">
-          {{ $t("project.overview.view-all-closed") }}
-        </router-link>
+        <BBSpin />
       </div>
+
+      <PagedIssueTableV1
+        :key="keyForTab(tab)"
+        v-model:loading="state.loading"
+        v-model:loading-more="state.loadingMore"
+        :session-key="keyForTab(tab)"
+        :issue-filter="mergeIssueFilterByTab(tab)"
+        :ui-issue-filter="mergeUIIssueFilterByTab(tab)"
+        :page-size="50"
+      >
+        <template #table="{ issueList, loading }">
+          <IssueTableV1
+            class="border-x-0"
+            :show-placeholder="!loading"
+            :issue-list="issueList"
+          />
+        </template>
+      </PagedIssueTableV1>
     </div>
   </div>
 
@@ -233,18 +151,17 @@ const TABS = [
   "APPROVAL_REQUESTED",
   "WAITING_ROLLOUT",
   "SUBSCRIBED",
-  "RECENTLY_CLOSED",
+  "ALL",
 ] as const;
 
 type TabValue = typeof TABS[number];
 
 interface LocalState {
+  loading: boolean;
+  loadingMore: boolean;
   params: SearchParams;
   showTrialStartModal: boolean;
 }
-
-const OPEN_ISSUE_LIST_PAGE_SIZE = 50;
-const MAX_CLOSED_ISSUE = 50;
 
 const { t } = useI18n();
 const subscriptionStore = useSubscriptionV1Store();
@@ -280,6 +197,8 @@ const defaultSearchParams = () => {
 };
 
 const state = reactive<LocalState>({
+  loading: false,
+  loadingMore: false,
   params: defaultSearchParams(),
   showTrialStartModal: false,
 });
@@ -302,11 +221,21 @@ const tabItemList = computed((): TabFilterItem<TabValue>[] => {
   items.push(
     { value: "WAITING_ROLLOUT", label: t("issue.waiting-rollout") },
     { value: "SUBSCRIBED", label: t("common.subscribed") },
-    { value: "RECENTLY_CLOSED", label: t("project.overview.recently-closed") }
+    { value: "ALL", label: t("common.all") }
   );
   return items;
 });
 
+const keyForTab = (tab: TabValue) => {
+  if (tab === "CREATED") return "my-issues-created";
+  if (tab === "ASSIGNED") return "my-issues-assigned";
+  if (tab === "APPROVAL_REQUESTED") return "my-issues-approval-requested";
+  if (tab === "WAITING_ROLLOUT") return "my-issues-waiting-rollout";
+  if (tab === "SUBSCRIBED") return "my-issues-subscribed";
+  if (tab === "ALL") return "my-issues-all";
+
+  return "my-issues-unknown";
+};
 const mergeSearchParamsByTab = (tab: TabValue) => {
   const common = cloneDeep(state.params);
   const myEmail = me.value.email;
@@ -328,11 +257,8 @@ const mergeSearchParamsByTab = (tab: TabValue) => {
       value: myEmail,
     });
   }
-  if (tab === "RECENTLY_CLOSED") {
-    return upsertScope(common, {
-      id: "status",
-      value: "CLOSED",
-    });
+  if (tab === "ALL") {
+    return common;
   }
   if (tab === "APPROVAL_REQUESTED") {
     return upsertScope(common, [
@@ -358,6 +284,7 @@ const mergeSearchParamsByTab = (tab: TabValue) => {
       },
     ]);
   }
+  console.error("[mergeSearchParamsByTab] should never reach this line", tab);
   return common;
 };
 
@@ -381,6 +308,10 @@ const issueLink = computed(() => {
   )}`;
 });
 
+const statusTabDisabled = computed(() => {
+  return ["APPROVAL_REQUESTED", "WAITING_ROLLOUT"].includes(tab.value);
+});
+
 const mergeIssueFilterByTab = (tab: TabValue) => {
   return buildIssueFilterBySearchParams(mergeSearchParamsByTab(tab));
 };
@@ -392,12 +323,12 @@ const mergeUIIssueFilterByTab = (tab: TabValue) => {
 watch(
   tab,
   (tab) => {
-    if (tab === "RECENTLY_CLOSED") {
+    if (tab === "APPROVAL_REQUESTED" || tab === "WAITING_ROLLOUT") {
       upsertScope(
         state.params,
         {
           id: "status",
-          value: "CLOSED",
+          value: "OPEN",
         },
         true /* mutate */
       );
