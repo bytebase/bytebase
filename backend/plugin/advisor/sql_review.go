@@ -586,7 +586,7 @@ func mysqlSyntaxCheck(statement string) (any, []Advice) {
 		if syntaxErr, ok := err.(*base.SyntaxError); ok {
 			return nil, []Advice{
 				{
-					Status:  Warn,
+					Status:  Error,
 					Code:    StatementSyntaxError,
 					Title:   SyntaxErrorTitle,
 					Content: syntaxErr.Message,
@@ -597,7 +597,7 @@ func mysqlSyntaxCheck(statement string) (any, []Advice) {
 		}
 		return nil, []Advice{
 			{
-				Status:  Warn,
+				Status:  Error,
 				Code:    Internal,
 				Title:   "Parse error",
 				Content: err.Error(),

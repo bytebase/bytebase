@@ -1,405 +1,542 @@
 - statement: CREATE TABLE user(id INT PRIMARY KEY COMMENT 'comment',name VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'comment',room_id INT NOT NULL DEFAULT 0 COMMENT 'comment',creator_id INT NOT NULL DEFAULT 0 COMMENT 'comment',created_ts TIMESTAMP NOT NULL DEFAULT NOW() COMMENT 'comment',updater_id INT NOT NULL DEFAULT 0 COMMENT 'comment',updated_ts TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',INDEX idx_user_name(name),UNIQUE KEY uk_user_id_name(id, name)) ENGINE = INNODB COMMENT 'comment'
   result:
-    - code: 0
-      status: 3
+    - status: 3
       title: OK
+      content: ""
+      code: 0
+      report: null
   run: false
 - statement: CREATE TABLE user(id);
   result:
     - status: 1
       title: Syntax error
-      content: |-
-        Syntax error at line 1:20 
-        related text: CREATE TABLE user(id)
-      sql_review_report:
-        code: 201
-        line: 1
-        column: 20
+      content: "Syntax error at line 1:20 \nrelated text: CREATE TABLE user(id)"
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 20
+            detail: ""
+            code: 201
   run: false
 - statement: CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin
   result:
     - status: 1
       title: engine.mysql.use-innodb
-      content: |-
-        "CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin
-        ;" doesn't use InnoDB engine
-      sql_review_report:
-        code: 501
-        line: 2
+      content: '"CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT ''comment'',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT ''comment'',content BLOB NOT NULL COMMENT ''comment'',json_content JSON NOT NULL COMMENT ''comment'',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;" doesn''t use InnoDB engine'
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 501
     - status: 1
       title: table.require-pk
       content: Table `userTable` requires PRIMARY KEY
-      sql_review_report:
-        code: 601
-        line: 2
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 601
     - status: 1
       title: table.no-foreign-key
       content: Foreign key is not allowed in the table `userTable`
-      sql_review_report:
-        code: 602
-        line: 1
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 602
     - status: 1
       title: column.type-disallow-list
       content: Disallow column type JSON but column `userTable`.`json_content` is
-      sql_review_report:
-        code: 411
-        line: 1
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 411
     - status: 2
       title: naming.table
       content: '`userTable` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      sql_review_report:
-        code: 301
-        line: 2
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 301
     - status: 2
       title: naming.column
       content: '`userTable`.`roomId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      sql_review_report:
-        code: 302
-        line: 1
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 302
     - status: 2
       title: naming.index.idx
       content: Index in table `userTable` mismatches the naming convention, expect "^$|^idx_userTable_name$" but found `idx1`
-      sql_review_report:
-        code: 303
-        line: 1
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 303
     - status: 2
       title: naming.index.uk
       content: Unique key in table `userTable` mismatches the naming convention, expect "^$|^uk_userTable_id_name$" but found `uk1`
-      sql_review_report:
-        code: 304
-        line: 1
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 304
     - status: 2
       title: naming.index.fk
       content: Foreign key in table `userTable` mismatches the naming convention, expect "^$|^fk_userTable_roomId_room_id$" but found `fk1`
-      sql_review_report:
-        code: 305
-        line: 1
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 305
     - status: 2
       title: table.comment
       content: Table `userTable` requires comments
-      sql_review_report:
-        code: 605
-        line: 2
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 605
     - status: 2
       title: column.required
-      content: "Table `userTable` requires columns: created_ts, creator_id, updated_ts, updater_id"
-      sql_review_report:
-        code: 401
-        line: 2
+      content: 'Table `userTable` requires columns: created_ts, creator_id, updated_ts, updater_id'
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 401
     - status: 2
       title: column.no-null
-      content: "`userTable`.`name` cannot have NULL value"
-      sql_review_report:
-        code: 402
-        line: 1
+      content: '`userTable`.`name` cannot have NULL value'
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 402
     - status: 2
       title: column.no-null
-      content: "`userTable`.`roomId` cannot have NULL value"
-      sql_review_report:
-        code: 402
-        line: 1
+      content: '`userTable`.`roomId` cannot have NULL value'
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 402
     - status: 2
       title: column.set-default-for-not-null
       content: Column `userTable`.`id` is NOT NULL but doesn't have DEFAULT
-      sql_review_report:
-        code: 404
-        line: 1
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 404
     - status: 2
       title: column.comment
       content: Column `userTable`.`id` requires comments
-      sql_review_report:
-        code: 408
-        line: 1
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 408
     - status: 2
       title: column.comment
       content: Column `userTable`.`name` requires comments
-      sql_review_report:
-        code: 408
-        line: 1
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 408
     - status: 2
       title: column.comment
       content: Column `userTable`.`roomId` requires comments
-      sql_review_report:
-        code: 408
-        line: 1
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 408
     - status: 2
       title: column.disallow-set-charset
-      content: |-
-        Disallow set column charset but "CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin
-        ;" does
-      sql_review_report:
-        code: 414
-        line: 2
+      content: Disallow set column charset but "CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;" does
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 414
     - status: 2
       title: column.current-time-count-limit
       content: Table `userTable` has 2 ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than 1.
-      sql_review_report:
-        code: 419
-        line: 2
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 419
     - status: 2
       title: column.require-default
       content: Column `userTable`.`id` doesn't have DEFAULT.
-      sql_review_report:
-        code: 420
-        line: 1
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 420
     - status: 2
       title: column.require-default
       content: Column `userTable`.`name` doesn't have DEFAULT.
-      sql_review_report:
-        code: 420
-        line: 1
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 420
     - status: 2
       title: column.require-default
       content: Column `userTable`.`roomId` doesn't have DEFAULT.
-      sql_review_report:
-        code: 420
-        line: 1
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 420
     - status: 2
       title: index.type-no-blob
       content: Columns in index must not be BLOB but `userTable`.`content` is blob
-      sql_review_report:
-        code: 804
-        line: 1
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 804
     - status: 2
       title: system.charset.allowlist
-      content: |-
-        "CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin
-        ;" used disabled charset 'ascii'
-      sql_review_report:
-        code: 1001
-        line: 1
+      content: '"CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT ''comment'',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT ''comment'',content BLOB NOT NULL COMMENT ''comment'',json_content JSON NOT NULL COMMENT ''comment'',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;" used disabled charset ''ascii'''
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 1001
     - status: 2
       title: system.collation.allowlist
-      content: |-
-        "CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',content BLOB NOT NULL COMMENT 'comment',json_content JSON NOT NULL COMMENT 'comment',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin
-        ;" used disabled collation 'latin1_bin'
-      sql_review_report:
-        code: 1201
-        line: 2
+      content: '"CREATE TABLE userTable(id INT NOT NULL,name VARCHAR(255) CHARSET ascii,roomId INT,time_created TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT ''comment'',time_updated TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT ''comment'',content BLOB NOT NULL COMMENT ''comment'',json_content JSON NOT NULL COMMENT ''comment'',INDEX idx1(name),UNIQUE KEY uk1(id, name),FOREIGN KEY fk1(roomId) REFERENCES room(id),INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;" used disabled collation ''latin1_bin'''
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 1201
   run: false
 - statement: CREATE TABLE t_auto(auto_id varchar(20) AUTO_INCREMENT PRIMARY KEY COMMENT 'COMMENT') auto_increment = 2 COMMENT 'comment'
   result:
     - status: 1
       title: column.auto-increment-must-integer
       content: Auto-increment column `t_auto`.`auto_id` requires integer type
-      sql_review_report:
-        code: 410
-        line: 2
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 410
     - status: 2
       title: naming.column.auto-increment
       content: '`t_auto`.`auto_id` mismatches auto_increment column naming convention, naming format should be "^id$"'
-      sql_review_report:
-        code: 307
-        line: 1
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 307
     - status: 2
       title: column.required
-      content: "Table `t_auto` requires columns: created_ts, creator_id, id, updated_ts, updater_id"
-      sql_review_report:
-        code: 401
-        line: 2
+      content: 'Table `t_auto` requires columns: created_ts, creator_id, id, updated_ts, updater_id'
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 401
     - status: 2
       title: column.auto-increment-initial-value
       content: The initial auto-increment value in table `t_auto` is 2, which doesn't equal 20
-      sql_review_report:
-        code: 416
-        line: 2
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 416
     - status: 2
       title: column.auto-increment-must-unsigned
       content: Auto-increment column `t_auto`.`auto_id` is not UNSIGNED type
-      sql_review_report:
-        code: 417
-        line: 2
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 417
     - status: 2
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t_auto`.`auto_id` is varchar(20)
-      sql_review_report:
-        code: 803
-        line: 1
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 803
   run: false
-- statement: "        DELETE FROM tech_book"
+- statement: '        DELETE FROM tech_book'
   result:
     - status: 1
       title: statement.where.require
-      content: |-
-        "        DELETE FROM tech_book
-        ;" requires WHERE clause
-      sql_review_report:
-        code: 202
-        line: 2
+      content: '"DELETE FROM tech_book;" requires WHERE clause'
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 202
     - status: 1
       title: statement.dml-dry-run
-      content: |-
-        "        DELETE FROM tech_book
-        ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist
-      sql_review_report:
-        code: 208
-        line: 2
+      content: '"DELETE FROM tech_book;" dry runs failed: Error 1146 (42S02): Table ''testsqlreview.tech_book'' doesn''t exist'
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 208
     - status: 2
       title: statement.affected-row-limit
-      content: |-
-        "        DELETE FROM tech_book
-        ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist
-      sql_review_report:
-        code: 209
-        line: 2
+      content: '"DELETE FROM tech_book;" dry runs failed: Error 1146 (42S02): Table ''testsqlreview.tech_book'' doesn''t exist'
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 209
   run: false
 - statement: DELETE FROM tech_book WHERE name like `%abc`
   result:
     - status: 1
-      title: statement.where.no-leading-wildcard-like
-      content: |-
-        "DELETE FROM tech_book WHERE name like `%abc`
-        ;" uses leading wildcard LIKE
-      sql_review_report:
-        code: 204
-        line: 2
-    - status: 1
       title: statement.dml-dry-run
-      content: |-
-        "DELETE FROM tech_book WHERE name like `%abc`
-        ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist
-      sql_review_report:
-        code: 208
-        line: 2
+      content: '"DELETE FROM tech_book WHERE name like `%abc`;" dry runs failed: Error 1146 (42S02): Table ''testsqlreview.tech_book'' doesn''t exist'
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 208
     - status: 2
       title: statement.affected-row-limit
-      content: |-
-        "DELETE FROM tech_book WHERE name like `%abc`
-        ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist
-      sql_review_report:
-        code: 209
-        line: 2
+      content: '"DELETE FROM tech_book WHERE name like `%abc`;" dry runs failed: Error 1146 (42S02): Table ''testsqlreview.tech_book'' doesn''t exist'
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 209
   run: false
-- statement: "        INSERT INTO t_copy SELECT * FROM t"
+- statement: '        INSERT INTO t_copy SELECT * FROM t'
   result:
     - status: 1
       title: statement.select.no-select-all
-      content: |-
-        "        INSERT INTO t_copy SELECT * FROM t
-        ;" uses SELECT all
-      sql_review_report:
-        code: 203
-        line: 2
+      content: '"INSERT INTO t_copy SELECT * FROM t;" uses SELECT all'
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 203
     - status: 1
       title: statement.where.require
-      content: |-
-        "        INSERT INTO t_copy SELECT * FROM t
-        ;" requires WHERE clause
-      sql_review_report:
-        code: 202
-        line: 2
+      content: '"INSERT INTO t_copy SELECT * FROM t;" requires WHERE clause'
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 202
     - status: 1
       title: statement.dml-dry-run
-      content: |-
-        "        INSERT INTO t_copy SELECT * FROM t
-        ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.t_copy' doesn't exist
-      sql_review_report:
-        code: 208
-        line: 2
+      content: '"INSERT INTO t_copy SELECT * FROM t;" dry runs failed: Error 1146 (42S02): Table ''testsqlreview.t_copy'' doesn''t exist'
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 208
     - status: 2
       title: statement.insert.row-limit
-      content: |-
-        "        INSERT INTO t_copy SELECT * FROM t
-        ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.t_copy' doesn't exist
-      sql_review_report:
-        code: 1101
-        line: 2
-    - status: 2
-      title: statement.insert.must-specify-column
-      content: |-
-        The INSERT statement must specify columns but "        INSERT INTO t_copy SELECT * FROM t
-        ;" does not
-      sql_review_report:
-        code: 1107
-        line: 2
+      content: '"INSERT INTO t_copy SELECT * FROM t;" dry runs failed: Error 1146 (42S02): Table ''testsqlreview.t'' doesn''t exist'
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 1101
   run: false
-- statement: "        INSERT INTO t VALUES (1, 1, now(), 1, now())"
+- statement: '        INSERT INTO t VALUES (1, 1, now(), 1, now())'
   result:
     - status: 1
       title: statement.dml-dry-run
-      content: |-
-        "        INSERT INTO t VALUES (1, 1, now(), 1, now())
-        ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.t' doesn't exist
-      sql_review_report:
-        code: 208
-        line: 2
+      content: '"INSERT INTO t VALUES (1, 1, now(), 1, now());" dry runs failed: Error 1146 (42S02): Table ''testsqlreview.t'' doesn''t exist'
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 208
     - status: 2
       title: statement.insert.must-specify-column
-      content: |-
-        The INSERT statement must specify columns but "        INSERT INTO t VALUES (1, 1, now(), 1, now())
-        ;" does not
-      sql_review_report:
-        code: 1107
-        line: 2
+      content: The INSERT statement must specify columns but "INSERT INTO t VALUES (1, 1, now(), 1, now());" does not
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 1107
   run: false
 - statement: DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')
   result:
     - status: 1
       title: statement.dml-dry-run
-      content: |-
-        "DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')
-        ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist
-      sql_review_report:
-        code: 208
-        line: 2
+      content: '"DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = ''bytebase'');" dry runs failed: Error 1146 (42S02): Table ''testsqlreview.tech_book'' doesn''t exist'
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 208
     - status: 2
       title: statement.affected-row-limit
-      content: |-
-        "DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')
-        ;" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist
-      sql_review_report:
-        code: 209
-        line: 2
+      content: '"DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = ''bytebase'');" dry runs failed: Error 1146 (42S02): Table ''testsqlreview.tech_book'' doesn''t exist'
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 209
   run: false
 - statement: COMMIT;
   result:
     - status: 1
       title: statement.disallow-commit
-      content: |-
-        Commit is not allowed, related statement: "COMMIT
-        ;"
-      sql_review_report:
-        code: 206
-        line: 2
+      content: 'Commit is not allowed, related statement: "COMMIT;"'
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 206
   run: false
 - statement: CREATE TABLE user(id INT PRIMARY KEY COMMENT 'comment',name VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'comment',room_id INT NOT NULL DEFAULT 0 COMMENT 'comment',creator_id INT NOT NULL DEFAULT 0 COMMENT 'comment',created_ts TIMESTAMP NOT NULL DEFAULT NOW() COMMENT 'comment',updater_id INT NOT NULL DEFAULT 0 COMMENT 'comment',updated_ts TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW() COMMENT 'comment',INDEX idx_user_name(name),UNIQUE KEY uk_user_id_name(id, name)) ENGINE = INNODB COMMENT 'comment'
   result:
-    - code: 0
-      status: 3
+    - status: 3
       title: OK
       content: ""
+      code: 0
+      report: null
   run: true
 - statement: INSERT INTO user(id, name) values (1, 'a'), (2, 'b'), (3, 'c'), (4, 'd'), (5, 'e')
   result:
-    - code: 0
-      status: 3
+    - status: 3
       title: OK
       content: ""
+      code: 0
+      report: null
   run: true
 - statement: DELETE FROM user WHERE id < 10
   result:
-    - code: 0
-      status: 3
+    - status: 3
       title: OK
       content: ""
+      code: 0
+      report: null
   run: false
 - statement: INSERT INTO user(id, name) values (6, 'f'), (7, 'g'), (8, 'h'), (9, 'i'), (10, 'j')
   result:
-    - code: 0
-      status: 3
+    - status: 3
       title: OK
       content: ""
+      code: 0
+      report: null
   run: true
 - statement: DELETE FROM user WHERE id <= 10
   result:
     - status: 2
       title: statement.affected-row-limit
-      content: |-
-        "DELETE FROM user WHERE id <= 10
-        ;" affected 10 rows. The count exceeds 5.
-      sql_review_report:
-        code: 209
-        line: 2
+      content: '"DELETE FROM user WHERE id <= 10;" affected 10 rows. The count exceeds 5.'
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 209
   run: false
 - statement: |-
     INSERT INTO user(id, name) SELECT id, name FROM (SELECT 1 AS id, 'a' AS name WHERE 1=1 UNION ALL
@@ -425,33 +562,51 @@
               SELECT 7 AS id, 'g' AS name WHERE 1=1 UNION ALL
               SELECT 8 AS id, 'h' AS name WHERE 1=1 UNION ALL
               SELECT 9 AS id, 'i' AS name WHERE 1=1 UNION ALL
-              SELECT 10 AS id, 'j' AS name WHERE 1=1) value_table WHERE 1=1
-        ;" inserts 10 rows. The count exceeds 5.
-      sql_review_report:
-        code: 1101
-        line: 11
+              SELECT 10 AS id, 'j' AS name WHERE 1=1) value_table WHERE 1=1;" dry runs failed: Error 1064 (42000): You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'id, name) SELECT id, name FROM (SELECT 1 AS id, 'a' AS name WHERE 1=1 UNION ALL
+        ' at line 1
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 1101
   run: false
 - statement: INSERT INTO user(id, name) SELECT id, name FROM user WHERE id=1 LIMIT 1
   result:
     - status: 2
       title: statement.disallow-limit
-      content: |-
-        LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but "INSERT INTO user(id, name) SELECT id, name FROM user WHERE id=1 LIMIT 1
-        ;" uses
-      sql_review_report:
-        code: 1103
-        line: 2
+      content: LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but "INSERT INTO user(id, name) SELECT id, name FROM user WHERE id=1 LIMIT 1;" uses
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 1103
+    - status: 2
+      title: statement.insert.row-limit
+      content: '"INSERT INTO user(id, name) SELECT id, name FROM user WHERE id=1 LIMIT 1;" dry runs failed: Error 1064 (42000): You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ''id, name) SELECT id, name FROM user WHERE id=1 LIMIT 1'' at line 1'
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 1101
   run: false
-- statement: "        ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8;"
+- statement: '        ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8;'
   result:
     - status: 2
       title: table.disallow-partition
-      content: |-
-        Table partition is forbidden, but "        ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8
-        ;" creates
-      sql_review_report:
-        code: 608
-        line: 2
+      content: Table partition is forbidden, but "ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8;" creates
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 608
   run: false
 - statement: |-
     ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '' COMMENT 'COMMENT' FIRST;
@@ -460,48 +615,74 @@
     - status: 2
       title: statement.merge-alter-table
       content: There are 2 statements to modify table `user`
-      sql_review_report:
-        code: 207
-        line: 3
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 2
+            column: 0
+            detail: ""
+            code: 207
     - status: 2
       title: column.disallow-change-type
       content: '"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '''' COMMENT ''COMMENT'' FIRST;" changes column type'
-      sql_review_report:
-        code: 403
-        line: 1
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 403
     - status: 2
       title: column.disallow-change
       content: '"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '''' COMMENT ''COMMENT'' FIRST;" contains CHANGE COLUMN statement'
-      sql_review_report:
-        code: 406
-        line: 1
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 406
     - status: 2
       title: column.disallow-changing-order
       content: '"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '''' COMMENT ''COMMENT'' FIRST;" changes column order'
-      sql_review_report:
-        code: 407
-        line: 1
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 407
     - status: 2
       title: schema.backward-compatibility
       content: '"ALTER TABLE user CHANGE name name varchar(320) NOT NULL DEFAULT '''' COMMENT ''COMMENT'' FIRST;" may cause incompatibility with the existing data and code'
-      sql_review_report:
-        code: 111
-        line: 1
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 111
   run: false
-- statement: "        DROP TABLE user;"
+- statement: '        DROP TABLE user;'
   result:
     - status: 1
       title: table.drop-naming-convention
       content: '`user` mismatches drop table naming convention, naming format should be "_delete$"'
-      sql_review_report:
-        code: 603
-        line: 2
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 603
     - status: 2
       title: schema.backward-compatibility
-      content: |-
-        "        DROP TABLE user
-        ;" may cause incompatibility with the existing data and code
-      sql_review_report:
-        code: 103
-        line: 2
+      content: '"DROP TABLE user;" may cause incompatibility with the existing data and code'
+      code: 0
+      report:
+        sqlreviewreport:
+            line: 1
+            column: 0
+            detail: ""
+            code: 103
   run: false
