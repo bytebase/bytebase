@@ -912,7 +912,8 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 	limitPlusOne := limit + 1
 
 	truncateSize := 512
-	if s.profile.Mode == common.ReleaseModeDev {
+	// We apply small truncate size in dev environment (not demo) for finding incorrect usage of views
+	if s.profile.Mode == common.ReleaseModeDev && s.profile.DemoName == "" {
 		truncateSize = 4
 	}
 	find := &store.FindInstanceChangeHistoryMessage{
@@ -990,7 +991,8 @@ func (s *DatabaseService) GetChangeHistory(ctx context.Context, request *v1pb.Ge
 	}
 
 	truncateSize := 4 * 1024 * 1024
-	if s.profile.Mode == common.ReleaseModeDev {
+	// We apply small truncate size in dev environment (not demo) for finding incorrect usage of views
+	if s.profile.Mode == common.ReleaseModeDev && s.profile.DemoName == "" {
 		truncateSize = 64
 	}
 	find := &store.FindInstanceChangeHistoryMessage{
