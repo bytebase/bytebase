@@ -6,14 +6,14 @@
   />
 
   <div
-    v-if="state.loading"
+    v-if="state.loadingMore"
     class="flex items-center justify-center py-2 text-gray-400 text-sm"
   >
     <BBSpin />
   </div>
 
   <slot
-    v-if="!state.loading"
+    v-if="!state.loadingMore"
     name="more"
     :has-more="state.hasMore"
     :fetch-next-page="fetchNextPage"
@@ -45,6 +45,7 @@ type LocalState = {
   loading: boolean;
   issueList: ComposedIssue[];
   paginationToken: string;
+  loadingMore: boolean;
   hasMore: boolean;
 };
 
@@ -87,12 +88,25 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  loading: {
+    type: Boolean,
+    default: false,
+  },
+  loadingMore: {
+    type: Boolean,
+    default: false,
+  },
 });
+const emit = defineEmits<{
+  (event: "update:loading", loading: boolean): void;
+  (event: "update:loading-more", loadingMore: boolean): void;
+}>();
 
 const state = reactive<LocalState>({
   loading: false,
   issueList: [],
   paginationToken: "",
+  loadingMore: false,
   hasMore: true,
 });
 
@@ -132,6 +146,9 @@ const fetchData = (refresh = false) => {
   state.loading = true;
 
   const isFirstFetch = state.paginationToken === "";
+  if (!isFirstFetch) {
+    state.loadingMore = true;
+  }
   const expectedRowCount = isFirstFetch
     ? // Load one or more page for the first fetch to restore the session
       limit.value * sessionState.value.page
@@ -174,6 +191,7 @@ const fetchData = (refresh = false) => {
     })
     .finally(() => {
       state.loading = false;
+      state.loadingMore = false;
     });
 };
 
@@ -211,4 +229,19 @@ watch(isLoggedIn, () => {
 useRefreshIssueList(() => {
   refresh();
 });
+
+watch(
+  () => state.loading,
+  (loading) => {
+    emit("update:loading", loading);
+  },
+  { immediate: true }
+);
+watch(
+  () => state.loadingMore,
+  (loadingMore) => {
+    emit("update:loading-more", loadingMore);
+  },
+  { immediate: true }
+);
 </script>
