@@ -2,10 +2,12 @@ import { isEqual, isUndefined, orderBy, uniqBy } from "lodash-es";
 import slug from "slug";
 import { t } from "@/plugins/i18n";
 import { useDBSchemaV1Store, useDatabaseV1Store } from "@/store";
+import { ComposedDatabase, UNKNOWN_ID } from "@/types";
 import { AffectedTable, EmptyAffectedTable } from "@/types/changeHistory";
 import {
   ChangeHistory,
   ChangeHistory_Type,
+  DatabaseSchema,
 } from "@/types/proto/v1/database_service";
 import { extractDatabaseResourceName } from "./database";
 
@@ -116,4 +118,17 @@ export const getHistoryChangeType = (type: ChangeHistory_Type) => {
     default:
       return "-";
   }
+};
+
+export const mockLatestSchemaChangeHistory = (
+  database: ComposedDatabase,
+  schema: DatabaseSchema | undefined = undefined
+) => {
+  return ChangeHistory.fromPartial({
+    name: `${database.name}/changeHistories/${UNKNOWN_ID}`,
+    uid: String(UNKNOWN_ID),
+    schema: schema?.schema,
+    version: "Latest version",
+    description: "the latest schema of database",
+  });
 };
