@@ -80,7 +80,10 @@ export function useOverlayStack(show: MaybeRef<boolean> = true) {
         e.stopPropagation();
         e.stopImmediatePropagation();
         e.preventDefault();
-        console.log(el);
+        console.debug(
+          "<OverlayStackManager> esc handled, if you don't want to handle esc event when focusing this kind of element, please check the element",
+          el
+        );
 
         context.events.emit("esc", e);
       }
