@@ -68,9 +68,10 @@ export function useOverlayStack(show: MaybeRef<boolean> = true) {
       const EXCLUDED_SELECTORS = [
         "input",
         "textarea",
+        ".n-input",
         ".n-base-selection-input",
         ".n-base-selection-tags",
-        ".n-input",
+        ".n-base-selection-label",
       ];
       const selector = EXCLUDED_SELECTORS.join(",");
       if (el.matches(selector)) return;
