@@ -283,6 +283,7 @@ const syncURLWithConnection = () => {
         // exceptions.
         tabStore.updateCurrentTab({
           connection: {
+            ...tabStore.currentTab.connection,
             instanceId: instance.uid,
             databaseId: database.uid,
           },

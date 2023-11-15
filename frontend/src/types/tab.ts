@@ -11,6 +11,7 @@ export type ExecuteOption = {
 export type Connection = {
   instanceId: string;
   databaseId: string;
+  dataSourceId?: string;
 };
 
 export enum TabMode {
