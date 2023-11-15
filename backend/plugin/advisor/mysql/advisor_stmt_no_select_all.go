@@ -17,8 +17,9 @@ var (
 )
 
 func init() {
-	// only for mysqlwip test.
-	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLNoSelectAll, &NoSelectAllAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLNoSelectAll, &NoSelectAllAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLNoSelectAll, &NoSelectAllAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLNoSelectAll, &NoSelectAllAdvisor{})
 }
 
 // NoSelectAllAdvisor is the advisor checking for no "select *".

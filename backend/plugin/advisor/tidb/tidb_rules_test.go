@@ -7,9 +7,8 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func TestMySQLRules(t *testing.T) {
-	mysqlRules := []advisor.SQLReviewRuleType{
-		advisor.SchemaRuleMySQLEngine,
+func TestTiDBRules(t *testing.T) {
+	tidbRules := []advisor.SQLReviewRuleType{
 		// advisor.SchemaRuleTableNaming enforce the table name format.
 		advisor.SchemaRuleTableNaming,
 		// advisor.SchemaRuleColumnNaming enforce the column name format.
@@ -37,14 +36,10 @@ func TestMySQLRules(t *testing.T) {
 		advisor.SchemaRuleStatementDisallowOrderBy,
 		// advisor.SchemaRuleStatementMergeAlterTable disallow redundant ALTER TABLE statements.
 		advisor.SchemaRuleStatementMergeAlterTable,
-		// advisor.SchemaRuleStatementInsertRowLimit enforce the insert row limit.
-		advisor.SchemaRuleStatementInsertRowLimit,
 		// advisor.SchemaRuleStatementInsertMustSpecifyColumn enforce the insert column specified.
 		advisor.SchemaRuleStatementInsertMustSpecifyColumn,
 		// advisor.SchemaRuleStatementInsertDisallowOrderByRand disallow the order by rand in the INSERT statement.
 		advisor.SchemaRuleStatementInsertDisallowOrderByRand,
-		// advisor.SchemaRuleStatementAffectedRowLimit enforce the UPDATE/DELETE affected row limit.
-		advisor.SchemaRuleStatementAffectedRowLimit,
 		// advisor.SchemaRuleStatementDMLDryRun dry run the dml.
 		advisor.SchemaRuleStatementDMLDryRun,
 
@@ -117,7 +112,7 @@ func TestMySQLRules(t *testing.T) {
 		advisor.SchemaRuleCollationAllowlist,
 	}
 
-	for _, rule := range mysqlRules {
-		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_MYSQL, false /* record */)
+	for _, rule := range tidbRules {
+		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_TIDB, false /* record */)
 	}
 }

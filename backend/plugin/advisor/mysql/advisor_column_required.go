@@ -19,8 +19,9 @@ var (
 )
 
 func init() {
-	// only for mysqlwip test.
-	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLColumnRequirement, &ColumnRequirementAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLColumnRequirement, &ColumnRequirementAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLColumnRequirement, &ColumnRequirementAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLColumnRequirement, &ColumnRequirementAdvisor{})
 }
 
 // ColumnRequirementAdvisor is the advisor checking for column requirement.

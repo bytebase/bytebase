@@ -20,6 +20,9 @@ import (
 	_ "github.com/pingcap/tidb/types/parser_driver"
 	// Register tidb advisor.
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/tidb"
+	// Register mysql advisor.
+	_ "github.com/bytebase/bytebase/backend/plugin/advisor/mysql"
+
 	// Register postgresql advisor.
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/pg"
 	// Register oracle advisor.

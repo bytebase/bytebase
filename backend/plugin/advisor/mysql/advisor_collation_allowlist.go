@@ -18,8 +18,9 @@ var (
 )
 
 func init() {
-	// only for mysqlwip test.
-	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLCollationAllowlist, &CollationAllowlistAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLCollationAllowlist, &CollationAllowlistAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLCollationAllowlist, &CollationAllowlistAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLCollationAllowlist, &CollationAllowlistAdvisor{})
 }
 
 // CollationAllowlistAdvisor is the advisor checking for collation allowlist.

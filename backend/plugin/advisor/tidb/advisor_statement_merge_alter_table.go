@@ -19,9 +19,6 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLMergeAlterTable, &StatementMergeAlterTableAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLMergeAlterTable, &StatementMergeAlterTableAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLMergeAlterTable, &StatementMergeAlterTableAdvisor{})
 	advisor.Register(storepb.Engine_TIDB, advisor.MySQLMergeAlterTable, &StatementMergeAlterTableAdvisor{})
 }
 
