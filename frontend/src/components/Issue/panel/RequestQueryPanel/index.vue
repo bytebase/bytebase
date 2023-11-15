@@ -1,11 +1,10 @@
 <template>
-  <NDrawer
+  <Drawer
     :show="true"
     width="auto"
-    :auto-focus="false"
     @update:show="(show: boolean) => !show && $emit('close')"
   >
-    <NDrawerContent
+    <DrawerContent
       :title="$t('quick-action.request-query-permission')"
       :closable="true"
       class="w-[50rem] max-w-[100vw] relative"
@@ -71,20 +70,20 @@
           </NButton>
         </div>
       </template>
-    </NDrawerContent>
-  </NDrawer>
+    </DrawerContent>
+  </Drawer>
 </template>
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { head, isUndefined, uniq } from "lodash-es";
-import { NButton, NDrawer, NDrawerContent, NInput } from "naive-ui";
+import { NButton, NInput } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
-import { ProjectSelect } from "@/components/v2";
+import { Drawer, DrawerContent, ProjectSelect } from "@/components/v2";
 import { issueServiceClient } from "@/grpcweb";
 import {
   useCurrentUserV1,

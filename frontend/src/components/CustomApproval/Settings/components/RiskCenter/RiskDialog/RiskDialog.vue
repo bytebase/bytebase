@@ -2,7 +2,7 @@
   <BBModal
     v-if="dialog"
     :title="title"
-    :esc-closable="false"
+    :close-on-esc="false"
     :before-close="beforeClose"
     :data-state-dirty="state.dirty"
     @close="dialog = undefined"

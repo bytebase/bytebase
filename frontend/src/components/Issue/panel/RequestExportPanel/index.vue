@@ -1,11 +1,10 @@
 <template>
-  <NDrawer
+  <Drawer
     :show="true"
     width="auto"
-    :auto-focus="false"
     @update:show="(show: boolean) => !show && $emit('close')"
   >
-    <NDrawerContent
+    <DrawerContent
       :title="$t('quick-action.request-export-permission')"
       :closable="true"
       class="w-[50rem] max-w-[100vw] relative"
@@ -126,20 +125,14 @@
           </NButton>
         </div>
       </template>
-    </NDrawerContent>
-  </NDrawer>
+    </DrawerContent>
+  </Drawer>
 </template>
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { head, isUndefined } from "lodash-es";
-import {
-  NButton,
-  NDrawer,
-  NDrawerContent,
-  NInput,
-  NInputNumber,
-} from "naive-ui";
+import { NButton, NInput, NInputNumber } from "naive-ui";
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -149,6 +142,8 @@ import {
   ProjectSelect,
   EnvironmentSelect,
   DatabaseSelect,
+  DrawerContent,
+  Drawer,
 } from "@/components/v2";
 import { issueServiceClient } from "@/grpcweb";
 import {

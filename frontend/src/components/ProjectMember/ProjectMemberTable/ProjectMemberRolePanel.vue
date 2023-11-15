@@ -1,11 +1,10 @@
 <template>
-  <NDrawer
+  <Drawer
     :show="true"
     width="auto"
-    :auto-focus="false"
     @update:show="(show: boolean) => !show && $emit('close')"
   >
-    <NDrawerContent
+    <DrawerContent
       :title="panelTitle"
       :closable="true"
       class="w-[72rem] max-w-[100vw] relative"
@@ -137,8 +136,8 @@
           </div>
         </div>
       </template>
-    </NDrawerContent>
-  </NDrawer>
+    </DrawerContent>
+  </Drawer>
 
   <EditProjectRolePanel
     v-if="editingBinding"
@@ -161,17 +160,11 @@
 
 <script lang="ts" setup>
 import { cloneDeep, isEqual, uniqBy } from "lodash-es";
-import {
-  NButton,
-  NDrawer,
-  NDrawerContent,
-  NTooltip,
-  useDialog,
-} from "naive-ui";
+import { NButton, NTooltip, useDialog } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGrid, BBGridRow } from "@/bbkit";
-import { InstanceV1Name } from "@/components/v2";
+import { Drawer, DrawerContent, InstanceV1Name } from "@/components/v2";
 import {
   useCurrentUserV1,
   useDatabaseV1Store,

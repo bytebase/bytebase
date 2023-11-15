@@ -3,7 +3,7 @@
     <Watermark />
 
     <NDialogProvider>
-      <BBModalStack>
+      <OverlayStackManager>
         <KBarWrapper>
           <router-view />
           <template v-if="state.notificationList.length > 0">
@@ -15,7 +15,7 @@
           </template>
           <HelpDrawer />
         </KBarWrapper>
-      </BBModalStack>
+      </OverlayStackManager>
     </NDialogProvider>
   </CustomThemeProvider>
 </template>
@@ -30,9 +30,9 @@ import HelpDrawer from "@/components/HelpDrawer";
 import Watermark from "@/components/misc/Watermark.vue";
 import { RouteMapList } from "@/types";
 import CustomThemeProvider from "./CustomThemeProvider.vue";
-import BBModalStack from "./bbkit/BBModalStack.vue";
 import { BBNotificationItem } from "./bbkit/types";
 import KBarWrapper from "./components/KBar/KBarWrapper.vue";
+import OverlayStackManager from "./components/misc/OverlayStackManager.vue";
 import { t } from "./plugins/i18n";
 import {
   useAuthStore,
