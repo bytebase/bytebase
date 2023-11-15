@@ -179,6 +179,11 @@ func (checker *namingFKConventionChecker) handleConstraintDef(tableName string, 
 	}
 
 	indexName := ""
+	// for compatibility.
+	if ctx.IndexName() != nil {
+		indexName = mysqlparser.NormalizeIndexName(ctx.IndexName())
+	}
+	// use constraint_name if both exist at the same time.
 	// for mysql, foreign key use constraint name as unique identifier.
 	if ctx.ConstraintName() != nil {
 		indexName = mysqlparser.NormalizeConstraintName(ctx.ConstraintName())
