@@ -16,8 +16,9 @@ import (
 var _ advisor.Advisor = (*NamingColumnConventionAdvisor)(nil)
 
 func init() {
-	// only for mysqlwip test.
-	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLNamingColumnConvention, &NamingColumnConventionAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLNamingColumnConvention, &NamingColumnConventionAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLNamingColumnConvention, &NamingColumnConventionAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLNamingColumnConvention, &NamingColumnConventionAdvisor{})
 }
 
 // NamingColumnConventionAdvisor is the advisor checking for column naming convention.

@@ -124,6 +124,7 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
     const resp = await issueServiceClient.listIssues({
       parent: find.project,
       filter: buildIssueFilter(find),
+      query: find.query,
       pageSize,
       pageToken,
     });

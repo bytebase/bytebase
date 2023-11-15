@@ -19,8 +19,9 @@ var (
 )
 
 func init() {
-	// only for mysqlwip test.
-	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLTableNoFK, &TableNoFKAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLTableNoFK, &TableNoFKAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLTableNoFK, &TableNoFKAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLTableNoFK, &TableNoFKAdvisor{})
 }
 
 // TableNoFKAdvisor is the advisor checking table disallow foreign key.

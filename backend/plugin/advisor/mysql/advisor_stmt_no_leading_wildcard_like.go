@@ -19,8 +19,9 @@ var (
 )
 
 func init() {
-	// only for mysqlwip test.
-	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLNoLeadingWildcardLike, &NoLeadingWildcardLikeAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLNoLeadingWildcardLike, &NoLeadingWildcardLikeAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLNoLeadingWildcardLike, &NoLeadingWildcardLikeAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLNoLeadingWildcardLike, &NoLeadingWildcardLikeAdvisor{})
 }
 
 // NoLeadingWildcardLikeAdvisor is the advisor checking for no leading wildcard LIKE.
@@ -81,7 +82,7 @@ func (checker *noLeadingWildcardLikeChecker) EnterPredicateExprLike(ctx *mysql.P
 
 	for _, expr := range ctx.AllSimpleExpr() {
 		pattern := expr.GetText()
-		if strings.HasPrefix(pattern, "'%") && strings.HasSuffix(pattern, "'") {
+		if (strings.HasPrefix(pattern, "'%") && strings.HasSuffix(pattern, "'")) || (strings.HasPrefix(pattern, "\"%") && strings.HasSuffix(pattern, "\"")) {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
 				Code:    advisor.StatementLeadingWildcardLike,

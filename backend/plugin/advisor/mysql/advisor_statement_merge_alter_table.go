@@ -21,8 +21,9 @@ var (
 )
 
 func init() {
-	// only for mysqlwip test.
-	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLMergeAlterTable, &StatementMergeAlterTableAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLMergeAlterTable, &StatementMergeAlterTableAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLMergeAlterTable, &StatementMergeAlterTableAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLMergeAlterTable, &StatementMergeAlterTableAdvisor{})
 }
 
 // StatementMergeAlterTableAdvisor is the advisor checking for merging ALTER TABLE statements.

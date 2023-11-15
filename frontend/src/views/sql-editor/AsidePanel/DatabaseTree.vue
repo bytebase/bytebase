@@ -458,8 +458,6 @@ watch(
       const db = databaseStore.getDatabaseByUID(databaseId);
       treeStore.expandNodes("database", db);
     }
-
-    // scrollToConnectedNode(instanceId, databaseId);
   },
   { immediate: true }
 );
@@ -524,5 +522,6 @@ watch(
 .sql-editor-tree :deep(.n-tree-node--selected),
 .sql-editor-tree :deep(.n-tree-node--selected:hover) {
   background-color: var(--n-node-color-active) !important;
+  font-weight: 500;
 }
 </style>

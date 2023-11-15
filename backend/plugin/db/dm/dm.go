@@ -99,8 +99,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 
 	totalRowsAffected := int64(0)
 	f := func(stmt string) error {
-		// The underlying dm golang driver go-dm does not support semicolon, so we should trim the suffix semicolon similar to the go-ora driver.
-		stmt = strings.TrimSuffix(stmt, ";")
 		sqlResult, err := tx.ExecContext(ctx, stmt)
 		if err != nil {
 			return err

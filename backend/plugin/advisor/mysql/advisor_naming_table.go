@@ -18,8 +18,9 @@ var (
 )
 
 func init() {
-	// only for test mysqlwip.
-	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLNamingTableConvention, &NamingTableConventionAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLNamingTableConvention, &NamingTableConventionAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLNamingTableConvention, &NamingTableConventionAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLNamingTableConvention, &NamingTableConventionAdvisor{})
 }
 
 // NamingTableConventionAdvisor is the advisor checking for table naming convention.

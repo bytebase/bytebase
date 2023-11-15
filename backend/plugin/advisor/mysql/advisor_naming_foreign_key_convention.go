@@ -19,7 +19,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLNamingFKConvention, &NamingFKConventionAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLNamingFKConvention, &NamingFKConventionAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLNamingFKConvention, &NamingFKConventionAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLNamingFKConvention, &NamingFKConventionAdvisor{})
 }
 
 // NamingFKConventionAdvisor is the advisor checking for foreign key naming convention.
