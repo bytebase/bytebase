@@ -38,8 +38,12 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
       {
         instanceId,
         databaseName,
+        dataSourceId,
         statement,
-      }: Pick<QueryInfo, "instanceId" | "databaseName" | "statement">,
+      }: Pick<
+        QueryInfo,
+        "instanceId" | "databaseName" | "dataSourceId" | "statement"
+      >,
       signal: AbortSignal
     ) {
       const instance = useInstanceV1Store().getInstanceByUID(
@@ -49,6 +53,7 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
         {
           name: instance.name,
           connectionDatabase: databaseName || "",
+          dataSourceId: dataSourceId || "",
           statement,
           limit: RESULT_ROWS_LIMIT,
         },
