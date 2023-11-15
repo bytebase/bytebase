@@ -56,7 +56,6 @@
 import { NButtonGroup, NButton } from "naive-ui";
 import { ref, useSlots } from "vue";
 import Square2x2 from "~icons/heroicons-outline/squares-2x2";
-import { pushNotification } from "@/store";
 import { useSchemaDiagramContext } from "../common";
 import { ZOOM_RANGE } from "../common/const";
 import DummyCanvas from "./DummyCanvas.vue";
@@ -83,12 +82,8 @@ const handleScreenshot = async () => {
   busy.value = true;
   try {
     await dummy.value?.capture(`${database.value.databaseName}.png`);
-  } catch {
-    pushNotification({
-      module: "bytebase",
-      style: "CRITICAL",
-      title: "Screenshot request failed",
-    });
+  } catch (err) {
+    console.error("Screenshot request failed", err);
   } finally {
     busy.value = false;
   }

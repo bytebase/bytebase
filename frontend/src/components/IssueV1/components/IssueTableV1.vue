@@ -103,15 +103,16 @@
           <CurrentApproverV1 :issue="issue" />
         </div>
         <div v-if="showExtendedColumns" class="bb-grid-cell !py-0.5">
-          <div class="flex flex-row items-center overflow-hidden gap-x-2">
-            <BBAvatar
-              :size="'SMALL'"
-              :username="issue.assigneeEntity?.title ?? $t('common.unassigned')"
-            />
+          <div
+            v-if="issue.assigneeEntity"
+            class="flex flex-row items-center overflow-hidden gap-x-2"
+          >
+            <BBAvatar :size="'SMALL'" :username="issue.assigneeEntity.title" />
             <span class="truncate">
-              {{ issue.assigneeEntity?.title ?? $t("common.unassigned") }}
+              {{ issue.assigneeEntity.title }}
             </span>
           </div>
+          <template v-else>-</template>
         </div>
         <div v-if="showExtendedColumns" class="bb-grid-cell !py-0.5">
           <div class="flex flex-row items-center overflow-hidden gap-x-2">
@@ -226,13 +227,14 @@ interface LocalState {
 
 const props = withDefaults(
   defineProps<{
-    title: string;
+    title?: string;
     issueList: ComposedIssue[];
     mode?: Mode;
     highlightText?: string;
     showPlaceholder?: boolean;
   }>(),
   {
+    title: "",
     mode: "ALL",
     highlightText: "",
     showPlaceholder: false,
