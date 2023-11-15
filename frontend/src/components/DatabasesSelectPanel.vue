@@ -1,11 +1,10 @@
 <template>
-  <NDrawer
+  <Drawer
     :show="true"
     width="auto"
-    :auto-focus="false"
     @update:show="(show: boolean) => !show && $emit('close')"
   >
-    <NDrawerContent
+    <DrawerContent
       :title="$t('common.database')"
       :closable="true"
       class="w-[30rem] max-w-[100vw] relative"
@@ -118,19 +117,14 @@
           </NButton>
         </div>
       </template>
-    </NDrawerContent>
-  </NDrawer>
+    </DrawerContent>
+  </Drawer>
 </template>
 
 <script setup lang="ts">
-import {
-  NCollapse,
-  NCollapseItem,
-  NButton,
-  NDrawer,
-  NDrawerContent,
-} from "naive-ui";
+import { NCollapse, NCollapseItem, NButton } from "naive-ui";
 import { computed, reactive, PropType } from "vue";
+import { Drawer, DrawerContent, InstanceV1Name } from "@/components/v2";
 import {
   useDatabaseV1Store,
   useEnvironmentV1Store,
@@ -139,7 +133,6 @@ import {
 import { ComposedDatabase } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { Environment } from "@/types/proto/v1/environment_service";
-import { InstanceV1Name } from "./v2";
 
 type LocalState = {
   searchText: string;

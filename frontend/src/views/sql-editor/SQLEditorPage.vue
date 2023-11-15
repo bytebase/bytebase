@@ -28,13 +28,13 @@
               :class="[state.sidebarExpanded ? '' : '-scale-100']"
             />
           </div>
-          <NDrawer
+          <Drawer
             v-model:show="state.sidebarExpanded"
             width="80vw"
             placement="left"
           >
             <AsidePanel />
-          </NDrawer>
+          </Drawer>
         </teleport>
       </template>
       <Pane class="relative flex flex-col">
@@ -145,7 +145,6 @@
 
 <script lang="ts" setup>
 import { useWindowSize } from "@vueuse/core";
-import { NDrawer } from "naive-ui";
 import { stringify } from "qs";
 import { Splitpanes, Pane } from "splitpanes";
 import { computed, reactive } from "vue";

@@ -174,7 +174,7 @@
     v-if="supportSQLReviewCI && state.showLoadingSQLReviewPRModal"
     class="relative overflow-hidden"
     :show-close="false"
-    :esc-closable="false"
+    :close-on-esc="false"
     :title="$t('repository.sql-review-ci-setup')"
   >
     <div

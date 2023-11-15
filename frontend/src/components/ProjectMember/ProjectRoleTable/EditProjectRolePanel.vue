@@ -1,11 +1,10 @@
 <template>
-  <NDrawer
+  <Drawer
     :show="true"
     width="auto"
-    :auto-focus="false"
     @update:show="(show: boolean) => !show && $emit('close')"
   >
-    <NDrawerContent
+    <DrawerContent
       :title="panelTitle"
       :closable="true"
       class="w-[64rem] max-w-[100vw] relative"
@@ -112,23 +111,17 @@
           </div>
         </div>
       </template>
-    </NDrawerContent>
-  </NDrawer>
+    </DrawerContent>
+  </Drawer>
 </template>
 
 <script lang="ts" setup>
 import { cloneDeep, isEqual, uniq } from "lodash-es";
-import {
-  NButton,
-  NDatePicker,
-  NDrawer,
-  NDrawerContent,
-  NInput,
-  NInputNumber,
-} from "naive-ui";
+import { NButton, NDatePicker, NInput, NInputNumber } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { onMounted } from "vue";
 import QuerierDatabaseResourceForm from "@/components/Issue/panel/RequestQueryPanel/DatabaseResourceForm/index.vue";
+import { Drawer, DrawerContent } from "@/components/v2";
 import {
   extractUserEmail,
   useCurrentUserV1,

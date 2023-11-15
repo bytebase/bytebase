@@ -4,7 +4,9 @@
     :show="show"
     :auto-focus="false"
     :trap-focus="false"
-    :close-on-esc="closeOnEsc"
+    :close-on-esc="false"
+    :data-overlay-stack-id="id"
+    :data-overlay-stack-upmost="upmost"
     v-bind="$attrs"
     @update:show="onUpdateShow"
   >
@@ -13,8 +15,10 @@
 </template>
 
 <script setup lang="ts">
-import { useEventListener } from "@vueuse/core";
+import { toRef } from "@vueuse/core";
 import { NDrawer } from "naive-ui";
+import { useOverlayStack } from "@/components/misc/OverlayStackManager.vue";
+import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 
 const props = withDefaults(
   defineProps<{
@@ -39,9 +43,10 @@ const onUpdateShow = (show: boolean) => {
   }
 };
 
-useEventListener("keydown", (e) => {
-  if (e.code == "Escape") {
-    if (!props.closeOnEsc) return;
+const { id, upmost, events } = useOverlayStack(toRef(props, "show"));
+
+useEmitteryEventListener(events, "esc", (e) => {
+  if (upmost.value && props.closeOnEsc) {
     emit("update:show", false);
     emit("close");
   }

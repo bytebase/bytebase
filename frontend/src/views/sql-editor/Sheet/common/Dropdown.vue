@@ -8,7 +8,7 @@
   >
     <heroicons-outline:dots-horizontal
       v-show="!transparent"
-      class="w-6 h-6 p-1 rounded outline-none hover:bg-link-hover"
+      class="bb-overlay-stack-ignore-esc w-6 h-6 p-1 rounded outline-none hover:bg-link-hover"
       :class="[secondary ? '' : 'border border-gray-300 bg-white shadow']"
     />
   </NDropdown>

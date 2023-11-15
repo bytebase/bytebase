@@ -53,7 +53,7 @@
       @apply="$emit('apply', $event)"
     />
   </div>
-  <Drawer :show="state.showDrawer" @close="state.showDrawer = false">
+  <Drawer v-model:show="state.showDrawer">
     <TableTemplateForm
       :readonly="!!readonly"
       :create="!state.template.table?.name"
