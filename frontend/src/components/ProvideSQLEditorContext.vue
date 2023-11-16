@@ -77,7 +77,7 @@ const prepareAccessibleDatabaseList = async () => {
   // `databaseList` is the database list accessible by current user.
   // Only accessible instances and databases will be listed in the tree.
   const databaseList = (
-    await databaseStore.searchDatabaseList({
+    await databaseStore.fetchDatabaseList({
       parent: "instances/-",
     })
   ).filter(

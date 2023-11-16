@@ -127,7 +127,7 @@ const environment = computed(() => {
 });
 
 watchEffect(() => {
-  databaseStore.searchDatabaseList({
+  databaseStore.fetchDatabaseList({
     parent: instance.value.name,
   });
 });
@@ -170,7 +170,7 @@ const syncSchema = async () => {
   state.syncingSchema = true;
   try {
     await instanceV1Store.syncInstance(instance.value).then(() => {
-      return databaseStore.searchDatabaseList({
+      return databaseStore.fetchDatabaseList({
         parent: instance.value.name,
       });
     });

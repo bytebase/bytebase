@@ -49,6 +49,7 @@ const (
 type DatabaseServiceClient interface {
 	GetDatabase(ctx context.Context, in *GetDatabaseRequest, opts ...grpc.CallOption) (*Database, error)
 	ListDatabases(ctx context.Context, in *ListDatabasesRequest, opts ...grpc.CallOption) (*ListDatabasesResponse, error)
+	// Deprecated: Do not use.
 	// Search for databases that the caller has both projects.get permission on, and also satisfy the specified query.
 	SearchDatabases(ctx context.Context, in *SearchDatabasesRequest, opts ...grpc.CallOption) (*SearchDatabasesResponse, error)
 	UpdateDatabase(ctx context.Context, in *UpdateDatabaseRequest, opts ...grpc.CallOption) (*Database, error)
@@ -97,6 +98,7 @@ func (c *databaseServiceClient) ListDatabases(ctx context.Context, in *ListDatab
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *databaseServiceClient) SearchDatabases(ctx context.Context, in *SearchDatabasesRequest, opts ...grpc.CallOption) (*SearchDatabasesResponse, error) {
 	out := new(SearchDatabasesResponse)
 	err := c.cc.Invoke(ctx, DatabaseService_SearchDatabases_FullMethodName, in, out, opts...)
@@ -274,6 +276,7 @@ func (c *databaseServiceClient) GetChangeHistory(ctx context.Context, in *GetCha
 type DatabaseServiceServer interface {
 	GetDatabase(context.Context, *GetDatabaseRequest) (*Database, error)
 	ListDatabases(context.Context, *ListDatabasesRequest) (*ListDatabasesResponse, error)
+	// Deprecated: Do not use.
 	// Search for databases that the caller has both projects.get permission on, and also satisfy the specified query.
 	SearchDatabases(context.Context, *SearchDatabasesRequest) (*SearchDatabasesResponse, error)
 	UpdateDatabase(context.Context, *UpdateDatabaseRequest) (*Database, error)
