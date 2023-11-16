@@ -149,8 +149,10 @@ const renderSuffix = ({ option }: { option: TreeOption }) => {
   if (!node.levelId) {
     return null;
   }
+
   return h(ClassificationLevelBadge, {
-    levelId: node.levelId,
+    showText: false,
+    classification: node.key,
     classificationConfig: props.classificationConfig,
   });
 };
