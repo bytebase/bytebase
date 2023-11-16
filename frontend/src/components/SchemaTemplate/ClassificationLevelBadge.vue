@@ -18,6 +18,9 @@ const props = withDefaults(
   }>(),
   {
     showText: true,
+    classification: undefined,
+    classificationConfig: undefined,
+    placeholder: undefined,
   }
 );
 
