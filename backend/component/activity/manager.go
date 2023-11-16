@@ -459,7 +459,7 @@ func postWebhookList(ctx context.Context, webhookCtx *webhook.Context, webhookLi
 func (m *Manager) getWebhookContext(ctx context.Context, activity *store.ActivityMessage, meta *Metadata, updater *store.UserMessage) (*webhook.Context, error) {
 	var webhookCtx webhook.Context
 	var webhookTaskResult *webhook.TaskResult
-	var webhookApproval webhook.Approval
+	var mentions []string
 
 	setting, err := m.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
@@ -822,7 +822,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 				continue
 			}
 			phone := strconv.FormatInt(int64(*phoneNumber.NationalNumber), 10)
-			webhookApproval.MentionUsersByPhone = append(webhookApproval.MentionUsersByPhone, phone)
+			mentions = append(mentions, phone)
 		}
 	}
 
@@ -841,13 +841,13 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 			ID:   meta.Issue.Project.UID,
 			Name: meta.Issue.Project.Title,
 		},
-		TaskResult:   webhookTaskResult,
-		Description:  activity.Comment,
-		Link:         link,
-		CreatorID:    updater.ID,
-		CreatorName:  updater.Name,
-		CreatorEmail: updater.Email,
-		Approval:     &webhookApproval,
+		TaskResult:          webhookTaskResult,
+		Description:         activity.Comment,
+		Link:                link,
+		CreatorID:           updater.ID,
+		CreatorName:         updater.Name,
+		CreatorEmail:        updater.Email,
+		MentionUsersByPhone: mentions,
 	}
 	return &webhookCtx, nil
 }
