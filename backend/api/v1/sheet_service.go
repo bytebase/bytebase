@@ -163,7 +163,7 @@ func (s *SheetService) GetSheet(ctx context.Context, request *v1pb.GetSheetReque
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to check access with error: %v", err))
 	}
 	if !canAccess {
-		return nil, status.Errorf(codes.PermissionDenied, "cannot access sheet %s", sheet.Name)
+		return nil, status.Errorf(codes.PermissionDenied, "cannot access sheet %s", sheet.Title)
 	}
 
 	v1pbSheet, err := s.convertToAPISheetMessage(ctx, sheet)
@@ -276,7 +276,7 @@ func (s *SheetService) SearchSheets(ctx context.Context, request *v1pb.SearchShe
 			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to check access with error: %v", err))
 		}
 		if !canAccess {
-			slog.Warn("cannot access sheet", slog.String("name", sheet.Name))
+			slog.Warn("cannot access sheet", slog.String("name", sheet.Title))
 			continue
 		}
 		v1pbSheet, err := s.convertToAPISheetMessage(ctx, sheet)
@@ -347,7 +347,7 @@ func (s *SheetService) UpdateSheet(ctx context.Context, request *v1pb.UpdateShee
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to check access with error: %v", err))
 	}
 	if !canAccess {
-		return nil, status.Errorf(codes.PermissionDenied, "cannot write sheet %s", sheet.Name)
+		return nil, status.Errorf(codes.PermissionDenied, "cannot write sheet %s", sheet.Title)
 	}
 
 	sheetPatch := &store.PatchSheetMessage{
@@ -358,7 +358,7 @@ func (s *SheetService) UpdateSheet(ctx context.Context, request *v1pb.UpdateShee
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
 		case "title":
-			sheetPatch.Name = &request.Sheet.Title
+			sheetPatch.Title = &request.Sheet.Title
 		case "content":
 			statement := string(request.Sheet.Content)
 			sheetPatch.Statement = &statement
@@ -423,7 +423,7 @@ func (s *SheetService) DeleteSheet(ctx context.Context, request *v1pb.DeleteShee
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to check access with error: %v", err))
 	}
 	if !canAccess {
-		return nil, status.Errorf(codes.PermissionDenied, "cannot write sheet %s", sheet.Name)
+		return nil, status.Errorf(codes.PermissionDenied, "cannot write sheet %s", sheet.Title)
 	}
 
 	if err := s.store.DeleteSheet(ctx, sheetUID); err != nil {
@@ -455,7 +455,7 @@ func (s *SheetService) UpdateSheetOrganizer(ctx context.Context, request *v1pb.U
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to check access with error: %v", err))
 	}
 	if !canAccess {
-		return nil, status.Errorf(codes.PermissionDenied, "cannot access sheet %s", sheet.Name)
+		return nil, status.Errorf(codes.PermissionDenied, "cannot access sheet %s", sheet.Title)
 	}
 
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
@@ -655,7 +655,7 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 	return &v1pb.Sheet{
 		Name:        fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, project.ResourceID, common.SheetIDPrefix, sheet.UID),
 		Database:    databaseParent,
-		Title:       sheet.Name,
+		Title:       sheet.Title,
 		Creator:     fmt.Sprintf("users/%s", creator.Email),
 		CreateTime:  timestamppb.New(sheet.CreatedTime),
 		UpdateTime:  timestamppb.New(sheet.UpdatedTime),
@@ -700,7 +700,7 @@ func convertToStoreSheetMessage(projectUID int, databaseUID *int, creatorID int,
 		ProjectUID:  projectUID,
 		DatabaseUID: databaseUID,
 		CreatorID:   creatorID,
-		Name:        sheet.Title,
+		Title:       sheet.Title,
 		Statement:   string(sheet.Content),
 		Visibility:  visibility,
 		Source:      source,

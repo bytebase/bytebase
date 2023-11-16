@@ -178,7 +178,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		CreatorID:   userID,
 		ProjectUID:  project.UID,
 		DatabaseUID: &prodDatabase.UID,
-		Name:        "Sample Sheet",
+		Title:       "Sample Sheet",
 		Statement:   "SELECT * FROM salary;",
 		Visibility:  store.ProjectSheet,
 		Source:      store.SheetFromBytebase,
@@ -196,7 +196,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		ProjectUID:  project.UID,
 		DatabaseUID: &testDatabase.UID,
 
-		Name:       "Alter table to test sample instance for sample issue",
+		Title:      "Alter table to test sample instance for sample issue",
 		Statement:  "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';",
 		Visibility: store.ProjectSheet,
 		Source:     store.SheetFromBytebaseArtifact,
@@ -212,7 +212,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		ProjectUID:  project.UID,
 		DatabaseUID: &prodDatabase.UID,
 
-		Name:       "Alter table to prod sample instance for sample issue",
+		Title:      "Alter table to prod sample instance for sample issue",
 		Statement:  "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';",
 		Visibility: store.ProjectSheet,
 		Source:     store.SheetFromBytebaseArtifact,
