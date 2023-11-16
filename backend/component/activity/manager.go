@@ -754,7 +754,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 			title = "Task run changed - " + payload.TaskName
 		}
 
-	case api.ActivityNotifyIssueApprovalPass:
+	case api.ActivityNotifyIssueApproved:
 		title = "Issue approved - " + meta.Issue.Title
 		user := meta.Issue.Creator
 		phoneNumber, err := phonenumbers.Parse(user.Phone, "")
@@ -922,7 +922,7 @@ func shouldPostInbox(activity *store.ActivityMessage, createType api.ActivityTyp
 		if update.NewStatus == api.TaskFailed {
 			return true, nil
 		}
-	case api.ActivityNotifyIssueApprovalPass:
+	case api.ActivityNotifyIssueApproved:
 		return false, nil
 	case api.ActivityNotifyPipelineRolloutNotify:
 		return false, nil

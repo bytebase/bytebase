@@ -801,7 +801,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 			create := &store.ActivityMessage{
 				CreatorUID:   api.SystemBotID,
 				ContainerUID: issue.UID,
-				Type:         api.ActivityNotifyIssueApprovalPass,
+				Type:         api.ActivityNotifyIssueApproved,
 				Level:        api.ActivityInfo,
 				Comment:      "",
 				Payload:      "",

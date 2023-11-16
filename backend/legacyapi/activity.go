@@ -10,9 +10,9 @@ type ActivityType string
 
 const (
 	// Notifications via webhooks.
-	// ActivityIssueApprovalPass is the type for notifying the creator when the issue approval passes.
+	// ActivityNotifyIssueApproved is the type for notifying the creator when the issue approval passes.
 	// Will not be stored. Only used for notification.
-	ActivityNotifyIssueApprovalPass ActivityType = "bb.notify.issue.approval.pass"
+	ActivityNotifyIssueApproved ActivityType = "bb.notify.issue.approved"
 	// ActivityPipelineRolloutNotify is the type for notifying releasers to rollout.
 	// Will not be stored. Only used for notification.
 	ActivityNotifyPipelineRolloutNotify ActivityType = "bb.notify.pipeline.rollout"

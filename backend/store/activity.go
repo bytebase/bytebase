@@ -269,7 +269,7 @@ type UpdateActivityMessage struct {
 // Certain types of activities are not stored in the database.
 func (s *Store) CreateActivityV2(ctx context.Context, create *ActivityMessage) (*ActivityMessage, error) {
 	switch create.Type {
-	case api.ActivityNotifyIssueApprovalPass, api.ActivityNotifyPipelineRolloutNotify:
+	case api.ActivityNotifyIssueApproved, api.ActivityNotifyPipelineRolloutNotify:
 		return create, nil
 	}
 
