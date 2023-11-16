@@ -215,7 +215,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		sheet, err := s.CreateSheet(ctx, &store.SheetMessage{
 			CreatorID:  api.SystemBotID,
 			ProjectUID: project.UID,
-			Name:       fmt.Sprintf("Sheet for creating database %v", databaseName),
+			Title:      fmt.Sprintf("Sheet for creating database %v", databaseName),
 			Statement:  statement,
 			Visibility: store.ProjectSheet,
 			Source:     store.SheetFromBytebaseArtifact,

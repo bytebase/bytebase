@@ -147,7 +147,7 @@ func (r *Runner) generateOracleRollbackSQL(ctx context.Context, task *store.Task
 	sheet, err := r.store.CreateSheet(ctx, &store.SheetMessage{
 		CreatorID:  api.SystemBotID,
 		ProjectUID: project.UID,
-		Name:       fmt.Sprintf("Sheet for rolling back task %v", task.ID),
+		Title:      fmt.Sprintf("Sheet for rolling back task %v", task.ID),
 		Statement:  rollbackStatement,
 		Visibility: store.ProjectSheet,
 		Source:     store.SheetFromBytebaseArtifact,
@@ -234,7 +234,7 @@ func (r *Runner) generateMySQLRollbackSQL(ctx context.Context, task *store.TaskM
 	sheet, err := r.store.CreateSheet(ctx, &store.SheetMessage{
 		CreatorID:  api.SystemBotID,
 		ProjectUID: project.UID,
-		Name:       fmt.Sprintf("Sheet for rolling back task %d", task.ID),
+		Title:      fmt.Sprintf("Sheet for rolling back task %d", task.ID),
 		Statement:  rollbackStatement,
 		Visibility: store.ProjectSheet,
 		Source:     store.SheetFromBytebaseArtifact,

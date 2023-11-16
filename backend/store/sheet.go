@@ -55,7 +55,7 @@ type SheetMessage struct {
 	CreatorID int
 	UpdaterID int
 
-	Name       string
+	Title      string
 	Statement  string
 	Visibility SheetVisibility
 	Source     SheetSource
@@ -98,7 +98,7 @@ type FindSheetMessage struct {
 	DatabaseUID *int
 
 	// Domain fields
-	Name         *string
+	Title        *string
 	Visibilities []SheetVisibility
 	Source       *SheetSource
 	NotSource    *SheetSource
@@ -119,7 +119,7 @@ type FindSheetMessage struct {
 type PatchSheetMessage struct {
 	UID         int
 	UpdaterID   int
-	Name        *string
+	Title       *string
 	Statement   *string
 	Visibility  *string
 	ProjectUID  *int
@@ -278,7 +278,7 @@ func (s *Store) ListSheets(ctx context.Context, find *FindSheetMessage, currentP
 			&sheet.updatedTs,
 			&sheet.ProjectUID,
 			&sheet.DatabaseUID,
-			&sheet.Name,
+			&sheet.Title,
 			&sheet.Statement,
 			&sheet.Visibility,
 			&sheet.Source,
@@ -351,7 +351,7 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 		create.CreatorID,
 		create.ProjectUID,
 		create.DatabaseUID,
-		create.Name,
+		create.Title,
 		create.Statement,
 		create.Visibility,
 		create.Source,
@@ -421,7 +421,7 @@ func (s *Store) DeleteSheet(ctx context.Context, sheetUID int) error {
 // patchSheetImpl updates a sheet's name/statement/visibility/payload/database_id/project_id.
 func patchSheetImpl(ctx context.Context, tx *Tx, patch *PatchSheetMessage) (*SheetMessage, error) {
 	set, args := []string{"updater_id = $1"}, []any{patch.UpdaterID}
-	if v := patch.Name; v != nil {
+	if v := patch.Title; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Statement; v != nil {
@@ -466,7 +466,7 @@ func patchSheetImpl(ctx context.Context, tx *Tx, patch *PatchSheetMessage) (*She
 		&sheet.updatedTs,
 		&sheet.ProjectUID,
 		&databaseID,
-		&sheet.Name,
+		&sheet.Title,
 		&sheet.Statement,
 		&sheet.Visibility,
 		&sheet.Source,
