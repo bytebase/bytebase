@@ -22,6 +22,7 @@
         >
           <SearchIcon class="w-4 h-4 text-control-placeholder" />
           <div
+            ref="tagsContainerRef"
             class="flex-1 flex flex-row items-center flex-nowrap gap-1 overflow-auto hide-scrollbar"
           >
             <ScopeTags
@@ -67,6 +68,7 @@ import { useElementSize } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
 import { SearchIcon } from "lucide-vue-next";
 import { InputInst, NInput } from "naive-ui";
+import scrollIntoView from "scroll-into-view-if-needed";
 import { zindexable as vZindexable } from "vdirs";
 import {
   reactive,
@@ -127,6 +129,7 @@ const state = reactive<LocalState>({
   showSearchScopes: props.autofocus,
 });
 const containerRef = ref<HTMLElement>();
+const tagsContainerRef = ref<HTMLElement>();
 const inputText = ref(props.params.query);
 const inputRef = ref<InputInst>();
 const menuIndex = ref(0);
@@ -222,16 +225,17 @@ const selectScope = (id: SearchScopeId | undefined) => {
     if (!inputText.value.startsWith(`${id}:`)) {
       inputText.value = `${id}:`;
     }
+    scrollScopeTagIntoViewIfNeeded(id);
   } else {
     menuView.value = "scope";
   }
 };
 const selectValue = (value: string) => {
-  nextTick(() => {
-    menuView.value = undefined;
-  });
   const id = currentScope.value;
-  if (!id) return;
+  if (!id) {
+    menuView.value = undefined;
+    return;
+  }
   const updated = upsertScope(props.params, {
     id,
     value,
@@ -240,6 +244,8 @@ const selectValue = (value: string) => {
   inputText.value = "";
   selectScope(undefined);
   emit("update:params", updated);
+
+  scrollScopeTagIntoViewIfNeeded(id);
 };
 
 const maybeSelectMatchedScope = () => {
@@ -337,6 +343,21 @@ const handleKeyPress = (e: KeyboardEvent) => {
   }
 
   maybeEmitIncompleteValue();
+};
+
+const scrollScopeTagIntoViewIfNeeded = (id: SearchScopeId) => {
+  nextTick(() => {
+    const tagsContainerEl = tagsContainerRef.value;
+    if (!tagsContainerEl) return;
+    const tagEl = tagsContainerEl.querySelector(
+      `[data-search-scope-id="${id}"]`
+    );
+    if (tagEl) {
+      scrollIntoView(tagEl, {
+        scrollMode: "if-needed",
+      });
+    }
+  });
 };
 
 onMounted(() => {

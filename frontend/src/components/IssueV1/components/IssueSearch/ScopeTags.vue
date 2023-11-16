@@ -5,6 +5,7 @@
     :closable="true"
     size="small"
     style="--n-icon-size: 12px"
+    :data-search-scope-id="scope.id"
     @close="removeScope(scope)"
     @click="$emit('select-scope', scope.id, scope.value)"
   >
