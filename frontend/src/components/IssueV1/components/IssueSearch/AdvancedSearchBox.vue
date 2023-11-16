@@ -75,7 +75,7 @@
 
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
-import { cloneDeep, last, pullAt } from "lodash-es";
+import { cloneDeep, last } from "lodash-es";
 import { SearchIcon } from "lucide-vue-next";
 import { XIcon } from "lucide-vue-next";
 import { matchSorter } from "match-sorter";
@@ -179,13 +179,12 @@ const visibleScopeOptions = computed(() => {
 
   const keyword = inputText.value.trim().replace(/:.*$/, "").toLowerCase();
   if (!keyword) return availableScopeOptions.value;
-  return availableScopeOptions.value.filter((opt) => {
-    return (
-      opt.id.toLowerCase().includes(keyword) ||
-      opt.description.toLowerCase().includes(keyword) ||
-      opt.title.toLowerCase().includes(keyword)
-    );
+
+  const filtered = matchSorter(availableScopeOptions.value, keyword, {
+    keys: ["id", "title", "description"],
   });
+
+  return filtered;
 });
 
 const visibleValueOptions = computed(() => {
@@ -195,23 +194,26 @@ const visibleValueOptions = computed(() => {
     .trim()
     .toLowerCase()
     .substring(scopePrefix.length);
+
   if (!keyword) return valueOptions.value;
-  const filtered = matchSorter(valueOptions.value, keyword, {
-    keys: ["value", "keywords"],
-  });
+
+  // Apply multiple segments of keyword splitted by whitespace
+  const terms = keyword.split(/\s+/g);
+  const filtered = terms.reduceRight((options, term) => {
+    return matchSorter(options, term, { keys: ["value", "keywords"] });
+  }, valueOptions.value);
+
   const currentValue = getValueFromSearchParams(
     props.params,
     currentScope.value
   );
   const option = valueOptions.value.find((opt) => opt.value === currentValue);
   if (currentValue && option) {
-    // If we have current value, put it to the first even though it doesn't
-    // match the keyword
+    // If we have current value, put it to the first if it doesn't match the keyword
     const index = filtered.findIndex((opt) => opt.value === currentValue);
-    if (index >= 0) {
-      pullAt(filtered);
+    if (index < 0) {
+      filtered.unshift(option);
     }
-    filtered.unshift(option);
   }
   return filtered;
 });

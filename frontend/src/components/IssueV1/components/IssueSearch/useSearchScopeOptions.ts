@@ -5,7 +5,11 @@ import BBAvatar from "@/bbkit/BBAvatar.vue";
 import GitIcon from "@/components/GitIcon.vue";
 import SystemBotTag from "@/components/misc/SystemBotTag.vue";
 import YouTag from "@/components/misc/YouTag.vue";
-import { InstanceV1Name, RichDatabaseName } from "@/components/v2";
+import {
+  InstanceV1Name,
+  ProjectV1Name,
+  RichDatabaseName,
+} from "@/components/v2";
 import {
   useCurrentUserV1,
   useDatabaseV1Store,
@@ -24,7 +28,6 @@ import {
   extractEnvironmentResourceName,
   extractInstanceResourceName,
   extractProjectResourceName,
-  projectV1Name,
 } from "@/utils";
 
 export type ScopeOption = {
@@ -94,7 +97,9 @@ export const useSearchScopeOptions = (params: Ref<SearchParams>) => {
             value: name,
             keywords: [name, proj.title, proj.key],
             render: () => {
-              const children: VNode[] = [h("span", {}, projectV1Name(proj))];
+              const children: VNode[] = [
+                h(ProjectV1Name, { project: proj, link: false }),
+              ];
               if (proj.workflow === Workflow.VCS) {
                 children.push(h(GitIcon, { class: "h-4" }));
               }
@@ -170,23 +175,6 @@ export const useSearchScopeOptions = (params: Ref<SearchParams>) => {
         options: principalSearchValueOptions.value,
       },
       {
-        id: "type",
-        title: t("issue.advanced-search.scope.type.title"),
-        description: t("issue.advanced-search.scope.type.description"),
-        options: [
-          {
-            value: "DDL",
-            keywords: ["ddl", "data definition language"],
-            render: () => renderSpan("Data Definition Language"),
-          },
-          {
-            value: "DML",
-            keywords: ["dml", "data manipulation language"],
-            render: () => renderSpan("Data Manipulation Language"),
-          },
-        ],
-      },
-      {
         id: "instance",
         title: t("issue.advanced-search.scope.instance.title"),
         description: t("issue.advanced-search.scope.instance.description"),
@@ -225,25 +213,40 @@ export const useSearchScopeOptions = (params: Ref<SearchParams>) => {
               db.databaseName,
               extractInstanceResourceName(db.instance),
               db.instanceEntity.title,
-              engineToJSON(db.instanceEntity.engine),
               extractEnvironmentResourceName(db.effectiveEnvironment),
               db.effectiveEnvironmentEntity.title,
               extractProjectResourceName(db.project),
               db.projectEntity.title,
               db.projectEntity.key,
-              db.uid,
-              ...Object.values(db.labels),
             ],
             custom: true,
             render: () => {
               return h("div", { class: "text-sm" }, [
                 h(RichDatabaseName, {
                   database: db,
+                  showProject: true,
                 }),
               ]);
             },
           };
         }),
+      },
+      {
+        id: "type",
+        title: t("issue.advanced-search.scope.type.title"),
+        description: t("issue.advanced-search.scope.type.description"),
+        options: [
+          {
+            value: "DDL",
+            keywords: ["ddl", "data definition language"],
+            render: () => renderSpan("Data Definition Language"),
+          },
+          {
+            value: "DML",
+            keywords: ["dml", "data manipulation language"],
+            render: () => renderSpan("Data Manipulation Language"),
+          },
+        ],
       },
     ];
     return scopes;
