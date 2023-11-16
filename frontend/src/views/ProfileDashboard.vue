@@ -281,7 +281,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  principalId?: string;
+  principalEmail?: string;
 }>();
 
 const { t } = useI18n();
@@ -334,8 +334,8 @@ const showRegenerateRecoveryCodes = computed(() => {
 });
 
 const user = computed(() => {
-  if (props.principalId) {
-    return userStore.getUserById(String(props.principalId)) ?? unknownUser();
+  if (props.principalEmail) {
+    return userStore.getUserByEmail(props.principalEmail) ?? unknownUser();
   }
   return currentUserV1.value;
 });
