@@ -85,7 +85,11 @@ import {
 } from "@/store";
 import { UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
-import { SYSTEM_BOT_USER_NAME, filterUserListByKeyword } from "../types";
+import {
+  ALL_USERS_USER_NAME,
+  SYSTEM_BOT_USER_NAME,
+  filterUserListByKeyword,
+} from "../types";
 import { hasWorkspacePermissionV1 } from "../utils";
 
 type LocalState = {
@@ -136,7 +140,7 @@ const activeUserList = computed(() => {
 
 const inactiveUserList = computed(() => {
   const list = userStore.userList.filter(
-    (user) => user.state === State.DELETED
+    (user) => user.state === State.DELETED && user.email !== ALL_USERS_USER_NAME
   );
   return filterUserListByKeyword(list, state.inactiveUserFilterText);
 });
