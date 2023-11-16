@@ -118,6 +118,77 @@ func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
 	return nil
 }
 
+// QueryV2 is a copy of Query, but do not mask the data(use none masker).
+func QueryV2(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, statement string, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+	tx, err := conn.BeginTx(ctx, &sql.TxOptions{ReadOnly: queryContext.ReadOnly})
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.QueryContext(ctx, statement)
+	if err != nil {
+		return nil, FormatErrorWithQuery(err, statement)
+	}
+	defer rows.Close()
+
+	columnNames, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO(d): use a Redshift extraction for shared database.
+	if dbType == storepb.Engine_REDSHIFT && queryContext.ShareDB {
+		statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", queryContext.CurrentDatabase), "")
+	}
+	fieldList, err := base.ExtractSensitiveField(dbType, statement, queryContext.CurrentDatabase, queryContext.SensitiveSchemaInfo)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to extract sensitive fields: %q", statement)
+	}
+	if len(fieldList) != 0 && len(fieldList) != len(columnNames) {
+		return nil, errors.Errorf("failed to extract sensitive fields: %q", statement)
+	}
+
+	var fieldMasker []masker.Masker
+	var fieldMaskInfo []bool
+	var fieldSensitiveInfo []bool
+	noneMasker := masker.NewNoneMasker()
+	for range columnNames {
+		fieldSensitiveInfo = append(fieldSensitiveInfo, false)
+		fieldMasker = append(fieldMasker, noneMasker)
+		fieldMaskInfo = append(fieldMaskInfo, false)
+	}
+
+	columnTypes, err := rows.ColumnTypes()
+	if err != nil {
+		return nil, err
+	}
+
+	var columnTypeNames []string
+	for _, v := range columnTypes {
+		// DatabaseTypeName returns the database system name of the column type.
+		// refer: https://pkg.go.dev/database/sql#ColumnType.DatabaseTypeName
+		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
+	}
+
+	data, err := readRows(rows, columnTypeNames, fieldMasker)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return &v1pb.QueryResult{
+		ColumnNames:     columnNames,
+		ColumnTypeNames: columnTypeNames,
+		Rows:            data,
+		Masked:          fieldMaskInfo,
+		Sensitive:       fieldSensitiveInfo,
+	}, nil
+}
+
 // Query will execute a readonly / SELECT query.
 func Query(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, statement string, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	tx, err := conn.BeginTx(ctx, &sql.TxOptions{ReadOnly: queryContext.ReadOnly})

@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 	"time"
@@ -10,8 +11,11 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/pkg/errors"
+
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -81,7 +85,7 @@ func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*
 	var queryErr error
 	var durationNs int64
 	if adviceStatus != advisor.Error {
-		results, durationNs, queryErr = s.doQuery(ctx, request, instance, maybeDatabase, nil)
+		results, durationNs, queryErr = s.doQueryV2(ctx, request, instance, maybeDatabase, nil)
 	}
 
 	// Update activity.
@@ -108,6 +112,53 @@ func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*
 	}
 
 	return response, nil
+}
+
+// doQueryV2 is the copy of doQuery, which use query span to improve performance.
+func (s *SQLService) doQueryV2(ctx context.Context, request *v1pb.QueryRequest, instance *store.InstanceMessage, database *store.DatabaseMessage, sensitiveSchemaInfo *base.SensitiveSchemaInfo) ([]*v1pb.QueryResult, int64, error) {
+	driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database, request.DataSourceId)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer driver.Close(ctx)
+
+	sqlDB := driver.GetDB()
+	var conn *sql.Conn
+	if sqlDB != nil {
+		conn, err = sqlDB.Conn(ctx)
+		if err != nil {
+			return nil, 0, err
+		}
+		defer conn.Close()
+	}
+
+	timeout := defaultTimeout
+	if request.Timeout != nil {
+		timeout = request.Timeout.AsDuration()
+	}
+	ctx, cancelCtx := context.WithTimeout(ctx, timeout)
+	defer cancelCtx()
+
+	start := time.Now().UnixNano()
+	results, err := driver.QueryConn(ctx, conn, request.Statement, &db.QueryContext{
+		Limit:               int(request.Limit),
+		ReadOnly:            true,
+		CurrentDatabase:     request.ConnectionDatabase,
+		SensitiveSchemaInfo: sensitiveSchemaInfo,
+		EnableSensitive:     s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil,
+		EngineVersion:       instance.EngineVersion,
+	})
+	select {
+	case <-ctx.Done():
+		// canceled or timed out
+		return nil, time.Now().UnixNano() - start, errors.Errorf("timeout reached: %v", timeout)
+	default:
+		// So the select will not block
+	}
+
+	sanitizeResults(results)
+
+	return results, time.Now().UnixNano() - start, err
 }
 
 func (s *SQLService) buildGetDatabaseMetadataFunc(instance *store.InstanceMessage) base.GetDatabaseMetadataFunc {
