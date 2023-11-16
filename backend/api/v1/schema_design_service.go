@@ -176,7 +176,8 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 		return nil, status.Errorf(codes.InvalidArgument, "empty branch design")
 	}
 
-	sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{ProjectUID: &project.UID, Title: &schemaDesign.Title}, principalID)
+	schemaDesignSheetType := storepb.SheetPayload_SCHEMA_DESIGN.String()
+	sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{ProjectUID: &project.UID, Title: &schemaDesign.Title, PayloadType: &schemaDesignSheetType}, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get existing branch design, error %v", err)
 	}

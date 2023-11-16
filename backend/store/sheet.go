@@ -188,6 +188,9 @@ func (s *Store) ListSheets(ctx context.Context, find *FindSheetMessage, currentP
 	if v := find.ProjectUID; v != nil {
 		where, args = append(where, fmt.Sprintf("sheet.project_id = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.Title; v != nil {
+		where, args = append(where, fmt.Sprintf("sheet.name = $%d", len(args)+1)), append(args, *v)
+	}
 	if v := find.DatabaseUID; v != nil {
 		where, args = append(where, fmt.Sprintf("sheet.database_id = $%d", len(args)+1)), append(args, *v)
 	}
