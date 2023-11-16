@@ -7,6 +7,7 @@
       class="bb-advanced-issue-search-box__input"
       style="--n-padding-left: 8px; --n-padding-right: 4px"
       @click="handleInputClick"
+      @blur="hideMenu"
       @keyup="handleKeyUp"
       @keydown="handleKeyDown"
     >
@@ -51,6 +52,7 @@
         v-show="showMenu"
         v-zindexable="{ enabled: true }"
         class="absolute top-[36px] w-full bg-white shadow-md origin-top-left rounded-[3px] overflow-clip"
+        @wheel="console.log('wheel', $event)"
       >
         <ScopeMenu
           :show="menuView === 'scope'"
