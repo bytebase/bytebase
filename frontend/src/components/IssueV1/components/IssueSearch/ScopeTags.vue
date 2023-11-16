@@ -1,6 +1,6 @@
 <template>
   <NTag
-    v-for="scope in params.scopes"
+    v-for="(scope, i) in params.scopes"
     :key="scope.id"
     :closable="true"
     :data-search-scope-id="scope.id"
@@ -13,11 +13,13 @@
   >
     <span>{{ scope.id }}</span>
     <span>:</span>
-    <span>{{ scope.value }}</span>
+    <component :is="() => renderValue(scope, i)" />
   </NTag>
 </template>
 <script setup lang="ts">
+import dayjs from "dayjs";
 import { NTag, TagProps } from "naive-ui";
+import { h } from "vue";
 import {
   SearchParams,
   SearchScope,
@@ -44,5 +46,16 @@ const tagProps = (scope: SearchScope): TagProps => {
       borderColor: callCssVariable("--color-accent"),
     },
   };
+};
+
+const renderValue = (scope: SearchScope, index: number) => {
+  if (scope.id === "created") {
+    const [begin, end] = scope.value.split(",").map((ts) => parseInt(ts, 10));
+    const format = "YYYY-MM-DD";
+    return [dayjs(begin).format(format), dayjs(end).format(format)].join(
+      " -> "
+    );
+  }
+  return h("span", {}, scope.value);
 };
 </script>
