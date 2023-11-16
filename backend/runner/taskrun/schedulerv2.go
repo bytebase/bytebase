@@ -535,10 +535,6 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 				}
 
 				stageDoneConfirmed[task.StageID] = true
-				go func(stageID int) {
-					time.Sleep(1 * time.Minute)
-					delete(stageDoneConfirmed, stageID)
-				}(task.StageID)
 
 				stages, err := s.store.ListStageV2(ctx, task.PipelineID)
 				if err != nil {
