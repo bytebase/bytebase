@@ -52,9 +52,7 @@ const renderValue = (scope: SearchScope, index: number) => {
   if (scope.id === "created") {
     const [begin, end] = scope.value.split(",").map((ts) => parseInt(ts, 10));
     const format = "YYYY-MM-DD";
-    return [dayjs(begin).format(format), dayjs(end).format(format)].join(
-      " -> "
-    );
+    return [dayjs(begin).format(format), dayjs(end).format(format)].join(" – ");
   }
   return h("span", {}, scope.value);
 };
