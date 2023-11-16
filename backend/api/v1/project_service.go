@@ -1738,11 +1738,19 @@ func (s *ProjectService) DeleteDatabaseGroup(ctx context.Context, request *v1pb.
 
 // ListDatabaseGroups lists database groups.
 func (s *ProjectService) ListDatabaseGroups(ctx context.Context, request *v1pb.ListDatabaseGroupsRequest) (*v1pb.ListDatabaseGroupsResponse, error) {
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+	role, ok := ctx.Value(common.RoleContextKey).(api.Role)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "role not found")
+	}
+
 	projectResourceID, err := common.GetProjectID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-
 	if projectResourceID == "-" {
 		var apiDatabaseGroups []*v1pb.DatabaseGroup
 		databaseGroups, err := s.store.ListDatabaseGroups(ctx, &store.FindDatabaseGroupMessage{})
@@ -1760,6 +1768,13 @@ func (s *ProjectService) ListDatabaseGroups(ctx context.Context, request *v1pb.L
 				return nil, status.Errorf(codes.DataLoss, "project %d not found", databaseGroup.ProjectUID)
 			}
 			if project.Deleted {
+				continue
+			}
+			policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, err.Error())
+			}
+			if !isOwnerOrDBA(role) && !isProjectOwnerOrDeveloper(principalID, policy) {
 				continue
 			}
 			apiDatabaseGroups = append(apiDatabaseGroups, convertStoreToAPIDatabaseGroupBasic(databaseGroup, project.ResourceID))

@@ -2350,7 +2350,7 @@ func isProjectOwnerOrDeveloper(principalID int, projectPolicy *store.IAMPolicyMe
 			continue
 		}
 		for _, member := range binding.Members {
-			if member.ID == principalID {
+			if member.ID == principalID || member.Email == api.AllUsers {
 				return true
 			}
 		}
