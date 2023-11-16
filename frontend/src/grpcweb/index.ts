@@ -8,7 +8,6 @@ import {
 import { ActuatorServiceDefinition } from "@/types/proto/v1/actuator_service";
 import { AnomalyServiceDefinition } from "@/types/proto/v1/anomaly_service";
 import { AuthServiceDefinition } from "@/types/proto/v1/auth_service";
-import { BookmarkServiceDefinition } from "@/types/proto/v1/bookmark_service";
 import { CelServiceDefinition } from "@/types/proto/v1/cel_service";
 import { ChangelistServiceDefinition } from "@/types/proto/v1/changelist_service";
 import { DatabaseServiceDefinition } from "@/types/proto/v1/database_service";
@@ -166,11 +165,6 @@ export const externalVersionControlServiceClient = clientFactory.create(
 
 export const loggingServiceClient = clientFactory.create(
   LoggingServiceDefinition,
-  channel
-);
-
-export const bookmarkServiceClient = clientFactory.create(
-  BookmarkServiceDefinition,
   channel
 );
 
