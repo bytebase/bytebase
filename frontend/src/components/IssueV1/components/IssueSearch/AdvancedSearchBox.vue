@@ -1,17 +1,14 @@
 <template>
-  <div
-    ref="containerRef"
-    class="bb-advanced-issue-search-box relative"
-    v-bind="$attrs"
-  >
+  <div ref="containerRef" class="bb-advanced-issue-search-box relative">
     <NInput
       ref="inputRef"
       v-model:value="inputText"
       class="bb-advanced-issue-search-box__input"
-      style="--n-padding-left: 8px"
+      style="--n-padding-left: 8px; --n-padding-right: 4px"
       @click="handleInputClick"
       @blur="menuView = undefined"
-      @keyup="handleKeyPress"
+      @keyup="handleKeyUp"
+      @keydown="handleKeyDown"
     >
       <template #prefix>
         <div
@@ -27,11 +24,25 @@
           >
             <ScopeTags
               :params="params"
-              @update:params="$emit('update:params', $event)"
-              @select-scope="(id) => selectScope(id)"
+              :focused-tag-id="focusedTagId"
+              @select-scope="selectScope($event)"
+              @remove-scope="removeScope($event)"
             />
           </div>
         </div>
+      </template>
+      <template #suffix>
+        <NButton
+          v-show="clearable"
+          quaternary
+          circle
+          size="tiny"
+          @click.stop.prevent="handleClear"
+        >
+          <template #icon>
+            <XIcon class="w-3 h-3" />
+          </template>
+        </NButton>
       </template>
     </NInput>
 
@@ -65,8 +76,9 @@
 
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
-import { cloneDeep } from "lodash-es";
+import { cloneDeep, last } from "lodash-es";
 import { SearchIcon } from "lucide-vue-next";
+import { XIcon } from "lucide-vue-next";
 import { InputInst, NInput } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { zindexable as vZindexable } from "vdirs";
@@ -82,7 +94,9 @@ import {
 import {
   SearchParams,
   SearchScopeId,
+  defaultSearchParams,
   getValueFromSearchParams,
+  maybeApplyDefaultTsRange,
   minmax,
   upsertScope,
 } from "@/utils";
@@ -134,6 +148,7 @@ const inputText = ref(props.params.query);
 const inputRef = ref<InputInst>();
 const menuIndex = ref(0);
 const { width: containerWidth } = useElementSize(containerRef);
+const focusedTagId = ref<SearchScopeId>();
 
 watch(
   () => state.showSearchScopes,
@@ -209,6 +224,18 @@ const showMenu = computed(() => {
   return false;
 });
 
+const clearable = computed(() => {
+  return inputText.value.length > 0 || props.params.scopes.length > 0;
+});
+
+const hideMenu = () => {
+  nextTick(() => {
+    menuView.value = undefined;
+    currentScope.value = undefined;
+    focusedTagId.value = undefined;
+  });
+};
+
 const moveMenuIndex = (delta: -1 | 1) => {
   const options = visibleOptions.value;
   if (options.length === 0) return;
@@ -217,6 +244,13 @@ const moveMenuIndex = (delta: -1 | 1) => {
   menuIndex.value = target;
 };
 
+const removeScope = (id: SearchScopeId) => {
+  const updated = upsertScope(props.params, {
+    id,
+    value: "",
+  });
+  emit("update:params", updated);
+};
 const selectScope = (id: SearchScopeId | undefined) => {
   currentScope.value = id;
   if (id) {
@@ -246,6 +280,7 @@ const selectValue = (value: string) => {
   emit("update:params", updated);
 
   scrollScopeTagIntoViewIfNeeded(id);
+  hideMenu();
 };
 
 const maybeSelectMatchedScope = () => {
@@ -290,11 +325,32 @@ const handleInputClick = () => {
   maybeEmitIncompleteValue();
 };
 
-const handleKeyPress = (e: KeyboardEvent) => {
-  if (!inputRef.value || !inputRef.value.inputElRef) {
-    return;
+const handleKeyDown = (e: KeyboardEvent) => {
+  if (e.isComposing) return;
+  if (e.defaultPrevented) return;
+  const { key } = e;
+  if (key === "Backspace" && inputText.value === "") {
+    // Pressing "backspace" when the input box is empty
+    if (focusedTagId.value) {
+      // Delete the focusedTag if it exists
+      const id = focusedTagId.value;
+      focusedTagId.value = undefined;
+      removeScope(id);
+      return;
+    } else {
+      // Otherwise mark the last tag as 'focusedTag'
+      const id = last(props.params.scopes)?.id;
+      if (id) {
+        focusedTagId.value = id;
+        scrollScopeTagIntoViewIfNeeded(id);
+      }
+      return;
+    }
   }
+  focusedTagId.value = undefined;
+};
 
+const handleKeyUp = (e: KeyboardEvent) => {
   if (e.isComposing) return;
   if (e.defaultPrevented) return;
   const { key } = e;
@@ -303,7 +359,10 @@ const handleKeyPress = (e: KeyboardEvent) => {
     menuView.value = undefined;
     return;
   }
-
+  if (key === "Backspace") {
+    // backspace key should be processed by KeyDown
+    return;
+  }
   if (maybeSelectMatchedScope()) {
     maybeEmitIncompleteValue();
     return;
@@ -312,7 +371,6 @@ const handleKeyPress = (e: KeyboardEvent) => {
     maybeEmitIncompleteValue();
     return;
   }
-
   if (key === "ArrowUp") {
     moveMenuIndex(-1);
     return;
@@ -345,6 +403,13 @@ const handleKeyPress = (e: KeyboardEvent) => {
   maybeEmitIncompleteValue();
 };
 
+const handleClear = () => {
+  const params = defaultSearchParams();
+  maybeApplyDefaultTsRange(params, "created", true /* mutate */);
+  emit("update:params", params);
+  hideMenu();
+};
+
 const scrollScopeTagIntoViewIfNeeded = (id: SearchScopeId) => {
   nextTick(() => {
     const tagsContainerEl = tagsContainerRef.value;
@@ -366,6 +431,7 @@ onMounted(() => {
   }
 });
 watch(menuView, () => {
+  focusedTagId.value = undefined;
   menuIndex.value = 0;
   if (menuView.value === "value" && currentScope.value) {
     const value = getValueFromSearchParams(props.params, currentScope.value);

@@ -3,10 +3,18 @@
     v-for="scope in params.scopes"
     :key="scope.id"
     :closable="true"
+    :data-search-scope-id="scope.id"
+    :bordered="scope.id === focusedTagId"
+    :color="
+      scope.id === focusedTagId
+        ? {
+            borderColor: callCssVariable('--color-accent'),
+          }
+        : undefined
+    "
     size="small"
     style="--n-icon-size: 12px"
-    :data-search-scope-id="scope.id"
-    @close="removeScope(scope)"
+    @close="$emit('remove-scope', scope.id, scope.value)"
     @click="$emit('select-scope', scope.id, scope.value)"
   >
     <span>{{ scope.id }}</span>
@@ -16,21 +24,14 @@
 </template>
 <script setup lang="ts">
 import { NTag } from "naive-ui";
-import { SearchParams, SearchScope, SearchScopeId, upsertScope } from "@/utils";
+import { SearchParams, SearchScopeId, callCssVariable } from "@/utils";
 
-const props = defineProps<{
+defineProps<{
   params: SearchParams;
+  focusedTagId?: SearchScopeId;
 }>();
-const emit = defineEmits<{
-  (event: "update:params", params: SearchParams): void;
+defineEmits<{
+  (event: "remove-scope", id: SearchScopeId, value: string): void;
   (event: "select-scope", id: SearchScopeId, value: string): void;
 }>();
-
-const removeScope = (scope: SearchScope) => {
-  const updated = upsertScope(props.params, {
-    id: scope.id,
-    value: "",
-  });
-  emit("update:params", updated);
-};
 </script>
