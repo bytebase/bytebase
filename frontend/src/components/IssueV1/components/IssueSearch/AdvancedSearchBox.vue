@@ -1,5 +1,4 @@
 <template>
-  <div>menuIndex: {{ menuIndex }}</div>
   <div ref="containerRef" class="bb-advanced-issue-search-box relative">
     <NInput
       ref="inputRef"
