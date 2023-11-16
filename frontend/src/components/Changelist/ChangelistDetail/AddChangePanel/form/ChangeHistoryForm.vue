@@ -166,13 +166,8 @@ const selectedChangeHistoryList = computed<string[]>({
         if (existedChange) {
           updatedChanges.push(existedChange);
         } else {
-          const uid = localSheetStore.nextUID();
-          const sheet = localSheetStore.createLocalSheet(
-            `${project.value.name}/sheets/${uid}`
-          );
-          setSheetStatement(sheet, changeHistory.statement);
           updatedChanges.push({
-            sheet: sheet.name,
+            sheet: changeHistory.statementSheet,
             source: changeHistory.name,
           });
         }
