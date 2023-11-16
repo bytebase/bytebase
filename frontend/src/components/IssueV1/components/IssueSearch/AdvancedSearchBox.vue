@@ -26,8 +26,8 @@
             <ScopeTags
               :params="params"
               :focused-tag-id="focusedTagId"
-              @select-scope="selectScope($event)"
-              @remove-scope="removeScope($event)"
+              @select-scope="selectScopeFromTag"
+              @remove-scope="removeScope"
             />
           </div>
         </div>
@@ -122,6 +122,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (event: "update:params", params: SearchParams): void;
+  (event: "select-unsupported-scope", id: SearchScopeId): void;
 }>();
 
 interface LocalState {
@@ -169,6 +170,7 @@ watch(
 
 const {
   menuView,
+  fullScopeOptions,
   availableScopeOptions,
   currentScope,
   currentScopeOption,
@@ -266,13 +268,16 @@ const removeScope = (id: SearchScopeId) => {
   });
   emit("update:params", updated);
 };
-const selectScope = (id: SearchScopeId | undefined) => {
+const selectScope = (
+  id: SearchScopeId | undefined,
+  value: string | undefined = undefined
+) => {
   currentScope.value = id;
   if (id) {
     menuView.value = "value";
     // Fill-in the scope prefix if needed
     if (!inputText.value.startsWith(`${id}:`)) {
-      inputText.value = `${id}:`;
+      inputText.value = `${id}:${value ?? ""}`;
     }
     scrollScopeTagIntoViewIfNeeded(id);
   } else {
@@ -296,6 +301,17 @@ const selectValue = (value: string) => {
 
   scrollScopeTagIntoViewIfNeeded(id);
   hideMenu();
+};
+const selectScopeFromTag = (id: SearchScopeId) => {
+  if (fullScopeOptions.value.find((opt) => opt.id === id)) {
+    // For AdvancedSearchBox supported scopes
+    selectScope(id);
+    return;
+  }
+
+  // Unsupported scope for AdvancedSearchBox
+  // emit an event and wish the parent UI can handle this
+  emit("select-unsupported-scope", id);
 };
 
 const maybeSelectMatchedScope = () => {
