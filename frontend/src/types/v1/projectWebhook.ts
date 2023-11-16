@@ -115,5 +115,10 @@ export const projectWebhookV1ActivityItemList =
         label: t("project.webhook.activity-item.issue-approval-notify.label"),
         activity: Activity_Type.TYPE_ISSUE_APPROVAL_NOTIFY,
       },
+      {
+        title: t("project.webhook.activity-item.notify-issue-approved.title"),
+        label: t("project.webhook.activity-item.notify-issue-approved.label"),
+        activity: Activity_Type.TYPE_NOTIFY_ISSUE_APPROVED,
+      },
     ];
   };

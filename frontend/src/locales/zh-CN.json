@@ -1851,6 +1851,10 @@
         "issue-task-run-status-change": {
           "title": "工单任务执行状态变更",
           "label": "当一个工单包含的任务执行状态发生了变更"
+        },
+        "notify-issue-approved": {
+          "title": "工单审批通过",
+          "label": "当工单审批通过"
         }
       }
     },
