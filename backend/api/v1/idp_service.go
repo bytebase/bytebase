@@ -504,6 +504,8 @@ func validIdentityProviderConfig(identityProviderType v1pb.IdentityProviderType,
 		if identityProviderConfig.GetLdapConfig() == nil {
 			return errors.Errorf("unexpected provider config value")
 		}
+	} else {
+		return errors.Errorf("unexpected provider type %s", identityProviderType)
 	}
-	return errors.Errorf("unexpected provider type %s", identityProviderType)
+	return nil
 }
