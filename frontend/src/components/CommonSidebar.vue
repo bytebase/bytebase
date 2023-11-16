@@ -21,8 +21,11 @@
           <component :is="item.icon" class="mr-2 w-5 h-5 text-gray-500" />
           {{ item.title }}
           <div v-if="item.children.length > 0" class="ml-auto text-gray-500">
-            <ChevronDown v-if="!state.expandedSidebar.has(i)" class="w-4 h-4" />
-            <ChevronUp v-else class="w-4 h-4" />
+            <ChevronRight
+              v-if="!state.expandedSidebar.has(i)"
+              class="w-4 h-4"
+            />
+            <ChevronDown v-else class="w-4 h-4" />
           </div>
         </div>
         <div
@@ -54,7 +57,7 @@
 </template>
 
 <script setup lang="ts">
-import { ChevronDown, ChevronUp } from "lucide-vue-next";
+import { ChevronDown, ChevronRight } from "lucide-vue-next";
 import { computed, VNode, reactive, onMounted } from "vue";
 
 export interface SidebarItem {
