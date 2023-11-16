@@ -49,24 +49,24 @@
       <div
         v-show="showMenu"
         v-zindexable="{ enabled: true }"
-        class="absolute top-[36px] w-full py-1 divide-y divide-block-border bg-white shadow-md origin-top-left rounded-[3px] overflow-clip"
+        class="absolute top-[36px] w-full bg-white shadow-md origin-top-left rounded-[3px] overflow-clip"
       >
         <ScopeMenu
-          v-show="menuView === 'scope'"
-          :input-text="inputText"
+          :show="menuView === 'scope'"
           :params="params"
           :options="visibleScopeOptions"
           :menu-index="menuIndex"
           @select-scope="selectScope"
+          @hover-item="menuIndex = $event"
         />
         <ValueMenu
-          v-show="menuView === 'value'"
-          :input-text="inputText"
+          :show="menuView === 'value'"
           :params="params"
           :scope-option="currentScopeOption"
           :value-options="visibleValueOptions"
           :menu-index="menuIndex"
           @select-value="selectValue"
+          @hover-item="menuIndex = $event"
         />
       </div>
     </Transition>
@@ -354,10 +354,12 @@ const handleKeyDown = (e: KeyboardEvent) => {
 
   if (key === "ArrowUp") {
     moveMenuIndex(-1);
+    e.preventDefault();
     return;
   }
   if (key === "ArrowDown") {
     moveMenuIndex(1);
+    e.preventDefault();
     return;
   }
 };
