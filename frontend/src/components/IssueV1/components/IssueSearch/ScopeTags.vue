@@ -4,16 +4,10 @@
     :key="scope.id"
     :closable="true"
     :data-search-scope-id="scope.id"
-    :bordered="scope.id === focusedTagId"
-    :color="
-      scope.id === focusedTagId
-        ? {
-            borderColor: callCssVariable('--color-accent'),
-          }
-        : undefined
-    "
+    :bordered="false"
     size="small"
     style="--n-icon-size: 12px"
+    v-bind="tagProps(scope)"
     @close="$emit('remove-scope', scope.id, scope.value)"
     @click="$emit('select-scope', scope.id, scope.value)"
   >
@@ -23,10 +17,15 @@
   </NTag>
 </template>
 <script setup lang="ts">
-import { NTag } from "naive-ui";
-import { SearchParams, SearchScopeId, callCssVariable } from "@/utils";
+import { NTag, TagProps } from "naive-ui";
+import {
+  SearchParams,
+  SearchScope,
+  SearchScopeId,
+  callCssVariable,
+} from "@/utils";
 
-defineProps<{
+const props = defineProps<{
   params: SearchParams;
   focusedTagId?: SearchScopeId;
 }>();
@@ -34,4 +33,16 @@ defineEmits<{
   (event: "remove-scope", id: SearchScopeId, value: string): void;
   (event: "select-scope", id: SearchScopeId, value: string): void;
 }>();
+
+const tagProps = (scope: SearchScope): TagProps => {
+  if (props.focusedTagId !== scope.id) {
+    return {};
+  }
+  return {
+    bordered: true,
+    color: {
+      borderColor: callCssVariable("--color-accent"),
+    },
+  };
+};
 </script>
