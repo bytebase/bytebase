@@ -150,13 +150,9 @@ func QueryV2(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, stateme
 	}
 
 	var fieldMasker []masker.Masker
-	var fieldMaskInfo []bool
-	var fieldSensitiveInfo []bool
 	noneMasker := masker.NewNoneMasker()
 	for range columnNames {
-		fieldSensitiveInfo = append(fieldSensitiveInfo, false)
 		fieldMasker = append(fieldMasker, noneMasker)
-		fieldMaskInfo = append(fieldMaskInfo, false)
 	}
 
 	columnTypes, err := rows.ColumnTypes()
@@ -184,8 +180,6 @@ func QueryV2(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, stateme
 		ColumnNames:     columnNames,
 		ColumnTypeNames: columnTypeNames,
 		Rows:            data,
-		Masked:          fieldMaskInfo,
-		Sensitive:       fieldSensitiveInfo,
 	}, nil
 }
 
