@@ -2312,7 +2312,7 @@ func hasDatabaseAccessRights(principalID int, projectPolicy *store.IAMPolicyMess
 		// Project owner has all permissions.
 		if binding.Role == api.Role(common.ProjectOwner) {
 			for _, member := range binding.Members {
-				if member.ID == principalID {
+				if member.ID == principalID || member.Email == api.AllUsers {
 					pass = true
 					break
 				}
