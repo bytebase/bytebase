@@ -292,7 +292,7 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 		UpdaterID:   principalID,
 		Payload:     schemaDesignSheetPayload,
 	}
-	sheet, err := s.store.CreateSheet(ctx, sheetCreate)
+	sheet, err = s.store.CreateSheet(ctx, sheetCreate)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to create sheet: %v", err))
 	}
