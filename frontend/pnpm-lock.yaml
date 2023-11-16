@@ -1,4 +1,4 @@
-lockfileVersion: '6.0'
+lockfileVersion: '6.1'
 
 settings:
   autoInstallPeers: true
@@ -101,6 +101,9 @@ dependencies:
   markdown-it:
     specifier: ^13.0.2
     version: 13.0.2
+  match-sorter:
+    specifier: 6.3.1
+    version: 6.3.1
   maz-ui:
     specifier: ^3.17.0
     version: 3.17.0(dayjs@1.11.9)(libphonenumber-js@1.10.47)(typescript@5.2.2)(vue-router@4.2.4)(vue@3.2.47)
@@ -4930,7 +4933,7 @@ packages:
     dev: false
 
   /remove-accents@0.4.2:
-    resolution: {integrity: sha512-7pXIJqJOq5tFgG1A2Zxti3Ht8jJF337m4sowbuHsW30ZnkQFnDzy9qBNhgzX8ZLW4+UBcXiiR7SwR6pokHsxiA==}
+    resolution: {integrity: sha1-CkPTqq4egNuRngeuJUsoXZ4ce7U=}
     dev: false
 
   /require-directory@2.1.1:

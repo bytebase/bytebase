@@ -360,6 +360,24 @@
   }
 }
 
+.fade-slide-up-leave-active {
+  @apply transition-[opacity,_transform] duration-100 ease-in-out;
+}
+
+.fade-slide-up-enter-active {
+  @apply transition-[opacity,_transform] duration-100 ease-in-out;
+}
+
+.fade-slide-up-enter-from,
+.fade-slide-up-leave-to {
+  @apply opacity-0 scale-90;
+}
+
+.fade-slide-up-leave-from,
+.fade-slide-up-enter-to {
+  @apply opacity-100 scale-100;
+}
+
 /* compatibility fixes for tailwindcss and naive-ui */
 .n-base-selection-input:focus,
 .n-base-selection-input-tag__input:focus,

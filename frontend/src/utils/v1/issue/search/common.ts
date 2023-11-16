@@ -53,11 +53,11 @@ export const buildSearchTextBySearchParams = (
 ): string => {
   const parts: string[] = [];
   params?.scopes.forEach((scope) => {
-    parts.push(`${scope.id}:${scope.value.trim()}`);
+    parts.push(`${scope.id}:${encodeURIComponent(scope.value.trim())}`);
   });
   const query = (params?.query ?? "").trim();
   if (params?.query) {
-    parts.push(query);
+    parts.push(encodeURIComponent(query));
   }
   return parts.join(" ");
 };
@@ -70,13 +70,13 @@ export const buildSearchParamsBySearchText = (text: string): SearchParams => {
   for (let i = 0; i < segments.length; i++) {
     const seg = segments[i];
     const parts = seg.split(":");
-    if (parts.length === 2 && isValidSearchScopeId(parts[0])) {
+    if (parts.length === 2 && isValidSearchScopeId(parts[0]) && parts[1]) {
       params.scopes.push({
         id: parts[0],
-        value: parts[1],
+        value: decodeURIComponent(parts[1]),
       });
     } else {
-      querySegments.push(seg);
+      querySegments.push(decodeURIComponent(seg));
     }
   }
   params.query = querySegments.join(" ");

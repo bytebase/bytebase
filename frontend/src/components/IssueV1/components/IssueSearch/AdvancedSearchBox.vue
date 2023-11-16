@@ -1,145 +1,134 @@
 <template>
-  <div class="relative" :class="customClass">
+  <div ref="containerRef" class="bb-advanced-issue-search-box relative">
     <NInput
       ref="inputRef"
-      :value="state.searchText"
-      :clearable="!!state.searchText"
+      v-model:value="inputText"
       :placeholder="$t('issue.advanced-search.self')"
-      style="width: 100%"
-      @update:value="onUpdate($event)"
-      @blur="onClear"
-      @keyup="onKeydown"
-      @click="onKeydown"
+      class="bb-advanced-issue-search-box__input"
+      style="--n-padding-left: 8px; --n-padding-right: 4px"
+      @click="handleInputClick"
+      @blur="hideMenu"
+      @keyup="handleKeyUp"
+      @keydown="handleKeyDown"
     >
       <template #prefix>
-        <heroicons-outline:search class="h-4 w-4 text-control-placeholder" />
+        <div
+          class="flex flex-row items-center justify-start gap-x-2"
+          :style="{
+            'max-width': `calc(${containerWidth}px - 14rem)`,
+          }"
+        >
+          <SearchIcon class="w-4 h-4 text-control-placeholder" />
+          <div
+            ref="tagsContainerRef"
+            class="flex-1 flex flex-row items-center flex-nowrap gap-1 overflow-auto hide-scrollbar"
+          >
+            <ScopeTags
+              :params="params"
+              :focused-tag-id="focusedTagId"
+              @select-scope="selectScopeFromTag"
+              @remove-scope="removeScope"
+            />
+          </div>
+        </div>
+      </template>
+      <template #suffix>
+        <NButton
+          v-show="clearable"
+          quaternary
+          circle
+          size="tiny"
+          @click.stop.prevent="handleClear"
+        >
+          <template #icon>
+            <XIcon class="w-3 h-3" />
+          </template>
+        </NButton>
       </template>
     </NInput>
-    <div
-      v-if="state.showSearchScopes"
-      class="absolute z-50 pt-2 mt-0.5 top-full w-full divide-y divide-block-border bg-white shadow-md"
-    >
+
+    <Transition name="fade-slide-up" :appear="true">
       <div
-        v-for="item in searchScopes"
-        :key="item.id"
-        class="flex gap-x-1 px-3 py-1 items-center cursor-pointer hover:bg-gray-100"
-        @mousedown.prevent.stop="onScopeSelect(item.id)"
+        v-show="showMenu"
+        v-zindexable="{ enabled: true }"
+        class="absolute top-[36px] w-full bg-white shadow-md origin-top-left rounded-[3px] overflow-clip"
+        @wheel="console.log('wheel', $event)"
       >
-        <div class="space-x-1 text-sm">
-          <span class="text-accent">{{ item.id }}:</span>
-          <span class="text-control-light">{{ item.description }}</span>
-        </div>
+        <ScopeMenu
+          :show="menuView === 'scope'"
+          :params="params"
+          :options="visibleScopeOptions"
+          :menu-index="menuIndex"
+          @select-scope="selectScope"
+          @hover-item="menuIndex = $event"
+        />
+        <ValueMenu
+          :show="menuView === 'value'"
+          :params="params"
+          :scope-option="currentScopeOption"
+          :value-options="visibleValueOptions"
+          :menu-index="menuIndex"
+          @select-value="selectValue"
+          @hover-item="menuIndex = $event"
+        />
       </div>
-    </div>
-    <div
-      v-if="state.currentScope"
-      class="absolute z-50 top-full w-full bg-white shadow-md"
-    >
-      <div class="px-3 pt-2 pb-1 text-sm text-control font-semibold">
-        {{ searchKeyword }}
-      </div>
-      <div class="max-h-60 overflow-y-auto divide-block-border">
-        <div
-          v-for="option in searchOptions"
-          :key="option.id"
-          class="flex gap-x-2 px-3 py-1 items-center cursor-pointer hover:bg-gray-100"
-          @mousedown.prevent.stop="onOptionSelect(option.id)"
-        >
-          <component :is="option.label" class="text-control text-sm" />
-          <span class="text-control-light text-sm">{{ option.id }}</span>
-        </div>
-        <div
-          v-if="searchOptions.length === 0"
-          class="px-3 py-1 text-control text-sm"
-        >
-          N/A
-        </div>
-      </div>
-    </div>
+    </Transition>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { debounce, orderBy } from "lodash-es";
-import { NInput } from "naive-ui";
+import { useElementSize } from "@vueuse/core";
+import { cloneDeep, last } from "lodash-es";
+import { SearchIcon } from "lucide-vue-next";
+import { XIcon } from "lucide-vue-next";
+import { matchSorter } from "match-sorter";
+import { InputInst, NInput } from "naive-ui";
+import scrollIntoView from "scroll-into-view-if-needed";
+import { zindexable as vZindexable } from "vdirs";
 import {
   reactive,
-  computed,
-  h,
   watch,
-  VNode,
   onMounted,
   ref,
+  toRef,
+  computed,
   nextTick,
 } from "vue";
-import { useI18n } from "vue-i18n";
-import BBAvatar from "@/bbkit/BBAvatar.vue";
-import GitIcon from "@/components/GitIcon.vue";
-import YouTag from "@/components/misc/YouTag.vue";
 import {
-  InstanceV1Name,
-  InstanceV1EngineIcon,
-  DatabaseV1Name,
-} from "@/components/v2";
-import {
-  useProjectV1ListByCurrentUser,
-  useInstanceV1List,
-  useSearchDatabaseV1List,
-  useUserStore,
-  useDatabaseV1Store,
-  useCurrentUserV1,
-} from "@/store";
-import {
-  projectNamePrefix,
-  instanceNamePrefix,
-} from "@/store/modules/v1/common";
-import { SYSTEM_BOT_EMAIL } from "@/types";
-import { Workflow } from "@/types/proto/v1/project_service";
-import {
-  projectV1Name,
-  environmentV1Name,
-  extractProjectResourceName,
-  extractInstanceResourceName,
   SearchParams,
   SearchScopeId,
-  buildSearchParamsBySearchText,
+  defaultSearchParams,
+  getValueFromSearchParams,
+  maybeApplyDefaultTsRange,
+  minmax,
+  upsertScope,
 } from "@/utils";
+import ScopeMenu from "./ScopeMenu.vue";
+import ScopeTags from "./ScopeTags.vue";
+import ValueMenu from "./ValueMenu.vue";
+import { useSearchScopeOptions } from "./useSearchScopeOptions";
 
 const props = withDefaults(
   defineProps<{
+    params: SearchParams;
     customClass?: string;
-    params?: SearchParams;
     autofocus?: boolean;
   }>(),
   {
     customClass: "",
-    params: undefined,
     autofocus: false,
   }
 );
 
 const emit = defineEmits<{
   (event: "update:params", params: SearchParams): void;
+  (event: "select-unsupported-scope", id: SearchScopeId): void;
 }>();
-
-const { t } = useI18n();
 
 interface LocalState {
   searchText: string;
   showSearchScopes: boolean;
   currentScope?: SearchScopeId;
-}
-
-interface SearchOption {
-  id: string;
-  label: VNode;
-}
-
-interface SearchScope {
-  id: SearchScopeId;
-  title: string;
-  description: string;
-  options: SearchOption[];
 }
 
 const buildSearchTextByParams = (params: SearchParams | undefined): string => {
@@ -157,10 +146,13 @@ const state = reactive<LocalState>({
   searchText: buildSearchTextByParams(props.params),
   showSearchScopes: props.autofocus,
 });
-const me = useCurrentUserV1();
-const inputRef = ref<InstanceType<typeof NInput>>();
-const userStore = useUserStore();
-const databaseV1Store = useDatabaseV1Store();
+const containerRef = ref<HTMLElement>();
+const tagsContainerRef = ref<HTMLElement>();
+const inputText = ref(props.params.query);
+const inputRef = ref<InputInst>();
+const menuIndex = ref(0);
+const { width: containerWidth } = useElementSize(containerRef);
+const focusedTagId = ref<SearchScopeId>();
 
 watch(
   () => state.showSearchScopes,
@@ -176,272 +168,302 @@ watch(
   }
 );
 
-const { projectList } = useProjectV1ListByCurrentUser();
-const { instanceList } = useInstanceV1List(false /* !showDeleted */);
-const { databaseList } = useSearchDatabaseV1List({
-  parent: "instances/-",
-});
+const {
+  menuView,
+  fullScopeOptions,
+  availableScopeOptions,
+  currentScope,
+  currentScopeOption,
+  valueOptions,
+} = useSearchScopeOptions(toRef(props, "params"));
 
-const principalSearchOptions = computed(() => {
-  const sortedUsers = orderBy(
-    userStore.activeUserList,
-    (user) => (user.name === me.value.name ? -1 : 1),
-    "asc"
-  );
-  return sortedUsers.map((user) => {
-    const children = [
-      h(BBAvatar, { size: "TINY", username: user.title }),
-      h("span", {}, user.title),
-    ];
-    if (user.name === me.value.name) {
-      children.push(h(YouTag));
-    }
-    return {
-      id: user.email,
-      label: h("div", { class: "flex items-center gap-x-1" }, children),
-    };
-  });
-});
+const visibleScopeOptions = computed(() => {
+  if (currentScopeOption.value) {
+    return [currentScopeOption.value];
+  }
 
-// fullScopes provides full search scopes and options.
-// we need this as the source of truth.
-const fullScopes = computed((): SearchScope[] => {
-  const scopes: SearchScope[] = [
-    {
-      id: "project",
-      title: t("issue.advanced-search.scope.project.title"),
-      description: t("issue.advanced-search.scope.project.description"),
-      options: projectList.value.map((proj) => {
-        const children: VNode[] = [
-          h("span", { innerHTML: projectV1Name(proj) }),
-        ];
-        if (proj.workflow === Workflow.VCS) {
-          children.push(h(GitIcon, { class: "w-5" }));
-        }
-        return {
-          id: extractProjectResourceName(proj.name),
-          label: h("div", { class: "flex items-center gap-x-2" }, children),
-        };
-      }),
-    },
-    {
-      id: "approval",
-      title: t("issue.advanced-search.scope.approval.title"),
-      description: t("issue.advanced-search.scope.approval.description"),
-      options: [
-        {
-          id: "pending",
-          label: h(
-            "span",
-            {},
-            t("issue.advanced-search.scope.approval.value.pending")
-          ),
-        },
-        {
-          id: "approved",
-          label: h(
-            "span",
-            {},
-            t("issue.advanced-search.scope.approval.value.approved")
-          ),
-        },
-      ],
-    },
-    {
-      id: "creator",
-      title: t("issue.advanced-search.scope.creator.title"),
-      description: t("issue.advanced-search.scope.creator.description"),
-      options: principalSearchOptions.value,
-    },
-    {
-      id: "assignee",
-      title: t("issue.advanced-search.scope.assignee.title"),
-      description: t("issue.advanced-search.scope.assignee.description"),
-      options: principalSearchOptions.value,
-    },
-    {
-      id: "approver",
-      title: t("issue.advanced-search.scope.approver.title"),
-      description: t("issue.advanced-search.scope.approver.description"),
-      options: principalSearchOptions.value.filter(
-        (o) => o.id !== SYSTEM_BOT_EMAIL
-      ),
-    },
-    {
-      id: "subscriber",
-      title: t("issue.advanced-search.scope.subscriber.title"),
-      description: t("issue.advanced-search.scope.subscriber.description"),
-      options: principalSearchOptions.value,
-    },
-    {
-      id: "type",
-      title: t("issue.advanced-search.scope.type.title"),
-      description: t("issue.advanced-search.scope.type.description"),
-      options: [
-        {
-          id: "DDL",
-          label: h("span", { innerHTML: "Data Definition Language" }),
-        },
-        {
-          id: "DML",
-          label: h("span", { innerHTML: "Data Manipulation Language" }),
-        },
-      ],
-    },
-    {
-      id: "instance",
-      title: t("issue.advanced-search.scope.instance.title"),
-      description: t("issue.advanced-search.scope.instance.description"),
-      options: instanceList.value.map((ins) => {
-        return {
-          id: extractInstanceResourceName(ins.name),
-          label: h("div", { class: "flex items-center gap-x-1" }, [
-            h(InstanceV1Name, { instance: ins, link: false, tooltip: false }),
-            h("span", {
-              innerHTML: `(${environmentV1Name(ins.environmentEntity)})`,
-            }),
-          ]),
-        };
-      }),
-    },
-    {
-      id: "database",
-      title: t("issue.advanced-search.scope.database.title"),
-      description: t("issue.advanced-search.scope.database.description"),
-      options: databaseList.value.map((db) => {
-        return {
-          id: `${db.databaseName}-${db.uid}`,
-          label: h("div", { class: "flex items-center gap-x-1" }, [
-            h(InstanceV1EngineIcon, { instance: db.instanceEntity }),
-            h(DatabaseV1Name, { database: db, link: false }),
-            h("span", {
-              innerHTML: `(${environmentV1Name(
-                db.effectiveEnvironmentEntity
-              )})`,
-            }),
-          ]),
-        };
-      }),
-    },
-  ];
-  return scopes;
-});
+  const keyword = inputText.value.trim().replace(/:.*$/, "").toLowerCase();
+  if (!keyword) return availableScopeOptions.value;
 
-// filteredScopes will filter search options by chosen scope.
-// For example, if users select a specific project, we should only allow them select instances related with this project.
-const filteredScopes = computed((): SearchScope[] => {
-  const params = buildSearchParamsBySearchText(state.searchText);
-  const existedScope = new Map<SearchScopeId, string>(
-    params.scopes.map((scope) => [scope.id, scope.value])
-  );
-
-  const clone = fullScopes.value.map((scope) => ({
-    ...scope,
-    options: scope.options.map((option) => ({
-      ...option,
-    })),
-  }));
-  const index = clone.findIndex((scope) => scope.id === "database");
-  clone[index].options = clone[index].options.filter((option) => {
-    if (!existedScope.has("project") && !existedScope.has("instance")) {
-      return true;
-    }
-
-    const uid = option.id.split("-").slice(-1)[0];
-    const db = databaseV1Store.getDatabaseByUID(uid);
-    const project = db.project;
-    const instance = db.instance;
-
-    if (project === `${projectNamePrefix}${existedScope.get("project")}`) {
-      return true;
-    }
-    if (instance === `${instanceNamePrefix}${existedScope.get("instance")}`) {
-      return true;
-    }
-
-    return false;
+  const filtered = matchSorter(availableScopeOptions.value, keyword, {
+    keys: ["id", "title", "description"],
   });
 
-  return clone;
+  return filtered;
 });
 
-// searchScopes will hide chosen search scope.
-// For example, if uses already select the instance, we should NOT show the instance scope in the dropdown.
-const searchScopes = computed((): SearchScope[] => {
-  const params = buildSearchParamsBySearchText(state.searchText);
-  const existedScope = new Set<SearchScopeId>(
-    params.scopes.map((scope) => scope.id)
-  );
+const visibleValueOptions = computed(() => {
+  if (!currentScope.value) return [];
+  const scopePrefix = `${currentScope.value}:`;
+  const keyword = inputText.value
+    .trim()
+    .toLowerCase()
+    .substring(scopePrefix.length);
 
-  return filteredScopes.value.filter((scope) => {
-    if (existedScope.has(scope.id)) {
-      return false;
+  if (!keyword) return valueOptions.value;
+
+  // Apply multiple segments of keyword splitted by whitespace
+  const terms = keyword.split(/\s+/g);
+  const filtered = terms.reduceRight((options, term) => {
+    return matchSorter(options, term, { keys: ["value", "keywords"] });
+  }, valueOptions.value);
+
+  const currentValue = getValueFromSearchParams(
+    props.params,
+    currentScope.value
+  );
+  const option = valueOptions.value.find((opt) => opt.value === currentValue);
+  if (currentValue && option) {
+    // If we have current value, put it to the first if it doesn't match the keyword
+    const index = filtered.findIndex((opt) => opt.value === currentValue);
+    if (index < 0) {
+      filtered.unshift(option);
     }
+  }
+  return filtered;
+});
+
+const visibleOptions = computed(() => {
+  return menuView.value === "scope"
+    ? visibleScopeOptions.value
+    : menuView.value === "value"
+    ? visibleValueOptions.value
+    : ([] as unknown[]);
+});
+
+const showMenu = computed(() => {
+  if (menuView.value === "scope") {
+    return visibleScopeOptions.value.length > 0;
+  }
+  if (menuView.value === "value") {
     return true;
+  }
+  return false;
+});
+
+const clearable = computed(() => {
+  return inputText.value.length > 0 || props.params.scopes.length > 0;
+});
+
+const hideMenu = () => {
+  nextTick(() => {
+    menuView.value = undefined;
+    currentScope.value = undefined;
+    focusedTagId.value = undefined;
   });
-});
-
-const searchOptions = computed((): SearchOption[] => {
-  const item = filteredScopes.value.find(
-    (item) => item.id === state.currentScope
-  );
-  return item?.options ?? [];
-});
-
-const searchKeyword = computed(() => {
-  const scope = filteredScopes.value.find(
-    (item) => item.id === state.currentScope
-  );
-  return scope?.title ?? "";
-});
-
-const onScopeSelect = (scopeId: SearchScopeId) => {
-  state.showSearchScopes = false;
-  state.currentScope = scopeId;
 };
 
-const onOptionSelect = (scopeValue: string) => {
-  const scopeId = state.currentScope;
-  if (!scopeId) {
+const moveMenuIndex = (delta: -1 | 1) => {
+  const options = visibleOptions.value;
+  if (options.length === 0) return;
+
+  const target = minmax(menuIndex.value + delta, 0, options.length - 1);
+  menuIndex.value = target;
+};
+
+const removeScope = (id: SearchScopeId) => {
+  const updated = upsertScope(props.params, {
+    id,
+    value: "",
+  });
+  emit("update:params", updated);
+};
+const selectScope = (
+  id: SearchScopeId | undefined,
+  value: string | undefined = undefined
+) => {
+  currentScope.value = id;
+  if (id) {
+    menuView.value = "value";
+    // Fill-in the scope prefix if needed
+    if (!inputText.value.startsWith(`${id}:`)) {
+      inputText.value = `${id}:${value ?? ""}`;
+    }
+    scrollScopeTagIntoViewIfNeeded(id);
+  } else {
+    menuView.value = "scope";
+  }
+};
+const selectValue = (value: string) => {
+  const id = currentScope.value;
+  if (!id) {
+    menuView.value = undefined;
     return;
   }
-  const params = buildSearchParamsBySearchText(state.searchText);
-  const index = params.scopes.findIndex((s) => s.id === scopeId);
-  if (index < 0) {
-    params.scopes.push({
-      id: scopeId,
-      value: scopeValue,
-    });
-  } else {
-    params.scopes[index] = {
-      id: scopeId,
-      value: scopeValue,
-    };
+  const updated = upsertScope(props.params, {
+    id,
+    value,
+  });
+  updated.query = "";
+  inputText.value = "";
+  selectScope(undefined);
+  emit("update:params", updated);
+
+  scrollScopeTagIntoViewIfNeeded(id);
+  hideMenu();
+};
+const selectScopeFromTag = (id: SearchScopeId) => {
+  if (fullScopeOptions.value.find((opt) => opt.id === id)) {
+    // For AdvancedSearchBox supported scopes
+    selectScope(id);
+    return;
   }
-  state.searchText = buildSearchTextByParams(params);
-  debouncedUpdate();
-  onClear();
+
+  // Unsupported scope for AdvancedSearchBox
+  // emit an event and wish the parent UI can handle this
+  emit("select-unsupported-scope", id);
+  hideMenu();
 };
 
-const onClear = (immediate = false) => {
-  const clear = () => {
-    state.showSearchScopes = false;
-    state.currentScope = undefined;
-  };
-  if (immediate) {
-    clear();
-  } else {
-    nextTick(clear);
+const maybeSelectMatchedScope = () => {
+  if (!menuView.value || menuView.value === "scope") {
+    const matchedScope = visibleScopeOptions.value.find((opt) =>
+      inputText.value.startsWith(`${opt.id}:`)
+    );
+    if (matchedScope) {
+      // select the scope if the inputText matches its prefix
+      selectScope(matchedScope.id);
+      return true;
+    }
+    if (!menuView.value) {
+      // Show scope menu if none of the menus are shown
+      menuView.value = "scope";
+      return true;
+    }
+  }
+  return false;
+};
+const maybeDeselectMismatchedScope = () => {
+  if (menuView.value === "value" && currentScope.value) {
+    if (!inputText.value.startsWith(`${currentScope.value}:`)) {
+      // de-select current scope since the inputText doesn't match its prefix.
+      menuView.value = "scope";
+      selectScope(undefined);
+      return true;
+    }
+  }
+  return false;
+};
+
+const maybeEmitIncompleteValue = () => {
+  const updated = cloneDeep(props.params);
+  updated.query = inputText.value;
+  emit("update:params", updated);
+};
+
+const handleInputClick = () => {
+  maybeSelectMatchedScope();
+  maybeDeselectMismatchedScope();
+  maybeEmitIncompleteValue();
+};
+
+const handleKeyDown = (e: KeyboardEvent) => {
+  if (e.isComposing) return;
+  if (e.defaultPrevented) return;
+  const { key } = e;
+  if (key === "Backspace" && inputText.value === "") {
+    // Pressing "backspace" when the input box is empty
+    if (focusedTagId.value) {
+      e.stopPropagation();
+      e.preventDefault();
+      // Delete the focusedTag if it exists
+      const id = focusedTagId.value;
+      focusedTagId.value = undefined;
+      removeScope(id);
+      return;
+    } else {
+      e.stopPropagation();
+      e.preventDefault();
+      // Otherwise mark the last tag as 'focusedTag'
+      const id = last(props.params.scopes)?.id;
+      if (id) {
+        focusedTagId.value = id;
+        scrollScopeTagIntoViewIfNeeded(id);
+      }
+      return;
+    }
+  }
+  focusedTagId.value = undefined;
+
+  if (key === "ArrowUp") {
+    moveMenuIndex(-1);
+    e.preventDefault();
+    return;
+  }
+  if (key === "ArrowDown") {
+    moveMenuIndex(1);
+    e.preventDefault();
+    return;
   }
 };
 
-const debouncedUpdate = debounce(() => {
-  emit("update:params", buildSearchParamsBySearchText(state.searchText));
-}, 500);
+const handleKeyUp = (e: KeyboardEvent) => {
+  if (e.isComposing) return;
+  if (e.defaultPrevented) return;
+  const { key } = e;
+  if (key === "Escape") {
+    maybeEmitIncompleteValue();
+    menuView.value = undefined;
+    return;
+  }
+  if (key === "Backspace" && inputText.value === "") {
+    // backspace key might be processed by KeyDown
+    if (focusedTagId.value) {
+      return;
+    }
+  }
+  if (maybeSelectMatchedScope()) {
+    maybeEmitIncompleteValue();
+    return;
+  }
+  if (maybeDeselectMismatchedScope()) {
+    maybeEmitIncompleteValue();
+    return;
+  }
+  if (key === "Enter") {
+    // Press enter to select scope (dive into the next step)
+    // or select value
+    const index = menuIndex.value;
+    if (menuView.value === "scope") {
+      const option = visibleScopeOptions.value[index];
+      if (option) {
+        selectScope(option.id);
+        maybeEmitIncompleteValue();
+        return;
+      }
+    }
+    if (menuView.value === "value") {
+      const option = visibleValueOptions.value[index];
+      if (option) {
+        selectValue(option.value);
+        return;
+      }
+    }
+  }
 
-const onUpdate = (value: string) => {
-  state.searchText = value;
-  debouncedUpdate();
+  maybeEmitIncompleteValue();
+};
+
+const handleClear = () => {
+  const params = defaultSearchParams();
+  maybeApplyDefaultTsRange(params, "created", true /* mutate */);
+  emit("update:params", params);
+  hideMenu();
+};
+
+const scrollScopeTagIntoViewIfNeeded = (id: SearchScopeId) => {
+  nextTick(() => {
+    const tagsContainerEl = tagsContainerRef.value;
+    if (!tagsContainerEl) return;
+    const tagEl = tagsContainerEl.querySelector(
+      `[data-search-scope-id="${id}"]`
+    );
+    if (tagEl) {
+      scrollIntoView(tagEl, {
+        scrollMode: "if-needed",
+      });
+    }
+  });
 };
 
 onMounted(() => {
@@ -449,66 +471,55 @@ onMounted(() => {
     inputRef.value?.inputElRef?.focus();
   }
 });
-
-const onKeydown = () => {
-  if (!inputRef.value || !inputRef.value.inputElRef) {
-    return;
-  }
-  if (!state.searchText) {
-    state.showSearchScopes = true;
-    return;
-  }
-
-  const start = inputRef.value.inputElRef.selectionStart ?? -1;
-  const end = inputRef.value.inputElRef.selectionEnd ?? -1;
-  if (start !== end) {
-    onClear();
-    return;
-  }
-
-  // Try to find the active section the cursor in.
-  // For example, the searchText is (the | is the current cursor):
-  // example 1:
-  // project:xxx insta|nce:yyy custom-search-text
-  // then the active section is instance:yyy, we should show the instances selector
-  //
-  // example 2:
-  // project:xxx| instance:yyy custom-search-text
-  // then the active section is project:xxx, we should show the projects selector
-  //
-  // example 3:
-  // project:xxx instance:yyy |
-  // we should NOT show any selector.
-  const sections = state.searchText.split(" ");
-  let i = 0;
-  let len = 0;
-  while (i < sections.length) {
-    len += sections[i].length;
-    if (i < sections.length - 1) {
-      len += 1; // this is the length for empty space " " between sections.
+watch(menuView, () => {
+  focusedTagId.value = undefined;
+  menuIndex.value = 0;
+  if (menuView.value === "value" && currentScope.value) {
+    const value = getValueFromSearchParams(props.params, currentScope.value);
+    if (value) {
+      const index = valueOptions.value.findIndex(
+        (option) => option.value === value
+      );
+      if (index >= 0) menuIndex.value = index;
     }
-    if (len > start) {
-      break;
+  }
+});
+watch(visibleScopeOptions, (newOptions, oldOptions) => {
+  if (menuView.value !== "scope") return;
+  const highlightedScope = oldOptions[menuIndex.value]?.id;
+  if (highlightedScope) {
+    const index = newOptions.findIndex((opt) => opt.id === highlightedScope);
+    if (index >= 0) {
+      menuIndex.value = index;
+      return;
     }
-    i++;
   }
-
-  if (i >= sections.length) {
-    onClear(true /* immediate */);
-    state.showSearchScopes = true;
-    return;
+  menuIndex.value = minmax(menuIndex.value, 0, newOptions.length - 1);
+});
+watch(visibleValueOptions, (newOptions, oldOptions) => {
+  if (menuView.value !== "value") return;
+  const highlightedValue = oldOptions[menuIndex.value]?.value;
+  if (highlightedValue) {
+    const index = newOptions.findIndex((opt) => opt.value === highlightedValue);
+    if (index >= 0) {
+      menuIndex.value = index;
+      return;
+    }
   }
-
-  const currentScope = sections[i].split(":")[0] as SearchScopeId;
-  const existed =
-    fullScopes.value.findIndex((item) => item.id === currentScope) >= 0;
-  if (!existed) {
-    onClear(true /* immediate */);
-    state.showSearchScopes = true;
-    return;
+  menuIndex.value = minmax(menuIndex.value, 0, newOptions.length - 1);
+});
+watch(
+  () => props.params,
+  (params) => {
+    inputText.value = params.query;
   }
-
-  state.showSearchScopes = false;
-  state.currentScope = currentScope;
-};
+);
 </script>
+
+<style lang="postcss" scoped>
+.bb-advanced-issue-search-box
+  .bb-advanced-issue-search-box__input
+  :deep(.n-input__input) {
+  @apply flex flex-row items-center;
+}
+</style>

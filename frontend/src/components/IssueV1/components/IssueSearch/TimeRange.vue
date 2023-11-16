@@ -1,5 +1,6 @@
 <template>
   <NDatePicker
+    :key="timeRange ? 'filled' : 'empty'"
     :value="timeRange"
     :is-date-disabled="isDateDisabled"
     type="daterange"
