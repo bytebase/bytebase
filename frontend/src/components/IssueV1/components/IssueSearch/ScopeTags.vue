@@ -9,7 +9,7 @@
     style="--n-icon-size: 12px"
     v-bind="tagProps(scope)"
     @close="$emit('remove-scope', scope.id, scope.value)"
-    @click="$emit('select-scope', scope.id, scope.value)"
+    @click.stop.prevent="$emit('select-scope', scope.id, scope.value)"
   >
     <span>{{ scope.id }}</span>
     <span>:</span>

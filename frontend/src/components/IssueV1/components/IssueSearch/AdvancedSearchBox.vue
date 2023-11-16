@@ -312,6 +312,7 @@ const selectScopeFromTag = (id: SearchScopeId) => {
   // Unsupported scope for AdvancedSearchBox
   // emit an event and wish the parent UI can handle this
   emit("select-unsupported-scope", id);
+  hideMenu();
 };
 
 const maybeSelectMatchedScope = () => {
