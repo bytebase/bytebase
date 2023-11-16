@@ -8256,7 +8256,11 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
-    /** Search for databases that the caller has both projects.get permission on, and also satisfy the specified query. */
+    /**
+     * Search for databases that the caller has both projects.get permission on, and also satisfy the specified query.
+     *
+     * @deprecated
+     */
     searchDatabases: {
       name: "SearchDatabases",
       requestType: SearchDatabasesRequest,

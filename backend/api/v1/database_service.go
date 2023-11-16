@@ -159,40 +159,17 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 }
 
 // SearchDatabases searches all databases.
+// Deprecated.
 func (s *DatabaseService) SearchDatabases(ctx context.Context, request *v1pb.SearchDatabasesRequest) (*v1pb.SearchDatabasesResponse, error) {
-	instanceID, err := common.GetInstanceID(request.Parent)
+	// TODO(d): to be deprecated.
+	r := &v1pb.ListDatabasesRequest{Parent: request.Parent, Filter: request.Filter, PageToken: request.PageToken, PageSize: request.PageSize}
+	resp, err := s.ListDatabases(ctx, r)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
-	find := &store.FindDatabaseMessage{}
-	if instanceID != "-" {
-		find.InstanceID = &instanceID
-	}
-	if request.Filter != "" {
-		projectFilter, err := getProjectFilter(request.Filter)
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, err.Error())
-		}
-		projectID, err := common.GetProjectID(projectFilter)
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid project %q in the filter", projectFilter)
-		}
-		find.ProjectID = &projectID
-	}
-	databases, err := s.store.ListDatabases(ctx, find)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	response := &v1pb.SearchDatabasesResponse{}
-	for _, database := range databases {
-		if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionManageGeneral); err != nil {
-			st := status.Convert(err)
-			if st.Code() == codes.PermissionDenied {
-				continue
-			}
-			return nil, err
-		}
-		response.Databases = append(response.Databases, convertToDatabase(database))
+	response := &v1pb.SearchDatabasesResponse{
+		Databases:     resp.Databases,
+		NextPageToken: resp.NextPageToken,
 	}
 	return response, nil
 }
