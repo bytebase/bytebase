@@ -6,7 +6,6 @@ export const ACTION_RANKINGS = [
   "bb.recently_visited.",
   "bb.quickaction.",
   "bb.navigation.",
-  "bb.bookmark.",
   "bb.project.",
   "bb.database.",
   "bb.preferences.",
