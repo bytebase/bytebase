@@ -96,7 +96,7 @@ const hasWorkspaceManageDatabasePermission = useWorkspacePermissionV1(
 const { project } = useProjectV1ByUID(toRef(props, "projectId"));
 
 const prepare = async () => {
-  await databaseStore.searchDatabaseList({
+  await databaseStore.fetchDatabaseList({
     parent: "instances/-",
   });
 };

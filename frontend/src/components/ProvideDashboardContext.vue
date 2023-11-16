@@ -26,7 +26,7 @@ export default defineComponent({
       useUserStore().fetchUserList(),
       useEnvironmentV1Store().fetchEnvironments(),
       useInstanceV1Store().fetchInstanceList(),
-      useDatabaseV1Store().searchDatabaseList({
+      useDatabaseV1Store().fetchDatabaseList({
         parent: "instances/-",
       }),
       useDBGroupStore().fetchAllDatabaseGroupList(),

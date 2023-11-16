@@ -18,7 +18,6 @@ import { User } from "@/types/proto/v1/auth_service";
 import {
   Database,
   ListDatabasesRequest,
-  SearchDatabasesRequest,
   UpdateDatabaseRequest,
   DiffSchemaRequest,
 } from "@/types/proto/v1/database_service";
@@ -69,11 +68,6 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
   };
   const fetchDatabaseList = async (args: Partial<ListDatabasesRequest>) => {
     const { databases } = await databaseServiceClient.listDatabases(args);
-    const composedDatabaseList = await upsertDatabaseMap(databases);
-    return composedDatabaseList;
-  };
-  const searchDatabaseList = async (args: Partial<SearchDatabasesRequest>) => {
-    const { databases } = await databaseServiceClient.searchDatabases(args);
     const composedDatabaseList = await upsertDatabaseMap(databases);
     return composedDatabaseList;
   };
@@ -171,7 +165,6 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     reset,
     databaseList,
     fetchDatabaseList,
-    searchDatabaseList,
     syncDatabase,
     databaseListByUser,
     databaseListByProject,
@@ -200,7 +193,7 @@ export const useSearchDatabaseV1List = (
     () => JSON.stringify(unref(args)),
     () => {
       ready.value = false;
-      store.searchDatabaseList(unref(args)).then((list) => {
+      store.fetchDatabaseList(unref(args)).then((list) => {
         databaseList.value = list;
         ready.value = true;
       });
