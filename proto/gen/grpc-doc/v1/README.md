@@ -403,8 +403,6 @@
     - [ScheduleDeployment](#bytebase-v1-ScheduleDeployment)
     - [SchemaGroup](#bytebase-v1-SchemaGroup)
     - [SchemaGroup.Table](#bytebase-v1-SchemaGroup-Table)
-    - [SearchProjectsRequest](#bytebase-v1-SearchProjectsRequest)
-    - [SearchProjectsResponse](#bytebase-v1-SearchProjectsResponse)
     - [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest)
     - [SetupSQLReviewCIRequest](#bytebase-v1-SetupSQLReviewCIRequest)
     - [SetupSQLReviewCIResponse](#bytebase-v1-SetupSQLReviewCIResponse)
@@ -6601,41 +6599,6 @@ All the expressions will be used to filter the schema objects in DatabaseSchema.
 
 
 
-<a name="bytebase-v1-SearchProjectsRequest"></a>
-
-### SearchProjectsRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| page_size | [int32](#int32) |  | The maximum number of projects to return. The service may return fewer than this value. If unspecified, at most 50 projects will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListProjects` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListProjects` must match the call that provided the page token. |
-| filter | [string](#string) |  | Filter is used to filter projects returned in the list. |
-
-
-
-
-
-
-<a name="bytebase-v1-SearchProjectsResponse"></a>
-
-### SearchProjectsResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| projects | [Project](#bytebase-v1-Project) | repeated | The projects from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
 <a name="bytebase-v1-SetIamPolicyRequest"></a>
 
 ### SetIamPolicyRequest
@@ -7067,7 +7030,6 @@ The type of target.
 | ----------- | ------------ | ------------- | ------------|
 | GetProject | [GetProjectRequest](#bytebase-v1-GetProjectRequest) | [Project](#bytebase-v1-Project) |  |
 | ListProjects | [ListProjectsRequest](#bytebase-v1-ListProjectsRequest) | [ListProjectsResponse](#bytebase-v1-ListProjectsResponse) |  |
-| SearchProjects | [SearchProjectsRequest](#bytebase-v1-SearchProjectsRequest) | [SearchProjectsResponse](#bytebase-v1-SearchProjectsResponse) | Search for projects that the caller has both projects.get permission on, and also satisfy the specified query. |
 | CreateProject | [CreateProjectRequest](#bytebase-v1-CreateProjectRequest) | [Project](#bytebase-v1-Project) |  |
 | UpdateProject | [UpdateProjectRequest](#bytebase-v1-UpdateProjectRequest) | [Project](#bytebase-v1-Project) |  |
 | DeleteProject | [DeleteProjectRequest](#bytebase-v1-DeleteProjectRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |

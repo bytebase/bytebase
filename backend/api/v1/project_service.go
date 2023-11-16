@@ -282,35 +282,6 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, request *v1pb.Unde
 	return convertToProject(project), nil
 }
 
-// SearchProjects searches all projects that the caller have permission to.
-func (s *ProjectService) SearchProjects(ctx context.Context, _ *v1pb.SearchProjectsRequest) (*v1pb.SearchProjectsResponse, error) {
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	role, ok := ctx.Value(common.RoleContextKey).(api.Role)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "role not found")
-	}
-
-	projects, err := s.store.ListProjectV2(ctx, &store.FindProjectMessage{})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	response := &v1pb.SearchProjectsResponse{}
-	for _, project := range projects {
-		policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
-		}
-		if !isOwnerOrDBA(role) && !isProjectMember(principalID, policy) {
-			continue
-		}
-		response.Projects = append(response.Projects, convertToProject(project))
-	}
-	return response, nil
-}
-
 // GetIamPolicy returns the IAM policy for a project.
 func (s *ProjectService) GetIamPolicy(ctx context.Context, request *v1pb.GetIamPolicyRequest) (*v1pb.IamPolicy, error) {
 	projectID, err := common.GetProjectID(request.Project)
@@ -1767,11 +1738,19 @@ func (s *ProjectService) DeleteDatabaseGroup(ctx context.Context, request *v1pb.
 
 // ListDatabaseGroups lists database groups.
 func (s *ProjectService) ListDatabaseGroups(ctx context.Context, request *v1pb.ListDatabaseGroupsRequest) (*v1pb.ListDatabaseGroupsResponse, error) {
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+	role, ok := ctx.Value(common.RoleContextKey).(api.Role)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "role not found")
+	}
+
 	projectResourceID, err := common.GetProjectID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-
 	if projectResourceID == "-" {
 		var apiDatabaseGroups []*v1pb.DatabaseGroup
 		databaseGroups, err := s.store.ListDatabaseGroups(ctx, &store.FindDatabaseGroupMessage{})
@@ -1789,6 +1768,13 @@ func (s *ProjectService) ListDatabaseGroups(ctx context.Context, request *v1pb.L
 				return nil, status.Errorf(codes.DataLoss, "project %d not found", databaseGroup.ProjectUID)
 			}
 			if project.Deleted {
+				continue
+			}
+			policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, err.Error())
+			}
+			if !isOwnerOrDBA(role) && !isProjectOwnerOrDeveloper(principalID, policy) {
 				continue
 			}
 			apiDatabaseGroups = append(apiDatabaseGroups, convertStoreToAPIDatabaseGroupBasic(databaseGroup, project.ResourceID))
@@ -2045,6 +2031,15 @@ func (s *ProjectService) DeleteSchemaGroup(ctx context.Context, request *v1pb.De
 
 // ListSchemaGroups lists database groups.
 func (s *ProjectService) ListSchemaGroups(ctx context.Context, request *v1pb.ListSchemaGroupsRequest) (*v1pb.ListSchemaGroupsResponse, error) {
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+	role, ok := ctx.Value(common.RoleContextKey).(api.Role)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "role not found")
+	}
+
 	projectResourceID, databaseResourceID, err := common.GetProjectIDDatabaseGroupID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -2058,6 +2053,14 @@ func (s *ProjectService) ListSchemaGroups(ctx context.Context, request *v1pb.Lis
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project %q not found", projectResourceID)
 	}
+	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if !isOwnerOrDBA(role) && !isProjectOwnerOrDeveloper(principalID, policy) {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied")
+	}
+
 	databaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
 		ProjectUID: &project.UID,
 		ResourceID: &databaseResourceID,

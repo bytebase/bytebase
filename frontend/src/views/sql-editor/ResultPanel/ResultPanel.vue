@@ -21,16 +21,9 @@
         </div>
       </div>
     </template>
-    <template v-else-if="!selectedResultSet">
-      <div
-        class="w-full h-full flex flex-col justify-center items-center text-sm"
-      >
-        <span>{{ $t("sql-editor.table-empty-placeholder") }}</span>
-      </div>
-    </template>
     <template v-else>
       <div
-        v-if="databases.length > 1"
+        v-if="batchQueryDatabases.length > 0"
         class="w-full flex flex-row justify-start items-center p-2 pb-0 gap-2 shrink-0"
       >
         <NTooltip
@@ -56,14 +49,26 @@
               <span>{{ database.databaseName }}</span>
               <Info
                 v-if="isDatabaseQueryFailed(database)"
-                class="ml-2 text-yellow-600 w-4 h-auto"
+                class="ml-1 text-yellow-600 w-4 h-auto"
+              />
+              <X
+                class="ml-1 text-gray-400 w-4 h-auto hover:text-gray-600"
+                @click.stop="handleCloseSingleResultView(database)"
               />
             </NButton>
           </template>
           {{ database.instanceEntity.title }}
         </NTooltip>
       </div>
+      <template v-if="!selectedResultSet">
+        <div
+          class="w-full h-full flex flex-col justify-center items-center text-sm"
+        >
+          <span>{{ $t("sql-editor.table-empty-placeholder") }}</span>
+        </div>
+      </template>
       <ResultViewV1
+        v-else
         class="w-full h-auto grow"
         :execute-params="executeParams"
         :result-set="selectedResultSet"
@@ -75,7 +80,7 @@
 <script lang="ts" setup>
 import { useTimestamp } from "@vueuse/core";
 import { head } from "lodash-es";
-import { Info } from "lucide-vue-next";
+import { Info, X } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useDatabaseV1Store, useTabStore } from "@/store";
@@ -86,6 +91,9 @@ const tabStore = useTabStore();
 const databaseStore = useDatabaseV1Store();
 const selectedDatabase = ref<ComposedDatabase>();
 
+const batchQueryDatabases = computed(() => {
+  return tabStore.currentTab.batchQueryContext?.selectedDatabaseNames || [];
+});
 const queriedDatabaseNames = computed(() =>
   Array.from(tabStore.currentTab.databaseQueryResultMap?.keys() || [])
 );
@@ -126,6 +134,10 @@ const cancelQuery = () => {
   if (!queryContext) return;
   const { abortController } = queryContext;
   abortController?.abort();
+};
+
+const handleCloseSingleResultView = (database: ComposedDatabase) => {
+  tabStore.currentTab.databaseQueryResultMap?.delete(database.name || "");
 };
 
 // Auto select the first database when the databases are ready.

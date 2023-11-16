@@ -22,7 +22,13 @@ import { useSQLEditorTreeStore } from "@/store/modules/sqlEditorTree";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { usePolicyV1Store } from "@/store/modules/v1/policy";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import { Connection, CoreTabInfo, TabMode, UNKNOWN_USER_NAME } from "@/types";
+import {
+  Connection,
+  CoreTabInfo,
+  TabMode,
+  UNKNOWN_USER_NAME,
+  unknownProject,
+} from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import {
@@ -77,7 +83,7 @@ const prepareAccessibleDatabaseList = async () => {
   // `databaseList` is the database list accessible by current user.
   // Only accessible instances and databases will be listed in the tree.
   const databaseList = (
-    await databaseStore.searchDatabaseList({
+    await databaseStore.fetchDatabaseList({
       parent: "instances/-",
     })
   ).filter(
@@ -99,7 +105,7 @@ const initializeTree = async () => {
       );
       treeStore.selectedProject = project;
     } catch (error) {
-      // do nothing.
+      treeStore.selectedProject = unknownProject();
     }
   }
   treeStore.buildTree();
