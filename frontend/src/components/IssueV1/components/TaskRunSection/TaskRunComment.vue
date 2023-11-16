@@ -90,7 +90,7 @@ const commentLink = computed((): CommentLink => {
       case Task_Type.DATABASE_SCHEMA_BASELINE:
       case Task_Type.DATABASE_SCHEMA_UPDATE:
       case Task_Type.DATABASE_SCHEMA_UPDATE_SDL:
-      case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC:
+      case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER:
       case Task_Type.DATABASE_DATA_UPDATE: {
         const db = databaseForTask(issue.value, task);
         const link = changeHistoryLinkRaw(
