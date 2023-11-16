@@ -85,7 +85,7 @@ func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*
 	var queryErr error
 	var durationNs int64
 	if adviceStatus != advisor.Error {
-		results, durationNs, queryErr = s.doQueryV2(ctx, request, instance, maybeDatabase, nil)
+		results, durationNs, queryErr = s.doQueryV2(ctx, request, instance, maybeDatabase)
 	}
 
 	// Update activity.
@@ -115,7 +115,7 @@ func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*
 }
 
 // doQueryV2 is the copy of doQuery, which use query span to improve performance.
-func (s *SQLService) doQueryV2(ctx context.Context, request *v1pb.QueryRequest, instance *store.InstanceMessage, database *store.DatabaseMessage, sensitiveSchemaInfo *base.SensitiveSchemaInfo) ([]*v1pb.QueryResult, int64, error) {
+func (s *SQLService) doQueryV2(ctx context.Context, request *v1pb.QueryRequest, instance *store.InstanceMessage, database *store.DatabaseMessage) ([]*v1pb.QueryResult, int64, error) {
 	driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database, request.DataSourceId)
 	if err != nil {
 		return nil, 0, err
@@ -144,7 +144,7 @@ func (s *SQLService) doQueryV2(ctx context.Context, request *v1pb.QueryRequest, 
 		Limit:               int(request.Limit),
 		ReadOnly:            true,
 		CurrentDatabase:     request.ConnectionDatabase,
-		SensitiveSchemaInfo: sensitiveSchemaInfo,
+		SensitiveSchemaInfo: nil,
 		EnableSensitive:     s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil,
 		EngineVersion:       instance.EngineVersion,
 	})
