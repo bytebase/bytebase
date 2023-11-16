@@ -20,7 +20,6 @@ const (
 	IdentityProviderNamePrefix   = "idps/"
 	SettingNamePrefix            = "settings/"
 	BackupPrefix                 = "backups/"
-	BookmarkPrefix               = "bookmarks/"
 	ExternalVersionControlPrefix = "externalVersionControls/"
 	RiskPrefix                   = "risks/"
 	IssuePrefix                  = "issues/"
@@ -244,11 +243,6 @@ func GetIdentityProviderID(name string) (string, error) {
 		return "", err
 	}
 	return tokens[0], nil
-}
-
-// GetBookmarkID returns the bookmark ID from a resource name.
-func GetBookmarkID(name string) (int, error) {
-	return GetUIDFromName(name, BookmarkPrefix)
 }
 
 // GetExternalVersionControlID returns the external version control ID from a resource name.
