@@ -68,7 +68,6 @@ import {
   useChangeHistoryStore,
   useDBSchemaV1Store,
   useDatabaseV1Store,
-  useLocalSheetStore,
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { AffectedTable, EmptyAffectedTable } from "@/types/changeHistory";
@@ -81,7 +80,6 @@ import {
   extractDatabaseResourceName,
   getAffectedTablesOfChangeHistory,
   keyBy,
-  setSheetStatement,
 } from "@/utils";
 import ChangeHistoryDetailPanel from "../../ChangeHistoryDetailPanel";
 import { useChangelistDetailContext } from "../../context";
@@ -102,7 +100,6 @@ type LocalState = {
 
 const { project } = useChangelistDetailContext();
 const { changesFromChangeHistory: changes } = useAddChangeContext();
-const localSheetStore = useLocalSheetStore();
 
 const state = reactive<LocalState>({
   isLoading: false,
