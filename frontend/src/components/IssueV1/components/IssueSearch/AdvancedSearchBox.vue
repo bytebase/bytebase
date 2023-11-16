@@ -3,6 +3,7 @@
     <NInput
       ref="inputRef"
       v-model:value="inputText"
+      :placeholder="$t('issue.advanced-search.self')"
       class="bb-advanced-issue-search-box__input"
       style="--n-padding-left: 8px; --n-padding-right: 4px"
       @click="handleInputClick"
