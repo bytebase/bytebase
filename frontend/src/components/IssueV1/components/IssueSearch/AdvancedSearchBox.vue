@@ -6,7 +6,6 @@
       class="bb-advanced-issue-search-box__input"
       style="--n-padding-left: 8px; --n-padding-right: 4px"
       @click="handleInputClick"
-      @blur="menuView = undefined"
       @keyup="handleKeyUp"
       @keydown="handleKeyDown"
     >
@@ -332,12 +331,16 @@ const handleKeyDown = (e: KeyboardEvent) => {
   if (key === "Backspace" && inputText.value === "") {
     // Pressing "backspace" when the input box is empty
     if (focusedTagId.value) {
+      e.stopPropagation();
+      e.preventDefault();
       // Delete the focusedTag if it exists
       const id = focusedTagId.value;
       focusedTagId.value = undefined;
       removeScope(id);
       return;
     } else {
+      e.stopPropagation();
+      e.preventDefault();
       // Otherwise mark the last tag as 'focusedTag'
       const id = last(props.params.scopes)?.id;
       if (id) {
@@ -348,6 +351,15 @@ const handleKeyDown = (e: KeyboardEvent) => {
     }
   }
   focusedTagId.value = undefined;
+
+  if (key === "ArrowUp") {
+    moveMenuIndex(-1);
+    return;
+  }
+  if (key === "ArrowDown") {
+    moveMenuIndex(1);
+    return;
+  }
 };
 
 const handleKeyUp = (e: KeyboardEvent) => {
@@ -359,9 +371,11 @@ const handleKeyUp = (e: KeyboardEvent) => {
     menuView.value = undefined;
     return;
   }
-  if (key === "Backspace") {
-    // backspace key should be processed by KeyDown
-    return;
+  if (key === "Backspace" && inputText.value === "") {
+    // backspace key might be processed by KeyDown
+    if (focusedTagId.value) {
+      return;
+    }
   }
   if (maybeSelectMatchedScope()) {
     maybeEmitIncompleteValue();
@@ -369,14 +383,6 @@ const handleKeyUp = (e: KeyboardEvent) => {
   }
   if (maybeDeselectMismatchedScope()) {
     maybeEmitIncompleteValue();
-    return;
-  }
-  if (key === "ArrowUp") {
-    moveMenuIndex(-1);
-    return;
-  }
-  if (key === "ArrowDown") {
-    moveMenuIndex(1);
     return;
   }
   if (key === "Enter") {
