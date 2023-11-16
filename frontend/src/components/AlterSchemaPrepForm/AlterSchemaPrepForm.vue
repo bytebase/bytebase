@@ -13,7 +13,7 @@
         >
           <template #deployment_config>
             <router-link
-              :to="`/project/${projectV1Slug(state.project!)}#databases`"
+              :to="`/project/${projectV1Slug(state.project!)}#setting`"
               class="underline hover:bg-link-hover"
               active-class=""
               exact-active-class=""
