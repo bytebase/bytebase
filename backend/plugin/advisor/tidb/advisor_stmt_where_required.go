@@ -62,6 +62,8 @@ type whereRequirementChecker struct {
 	title      string
 	text       string
 	line       int
+	// only used by select statement.
+	selectDownwards bool
 }
 
 // Enter implements the ast.Visitor interface.
@@ -80,9 +82,7 @@ func (v *whereRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
 		}
 	// SELECT
 	case *ast.SelectStmt:
-		if node.Where == nil {
-			code = advisor.StatementNoWhere
-		}
+		v.selectDownwards = true
 	}
 
 	if code != advisor.Ok {
@@ -98,6 +98,21 @@ func (v *whereRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
 }
 
 // Leave implements the ast.Visitor interface.
-func (*whereRequirementChecker) Leave(in ast.Node) (ast.Node, bool) {
+func (v *whereRequirementChecker) Leave(in ast.Node) (ast.Node, bool) {
+	if !v.selectDownwards {
+		return in, true
+	}
+	if node, ok := in.(*ast.SelectStmt); ok {
+		v.selectDownwards = false
+		if node.Where == nil {
+			v.adviceList = append(v.adviceList, advisor.Advice{
+				Status:  v.level,
+				Code:    advisor.StatementNoWhere,
+				Title:   v.title,
+				Content: fmt.Sprintf("\"%s\" requires WHERE clause", v.text),
+				Line:    v.line,
+			})
+		}
+	}
 	return in, true
 }

@@ -1,3 +1,38 @@
+- statement: |
+    SELECT MAX(items), MIN(items), FLOOR(AVG(items)) FROM (SELECT orderNumber, COUNT(orderNumber) AS items FROM orderdetails WHERE id > 5 GROUP BY orderNumber) AS lineitems;
+    SELECT MAX(items), MIN(items), FLOOR(AVG(items)) FROM (SELECT orderNumber, COUNT(orderNumber) AS items FROM orderdetails GROUP BY orderNumber) AS lineitems;
+  want:
+    - status: WARN
+      code: 202
+      title: statement.where.require
+      content: |-
+        "
+        SELECT MAX(items), MIN(items), FLOOR(AVG(items)) FROM (SELECT orderNumber, COUNT(orderNumber) AS items FROM orderdetails GROUP BY orderNumber) AS lineitems
+        ;" requires WHERE clause
+      line: 3
+      details: ""
+- statement: |
+    SELECT customerNumber, checkNumber amount FROM payments WHERE amount > (SELECT AVG(amount) FROM payments WHERE amount > 80);
+    SELECT customerNumber, checkNumber amount FROM payments WHERE amount > (SELECT AVG(amount) FROM payments);
+  want:
+    - status: WARN
+      code: 202
+      title: statement.where.require
+      content: |-
+        "
+        SELECT customerNumber, checkNumber amount FROM payments WHERE amount > (SELECT AVG(amount) FROM payments)
+        ;" requires WHERE clause
+      line: 3
+      details: ""
+- statement: |
+    select * from (select * from tech_book where id = 1) t1;
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
 - statement: INSERT INTO tech_book(id) values (1)
   want:
     - status: SUCCESS
