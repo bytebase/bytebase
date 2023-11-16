@@ -5,11 +5,7 @@ import BBAvatar from "@/bbkit/BBAvatar.vue";
 import GitIcon from "@/components/GitIcon.vue";
 import SystemBotTag from "@/components/misc/SystemBotTag.vue";
 import YouTag from "@/components/misc/YouTag.vue";
-import {
-  DatabaseV1Name,
-  InstanceV1EngineIcon,
-  InstanceV1Name,
-} from "@/components/v2";
+import { InstanceV1Name, RichDatabaseName } from "@/components/v2";
 import {
   useCurrentUserV1,
   useDatabaseV1Store,
@@ -19,26 +15,30 @@ import {
   useUserStore,
 } from "@/store";
 import { SYSTEM_BOT_EMAIL, UNKNOWN_ID } from "@/types";
+import { engineToJSON } from "@/types/proto/v1/common";
 import { Workflow } from "@/types/proto/v1/project_service";
 import {
   SearchParams,
   SearchScopeId,
   environmentV1Name,
+  extractEnvironmentResourceName,
   extractInstanceResourceName,
   extractProjectResourceName,
   projectV1Name,
 } from "@/utils";
-
-export type ValueOption = {
-  value: string;
-  render: RenderFunction;
-};
 
 export type ScopeOption = {
   id: SearchScopeId;
   title: string;
   description: string;
   options: ValueOption[];
+};
+
+export type ValueOption = {
+  value: string;
+  keywords: string[];
+  custom?: boolean;
+  render: RenderFunction;
 };
 
 export const useSearchScopeOptions = (params: Ref<SearchParams>) => {
@@ -62,6 +62,7 @@ export const useSearchScopeOptions = (params: Ref<SearchParams>) => {
     return sortedUsers.map<ValueOption>((user) => {
       return {
         value: user.email,
+        keywords: [user.email, user.title],
         render: () => {
           const children = [
             h(BBAvatar, { size: "TINY", username: user.title }),
@@ -88,8 +89,10 @@ export const useSearchScopeOptions = (params: Ref<SearchParams>) => {
         title: t("issue.advanced-search.scope.project.title"),
         description: t("issue.advanced-search.scope.project.description"),
         options: projectList.value.map<ValueOption>((proj) => {
+          const name = extractProjectResourceName(proj.name);
           return {
-            value: extractProjectResourceName(proj.name),
+            value: name,
+            keywords: [name, proj.title, proj.key],
             render: () => {
               const children: VNode[] = [h("span", {}, projectV1Name(proj))];
               if (proj.workflow === Workflow.VCS) {
@@ -101,12 +104,30 @@ export const useSearchScopeOptions = (params: Ref<SearchParams>) => {
         }),
       },
       {
+        id: "status",
+        title: t("common.status"),
+        description: t("issue.advanced-search.scope.approval.description"),
+        options: [
+          {
+            value: "OPEN",
+            keywords: ["open"],
+            render: () => renderSpan(t("issue.table.open")),
+          },
+          {
+            value: "CLOSED",
+            keywords: ["closed", "canceled", "done"],
+            render: () => renderSpan(t("issue.table.closed")),
+          },
+        ],
+      },
+      {
         id: "approval",
         title: t("issue.advanced-search.scope.approval.title"),
         description: t("issue.advanced-search.scope.approval.description"),
         options: [
           {
             value: "pending",
+            keywords: ["pending"],
             render: () =>
               renderSpan(
                 t("issue.advanced-search.scope.approval.value.pending")
@@ -114,6 +135,7 @@ export const useSearchScopeOptions = (params: Ref<SearchParams>) => {
           },
           {
             value: "approved",
+            keywords: ["approved", "done"],
             render: () =>
               renderSpan(
                 t("issue.advanced-search.scope.approval.value.approved")
@@ -154,10 +176,12 @@ export const useSearchScopeOptions = (params: Ref<SearchParams>) => {
         options: [
           {
             value: "DDL",
+            keywords: ["ddl", "data definition language"],
             render: () => renderSpan("Data Definition Language"),
           },
           {
             value: "DML",
+            keywords: ["dml", "data manipulation language"],
             render: () => renderSpan("Data Manipulation Language"),
           },
         ],
@@ -167,8 +191,16 @@ export const useSearchScopeOptions = (params: Ref<SearchParams>) => {
         title: t("issue.advanced-search.scope.instance.title"),
         description: t("issue.advanced-search.scope.instance.description"),
         options: instanceList.value.map((ins) => {
+          const name = extractInstanceResourceName(ins.name);
           return {
-            value: extractInstanceResourceName(ins.name),
+            value: name,
+            keywords: [
+              name,
+              ins.title,
+              engineToJSON(ins.engine),
+              ins.environmentEntity.title,
+              extractEnvironmentResourceName(ins.environment),
+            ],
             render: () => {
               return h("div", { class: "flex items-center gap-x-1" }, [
                 h(InstanceV1Name, {
@@ -189,13 +221,25 @@ export const useSearchScopeOptions = (params: Ref<SearchParams>) => {
         options: databaseList.value.map((db) => {
           return {
             value: `${db.databaseName}-${db.uid}`,
+            keywords: [
+              db.databaseName,
+              extractInstanceResourceName(db.instance),
+              db.instanceEntity.title,
+              engineToJSON(db.instanceEntity.engine),
+              extractEnvironmentResourceName(db.effectiveEnvironment),
+              db.effectiveEnvironmentEntity.title,
+              extractProjectResourceName(db.project),
+              db.projectEntity.title,
+              db.projectEntity.key,
+              db.uid,
+              ...Object.values(db.labels),
+            ],
+            custom: true,
             render: () => {
-              return h("div", { class: "flex items-center gap-x-1" }, [
-                h(InstanceV1EngineIcon, { instance: db.instanceEntity }),
-                h(DatabaseV1Name, { database: db, link: false }),
-                renderSpan(
-                  `(${environmentV1Name(db.effectiveEnvironmentEntity)})`
-                ),
+              return h("div", { class: "text-sm" }, [
+                h(RichDatabaseName, {
+                  database: db,
+                }),
               ]);
             },
           };

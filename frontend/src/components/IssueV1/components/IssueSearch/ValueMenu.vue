@@ -30,15 +30,17 @@
       >
         <template #default="{ item: option, index }: ListItem">
           <div
-            class="h-[32px] flex gap-x-2 px-3 items-center cursor-pointer border-t border-block-border"
-            :class="[index === menuIndex && 'bg-gray-100']"
+            class="h-[32px] flex gap-x-2 px-3 items-center cursor-pointer border-t border-block-border overflow-hidden"
+            :class="[index === menuIndex && 'bg-gray-200/75']"
             :data-index="index"
             :data-value="option.value"
             @mouseenter.prevent.stop="$emit('hover-item', index)"
             @mousedown.prevent.stop="$emit('select-value', option.value)"
           >
             <component :is="option.render" class="text-control text-sm" />
-            <span class="text-control-light text-sm">{{ option.value }}</span>
+            <span v-if="!option.custom" class="text-control-light text-sm">
+              {{ option.value }}
+            </span>
           </div>
         </template>
       </VirtualList>
@@ -98,7 +100,7 @@ const maxListHeight = computed(() => {
 });
 
 const highlightedItem = computed((): ListItem | undefined => {
-  if (props.show) return undefined;
+  if (!props.show) return undefined;
   const options = props.valueOptions;
   const index = props.menuIndex;
   const item = options[index];

@@ -18,7 +18,7 @@
         <div
           class="h-[32px] flex gap-x-1 px-3 items-center cursor-pointer border-t text-sm"
           :class="[
-            index === menuIndex && 'bg-gray-100',
+            index === menuIndex && 'bg-gray-200/75',
             index === 0 ? 'border-transparent' : 'border-block-border',
           ]"
           :data-index="index"

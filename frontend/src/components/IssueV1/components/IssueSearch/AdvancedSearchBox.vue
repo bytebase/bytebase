@@ -1,4 +1,5 @@
 <template>
+  <div>menuIndex: {{ menuIndex }}</div>
   <div ref="containerRef" class="bb-advanced-issue-search-box relative">
     <NInput
       ref="inputRef"
@@ -75,9 +76,10 @@
 
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
-import { cloneDeep, last } from "lodash-es";
+import { cloneDeep, last, pullAt } from "lodash-es";
 import { SearchIcon } from "lucide-vue-next";
 import { XIcon } from "lucide-vue-next";
+import { matchSorter } from "match-sorter";
 import { InputInst, NInput } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { zindexable as vZindexable } from "vdirs";
@@ -195,14 +197,24 @@ const visibleValueOptions = computed(() => {
     .toLowerCase()
     .substring(scopePrefix.length);
   if (!keyword) return valueOptions.value;
+  const filtered = matchSorter(valueOptions.value, keyword, {
+    keys: ["value", "keywords"],
+  });
   const currentValue = getValueFromSearchParams(
     props.params,
     currentScope.value
   );
-  return valueOptions.value.filter((opt) => {
-    if (currentValue && opt.value === currentValue) return true;
-    return opt.value.toLowerCase().includes(keyword);
-  });
+  const option = valueOptions.value.find((opt) => opt.value === currentValue);
+  if (currentValue && option) {
+    // If we have current value, put it to the first even though it doesn't
+    // match the keyword
+    const index = filtered.findIndex((opt) => opt.value === currentValue);
+    if (index >= 0) {
+      pullAt(filtered);
+    }
+    filtered.unshift(option);
+  }
+  return filtered;
 });
 
 const visibleOptions = computed(() => {
