@@ -266,7 +266,13 @@ type UpdateActivityMessage struct {
 }
 
 // CreateActivityV2 creates an instance of Activity.
+// Certain types of activities are not stored in the database.
 func (s *Store) CreateActivityV2(ctx context.Context, create *ActivityMessage) (*ActivityMessage, error) {
+	switch create.Type {
+	case api.ActivityNotifyIssueApprovalPass, api.ActivityNotifyPipelineRolloutNotify:
+		return create, nil
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err

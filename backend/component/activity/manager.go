@@ -910,6 +910,10 @@ func shouldPostInbox(activity *store.ActivityMessage, createType api.ActivityTyp
 		if update.NewStatus == api.TaskFailed {
 			return true, nil
 		}
+	case api.ActivityNotifyIssueApprovalPass:
+		return false, nil
+	case api.ActivityNotifyPipelineRolloutNotify:
+		return false, nil
 	}
 	return false, nil
 }
