@@ -1834,7 +1834,7 @@
         },
         "issue-info-change": {
           "title": "工单信息变更",
-          "label": "当一个工单的信息 (比如: 分配人, 标题, 描述) 发生了变更"
+          "label": "当一个工单的信息 (比如: 指派人, 标题, 描述) 发生了变更"
         },
         "issue-comment-creation": {
           "title": "工单被评论",
