@@ -63,6 +63,8 @@ type whereRequirementChecker struct {
 	text       string
 	line       int
 	// only used by select statement.
+	// We use selectDownwards as the access direction flag for traversing ast to identify leaf nodes.
+	// after accessing a leaf node, we change selectDownwards to false to change the access direction.
 	selectDownwards bool
 }
 
