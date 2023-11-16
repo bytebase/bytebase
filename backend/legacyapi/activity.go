@@ -13,9 +13,9 @@ const (
 	// ActivityNotifyIssueApproved is the type for notifying the creator when the issue approval passes.
 	// Will not be stored. Only used for notification.
 	ActivityNotifyIssueApproved ActivityType = "bb.notify.issue.approved"
-	// ActivityPipelineRolloutNotify is the type for notifying releasers to rollout.
+	// ActivityPipelineRollout is the type for notifying releasers to rollout.
 	// Will not be stored. Only used for notification.
-	ActivityNotifyPipelineRolloutNotify ActivityType = "bb.notify.pipeline.rollout"
+	ActivityNotifyPipelineRollout ActivityType = "bb.notify.pipeline.rollout"
 
 	// Issue related.
 

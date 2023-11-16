@@ -924,7 +924,7 @@ func shouldPostInbox(activity *store.ActivityMessage, createType api.ActivityTyp
 		}
 	case api.ActivityNotifyIssueApproved:
 		return false, nil
-	case api.ActivityNotifyPipelineRolloutNotify:
+	case api.ActivityNotifyPipelineRollout:
 		return false, nil
 	}
 	return false, nil
