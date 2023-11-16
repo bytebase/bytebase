@@ -754,6 +754,18 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 			title = "Task run changed - " + payload.TaskName
 		}
 
+	case api.ActivityNotifyIssueApprovalPass:
+		title = "Issue approved - " + meta.Issue.Title
+		user := meta.Issue.Creator
+		phoneNumber, err := phonenumbers.Parse(user.Phone, "")
+		if err != nil {
+			slog.Warn("Failed to post webhook event after changing the issue approval node status, failed to parse phone number",
+				slog.String("issue_name", meta.Issue.Title),
+				log.BBError(err))
+		}
+		phone := strconv.FormatInt(int64(*phoneNumber.NationalNumber), 10)
+		mentions = append(mentions, phone)
+
 	case api.ActivityIssueApprovalNotify:
 		payload := &api.ActivityIssueApprovalNotifyPayload{}
 		if err := json.Unmarshal([]byte(activity.Payload), payload); err != nil {

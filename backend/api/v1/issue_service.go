@@ -792,7 +792,48 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 		slog.Error("failed to create approval step pending activity after creating issue", log.BBError(err))
 	}
 
-	s.onIssueApproved(ctx, issue)
+	if err := func() error {
+		approved, err := utils.CheckApprovalApproved(issue.Payload.GetApproval())
+		if err != nil {
+			return errors.Wrap(err, "failed to check if the approval is approved")
+		}
+		if approved {
+			create := &store.ActivityMessage{
+				CreatorUID:   api.SystemBotID,
+				ContainerUID: issue.UID,
+				Type:         api.ActivityNotifyIssueApprovalPass,
+				Level:        api.ActivityInfo,
+				Comment:      "",
+				Payload:      "",
+			}
+			if _, err := s.activityManager.CreateActivity(ctx, create, &activity.Metadata{
+				Issue: issue,
+			}); err != nil {
+				return errors.Wrapf(err, "failed to create activity")
+			}
+		}
+		return nil
+	}(); err != nil {
+		slog.Debug("failed to update issue status to done if grant request issue is approved", log.BBError(err))
+	}
+
+	if issue.Type == api.IssueGrantRequest {
+		if err := func() error {
+			payload := issue.Payload
+			approved, err := utils.CheckApprovalApproved(payload.Approval)
+			if err != nil {
+				return errors.Wrap(err, "failed to check if the approval is approved")
+			}
+			if approved {
+				if err := utils.ChangeIssueStatus(ctx, s.store, s.activityManager, issue, api.IssueDone, api.SystemBotID, ""); err != nil {
+					return errors.Wrap(err, "failed to update issue status")
+				}
+			}
+			return nil
+		}(); err != nil {
+			slog.Debug("failed to update issue status to done if grant request issue is approved", log.BBError(err))
+		}
+	}
 
 	issueV1, err := convertToIssue(ctx, s.store, issue)
 	if err != nil {
@@ -1414,26 +1455,6 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, request *v1pb.Upd
 		CreateTime: timestamppb.New(time.Unix(activity.CreatedTs, 0)),
 		UpdateTime: timestamppb.New(time.Unix(activity.UpdatedTs, 0)),
 	}, nil
-}
-
-func (s *IssueService) onIssueApproved(ctx context.Context, issue *store.IssueMessage) {
-	if issue.Type == api.IssueGrantRequest {
-		if err := func() error {
-			payload := issue.Payload
-			approved, err := utils.CheckApprovalApproved(payload.Approval)
-			if err != nil {
-				return errors.Wrap(err, "failed to check if the approval is approved")
-			}
-			if approved {
-				if err := utils.ChangeIssueStatus(ctx, s.store, s.activityManager, issue, api.IssueDone, api.SystemBotID, ""); err != nil {
-					return errors.Wrap(err, "failed to update issue status")
-				}
-			}
-			return nil
-		}(); err != nil {
-			slog.Debug("failed to update issue status to done if grant request issue is approved", log.BBError(err))
-		}
-	}
 }
 
 func (s *IssueService) getIssueMessage(ctx context.Context, name string) (*store.IssueMessage, error) {
