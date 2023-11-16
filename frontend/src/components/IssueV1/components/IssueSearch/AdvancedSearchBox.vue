@@ -17,7 +17,7 @@
     </NInput>
     <div
       v-if="state.showSearchScopes"
-      class="absolute z-50 pt-1 top-full w-full divide-y divide-block-border bg-white shadow-md"
+      class="absolute z-50 pt-2 mt-0.5 top-full w-full divide-y divide-block-border bg-white shadow-md"
     >
       <div
         v-for="item in searchScopes"
@@ -62,10 +62,20 @@
 <script lang="ts" setup>
 import { debounce, orderBy } from "lodash-es";
 import { NInput } from "naive-ui";
-import { reactive, computed, h, watch, VNode, onMounted, ref } from "vue";
+import {
+  reactive,
+  computed,
+  h,
+  watch,
+  VNode,
+  onMounted,
+  ref,
+  nextTick,
+} from "vue";
 import { useI18n } from "vue-i18n";
 import BBAvatar from "@/bbkit/BBAvatar.vue";
 import GitIcon from "@/components/GitIcon.vue";
+import YouTag from "@/components/misc/YouTag.vue";
 import {
   InstanceV1Name,
   InstanceV1EngineIcon,
@@ -92,8 +102,8 @@ import {
   extractInstanceResourceName,
   SearchParams,
   SearchScopeId,
+  buildSearchParamsBySearchText,
 } from "@/utils";
-import YouTag from "./misc/YouTag.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -109,7 +119,7 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  (event: "update", params: SearchParams): void;
+  (event: "update:params", params: SearchParams): void;
 }>();
 
 const { t } = useI18n();
@@ -156,6 +166,13 @@ watch(
   () => state.showSearchScopes,
   (show) => {
     if (show) state.currentScope = undefined;
+  }
+);
+
+watch(
+  () => props.params,
+  (params) => {
+    state.searchText = buildSearchTextByParams(params);
   }
 );
 
@@ -313,7 +330,7 @@ const fullScopes = computed((): SearchScope[] => {
 // filteredScopes will filter search options by chosen scope.
 // For example, if users select a specific project, we should only allow them select instances related with this project.
 const filteredScopes = computed((): SearchScope[] => {
-  const params = getSearchParamsByText(state.searchText);
+  const params = buildSearchParamsBySearchText(state.searchText);
   const existedScope = new Map<SearchScopeId, string>(
     params.scopes.map((scope) => [scope.id, scope.value])
   );
@@ -351,7 +368,7 @@ const filteredScopes = computed((): SearchScope[] => {
 // searchScopes will hide chosen search scope.
 // For example, if uses already select the instance, we should NOT show the instance scope in the dropdown.
 const searchScopes = computed((): SearchScope[] => {
-  const params = getSearchParamsByText(state.searchText);
+  const params = buildSearchParamsBySearchText(state.searchText);
   const existedScope = new Set<SearchScopeId>(
     params.scopes.map((scope) => scope.id)
   );
@@ -388,7 +405,7 @@ const onOptionSelect = (scopeValue: string) => {
   if (!scopeId) {
     return;
   }
-  const params = getSearchParamsByText(state.searchText);
+  const params = buildSearchParamsBySearchText(state.searchText);
   const index = params.scopes.findIndex((s) => s.id === scopeId);
   if (index < 0) {
     params.scopes.push({
@@ -404,57 +421,27 @@ const onOptionSelect = (scopeValue: string) => {
   state.searchText = buildSearchTextByParams(params);
   debouncedUpdate();
   onClear();
+};
 
-  if (params.scopes.length < fullScopes.value.length) {
-    state.showSearchScopes = true;
+const onClear = (immediate = false) => {
+  const clear = () => {
+    state.showSearchScopes = false;
+    state.currentScope = undefined;
+  };
+  if (immediate) {
+    clear();
+  } else {
+    nextTick(clear);
   }
 };
 
-const onClear = () => {
-  state.showSearchScopes = false;
-  state.currentScope = undefined;
-};
-
 const debouncedUpdate = debounce(() => {
-  emit("update", getSearchParamsByText(state.searchText));
+  emit("update:params", buildSearchParamsBySearchText(state.searchText));
 }, 500);
 
 const onUpdate = (value: string) => {
   state.searchText = value;
   debouncedUpdate();
-};
-
-const query = computed(() => {
-  const sections = state.searchText.split(" ");
-  let i = 0;
-  while (i < sections.length) {
-    const section = sections[i];
-    const keyword = section.split(":")[0];
-    const exist =
-      fullScopes.value.findIndex((item) => item.id === keyword) >= 0;
-    if (!exist) {
-      break;
-    }
-    i++;
-  }
-  return sections.slice(i).join(" ");
-});
-
-const getSearchParamsByText = (text: string): SearchParams => {
-  const plainQuery = query.value.trim();
-  const scopeText = plainQuery ? text.split(plainQuery)[0] || "" : text;
-  return {
-    query: plainQuery,
-    scopes: scopeText
-      .split(" ")
-      .map((scope) => {
-        return {
-          id: scope.split(":")[0] as SearchScopeId,
-          value: scope.split(":")[1],
-        };
-      })
-      .filter((scope) => scope.id && scope.value),
-  };
 };
 
 onMounted(() => {
@@ -507,7 +494,7 @@ const onKeydown = () => {
   }
 
   if (i >= sections.length) {
-    onClear();
+    onClear(true /* immediate */);
     state.showSearchScopes = true;
     return;
   }
@@ -516,7 +503,7 @@ const onKeydown = () => {
   const existed =
     fullScopes.value.findIndex((item) => item.id === currentScope) >= 0;
   if (!existed) {
-    onClear();
+    onClear(true /* immediate */);
     state.showSearchScopes = true;
     return;
   }

@@ -20,8 +20,9 @@ var (
 )
 
 func init() {
-	// only for mysqlwip test.
-	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLNamingUKConvention, &NamingUKConventionAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLNamingUKConvention, &NamingUKConventionAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLNamingUKConvention, &NamingUKConventionAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLNamingUKConvention, &NamingUKConventionAdvisor{})
 }
 
 // NamingUKConventionAdvisor is the advisor checking for unique key naming convention.

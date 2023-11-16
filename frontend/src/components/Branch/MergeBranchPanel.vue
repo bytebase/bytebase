@@ -1,15 +1,10 @@
 <template>
-  <NDrawer
+  <Drawer
     :show="true"
     width="auto"
-    :auto-focus="false"
-    :close-on-esc="true"
     @update:show="(show: boolean) => !show && emit('dismiss')"
   >
-    <NDrawerContent
-      :title="$t('schema-designer.merge-branch')"
-      :closable="true"
-    >
+    <DrawerContent :title="$t('schema-designer.merge-branch')" :closable="true">
       <div
         class="space-y-3 w-[calc(100vw-24rem)] min-w-[64rem] max-w-[calc(100vw-8rem)] h-full overflow-x-auto"
       >
@@ -75,25 +70,19 @@
           </div>
         </div>
       </div>
-    </NDrawerContent>
-  </NDrawer>
+    </DrawerContent>
+  </Drawer>
 </template>
 
 <script lang="ts" setup>
 import { asyncComputed } from "@vueuse/core";
 import { MoveLeft } from "lucide-vue-next";
-import {
-  NButton,
-  NDrawer,
-  NDrawerContent,
-  NInput,
-  NCheckbox,
-  useDialog,
-} from "naive-ui";
+import { NButton, NInput, NCheckbox, useDialog } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import DiffEditor from "@/components/MonacoEditor/DiffEditor.vue";
+import { Drawer, DrawerContent } from "@/components/v2";
 import { pushNotification, useSheetV1Store } from "@/store";
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
 import {

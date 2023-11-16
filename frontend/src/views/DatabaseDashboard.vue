@@ -219,7 +219,7 @@ const prepareDatabaseList = async () => {
   // It will also be called when user logout
   if (currentUserV1.value.name !== UNKNOWN_USER_NAME) {
     state.loading = true;
-    await databaseV1Store.searchDatabaseList({
+    await databaseV1Store.fetchDatabaseList({
       parent: "instances/-",
     });
     state.loading = false;

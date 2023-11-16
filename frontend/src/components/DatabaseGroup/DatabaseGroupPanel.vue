@@ -1,11 +1,10 @@
 <template>
-  <NDrawer
+  <Drawer
     :show="true"
     width="auto"
-    :auto-focus="false"
     @update:show="(show: boolean) => !show && $emit('close')"
   >
-    <NDrawerContent
+    <DrawerContent
       :title="title"
       :closable="true"
       class="w-[64rem] max-w-[100vw] relative"
@@ -36,16 +35,17 @@
           </div>
         </div>
       </template>
-    </NDrawerContent>
-  </NDrawer>
+    </DrawerContent>
+  </Drawer>
 </template>
 
 <script lang="ts" setup>
-import { NButton, NDrawer, NDrawerContent, useDialog } from "naive-ui";
+import { NButton, useDialog } from "naive-ui";
 import { ClientError } from "nice-grpc-common";
 import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { Drawer, DrawerContent } from "@/components/v2";
 import { buildCELExpr } from "@/plugins/cel/logic";
 import {
   pushNotification,

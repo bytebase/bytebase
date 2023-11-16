@@ -1,12 +1,10 @@
 <template>
-  <NDrawer
+  <Drawer
     :show="true"
     width="auto"
-    :auto-focus="false"
-    :close-on-esc="true"
     @update:show="(show: boolean) => !show && emit('dismiss')"
   >
-    <NDrawerContent
+    <DrawerContent
       :title="$t('schema-designer.quick-action')"
       :closable="true"
       class="w-192"
@@ -30,12 +28,12 @@
           </div>
         </div>
       </template>
-    </NDrawerContent>
-  </NDrawer>
+    </DrawerContent>
+  </Drawer>
 </template>
 
 <script lang="ts" setup>
-import { NDrawer, NDrawerContent } from "naive-ui";
+import { Drawer, DrawerContent } from "@/components/v2";
 import RawSQLEditor from "./RawSQLEditor.vue";
 import { RawSQLState } from "./types";
 

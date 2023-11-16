@@ -17,7 +17,7 @@ func init() {
 	base.RegisterSplitterFunc(storepb.Engine_OCEANBASE_ORACLE, SplitSQL)
 }
 
-// SplitMultiSQLStream splits MySQL multiSQL to stream.
+// SplitMultiSQLStream splits Oracle multiSQL to stream.
 // Note that the reader is read completely into memory and so it must actually
 // have a stopping point - you cannot pass in a reader on an open-ended source such
 // as a socket for instance.
@@ -47,20 +47,41 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 	var result []base.SingleSQL
 	for _, item := range tree.GetChildren() {
 		if stmt, ok := item.(parser.IUnit_statementContext); ok {
-			stopIndex := stmt.GetStop().GetTokenIndex()
-			if stmt.GetStop().GetTokenType() == parser.PlSqlParserSEMICOLON {
-				stopIndex--
+			text := ""
+			lastLine := 0
+			// The go-ora driver requires semicolon for anonymous block,
+			// but does not support semicolon for other statements.
+			if needSemicolon(stmt) {
+				lastToken := tokens.Get(stmt.GetStop().GetTokenIndex())
+				lastLine = lastToken.GetLine()
+				text = tokens.GetTextFromTokens(stmt.GetStart(), lastToken)
+				if lastToken.GetTokenType() != parser.PlSqlParserSEMICOLON {
+					text += ";"
+				}
+			} else {
+				stopIndex := stmt.GetStop().GetTokenIndex()
+				if stmt.GetStop().GetTokenType() == parser.PlSqlParserSEMICOLON {
+					stopIndex--
+				}
+				lastToken := tokens.Get(stopIndex)
+				lastLine = lastToken.GetLine()
+				text = tokens.GetTextFromTokens(stmt.GetStart(), lastToken)
+				text = strings.TrimRight(text, " \n\t;")
 			}
-			lastToken := tokens.Get(stopIndex)
-			text := tokens.GetTextFromTokens(stmt.GetStart(), lastToken)
-			text = strings.TrimRight(text, " \n\t;")
 
 			result = append(result, base.SingleSQL{
 				Text:     text,
-				LastLine: lastToken.GetLine(),
+				LastLine: lastLine,
 				Empty:    false,
 			})
 		}
 	}
 	return result, nil
+}
+
+// needSemicolon returns true if the given statement needs a semicolon.
+// The go-ora driver requires semicolon for anonymous block,
+// but does not support semicolon for other statements.
+func needSemicolon(stmt parser.IUnit_statementContext) bool {
+	return stmt.Anonymous_block() != nil
 }

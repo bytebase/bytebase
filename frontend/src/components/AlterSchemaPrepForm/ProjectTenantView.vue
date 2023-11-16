@@ -62,7 +62,6 @@ import { getPipelineFromDeploymentScheduleV1, projectV1Slug } from "@/utils";
 import { DeployDatabaseTable } from "../TenantDatabaseTable";
 
 export type ProjectTenantViewState = {
-  selectedDatabaseIdListForTenantMode: Set<string>;
   deployingTenantDatabaseList: string[];
   label: string;
 };

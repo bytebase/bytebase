@@ -1,4 +1,3 @@
-import { asyncComputed } from "@vueuse/core";
 import Emittery from "emittery";
 import { first } from "lodash-es";
 import { useDialog } from "naive-ui";
@@ -135,9 +134,9 @@ export const useBaseIssueContext = (
     });
   });
 
-  const releaserCandidates = asyncComputed(async () => {
-    return await releaserCandidatesForIssue(issue.value);
-  }, []);
+  const releaserCandidates = computed(() => {
+    return releaserCandidatesForIssue(issue.value);
+  });
   const reviewContext = extractReviewContext(issue);
 
   const phase = computed((): IssuePhase => {

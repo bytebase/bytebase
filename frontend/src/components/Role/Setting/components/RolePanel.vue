@@ -1,11 +1,10 @@
 <template>
-  <NDrawer
+  <Drawer
     :show="role !== undefined"
-    :auto-focus="false"
     width="auto"
     @update:show="(show: boolean) => !show && $emit('close')"
   >
-    <NDrawerContent
+    <DrawerContent
       :title="mode === 'ADD' ? $t('role.setting.add') : $t('role.setting.edit')"
       :closable="true"
       class="w-[30rem] max-w-[100vw] relative"
@@ -64,16 +63,16 @@
           </NButton>
         </div>
       </template>
-    </NDrawerContent>
-  </NDrawer>
+    </DrawerContent>
+  </Drawer>
 </template>
 
 <script setup lang="ts">
 import { cloneDeep } from "lodash-es";
-import { NButton, NDrawer, NDrawerContent, NInput } from "naive-ui";
+import { NButton, NInput } from "naive-ui";
 import { computed, reactive, watch, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { ResourceIdField } from "@/components/v2";
+import { Drawer, DrawerContent, ResourceIdField } from "@/components/v2";
 import { pushNotification, useRoleStore } from "@/store";
 import { ValidatedMessage } from "@/types";
 import { Role } from "@/types/proto/v1/role_service";

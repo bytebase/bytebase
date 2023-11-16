@@ -20,8 +20,9 @@ var (
 )
 
 func init() {
-	// only for mysqlwip test.
-	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLInsertRowLimit, &InsertRowLimitAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLInsertRowLimit, &InsertRowLimitAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLInsertRowLimit, &InsertRowLimitAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLInsertRowLimit, &InsertRowLimitAdvisor{})
 }
 
 // NamingTableConventionAdvisor is the advisor checking for table naming convention.
@@ -86,9 +87,12 @@ func (checker *insertRowLimitChecker) generateAdvice() ([]advisor.Advice, error)
 	return checker.adviceList, nil
 }
 
+func (checker *insertRowLimitChecker) EnterQuery(ctx *mysql.QueryContext) {
+	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+}
+
 // EnterInsertStatement is called when production insertStatement is entered.
 func (checker *insertRowLimitChecker) EnterInsertStatement(ctx *mysql.InsertStatementContext) {
-	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx) + ";"
 	checker.line = checker.baseLine + ctx.GetStart().GetLine()
 	if ctx.InsertQueryExpression() != nil {
 		checker.handleInsertQueryExpression(ctx.InsertQueryExpression())
@@ -101,7 +105,7 @@ func (checker *insertRowLimitChecker) handleInsertQueryExpression(ctx mysql.IIns
 		return
 	}
 
-	res, err := advisor.Query(checker.ctx, checker.driver, fmt.Sprintf("EXPLAIN %s", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)))
+	res, err := advisor.Query(checker.ctx, checker.driver, fmt.Sprintf("EXPLAIN %s", checker.text))
 	if err != nil {
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  checker.level,

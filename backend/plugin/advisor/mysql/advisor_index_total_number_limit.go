@@ -22,8 +22,9 @@ var (
 )
 
 func init() {
-	// only for mysqlwip test.
-	advisor.Register(storepb.Engine_ENGINE_UNSPECIFIED, advisor.MySQLIndexTotalNumberLimit, &IndexTotalNumberLimitAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLIndexTotalNumberLimit, &IndexTotalNumberLimitAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLIndexTotalNumberLimit, &IndexTotalNumberLimitAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLIndexTotalNumberLimit, &IndexTotalNumberLimitAdvisor{})
 }
 
 // IndexTotalNumberLimitAdvisor is the advisor checking for index total number limit.
