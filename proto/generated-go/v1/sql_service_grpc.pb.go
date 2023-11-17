@@ -19,24 +19,26 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	SQLService_Pretty_FullMethodName        = "/bytebase.v1.SQLService/Pretty"
-	SQLService_Query_FullMethodName         = "/bytebase.v1.SQLService/Query"
-	SQLService_Export_FullMethodName        = "/bytebase.v1.SQLService/Export"
-	SQLService_AdminExecute_FullMethodName  = "/bytebase.v1.SQLService/AdminExecute"
-	SQLService_DifferPreview_FullMethodName = "/bytebase.v1.SQLService/DifferPreview"
-	SQLService_Check_FullMethodName         = "/bytebase.v1.SQLService/Check"
+	SQLService_Query_FullMethodName             = "/bytebase.v1.SQLService/Query"
+	SQLService_Export_FullMethodName            = "/bytebase.v1.SQLService/Export"
+	SQLService_AdminExecute_FullMethodName      = "/bytebase.v1.SQLService/AdminExecute"
+	SQLService_DifferPreview_FullMethodName     = "/bytebase.v1.SQLService/DifferPreview"
+	SQLService_Check_FullMethodName             = "/bytebase.v1.SQLService/Check"
+	SQLService_Pretty_FullMethodName            = "/bytebase.v1.SQLService/Pretty"
+	SQLService_StringifyMetadata_FullMethodName = "/bytebase.v1.SQLService/StringifyMetadata"
 )
 
 // SQLServiceClient is the client API for SQLService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SQLServiceClient interface {
-	Pretty(ctx context.Context, in *PrettyRequest, opts ...grpc.CallOption) (*PrettyResponse, error)
 	Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryResponse, error)
 	Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error)
 	AdminExecute(ctx context.Context, opts ...grpc.CallOption) (SQLService_AdminExecuteClient, error)
 	DifferPreview(ctx context.Context, in *DifferPreviewRequest, opts ...grpc.CallOption) (*DifferPreviewResponse, error)
 	Check(ctx context.Context, in *CheckRequest, opts ...grpc.CallOption) (*CheckResponse, error)
+	Pretty(ctx context.Context, in *PrettyRequest, opts ...grpc.CallOption) (*PrettyResponse, error)
+	StringifyMetadata(ctx context.Context, in *StringifyMetadataRequest, opts ...grpc.CallOption) (*StringifyMetadataResponse, error)
 }
 
 type sQLServiceClient struct {
@@ -45,15 +47,6 @@ type sQLServiceClient struct {
 
 func NewSQLServiceClient(cc grpc.ClientConnInterface) SQLServiceClient {
 	return &sQLServiceClient{cc}
-}
-
-func (c *sQLServiceClient) Pretty(ctx context.Context, in *PrettyRequest, opts ...grpc.CallOption) (*PrettyResponse, error) {
-	out := new(PrettyResponse)
-	err := c.cc.Invoke(ctx, SQLService_Pretty_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *sQLServiceClient) Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryResponse, error) {
@@ -123,16 +116,35 @@ func (c *sQLServiceClient) Check(ctx context.Context, in *CheckRequest, opts ...
 	return out, nil
 }
 
+func (c *sQLServiceClient) Pretty(ctx context.Context, in *PrettyRequest, opts ...grpc.CallOption) (*PrettyResponse, error) {
+	out := new(PrettyResponse)
+	err := c.cc.Invoke(ctx, SQLService_Pretty_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sQLServiceClient) StringifyMetadata(ctx context.Context, in *StringifyMetadataRequest, opts ...grpc.CallOption) (*StringifyMetadataResponse, error) {
+	out := new(StringifyMetadataResponse)
+	err := c.cc.Invoke(ctx, SQLService_StringifyMetadata_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SQLServiceServer is the server API for SQLService service.
 // All implementations must embed UnimplementedSQLServiceServer
 // for forward compatibility
 type SQLServiceServer interface {
-	Pretty(context.Context, *PrettyRequest) (*PrettyResponse, error)
 	Query(context.Context, *QueryRequest) (*QueryResponse, error)
 	Export(context.Context, *ExportRequest) (*ExportResponse, error)
 	AdminExecute(SQLService_AdminExecuteServer) error
 	DifferPreview(context.Context, *DifferPreviewRequest) (*DifferPreviewResponse, error)
 	Check(context.Context, *CheckRequest) (*CheckResponse, error)
+	Pretty(context.Context, *PrettyRequest) (*PrettyResponse, error)
+	StringifyMetadata(context.Context, *StringifyMetadataRequest) (*StringifyMetadataResponse, error)
 	mustEmbedUnimplementedSQLServiceServer()
 }
 
@@ -140,9 +152,6 @@ type SQLServiceServer interface {
 type UnimplementedSQLServiceServer struct {
 }
 
-func (UnimplementedSQLServiceServer) Pretty(context.Context, *PrettyRequest) (*PrettyResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Pretty not implemented")
-}
 func (UnimplementedSQLServiceServer) Query(context.Context, *QueryRequest) (*QueryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Query not implemented")
 }
@@ -158,6 +167,12 @@ func (UnimplementedSQLServiceServer) DifferPreview(context.Context, *DifferPrevi
 func (UnimplementedSQLServiceServer) Check(context.Context, *CheckRequest) (*CheckResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Check not implemented")
 }
+func (UnimplementedSQLServiceServer) Pretty(context.Context, *PrettyRequest) (*PrettyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Pretty not implemented")
+}
+func (UnimplementedSQLServiceServer) StringifyMetadata(context.Context, *StringifyMetadataRequest) (*StringifyMetadataResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StringifyMetadata not implemented")
+}
 func (UnimplementedSQLServiceServer) mustEmbedUnimplementedSQLServiceServer() {}
 
 // UnsafeSQLServiceServer may be embedded to opt out of forward compatibility for this service.
@@ -169,24 +184,6 @@ type UnsafeSQLServiceServer interface {
 
 func RegisterSQLServiceServer(s grpc.ServiceRegistrar, srv SQLServiceServer) {
 	s.RegisterService(&SQLService_ServiceDesc, srv)
-}
-
-func _SQLService_Pretty_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PrettyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SQLServiceServer).Pretty(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SQLService_Pretty_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SQLServiceServer).Pretty(ctx, req.(*PrettyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _SQLService_Query_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -287,6 +284,42 @@ func _SQLService_Check_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SQLService_Pretty_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PrettyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SQLServiceServer).Pretty(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SQLService_Pretty_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SQLServiceServer).Pretty(ctx, req.(*PrettyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SQLService_StringifyMetadata_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StringifyMetadataRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SQLServiceServer).StringifyMetadata(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SQLService_StringifyMetadata_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SQLServiceServer).StringifyMetadata(ctx, req.(*StringifyMetadataRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SQLService_ServiceDesc is the grpc.ServiceDesc for SQLService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -294,10 +327,6 @@ var SQLService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "bytebase.v1.SQLService",
 	HandlerType: (*SQLServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "Pretty",
-			Handler:    _SQLService_Pretty_Handler,
-		},
 		{
 			MethodName: "Query",
 			Handler:    _SQLService_Query_Handler,
@@ -313,6 +342,14 @@ var SQLService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Check",
 			Handler:    _SQLService_Check_Handler,
+		},
+		{
+			MethodName: "Pretty",
+			Handler:    _SQLService_Pretty_Handler,
+		},
+		{
+			MethodName: "StringifyMetadata",
+			Handler:    _SQLService_StringifyMetadata_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
