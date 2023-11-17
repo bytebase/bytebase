@@ -705,6 +705,14 @@ export interface Activity {
 export enum Activity_Type {
   TYPE_UNSPECIFIED = 0,
   /**
+   * TYPE_NOTIFY_ISSUE_APPROVED - Notifications via webhooks.
+   *
+   * TYPE_NOTIFY_ISSUE_APPROVED represents the issue approved notification.
+   */
+  TYPE_NOTIFY_ISSUE_APPROVED = 23,
+  /** TYPE_NOTIFY_PIPELINE_ROLLOUT - TYPE_NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification. */
+  TYPE_NOTIFY_PIPELINE_ROLLOUT = 24,
+  /**
    * TYPE_ISSUE_CREATE - Issue related activity types.
    *
    * TYPE_ISSUE_CREATE represents creating an issue.
@@ -772,6 +780,12 @@ export function activity_TypeFromJSON(object: any): Activity_Type {
     case 0:
     case "TYPE_UNSPECIFIED":
       return Activity_Type.TYPE_UNSPECIFIED;
+    case 23:
+    case "TYPE_NOTIFY_ISSUE_APPROVED":
+      return Activity_Type.TYPE_NOTIFY_ISSUE_APPROVED;
+    case 24:
+    case "TYPE_NOTIFY_PIPELINE_ROLLOUT":
+      return Activity_Type.TYPE_NOTIFY_PIPELINE_ROLLOUT;
     case 1:
     case "TYPE_ISSUE_CREATE":
       return Activity_Type.TYPE_ISSUE_CREATE;
@@ -846,6 +860,10 @@ export function activity_TypeToJSON(object: Activity_Type): string {
   switch (object) {
     case Activity_Type.TYPE_UNSPECIFIED:
       return "TYPE_UNSPECIFIED";
+    case Activity_Type.TYPE_NOTIFY_ISSUE_APPROVED:
+      return "TYPE_NOTIFY_ISSUE_APPROVED";
+    case Activity_Type.TYPE_NOTIFY_PIPELINE_ROLLOUT:
+      return "TYPE_NOTIFY_PIPELINE_ROLLOUT";
     case Activity_Type.TYPE_ISSUE_CREATE:
       return "TYPE_ISSUE_CREATE";
     case Activity_Type.TYPE_ISSUE_COMMENT_CREATE:

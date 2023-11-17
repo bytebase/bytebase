@@ -62,27 +62,22 @@ type Project struct {
 	Name string `json:"name"`
 }
 
-// Approval object of issue approval.
-type Approval struct {
-	MentionUsersByPhone []string
-}
-
 // Context is the context of webhook.
 type Context struct {
-	URL          string
-	Level        Level
-	ActivityType string
-	Title        string
-	Description  string
-	Link         string
-	CreatorID    int
-	CreatorName  string
-	CreatorEmail string
-	CreatedTs    int64
-	Issue        *Issue
-	Project      *Project
-	TaskResult   *TaskResult
-	Approval     *Approval
+	URL                 string
+	Level               Level
+	ActivityType        string
+	Title               string
+	Description         string
+	Link                string
+	CreatorID           int
+	CreatorName         string
+	CreatorEmail        string
+	CreatedTs           int64
+	Issue               *Issue
+	Project             *Project
+	TaskResult          *TaskResult
+	MentionUsersByPhone []string
 }
 
 // Receiver is the webhook receiver.

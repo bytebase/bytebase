@@ -542,10 +542,14 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 				}
 
 				var taskStage *store.StageMessage
+				var nextStage *store.StageMessage
 				var pipelineDone bool
 				for i, stage := range stages {
 					if stage.ID == task.StageID {
 						taskStage = stages[i]
+						if i < len(stages)-1 {
+							nextStage = stages[i+1]
+						}
 						if i == len(stages)-1 {
 							pipelineDone = true
 						}
@@ -592,6 +596,37 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 					return nil
 				}(); err != nil {
 					slog.Error("failed to create ActivityPipelineStageStatusUpdate activity", log.BBError(err))
+				}
+				// create "notify pipeline rollout" activity.
+				if err := func() error {
+					if nextStage == nil {
+						return nil
+					}
+					policy, err := s.store.GetRolloutPolicy(ctx, nextStage.EnvironmentID)
+					if err != nil {
+						return errors.Wrapf(err, "failed to get rollout policy")
+					}
+					payload, err := json.Marshal(api.ActivityNotifyPipelineRolloutPayload{
+						RolloutPolicy: policy,
+						StageName:     nextStage.Name,
+					})
+					if err != nil {
+						return errors.Wrapf(err, "failed to marshal activity payload")
+					}
+					create := &store.ActivityMessage{
+						CreatorUID:   api.SystemBotID,
+						ContainerUID: nextStage.PipelineID,
+						Type:         api.ActivityNotifyPipelineRollout,
+						Level:        api.ActivityInfo,
+						Comment:      "",
+						Payload:      string(payload),
+					}
+					if _, err := s.activityManager.CreateActivity(ctx, create, &activity.Metadata{Issue: issue}); err != nil {
+						return err
+					}
+					return nil
+				}(); err != nil {
+					slog.Error("failed to create rollout release notification activity", log.BBError(err))
 				}
 
 				if pipelineDone {

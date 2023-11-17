@@ -3,12 +3,21 @@ package api
 import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // ActivityType is the type for an activity.
 type ActivityType string
 
 const (
+	// Notifications via webhooks.
+	// ActivityNotifyIssueApproved is the type for notifying the creator when the issue approval passes.
+	// Will not be stored. Only used for notification.
+	ActivityNotifyIssueApproved ActivityType = "bb.notify.issue.approved"
+	// ActivityPipelineRollout is the type for notifying releasers to rollout.
+	// Will not be stored. Only used for notification.
+	ActivityNotifyPipelineRollout ActivityType = "bb.notify.pipeline.rollout"
+
 	// Issue related.
 
 	// ActivityIssueCreate is the type for creating issues.
@@ -269,4 +278,10 @@ type ActivitySQLExportPayload struct {
 	DatabaseID   int    `json:"databaseId"`
 	DatabaseName string `json:"databaseName"`
 	Error        string `json:"error"`
+}
+
+type ActivityNotifyPipelineRolloutPayload struct {
+	RolloutPolicy *storepb.RolloutPolicy
+	// Used to display info without paying the join cost
+	StageName string
 }
