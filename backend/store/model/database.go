@@ -14,16 +14,20 @@ type DBSchema struct {
 	metadata *storepb.DatabaseSchemaMetadata
 	schema   []byte
 	config   *storepb.DatabaseConfig
-	internal *DatabaseMetadata
+
+	metadataInternal *DatabaseMetadata
+	configInternal   *DatabaseConfig
 }
 
 func NewDBSchema(metadata *storepb.DatabaseSchemaMetadata, schema []byte, config *storepb.DatabaseConfig) *DBSchema {
 	databaseMetadata := NewDatabaseMetadata(metadata)
+	databaseConfig := NewDatabaseConfig(config)
 	return &DBSchema{
-		metadata: metadata,
-		schema:   schema,
-		config:   config,
-		internal: databaseMetadata,
+		metadata:         metadata,
+		schema:           schema,
+		config:           config,
+		metadataInternal: databaseMetadata,
+		configInternal:   databaseConfig,
 	}
 }
 
@@ -40,7 +44,11 @@ func (dbs *DBSchema) GetConfig() *storepb.DatabaseConfig {
 }
 
 func (dbs *DBSchema) GetDatabaseMetadata() *DatabaseMetadata {
-	return dbs.internal
+	return dbs.metadataInternal
+}
+
+func (dbs *DBSchema) GetDatabaseConfig() *DatabaseConfig {
+	return dbs.configInternal
 }
 
 // TableExists checks if the table exists.
@@ -160,6 +168,61 @@ func (dbs *DBSchema) FindIndex(schemaName string, tableName string, indexName st
 		}
 	}
 	return nil
+}
+
+// DatabaseConfig is the config for a database.
+type DatabaseConfig struct {
+	internal map[string]*SchemaConfig
+}
+
+// NewDatabaseConfig creates a new database config.
+func NewDatabaseConfig(config *storepb.DatabaseConfig) *DatabaseConfig {
+	databaseConfig := &DatabaseConfig{
+		internal: make(map[string]*SchemaConfig),
+	}
+	if config == nil {
+		return databaseConfig
+	}
+	for _, schema := range config.SchemaConfigs {
+		schemaConfig := &SchemaConfig{
+			internal: make(map[string]*TableConfig),
+		}
+		for _, table := range schema.TableConfigs {
+			tableConfig := &TableConfig{
+				internal: make(map[string]*storepb.ColumnConfig),
+			}
+			for _, column := range table.ColumnConfigs {
+				tableConfig.internal[column.Name] = column
+			}
+			schemaConfig.internal[table.Name] = tableConfig
+		}
+		databaseConfig.internal[schema.Name] = schemaConfig
+	}
+	return databaseConfig
+}
+
+func (d *DatabaseConfig) GetSchemaConfig(name string) *SchemaConfig {
+	return d.internal[name]
+}
+
+// SchemaConfig is the config for a schema.
+type SchemaConfig struct {
+	internal map[string]*TableConfig
+}
+
+// GetTableConfig gets the table config by name.
+func (s *SchemaConfig) GetTableConfig(name string) *TableConfig {
+	return s.internal[name]
+}
+
+// TableConfig is the config for a table.
+type TableConfig struct {
+	internal map[string]*storepb.ColumnConfig
+}
+
+// GetColumnConfig gets the column config by name.
+func (t *TableConfig) GetColumnConfig(name string) *storepb.ColumnConfig {
+	return t.internal[name]
 }
 
 // DatabaseMetadata is the metadata for a database.

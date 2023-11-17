@@ -50,8 +50,6 @@
     "environment": "Entorno",
     "environments": "Entornos",
     "environment-name": "Nombre del entorno",
-    "bookmark": "Marcador",
-    "bookmarks": "Marcadores",
     "quick-action": "Acción rápida",
     "archive": "Archivo",
     "archived": "Archivada",
@@ -1855,6 +1853,14 @@
         "issue-task-run-status-change": {
           "title": "Cambio de estado de ejecución de tarea de incidencia",
           "label": "Cuando cambia el estado de la ejecución de la tarea que encierra la incidencia"
+        },
+        "notify-issue-approved": {
+          "title": "Asunto aprobado",
+          "label": "Cuando se aprueba la emisión"
+        },
+        "notify-pipeline-rollout": {
+          "title": "Se necesita implementar el problema",
+          "label": "Cuando el problema está esperando la implementación"
         }
       }
     },

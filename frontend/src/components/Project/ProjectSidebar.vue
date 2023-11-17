@@ -22,12 +22,13 @@ import {
 } from "lucide-vue-next";
 import { computed, VNode, h, reactive, watch, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoute, useRouter } from "vue-router";
+import { useRouter } from "vue-router";
 import { SidebarItem } from "@/components/CommonSidebar.vue";
+import { useInitializeIssue } from "@/components/IssueV1";
 import { useCurrentUserIamPolicy, useProjectV1Store } from "@/store";
-import { DEFAULT_PROJECT_V1_NAME } from "@/types";
+import { DEFAULT_PROJECT_V1_NAME, unknownProject } from "@/types";
 import { TenantMode } from "@/types/proto/v1/project_service";
-import { idFromSlug } from "@/utils";
+import { idFromSlug, projectSlugV1 } from "@/utils";
 
 const projectHashList = [
   "databases",
@@ -60,11 +61,16 @@ interface ProjectSidebarItem {
   }[];
 }
 
-const route = useRoute();
-const projectSlug = computed(() => route.params.projectSlug as string);
+const props = defineProps<{
+  projectSlug?: string;
+  issueSlug?: string;
+}>();
+
+const issueSlug = computed(() => props.issueSlug ?? "");
+const { issue } = useInitializeIssue(issueSlug, false);
 
 const cachedLastPage = useLocalStorage<ProjectHash>(
-  `bb.project.${projectSlug.value}.page`,
+  `bb.project.${props.projectSlug}.page`,
   "databases"
 );
 
@@ -90,7 +96,14 @@ watch(
 );
 
 const project = computed(() => {
-  return projectV1Store.getProjectByUID(String(idFromSlug(projectSlug.value)));
+  if (issue.value) {
+    return issue.value.projectEntity;
+  } else if (props.projectSlug) {
+    return projectV1Store.getProjectByUID(
+      String(idFromSlug(props.projectSlug))
+    );
+  }
+  return unknownProject();
 });
 const currentUserIamPolicy = useCurrentUserIamPolicy();
 
@@ -250,6 +263,9 @@ const onSelect = (hash: ProjectHash | undefined) => {
   router.replace({
     name: "workspace.project.detail",
     hash: `#${hash}`,
+    params: {
+      projectSlug: props.projectSlug || projectSlugV1(project.value),
+    },
   });
 };
 
@@ -275,6 +291,8 @@ const selectProjectTabOnHash = () => {
     name === "workspace.database-group.table-group.detail"
   ) {
     state.selectedHash = "database-groups";
+  } else if (name === "workspace.issue.detail") {
+    state.selectedHash = "issues";
   }
 };
 

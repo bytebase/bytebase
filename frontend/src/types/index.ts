@@ -15,7 +15,6 @@ export * from "./help";
 export * from "./id";
 export * from "./instance";
 export * from "./issue";
-export * from "./jsonapi";
 export * from "./member";
 export * from "./notification";
 export * from "./oauth";

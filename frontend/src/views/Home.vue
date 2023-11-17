@@ -2,7 +2,7 @@
   <div class="flex flex-col">
     <IssueSearch
       v-model:params="state.params"
-      :components="['status', 'time-range']"
+      :components="['status']"
       :component-props="
         statusTabDisabled ? { status: { disabled: true } } : undefined
       "

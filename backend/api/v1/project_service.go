@@ -2417,6 +2417,10 @@ func convertToActivityTypeStrings(types []v1pb.Activity_Type) ([]string, error) 
 			result = append(result, string(api.ActivitySQLEditorQuery))
 		case v1pb.Activity_TYPE_DATABASE_RECOVERY_PITR_DONE:
 			result = append(result, string(api.ActivityDatabaseRecoveryPITRDone))
+		case v1pb.Activity_TYPE_NOTIFY_ISSUE_APPROVED:
+			result = append(result, string(api.ActivityNotifyIssueApproved))
+		case v1pb.Activity_TYPE_NOTIFY_PIPELINE_ROLLOUT:
+			result = append(result, string(api.ActivityNotifyPipelineRollout))
 		default:
 			return nil, common.Errorf(common.Invalid, "unsupported activity type: %v", tp)
 		}
@@ -2470,6 +2474,10 @@ func convertNotificationTypeStrings(types []string) []v1pb.Activity_Type {
 			result = append(result, v1pb.Activity_TYPE_SQL_EDITOR_QUERY)
 		case string(api.ActivityDatabaseRecoveryPITRDone):
 			result = append(result, v1pb.Activity_TYPE_DATABASE_RECOVERY_PITR_DONE)
+		case string(api.ActivityNotifyIssueApproved):
+			result = append(result, v1pb.Activity_TYPE_NOTIFY_ISSUE_APPROVED)
+		case string(api.ActivityNotifyPipelineRollout):
+			result = append(result, v1pb.Activity_TYPE_NOTIFY_PIPELINE_ROLLOUT)
 		default:
 			result = append(result, v1pb.Activity_TYPE_UNSPECIFIED)
 		}

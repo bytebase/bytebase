@@ -50,8 +50,6 @@
     "environment": "环境",
     "environments": "环境",
     "environment-name": "环境名",
-    "bookmark": "书签",
-    "bookmarks": "书签",
     "quick-action": "快捷操作",
     "archive": "归档",
     "archived": "已归档",
@@ -1851,6 +1849,14 @@
         "issue-task-run-status-change": {
           "title": "工单任务执行状态变更",
           "label": "当一个工单包含的任务执行状态发生了变更"
+        },
+        "notify-issue-approved": {
+          "title": "工单审批通过",
+          "label": "当工单审批通过"
+        },
+        "notify-pipeline-rollout": {
+          "title": "工单待发布",
+          "label": "当工单待发布时"
         }
       }
     },

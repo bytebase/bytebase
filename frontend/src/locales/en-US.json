@@ -50,8 +50,6 @@
     "environment": "Environment",
     "environments": "Environments",
     "environment-name": "Environment Name",
-    "bookmark": "Bookmark",
-    "bookmarks": "Bookmarks",
     "quick-action": "Quick Action",
     "archive": "Archive",
     "archived": "Archived",
@@ -1856,6 +1854,14 @@
         "issue-task-run-status-change": {
           "title": "Issue task run status change",
           "label": "When issue task run status has changed"
+        },
+        "notify-issue-approved": {
+          "title": "Issue approved",
+          "label": "When issue is approved"
+        },
+        "notify-pipeline-rollout": {
+          "title": "Issue rollout needed",
+          "label": "When the issue is waiting rollout"
         }
       }
     },
