@@ -6,7 +6,6 @@ export interface ResourceObject {
   id: string;
   // [NOTE] This diverges from the spec a bit to make attributes required to avoid "possibly undefined ts warning"
   attributes: Attributes;
-  relationships?: Relationships;
 }
 
 /**
@@ -30,27 +29,4 @@ export type ResourceIdentifier<T extends ResourceObject = ResourceObject> =
  */
 export interface Attributes {
   [index: string]: string | number | boolean | object | undefined;
-}
-
-/**
- * A Resource object's Relationships.
- */
-export interface Relationships {
-  [index: string]: Relationship;
-}
-
-/**
- * Describes a single Relationship type between a
- * Resource Object and one or more other Resource Objects.
- */
-export interface Relationship<
-  D extends ResourceObject | ResourceObject[] =
-    | ResourceObject
-    | ResourceObject[]
-> {
-  data?: D extends ResourceObject
-    ? ResourceIdentifier<D>
-    : D extends ResourceObject[]
-    ? ResourceIdentifier<D[0]>[]
-    : ResourceIdentifier | ResourceIdentifier[];
 }

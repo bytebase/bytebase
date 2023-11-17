@@ -24,7 +24,6 @@ import {
   useSheetV1Store,
   useAuthStore,
   useActuatorV1Store,
-  useLegacyInstanceStore,
   useRouterStore,
   useDBSchemaV1Store,
   useOnboardingStateStore,
@@ -979,7 +978,6 @@ router.beforeEach((to, from, next) => {
 
   const authStore = useAuthStore();
   const dbSchemaStore = useDBSchemaV1Store();
-  const instanceStore = useLegacyInstanceStore();
   const routerStore = useRouterStore();
   const projectV1Store = useProjectV1Store();
   const projectWebhookV1Store = useProjectWebhookV1Store();
@@ -1373,7 +1371,6 @@ router.beforeEach((to, from, next) => {
   }
 
   if (instanceSlug) {
-    instanceStore;
     useInstanceV1Store()
       .getOrFetchInstanceByUID(String(idFromSlug(instanceSlug)))
       .then(() => {
