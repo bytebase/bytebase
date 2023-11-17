@@ -77,7 +77,9 @@
     "role": {
       "self": "Role",
       "dba": "DBA",
-      "owner": "Admin",
+      "admin": "Admin",
+      "owner": "Owner",
+      "developer": "Developer",
       "member": "Member",
       "exporter": "Exporter",
       "querier": "Querier",
