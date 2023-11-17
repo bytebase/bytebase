@@ -15,7 +15,7 @@
       <BBSpin v-if="isFetching" />
       <MonacoEditor
         v-else
-        :value="schemaStringRef || ''"
+        :value="schemaString || ''"
         :readonly="true"
         class="border w-full h-full"
       />
@@ -28,7 +28,7 @@ import { cloneDeep } from "lodash-es";
 import { Code } from "lucide-vue-next";
 import { NButton, NPopover } from "naive-ui";
 import { onMounted, ref } from "vue";
-import { schemaDesignServiceClient } from "@/grpcweb";
+import { sqlServiceClient } from "@/grpcweb";
 import { useDBSchemaV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import {
@@ -44,7 +44,7 @@ const props = defineProps<{
 }>();
 
 const dbSchemaStore = useDBSchemaV1Store();
-const schemaStringRef = ref<string | null>(null);
+const schemaString = ref<string | null>(null);
 const isFetching = ref<boolean>(false);
 
 onMounted(async () => {
@@ -74,11 +74,11 @@ const handleShowSchemaString = async () => {
   }
 
   isFetching.value = true;
-  const { schemaString } = await schemaDesignServiceClient.stringifyMetadata({
+  const { schema } = await sqlServiceClient.stringifyMetadata({
     metadata: databaseMetadata,
     engine: props.database.instanceEntity.engine,
   });
-  schemaStringRef.value = schemaString.trim();
+  schemaString.value = schema.trim();
   isFetching.value = false;
 };
 </script>

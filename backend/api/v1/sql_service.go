@@ -415,6 +415,31 @@ func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, 
 	return content, durationNs, nil
 }
 
+func (*SQLService) StringifyMetadata(_ context.Context, request *v1pb.StringifyMetadataRequest) (*v1pb.StringifyMetadataResponse, error) {
+	switch request.Engine {
+	case v1pb.Engine_MYSQL, v1pb.Engine_POSTGRES, v1pb.Engine_TIDB:
+	default:
+		return nil, status.Errorf(codes.InvalidArgument, "unsupported engine: %v", request.Engine)
+	}
+
+	if request.Metadata == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "metadata is required")
+	}
+	if err := checkDatabaseMetadata(request.Engine, request.Metadata); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid metadata: %v", err))
+	}
+
+	sanitizeCommentForSchemaMetadata(request.Metadata)
+	schema, err := transformDatabaseMetadataToSchemaString(request.Engine, request.Metadata)
+	if err != nil {
+		return nil, err
+	}
+
+	return &v1pb.StringifyMetadataResponse{
+		Schema: schema,
+	}, nil
+}
+
 func exportCSV(result *v1pb.QueryResult) ([]byte, error) {
 	var buf bytes.Buffer
 	if _, err := buf.WriteString(strings.Join(result.ColumnNames, ",")); err != nil {
