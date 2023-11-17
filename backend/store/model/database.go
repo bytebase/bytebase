@@ -47,6 +47,10 @@ func (dbs *DBSchema) GetDatabaseMetadata() *DatabaseMetadata {
 	return dbs.metadataInternal
 }
 
+func (dbs *DBSchema) GetDatabaseConfig() *DatabaseConfig {
+	return dbs.configInternal
+}
+
 // TableExists checks if the table exists.
 func (dbs *DBSchema) TableExists(schemaName string, tableName string, ignoreCaseSensitive bool) bool {
 	if ignoreCaseSensitive {
