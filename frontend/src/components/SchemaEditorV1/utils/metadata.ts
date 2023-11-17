@@ -1,5 +1,4 @@
 import { cloneDeep, isEqual, uniq } from "lodash-es";
-import { markRaw } from "vue";
 import {
   ColumnMetadata,
   DatabaseMetadata,
@@ -573,7 +572,7 @@ export const rebuildEditableSchemas = (
   console.timeEnd("loop-3");
 
   console.timeEnd(tag);
-  return markRaw(editableSchemas);
+  return editableSchemas;
 };
 
 export const validateDatabaseMetadata = (
