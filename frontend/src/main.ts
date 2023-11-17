@@ -25,7 +25,6 @@ import {
 } from "./store";
 import {
   databaseSlug,
-  dataSourceSlug,
   environmentName,
   environmentSlug,
   humanizeTs,
@@ -155,7 +154,6 @@ app.config.globalProperties.projectSlug = projectSlug;
 app.config.globalProperties.instanceName = instanceName;
 app.config.globalProperties.instanceSlug = instanceSlug;
 app.config.globalProperties.databaseSlug = databaseSlug;
-app.config.globalProperties.dataSourceSlug = dataSourceSlug;
 app.config.globalProperties.connectionSlug = connectionSlug;
 
 app

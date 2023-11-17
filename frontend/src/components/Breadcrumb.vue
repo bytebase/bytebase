@@ -117,7 +117,6 @@ export default defineComponent({
       const instanceSlug = routeSlug.instanceSlug;
       const databaseSlug = routeSlug.databaseSlug;
       const tableName = routeSlug.tableName;
-      const dataSourceSlug = routeSlug.dataSourceSlug;
       const vcsSlug = routeSlug.vcsSlug;
       const sqlReviewPolicySlug = routeSlug.sqlReviewPolicySlug;
       const ssoName = routeSlug.ssoName;
@@ -208,7 +207,7 @@ export default defineComponent({
           path: "/db",
         });
 
-        if (tableName || dataSourceSlug) {
+        if (tableName) {
           const database = useDatabaseV1Store().getDatabaseByUID(
             String(idFromSlug(databaseSlug))
           );
