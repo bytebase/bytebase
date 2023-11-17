@@ -1860,6 +1860,10 @@
         "notify-issue-approved": {
           "title": "Issue approved",
           "label": "When issue is approved"
+        },
+        "notify-pipeline-rollout": {
+          "title": "Issue rollout needed",
+          "label": "When the issue is waiting rollout"
         }
       }
     },

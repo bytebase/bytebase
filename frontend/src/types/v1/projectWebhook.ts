@@ -120,5 +120,10 @@ export const projectWebhookV1ActivityItemList =
         label: t("project.webhook.activity-item.notify-issue-approved.label"),
         activity: Activity_Type.TYPE_NOTIFY_ISSUE_APPROVED,
       },
+      {
+        title: t("project.webhook.activity-item.notify-pipeline-rollout.title"),
+        label: t("project.webhook.activity-item.notify-pipeline-rollout.label"),
+        activity: Activity_Type.TYPE_NOTIFY_PIPELINE_ROLLOUT,
+      },
     ];
   };

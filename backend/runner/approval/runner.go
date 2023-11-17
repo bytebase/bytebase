@@ -248,6 +248,46 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 	}
 
 	if err := func() error {
+		if len(payload.Approval.ApprovalTemplates) != 0 {
+			return nil
+		}
+		if issue.PipelineUID == nil {
+			return nil
+		}
+		stages, err := r.store.ListStageV2(ctx, *issue.PipelineUID)
+		if err != nil {
+			return errors.Wrapf(err, "failed to list stages")
+		}
+		if len(stages) == 0 {
+			return nil
+		}
+		policy, err := r.store.GetRolloutPolicy(ctx, stages[0].EnvironmentID)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get rollout policy")
+		}
+		payload, err := json.Marshal(api.ActivityNotifyPipelineRolloutPayload{
+			RolloutPolicy: policy,
+		})
+		if err != nil {
+			return errors.Wrapf(err, "failed to marshal activity payload")
+		}
+		create := &store.ActivityMessage{
+			CreatorUID:   api.SystemBotID,
+			ContainerUID: *issue.PipelineUID,
+			Type:         api.ActivityNotifyPipelineRollout,
+			Level:        api.ActivityInfo,
+			Comment:      "",
+			Payload:      string(payload),
+		}
+		if _, err := r.activityManager.CreateActivity(ctx, create, &activity.Metadata{Issue: issue}); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		slog.Error("failed to create rollout release notification activity", log.BBError(err))
+	}
+
+	if err := func() error {
 		if len(payload.Approval.ApprovalTemplates) != 1 {
 			return nil
 		}

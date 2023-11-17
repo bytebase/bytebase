@@ -1855,6 +1855,10 @@
         "notify-issue-approved": {
           "title": "工单审批通过",
           "label": "当工单审批通过"
+        },
+        "notify-pipeline-rollout": {
+          "title": "工单待发布",
+          "label": "当工单待发布时"
         }
       }
     },

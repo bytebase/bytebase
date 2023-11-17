@@ -792,12 +792,13 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 		slog.Error("failed to create approval step pending activity after creating issue", log.BBError(err))
 	}
 
-	if err := func() error {
-		approved, err := utils.CheckApprovalApproved(issue.Payload.GetApproval())
-		if err != nil {
-			return errors.Wrap(err, "failed to check if the approval is approved")
+	func() {
+		if !approved {
+			return
 		}
-		if approved {
+
+		// notify issue approved
+		if err := func() error {
 			create := &store.ActivityMessage{
 				CreatorUID:   api.SystemBotID,
 				ContainerUID: issue.UID,
@@ -811,11 +812,49 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 			}); err != nil {
 				return errors.Wrapf(err, "failed to create activity")
 			}
+			return nil
+		}(); err != nil {
+			slog.Error("failed to create activity for notifying issue approved", log.BBError(err))
 		}
-		return nil
-	}(); err != nil {
-		slog.Debug("failed to update issue status to done if grant request issue is approved", log.BBError(err))
-	}
+
+		// notify pipeline rollout
+		if err := func() error {
+			if issue.PipelineUID == nil {
+				return nil
+			}
+			stages, err := s.store.ListStageV2(ctx, *issue.PipelineUID)
+			if err != nil {
+				return errors.Wrapf(err, "failed to list stages")
+			}
+			if len(stages) == 0 {
+				return nil
+			}
+			policy, err := s.store.GetRolloutPolicy(ctx, stages[0].EnvironmentID)
+			if err != nil {
+				return errors.Wrapf(err, "failed to get rollout policy")
+			}
+			payload, err := json.Marshal(api.ActivityNotifyPipelineRolloutPayload{
+				RolloutPolicy: policy,
+			})
+			if err != nil {
+				return errors.Wrapf(err, "failed to marshal activity payload")
+			}
+			create := &store.ActivityMessage{
+				CreatorUID:   api.SystemBotID,
+				ContainerUID: *issue.PipelineUID,
+				Type:         api.ActivityNotifyPipelineRollout,
+				Level:        api.ActivityInfo,
+				Comment:      "",
+				Payload:      string(payload),
+			}
+			if _, err := s.activityManager.CreateActivity(ctx, create, &activity.Metadata{Issue: issue}); err != nil {
+				return err
+			}
+			return nil
+		}(); err != nil {
+			slog.Error("failed to create rollout release notification activity", log.BBError(err))
+		}
+	}()
 
 	if issue.Type == api.IssueGrantRequest {
 		if err := func() error {

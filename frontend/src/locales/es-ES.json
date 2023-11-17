@@ -1859,6 +1859,10 @@
         "notify-issue-approved": {
           "title": "Asunto aprobado",
           "label": "Cuando se aprueba la emisión"
+        },
+        "notify-pipeline-rollout": {
+          "title": "Se necesita implementar el problema",
+          "label": "Cuando el problema está esperando la implementación"
         }
       }
     },

@@ -766,6 +766,61 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 		phone := strconv.FormatInt(int64(*phoneNumber.NationalNumber), 10)
 		mentions = append(mentions, phone)
 
+	case api.ActivityNotifyPipelineRollout:
+		title = "Issue is waiting rollout - " + meta.Issue.Title
+		payload := &api.ActivityNotifyPipelineRolloutPayload{}
+		if err := json.Unmarshal([]byte(activity.Payload), payload); err != nil {
+			slog.Warn("failed to unmarshal payload",
+				slog.String("issue_name", meta.Issue.Title),
+				log.BBError(err))
+			return nil, err
+		}
+		var usersGetters []func(context.Context) ([]*store.UserMessage, error)
+		if payload.RolloutPolicy.GetAutomatic() {
+			usersGetters = append(usersGetters, getUsersFromUsers(meta.Issue.Creator))
+		} else {
+			for _, workspaceRole := range payload.RolloutPolicy.GetWorkspaceRoles() {
+				role := api.Role(strings.TrimPrefix(workspaceRole, "roles/"))
+				usersGetters = append(usersGetters, getUsersFromWorkspaceRole(m.store, role))
+			}
+			for _, projectRole := range payload.RolloutPolicy.GetProjectRoles() {
+				role := api.Role(strings.TrimPrefix(projectRole, "roles/"))
+				usersGetters = append(usersGetters, getUsersFromProjectRole(m.store, role, meta.Issue.Project.ResourceID))
+			}
+			for _, issueRole := range payload.RolloutPolicy.GetIssueRoles() {
+				switch issueRole {
+				case "roles/LAST_APPROVER":
+					usersGetters = append(usersGetters, getUsersFromIssueLastApprover(m.store, meta.Issue.Payload.GetApproval()))
+				case "roles/CREATOR":
+					usersGetters = append(usersGetters, getUsersFromUsers(meta.Issue.Creator))
+				}
+			}
+		}
+		mentionedUser := map[int]bool{}
+		for _, usersGetter := range usersGetters {
+			users, err := usersGetter(ctx)
+			if err != nil {
+				slog.Warn("failed to get users",
+					slog.String("issue_name", meta.Issue.Title),
+					log.BBError(err))
+				return nil, err
+			}
+			for _, user := range users {
+				if mentionedUser[user.ID] {
+					continue
+				}
+				mentionedUser[user.ID] = true
+				phoneNumber, err := phonenumbers.Parse(user.Phone, "")
+				if err != nil {
+					slog.Warn("failed to parse phone number",
+						slog.String("issue_name", meta.Issue.Title),
+						log.BBError(err))
+				}
+				phone := strconv.FormatInt(int64(*phoneNumber.NationalNumber), 10)
+				mentions = append(mentions, phone)
+			}
+		}
+
 	case api.ActivityIssueApprovalNotify:
 		payload := &api.ActivityIssueApprovalNotifyPayload{}
 		if err := json.Unmarshal([]byte(activity.Payload), payload); err != nil {
@@ -953,6 +1008,29 @@ func getUsersFromProjectRole(s *store.Store, role api.Role, projectID string) fu
 			}
 		}
 		return users, nil
+	}
+}
+
+func getUsersFromUsers(users ...*store.UserMessage) func(context.Context) ([]*store.UserMessage, error) {
+	return func(_ context.Context) ([]*store.UserMessage, error) {
+		return users, nil
+	}
+}
+
+func getUsersFromIssueLastApprover(s *store.Store, approval *storepb.IssuePayloadApproval) func(context.Context) ([]*store.UserMessage, error) {
+	return func(ctx context.Context) ([]*store.UserMessage, error) {
+		var userUID int
+		if approvers := approval.GetApprovers(); len(approvers) > 0 {
+			userUID = int(approvers[len(approvers)-1].PrincipalId)
+		}
+		if userUID == 0 {
+			return nil, nil
+		}
+		user, err := s.GetUserByID(ctx, userUID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get user")
+		}
+		return []*store.UserMessage{user}, nil
 	}
 }
 

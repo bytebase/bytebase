@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // ActivityType is the type for an activity.
@@ -277,4 +278,8 @@ type ActivitySQLExportPayload struct {
 	DatabaseID   int    `json:"databaseId"`
 	DatabaseName string `json:"databaseName"`
 	Error        string `json:"error"`
+}
+
+type ActivityNotifyPipelineRolloutPayload struct {
+	RolloutPolicy *storepb.RolloutPolicy
 }
