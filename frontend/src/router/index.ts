@@ -246,7 +246,6 @@ const routes: Array<RouteRecordRaw> = [
             path: "/project/:projectSlug/changelists/:changelistName",
             name: "workspace.changelist.detail",
             meta: {
-              allowBookmark: true,
               overrideTitle: true,
             },
             components: {
@@ -263,7 +262,6 @@ const routes: Array<RouteRecordRaw> = [
             path: "/project/:projectSlug/branches/:branchName",
             name: "workspace.branch.detail",
             meta: {
-              allowBookmark: true,
               overrideTitle: true,
             },
             components: {
@@ -649,7 +647,6 @@ const routes: Array<RouteRecordRaw> = [
                   String(idFromSlug(slug))
                 ).title;
               },
-              allowBookmark: true,
             },
             components: {
               content: () => import("../views/EnvironmentDetail.vue"),
@@ -707,7 +704,6 @@ const routes: Array<RouteRecordRaw> = [
                     );
                     return projectV1.title;
                   },
-                  allowBookmark: true,
                 },
                 component: () => import("../views/ProjectDetail.vue"),
                 props: true,
@@ -742,7 +738,6 @@ const routes: Array<RouteRecordRaw> = [
                       webhook?.title ?? "unknown"
                     }`;
                   },
-                  allowBookmark: true,
                 },
                 component: () => import("../views/ProjectWebhookDetail.vue"),
                 props: true,
@@ -833,7 +828,6 @@ const routes: Array<RouteRecordRaw> = [
                       String(idFromSlug(slug))
                     ).databaseName;
                   },
-                  allowBookmark: true,
                 },
                 component: () => import("../views/DatabaseDetail.vue"),
                 props: true,
@@ -893,7 +887,6 @@ const routes: Array<RouteRecordRaw> = [
             path: "issue/:issueSlug",
             name: "workspace.issue.detail",
             meta: {
-              allowBookmark: true,
               overrideTitle: true,
             },
             components: {

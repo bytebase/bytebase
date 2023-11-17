@@ -1254,7 +1254,7 @@ func (s *RolloutService) createPipeline(ctx context.Context, project *store.Proj
 				sheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
 					CreatorID:  api.SystemBotID,
 					ProjectUID: project.UID,
-					Name:       fmt.Sprintf("Sheet for task %v", c.Name),
+					Title:      fmt.Sprintf("Sheet for task %v", c.Name),
 					Statement:  c.Statement,
 					Visibility: store.ProjectSheet,
 					Source:     store.SheetFromBytebaseArtifact,

@@ -130,6 +130,7 @@ import {
 import type { ExecuteConfig, ExecuteOption, FeatureType } from "@/types";
 import { TabMode, UNKNOWN_ID } from "@/types";
 import { formatEngineV1, keyboardShortcutStr } from "@/utils";
+import { customTheme } from "@/utils/customTheme";
 import { useSQLEditorContext } from "../context";
 import AdminModeButton from "./AdminModeButton.vue";
 import QueryContextSettingPopover from "./QueryContextSettingPopover.vue";
@@ -229,7 +230,8 @@ const queryList = computed(() => {
 const showQueryContextSettingPopover = computed(() => {
   return (
     Boolean(selectedInstance.value) &&
-    tabStore.currentTab.mode !== TabMode.Admin
+    tabStore.currentTab.mode !== TabMode.Admin &&
+    customTheme.value === "lixiang"
   );
 });
 

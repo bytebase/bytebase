@@ -6,6 +6,7 @@
       :autofocus="autofocus"
       v-bind="componentProps?.searchbox"
       @update:params="$emit('update:params', $event)"
+      @select-unsupported-scope="handleSelectScope"
     />
     <slot name="default" />
 
@@ -29,6 +30,7 @@
         <NInputGroup>
           <TimeRange
             v-if="components.includes('time-range')"
+            v-model:show="showTimeRange"
             :params="params"
             v-bind="componentProps?.['time-range']"
             @update:params="$emit('update:params', $event)"
@@ -41,7 +43,8 @@
 </template>
 
 <script lang="ts" setup>
-import { SearchParams } from "@/utils";
+import { ref } from "vue";
+import { SearchParams, SearchScopeId } from "@/utils";
 import AdvancedSearchBox from "./AdvancedSearchBox.vue";
 import Status from "./Status.vue";
 import TimeRange from "./TimeRange.vue";
@@ -73,8 +76,15 @@ withDefaults(
     componentProps: undefined,
   }
 );
-
 defineEmits<{
   (event: "update:params", params: SearchParams): void;
 }>();
+
+const showTimeRange = ref(false);
+
+const handleSelectScope = (id: SearchScopeId) => {
+  if (id === "created") {
+    showTimeRange.value = true;
+  }
+};
 </script>

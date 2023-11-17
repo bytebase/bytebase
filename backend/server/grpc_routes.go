@@ -85,7 +85,6 @@ func configureGrpcRouters(
 	v1pb.RegisterSchemaDesignServiceServer(grpcServer, apiv1.NewSchemaDesignService(stores, licenseService))
 	v1pb.RegisterCelServiceServer(grpcServer, apiv1.NewCelService())
 	v1pb.RegisterLoggingServiceServer(grpcServer, apiv1.NewLoggingService(stores))
-	v1pb.RegisterBookmarkServiceServer(grpcServer, apiv1.NewBookmarkService(stores))
 	v1pb.RegisterInboxServiceServer(grpcServer, apiv1.NewInboxService(stores))
 	v1pb.RegisterChangelistServiceServer(grpcServer, apiv1.NewChangelistService(stores))
 
@@ -151,9 +150,6 @@ func configureGrpcRouters(
 		return nil, nil, err
 	}
 	if err := v1pb.RegisterLoggingServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, err
-	}
-	if err := v1pb.RegisterBookmarkServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, nil, err
 	}
 	if err := v1pb.RegisterInboxServiceHandler(ctx, mux, grpcConn); err != nil {
