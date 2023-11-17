@@ -12,7 +12,10 @@ import { createIssueSkeleton } from "./create";
 
 export * from "./create";
 
-export function useInitializeIssue(issueSlug: Ref<string>) {
+export function useInitializeIssue(
+  issueSlug: Ref<string>,
+  redirectNotFound: boolean = true
+) {
   const isCreating = computed(() => issueSlug.value.toLowerCase() == "new");
   const uid = computed(() => {
     const slug = issueSlug.value;
@@ -43,7 +46,7 @@ export function useInitializeIssue(issueSlug: Ref<string>) {
   watch(
     uid,
     (uid) => {
-      if (uid === String(UNKNOWN_ID)) {
+      if (uid === String(UNKNOWN_ID) && redirectNotFound) {
         router.push({ name: "error.404" });
         return;
       }
