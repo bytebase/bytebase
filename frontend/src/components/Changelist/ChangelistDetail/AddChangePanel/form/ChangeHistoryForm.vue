@@ -74,6 +74,7 @@ import { AffectedTable, EmptyAffectedTable } from "@/types/changeHistory";
 import { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
 import {
   ChangeHistory,
+  ChangeHistory_Status,
   ChangeHistory_Type,
 } from "@/types/proto/v1/database_service";
 import {
@@ -122,7 +123,10 @@ const filteredChangeHistoryList = computed(() => {
   const types = state.changeHistoryTypes;
   list = list.filter((changeHistory) => {
     const semanticType = semanticChangeHistoryType(changeHistory.type);
-    return types.includes(semanticType);
+    return (
+      types.includes(semanticType) &&
+      changeHistory.status === ChangeHistory_Status.DONE
+    );
   });
 
   const kw = state.keyword.trim().toLowerCase();

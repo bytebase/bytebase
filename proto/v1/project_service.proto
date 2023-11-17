@@ -529,6 +529,12 @@ enum OperatorType {
 message Activity {
   enum Type {
     TYPE_UNSPECIFIED = 0;
+    // Notifications via webhooks.
+    //
+    // TYPE_NOTIFY_ISSUE_APPROVED represents the issue approved notification.
+    TYPE_NOTIFY_ISSUE_APPROVED = 23;
+    // TYPE_NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification.
+    TYPE_NOTIFY_PIPELINE_ROLLOUT = 24;
     // Issue related activity types.
     //
     // TYPE_ISSUE_CREATE represents creating an issue.

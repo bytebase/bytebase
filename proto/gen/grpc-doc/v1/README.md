@@ -620,6 +620,8 @@
     - [QueryResult](#bytebase-v1-QueryResult)
     - [QueryRow](#bytebase-v1-QueryRow)
     - [RowValue](#bytebase-v1-RowValue)
+    - [StringifyMetadataRequest](#bytebase-v1-StringifyMetadataRequest)
+    - [StringifyMetadataResponse](#bytebase-v1-StringifyMetadataResponse)
   
     - [Advice.Status](#bytebase-v1-Advice-Status)
   
@@ -6734,6 +6736,10 @@ The schema group&#39;s `name` field is used to identify the schema group to upda
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
+| TYPE_NOTIFY_ISSUE_APPROVED | 23 | Notifications via webhooks.
+
+TYPE_NOTIFY_ISSUE_APPROVED represents the issue approved notification. |
+| TYPE_NOTIFY_PIPELINE_ROLLOUT | 24 | TYPE_NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification. |
 | TYPE_ISSUE_CREATE | 1 | Issue related activity types.
 
 TYPE_ISSUE_CREATE represents creating an issue. |
@@ -9904,6 +9910,37 @@ Type of the SheetPayload.
 
 
 
+
+<a name="bytebase-v1-StringifyMetadataRequest"></a>
+
+### StringifyMetadataRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |  |
+| engine | [Engine](#bytebase-v1-Engine) |  | The database engine of the schema string. |
+
+
+
+
+
+
+<a name="bytebase-v1-StringifyMetadataResponse"></a>
+
+### StringifyMetadataResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema | [string](#string) |  |  |
+
+
+
+
+
  
 
 
@@ -9932,12 +9969,13 @@ Type of the SheetPayload.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| Pretty | [PrettyRequest](#bytebase-v1-PrettyRequest) | [PrettyResponse](#bytebase-v1-PrettyResponse) |  |
 | Query | [QueryRequest](#bytebase-v1-QueryRequest) | [QueryResponse](#bytebase-v1-QueryResponse) |  |
 | Export | [ExportRequest](#bytebase-v1-ExportRequest) | [ExportResponse](#bytebase-v1-ExportResponse) |  |
 | AdminExecute | [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest) stream | [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse) stream |  |
 | DifferPreview | [DifferPreviewRequest](#bytebase-v1-DifferPreviewRequest) | [DifferPreviewResponse](#bytebase-v1-DifferPreviewResponse) |  |
 | Check | [CheckRequest](#bytebase-v1-CheckRequest) | [CheckResponse](#bytebase-v1-CheckResponse) |  |
+| Pretty | [PrettyRequest](#bytebase-v1-PrettyRequest) | [PrettyResponse](#bytebase-v1-PrettyResponse) |  |
+| StringifyMetadata | [StringifyMetadataRequest](#bytebase-v1-StringifyMetadataRequest) | [StringifyMetadataResponse](#bytebase-v1-StringifyMetadataResponse) |  |
 
  
 
