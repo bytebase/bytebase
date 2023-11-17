@@ -282,9 +282,9 @@ const generateConditionTitle = () => {
   if (state.expireDays > 0) {
     const now = dayjs();
     const expiresAt = now.add(state.expireDays, "days");
-    conditionSuffix = `${conditionSuffix} ${now.format(
-      "YYYY-MM-DD"
-    )} to ${expiresAt.format("YYYY-MM-DD")}`;
+    conditionSuffix = `${conditionSuffix} ${now.format("L")}-${expiresAt.format(
+      "L"
+    )}`;
   }
 
   if (conditionSuffix !== "") {
