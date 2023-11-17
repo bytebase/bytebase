@@ -3150,25 +3150,25 @@
     "select": "Select role",
     "select-roles": "Select roles",
     "title": "Title",
-    "owner": {
-      "description": "System defined project owner role"
-    },
-    "developer": {
-      "description": "System defined project developer role"
-    },
-    "exporter": {
-      "description": "System defined project exporter role"
-    },
-    "querier": {
-      "description": "System defined project querier role"
-    },
     "select-role": "Select role",
     "expired-tip": "The role might has been expired.",
+    "owner": {
+      "description": "All permissions within the project"
+    },
+    "developer": {
+      "description": "All viewer permissions, plus permissions for requesting database changes."
+    },
     "releaser": {
-      "description": "System defined project releaser role"
+      "description": "All viewer permissions, plus permission for reviewing database change requests for release purposes."
+    },
+    "querier": {
+      "description": "All viewer permissions, plus permissions for querying database data."
+    },
+    "exporter": {
+      "description": "All viewer permissions, plus permissions for exporting database data."
     },
     "viewer": {
-      "description": "System defined project database viewer role"
+      "description": "Read-only permissions for viewing basic project information, accessing databases, and initiating privilege requests."
     }
   },
   "database-group": {
