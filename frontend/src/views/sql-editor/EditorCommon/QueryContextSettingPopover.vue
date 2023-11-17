@@ -11,7 +11,6 @@
       <p class="mb-1">{{ $t("data-source.select-data-source") }}</p>
       <NSelect
         class="!w-40"
-        clearable
         :options="dataSourceOptions"
         :value="selectedDataSourceId"
         :render-label="renderLabel"
@@ -22,7 +21,7 @@
 </template>
 
 <script lang="ts" setup>
-import { orderBy } from "lodash-es";
+import { head, orderBy } from "lodash-es";
 import { ChevronDown } from "lucide-vue-next";
 import {
   NButton,
@@ -32,7 +31,7 @@ import {
   SelectOption,
   SelectRenderLabel,
 } from "naive-ui";
-import { computed, h } from "vue";
+import { computed, h, watch } from "vue";
 import { useInstanceV1ByUID, useTabStore } from "@/store";
 import { DataSource, DataSourceType } from "@/types/proto/v1/instance_service";
 
@@ -114,4 +113,27 @@ const readableDataSourceType = (type: DataSourceType): string => {
     return "Unknown";
   }
 };
+
+watch(
+  () => selectedDataSourceId.value,
+  () => {
+    // If current connection has data source, skip initial selection.
+    if (selectedDataSourceId.value) {
+      return;
+    }
+
+    const readOnlyDataSources = dataSources.value.filter(
+      (dataSource) => dataSource.type === DataSourceType.READ_ONLY
+    );
+    // Default set the first read only data source as selected.
+    if (readOnlyDataSources.length > 0) {
+      handleDataSourceSelect(readOnlyDataSources[0].id);
+    } else {
+      handleDataSourceSelect(head(dataSources.value)?.id);
+    }
+  },
+  {
+    immediate: true,
+  }
+);
 </script>
