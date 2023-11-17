@@ -76,11 +76,11 @@
     "visit": "访问",
     "role": {
       "self": "角色",
-      "dba": "DBA",
       "admin": "管理员",
+      "dba": "DBA",
+      "member": "成员",
       "owner": "所有者",
       "developer": "开发者",
-      "member": "成员",
       "exporter": "数据导出者",
       "querier": "数据查询者",
       "releaser": "发布者",
