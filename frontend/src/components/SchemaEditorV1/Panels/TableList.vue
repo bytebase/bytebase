@@ -1,6 +1,19 @@
 <template>
   <div class="w-full h-full">
+    <div class="text-xs font-mono">
+      tableList.length: {{ tableList.length }}
+    </div>
+
+    <NDataTable
+      v-bind="$attrs"
+      :columns="dataTableColumns"
+      :row-key="(table: Table) => table.id"
+      :data="tableList"
+      :virtual-scroll="true"
+    />
+
     <BBGrid
+      v-if="false"
       class="border"
       :column-list="tableHeaderList"
       :data-source="tableList"
@@ -136,7 +149,7 @@
 </template>
 
 <script lang="ts" setup>
-import { NEllipsis, NTooltip } from "naive-ui";
+import { NDataTable, NEllipsis, NTooltip } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { Drawer, DrawerContent } from "@/components/v2";
@@ -285,6 +298,45 @@ const tableHeaderList = computed(() => {
       key: "comment",
       title: t("schema-editor.database.comment"),
       width: "minmax(auto, 1fr)",
+    },
+    {
+      title: "",
+      width: "30px",
+      hide: readonly.value,
+    },
+  ].filter((header) => !header.hide);
+});
+
+const dataTableColumns = computed(() => {
+  return [
+    {
+      key: "name",
+      title: t("schema-editor.database.name"),
+    },
+    {
+      key: "classification",
+      title: t("schema-editor.column.classification"),
+      hide: !supportClassification.value,
+    },
+    {
+      key: "raw-count",
+      title: t("schema-editor.database.row-count"),
+    },
+    {
+      key: "data-size",
+      title: t("schema-editor.database.data-size"),
+    },
+    {
+      key: "engine",
+      title: t("schema-editor.database.engine"),
+    },
+    {
+      key: "collation",
+      title: t("schema-editor.database.collation"),
+    },
+    {
+      key: "comment",
+      title: t("schema-editor.database.comment"),
     },
     {
       title: "",

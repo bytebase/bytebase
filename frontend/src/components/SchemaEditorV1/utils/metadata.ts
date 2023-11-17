@@ -1,4 +1,5 @@
 import { cloneDeep, isEqual, uniq } from "lodash-es";
+import { markRaw } from "vue";
 import {
   ColumnMetadata,
   DatabaseMetadata,
@@ -19,7 +20,7 @@ import {
   convertSchemaMetadataToSchema,
   convertTableMetadataToTable,
 } from "@/types/v1/schemaEditor";
-import { randomString } from "@/utils";
+import { keyBy, randomString } from "@/utils";
 
 export const mergeSchemaEditToMetadata = (
   schemaEdits: Schema[],
@@ -374,19 +375,19 @@ export const rebuildEditableSchemas = (
   const editableSchemas = cloneDeep(originalSchemas);
 
   console.time("loop-1");
-  for (const editableSchema of editableSchemas) {
-    const schema = schemas.find(
-      (schema) => schema.name === editableSchema.name
-    );
+  const schemaMetadataByName = keyBy(schemas, (s) => s.name);
+  const schemaConfigByName = keyBy(schemaConfigList, (sc) => sc.name);
+  for (let i = 0; i < editableSchemas.length; i++) {
+    const editableSchema = editableSchemas[i];
+    const schema = schemaMetadataByName.get(editableSchema.name);
     if (!schema) {
       editableSchema.status = "dropped";
       continue;
     }
 
     const schemaConfig =
-      schemaConfigList.find(
-        (schemaConfig) => schemaConfig.name === editableSchema.name
-      ) ?? SchemaConfig.fromPartial({});
+      schemaConfigByName.get(editableSchema.name) ??
+      SchemaConfig.fromPartial({});
 
     for (const editableTable of editableSchema.tableList) {
       const table = schema.tables.find(
@@ -572,7 +573,7 @@ export const rebuildEditableSchemas = (
   console.timeEnd("loop-3");
 
   console.timeEnd(tag);
-  return editableSchemas;
+  return markRaw(editableSchemas);
 };
 
 export const validateDatabaseMetadata = (

@@ -1,5 +1,6 @@
 import Long from "long";
 import { v1 as uuidv1 } from "uuid";
+import { markRaw } from "vue";
 import {
   SchemaMetadata,
   TableMetadata,
@@ -252,5 +253,5 @@ export const convertSchemaMetadataList = (
     }
   }
 
-  return schemaList;
+  return markRaw(schemaList);
 };
