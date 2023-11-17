@@ -3,13 +3,7 @@
   <Suspense>
     <template #default>
       <ProvideInstanceContext :instance-slug="instanceSlug">
-        <!-- This if-lese looks weird because the router-view can be both-->
-        <router-view
-          v-if="dataSourceSlug"
-          :instance-slug="instanceSlug"
-          :data-source-slug="dataSourceSlug"
-        />
-        <router-view v-else :instance-slug="instanceSlug" />
+        <router-view :instance-slug="instanceSlug" />
       </ProvideInstanceContext>
     </template>
     <template #fallback>
@@ -30,10 +24,6 @@ export default {
       type: String,
     },
     databaseSlug: {
-      type: String,
-      default: "",
-    },
-    dataSourceSlug: {
       type: String,
       default: "",
     },

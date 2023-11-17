@@ -2,7 +2,6 @@ import type dayjs from "dayjs";
 import type { isEmpty } from "lodash-es";
 import type {
   databaseSlug,
-  dataSourceSlug,
   environmentName,
   environmentSlug,
   humanizeTs,
@@ -38,6 +37,5 @@ declare module "vue" {
     instanceName: typeof instanceName;
     instanceSlug: typeof instanceSlug;
     databaseSlug: typeof databaseSlug;
-    dataSourceSlug: typeof dataSourceSlug;
   }
 }
