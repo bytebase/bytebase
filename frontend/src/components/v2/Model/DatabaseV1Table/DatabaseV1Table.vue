@@ -67,7 +67,6 @@
             :show-tenant-icon="showTenantIcon"
             :show-instance-column="showInstanceColumn"
             :show-labels-column="showLabelsColumn"
-            :allow-query="allowQuery(database as ComposedDatabase)"
           >
             <template v-if="showSelectionColumn" #selection>
               <slot name="selection" :database="database" />
