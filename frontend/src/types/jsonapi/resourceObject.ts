@@ -30,20 +30,6 @@ export type ResourceIdentifier<T extends ResourceObject = ResourceObject> =
   Pick<T, "type" | "id" | "meta">;
 
 /**
- * A representation of a new Resource Object that
- * originates at the client and is yet to be created
- * on the server. The main difference between a regular
- * Resource Object is that this may not have an `id` yet.
- */
-export interface NewResourceObject {
-  type: string;
-  id?: string;
-  attributes?: Attributes;
-  relationships?: Relationships;
-  links?: Links;
-}
-
-/**
  * Attributes describing a Resource Object
  */
 export interface Attributes {
