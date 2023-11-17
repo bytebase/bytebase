@@ -152,8 +152,10 @@ github.com/bytebase/gh-ost v1.1.3-0.20230915044519-b37a6525f8f9 h1:Sk8tTyttWhoKj
 github.com/bytebase/gh-ost v1.1.3-0.20230915044519-b37a6525f8f9/go.mod h1:/HsnX0+34LXVz3MxtZoW15GiwEOXz/PrEhutjb3icfE=
 github.com/bytebase/go-obo v0.0.0-20231026081615-705a7fffbfd2 h1:nEHZi8S7PHT4GxP9GfJiuhO8KkYcHmePvy5BfiYxwNk=
 github.com/bytebase/go-obo v0.0.0-20231026081615-705a7fffbfd2/go.mod h1:wjDx6Xm9q7dFtHJvIlrI99JytznLw5wQ4R+9mNXJwGI=
-github.com/bytebase/mysql-parser v0.0.0-20231027071737-2b1ee7eca26c h1:IzfBp1TpLr0tsaOpxq8jf00cvnWS11RowRP9+atxvSE=
-github.com/bytebase/mysql-parser v0.0.0-20231027071737-2b1ee7eca26c/go.mod h1:n22yoTeLcphIYQlV6nbufQbHMxNceOjeGDOrpaRIhiY=
+github.com/bytebase/mysql-parser v0.0.0-20231117070536-60fd41b78052 h1:4evPfnVFB+cEd4dA461ZiTogpmVa6fNj6pkkJN60TAg=
+github.com/bytebase/mysql-parser v0.0.0-20231117070536-60fd41b78052/go.mod h1:n22yoTeLcphIYQlV6nbufQbHMxNceOjeGDOrpaRIhiY=
+github.com/bytebase/mysql-parser v0.0.0-20231117080012-40c25c7c076c h1:cBlwIfQ8WJkz7XyBOUBw5dmFVhom65jPHlCaR9UzYlw=
+github.com/bytebase/mysql-parser v0.0.0-20231117080012-40c25c7c076c/go.mod h1:n22yoTeLcphIYQlV6nbufQbHMxNceOjeGDOrpaRIhiY=
 github.com/bytebase/pg_query_go/v4 v4.0.0-20230802100607-2f34e68d96f5 h1:3Ihj6fsBY7rAKzOO2nxJocq9uOxARAwoalhC84ntjec=
 github.com/bytebase/pg_query_go/v4 v4.0.0-20230802100607-2f34e68d96f5/go.mod h1:aEkDNOXNM5j0YGzaAapwJ7LB3dLNj+bvbWcLv1hOVqA=
 github.com/bytebase/plsql-parser v0.0.0-20231110065312-688a51648c4a h1:2t4nAguPYBm7HWz8TA+HM6FWCdldfk7nmjTiksP2ZuE=
