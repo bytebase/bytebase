@@ -19,7 +19,6 @@ import { t } from "@/plugins/i18n";
 import {
   hasFeature,
   useVCSV1Store,
-  useDataSourceStore,
   useSQLReviewStore,
   useSheetV1Store,
   useAuthStore,
@@ -1185,7 +1184,6 @@ router.beforeEach((to, from, next) => {
   const issueSlug = routerSlug.issueSlug;
   const instanceSlug = routerSlug.instanceSlug;
   const databaseSlug = routerSlug.databaseSlug;
-  const dataSourceSlug = routerSlug.dataSourceSlug;
   const vcsSlug = routerSlug.vcsSlug;
   const connectionSlug = routerSlug.connectionSlug;
   const sheetSlug = routerSlug.sheetSlug;
@@ -1339,25 +1337,7 @@ router.beforeEach((to, from, next) => {
             view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
           })
           .then(() => {
-            if (!dataSourceSlug) {
-              next();
-            } else if (dataSourceSlug) {
-              useDataSourceStore()
-                .fetchDataSourceById({
-                  dataSourceId: idFromSlug(dataSourceSlug),
-                  databaseId: Number(database.uid),
-                })
-                .then(() => {
-                  next();
-                })
-                .catch((error) => {
-                  next({
-                    name: "error.404",
-                    replace: false,
-                  });
-                  throw error;
-                });
-            }
+            next();
           });
       })
       .catch((error) => {
