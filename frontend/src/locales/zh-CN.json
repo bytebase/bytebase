@@ -3143,25 +3143,25 @@
     "select": "选择角色",
     "select-roles": "选择角色",
     "title": "称谓",
-    "owner": {
-      "description": "系统定义的项目所有者角色"
-    },
-    "developer": {
-      "description": "系统定义的项目开发者角色"
-    },
-    "exporter": {
-      "description": "系统定义的项目数据导出者角色"
-    },
-    "querier": {
-      "description": "系统定义的项目数据查询者角色"
-    },
     "select-role": "选择角色",
     "expired-tip": "该角色可能已经过期。",
+    "owner": {
+      "description": "项目内的所有权限。"
+    },
+    "developer": {
+      "description": "所有查看者权限，以及请求数据库更改的权限。"
+    },
     "releaser": {
-      "description": "系统定义的项目发布者角色"
+      "description": "所有查看者权限，以及查看数据库变更请求以用于发布。"
+    },
+    "querier": {
+      "description": "所有查看者权限，以及查询数据库数据的权限。"
+    },
+    "exporter": {
+      "description": "所有查看者权限，以及导出数据库数据的权限。"
     },
     "viewer": {
-      "description": "系统定义的项目数据库查看者角色"
+      "description": "只读权限，用于查看基本项目信息、访问数据库和发起权限请求。"
     }
   },
   "database-group": {

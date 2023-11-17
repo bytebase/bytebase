@@ -3147,25 +3147,25 @@
     "select": "Seleccionar rol",
     "select-roles": "Seleccionar roles",
     "title": "Título",
-    "owner": {
-      "description": "Rol de propietario del proyecto definido por el sistema"
-    },
-    "developer": {
-      "description": "Rol de desarrollador del proyecto definido por el sistema"
-    },
-    "exporter": {
-      "description": "Rol de exportador del proyecto definido por el sistema"
-    },
-    "querier": {
-      "description": "Rol de querier del proyecto definido por el sistema"
-    },
     "select-role": "Seleccionar rol",
     "expired-tip": "El papel puede haber expirado.",
+    "owner": {
+      "description": "Todas las permisos dentro del proyecto."
+    },
+    "developer": {
+      "description": "Todas las permisos de visualización, más permisos para solicitar cambios en la base de datos."
+    },
     "releaser": {
-      "description": "Rol de liberador de proyecto definido por el sistema"
+      "description": "Todas las permisos de visualización, más permisos para revisar solicitudes de cambios en la base de datos con fines de lanzamiento."
+    },
+    "querier": {
+      "description": "Todas las permisos de visualización, además de permisos para consultar datos en la base de datos."
+    },
+    "exporter": {
+      "description": "Todas las permisos de visualización, además de permisos para exportar datos de la base de datos."
     },
     "viewer": {
-      "description": "Rol de visor de base de datos de proyecto definido por el sistema"
+      "description": "Permisos de solo lectura para ver información básica del proyecto, acceder a las bases de datos e iniciar solicitudes de privilegios."
     }
   },
   "database-group": {
