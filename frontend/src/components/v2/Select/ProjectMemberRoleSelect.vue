@@ -6,6 +6,7 @@
     :max-tag-count="'responsive'"
     :filterable="true"
     :filter="filterByName"
+    :render-option="renderOption"
     :placeholder="$t('role.select')"
     :render-label="renderLabel"
     class="bb-project-member-role-select"
@@ -19,14 +20,14 @@
 </template>
 
 <script setup lang="ts">
-import { type SelectOption, NSelect } from "naive-ui";
-import { computed, h, ref } from "vue";
+import { type SelectOption, NSelect, NTooltip } from "naive-ui";
+import { computed, h, ref, VNode } from "vue";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import FeatureModal from "@/components/FeatureGuard/FeatureModal.vue";
 import { featureToRef, useRoleStore } from "@/store";
 import { PresetRoleType, ProjectRoleType } from "@/types";
 import { Role } from "@/types/proto/v1/role_service";
-import { displayRoleTitle } from "@/utils";
+import { displayRoleDescription, displayRoleTitle } from "@/utils";
 
 type ProjectRoleSelectOption = SelectOption & {
   value: string;
@@ -44,6 +45,7 @@ const emit = defineEmits<{
 const FREE_ROLE_LIST = [
   PresetRoleType.OWNER,
   PresetRoleType.DEVELOPER,
+  PresetRoleType.RELEASER,
   PresetRoleType.QUERIER,
   PresetRoleType.EXPORTER,
   PresetRoleType.VIEWER,
@@ -104,5 +106,19 @@ const filterByName = (pattern: string, option: SelectOption) => {
   const { role } = option as ProjectRoleSelectOption;
   pattern = pattern.toLowerCase();
   return role.name.toLowerCase().includes(pattern);
+};
+
+const renderOption = ({
+  node,
+  option,
+}: {
+  node: VNode;
+  option: SelectOption;
+}) => {
+  const { role } = option as ProjectRoleSelectOption;
+  return h(NTooltip, null, {
+    trigger: () => node,
+    default: () => displayRoleDescription(role.name),
+  });
 };
 </script>
