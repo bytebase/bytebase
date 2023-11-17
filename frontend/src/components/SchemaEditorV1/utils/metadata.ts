@@ -363,8 +363,17 @@ export const rebuildEditableSchemas = (
   schemas: SchemaMetadata[],
   schemaConfigList: SchemaConfig[]
 ): Schema[] => {
+  const tag = [
+    "rebuildEditableSchemas",
+    `[${originalSchemas.map((s) => s.tableList.length)}]`,
+    `[${schemas.map((s) => s.tables.length)}]`,
+    `[${schemaConfigList.map((sc) => sc.tableConfigs.length)}]`,
+  ].join("--");
+  console.log("go!", tag);
+  console.time(tag);
   const editableSchemas = cloneDeep(originalSchemas);
 
+  console.time("loop-1");
   for (const editableSchema of editableSchemas) {
     const schema = schemas.find(
       (schema) => schema.name === editableSchema.name
@@ -480,7 +489,9 @@ export const rebuildEditableSchemas = (
       }
     }
   }
+  console.timeEnd("loop-1");
 
+  console.time("loop-2");
   for (const schema of schemas) {
     const editableSchema = editableSchemas.find(
       (item) => item.name === schema.name
@@ -496,7 +507,9 @@ export const rebuildEditableSchemas = (
       editableSchemas.push(newSchema);
     }
   }
+  console.timeEnd("loop-2");
 
+  console.time("loop-3");
   // Build foreign keys for schema and referenced schema.
   for (const schema of schemas) {
     const editableSchema = editableSchemas.find(
@@ -556,7 +569,9 @@ export const rebuildEditableSchemas = (
       editableTable.foreignKeyList = foreignKeyList;
     }
   }
+  console.timeEnd("loop-3");
 
+  console.timeEnd(tag);
   return editableSchemas;
 };
 
