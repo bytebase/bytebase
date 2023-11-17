@@ -197,7 +197,7 @@ export const extractRoleResourceName = (resourceId: string): string => {
 export const displayRoleTitle = (role: string): string => {
   // Use i18n-defined readable titles for system roles
   if (role === PresetRoleType.OWNER) return t("common.role.owner");
-  if (role === PresetRoleType.DEVELOPER) return t("common.role.developer");
+  if (role === PresetRoleType.DEVELOPER) return t("common.role.member");
   if (role === PresetRoleType.RELEASER) return t("common.role.releaser");
   if (role === PresetRoleType.EXPORTER) return t("common.role.exporter");
   if (role === PresetRoleType.QUERIER) return t("common.role.querier");
