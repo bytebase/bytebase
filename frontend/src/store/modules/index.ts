@@ -4,7 +4,6 @@ export * from "./help";
 export * from "./issue";
 export * from "./notification";
 export * from "./slowQueryPolicy";
-export * from "./principal";
 export * from "./router";
 export * from "./sqlEditor";
 export * from "./sqlEditorTree";
