@@ -1,4 +1,4 @@
-import { groupBy, maxBy } from "lodash-es";
+import { maxBy } from "lodash-es";
 import { ComposedIssue } from "@/types";
 import {
   PlanCheckRun,
@@ -92,18 +92,29 @@ export const planCheckRunSummaryForCheckRunList = (
     (check) => !HiddenPlanCheckTypes.has(check.type)
   );
 
-  const listGroupByType = groupBy(
-    planCheckRunList,
-    (checkRun) => checkRun.type
+  const listGroupByTypeTargetSheet = planCheckRunList.reduce(
+    (acc, checkRun) => {
+      const key = `${checkRun.type}-${checkRun.target}-${checkRun.sheet}`;
+      if (!acc[key]) {
+        acc[key] = [];
+      }
+      acc[key].push(checkRun);
+      return acc;
+    },
+    {} as { [key: string]: PlanCheckRun[] }
   );
 
-  const latestCheckRunOfEachType = Object.keys(listGroupByType).map((type) => {
-    const listOfType = listGroupByType[type];
-    const latest = maxBy(listOfType, (checkRun) => Number(checkRun.uid))!;
+  const latestCheckRunOfEachTypeTargetSheet = Object.keys(
+    listGroupByTypeTargetSheet
+  ).map((k) => {
+    const listOfTypeTargetSheet = listGroupByTypeTargetSheet[k];
+    const latest = maxBy(listOfTypeTargetSheet, (checkRun) =>
+      Number(checkRun.uid)
+    )!;
     return latest;
   });
 
-  for (const checkRun of latestCheckRunOfEachType) {
+  for (const checkRun of latestCheckRunOfEachTypeTargetSheet) {
     switch (checkRun.status) {
       case PlanCheckRun_Status.CANCELED:
         // nothing todo
@@ -132,7 +143,19 @@ export const planCheckRunSummaryForCheckRunList = (
 };
 
 export const planCheckRunSummaryForIssue = (issue: ComposedIssue) => {
-  return planCheckRunSummaryForCheckRunList(issue.planCheckRunList);
+  const sheets = issue.planEntity?.steps.reduce((acc, step) => {
+    step.specs.forEach((spec) => {
+      if (spec.changeDatabaseConfig?.sheet) {
+        acc.add(spec.changeDatabaseConfig?.sheet);
+      }
+    });
+    return acc;
+  }, new Set<string>());
+  const planCheckRunList = issue.planCheckRunList.filter((check) => {
+    return sheets?.has(check.sheet);
+  });
+
+  return planCheckRunSummaryForCheckRunList(planCheckRunList);
 };
 
 export const planCheckRunSummaryForTask = (
