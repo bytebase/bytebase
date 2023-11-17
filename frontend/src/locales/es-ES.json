@@ -76,9 +76,11 @@
     "visit": "Visitar",
     "role": {
       "self": "Rol",
+      "admin": "Administrador",
       "dba": "DBA",
-      "owner": "Administrador",
       "member": "Miembro",
+      "owner": "Propietario",
+      "developer": "Desarrollador",
       "exporter": "Exportador",
       "querier": "Querier",
       "releaser": "Liberador",

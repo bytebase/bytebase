@@ -77,7 +77,7 @@ const title = computed(() => {
     return t("common.role.owner");
   }
   if (role.name === PresetRoleType.DEVELOPER) {
-    return t("common.role.member");
+    return t("common.role.developer");
   }
   if (role.name === PresetRoleType.EXPORTER) {
     return t("common.role.exporter");
