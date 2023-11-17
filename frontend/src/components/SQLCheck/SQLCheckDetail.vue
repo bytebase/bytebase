@@ -34,6 +34,14 @@
       <div class="bb-grid-cell">
         <div>
           <span>{{ row.content }}</span>
+          <template v-if="row.advice.detail">
+            <span
+              class="ml-1 normal-link"
+              @click="state.activeResultDefinition = row.advice.detail"
+              >{{ $t("sql-review.view-definition") }}</span
+            >
+            <span class="border-r border-control-border ml-1"></span>
+          </template>
           <template v-if="getActiveRule(row.advice.title as RuleType)">
             <span
               class="ml-1 normal-link"
@@ -63,6 +71,12 @@
     :payload="state.activeRule.payload"
     :disabled="true"
     @cancel="state.activeRule = undefined"
+  />
+
+  <PlanCheckResultDefinitionModal
+    v-if="state.activeResultDefinition"
+    :definition="state.activeResultDefinition"
+    @cancel="state.activeResultDefinition = undefined"
   />
 </template>
 
