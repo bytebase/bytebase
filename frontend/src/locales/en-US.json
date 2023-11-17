@@ -3162,10 +3162,10 @@
       "description": "All viewer permissions, plus permission for reviewing database change requests for release purposes."
     },
     "querier": {
-      "description": "All viewer permissions, plus permissions for querying database data."
+      "description": "Permissions for querying database data."
     },
     "exporter": {
-      "description": "All viewer permissions, plus permissions for exporting database data."
+      "description": "Permissions for exporting database data."
     },
     "viewer": {
       "description": "Read-only permissions for viewing basic project information, accessing databases, and initiating privilege requests."
