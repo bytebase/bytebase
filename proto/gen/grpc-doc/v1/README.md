@@ -6736,6 +6736,10 @@ The schema group&#39;s `name` field is used to identify the schema group to upda
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
+| TYPE_NOTIFY_ISSUE_APPROVED | 23 | Notifications via webhooks.
+
+TYPE_NOTIFY_ISSUE_APPROVED represents the issue approved notification. |
+| TYPE_NOTIFY_PIPELINE_ROLLOUT | 24 | TYPE_NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification. |
 | TYPE_ISSUE_CREATE | 1 | Issue related activity types.
 
 TYPE_ISSUE_CREATE represents creating an issue. |
