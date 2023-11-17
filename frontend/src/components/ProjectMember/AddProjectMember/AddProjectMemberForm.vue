@@ -259,20 +259,22 @@ const generateConditionTitle = () => {
     return "";
   }
 
-  let conditionName = displayRoleTitle(state.role);
+  let conditionSuffix = "";
   if (state.role === "roles/QUERIER" || state.role === "roles/EXPORTER") {
     if (!state.databaseResources || state.databaseResources.length === 0) {
-      conditionName = `${conditionName} All`;
+      conditionSuffix = `${conditionSuffix} All`;
     } else if (state.databaseResources.length <= 3) {
       const databaseResourceNames = state.databaseResources.map((ds) =>
         getDatabaseResourceName(ds)
       );
-      conditionName = `${conditionName} ${databaseResourceNames.join(", ")}`;
+      conditionSuffix = `${conditionSuffix} ${databaseResourceNames.join(
+        ", "
+      )}`;
     } else {
       const firstDatabaseResourceName = getDatabaseResourceName(
         head(state.databaseResources)!
       );
-      conditionName = `${conditionName} ${firstDatabaseResourceName} and ${
+      conditionSuffix = `${conditionSuffix} ${firstDatabaseResourceName} and ${
         state.databaseResources.length - 1
       } more`;
     }
@@ -280,11 +282,15 @@ const generateConditionTitle = () => {
   if (state.expireDays > 0) {
     const now = dayjs();
     const expiresAt = now.add(state.expireDays, "days");
-    conditionName = `${conditionName} ${now.format(
-      "YYYY-MM-DD"
-    )} to ${expiresAt.format("YYYY-MM-DD")}`;
+    conditionSuffix = `${conditionSuffix} ${now.format("L")}-${expiresAt.format(
+      "L"
+    )}`;
   }
-  return conditionName;
+
+  if (conditionSuffix !== "") {
+    return displayRoleTitle(state.role) + conditionSuffix;
+  }
+  return "";
 };
 
 const getDatabaseResourceName = (databaseResource: DatabaseResource) => {
