@@ -8,7 +8,6 @@ export * from "./instance";
 export * from "./notification";
 export * from "./slowQueryPolicy";
 export * from "./principal";
-export * from "./project";
 export * from "./router";
 export * from "./sqlEditor";
 export * from "./sqlEditorTree";
