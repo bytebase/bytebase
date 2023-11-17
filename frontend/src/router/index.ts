@@ -270,7 +270,7 @@ const routes: Array<RouteRecordRaw> = [
               content: () => import("../views/branch/BranchDetail.vue"),
               leftSidebar: ProjectSidebar,
             },
-            props: { content: true },
+            props: { content: true, leftSidebar: true },
           },
           {
             path: "sync-schema",
@@ -682,7 +682,7 @@ const routes: Array<RouteRecordRaw> = [
               content: () => import("../layouts/ProjectLayout.vue"),
               leftSidebar: ProjectSidebar,
             },
-            props: { content: true },
+            props: { content: true, leftSidebar: true },
             children: [
               {
                 path: "",
@@ -898,9 +898,9 @@ const routes: Array<RouteRecordRaw> = [
             },
             components: {
               content: () => import("../views/IssueDetailV1.vue"),
-              leftSidebar: DashboardSidebar,
+              leftSidebar: ProjectSidebar,
             },
-            props: { content: true },
+            props: { content: true, leftSidebar: true },
           },
           // Resource name related routes.
           {
