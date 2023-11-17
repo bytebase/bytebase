@@ -1,6 +1,5 @@
 export * from "./auth";
 export * from "./command";
-export * from "./database";
 export * from "./dataSource";
 export * from "./environment";
 export * from "./help";
