@@ -47,7 +47,6 @@ export type RouterSlug = {
   instanceSlug?: string;
   databaseSlug?: string;
   tableName?: string;
-  dataSourceSlug?: string;
   vcsSlug?: string;
   connectionSlug?: string;
   sheetSlug?: string;

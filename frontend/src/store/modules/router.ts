@@ -116,20 +116,6 @@ export const useRouterStore = defineStore("router", {
       }
 
       {
-        // /db/:databaseSlug/data-source/:dataSourceSlug
-        // Total 3 elements, 2nd element is the database slug, 3rd element is the data source slug
-        const dataSourceComponents = currentRoute.path.match(
-          "/db/([0-9a-zA-Z_-]+)/data-source/([0-9a-zA-Z_-]+)"
-        ) || ["/", undefined, undefined];
-        if (dataSourceComponents[1] && dataSourceComponents[2]) {
-          return {
-            databaseSlug: dataSourceComponents[1],
-            dataSourceSlug: dataSourceComponents[2],
-          };
-        }
-      }
-
-      {
         // /db/:databaseSlug
         // Total 2 elements, 2nd element is the database slug
         const databaseComponents = currentRoute.path.match(
