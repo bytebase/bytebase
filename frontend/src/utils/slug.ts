@@ -10,7 +10,6 @@ import { Project as ProjectV1 } from "@/types/proto/v1/project_service";
 import { Sheet as SheetV1 } from "@/types/proto/v1/sheet_service";
 import {
   Database,
-  DataSource,
   Environment,
   Instance,
   IssueId,
