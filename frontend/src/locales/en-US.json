@@ -78,7 +78,6 @@
       "self": "Role",
       "dba": "DBA",
       "owner": "Owner",
-      "developer": "Developer",
       "member": "Member",
       "exporter": "Exporter",
       "querier": "Querier",
@@ -1872,7 +1871,7 @@
       "member-placeholder": "Select user",
       "manage-member": "Manage members",
       "owner": "@.upper:common.role.owner",
-      "developer": "@.upper:common.role.developer",
+      "developer": "@.upper:common.role.member",
       "archive": {
         "title": "Archive project",
         "description": "Archived project will not be shown on the normal interface. You can click \"Archive\" on the bottom left to find and restore it.",
