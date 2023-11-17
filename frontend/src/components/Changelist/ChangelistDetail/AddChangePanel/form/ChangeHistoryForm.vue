@@ -125,7 +125,7 @@ const filteredChangeHistoryList = computed(() => {
     const semanticType = semanticChangeHistoryType(changeHistory.type);
     return (
       types.includes(semanticType) &&
-      changeHistory.status !== ChangeHistory_Status.FAILED
+      changeHistory.status === ChangeHistory_Status.DONE
     );
   });
 
