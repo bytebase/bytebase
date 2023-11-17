@@ -1,13 +1,11 @@
 <template>
-  <NPopover trigger="click" placement="bottom-end">
+  <NPopover
+    trigger="click"
+    placement="bottom-end"
+    @update:show="(show: boolean) => show && handleShowSchemaString()"
+  >
     <template #trigger>
-      <NButton
-        quaternary
-        size="tiny"
-        class="!px-1"
-        v-bind="$attrs"
-        @click="handleShowSchemaString"
-      >
+      <NButton quaternary size="tiny" class="!px-1" v-bind="$attrs">
         <Code class="w-4 h-4" />
       </NButton>
     </template>
