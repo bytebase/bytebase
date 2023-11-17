@@ -3159,10 +3159,10 @@
       "description": "Todas las permisos de visualización, más permisos para revisar solicitudes de cambios en la base de datos con fines de lanzamiento."
     },
     "querier": {
-      "description": "Todas las permisos de visualización, además de permisos para consultar datos en la base de datos."
+      "description": "Permisos para realizar consultas a datos de la base de datos"
     },
     "exporter": {
-      "description": "Todas las permisos de visualización, además de permisos para exportar datos de la base de datos."
+      "description": "Permisos para exportar datos de la base de datos."
     },
     "viewer": {
       "description": "Permisos de solo lectura para ver información básica del proyecto, acceder a las bases de datos e iniciar solicitudes de privilegios."

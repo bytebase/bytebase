@@ -3155,10 +3155,10 @@
       "description": "所有查看者权限，以及查看数据库变更请求以用于发布。"
     },
     "querier": {
-      "description": "所有查看者权限，以及查询数据库数据的权限。"
+      "description": "查询数据库数据的权限。"
     },
     "exporter": {
-      "description": "所有查看者权限，以及导出数据库数据的权限。"
+      "description": "导出数据库数据的权限。"
     },
     "viewer": {
       "description": "只读权限，用于查看基本项目信息、访问数据库和发起权限请求。"
