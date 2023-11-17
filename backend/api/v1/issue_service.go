@@ -835,6 +835,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 			}
 			payload, err := json.Marshal(api.ActivityNotifyPipelineRolloutPayload{
 				RolloutPolicy: policy,
+				StageName:     stages[0].Name,
 			})
 			if err != nil {
 				return errors.Wrapf(err, "failed to marshal activity payload")

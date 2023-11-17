@@ -767,7 +767,6 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 		mentions = append(mentions, phone)
 
 	case api.ActivityNotifyPipelineRollout:
-		title = "Issue is waiting rollout - " + meta.Issue.Title
 		payload := &api.ActivityNotifyPipelineRolloutPayload{}
 		if err := json.Unmarshal([]byte(activity.Payload), payload); err != nil {
 			slog.Warn("failed to unmarshal payload",
@@ -775,6 +774,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 				log.BBError(err))
 			return nil, err
 		}
+		title = fmt.Sprintf("Issue is waiting rollout (%s) - %s", payload.StageName, meta.Issue.Title)
 		var usersGetters []func(context.Context) ([]*store.UserMessage, error)
 		if payload.RolloutPolicy.GetAutomatic() {
 			usersGetters = append(usersGetters, getUsersFromUsers(meta.Issue.Creator))

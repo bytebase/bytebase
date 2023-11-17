@@ -608,6 +608,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 					}
 					payload, err := json.Marshal(api.ActivityNotifyPipelineRolloutPayload{
 						RolloutPolicy: policy,
+						StageName:     nextStage.Name,
 					})
 					if err != nil {
 						return errors.Wrapf(err, "failed to marshal activity payload")

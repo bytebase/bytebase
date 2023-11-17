@@ -282,4 +282,6 @@ type ActivitySQLExportPayload struct {
 
 type ActivityNotifyPipelineRolloutPayload struct {
 	RolloutPolicy *storepb.RolloutPolicy
+	// Used to display info without paying the join cost
+	StageName string
 }

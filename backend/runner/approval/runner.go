@@ -267,6 +267,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		}
 		payload, err := json.Marshal(api.ActivityNotifyPipelineRolloutPayload{
 			RolloutPolicy: policy,
+			StageName:     stages[0].Name,
 		})
 		if err != nil {
 			return errors.Wrapf(err, "failed to marshal activity payload")
