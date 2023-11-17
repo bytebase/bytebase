@@ -665,6 +665,31 @@ func (*SchemaDesignService) DiffMetadata(_ context.Context, request *v1pb.DiffMe
 	}, nil
 }
 
+func (*SchemaDesignService) StringifyMetadata(_ context.Context, request *v1pb.StringifyMetadataRequest) (*v1pb.StringifyMetadataResponse, error) {
+	switch request.Engine {
+	case v1pb.Engine_MYSQL, v1pb.Engine_POSTGRES, v1pb.Engine_TIDB:
+	default:
+		return nil, status.Errorf(codes.InvalidArgument, "unsupported engine: %v", request.Engine)
+	}
+
+	if request.Metadata == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "metadata is required")
+	}
+	if err := checkDatabaseMetadata(request.Engine, request.Metadata); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid metadata: %v", err))
+	}
+
+	sanitizeCommentForSchemaMetadata(request.Metadata)
+	schemaString, err := transformDatabaseMetadataToSchemaString(request.Engine, request.Metadata)
+	if err != nil {
+		return nil, err
+	}
+
+	return &v1pb.StringifyMetadataResponse{
+		SchemaString: schemaString,
+	}, nil
+}
+
 func (s *SchemaDesignService) listSheets(ctx context.Context, find *store.FindSheetMessage) ([]*store.SheetMessage, error) {
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
 	if !ok {

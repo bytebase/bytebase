@@ -282,6 +282,18 @@ export interface DiffMetadataResponse {
   diff: string;
 }
 
+export interface StringifyMetadataRequest {
+  metadata:
+    | DatabaseMetadata
+    | undefined;
+  /** The database engine of the schema string. */
+  engine: Engine;
+}
+
+export interface StringifyMetadataResponse {
+  schemaString: string;
+}
+
 function createBaseSchemaDesign(): SchemaDesign {
   return {
     name: "",
@@ -1487,6 +1499,139 @@ export const DiffMetadataResponse = {
   },
 };
 
+function createBaseStringifyMetadataRequest(): StringifyMetadataRequest {
+  return { metadata: undefined, engine: 0 };
+}
+
+export const StringifyMetadataRequest = {
+  encode(message: StringifyMetadataRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.metadata !== undefined) {
+      DatabaseMetadata.encode(message.metadata, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.engine !== 0) {
+      writer.uint32(16).int32(message.engine);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): StringifyMetadataRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseStringifyMetadataRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.metadata = DatabaseMetadata.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.engine = reader.int32() as any;
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): StringifyMetadataRequest {
+    return {
+      metadata: isSet(object.metadata) ? DatabaseMetadata.fromJSON(object.metadata) : undefined,
+      engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
+    };
+  },
+
+  toJSON(message: StringifyMetadataRequest): unknown {
+    const obj: any = {};
+    if (message.metadata !== undefined) {
+      obj.metadata = DatabaseMetadata.toJSON(message.metadata);
+    }
+    if (message.engine !== 0) {
+      obj.engine = engineToJSON(message.engine);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<StringifyMetadataRequest>): StringifyMetadataRequest {
+    return StringifyMetadataRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<StringifyMetadataRequest>): StringifyMetadataRequest {
+    const message = createBaseStringifyMetadataRequest();
+    message.metadata = (object.metadata !== undefined && object.metadata !== null)
+      ? DatabaseMetadata.fromPartial(object.metadata)
+      : undefined;
+    message.engine = object.engine ?? 0;
+    return message;
+  },
+};
+
+function createBaseStringifyMetadataResponse(): StringifyMetadataResponse {
+  return { schemaString: "" };
+}
+
+export const StringifyMetadataResponse = {
+  encode(message: StringifyMetadataResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.schemaString !== "") {
+      writer.uint32(10).string(message.schemaString);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): StringifyMetadataResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseStringifyMetadataResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.schemaString = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): StringifyMetadataResponse {
+    return { schemaString: isSet(object.schemaString) ? globalThis.String(object.schemaString) : "" };
+  },
+
+  toJSON(message: StringifyMetadataResponse): unknown {
+    const obj: any = {};
+    if (message.schemaString !== "") {
+      obj.schemaString = message.schemaString;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<StringifyMetadataResponse>): StringifyMetadataResponse {
+    return StringifyMetadataResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<StringifyMetadataResponse>): StringifyMetadataResponse {
+    const message = createBaseStringifyMetadataResponse();
+    message.schemaString = object.schemaString ?? "";
+    return message;
+  },
+};
+
 export type SchemaDesignServiceDefinition = typeof SchemaDesignServiceDefinition;
 export const SchemaDesignServiceDefinition = {
   name: "SchemaDesignService",
@@ -2022,6 +2167,61 @@ export const SchemaDesignServiceDefinition = {
               105,
               102,
               102,
+              77,
+              101,
+              116,
+              97,
+              100,
+              97,
+              116,
+              97,
+            ]),
+          ],
+        },
+      },
+    },
+    stringifyMetadata: {
+      name: "StringifyMetadata",
+      requestType: StringifyMetadataRequest,
+      requestStream: false,
+      responseType: StringifyMetadataResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              39,
+              58,
+              1,
+              42,
+              34,
+              34,
+              47,
+              118,
+              49,
+              47,
+              115,
+              99,
+              104,
+              101,
+              109,
+              97,
+              68,
+              101,
+              115,
+              105,
+              103,
+              110,
+              58,
+              115,
+              116,
+              114,
+              105,
+              110,
+              103,
+              105,
+              102,
+              121,
               77,
               101,
               116,

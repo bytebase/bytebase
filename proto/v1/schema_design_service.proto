@@ -63,6 +63,13 @@ service SchemaDesignService {
       body: "*"
     };
   }
+
+  rpc StringifyMetadata(StringifyMetadataRequest) returns (StringifyMetadataResponse) {
+    option (google.api.http) = {
+      post: "/v1/schemaDesign:stringifyMetadata"
+      body: "*"
+    };
+  }
 }
 
 enum SchemaDesignView {
@@ -249,4 +256,14 @@ message DiffMetadataRequest {
 message DiffMetadataResponse {
   // The diff of the metadata.
   string diff = 1;
+}
+
+message StringifyMetadataRequest {
+  DatabaseMetadata metadata = 1 [(google.api.field_behavior) = REQUIRED];
+  // The database engine of the schema string.
+  Engine engine = 2;
+}
+
+message StringifyMetadataResponse {
+  string schema_string = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

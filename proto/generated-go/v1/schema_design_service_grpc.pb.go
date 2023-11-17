@@ -28,6 +28,7 @@ const (
 	SchemaDesignService_ParseSchemaString_FullMethodName  = "/bytebase.v1.SchemaDesignService/ParseSchemaString"
 	SchemaDesignService_DeleteSchemaDesign_FullMethodName = "/bytebase.v1.SchemaDesignService/DeleteSchemaDesign"
 	SchemaDesignService_DiffMetadata_FullMethodName       = "/bytebase.v1.SchemaDesignService/DiffMetadata"
+	SchemaDesignService_StringifyMetadata_FullMethodName  = "/bytebase.v1.SchemaDesignService/StringifyMetadata"
 )
 
 // SchemaDesignServiceClient is the client API for SchemaDesignService service.
@@ -42,6 +43,7 @@ type SchemaDesignServiceClient interface {
 	ParseSchemaString(ctx context.Context, in *ParseSchemaStringRequest, opts ...grpc.CallOption) (*ParseSchemaStringResponse, error)
 	DeleteSchemaDesign(ctx context.Context, in *DeleteSchemaDesignRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	DiffMetadata(ctx context.Context, in *DiffMetadataRequest, opts ...grpc.CallOption) (*DiffMetadataResponse, error)
+	StringifyMetadata(ctx context.Context, in *StringifyMetadataRequest, opts ...grpc.CallOption) (*StringifyMetadataResponse, error)
 }
 
 type schemaDesignServiceClient struct {
@@ -124,6 +126,15 @@ func (c *schemaDesignServiceClient) DiffMetadata(ctx context.Context, in *DiffMe
 	return out, nil
 }
 
+func (c *schemaDesignServiceClient) StringifyMetadata(ctx context.Context, in *StringifyMetadataRequest, opts ...grpc.CallOption) (*StringifyMetadataResponse, error) {
+	out := new(StringifyMetadataResponse)
+	err := c.cc.Invoke(ctx, SchemaDesignService_StringifyMetadata_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SchemaDesignServiceServer is the server API for SchemaDesignService service.
 // All implementations must embed UnimplementedSchemaDesignServiceServer
 // for forward compatibility
@@ -136,6 +147,7 @@ type SchemaDesignServiceServer interface {
 	ParseSchemaString(context.Context, *ParseSchemaStringRequest) (*ParseSchemaStringResponse, error)
 	DeleteSchemaDesign(context.Context, *DeleteSchemaDesignRequest) (*emptypb.Empty, error)
 	DiffMetadata(context.Context, *DiffMetadataRequest) (*DiffMetadataResponse, error)
+	StringifyMetadata(context.Context, *StringifyMetadataRequest) (*StringifyMetadataResponse, error)
 	mustEmbedUnimplementedSchemaDesignServiceServer()
 }
 
@@ -166,6 +178,9 @@ func (UnimplementedSchemaDesignServiceServer) DeleteSchemaDesign(context.Context
 }
 func (UnimplementedSchemaDesignServiceServer) DiffMetadata(context.Context, *DiffMetadataRequest) (*DiffMetadataResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DiffMetadata not implemented")
+}
+func (UnimplementedSchemaDesignServiceServer) StringifyMetadata(context.Context, *StringifyMetadataRequest) (*StringifyMetadataResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StringifyMetadata not implemented")
 }
 func (UnimplementedSchemaDesignServiceServer) mustEmbedUnimplementedSchemaDesignServiceServer() {}
 
@@ -324,6 +339,24 @@ func _SchemaDesignService_DiffMetadata_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SchemaDesignService_StringifyMetadata_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StringifyMetadataRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SchemaDesignServiceServer).StringifyMetadata(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SchemaDesignService_StringifyMetadata_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SchemaDesignServiceServer).StringifyMetadata(ctx, req.(*StringifyMetadataRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SchemaDesignService_ServiceDesc is the grpc.ServiceDesc for SchemaDesignService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -362,6 +395,10 @@ var SchemaDesignService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DiffMetadata",
 			Handler:    _SchemaDesignService_DiffMetadata_Handler,
+		},
+		{
+			MethodName: "StringifyMetadata",
+			Handler:    _SchemaDesignService_StringifyMetadata_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

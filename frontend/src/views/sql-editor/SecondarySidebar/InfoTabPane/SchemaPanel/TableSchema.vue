@@ -10,23 +10,30 @@
         <span class="text-sm">{{ table.name }}</span>
       </div>
 
-      <div v-if="pageMode === 'BUNDLED'" class="flex justify-end gap-x-0.5">
-        <ExternalLinkButton
-          :link="tableDetailLink"
-          :tooltip="$t('common.detail')"
-        />
-        <AlterSchemaButton
+      <div class="flex justify-end gap-x-0.5">
+        <StringifyMetadataButton
           :database="db"
           :schema="schema"
           :table="table"
-          @click="
-            editorEvents.emit('alter-schema', {
-              databaseUID: db.uid,
-              schema: schema.name,
-              table: table.name,
-            })
-          "
         />
+        <template v-if="pageMode === 'BUNDLED'">
+          <ExternalLinkButton
+            :link="tableDetailLink"
+            :tooltip="$t('common.detail')"
+          />
+          <AlterSchemaButton
+            :database="db"
+            :schema="schema"
+            :table="table"
+            @click="
+              editorEvents.emit('alter-schema', {
+                databaseUID: db.uid,
+                schema: schema.name,
+                table: table.name,
+              })
+            "
+          />
+        </template>
       </div>
     </div>
 
@@ -55,6 +62,7 @@ import { useSQLEditorContext } from "@/views/sql-editor/context";
 import AlterSchemaButton from "./AlterSchemaButton.vue";
 import ColumnList from "./ColumnList.vue";
 import ExternalLinkButton from "./ExternalLinkButton.vue";
+import StringifyMetadataButton from "./StringifyMetadataButton.vue";
 
 const props = defineProps<{
   db: ComposedDatabase;

@@ -517,6 +517,8 @@
     - [ParseSchemaStringResponse](#bytebase-v1-ParseSchemaStringResponse)
     - [SchemaDesign](#bytebase-v1-SchemaDesign)
     - [SchemaDesign.Protection](#bytebase-v1-SchemaDesign-Protection)
+    - [StringifyMetadataRequest](#bytebase-v1-StringifyMetadataRequest)
+    - [StringifyMetadataResponse](#bytebase-v1-StringifyMetadataResponse)
     - [UpdateSchemaDesignRequest](#bytebase-v1-UpdateSchemaDesignRequest)
   
     - [SchemaDesign.Type](#bytebase-v1-SchemaDesign-Type)
@@ -8394,6 +8396,37 @@ When paginating, all other parameters provided to `ListSchemaDesigns` must match
 
 
 
+<a name="bytebase-v1-StringifyMetadataRequest"></a>
+
+### StringifyMetadataRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |  |
+| engine | [Engine](#bytebase-v1-Engine) |  | The database engine of the schema string. |
+
+
+
+
+
+
+<a name="bytebase-v1-StringifyMetadataResponse"></a>
+
+### StringifyMetadataResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema_string | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-UpdateSchemaDesignRequest"></a>
 
 ### UpdateSchemaDesignRequest
@@ -8459,6 +8492,7 @@ The schema design&#39;s `name` field is used to identify the schema design to up
 | ParseSchemaString | [ParseSchemaStringRequest](#bytebase-v1-ParseSchemaStringRequest) | [ParseSchemaStringResponse](#bytebase-v1-ParseSchemaStringResponse) |  |
 | DeleteSchemaDesign | [DeleteSchemaDesignRequest](#bytebase-v1-DeleteSchemaDesignRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 | DiffMetadata | [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest) | [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse) |  |
+| StringifyMetadata | [StringifyMetadataRequest](#bytebase-v1-StringifyMetadataRequest) | [StringifyMetadataResponse](#bytebase-v1-StringifyMetadataResponse) |  |
 
  
 
