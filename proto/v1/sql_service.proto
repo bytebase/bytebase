@@ -39,6 +39,7 @@ service SQLService {
       body: "*"
     };
   }
+
   rpc Pretty(PrettyRequest) returns (PrettyResponse) {
     option (google.api.http) = {
       post: "/v1/sql/pretty"
