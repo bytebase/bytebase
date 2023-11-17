@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col w-full h-full overflow-y-auto">
+  <div class="flex flex-col w-full h-full overflow-y-hidden">
     <div class="py-2 w-full flex flex-row justify-between items-center">
       <div>
         <div
@@ -70,26 +70,28 @@
       </div>
     </div>
 
-    <!-- List view -->
-    <template v-if="state.selectedSubtab === 'table-list'">
-      <TableList
-        :schema-id="selectedSchema?.id || ''"
-        :table-list="shownTableList"
-      />
-    </template>
-    <template v-else-if="state.selectedSubtab === 'schema-diagram'">
-      <SchemaDiagram
-        :key="currentTab.parentName"
-        :database="databaseV1"
-        :database-metadata="databaseMetadata"
-        :schema-status="schemaStatus"
-        :table-status="tableStatus"
-        :column-status="columnStatus"
-        :editable="true"
-        @edit-table="tryEditTable"
-        @edit-column="tryEditColumn"
-      />
-    </template>
+    <div class="flex-1 overflow-y-hidden">
+      <!-- List view -->
+      <template v-if="state.selectedSubtab === 'table-list'">
+        <TableList
+          :schema-id="selectedSchema?.id || ''"
+          :table-list="shownTableList"
+        />
+      </template>
+      <template v-else-if="state.selectedSubtab === 'schema-diagram'">
+        <SchemaDiagram
+          :key="currentTab.parentName"
+          :database="databaseV1"
+          :database-metadata="databaseMetadata"
+          :schema-status="schemaStatus"
+          :table-status="tableStatus"
+          :column-status="columnStatus"
+          :editable="true"
+          @edit-table="tryEditTable"
+          @edit-column="tryEditColumn"
+        />
+      </template>
+    </div>
   </div>
 
   <TableNameModal
