@@ -3149,19 +3149,19 @@
       "description": "项目内的所有权限。"
     },
     "developer": {
-      "description": "所有查看者权限，以及请求数据库更改的权限。"
+      "description": "可查看项目基本信息，并可自助发起数据库变更、数据查询、数据导出请求。"
     },
     "releaser": {
-      "description": "所有查看者权限，以及查看数据库变更请求以用于发布。"
+      "description": "可查看项目基本信息，并可在指定流程中发布变更。"
     },
     "querier": {
-      "description": "所有查看者权限，以及查询数据库数据的权限。"
+      "description": "可查询指定范围的数据。"
     },
     "exporter": {
-      "description": "所有查看者权限，以及导出数据库数据的权限。"
+      "description": "可导出指定范围的数据。"
     },
     "viewer": {
-      "description": "只读权限，用于查看基本项目信息、访问数据库和发起权限请求。"
+      "description": "可查看项目基本信息，并可自助发起数据查询、数据导出请求。"
     }
   },
   "database-group": {
