@@ -151,7 +151,7 @@ import {
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import { useMetadataForDiagram } from "../utils/useMetadataForDiagram";
-import TableList from "./TableList.vue";
+import TableList from "./TableList";
 
 const props = withDefaults(
   defineProps<{
