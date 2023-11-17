@@ -55,9 +55,9 @@ func (*DingTalkReceiver) post(context Context) error {
 	if context.Description != "" {
 		text = fmt.Sprintf("# %s\n> %s\n%s\n##### [View in Bytebase](%s)", context.Title, context.Description, strings.Join(metaStrList, "\n"), context.Link)
 	}
-	if context.Approval != nil && len(context.Approval.MentionUsersByPhone) > 0 {
+	if len(context.MentionUsersByPhone) > 0 {
 		var ats []string
-		for _, phone := range context.Approval.MentionUsersByPhone {
+		for _, phone := range context.MentionUsersByPhone {
 			ats = append(ats, fmt.Sprintf("@%s", phone))
 		}
 		text += "\n" + strings.Join(ats, " ")
@@ -70,8 +70,8 @@ func (*DingTalkReceiver) post(context Context) error {
 			Text:  text,
 		},
 	}
-	if context.Approval != nil {
-		post.Mention.Mobiles = append(post.Mention.Mobiles, context.Approval.MentionUsersByPhone...)
+	if len(context.MentionUsersByPhone) > 0 {
+		post.Mention.Mobiles = append(post.Mention.Mobiles, context.MentionUsersByPhone...)
 	}
 
 	body, err := json.Marshal(post)
