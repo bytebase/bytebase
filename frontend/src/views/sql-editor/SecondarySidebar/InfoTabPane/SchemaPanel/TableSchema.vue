@@ -12,6 +12,7 @@
 
       <div class="flex justify-end gap-x-0.5">
         <StringifyMetadataButton
+          v-if="showStringifyMetadataButton"
           :database="db"
           :schema="schema"
           :table="table"
@@ -52,6 +53,7 @@ import { stringify } from "qs";
 import { computed } from "vue";
 import { usePageMode } from "@/store";
 import type { ComposedDatabase } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
 import type {
   DatabaseMetadata,
   SchemaMetadata,
@@ -89,5 +91,10 @@ const tableDetailLink = computed((): string => {
   const url = `/db/${databaseV1Slug(database)}?${stringify(query)}`;
 
   return url;
+});
+
+const showStringifyMetadataButton = computed(() => {
+  const engine = props.db.instanceEntity.engine;
+  return [Engine.MYSQL, Engine.POSTGRES, Engine.TIDB].includes(engine);
 });
 </script>
