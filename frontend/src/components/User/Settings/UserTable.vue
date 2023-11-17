@@ -253,7 +253,7 @@ const dataSource = computed((): BBTableSectionDataSource<User>[] => {
   });
 
   dataSource.push({
-    title: t("common.role.developer"),
+    title: t("common.role.member"),
     list: developerList,
   });
 

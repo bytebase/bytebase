@@ -1867,7 +1867,7 @@
       "member-placeholder": "选择用户",
       "manage-member": "管理成员",
       "owner": "@.upper:common.role.owner",
-      "developer": "@.upper:common.role.developer",
+      "developer": "@.upper:common.role.member",
       "archive": {
         "title": "归档项目",
         "description": "已归档的项目将不会显示在日常界面，您可以通过点击页面左下方的 \"归档\"来恢复。",

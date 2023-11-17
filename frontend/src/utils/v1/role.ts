@@ -8,7 +8,7 @@ export function roleNameV1(role: UserRole): string {
     case UserRole.DBA:
       return t("common.role.dba");
     case UserRole.DEVELOPER:
-      return t("common.role.developer");
+      return t("common.role.member");
   }
   return userRoleToJSON(role);
 }
