@@ -141,13 +141,6 @@ func QueryV2(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, stateme
 	if dbType == storepb.Engine_REDSHIFT && queryContext.ShareDB {
 		statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", queryContext.CurrentDatabase), "")
 	}
-	fieldList, err := base.ExtractSensitiveField(dbType, statement, queryContext.CurrentDatabase, queryContext.SensitiveSchemaInfo)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to extract sensitive fields: %q", statement)
-	}
-	if len(fieldList) != 0 && len(fieldList) != len(columnNames) {
-		return nil, errors.Errorf("failed to extract sensitive fields: %q", statement)
-	}
 
 	var fieldMasker []masker.Masker
 	noneMasker := masker.NewNoneMasker()

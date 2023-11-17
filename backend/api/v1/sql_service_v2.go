@@ -11,6 +11,11 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+
+	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/masker"
+
 	"github.com/pkg/errors"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -86,6 +91,42 @@ func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*
 	var durationNs int64
 	if adviceStatus != advisor.Error {
 		results, durationNs, queryErr = s.doQueryV2(ctx, request, instance, maybeDatabase)
+		if queryErr == nil {
+			classificationSetting, err := s.store.GetDataClassificationSetting(ctx)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to find classification setting")
+			}
+
+			maskingRulePolicy, err := s.store.GetMaskingRulePolicy(ctx)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to find masking rule policy")
+			}
+
+			algorithmSetting, err := s.store.GetMaskingAlgorithmSetting(ctx)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to find masking algorithm setting")
+			}
+
+			semanticTypesSetting, err := s.store.GetSemanticTypesSetting(ctx)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to find semantic types setting")
+			}
+
+			m := newEmptyMaskingLevelEvaluator().
+				withMaskingRulePolicy(maskingRulePolicy).
+				withDataClassificationSetting(classificationSetting).
+				withMaskingAlgorithmSetting(algorithmSetting).
+				withSemanticTypeSetting(semanticTypesSetting)
+
+			maxLen := max(len(spans), len(results))
+			for i := 0; i < maxLen; i++ {
+				maskers, err := s.getMaskersForQuerySpan(ctx, m, instance, spans[i], storepb.MaskingExceptionPolicy_MaskingException_QUERY)
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to get maskers for query span")
+				}
+				mask(maskers, results[i])
+			}
+		}
 	}
 
 	// Update activity.
@@ -112,6 +153,33 @@ func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*
 	}
 
 	return response, nil
+}
+
+func mask(maskers []masker.Masker, result *v1pb.QueryResult) {
+	sensitive := make([]bool, len(result.ColumnNames))
+	for i := range result.ColumnNames {
+		if i < len(maskers) {
+			switch maskers[i].(type) {
+			case *masker.NoneMasker:
+				sensitive[i] = false
+			default:
+				sensitive[i] = true
+			}
+		}
+	}
+
+	for i, row := range result.Rows {
+		for j, value := range row.Values {
+			if value == nil {
+				continue
+			}
+			maskedValue := maskers[j].Mask(&masker.MaskData{
+				DataV2: row.Values[j],
+			})
+			result.Rows[i].Values[j] = maskedValue
+		}
+	}
+	return
 }
 
 // doQueryV2 is the copy of doQuery, which use query span to improve performance.
@@ -159,6 +227,200 @@ func (s *SQLService) doQueryV2(ctx context.Context, request *v1pb.QueryRequest, 
 	sanitizeResults(results)
 
 	return results, time.Now().UnixNano() - start, err
+}
+
+// getMaskersForQuerySpan returns the maskers for the query span.
+func (s *SQLService) getMaskersForQuerySpan(ctx context.Context, m *maskingLevelEvaluator, instance *store.InstanceMessage, span *base.QuerySpan, action storepb.MaskingExceptionPolicy_MaskingException_Action) ([]masker.Masker, error) {
+	if span == nil {
+		return nil, nil
+	}
+
+	noneMasker := masker.NewNoneMasker()
+	maskers := make([]masker.Masker, 0, len(span.Results))
+
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+	currentPrincipal, err := s.store.GetUser(ctx, &store.FindUserMessage{
+		ID: &principalID,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find current principal")
+	}
+	if currentPrincipal == nil {
+		return nil, status.Errorf(codes.Internal, "current principal not found")
+	}
+
+	// Multiple databases may belong to the same project, to reduce the protojson unmarshal cost,
+	// we store the projectResourceID - maskingExceptionPolicy in a map.
+	maskingExceptionPolicyMap := make(map[string]*storepb.MaskingExceptionPolicy)
+
+	for _, spanResult := range span.Results {
+		// Likes constant expression, we use the none masker.
+		if len(spanResult.SourceColumns) == 0 {
+			maskers = append(maskers, noneMasker)
+			continue
+		}
+		// If there are more than one source columns, we fall back to the default full masker,
+		// because we don't know how the data be made up.
+		if len(spanResult.SourceColumns) > 1 {
+			maskers = append(maskers, noneMasker)
+			continue
+		}
+
+		// Otherwise, we use the source column to get the masker.
+		var sourceColumn base.ColumnResource
+		for column := range spanResult.SourceColumns {
+			sourceColumn = column
+		}
+
+		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+			InstanceID:   &instance.ResourceID,
+			DatabaseName: &sourceColumn.Database,
+		})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to find database: %q", sourceColumn.Database)
+		}
+		if database == nil {
+			maskers = append(maskers, noneMasker)
+			continue
+		}
+
+		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+			ResourceID: &database.ProjectID,
+		})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to find project: %q", database.ProjectID)
+		}
+		if project == nil {
+			maskers = append(maskers, noneMasker)
+			continue
+		}
+
+		meta, config, err := s.getColumnForColumnResource(ctx, instance.ResourceID, &sourceColumn)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get database metadata for column resource: %q", sourceColumn.String())
+		}
+		// Span and metadata are not the same in real time, so we fall back to none masker.
+		if meta == nil {
+			maskers = append(maskers, noneMasker)
+			continue
+		}
+
+		semanticTypeID := ""
+		if config != nil {
+			semanticTypeID = config.SemanticTypeId
+		}
+
+		maskingPolicy, err := s.store.GetMaskingPolicyByDatabaseUID(ctx, database.UID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get masking policy for database: %q", database.DatabaseName)
+		}
+		maskingPolicyMap := make(map[maskingPolicyKey]*storepb.MaskData)
+		if maskingPolicy != nil {
+			for _, maskData := range maskingPolicy.MaskData {
+				maskingPolicyMap[maskingPolicyKey{
+					schema: maskData.Schema,
+					table:  maskData.Table,
+					column: maskData.Column,
+				}] = maskData
+			}
+		}
+
+		var maskingExceptionPolicy *storepb.MaskingExceptionPolicy
+		// If we cannot find the maskingExceptionPolicy before, we need to find it from the database and record it in cache.
+
+		if _, ok := maskingExceptionPolicyMap[database.ProjectID]; !ok {
+			policy, err := s.store.GetMaskingExceptionPolicyByProjectUID(ctx, project.UID)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to find masking exception policy for project %q", project.ResourceID)
+			}
+			// It is safe if policy is nil.
+			maskingExceptionPolicyMap[database.ProjectID] = policy
+		}
+		maskingExceptionPolicy = maskingExceptionPolicyMap[database.ProjectID]
+
+		// Build the filtered maskingExceptionPolicy for current principal.
+		var maskingExceptionContainsCurrentPrincipal []*storepb.MaskingExceptionPolicy_MaskingException
+		if maskingExceptionPolicy != nil {
+			for _, maskingException := range maskingExceptionPolicy.MaskingExceptions {
+				if maskingException.Action != action {
+					continue
+				}
+				if maskingException.Member == currentPrincipal.Email {
+					maskingExceptionContainsCurrentPrincipal = append(maskingExceptionContainsCurrentPrincipal, maskingException)
+				}
+			}
+		}
+
+		maskingAlgorithm, maskingLevel, err := m.evaluateMaskingAlgorithmOfColumn(database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column, semanticTypeID, meta.Classification, project.DataClassificationConfigID, maskingPolicyMap, maskingExceptionContainsCurrentPrincipal)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to evaluate masking level of database %q, schema %q, table %q, column %q", sourceColumn.Database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column)
+		}
+		masker := getMaskerByMaskingAlgorithmAndLevel(maskingAlgorithm, maskingLevel)
+		maskers = append(maskers, masker)
+	}
+	return maskers, nil
+}
+
+func (s *SQLService) getColumnForColumnResource(ctx context.Context, instanceID string, sourceColumn *base.ColumnResource) (*storepb.ColumnMetadata, *storepb.ColumnConfig, error) {
+	if sourceColumn == nil {
+		return nil, nil, nil
+	}
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		InstanceID:   &instanceID,
+		DatabaseName: &sourceColumn.Database,
+	})
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to find database: %q", sourceColumn.Database)
+	}
+	if database == nil {
+		return nil, nil, nil
+	}
+	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to find database schema: %q", sourceColumn.Database)
+	}
+	if dbSchema == nil {
+		return nil, nil, nil
+	}
+
+	var columnMetadata *storepb.ColumnMetadata
+	metadata := dbSchema.GetDatabaseMetadata()
+	if metadata == nil {
+		return nil, nil, nil
+	}
+	schema := metadata.GetSchema(sourceColumn.Schema)
+	if schema == nil {
+		return nil, nil, nil
+	}
+	table := schema.GetTable(sourceColumn.Table)
+	if table == nil {
+		return nil, nil, nil
+	}
+	column := table.GetColumn(sourceColumn.Column)
+	if column == nil {
+		return nil, nil, nil
+	}
+	columnMetadata = column
+
+	var columnConfig *storepb.ColumnConfig
+	config := dbSchema.GetDatabaseConfig()
+	if config == nil {
+		return columnMetadata, nil, nil
+	}
+	schemaConfig := config.GetSchemaConfig(sourceColumn.Schema)
+	if schemaConfig == nil {
+		return columnMetadata, nil, nil
+	}
+	tableConfig := schemaConfig.GetTableConfig(sourceColumn.Table)
+	if tableConfig == nil {
+		return columnMetadata, nil, nil
+	}
+
+	columnConfig = tableConfig.GetColumnConfig(sourceColumn.Column)
+	return columnMetadata, columnConfig, nil
 }
 
 func (s *SQLService) buildGetDatabaseMetadataFunc(instance *store.InstanceMessage) base.GetDatabaseMetadataFunc {
