@@ -10,23 +10,31 @@
         <span class="text-sm">{{ table.name }}</span>
       </div>
 
-      <div v-if="pageMode === 'BUNDLED'" class="flex justify-end gap-x-0.5">
-        <ExternalLinkButton
-          :link="tableDetailLink"
-          :tooltip="$t('common.detail')"
-        />
-        <AlterSchemaButton
+      <div class="flex justify-end gap-x-0.5">
+        <StringifyMetadataButton
+          v-if="showStringifyMetadataButton"
           :database="db"
           :schema="schema"
           :table="table"
-          @click="
-            editorEvents.emit('alter-schema', {
-              databaseUID: db.uid,
-              schema: schema.name,
-              table: table.name,
-            })
-          "
         />
+        <template v-if="pageMode === 'BUNDLED'">
+          <ExternalLinkButton
+            :link="tableDetailLink"
+            :tooltip="$t('common.detail')"
+          />
+          <AlterSchemaButton
+            :database="db"
+            :schema="schema"
+            :table="table"
+            @click="
+              editorEvents.emit('alter-schema', {
+                databaseUID: db.uid,
+                schema: schema.name,
+                table: table.name,
+              })
+            "
+          />
+        </template>
       </div>
     </div>
 
@@ -45,6 +53,7 @@ import { stringify } from "qs";
 import { computed } from "vue";
 import { usePageMode } from "@/store";
 import type { ComposedDatabase } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
 import type {
   DatabaseMetadata,
   SchemaMetadata,
@@ -55,6 +64,7 @@ import { useSQLEditorContext } from "@/views/sql-editor/context";
 import AlterSchemaButton from "./AlterSchemaButton.vue";
 import ColumnList from "./ColumnList.vue";
 import ExternalLinkButton from "./ExternalLinkButton.vue";
+import StringifyMetadataButton from "./StringifyMetadataButton.vue";
 
 const props = defineProps<{
   db: ComposedDatabase;
@@ -81,5 +91,10 @@ const tableDetailLink = computed((): string => {
   const url = `/db/${databaseV1Slug(database)}?${stringify(query)}`;
 
   return url;
+});
+
+const showStringifyMetadataButton = computed(() => {
+  const engine = props.db.instanceEntity.engine;
+  return [Engine.MYSQL, Engine.POSTGRES, Engine.TIDB].includes(engine);
 });
 </script>
