@@ -59,7 +59,7 @@ interface LocalState {
 }
 
 const state = reactive<LocalState>({
-  selectedTab: "sensitive-column-list",
+  selectedTab: "global-masking-rule",
 });
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
 const router = useRouter();
@@ -72,7 +72,7 @@ watch(
     if (isDataMaskingTab(tab)) {
       state.selectedTab = tab;
     } else {
-      state.selectedTab = "sensitive-column-list";
+      state.selectedTab = "global-masking-rule";
     }
   },
   {
