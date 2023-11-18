@@ -6,7 +6,7 @@
       </h1>
       <span v-if="!allowEdit" class="text-sm text-gray-400">
         {{
-          $t("settings.general.workspace.announcement.owner-or-dba-can-edit")
+          $t("settings.general.workspace.announcement.admin-or-dba-can-edit")
         }}
       </span>
     </div>
@@ -28,7 +28,7 @@
           >
             {{
               $t(
-                "settings.general.workspace.announcement.owner-or-dba-can-edit"
+                "settings.general.workspace.announcement.admin-or-dba-can-edit"
               )
             }}
           </span>
@@ -56,7 +56,7 @@
           >
             {{
               $t(
-                "settings.general.workspace.announcement.owner-or-dba-can-edit"
+                "settings.general.workspace.announcement.admin-or-dba-can-edit"
               )
             }}
           </span>
@@ -90,7 +90,7 @@
           >
             {{
               $t(
-                "settings.general.workspace.announcement.owner-or-dba-can-edit"
+                "settings.general.workspace.announcement.admin-or-dba-can-edit"
               )
             }}
           </span>

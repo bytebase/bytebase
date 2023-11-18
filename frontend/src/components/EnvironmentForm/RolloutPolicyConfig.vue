@@ -38,7 +38,7 @@
           "
         >
           <div class="textlabel">
-            {{ $t("policy.rollout.manual-by-workspace-owner") }}
+            {{ $t("policy.rollout.manual-by-workspace-admin") }}
           </div>
         </NCheckbox>
         <NCheckbox
