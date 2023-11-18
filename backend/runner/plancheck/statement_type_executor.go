@@ -97,7 +97,7 @@ func (e *StatementTypeExecutor) runForDatabaseTarget(ctx context.Context, config
 	if sheet == nil {
 		return nil, errors.Errorf("sheet %d not found", sheetUID)
 	}
-	if sheet.Size > common.MaxSheetSizeForChecks {
+	if sheet.Size > common.MaxSheetCheckSize {
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
@@ -205,7 +205,7 @@ func (e *StatementTypeExecutor) runForDatabaseGroupTarget(ctx context.Context, c
 	if sheet == nil {
 		return nil, errors.Errorf("sheet %d not found", sheetUID)
 	}
-	if sheet.Size > common.MaxSheetSizeForChecks {
+	if sheet.Size > common.MaxSheetCheckSize {
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,

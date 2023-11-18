@@ -24,8 +24,8 @@ import (
 const (
 	// MaxSheetSize is the maximum size (1M) of a sheet for displaying.
 	MaxSheetSize = 1024 * 1024
-	// MaxSheetSizeForChecks is the maximum size of a sheet for checking changes.
-	MaxSheetSizeForChecks = 512 * 1024
+	// MaxSheetCheckSize is the maximum size of a sheet for checking changes.
+	MaxSheetCheckSize = 512 * 1024
 	// MaxSheetSizeForRollback is the maximum size of a sheet for rollback generator to run.
 	MaxSheetSizeForRollback = 8 * 1024 * 1024
 
