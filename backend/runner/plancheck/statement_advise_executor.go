@@ -119,7 +119,7 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 	if sheet == nil {
 		return nil, errors.Errorf("sheet %d not found", sheetUID)
 	}
-	if (sheet.Size > common.MaxSheetSizeForTaskCheck) || (config.ChangeDatabaseType == storepb.PlanCheckRunConfig_DML && sheet.Size > common.MaxSheetSizeForPlanCheckDML) {
+	if sheet.Size > common.MaxSheetSizeForChecks {
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
@@ -261,7 +261,7 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 	if sheet == nil {
 		return nil, errors.Errorf("sheet %d not found", sheetUID)
 	}
-	if sheet.Size > common.MaxSheetSizeForTaskCheck {
+	if sheet.Size > common.MaxSheetSizeForChecks {
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,

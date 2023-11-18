@@ -24,14 +24,10 @@ import (
 const (
 	// MaxSheetSize is the maximum size (1M) of a sheet for displaying.
 	MaxSheetSize = 1024 * 1024
-	// MaxSheetSizeForTaskCheck is the maximum size of a sheet for task check to run.
-	MaxSheetSizeForTaskCheck = 10 * 1024 * 1024
+	// MaxSheetSizeForChecks is the maximum size of a sheet for checking changes.
+	MaxSheetSizeForChecks = 512 * 1024
 	// MaxSheetSizeForRollback is the maximum size of a sheet for rollback generator to run.
 	MaxSheetSizeForRollback = 8 * 1024 * 1024
-	// MaxSheetSizeForPlanCheckDML is the maximum size of a sheet for plan check to check DML changes.
-	MaxSheetSizeForPlanCheckDML = 512 * 1024
-	// MaxStatementSizeForSQLReview is the maximum size of the statement to do sql review checks in sql service.
-	MaxStatementSizeForSQLReview = 512 * 1024
 
 	// ExternalURLPlaceholder is the docs link to configure --external-url.
 	ExternalURLPlaceholder = "https://www.bytebase.com/docs/get-started/install/external-url"
