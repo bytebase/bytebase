@@ -7,7 +7,7 @@
       class="h-6 w-6 text-yellow-400 flex-shrink-0 mr-1"
     />
     <span class="text-yellow-800 text-sm">
-      {{ $t("instance.no-read-only-data-source-warn-for-owner-dba") }}
+      {{ $t("instance.no-read-only-data-source-warn-for-admin-dba") }}
     </span>
     <NButton
       class="!ml-4 text-sm"

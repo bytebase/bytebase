@@ -5,7 +5,7 @@
         {{ $t("settings.general.workspace.security") }}
       </h1>
       <span v-if="!allowEdit" class="text-sm text-gray-400">
-        {{ $t("settings.general.workspace.only-owner-can-edit") }}
+        {{ $t("settings.general.workspace.only-admin-can-edit") }}
       </span>
     </div>
     <div class="flex-1 lg:px-4">
@@ -29,7 +29,7 @@
             v-if="!allowEdit"
             class="text-sm text-gray-400 -translate-y-2 tooltip"
           >
-            {{ $t("settings.general.workspace.watermark.only-owner-can-edit") }}
+            {{ $t("settings.general.workspace.watermark.only-admin-can-edit") }}
           </span>
         </label>
         <div class="mb-3 text-sm text-gray-400">
@@ -56,7 +56,7 @@
             v-if="!allowEdit"
             class="text-sm text-gray-400 -translate-y-2 tooltip"
           >
-            {{ $t("settings.general.workspace.only-owner-can-edit") }}
+            {{ $t("settings.general.workspace.only-admin-can-edit") }}
           </span>
         </label>
         <div class="mb-3 text-sm text-gray-400">
@@ -81,7 +81,7 @@
             v-if="!allowEdit"
             class="text-sm text-gray-400 -translate-y-2 tooltip"
           >
-            {{ $t("settings.general.workspace.only-owner-can-edit") }}
+            {{ $t("settings.general.workspace.only-admin-can-edit") }}
           </span>
         </label>
         <div class="mb-3 text-sm text-gray-400">
