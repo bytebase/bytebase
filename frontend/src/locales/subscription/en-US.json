@@ -131,7 +131,7 @@
       "title": "Data Security & Governance",
       "features": {
         "audit-log": "Audit log",
-        "rbac": "RBAC (Owner, DBA, Developer role)",
+        "rbac": "RBAC",
         "slow-query": "Slow query",
         "watermark": "Watermark",
         "sso": "Single Sign-On (SSO)",
@@ -177,7 +177,7 @@
     "webhook-integration": "IM integration (Slack, Discord, etc)",
     "email-support": "Email support",
     "everything-in-free-plan": "Everything in community plan",
-    "rbac": "Owner, DBA and Developer roles",
+    "rbac": "RBAC",
     "gitlab-login": "GitLab login",
     "online-schema-migration": "Large table online schema migration",
     "sql-check-anomaly-detection": "Advanced SQL check and anomaly detection",

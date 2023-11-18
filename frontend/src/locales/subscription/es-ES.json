@@ -131,7 +131,7 @@
       "title": "Gobernanza y Seguridad de Datos",
       "features": {
         "audit-log": "Registro de auditoría",
-        "rbac": "RBAC (Propietario, DBA, Rol Desarrollador)",
+        "rbac": "RBAC",
         "slow-query": "Consulta lenta",
         "watermark": "Marca de agua",
         "sso": "Inicio de Sesión Único (SSO)",
@@ -177,7 +177,7 @@
     "webhook-integration": "Integración IM (Slack, Discord, etc)",
     "email-support": "Soporte por correo electrónico",
     "everything-in-free-plan": "Todo en el plan comunitario",
-    "rbac": "Roles de Propietario, DBA y desarrollador",
+    "rbac": "RBAC",
     "gitlab-login": "GitLab login",
     "online-schema-migration": "Migración de esquema en línea para tablas grandes",
     "sql-check-anomaly-detection": "Comprobación avanzada de SQL y detección de anomalías",
