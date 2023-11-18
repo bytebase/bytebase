@@ -505,8 +505,8 @@
       },
       "tooltip": {
         "upgrade": "升级到付费方案来解锁角色管理",
-        "not-allow-edit": "只有所有者才能改变角色",
-        "not-allow-remove": "不能移除最后一个所有者",
+        "not-allow-edit": "只有管理员才能改变角色",
+        "not-allow-remove": "不能移除最后一个管理员",
         "project-role-provider-gitlab": "同步自对应 GitLab 项目的 {rawRole} 角色",
         "cannot-change-role-of-systembot-or-service-account": "不能修改机器人助手和服务账号的角色"
       },
@@ -3059,7 +3059,7 @@
     },
     "no-log-placeholder": {
       "admin": "点击「配置」按钮从数据库实例上抓取慢查询日志或点击「立即同步」按钮立即同步慢查询日志",
-      "developer": "点击「立即同步」按钮立即同步慢查询日志或联系工作空间所有者或 DBA 配置慢查询功能"
+      "developer": "点击「立即同步」按钮立即同步慢查询日志或联系工作空间管理员或 DBA 配置慢查询功能"
     }
   },
   "schema-template": {

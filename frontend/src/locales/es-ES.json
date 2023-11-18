@@ -507,8 +507,8 @@
       },
       "tooltip": {
         "upgrade": "Actualice para habilitar la gestión de roles",
-        "not-allow-edit": "Solo el propietario puede cambiar el rol",
-        "not-allow-remove": "No se puede eliminar el último propietario",
+        "not-allow-edit": "Solo el administrador puede cambiar el rol",
+        "not-allow-remove": "No se puede eliminar el último administrador",
         "project-role-provider-gitlab": "Mapeado desde el rol {rawRole} en el proyecto correspondiente de GitLab.",
         "cannot-change-role-of-systembot-or-service-account": "No se puede cambiar el rol de la cuenta bot del sistema o de la cuenta de servicio"
       },
@@ -599,7 +599,7 @@
         },
         "disallow-signup": {
           "enable": "Deshabilitar el registro de autoservicio",
-          "description": "Una vez deshabilitado, los usuarios no pueden registrarse por sí mismos y solo pueden ser invitados por el propietario del espacio de trabajo."
+          "description": "Una vez deshabilitado, los usuarios no pueden registrarse por sí mismos y solo pueden ser invitados por el administrador del espacio de trabajo."
         },
         "require-2fa": {
           "enable": "Requerir autenticación de dos factores para todos los usuarios",
@@ -3063,7 +3063,7 @@
     },
     "no-log-placeholder": {
       "admin": "Haga clic en el botón \"Configurar\" para obtener consultas lentas de las instancias de la base de datos o haga clic en el botón \"Sincronizar ahora\" para sincronizar los registros de consultas lentas de inmediato",
-      "developer": "Haga clic en el botón \"Sincronizar ahora\" para sincronizar los registros de consultas lentas inmediatamente o comuníquese con los propietarios/DBA de Bytebase para configurar consultas lentas"
+      "developer": "Haga clic en el botón \"Sincronizar ahora\" para sincronizar los registros de consultas lentas inmediatamente o comuníquese con los administradors/DBA de Bytebase para configurar consultas lentas"
     }
   },
   "schema-template": {
