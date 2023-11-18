@@ -1234,7 +1234,7 @@
     "show-how-to-create": "Show how to create",
     "below-is-an-example-to-create-user-bytebase-with-password": "Below is an example to create user 'bytebase{'@'}%' with password",
     "your_db_pwd": "YOUR_DB_PWD",
-    "no-read-only-data-source-warn-for-owner-dba": "The instance has not configured read-only connection, please consider adding one.",
+    "no-read-only-data-source-warn-for-admin-dba": "The instance has not configured read-only connection, please consider adding one.",
     "no-read-only-data-source-warn-for-developer": "The instance has not configured read-only connection, please ask your DBA to add one.",
     "sentence": {
       "host": {

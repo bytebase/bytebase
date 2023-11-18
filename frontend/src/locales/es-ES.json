@@ -1233,7 +1233,7 @@
     "show-how-to-create": "Mostrar cómo crear",
     "below-is-an-example-to-create-user-bytebase-with-password": "A continuación se muestra un ejemplo para crear el usuario 'bytebase {'@'}%' con contraseña",
     "your_db_pwd": "SU_DB_PWD",
-    "no-read-only-data-source-warn-for-owner-dba": "La instancia no ha configurado una conexión de solo lectura, por favor considere agregar una.",
+    "no-read-only-data-source-warn-for-admin-dba": "La instancia no ha configurado una conexión de solo lectura, por favor considere agregar una.",
     "no-read-only-data-source-warn-for-developer": "La instancia no ha configurado una conexión de solo lectura, solicite a su DBA que agregue una.",
     "sentence": {
       "host": {

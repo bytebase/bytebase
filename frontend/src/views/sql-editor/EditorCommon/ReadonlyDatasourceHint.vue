@@ -7,7 +7,7 @@
     </template>
     <p class="py-1">
       <template v-if="allowManageInstance">
-        {{ $t("instance.no-read-only-data-source-warn-for-owner-dba") }}
+        {{ $t("instance.no-read-only-data-source-warn-for-admin-dba") }}
         <span
           v-if="pageMode === 'BUNDLED'"
           class="underline text-accent cursor-pointer hover:opacity-80"
