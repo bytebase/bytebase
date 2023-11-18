@@ -138,7 +138,7 @@
         "2fa": "Autenticación de dos factores (2FA)",
         "ssh-tunnel": "SSH Tunnel",
         "dba-workflow": "Flujo de Trabajo DBA",
-        "dba-workflow-tooltip": "Solo permita que el DBA y el Propietario creen o transfieran la base de datos",
+        "dba-workflow-tooltip": "Solo permita que el Administrador y el DBA creen o transfieran la base de datos",
         "environment-tier": "Nivel de entorno",
         "backup-policy": "Política de respaldo",
         "sensitive-data": "Enmascaramiento de datos confidenciales",

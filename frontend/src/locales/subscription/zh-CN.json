@@ -138,7 +138,7 @@
         "2fa": "双重认证 (2FA)",
         "ssh-tunnel": "SSH Tunnel",
         "dba-workflow": "DBA 工作流",
-        "dba-workflow-tooltip": "仅允许 DBA 和所有者创建或者转移数据库",
+        "dba-workflow-tooltip": "仅允许管理员和 DBA 创建或者转移数据库",
         "environment-tier": "环境分级",
         "backup-policy": "审核和备份策略",
         "sensitive-data": "数据脱敏",

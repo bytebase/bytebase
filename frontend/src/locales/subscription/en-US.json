@@ -138,7 +138,7 @@
         "2fa": "Two-Factor Authentication (2FA)",
         "ssh-tunnel": "SSH Tunnel",
         "dba-workflow": "DBA workflow",
-        "dba-workflow-tooltip": "Only allow DBA and Owner to create or transfer database",
+        "dba-workflow-tooltip": "Only allow Admin and DBA to create or transfer database",
         "environment-tier": "Environment tier",
         "backup-policy": "Backup policy",
         "sensitive-data": "Sensitive data masking",
