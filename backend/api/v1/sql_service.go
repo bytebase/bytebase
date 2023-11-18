@@ -837,8 +837,8 @@ func (s *SQLService) createExportActivity(ctx context.Context, user *store.UserM
 }
 
 func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1pb.CheckResponse, error) {
-	if len(request.Statement) > common.MaxStatementSizeForSQLReview {
-		return nil, status.Errorf(codes.FailedPrecondition, "statement size exceeds maximum allowed size %dKB", common.MaxStatementSizeForSQLReview/1024)
+	if len(request.Statement) > common.MaxSheetCheckSize {
+		return nil, status.Errorf(codes.FailedPrecondition, "statement size exceeds maximum allowed size %dKB", common.MaxSheetCheckSize/1024)
 	}
 
 	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Database)
