@@ -1398,10 +1398,6 @@
       "manual-info": "Requiere hacer clic en el botón \"Implementar\" manualmente, y luego se ejecutará el cambio.",
       "auto": "Implementar automático",
       "auto-info": "Si se aprueban todas las comprobaciones, el cambio se implementará y ejecutará automáticamente.",
-      "assignee-group": {
-        "workspace-owner-or-dba": "Requiere implementación del DBA o del propietario del espacio de trabajo.",
-        "project-owner": "Requiere implementación del propietario del proyecto."
-      },
       "manual-by-dba-or-workspace-owner": "Requiere implementación del DBA o del propietario del espacio de trabajo.",
       "manual-by-project-owner": "Dueño del proyecto",
       "manual-by-project-releaser": "Liberador de proyecto",

@@ -1396,10 +1396,6 @@
       "manual-info": "需要人工点击「发布」按钮后，才会执行变更。",
       "auto": "自动发布",
       "auto-info": "如果预检查都通过的话，会自动发布，执行变更。",
-      "assignee-group": {
-        "workspace-owner-or-dba": "需要 DBA 或者 Bytebase 实例所有者发布。",
-        "project-owner": "需要项目所有者发布。"
-      },
       "manual-by-dba-or-workspace-owner": "需要 DBA 或者 Bytebase 实例所有者发布。",
       "manual-by-project-owner": "项目所有者",
       "manual-by-project-releaser": "项目的发布者",

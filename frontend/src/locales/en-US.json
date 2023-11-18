@@ -1399,10 +1399,6 @@
       "manual-info": "Require clicking \"Rollout\" button manually, and then the change will be executed.",
       "auto": "Automatic rollout",
       "auto-info": "If all check pass, the change will be rolled out and executed automatically.",
-      "assignee-group": {
-        "workspace-owner-or-dba": "Require rolling out from DBA or workspace owner.",
-        "project-owner": "Require rolling out from project owner."
-      },
       "manual-by-dba-or-workspace-owner": "Require rolling out from DBA or workspace owner.",
       "manual-by-project-owner": "Project owner",
       "manual-by-project-releaser": "Project releaser",
