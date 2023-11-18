@@ -2614,7 +2614,7 @@
     "policy-duplicated": "审核策略已复制",
     "rules": "规则",
     "filter": "筛选",
-    "no-permission": "仅 DBA 或所有者有权限创建或更新审核策略。",
+    "no-permission": "仅管理员或 DBA 有权限创建或更新审核策略。",
     "disable": "停用审核策略",
     "enable": "开启审核策略",
     "delete": "删除审核策略",
@@ -2953,7 +2953,7 @@
         "description": "当一个节点上有多个审批人时，只需要一次审批通过。",
         "approver": "审批人",
         "group": {
-          "WORKSPACE_OWNER": "工作空间所有者",
+          "WORKSPACE_OWNER": "工作空间管理员",
           "WORKSPACE_DBA": "DBA",
           "PROJECT_OWNER": "项目所有者",
           "PROJECT_MEMBER": "项目成员"

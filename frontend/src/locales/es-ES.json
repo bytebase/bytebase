@@ -2546,7 +2546,7 @@
       },
       "bb-feature-disallow-signup": {
         "title": "Deshabilitar el registro de autoservicio",
-        "desc": "Una vez deshabilitados, los usuarios no pueden registrarse por sí mismos y solo pueden ser invitados por el propietario del espacio de trabajo."
+        "desc": "Una vez deshabilitados, los usuarios no pueden registrarse por sí mismos y solo pueden ser invitados por el administrador del espacio de trabajo."
       },
       "bb-feature-instance-ssh-connection": {
         "title": "Instancia de Conexión SSH",
@@ -2614,7 +2614,7 @@
     "policy-duplicated": "La política de revisión se duplicó correctamente.",
     "rules": "Reglas",
     "filter": "Filtro",
-    "no-permission": "Solo el DBA o el propietario tienen permiso para crear o actualizar la política de revisión.",
+    "no-permission": "Solo el DBA o el administrador tiene permiso para crear o actualizar la política de revisión.",
     "disable": "Deshabilitar",
     "enable": "Habilitar",
     "delete": "Eliminar política de revisión SQL",
@@ -2957,7 +2957,7 @@
         "order": "Orden",
         "approver": "Aprobador",
         "group": {
-          "WORKSPACE_OWNER": "Propietario del espacio de trabajo",
+          "WORKSPACE_OWNER": "Administrador del espacio de trabajo",
           "WORKSPACE_DBA": "DBA",
           "PROJECT_OWNER": "Propietario del proyecto",
           "PROJECT_MEMBER": "Miembro del proyecto"

@@ -2558,7 +2558,7 @@
       },
       "bb-feature-disallow-signup": {
         "title": "Disable self-service signup",
-        "desc": "Once disabled, users cannot self-service signup and can only be invited by the workspace owner."
+        "desc": "Once disabled, users cannot self-service signup and can only be invited by the workspace admin."
       },
       "bb-feature-schema-template": {
         "title": "Schema Template",
@@ -2618,7 +2618,7 @@
     "policy-duplicated": "Successfully duplicated the review policy.",
     "rules": "Rules",
     "filter": "Filter",
-    "no-permission": "Only DBA or Owner has permission to create or update review policy.",
+    "no-permission": "Only DBA or Admin has permission to create or update review policy.",
     "disable": "Disable",
     "enable": "Enable",
     "delete": "Delete SQL review policy",
@@ -2960,7 +2960,7 @@
         "order": "Order",
         "approver": "Approver",
         "group": {
-          "WORKSPACE_OWNER": "Workspace Owner",
+          "WORKSPACE_OWNER": "Workspace Admin",
           "WORKSPACE_DBA": "DBA",
           "PROJECT_OWNER": "Project Owner",
           "PROJECT_MEMBER": "Project Member"
