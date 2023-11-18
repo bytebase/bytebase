@@ -214,10 +214,10 @@ More details in [Data Model Doc](https://www.bytebase.com/docs/concepts/data-mod
 
 More details in [Roles and Permissions Doc](https://www.bytebase.com/docs/concepts/roles-and-permissions).
 
-Bytebase employs RBAC (Role-Based-Access-Control) and provides two role sets at the workspace and project level:
+Bytebase employs RBAC (role based access control) and provides two role sets at the workspace and project level:
 
-- Workspace roles: `Owner`, `DBA`, `Developer`. The workspace role maps to the role in an engineering organization.
-- Project roles: `Owner`, `Developer`. The project level role maps to the role in a specific team or project.
+- Workspace roles: `Admin`, `DBA`, `Member`. The workspace role maps to the role in an organization.
+- Project roles: `Owner`, `Developer`, `Releaser`, `Querier`, `Exporter`. The project level role maps to the role in a specific team or project.
 
 Every user is assigned a workspace role, and if a particular user is involved in a particular project, then she will also be assigned a project role accordingly.
 

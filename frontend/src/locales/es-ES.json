@@ -520,9 +520,9 @@
       "service-key-copied": "Clave de Servicio copiada al portapapeles, por favor manténgala en secreto.",
       "create-as-service-account": "Crear como cuenta de servicio",
       "show-inactive": "Mostrar miembros inactivos",
-      "remove-self-owner": {
-        "title": "¿Estás seguro de revocarte PROPIETARIO?",
-        "description": "Asegúrese de que los PROPIETARIOS restantes puedan iniciar sesión; de lo contrario, nadie podrá administrar los usuarios."
+      "remove-self-admin": {
+        "title": "¿Estás seguro de revocarte @.lower:common.role.admin?",
+        "description": "Asegúrese de que los @.lower:common.role.admin restantes puedan iniciar sesión; de lo contrario, nadie podrá administrar los usuarios."
       }
     },
     "im-integration": {

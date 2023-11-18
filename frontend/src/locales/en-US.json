@@ -520,9 +520,9 @@
       "service-key-copied": "Service Key copied to clipboard, please keep it in secret.",
       "create-as-service-account": "Create as service account",
       "show-inactive": "Show inactive members",
-      "remove-self-owner": {
-        "title": "Are you sure to revoke OWNER from yourself?",
-        "description": "Please make sure the remaining OWNER(s) can sign in, otherwise, no one can manage users."
+      "remove-self-admin": {
+        "title": "Are you sure to revoke @.lower:common.role.admin from yourself?",
+        "description": "Please make sure the remaining @.lower:common.role.admin(s) can sign in, otherwise, no one can manage users."
       }
     },
     "im-integration": {
