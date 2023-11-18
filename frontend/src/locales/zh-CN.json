@@ -1114,7 +1114,7 @@
     "approval-requested": "审批请求",
     "assignee": {
       "project-members": "项目成员",
-      "workspace-owners": "Bytebase 实例所有者",
+      "workspace-admins": "Bytebase 工作区管理员",
       "workspace-dbas": "DBA",
       "project-owners": "项目所有者",
       "releasers-of-current-stage": "当前阶段的发布人",

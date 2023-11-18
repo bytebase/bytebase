@@ -1116,7 +1116,7 @@
     "approval-requested": "Aprobación solicitada",
     "assignee": {
       "project-members": "Miembros del proyecto",
-      "workspace-owners": "Propietarios del espacio de trabajo",
+      "workspace-admins": "Administrador del espacio de trabajo",
       "workspace-dbas": "DBA",
       "project-owners": "Propietarios del proyecto",
       "releasers-of-current-stage": "Liberadores de la etapa actual.",

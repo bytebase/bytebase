@@ -242,8 +242,8 @@ const mapUserOptions = (users: User[]) => {
   addGroup(
     {
       type: "group",
-      label: t("issue.assignee.workspace-owners"),
-      key: "workspace-owners",
+      label: t("issue.assignee.workspace-admins"),
+      key: "workspace-admins",
     },
     workspaceOwners
   );

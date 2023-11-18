@@ -1117,7 +1117,7 @@
     "approval-requested": "Approval Requested",
     "assignee": {
       "project-members": "Project members",
-      "workspace-owners": "Workspace owners",
+      "workspace-admins": "Workspace admins",
       "workspace-dbas": "DBA",
       "project-owners": "Project owners",
       "releasers-of-current-stage": "Releasers of current stage",
