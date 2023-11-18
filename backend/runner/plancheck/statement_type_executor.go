@@ -101,7 +101,7 @@ func (e *StatementTypeExecutor) runForDatabaseTarget(ctx context.Context, config
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.PlanCheckRunResult_Result_WARNING,
-				Code:    common.Ok.Int32(),
+				Code:    common.SizeExceeded.Int32(),
 				Title:   "Large SQL review policy is disabled",
 				Content: "",
 			},
@@ -209,7 +209,7 @@ func (e *StatementTypeExecutor) runForDatabaseGroupTarget(ctx context.Context, c
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.PlanCheckRunResult_Result_WARNING,
-				Code:    common.Ok.Int32(),
+				Code:    common.SizeExceeded.Int32(),
 				Title:   "Large SQL review policy is disabled",
 				Content: "",
 			},
