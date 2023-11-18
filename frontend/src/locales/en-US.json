@@ -583,7 +583,7 @@
     "general": {
       "workspace": {
         "branding": "Branding",
-        "only-owner-can-edit": "Only workspace owner can update the settings.",
+        "only-admin-can-edit": "Only workspace admin can update the settings.",
         "logo": "Logo",
         "logo-aspect": "The suggested logo size should be 5:2 aspect ratio, e.g 100 x 40.",
         "select-logo": "Upload a file",
@@ -595,7 +595,7 @@
           "self": "Watermark",
           "update-success": "Watermark setting updated",
           "description": "Display watermarks on pages, including username, ID and email.",
-          "only-owner-can-edit": "Only workspace owner can update watermark setting.",
+          "only-admin-can-edit": "Only workspace admin can update watermark setting.",
           "enable": "Enable watermark"
         },
         "disallow-signup": {

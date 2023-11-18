@@ -581,7 +581,7 @@
     "general": {
       "workspace": {
         "branding": "品牌",
-        "only-owner-can-edit": "仅管理员可以更改此设置",
+        "only-admin-can-edit": "仅管理员可以更改此设置",
         "logo": "Logo",
         "logo-aspect": "Logo 建议为 5:2 的宽:高比例（例如 100 x 40 像素）",
         "select-logo": "选择",
@@ -593,7 +593,7 @@
           "self": "水印",
           "update-success": "水印设置已更新",
           "description": "在页面上显示水印，包含用户名、ID 和 Email。",
-          "only-owner-can-edit": "仅管理员可以更新水印设置",
+          "only-admin-can-edit": "仅管理员可以更新水印设置",
           "enable": "开启水印"
         },
         "disallow-signup": {

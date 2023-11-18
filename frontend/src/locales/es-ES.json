@@ -582,7 +582,7 @@
     "general": {
       "workspace": {
         "branding": "Marca",
-        "only-owner-can-edit": "Solo el propietario del espacio de trabajo puede actualizar la configuración.",
+        "only-admin-can-edit": "Solo el administrador del espacio de trabajo puede actualizar la configuración.",
         "logo": "Logo",
         "logo-aspect": "El tamaño sugerido para el logo debería tener una proporción de 5:2, por ejemplo, 100 x 40.",
         "select-logo": "Subir un archivo",
@@ -594,7 +594,7 @@
           "self": "Marca de agua",
           "update-success": "Configuración de marca de agua actualizada",
           "description": "Mostrar marcas de agua en las páginas, incluyendo el nombre de usuario, el ID y el correo electrónico.",
-          "only-owner-can-edit": "Solo el propietario del espacio de trabajo puede actualizar la configuración de la marca de agua.",
+          "only-admin-can-edit": "Solo el administrador del espacio de trabajo puede actualizar la configuración de la marca de agua.",
           "enable": "Activar marca de agua"
         },
         "disallow-signup": {
