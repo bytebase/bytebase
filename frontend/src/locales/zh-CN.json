@@ -1114,7 +1114,7 @@
     "approval-requested": "审批请求",
     "assignee": {
       "project-members": "项目成员",
-      "workspace-admins": "Bytebase 工作区管理员",
+      "workspace-admins": "Bytebase 工作空间管理员",
       "workspace-dbas": "DBA",
       "project-owners": "项目所有者",
       "releasers-of-current-stage": "当前阶段的发布人",
@@ -1401,7 +1401,7 @@
       "manual-by-dedicated-roles": "特定角色手工发布",
       "manual-by-dedicated-roles-info": "允许以下任一选中角色，点击「发布」按钮后，执行变更。",
       "manual-by-dba": "DBA",
-      "manual-by-workspace-admin": "Bytebase 工作区管理员"
+      "manual-by-workspace-admin": "Bytebase 工作空间管理员"
     },
     "backup": {
       "name": "数据库备份策略",
@@ -1706,7 +1706,7 @@
     "configure-deploy": "配置部署",
     "choose-git-provider-description": "选择存放着您数据库 schema 脚本的 Git 提供方。当您把变更脚本推送到 Git 仓库后，Bytebase 会自动创建一条流水线把 schema 变更应用到数据库上。",
     "choose-git-provider-visit-workspace": "访问 {workspace} 设置以添加更多 Git 提供方.",
-    "choose-git-provider-contact-workspace-admin": "如果您希望其他 Git 提供方出现在列表中，请联系 Bytebase 工作区管理员。当前 Bytebase 支持自己托管的 GitLab EE/CE，我们之后也会支持 GitLab.com 和 GitHub Enterprise",
+    "choose-git-provider-contact-workspace-admin": "如果您希望其他 Git 提供方出现在列表中，请联系 Bytebase 工作空间管理员。当前 Bytebase 支持自己托管的 GitLab EE/CE，我们之后也会支持 GitLab.com 和 GitHub Enterprise",
     "select-repository-attention-gitlab": "Bytebase 仅列出您至少拥有 'Maintainer' 权限的 GitLab 项目。因为只有至少拥有该权限，才能够配置项目的 webhook 用来监听代码推送事件。",
     "select-repository-attention-github": "Bytebase 仅列出您拥有管理员权限的 GitHub 仓库。因为只有拥有该权限，才能够配置仓库的 webhook 用来监听代码推送事件。",
     "select-repository-attention-bitbucket": "Bytebase 仅列出您拥有管理员权限的 Bitbucket 仓库。因为只有拥有该权限，才能够配置仓库的 webhook 用来监听代码推送事件。",
@@ -1883,7 +1883,7 @@
       }
     },
     "members": {
-      "description": "项目成员角色决定了操作项目中的数据库和工单的权限。项目的所有者，工作空间的所有者和 DBA 都具有项目所有的权限。",
+      "description": "项目成员角色决定了操作项目中的数据库和工单的权限。项目的所有者，工作空间管理员和 DBA 都具有项目所有的权限。",
       "add-member": "添加成员",
       "revoke-member": "撤销成员",
       "revoke-access": "撤销访问",

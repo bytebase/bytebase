@@ -1888,7 +1888,7 @@
       }
     },
     "members": {
-      "description": "Project members determine the permission to operate database and issues inside the proejct. Project Owner, Workspace Owner and Workspace DBA all have full project permissions.",
+      "description": "Project members determine the permission to operate database and issues inside the proejct. Project Owner, Workspace Admin and Workspace DBA all have full project permissions.",
       "add-member": "Add member",
       "revoke-member": "Revoke member",
       "revoke-access": "Revoke Access",
