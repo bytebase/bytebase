@@ -235,7 +235,7 @@ const mapUserOptions = (users: User[]) => {
     projectMembers
   );
 
-  // Add non-project members (workspace owners and DBAs)
+  // Add non-project members (workspace admins and DBAs)
   const workspaceOwners = users.filter(
     (user) => user.userRole === UserRole.OWNER
   );
