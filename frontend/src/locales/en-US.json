@@ -643,7 +643,7 @@
         "announcement": {
           "self": "Announcement",
           "update-success": "Announcement setting updated.",
-          "owner-or-dba-can-edit": "Only workspace owner or DBA can update announcement setting."
+          "admin-or-dba-can-edit": "Only workspace admin or DBA can update announcement setting."
         },
         "announcement-alert-level": {
           "description": "Level",

@@ -641,7 +641,7 @@
         "announcement": {
           "self": "公告",
           "update-success": "公告设置已更新。",
-          "owner-or-dba-can-edit": "只有工作区所有者或 DBA 可以更新公告设置。"
+          "admin-or-dba-can-edit": "只有管理员或 DBA 可以更新公告设置。"
         },
         "announcement-alert-level": {
           "description": "等级",

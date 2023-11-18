@@ -630,7 +630,7 @@
         "announcement": {
           "self": "Anuncio",
           "update-success": "Configuración de anuncios actualizada.",
-          "owner-or-dba-can-edit": "Solo el propietario del espacio de trabajo o el DBA pueden actualizar la configuración de anuncios."
+          "admin-or-dba-can-edit": "Solo el administrador del espacio de trabajo o el DBA pueden actualizar la configuración de anuncios."
         },
         "announcement-alert-level": {
           "description": "Level",
