@@ -122,7 +122,7 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 	if sheet.Size > common.MaxSheetCheckSize {
 		return []*storepb.PlanCheckRunResult_Result{
 			{
-				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
+				Status:  storepb.PlanCheckRunResult_Result_WARNING,
 				Code:    common.Ok.Int32(),
 				Title:   "Large SQL review policy is disabled",
 				Content: "",
@@ -264,7 +264,7 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 	if sheet.Size > common.MaxSheetCheckSize {
 		return []*storepb.PlanCheckRunResult_Result{
 			{
-				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
+				Status:  storepb.PlanCheckRunResult_Result_WARNING,
 				Code:    common.Ok.Int32(),
 				Title:   "Large SQL review policy is disabled",
 				Content: "",

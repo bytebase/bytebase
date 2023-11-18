@@ -100,7 +100,7 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, conf
 	if sheet.Size > common.MaxSheetCheckSize {
 		return []*storepb.PlanCheckRunResult_Result{
 			{
-				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
+				Status:  storepb.PlanCheckRunResult_Result_WARNING,
 				Code:    common.Ok.Int32(),
 				Title:   "Report for large SQL is not supported",
 				Content: "",
@@ -205,7 +205,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 	if sheet.Size > common.MaxSheetCheckSize {
 		return []*storepb.PlanCheckRunResult_Result{
 			{
-				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
+				Status:  storepb.PlanCheckRunResult_Result_WARNING,
 				Code:    common.Ok.Int32(),
 				Title:   "Large SQL review policy is disabled",
 				Content: "",
