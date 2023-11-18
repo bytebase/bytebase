@@ -1403,15 +1403,7 @@
       "manual-by-dedicated-roles": "Implementación manual por roles especializados",
       "manual-by-dedicated-roles-info": "Permita que cualquiera de los siguientes roles seleccionados haga clic en el botón \"Implementar\" y luego se ejecutará el cambio.",
       "manual-by-dba": "DBA",
-      "manual-by-workspace-admin": "Administrador del espacio de trabajo",
-      "role": {
-        "workspace-owner": "Propietario del espacio de trabajo",
-        "dba": "DBA",
-        "project-owner": "Dueño del proyecto",
-        "project-releaser": "Liberador de proyecto",
-        "issue-creator": "Creador del problema",
-        "last-approver": "El último aprobador del flujo de aprobación personalizado"
-      }
+      "manual-by-workspace-admin": "Administrador del espacio de trabajo"
     },
     "backup": {
       "name": "Política de programación de copias de seguridad de la base de datos",

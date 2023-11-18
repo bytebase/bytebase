@@ -1404,15 +1404,7 @@
       "manual-by-dedicated-roles": "Manual rollout by dedicated roles",
       "manual-by-dedicated-roles-info": "Allow any of the following selected roles to click the \"Rollout\" button, and then the change will be executed.",
       "manual-by-dba": "DBA",
-      "manual-by-workspace-admin": "Workspace admin",
-      "role": {
-        "workspace-owner": "Workspace owner",
-        "dba": "DBA",
-        "project-owner": "Project owner",
-        "project-releaser": "Project releaser",
-        "issue-creator": "Issue creator",
-        "last-approver": "The last approver from the custom approval flow"
-      }
+      "manual-by-workspace-admin": "Workspace admin"
     },
     "backup": {
       "name": "Database backup schedule policy",

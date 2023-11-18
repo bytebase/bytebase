@@ -1401,15 +1401,7 @@
       "manual-by-dedicated-roles": "特定角色手工发布",
       "manual-by-dedicated-roles-info": "允许以下任一选中角色，点击「发布」按钮后，执行变更。",
       "manual-by-dba": "DBA",
-      "manual-by-workspace-admin": "Bytebase 工作区管理员",
-      "role": {
-        "workspace-owner": "Bytebase 实例所有者",
-        "dba": "DBA",
-        "project-owner": "项目所有者",
-        "project-releaser": "项目的发布者",
-        "issue-creator": "工单的创建者",
-        "last-approver": "自定义审批流的最后一个审批人"
-      }
+      "manual-by-workspace-admin": "Bytebase 工作区管理员"
     },
     "backup": {
       "name": "数据库备份策略",
