@@ -1936,7 +1936,7 @@
   },
   "gitops": {
     "setting": {
-      "description": "Bytebase admite el flujo de trabajo de GitOps, donde los scripts de migración de la base de datos se almacenan en el sistema de control de versiones (VCS) y los scripts de migración recién creados activarán automáticamente el cambio de base de datos correspondiente. Los propietarios de Bytebase administran todos los VCS aplicables aquí para que los propietarios de proyectos puedan vincular los proyectos con sus repositorios de Git desde estos VCS.",
+      "description": "Bytebase admite el flujo de trabajo de GitOps, donde los scripts de migración de la base de datos se almacenan en el sistema de control de versiones (VCS) y los scripts de migración recién creados activarán automáticamente el cambio de base de datos correspondiente. Los administrador de Bytebase administran todos los VCS aplicables aquí para que los propietarios de proyectos puedan vincular los proyectos con sus repositorios de Git desde estos VCS.",
       "description-highlight": "Si desea habilitar el inicio de sesión de terceros a través de sus VCS configurados, configure en SSO.",
       "add-git-provider": {
         "self": "Agregar un proveedor de Git",

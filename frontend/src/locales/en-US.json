@@ -1937,7 +1937,7 @@
   },
   "gitops": {
     "setting": {
-      "description": "Bytebase supports GitOps workflow where database migration scripts are stored in the version control system (VCS), and newly created migration scripts will automatically trigger the corresponding database change. Bytebase owners manage all the applicable VCSs here, so that project owners can link the projects with their Git repositories from these VCSs.",
+      "description": "Bytebase supports GitOps workflow where database migration scripts are stored in the version control system (VCS), and newly created migration scripts will automatically trigger the corresponding database change. Bytebase admins manage all the applicable VCSs here, so that project owners can link the projects with their Git repositories from these VCSs.",
       "description-highlight": "If you want to enable third party login via your configured VCSs, please configure it in SSO.",
       "add-git-provider": {
         "self": "Add a Git provider",

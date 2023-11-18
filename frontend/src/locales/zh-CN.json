@@ -1932,7 +1932,7 @@
   },
   "gitops": {
     "setting": {
-      "description": "Bytebase 支持 GitOps 工作流。该工作流下，数据库变更脚本存储在版本控制系统上 (VCS)，新创建的变更脚本会自动触发对应的数据库变更。Bytebase 的所有者先在此配置 VCS，在这之后，项目的所有者就可以从所配置的 VCS 中选取他们的 Git 仓库。",
+      "description": "Bytebase 支持 GitOps 工作流。该工作流下，数据库变更脚本存储在版本控制系统上 (VCS)，新创建的变更脚本会自动触发对应的数据库变更。Bytebase 管理员先在此配置 VCS，在这之后，项目的所有者就可以从所配置的 VCS 中选取他们的 Git 仓库。",
       "description-highlight": "如果您想通过您配置的VCS启用第三方登录，请在SSO中进行配置。",
       "add-git-provider": {
         "self": "添加 Git 提供方",
