@@ -1116,7 +1116,7 @@
     },
     "approval-requested": "Approval Requested",
     "assignee": {
-      "project-members": "Project members",
+      "current-assignee": "Current assignee",
       "workspace-admins": "Workspace admins",
       "workspace-dbas": "DBA",
       "project-owners": "Project owners",
