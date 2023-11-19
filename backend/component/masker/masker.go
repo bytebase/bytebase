@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -22,9 +23,13 @@ type MaskData struct {
 	// *sql.NullInt64
 	// *sql.NullFloat64
 	Data any
+
 	// WantBytes indicates whether the Masker should return the masked data as
 	// *v1pb.RowValue_BytesValue.
 	WantBytes bool
+
+	// DataV2 is the data to be masked.
+	DataV2 *v1pb.RowValue
 }
 
 // Masker is the interface that masks the data.
@@ -47,60 +52,64 @@ func (*NoneMasker) Mask(data *MaskData) *v1pb.RowValue {
 }
 
 func noneMask(data *MaskData) *v1pb.RowValue {
-	switch raw := data.Data.(type) {
-	case *sql.NullBool:
-		if raw.Valid {
-			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_BoolValue{
-					BoolValue: raw.Bool,
-				},
-			}
-		}
-	case *sql.NullString:
-		if raw.Valid {
-			if data.WantBytes {
+	if data.Data != nil {
+		switch raw := data.Data.(type) {
+		case *sql.NullBool:
+			if raw.Valid {
 				return &v1pb.RowValue{
-					Kind: &v1pb.RowValue_BytesValue{
-						BytesValue: []byte(raw.String),
+					Kind: &v1pb.RowValue_BoolValue{
+						BoolValue: raw.Bool,
 					},
 				}
 			}
-			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_StringValue{
-					StringValue: raw.String,
-				},
+		case *sql.NullString:
+			if raw.Valid {
+				if data.WantBytes {
+					return &v1pb.RowValue{
+						Kind: &v1pb.RowValue_BytesValue{
+							BytesValue: []byte(raw.String),
+						},
+					}
+				}
+				return &v1pb.RowValue{
+					Kind: &v1pb.RowValue_StringValue{
+						StringValue: raw.String,
+					},
+				}
+			}
+		case *sql.NullInt32:
+			if raw.Valid {
+				return &v1pb.RowValue{
+					Kind: &v1pb.RowValue_Int32Value{
+						Int32Value: raw.Int32,
+					},
+				}
+			}
+		case *sql.NullInt64:
+			if raw.Valid {
+				return &v1pb.RowValue{
+					Kind: &v1pb.RowValue_Int64Value{
+						Int64Value: raw.Int64,
+					},
+				}
+			}
+		case *sql.NullFloat64:
+			if raw.Valid {
+				return &v1pb.RowValue{
+					Kind: &v1pb.RowValue_DoubleValue{
+						DoubleValue: raw.Float64,
+					},
+				}
 			}
 		}
-	case *sql.NullInt32:
-		if raw.Valid {
-			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_Int32Value{
-					Int32Value: raw.Int32,
-				},
-			}
-		}
-	case *sql.NullInt64:
-		if raw.Valid {
-			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_Int64Value{
-					Int64Value: raw.Int64,
-				},
-			}
-		}
-	case *sql.NullFloat64:
-		if raw.Valid {
-			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_DoubleValue{
-					DoubleValue: raw.Float64,
-				},
-			}
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_NullValue{
+				NullValue: structpb.NullValue_NULL_VALUE,
+			},
 		}
 	}
-	return &v1pb.RowValue{
-		Kind: &v1pb.RowValue_NullValue{
-			NullValue: structpb.NullValue_NULL_VALUE,
-		},
-	}
+	//nolint
+	return proto.Clone(data.DataV2).(*v1pb.RowValue)
 }
 
 // Equal implements Masker.Equal.
@@ -268,54 +277,127 @@ func (m *RangeMasker) Mask(data *MaskData) *v1pb.RowValue {
 	if !m.enableMask() {
 		return noneMask(data)
 	}
-	var stringValue string
-	var valid bool
-	switch raw := data.Data.(type) {
-	case *sql.NullBool:
-		if raw.Valid {
-			stringValue = "******"
-			valid = true
-		}
-	case *sql.NullString:
-		if raw.Valid {
-			if data.WantBytes {
-				return &v1pb.RowValue{
-					Kind: &v1pb.RowValue_BytesValue{
-						BytesValue: fBytes([]byte(raw.String)),
-					},
-				}
+	if data.Data != nil {
+		var stringValue string
+		var valid bool
+		switch raw := data.Data.(type) {
+		case *sql.NullBool:
+			if raw.Valid {
+				stringValue = "******"
+				valid = true
 			}
-			stringValue = string(fRune([]rune(raw.String)))
-			valid = true
+		case *sql.NullString:
+			if raw.Valid {
+				if data.WantBytes {
+					return &v1pb.RowValue{
+						Kind: &v1pb.RowValue_BytesValue{
+							BytesValue: fBytes([]byte(raw.String)),
+						},
+					}
+				}
+				stringValue = string(fRune([]rune(raw.String)))
+				valid = true
+			}
+		case *sql.NullInt32:
+			if raw.Valid {
+				stringValue = string(fBytes([]byte(strconv.FormatInt(int64(raw.Int32), 10))))
+				valid = true
+			}
+		case *sql.NullInt64:
+			if raw.Valid {
+				stringValue = string(fBytes([]byte(strconv.FormatInt(raw.Int64, 10))))
+				valid = true
+			}
+		case *sql.NullFloat64:
+			if raw.Valid {
+				stringValue = string(fBytes([]byte(strconv.FormatFloat(raw.Float64, 'f', -1, 64))))
+				valid = true
+			}
 		}
-	case *sql.NullInt32:
-		if raw.Valid {
-			stringValue = string(fBytes([]byte(strconv.FormatInt(int64(raw.Int32), 10))))
-			valid = true
+		if !valid {
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_NullValue{
+					NullValue: structpb.NullValue_NULL_VALUE,
+				},
+			}
 		}
-	case *sql.NullInt64:
-		if raw.Valid {
-			stringValue = string(fBytes([]byte(strconv.FormatInt(raw.Int64, 10))))
-			valid = true
-		}
-	case *sql.NullFloat64:
-		if raw.Valid {
-			stringValue = string(fBytes([]byte(strconv.FormatFloat(raw.Float64, 'f', -1, 64))))
-			valid = true
-		}
-	}
-	if !valid {
 		return &v1pb.RowValue{
-			Kind: &v1pb.RowValue_NullValue{
-				NullValue: structpb.NullValue_NULL_VALUE,
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: stringValue,
 			},
 		}
 	}
-	return &v1pb.RowValue{
-		Kind: &v1pb.RowValue_StringValue{
-			StringValue: stringValue,
-		},
+	switch kind := data.DataV2.Kind.(type) {
+	case *v1pb.RowValue_NullValue:
+		if kind.NullValue == structpb.NullValue_NULL_VALUE {
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{
+					StringValue: "******",
+				},
+			}
+		}
+	case *v1pb.RowValue_BoolValue:
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: "******",
+			},
+		}
+	case *v1pb.RowValue_BytesValue:
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_BytesValue{
+				BytesValue: fBytes(kind.BytesValue),
+			},
+		}
+	case *v1pb.RowValue_DoubleValue:
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: string(fRune([]rune(strconv.FormatFloat(kind.DoubleValue, 'f', -1, 64)))),
+			},
+		}
+	case *v1pb.RowValue_FloatValue:
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: string(fRune([]rune(strconv.FormatFloat(float64(kind.FloatValue), 'f', -1, 64)))),
+			},
+		}
+	case *v1pb.RowValue_Int32Value:
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: string(fRune([]rune(strconv.FormatInt(int64(kind.Int32Value), 10)))),
+			},
+		}
+	case *v1pb.RowValue_Int64Value:
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: string(fRune([]rune(strconv.FormatInt(kind.Int64Value, 10)))),
+			},
+		}
+	case *v1pb.RowValue_StringValue:
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: string(fRune([]rune(kind.StringValue))),
+			},
+		}
+	case *v1pb.RowValue_Uint32Value:
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: string(fRune([]rune(strconv.FormatUint(uint64(kind.Uint32Value), 10)))),
+			},
+		}
+	case *v1pb.RowValue_Uint64Value:
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: string(fRune([]rune(strconv.FormatUint(kind.Uint64Value, 10)))),
+			},
+		}
+	case *v1pb.RowValue_ValueValue:
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_ValueValue{
+				ValueValue: maskProtoValue(m, kind.ValueValue),
+			},
+		}
 	}
+	return nil
 }
 
 // Equal implements Masker.Equal.
@@ -349,31 +431,85 @@ func (*DefaultRangeMasker) Mask(data *MaskData) *v1pb.RowValue {
 	paddingAsterisk := func(t string) string {
 		return fmt.Sprintf("**%s**", t)
 	}
-	stringValue := ""
-	switch raw := data.Data.(type) {
-	case *sql.NullBool:
-		stringValue = ""
-	case *sql.NullString:
-		if data.WantBytes {
-			bytesValue := append([]byte{'*', '*'}, middle([]byte(raw.String))...)
-			bytesValue = append(bytesValue, []byte{'*', '*'}...)
+	if data.Data != nil {
+		stringValue := ""
+		switch raw := data.Data.(type) {
+		case *sql.NullBool:
+			stringValue = ""
+		case *sql.NullString:
+			if data.WantBytes {
+				bytesValue := append([]byte{'*', '*'}, middle([]byte(raw.String))...)
+				bytesValue = append(bytesValue, []byte{'*', '*'}...)
+				return &v1pb.RowValue{
+					Kind: &v1pb.RowValue_BytesValue{
+						BytesValue: bytesValue,
+					},
+				}
+			}
+			stringValue = string(middle([]rune(raw.String)))
+		case *sql.NullInt64:
+			s := strconv.FormatInt(raw.Int64, 10)
+			stringValue = string(middle([]byte(s)))
+		case *sql.NullInt32:
+			s := strconv.FormatInt(int64(raw.Int32), 10)
+			stringValue = string(middle([]byte(s)))
+		case *sql.NullFloat64:
+			s := strconv.FormatFloat(raw.Float64, 'f', -1, 64)
+			stringValue = string(middle([]byte(s)))
+		}
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: paddingAsterisk(stringValue),
+			},
+		}
+	}
+
+	var stringValue string
+	switch kind := data.DataV2.Kind.(type) {
+	case *v1pb.RowValue_NullValue:
+		if kind.NullValue == structpb.NullValue_NULL_VALUE {
 			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_BytesValue{
-					BytesValue: bytesValue,
+				Kind: &v1pb.RowValue_StringValue{
+					StringValue: "******",
 				},
 			}
 		}
-		stringValue = string(middle([]rune(raw.String)))
-	case *sql.NullInt64:
-		s := strconv.FormatInt(raw.Int64, 10)
-		stringValue = string(middle([]byte(s)))
-	case *sql.NullInt32:
-		s := strconv.FormatInt(int64(raw.Int32), 10)
-		stringValue = string(middle([]byte(s)))
-	case *sql.NullFloat64:
-		s := strconv.FormatFloat(raw.Float64, 'f', -1, 64)
-		stringValue = string(middle([]byte(s)))
+	case *v1pb.RowValue_BoolValue:
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: "******",
+			},
+		}
+	case *v1pb.RowValue_BytesValue:
+		bytesValue := append([]byte{'*', '*'}, middle([]byte(kind.BytesValue))...)
+		bytesValue = append(bytesValue, []byte{'*', '*'}...)
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_BytesValue{
+				BytesValue: bytesValue,
+			},
+		}
+	case *v1pb.RowValue_DoubleValue:
+		stringValue = string(middle([]byte(strconv.FormatFloat(kind.DoubleValue, 'f', -1, 64))))
+	case *v1pb.RowValue_FloatValue:
+		stringValue = string(middle([]byte(strconv.FormatFloat(float64(kind.FloatValue), 'f', -1, 64))))
+	case *v1pb.RowValue_Int32Value:
+		stringValue = string(middle([]byte(strconv.FormatInt(int64(kind.Int32Value), 10))))
+	case *v1pb.RowValue_Int64Value:
+		stringValue = string(middle([]byte(strconv.FormatInt(kind.Int64Value, 10))))
+	case *v1pb.RowValue_StringValue:
+		stringValue = string(middle([]rune(kind.StringValue)))
+	case *v1pb.RowValue_Uint32Value:
+		stringValue = string(middle([]byte(strconv.FormatUint(uint64(kind.Uint32Value), 10))))
+	case *v1pb.RowValue_Uint64Value:
+		stringValue = string(middle([]byte(strconv.FormatUint(kind.Uint64Value, 10))))
+	case *v1pb.RowValue_ValueValue:
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_ValueValue{
+				ValueValue: maskProtoValue(&DefaultRangeMasker{}, kind.ValueValue),
+			},
+		}
 	}
+
 	return &v1pb.RowValue{
 		Kind: &v1pb.RowValue_StringValue{
 			StringValue: paddingAsterisk(stringValue),
@@ -428,36 +564,84 @@ func (m *MD5Masker) Mask(data *MaskData) *v1pb.RowValue {
 		return fmt.Sprintf("%x", h.Sum(nil))
 	}
 
-	var stringValue string
-	switch raw := data.Data.(type) {
-	case *sql.NullBool:
-		if raw.Valid {
-			stringValue = f(strconv.FormatBool(raw.Bool))
+	if data.Data != nil {
+		var stringValue string
+		switch raw := data.Data.(type) {
+		case *sql.NullBool:
+			if raw.Valid {
+				stringValue = f(strconv.FormatBool(raw.Bool))
+			}
+		case *sql.NullString:
+			if raw.Valid {
+				stringValue = f(raw.String)
+			}
+		case *sql.NullInt32:
+			if raw.Valid {
+				stringValue = f(strconv.FormatInt(int64(raw.Int32), 10))
+			}
+		case *sql.NullInt64:
+			if raw.Valid {
+				stringValue = f(strconv.FormatInt(raw.Int64, 10))
+			}
+		case *sql.NullFloat64:
+			if raw.Valid {
+				stringValue = f(strconv.FormatFloat(raw.Float64, 'f', -1, 64))
+			}
 		}
-	case *sql.NullString:
-		if raw.Valid {
-			stringValue = f(raw.String)
+		if stringValue == "" {
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_NullValue{
+					NullValue: structpb.NullValue_NULL_VALUE,
+				},
+			}
 		}
-	case *sql.NullInt32:
-		if raw.Valid {
-			stringValue = f(strconv.FormatInt(int64(raw.Int32), 10))
-		}
-	case *sql.NullInt64:
-		if raw.Valid {
-			stringValue = f(strconv.FormatInt(raw.Int64, 10))
-		}
-	case *sql.NullFloat64:
-		if raw.Valid {
-			stringValue = f(strconv.FormatFloat(raw.Float64, 'f', -1, 64))
-		}
-	}
-	if stringValue == "" {
 		return &v1pb.RowValue{
-			Kind: &v1pb.RowValue_NullValue{
-				NullValue: structpb.NullValue_NULL_VALUE,
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: stringValue,
 			},
 		}
 	}
+
+	var stringValue string
+	switch kind := data.DataV2.Kind.(type) {
+	case *v1pb.RowValue_NullValue:
+		if kind.NullValue == structpb.NullValue_NULL_VALUE {
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{
+					StringValue: "******",
+				},
+			}
+		}
+	case *v1pb.RowValue_BoolValue:
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: "******",
+			},
+		}
+	case *v1pb.RowValue_BytesValue:
+		stringValue = f(string(kind.BytesValue))
+	case *v1pb.RowValue_DoubleValue:
+		stringValue = f(strconv.FormatFloat(kind.DoubleValue, 'f', -1, 64))
+	case *v1pb.RowValue_FloatValue:
+		stringValue = f(strconv.FormatFloat(float64(kind.FloatValue), 'f', -1, 64))
+	case *v1pb.RowValue_Int32Value:
+		stringValue = f(strconv.FormatInt(int64(kind.Int32Value), 10))
+	case *v1pb.RowValue_Int64Value:
+		stringValue = f(strconv.FormatInt(kind.Int64Value, 10))
+	case *v1pb.RowValue_StringValue:
+		stringValue = f(kind.StringValue)
+	case *v1pb.RowValue_Uint32Value:
+		stringValue = f(strconv.FormatUint(uint64(kind.Uint32Value), 10))
+	case *v1pb.RowValue_Uint64Value:
+		stringValue = f(strconv.FormatUint(kind.Uint64Value, 10))
+	case *v1pb.RowValue_ValueValue:
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_ValueValue{
+				ValueValue: maskProtoValue(m, kind.ValueValue),
+			},
+		}
+	}
+
 	return &v1pb.RowValue{
 		Kind: &v1pb.RowValue_StringValue{
 			StringValue: stringValue,
@@ -471,4 +655,80 @@ func (m *MD5Masker) Equal(other Masker) bool {
 		return m.salt == otherMD5Masker.salt
 	}
 	return false
+}
+
+func maskProtoValue(m Masker, value *structpb.Value) *structpb.Value {
+	switch kindValue := value.Kind.(type) {
+	case *structpb.Value_NullValue:
+		nullValue := m.Mask(&MaskData{
+			DataV2: &v1pb.RowValue{
+				Kind: &v1pb.RowValue_NullValue{
+					NullValue: kindValue.NullValue,
+				},
+			},
+		}).GetNullValue()
+		return &structpb.Value{
+			Kind: &structpb.Value_NullValue{
+				NullValue: nullValue,
+			},
+		}
+	case *structpb.Value_NumberValue:
+		numberValue := m.Mask(&MaskData{
+			DataV2: &v1pb.RowValue{
+				Kind: &v1pb.RowValue_DoubleValue{
+					DoubleValue: kindValue.NumberValue,
+				},
+			},
+		}).GetDoubleValue()
+		return &structpb.Value{
+			Kind: &structpb.Value_NumberValue{
+				NumberValue: numberValue,
+			},
+		}
+	case *structpb.Value_StringValue:
+		stringValue := m.Mask(&MaskData{
+			DataV2: &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{
+					StringValue: kindValue.StringValue,
+				},
+			},
+		}).GetStringValue()
+		return &structpb.Value{
+			Kind: &structpb.Value_StringValue{
+				StringValue: stringValue,
+			},
+		}
+	case *structpb.Value_BoolValue:
+		boolValue := m.Mask(&MaskData{
+			DataV2: &v1pb.RowValue{
+				Kind: &v1pb.RowValue_BoolValue{
+					BoolValue: kindValue.BoolValue,
+				},
+			},
+		}).GetBoolValue()
+		return &structpb.Value{
+			Kind: &structpb.Value_BoolValue{
+				BoolValue: boolValue,
+			},
+		}
+	case *structpb.Value_StructValue:
+		//nolint
+		v := proto.Clone(value).(*structpb.Value)
+		//nolint
+		f := v.Kind.(*structpb.Value_StructValue)
+		for field, value := range f.StructValue.Fields {
+			kindValue.StructValue.Fields[field] = maskProtoValue(m, value)
+		}
+		return v
+	case *structpb.Value_ListValue:
+		//nolint
+		v := proto.Clone(value).(*structpb.Value)
+		//nolint
+		l := v.Kind.(*structpb.Value_ListValue)
+		for i, value := range l.ListValue.Values {
+			kindValue.ListValue.Values[i] = maskProtoValue(m, value)
+		}
+		return v
+	}
+	return nil
 }
