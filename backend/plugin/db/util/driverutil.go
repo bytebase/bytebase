@@ -137,11 +137,6 @@ func QueryV2(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, stateme
 		return nil, err
 	}
 
-	// TODO(d): use a Redshift extraction for shared database.
-	if dbType == storepb.Engine_REDSHIFT && queryContext.ShareDB {
-		statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", queryContext.CurrentDatabase), "")
-	}
-
 	var fieldMasker []masker.Masker
 	noneMasker := masker.NewNoneMasker()
 	for range columnNames {

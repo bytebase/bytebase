@@ -179,7 +179,6 @@ func mask(maskers []masker.Masker, result *v1pb.QueryResult) {
 			result.Rows[i].Values[j] = maskedValue
 		}
 	}
-	return
 }
 
 // doQueryV2 is the copy of doQuery, which use query span to improve performance.

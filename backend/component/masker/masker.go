@@ -108,6 +108,7 @@ func noneMask(data *MaskData) *v1pb.RowValue {
 			},
 		}
 	}
+	//nolint
 	return proto.Clone(data.DataV2).(*v1pb.RowValue)
 }
 
@@ -711,14 +712,18 @@ func maskProtoValue(m Masker, value *structpb.Value) *structpb.Value {
 			},
 		}
 	case *structpb.Value_StructValue:
+		//nolint
 		v := proto.Clone(value).(*structpb.Value)
+		//nolint
 		f := v.Kind.(*structpb.Value_StructValue)
 		for field, value := range f.StructValue.Fields {
 			kindValue.StructValue.Fields[field] = maskProtoValue(m, value)
 		}
 		return v
 	case *structpb.Value_ListValue:
+		//nolint
 		v := proto.Clone(value).(*structpb.Value)
+		//nolint
 		l := v.Kind.(*structpb.Value_ListValue)
 		for i, value := range l.ListValue.Values {
 			kindValue.ListValue.Values[i] = maskProtoValue(m, value)
