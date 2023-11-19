@@ -8,11 +8,11 @@
       v-bind="$attrs"
       class="schema-editor-table-list"
       :row-key="(table: Table) => table.id"
-      :columns="dataTableColumns"
+      :columns="columns"
       :data="tableList"
-      :virtual-scroll="true"
       :row-class-name="classesForRow"
       :max-height="tableBodyHeight"
+      :virtual-scroll="true"
       :striped="true"
     />
   </div>
@@ -157,7 +157,7 @@ const onClassificationSelect = (classificationId: string) => {
   state.activeTableId = undefined;
 };
 
-const dataTableColumns = computed(() => {
+const columns = computed(() => {
   const columns: (DataTableColumn<Table> & { hide?: boolean })[] = [
     {
       key: "name",
@@ -302,14 +302,14 @@ const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
 </script>
 
 <style lang="postcss" scoped>
-.schema-editor-table-list :deep(.n-data-table-tr.created td) {
+.schema-editor-table-list :deep(.n-data-table-tr.created .n-data-table-td) {
   @apply text-green-700 !bg-green-50;
 }
-.schema-editor-table-list :deep(.n-data-table-tr.dropped td) {
+.schema-editor-table-list :deep(.n-data-table-tr.dropped .n-data-table-td) {
   @apply text-red-700 !bg-red-50 opacity-70;
 }
 
-.schema-editor-table-list :deep(.n-data-table-tr.updated td) {
+.schema-editor-table-list :deep(.n-data-table-tr.updated .n-data-table-td) {
   @apply text-yellow-700 !bg-yellow-50;
 }
 </style>

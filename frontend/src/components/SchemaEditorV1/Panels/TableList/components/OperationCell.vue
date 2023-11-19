@@ -20,10 +20,8 @@
     </NTooltip>
   </div>
 </template>
-
 <script lang="ts" setup>
 import { Table } from "@/types/v1/schemaEditor";
-import { isDroppedTable } from "../common";
 
 defineProps<{
   table: Table;
@@ -32,4 +30,8 @@ defineEmits<{
   (event: "drop"): void;
   (event: "restore"): void;
 }>();
+
+const isDroppedTable = (table: Table) => {
+  return table.status === "dropped";
+};
 </script>
