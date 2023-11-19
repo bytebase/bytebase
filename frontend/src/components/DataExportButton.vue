@@ -223,6 +223,7 @@ const doExport = async (format: ExportFormat, limit: number | undefined) => {
     });
   } finally {
     state.isRequesting = false;
+    state.showDrawer = false;
   }
 };
 
