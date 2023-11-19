@@ -1,11 +1,5 @@
 # Naming
 
-## Variables and properties
-
-We are following the "Property Name Convention" guide in [Bytebase's API Style Guide](https://github.com/bytebase/bytebase/blob/main/docs/api-style-guide.md#property-name-convention).
-
-This allows us to follow vue recommended naming style such as [vue/attribute-hyphenation](https://eslint.vuejs.org/rules/attribute-hyphenation.html) and [vue/camelcase](https://eslint.vuejs.org/rules/camelcase.html). Making our code looks more likely to vue's "local accent".
-
 ## Files and directories
 
 We use different naming style to different types of files and directories.
