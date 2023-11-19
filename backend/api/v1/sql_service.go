@@ -893,6 +893,15 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 //  2. do query
 //  3. post-query
 func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1pb.QueryResponse, error) {
+	// TODO(zp): Remove this hack after switching all engines to use query span.
+	_, _, instance, _, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to prepare related message")
+	}
+	if instance.Engine == storepb.Engine_POSTGRES {
+		return s.QueryV2(ctx, request)
+	}
+
 	user, instance, database, adviceStatus, adviceList, sensitiveSchemaInfo, err := s.preCheck(ctx, request.Name, request.ConnectionDatabase, request.Statement, request.Limit, false /* isAdmin */, false /* isExport */)
 	if err != nil {
 		return nil, err
