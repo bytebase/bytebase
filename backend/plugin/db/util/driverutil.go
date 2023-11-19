@@ -119,7 +119,7 @@ func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
 }
 
 // QueryV2 is a copy of Query, but do not mask the data(use none masker).
-func QueryV2(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, statement string, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+func QueryV2(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	tx, err := conn.BeginTx(ctx, &sql.TxOptions{ReadOnly: queryContext.ReadOnly})
 	if err != nil {
 		return nil, err

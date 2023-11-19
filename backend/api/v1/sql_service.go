@@ -906,9 +906,6 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	if err != nil {
 		return nil, err
 	}
-	if instance.Engine == storepb.Engine_POSTGRES {
-		return s.QueryV2(ctx, request)
-	}
 
 	// Create query activity.
 	level := api.ActivityInfo
