@@ -7,7 +7,7 @@
 ## API
 
 1. Follow [Google AIP](https://google.aip.dev/).
-2. In cases of conflicts between AIP and the proto guide, follow AIP. For instance, the enum name should be `HELLO` instead of `TYPE_HELLO`.
+1. In cases of conflicts between AIP and the proto guide, follow AIP. For instance, the enum name should be `HELLO` instead of `TYPE_HELLO`.
 
 ## Go
 
