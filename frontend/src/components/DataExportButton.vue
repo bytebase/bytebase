@@ -181,7 +181,6 @@ const tryExportViaForm = async (e: MouseEvent) => {
   formRef.value?.validate((errors) => {
     if (errors) return;
     doExport(formData.value.format, formData.value.limit);
-    state.showDrawer = false;
   });
 };
 const formErrors = asyncComputed(() => {
@@ -224,6 +223,7 @@ const doExport = async (format: ExportFormat, limit: number | undefined) => {
     });
   } finally {
     state.isRequesting = false;
+    state.showDrawer = false;
   }
 };
 
