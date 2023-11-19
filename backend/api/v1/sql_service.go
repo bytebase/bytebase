@@ -893,9 +893,15 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 //  2. do query
 //  3. post-query
 func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1pb.QueryResponse, error) {
-	if strings.HasPrefix(request.Name, "instances/hellodanny") {
+	// TODO(zp): Remove this hack after switching all engines to use query span.
+	_, _, instance, _, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to prepare related message")
+	}
+	if instance.Engine == storepb.Engine_POSTGRES {
 		return s.QueryV2(ctx, request)
 	}
+
 	user, instance, database, adviceStatus, adviceList, sensitiveSchemaInfo, err := s.preCheck(ctx, request.Name, request.ConnectionDatabase, request.Statement, request.Limit, false /* isAdmin */, false /* isExport */)
 	if err != nil {
 		return nil, err
@@ -1243,7 +1249,6 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 		return nil, errors.Wrapf(err, "failed to find current principal")
 	}
 
-	type sensitiveDataMap map[api.SensitiveData]api.SensitiveDataMaskType
 	isEmpty := true
 	result := &base.SensitiveSchemaInfo{
 		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
@@ -1369,15 +1374,6 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 			}
 		}
 		slog.Debug("found masking policy for database", slog.String("database", databaseName), slog.Any("masking policy", maskingPolicy))
-
-		columnMap := make(sensitiveDataMap)
-		for _, data := range maskingPolicy.MaskData {
-			columnMap[api.SensitiveData{
-				Schema: data.Schema,
-				Table:  data.Table,
-				Column: data.Column,
-			}] = api.SensitiveDataMaskTypeDefault
-		}
 
 		dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
 		if err != nil {
