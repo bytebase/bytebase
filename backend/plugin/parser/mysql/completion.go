@@ -336,11 +336,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 
 		switch candidate {
 		case mysql.MySQLParserRULE_runtimeFunctionCall:
-			// TODO: load runtime functions
-			runtimeFunctionEntries.Insert(base.Candidate{
-				Type: base.CandidateTypeFunction,
-				Text: "runtimeFunction()",
-			})
+			runtimeFunctionEntries.insertFunctions()
 		case mysql.MySQLParserRULE_schemaRef:
 			schemaEntries.insertDatabases(c)
 		case mysql.MySQLParserRULE_tableRefWithWildcard:
@@ -830,6 +826,15 @@ func (m CompletionMap) toSLice() []base.Candidate {
 
 func (m CompletionMap) Insert(entry base.Candidate) {
 	m[entry.String()] = entry
+}
+
+func (m CompletionMap) insertFunctions() {
+	for _, function := range mysql.GetBuiltinFunctions() {
+		m.Insert(base.Candidate{
+			Type: base.CandidateTypeFunction,
+			Text: function + "()",
+		})
+	}
 }
 
 func (m CompletionMap) insertDatabases(c *Completer) {

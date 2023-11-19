@@ -300,3 +300,22 @@ func NormalizeMySQLDataType(ctx parser.IDataTypeContext, compact bool) string {
 		return strings.ToLower(ctx.GetType_().GetText())
 	}
 }
+
+// GetCharSetName get charset name from DataTypeContext.
+func GetCharSetName(ctx parser.IDataTypeContext) string {
+	if ctx.CharsetWithOptBinary() == nil {
+		return ""
+	}
+	charset := NormalizeMySQLCharsetName(ctx.CharsetWithOptBinary().CharsetName())
+	return charset
+}
+
+// GetCollationName get collation name from FieldDefinitionContext.
+func GetCollationName(ctx parser.IFieldDefinitionContext) string {
+	for _, attr := range ctx.AllColumnAttribute() {
+		if attr != nil && attr.Collate() != nil && attr.Collate().CollationName() != nil {
+			return NormalizeMySQLCollationName(attr.Collate().CollationName())
+		}
+	}
+	return ""
+}
