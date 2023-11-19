@@ -181,13 +181,27 @@ const mapUserOptions = (users: User[]) => {
   };
 
   // Groups in order
+  // - current assignee
   // - approvers of current step (CI phase only)
   // - releasers of current stage (CD phase only)
   // - project owners
-  // - other project members
   // - other non-member assignee candidates
   //   - workspace owners
   //   - workspace DBAs
+  if (assigneeEmail.value) {
+    const assignee = userStore.getUserByEmail(assigneeEmail.value);
+    if (assignee) {
+      addGroup(
+        {
+          type: "group",
+          label: t("issue.assignee.current-assignee"),
+          key: "current-assignee",
+        },
+        [assignee]
+      );
+    }
+  }
+
   if (phase === "CI") {
     const steps = useWrappedReviewStepsV1(issue, reviewContext);
     const currentStep = steps.value?.find((step) => step.status === "CURRENT");
@@ -222,17 +236,6 @@ const mapUserOptions = (users: User[]) => {
       key: "project-owners",
     },
     projectOwners
-  );
-  const projectMembers = users.filter((user) =>
-    isMemberOfProjectV1(project.iamPolicy, user)
-  );
-  addGroup(
-    {
-      type: "group",
-      label: t("issue.assignee.project-members"),
-      key: "project-members",
-    },
-    projectMembers
   );
 
   // Add non-project members (workspace admins and DBAs)
