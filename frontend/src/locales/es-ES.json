@@ -1115,7 +1115,7 @@
     },
     "approval-requested": "Aprobación solicitada",
     "assignee": {
-      "project-members": "Miembros del proyecto",
+      "current-assignee": "Asignatario actual",
       "workspace-admins": "Administrador del espacio de trabajo",
       "workspace-dbas": "DBA",
       "project-owners": "Propietarios del proyecto",

@@ -1113,7 +1113,7 @@
     },
     "approval-requested": "审批请求",
     "assignee": {
-      "project-members": "项目成员",
+      "current-assignee": "当前指派人",
       "workspace-admins": "Bytebase 工作空间管理员",
       "workspace-dbas": "DBA",
       "project-owners": "项目所有者",
