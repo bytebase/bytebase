@@ -1,6 +1,6 @@
 <template>
   <div class="flex justify-start items-center">
-    <NTooltip v-if="!readonly" trigger="hover" to="body">
+    <NTooltip v-if="!dropped" trigger="hover" to="body">
       <template #trigger>
         <heroicons:trash
           class="w-4 h-auto text-gray-500 cursor-pointer hover:opacity-80"
@@ -25,7 +25,7 @@ import { Table } from "@/types/v1/schemaEditor";
 
 defineProps<{
   table: Table;
-  readonly?: boolean;
+  dropped?: boolean;
 }>();
 defineEmits<{
   (event: "drop"): void;
