@@ -238,15 +238,29 @@ func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement strin
 	return util.RunStatement(ctx, storepb.Engine_ORACLE, conn, statement)
 }
 
-func (driver *Driver) getMajorVersion(ctx context.Context) (int, error) {
+func (driver *Driver) getVersion(ctx context.Context) (int, int, error) {
+	// https://docs.oracle.com/en/database/oracle/oracle-database/19/upgrd/oracle-database-release-numbers.html#GUID-1E2F3945-C0EE-4EB2-A933-8D1862D8ECE2
 	var banner string
 	if err := driver.db.QueryRowContext(ctx, "SELECT BANNER FROM v$version").Scan(&banner); err != nil {
-		return 0, err
+		return 0, 0, err
 	}
-	re := regexp.MustCompile(`(\d+)`)
+
+	return parseVersion(banner)
+}
+
+func parseVersion(banner string) (int, int, error) {
+	re := regexp.MustCompile(`(\d+)\.(\d+)`)
 	match := re.FindStringSubmatch(banner)
-	if len(match) > 0 {
-		return strconv.Atoi(match[0])
+	if len(match) >= 3 {
+		firstVersion, err := strconv.Atoi(match[1])
+		if err != nil {
+			return 0, 0, errors.Errorf("failed to parse first version from banner: %s", banner)
+		}
+		secondVersion, err := strconv.Atoi(match[2])
+		if err != nil {
+			return 0, 0, errors.Errorf("failed to parse second version from banner: %s", banner)
+		}
+		return firstVersion, secondVersion, nil
 	}
-	return 0, errors.Errorf("failed to parse major version from banner: %s", banner)
+	return 0, 0, errors.Errorf("failed to parse version from banner: %s", banner)
 }
