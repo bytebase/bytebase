@@ -203,9 +203,12 @@ func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*
 		return nil, queryErr
 	}
 
+	allowExport := true
 	// AllowExport is a validate only check.
-	_, _, _, _, _, _, err = s.preCheck(ctx, request.Name, request.ConnectionDatabase, request.Statement, request.Limit, false /* isAdmin */, true /* isExport */)
-	allowExport := (err == nil)
+	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
+		err := s.accessCheck(ctx, instance, environment, user, request.Statement, spans, request.Limit, false /* isAdmin */, true /* isExport */)
+		allowExport = (err == nil)
+	}
 
 	response := &v1pb.QueryResponse{
 		Results:     results,
