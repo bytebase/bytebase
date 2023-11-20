@@ -1138,7 +1138,7 @@ func (s *SQLService) preCheck(ctx context.Context, instanceName, connectionDatab
 		maskingType = storepb.MaskingExceptionPolicy_MaskingException_EXPORT
 	}
 	var sensitiveSchemaInfo *base.SensitiveSchemaInfo
-	if adviceStatus != advisor.Error {
+	if s.licenseService.IsFeatureEnabled(api.FeatureSensitiveData) == nil && adviceStatus != advisor.Error {
 		databaseMap := make(map[string]bool)
 		switch instance.Engine {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
