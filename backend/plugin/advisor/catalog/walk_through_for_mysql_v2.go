@@ -162,6 +162,42 @@ func (l *mysqlV2Listener) EnterCreateTable(ctx *mysql.CreateTableContext) {
 	}
 }
 
+// EnterDropTable is called when production dropTable is entered.
+func (l *mysqlV2Listener) EnterDropTable(ctx *mysql.DropTableContext) {
+	if ctx.TableRefList() == nil {
+		return
+	}
+
+	for _, tableRef := range ctx.TableRefList().AllTableRef() {
+		databaseName, tableName := mysqlparser.NormalizeMySQLTableRef(tableRef)
+		if databaseName != "" && !l.databaseState.isCurrentDatabase(databaseName) {
+			l.err = &WalkThroughError{
+				Type:    ErrorTypeAccessOtherDatabase,
+				Content: fmt.Sprintf("Database `%s` is not the current database `%s`", databaseName, tableName),
+			}
+		}
+
+		schema, exists := l.databaseState.schemaSet[""]
+		if !exists {
+			schema = l.databaseState.createSchema("")
+		}
+
+		table, exists := schema.getTable(tableName)
+		if !exists {
+			if ctx.IfExists() != nil || !l.databaseState.ctx.CheckIntegrity {
+				return
+			}
+			l.err = &WalkThroughError{
+				Type:    ErrorTypeTableNotExists,
+				Content: fmt.Sprintf("Table `%s` does not exist", tableName),
+			}
+			return
+		}
+
+		delete(schema.tableSet, table.name)
+	}
+}
+
 func (d *DatabaseState) mysqlV2CopyTable(databaseName, tableName, referTable string) *WalkThroughError {
 	targetTable, err := d.mysqlV2FindTableState(databaseName, referTable, true /* createIncompleteTable */)
 	if err != nil {
