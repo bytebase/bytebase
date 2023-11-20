@@ -144,8 +144,8 @@ func (t *TableState) mysqlV2CreateColumn(_ *FinderContext, columnDef mysql.IColu
 	columnType := ""
 	characterSet := ""
 	collation := ""
-	// todo: use fail-open pattern.
 	if columnDef.FieldDefinition() == nil || columnDef.FieldDefinition().DataType() == nil {
+		// todo: add more error detail.
 		return nil
 	}
 	columnType = mysqlparser.NormalizeMySQLDataType(columnDef.FieldDefinition().DataType(), true /* compact */)
@@ -288,7 +288,7 @@ func (t *TableState) mysqlV2CreateIndex(name string, keyList []string, unique bo
 	}
 
 	// need to check the visibility of index.
-	// we need a for loop to determined the visibility of index.
+	// we need a for-loop to determined the visibility of index.
 	for _, attribute := range tableConstraint.AllIndexOption() {
 		if attribute == nil || attribute.CommonIndexOption() == nil {
 			continue
