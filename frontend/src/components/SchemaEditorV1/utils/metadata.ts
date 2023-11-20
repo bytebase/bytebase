@@ -369,7 +369,7 @@ export const rebuildEditableSchemas = (
     `[${schemas.map((s) => s.tables.length)}]`,
     `[${schemaConfigList.map((sc) => sc.tableConfigs.length)}]`,
   ].join("--");
-  console.log("go!", tag);
+  console.debug("go!", tag);
   console.time(tag);
   const editableSchemas = cloneDeep(originalSchemas);
 
