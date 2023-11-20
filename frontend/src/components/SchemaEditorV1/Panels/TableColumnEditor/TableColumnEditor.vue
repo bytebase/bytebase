@@ -3,6 +3,8 @@
     ref="containerElRef"
     class="w-full h-full"
     :data-height="containerHeight"
+    :data-table-header-height="tableHeaderHeight"
+    :data-table-body-height="tableBodyHeight"
   >
     <NDataTable
       v-bind="$attrs"
@@ -143,7 +145,7 @@ const tableHeaderElRef = computed(
 const { height: containerHeight } = useElementSize(containerElRef);
 const { height: tableHeaderHeight } = useElementSize(tableHeaderElRef);
 const tableBodyHeight = computed(() => {
-  return containerHeight.value - tableHeaderHeight.value;
+  return containerHeight.value - tableHeaderHeight.value - 2;
 });
 const { t } = useI18n();
 const subscriptionV1Store = useSubscriptionV1Store();
@@ -183,6 +185,7 @@ const columns = computed(() => {
           style: {
             "--n-padding-left": "6px",
             "--n-padding-right": "4px",
+            "--n-text-color-disabled": "rgb(var(--color-main))",
           },
           "onUpdate:value": (value) => (column.name = value),
         });
@@ -263,6 +266,7 @@ const columns = computed(() => {
           style: {
             "--n-padding-left": "6px",
             "--n-padding-right": "4px",
+            "--n-text-color-disabled": "rgb(var(--color-main))",
           },
           "onUpdate:value": (value) => (column.userComment = value),
         });

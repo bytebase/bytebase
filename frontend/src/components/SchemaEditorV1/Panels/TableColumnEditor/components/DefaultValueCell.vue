@@ -72,6 +72,7 @@ const style = computed(() => {
     "--n-padding-right": "16px",
     "--n-color": "transparent",
     "--n-color-disabled": "transparent",
+    "--n-text-color-disabled": "rgb(var(--color-main))",
     cursor: "default",
   };
   const border = focused.value
@@ -90,6 +91,7 @@ const style = computed(() => {
   --n-color: transparent !important;
   --n-color-disabled: transparent !important;
   --n-border: none !important;
+  --n-text-color-disabled: rgb(var(--color-main)) !important;
 }
 .bb-schema-editor--column-default-value-select
   :deep(.n-base-selection .n-base-suffix) {

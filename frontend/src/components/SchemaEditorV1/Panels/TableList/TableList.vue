@@ -3,6 +3,8 @@
     ref="containerElRef"
     class="w-full h-full"
     :data-height="containerHeight"
+    :data-table-header-height="tableHeaderHeight"
+    :data-table-body-height="tableBodyHeight"
   >
     <NDataTable
       v-bind="$attrs"
@@ -14,6 +16,8 @@
       :max-height="tableBodyHeight"
       :virtual-scroll="true"
       :striped="true"
+      :bordered="true"
+      :bottom-bordered="true"
     />
   </div>
 
@@ -110,7 +114,7 @@ const tableHeaderElRef = computed(
 const { height: containerHeight } = useElementSize(containerElRef);
 const { height: tableHeaderHeight } = useElementSize(tableHeaderElRef);
 const tableBodyHeight = computed(() => {
-  return containerHeight.value - tableHeaderHeight.value;
+  return containerHeight.value - tableHeaderHeight.value - 2;
 });
 const editorStore = useSchemaEditorV1Store();
 const settingStore = useSettingV1Store();
