@@ -309,6 +309,7 @@ const handleBaselineSchemaChange = async (baselineSchema: BaselineSchema) => {
   state.loading = true;
   state.schemaDesign = await prepareSchemaDesign();
   state.loading = false;
+  console.timeEnd("prepareSchemaDesign");
 };
 
 const handleConfirm = async () => {

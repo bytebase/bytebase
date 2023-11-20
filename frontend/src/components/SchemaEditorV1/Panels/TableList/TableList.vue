@@ -232,6 +232,7 @@ const columns = computed(() => {
       resizable: true,
       width: 120,
       ellipsis: true,
+      ellipsisComponent: "performant-ellipsis",
     },
     {
       key: "comment",
@@ -239,6 +240,7 @@ const columns = computed(() => {
       resizable: true,
       width: 140,
       ellipsis: true,
+      ellipsisComponent: "performant-ellipsis",
     },
     {
       key: "operations",

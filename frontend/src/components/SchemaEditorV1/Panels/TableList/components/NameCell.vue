@@ -1,13 +1,15 @@
 <template>
-  <NEllipsis class="w-full cursor-pointer leading-6 hover:text-accent">
+  <NPerformantEllipsis
+    class="w-full cursor-pointer leading-6 hover:text-accent"
+  >
     <span @click="$emit('click')">
       {{ table.name }}
     </span>
-  </NEllipsis>
+  </NPerformantEllipsis>
 </template>
 
 <script lang="ts" setup>
-import { NEllipsis } from "naive-ui";
+import { NPerformantEllipsis } from "naive-ui";
 import { Table } from "@/types/v1/schemaEditor";
 
 defineProps<{
