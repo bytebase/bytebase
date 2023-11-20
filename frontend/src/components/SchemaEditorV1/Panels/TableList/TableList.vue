@@ -8,6 +8,7 @@
   >
     <NDataTable
       v-bind="$attrs"
+      size="small"
       :row-key="(table: Table) => table.id"
       :columns="columns"
       :data="tableList"
@@ -169,6 +170,8 @@ const columns = computed(() => {
     {
       key: "name",
       title: t("schema-editor.database.name"),
+      resizable: true,
+      width: 140,
       className: "truncate",
       render: (table) => {
         return h(NameCell, {
@@ -180,6 +183,8 @@ const columns = computed(() => {
     {
       key: "classification",
       title: t("schema-editor.column.classification"),
+      resizable: true,
+      width: 140,
       hide: !classificationConfig.value,
       render: (table) => {
         return h(ClassificationCell, {
@@ -195,6 +200,8 @@ const columns = computed(() => {
     {
       key: "rowCount",
       title: t("schema-editor.database.row-count"),
+      resizable: true,
+      width: 120,
       render: (table) => {
         return table.rowCount.toString();
       },
@@ -202,6 +209,8 @@ const columns = computed(() => {
     {
       key: "dataSize",
       title: t("schema-editor.database.data-size"),
+      resizable: true,
+      width: 120,
       render: (table) => {
         return bytesToString(table.dataSize.toNumber());
       },
@@ -209,6 +218,8 @@ const columns = computed(() => {
     {
       key: "engine",
       title: t("schema-editor.database.engine"),
+      resizable: true,
+      width: 120,
       render: (table) => {
         return table.engine;
       },
@@ -216,16 +227,21 @@ const columns = computed(() => {
     {
       key: "collation",
       title: t("schema-editor.database.collation"),
+      resizable: true,
+      width: 120,
       ellipsis: true,
     },
     {
       key: "comment",
       title: t("schema-editor.database.comment"),
+      resizable: true,
+      width: 140,
       ellipsis: true,
     },
     {
       key: "operations",
       title: "",
+      resizable: false,
       width: 30,
       hide: readonly.value,
       className: "!px-0",
@@ -320,7 +336,7 @@ const isDroppedTable = (table: Table) => {
 <style lang="postcss" scoped>
 .schema-editor-table-list
   :deep(.n-data-table-th .n-data-table-resize-button::after) {
-  @apply bg-control-bg;
+  @apply bg-control-bg h-2/3;
 }
 .schema-editor-table-list :deep(.n-data-table-tr.created .n-data-table-td) {
   @apply text-green-700 !bg-green-50;

@@ -176,7 +176,7 @@ const columns = computed(() => {
       key: "name",
       title: t("schema-editor.column.name"),
       resizable: true,
-      width: 120,
+      width: 140,
       className: "input-cell",
       render: (column) => {
         return h(InlineInput, {
@@ -231,7 +231,7 @@ const columns = computed(() => {
       key: "type",
       title: t("schema-editor.column.type"),
       resizable: true,
-      width: 120,
+      width: 140,
       className: "input-cell",
       render: (column) => {
         return h(DataTypeCell, {
@@ -264,7 +264,7 @@ const columns = computed(() => {
       key: "comment",
       title: t("schema-editor.column.comment"),
       resizable: true,
-      width: 120,
+      width: 140,
       className: "input-cell",
       render: (column) => {
         return h(InlineInput, {
@@ -318,7 +318,7 @@ const columns = computed(() => {
       title: t("schema-editor.column.foreign-key"),
       hide: !props.showForeignKey,
       resizable: true,
-      width: 120,
+      width: 140,
       className: "text-cell",
       render: (column) => {
         return h(ForeignKeyCell, {
@@ -505,7 +505,7 @@ const isDroppedColumn = (column: Column): boolean => {
 <style lang="postcss" scoped>
 .schema-editor-table-column-editor
   :deep(.n-data-table-th .n-data-table-resize-button::after) {
-  @apply bg-control-bg;
+  @apply bg-control-bg h-2/3;
 }
 .schema-editor-table-column-editor :deep(.n-data-table-td.input-cell) {
   @apply pl-0.5 pr-1 py-0;
