@@ -686,10 +686,10 @@
         "add-type": "Add type",
         "add-from-template": "Add from template",
         "table": {
-          "semantic-type": "Semantic type",
+          "semantic-type": "Semantic Type",
           "description": "Description",
-          "full-masking-algorithm": "Full-masking algorithm",
-          "partial-masking-algorithm": "Partial-masking algorithm",
+          "full-masking-algorithm": "Full Masking Algorithm",
+          "partial-masking-algorithm": "Partial Masking Algorithm",
           "delete": "Delete this semantic type?"
         },
         "template": {
@@ -751,7 +751,7 @@
         "table": {
           "title": "Title",
           "description": "Description",
-          "masking-type": "Masking type",
+          "masking-type": "Masking Type",
           "delete": "Delete this algorithm?"
         },
         "mask": "Mask",
@@ -774,7 +774,7 @@
         "md5-mask": {
           "self": "MD5 mask",
           "salt": "Salt",
-          "salt-label": "Salt is the salt value to generate a different hash that with the word alone."
+          "salt-label": "Salt is used to generate a hash from the original value."
         }
       },
       "masking-level": {
@@ -2945,7 +2945,7 @@
       "search": "Search rule"
     },
     "approval-flow": {
-      "self": "Approval flow",
+      "self": "Approval Flow",
       "description": "For each operation type, configure custom condition, risk and approval flow. ",
       "approval-flows": "Approval Flows",
       "approval-nodes": "Approval nodes",
