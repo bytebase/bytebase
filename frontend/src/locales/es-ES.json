@@ -668,7 +668,7 @@
       "description": "A las siguientes columnas se les asignan niveles de enmascaramiento explícitamente y tienen prioridad sobre la regla de enmascaramiento global.",
       "remove-sensitive-column-tips": "¿Exponer esta columna?",
       "sensitive-column-list": "Columnas Explícitas Enmascaradas",
-      "global-masking-rule": "Regla de enmascaramiento global",
+      "global-masking-rule": "Regla De Enmascaramiento Global",
       "grant-access": "Autorizará el acceso",
       "never-expires": "Nunca expira",
       "global-rules": {
@@ -681,14 +681,14 @@
         "check-rules": "Check global rules"
       },
       "semantic-types": {
-        "self": "Tipos semánticos",
+        "self": "Tipos Semánticos",
         "add-type": "Agregar tipo",
         "add-from-template": "Agregar desde plantilla",
         "table": {
-          "semantic-type": "Tipo semántico",
+          "semantic-type": "Tipo Semántico",
           "description": "Descripción",
-          "full-masking-algorithm": "Algoritmo de enmascaramiento completo",
-          "partial-masking-algorithm": "Algoritmo de enmascaramiento parcial",
+          "full-masking-algorithm": "Algoritmo De Enmascaramiento Completo",
+          "partial-masking-algorithm": "Algoritmo De Enmascaramiento Parcial",
           "delete": "¿Eliminar este tipo semántico?"
         },
         "template": {
@@ -743,14 +743,14 @@
         "column-effective-masking-tips": "Esta columna no configura su propio nivel de enmascaramiento.\nMostramos su nivel de enmascaramiento efectivo con reglas de enmascaramiento globales. {link}"
       },
       "algorithms": {
-        "self": "Algoritmo de enmascaramiento",
+        "self": "Algoritmo De Enmascaramiento",
         "add": "Agregar algoritmo",
         "default": "Por defecto",
         "default-desc": "Utilice *** como máscara de datos",
         "table": {
           "title": "Título",
           "description": "Descripción",
-          "masking-type": "Tipo de enmascaramiento",
+          "masking-type": "Tipo De Enmascaramiento",
           "delete": "¿Eliminar este algoritmo?"
         },
         "mask": "Máscara",
@@ -772,8 +772,8 @@
         },
         "md5-mask": {
           "self": "Máscara MD5",
-          "salt": "Sal",
-          "salt-label": "La sal es el valor de la sal para generar un hash diferente al de la palabra sola."
+          "salt": "Sal (Salt)",
+          "salt-label": "La sal (Salt) se utiliza para generar un hash a partir del valor original."
         }
       },
       "masking-level": {
