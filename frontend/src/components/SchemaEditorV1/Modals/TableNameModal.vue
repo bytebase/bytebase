@@ -10,27 +10,27 @@
   >
     <div class="w-72">
       <p>{{ $t("schema-editor.table.name") }}</p>
-      <BBTextField
-        class="my-2 w-full"
-        :required="true"
-        :focus-on-mount="true"
-        :value="state.tableName"
-        @input="handleTableNameChange"
+      <NInput
+        ref="inputRef"
+        v-model:value="state.tableName"
+        class="my-2"
+        :autofocus="true"
       />
     </div>
-    <div class="w-full flex items-center justify-end mt-2 space-x-3 pr-1 pb-1">
-      <button type="button" class="btn-normal" @click="dismissModal">
+    <div class="w-full flex items-center justify-end mt-2 space-x-3">
+      <NButton @click="dismissModal">
         {{ $t("common.cancel") }}
-      </button>
-      <button class="btn-primary" @click="handleConfirmButtonClick">
+      </NButton>
+      <NButton type="primary" @click="handleConfirmButtonClick">
         {{ isCreatingTable ? $t("common.create") : $t("common.save") }}
-      </button>
+      </NButton>
     </div>
   </BBModal>
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive } from "vue";
+import { InputInst, NButton, NInput } from "naive-ui";
+import { computed, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   generateUniqueTabId,
@@ -65,6 +65,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const inputRef = ref<InputInst>();
 const schemaEditorV1Store = useSchemaEditorV1Store();
 const notificationStore = useNotificationStore();
 const state = reactive<LocalState>({
@@ -78,10 +79,6 @@ const engine = computed(() => {
 const isCreatingTable = computed(() => {
   return props.tableId === undefined;
 });
-
-const handleTableNameChange = (event: Event) => {
-  state.tableName = (event.target as HTMLInputElement).value;
-};
 
 const handleConfirmButtonClick = async () => {
   if (!tableNameFieldRegexp.test(state.tableName)) {
@@ -153,4 +150,8 @@ const handleConfirmButtonClick = async () => {
 const dismissModal = () => {
   emit("close");
 };
+
+onMounted(() => {
+  inputRef.value?.focus();
+});
 </script>

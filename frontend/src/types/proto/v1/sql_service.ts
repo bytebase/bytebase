@@ -90,7 +90,15 @@ export interface QueryRequest {
   /** The maximum number of rows to return. */
   limit: number;
   /** The timeout for the request. */
-  timeout?: Duration | undefined;
+  timeout?:
+    | Duration
+    | undefined;
+  /**
+   * The id of data source.
+   * It is used for querying admin data source even if the instance has read-only data sources.
+   * Or it can be used to query a specific read-only data source.
+   */
+  dataSourceId: string;
 }
 
 export interface QueryResponse {
@@ -237,6 +245,18 @@ export interface CheckRequest {
 
 export interface CheckResponse {
   advices: Advice[];
+}
+
+export interface StringifyMetadataRequest {
+  metadata:
+    | DatabaseMetadata
+    | undefined;
+  /** The database engine of the schema string. */
+  engine: Engine;
+}
+
+export interface StringifyMetadataResponse {
+  schema: string;
 }
 
 function createBaseDifferPreviewRequest(): DifferPreviewRequest {
@@ -759,7 +779,7 @@ export const ExportResponse = {
 };
 
 function createBaseQueryRequest(): QueryRequest {
-  return { name: "", connectionDatabase: "", statement: "", limit: 0, timeout: undefined };
+  return { name: "", connectionDatabase: "", statement: "", limit: 0, timeout: undefined, dataSourceId: "" };
 }
 
 export const QueryRequest = {
@@ -778,6 +798,9 @@ export const QueryRequest = {
     }
     if (message.timeout !== undefined) {
       Duration.encode(message.timeout, writer.uint32(42).fork()).ldelim();
+    }
+    if (message.dataSourceId !== "") {
+      writer.uint32(50).string(message.dataSourceId);
     }
     return writer;
   },
@@ -824,6 +847,13 @@ export const QueryRequest = {
 
           message.timeout = Duration.decode(reader, reader.uint32());
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.dataSourceId = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -840,6 +870,7 @@ export const QueryRequest = {
       statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
       limit: isSet(object.limit) ? globalThis.Number(object.limit) : 0,
       timeout: isSet(object.timeout) ? Duration.fromJSON(object.timeout) : undefined,
+      dataSourceId: isSet(object.dataSourceId) ? globalThis.String(object.dataSourceId) : "",
     };
   },
 
@@ -860,6 +891,9 @@ export const QueryRequest = {
     if (message.timeout !== undefined) {
       obj.timeout = Duration.toJSON(message.timeout);
     }
+    if (message.dataSourceId !== "") {
+      obj.dataSourceId = message.dataSourceId;
+    }
     return obj;
   },
 
@@ -875,6 +909,7 @@ export const QueryRequest = {
     message.timeout = (object.timeout !== undefined && object.timeout !== null)
       ? Duration.fromPartial(object.timeout)
       : undefined;
+    message.dataSourceId = object.dataSourceId ?? "";
     return message;
   },
 };
@@ -1902,25 +1937,144 @@ export const CheckResponse = {
   },
 };
 
+function createBaseStringifyMetadataRequest(): StringifyMetadataRequest {
+  return { metadata: undefined, engine: 0 };
+}
+
+export const StringifyMetadataRequest = {
+  encode(message: StringifyMetadataRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.metadata !== undefined) {
+      DatabaseMetadata.encode(message.metadata, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.engine !== 0) {
+      writer.uint32(16).int32(message.engine);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): StringifyMetadataRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseStringifyMetadataRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.metadata = DatabaseMetadata.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.engine = reader.int32() as any;
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): StringifyMetadataRequest {
+    return {
+      metadata: isSet(object.metadata) ? DatabaseMetadata.fromJSON(object.metadata) : undefined,
+      engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
+    };
+  },
+
+  toJSON(message: StringifyMetadataRequest): unknown {
+    const obj: any = {};
+    if (message.metadata !== undefined) {
+      obj.metadata = DatabaseMetadata.toJSON(message.metadata);
+    }
+    if (message.engine !== 0) {
+      obj.engine = engineToJSON(message.engine);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<StringifyMetadataRequest>): StringifyMetadataRequest {
+    return StringifyMetadataRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<StringifyMetadataRequest>): StringifyMetadataRequest {
+    const message = createBaseStringifyMetadataRequest();
+    message.metadata = (object.metadata !== undefined && object.metadata !== null)
+      ? DatabaseMetadata.fromPartial(object.metadata)
+      : undefined;
+    message.engine = object.engine ?? 0;
+    return message;
+  },
+};
+
+function createBaseStringifyMetadataResponse(): StringifyMetadataResponse {
+  return { schema: "" };
+}
+
+export const StringifyMetadataResponse = {
+  encode(message: StringifyMetadataResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.schema !== "") {
+      writer.uint32(10).string(message.schema);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): StringifyMetadataResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseStringifyMetadataResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.schema = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): StringifyMetadataResponse {
+    return { schema: isSet(object.schema) ? globalThis.String(object.schema) : "" };
+  },
+
+  toJSON(message: StringifyMetadataResponse): unknown {
+    const obj: any = {};
+    if (message.schema !== "") {
+      obj.schema = message.schema;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<StringifyMetadataResponse>): StringifyMetadataResponse {
+    return StringifyMetadataResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<StringifyMetadataResponse>): StringifyMetadataResponse {
+    const message = createBaseStringifyMetadataResponse();
+    message.schema = object.schema ?? "";
+    return message;
+  },
+};
+
 export type SQLServiceDefinition = typeof SQLServiceDefinition;
 export const SQLServiceDefinition = {
   name: "SQLService",
   fullName: "bytebase.v1.SQLService",
   methods: {
-    pretty: {
-      name: "Pretty",
-      requestType: PrettyRequest,
-      requestStream: false,
-      responseType: PrettyResponse,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([19, 58, 1, 42, 34, 14, 47, 118, 49, 47, 115, 113, 108, 47, 112, 114, 101, 116, 116, 121]),
-          ],
-        },
-      },
-    },
     query: {
       name: "Query",
       requestType: QueryRequest,
@@ -2086,6 +2240,75 @@ export const SQLServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([18, 58, 1, 42, 34, 13, 47, 118, 49, 47, 115, 113, 108, 47, 99, 104, 101, 99, 107]),
+          ],
+        },
+      },
+    },
+    pretty: {
+      name: "Pretty",
+      requestType: PrettyRequest,
+      requestStream: false,
+      responseType: PrettyResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([19, 58, 1, 42, 34, 14, 47, 118, 49, 47, 115, 113, 108, 47, 112, 114, 101, 116, 116, 121]),
+          ],
+        },
+      },
+    },
+    stringifyMetadata: {
+      name: "StringifyMetadata",
+      requestType: StringifyMetadataRequest,
+      requestStream: false,
+      responseType: StringifyMetadataResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              39,
+              58,
+              1,
+              42,
+              34,
+              34,
+              47,
+              118,
+              49,
+              47,
+              115,
+              99,
+              104,
+              101,
+              109,
+              97,
+              68,
+              101,
+              115,
+              105,
+              103,
+              110,
+              58,
+              115,
+              116,
+              114,
+              105,
+              110,
+              103,
+              105,
+              102,
+              121,
+              77,
+              101,
+              116,
+              97,
+              100,
+              97,
+              116,
+              97,
+            ]),
           ],
         },
       },

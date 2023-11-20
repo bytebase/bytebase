@@ -4,24 +4,26 @@ package mysql
 
 import (
 	"fmt"
+	"strconv"
 
-	"github.com/pingcap/tidb/parser/ast"
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
+	mysql "github.com/bytebase/mysql-parser"
+
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*ColumnAutoIncrementInitialValueAdvisor)(nil)
-	_ ast.Visitor     = (*columnAutoIncrementInitialValueChecker)(nil)
 )
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLAutoIncrementColumnInitialValue, &ColumnAutoIncrementInitialValueAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLAutoIncrementColumnInitialValue, &ColumnAutoIncrementInitialValueAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLAutoIncrementColumnInitialValue, &ColumnAutoIncrementInitialValueAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLAutoIncrementColumnInitialValue, &ColumnAutoIncrementInitialValueAdvisor{})
 }
 
 // ColumnAutoIncrementInitialValueAdvisor is the advisor checking for auto-increment column initial value.
@@ -30,9 +32,9 @@ type ColumnAutoIncrementInitialValueAdvisor struct {
 
 // Check checks for auto-increment column initial value.
 func (*ColumnAutoIncrementInitialValueAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	stmtList, ok := ctx.AST.([]ast.StmtNode)
+	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to StmtNode")
+		return nil, errors.Errorf("failed to convert to mysql parser result")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -50,9 +52,8 @@ func (*ColumnAutoIncrementInitialValueAdvisor) Check(ctx advisor.Context, _ stri
 	}
 
 	for _, stmt := range stmtList {
-		checker.text = stmt.Text()
-		checker.line = stmt.OriginTextPosition()
-		(stmt).Accept(checker)
+		checker.baseLine = stmt.BaseLine
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -67,36 +68,85 @@ func (*ColumnAutoIncrementInitialValueAdvisor) Check(ctx advisor.Context, _ stri
 }
 
 type columnAutoIncrementInitialValueChecker struct {
+	*mysql.BaseMySQLParserListener
+
+	baseLine   int
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
-	text       string
-	line       int
 	value      int
 }
 
-// Enter implements the ast.Visitor interface.
-func (checker *columnAutoIncrementInitialValueChecker) Enter(in ast.Node) (ast.Node, bool) {
-	if createTable, ok := in.(*ast.CreateTableStmt); ok {
-		for _, option := range createTable.Options {
-			if option.Tp == ast.TableOptionAutoIncrement {
-				if option.UintValue != uint64(checker.value) {
-					checker.adviceList = append(checker.adviceList, advisor.Advice{
-						Status:  checker.level,
-						Code:    advisor.AutoIncrementColumnInitialValueNotMatch,
-						Title:   checker.title,
-						Content: fmt.Sprintf("The initial auto-increment value in table `%s` is %v, which doesn't equal %v", createTable.Table.Name.O, option.UintValue, checker.value),
-						Line:    checker.line,
-					})
-				}
+func (checker *columnAutoIncrementInitialValueChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if ctx.CreateTableOptions() == nil || ctx.TableName() == nil {
+		return
+	}
+
+	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
+	for _, option := range ctx.CreateTableOptions().AllCreateTableOption() {
+		if option.AUTO_INCREMENT_SYMBOL() == nil || option.Ulonglong_number() == nil {
+			continue
+		}
+
+		base := 10
+		bitSize := 0
+		value, err := strconv.ParseUint(option.Ulonglong_number().GetText(), base, bitSize)
+		if err != nil {
+			continue
+		}
+		if value != uint64(checker.value) {
+			checker.adviceList = append(checker.adviceList, advisor.Advice{
+				Status:  checker.level,
+				Code:    advisor.AutoIncrementColumnInitialValueNotMatch,
+				Title:   checker.title,
+				Content: fmt.Sprintf("The initial auto-increment value in table `%s` is %v, which doesn't equal %v", tableName, value, checker.value),
+				Line:    checker.baseLine + ctx.GetStart().GetLine(),
+			})
+		}
+	}
+}
+
+// EnterAlterTable is called when production alterTable is entered.
+func (checker *columnAutoIncrementInitialValueChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if ctx.AlterTableActions() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
+		return
+	}
+	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
+	if tableName == "" {
+		return
+	}
+
+	// alter table option.
+	for _, option := range ctx.AlterTableActions().AlterCommandList().AlterList().AllCreateTableOptionsSpaceSeparated() {
+		if option == nil {
+			continue
+		}
+		for _, tableOption := range option.AllCreateTableOption() {
+			if tableOption == nil || tableOption.AUTO_INCREMENT_SYMBOL() == nil || tableOption.Ulonglong_number() == nil {
+				continue
+			}
+
+			base := 10
+			bitSize := 0
+			value, err := strconv.ParseUint(tableOption.Ulonglong_number().GetText(), base, bitSize)
+			if err != nil {
+				continue
+			}
+			if value != uint64(checker.value) {
+				checker.adviceList = append(checker.adviceList, advisor.Advice{
+					Status:  checker.level,
+					Code:    advisor.AutoIncrementColumnInitialValueNotMatch,
+					Title:   checker.title,
+					Content: fmt.Sprintf("The initial auto-increment value in table `%s` is %v, which doesn't equal %v", tableName, value, checker.value),
+					Line:    checker.baseLine + ctx.GetStart().GetLine(),
+				})
 			}
 		}
 	}
-
-	return in, false
-}
-
-// Leave implements the ast.Visitor interface.
-func (*columnAutoIncrementInitialValueChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
 }

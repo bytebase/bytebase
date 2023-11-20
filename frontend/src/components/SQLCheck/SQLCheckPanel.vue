@@ -2,7 +2,7 @@
   <BBModal
     :title="overrideTitle ?? $t('task.check-result.title-general')"
     :show-close="!confirm"
-    :esc-closable="!confirm"
+    :close-on-esc="!confirm"
     class="!w-[56rem]"
     header-class="whitespace-pre-wrap break-all gap-x-1"
     container-class="!pt-0 -mt-px"

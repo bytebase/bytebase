@@ -208,10 +208,6 @@ func (e *WalkThroughError) Error() string {
 // WalkThrough will collect the catalog schema in the databaseState as it walks through the stmt.
 func (d *DatabaseState) WalkThrough(stmt string) error {
 	switch d.dbType {
-	// only for mysqlwip test.
-	case storepb.Engine_ENGINE_UNSPECIFIED:
-		err := d.mysqlWalkThrough(stmt)
-		return err
 	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		err := d.mysqlWalkThrough(stmt)
 		return err
@@ -226,6 +222,10 @@ func (d *DatabaseState) WalkThrough(stmt string) error {
 			d.usable = false
 		}
 		return nil
+	// only for mysqlv2 test.
+	case storepb.Engine_ENGINE_UNSPECIFIED:
+		err := d.mysqlV2WalkThrough(stmt)
+		return err
 	default:
 		return &WalkThroughError{
 			Type:    ErrorTypeUnsupported,

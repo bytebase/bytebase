@@ -1,0 +1,211 @@
+- statement: |-
+    CREATE TABLE t1(
+      a INT PRIMARY KEY,
+      b INT NOT NULL DEFAULT 1,
+      c INT,
+      d VARCHAR(255) NOT NULL,
+      e VARCHAR(255),
+      UNIQUE KEY uk1 (b, c),
+      KEY idx1 (c),
+      FULLTEXT(d, e) WITH PARSER ngram INVISIBLE
+    );
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name": "test",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "t1",
+              "columns": [
+                {
+                  "name": "a",
+                  "position": 1,
+                  "type": "int"
+                },
+                {
+                  "name": "b",
+                  "position": 2,
+                  "default": "1",
+                  "type": "int"
+                },
+                {
+                  "name": "c",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "int"
+                },
+                {
+                  "name": "d",
+                  "position": 4,
+                  "type": "varchar"
+                },
+                {
+                  "name": "e",
+                  "position": 5,
+                  "nullable": true,
+                  "type": "varchar"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "a"
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "d",
+                  "expressions": [
+                    "d",
+                    "e"
+                  ],
+                  "type": "FULLTEXT"
+                },
+                {
+                  "name": "idx1",
+                  "expressions": [
+                    "c"
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "uk1",
+                  "expressions": [
+                    "b",
+                    "c"
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  err: null
+- statement: |-
+    CREATE TABLE t1(
+      a INT NOT NULL DEFAULT NULL
+    );
+  ignore_case_sensitive: false
+  want: ""
+  err:
+    type: 406
+    content: Invalid default value for column `a`
+    line: 2
+    payload: null
+- statement: |-
+    CREATE TABLE t1(
+      a BLOB DEFAULT 'this is a default value'
+    );
+  ignore_case_sensitive: false
+  want: ""
+  err:
+    type: 407
+    content: BLOB, TEXT, GEOMETRY or JSON column `a` can't have a default value
+    line: 2
+    payload: null
+- statement: |-
+    CREATE TABLE t1(
+      a INT ON UPDATE NOW()
+    );
+  ignore_case_sensitive: false
+  want: ""
+  err:
+    type: 405
+    content: Column `a` use ON UPDATE but is not DATETIME or TIMESTAMP
+    line: 2
+    payload: null
+- statement: |-
+    CREATE TABLE t1(
+      a INT NOT NULL DEFAULT 1 PRIMARY KEY,
+      b INT UNIQUE,
+      c VARCHAR(255) NOT NULL DEFAULT 'NULL' COMMENT 'column c',
+      e INT NULL DEFAULT NULL,
+      f VARCHAR(10) NOT NULL COLLATE utf8mb4_polish_ci,
+      g VARCHAR(200) CHARACTER SET utf8mb4 NOT NULL
+    );
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name": "test",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "t1",
+              "columns": [
+                {
+                  "name": "a",
+                  "position": 1,
+                  "default": "1",
+                  "type": "int"
+                },
+                {
+                  "name": "b",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "int"
+                },
+                {
+                  "name": "c",
+                  "position": 3,
+                  "default": "NULL",
+                  "type": "varchar",
+                  "comment": "column c"
+                },
+                {
+                  "name": "e",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "int"
+                },
+                {
+                  "name": "f",
+                  "position": 5,
+                  "type": "varchar",
+                  "collation": "utf8mb4_polish_ci"
+                },
+                {
+                  "name": "g",
+                  "position": 6,
+                  "type": "varchar",
+                  "characterSet": "utf8mb4"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "a"
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "b",
+                  "expressions": [
+                    "b"
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  err: null

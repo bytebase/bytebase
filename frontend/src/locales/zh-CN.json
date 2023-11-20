@@ -50,8 +50,6 @@
     "environment": "环境",
     "environments": "环境",
     "environment-name": "环境名",
-    "bookmark": "书签",
-    "bookmarks": "书签",
     "quick-action": "快捷操作",
     "archive": "归档",
     "archived": "已归档",
@@ -78,10 +76,11 @@
     "visit": "访问",
     "role": {
       "self": "角色",
+      "admin": "管理员",
       "dba": "DBA",
+      "member": "成员",
       "owner": "所有者",
       "developer": "开发者",
-      "member": "成员",
       "exporter": "数据导出者",
       "querier": "数据查询者",
       "releaser": "发布者",
@@ -506,8 +505,8 @@
       },
       "tooltip": {
         "upgrade": "升级到付费方案来解锁角色管理",
-        "not-allow-edit": "只有所有者才能改变角色",
-        "not-allow-remove": "不能移除最后一个所有者",
+        "not-allow-edit": "只有管理员才能改变角色",
+        "not-allow-remove": "不能移除最后一个管理员",
         "project-role-provider-gitlab": "同步自对应 GitLab 项目的 {rawRole} 角色",
         "cannot-change-role-of-systembot-or-service-account": "不能修改机器人助手和服务账号的角色"
       },
@@ -519,9 +518,9 @@
       "service-key-copied": "Service Key 已复制，请勿泄漏",
       "create-as-service-account": "创建为服务账号",
       "show-inactive": "查看未激活的成员",
-      "remove-self-owner": {
-        "title": "请确认您要移除您的 OWNER 角色。",
-        "description": "请确保剩下的 Owner 成员可以登录，否则就无人可以管理用户了。"
+      "remove-self-admin": {
+        "title": "请确认您要移除您的@.lower:common.role.admin角色。",
+        "description": "请确保剩下的@.lower:common.role.admin成员可以登录，否则就无人可以管理用户了。"
       }
     },
     "im-integration": {
@@ -582,7 +581,7 @@
     "general": {
       "workspace": {
         "branding": "品牌",
-        "only-owner-can-edit": "仅管理员可以更改此设置",
+        "only-admin-can-edit": "仅管理员可以更改此设置",
         "logo": "Logo",
         "logo-aspect": "Logo 建议为 5:2 的宽:高比例（例如 100 x 40 像素）",
         "select-logo": "选择",
@@ -594,7 +593,7 @@
           "self": "水印",
           "update-success": "水印设置已更新",
           "description": "在页面上显示水印，包含用户名、ID 和 Email。",
-          "only-owner-can-edit": "仅管理员可以更新水印设置",
+          "only-admin-can-edit": "仅管理员可以更新水印设置",
           "enable": "开启水印"
         },
         "disallow-signup": {
@@ -642,7 +641,7 @@
         "announcement": {
           "self": "公告",
           "update-success": "公告设置已更新。",
-          "owner-or-dba-can-edit": "只有工作区所有者或 DBA 可以更新公告设置。"
+          "admin-or-dba-can-edit": "只有管理员或 DBA 可以更新公告设置。"
         },
         "announcement-alert-level": {
           "description": "等级",
@@ -1114,8 +1113,8 @@
     },
     "approval-requested": "审批请求",
     "assignee": {
-      "project-members": "项目成员",
-      "workspace-owners": "Bytebase 实例所有者",
+      "current-assignee": "当前指派人",
+      "workspace-admins": "Bytebase 工作空间管理员",
       "workspace-dbas": "DBA",
       "project-owners": "项目所有者",
       "releasers-of-current-stage": "当前阶段的发布人",
@@ -1231,7 +1230,7 @@
     "show-how-to-create": "如何创建",
     "below-is-an-example-to-create-user-bytebase-with-password": "创建用户 'bytebase{'@'}%' 及其密码的例子如下",
     "your_db_pwd": "YOUR_DB_PWD",
-    "no-read-only-data-source-warn-for-owner-dba": "该实例没有配置只读连接，请考虑配置。",
+    "no-read-only-data-source-warn-for-admin-dba": "该实例没有配置只读连接，请考虑配置。",
     "no-read-only-data-source-warn-for-developer": "该实例没有配置只读连接，请让您的 DBA 配置一个。",
     "sentence": {
       "host": {
@@ -1393,15 +1392,8 @@
       "name": "发布策略",
       "tip": "新策略对旧工单也生效",
       "info": "当要发布对数据库的变更时，该选项控制了是否需要人工发布。",
-      "manual": "人工发布",
-      "manual-info": "需要人工点击「发布」按钮后，才会执行变更。",
       "auto": "自动发布",
       "auto-info": "如果预检查都通过的话，会自动发布，执行变更。",
-      "assignee-group": {
-        "workspace-owner-or-dba": "需要 DBA 或者 Bytebase 实例所有者发布。",
-        "project-owner": "需要项目所有者发布。"
-      },
-      "manual-by-dba-or-workspace-owner": "需要 DBA 或者 Bytebase 实例所有者发布。",
       "manual-by-project-owner": "项目所有者",
       "manual-by-project-releaser": "项目的发布者",
       "manual-by-issue-creator": "工单的创建者",
@@ -1409,15 +1401,7 @@
       "manual-by-dedicated-roles": "特定角色手工发布",
       "manual-by-dedicated-roles-info": "允许以下任一选中角色，点击「发布」按钮后，执行变更。",
       "manual-by-dba": "DBA",
-      "manual-by-workspace-owner": "Bytebase 实例所有者",
-      "role": {
-        "workspace-owner": "Bytebase 实例所有者",
-        "dba": "DBA",
-        "project-owner": "项目所有者",
-        "project-releaser": "项目的发布者",
-        "issue-creator": "工单的创建者",
-        "last-approver": "自定义审批流的最后一个审批人"
-      }
+      "manual-by-workspace-admin": "Bytebase 工作空间管理员"
     },
     "backup": {
       "name": "数据库备份策略",
@@ -1722,7 +1706,7 @@
     "configure-deploy": "配置部署",
     "choose-git-provider-description": "选择存放着您数据库 schema 脚本的 Git 提供方。当您把变更脚本推送到 Git 仓库后，Bytebase 会自动创建一条流水线把 schema 变更应用到数据库上。",
     "choose-git-provider-visit-workspace": "访问 {workspace} 设置以添加更多 Git 提供方.",
-    "choose-git-provider-contact-workspace-owner": "如果您希望其他 Git 提供方出现在列表中，请联系 Bytebase 实例的所有者。当前 Bytebase 支持自己托管的 GitLab EE/CE，我们之后也会支持 GitLab.com 和 GitHub Enterprise",
+    "choose-git-provider-contact-workspace-admin": "如果您希望其他 Git 提供方出现在列表中，请联系 Bytebase 工作空间管理员。当前 Bytebase 支持自己托管的 GitLab EE/CE，我们之后也会支持 GitLab.com 和 GitHub Enterprise",
     "select-repository-attention-gitlab": "Bytebase 仅列出您至少拥有 'Maintainer' 权限的 GitLab 项目。因为只有至少拥有该权限，才能够配置项目的 webhook 用来监听代码推送事件。",
     "select-repository-attention-github": "Bytebase 仅列出您拥有管理员权限的 GitHub 仓库。因为只有拥有该权限，才能够配置仓库的 webhook 用来监听代码推送事件。",
     "select-repository-attention-bitbucket": "Bytebase 仅列出您拥有管理员权限的 Bitbucket 仓库。因为只有拥有该权限，才能够配置仓库的 webhook 用来监听代码推送事件。",
@@ -1834,7 +1818,7 @@
         },
         "issue-info-change": {
           "title": "工单信息变更",
-          "label": "当一个工单的信息 (比如: 分配人, 标题, 描述) 发生了变更"
+          "label": "当一个工单的信息 (比如: 指派人, 标题, 描述) 发生了变更"
         },
         "issue-comment-creation": {
           "title": "工单被评论",
@@ -1851,6 +1835,14 @@
         "issue-task-run-status-change": {
           "title": "工单任务执行状态变更",
           "label": "当一个工单包含的任务执行状态发生了变更"
+        },
+        "notify-issue-approved": {
+          "title": "工单审批通过",
+          "label": "当工单审批通过"
+        },
+        "notify-pipeline-rollout": {
+          "title": "工单待发布",
+          "label": "当工单待发布时"
         }
       }
     },
@@ -1861,7 +1853,7 @@
       "member-placeholder": "选择用户",
       "manage-member": "管理成员",
       "owner": "@.upper:common.role.owner",
-      "developer": "@.upper:common.role.developer",
+      "developer": "@.upper:common.role.member",
       "archive": {
         "title": "归档项目",
         "description": "已归档的项目将不会显示在日常界面，您可以通过点击页面左下方的 \"归档\"来恢复。",
@@ -1891,7 +1883,7 @@
       }
     },
     "members": {
-      "description": "项目成员角色决定了操作项目中的数据库和工单的权限。项目的所有者，工作空间的所有者和 DBA 都具有项目所有的权限。",
+      "description": "项目成员角色决定了操作项目中的数据库和工单的权限。项目的所有者，工作空间管理员和 DBA 都具有项目所有的权限。",
       "add-member": "添加成员",
       "revoke-member": "撤销成员",
       "revoke-access": "撤销访问",
@@ -1940,7 +1932,7 @@
   },
   "gitops": {
     "setting": {
-      "description": "Bytebase 支持 GitOps 工作流。该工作流下，数据库变更脚本存储在版本控制系统上 (VCS)，新创建的变更脚本会自动触发对应的数据库变更。Bytebase 的所有者先在此配置 VCS，在这之后，项目的所有者就可以从所配置的 VCS 中选取他们的 Git 仓库。",
+      "description": "Bytebase 支持 GitOps 工作流。该工作流下，数据库变更脚本存储在版本控制系统上 (VCS)，新创建的变更脚本会自动触发对应的数据库变更。Bytebase 管理员先在此配置 VCS，在这之后，项目的所有者就可以从所配置的 VCS 中选取他们的 Git 仓库。",
       "description-highlight": "如果您想通过您配置的VCS启用第三方登录，请在SSO中进行配置。",
       "add-git-provider": {
         "self": "添加 Git 提供方",
@@ -2300,7 +2292,8 @@
       "schema-not-found": "找不到 Schema",
       "failed-to-fetch-database-schema": "请求数据库 Schema 失败",
       "invalid-schema": "无效的 Schema",
-      "cannot-drop-the-last-column": "不能删除最后一列"
+      "cannot-drop-the-last-column": "不能删除最后一列",
+      "cannot-change-config": "数据库配置必须同 Schema 一起变更"
     },
     "confirm-to-close": {
       "title": "确定关闭？",
@@ -2370,10 +2363,10 @@
     "successfully-upgrade-trial": "成功升级为{plan}试用",
     "require-subscription": "这个功能需要{requiredPlan}订阅，请购买 Bytebase 证书来解锁该功能。",
     "required-plan-with-trial": "这个功能需要{requiredPlan}订阅，{startTrial}。",
-    "trial-for-plan": "您可以开启{plan}的 {days} 天免费试用 - 无需任何信用卡或预付费",
-    "trial-for-days": "您可以开启 {days} 天的免费试用 - 无需任何信用卡或预付费",
-    "upgrade-trial": "您可以直接将现有的试用升级到这个版本",
-    "contact-to-upgrade": "请联系 DBA 或所有者来升级到试用版",
+    "trial-for-plan": "您可以开启{plan}的 {days} 天免费试用 - 无需任何信用卡或预付费。",
+    "trial-for-days": "您可以开启 {days} 天的免费试用 - 无需任何信用卡或预付费。",
+    "upgrade-trial": "您可以直接将现有的试用升级到这个版本。",
+    "contact-to-upgrade": "请联系工作空间所有者来升级到试用版。",
     "upgrade-now": "现在升级",
     "instance-assignment": {
       "license": "证书",
@@ -2621,7 +2614,7 @@
     "policy-duplicated": "审核策略已复制",
     "rules": "规则",
     "filter": "筛选",
-    "no-permission": "仅 DBA 或所有者有权限创建或更新审核策略。",
+    "no-permission": "仅管理员或 DBA 有权限创建或更新审核策略。",
     "disable": "停用审核策略",
     "enable": "开启审核策略",
     "delete": "删除审核策略",
@@ -2960,7 +2953,7 @@
         "description": "当一个节点上有多个审批人时，只需要一次审批通过。",
         "approver": "审批人",
         "group": {
-          "WORKSPACE_OWNER": "工作空间所有者",
+          "WORKSPACE_OWNER": "工作空间管理员",
           "WORKSPACE_DBA": "DBA",
           "PROJECT_OWNER": "项目所有者",
           "PROJECT_MEMBER": "项目成员"
@@ -3066,7 +3059,7 @@
     },
     "no-log-placeholder": {
       "admin": "点击「配置」按钮从数据库实例上抓取慢查询日志或点击「立即同步」按钮立即同步慢查询日志",
-      "developer": "点击「立即同步」按钮立即同步慢查询日志或联系工作空间所有者或 DBA 配置慢查询功能"
+      "developer": "点击「立即同步」按钮立即同步慢查询日志或联系工作空间管理员或 DBA 配置慢查询功能"
     }
   },
   "schema-template": {
@@ -3135,25 +3128,25 @@
     "select": "选择角色",
     "select-roles": "选择角色",
     "title": "称谓",
-    "owner": {
-      "description": "系统定义的项目所有者角色"
-    },
-    "developer": {
-      "description": "系统定义的项目开发者角色"
-    },
-    "exporter": {
-      "description": "系统定义的项目数据导出者角色"
-    },
-    "querier": {
-      "description": "系统定义的项目数据查询者角色"
-    },
     "select-role": "选择角色",
     "expired-tip": "该角色可能已经过期。",
+    "owner": {
+      "description": "项目内的所有权限。"
+    },
+    "developer": {
+      "description": "可查看项目基本信息，并可自助发起数据库变更、数据查询、数据导出请求。"
+    },
     "releaser": {
-      "description": "系统定义的项目发布者角色"
+      "description": "可查看项目基本信息，并可在指定流程中发布变更。"
+    },
+    "querier": {
+      "description": "可查询指定范围的数据。"
+    },
+    "exporter": {
+      "description": "可导出指定范围的数据。"
     },
     "viewer": {
-      "description": "系统定义的项目数据库查看者角色"
+      "description": "可查看项目基本信息，并可自助发起数据查询、数据导出请求。"
     }
   },
   "database-group": {

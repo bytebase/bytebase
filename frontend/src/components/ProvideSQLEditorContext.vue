@@ -1,9 +1,9 @@
 <template>
-  <slot />
+  <slot v-if="!isLoading" />
 </template>
 
 <script lang="ts" setup>
-import { onMounted, computed, watch } from "vue";
+import { onMounted, computed, watch, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import {
@@ -19,9 +19,16 @@ import {
   useUserStore,
 } from "@/store";
 import { useSQLEditorTreeStore } from "@/store/modules/sqlEditorTree";
+import { projectNamePrefix } from "@/store/modules/v1/common";
 import { usePolicyV1Store } from "@/store/modules/v1/policy";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import { Connection, CoreTabInfo, TabMode, UNKNOWN_USER_NAME } from "@/types";
+import {
+  Connection,
+  CoreTabInfo,
+  TabMode,
+  UNKNOWN_USER_NAME,
+  unknownProject,
+} from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import {
@@ -43,8 +50,10 @@ import {
 const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
+const isLoading = ref<boolean>(true);
 
 const currentUserV1 = useCurrentUserV1();
+const projectStore = useProjectV1Store();
 const instanceStore = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
 const policyV1Store = usePolicyV1Store();
@@ -74,7 +83,7 @@ const prepareAccessibleDatabaseList = async () => {
   // `databaseList` is the database list accessible by current user.
   // Only accessible instances and databases will be listed in the tree.
   const databaseList = (
-    await databaseStore.searchDatabaseList({
+    await databaseStore.fetchDatabaseList({
       parent: "instances/-",
     })
   ).filter(
@@ -87,6 +96,18 @@ const prepareAccessibleDatabaseList = async () => {
 };
 
 const initializeTree = async () => {
+  const projectName = route.query.project;
+  if (projectName) {
+    try {
+      const project = await projectStore.getOrFetchProjectByName(
+        `${projectNamePrefix}${projectName}`,
+        true /* silent */
+      );
+      treeStore.selectedProject = project;
+    } catch (error) {
+      treeStore.selectedProject = unknownProject();
+    }
+  }
   treeStore.buildTree();
 };
 
@@ -269,6 +290,7 @@ const syncURLWithConnection = () => {
         // exceptions.
         tabStore.updateCurrentTab({
           connection: {
+            ...tabStore.currentTab.connection,
             instanceId: instance.uid,
             databaseId: database.uid,
           },
@@ -291,6 +313,7 @@ const syncURLWithConnection = () => {
 
 onMounted(async () => {
   await useUserStore().fetchUserList();
+  await useSettingV1Store().fetchSettingList();
 
   if (treeStore.state === "UNSET") {
     treeStore.state = "LOADING";
@@ -304,6 +327,9 @@ onMounted(async () => {
     await usePolicyV1Store().getOrFetchPolicyByName("policies/WORKSPACE_IAM");
     await prepareAccessControlPolicy();
     await prepareAccessibleDatabaseList();
+
+    await setConnectionFromQuery();
+    await sqlEditorStore.fetchQueryHistoryList();
 
     await initializeTree();
     treeStore.state = "READY";
@@ -320,10 +346,7 @@ onMounted(async () => {
     }
   );
 
-  await setConnectionFromQuery();
-  await sqlEditorStore.fetchQueryHistoryList();
-  await useSettingV1Store().fetchSettingList();
-
   syncURLWithConnection();
+  isLoading.value = false;
 });
 </script>

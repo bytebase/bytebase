@@ -25,12 +25,6 @@ service ProjectService {
     option (google.api.method_signature) = "";
   }
 
-  // Search for projects that the caller has both projects.get permission on, and also satisfy the specified query.
-  rpc SearchProjects(SearchProjectsRequest) returns (SearchProjectsResponse) {
-    option (google.api.http) = {get: "/v1/projects:search"};
-    option (google.api.method_signature) = "";
-  }
-
   rpc CreateProject(CreateProjectRequest) returns (Project) {
     option (google.api.http) = {
       post: "/v1/projects"
@@ -236,33 +230,6 @@ message ListProjectsRequest {
 }
 
 message ListProjectsResponse {
-  // The projects from the specified request.
-  repeated Project projects = 1;
-
-  // A token, which can be sent as `page_token` to retrieve the next page.
-  // If this field is omitted, there are no subsequent pages.
-  string next_page_token = 2;
-}
-
-message SearchProjectsRequest {
-  // The maximum number of projects to return. The service may return fewer than
-  // this value.
-  // If unspecified, at most 50 projects will be returned.
-  // The maximum value is 1000; values above 1000 will be coerced to 1000.
-  int32 page_size = 1;
-
-  // A page token, received from a previous `ListProjects` call.
-  // Provide this to retrieve the subsequent page.
-  //
-  // When paginating, all other parameters provided to `ListProjects` must match
-  // the call that provided the page token.
-  string page_token = 2;
-
-  // Filter is used to filter projects returned in the list.
-  string filter = 3;
-}
-
-message SearchProjectsResponse {
   // The projects from the specified request.
   repeated Project projects = 1;
 
@@ -562,6 +529,12 @@ enum OperatorType {
 message Activity {
   enum Type {
     TYPE_UNSPECIFIED = 0;
+    // Notifications via webhooks.
+    //
+    // TYPE_NOTIFY_ISSUE_APPROVED represents the issue approved notification.
+    TYPE_NOTIFY_ISSUE_APPROVED = 23;
+    // TYPE_NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification.
+    TYPE_NOTIFY_PIPELINE_ROLLOUT = 24;
     // Issue related activity types.
     //
     // TYPE_ISSUE_CREATE represents creating an issue.

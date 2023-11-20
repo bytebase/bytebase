@@ -4,23 +4,23 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/pingcap/tidb/parser/ast"
+	"github.com/antlr4-go/antlr/v4"
+	mysql "github.com/bytebase/mysql-parser"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*TableDropNamingConventionAdvisor)(nil)
-	_ ast.Visitor     = (*namingDropTableConventionChecker)(nil)
 )
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
 }
 
 // TableDropNamingConventionAdvisor is the advisor checking the MySQLTableDropNamingConvention rule.
@@ -29,11 +29,10 @@ type TableDropNamingConventionAdvisor struct {
 
 // Check checks for drop table naming convention.
 func (*TableDropNamingConventionAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	root, ok := ctx.AST.([]ast.StmtNode)
+	list, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to StmtNode")
+		return nil, errors.Errorf("failed to convert to mysql parser result")
 	}
-
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
 	if err != nil {
 		return nil, err
@@ -48,8 +47,10 @@ func (*TableDropNamingConventionAdvisor) Check(ctx advisor.Context, _ string) ([
 		title:  string(ctx.Rule.Type),
 		format: format,
 	}
-	for _, stmtNode := range root {
-		(stmtNode).Accept(checker)
+
+	for _, stmt := range list {
+		checker.baseLine = stmt.BaseLine
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -64,32 +65,31 @@ func (*TableDropNamingConventionAdvisor) Check(ctx advisor.Context, _ string) ([
 }
 
 type namingDropTableConventionChecker struct {
+	*mysql.BaseMySQLParserListener
+
+	baseLine   int
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
 	format     *regexp.Regexp
 }
 
-// Enter implements the ast.Visitor interface.
-func (v *namingDropTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
-	if node, ok := in.(*ast.DropTableStmt); ok {
-		for _, table := range node.Tables {
-			if !v.format.MatchString(table.Name.O) {
-				v.adviceList = append(v.adviceList, advisor.Advice{
-					Status:  v.level,
-					Code:    advisor.TableDropNamingConventionMismatch,
-					Title:   v.title,
-					Content: fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", table.Name.O, v.format),
-					Line:    node.OriginTextPosition(),
-				})
-			}
-		}
+// EnterDropTable is called when production dropTable is entered.
+func (checker *namingDropTableConventionChecker) EnterDropTable(ctx *mysql.DropTableContext) {
+	if ctx.TableRefList() == nil {
+		return
 	}
 
-	return in, false
-}
-
-// Leave implements the ast.Visitor interface.
-func (*namingDropTableConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
+	for _, tableRef := range ctx.TableRefList().AllTableRef() {
+		_, tableName := mysqlparser.NormalizeMySQLTableRef(tableRef)
+		if !checker.format.MatchString(tableName) {
+			checker.adviceList = append(checker.adviceList, advisor.Advice{
+				Status:  checker.level,
+				Code:    advisor.TableDropNamingConventionMismatch,
+				Title:   checker.title,
+				Content: fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", tableName, checker.format),
+				Line:    checker.baseLine + ctx.GetStart().GetLine(),
+			})
+		}
+	}
 }

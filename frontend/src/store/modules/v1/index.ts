@@ -22,7 +22,6 @@ export * from "./vcs";
 export * from "./changeHistory";
 export * from "./dbSchema";
 export * from "./activity";
-export * from "./bookmark";
 export * from "./inbox";
 export * from "./anomaly";
 export * from "./schemaEditor";

@@ -50,8 +50,6 @@
     "environment": "Entorno",
     "environments": "Entornos",
     "environment-name": "Nombre del entorno",
-    "bookmark": "Marcador",
-    "bookmarks": "Marcadores",
     "quick-action": "Acción rápida",
     "archive": "Archivo",
     "archived": "Archivada",
@@ -78,10 +76,11 @@
     "visit": "Visitar",
     "role": {
       "self": "Rol",
+      "admin": "Administrador",
       "dba": "DBA",
+      "member": "Miembro",
       "owner": "Propietario",
       "developer": "Desarrollador",
-      "member": "Miembro",
       "exporter": "Exportador",
       "querier": "Querier",
       "releaser": "Liberador",
@@ -508,8 +507,8 @@
       },
       "tooltip": {
         "upgrade": "Actualice para habilitar la gestión de roles",
-        "not-allow-edit": "Solo el propietario puede cambiar el rol",
-        "not-allow-remove": "No se puede eliminar el último propietario",
+        "not-allow-edit": "Solo el administrador puede cambiar el rol",
+        "not-allow-remove": "No se puede eliminar el último administrador",
         "project-role-provider-gitlab": "Mapeado desde el rol {rawRole} en el proyecto correspondiente de GitLab.",
         "cannot-change-role-of-systembot-or-service-account": "No se puede cambiar el rol de la cuenta bot del sistema o de la cuenta de servicio"
       },
@@ -521,9 +520,9 @@
       "service-key-copied": "Clave de Servicio copiada al portapapeles, por favor manténgala en secreto.",
       "create-as-service-account": "Crear como cuenta de servicio",
       "show-inactive": "Mostrar miembros inactivos",
-      "remove-self-owner": {
-        "title": "¿Estás seguro de revocarte PROPIETARIO?",
-        "description": "Asegúrese de que los PROPIETARIOS restantes puedan iniciar sesión; de lo contrario, nadie podrá administrar los usuarios."
+      "remove-self-admin": {
+        "title": "¿Estás seguro de revocarte @.lower:common.role.admin?",
+        "description": "Asegúrese de que los @.lower:common.role.admin restantes puedan iniciar sesión; de lo contrario, nadie podrá administrar los usuarios."
       }
     },
     "im-integration": {
@@ -583,7 +582,7 @@
     "general": {
       "workspace": {
         "branding": "Marca",
-        "only-owner-can-edit": "Solo el propietario del espacio de trabajo puede actualizar la configuración.",
+        "only-admin-can-edit": "Solo el administrador del espacio de trabajo puede actualizar la configuración.",
         "logo": "Logo",
         "logo-aspect": "El tamaño sugerido para el logo debería tener una proporción de 5:2, por ejemplo, 100 x 40.",
         "select-logo": "Subir un archivo",
@@ -595,12 +594,12 @@
           "self": "Marca de agua",
           "update-success": "Configuración de marca de agua actualizada",
           "description": "Mostrar marcas de agua en las páginas, incluyendo el nombre de usuario, el ID y el correo electrónico.",
-          "only-owner-can-edit": "Solo el propietario del espacio de trabajo puede actualizar la configuración de la marca de agua.",
+          "only-admin-can-edit": "Solo el administrador del espacio de trabajo puede actualizar la configuración de la marca de agua.",
           "enable": "Activar marca de agua"
         },
         "disallow-signup": {
           "enable": "Deshabilitar el registro de autoservicio",
-          "description": "Una vez deshabilitado, los usuarios no pueden registrarse por sí mismos y solo pueden ser invitados por el propietario del espacio de trabajo."
+          "description": "Una vez deshabilitado, los usuarios no pueden registrarse por sí mismos y solo pueden ser invitados por el administrador del espacio de trabajo."
         },
         "require-2fa": {
           "enable": "Requerir autenticación de dos factores para todos los usuarios",
@@ -631,7 +630,7 @@
         "announcement": {
           "self": "Anuncio",
           "update-success": "Configuración de anuncios actualizada.",
-          "owner-or-dba-can-edit": "Solo el propietario del espacio de trabajo o el DBA pueden actualizar la configuración de anuncios."
+          "admin-or-dba-can-edit": "Solo el administrador del espacio de trabajo o el DBA pueden actualizar la configuración de anuncios."
         },
         "announcement-alert-level": {
           "description": "Level",
@@ -1116,8 +1115,8 @@
     },
     "approval-requested": "Aprobación solicitada",
     "assignee": {
-      "project-members": "Miembros del proyecto",
-      "workspace-owners": "Propietarios del espacio de trabajo",
+      "current-assignee": "Asignatario actual",
+      "workspace-admins": "Administrador del espacio de trabajo",
       "workspace-dbas": "DBA",
       "project-owners": "Propietarios del proyecto",
       "releasers-of-current-stage": "Liberadores de la etapa actual.",
@@ -1234,7 +1233,7 @@
     "show-how-to-create": "Mostrar cómo crear",
     "below-is-an-example-to-create-user-bytebase-with-password": "A continuación se muestra un ejemplo para crear el usuario 'bytebase {'@'}%' con contraseña",
     "your_db_pwd": "SU_DB_PWD",
-    "no-read-only-data-source-warn-for-owner-dba": "La instancia no ha configurado una conexión de solo lectura, por favor considere agregar una.",
+    "no-read-only-data-source-warn-for-admin-dba": "La instancia no ha configurado una conexión de solo lectura, por favor considere agregar una.",
     "no-read-only-data-source-warn-for-developer": "La instancia no ha configurado una conexión de solo lectura, solicite a su DBA que agregue una.",
     "sentence": {
       "host": {
@@ -1395,15 +1394,8 @@
       "name": "Política de implementación",
       "tip": "La política se aplica retrospectivamente a las incidencias.",
       "info": "Para implementar cambios en la base de datos, esta configuración controla si la implementación requiere aprobación manual.",
-      "manual": "Implementar manual",
-      "manual-info": "Requiere hacer clic en el botón \"Implementar\" manualmente, y luego se ejecutará el cambio.",
       "auto": "Implementar automático",
       "auto-info": "Si se aprueban todas las comprobaciones, el cambio se implementará y ejecutará automáticamente.",
-      "assignee-group": {
-        "workspace-owner-or-dba": "Requiere implementación del DBA o del propietario del espacio de trabajo.",
-        "project-owner": "Requiere implementación del propietario del proyecto."
-      },
-      "manual-by-dba-or-workspace-owner": "Requiere implementación del DBA o del propietario del espacio de trabajo.",
       "manual-by-project-owner": "Dueño del proyecto",
       "manual-by-project-releaser": "Liberador de proyecto",
       "manual-by-issue-creator": "Creador del problema",
@@ -1411,15 +1403,7 @@
       "manual-by-dedicated-roles": "Implementación manual por roles especializados",
       "manual-by-dedicated-roles-info": "Permita que cualquiera de los siguientes roles seleccionados haga clic en el botón \"Implementar\" y luego se ejecutará el cambio.",
       "manual-by-dba": "DBA",
-      "manual-by-workspace-owner": "Propietario del espacio de trabajo",
-      "role": {
-        "workspace-owner": "Propietario del espacio de trabajo",
-        "dba": "DBA",
-        "project-owner": "Dueño del proyecto",
-        "project-releaser": "Liberador de proyecto",
-        "issue-creator": "Creador del problema",
-        "last-approver": "El último aprobador del flujo de aprobación personalizado"
-      }
+      "manual-by-workspace-admin": "Administrador del espacio de trabajo"
     },
     "backup": {
       "name": "Política de programación de copias de seguridad de la base de datos",
@@ -1726,7 +1710,7 @@
     "configure-deploy": "Configurar implementación",
     "choose-git-provider-description": "Elige el proveedor Git donde se encuentran alojados tus scripts de esquema de base de datos (.sql). Cuando subas el script modificado al repositorio Git, Bytebase creará automáticamente un pipeline para aplicar el cambio de esquema a la base de datos.",
     "choose-git-provider-visit-workspace": "Visita la configuración de {workspace} para agregar más proveedores Git.",
-    "choose-git-provider-contact-workspace-owner": "Contacta al propietario de Bytebase si deseas que aparezcan otros proveedores Git aquí. Bytebase actualmente admite GitLab EE/CE autoalojado y planea agregar GitLab.com y GitHub Enterprise más adelante.",
+    "choose-git-provider-contact-workspace-admin": "Contacta al administrador de tu espacio de trabajo en Bytebase si deseas que aparezcan otros proveedores de Git aquí. Actualmente, Bytebase admite GitLab EE/CE autohospedado y planea agregar GitLab.com y GitHub Enterprise más adelante.",
     "select-repository-attention-gitlab": "Bytebase solo enumera los proyectos de GitLab que te otorgan al menos el rol de 'Mantenedor', lo que te permite configurar el webhook del proyecto para observar el evento de empuje de código.",
     "select-repository-attention-github": "Bytebase solo enumera los repositorios de GitHub en los que tienes permisos de administrador, lo que te permite configurar el webhook del repositorio para observar el evento de empuje de código.",
     "select-repository-attention-bitbucket": "Bytebase solo enumera los repositorios de Bitbucket en los que tienes permisos de administrador, lo que te permite configurar el webhook del repositorio para observar el evento de empuje de código.",
@@ -1855,6 +1839,14 @@
         "issue-task-run-status-change": {
           "title": "Cambio de estado de ejecución de tarea de incidencia",
           "label": "Cuando cambia el estado de la ejecución de la tarea que encierra la incidencia"
+        },
+        "notify-issue-approved": {
+          "title": "Asunto aprobado",
+          "label": "Cuando se aprueba la emisión"
+        },
+        "notify-pipeline-rollout": {
+          "title": "Se necesita implementar el problema",
+          "label": "Cuando el problema está esperando la implementación"
         }
       }
     },
@@ -1865,7 +1857,7 @@
       "member-placeholder": "Seleccionar usuario",
       "manage-member": "Administrar miembros",
       "owner": "@.upper:common.role.owner",
-      "developer": "@.upper:common.role.developer",
+      "developer": "@.upper:common.role.member",
       "archive": {
         "title": "Archivar proyecto",
         "description": "El proyecto archivado no se mostrará en la interfaz normal. Puede hacer clic en \"Archivar\" en la parte inferior izquierda para encontrarlo y restaurarlo.",
@@ -1895,7 +1887,7 @@
       }
     },
     "members": {
-      "description": "Los miembros del proyecto determinan el permiso para operar la base de datos y los problemas dentro del proyecto. El propietario del proyecto, el propietario del espacio de trabajo y el DBA del espacio de trabajo tienen permisos completos para el proyecto.",
+      "description": "Los miembros del proyecto determinan el permiso para operar la base de datos y los problemas dentro del proyecto. El propietario del proyecto, el administrador del espacio de trabajo y el DBA del espacio de trabajo tienen permisos completos para el proyecto.",
       "add-member": "Agregar miembro",
       "revoke-member": "Revocar miembro",
       "revoke-access": "Revocar acceso",
@@ -1944,7 +1936,7 @@
   },
   "gitops": {
     "setting": {
-      "description": "Bytebase admite el flujo de trabajo de GitOps, donde los scripts de migración de la base de datos se almacenan en el sistema de control de versiones (VCS) y los scripts de migración recién creados activarán automáticamente el cambio de base de datos correspondiente. Los propietarios de Bytebase administran todos los VCS aplicables aquí para que los propietarios de proyectos puedan vincular los proyectos con sus repositorios de Git desde estos VCS.",
+      "description": "Bytebase admite el flujo de trabajo de GitOps, donde los scripts de migración de la base de datos se almacenan en el sistema de control de versiones (VCS) y los scripts de migración recién creados activarán automáticamente el cambio de base de datos correspondiente. Los administrador de Bytebase administran todos los VCS aplicables aquí para que los propietarios de proyectos puedan vincular los proyectos con sus repositorios de Git desde estos VCS.",
       "description-highlight": "Si desea habilitar el inicio de sesión de terceros a través de sus VCS configurados, configure en SSO.",
       "add-git-provider": {
         "self": "Agregar un proveedor de Git",
@@ -2300,7 +2292,8 @@
       "schema-not-found": "Esquema no encontrado",
       "failed-to-fetch-database-schema": "Error al obtener el esquema de la base de datos",
       "invalid-schema": "Esquema no válido",
-      "cannot-drop-the-last-column": "No se puede eliminar la última columna"
+      "cannot-drop-the-last-column": "No se puede eliminar la última columna",
+      "cannot-change-config": "La configuración de la base de datos debe cambiarse con el esquema"
     },
     "confirm-to-close": {
       "title": "Confirmar para cerrar",
@@ -2371,10 +2364,10 @@
     "require-subscription": "Esta función requiere {requiredPlan}, por favor compra la licencia Bytebase para desbloquear esta función.",
     "feature-require-subscription": "{feature} requiere {requiredPlan}.",
     "required-plan-with-trial": "Esta función requiere {requiredPlan}. {startTrial}.",
-    "trial-for-plan": "Puedes iniciar una prueba gratuita de {plan} por {days} días - no se requiere tarjeta de crédito",
-    "trial-for-days": "Puedes iniciar una prueba gratuita por {days} días - no se requiere tarjeta de crédito",
-    "upgrade-trial": "Puedes actualizar tu prueba gratuita a este plan",
-    "contact-to-upgrade": "Comuníquese con el propietario de su espacio de trabajo o DBA para actualizar el plan",
+    "trial-for-plan": "Puedes iniciar una prueba gratuita de {plan} por {days} días - no se requiere tarjeta de crédito.",
+    "trial-for-days": "Puedes iniciar una prueba gratuita por {days} días - no se requiere tarjeta de crédito.",
+    "upgrade-trial": "Puedes actualizar tu prueba gratuita a este plan.",
+    "contact-to-upgrade": "Contacta al administrador de tu espacio de trabajo para actualizar el plan.",
     "upgrade-now": "Actualizar ahora",
     "instance-assignment": {
       "license": "Licencia",
@@ -2553,7 +2546,7 @@
       },
       "bb-feature-disallow-signup": {
         "title": "Deshabilitar el registro de autoservicio",
-        "desc": "Una vez deshabilitados, los usuarios no pueden registrarse por sí mismos y solo pueden ser invitados por el propietario del espacio de trabajo."
+        "desc": "Una vez deshabilitados, los usuarios no pueden registrarse por sí mismos y solo pueden ser invitados por el administrador del espacio de trabajo."
       },
       "bb-feature-instance-ssh-connection": {
         "title": "Instancia de Conexión SSH",
@@ -2621,7 +2614,7 @@
     "policy-duplicated": "La política de revisión se duplicó correctamente.",
     "rules": "Reglas",
     "filter": "Filtro",
-    "no-permission": "Solo el DBA o el propietario tienen permiso para crear o actualizar la política de revisión.",
+    "no-permission": "Solo el DBA o el administrador tiene permiso para crear o actualizar la política de revisión.",
     "disable": "Deshabilitar",
     "enable": "Habilitar",
     "delete": "Eliminar política de revisión SQL",
@@ -2964,7 +2957,7 @@
         "order": "Orden",
         "approver": "Aprobador",
         "group": {
-          "WORKSPACE_OWNER": "Propietario del espacio de trabajo",
+          "WORKSPACE_OWNER": "Administrador del espacio de trabajo",
           "WORKSPACE_DBA": "DBA",
           "PROJECT_OWNER": "Propietario del proyecto",
           "PROJECT_MEMBER": "Miembro del proyecto"
@@ -3070,7 +3063,7 @@
     },
     "no-log-placeholder": {
       "admin": "Haga clic en el botón \"Configurar\" para obtener consultas lentas de las instancias de la base de datos o haga clic en el botón \"Sincronizar ahora\" para sincronizar los registros de consultas lentas de inmediato",
-      "developer": "Haga clic en el botón \"Sincronizar ahora\" para sincronizar los registros de consultas lentas inmediatamente o comuníquese con los propietarios/DBA de Bytebase para configurar consultas lentas"
+      "developer": "Haga clic en el botón \"Sincronizar ahora\" para sincronizar los registros de consultas lentas inmediatamente o comuníquese con los administradors/DBA de Bytebase para configurar consultas lentas"
     }
   },
   "schema-template": {
@@ -3139,25 +3132,25 @@
     "select": "Seleccionar rol",
     "select-roles": "Seleccionar roles",
     "title": "Título",
-    "owner": {
-      "description": "Rol de propietario del proyecto definido por el sistema"
-    },
-    "developer": {
-      "description": "Rol de desarrollador del proyecto definido por el sistema"
-    },
-    "exporter": {
-      "description": "Rol de exportador del proyecto definido por el sistema"
-    },
-    "querier": {
-      "description": "Rol de querier del proyecto definido por el sistema"
-    },
     "select-role": "Seleccionar rol",
     "expired-tip": "El papel puede haber expirado.",
+    "owner": {
+      "description": "Todas las permisos dentro del proyecto."
+    },
+    "developer": {
+      "description": "Todas las permisos de visualización, más permisos para solicitar cambios en la base de datos."
+    },
     "releaser": {
-      "description": "Rol de liberador de proyecto definido por el sistema"
+      "description": "Todas las permisos de visualización, más permisos para revisar solicitudes de cambios en la base de datos con fines de lanzamiento."
+    },
+    "querier": {
+      "description": "Permisos para realizar consultas a datos de la base de datos"
+    },
+    "exporter": {
+      "description": "Permisos para exportar datos de la base de datos."
     },
     "viewer": {
-      "description": "Rol de visor de base de datos de proyecto definido por el sistema"
+      "description": "Permisos de solo lectura para ver información básica del proyecto, acceder a las bases de datos e iniciar solicitudes de privilegios."
     }
   },
   "database-group": {

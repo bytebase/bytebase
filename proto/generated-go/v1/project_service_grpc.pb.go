@@ -22,7 +22,6 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	ProjectService_GetProject_FullMethodName                   = "/bytebase.v1.ProjectService/GetProject"
 	ProjectService_ListProjects_FullMethodName                 = "/bytebase.v1.ProjectService/ListProjects"
-	ProjectService_SearchProjects_FullMethodName               = "/bytebase.v1.ProjectService/SearchProjects"
 	ProjectService_CreateProject_FullMethodName                = "/bytebase.v1.ProjectService/CreateProject"
 	ProjectService_UpdateProject_FullMethodName                = "/bytebase.v1.ProjectService/UpdateProject"
 	ProjectService_DeleteProject_FullMethodName                = "/bytebase.v1.ProjectService/DeleteProject"
@@ -60,8 +59,6 @@ const (
 type ProjectServiceClient interface {
 	GetProject(ctx context.Context, in *GetProjectRequest, opts ...grpc.CallOption) (*Project, error)
 	ListProjects(ctx context.Context, in *ListProjectsRequest, opts ...grpc.CallOption) (*ListProjectsResponse, error)
-	// Search for projects that the caller has both projects.get permission on, and also satisfy the specified query.
-	SearchProjects(ctx context.Context, in *SearchProjectsRequest, opts ...grpc.CallOption) (*SearchProjectsResponse, error)
 	CreateProject(ctx context.Context, in *CreateProjectRequest, opts ...grpc.CallOption) (*Project, error)
 	UpdateProject(ctx context.Context, in *UpdateProjectRequest, opts ...grpc.CallOption) (*Project, error)
 	DeleteProject(ctx context.Context, in *DeleteProjectRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
@@ -113,15 +110,6 @@ func (c *projectServiceClient) GetProject(ctx context.Context, in *GetProjectReq
 func (c *projectServiceClient) ListProjects(ctx context.Context, in *ListProjectsRequest, opts ...grpc.CallOption) (*ListProjectsResponse, error) {
 	out := new(ListProjectsResponse)
 	err := c.cc.Invoke(ctx, ProjectService_ListProjects_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) SearchProjects(ctx context.Context, in *SearchProjectsRequest, opts ...grpc.CallOption) (*SearchProjectsResponse, error) {
-	out := new(SearchProjectsResponse)
-	err := c.cc.Invoke(ctx, ProjectService_SearchProjects_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -395,8 +383,6 @@ func (c *projectServiceClient) UpdateProjectProtectionRules(ctx context.Context,
 type ProjectServiceServer interface {
 	GetProject(context.Context, *GetProjectRequest) (*Project, error)
 	ListProjects(context.Context, *ListProjectsRequest) (*ListProjectsResponse, error)
-	// Search for projects that the caller has both projects.get permission on, and also satisfy the specified query.
-	SearchProjects(context.Context, *SearchProjectsRequest) (*SearchProjectsResponse, error)
 	CreateProject(context.Context, *CreateProjectRequest) (*Project, error)
 	UpdateProject(context.Context, *UpdateProjectRequest) (*Project, error)
 	DeleteProject(context.Context, *DeleteProjectRequest) (*emptypb.Empty, error)
@@ -438,9 +424,6 @@ func (UnimplementedProjectServiceServer) GetProject(context.Context, *GetProject
 }
 func (UnimplementedProjectServiceServer) ListProjects(context.Context, *ListProjectsRequest) (*ListProjectsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListProjects not implemented")
-}
-func (UnimplementedProjectServiceServer) SearchProjects(context.Context, *SearchProjectsRequest) (*SearchProjectsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SearchProjects not implemented")
 }
 func (UnimplementedProjectServiceServer) CreateProject(context.Context, *CreateProjectRequest) (*Project, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateProject not implemented")
@@ -574,24 +557,6 @@ func _ProjectService_ListProjects_Handler(srv interface{}, ctx context.Context, 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ProjectServiceServer).ListProjects(ctx, req.(*ListProjectsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_SearchProjects_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SearchProjectsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).SearchProjects(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_SearchProjects_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).SearchProjects(ctx, req.(*SearchProjectsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1132,10 +1097,6 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListProjects",
 			Handler:    _ProjectService_ListProjects_Handler,
-		},
-		{
-			MethodName: "SearchProjects",
-			Handler:    _ProjectService_SearchProjects_Handler,
 		},
 		{
 			MethodName: "CreateProject",

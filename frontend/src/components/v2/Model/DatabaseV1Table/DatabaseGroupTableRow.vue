@@ -57,6 +57,5 @@ defineProps<{
   showEnvironmentColumn: boolean;
   showInstanceColumn: boolean;
   showLabelsColumn: boolean;
-  allowQuery: boolean;
 }>();
 </script>

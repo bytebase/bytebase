@@ -50,8 +50,6 @@
     "environment": "Environment",
     "environments": "Environments",
     "environment-name": "Environment Name",
-    "bookmark": "Bookmark",
-    "bookmarks": "Bookmarks",
     "quick-action": "Quick Action",
     "archive": "Archive",
     "archived": "Archived",
@@ -78,10 +76,11 @@
     "visit": "Visit",
     "role": {
       "self": "Role",
+      "admin": "Admin",
       "dba": "DBA",
+      "member": "Member",
       "owner": "Owner",
       "developer": "Developer",
-      "member": "Member",
       "exporter": "Exporter",
       "querier": "Querier",
       "releaser": "Releaser",
@@ -508,8 +507,8 @@
       },
       "tooltip": {
         "upgrade": "Upgrade to enable role management",
-        "not-allow-edit": "Only Owner can change the role",
-        "not-allow-remove": "Cannot remove the last Owner",
+        "not-allow-edit": "Only Admin can change the role",
+        "not-allow-remove": "Cannot remove the last Admin",
         "project-role-provider-gitlab": "Mapped from the {rawRole} role in the corresponding GitLab project.",
         "cannot-change-role-of-systembot-or-service-account": "Cannot change the role of system bot or service account"
       },
@@ -521,9 +520,9 @@
       "service-key-copied": "Service Key copied to clipboard, please keep it in secret.",
       "create-as-service-account": "Create as service account",
       "show-inactive": "Show inactive members",
-      "remove-self-owner": {
-        "title": "Are you sure to revoke OWNER from yourself?",
-        "description": "Please make sure the remaining OWNER(s) can sign in, otherwise, no one can manage users."
+      "remove-self-admin": {
+        "title": "Are you sure to revoke @.lower:common.role.admin from yourself?",
+        "description": "Please make sure the remaining @.lower:common.role.admin(s) can sign in, otherwise, no one can manage users."
       }
     },
     "im-integration": {
@@ -584,7 +583,7 @@
     "general": {
       "workspace": {
         "branding": "Branding",
-        "only-owner-can-edit": "Only workspace owner can update the settings.",
+        "only-admin-can-edit": "Only workspace admin can update the settings.",
         "logo": "Logo",
         "logo-aspect": "The suggested logo size should be 5:2 aspect ratio, e.g 100 x 40.",
         "select-logo": "Upload a file",
@@ -596,12 +595,12 @@
           "self": "Watermark",
           "update-success": "Watermark setting updated",
           "description": "Display watermarks on pages, including username, ID and email.",
-          "only-owner-can-edit": "Only workspace owner can update watermark setting.",
+          "only-admin-can-edit": "Only workspace admin can update watermark setting.",
           "enable": "Enable watermark"
         },
         "disallow-signup": {
           "enable": "Disable self-service signup",
-          "description": "Once disabled, users cannot self-service signup and can only be invited by the workspace owner."
+          "description": "Once disabled, users cannot self-service signup and can only be invited by the workspace admin."
         },
         "require-2fa": {
           "enable": "Require two-factor authentication for all users",
@@ -644,7 +643,7 @@
         "announcement": {
           "self": "Announcement",
           "update-success": "Announcement setting updated.",
-          "owner-or-dba-can-edit": "Only workspace owner or DBA can update announcement setting."
+          "admin-or-dba-can-edit": "Only workspace admin or DBA can update announcement setting."
         },
         "announcement-alert-level": {
           "description": "Level",
@@ -1117,8 +1116,8 @@
     },
     "approval-requested": "Approval Requested",
     "assignee": {
-      "project-members": "Project members",
-      "workspace-owners": "Workspace owners",
+      "current-assignee": "Current assignee",
+      "workspace-admins": "Workspace admins",
       "workspace-dbas": "DBA",
       "project-owners": "Project owners",
       "releasers-of-current-stage": "Releasers of current stage",
@@ -1235,7 +1234,7 @@
     "show-how-to-create": "Show how to create",
     "below-is-an-example-to-create-user-bytebase-with-password": "Below is an example to create user 'bytebase{'@'}%' with password",
     "your_db_pwd": "YOUR_DB_PWD",
-    "no-read-only-data-source-warn-for-owner-dba": "The instance has not configured read-only connection, please consider adding one.",
+    "no-read-only-data-source-warn-for-admin-dba": "The instance has not configured read-only connection, please consider adding one.",
     "no-read-only-data-source-warn-for-developer": "The instance has not configured read-only connection, please ask your DBA to add one.",
     "sentence": {
       "host": {
@@ -1396,15 +1395,8 @@
       "name": "Rollout policy",
       "tip": "The policy is applied to issues retroactively.",
       "info": "For rolling out database change, this setting controls whether the rollout requires manual approval.",
-      "manual": "Manual rollout",
-      "manual-info": "Require clicking \"Rollout\" button manually, and then the change will be executed.",
       "auto": "Automatic rollout",
       "auto-info": "If all check pass, the change will be rolled out and executed automatically.",
-      "assignee-group": {
-        "workspace-owner-or-dba": "Require rolling out from DBA or workspace owner.",
-        "project-owner": "Require rolling out from project owner."
-      },
-      "manual-by-dba-or-workspace-owner": "Require rolling out from DBA or workspace owner.",
       "manual-by-project-owner": "Project owner",
       "manual-by-project-releaser": "Project releaser",
       "manual-by-issue-creator": "Issue creator",
@@ -1412,15 +1404,7 @@
       "manual-by-dedicated-roles": "Manual rollout by dedicated roles",
       "manual-by-dedicated-roles-info": "Allow any of the following selected roles to click the \"Rollout\" button, and then the change will be executed.",
       "manual-by-dba": "DBA",
-      "manual-by-workspace-owner": "Workspace owner",
-      "role": {
-        "workspace-owner": "Workspace owner",
-        "dba": "DBA",
-        "project-owner": "Project owner",
-        "project-releaser": "Project releaser",
-        "issue-creator": "Issue creator",
-        "last-approver": "The last approver from the custom approval flow"
-      }
+      "manual-by-workspace-admin": "Workspace admin"
     },
     "backup": {
       "name": "Database backup schedule policy",
@@ -1728,7 +1712,7 @@
     "configure-deploy": "Configure deploy",
     "choose-git-provider-description": "Choose the Git provider where your database schema scripts (.sql) are hosted. When you push the changed script to the Git repository, Bytebase will automatically create a pipeline to apply the schema change to the database.",
     "choose-git-provider-visit-workspace": "Visit {workspace} setting to add more Git providers.",
-    "choose-git-provider-contact-workspace-owner": "Contact your Bytebase owner if you want other Git providers to appear here. Bytebase currently supports self-host GitLab EE/CE, and plan to add GitLab.com, and GitHub Enterprise later.",
+    "choose-git-provider-contact-workspace-admin": "Contact your Bytebase workspace admin if you want other Git providers to appear here. Bytebase currently supports self-host GitLab EE/CE, and plan to add GitLab.com, and GitHub Enterprise later.",
     "select-repository-attention-gitlab": "Bytebase only lists GitLab projects granting you at least the 'Maintainer' role, which allows to configure the project webhook to observe the code push event.",
     "select-repository-attention-github": "Bytebase only lists GitHub repositories you have admin permissions, which allows to configure the repository webhook to observe the code push event.",
     "select-repository-attention-bitbucket": "Bytebase only lists Bitbucket repositories you have admin permissions, which allows to configure the repository webhook to observe the code push event.",
@@ -1856,6 +1840,14 @@
         "issue-task-run-status-change": {
           "title": "Issue task run status change",
           "label": "When issue task run status has changed"
+        },
+        "notify-issue-approved": {
+          "title": "Issue approved",
+          "label": "When issue is approved"
+        },
+        "notify-pipeline-rollout": {
+          "title": "Issue rollout needed",
+          "label": "When the issue is waiting rollout"
         }
       }
     },
@@ -1866,7 +1858,7 @@
       "member-placeholder": "Select user",
       "manage-member": "Manage members",
       "owner": "@.upper:common.role.owner",
-      "developer": "@.upper:common.role.developer",
+      "developer": "@.upper:common.role.member",
       "archive": {
         "title": "Archive project",
         "description": "Archived project will not be shown on the normal interface. You can click \"Archive\" on the bottom left to find and restore it.",
@@ -1896,7 +1888,7 @@
       }
     },
     "members": {
-      "description": "Project members determine the permission to operate database and issues inside the proejct. Project Owner, Workspace Owner and Workspace DBA all have full project permissions.",
+      "description": "Project members determine the permission to operate database and issues inside the proejct. Project Owner, Workspace Admin and Workspace DBA all have full project permissions.",
       "add-member": "Add member",
       "revoke-member": "Revoke member",
       "revoke-access": "Revoke Access",
@@ -1945,7 +1937,7 @@
   },
   "gitops": {
     "setting": {
-      "description": "Bytebase supports GitOps workflow where database migration scripts are stored in the version control system (VCS), and newly created migration scripts will automatically trigger the corresponding database change. Bytebase owners manage all the applicable VCSs here, so that project owners can link the projects with their Git repositories from these VCSs.",
+      "description": "Bytebase supports GitOps workflow where database migration scripts are stored in the version control system (VCS), and newly created migration scripts will automatically trigger the corresponding database change. Bytebase admins manage all the applicable VCSs here, so that project owners can link the projects with their Git repositories from these VCSs.",
       "description-highlight": "If you want to enable third party login via your configured VCSs, please configure it in SSO.",
       "add-git-provider": {
         "self": "Add a Git provider",
@@ -2304,7 +2296,8 @@
       "schema-not-found": "Schema not found",
       "failed-to-fetch-database-schema": "Failed to fetch database schema",
       "invalid-schema": "Invalid schema",
-      "cannot-drop-the-last-column": "Cannot drop the last column"
+      "cannot-drop-the-last-column": "Cannot drop the last column",
+      "cannot-change-config": "Database config must changed with the schema"
     },
     "confirm-to-close": {
       "title": "Confirm to close",
@@ -2375,10 +2368,10 @@
     "require-subscription": "This feature requires {requiredPlan}, please purchase Bytebase license to unlock this feature.",
     "feature-require-subscription": "{feature} requires {requiredPlan}.",
     "required-plan-with-trial": "This feature requires {requiredPlan}. {startTrial}.",
-    "trial-for-plan": "You can start a free trial for {plan} with {days} days - no credit card required",
-    "trial-for-days": "You can start a free trial for {days} days - no credit card required",
-    "upgrade-trial": "You can upgrade your free trial to this plan",
-    "contact-to-upgrade": "Contact your Workspace Owner or DBA to upgrade the plan",
+    "trial-for-plan": "You can start a free trial for {plan} with {days} days - no credit card required.",
+    "trial-for-days": "You can start a free trial for {days} days - no credit card required.",
+    "upgrade-trial": "You can upgrade your free trial to this plan.",
+    "contact-to-upgrade": "Contact your Workspace admin to upgrade the plan.",
     "upgrade-now": "Upgrade Now",
     "instance-assignment": {
       "license": "License",
@@ -2565,7 +2558,7 @@
       },
       "bb-feature-disallow-signup": {
         "title": "Disable self-service signup",
-        "desc": "Once disabled, users cannot self-service signup and can only be invited by the workspace owner."
+        "desc": "Once disabled, users cannot self-service signup and can only be invited by the workspace admin."
       },
       "bb-feature-schema-template": {
         "title": "Schema Template",
@@ -2625,7 +2618,7 @@
     "policy-duplicated": "Successfully duplicated the review policy.",
     "rules": "Rules",
     "filter": "Filter",
-    "no-permission": "Only DBA or Owner has permission to create or update review policy.",
+    "no-permission": "Only DBA or Admin has permission to create or update review policy.",
     "disable": "Disable",
     "enable": "Enable",
     "delete": "Delete SQL review policy",
@@ -2967,7 +2960,7 @@
         "order": "Order",
         "approver": "Approver",
         "group": {
-          "WORKSPACE_OWNER": "Workspace Owner",
+          "WORKSPACE_OWNER": "Workspace Admin",
           "WORKSPACE_DBA": "DBA",
           "PROJECT_OWNER": "Project Owner",
           "PROJECT_MEMBER": "Project Member"
@@ -3073,7 +3066,7 @@
     },
     "no-log-placeholder": {
       "admin": "Click the \"Configure\" button to fetch slow queries from the database instances or click the \"Sync Now\" button to sync slow query logs immediately",
-      "developer": "Click the \"Sync Now\" button to sync slow query logs immediately or contact Bytebase owners/DBAs to configure slow queries"
+      "developer": "Click the \"Sync Now\" button to sync slow query logs immediately or contact Bytebase admins/DBAs to configure slow queries"
     }
   },
   "schema-template": {
@@ -3142,25 +3135,25 @@
     "select": "Select role",
     "select-roles": "Select roles",
     "title": "Title",
-    "owner": {
-      "description": "System defined project owner role"
-    },
-    "developer": {
-      "description": "System defined project developer role"
-    },
-    "exporter": {
-      "description": "System defined project exporter role"
-    },
-    "querier": {
-      "description": "System defined project querier role"
-    },
     "select-role": "Select role",
     "expired-tip": "The role might has been expired.",
+    "owner": {
+      "description": "All permissions within the project"
+    },
+    "developer": {
+      "description": "All viewer permissions, plus permissions for requesting database changes."
+    },
     "releaser": {
-      "description": "System defined project releaser role"
+      "description": "All viewer permissions, plus permission for reviewing database change requests for release purposes."
+    },
+    "querier": {
+      "description": "Permissions for querying database data."
+    },
+    "exporter": {
+      "description": "Permissions for exporting database data."
     },
     "viewer": {
-      "description": "System defined project database viewer role"
+      "description": "Read-only permissions for viewing basic project information, accessing databases, and initiating privilege requests."
     }
   },
   "database-group": {

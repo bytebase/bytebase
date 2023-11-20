@@ -2,6 +2,15 @@
   <NPopover :disabled="!tooltip">
     <template #trigger>
       <div class="flex flex-row justify-start items-center gap-x-1">
+        <div v-if="showProject">
+          <ProjectV1Name :project="database.projectEntity" :link="false" />
+        </div>
+
+        <heroicons:chevron-right
+          v-if="showProject && showArrow"
+          class="text-control-light"
+        />
+
         <div
           v-if="showInstance || showEngineIcon"
           class="flex flex-row items-center gap-x-1"
@@ -55,10 +64,12 @@ import { ComposedDatabase } from "@/types";
 import DatabaseV1Name from "./DatabaseV1Name.vue";
 import EnvironmentV1Name from "./EnvironmentV1Name.vue";
 import { InstanceV1EngineIcon, InstanceV1Name } from "./Instance";
+import ProjectV1Name from "./ProjectV1Name.vue";
 
 withDefaults(
   defineProps<{
     database: ComposedDatabase;
+    showProject?: boolean;
     showEngineIcon?: boolean;
     showInstance?: boolean;
     showArrow?: boolean;
@@ -67,6 +78,7 @@ withDefaults(
     tooltip?: "instance" | undefined;
   }>(),
   {
+    showProject: false,
     showEngineIcon: true,
     showInstance: true,
     showArrow: true,

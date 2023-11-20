@@ -34,7 +34,7 @@ bytebase-build
 dist/
 docs/openapi/swagger.json
 docs/sqlservice/swagger.json
+frontend/public/monaco-workers/
 frontend/src/types/sql-review.*.yaml
 frontend/src/types/plan.yaml
-
 scripts/.air.toml

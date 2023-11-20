@@ -105,6 +105,15 @@ func NormalizeMySQLTextStringLiteral(ctx parser.ITextStringLiteralContext) strin
 	return textString[1 : len(textString)-1]
 }
 
+// NormalizeMySQLSignedStringLiteral normalize the given SignedLiteral.
+func NormalizeMySQLSignedLiteral(ctx parser.ISignedLiteralContext) string {
+	textString := ctx.GetText()
+	if (strings.HasPrefix(textString, "'") && strings.HasSuffix(textString, "'")) || (strings.HasPrefix(textString, "\"") && strings.HasSuffix(textString, "\"")) {
+		textString = textString[1 : len(textString)-1]
+	}
+	return textString
+}
+
 // NormalizeMySQLSelectAlias normalizes the given select alias.
 func NormalizeMySQLSelectAlias(selectAlias parser.ISelectAliasContext) string {
 	if selectAlias.Identifier() != nil {
@@ -298,5 +307,38 @@ func NormalizeMySQLDataType(ctx parser.IDataTypeContext, compact bool) string {
 		return "char"
 	default:
 		return strings.ToLower(ctx.GetType_().GetText())
+	}
+}
+
+// GetCharSetName get charset name from DataTypeContext.
+func GetCharSetName(ctx parser.IDataTypeContext) string {
+	if ctx.CharsetWithOptBinary() == nil {
+		return ""
+	}
+	charset := NormalizeMySQLCharsetName(ctx.CharsetWithOptBinary().CharsetName())
+	return charset
+}
+
+// GetCollationName get collation name from FieldDefinitionContext.
+func GetCollationName(ctx parser.IFieldDefinitionContext) string {
+	for _, attr := range ctx.AllColumnAttribute() {
+		if attr != nil && attr.Collate() != nil && attr.Collate().CollationName() != nil {
+			return NormalizeMySQLCollationName(attr.Collate().CollationName())
+		}
+	}
+	return ""
+}
+
+// IsTypeType check if the dataType is time type.
+func IsTimeType(ctx parser.IDataTypeContext) bool {
+	if ctx.GetType_() == nil {
+		return false
+	}
+
+	switch ctx.GetType_().GetTokenType() {
+	case parser.MySQLParserDATETIME_SYMBOL, parser.MySQLParserTIMESTAMP_SYMBOL:
+		return true
+	default:
+		return false
 	}
 }

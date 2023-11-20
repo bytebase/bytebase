@@ -2,7 +2,7 @@
   <BBModal
     :title="$t('database.edit-schema')"
     :trap-focus="false"
-    class="schema-editor-modal-container !w-[96rem] h-auto overflow-auto !max-w-[calc(100%-40px)] !max-h-[calc(100%-40px)]"
+    class="schema-editor-modal-container !w-[96rem] h-auto overflow-auto !max-w-[calc(100vw-40px)] !max-h-[calc(100vh-40px)]"
     @close="dismissModal"
   >
     <div
@@ -352,6 +352,17 @@ const fetchStatementMapWithSchemaEditor = async () => {
       targetMetadata,
       engine: database.instanceEntity.engine,
     });
+    if (
+      diff === "" &&
+      !isEqual(sourceMetadata.schemaConfigs, targetMetadata.schemaConfigs)
+    ) {
+      pushNotification({
+        module: "bytebase",
+        style: "WARN",
+        title: t("schema-editor.message.cannot-change-config"),
+      });
+      return;
+    }
     statementMap.set(database.uid, diff);
   }
   return statementMap;

@@ -792,7 +792,88 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 		slog.Error("failed to create approval step pending activity after creating issue", log.BBError(err))
 	}
 
-	s.onIssueApproved(ctx, issue)
+	func() {
+		if !approved {
+			return
+		}
+
+		// notify issue approved
+		if err := func() error {
+			create := &store.ActivityMessage{
+				CreatorUID:   api.SystemBotID,
+				ContainerUID: issue.UID,
+				Type:         api.ActivityNotifyIssueApproved,
+				Level:        api.ActivityInfo,
+				Comment:      "",
+				Payload:      "",
+			}
+			if _, err := s.activityManager.CreateActivity(ctx, create, &activity.Metadata{
+				Issue: issue,
+			}); err != nil {
+				return errors.Wrapf(err, "failed to create activity")
+			}
+			return nil
+		}(); err != nil {
+			slog.Error("failed to create activity for notifying issue approved", log.BBError(err))
+		}
+
+		// notify pipeline rollout
+		if err := func() error {
+			if issue.PipelineUID == nil {
+				return nil
+			}
+			stages, err := s.store.ListStageV2(ctx, *issue.PipelineUID)
+			if err != nil {
+				return errors.Wrapf(err, "failed to list stages")
+			}
+			if len(stages) == 0 {
+				return nil
+			}
+			policy, err := s.store.GetRolloutPolicy(ctx, stages[0].EnvironmentID)
+			if err != nil {
+				return errors.Wrapf(err, "failed to get rollout policy")
+			}
+			payload, err := json.Marshal(api.ActivityNotifyPipelineRolloutPayload{
+				RolloutPolicy: policy,
+				StageName:     stages[0].Name,
+			})
+			if err != nil {
+				return errors.Wrapf(err, "failed to marshal activity payload")
+			}
+			create := &store.ActivityMessage{
+				CreatorUID:   api.SystemBotID,
+				ContainerUID: *issue.PipelineUID,
+				Type:         api.ActivityNotifyPipelineRollout,
+				Level:        api.ActivityInfo,
+				Comment:      "",
+				Payload:      string(payload),
+			}
+			if _, err := s.activityManager.CreateActivity(ctx, create, &activity.Metadata{Issue: issue}); err != nil {
+				return err
+			}
+			return nil
+		}(); err != nil {
+			slog.Error("failed to create rollout release notification activity", log.BBError(err))
+		}
+	}()
+
+	if issue.Type == api.IssueGrantRequest {
+		if err := func() error {
+			payload := issue.Payload
+			approved, err := utils.CheckApprovalApproved(payload.Approval)
+			if err != nil {
+				return errors.Wrap(err, "failed to check if the approval is approved")
+			}
+			if approved {
+				if err := utils.ChangeIssueStatus(ctx, s.store, s.activityManager, issue, api.IssueDone, api.SystemBotID, ""); err != nil {
+					return errors.Wrap(err, "failed to update issue status")
+				}
+			}
+			return nil
+		}(); err != nil {
+			slog.Debug("failed to update issue status to done if grant request issue is approved", log.BBError(err))
+		}
+	}
 
 	issueV1, err := convertToIssue(ctx, s.store, issue)
 	if err != nil {
@@ -1414,26 +1495,6 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, request *v1pb.Upd
 		CreateTime: timestamppb.New(time.Unix(activity.CreatedTs, 0)),
 		UpdateTime: timestamppb.New(time.Unix(activity.UpdatedTs, 0)),
 	}, nil
-}
-
-func (s *IssueService) onIssueApproved(ctx context.Context, issue *store.IssueMessage) {
-	if issue.Type == api.IssueGrantRequest {
-		if err := func() error {
-			payload := issue.Payload
-			approved, err := utils.CheckApprovalApproved(payload.Approval)
-			if err != nil {
-				return errors.Wrap(err, "failed to check if the approval is approved")
-			}
-			if approved {
-				if err := utils.ChangeIssueStatus(ctx, s.store, s.activityManager, issue, api.IssueDone, api.SystemBotID, ""); err != nil {
-					return errors.Wrap(err, "failed to update issue status")
-				}
-			}
-			return nil
-		}(); err != nil {
-			slog.Debug("failed to update issue status to done if grant request issue is approved", log.BBError(err))
-		}
-	}
 }
 
 func (s *IssueService) getIssueMessage(ctx context.Context, name string) (*store.IssueMessage, error) {

@@ -13,7 +13,7 @@
         >
           <template #deployment_config>
             <router-link
-              :to="`/project/${projectV1Slug(state.project!)}#databases`"
+              :to="`/project/${projectV1Slug(state.project!)}#setting`"
               class="underline hover:bg-link-hover"
               active-class=""
               exact-active-class=""
@@ -75,47 +75,13 @@
                   </NRadio>
                 </div>
                 <div v-if="state.databaseSelectedTab === 'DATABASE'">
-                  <DatabaseV1Table
-                    mode="PROJECT_SHORT"
-                    table-class="border"
-                    :custom-click="true"
+                  <ProjectStandardView
+                    :state="state"
+                    :project="state.project"
                     :database-list="selectableDatabaseList"
-                    :show-selection-column="true"
-                    @select-database="
-                      (db: ComposedDatabase) =>
-                        toggleDatabasesSelection([db as ComposedDatabase], !isDatabaseSelected(db))
-                    "
-                  >
-                    <template
-                      #selection-all="{ databaseList: renderedDatabaseList }"
-                    >
-                      <input
-                        v-if="renderedDatabaseList.length > 0"
-                        type="checkbox"
-                        class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-                        v-bind="getAllSelectionState(renderedDatabaseList as ComposedDatabase[])"
-                        @input="
-                          toggleDatabasesSelection(
-                            renderedDatabaseList as ComposedDatabase[],
-                            ($event.target as HTMLInputElement).checked
-                          )
-                        "
-                      />
-                    </template>
-                    <template #selection="{ database }">
-                      <input
-                        type="checkbox"
-                        class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-                        :checked="isDatabaseSelected(database as ComposedDatabase)"
-                        @click.stop="
-                          toggleDatabasesSelection(
-                            [database as ComposedDatabase],
-                            ($event.target as HTMLInputElement).checked
-                          )
-                        "
-                      />
-                    </template>
-                  </DatabaseV1Table>
+                    :environment-list="environmentList"
+                    @select-database="selectDatabase"
+                  />
                   <SchemalessDatabaseTable
                     v-if="isEditSchema"
                     mode="PROJECT"
@@ -444,6 +410,7 @@ type LocalState = ProjectStandardViewState &
     // Using to display the database group prev editor.
     selectedDatabaseGroup?: ComposedDatabaseGroup;
     selectedLabels: { key: string; value: string }[];
+    selectedDatabaseUidList: Set<string>;
   };
 
 const props = defineProps({
@@ -484,7 +451,7 @@ const state = reactive<LocalState>({
     : undefined,
   alterType: "MULTI_DB",
   selectedDatabaseUidListForEnvironment: new Map<string, string[]>(),
-  selectedDatabaseIdListForTenantMode: new Set<string>(),
+  selectedDatabaseUidList: new Set<string>(),
   deployingTenantDatabaseList: [],
   label: "environment",
   searchText: "",
@@ -611,18 +578,12 @@ const databaseGroupList = computed(() => {
 const flattenSelectedDatabaseUidList = computed(() => {
   const flattenDatabaseIdList: string[] = [];
   if (!props.projectId) {
-    for (const db of state.selectedDatabaseIdListForTenantMode) {
+    for (const db of state.selectedDatabaseUidList) {
       flattenDatabaseIdList.push(db);
     }
   } else {
-    if (isTenantProject.value && state.alterType === "MULTI_DB") {
-      for (const db of state.selectedDatabaseIdListForTenantMode) {
-        flattenDatabaseIdList.push(db);
-      }
-    } else {
-      for (const databaseIdList of state.selectedDatabaseUidListForEnvironment.values()) {
-        flattenDatabaseIdList.push(...databaseIdList);
-      }
+    for (const databaseIdList of state.selectedDatabaseUidListForEnvironment.values()) {
+      flattenDatabaseIdList.push(...databaseIdList);
     }
   }
   return flattenDatabaseIdList;
@@ -713,7 +674,7 @@ const showGenerateTenant = computed(() => {
 const allowGenerateTenant = computed(() => {
   if (state.databaseSelectedTab === "DATABASE") {
     if (isTenantProject.value && state.alterType === "MULTI_DB") {
-      if (state.selectedDatabaseIdListForTenantMode.size === 0) {
+      if (flattenSelectedDatabaseUidList.value.length === 0) {
         return false;
       }
     }
@@ -733,7 +694,7 @@ const allowGenerateTenant = computed(() => {
 const getAllSelectionState = (
   databaseList: ComposedDatabase[]
 ): { checked: boolean; indeterminate: boolean } => {
-  const set = state.selectedDatabaseIdListForTenantMode;
+  const set = state.selectedDatabaseUidList;
 
   const checked = set.size > 0 && databaseList.every((db) => set.has(db.uid));
   const indeterminate = !checked && databaseList.some((db) => set.has(db.uid));
@@ -750,11 +711,11 @@ const toggleDatabasesSelection = (
 ): void => {
   if (on) {
     databaseList.forEach((db) => {
-      state.selectedDatabaseIdListForTenantMode.add(db.uid);
+      state.selectedDatabaseUidList.add(db.uid);
     });
   } else {
     databaseList.forEach((db) => {
-      state.selectedDatabaseIdListForTenantMode.delete(db.uid);
+      state.selectedDatabaseUidList.delete(db.uid);
     });
   }
 };
@@ -774,7 +735,7 @@ const selectDatabaseGroup = async (
 };
 
 const isDatabaseSelected = (database: ComposedDatabase): boolean => {
-  return state.selectedDatabaseIdListForTenantMode.has(database.uid);
+  return state.selectedDatabaseUidList.has(database.uid);
 };
 
 const handleDatabaseGroupTabSelect = () => {
@@ -832,16 +793,16 @@ const generateTenant = async () => {
     query.databaseName = "";
   } else {
     const databaseList: ComposedDatabase[] = [];
-    for (const databaseId of state.selectedDatabaseIdListForTenantMode) {
+    for (const databaseId of flattenSelectedDatabaseUidList.value) {
       const database = databaseV1Store.getDatabaseByUID(databaseId);
       if (database.syncState === State.ACTIVE) {
         databaseList.push(database);
       }
     }
     if (isEditSchema.value && allowUsingSchemaEditorV1(databaseList)) {
-      schemaEditorContext.value.databaseIdList = Array.from(
-        state.selectedDatabaseIdListForTenantMode.values()
-      );
+      schemaEditorContext.value.databaseIdList = [
+        ...flattenSelectedDatabaseUidList.value,
+      ];
       state.showSchemaEditorModal = true;
       return;
     }
@@ -851,9 +812,7 @@ const generateTenant = async () => {
       databaseList.map((database) => database.databaseName),
       false
     );
-    query.databaseList = Array.from(
-      state.selectedDatabaseIdListForTenantMode
-    ).join(",");
+    query.databaseList = flattenSelectedDatabaseUidList.value.join(",");
   }
 
   emit("dismiss");

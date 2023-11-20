@@ -1,6 +1,15 @@
+import DropdownInput from "./DropdownInput.vue";
+import InlineInput from "./InlineInput.vue";
 import ResourceIdField from "./ResourceIdField.vue";
 import SearchBox from "./SearchBox.vue";
 import SpinnerButton from "./SpinnerButton.vue";
 import SpinnerSwitch from "./SpinnerSwitch.vue";
 
-export { SpinnerSwitch, SpinnerButton, SearchBox, ResourceIdField };
+export {
+  DropdownInput,
+  InlineInput,
+  SpinnerSwitch,
+  SpinnerButton,
+  SearchBox,
+  ResourceIdField,
+};

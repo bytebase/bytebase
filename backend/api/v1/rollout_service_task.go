@@ -77,7 +77,7 @@ func transformDeploymentConfigTargetToSteps(ctx context.Context, s *store.Store,
 						Type:            c.Type,
 						Target:          fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName),
 						Sheet:           c.Sheet,
-						SchemaVersion:   c.SchemaVersion,
+						SchemaVersion:   getOrDefaultSchemaVersion(c.SchemaVersion),
 						RollbackEnabled: c.RollbackEnabled,
 						RollbackDetail:  c.RollbackDetail,
 					},
@@ -215,7 +215,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		sheet, err := s.CreateSheet(ctx, &store.SheetMessage{
 			CreatorID:  api.SystemBotID,
 			ProjectUID: project.UID,
-			Name:       fmt.Sprintf("Sheet for creating database %v", databaseName),
+			Title:      fmt.Sprintf("Sheet for creating database %v", databaseName),
 			Statement:  statement,
 			Visibility: store.ProjectSheet,
 			Source:     store.SheetFromBytebaseArtifact,
@@ -397,7 +397,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		payloadSync := api.TaskDatabaseSchemaUpdateGhostSyncPayload{
 			SpecID:        spec.Id,
 			SheetID:       sheetUID,
-			SchemaVersion: c.SchemaVersion,
+			SchemaVersion: getOrDefaultSchemaVersion(c.SchemaVersion),
 			Flags:         c.GhostFlags,
 		}
 		bytesSync, err := json.Marshal(payloadSync)

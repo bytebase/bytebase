@@ -269,6 +269,14 @@ func (s *SQLService) preAdminExecute(ctx context.Context, request *v1pb.AdminExe
 
 // Export exports the SQL query result.
 func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*v1pb.ExportResponse, error) {
+	// TODO(zp): Remove this hack after switching all engines to use query span.
+	_, _, instance, _, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to prepare related message")
+	}
+	if instance.Engine == storepb.Engine_POSTGRES {
+		return s.ExportV2(ctx, request)
+	}
 	user, instance, database, _, _, sensitiveSchemaInfo, err := s.preCheck(ctx, request.Name, request.ConnectionDatabase, request.Statement, request.Limit, false /* isAdmin */, false /* isExport */)
 	if err != nil {
 		return nil, err
@@ -351,7 +359,7 @@ func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, 
 		sensitiveSchemaInfo = nil
 	}
 
-	driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database)
+	driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database, "" /* dataSourceID */)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -413,6 +421,31 @@ func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, 
 		return nil, durationNs, status.Errorf(codes.InvalidArgument, "unsupported export format: %s", request.Format.String())
 	}
 	return content, durationNs, nil
+}
+
+func (*SQLService) StringifyMetadata(_ context.Context, request *v1pb.StringifyMetadataRequest) (*v1pb.StringifyMetadataResponse, error) {
+	switch request.Engine {
+	case v1pb.Engine_MYSQL, v1pb.Engine_POSTGRES, v1pb.Engine_TIDB:
+	default:
+		return nil, status.Errorf(codes.InvalidArgument, "unsupported engine: %v", request.Engine)
+	}
+
+	if request.Metadata == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "metadata is required")
+	}
+	if err := checkDatabaseMetadata(request.Engine, request.Metadata); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid metadata: %v", err))
+	}
+
+	sanitizeCommentForSchemaMetadata(request.Metadata)
+	schema, err := transformDatabaseMetadataToSchemaString(request.Engine, request.Metadata)
+	if err != nil {
+		return nil, err
+	}
+
+	return &v1pb.StringifyMetadataResponse{
+		Schema: schema,
+	}, nil
 }
 
 func exportCSV(result *v1pb.QueryResult) ([]byte, error) {
@@ -812,8 +845,8 @@ func (s *SQLService) createExportActivity(ctx context.Context, user *store.UserM
 }
 
 func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1pb.CheckResponse, error) {
-	if len(request.Statement) > common.MaxStatementSizeForSQLReview {
-		return nil, status.Errorf(codes.FailedPrecondition, "statement size exceeds maximum allowed size %dKB", common.MaxStatementSizeForSQLReview/1024)
+	if len(request.Statement) > common.MaxSheetCheckSize {
+		return nil, status.Errorf(codes.FailedPrecondition, "statement size exceeds maximum allowed size %dKB", common.MaxSheetCheckSize/1024)
 	}
 
 	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Database)
@@ -868,9 +901,15 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 //  2. do query
 //  3. post-query
 func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1pb.QueryResponse, error) {
-	if strings.HasPrefix(request.Name, "instances/hellodanny") {
+	// TODO(zp): Remove this hack after switching all engines to use query span.
+	_, _, instance, _, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to prepare related message")
+	}
+	if instance.Engine == storepb.Engine_POSTGRES {
 		return s.QueryV2(ctx, request)
 	}
+
 	user, instance, database, adviceStatus, adviceList, sensitiveSchemaInfo, err := s.preCheck(ctx, request.Name, request.ConnectionDatabase, request.Statement, request.Limit, false /* isAdmin */, false /* isExport */)
 	if err != nil {
 		return nil, err
@@ -979,7 +1018,7 @@ func (s *SQLService) postQuery(ctx context.Context, activity *store.ActivityMess
 }
 
 func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, instance *store.InstanceMessage, database *store.DatabaseMessage, sensitiveSchemaInfo *base.SensitiveSchemaInfo) ([]*v1pb.QueryResult, int64, error) {
-	driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database)
+	driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database, request.DataSourceId)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -1218,7 +1257,6 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 		return nil, errors.Wrapf(err, "failed to find current principal")
 	}
 
-	type sensitiveDataMap map[api.SensitiveData]api.SensitiveDataMaskType
 	isEmpty := true
 	result := &base.SensitiveSchemaInfo{
 		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
@@ -1344,15 +1382,6 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 			}
 		}
 		slog.Debug("found masking policy for database", slog.String("database", databaseName), slog.Any("masking policy", maskingPolicy))
-
-		columnMap := make(sensitiveDataMap)
-		for _, data := range maskingPolicy.MaskData {
-			columnMap[api.SensitiveData{
-				Schema: data.Schema,
-				Table:  data.Table,
-				Column: data.Column,
-			}] = api.SensitiveDataMaskTypeDefault
-		}
 
 		dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
 		if err != nil {
@@ -2312,7 +2341,7 @@ func hasDatabaseAccessRights(principalID int, projectPolicy *store.IAMPolicyMess
 		// Project owner has all permissions.
 		if binding.Role == api.Role(common.ProjectOwner) {
 			for _, member := range binding.Members {
-				if member.ID == principalID {
+				if member.ID == principalID || member.Email == api.AllUsers {
 					pass = true
 					break
 				}

@@ -9,7 +9,9 @@ import (
 
 func TestMySQLRules(t *testing.T) {
 	mysqlRules := []advisor.SQLReviewRuleType{
+		// advisor.SchemaRuleMySQLEngine enforce the innodb engine.
 		advisor.SchemaRuleMySQLEngine,
+
 		// advisor.SchemaRuleTableNaming enforce the table name format.
 		advisor.SchemaRuleTableNaming,
 		// advisor.SchemaRuleColumnNaming enforce the column name format.
@@ -87,15 +89,15 @@ func TestMySQLRules(t *testing.T) {
 		advisor.SchemaRuleColumnAutoIncrementInitialValue,
 		// advisor.SchemaRuleColumnAutoIncrementMustUnsigned enforce the auto-increment column to be unsigned.
 		advisor.SchemaRuleColumnAutoIncrementMustUnsigned,
-		// advisor.SchemaRuleCurrentTimeColumnCountLimit enforce the current column count limit.
-		advisor.SchemaRuleCurrentTimeColumnCountLimit,
 		// advisor.SchemaRuleColumnRequireDefault enforce the column default.
 		advisor.SchemaRuleColumnRequireDefault,
 
 		// advisor.SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
 		advisor.SchemaRuleSchemaBackwardCompatibility,
+		// advisor.SchemaRuleCurrentTimeColumnCountLimit enforce the current column count limit.
+		advisor.SchemaRuleCurrentTimeColumnCountLimit,
 
-		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL and TiDB support check if the database is empty before users drop it.
+		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL support check if the database is empty before users drop it.
 		advisor.SchemaRuleDropEmptyDatabase,
 
 		// advisor.SchemaRuleIndexNoDuplicateColumn require the index no duplicate column.

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/gosimple/slug"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -178,7 +178,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		CreatorID:   userID,
 		ProjectUID:  project.UID,
 		DatabaseUID: &prodDatabase.UID,
-		Name:        "Sample Sheet",
+		Title:       "Sample Sheet",
 		Statement:   "SELECT * FROM salary;",
 		Visibility:  store.ProjectSheet,
 		Source:      store.SheetFromBytebase,
@@ -196,7 +196,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		ProjectUID:  project.UID,
 		DatabaseUID: &testDatabase.UID,
 
-		Name:       "Alter table to test sample instance for sample issue",
+		Title:      "Alter table to test sample instance for sample issue",
 		Statement:  "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';",
 		Visibility: store.ProjectSheet,
 		Source:     store.SheetFromBytebaseArtifact,
@@ -212,7 +212,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		ProjectUID:  project.UID,
 		DatabaseUID: &prodDatabase.UID,
 
-		Name:       "Alter table to prod sample instance for sample issue",
+		Title:      "Alter table to prod sample instance for sample issue",
 		Statement:  "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';",
 		Visibility: store.ProjectSheet,
 		Source:     store.SheetFromBytebaseArtifact,
@@ -222,7 +222,6 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		return errors.Wrapf(err, "failed to create prod sheet for sample project")
 	}
 
-	var issueLink string
 	// Use new CI/CD API.
 	childCtx := context.WithValue(ctx, common.PrincipalIDContextKey, user.ID)
 	plan, err := s.rolloutService.CreatePlan(childCtx, &v1pb.CreatePlanRequest{
@@ -233,6 +232,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 				{
 					Specs: []*v1pb.Plan_Spec{
 						{
+							Id: uuid.NewString(),
 							Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 								ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 									Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
@@ -246,6 +246,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 				{
 					Specs: []*v1pb.Plan_Spec{
 						{
+							Id: uuid.NewString(),
 							Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 								ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 									Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
@@ -271,7 +272,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 	if err != nil {
 		return errors.Wrapf(err, "failed to create rollout for sample project")
 	}
-	issue, err := s.issueService.CreateIssue(childCtx, &v1pb.CreateIssueRequest{
+	if _, err := s.issueService.CreateIssue(childCtx, &v1pb.CreateIssueRequest{
 		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
 		Issue: &v1pb.Issue{
 			Title: "👉👉👉 [START HERE] Add email column to Employee table",
@@ -283,18 +284,8 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 			Plan:     plan.Name,
 			Rollout:  rollout.Name,
 		},
-	})
-	if err != nil {
+	}); err != nil {
 		return errors.Wrapf(err, "failed to create issue for sample project")
-	}
-	issueLink = fmt.Sprintf("/issue/%s-%s", slug.Make(issue.Title), issue.Uid)
-
-	// Bookmark the issue.
-	if _, err := s.store.CreateBookmarkV2(ctx, &store.BookmarkMessage{
-		Name: "Sample Issue",
-		Link: issueLink,
-	}, userID); err != nil {
-		return errors.Wrapf(err, "failed to bookmark sample issue")
 	}
 
 	// Add a sensitive data policy to pair it with the sample query below. So that user can

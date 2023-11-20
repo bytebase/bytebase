@@ -49,9 +49,8 @@
 
   <Drawer
     v-if="selectedProjectUid"
-    :auto-focus="true"
-    :trap-focus="false"
     :show="state.showTransferOutDatabaseForm"
+    :auto-focus="true"
     @close="state.showTransferOutDatabaseForm = false"
   >
     <TransferOutDatabaseForm

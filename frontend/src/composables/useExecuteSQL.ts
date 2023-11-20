@@ -163,13 +163,21 @@ const useExecuteSQL = () => {
         });
         continue;
       }
+      const instanceId = isUnknownDatabase
+        ? tab.connection.instanceId
+        : database.instanceEntity.uid;
+      const databaseName = isUnknownDatabase ? "" : database.databaseName;
+      const dataSourceId =
+        instanceId === tab.connection.instanceId
+          ? tab.connection.dataSourceId
+          : undefined;
+
       try {
         const sqlResultSet = await sqlEditorStore.executeQuery(
           {
-            instanceId: isUnknownDatabase
-              ? tab.connection.instanceId
-              : database.instanceEntity.uid,
-            databaseName: isUnknownDatabase ? "" : database.databaseName,
+            instanceId: instanceId,
+            databaseName: databaseName,
+            dataSourceId: dataSourceId,
             statement: selectStatement,
           },
           abortController.signal

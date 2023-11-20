@@ -5,24 +5,24 @@ package mysql
 import (
 	"fmt"
 
-	"github.com/pingcap/tidb/parser/ast"
-	"github.com/pingcap/tidb/parser/mysql"
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
+	mysql "github.com/bytebase/mysql-parser"
+
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
-	_ advisor.Advisor = (*ColumnAutoIncrementMustUnsignedAdvisor)(nil)
-	_ ast.Visitor     = (*columnAutoIncrementMustUnsignedChecker)(nil)
+	_ advisor.Advisor = (*ColumnAutoIncrementMustIntegerAdvisor)(nil)
 )
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLAutoIncrementColumnMustUnsigned, &ColumnAutoIncrementMustUnsignedAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLAutoIncrementColumnMustUnsigned, &ColumnAutoIncrementMustUnsignedAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLAutoIncrementColumnMustUnsigned, &ColumnAutoIncrementMustUnsignedAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLAutoIncrementColumnMustUnsigned, &ColumnAutoIncrementMustUnsignedAdvisor{})
 }
 
 // ColumnAutoIncrementMustUnsignedAdvisor is the advisor checking for unsigned auto-increment column.
@@ -31,9 +31,9 @@ type ColumnAutoIncrementMustUnsignedAdvisor struct {
 
 // Check checks for unsigned auto-increment column.
 func (*ColumnAutoIncrementMustUnsignedAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	stmtList, ok := ctx.AST.([]ast.StmtNode)
+	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to StmtNode")
+		return nil, errors.Errorf("failed to convert to mysql parse result")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -46,9 +46,8 @@ func (*ColumnAutoIncrementMustUnsignedAdvisor) Check(ctx advisor.Context, _ stri
 	}
 
 	for _, stmt := range stmtList {
-		checker.text = stmt.Text()
-		checker.line = stmt.OriginTextPosition()
-		(stmt).Accept(checker)
+		checker.baseLine = stmt.BaseLine
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -63,75 +62,129 @@ func (*ColumnAutoIncrementMustUnsignedAdvisor) Check(ctx advisor.Context, _ stri
 }
 
 type columnAutoIncrementMustUnsignedChecker struct {
+	*mysql.BaseMySQLParserListener
+
+	baseLine   int
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
-	text       string
-	line       int
 }
 
-// Enter implements the ast.Visitor interface.
-func (checker *columnAutoIncrementMustUnsignedChecker) Enter(in ast.Node) (ast.Node, bool) {
-	var columnList []columnData
-	switch node := in.(type) {
-	case *ast.CreateTableStmt:
-		for _, column := range node.Cols {
-			if !autoIncrementColumnIsUnsigned(column) {
-				columnList = append(columnList, columnData{
-					table:  node.Table.Name.O,
-					column: column.Name.Name.O,
-					line:   column.OriginTextPosition(),
-				})
-			}
-		}
-	case *ast.AlterTableStmt:
-		for _, spec := range node.Specs {
-			switch spec.Tp {
-			case ast.AlterTableAddColumns:
-				for _, column := range spec.NewColumns {
-					if !autoIncrementColumnIsUnsigned(column) {
-						columnList = append(columnList, columnData{
-							table:  node.Table.Name.O,
-							column: column.Name.Name.O,
-							line:   node.OriginTextPosition(),
-						})
-					}
-				}
-			case ast.AlterTableChangeColumn, ast.AlterTableModifyColumn:
-				if !autoIncrementColumnIsUnsigned(spec.NewColumns[0]) {
-					columnList = append(columnList, columnData{
-						table:  node.Table.Name.O,
-						column: spec.NewColumns[0].Name.Name.O,
-						line:   node.OriginTextPosition(),
-					})
-				}
-			}
-		}
+func (checker *columnAutoIncrementMustUnsignedChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if ctx.TableElementList() == nil || ctx.TableName() == nil {
+		return
 	}
 
-	for _, column := range columnList {
+	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
+	for _, tableElement := range ctx.TableElementList().AllTableElement() {
+		if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil || tableElement.ColumnDefinition().FieldDefinition().DataType() == nil {
+			continue
+		}
+		_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
+		checker.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
+	}
+}
+
+func (checker *columnAutoIncrementMustUnsignedChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if ctx.AlterTableActions() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
+		return
+	}
+
+	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
+	if tableName == "" {
+		return
+	}
+	// alter table add column, change column, modify column.
+	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
+		if item == nil {
+			continue
+		}
+
+		var columnName string
+		switch {
+		// add column
+		case item.ADD_SYMBOL() != nil:
+			// only focus on adding column.
+			switch {
+			case item.Identifier() != nil && item.FieldDefinition() != nil:
+				columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+				checker.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
+			case item.OPEN_PAR_SYMBOL() != nil && item.TableElementList() != nil:
+				for _, tableElement := range item.TableElementList().AllTableElement() {
+					if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().ColumnName() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil {
+						continue
+					}
+					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
+					checker.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
+				}
+			}
+		// change column.
+		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil && item.FieldDefinition() != nil:
+			if item.FieldDefinition().DataType() == nil {
+				continue
+			}
+			columnName = mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+			checker.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
+		// modify column.
+		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
+			if item.FieldDefinition().DataType() == nil {
+				continue
+			}
+			columnName = mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
+			checker.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
+		default:
+			continue
+		}
+	}
+}
+
+func (checker *columnAutoIncrementMustUnsignedChecker) checkFieldDefinition(tableName, columnName string, ctx mysql.IFieldDefinitionContext) {
+	if !checker.isAutoIncrementColumnIsInteger(ctx) {
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  checker.level,
 			Code:    advisor.AutoIncrementColumnSigned,
 			Title:   checker.title,
-			Content: fmt.Sprintf("Auto-increment column `%s`.`%s` is not UNSIGNED type", column.table, column.column),
-			Line:    checker.line,
+			Content: fmt.Sprintf("Auto-increment column `%s`.`%s` is not UNSIGNED type", tableName, columnName),
+			Line:    checker.baseLine + ctx.GetStart().GetLine(),
 		})
 	}
-
-	return in, false
 }
 
-// Leave implements the ast.Visitor interface.
-func (*columnAutoIncrementMustUnsignedChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
-}
-
-func autoIncrementColumnIsUnsigned(column *ast.ColumnDef) bool {
-	for _, option := range column.Options {
-		if option.Tp == ast.ColumnOptionAutoIncrement && !mysql.HasUnsignedFlag(column.Tp.GetFlag()) {
-			return false
-		}
+func (checker *columnAutoIncrementMustUnsignedChecker) isAutoIncrementColumnIsInteger(ctx mysql.IFieldDefinitionContext) bool {
+	if checker.isAutoIncrementColumn(ctx) && !checker.isUnsigned(ctx.DataType()) {
+		return false
 	}
 	return true
+}
+
+func (*columnAutoIncrementMustUnsignedChecker) isAutoIncrementColumn(ctx mysql.IFieldDefinitionContext) bool {
+	for _, attr := range ctx.AllColumnAttribute() {
+		if attr.AUTO_INCREMENT_SYMBOL() != nil {
+			return true
+		}
+	}
+	return false
+}
+
+func (*columnAutoIncrementMustUnsignedChecker) isUnsigned(ctx mysql.IDataTypeContext) bool {
+	if ctx.FieldOptions() == nil {
+		return false
+	}
+
+	if ctx.FieldOptions().AllUNSIGNED_SYMBOL() != nil && len(ctx.FieldOptions().AllUNSIGNED_SYMBOL()) > 0 {
+		return true
+	}
+
+	// If you specify ZEROFILL for a numeric column, MySQL automatically adds the UNSIGNED attribute to the column.
+	// As of MySQL 8.0.17, the ZEROFILL attribute is deprecated for numeric data types.
+	if ctx.FieldOptions().AllZEROFILL_SYMBOL() != nil && len(ctx.FieldOptions().AllZEROFILL_SYMBOL()) > 0 {
+		return true
+	}
+	return false
 }

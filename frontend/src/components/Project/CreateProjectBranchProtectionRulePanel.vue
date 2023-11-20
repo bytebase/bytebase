@@ -1,11 +1,10 @@
 <template>
-  <NDrawer
+  <Drawer
     :show="true"
     width="auto"
-    :auto-focus="false"
     @update:show="(show: boolean) => !show && $emit('close')"
   >
-    <NDrawerContent
+    <DrawerContent
       :title="$t('project.settings.branch-protection-rules.self')"
       :closable="true"
       class="w-[50rem] max-w-[100vw] relative"
@@ -80,24 +79,16 @@
           </div>
         </div>
       </template>
-    </NDrawerContent>
-  </NDrawer>
+    </DrawerContent>
+  </Drawer>
 </template>
 
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
-import {
-  NButton,
-  NCheckbox,
-  NDrawer,
-  NDrawerContent,
-  NInput,
-  NDivider,
-  NSelect,
-  NTag,
-} from "naive-ui";
+import { NButton, NCheckbox, NInput, NDivider, NSelect, NTag } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, watch } from "vue";
+import { Drawer, DrawerContent } from "@/components/v2";
 import { useRoleStore, useSchemaDesignList } from "@/store";
 import {
   getProjectAndSchemaDesignSheetId,

@@ -12,12 +12,6 @@ import "v1/database_service.proto";
 option go_package = "generated-go/v1";
 
 service SQLService {
-  rpc Pretty(PrettyRequest) returns (PrettyResponse) {
-    option (google.api.http) = {
-      post: "/v1/sql/pretty"
-      body: "*"
-    };
-  }
   rpc Query(QueryRequest) returns (QueryResponse) {
     option (google.api.http) = {
       post: "/v1/{name=instances/*}:query"
@@ -42,6 +36,20 @@ service SQLService {
   rpc Check(CheckRequest) returns (CheckResponse) {
     option (google.api.http) = {
       post: "/v1/sql/check"
+      body: "*"
+    };
+  }
+
+  rpc Pretty(PrettyRequest) returns (PrettyResponse) {
+    option (google.api.http) = {
+      post: "/v1/sql/pretty"
+      body: "*"
+    };
+  }
+
+  rpc StringifyMetadata(StringifyMetadataRequest) returns (StringifyMetadataResponse) {
+    option (google.api.http) = {
+      post: "/v1/schemaDesign:stringifyMetadata"
       body: "*"
     };
   }
@@ -131,6 +139,11 @@ message QueryRequest {
 
   // The timeout for the request.
   optional google.protobuf.Duration timeout = 5;
+
+  // The id of data source.
+  // It is used for querying admin data source even if the instance has read-only data sources.
+  // Or it can be used to query a specific read-only data source.
+  string data_source_id = 6;
 }
 
 message QueryResponse {
@@ -251,4 +264,14 @@ message CheckRequest {
 
 message CheckResponse {
   repeated Advice advices = 1;
+}
+
+message StringifyMetadataRequest {
+  DatabaseMetadata metadata = 1 [(google.api.field_behavior) = REQUIRED];
+  // The database engine of the schema string.
+  Engine engine = 2;
+}
+
+message StringifyMetadataResponse {
+  string schema = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

@@ -5,24 +5,24 @@ package mysql
 import (
 	"fmt"
 
-	"github.com/pingcap/tidb/parser/ast"
-	"github.com/pingcap/tidb/parser/format"
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
+	mysql "github.com/bytebase/mysql-parser"
+
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*ColumnCommentConventionAdvisor)(nil)
-	_ ast.Visitor     = (*columnCommentConventionChecker)(nil)
 )
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLColumnCommentConvention, &ColumnCommentConventionAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLColumnCommentConvention, &ColumnCommentConventionAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLColumnCommentConvention, &ColumnCommentConventionAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnCommentConvention, &ColumnCommentConventionAdvisor{})
 }
 
 // ColumnCommentConventionAdvisor is the advisor checking for column comment convention.
@@ -31,9 +31,9 @@ type ColumnCommentConventionAdvisor struct {
 
 // Check checks for column comment convention.
 func (*ColumnCommentConventionAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	stmtList, ok := ctx.AST.([]ast.StmtNode)
+	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to StmtNode")
+		return nil, errors.Errorf("failed to convert to mysql parse result")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -52,9 +52,8 @@ func (*ColumnCommentConventionAdvisor) Check(ctx advisor.Context, _ string) ([]a
 	}
 
 	for _, stmt := range stmtList {
-		checker.text = stmt.Text()
-		checker.line = stmt.OriginTextPosition()
-		(stmt).Accept(checker)
+		checker.baseLine = stmt.BaseLine
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -69,111 +68,120 @@ func (*ColumnCommentConventionAdvisor) Check(ctx advisor.Context, _ string) ([]a
 }
 
 type columnCommentConventionChecker struct {
+	*mysql.BaseMySQLParserListener
+
+	baseLine   int
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
-	text       string
-	line       int
 	required   bool
 	maxLength  int
 }
 
-type columnCommentData struct {
-	exist   bool
-	comment string
-	table   string
-	column  string
-	line    int
-}
-
-// Enter implements the ast.Visitor interface.
-func (checker *columnCommentConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
-	var columnList []columnCommentData
-	switch node := in.(type) {
-	case *ast.CreateTableStmt:
-		for _, column := range node.Cols {
-			exist, comment := checker.columnComment(column)
-			columnList = append(columnList, columnCommentData{
-				exist:   exist,
-				comment: comment,
-				table:   node.Table.Name.O,
-				column:  column.Name.Name.O,
-				line:    column.OriginTextPosition(),
-			})
-		}
-	case *ast.AlterTableStmt:
-		table := node.Table.Name.O
-		for _, spec := range node.Specs {
-			switch spec.Tp {
-			case ast.AlterTableAddColumns:
-				for _, column := range spec.NewColumns {
-					exist, comment := checker.columnComment(column)
-					columnList = append(columnList, columnCommentData{
-						exist:   exist,
-						comment: comment,
-						table:   table,
-						column:  column.Name.Name.O,
-						line:    checker.line,
-					})
-				}
-			case ast.AlterTableChangeColumn, ast.AlterTableModifyColumn:
-				exist, comment := checker.columnComment(spec.NewColumns[0])
-				columnList = append(columnList, columnCommentData{
-					exist:   exist,
-					comment: comment,
-					table:   table,
-					column:  spec.NewColumns[0].Name.Name.O,
-					line:    checker.line,
-				})
-			}
-		}
+func (checker *columnCommentConventionChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if ctx.TableName() == nil {
+		return
+	}
+	if ctx.TableElementList() == nil {
+		return
 	}
 
-	for _, column := range columnList {
-		if checker.required && !column.exist {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
-				Status:  checker.level,
-				Code:    advisor.NoColumnComment,
-				Title:   checker.title,
-				Content: fmt.Sprintf("Column `%s`.`%s` requires comments", column.table, column.column),
-				Line:    column.line,
-			})
+	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
+	for _, tableElement := range ctx.TableElementList().AllTableElement() {
+		if tableElement == nil {
+			continue
 		}
-		if checker.maxLength >= 0 && len(column.comment) > checker.maxLength {
+		if tableElement.ColumnDefinition() == nil {
+			continue
+		}
+
+		_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
+		if tableElement.ColumnDefinition().FieldDefinition() == nil {
+			continue
+		}
+		checker.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
+	}
+}
+
+func (checker *columnCommentConventionChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if ctx.AlterTableActions() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
+		return
+	}
+
+	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
+	// alter table add column, change column, modify column.
+	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
+		if item == nil {
+			continue
+		}
+
+		var columnName string
+		switch {
+		// add column
+		case item.ADD_SYMBOL() != nil:
+			switch {
+			case item.Identifier() != nil && item.FieldDefinition() != nil:
+				columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+				checker.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
+			case item.OPEN_PAR_SYMBOL() != nil && item.TableElementList() != nil:
+				for _, tableElement := range item.TableElementList().AllTableElement() {
+					if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().ColumnName() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil {
+						continue
+					}
+					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
+					checker.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
+				}
+			}
+		// modify column
+		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
+			columnName = mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
+			checker.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
+		// change column
+		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil && item.FieldDefinition() != nil:
+			columnName = mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+			checker.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
+		}
+	}
+}
+
+func (checker *columnCommentConventionChecker) checkFieldDefinition(tableName, columnName string, ctx mysql.IFieldDefinitionContext) {
+	comment := ""
+	for _, attribute := range ctx.AllColumnAttribute() {
+		if attribute == nil || attribute.GetValue() == nil {
+			continue
+		}
+		if attribute.GetValue().GetTokenType() != mysql.MySQLParserCOMMENT_SYMBOL {
+			continue
+		}
+		if attribute.TextLiteral() == nil {
+			continue
+		}
+		comment = mysqlparser.NormalizeMySQLTextLiteral(attribute.TextLiteral())
+		if checker.maxLength >= 0 && len(comment) > checker.maxLength {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
 				Code:    advisor.ColumnCommentTooLong,
 				Title:   checker.title,
-				Content: fmt.Sprintf("The length of column `%s`.`%s` comment should be within %d characters", column.table, column.column, checker.maxLength),
-				Line:    column.line,
+				Content: fmt.Sprintf("The length of column `%s`.`%s` comment should be within %d characters", tableName, columnName, checker.maxLength),
+				Line:    checker.baseLine + ctx.GetStart().GetLine(),
 			})
 		}
 	}
-
-	return in, false
-}
-
-// Leave implements the ast.Visitor interface.
-func (*columnCommentConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
-}
-
-func (checker *columnCommentConventionChecker) columnComment(column *ast.ColumnDef) (bool, string) {
-	for _, option := range column.Options {
-		if option.Tp == ast.ColumnOptionComment {
-			comment, err := restoreNode(option.Expr, format.RestoreStringWithoutCharset)
-			if err != nil {
-				comment = ""
-				checker.adviceList = append(checker.adviceList, advisor.Advice{
-					Status:  checker.level,
-					Code:    advisor.Internal,
-					Title:   "Internal error for parsing column comment",
-					Content: fmt.Sprintf("\"%q\" meet internal error %s", checker.text, err),
-				})
-			}
-			return true, comment
+	if len(comment) == 0 {
+		if checker.required {
+			checker.adviceList = append(checker.adviceList, advisor.Advice{
+				Status:  checker.level,
+				Code:    advisor.NoColumnComment,
+				Title:   checker.title,
+				Content: fmt.Sprintf("Column `%s`.`%s` requires comments", tableName, columnName),
+				Line:    checker.baseLine + ctx.GetStart().GetLine(),
+			})
 		}
 	}
-
-	return false, ""
 }

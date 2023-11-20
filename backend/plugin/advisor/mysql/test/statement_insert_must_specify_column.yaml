@@ -1,4 +1,13 @@
-- statement: INSERT INTO tech_book(id, name) VALUES (1, '1')
+- statement: INSERT INTO t_copy SELECT * FROM t;
+  want:
+    - status: WARN
+      code: 1107
+      title: statement.insert.must-specify-column
+      content: |-
+        The INSERT statement must specify columns but "INSERT INTO t_copy SELECT * FROM t;" does not
+      line: 1
+      details: ""
+- statement: INSERT INTO tech_book(id, name) VALUES (1, '1');
   want:
     - status: SUCCESS
       code: 0
@@ -6,13 +15,14 @@
       content: ""
       line: 0
       details: ""
-- statement: INSERT INTO tech_book VALUES (1, '1')
+- statement: |-
+    INSERT INTO tech_book(id, name) VALUES (1, '1'); 
+    INSERT INTO tech_book VALUES (1, '1');
   want:
     - status: WARN
       code: 1107
       title: statement.insert.must-specify-column
       content: |-
-        The INSERT statement must specify columns but "INSERT INTO tech_book VALUES (1, '1')
-        ;" does not
+        The INSERT statement must specify columns but "INSERT INTO tech_book VALUES (1, '1');" does not
       line: 2
       details: ""

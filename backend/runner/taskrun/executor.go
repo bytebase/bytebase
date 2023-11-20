@@ -169,13 +169,6 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.P
 	if mi.Type != db.Baseline && mi.Type != db.MigrateSDL && statement == "" {
 		return nil, errors.Errorf("empty statement")
 	}
-	// We will force migration for baseline, migrate and data type of migrations.
-	// This usually happens when the previous attempt fails and the client retries the migration.
-	// We also force migration for VCS migrations, which is usually a modified file to correct a former wrong migration commit.
-	if mi.Type == db.Baseline || mi.Type == db.Migrate || mi.Type == db.MigrateSDL || mi.Type == db.Data {
-		mi.Force = true
-	}
-
 	return mi, nil
 }
 

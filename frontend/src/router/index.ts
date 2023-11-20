@@ -19,12 +19,10 @@ import { t } from "@/plugins/i18n";
 import {
   hasFeature,
   useVCSV1Store,
-  useDataSourceStore,
   useSQLReviewStore,
   useSheetV1Store,
   useAuthStore,
   useActuatorV1Store,
-  useLegacyInstanceStore,
   useRouterStore,
   useDBSchemaV1Store,
   useOnboardingStateStore,
@@ -255,7 +253,6 @@ const routes: Array<RouteRecordRaw> = [
             path: "/project/:projectSlug/changelists/:changelistName",
             name: "workspace.changelist.detail",
             meta: {
-              allowBookmark: true,
               overrideTitle: true,
             },
             components: {
@@ -272,14 +269,13 @@ const routes: Array<RouteRecordRaw> = [
             path: "/project/:projectSlug/branches/:branchName",
             name: "workspace.branch.detail",
             meta: {
-              allowBookmark: true,
               overrideTitle: true,
             },
             components: {
               content: () => import("../views/branch/BranchDetail.vue"),
               leftSidebar: ProjectSidebar,
             },
-            props: { content: true },
+            props: { content: true, leftSidebar: true },
           },
           {
             path: "sync-schema",
@@ -658,7 +654,6 @@ const routes: Array<RouteRecordRaw> = [
                   String(idFromSlug(slug))
                 ).title;
               },
-              allowBookmark: true,
             },
             components: {
               content: () => import("../views/EnvironmentDetail.vue"),
@@ -691,7 +686,7 @@ const routes: Array<RouteRecordRaw> = [
               content: () => import("../layouts/ProjectLayout.vue"),
               leftSidebar: ProjectSidebar,
             },
-            props: { content: true },
+            props: { content: true, leftSidebar: true },
             children: [
               {
                 path: "",
@@ -716,7 +711,6 @@ const routes: Array<RouteRecordRaw> = [
                     );
                     return projectV1.title;
                   },
-                  allowBookmark: true,
                 },
                 component: () => import("../views/ProjectDetail.vue"),
                 props: true,
@@ -751,7 +745,6 @@ const routes: Array<RouteRecordRaw> = [
                       webhook?.title ?? "unknown"
                     }`;
                   },
-                  allowBookmark: true,
                 },
                 component: () => import("../views/ProjectWebhookDetail.vue"),
                 props: true,
@@ -842,7 +835,6 @@ const routes: Array<RouteRecordRaw> = [
                       String(idFromSlug(slug))
                     ).databaseName;
                   },
-                  allowBookmark: true,
                 },
                 component: () => import("../views/DatabaseDetail.vue"),
                 props: true,
@@ -902,14 +894,13 @@ const routes: Array<RouteRecordRaw> = [
             path: "issue/:issueSlug",
             name: "workspace.issue.detail",
             meta: {
-              allowBookmark: true,
               overrideTitle: true,
             },
             components: {
               content: () => import("../views/IssueDetailV1.vue"),
-              leftSidebar: DashboardSidebar,
+              leftSidebar: ProjectSidebar,
             },
-            props: { content: true },
+            props: { content: true, leftSidebar: true },
           },
           // Resource name related routes.
           {
@@ -995,7 +986,6 @@ router.beforeEach((to, from, next) => {
 
   const authStore = useAuthStore();
   const dbSchemaStore = useDBSchemaV1Store();
-  const instanceStore = useLegacyInstanceStore();
   const routerStore = useRouterStore();
   const projectV1Store = useProjectV1Store();
   const projectWebhookV1Store = useProjectWebhookV1Store();
@@ -1207,7 +1197,6 @@ router.beforeEach((to, from, next) => {
   const issueSlug = routerSlug.issueSlug;
   const instanceSlug = routerSlug.instanceSlug;
   const databaseSlug = routerSlug.databaseSlug;
-  const dataSourceSlug = routerSlug.dataSourceSlug;
   const vcsSlug = routerSlug.vcsSlug;
   const connectionSlug = routerSlug.connectionSlug;
   const sheetSlug = routerSlug.sheetSlug;
@@ -1361,25 +1350,7 @@ router.beforeEach((to, from, next) => {
             view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
           })
           .then(() => {
-            if (!dataSourceSlug) {
-              next();
-            } else if (dataSourceSlug) {
-              useDataSourceStore()
-                .fetchDataSourceById({
-                  dataSourceId: idFromSlug(dataSourceSlug),
-                  databaseId: Number(database.uid),
-                })
-                .then(() => {
-                  next();
-                })
-                .catch((error) => {
-                  next({
-                    name: "error.404",
-                    replace: false,
-                  });
-                  throw error;
-                });
-            }
+            next();
           });
       })
       .catch((error) => {
@@ -1393,7 +1364,6 @@ router.beforeEach((to, from, next) => {
   }
 
   if (instanceSlug) {
-    instanceStore;
     useInstanceV1Store()
       .getOrFetchInstanceByUID(String(idFromSlug(instanceSlug)))
       .then(() => {

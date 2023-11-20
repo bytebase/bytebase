@@ -3,24 +3,24 @@ package mysql
 import (
 	"fmt"
 
-	"github.com/pingcap/tidb/parser/ast"
+	"github.com/antlr4-go/antlr/v4"
+	mysql "github.com/bytebase/mysql-parser"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*DatabaseAllowDropIfEmptyAdvisor)(nil)
-	_ ast.Visitor     = (*allowDropEmptyDBChecker)(nil)
 )
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLDatabaseAllowDropIfEmpty, &DatabaseAllowDropIfEmptyAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLDatabaseAllowDropIfEmpty, &DatabaseAllowDropIfEmptyAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLDatabaseAllowDropIfEmpty, &DatabaseAllowDropIfEmptyAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLDatabaseAllowDropIfEmpty, &DatabaseAllowDropIfEmptyAdvisor{})
 }
 
 // DatabaseAllowDropIfEmptyAdvisor is the advisor checking the MySQLDatabaseAllowDropIfEmpty rule.
@@ -29,9 +29,9 @@ type DatabaseAllowDropIfEmptyAdvisor struct {
 
 // Check checks for drop table naming convention.
 func (*DatabaseAllowDropIfEmptyAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	root, ok := ctx.AST.([]ast.StmtNode)
+	list, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to StmtNode")
+		return nil, errors.Errorf("failed to convert to mysql ParseResult")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -44,8 +44,10 @@ func (*DatabaseAllowDropIfEmptyAdvisor) Check(ctx advisor.Context, _ string) ([]
 		title:   string(ctx.Rule.Type),
 		catalog: ctx.Catalog,
 	}
-	for _, stmtNode := range root {
-		(stmtNode).Accept(checker)
+
+	for _, stmt := range list {
+		checker.baseLine = stmt.BaseLine
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -60,37 +62,37 @@ func (*DatabaseAllowDropIfEmptyAdvisor) Check(ctx advisor.Context, _ string) ([]
 }
 
 type allowDropEmptyDBChecker struct {
+	*mysql.BaseMySQLParserListener
+
+	baseLine   int
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
 	catalog    *catalog.Finder
 }
 
-// Enter implements the ast.Visitor interface.
-func (v *allowDropEmptyDBChecker) Enter(in ast.Node) (ast.Node, bool) {
-	if node, ok := in.(*ast.DropDatabaseStmt); ok {
-		if v.catalog.Origin.DatabaseName() != node.Name.O {
-			v.adviceList = append(v.adviceList, advisor.Advice{
-				Status:  v.level,
-				Code:    advisor.NotCurrentDatabase,
-				Title:   v.title,
-				Content: fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", node.Name, v.catalog.Origin.DatabaseName()),
-				Line:    node.OriginTextPosition(),
-			})
-		} else if !v.catalog.Origin.HasNoTable() {
-			v.adviceList = append(v.adviceList, advisor.Advice{
-				Status:  v.level,
-				Code:    advisor.DatabaseNotEmpty,
-				Title:   v.title,
-				Content: fmt.Sprintf("Database `%s` is not allowed to drop if not empty", node.Name),
-				Line:    node.OriginTextPosition(),
-			})
-		}
+// EnterDropDatabase is called when production dropDatabase is entered.
+func (checker *allowDropEmptyDBChecker) EnterDropDatabase(ctx *mysql.DropDatabaseContext) {
+	if ctx.SchemaRef() == nil {
+		return
 	}
-	return in, false
-}
 
-// Leave implements the ast.Visitor interface.
-func (*allowDropEmptyDBChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
+	dbName := mysqlparser.NormalizeMySQLSchemaRef(ctx.SchemaRef())
+	if checker.catalog.Origin.DatabaseName() != dbName {
+		checker.adviceList = append(checker.adviceList, advisor.Advice{
+			Status:  checker.level,
+			Code:    advisor.NotCurrentDatabase,
+			Title:   checker.title,
+			Content: fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", dbName, checker.catalog.Origin.DatabaseName()),
+			Line:    checker.baseLine + ctx.GetStart().GetLine(),
+		})
+	} else if !checker.catalog.Origin.HasNoTable() {
+		checker.adviceList = append(checker.adviceList, advisor.Advice{
+			Status:  checker.level,
+			Code:    advisor.DatabaseNotEmpty,
+			Title:   checker.title,
+			Content: fmt.Sprintf("Database `%s` is not allowed to drop if not empty", dbName),
+			Line:    checker.baseLine + ctx.GetStart().GetLine(),
+		})
+	}
 }

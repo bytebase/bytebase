@@ -7,7 +7,12 @@
       v-html="html"
     ></div>
     <div v-if="clickable" class="absolute right-1 top-1/2 translate-y-[-45%]">
-      <NButton size="tiny" circle class="dark:!bg-dark-bg" @click="showDetail">
+      <NButton
+        size="tiny"
+        circle
+        class="dark:!bg-dark-bg"
+        @click.stop="showDetail"
+      >
         <template #icon>
           <heroicons:arrows-pointing-out class="w-3 h-3" />
         </template>

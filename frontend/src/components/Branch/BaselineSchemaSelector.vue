@@ -1,7 +1,5 @@
 <template>
-  <div
-    class="w-full mx-auto flex flex-col justify-start items-start space-y-3 mb-6"
-  >
+  <div class="w-full mx-auto flex flex-col justify-start items-start gap-y-3">
     <div class="w-full flex flex-row justify-start items-center">
       <span class="flex w-40 items-center shrink-0 text-sm">
         {{ $t("common.database") }}
@@ -23,6 +21,7 @@
         :environment="state.environmentId"
         :project="projectId"
         :database="state.databaseId"
+        :fallback-option="false"
         @update:database="handleDatabaseSelect"
       />
     </div>
@@ -30,50 +29,35 @@
       <span class="flex w-40 items-center shrink-0 text-sm">
         {{ $t("schema-designer.schema-version") }}
       </span>
-      <div
-        class="w-192 flex flex-row justify-start items-center relative"
-        :class="isValidId(props.projectId) ? '' : 'opacity-50'"
-      >
-        <BBSelect
-          class="w-full"
-          :disabled="props.readonly"
-          :selected-item="state.changeHistory"
-          :item-list="
-            databaseChangeHistoryList(state.databaseId as string)
-          "
+      <div class="w-192 flex flex-row justify-start items-center relative">
+        <NSelect
+          :value="state.changeHistory?.name"
+          :options="schemaVersionOptions"
           :placeholder="$t('change-history.select')"
-          :show-prefix-item="databaseChangeHistoryList(state.databaseId as string).length > 0"
-          @select-item="(changeHistory: ChangeHistory) => handleSchemaVersionSelect(changeHistory)"
-        >
-          <template
-            #menuItem="{ item, index }: { item: ChangeHistory, index: number }"
-          >
-            <div class="flex justify-between mr-2">
-              <FeatureBadge
-                v-if="index > 0"
-                feature="bb.feature.sync-schema-all-versions"
-                custom-class="mr-1"
-                :instance="database?.instanceEntity"
-              />
-              <NEllipsis class="flex-1 pr-2" :tooltip="false">
-                {{ item.version }} -
-                {{ item.description }}
-              </NEllipsis>
-              <span class="text-control-light">
-                {{ humanizeDate(item.updateTime) }}
-              </span>
-            </div>
-          </template>
-        </BBSelect>
+          :disabled="
+            $props.readonly ||
+            !isValidId(props.projectId) ||
+            schemaVersionOptions.length === 0
+          "
+          :render-label="renderSchemaVersionLabel"
+          :fallback-option="
+            isMockLatestSchemaChangeHistorySelected
+              ? fallbackSchemaVersionOption
+              : false
+          "
+          @update:value="handleSchemaVersionSelect"
+        />
       </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { head, isNull, isUndefined } from "lodash-es";
-import { NEllipsis } from "naive-ui";
-import { computed, reactive, watch } from "vue";
+import { debounce, head, isNull, isUndefined } from "lodash-es";
+import { NEllipsis, SelectOption } from "naive-ui";
+import { computed, h, reactive, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { EnvironmentSelect, DatabaseSelect } from "@/components/v2";
 import {
   useChangeHistoryStore,
@@ -88,6 +72,10 @@ import {
   ChangeHistory_Type,
   DatabaseMetadataView,
 } from "@/types/proto/v1/database_service";
+import {
+  extractChangeHistoryUID,
+  mockLatestSchemaChangeHistory,
+} from "@/utils";
 
 const props = defineProps<{
   projectId?: string;
@@ -106,6 +94,7 @@ interface LocalState {
   changeHistory?: ChangeHistory;
 }
 
+const { t } = useI18n();
 const state = reactive<LocalState>({});
 const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
@@ -128,6 +117,97 @@ const prepareChangeHistoryList = async () => {
   return await changeHistoryStore.fetchChangeHistoryList({
     parent: database.value.name,
   });
+};
+
+const schemaVersionOptions = computed(() => {
+  const { databaseId } = state;
+  if (!databaseId || databaseId === String(UNKNOWN_ID)) {
+    return [];
+  }
+  const changeHistories = databaseChangeHistoryList(databaseId);
+  if (changeHistories.length === 0) return [];
+  const options: SelectOption[] = [
+    {
+      value: "PLACEHOLDER",
+      label: t("change-history.select"),
+      disabled: true,
+      style: "cursor: default",
+    },
+  ];
+  options.push(
+    ...changeHistories.map<SelectOption>((changeHistory, index) => {
+      return {
+        changeHistory,
+        index,
+        value: changeHistory.name,
+        label: changeHistory.name,
+        class: "bb-baseline-schema-select-option",
+      };
+    })
+  );
+  return options;
+});
+const renderSchemaVersionLabel = (option: SelectOption) => {
+  if (
+    option.value === "PLACEHOLDER" ||
+    option.disabled ||
+    !option.changeHistory
+  ) {
+    return option.label;
+  }
+  const changeHistory = option.changeHistory as ChangeHistory;
+  const { version, description, updateTime } = changeHistory;
+
+  const children = [
+    h(
+      NEllipsis,
+      { class: "flex-1 pr-2", tooltip: false },
+      {
+        default: () => `${version} - ${description}`,
+      }
+    ),
+  ];
+  if (updateTime) {
+    children.push(
+      h(HumanizeDate, {
+        date: updateTime,
+        class: "text-control-light",
+      })
+    );
+  }
+
+  return h("div", { class: "w-full flex justify-between" }, children);
+};
+const isMockLatestSchemaChangeHistorySelected = computed(() => {
+  if (!state.changeHistory) return false;
+  return (
+    extractChangeHistoryUID(state.changeHistory.name) === String(UNKNOWN_ID)
+  );
+});
+const fallbackSchemaVersionOption = (value: string): SelectOption => {
+  if (extractChangeHistoryUID(value) === String(UNKNOWN_ID)) {
+    const { databaseId } = state;
+    if (databaseId && databaseId !== String(UNKNOWN_ID)) {
+      const db = databaseStore.getDatabaseByUID(databaseId);
+      const changeHistory = mockLatestSchemaChangeHistory(db);
+      return {
+        changeHistory,
+        value: changeHistory.name,
+        label: changeHistory.name,
+      };
+    }
+  }
+  return {
+    value: "PLACEHOLDER",
+    disabled: true,
+    label: t("change-history.select"),
+    style: "cursor: default",
+  };
+};
+
+const handleSchemaVersionSelect = (name: string, option: SelectOption) => {
+  const changeHistory = option.changeHistory as ChangeHistory;
+  state.changeHistory = changeHistory;
 };
 
 watch(
@@ -180,14 +260,10 @@ watch(
       const schema = await databaseStore.fetchDatabaseSchema(
         `${database.value.name}/schema`
       );
-      state.changeHistory = {
-        name: `${database.value.name}/changeHistories/${UNKNOWN_ID}`,
-        uid: String(UNKNOWN_ID),
-        updateTime: new Date(),
-        schema: schema.schema,
-        version: "Latest version",
-        description: "the latest schema of database",
-      } as ChangeHistory;
+      state.changeHistory = mockLatestSchemaChangeHistory(
+        database.value,
+        schema
+      );
     } else {
       state.changeHistory = head(list);
     }
@@ -252,17 +328,14 @@ const databaseChangeHistoryList = (databaseId: string) => {
   return list;
 };
 
-const handleSchemaVersionSelect = (changeHistory: ChangeHistory) => {
-  state.changeHistory = changeHistory;
-};
+const debouncedUpdate = debounce((state: LocalState) => {
+  emit("update", { ...state });
+}, 200);
 
-watch(
-  () => state,
-  () => {
-    emit("update", {
-      ...state,
-    });
-  },
-  { deep: true }
-);
+watch(() => state, debouncedUpdate, { deep: true });
 </script>
+<style lang="postcss">
+.bb-baseline-schema-select-option .n-base-select-option__content {
+  @apply w-full;
+}
+</style>

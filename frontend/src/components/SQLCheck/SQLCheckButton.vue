@@ -90,7 +90,8 @@ const props = withDefaults(
 );
 
 const { t } = useI18n();
-const SKIP_CHECK_THRESHOLD = 500000;
+// SKIP_CHECK_THRESHOLD is the MaxSheetCheckSize in the backend.
+const SKIP_CHECK_THRESHOLD = 512 * 1024;
 const isRunning = ref(false);
 const advices = ref<Advice[]>();
 const checkRunCounter = ref(0);

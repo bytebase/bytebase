@@ -10,7 +10,6 @@ import { Project as ProjectV1 } from "@/types/proto/v1/project_service";
 import { Sheet as SheetV1 } from "@/types/proto/v1/sheet_service";
 import {
   Database,
-  DataSource,
   Environment,
   Instance,
   IssueId,
@@ -86,10 +85,6 @@ export function taskSlug(name: string, id: IdType): string {
 
 export function databaseSlug(database: Database): string {
   return [slug(database.name), database.id].join("-");
-}
-
-export function dataSourceSlug(dataSource: DataSource): string {
-  return [slug(dataSource.name), dataSource.id].join("-");
 }
 
 export function fullDatabasePath(database: Database): string {

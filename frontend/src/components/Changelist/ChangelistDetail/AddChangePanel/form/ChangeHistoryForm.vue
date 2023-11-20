@@ -68,20 +68,19 @@ import {
   useChangeHistoryStore,
   useDBSchemaV1Store,
   useDatabaseV1Store,
-  useLocalSheetStore,
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { AffectedTable, EmptyAffectedTable } from "@/types/changeHistory";
 import { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
 import {
   ChangeHistory,
+  ChangeHistory_Status,
   ChangeHistory_Type,
 } from "@/types/proto/v1/database_service";
 import {
   extractDatabaseResourceName,
   getAffectedTablesOfChangeHistory,
   keyBy,
-  setSheetStatement,
 } from "@/utils";
 import ChangeHistoryDetailPanel from "../../ChangeHistoryDetailPanel";
 import { useChangelistDetailContext } from "../../context";
@@ -102,7 +101,6 @@ type LocalState = {
 
 const { project } = useChangelistDetailContext();
 const { changesFromChangeHistory: changes } = useAddChangeContext();
-const localSheetStore = useLocalSheetStore();
 
 const state = reactive<LocalState>({
   isLoading: false,
@@ -125,7 +123,10 @@ const filteredChangeHistoryList = computed(() => {
   const types = state.changeHistoryTypes;
   list = list.filter((changeHistory) => {
     const semanticType = semanticChangeHistoryType(changeHistory.type);
-    return types.includes(semanticType);
+    return (
+      types.includes(semanticType) &&
+      changeHistory.status === ChangeHistory_Status.DONE
+    );
   });
 
   const kw = state.keyword.trim().toLowerCase();
@@ -166,13 +167,8 @@ const selectedChangeHistoryList = computed<string[]>({
         if (existedChange) {
           updatedChanges.push(existedChange);
         } else {
-          const uid = localSheetStore.nextUID();
-          const sheet = localSheetStore.createLocalSheet(
-            `${project.value.name}/sheets/${uid}`
-          );
-          setSheetStatement(sheet, changeHistory.statement);
           updatedChanges.push({
-            sheet: sheet.name,
+            sheet: changeHistory.statementSheet,
             source: changeHistory.name,
           });
         }

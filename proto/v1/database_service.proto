@@ -27,6 +27,7 @@ service DatabaseService {
 
   // Search for databases that the caller has both projects.get permission on, and also satisfy the specified query.
   rpc SearchDatabases(SearchDatabasesRequest) returns (SearchDatabasesResponse) {
+    option deprecated = true;
     option (google.api.http) = {get: "/v1/{parent=instances/*}/databases:search"};
     option (google.api.method_signature) = "";
   }

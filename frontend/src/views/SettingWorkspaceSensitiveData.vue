@@ -18,14 +18,12 @@
         <SensitiveColumnView />
       </NTabPane>
       <NTabPane
-        v-if="isDev()"
         name="semantic-types"
         :tab="$t('settings.sensitive-data.semantic-types.self')"
       >
         <SemanticTypesView />
       </NTabPane>
       <NTabPane
-        v-if="isDev()"
         name="masking-algorithms"
         :tab="$t('settings.sensitive-data.algorithms.self')"
       >
@@ -45,7 +43,6 @@ import {
   SemanticTypesView,
 } from "@/components/SensitiveData";
 import { featureToRef } from "@/store";
-import { isDev } from "@/utils";
 
 const dataMaskingTabList = [
   "sensitive-column-list",
@@ -62,7 +59,7 @@ interface LocalState {
 }
 
 const state = reactive<LocalState>({
-  selectedTab: "sensitive-column-list",
+  selectedTab: "global-masking-rule",
 });
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
 const router = useRouter();
@@ -75,7 +72,7 @@ watch(
     if (isDataMaskingTab(tab)) {
       state.selectedTab = tab;
     } else {
-      state.selectedTab = "sensitive-column-list";
+      state.selectedTab = "global-masking-rule";
     }
   },
   {

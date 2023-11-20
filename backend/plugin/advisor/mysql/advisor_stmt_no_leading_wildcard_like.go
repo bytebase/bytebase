@@ -2,29 +2,26 @@ package mysql
 
 import (
 	"fmt"
+	"strings"
 
-	"github.com/pingcap/tidb/parser/ast"
-	"github.com/pingcap/tidb/parser/format"
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-)
+	mysql "github.com/bytebase/mysql-parser"
 
-const (
-	wildcard string = "%"
+	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
 	_ advisor.Advisor = (*NoLeadingWildcardLikeAdvisor)(nil)
-	_ ast.Visitor     = (*noLeadingWildcardLikeChecker)(nil)
 )
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLNoLeadingWildcardLike, &NoLeadingWildcardLikeAdvisor{})
 	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLNoLeadingWildcardLike, &NoLeadingWildcardLikeAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLNoLeadingWildcardLike, &NoLeadingWildcardLikeAdvisor{})
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLNoLeadingWildcardLike, &NoLeadingWildcardLikeAdvisor{})
 }
 
 // NoLeadingWildcardLikeAdvisor is the advisor checking for no leading wildcard LIKE.
@@ -33,9 +30,9 @@ type NoLeadingWildcardLikeAdvisor struct {
 
 // Check checks for no leading wildcard LIKE.
 func (*NoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	root, ok := ctx.AST.([]ast.StmtNode)
+	root, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert to StmtNode")
+		return nil, errors.Errorf("failed to convert to mysql parse result")
 	}
 
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
@@ -43,21 +40,13 @@ func (*NoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context, _ string) ([]adv
 		return nil, err
 	}
 
-	checker := &noLeadingWildcardLikeChecker{level: level}
+	checker := &noLeadingWildcardLikeChecker{
+		title: string(ctx.Rule.Type),
+		level: level,
+	}
 	for _, stmtNode := range root {
-		checker.text = stmtNode.Text()
-		checker.leadingWildcardLike = false
-		(stmtNode).Accept(checker)
-
-		if checker.leadingWildcardLike {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
-				Status:  checker.level,
-				Code:    advisor.StatementLeadingWildcardLike,
-				Title:   string(ctx.Rule.Type),
-				Content: fmt.Sprintf("\"%s\" uses leading wildcard LIKE", checker.text),
-				Line:    stmtNode.OriginTextPosition(),
-			})
-		}
+		checker.baseLine = stmtNode.BaseLine
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtNode.Tree)
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -72,32 +61,35 @@ func (*NoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context, _ string) ([]adv
 }
 
 type noLeadingWildcardLikeChecker struct {
-	adviceList          []advisor.Advice
-	level               advisor.Status
-	text                string
-	leadingWildcardLike bool
+	*mysql.BaseMySQLParserListener
+
+	baseLine   int
+	title      string
+	adviceList []advisor.Advice
+	level      advisor.Status
+	text       string
 }
 
-// Enter implements the ast.Visitor interface.
-func (v *noLeadingWildcardLikeChecker) Enter(in ast.Node) (ast.Node, bool) {
-	if node, ok := in.(*ast.PatternLikeExpr); !v.leadingWildcardLike && ok {
-		pattern, err := restoreNode(node.Pattern, format.RestoreStringWithoutCharset)
-		if err != nil {
-			v.adviceList = append(v.adviceList, advisor.Advice{
-				Status:  v.level,
-				Code:    advisor.Internal,
-				Title:   "Internal error for no leading wildcard LIKE rule",
-				Content: fmt.Sprintf("\"%s\" meet internal error %q", v.text, err.Error()),
+func (checker *noLeadingWildcardLikeChecker) EnterQuery(ctx *mysql.QueryContext) {
+	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+}
+
+// EnterPredicateExprLike is called when production predicateExprLike is entered.
+func (checker *noLeadingWildcardLikeChecker) EnterPredicateExprLike(ctx *mysql.PredicateExprLikeContext) {
+	if ctx.LIKE_SYMBOL() == nil {
+		return
+	}
+
+	for _, expr := range ctx.AllSimpleExpr() {
+		pattern := expr.GetText()
+		if (strings.HasPrefix(pattern, "'%") && strings.HasSuffix(pattern, "'")) || (strings.HasPrefix(pattern, "\"%") && strings.HasSuffix(pattern, "\"")) {
+			checker.adviceList = append(checker.adviceList, advisor.Advice{
+				Status:  checker.level,
+				Code:    advisor.StatementLeadingWildcardLike,
+				Title:   checker.title,
+				Content: fmt.Sprintf("\"%s\" uses leading wildcard LIKE", checker.text),
+				Line:    checker.baseLine + ctx.GetStart().GetLine(),
 			})
 		}
-		if len(pattern) > 0 && pattern[:1] == wildcard {
-			v.leadingWildcardLike = true
-		}
 	}
-	return in, false
-}
-
-// Leave implements the ast.Visitor interface.
-func (*noLeadingWildcardLikeChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
 }

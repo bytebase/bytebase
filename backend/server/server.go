@@ -51,6 +51,9 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/store"
 	_ "github.com/bytebase/bytebase/docs/openapi" // initial the swagger doc
+
+	// Register PostgreSQL get query span.
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/pg/v2"
 )
 
 const (

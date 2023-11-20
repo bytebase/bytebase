@@ -112,8 +112,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 
 	totalRowsAffected := int64(0)
 	f := func(stmt string) error {
-		// The underlying oracle golang driver go-ora does not support semicolon, so we should trim the suffix semicolon.
-		stmt = strings.TrimSuffix(stmt, ";")
 		sqlResult, err := tx.ExecContext(ctx, stmt)
 		if err != nil {
 			return err
