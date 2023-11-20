@@ -105,7 +105,7 @@
           <span v-else>{{ $t("db.tables") }}</span>
         </div>
 
-        <TableTable
+        <TableDataTable
           :database="database"
           :schema-name="state.selectedSchemaName"
           :table-list="tableList"
@@ -173,7 +173,7 @@ import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { BBTableSectionDataSource } from "../bbkit/types";
 import AnomalyTable from "../components/AnomalyCenter/AnomalyTable.vue";
 import FunctionTable from "../components/FunctionTable.vue";
-import TableTable from "../components/TableTable.vue";
+import TableDataTable from "../components/TableDataTable.vue";
 import ViewTable from "../components/ViewTable.vue";
 import { ComposedDatabase, DataSource } from "../types";
 import StreamTable from "./StreamTable.vue";
