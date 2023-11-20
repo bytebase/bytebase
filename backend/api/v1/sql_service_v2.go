@@ -27,6 +27,71 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
+func (s *SQLService) ExportV2(ctx context.Context, request *v1pb.ExportRequest) (*v1pb.ExportResponse, error) {
+	// Prepare related message.
+	user, environment, instance, maybeDatabase, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
+	if err != nil {
+		return nil, err
+	}
+
+	statement := request.Statement
+	// In Redshift datashare, Rewrite query used for parser.
+	if maybeDatabase != nil && maybeDatabase.DataShare {
+		statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", maybeDatabase.DatabaseName), "")
+	}
+
+	// Validate the request.
+	if err := validateQueryRequest(instance, request.ConnectionDatabase, statement); err != nil {
+		return nil, err
+	}
+
+	spans, err := base.GetQuerySpan(ctx, instance.Engine, statement, request.ConnectionDatabase, s.buildGetDatabaseMetadataFunc(instance))
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get query span")
+	}
+
+	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
+		if err := s.accessCheck(ctx, instance, environment, user, request.Statement, spans, request.Limit, false /* isAdmin */, true /* isExport */); err != nil {
+			return nil, err
+		}
+	}
+
+	// Run SQL review.
+	if _, _, err = s.sqlReviewCheck(ctx, statement, environment, instance, maybeDatabase); err != nil {
+		return nil, err
+	}
+
+	databaseID := 0
+	if maybeDatabase != nil {
+		databaseID = maybeDatabase.UID
+	}
+	// Create export activity.
+	level := api.ActivityInfo
+	activity, err := s.createExportActivity(ctx, user, level, instance.UID, api.ActivitySQLExportPayload{
+		Statement:    request.Statement,
+		InstanceID:   instance.UID,
+		DatabaseID:   databaseID,
+		DatabaseName: request.ConnectionDatabase,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	bytes, durationNs, exportErr := s.doExportV2(ctx, request, instance, maybeDatabase, spans)
+
+	if err := s.postExport(ctx, activity, durationNs, exportErr); err != nil {
+		return nil, err
+	}
+
+	if exportErr != nil {
+		return nil, exportErr
+	}
+
+	return &v1pb.ExportResponse{
+		Content: bytes,
+	}, nil
+}
+
 func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*v1pb.QueryResponse, error) {
 	// Prepare related message.
 	user, environment, instance, maybeDatabase, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
@@ -138,12 +203,16 @@ func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*
 		return nil, queryErr
 	}
 
-	// Return response.
+	// AllowExport is a validate only check.
+	_, _, _, _, _, _, err = s.preCheck(ctx, request.Name, request.ConnectionDatabase, request.Statement, request.Limit, false /* isAdmin */, true /* isExport */)
+	allowExport := (err == nil)
+
 	response := &v1pb.QueryResponse{
-		Results: results,
-		Advices: advices,
-		// AllowExport: allowExport,
+		Results:     results,
+		Advices:     advices,
+		AllowExport: allowExport,
 	}
+
 	if proto.Size(response) > maximumSQLResultSize {
 		response.Results = []*v1pb.QueryResult{
 			{
@@ -179,6 +248,107 @@ func mask(maskers []masker.Masker, result *v1pb.QueryResult) {
 			result.Rows[i].Values[j] = maskedValue
 		}
 	}
+}
+
+// doExportV2 is the copy of doExport, which use query span to improve performance.
+func (s *SQLService) doExportV2(ctx context.Context, request *v1pb.ExportRequest, instance *store.InstanceMessage, database *store.DatabaseMessage, spans []*base.QuerySpan) ([]byte, int64, error) {
+	driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database, "" /* dataSourceID */)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer driver.Close(ctx)
+
+	sqlDB := driver.GetDB()
+	var conn *sql.Conn
+	if sqlDB != nil {
+		conn, err = sqlDB.Conn(ctx)
+		if err != nil {
+			return nil, 0, err
+		}
+		defer conn.Close()
+	}
+
+	start := time.Now().UnixNano()
+	result, err := driver.QueryConn(ctx, conn, request.Statement, &db.QueryContext{
+		Limit:               int(request.Limit),
+		ReadOnly:            true,
+		CurrentDatabase:     request.ConnectionDatabase,
+		SensitiveSchemaInfo: nil,
+		EnableSensitive:     s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil,
+	})
+	durationNs := time.Now().UnixNano() - start
+	if err != nil {
+		return nil, durationNs, err
+	}
+	if len(result) != 1 {
+		return nil, durationNs, errors.Errorf("expecting 1 result, but got %d", len(result))
+	}
+
+	classificationSetting, err := s.store.GetDataClassificationSetting(ctx)
+	if err != nil {
+		return nil, durationNs, errors.Wrapf(err, "failed to find classification setting")
+	}
+
+	maskingRulePolicy, err := s.store.GetMaskingRulePolicy(ctx)
+	if err != nil {
+		return nil, durationNs, errors.Wrapf(err, "failed to find masking rule policy")
+	}
+
+	algorithmSetting, err := s.store.GetMaskingAlgorithmSetting(ctx)
+	if err != nil {
+		return nil, durationNs, errors.Wrapf(err, "failed to find masking algorithm setting")
+	}
+
+	semanticTypesSetting, err := s.store.GetSemanticTypesSetting(ctx)
+	if err != nil {
+		return nil, durationNs, errors.Wrapf(err, "failed to find semantic types setting")
+	}
+
+	m := newEmptyMaskingLevelEvaluator().
+		withMaskingRulePolicy(maskingRulePolicy).
+		withDataClassificationSetting(classificationSetting).
+		withMaskingAlgorithmSetting(algorithmSetting).
+		withSemanticTypeSetting(semanticTypesSetting)
+
+	maxLen := max(len(spans), len(result))
+	for i := 0; i < maxLen; i++ {
+		maskers, err := s.getMaskersForQuerySpan(ctx, m, instance, spans[i], storepb.MaskingExceptionPolicy_MaskingException_EXPORT)
+		if err != nil {
+			return nil, durationNs, errors.Wrapf(err, "failed to get maskers for query span")
+		}
+		mask(maskers, result[i])
+	}
+
+	var content []byte
+	switch request.Format {
+	case v1pb.ExportFormat_CSV:
+		if content, err = exportCSV(result[0]); err != nil {
+			return nil, durationNs, err
+		}
+	case v1pb.ExportFormat_JSON:
+		if content, err = exportJSON(result[0]); err != nil {
+			return nil, durationNs, err
+		}
+	case v1pb.ExportFormat_SQL:
+		resourceList, err := s.extractResourceList(ctx, instance.Engine, request.ConnectionDatabase, request.Statement, instance)
+		if err != nil {
+			return nil, 0, status.Errorf(codes.InvalidArgument, "failed to extract resource list: %v", err)
+		}
+		statementPrefix, err := getSQLStatementPrefix(instance.Engine, resourceList, result[0].ColumnNames)
+		if err != nil {
+			return nil, 0, err
+		}
+		if content, err = exportSQL(instance.Engine, statementPrefix, result[0]); err != nil {
+			return nil, durationNs, err
+		}
+	case v1pb.ExportFormat_XLSX:
+		if content, err = exportXLSX(result[0]); err != nil {
+			return nil, durationNs, err
+		}
+	default:
+		return nil, durationNs, status.Errorf(codes.InvalidArgument, "unsupported export format: %s", request.Format.String())
+	}
+	return content, durationNs, nil
 }
 
 // doQueryV2 is the copy of doQuery, which use query span to improve performance.
