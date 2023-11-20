@@ -16,7 +16,11 @@
         </template>
       </NInput>
     </div>
-    <div class="sql-editor-tree--tree flex-1 overflow-y-auto select-none">
+    <div
+      ref="treeContainerElRef"
+      class="sql-editor-tree--tree flex-1 pb-1 text-sm overflow-hidden select-none"
+      :data-height="treeContainerHeight"
+    >
       <NTree
         ref="treeRef"
         v-model:expanded-keys="treeStore.expandedKeys"
@@ -58,7 +62,7 @@
 </template>
 
 <script lang="ts" setup>
-import { useMounted, useThrottleFn } from "@vueuse/core";
+import { useElementSize, useMounted, useThrottleFn } from "@vueuse/core";
 import { head } from "lodash-es";
 import { NTree, NInput, NDropdown, DropdownOption, TreeOption } from "naive-ui";
 import { storeToRefs } from "pinia";
@@ -140,6 +144,14 @@ const hoverPanelPosition = ref<Position>({
 });
 
 const mounted = useMounted();
+const treeContainerElRef = ref<HTMLElement>();
+const { height: treeContainerHeight } = useElementSize(
+  treeContainerElRef,
+  undefined,
+  {
+    box: "content-box",
+  }
+);
 const treeRef = ref<InstanceType<typeof NTree>>();
 const throttledSearchPattern = ref(props.searchPattern);
 const showDropdown = ref(false);
