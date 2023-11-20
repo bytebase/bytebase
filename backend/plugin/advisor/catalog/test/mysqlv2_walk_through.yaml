@@ -1,4 +1,91 @@
 - statement: |-
+    CREATE TABLE t1(
+      a INT
+    );
+    ALTER TABLE t1 ADD COLUMN b INT AFTER a;
+    ALTER TABLE t1 ADD COLUMN c INT AFTER a;
+    ALTER TABLE t1 CHANGE COLUMN b d TEXT AFTER a;
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name":  "test",
+      "schemas":  [
+        {
+          "tables":  [
+            {
+              "name":  "t1",
+              "columns":  [
+                {
+                  "name":  "a",
+                  "position":  1,
+                  "nullable":  true,
+                  "type":  "int"
+                },
+                {
+                  "name":  "d",
+                  "position":  2,
+                  "nullable":  true,
+                  "type":  "text"
+                },
+                {
+                  "name":  "c",
+                  "position":  3,
+                  "nullable":  true,
+                  "type":  "int"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  err: null
+- statement: |-
+    CREATE TABLE t1(
+      a INT
+    );
+    ALTER TABLE t1 ADD COLUMN b VARCHAR(255) FIRST;
+    ALTER TABLE t1 ADD COLUMN (c INT, d BLOB);
+    ALTER TABLE t1 MODIFY COLUMN b INT AFTER a;
+    ALTER TABLE t1 RENAME COLUMN b TO e;
+    ALTER TABLE t1 CHANGE COLUMN d f TEXT AFTER e;
+    ALTER TABLE t1 DROP COLUMN a;
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name":  "test",
+      "schemas":  [
+        {
+          "tables":  [
+            {
+              "name":  "t1",
+              "columns":  [
+                {
+                  "name":  "e",
+                  "position":  1,
+                  "nullable":  true,
+                  "type":  "int"
+                },
+                {
+                  "name":  "f",
+                  "position":  2,
+                  "nullable":  true,
+                  "type":  "text"
+                },
+                {
+                  "name":  "c",
+                  "position":  3,
+                  "nullable":  true,
+                  "type":  "int"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  err: null
+- statement: |-
     CREATE TABLE t1(a INT);
     CREATE TABLE t2(a INT);
     DROP TABLE t1, t2;
@@ -6,18 +93,18 @@
   ignore_case_sensitive: false
   want: |-
     {
-      "name": "test",
-      "schemas": [
+      "name":  "test",
+      "schemas":  [
         {
-          "tables": [
+          "tables":  [
             {
-              "name": "t3",
-              "columns": [
+              "name":  "t3",
+              "columns":  [
                 {
-                  "name": "a",
-                  "position": 1,
-                  "nullable": true,
-                  "type": "int"
+                  "name":  "a",
+                  "position":  1,
+                  "nullable":  true,
+                  "type":  "int"
                 }
               ]
             }
@@ -64,29 +151,29 @@
   ignore_case_sensitive: false
   want: |-
     {
-      "name": "test",
-      "schemas": [
+      "name":  "test",
+      "schemas":  [
         {
-          "tables": [
+          "tables":  [
             {
-              "name": "t1",
-              "columns": [
+              "name":  "t1",
+              "columns":  [
                 {
-                  "name": "a",
-                  "position": 1,
-                  "nullable": true,
-                  "type": "int"
+                  "name":  "a",
+                  "position":  1,
+                  "nullable":  true,
+                  "type":  "int"
                 }
               ]
             },
             {
-              "name": "t2",
-              "columns": [
+              "name":  "t2",
+              "columns":  [
                 {
-                  "name": "a",
-                  "position": 1,
-                  "nullable": true,
-                  "type": "int"
+                  "name":  "a",
+                  "position":  1,
+                  "nullable":  true,
+                  "type":  "int"
                 }
               ]
             }
@@ -109,78 +196,78 @@
   ignore_case_sensitive: false
   want: |-
     {
-      "name": "test",
-      "schemas": [
+      "name":  "test",
+      "schemas":  [
         {
-          "tables": [
+          "tables":  [
             {
-              "name": "t1",
-              "columns": [
+              "name":  "t1",
+              "columns":  [
                 {
-                  "name": "a",
-                  "position": 1,
-                  "type": "int"
+                  "name":  "a",
+                  "position":  1,
+                  "type":  "int"
                 },
                 {
-                  "name": "b",
-                  "position": 2,
-                  "default": "1",
-                  "type": "int"
+                  "name":  "b",
+                  "position":  2,
+                  "default":  "1",
+                  "type":  "int"
                 },
                 {
-                  "name": "c",
-                  "position": 3,
-                  "nullable": true,
-                  "type": "int"
+                  "name":  "c",
+                  "position":  3,
+                  "nullable":  true,
+                  "type":  "int"
                 },
                 {
-                  "name": "d",
-                  "position": 4,
-                  "type": "varchar"
+                  "name":  "d",
+                  "position":  4,
+                  "type":  "varchar"
                 },
                 {
-                  "name": "e",
-                  "position": 5,
-                  "nullable": true,
-                  "type": "varchar"
+                  "name":  "e",
+                  "position":  5,
+                  "nullable":  true,
+                  "type":  "varchar"
                 }
               ],
-              "indexes": [
+              "indexes":  [
                 {
-                  "name": "PRIMARY",
-                  "expressions": [
+                  "name":  "PRIMARY",
+                  "expressions":  [
                     "a"
                   ],
-                  "type": "BTREE",
-                  "unique": true,
-                  "primary": true,
-                  "visible": true
+                  "type":  "BTREE",
+                  "unique":  true,
+                  "primary":  true,
+                  "visible":  true
                 },
                 {
-                  "name": "d",
-                  "expressions": [
+                  "name":  "d",
+                  "expressions":  [
                     "d",
                     "e"
                   ],
-                  "type": "FULLTEXT"
+                  "type":  "FULLTEXT"
                 },
                 {
-                  "name": "idx1",
-                  "expressions": [
+                  "name":  "idx1",
+                  "expressions":  [
                     "c"
                   ],
-                  "type": "BTREE",
-                  "visible": true
+                  "type":  "BTREE",
+                  "visible":  true
                 },
                 {
-                  "name": "uk1",
-                  "expressions": [
+                  "name":  "uk1",
+                  "expressions":  [
                     "b",
                     "c"
                   ],
-                  "type": "BTREE",
-                  "unique": true,
-                  "visible": true
+                  "type":  "BTREE",
+                  "unique":  true,
+                  "visible":  true
                 }
               ]
             }
@@ -234,70 +321,70 @@
   ignore_case_sensitive: false
   want: |-
     {
-      "name": "test",
-      "schemas": [
+      "name":  "test",
+      "schemas":  [
         {
-          "tables": [
+          "tables":  [
             {
-              "name": "t1",
-              "columns": [
+              "name":  "t1",
+              "columns":  [
                 {
-                  "name": "a",
-                  "position": 1,
-                  "default": "1",
-                  "type": "int"
+                  "name":  "a",
+                  "position":  1,
+                  "default":  "1",
+                  "type":  "int"
                 },
                 {
-                  "name": "b",
-                  "position": 2,
-                  "nullable": true,
-                  "type": "int"
+                  "name":  "b",
+                  "position":  2,
+                  "nullable":  true,
+                  "type":  "int"
                 },
                 {
-                  "name": "c",
-                  "position": 3,
-                  "default": "NULL",
-                  "type": "varchar",
-                  "comment": "column c"
+                  "name":  "c",
+                  "position":  3,
+                  "default":  "NULL",
+                  "type":  "varchar",
+                  "comment":  "column c"
                 },
                 {
-                  "name": "e",
-                  "position": 4,
-                  "nullable": true,
-                  "type": "int"
+                  "name":  "e",
+                  "position":  4,
+                  "nullable":  true,
+                  "type":  "int"
                 },
                 {
-                  "name": "f",
-                  "position": 5,
-                  "type": "varchar",
-                  "collation": "utf8mb4_polish_ci"
+                  "name":  "f",
+                  "position":  5,
+                  "type":  "varchar",
+                  "collation":  "utf8mb4_polish_ci"
                 },
                 {
-                  "name": "g",
-                  "position": 6,
-                  "type": "varchar",
-                  "characterSet": "utf8mb4"
+                  "name":  "g",
+                  "position":  6,
+                  "type":  "varchar",
+                  "characterSet":  "utf8mb4"
                 }
               ],
-              "indexes": [
+              "indexes":  [
                 {
-                  "name": "PRIMARY",
-                  "expressions": [
+                  "name":  "PRIMARY",
+                  "expressions":  [
                     "a"
                   ],
-                  "type": "BTREE",
-                  "unique": true,
-                  "primary": true,
-                  "visible": true
+                  "type":  "BTREE",
+                  "unique":  true,
+                  "primary":  true,
+                  "visible":  true
                 },
                 {
-                  "name": "b",
-                  "expressions": [
+                  "name":  "b",
+                  "expressions":  [
                     "b"
                   ],
-                  "type": "BTREE",
-                  "unique": true,
-                  "visible": true
+                  "type":  "BTREE",
+                  "unique":  true,
+                  "visible":  true
                 }
               ]
             }
