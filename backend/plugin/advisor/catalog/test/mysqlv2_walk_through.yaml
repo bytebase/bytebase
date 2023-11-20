@@ -10,6 +10,14 @@
     content: There can be only one auto column for table `t1`
     line: 0
     payload: null
+- statement: CREATE TABLE tvx SELECT (x,z) FROM (VALUES ROW(1,3,5), ROW(2,4,6)) AS v(x,y,z);
+  ignore_case_sensitive: false
+  want: ""
+  err:
+    type: 303
+    content: Disallow the CREATE TABLE AS statement but "CREATE TABLE tvx SELECT (x,z) FROM (VALUES ROW(1,3,5), ROW(2,4,6)) AS v(x,y,z);" uses
+    line: 0
+    payload: null
 - statement: |-
     CREATE TABLE t1(a int);
     CREATE TABLE t2 (b INT) SELECT a FROM t1;
