@@ -524,18 +524,29 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 					}]; ok {
 						for _, result := range run.Result.Results {
 							report := result.GetSqlSummaryReport()
-							// If the sheet exceeds common.MaxSheetCheckSize, the report is nil and the affected_rows will be math.MaxInt32.
 							if report == nil {
 								continue
 							}
 							args["affected_rows"] = report.AffectedRows
 							for _, statementType := range report.StatementTypes {
 								args["sql_type"] = statementType
+								res, _, err := prg.Eval(args)
+								if err != nil {
+									return 0, err
+								}
+								val, err := res.ConvertToNative(reflect.TypeOf(false))
+								if err != nil {
+									return 0, errors.Wrap(err, "expect bool result")
+								}
+								if boolVal, ok := val.(bool); ok && boolVal {
+									return risk.Level, nil
+								}
 							}
-							break
 						}
 					}
 
+					args["sql_type"] = "UNKNOWN"
+					args["affected_rows"] = math.MaxInt32
 					res, _, err := prg.Eval(args)
 					if err != nil {
 						return 0, err
