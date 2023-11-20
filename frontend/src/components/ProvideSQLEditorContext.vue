@@ -53,7 +53,7 @@ const { t } = useI18n();
 const isLoading = ref<boolean>(true);
 
 const currentUserV1 = useCurrentUserV1();
-const projectStpre = useProjectV1Store();
+const projectStore = useProjectV1Store();
 const instanceStore = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
 const policyV1Store = usePolicyV1Store();
@@ -99,7 +99,7 @@ const initializeTree = async () => {
   const projectName = route.query.project;
   if (projectName) {
     try {
-      const project = await projectStpre.getOrFetchProjectByName(
+      const project = await projectStore.getOrFetchProjectByName(
         `${projectNamePrefix}${projectName}`,
         true /* silent */
       );
@@ -313,6 +313,7 @@ const syncURLWithConnection = () => {
 
 onMounted(async () => {
   await useUserStore().fetchUserList();
+  await useSettingV1Store().fetchSettingList();
 
   if (treeStore.state === "UNSET") {
     treeStore.state = "LOADING";
@@ -326,6 +327,9 @@ onMounted(async () => {
     await usePolicyV1Store().getOrFetchPolicyByName("policies/WORKSPACE_IAM");
     await prepareAccessControlPolicy();
     await prepareAccessibleDatabaseList();
+
+    await setConnectionFromQuery();
+    await sqlEditorStore.fetchQueryHistoryList();
 
     await initializeTree();
     treeStore.state = "READY";
@@ -341,10 +345,6 @@ onMounted(async () => {
       }
     }
   );
-
-  await setConnectionFromQuery();
-  await sqlEditorStore.fetchQueryHistoryList();
-  await useSettingV1Store().fetchSettingList();
 
   syncURLWithConnection();
   isLoading.value = false;
