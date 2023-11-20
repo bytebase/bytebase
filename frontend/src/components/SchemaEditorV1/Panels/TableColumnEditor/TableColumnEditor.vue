@@ -356,7 +356,7 @@ const columns = computed(() => {
       render: (column) => {
         return h(OperationCell, {
           column,
-          readonly: props.readonly || !isDroppedColumn(column),
+          dropped: isDroppedColumn(column),
           disabled: props.disableChangeTable,
           onDrop: () => emit("drop", column),
           onRestore: () => emit("restore", column),
