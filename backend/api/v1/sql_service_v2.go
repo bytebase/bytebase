@@ -308,7 +308,7 @@ func (s *SQLService) doExportV2(ctx context.Context, request *v1pb.ExportRequest
 
 	maxLen := max(len(spans), len(result))
 	for i := 0; i < maxLen; i++ {
-		maskers, err := s.getMaskersForQuerySpan(ctx, m, instance, spans[i], storepb.MaskingExceptionPolicy_MaskingException_QUERY)
+		maskers, err := s.getMaskersForQuerySpan(ctx, m, instance, spans[i], storepb.MaskingExceptionPolicy_MaskingException_EXPORT)
 		if err != nil {
 			return nil, durationNs, errors.Wrapf(err, "failed to get maskers for query span")
 		}
