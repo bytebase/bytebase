@@ -8,7 +8,6 @@
   >
     <NDataTable
       v-bind="$attrs"
-      class="schema-editor-table-list"
       :row-key="(table: Table) => table.id"
       :columns="columns"
       :data="tableList"
@@ -18,6 +17,7 @@
       :striped="true"
       :bordered="true"
       :bottom-bordered="true"
+      class="schema-editor-table-list"
     />
   </div>
 
@@ -318,6 +318,10 @@ const isDroppedTable = (table: Table) => {
 </script>
 
 <style lang="postcss" scoped>
+.schema-editor-table-list
+  :deep(.n-data-table-th .n-data-table-resize-button::after) {
+  @apply bg-control-bg;
+}
 .schema-editor-table-list :deep(.n-data-table-tr.created .n-data-table-td) {
   @apply text-green-700 !bg-green-50;
 }

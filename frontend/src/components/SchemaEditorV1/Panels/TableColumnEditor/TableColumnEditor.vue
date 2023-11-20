@@ -9,7 +9,6 @@
     <NDataTable
       v-bind="$attrs"
       size="small"
-      class="schema-editor-table-column-editor"
       :row-key="(column: Column) => column.id"
       :columns="columns"
       :data="shownColumnList"
@@ -17,6 +16,7 @@
       :max-height="tableBodyHeight"
       :virtual-scroll="true"
       :striped="true"
+      class="schema-editor-table-column-editor"
     />
   </div>
 
@@ -175,6 +175,7 @@ const columns = computed(() => {
     {
       key: "name",
       title: t("schema-editor.column.name"),
+      resizable: true,
       width: 120,
       className: "input-cell",
       render: (column) => {
@@ -194,6 +195,8 @@ const columns = computed(() => {
     {
       key: "semantic-types",
       title: t("settings.sensitive-data.semantic-types.self"),
+      resizable: true,
+      width: 140,
       hide: !showSemanticTypeColumn.value,
       render: (column) => {
         return h(SemanticTypeCell, {
@@ -211,6 +214,8 @@ const columns = computed(() => {
       key: "classification",
       title: t("schema-editor.column.classification"),
       hide: !classificationConfig.value,
+      resizable: true,
+      width: 140,
       render: (column) => {
         return h(ClassificationCell, {
           column,
@@ -225,6 +230,7 @@ const columns = computed(() => {
     {
       key: "type",
       title: t("schema-editor.column.type"),
+      resizable: true,
       width: 120,
       className: "input-cell",
       render: (column) => {
@@ -240,7 +246,8 @@ const columns = computed(() => {
     {
       key: "default-value",
       title: t("schema-editor.column.default"),
-      width: 120,
+      resizable: true,
+      width: 140,
       className: "input-cell",
       render: (column) => {
         return h(DefaultValueCell, {
@@ -256,6 +263,7 @@ const columns = computed(() => {
     {
       key: "comment",
       title: t("schema-editor.column.comment"),
+      resizable: true,
       width: 120,
       className: "input-cell",
       render: (column) => {
@@ -275,6 +283,7 @@ const columns = computed(() => {
     {
       key: "not-null",
       title: t("schema-editor.column.not-null"),
+      resizable: true,
       width: 80,
       className: "checkbox-cell",
       render: (column) => {
@@ -292,6 +301,7 @@ const columns = computed(() => {
     {
       key: "primary",
       title: t("schema-editor.column.primary"),
+      resizable: true,
       width: 80,
       className: "checkbox-cell",
       render: (column) => {
@@ -307,6 +317,7 @@ const columns = computed(() => {
       key: "foreign-key",
       title: t("schema-editor.column.foreign-key"),
       hide: !props.showForeignKey,
+      resizable: true,
       width: 120,
       className: "text-cell",
       render: (column) => {
@@ -324,6 +335,8 @@ const columns = computed(() => {
     {
       key: "labels",
       title: t("common.labels"),
+      resizable: true,
+      width: 80,
       render: (column) => {
         return h(LabelsCell, {
           column,
@@ -336,6 +349,7 @@ const columns = computed(() => {
     {
       key: "operations",
       title: "",
+      resizable: false,
       width: 30,
       hide: props.readonly,
       className: "!px-0",
@@ -489,6 +503,10 @@ const isDroppedColumn = (column: Column): boolean => {
 </script>
 
 <style lang="postcss" scoped>
+.schema-editor-table-column-editor
+  :deep(.n-data-table-th .n-data-table-resize-button::after) {
+  @apply bg-control-bg;
+}
 .schema-editor-table-column-editor :deep(.n-data-table-td.input-cell) {
   @apply pl-0.5 pr-1 py-0;
 }
