@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 	mysql "github.com/bytebase/mysql-parser"
@@ -121,9 +122,154 @@ func (l *mysqlV2Listener) EnterCreateTable(ctx *mysql.CreateTableContext) {
 				l.err = err
 				return
 			}
-		default:
+		case tableElement.TableConstraintDef() != nil:
+			if err := table.mysqlV2CreateConstraint(l.databaseState.ctx, tableElement.TableConstraintDef()); err != nil {
+				err.Line = tableElement.GetStart().GetLine()
+				l.err = err
+				return
+			}
 		}
 	}
+}
+
+func (t *TableState) mysqlV2CreateConstraint(ctx *FinderContext, constraintDef mysql.ITableConstraintDefContext) *WalkThroughError {
+	if constraintDef.GetType_() != nil {
+		switch constraintDef.GetType_().GetTokenType() {
+		// PRIMARY KEY.
+		case mysql.MySQLParserPRIMARY_SYMBOL:
+			if constraintDef.KeyListVariants() == nil {
+				// never reach here.
+				return nil
+			}
+			keyList := mysqlparser.NormalizeKeyListVariants(constraintDef.KeyListVariants())
+			if err := t.mysqlV2ValidateKeyStringList(ctx, keyList, true /* primary */, false /* isSpatial*/); err != nil {
+				return err
+			}
+			if err := t.mysqlV2CreatePrimaryKey(keyList, mysqlV2GetIndexType(constraintDef)); err != nil {
+				return err
+			}
+		// normal KEY/INDEX.
+		case mysql.MySQLParserKEY_SYMBOL, mysql.MySQLParserINDEX_SYMBOL:
+			if constraintDef.KeyListVariants() == nil {
+				// never reach here.
+				return nil
+			}
+			keyList := mysqlparser.NormalizeKeyListVariants(constraintDef.KeyListVariants())
+			if err := t.mysqlV2ValidateKeyStringList(ctx, keyList, false /* primary */, false /* isSpatial */); err != nil {
+				return err
+			}
+
+			indexName := ""
+			if constraintDef.IndexNameAndType() != nil && constraintDef.IndexNameAndType().IndexName() != nil {
+				indexName = mysqlparser.NormalizeIndexName(constraintDef.IndexNameAndType().IndexName())
+			}
+			if err := t.mysqlV2CreateIndex(indexName, keyList, false /* unique */, mysqlV2GetIndexType(constraintDef), constraintDef); err != nil {
+				return err
+			}
+		// UNIQUE KEY.
+		case mysql.MySQLParserUNIQUE_SYMBOL:
+			if constraintDef.KeyListVariants() == nil {
+				// never reach here.
+				return nil
+			}
+			keyList := mysqlparser.NormalizeKeyListVariants(constraintDef.KeyListVariants())
+			if err := t.mysqlV2ValidateKeyStringList(ctx, keyList, false /* primary */, false /* isSpatial*/); err != nil {
+				return err
+			}
+
+			indexName := ""
+			if constraintDef.ConstraintName() != nil {
+				indexName = mysqlparser.NormalizeConstraintName(constraintDef.ConstraintName())
+			}
+			if constraintDef.IndexNameAndType() != nil && constraintDef.IndexNameAndType().IndexName() != nil {
+				indexName = mysqlparser.NormalizeIndexName(constraintDef.IndexNameAndType().IndexName())
+			}
+			if err := t.mysqlV2CreateIndex(indexName, keyList, true /* unique */, mysqlV2GetIndexType(constraintDef), constraintDef); err != nil {
+				return err
+			}
+		// FULLTEXT KEY.
+		case mysql.MySQLParserFULLTEXT_SYMBOL:
+			if constraintDef.KeyListVariants() == nil {
+				// never reach here.
+				return nil
+			}
+			keyList := mysqlparser.NormalizeKeyListVariants(constraintDef.KeyListVariants())
+			if err := t.mysqlV2ValidateKeyStringList(ctx, keyList, false /* primary */, false /* isSpatial*/); err != nil {
+				return err
+			}
+			indexName := ""
+			if constraintDef.IndexName() != nil {
+				indexName = mysqlparser.NormalizeIndexName(constraintDef.IndexName())
+			}
+			if err := t.mysqlV2CreateIndex(indexName, keyList, false /* unique */, mysqlV2GetIndexType(constraintDef), constraintDef); err != nil {
+				return err
+			}
+		case mysql.MySQLParserFOREIGN_SYMBOL:
+			// we do not deal with FOREIGN KEY constraints.
+		}
+	}
+
+	// we do not deal with check constraints.
+	// if constraintDef.CheckConstraint() != nil {}
+	return nil
+}
+
+func (t *TableState) mysqlV2ValidateKeyStringList(ctx *FinderContext, keyList []string, primary bool, isSpatial bool) *WalkThroughError {
+	for _, columnName := range keyList {
+		column, exists := t.columnSet[columnName]
+		if !exists {
+			if ctx.CheckIntegrity {
+				return NewColumnNotExistsError(t.name, columnName)
+			}
+		} else {
+			if primary {
+				column.nullable = newFalsePointer()
+			}
+			if isSpatial && column.nullable != nil && *column.nullable {
+				return &WalkThroughError{
+					Type: ErrorTypeSpatialIndexKeyNullable,
+					// The error content comes from MySQL.
+					Content: fmt.Sprintf("All parts of a SPATIAL index must be NOT NULL, but `%s` is nullable", column.name),
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func mysqlV2GetIndexType(tableConstraint mysql.ITableConstraintDefContext) string {
+	if tableConstraint.GetType_() == nil {
+		return "BTREE"
+	}
+
+	// I still need to handle IndexNameAndType to get index type(algorithm).
+	switch tableConstraint.GetType_().GetTokenType() {
+	case mysql.MySQLParserPRIMARY_SYMBOL,
+		mysql.MySQLParserKEY_SYMBOL,
+		mysql.MySQLParserINDEX_SYMBOL,
+		mysql.MySQLParserUNIQUE_SYMBOL:
+
+		if tableConstraint.IndexNameAndType() != nil {
+			if tableConstraint.IndexNameAndType().IndexType() != nil {
+				indexType := tableConstraint.IndexNameAndType().IndexType().GetText()
+				return strings.ToUpper(indexType)
+			}
+		}
+
+		for _, option := range tableConstraint.AllIndexOption() {
+			if option == nil || option.IndexTypeClause() == nil {
+				continue
+			}
+
+			indexType := option.IndexTypeClause().IndexType().GetText()
+			return strings.ToUpper(indexType)
+		}
+	case mysql.MySQLParserFULLTEXT_SYMBOL:
+		return "FULLTEXT"
+	case mysql.MySQLParserFOREIGN_SYMBOL:
+	}
+	// for mysql, we use BTREE as default index type.
+	return "BTREE"
 }
 
 func (t *TableState) mysqlV2CreateColumn(_ *FinderContext, columnDef mysql.IColumnDefinitionContext) *WalkThroughError {
@@ -289,7 +435,31 @@ func (t *TableState) mysqlV2CreateIndex(name string, keyList []string, unique bo
 
 	// need to check the visibility of index.
 	// we need a for-loop to determined the visibility of index.
+
+	// NORMAL KEY/INDEX.
+	// PRIMARY KEY.
+	// UNIQUE KEY.
 	for _, attribute := range tableConstraint.AllIndexOption() {
+		if attribute == nil || attribute.CommonIndexOption() == nil {
+			continue
+		}
+		if attribute.CommonIndexOption().Visibility() != nil && attribute.CommonIndexOption().Visibility().INVISIBLE_SYMBOL() != nil {
+			index.visible = newFalsePointer()
+		}
+	}
+
+	// FULLTEXT INDEX.
+	for _, attribute := range tableConstraint.AllFulltextIndexOption() {
+		if attribute == nil || attribute.CommonIndexOption() == nil {
+			continue
+		}
+		if attribute.CommonIndexOption().Visibility() != nil && attribute.CommonIndexOption().Visibility().INVISIBLE_SYMBOL() != nil {
+			index.visible = newFalsePointer()
+		}
+	}
+
+	// SPATIAL INDEX.
+	for _, attribute := range tableConstraint.AllSpatialIndexOption() {
 		if attribute == nil || attribute.CommonIndexOption() == nil {
 			continue
 		}
