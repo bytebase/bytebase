@@ -1,0 +1,33 @@
+roles:
+  - name: roles/workspaceAdmin
+    permissions:
+      - bb.instance.list
+      - bb.instance.get
+      - bb.instance.create
+      - bb.instance.update
+      - bb.instance.delete
+      - bb.instance.undelete
+      - bb.instance.sync
+  - name: roles/workspaceDBA
+    permissions:
+      - bb.instance.list
+      - bb.instance.get
+      - bb.instance.create
+      - bb.instance.update
+      - bb.instance.delete
+      - bb.instance.undelete
+      - bb.instance.sync
+  - name: roles/workspaceMember
+    permissions: []
+  - name: roles/projectOwner
+    permissions: []
+  - name: roles/projectDeveloper
+    permissions: []
+  - name: roles/projectQuerier
+    permissions: []
+  - name: roles/projectExporter
+    permissions: []
+  - name: roles/projectReleaser
+    permissions: []
+  - name: roles/projectViewer
+    permissions: []
