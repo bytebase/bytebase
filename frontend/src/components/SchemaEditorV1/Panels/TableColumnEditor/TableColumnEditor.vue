@@ -11,11 +11,13 @@
       size="small"
       :row-key="(column: Column) => column.id"
       :columns="columns"
-      :data="shownColumnList"
+      :data="layoutReady ? shownColumnList : []"
       :row-class-name="classesForRow"
       :max-height="tableBodyHeight"
       :virtual-scroll="true"
       :striped="true"
+      :bordered="true"
+      :bottom-bordered="true"
       class="schema-editor-table-column-editor"
     />
   </div>
@@ -147,6 +149,8 @@ const { height: tableHeaderHeight } = useElementSize(tableHeaderElRef);
 const tableBodyHeight = computed(() => {
   return containerHeight.value - tableHeaderHeight.value - 2;
 });
+// Use this to avoid unnecessary initial rendering
+const layoutReady = computed(() => tableHeaderHeight.value > 0);
 const { t } = useI18n();
 const subscriptionV1Store = useSubscriptionV1Store();
 const settingStore = useSettingV1Store();
