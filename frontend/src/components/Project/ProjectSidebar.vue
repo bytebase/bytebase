@@ -96,7 +96,7 @@ watch(
 );
 
 const project = computed(() => {
-  if (issue.value) {
+  if (props.issueSlug) {
     return issue.value.projectEntity;
   } else if (props.projectSlug) {
     return projectV1Store.getProjectByUID(
