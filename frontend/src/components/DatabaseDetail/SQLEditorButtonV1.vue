@@ -37,7 +37,7 @@ import {
   DEFAULT_PROJECT_V1_NAME,
   UNKNOWN_PROJECT_NAME,
 } from "@/types";
-import { connectionV1Slug, hasWorkspacePermissionV1 } from "@/utils";
+import { VueClass, connectionV1Slug, hasWorkspacePermissionV1 } from "@/utils";
 
 interface LocalState {
   showRequestQueryPanel: boolean;
@@ -49,12 +49,14 @@ const props = withDefaults(
     label?: boolean;
     disabled?: boolean;
     tooltip?: boolean;
+    class?: VueClass;
   }>(),
   {
     database: undefined,
     label: false,
     disabled: false,
     tooltip: false,
+    class: undefined,
   }
 );
 
@@ -74,7 +76,7 @@ const showTooltip = computed((): boolean => {
   return !props.disabled && props.tooltip;
 });
 
-const classes = computed((): string[] => {
+const classes = computed(() => {
   const classes: string[] = [];
   if (showTooltip.value) {
     classes.push("tooltip-wrapper");
@@ -84,7 +86,7 @@ const classes = computed((): string[] => {
   } else {
     classes.push("textlabel", "cursor-pointer", "hover:text-accent");
   }
-  return classes;
+  return [...classes, props.class];
 });
 
 const gotoSQLEditor = () => {

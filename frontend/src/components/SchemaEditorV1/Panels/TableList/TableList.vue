@@ -11,7 +11,7 @@
       size="small"
       :row-key="(table: Table) => table.id"
       :columns="columns"
-      :data="tableList"
+      :data="layoutReady ? tableList : []"
       :row-class-name="classesForRow"
       :max-height="tableBodyHeight"
       :virtual-scroll="true"
@@ -117,6 +117,8 @@ const { height: tableHeaderHeight } = useElementSize(tableHeaderElRef);
 const tableBodyHeight = computed(() => {
   return containerHeight.value - tableHeaderHeight.value - 2;
 });
+// Use this to avoid unnecessary initial rendering
+const layoutReady = computed(() => tableHeaderHeight.value > 0);
 const editorStore = useSchemaEditorV1Store();
 const settingStore = useSettingV1Store();
 const currentTab = computed(
@@ -268,6 +270,7 @@ const classesForRow = (table: Table, index: number) => {
   ) {
     return "updated";
   }
+  return "";
 };
 
 const handleTableItemClick = (table: Table) => {
