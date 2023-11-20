@@ -56,7 +56,9 @@
 
       <template #footer>
         <div class="flex items-center justify-end gap-x-3">
-          <NButton>{{ $t("common.cancel") }}</NButton>
+          <NButton @click="showCreatePanel = false">{{
+            $t("common.cancel")
+          }}</NButton>
           <NTooltip :disabled="errors.length === 0">
             <template #trigger>
               <NButton
@@ -80,7 +82,7 @@
 
 <script setup lang="ts">
 import { asyncComputed } from "@vueuse/core";
-import { NInput, NTooltip } from "naive-ui";
+import { NButton, NInput, NTooltip } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { zindexable as vZindexable } from "vdirs";
 import { ref, watch } from "vue";

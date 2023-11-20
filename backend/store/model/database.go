@@ -201,6 +201,7 @@ func NewDatabaseConfig(config *storepb.DatabaseConfig) *DatabaseConfig {
 	return databaseConfig
 }
 
+// GetSchemaConfig gets the schema config by name.
 func (d *DatabaseConfig) GetSchemaConfig(name string) *SchemaConfig {
 	return d.internal[name]
 }

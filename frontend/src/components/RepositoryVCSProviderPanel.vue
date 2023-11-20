@@ -26,7 +26,7 @@
       </i18n-t>
     </template>
     <template v-else>
-      {{ $t("repository.choose-git-provider-contact-workspace-owner") }}
+      {{ $t("repository.choose-git-provider-contact-workspace-admin") }}
     </template>
   </div>
 </template>

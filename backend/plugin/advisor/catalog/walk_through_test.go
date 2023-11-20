@@ -42,6 +42,20 @@ func TestMySQLWalkThrough(t *testing.T) {
 	}
 }
 
+func TestMySQLV2WalkThrough(t *testing.T) {
+	originDatabase := &storepb.DatabaseSchemaMetadata{
+		Name: "test",
+	}
+
+	tests := []string{
+		"mysqlv2_walk_through",
+	}
+
+	for _, test := range tests {
+		runWalkThroughTest(t, test, storepb.Engine_ENGINE_UNSPECIFIED, originDatabase, false /* record */)
+	}
+}
+
 func TestMySQLWalkThroughForIncomplete(t *testing.T) {
 	tests := []string{
 		"mysql_walk_through_for_incomplete",
