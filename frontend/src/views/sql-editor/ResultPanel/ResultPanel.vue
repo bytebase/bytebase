@@ -1,11 +1,10 @@
 <template>
   <div
-    class="absolute inset-0 flex flex-col justify-start items-start z-10"
-    :class="loading && 'bg-white/80 dark:bg-black/80'"
+    class="relative w-full h-full flex flex-col justify-start items-start z-10 overflow-x-hidden"
   >
     <template v-if="loading">
       <div
-        class="w-full h-full flex flex-col justify-center items-center text-sm gap-y-1"
+        class="w-full h-full flex flex-col justify-center items-center text-sm gap-y-1 bg-white/80 dark:bg-black/80"
       >
         <div class="flex flex-row gap-x-1">
           <BBSpin />
@@ -24,7 +23,7 @@
     <template v-else>
       <div
         v-if="batchQueryDatabases.length > 0"
-        class="w-full flex flex-row justify-start items-center p-2 pb-0 gap-2 shrink-0"
+        class="w-full flex flex-row justify-start items-center p-2 pb-0 gap-2 shrink-0 overflow-x-auto hide-scrollbar"
       >
         <NTooltip
           v-for="database in databases"
