@@ -11,16 +11,16 @@ import (
 var aclYaml []byte
 
 type acl struct {
-	Allowlist []Binding `yaml:"allowlist"`
+	Roles []Role `yaml:"roles"`
 }
 
-type Binding struct {
-	Role        string   `yaml:"role"`
+type Role struct {
+	Name        string   `yaml:"name"`
 	Permissions []string `yaml:"permissions"`
 }
 
 type Manager struct {
-	Allowlist map[string][]Permission
+	roles map[string][]Permission
 }
 
 func NewManager() (*Manager, error) {
@@ -29,15 +29,14 @@ func NewManager() (*Manager, error) {
 		return nil, errors.Wrapf(err, "failed to unmarshal predefined acl")
 	}
 
-	allowlist := make(map[string][]Permission)
-	for _, binding := range predefinedACL.Allowlist {
-		allowlist[binding.Role] = make([]Permission, len(binding.Permissions))
-		for i, permission := range binding.Permissions {
-			allowlist[binding.Role][i] = Permission(permission)
+	roles := make(map[string][]Permission)
+	for _, binding := range predefinedACL.Roles {
+		for _, permission := range binding.Permissions {
+			roles[binding.Name] = append(roles[binding.Name], Permission(permission))
 		}
 	}
 
 	return &Manager{
-		Allowlist: allowlist,
+		roles: roles,
 	}, nil
 }

@@ -1,5 +1,5 @@
-allowlist:
-  - role: roles/workspaceAdmin
+roles:
+  - name: roles/workspaceAdmin
     permissions:
       - bb.instance.list
       - bb.instance.get
@@ -8,7 +8,7 @@ allowlist:
       - bb.instance.delete
       - bb.instance.undelete
       - bb.instance.sync
-  - role: roles/workspaceDBA
+  - name: roles/workspaceDBA
     permissions:
       - bb.instance.list
       - bb.instance.get
@@ -17,17 +17,17 @@ allowlist:
       - bb.instance.delete
       - bb.instance.undelete
       - bb.instance.sync
-  - role: roles/workspaceMember
+  - name: roles/workspaceMember
     permissions: []
-  - role: roles/projectOwner
+  - name: roles/projectOwner
     permissions: []
-  - role: roles/projectDeveloper
+  - name: roles/projectDeveloper
     permissions: []
-  - role: roles/projectQuerier
+  - name: roles/projectQuerier
     permissions: []
-  - role: roles/projectExporter
+  - name: roles/projectExporter
     permissions: []
-  - role: roles/projectReleaser
+  - name: roles/projectReleaser
     permissions: []
-  - role: roles/projectViewer
+  - name: roles/projectViewer
     permissions: []

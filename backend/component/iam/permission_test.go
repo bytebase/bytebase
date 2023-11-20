@@ -13,7 +13,7 @@ func TestPermissionExists(t *testing.T) {
 	m, err := NewManager()
 	a.NoError(err)
 
-	for _, permissions := range m.Allowlist {
+	for _, permissions := range m.roles {
 		for _, p := range permissions {
 			exist := permissionExist(p)
 			a.True(exist, "permission %s is not defined as a constant", p)
