@@ -1,11 +1,11 @@
 <template>
-  <div class="flex flex-col w-full h-full overflow-y-hidden">
-    <div class="py-2 w-full flex flex-row justify-between items-center">
+  <div class="flex flex-col pt-2 gap-y-2 w-full h-full overflow-y-hidden">
+    <div
+      v-if="!readonly"
+      class="w-full flex flex-row justify-between items-center"
+    >
       <div>
-        <div
-          v-if="!readonly"
-          class="w-full flex justify-between items-center space-x-2"
-        >
+        <div class="w-full flex justify-between items-center space-x-2">
           <NButton
             size="small"
             :disabled="disableChangeTable"

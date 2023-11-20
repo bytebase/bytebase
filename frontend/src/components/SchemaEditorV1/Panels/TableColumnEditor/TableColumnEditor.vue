@@ -336,7 +336,7 @@ const columns = computed(() => {
       key: "labels",
       title: t("common.labels"),
       resizable: true,
-      width: 80,
+      width: 140,
       render: (column) => {
         return h(LabelsCell, {
           column,
