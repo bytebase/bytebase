@@ -1,31 +1,101 @@
 - statement: |-
     CREATE TABLE t1(
-      col1 CHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_i,
-      col2 INT
+      a BLOB DEFAULT 'this is a default value'
+    );
+  ignore_case_sensitive: false
+  want: ""
+  err:
+    type: 407
+    content: BLOB, TEXT, GEOMETRY or JSON column `a` can't have a default value
+    line: 2
+    payload: null
+- statement: |-
+    CREATE TABLE t1(
+      a INT ON UPDATE NOW()
+    );
+  ignore_case_sensitive: false
+  want: ""
+  err:
+    type: 405
+    content: Column `a` use ON UPDATE but is not DATETIME or TIMESTAMP
+    line: 2
+    payload: null
+- statement: |-
+    CREATE TABLE t1(
+      a INT NOT NULL DEFAULT 1 PRIMARY KEY,
+      b INT UNIQUE,
+      c VARCHAR(255) NOT NULL DEFAULT 'NULL' COMMENT 'column c',
+      e INT NULL DEFAULT NULL,
+      f VARCHAR(10) NOT NULL COLLATE utf8mb4_polish_ci,
+      g VARCHAR(200) CHARACTER SET utf8mb4 NOT NULL
     );
   ignore_case_sensitive: false
   want: |-
     {
-      "name": "test",
-      "schemas": [
+      "name":  "test",
+      "schemas":  [
         {
-          "tables": [
+          "tables":  [
             {
-              "name": "t1",
-              "columns": [
+              "name":  "t1",
+              "columns":  [
                 {
-                  "name": "col1",
-                  "position": 1,
-                  "nullable": true,
-                  "type": "char",
-                  "characterSet": "utf8mb4",
-                  "collation": "utf8mb4_unicode_i"
+                  "name":  "a",
+                  "position":  1,
+                  "default":  "1",
+                  "type":  "int"
                 },
                 {
-                  "name": "col2",
-                  "position": 2,
-                  "nullable": true,
-                  "type": "int"
+                  "name":  "b",
+                  "position":  2,
+                  "nullable":  true,
+                  "type":  "int"
+                },
+                {
+                  "name":  "c",
+                  "position":  3,
+                  "default":  "NULL",
+                  "type":  "varchar",
+                  "comment":  "column c"
+                },
+                {
+                  "name":  "e",
+                  "position":  4,
+                  "nullable":  true,
+                  "type":  "int"
+                },
+                {
+                  "name":  "f",
+                  "position":  5,
+                  "type":  "varchar",
+                  "collation":  "utf8mb4_polish_ci"
+                },
+                {
+                  "name":  "g",
+                  "position":  6,
+                  "type":  "varchar",
+                  "characterSet":  "utf8mb4"
+                }
+              ],
+              "indexes":  [
+                {
+                  "name":  "PRIMARY",
+                  "expressions":  [
+                    "a"
+                  ],
+                  "type":  "BTREE",
+                  "unique":  true,
+                  "primary":  true,
+                  "visible":  true
+                },
+                {
+                  "name":  "b",
+                  "expressions":  [
+                    "b"
+                  ],
+                  "type":  "BTREE",
+                  "unique":  true,
+                  "visible":  true
                 }
               ]
             }
