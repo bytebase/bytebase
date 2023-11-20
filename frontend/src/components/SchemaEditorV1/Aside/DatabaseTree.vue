@@ -18,10 +18,13 @@
       :data-height="treeContainerHeight"
     >
       <NTree
+        v-if="treeContainerHeight > 0"
         ref="treeRef"
         block-line
         virtual-scroll
-        style="height: 100%"
+        :style="{
+          height: `${treeContainerHeight}px`,
+        }"
         :data="treeDataRef"
         :pattern="searchPattern"
         :render-prefix="renderPrefix"

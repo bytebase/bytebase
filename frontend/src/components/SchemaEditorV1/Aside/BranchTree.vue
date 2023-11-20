@@ -26,6 +26,7 @@
       :data-height="treeContainerHeight"
     >
       <NTree
+        v-if="treeContainerHeight > 0"
         :key="treeKeyRef"
         ref="treeRef"
         block-line

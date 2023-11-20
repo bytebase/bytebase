@@ -1,11 +1,13 @@
 <template>
   <div
-    v-if="state.initialized"
-    class="w-full h-full border rounded-lg overflow-hidden"
+    class="w-full h-full border rounded-lg overflow-hidden relative"
     v-bind="$attrs"
   >
+    <MaskSpinner v-if="mergedLoading" />
+
     <Splitpanes
-      class="default-theme w-full h-full flex flex-row overflow-hidden"
+      v-if="state.initialized"
+      class="default-theme w-full h-full flex flex-row overflow-hidden relative"
     >
       <Pane min-size="15" size="25">
         <Aside />
@@ -20,7 +22,7 @@
 <script lang="ts" setup>
 import { isEqual } from "lodash-es";
 import { Splitpanes, Pane } from "splitpanes";
-import { onMounted, watch, reactive } from "vue";
+import { onMounted, watch, reactive, computed } from "vue";
 import { useSchemaEditorV1Store, useSettingV1Store } from "@/store";
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
 import { ComposedProject, ComposedDatabase } from "@/types";
@@ -29,6 +31,8 @@ import {
   SchemaDesign_Type,
 } from "@/types/proto/v1/schema_design_service";
 import { BranchSchema } from "@/types/v1/schemaEditor";
+import { nextAnimationFrame } from "@/utils";
+import MaskSpinner from "../misc/MaskSpinner.vue";
 import Aside from "./Aside/index.vue";
 import Editor from "./Editor.vue";
 import { convertBranchToBranchSchema } from "./utils/branch";
@@ -40,9 +44,11 @@ const props = defineProps<{
   databases?: ComposedDatabase[];
   // NOTE: we only support editing one branch for now.
   branches?: SchemaDesign[];
+  loading?: boolean;
 }>();
 
 interface LocalState {
+  loading: boolean;
   initialized: boolean;
 }
 
@@ -50,7 +56,12 @@ const settingStore = useSettingV1Store();
 const schemaEditorV1Store = useSchemaEditorV1Store();
 const schemaDesignStore = useSchemaDesignStore();
 const state = reactive<LocalState>({
+  loading: false,
   initialized: false,
+});
+
+const mergedLoading = computed(() => {
+  return props.loading || state.loading;
 });
 
 const prepareBranchContext = async () => {
@@ -72,11 +83,17 @@ const prepareBranchContext = async () => {
 };
 
 const batchConvertBranchSchemas = async (branches: SchemaDesign[]) => {
-  return await Promise.all(
-    branches.map<Promise<[string, BranchSchema]>>(async (branch) => {
-      return [branch.name, await convertBranchToBranchSchema(branch)];
-    })
-  );
+  try {
+    state.loading = true;
+    await nextAnimationFrame();
+    return await Promise.all(
+      branches.map<Promise<[string, BranchSchema]>>(async (branch) => {
+        return [branch.name, await convertBranchToBranchSchema(branch)];
+      })
+    );
+  } finally {
+    state.loading = false;
+  }
 };
 
 const initialSchemaEditorState = async () => {
