@@ -1,6 +1,6 @@
 <template>
   <div class="flex justify-start items-center">
-    <NTooltip v-if="!isDroppedColumn(column)" trigger="hover" to="body">
+    <NTooltip v-if="!readonly" trigger="hover" to="body">
       <template #trigger>
         <MiniActionButton tag="div" :disabled="disabled" @click="$emit('drop')">
           <TrashIcon class="w-4 h-4" />
@@ -28,10 +28,10 @@ import { TrashIcon } from "lucide-vue-next";
 import { Undo2Icon } from "lucide-vue-next";
 import { MiniActionButton } from "@/components/v2";
 import { Column } from "@/types/v1/schemaEditor";
-import { isDroppedColumn } from "../common";
 
 defineProps<{
   column: Column;
+  readonly?: boolean;
   disabled?: boolean;
 }>();
 defineEmits<{

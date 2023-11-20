@@ -338,6 +338,7 @@ const columns = computed(() => {
       render: (column) => {
         return h(OperationCell, {
           column,
+          readonly: props.readonly || !isDroppedColumn(column),
           disabled: props.disableChangeTable,
           onDrop: () => emit("drop", column),
           onRestore: () => emit("restore", column),
@@ -476,6 +477,10 @@ const onSemanticTypeRemove = async (column: Column) => {
 
 const classesForRow = (column: Column, index: number) => {
   return props.getColumnItemComputedClassList(column);
+};
+
+const isDroppedColumn = (column: Column): boolean => {
+  return column.status === "dropped";
 };
 </script>
 
