@@ -1,6 +1,8 @@
 <template>
-  <div class="w-full h-full px-2 space-y-2 relative overflow-y-hidden">
-    <div class="w-full flex sticky top-0 pt-2 bg-white z-10 space-x-2">
+  <div
+    class="w-full h-full px-2 flex flex-col gap-y-2 relative overflow-y-hidden"
+  >
+    <div class="w-full flex pt-2 bg-white z-10 space-x-2">
       <NInput
         v-model:value="searchPattern"
         size="small"
@@ -19,14 +21,18 @@
       </button>
     </div>
     <div
-      class="schema-designer-database-tree pb-2 overflow-y-auto h-full text-sm"
+      ref="treeContainerElRef"
+      class="flex-1 text-sm overflow-hidden select-none"
+      :data-height="treeContainerHeight"
     >
       <NTree
         :key="treeKeyRef"
         ref="treeRef"
         block-line
         virtual-scroll
-        style="height: 100%"
+        :style="{
+          height: `${treeContainerHeight}px`,
+        }"
         :data="treeData"
         :pattern="searchPattern"
         :render-prefix="renderPrefix"
@@ -68,6 +74,7 @@
 </template>
 
 <script lang="ts" setup>
+import { useElementSize } from "@vueuse/core";
 import { escape, head, isUndefined } from "lodash-es";
 import { TreeOption, NEllipsis, NInput, NDropdown, NTree } from "naive-ui";
 import { v1 as uuidv1 } from "uuid";
@@ -135,6 +142,8 @@ const state = reactive<LocalState>({
 const readonly = computed(() => schemaEditorV1Store.readonly);
 const currentTab = computed(() => schemaEditorV1Store.currentTab);
 
+const treeContainerElRef = ref<HTMLElement>();
+const { height: treeContainerHeight } = useElementSize(treeContainerElRef);
 const treeRef = ref<InstanceType<typeof NTree>>();
 const searchPattern = ref("");
 const expandedKeysRef = ref<string[]>([]);
