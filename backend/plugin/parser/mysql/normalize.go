@@ -342,3 +342,13 @@ func IsTimeType(ctx parser.IDataTypeContext) bool {
 		return false
 	}
 }
+
+// IsAutoIncrement check if this column is auto_increment.
+func IsAutoIncrement(ctx parser.IFieldDefinitionContext) bool {
+	for _, attr := range ctx.AllColumnAttribute() {
+		if attr.AUTO_INCREMENT_SYMBOL() != nil {
+			return true
+		}
+	}
+	return false
+}

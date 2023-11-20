@@ -35,8 +35,13 @@ type mysqlV2Listener struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine      int
+	text          string
 	databaseState *DatabaseState
 	err           *WalkThroughError
+}
+
+func (l *mysqlV2Listener) EnterQuery(ctx *mysql.QueryContext) {
+	l.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
 }
 
 func (d *DatabaseState) mysqlV2ChangeState(in *mysqlparser.ParseResult) (err *WalkThroughError) {
@@ -96,6 +101,20 @@ func (l *mysqlV2Listener) EnterCreateTable(ctx *mysql.CreateTableContext) {
 		return
 	}
 
+	if ctx.DuplicateAsQueryExpression() != nil {
+		l.err = &WalkThroughError{
+			Type:    ErrorTypeUseCreateTableAs,
+			Content: fmt.Sprintf("Disallow the CREATE TABLE AS statement but \"%s\" uses", l.text),
+		}
+		return
+	}
+
+	if ctx.LIKE_SYMBOL() != nil {
+		_, referTable := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
+		l.err = l.databaseState.mysqlV2CopyTable(databaseName, tableName, referTable)
+		return
+	}
+
 	table := &TableState{
 		name:      tableName,
 		engine:    newEmptyStringPointer(),
@@ -110,12 +129,23 @@ func (l *mysqlV2Listener) EnterCreateTable(ctx *mysql.CreateTableContext) {
 		return
 	}
 
+	hasAutoIncrement := false
 	for _, tableElement := range ctx.TableElementList().AllTableElement() {
 		switch {
 		// handle column
 		case tableElement.ColumnDefinition() != nil:
 			if tableElement.ColumnDefinition().FieldDefinition() == nil {
 				continue
+			}
+			if mysqlparser.IsAutoIncrement(tableElement.ColumnDefinition().FieldDefinition()) {
+				if hasAutoIncrement {
+					l.err = &WalkThroughError{
+						Type: ErrorTypeAutoIncrementExists,
+						// The content comes from MySQL error content.
+						Content: fmt.Sprintf("There can be only one auto column for table `%s`", table.name),
+					}
+				}
+				hasAutoIncrement = true
 			}
 			if err := table.mysqlV2CreateColumn(l.databaseState.ctx, tableElement.ColumnDefinition()); err != nil {
 				err.Line = l.baseLine + tableElement.GetStart().GetLine()
@@ -130,6 +160,44 @@ func (l *mysqlV2Listener) EnterCreateTable(ctx *mysql.CreateTableContext) {
 			}
 		}
 	}
+}
+
+func (d *DatabaseState) mysqlV2CopyTable(databaseName, tableName, referTable string) *WalkThroughError {
+	targetTable, err := d.mysqlV2FindTableState(databaseName, referTable, true /* createIncompleteTable */)
+	if err != nil {
+		return err
+	}
+
+	schema := d.schemaSet[""]
+	table := targetTable.copy()
+	table.name = tableName
+	schema.tableSet[table.name] = table
+	return nil
+}
+
+func (d *DatabaseState) mysqlV2FindTableState(databaseName, tableName string, createIncompleteTable bool) (*TableState, *WalkThroughError) {
+	if databaseName != "" && !d.isCurrentDatabase(databaseName) {
+		return nil, NewAccessOtherDatabaseError(d.name, databaseName)
+	}
+
+	schema, exists := d.schemaSet[""]
+	if !exists {
+		schema = d.createSchema("")
+	}
+
+	table, exists := schema.getTable(tableName)
+	if !exists {
+		if schema.ctx.CheckIntegrity {
+			return nil, NewTableNotExistsError(tableName)
+		}
+		if createIncompleteTable {
+			table = schema.createIncompleteTable(tableName)
+		} else {
+			return nil, nil
+		}
+	}
+
+	return table, nil
 }
 
 func (t *TableState) mysqlV2CreateConstraint(ctx *FinderContext, constraintDef mysql.ITableConstraintDefContext) *WalkThroughError {
