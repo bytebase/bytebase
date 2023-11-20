@@ -313,9 +313,12 @@ const syncURLWithConnection = () => {
 
 onMounted(async () => {
   await useUserStore().fetchUserList();
+  await useSettingV1Store().fetchSettingList();
 
   if (treeStore.state === "UNSET") {
     treeStore.state = "LOADING";
+    await setConnectionFromQuery();
+    await sqlEditorStore.fetchQueryHistoryList();
 
     // Initialize project list state for iam policy.
     await useProjectV1Store().fetchProjectList(true /* include archived */);
@@ -341,10 +344,6 @@ onMounted(async () => {
       }
     }
   );
-
-  await setConnectionFromQuery();
-  await sqlEditorStore.fetchQueryHistoryList();
-  await useSettingV1Store().fetchSettingList();
 
   syncURLWithConnection();
   isLoading.value = false;
