@@ -242,6 +242,11 @@ func (driver *Driver) getVersion(ctx context.Context) (int, int, error) {
 	if err := driver.db.QueryRowContext(ctx, "SELECT BANNER FROM v$version").Scan(&banner); err != nil {
 		return 0, 0, err
 	}
+
+	return parseVersion(banner)
+}
+
+func parseVersion(banner string) (int, int, error) {
 	re := regexp.MustCompile(`(\d+)\.(\d+)`)
 	match := re.FindStringSubmatch(banner)
 	if len(match) >= 3 {
