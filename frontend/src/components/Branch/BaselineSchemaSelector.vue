@@ -1,7 +1,5 @@
 <template>
-  <div
-    class="w-full mx-auto flex flex-col justify-start items-start space-y-3 mb-6"
-  >
+  <div class="w-full mx-auto flex flex-col justify-start items-start gap-y-3">
     <div class="w-full flex flex-row justify-start items-center">
       <span class="flex w-40 items-center shrink-0 text-sm">
         {{ $t("common.database") }}
@@ -55,7 +53,7 @@
 </template>
 
 <script lang="ts" setup>
-import { head, isNull, isUndefined } from "lodash-es";
+import { debounce, head, isNull, isUndefined } from "lodash-es";
 import { NEllipsis, SelectOption } from "naive-ui";
 import { computed, h, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -330,15 +328,11 @@ const databaseChangeHistoryList = (databaseId: string) => {
   return list;
 };
 
-watch(
-  () => state,
-  () => {
-    emit("update", {
-      ...state,
-    });
-  },
-  { deep: true }
-);
+const debouncedUpdate = debounce((state: LocalState) => {
+  emit("update", { ...state });
+}, 200);
+
+watch(() => state, debouncedUpdate, { deep: true });
 </script>
 <style lang="postcss">
 .bb-baseline-schema-select-option .n-base-select-option__content {

@@ -41,7 +41,7 @@
           :project="project"
           :readonly="readonly"
           :resource-type="'branch'"
-          :branches="[branch]"
+          :branches="branches"
         />
       </div>
       <div
@@ -105,6 +105,9 @@ const rawSQLPreviewState = reactive({
 const baselineDatabase = computed(() => {
   return databaseStore.getDatabaseByName(props.branch.baselineDatabase);
 });
+
+// Avoid to create array or object literals in template to improve performance
+const branches = computed(() => [props.branch]);
 
 const handleChangeTab = async (tab: TabType) => {
   state.selectedTab = tab;

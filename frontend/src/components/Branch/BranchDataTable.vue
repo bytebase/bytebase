@@ -7,6 +7,7 @@
     :data="dataTableRows"
     :row-key="rowKey"
     :row-props="rowProps"
+    class="bb-branch-data-table"
   />
 </template>
 
@@ -207,14 +208,14 @@ const getUpdatedTimeStr = (branch: SchemaDesign) => {
 };
 </script>
 
-<style lang="postcss">
-.n-data-table-expand-trigger {
+<style lang="postcss" scoped>
+.bb-branch-data-table :deep(.n-data-table-expand-trigger) {
   @apply !w-5 !h-5 inline-flex justify-center items-center translate-y-0.5 rounded hover:bg-white hover:shadow;
 }
-.n-data-table-expand-trigger > .n-base-icon {
+.bb-branch-data-table :deep(.n-data-table-expand-trigger > .n-base-icon) {
   @apply !w-5 !h-5 flex flex-row justify-center items-center;
 }
-.n-data-table .n-data-table-td {
+.bb-branch-data-table :deep(.n-data-table-td) {
   background-color: transparent !important;
 }
 </style>
