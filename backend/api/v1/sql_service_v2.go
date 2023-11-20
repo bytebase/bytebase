@@ -203,12 +203,16 @@ func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*
 		return nil, queryErr
 	}
 
-	// Return response.
+	// AllowExport is a validate only check.
+	_, _, _, _, _, _, err = s.preCheck(ctx, request.Name, request.ConnectionDatabase, request.Statement, request.Limit, false /* isAdmin */, true /* isExport */)
+	allowExport := (err == nil)
+
 	response := &v1pb.QueryResponse{
-		Results: results,
-		Advices: advices,
-		// AllowExport: allowExport,
+		Results:     results,
+		Advices:     advices,
+		AllowExport: allowExport,
 	}
+
 	if proto.Size(response) > maximumSQLResultSize {
 		response.Results = []*v1pb.QueryResult{
 			{
