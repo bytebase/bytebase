@@ -119,11 +119,11 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 	if sheet == nil {
 		return nil, errors.Errorf("sheet %d not found", sheetUID)
 	}
-	if (sheet.Size > common.MaxSheetSizeForTaskCheck) || (config.ChangeDatabaseType == storepb.PlanCheckRunConfig_DML && sheet.Size > common.MaxSheetSizeForPlanCheckDML) {
+	if sheet.Size > common.MaxSheetCheckSize {
 		return []*storepb.PlanCheckRunResult_Result{
 			{
-				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
-				Code:    common.Ok.Int32(),
+				Status:  storepb.PlanCheckRunResult_Result_WARNING,
+				Code:    common.SizeExceeded.Int32(),
 				Title:   "Large SQL review policy is disabled",
 				Content: "",
 			},
@@ -261,11 +261,11 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 	if sheet == nil {
 		return nil, errors.Errorf("sheet %d not found", sheetUID)
 	}
-	if sheet.Size > common.MaxSheetSizeForTaskCheck {
+	if sheet.Size > common.MaxSheetCheckSize {
 		return []*storepb.PlanCheckRunResult_Result{
 			{
-				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
-				Code:    common.Ok.Int32(),
+				Status:  storepb.PlanCheckRunResult_Result_WARNING,
+				Code:    common.SizeExceeded.Int32(),
 				Title:   "Large SQL review policy is disabled",
 				Content: "",
 			},

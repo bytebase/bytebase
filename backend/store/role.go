@@ -95,8 +95,8 @@ func (s *Store) ListRoles(ctx context.Context) ([]*RoleMessage, error) {
 		},
 		&RoleMessage{
 			CreatorID:   api.SystemBotID,
-			ResourceID:  api.ProjectViewer.String(),
-			Name:        "Project database viewer",
+			ResourceID:  api.Querier.String(),
+			Name:        "Project querier",
 			Description: "",
 		},
 		&RoleMessage{
@@ -107,8 +107,8 @@ func (s *Store) ListRoles(ctx context.Context) ([]*RoleMessage, error) {
 		},
 		&RoleMessage{
 			CreatorID:   api.SystemBotID,
-			ResourceID:  api.Querier.String(),
-			Name:        "Project querier",
+			ResourceID:  api.ProjectViewer.String(),
+			Name:        "Project viewer",
 			Description: "",
 		},
 	)
