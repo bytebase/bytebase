@@ -25,8 +25,9 @@ var (
 // SyncInstance syncs the instance.
 func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
 	var fullVersion string
-	if err := driver.db.QueryRowContext(ctx, "SELECT BANNER FROM v$version WHERE banner LIKE 'Oracle%'").Scan(&fullVersion); err != nil {
-		return nil, err
+	queryVersion := "SELECT BANNER FROM v$version WHERE banner LIKE 'Oracle%'"
+	if err := driver.db.QueryRowContext(ctx, queryVersion).Scan(&fullVersion); err != nil {
+		return nil, util.FormatErrorWithQuery(err, queryVersion)
 	}
 	tokens := strings.Fields(fullVersion)
 	var version, canonicalVersion string
@@ -47,7 +48,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 	if driver.schemaTenantMode {
 		databases, err := driver.syncSchemaTenantModeInstance(ctx)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "failed to sync schema tenant mode instance")
 		}
 
 		return &db.InstanceMetadata{
@@ -58,9 +59,10 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 
 	var databases []*storepb.DatabaseSchemaMetadata
 	// sync CDB
-	cdbRows, err := driver.db.QueryContext(ctx, "SELECT name FROM v$database")
+	queryDB := "SELECT name FROM v$database"
+	cdbRows, err := driver.db.QueryContext(ctx, queryDB)
 	if err != nil {
-		return nil, err
+		return nil, util.FormatErrorWithQuery(err, queryDB)
 	}
 	defer cdbRows.Close()
 
@@ -72,7 +74,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 		databases = append(databases, database)
 	}
 	if err := cdbRows.Err(); err != nil {
-		return nil, err
+		return nil, util.FormatErrorWithQuery(err, queryDB)
 	}
 
 	// sync PDBs
@@ -101,7 +103,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 		databases = append(databases, database)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, util.FormatErrorWithQuery(err, query)
 	}
 
 	return &db.InstanceMetadata{
@@ -119,7 +121,7 @@ func (driver *Driver) syncSchemaTenantModeInstance(ctx context.Context) ([]*stor
 
 	schemas, err := getSchemas(txn)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to get schemas from database %q", driver.databaseName)
 	}
 
 	var result []*storepb.DatabaseSchemaMetadata
@@ -216,7 +218,7 @@ func getSchemas(txn *sql.Tx) ([]string, error) {
 		systemSchema)
 	rows, err := txn.Query(query)
 	if err != nil {
-		return nil, err
+		return nil, util.FormatErrorWithQuery(err, query)
 	}
 	defer rows.Close()
 
@@ -229,7 +231,7 @@ func getSchemas(txn *sql.Tx) ([]string, error) {
 		result = append(result, schemaName)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, util.FormatErrorWithQuery(err, query)
 	}
 
 	return result, nil
@@ -264,7 +266,7 @@ func getTables(txn *sql.Tx, schemaName string) (map[string][]*storepb.TableMetad
 
 	rows, err := txn.Query(query)
 	if err != nil {
-		return nil, err
+		return nil, util.FormatErrorWithQuery(err, query)
 	}
 	defer rows.Close()
 
@@ -283,7 +285,7 @@ func getTables(txn *sql.Tx, schemaName string) (map[string][]*storepb.TableMetad
 		tableMap[schemaName] = append(tableMap[schemaName], table)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, util.FormatErrorWithQuery(err, query)
 	}
 
 	return tableMap, nil
@@ -326,7 +328,7 @@ func getTableColumns(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb
 
 	rows, err := txn.Query(query)
 	if err != nil {
-		return nil, err
+		return nil, util.FormatErrorWithQuery(err, query)
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -351,7 +353,7 @@ func getTableColumns(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb
 		columnsMap[key] = append(columnsMap[key], column)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, util.FormatErrorWithQuery(err, query)
 	}
 
 	return columnsMap, nil
@@ -378,7 +380,7 @@ func getIndexes(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.Inde
 	}
 	colRows, err := txn.Query(queryColumn)
 	if err != nil {
-		return nil, err
+		return nil, util.FormatErrorWithQuery(err, queryColumn)
 	}
 	defer colRows.Close()
 	for colRows.Next() {
@@ -390,7 +392,7 @@ func getIndexes(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.Inde
 		expressionsMap[key] = append(expressionsMap[key], columnName)
 	}
 	if err := colRows.Err(); err != nil {
-		return nil, err
+		return nil, util.FormatErrorWithQuery(err, queryColumn)
 	}
 	queryExpression := ""
 	if schemaName == "" {
@@ -408,7 +410,7 @@ func getIndexes(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.Inde
 	}
 	expRows, err := txn.Query(queryExpression)
 	if err != nil {
-		return nil, err
+		return nil, util.FormatErrorWithQuery(err, queryExpression)
 	}
 	defer expRows.Close()
 	for expRows.Next() {
@@ -426,7 +428,7 @@ func getIndexes(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.Inde
 		expressionsMap[key][expIndex] = columnExpression
 	}
 	if err := expRows.Err(); err != nil {
-		return nil, err
+		return nil, util.FormatErrorWithQuery(err, queryExpression)
 	}
 	query := ""
 	if schemaName == "" {
@@ -444,7 +446,7 @@ func getIndexes(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.Inde
 	}
 	rows, err := txn.Query(query)
 	if err != nil {
-		return nil, err
+		return nil, util.FormatErrorWithQuery(err, query)
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -463,7 +465,7 @@ func getIndexes(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.Inde
 		indexMap[key] = append(indexMap[key], index)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, util.FormatErrorWithQuery(err, query)
 	}
 
 	return indexMap, nil
@@ -492,7 +494,7 @@ func getViews(txn *sql.Tx, schemaName string) (map[string][]*storepb.ViewMetadat
 
 	rows, err := txn.Query(query)
 	if err != nil {
-		return nil, err
+		return nil, util.FormatErrorWithQuery(err, query)
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -504,7 +506,7 @@ func getViews(txn *sql.Tx, schemaName string) (map[string][]*storepb.ViewMetadat
 		viewMap[schemaName] = append(viewMap[schemaName], view)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, util.FormatErrorWithQuery(err, query)
 	}
 
 	return viewMap, nil
