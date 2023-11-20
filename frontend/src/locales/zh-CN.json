@@ -771,8 +771,8 @@
         },
         "md5-mask": {
           "self": "MD5 哈希",
-          "salt": "盐值",
-          "salt-label": "盐值用于计算生成哈希值。"
+          "salt": "盐值 (Salt)",
+          "salt-label": "盐值 (Salt) 用于通过原始值生成哈希值。"
         }
       },
       "masking-level": {
