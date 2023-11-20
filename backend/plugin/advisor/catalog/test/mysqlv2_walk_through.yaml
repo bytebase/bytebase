@@ -1,5 +1,16 @@
 - statement: |-
     CREATE TABLE t1(
+      a INT NOT NULL DEFAULT NULL
+    );
+  ignore_case_sensitive: false
+  want: ""
+  err:
+    type: 406
+    content: Invalid default value for column `a`
+    line: 2
+    payload: null
+- statement: |-
+    CREATE TABLE t1(
       a BLOB DEFAULT 'this is a default value'
     );
   ignore_case_sensitive: false
