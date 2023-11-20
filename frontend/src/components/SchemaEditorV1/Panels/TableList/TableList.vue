@@ -60,6 +60,8 @@ import { useElementSize } from "@vueuse/core";
 import { DataTableColumn, NDataTable } from "naive-ui";
 import { computed, h, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import FeatureModal from "@/components/FeatureGuard/FeatureModal.vue";
+import SelectClassificationDrawer from "@/components/SchemaTemplate/SelectClassificationDrawer.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import {
   hasFeature,
@@ -76,6 +78,7 @@ import {
 } from "@/types/v1/schemaEditor";
 import { bytesToString } from "@/utils";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
+import TableNameModal from "../../Modals/TableNameModal.vue";
 import { isTableChanged } from "../../utils";
 import { NameCell, ClassificationCell, OperationCell } from "./components";
 
@@ -178,6 +181,7 @@ const columns = computed(() => {
         return h(ClassificationCell, {
           table,
           readonly: readonly.value,
+          disabled: !disableChangeTable(table),
           classificationConfig: classificationConfig.value,
           onEdit: () => showClassificationDrawer(table),
           onRemove: () => (table.classification = ""),
@@ -224,6 +228,7 @@ const columns = computed(() => {
       render: (table) => {
         return h(OperationCell, {
           table,
+          readonly: !isDroppedTable(table),
           onDrop: () => handleDropTable(table),
           onRestore: () => handleRestoreTable(table),
         });
@@ -298,6 +303,13 @@ const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
       name: template.table.name,
     });
   }
+};
+
+const disableChangeTable = (table: Table): boolean => {
+  return table.status === "dropped";
+};
+const isDroppedTable = (table: Table) => {
+  return table.status === "dropped";
 };
 </script>
 

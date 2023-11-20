@@ -4,7 +4,7 @@
       :classification="table.classification"
       :classification-config="classificationConfig"
     />
-    <template v-if="!readonly && !disableChangeTable(table)">
+    <template v-if="!readonly && !disabled">
       <MiniActionButton
         v-if="table.classification"
         @click.prevent="$emit('remove')"
@@ -25,11 +25,11 @@
 import ClassificationLevelBadge from "@/components/SchemaTemplate/ClassificationLevelBadge.vue";
 import { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import { Table } from "@/types/v1/schemaEditor";
-import { disableChangeTable } from "../common";
 
 defineProps<{
   table: Table;
   readonly?: boolean;
+  disabled?: boolean;
   classificationConfig: DataClassificationConfig;
 }>();
 defineEmits<{
