@@ -169,13 +169,17 @@ const columns = computed(() => {
     {
       key: "name",
       title: t("schema-editor.column.name"),
-      width: 100,
+      width: 120,
       className: "input-cell",
       render: (column) => {
         return h(InlineInput, {
           value: column.name,
           disabled: props.readonly || props.disableAlterColumn(column),
           placeholder: "column name",
+          style: {
+            "--n-padding-left": "6px",
+            "--n-padding-right": "4px",
+          },
           "onUpdate:value": (value) => (column.name = value),
         });
       },
@@ -229,6 +233,7 @@ const columns = computed(() => {
     {
       key: "default-value",
       title: t("schema-editor.column.default"),
+      width: 120,
       className: "input-cell",
       render: (column) => {
         return h(DefaultValueCell, {
@@ -251,6 +256,10 @@ const columns = computed(() => {
           value: column.userComment,
           disabled: props.readonly || props.disableAlterColumn(column),
           placeholder: "comment",
+          style: {
+            "--n-padding-left": "6px",
+            "--n-padding-right": "4px",
+          },
           "onUpdate:value": (value) => (column.userComment = value),
         });
       },
@@ -290,6 +299,7 @@ const columns = computed(() => {
       key: "foreign-key",
       title: t("schema-editor.column.foreign-key"),
       hide: !props.showForeignKey,
+      width: 120,
       className: "text-cell",
       render: (column) => {
         return h(ForeignKeyCell, {
@@ -468,6 +478,12 @@ const classesForRow = (column: Column, index: number) => {
 <style lang="postcss" scoped>
 .schema-editor-table-column-editor :deep(.n-data-table-td.input-cell) {
   @apply pl-0.5 pr-1 py-0;
+}
+.schema-editor-table-column-editor
+  :deep(.n-data-table-td.input-cell .n-input__placeholder),
+.schema-editor-table-column-editor
+  :deep(.n-data-table-td.input-cell .n-base-selection-placeholder) {
+  @apply italic;
 }
 .schema-editor-table-column-editor :deep(.n-data-table-td.checkbox-cell) {
   @apply pr-1 py-0;

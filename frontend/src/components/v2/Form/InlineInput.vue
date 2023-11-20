@@ -25,10 +25,7 @@ const style = computed(() => {
   const style: CSSProperties = {
     cursor: "default",
     "--n-color": "transparent",
-    "--n-padding-left": "6px",
-    "--n-padding-right": "4px",
     "--n-color-disabled": "transparent",
-    "--n-font-size": "14px",
   };
   const border = focused.value
     ? "1px solid rgb(var(--color-control-border))"

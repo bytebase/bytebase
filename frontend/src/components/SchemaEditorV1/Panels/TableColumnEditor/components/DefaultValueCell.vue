@@ -4,15 +4,18 @@
     :options="options"
     :placeholder="placeholder"
     :consistent-menu-width="false"
-    style="--n-padding-left: 6px; --n-padding-right: 22px; --n-font-size: 14px"
+    :style="style"
+    suffix-style="right: 3px"
     class="bb-schema-editor--column-default-value-select"
+    @focus="focused = true"
+    @blur="focused = false"
     @update:value="handleUpdateValue"
   />
 </template>
 
 <script lang="ts" setup>
 import { SelectOption } from "naive-ui";
-import { computed } from "vue";
+import { CSSProperties, computed, ref } from "vue";
 import {
   DefaultValueOption,
   getColumnDefaultDisplayString,
@@ -32,6 +35,7 @@ const emit = defineEmits<{
   (event: "input", value: string): void;
   (event: "select", option: DefaultValueOption): void;
 }>();
+const focused = ref(false);
 
 const value = computed(() => {
   return getColumnDefaultDisplayString(props.column) ?? null;
@@ -61,10 +65,34 @@ const handleUpdateValue = (key: string) => {
 
   emit("input", key);
 };
+
+const style = computed(() => {
+  const style: CSSProperties = {
+    "--n-padding-left": "6px",
+    "--n-padding-right": "16px",
+    "--n-color": "transparent",
+    "--n-color-disabled": "transparent",
+    cursor: "default",
+  };
+  const border = focused.value
+    ? "1px solid rgb(var(--color-control-border))"
+    : "none";
+  style["--n-border"] = border;
+  style["--n-border-disabled"] = border;
+
+  return style;
+});
 </script>
 
 <style lang="postcss" scoped>
 .bb-schema-editor--column-default-value-select :deep(.n-base-selection) {
-  --n-padding-single: 0 22px 0 6px !important;
+  --n-padding-single: 0 16px 0 6px !important;
+  --n-color: transparent !important;
+  --n-color-disabled: transparent !important;
+  --n-border: none !important;
+}
+.bb-schema-editor--column-default-value-select
+  :deep(.n-base-selection .n-base-suffix) {
+  right: 4px;
 }
 </style>

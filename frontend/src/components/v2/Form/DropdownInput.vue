@@ -19,6 +19,8 @@
           tag="button"
           style="color: var(--placeholder-color)"
           class="absolute top-1/2 right-[9px] -translate-y-1/2 cursor-pointer"
+          :class="suffixClass"
+          :style="suffixStyle"
         >
           <svg
             viewBox="0 0 16 16"
@@ -55,6 +57,7 @@ import {
   SelectOption,
 } from "naive-ui";
 import { computed } from "vue";
+import { VueClass, VueStyle } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
@@ -62,10 +65,14 @@ const props = withDefaults(
     allowInputValue?: boolean;
     options: SelectOption[];
     dropdownProps?: DropdownProps;
+    suffixClass?: VueClass;
+    suffixStyle?: VueStyle;
   }>(),
   {
     allowInputValue: true,
     dropdownProps: undefined,
+    suffixClass: undefined,
+    suffixStyle: undefined,
   }
 );
 defineEmits<{
