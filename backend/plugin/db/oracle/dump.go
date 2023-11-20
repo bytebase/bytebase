@@ -1288,7 +1288,7 @@ WHERE
   )
 ORDER BY
   T.TABLE_NAME ASC`
-	dumpFieldSQL11g = `
+	dumpFieldSQLCompatible = `
 SELECT
 	T.IOT_TYPE,
 	ET.TABLE_NAME EXT_TABLE_NAME,
@@ -1775,14 +1775,16 @@ func (driver *Driver) dumpTableTxn(ctx context.Context, txn *sql.Tx, schema stri
 	}
 
 	var fieldRows *sql.Rows
-	majorVersion, err := driver.getMajorVersion(ctx)
+	firstVersion, secondVersion, err := driver.getVersion(ctx)
 	if err != nil {
 		return err
 	}
-	if majorVersion >= 12 {
+	// https://docs.oracle.com/en/database/oracle/oracle-database/12.2/refrn/ALL_TAB_COLS.html#GUID-85036F42-140A-406B-BE11-0AC49A00DBA3
+	equalOrHigherThan12c2release := firstVersion > 12 || (firstVersion == 12 && secondVersion >= 2)
+	if equalOrHigherThan12c2release {
 		fieldRows, err = txn.QueryContext(ctx, fmt.Sprintf(dumpFieldSQL, schema))
 	} else {
-		fieldRows, err = txn.QueryContext(ctx, fmt.Sprintf(dumpFieldSQL11g, schema))
+		fieldRows, err = txn.QueryContext(ctx, fmt.Sprintf(dumpFieldSQLCompatible, schema))
 	}
 	if err != nil {
 		return err
@@ -2174,11 +2176,11 @@ func dumpIndexTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer
 func (driver *Driver) dumpSequenceTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) error {
 	sequences := []*sequenceMeta{}
 	var sequenceRows *sql.Rows
-	majorVersion, err := driver.getMajorVersion(ctx)
+	firstVersion, _, err := driver.getVersion(ctx)
 	if err != nil {
 		return err
 	}
-	if majorVersion >= 12 {
+	if firstVersion >= 12 {
 		sequenceRows, err = txn.QueryContext(ctx, fmt.Sprintf(dumpSequenceSQL, schema))
 	} else {
 		sequenceRows, err = txn.QueryContext(ctx, fmt.Sprintf(dumpSequenceSQL11g, schema))
