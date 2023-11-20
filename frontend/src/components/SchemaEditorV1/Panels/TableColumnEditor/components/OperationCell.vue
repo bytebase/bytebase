@@ -1,6 +1,6 @@
 <template>
   <div class="flex justify-start items-center">
-    <NTooltip v-if="!readonly" trigger="hover" to="body">
+    <NTooltip v-if="!dropped" trigger="hover" to="body">
       <template #trigger>
         <MiniActionButton tag="div" :disabled="disabled" @click="$emit('drop')">
           <TrashIcon class="w-4 h-4" />
@@ -31,7 +31,7 @@ import { Column } from "@/types/v1/schemaEditor";
 
 defineProps<{
   column: Column;
-  readonly?: boolean;
+  dropped?: boolean;
   disabled?: boolean;
 }>();
 defineEmits<{
