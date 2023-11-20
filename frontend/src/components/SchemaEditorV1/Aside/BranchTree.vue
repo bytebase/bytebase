@@ -22,7 +22,7 @@
     </div>
     <div
       ref="treeContainerElRef"
-      class="flex-1 text-sm overflow-hidden select-none"
+      class="schema-designer-database-tree flex-1 pb-1 text-sm overflow-hidden select-none"
       :data-height="treeContainerHeight"
     >
       <NTree
@@ -143,7 +143,13 @@ const readonly = computed(() => schemaEditorV1Store.readonly);
 const currentTab = computed(() => schemaEditorV1Store.currentTab);
 
 const treeContainerElRef = ref<HTMLElement>();
-const { height: treeContainerHeight } = useElementSize(treeContainerElRef);
+const { height: treeContainerHeight } = useElementSize(
+  treeContainerElRef,
+  undefined,
+  {
+    box: "content-box",
+  }
+);
 const treeRef = ref<InstanceType<typeof NTree>>();
 const searchPattern = ref("");
 const expandedKeysRef = ref<string[]>([]);
@@ -679,37 +685,30 @@ const handleExpandedKeysChange = (expandedKeys: string[]) => {
 };
 </script>
 
-<style>
-.schema-designer-database-tree .n-tree-node-wrapper {
+<style lang="postcss" scoped>
+.schema-designer-database-tree :deep(.n-tree-node-wrapper) {
   @apply !p-0;
 }
-.schema-designer-database-tree .n-tree-node-content {
+.schema-designer-database-tree :deep(.n-tree-node-content) {
   @apply !pl-2 text-sm;
 }
-.schema-designer-database-tree .n-tree-node-indent {
+.schema-designer-database-tree :deep(.n-tree-node-indent) {
   width: 0.25rem;
 }
-.schema-designer-database-tree .n-tree-node-content__suffix {
+.schema-designer-database-tree :deep(.n-tree-node-content__suffix) {
   @apply rounded-sm !hidden hover:opacity-80;
 }
 .schema-designer-database-tree
-  .n-tree-node-wrapper:hover
-  .n-tree-node-content__suffix {
+  :deep(.n-tree-node-wrapper:hover .n-tree-node-content__suffix) {
   @apply !flex;
 }
 .schema-designer-database-tree
-  .n-tree-node-wrapper
-  .n-tree-node--selected
-  .n-tree-node-content__suffix {
+  :deep(.n-tree-node-wrapper
+    .n-tree-node--selected
+    .n-tree-node-content__suffix) {
   @apply !flex;
 }
-.schema-designer-database-tree .n-tree-node-switcher {
+.schema-designer-database-tree :deep(.n-tree-node-switcher) {
   @apply px-0 !w-4 !h-7;
-}
-</style>
-
-<style scoped>
-.schema-designer-database-tree {
-  max-height: calc(100% - 80px);
 }
 </style>
