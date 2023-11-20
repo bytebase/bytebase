@@ -212,7 +212,7 @@ func (t *TableState) mysqlV2CreateColumn(_ *FinderContext, columnDef mysql.IColu
 						Content: fmt.Sprintf("Column `%s` use ON UPDATE but is not DATETIME or TIMESTAMP", col.name),
 					}
 				}
-			// key.
+			// primary key.
 			case mysql.MySQLParserKEY_SYMBOL:
 				// the key attribute for in a column meaning primary key.
 				col.nullable = newFalsePointer()
