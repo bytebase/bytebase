@@ -1,3 +1,4 @@
+import { DropdownOption } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import { Engine } from "@/types/proto/v1/common";
 import { ColumnDefaultValue } from "@/types/v1/schemaEditor";
@@ -150,7 +151,7 @@ export const getColumnDefaultValuePlaceholder = (
 export const getColumnDefaultValueOptions = (
   engine: Engine,
   columnType: string
-): DefaultValueOption[] => {
+): (DefaultValueOption & DropdownOption)[] => {
   const { t } = useI18n();
   return getColumnTypeDefaultValueOptions(engine, columnType).map((option) => {
     return {

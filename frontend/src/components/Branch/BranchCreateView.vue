@@ -1,5 +1,7 @@
 <template>
-  <div class="space-y-3 w-full overflow-x-auto px-4 pb-8 pt-4">
+  <div
+    class="w-full h-full flex flex-col gap-y-3 overflow-y-hidden overflow-x-auto px-4 py-4"
+  >
     <div
       v-if="showProjectSelector"
       class="w-full flex flex-row justify-start items-center"
@@ -13,7 +15,7 @@
         @update:project="handleProjectSelect"
       />
     </div>
-    <div class="w-full flex flex-row justify-start items-center mt-1">
+    <div class="w-full flex flex-row justify-start items-center">
       <span class="flex w-40 items-center text-sm">{{
         $t("database.branch-name")
       }}</span>
@@ -34,8 +36,8 @@
         @update:branch="(branch) => (state.parentBranchName = branch ?? '')"
       />
     </div>
-    <NDivider />
-    <div class="w-full flex flex-row justify-start items-center mt-1">
+    <NDivider class="!my-0" />
+    <div class="w-full flex flex-row justify-start items-center">
       <span class="flex w-full items-center text-sm font-medium">{{
         state.parentBranchName
           ? $t("schema-designer.baseline-version-from-parent")
@@ -49,28 +51,24 @@
       :readonly="disallowToChangeBaseline"
       @update="handleBaselineSchemaChange"
     />
-    <div class="!mt-6 w-full h-[32rem]">
+    <div class="w-full flex-1 overflow-y-hidden">
       <SchemaEditorV1
         :key="refreshId"
         :project="project"
         :resource-type="'branch'"
-        :branches="[state.schemaDesign]"
+        :branches="branches"
         :readonly="true"
       />
     </div>
-    <div class="w-full flex items-center justify-between mt-4">
-      <div></div>
-
-      <div class="flex items-center justify-end gap-x-3">
-        <NButton
-          type="primary"
-          :disabled="!allowConfirm"
-          :loading="state.isCreating"
-          @click.prevent="handleConfirm"
-        >
-          {{ confirmText }}
-        </NButton>
-      </div>
+    <div class="w-full flex items-center justify-end">
+      <NButton
+        type="primary"
+        :disabled="!allowConfirm"
+        :loading="state.isCreating"
+        @click.prevent="handleConfirm"
+      >
+        {{ confirmText }}
+      </NButton>
     </div>
   </div>
 </template>
@@ -164,6 +162,9 @@ const project = computed(() => {
 const disallowToChangeBaseline = computed(() => {
   return !!state.parentBranchName;
 });
+
+// Avoid to create array or object literals in template to improve performance
+const branches = computed(() => [state.schemaDesign]);
 
 onMounted(async () => {
   if (props.projectId) {
