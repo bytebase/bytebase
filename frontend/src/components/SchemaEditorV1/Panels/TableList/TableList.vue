@@ -248,7 +248,7 @@ const columns = computed(() => {
       render: (table) => {
         return h(OperationCell, {
           table,
-          readonly: !isDroppedTable(table),
+          dropped: isDroppedTable(table),
           onDrop: () => handleDropTable(table),
           onRestore: () => handleRestoreTable(table),
         });
