@@ -262,7 +262,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 
 	instanceMeta, err := driver.SyncInstance(ctx)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to sync instance: %s", instance.ResourceID)
 	}
 
 	updateInstance := &store.UpdateInstanceMessage{
@@ -351,7 +351,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to get instance %q", database.InstanceID)
 	}
 	if instance == nil {
 		return errors.Errorf("instance %q not found", database.InstanceID)
@@ -366,7 +366,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	// Sync database schema
 	databaseMetadata, err := driver.SyncDBSchema(ctx)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to sync database schema for database %q", database.DatabaseName)
 	}
 	setClassificationAndUserCommentFromComment(databaseMetadata)
 
@@ -375,7 +375,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		// When there are too many databases, this might have performance issue.
 		schemaVersion, err := utils.GetLatestSchemaVersion(ctx, s.store, instance.UID, database.UID, databaseMetadata.Name)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "failed to get latest schema version for database %q", database.DatabaseName)
 		}
 		patchSchemaVersion = &schemaVersion
 	}
@@ -397,7 +397,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 
 	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to get database schema for database %q", database.DatabaseName)
 	}
 	var oldDatabaseMetadata *storepb.DatabaseSchemaMetadata
 	var rawDump []byte
@@ -412,7 +412,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		if force || !equalDatabaseMetadata(oldDatabaseMetadata, databaseMetadata) {
 			var schemaBuf bytes.Buffer
 			if _, err := driver.Dump(ctx, &schemaBuf, true /* schemaOnly */); err != nil {
-				return err
+				return errors.Wrapf(err, "failed to dump database schema for database %q", database.DatabaseName)
 			}
 			rawDump = schemaBuf.Bytes()
 		}
@@ -422,7 +422,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 			model.NewDBSchema(databaseMetadata, rawDump, nil /* config */),
 			api.SystemBotID,
 		); err != nil {
-			return err
+			return errors.Wrapf(err, "failed to upsert database schema for database %q", database.DatabaseName)
 		}
 	}
 
