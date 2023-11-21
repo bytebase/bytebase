@@ -107,6 +107,7 @@ const props = withDefaults(
     classificationConfigId?: string;
     disableChangeTable?: boolean;
     allowReorderColumns?: boolean;
+    maxBodyHeight?: number;
     filterColumn?: (column: Column) => boolean;
     disableAlterColumn?: (column: Column) => boolean;
     getReferencedForeignKeyName?: (column: Column) => string;
@@ -116,6 +117,7 @@ const props = withDefaults(
     showForeignKey: true,
     disableChangeTable: false,
     allowReorderColumns: false,
+    maxBodyHeight: undefined,
     foreignKeyList: () => [],
     classificationConfigId: "",
     filterColumn: (_: Column) => true,
@@ -150,7 +152,12 @@ const tableHeaderElRef = computed(
 const { height: containerHeight } = useElementSize(containerElRef);
 const { height: tableHeaderHeight } = useElementSize(tableHeaderElRef);
 const tableBodyHeight = computed(() => {
-  return containerHeight.value - tableHeaderHeight.value - 2;
+  const bodyHeight = containerHeight.value - tableHeaderHeight.value - 2;
+  const { maxBodyHeight = 0 } = props;
+  if (maxBodyHeight > 0) {
+    return Math.min(maxBodyHeight, bodyHeight);
+  }
+  return bodyHeight;
 });
 // Use this to avoid unnecessary initial rendering
 const layoutReady = computed(() => tableHeaderHeight.value > 0);
