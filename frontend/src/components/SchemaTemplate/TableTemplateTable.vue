@@ -87,7 +87,7 @@ const columnList = computed((): BBGridColumn[] => {
     {
       title: t("schema-template.classification.self"),
       width: "minmax(auto, 1fr)",
-      class: "capitalize whitespace-nowrap",
+      class: "capitalize",
       hide: !classificationConfig.value,
     },
     {
