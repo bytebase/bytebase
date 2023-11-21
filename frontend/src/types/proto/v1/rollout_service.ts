@@ -5744,16 +5744,16 @@ function createBaseTaskRun_ExecutionDetail(): TaskRun_ExecutionDetail {
 export const TaskRun_ExecutionDetail = {
   encode(message: TaskRun_ExecutionDetail, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.commandsTotal !== 0) {
-      writer.uint32(16).int32(message.commandsTotal);
+      writer.uint32(8).int32(message.commandsTotal);
     }
     if (message.commandsCompleted !== 0) {
-      writer.uint32(24).int32(message.commandsCompleted);
+      writer.uint32(16).int32(message.commandsCompleted);
     }
     if (message.commandStartPosition !== undefined) {
-      TaskRun_ExecutionDetail_Position.encode(message.commandStartPosition, writer.uint32(34).fork()).ldelim();
+      TaskRun_ExecutionDetail_Position.encode(message.commandStartPosition, writer.uint32(26).fork()).ldelim();
     }
     if (message.commandEndPosition !== undefined) {
-      TaskRun_ExecutionDetail_Position.encode(message.commandEndPosition, writer.uint32(42).fork()).ldelim();
+      TaskRun_ExecutionDetail_Position.encode(message.commandEndPosition, writer.uint32(34).fork()).ldelim();
     }
     return writer;
   },
@@ -5765,29 +5765,29 @@ export const TaskRun_ExecutionDetail = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 2:
-          if (tag !== 16) {
+        case 1:
+          if (tag !== 8) {
             break;
           }
 
           message.commandsTotal = reader.int32();
           continue;
-        case 3:
-          if (tag !== 24) {
+        case 2:
+          if (tag !== 16) {
             break;
           }
 
           message.commandsCompleted = reader.int32();
           continue;
-        case 4:
-          if (tag !== 34) {
+        case 3:
+          if (tag !== 26) {
             break;
           }
 
           message.commandStartPosition = TaskRun_ExecutionDetail_Position.decode(reader, reader.uint32());
           continue;
-        case 5:
-          if (tag !== 42) {
+        case 4:
+          if (tag !== 34) {
             break;
           }
 

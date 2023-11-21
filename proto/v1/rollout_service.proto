@@ -712,8 +712,8 @@ message TaskRun {
 
   message ExecutionDetail {
     // Currently, the following fields are only used for EXECUTING status.
-    int32 commands_total = 2;
-    int32 commands_completed = 3;
+    int32 commands_total = 1;
+    int32 commands_completed = 2;
 
     message Position {
       // The line number, starting from 0.
@@ -721,8 +721,8 @@ message TaskRun {
       // The column number, starting from 0.
       int32 column = 2;
     }
-    Position command_start_position = 4;
-    Position command_end_position = 5;
+    Position command_start_position = 3;
+    Position command_end_position = 4;
   }
   ExecutionDetail execution_detail = 15;
 
