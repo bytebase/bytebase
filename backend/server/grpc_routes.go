@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -38,6 +39,7 @@ func configureGrpcRouters(
 	stateCfg *state.State,
 	schemaSyncer *schemasync.Syncer,
 	activityManager *activity.Manager,
+	iamManager *iam.Manager,
 	backupRunner *backuprun.Runner,
 	relayRunner *relay.Runner,
 	planCheckScheduler *plancheck.Scheduler,
@@ -65,7 +67,8 @@ func configureGrpcRouters(
 		secret,
 		stateCfg,
 		dbFactory,
-		schemaSyncer))
+		schemaSyncer,
+		iamManager))
 	v1pb.RegisterProjectServiceServer(grpcServer, apiv1.NewProjectService(stores, activityManager, licenseService))
 	v1pb.RegisterDatabaseServiceServer(grpcServer, apiv1.NewDatabaseService(stores, backupRunner, schemaSyncer, licenseService, profile))
 	v1pb.RegisterInstanceRoleServiceServer(grpcServer, apiv1.NewInstanceRoleService(stores, dbFactory))

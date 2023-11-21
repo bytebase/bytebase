@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/secret"
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
@@ -39,10 +40,11 @@ type InstanceService struct {
 	stateCfg       *state.State
 	dbFactory      *dbfactory.DBFactory
 	schemaSyncer   *schemasync.Syncer
+	iamManager     *iam.Manager
 }
 
 // NewInstanceService creates a new InstanceService.
-func NewInstanceService(store *store.Store, licenseService enterprise.LicenseService, metricReporter *metricreport.Reporter, secret string, stateCfg *state.State, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer) *InstanceService {
+func NewInstanceService(store *store.Store, licenseService enterprise.LicenseService, metricReporter *metricreport.Reporter, secret string, stateCfg *state.State, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, iamManager *iam.Manager) *InstanceService {
 	return &InstanceService{
 		store:          store,
 		licenseService: licenseService,
@@ -51,11 +53,20 @@ func NewInstanceService(store *store.Store, licenseService enterprise.LicenseSer
 		stateCfg:       stateCfg,
 		dbFactory:      dbFactory,
 		schemaSyncer:   schemaSyncer,
+		iamManager:     iamManager,
 	}
 }
 
 // GetInstance gets an instance.
 func (s *InstanceService) GetInstance(ctx context.Context, request *v1pb.GetInstanceRequest) (*v1pb.Instance, error) {
+	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionInstanceGet)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check permission: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied: user does not have permission %s", iam.PermissionInstanceGet)
+	}
+
 	instance, err := s.getInstanceMessage(ctx, request.Name)
 	if err != nil {
 		return nil, err
@@ -65,6 +76,14 @@ func (s *InstanceService) GetInstance(ctx context.Context, request *v1pb.GetInst
 
 // ListInstances lists all instances.
 func (s *InstanceService) ListInstances(ctx context.Context, request *v1pb.ListInstancesRequest) (*v1pb.ListInstancesResponse, error) {
+	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionInstanceList)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check permission: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied: user does not have permission %s", iam.PermissionInstanceList)
+	}
+
 	find := &store.FindInstanceMessage{
 		ShowDeleted: request.ShowDeleted,
 	}
@@ -81,6 +100,13 @@ func (s *InstanceService) ListInstances(ctx context.Context, request *v1pb.ListI
 
 // CreateInstance creates an instance.
 func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.CreateInstanceRequest) (*v1pb.Instance, error) {
+	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionInstanceCreate)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check permission: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied: user does not have permission %s", iam.PermissionInstanceCreate)
+	}
 	if request.Instance == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "instance must be set")
 	}
@@ -186,6 +212,14 @@ func (s *InstanceService) checkDataSource(instance *store.InstanceMessage, dataS
 
 // UpdateInstance updates an instance.
 func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.UpdateInstanceRequest) (*v1pb.Instance, error) {
+	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionInstanceUpdate)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check permission: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied: user does not have permission %s", iam.PermissionInstanceUpdate)
+	}
+
 	if request.Instance == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "instance must be set")
 	}
@@ -443,6 +477,14 @@ func (s *InstanceService) SyncSlowQueries(ctx context.Context, request *v1pb.Syn
 
 // DeleteInstance deletes an instance.
 func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.DeleteInstanceRequest) (*emptypb.Empty, error) {
+	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionInstanceDelete)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check permission: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied: user does not have permission %s", iam.PermissionInstanceDelete)
+	}
+
 	instance, err := s.getInstanceMessage(ctx, request.Name)
 	if err != nil {
 		return nil, err
@@ -491,6 +533,13 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.Dele
 
 // UndeleteInstance undeletes an instance.
 func (s *InstanceService) UndeleteInstance(ctx context.Context, request *v1pb.UndeleteInstanceRequest) (*v1pb.Instance, error) {
+	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionInstanceUndelete)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check permission: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied: user does not have permission %s", iam.PermissionInstanceUndelete)
+	}
 	instance, err := s.getInstanceMessage(ctx, request.Name)
 	if err != nil {
 		return nil, err
@@ -518,6 +567,14 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, request *v1pb.Un
 
 // SyncInstance syncs the instance.
 func (s *InstanceService) SyncInstance(ctx context.Context, request *v1pb.SyncInstanceRequest) (*v1pb.SyncInstanceResponse, error) {
+	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionInstanceSync)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check permission: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied: user does not have permission %s", iam.PermissionInstanceSync)
+	}
+
 	instance, err := s.getInstanceMessage(ctx, request.Name)
 	if err != nil {
 		return nil, err
@@ -538,6 +595,13 @@ func (s *InstanceService) SyncInstance(ctx context.Context, request *v1pb.SyncIn
 
 // SyncInstance syncs the instance.
 func (s *InstanceService) BatchSyncInstance(ctx context.Context, request *v1pb.BatchSyncInstanceRequest) (*v1pb.BatchSyncInstanceResponse, error) {
+	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionInstanceSync)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check permission: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied: user does not have permission %s", iam.PermissionInstanceSync)
+	}
 	for _, r := range request.Requests {
 		instance, err := s.getInstanceMessage(ctx, r.Name)
 		if err != nil {
@@ -556,6 +620,14 @@ func (s *InstanceService) BatchSyncInstance(ctx context.Context, request *v1pb.B
 
 // AddDataSource adds a data source to an instance.
 func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDataSourceRequest) (*v1pb.Instance, error) {
+	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionInstanceUpdate)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check permission: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied: user does not have permission %s", iam.PermissionInstanceUpdate)
+	}
+
 	if request.DataSource == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "data sources is required")
 	}
@@ -628,6 +700,13 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 
 // UpdateDataSource updates a data source of an instance.
 func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.UpdateDataSourceRequest) (*v1pb.Instance, error) {
+	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionInstanceUpdate)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check permission: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied: user does not have permission %s", iam.PermissionInstanceUpdate)
+	}
 	if request.DataSource == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "datasource is required")
 	}
@@ -781,6 +860,14 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 
 // RemoveDataSource removes a data source to an instance.
 func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.RemoveDataSourceRequest) (*v1pb.Instance, error) {
+	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionInstanceUpdate)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check permission: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied: user does not have permission %s", iam.PermissionInstanceUpdate)
+	}
+
 	if request.DataSource == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "data sources is required")
 	}

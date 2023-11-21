@@ -28,6 +28,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/demo"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
@@ -81,6 +82,7 @@ type Server struct {
 	runnerWG           sync.WaitGroup
 
 	activityManager *activity.Manager
+	iamManager      *iam.Manager
 
 	licenseService enterprise.LicenseService
 
@@ -234,6 +236,10 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	}
 	s.secret = secret
 	s.activityManager = activity.NewManager(storeInstance)
+	s.iamManager, err = iam.NewManager(storeInstance, s.licenseService)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create iam manager")
+	}
 	s.dbFactory = dbfactory.New(s.mysqlBinDir, s.mongoBinDir, s.pgBinDir, profile.DataDir, s.secret)
 
 	// Configure echo server.
@@ -346,7 +352,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		}
 		return nil
 	}
-	rolloutService, issueService, err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, s.dbFactory, s.licenseService, &s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.activityManager, s.backupRunner, s.relayRunner, s.planCheckScheduler, postCreateUser, s.secret, &s.errorRecordRing, tokenDuration)
+	rolloutService, issueService, err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, s.dbFactory, s.licenseService, &s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.activityManager, s.iamManager, s.backupRunner, s.relayRunner, s.planCheckScheduler, postCreateUser, s.secret, &s.errorRecordRing, tokenDuration)
 	if err != nil {
 		return nil, err
 	}
