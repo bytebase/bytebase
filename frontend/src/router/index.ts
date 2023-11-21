@@ -809,9 +809,9 @@ const routes: Array<RouteRecordRaw> = [
             path: "db/:databaseSlug",
             components: {
               content: DatabaseLayout,
-              leftSidebar: DashboardSidebar,
+              leftSidebar: ProjectSidebar,
             },
-            props: { content: true },
+            props: { content: true, leftSidebar: true },
             children: [
               {
                 path: "",
@@ -850,7 +850,7 @@ const routes: Array<RouteRecordRaw> = [
             },
             components: {
               content: () => import("../views/ChangeHistoryDetail.vue"),
-              leftSidebar: DashboardSidebar,
+              leftSidebar: ProjectSidebar,
             },
             props: { content: true, leftSidebar: true },
           },
