@@ -490,6 +490,8 @@
     - [Task.DatabaseSchemaBaseline](#bytebase-v1-Task-DatabaseSchemaBaseline)
     - [Task.DatabaseSchemaUpdate](#bytebase-v1-Task-DatabaseSchemaUpdate)
     - [TaskRun](#bytebase-v1-TaskRun)
+    - [TaskRun.ExecutionStatus](#bytebase-v1-TaskRun-ExecutionStatus)
+    - [TaskRun.ExecutionStatus.Position](#bytebase-v1-TaskRun-ExecutionStatus-Position)
     - [UpdatePlanRequest](#bytebase-v1-UpdatePlanRequest)
   
     - [Plan.ChangeDatabaseConfig.Type](#bytebase-v1-Plan-ChangeDatabaseConfig-Type)
@@ -499,7 +501,7 @@
     - [Task.DatabaseDataUpdate.RollbackSqlStatus](#bytebase-v1-Task-DatabaseDataUpdate-RollbackSqlStatus)
     - [Task.Status](#bytebase-v1-Task-Status)
     - [Task.Type](#bytebase-v1-Task-Type)
-    - [TaskRun.ExecutionStatus](#bytebase-v1-TaskRun-ExecutionStatus)
+    - [TaskRun.ExecutionStatus.Status](#bytebase-v1-TaskRun-ExecutionStatus-Status)
     - [TaskRun.Status](#bytebase-v1-TaskRun-Status)
   
     - [RolloutService](#bytebase-v1-RolloutService)
@@ -7987,6 +7989,41 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 
 
 
+<a name="bytebase-v1-TaskRun-ExecutionStatus"></a>
+
+### TaskRun.ExecutionStatus
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| status | [TaskRun.ExecutionStatus.Status](#bytebase-v1-TaskRun-ExecutionStatus-Status) |  |  |
+| commands_total | [int32](#int32) |  | Currently, the following fields are only used for EXECUTING status. |
+| commands_completed | [int32](#int32) |  |  |
+| command_start_position | [TaskRun.ExecutionStatus.Position](#bytebase-v1-TaskRun-ExecutionStatus-Position) |  |  |
+| command_end_position | [TaskRun.ExecutionStatus.Position](#bytebase-v1-TaskRun-ExecutionStatus-Position) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRun-ExecutionStatus-Position"></a>
+
+### TaskRun.ExecutionStatus.Position
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| line | [int32](#int32) |  | The line number, starting from 0. |
+| column | [int32](#int32) |  | The column number, starting from 0. |
+
+
+
+
+
+
 <a name="bytebase-v1-UpdatePlanRequest"></a>
 
 ### UpdatePlanRequest
@@ -8126,14 +8163,14 @@ Type is the database change type.
 
 
 
-<a name="bytebase-v1-TaskRun-ExecutionStatus"></a>
+<a name="bytebase-v1-TaskRun-ExecutionStatus-Status"></a>
 
-### TaskRun.ExecutionStatus
+### TaskRun.ExecutionStatus.Status
 
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| EXECUTION_STATUS_UNSPECIFIED | 0 |  |
+| STATUS_UNSPECIFIED | 0 |  |
 | PRE_EXECUTING | 1 |  |
 | EXECUTING | 2 |  |
 | POST_EXECUTING | 3 |  |
