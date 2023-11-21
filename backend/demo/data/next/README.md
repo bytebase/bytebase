@@ -1,6 +1,6 @@
 # Overview
 
-*Work In Progress*
+_Work In Progress_
 
 This is the next version of demo data for https://demo.bytebase.com.
 
@@ -11,7 +11,7 @@ This is the next version of demo data for https://demo.bytebase.com.
 1. Sample test and prod PG instances running on port `8083` and `8084`.
 1. [GitHub hr-sample](https://github.com/s-bytebase/hr-sample) to demonstrate GitOps Workflow.
 1. Enterprise license. https://demo.bytebase.com runs in dev mode, thus it bundles a dev license. If
-you want to run the demo in release mode. You need to supply your own release license.
+   you want to run the demo in release mode. You need to supply your own release license.
 
 # How to use
 
@@ -19,7 +19,7 @@ Append `--demo next` to the start command.
 
 Demo only works when using embedded PostgreSQL (without supplying [--pg](https://www.bytebase.com/docs/reference/command-line/#pg-string)). This is to prevent accidentally deleting the existing data.
 
-Demo requires the sample test and prod instances run on port `8083` and `8084` respectively. So we need to 
+Demo requires the sample test and prod instances run on port `8083` and `8084` respectively. So we need to
 supply the --port with `8080` to make sample instances run on those 2 desired ports.
 
 ```bash
@@ -31,7 +31,7 @@ docker run --init \
   --health-interval 5m \
   --health-timeout 60s \
   --volume ~/.bytebase/data:/var/opt/bytebase \
-  bytebase/bytebase:2.8.0 \
+  bytebase/bytebase:2.11.1 \
   --data /var/opt/bytebase \
   --port 8080 \
   --demo next
@@ -44,6 +44,8 @@ docker run --init \
 1. Supply `bytebase --port 8080 --data /var/opt/bytebase --demo next` to the Docker Command.
 
 # How to update demo data
+
+1. Demo data is using the dev build because our demo runs in dev mode.
 
 1. Start Bytebase with `--demo next`, and do whatever you want.
 
