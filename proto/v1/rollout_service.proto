@@ -709,17 +709,17 @@ message TaskRun {
     }
     Status status = 1;
     // Currently, the following fields are only used for EXECUTING status.
-    int32 total_command_count = 2;
-    int32 current_command_index = 3;
+    int32 commands_total = 2;
+    int32 commands_completed = 3;
 
-    message TextPosition {
+    message Position {
       // The line number, starting from 0.
       int32 line = 1;
       // The column number, starting from 0.
       int32 column = 2;
     }
-    TextPosition command_start_position = 4;
-    TextPosition command_end_position = 5;
+    Position command_start_position = 4;
+    Position command_end_position = 5;
   }
   ExecutionStatus execution_status = 12;
   // Last execution status update timestamp.

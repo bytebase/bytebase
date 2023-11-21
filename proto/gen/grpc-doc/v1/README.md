@@ -491,7 +491,7 @@
     - [Task.DatabaseSchemaUpdate](#bytebase-v1-Task-DatabaseSchemaUpdate)
     - [TaskRun](#bytebase-v1-TaskRun)
     - [TaskRun.ExecutionStatus](#bytebase-v1-TaskRun-ExecutionStatus)
-    - [TaskRun.ExecutionStatus.TextPosition](#bytebase-v1-TaskRun-ExecutionStatus-TextPosition)
+    - [TaskRun.ExecutionStatus.Position](#bytebase-v1-TaskRun-ExecutionStatus-Position)
     - [UpdatePlanRequest](#bytebase-v1-UpdatePlanRequest)
   
     - [Plan.ChangeDatabaseConfig.Type](#bytebase-v1-Plan-ChangeDatabaseConfig-Type)
@@ -7998,19 +7998,19 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | status | [TaskRun.ExecutionStatus.Status](#bytebase-v1-TaskRun-ExecutionStatus-Status) |  |  |
-| total_command_count | [int32](#int32) |  | Currently, the following fields are only used for EXECUTING status. |
-| current_command_index | [int32](#int32) |  |  |
-| command_start_position | [TaskRun.ExecutionStatus.TextPosition](#bytebase-v1-TaskRun-ExecutionStatus-TextPosition) |  |  |
-| command_end_position | [TaskRun.ExecutionStatus.TextPosition](#bytebase-v1-TaskRun-ExecutionStatus-TextPosition) |  |  |
+| commands_total | [int32](#int32) |  | Currently, the following fields are only used for EXECUTING status. |
+| commands_completed | [int32](#int32) |  |  |
+| command_start_position | [TaskRun.ExecutionStatus.Position](#bytebase-v1-TaskRun-ExecutionStatus-Position) |  |  |
+| command_end_position | [TaskRun.ExecutionStatus.Position](#bytebase-v1-TaskRun-ExecutionStatus-Position) |  |  |
 
 
 
 
 
 
-<a name="bytebase-v1-TaskRun-ExecutionStatus-TextPosition"></a>
+<a name="bytebase-v1-TaskRun-ExecutionStatus-Position"></a>
 
-### TaskRun.ExecutionStatus.TextPosition
+### TaskRun.ExecutionStatus.Position
 
 
 
