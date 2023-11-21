@@ -256,7 +256,7 @@ func (l *mysqlV2Listener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 				// todo
 			}
 		// drop column.
-		case item.DROP_SYMBOL() != nil:
+		case item.DROP_SYMBOL() != nil && item.ALTER_SYMBOL() == nil:
 			switch {
 			// drop column.
 			case item.ColumnInternalRef() != nil:
@@ -332,17 +332,7 @@ func (t *TableState) mysqlV2AlterColumn(ctx *FinderContext, itemDef mysql.IAlter
 		switch {
 		// SET DEFAULT.
 		case itemDef.DEFAULT_SYMBOL() != nil:
-			if itemDef.SignedLiteral() == nil || itemDef.SignedLiteral().Literal() == nil || itemDef.SignedLiteral().Literal().NullLiteral() == nil {
-				if colState.nullable != nil && !*colState.nullable {
-					return &WalkThroughError{
-						Type: ErrorTypeSetNullDefaultForNotNullColumn,
-						// Content comes from MySQL Error content.
-						Content: fmt.Sprintf("Invalid default value for column `%s`", columnName),
-					}
-				}
-
-				colState.defaultValue = nil
-			} else {
+			if itemDef.SignedLiteral() != nil && itemDef.SignedLiteral().Literal() != nil && itemDef.SignedLiteral().Literal().NullLiteral() == nil {
 				if colState.columnType != nil {
 					switch strings.ToLower(*colState.columnType) {
 					case "blob", "tinyblob", "mediumblob", "longblob",
@@ -366,11 +356,21 @@ func (t *TableState) mysqlV2AlterColumn(ctx *FinderContext, itemDef mysql.IAlter
 				}
 
 				colState.defaultValue = &defaultValue
+			} else {
+				if colState.nullable != nil && !*colState.nullable {
+					return &WalkThroughError{
+						Type: ErrorTypeSetNullDefaultForNotNullColumn,
+						// Content comes from MySQL Error content.
+						Content: fmt.Sprintf("Invalid default value for column `%s`", columnName),
+					}
+				}
+
+				colState.defaultValue = nil
 			}
 		// SET VISIBLE/INVISIBLE.
 		default:
 		}
-	case itemDef.DROP_SYMBOL() != nil:
+	case itemDef.DROP_SYMBOL() != nil && itemDef.DEFAULT_SYMBOL() != nil:
 		// DROP DEFAULT.
 		colState.defaultValue = nil
 	}
