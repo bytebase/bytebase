@@ -86,13 +86,13 @@ const columnList = computed((): BBGridColumn[] => {
     },
     {
       title: t("schema-template.classification.self"),
-      width: "1fr",
-      class: "capitalize",
+      width: "minmax(auto, 1fr)",
+      class: "capitalize whitespace-nowrap",
       hide: !classificationConfig.value,
     },
     {
       title: t("schema-template.form.comment"),
-      width: "1fr",
+      width: "minmax(auto, 1fr)",
       class: "capitalize",
     },
     {
