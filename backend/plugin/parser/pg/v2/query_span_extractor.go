@@ -782,6 +782,9 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 		schemaName = "public"
 	}
 	schema := dbSchema.GetSchema(schemaName)
+	if schema == nil {
+		return nil, errors.Errorf("schema %s not found", schemaName)
+	}
 	table := schema.GetTable(tableName)
 	if table == nil {
 		return nil, errors.Errorf("table %s.%s not found", schemaName, tableName)
