@@ -891,8 +891,8 @@
   },
   "issue": {
     "my-issues": "My Issues",
-    "waiting-approval": "Waiting Approval",
-    "waiting-rollout": "Waiting Rollout",
+    "waiting-approval": "Waiting for Approval",
+    "waiting-rollout": "Waiting for Rollout",
     "opened-by-at": "opened by {creator} at {time}",
     "commit-by-at": "commit {id} {title} by {author} at {time}",
     "status-transition": {
@@ -1847,7 +1847,7 @@
         },
         "notify-pipeline-rollout": {
           "title": "Issue rollout needed",
-          "label": "When the issue is waiting rollout"
+          "label": "When the issue is waiting for rollout"
         }
       }
     },
