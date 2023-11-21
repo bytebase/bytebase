@@ -157,7 +157,9 @@
               :table="state.table"
               :engine="state.engine"
               :classification-config-id="classificationConfig?.id"
+              :allow-reorder-columns="allowReorderColumns"
               @drop="onColumnDrop"
+              @reorder="handleReorderColumn"
               @primary-key-set="setColumnPrimaryKey"
             />
           </div>
@@ -173,9 +175,9 @@
           </NButton>
           <NButton
             v-if="allowEdit"
-            :disabled="sumbitDisabled"
+            :disabled="submitDisabled"
             type="primary"
-            @click.prevent="onSumbit"
+            @click.prevent="onSubmit"
           >
             {{ create ? $t("common.create") : $t("common.update") }}
           </NButton>
@@ -228,8 +230,14 @@ import {
   Table,
   convertColumnMetadataToColumn,
 } from "@/types/v1/schemaEditor";
-import { engineNameV1, useWorkspacePermissionV1 } from "@/utils";
+import {
+  arraySwap,
+  engineNameV1,
+  instanceV1AllowsReorderColumns,
+  useWorkspacePermissionV1,
+} from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
+import TableColumnEditor from "../SchemaEditorV1/Panels/TableColumnEditor";
 import { engineList, caregoryList, classificationConfig } from "./utils";
 
 const props = defineProps<{
@@ -277,13 +285,17 @@ const categoryOptions = computed(() => {
   }));
 });
 
+const allowReorderColumns = computed(() => {
+  return instanceV1AllowsReorderColumns(state.engine);
+});
+
 const changeEngine = (engine: Engine) => {
   if (allowEdit.value) {
     state.engine = engine;
   }
 };
 
-const sumbitDisabled = computed(() => {
+const submitDisabled = computed(() => {
   if (!state.table.name || state.table.columnList.length === 0) {
     return true;
   }
@@ -306,7 +318,7 @@ const sumbitDisabled = computed(() => {
   return false;
 });
 
-const onSumbit = async () => {
+const onSubmit = async () => {
   const template: SchemaTemplateSetting_TableTemplate = {
     id: state.id,
     engine: state.engine,
@@ -410,5 +422,14 @@ const handleApplyColumnTemplate = (
 
 const onClassificationSelect = (id: string) => {
   state.table.classification = id;
+};
+
+const handleReorderColumn = (column: Column, index: number, delta: -1 | 1) => {
+  const target = index + delta;
+  const { columnList } = state.table;
+  if (target < 0) return;
+  if (target >= columnList.length) return;
+
+  arraySwap(columnList, index, target);
 };
 </script>

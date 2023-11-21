@@ -11,10 +11,7 @@
       >
         <XIcon class="w-3 h-3" />
       </MiniActionButton>
-      <MiniActionButton
-        class="w-4 h-4 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer"
-        @click.prevent="$emit('edit')"
-      >
+      <MiniActionButton @click.prevent="$emit('edit')">
         <PencilIcon class="w-3 h-3" />
       </MiniActionButton>
     </template>
