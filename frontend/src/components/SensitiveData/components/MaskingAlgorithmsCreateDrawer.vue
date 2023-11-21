@@ -41,33 +41,17 @@
               {{ $t("settings.sensitive-data.algorithms.table.masking-type") }}
               <span class="text-red-600 mr-2">*</span>
             </label>
-            <div class="grid grid-cols-3 gap-2">
-              <template v-for="(item, i) in maskingTypeList" :key="i">
-                <div
-                  class="flex relative justify-start p-2 border rounded"
-                  :class="[
-                    state.maskingType === item.id &&
-                      'font-medium bg-control-bg-hover',
-                    readonly
-                      ? 'cursor-not-allowed'
-                      : 'cursor-pointer hover:bg-control-bg-hover',
-                  ]"
-                  @click.capture="onMaskingTypeChange(item.id)"
-                >
-                  <div class="flex flex-row justify-start items-center">
-                    <input
-                      type="radio"
-                      class="btn mr-2"
-                      :checked="state.maskingType === item.id"
-                      :disabled="state.processing || readonly"
-                    />
-                    <p class="text-center text-sm">
-                      {{ item.title }}
-                    </p>
-                  </div>
-                </div>
+            <RadioGrid
+              :value="state.maskingType"
+              :options="maskingTypeList"
+              :disabled="readonly"
+              class="grid-cols-3 gap-2"
+              @update:value="onMaskingTypeChange($event as MaskingType)"
+            >
+              <template #item="{ option }: RadioGridItem<MaskingType>">
+                {{ option.label }}
               </template>
-            </div>
+            </RadioGrid>
           </div>
         </div>
         <div class="space-y-6 pt-6">
@@ -257,7 +241,13 @@
 import { cloneDeep } from "lodash-es";
 import { computed, watch, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { Drawer, DrawerContent } from "@/components/v2";
+import {
+  Drawer,
+  DrawerContent,
+  RadioGrid,
+  RadioGridOption,
+  RadioGridItem,
+} from "@/components/v2";
 import { pushNotification, useSettingV1Store } from "@/store";
 import {
   MaskingAlgorithmSetting_Algorithm,
@@ -268,9 +258,9 @@ import {
 } from "@/types/proto/v1/setting_service";
 import { MaskingType, getMaskingType } from "./utils";
 
-interface MaskingTypeItem {
-  id: MaskingType;
-  title: string;
+interface MaskingTypeOption extends RadioGridOption<MaskingType> {
+  value: MaskingType;
+  label: string;
 }
 
 interface LocalState {
@@ -317,18 +307,18 @@ const state = reactive<LocalState>({
 const { t } = useI18n();
 const settingStore = useSettingV1Store();
 
-const maskingTypeList = computed((): MaskingTypeItem[] => [
+const maskingTypeList = computed((): MaskingTypeOption[] => [
   {
-    id: "full-mask",
-    title: t("settings.sensitive-data.algorithms.full-mask.self"),
+    value: "full-mask",
+    label: t("settings.sensitive-data.algorithms.full-mask.self"),
   },
   {
-    id: "range-mask",
-    title: t("settings.sensitive-data.algorithms.range-mask.self"),
+    value: "range-mask",
+    label: t("settings.sensitive-data.algorithms.range-mask.self"),
   },
   {
-    id: "md5-mask",
-    title: t("settings.sensitive-data.algorithms.md5-mask.self"),
+    value: "md5-mask",
+    label: t("settings.sensitive-data.algorithms.md5-mask.self"),
   },
 ]);
 

@@ -2,39 +2,20 @@
   <component :is="drawer ? DrawerContent : 'div'" v-bind="bindings">
     <div class="space-y-6 divide-y divide-block-border">
       <div class="divide-y divide-block-border w-[850px]">
-        <div v-if="isCreating" class="w-full mt-4 mb-6 grid grid-cols-4 gap-2">
-          <NButton
-            v-for="engine in EngineList"
-            :key="engine"
-            class="instance-engine-button"
-            size="large"
-            ghost
-            :type="basicInfo.engine === engine ? 'primary' : 'default'"
-            @click="changeInstanceEngine(engine)"
-          >
-            <NRadio
-              :checked="basicInfo.engine === engine"
-              size="large"
-              class="btn mr-2 pointer-events-none"
+        <InstanceEngineRadioGrid
+          v-if="isCreating"
+          :engine="basicInfo.engine"
+          :engine-list="EngineList"
+          class="w-full mt-4 mb-6 grid-cols-4 gap-2"
+          @update:engine="changeInstanceEngine"
+        >
+          <template #suffix="{ engine }: { engine: Engine }">
+            <BBBetaBadge
+              v-if="isEngineBeta(engine)"
+              class="absolute -top-1.5 -right-1 rounded text-xs !bg-gray-500 px-1 !py-0 z-10"
             />
-            <img
-              v-if="EngineIconPath[engine]"
-              class="w-5 h-auto max-h-[20px] object-contain mr-1"
-              :src="EngineIconPath[engine]"
-            />
-            <RichEngineName
-              :engine="engine"
-              tag="p"
-              class="text-center text-sm !text-main"
-              :class="basicInfo.engine === engine && 'font-medium'"
-            />
-            <template v-if="isEngineBeta(engine)">
-              <BBBetaBadge
-                class="absolute -top-1.5 -right-1 rounded text-xs !bg-gray-500 px-1 !py-0 z-10"
-              />
-            </template>
-          </NButton>
-        </div>
+          </template>
+        </InstanceEngineRadioGrid>
 
         <!-- Instance Name -->
         <div class="pt-4 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4">
@@ -358,8 +339,8 @@ import { InstanceArchiveRestoreButton } from "@/components/Instance";
 import {
   DrawerContent,
   EnvironmentSelect,
+  InstanceEngineRadioGrid,
   InstanceV1EngineIcon,
-  RichEngineName,
 } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { instanceServiceClient } from "@/grpcweb";
@@ -411,7 +392,6 @@ import {
   MongoDBConnectionStringSchemaList,
   SnowflakeExtraLinkPlaceHolder,
   defaultPortForEngine,
-  EngineIconPath,
   EngineList,
 } from "./constants";
 import { provideInstanceFormContext } from "./context";
