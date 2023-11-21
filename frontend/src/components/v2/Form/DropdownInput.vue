@@ -4,7 +4,7 @@
     trigger="click"
     placement="bottom-start"
     :options="dropdownOptions"
-    :width="$attrs.consistentMenuWidth ? 'trigger' : undefined"
+    :width="consistentMenuWidth ? 'trigger' : undefined"
     v-bind="dropdownProps"
     @select="$emit('update:value', $event as string)"
   >
@@ -41,6 +41,7 @@
     v-else
     :value="value"
     :options="options"
+    :consistent-menu-width="consistentMenuWidth"
     v-bind="$attrs"
     @update:value="$emit('update:value', $event as string)"
   />
@@ -61,18 +62,21 @@ import { VueClass, VueStyle } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
-    value: string | undefined | null;
+    value?: string | undefined | null;
     allowInputValue?: boolean;
     options: SelectOption[];
     dropdownProps?: DropdownProps;
     suffixClass?: VueClass;
     suffixStyle?: VueStyle;
+    consistentMenuWidth?: boolean;
   }>(),
   {
+    value: undefined,
     allowInputValue: true,
     dropdownProps: undefined,
     suffixClass: undefined,
     suffixStyle: undefined,
+    consistentMenuWidth: true,
   }
 );
 defineEmits<{
