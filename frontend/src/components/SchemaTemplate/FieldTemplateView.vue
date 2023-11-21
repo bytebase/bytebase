@@ -3,40 +3,34 @@
     <div
       class="border-4 border-dashed border-gray-200 rounded-lg h-96 flex justify-center items-center"
     >
-      <div class="text-center flex flex-col justify-center items-center">
-        <img src="../../assets/illustration/no-data.webp" class="w-52" />
-      </div>
+      <NoData />
     </div>
   </div>
   <div v-else class="flex">
     <div
-      class="hidden sm:flex w-1/6 max-w-xs flex-col space-y-3 border-r mr-5 pr-5"
+      class="hidden sm:flex w-1/5 max-w-xs flex-col space-y-3 border-r mr-5 pr-5"
     >
       <p class="text-lg">
         {{ $t("schema-template.form.category") }}
       </p>
       <div class="space-y-2">
-        <label
+        <NCheckbox
           v-for="item in categoryList"
           :key="item.id"
-          class="flex items-center gap-x-1 text-sm text-gray-600"
+          :checked="state.selectedCategory.has(item.id)"
+          @update:checked="toggleCategoryCheck(item.id)"
         >
-          <input
-            type="checkbox"
-            :value="item"
-            :checked="state.selectedCategory.has(item.id)"
-            class="h-4 w-4 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500"
-            @input="toggleCategoryCheck(item.id)"
-          />
-          <span class="text-ellipsis whitespace-nowrap overflow-hidden">
-            {{ item.text }}
-          </span>
-          <span
-            class="items-center text-xs px-2 py-0.5 rounded-full bg-gray-200 text-gray-800"
-          >
-            {{ item.count }}
-          </span>
-        </label>
+          <div class="flex items-center gap-x-1 text-sm text-gray-600">
+            <span class="text-ellipsis whitespace-nowrap overflow-hidden">
+              {{ item.text }}
+            </span>
+            <span
+              class="items-center text-xs px-2 py-0.5 rounded-full bg-gray-200 text-gray-800"
+            >
+              {{ item.count }}
+            </span>
+          </div>
+        </NCheckbox>
       </div>
     </div>
     <FieldTemplateTable
@@ -51,10 +45,13 @@
 </template>
 
 <script lang="ts" setup>
+import { NCheckbox } from "naive-ui";
 import { reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { Engine } from "@/types/proto/v1/common";
 import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
+import NoData from "../misc/NoData.vue";
+import FieldTemplateTable from "./FieldTemplateTable.vue";
 
 interface LocalState {
   selectedCategory: Set<string>;

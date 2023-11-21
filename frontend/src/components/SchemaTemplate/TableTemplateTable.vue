@@ -24,22 +24,15 @@
         {{ item.table?.userComment }}
       </div>
       <div class="bb-grid-cell flex items-center justify-start gap-x-2">
-        <button
-          class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
-          @click.stop="$emit('view', item)"
-        >
-          <heroicons-outline:pencil class="w-4 h-4" />
-        </button>
+        <MiniActionButton @click.stop="$emit('view', item)">
+          <PencilIcon class="w-4 h-4" />
+        </MiniActionButton>
         <NPopconfirm v-if="!readonly" @positive-click="deleteTemplate(item.id)">
           <template #trigger>
-            <button
-              class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
-              @click.stop=""
-            >
-              <heroicons-outline:trash class="w-4 h-4" />
-            </button>
+            <MiniActionButton tag="div" @click.stop>
+              <TrashIcon class="w-4 h-4" />
+            </MiniActionButton>
           </template>
-
           <div class="whitespace-nowrap">
             {{ $t("common.delete") + ` '${item.table?.name}'?` }}
           </div>
@@ -51,10 +44,12 @@
 
 <script lang="ts" setup>
 import { pullAt } from "lodash-es";
+import { PencilIcon, TrashIcon } from "lucide-vue-next";
 import { NPopconfirm } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGrid, BBGridColumn } from "@/bbkit";
+import { MiniActionButton } from "@/components/v2";
 import { useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import {
@@ -81,28 +76,28 @@ const columnList = computed((): BBGridColumn[] => {
   return [
     {
       title: t("schema-template.form.category"),
-      width: "15rem",
+      width: "minmax(auto, 15rem)",
       class: "capitalize",
     },
     {
       title: t("schema-template.form.table-name"),
-      width: "15rem",
+      width: "minmax(auto, 15rem)",
       class: "capitalize",
     },
     {
       title: t("schema-template.classification.self"),
-      width: "auto",
+      width: "minmax(auto, 1fr)",
       class: "capitalize",
       hide: !classificationConfig.value,
     },
     {
       title: t("schema-template.form.comment"),
-      width: "auto",
+      width: "minmax(auto, 1fr)",
       class: "capitalize",
     },
     {
       title: t("common.operations"),
-      width: "5rem",
+      width: "auto",
       class: "capitalize",
     },
   ].filter((col) => !col.hide);
