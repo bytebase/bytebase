@@ -24,8 +24,7 @@
 </template>
 
 <script lang="ts" setup>
-import { TrashIcon } from "lucide-vue-next";
-import { Undo2Icon } from "lucide-vue-next";
+import { TrashIcon, Undo2Icon } from "lucide-vue-next";
 import { MiniActionButton } from "@/components/v2";
 import { Column } from "@/types/v1/schemaEditor";
 

@@ -36,12 +36,14 @@
         :foreign-key-list="foreignKeyList"
         :classification-config-id="project.dataClassificationConfigId"
         :disable-change-table="disableChangeTable"
+        :allow-reorder-columns="allowReorderColumns"
         :filter-column="(column: Column) => column.name.includes(props.searchPattern.trim())"
         :disable-alter-column="disableAlterColumn"
         :get-referenced-foreign-key-name="getReferencedForeignKeyName"
         :get-column-item-computed-class-list="getColumnItemComputedClassList"
         @drop="handleDropColumn"
         @restore="handleRestoreColumn"
+        @reorder="handleReorderColumn"
         @primary-key-set="setColumnPrimaryKey"
         @foreign-key-edit="handleEditColumnForeignKey"
         @foreign-key-click="gotoForeignKeyReferencedTable"
@@ -103,6 +105,7 @@ import {
   SchemaEditorTabType,
 } from "@/types/v1/schemaEditor";
 import { TableTabContext } from "@/types/v1/schemaEditor";
+import { arraySwap, instanceV1AllowsReorderColumns } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import EditColumnForeignKeyModal from "../Modals/EditColumnForeignKeyModal.vue";
 import { isColumnChanged } from "../utils";
@@ -129,7 +132,7 @@ const currentTab = computed(
   () => schemaEditorV1Store.currentTab as TableTabContext
 );
 
-const parentResouce = computed(() => {
+const parentResource = computed(() => {
   return schemaEditorV1Store.resourceMap[schemaEditorV1Store.resourceType].get(
     currentTab.value.parentName
   )!;
@@ -213,7 +216,7 @@ const getReferencedForeignKeyName = (column: Column) => {
   if (isUndefined(fk) || isUndefined(index) || index < 0) {
     return "";
   }
-  const referencedSchema = parentResouce.value.schemaList.find(
+  const referencedSchema = parentResource.value.schemaList.find(
     (schema) => schema.id === fk.referencedSchemaId
   );
   const referencedTable = referencedSchema?.tableList.find(
@@ -238,6 +241,18 @@ const isDroppedColumn = (column: Column): boolean => {
 
 const disableChangeTable = computed(() => {
   return isDroppedSchema.value || isDroppedTable.value;
+});
+
+const allowReorderColumns = computed(() => {
+  if (props.searchPattern.trim().length !== 0) {
+    // The column keyword filter will break the original indexes of columns
+    return false;
+  }
+
+  return (
+    instanceV1AllowsReorderColumns(engine.value) &&
+    table.value.status === "created"
+  );
 });
 
 const disableAlterColumn = (column: Column): boolean => {
@@ -308,7 +323,7 @@ const gotoForeignKeyReferencedTable = (column: Column) => {
     return;
   }
 
-  const referencedSchema = parentResouce.value.schemaList.find(
+  const referencedSchema = parentResource.value.schemaList.find(
     (schema) => schema.id === fk.referencedSchemaId
   );
   const referencedTable = referencedSchema?.tableList.find(
@@ -395,5 +410,14 @@ const handleRestoreColumn = (column: Column) => {
     return;
   }
   column.status = "normal";
+};
+
+const handleReorderColumn = (column: Column, index: number, delta: -1 | 1) => {
+  const target = index + delta;
+  const { columnList } = table.value;
+  if (target < 0) return;
+  if (target >= columnList.length) return;
+
+  arraySwap(columnList, index, target);
 };
 </script>
