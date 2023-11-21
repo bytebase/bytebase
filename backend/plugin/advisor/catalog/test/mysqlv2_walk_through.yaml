@@ -1,4 +1,98 @@
 - statement: |-
+    CREATE TABLE t1(
+      a INT PRIMARY KEY,
+      b INT,
+      UNIQUE uk1 (b)
+    );
+    ALTER TABLE t1 DROP PRIMARY KEY;
+    ALTER TABLE t1 DROP INDEX uk1;
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name": "test",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "t1",
+              "columns": [
+                {
+                  "name": "a",
+                  "position": 1,
+                  "type": "int"
+                },
+                {
+                  "name": "b",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "int"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  err: null
+- statement: |-
+    CREATE TABLE t1(
+      a INT,
+      b INT,
+      UNIQUE uk1 (b)
+    );
+    ALTER TABLE t1 RENAME INDEX uk1 TO uk_b;
+    ALTER TABLE t1 ADD INDEX idx1 (b);
+    ALTER TABLE t1 RENAME INDEX idx1 TO idx2;
+    ALTER TABLE t1 ALTER INDEX idx2 INVISIBLE;
+    ALTER TABLE t1 RENAME TO t2;
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name": "test",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "t2",
+              "columns": [
+                {
+                  "name": "a",
+                  "position": 1,
+                  "nullable": true,
+                  "type": "int"
+                },
+                {
+                  "name": "b",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "int"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "idx2",
+                  "expressions": [
+                    "b"
+                  ],
+                  "type": "BTREE"
+                },
+                {
+                  "name": "uk_b",
+                  "expressions": [
+                    "b"
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  err: null
+- statement: |-
     CREATE TABLE t1(a INT NOT NULL);
     ALTER TABLE t1 ALTER COLUMN a SET DEFAULT NULL;
   ignore_case_sensitive: false
