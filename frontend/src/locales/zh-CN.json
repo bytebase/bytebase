@@ -682,6 +682,7 @@
       "semantic-types": {
         "self": "语义类型",
         "add-type": "新增类型",
+        "label": "具有相同语义类型的列会使用相同的脱敏算法。",
         "add-from-template": "从模板添加",
         "table": {
           "semantic-type": "语义类型",
@@ -752,12 +753,22 @@
           "masking-type": "算法类型",
           "delete": "删除该算法？"
         },
+        "error": {
+          "title-required": "请填写算法名称",
+          "substitution-required": "请填写遮掩字符串",
+          "substitution-length": "遮掩字符串长度不能超过 16 个字符",
+          "salt-required": "请填写盐值",
+          "slice-required": "遮掩范围不能为空",
+          "slice-invalid-number": "遮掩范围起始值和结束值必须是数字",
+          "slice-number-range": "遮掩范围结束值必须小于起始值",
+          "slice-overlap": "遮掩范围不能有重叠"
+        },
         "mask": "遮掩",
         "hash": "哈希",
         "full-mask": {
           "self": "全遮掩",
           "substitution": "遮掩字符串",
-          "substitution-label": "遮掩字符串是用来替换原始值的字符串，最大长度不能超过16字节。"
+          "substitution-label": "遮掩字符串是用来替换原始值的字符串，最大长度不能超过 16 个字符。"
         },
         "range-mask": {
           "self": "范围遮掩",
