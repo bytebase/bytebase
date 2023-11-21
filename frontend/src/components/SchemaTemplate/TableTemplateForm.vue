@@ -157,8 +157,10 @@
               :table="state.table"
               :engine="state.engine"
               :classification-config-id="classificationConfig?.id"
-              @on-drop="onColumnDrop"
-              @on-primary-key-set="setColumnPrimaryKey"
+              :allow-reorder-columns="true"
+              @drop="onColumnDrop"
+              @reorder="handleReorderColumn"
+              @primary-key-set="setColumnPrimaryKey"
             />
           </div>
         </div>
@@ -228,8 +230,9 @@ import {
   Table,
   convertColumnMetadataToColumn,
 } from "@/types/v1/schemaEditor";
-import { engineNameV1, useWorkspacePermissionV1 } from "@/utils";
+import { arraySwap, engineNameV1, useWorkspacePermissionV1 } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
+import TableColumnEditor from "../SchemaEditorV1/Panels/TableColumnEditor";
 import { engineList, caregoryList, classificationConfig } from "./utils";
 
 const props = defineProps<{
@@ -410,5 +413,14 @@ const handleApplyColumnTemplate = (
 
 const onClassificationSelect = (id: string) => {
   state.table.classification = id;
+};
+
+const handleReorderColumn = (column: Column, index: number, delta: -1 | 1) => {
+  const target = index + delta;
+  const { columnList } = state.table;
+  if (target < 0) return;
+  if (target >= columnList.length) return;
+
+  arraySwap(columnList, index, target);
 };
 </script>

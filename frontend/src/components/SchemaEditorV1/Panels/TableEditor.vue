@@ -36,12 +36,14 @@
         :foreign-key-list="foreignKeyList"
         :classification-config-id="project.dataClassificationConfigId"
         :disable-change-table="disableChangeTable"
+        :allow-reorder-columns="allowReorderColumns"
         :filter-column="(column: Column) => column.name.includes(props.searchPattern.trim())"
         :disable-alter-column="disableAlterColumn"
         :get-referenced-foreign-key-name="getReferencedForeignKeyName"
         :get-column-item-computed-class-list="getColumnItemComputedClassList"
         @drop="handleDropColumn"
         @restore="handleRestoreColumn"
+        @reorder="handleReorderColumn"
         @primary-key-set="setColumnPrimaryKey"
         @foreign-key-edit="handleEditColumnForeignKey"
         @foreign-key-click="gotoForeignKeyReferencedTable"
@@ -103,6 +105,7 @@ import {
   SchemaEditorTabType,
 } from "@/types/v1/schemaEditor";
 import { TableTabContext } from "@/types/v1/schemaEditor";
+import { arraySwap } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import EditColumnForeignKeyModal from "../Modals/EditColumnForeignKeyModal.vue";
 import { isColumnChanged } from "../utils";
@@ -238,6 +241,12 @@ const isDroppedColumn = (column: Column): boolean => {
 
 const disableChangeTable = computed(() => {
   return isDroppedSchema.value || isDroppedTable.value;
+});
+
+const allowReorderColumns = computed(() => {
+  return (
+    table.value.status === "created" && props.searchPattern.trim().length === 0
+  );
 });
 
 const disableAlterColumn = (column: Column): boolean => {
@@ -395,5 +404,14 @@ const handleRestoreColumn = (column: Column) => {
     return;
   }
   column.status = "normal";
+};
+
+const handleReorderColumn = (column: Column, index: number, delta: -1 | 1) => {
+  const target = index + delta;
+  const { columnList } = table.value;
+  if (target < 0) return;
+  if (target >= columnList.length) return;
+
+  arraySwap(columnList, index, target);
 };
 </script>
