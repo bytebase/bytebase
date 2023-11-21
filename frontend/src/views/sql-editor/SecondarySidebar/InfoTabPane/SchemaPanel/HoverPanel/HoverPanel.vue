@@ -15,15 +15,22 @@
         :db="state.db"
         :database="state.database"
         :schema="state.schema"
-        :table="state.table"
+        :table="state.table!"
         :column="state.column"
       />
       <TableInfo
-        v-else
+        v-else-if="state.table"
         :db="state.db"
         :database="state.database"
         :schema="state.schema"
         :table="state.table"
+      />
+      <ViewInfo
+        v-else-if="state.view"
+        :db="state.db"
+        :database="state.database"
+        :schema="state.schema"
+        :view="state.view"
       />
     </template>
   </div>
@@ -35,6 +42,7 @@ import { zindexable as vZindexable } from "vdirs";
 import { computed, ref } from "vue";
 import ColumnInfo from "./ColumnInfo.vue";
 import TableInfo from "./TableInfo.vue";
+import ViewInfo from "./ViewInfo.vue";
 import { useHoverStateContext } from "./hover-state";
 
 defineProps<{
