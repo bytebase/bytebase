@@ -700,14 +700,15 @@ message TaskRun {
   string change_history = 10;
   string schema_version = 11;
 
-  message ExecutionStatus {
-    enum Status {
-      STATUS_UNSPECIFIED = 0;
-      PRE_EXECUTING = 1;
-      EXECUTING = 2;
-      POST_EXECUTING = 3;
-    }
-    Status status = 1;
+  enum ExecutionStatus {
+    EXECUTION_STATUS_UNSPECIFIED = 0;
+    PRE_EXECUTING = 1;
+    EXECUTING = 2;
+    POST_EXECUTING = 3;
+  }
+  ExecutionStatus execution_status = 12;
+
+  message ExecutionDetails {
     // Currently, the following fields are only used for EXECUTING status.
     int32 commands_total = 2;
     int32 commands_completed = 3;
@@ -721,7 +722,7 @@ message TaskRun {
     Position command_start_position = 4;
     Position command_end_position = 5;
   }
-  ExecutionStatus execution_status = 12;
+  ExecutionDetails execution_details = 15;
   // Last execution status update timestamp.
   google.protobuf.Timestamp execution_status_update_time = 13;
 

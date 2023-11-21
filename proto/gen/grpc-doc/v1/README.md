@@ -490,8 +490,8 @@
     - [Task.DatabaseSchemaBaseline](#bytebase-v1-Task-DatabaseSchemaBaseline)
     - [Task.DatabaseSchemaUpdate](#bytebase-v1-Task-DatabaseSchemaUpdate)
     - [TaskRun](#bytebase-v1-TaskRun)
-    - [TaskRun.ExecutionStatus](#bytebase-v1-TaskRun-ExecutionStatus)
-    - [TaskRun.ExecutionStatus.Position](#bytebase-v1-TaskRun-ExecutionStatus-Position)
+    - [TaskRun.ExecutionDetails](#bytebase-v1-TaskRun-ExecutionDetails)
+    - [TaskRun.ExecutionDetails.Position](#bytebase-v1-TaskRun-ExecutionDetails-Position)
     - [UpdatePlanRequest](#bytebase-v1-UpdatePlanRequest)
   
     - [Plan.ChangeDatabaseConfig.Type](#bytebase-v1-Plan-ChangeDatabaseConfig-Type)
@@ -501,7 +501,7 @@
     - [Task.DatabaseDataUpdate.RollbackSqlStatus](#bytebase-v1-Task-DatabaseDataUpdate-RollbackSqlStatus)
     - [Task.Status](#bytebase-v1-Task-Status)
     - [Task.Type](#bytebase-v1-Task-Type)
-    - [TaskRun.ExecutionStatus.Status](#bytebase-v1-TaskRun-ExecutionStatus-Status)
+    - [TaskRun.ExecutionStatus](#bytebase-v1-TaskRun-ExecutionStatus)
     - [TaskRun.Status](#bytebase-v1-TaskRun-Status)
   
     - [RolloutService](#bytebase-v1-RolloutService)
@@ -7981,6 +7981,7 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | change_history | [string](#string) |  | The resource name of the change history Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
 | schema_version | [string](#string) |  |  |
 | execution_status | [TaskRun.ExecutionStatus](#bytebase-v1-TaskRun-ExecutionStatus) |  |  |
+| execution_details | [TaskRun.ExecutionDetails](#bytebase-v1-TaskRun-ExecutionDetails) |  |  |
 | execution_status_update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Last execution status update timestamp. |
 | start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 
@@ -7989,28 +7990,27 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 
 
 
-<a name="bytebase-v1-TaskRun-ExecutionStatus"></a>
+<a name="bytebase-v1-TaskRun-ExecutionDetails"></a>
 
-### TaskRun.ExecutionStatus
+### TaskRun.ExecutionDetails
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| status | [TaskRun.ExecutionStatus.Status](#bytebase-v1-TaskRun-ExecutionStatus-Status) |  |  |
 | commands_total | [int32](#int32) |  | Currently, the following fields are only used for EXECUTING status. |
 | commands_completed | [int32](#int32) |  |  |
-| command_start_position | [TaskRun.ExecutionStatus.Position](#bytebase-v1-TaskRun-ExecutionStatus-Position) |  |  |
-| command_end_position | [TaskRun.ExecutionStatus.Position](#bytebase-v1-TaskRun-ExecutionStatus-Position) |  |  |
+| command_start_position | [TaskRun.ExecutionDetails.Position](#bytebase-v1-TaskRun-ExecutionDetails-Position) |  |  |
+| command_end_position | [TaskRun.ExecutionDetails.Position](#bytebase-v1-TaskRun-ExecutionDetails-Position) |  |  |
 
 
 
 
 
 
-<a name="bytebase-v1-TaskRun-ExecutionStatus-Position"></a>
+<a name="bytebase-v1-TaskRun-ExecutionDetails-Position"></a>
 
-### TaskRun.ExecutionStatus.Position
+### TaskRun.ExecutionDetails.Position
 
 
 
@@ -8163,14 +8163,14 @@ Type is the database change type.
 
 
 
-<a name="bytebase-v1-TaskRun-ExecutionStatus-Status"></a>
+<a name="bytebase-v1-TaskRun-ExecutionStatus"></a>
 
-### TaskRun.ExecutionStatus.Status
+### TaskRun.ExecutionStatus
 
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| STATUS_UNSPECIFIED | 0 |  |
+| EXECUTION_STATUS_UNSPECIFIED | 0 |  |
 | PRE_EXECUTING | 1 |  |
 | EXECUTING | 2 |  |
 | POST_EXECUTING | 3 |  |
