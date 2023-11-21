@@ -253,7 +253,10 @@ func (l *mysqlV2Listener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 				}
 			// add constraint.
 			case item.TableConstraintDef() != nil:
-				// todo
+				if err := table.mysqlV2CreateConstraint(l.databaseState.ctx, item.TableConstraintDef()); err != nil {
+					l.err = err
+					return
+				}
 			}
 		// drop column.
 		case item.DROP_SYMBOL() != nil && item.ALTER_SYMBOL() == nil:
@@ -267,10 +270,20 @@ func (l *mysqlV2Listener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 				}
 				// drop primary key.
 			case item.PRIMARY_SYMBOL() != nil && item.KEY_SYMBOL() != nil:
+				if err := table.dropIndex(l.databaseState.ctx, PrimaryKeyName); err != nil {
+					l.err = err
+					return
+				}
 				// drop key/index.
 			case item.KeyOrIndex() != nil && item.IndexRef() != nil:
+				_, _, indexName := mysqlparser.NormalizeIndexRef(item.IndexRef())
+				if err := table.dropIndex(l.databaseState.ctx, indexName); err != nil {
+					l.err = err
+					return
+				}
 				// drop foreign key.
 			case item.FOREIGN_SYMBOL() != nil && item.KEY_SYMBOL() != nil:
+				// we do not deal with DROP FOREIGN KEY statements.
 			}
 		// modify column.
 		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil:
@@ -303,14 +316,50 @@ func (l *mysqlV2Listener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 					l.err = err
 					return
 				}
+			// alter index visibility.
+			case item.INDEX_SYMBOL() != nil && item.IndexRef() != nil && item.Visibility() != nil:
+				_, _, indexName := mysqlparser.NormalizeIndexRef(item.IndexRef())
+				if err := table.mysqlV2ChangeIndexVisibility(l.databaseState.ctx, indexName, item.Visibility()); err != nil {
+					l.err = err
+					return
+				}
 			default:
 			}
 		// rename table.
 		case item.RENAME_SYMBOL() != nil && item.TableName() != nil:
+			_, newTableName := mysqlparser.NormalizeMySQLTableName(item.TableName())
+			schema := l.databaseState.schemaSet[""]
+			if err := schema.renameTable(l.databaseState.ctx, table.name, newTableName); err != nil {
+				l.err = err
+				return
+			}
 		// rename index.
-		case item.RENAME_SYMBOL() != nil && item.KeyOrIndex() != nil:
+		case item.RENAME_SYMBOL() != nil && item.KeyOrIndex() != nil && item.IndexRef() != nil && item.IndexName() != nil:
+			_, _, oldIndexName := mysqlparser.NormalizeIndexRef(item.IndexRef())
+			newIndexName := mysqlparser.NormalizeIndexName(item.IndexName())
+			if err := table.renameIndex(l.databaseState.ctx, oldIndexName, newIndexName); err != nil {
+				l.err = err
+				return
+			}
 		}
 	}
+}
+
+func (t *TableState) mysqlV2ChangeIndexVisibility(ctx *FinderContext, indexName string, visibility mysql.IVisibilityContext) *WalkThroughError {
+	index, exists := t.indexSet[indexName]
+	if !exists {
+		if ctx.CheckIntegrity {
+			return NewIndexNotExistsError(t.name, indexName)
+		}
+		index = t.createIncompleteIndex(indexName)
+	}
+	switch {
+	case visibility.VISIBLE_SYMBOL() != nil:
+		index.visible = newTruePointer()
+	case visibility.INVISIBLE_SYMBOL() != nil:
+		index.visible = newFalsePointer()
+	}
+	return nil
 }
 
 func (t *TableState) mysqlV2AlterColumn(ctx *FinderContext, itemDef mysql.IAlterListItemContext) *WalkThroughError {
