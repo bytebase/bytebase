@@ -5863,10 +5863,10 @@ function createBaseTaskRun_ExecutionStatus_TextPosition(): TaskRun_ExecutionStat
 export const TaskRun_ExecutionStatus_TextPosition = {
   encode(message: TaskRun_ExecutionStatus_TextPosition, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.line !== 0) {
-      writer.uint32(8).uint32(message.line);
+      writer.uint32(8).int32(message.line);
     }
     if (message.column !== 0) {
-      writer.uint32(16).uint32(message.column);
+      writer.uint32(16).int32(message.column);
     }
     return writer;
   },
@@ -5883,14 +5883,14 @@ export const TaskRun_ExecutionStatus_TextPosition = {
             break;
           }
 
-          message.line = reader.uint32();
+          message.line = reader.int32();
           continue;
         case 2:
           if (tag !== 16) {
             break;
           }
 
-          message.column = reader.uint32();
+          message.column = reader.int32();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {

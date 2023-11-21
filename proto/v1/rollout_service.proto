@@ -714,9 +714,9 @@ message TaskRun {
 
     message TextPosition {
       // The line number, starting from 0.
-      uint32 line = 1;
+      int32 line = 1;
       // The column number, starting from 0.
-      uint32 column = 2;
+      int32 column = 2;
     }
     TextPosition command_start_position = 4;
     TextPosition command_end_position = 5;

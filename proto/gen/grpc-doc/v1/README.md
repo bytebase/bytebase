@@ -8016,8 +8016,8 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| line | [uint32](#uint32) |  | The line number, starting from 0. |
-| column | [uint32](#uint32) |  | The column number, starting from 0. |
+| line | [int32](#int32) |  | The line number, starting from 0. |
+| column | [int32](#int32) |  | The column number, starting from 0. |
 
 
 
