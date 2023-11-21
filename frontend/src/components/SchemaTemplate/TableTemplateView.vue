@@ -3,9 +3,7 @@
     <div
       class="border-4 border-dashed border-gray-200 rounded-lg h-96 flex justify-center items-center"
     >
-      <div class="text-center flex flex-col justify-center items-center">
-        <img src="../../assets/illustration/no-data.webp" class="w-52" />
-      </div>
+      <NoData />
     </div>
   </div>
   <div v-else class="flex">
@@ -16,27 +14,23 @@
         {{ $t("schema-template.form.category") }}
       </p>
       <div class="space-y-2">
-        <label
+        <NCheckbox
           v-for="item in categoryList"
           :key="item.id"
-          class="flex items-center gap-x-1 text-sm text-gray-600"
+          :checked="state.selectedCategory.has(item.id)"
+          @update:checked="toggleCategoryCheck(item.id)"
         >
-          <input
-            type="checkbox"
-            :value="item"
-            :checked="state.selectedCategory.has(item.id)"
-            class="h-4 w-4 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500"
-            @input="toggleCategoryCheck(item.id)"
-          />
-          <span class="text-ellipsis whitespace-nowrap overflow-hidden">
-            {{ item.text }}
-          </span>
-          <span
-            class="items-center text-xs px-2 py-0.5 rounded-full bg-gray-200 text-gray-800"
-          >
-            {{ item.count }}
-          </span>
-        </label>
+          <div class="flex items-center gap-x-1 text-sm text-gray-600">
+            <span class="text-ellipsis whitespace-nowrap overflow-hidden">
+              {{ item.text }}
+            </span>
+            <span
+              class="items-center text-xs px-2 py-0.5 rounded-full bg-gray-200 text-gray-800"
+            >
+              {{ item.count }}
+            </span>
+          </div>
+        </NCheckbox>
       </div>
     </div>
     <TableTemplateTable
@@ -51,10 +45,13 @@
 </template>
 
 <script lang="ts" setup>
+import { NCheckbox } from "naive-ui";
 import { reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
+import NoData from "@/components/misc/NoData.vue";
 import { Engine } from "@/types/proto/v1/common";
 import { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
+import TableTemplateTable from "./TableTemplateTable.vue";
 
 interface LocalState {
   selectedCategory: Set<string>;
