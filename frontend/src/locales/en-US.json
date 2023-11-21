@@ -684,6 +684,7 @@
       "semantic-types": {
         "self": "Semantic Types",
         "add-type": "Add type",
+        "label": "Columns having the same semantic type will use the same masking algorithms.",
         "add-from-template": "Add from template",
         "table": {
           "semantic-type": "Semantic Type",
@@ -753,6 +754,16 @@
           "description": "Description",
           "masking-type": "Masking Type",
           "delete": "Delete this algorithm?"
+        },
+        "error": {
+          "title-required": "Title is required",
+          "substitution-required": "Substitution is required",
+          "substitution-length": "Substitution should be less than 16 bytes",
+          "salt-required": "Salt is required",
+          "slice-required": "Slice is required",
+          "slice-invalid-number": "Slice start or end is not a valid number",
+          "slice-number-range": "The slice end must be smaller than the start",
+          "slice-overlap": "The slice range cannot overlap"
         },
         "mask": "Mask",
         "hash": "Hash",
