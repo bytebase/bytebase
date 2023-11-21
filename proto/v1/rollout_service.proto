@@ -700,11 +700,26 @@ message TaskRun {
   string change_history = 10;
   string schema_version = 11;
 
-  enum ExecutionStatus {
-    EXECUTION_STATUS_UNSPECIFIED = 0;
-    PRE_EXECUTING = 1;
-    EXECUTING = 2;
-    POST_EXECUTING = 3;
+  message ExecutionStatus {
+    enum Status {
+      STATUS_UNSPECIFIED = 0;
+      PRE_EXECUTING = 1;
+      EXECUTING = 2;
+      POST_EXECUTING = 3;
+    }
+    Status status = 1;
+    // Currently, the following fields are only used for EXECUTING status.
+    int32 total_command_count = 2;
+    int32 current_command_index = 3;
+
+    message TextPosition {
+      // The line number, starting from 0.
+      uint32 line = 1;
+      // The column number, starting from 0.
+      uint32 column = 2;
+    }
+    TextPosition command_start_position = 4;
+    TextPosition command_end_position = 5;
   }
   ExecutionStatus execution_status = 12;
   // Last execution status update timestamp.
