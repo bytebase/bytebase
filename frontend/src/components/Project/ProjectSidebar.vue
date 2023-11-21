@@ -22,11 +22,19 @@ import {
 } from "lucide-vue-next";
 import { computed, VNode, h, reactive, watch, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { SidebarItem } from "@/components/CommonSidebar.vue";
 import { useInitializeIssue } from "@/components/IssueV1";
-import { useCurrentUserIamPolicy, useProjectV1Store } from "@/store";
-import { DEFAULT_PROJECT_V1_NAME, unknownProject } from "@/types";
+import {
+  useCurrentUserIamPolicy,
+  useProjectV1Store,
+  useDatabaseV1Store,
+} from "@/store";
+import {
+  DEFAULT_PROJECT_V1_NAME,
+  unknownProject,
+  unknownDatabase,
+} from "@/types";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import { idFromSlug, projectSlugV1 } from "@/utils";
 
@@ -64,10 +72,24 @@ interface ProjectSidebarItem {
 const props = defineProps<{
   projectSlug?: string;
   issueSlug?: string;
+  databaseSlug?: string;
+  changeHistorySlug?: string;
 }>();
 
+const route = useRoute();
 const issueSlug = computed(() => props.issueSlug ?? "");
 const { issue } = useInitializeIssue(issueSlug, false);
+const database = computed(() => {
+  if (props.changeHistorySlug) {
+    const parent = `instances/${route.params.instance}/databases/${route.params.database}`;
+    return useDatabaseV1Store().getDatabaseByName(parent);
+  } else if (props.databaseSlug) {
+    return useDatabaseV1Store().getDatabaseByUID(
+      String(idFromSlug(props.databaseSlug))
+    );
+  }
+  return unknownDatabase();
+});
 
 const cachedLastPage = useLocalStorage<ProjectHash>(
   `bb.project.${props.projectSlug}.page`,
@@ -102,6 +124,8 @@ const project = computed(() => {
     return projectV1Store.getProjectByUID(
       String(idFromSlug(props.projectSlug))
     );
+  } else if (props.databaseSlug || props.changeHistorySlug) {
+    return database.value.projectEntity;
   }
   return unknownProject();
 });
@@ -271,28 +295,37 @@ const onSelect = (hash: ProjectHash | undefined) => {
 
 const selectProjectTabOnHash = () => {
   const { name, hash } = router.currentRoute.value;
-  if (name == "workspace.project.detail") {
-    let targetHash = hash.replace(/^#?/g, "");
-    if (!isProjectHash(targetHash)) {
-      targetHash = defaultHash.value;
+
+  switch (name) {
+    case "workspace.project.detail": {
+      let targetHash = hash.replace(/^#?/g, "");
+      if (!isProjectHash(targetHash)) {
+        targetHash = defaultHash.value;
+      }
+      onSelect(targetHash as ProjectHash);
+      return;
     }
-    onSelect(targetHash as ProjectHash);
-  } else if (
-    name == "workspace.project.hook.create" ||
-    name == "workspace.project.hook.detail"
-  ) {
-    state.selectedHash = "webhook";
-  } else if (name == "workspace.changelist.detail") {
-    state.selectedHash = "changelists";
-  } else if (name === "workspace.branch.detail") {
-    state.selectedHash = "branches";
-  } else if (
-    name === "workspace.database-group.detail" ||
-    name === "workspace.database-group.table-group.detail"
-  ) {
-    state.selectedHash = "database-groups";
-  } else if (name === "workspace.issue.detail") {
-    state.selectedHash = "issues";
+    case "workspace.project.hook.create":
+    case "workspace.project.hook.detail":
+      state.selectedHash = "webhook";
+      return;
+    case "workspace.changelist.detail":
+      state.selectedHash = "changelists";
+      return;
+    case "workspace.branch.detail":
+      state.selectedHash = "branches";
+      return;
+    case "workspace.database-group.detail":
+    case "workspace.database-group.table-group.detail":
+      state.selectedHash = "database-groups";
+      return;
+    case "workspace.issue.detail":
+      state.selectedHash = "issues";
+      return;
+    case "workspace.database.detail":
+    case "workspace.database.history.detail":
+      state.selectedHash = "databases";
+      return;
   }
 };
 
