@@ -11,7 +11,7 @@
 </template>
 
 <script lang="ts" setup>
-import { DataTableColumn, NDataTable, NEllipsis } from "naive-ui";
+import { DataTableColumn, NDataTable } from "naive-ui";
 import { computed, PropType } from "vue";
 import { h } from "vue";
 import { useI18n } from "vue-i18n";
@@ -122,6 +122,7 @@ const columns = computed(() => {
       title: t("common.name"),
       resizable: true,
       width: 140,
+      ellipsis: true,
       render: (column) => {
         return column.name;
       },
@@ -176,6 +177,7 @@ const columns = computed(() => {
       title: t("common.type"),
       resizable: true,
       width: 140,
+      ellipsis: true,
       render: (column) => {
         return column.type;
       },
@@ -185,6 +187,7 @@ const columns = computed(() => {
       title: t("common.default"),
       resizable: true,
       width: 140,
+      ellipsis: true,
       render: (column) => {
         return getColumnDefaultValuePlaceholder(column);
       },
@@ -204,6 +207,7 @@ const columns = computed(() => {
       hide: engine.value === Engine.POSTGRES,
       resizable: true,
       width: 140,
+      ellipsis: true,
       render: (column) => {
         return column.characterSet;
       },
@@ -214,8 +218,9 @@ const columns = computed(() => {
       hide: !showCollationColumn.value,
       resizable: true,
       width: 140,
+      ellipsis: true,
       render: (column) => {
-        return h(NEllipsis, null, { default: () => column.collation });
+        return column.collation;
       },
     },
     {
@@ -223,8 +228,9 @@ const columns = computed(() => {
       title: t("database.comment"),
       resizable: true,
       width: 140,
+      ellipsis: true,
       render: (column) => {
-        return h(NEllipsis, null, { default: () => column.userComment });
+        return column.userComment;
       },
     },
     {
