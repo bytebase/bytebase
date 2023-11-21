@@ -534,7 +534,7 @@
       "create": "Create SSO",
       "description": "Single Sign-On (SSO) is an authentication method that enables users to authenticate with multiple applications and websites via a single set of credentials.",
       "archive": "Archive this SSO",
-      "archive-info": "Archived SSO will not be shown on the normal interface. You can click \"Archive\" on the bottom left to find and restore it.",
+      "archive-info": "Archived SSO will not be displayed.",
       "restore": "Restore this SSO",
       "form": {
         "type": "Type",
@@ -1223,7 +1223,7 @@
     "successfully-synced-schema-for-instance-instance-value-name": "Successfully synced schema for instance '{0}'.",
     "archive-this-instance": "Archive this instance",
     "archive-instance-instance-name": "Archive instance '{0}'?",
-    "archived-instances-will-not-be-shown-on-the-normal-interface-you-can-still-restore-later-from-the-archive-page": "Archived instances will not be shown on the normal interface. You can click \"Archive\" on the bottom left to find and restore it.",
+    "archived-instances-will-not-be-displayed": "Archived instances will not be displayed.",
     "restore-this-instance": "Restore this instance",
     "restore": "Restore",
     "restore-instance-instance-name-to-normal-state": "Restore instance '{0}' to normal state?",
@@ -1335,7 +1335,7 @@
     "id-description": "The Environment ID is the unique identifier for your environment. You cannot change it after created.",
     "select": "Select environment",
     "archive": "Archive this environment",
-    "archive-info": "Archived environment will not be shown on the normal interface. You can click \"Archive\" on the bottom left to find and restore it.",
+    "archive-info": "Archived environments will not be displayed.",
     "create": "Create Environment",
     "restore": "Restore this environment",
     "successfully-updated-environment": "Successfully updated environment '{name}'.",
@@ -1872,7 +1872,7 @@
       "developer": "@.upper:common.role.member",
       "archive": {
         "title": "Archive project",
-        "description": "Archived project will not be shown on the normal interface. You can click \"Archive\" on the bottom left to find and restore it.",
+        "description": "Archived projects will not be displayed.",
         "btn-text": "Archive this @.lower:{'common.project'}",
         "force": {
           "description": "Force to archive. All releated issues will be resolved, and all related sheets will be deleted."
