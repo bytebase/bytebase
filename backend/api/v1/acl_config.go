@@ -3,6 +3,7 @@ package v1
 import (
 	"strings"
 
+	"github.com/bytebase/bytebase/backend/component/iam"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
@@ -46,6 +47,21 @@ var projectOwnerMethods = map[string]bool{
 var transferDatabaseMethods = map[string]bool{
 	"DatabaseService/UpdateDatabase":       true,
 	"DatabaseService/BatchUpdateDatabases": true,
+}
+
+var methodPermissionMap = map[string]iam.Permission{
+	"InstanceService/ListInstance":      iam.PermissionInstanceList,
+	"InstanceService/GetInstance":       iam.PermissionInstanceGet,
+	"InstanceService/CreateInstance":    iam.PermissionInstanceCreate,
+	"InstanceService/UpdateInstance":    iam.PermissionInstanceUpdate,
+	"InstanceService/DeleteInstance":    iam.PermissionInstanceDelete,
+	"InstanceService/UndeleteInstance":  iam.PermissionInstanceUndelete,
+	"InstanceService/SyncInstance":      iam.PermissionInstanceSync,
+	"InstanceService/BatchSyncInstance": iam.PermissionInstanceSync,
+	"InstanceService/AddDataSource":     iam.PermissionInstanceUpdate,
+	"InstanceService/RemoveDataSource":  iam.PermissionInstanceUpdate,
+	"InstanceService/UpdateDataSource":  iam.PermissionInstanceUpdate,
+	"InstanceService/SyncSlowQueries":   iam.PermissionInstanceSync,
 }
 
 func isOwnerAndDBAMethod(methodName string) bool {

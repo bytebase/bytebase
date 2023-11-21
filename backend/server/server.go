@@ -236,7 +236,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	}
 	s.secret = secret
 	s.activityManager = activity.NewManager(storeInstance)
-	s.iamManager, err = iam.NewManager(storeInstance, s.licenseService)
+	s.iamManager, err = iam.NewManager(storeInstance)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create iam manager")
 	}
@@ -305,7 +305,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	// Setup the gRPC and grpc-gateway.
 	authProvider := auth.New(s.store, s.secret, tokenDuration, s.licenseService, s.stateCfg, profile.Mode)
-	aclProvider := apiv1.NewACLInterceptor(s.store, s.secret, s.licenseService, profile.Mode)
+	aclProvider := apiv1.NewACLInterceptor(s.store, s.secret, s.licenseService, s.iamManager, profile.Mode)
 	debugProvider := apiv1.NewDebugInterceptor(&s.errorRecordRing, &profile, s.metricReporter)
 	onPanic := func(p any) error {
 		stack := stacktrace.TakeStacktrace(20 /* n */, 5 /* skip */)
@@ -352,7 +352,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		}
 		return nil
 	}
-	rolloutService, issueService, err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, s.dbFactory, s.licenseService, &s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.activityManager, s.iamManager, s.backupRunner, s.relayRunner, s.planCheckScheduler, postCreateUser, s.secret, &s.errorRecordRing, tokenDuration)
+	rolloutService, issueService, err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, s.dbFactory, s.licenseService, &s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.activityManager, s.backupRunner, s.relayRunner, s.planCheckScheduler, postCreateUser, s.secret, &s.errorRecordRing, tokenDuration)
 	if err != nil {
 		return nil, err
 	}
