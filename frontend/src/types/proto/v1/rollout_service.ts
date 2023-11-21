@@ -1046,6 +1046,7 @@ export interface TaskRun {
   executionStatus: TaskRun_ExecutionStatus;
   /** Last execution status update timestamp. */
   executionStatusUpdateTime: Date | undefined;
+  executionDetail: TaskRun_ExecutionDetail | undefined;
   startTime: Date | undefined;
 }
 
@@ -1149,6 +1150,21 @@ export function taskRun_ExecutionStatusToJSON(object: TaskRun_ExecutionStatus): 
     default:
       return "UNRECOGNIZED";
   }
+}
+
+export interface TaskRun_ExecutionDetail {
+  /** Currently, the following fields are only used for EXECUTING status. */
+  commandsTotal: number;
+  commandsCompleted: number;
+  commandStartPosition: TaskRun_ExecutionDetail_Position | undefined;
+  commandEndPosition: TaskRun_ExecutionDetail_Position | undefined;
+}
+
+export interface TaskRun_ExecutionDetail_Position {
+  /** The line number, starting from 0. */
+  line: number;
+  /** The column number, starting from 0. */
+  column: number;
 }
 
 function createBaseGetPlanRequest(): GetPlanRequest {
@@ -5445,6 +5461,7 @@ function createBaseTaskRun(): TaskRun {
     schemaVersion: "",
     executionStatus: 0,
     executionStatusUpdateTime: undefined,
+    executionDetail: undefined,
     startTime: undefined,
   };
 }
@@ -5489,6 +5506,9 @@ export const TaskRun = {
     }
     if (message.executionStatusUpdateTime !== undefined) {
       Timestamp.encode(toTimestamp(message.executionStatusUpdateTime), writer.uint32(106).fork()).ldelim();
+    }
+    if (message.executionDetail !== undefined) {
+      TaskRun_ExecutionDetail.encode(message.executionDetail, writer.uint32(122).fork()).ldelim();
     }
     if (message.startTime !== undefined) {
       Timestamp.encode(toTimestamp(message.startTime), writer.uint32(114).fork()).ldelim();
@@ -5594,6 +5614,13 @@ export const TaskRun = {
 
           message.executionStatusUpdateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
+        case 15:
+          if (tag !== 122) {
+            break;
+          }
+
+          message.executionDetail = TaskRun_ExecutionDetail.decode(reader, reader.uint32());
+          continue;
         case 14:
           if (tag !== 114) {
             break;
@@ -5626,6 +5653,9 @@ export const TaskRun = {
       executionStatus: isSet(object.executionStatus) ? taskRun_ExecutionStatusFromJSON(object.executionStatus) : 0,
       executionStatusUpdateTime: isSet(object.executionStatusUpdateTime)
         ? fromJsonTimestamp(object.executionStatusUpdateTime)
+        : undefined,
+      executionDetail: isSet(object.executionDetail)
+        ? TaskRun_ExecutionDetail.fromJSON(object.executionDetail)
         : undefined,
       startTime: isSet(object.startTime) ? fromJsonTimestamp(object.startTime) : undefined,
     };
@@ -5672,6 +5702,9 @@ export const TaskRun = {
     if (message.executionStatusUpdateTime !== undefined) {
       obj.executionStatusUpdateTime = message.executionStatusUpdateTime.toISOString();
     }
+    if (message.executionDetail !== undefined) {
+      obj.executionDetail = TaskRun_ExecutionDetail.toJSON(message.executionDetail);
+    }
     if (message.startTime !== undefined) {
       obj.startTime = message.startTime.toISOString();
     }
@@ -5696,7 +5729,196 @@ export const TaskRun = {
     message.schemaVersion = object.schemaVersion ?? "";
     message.executionStatus = object.executionStatus ?? 0;
     message.executionStatusUpdateTime = object.executionStatusUpdateTime ?? undefined;
+    message.executionDetail = (object.executionDetail !== undefined && object.executionDetail !== null)
+      ? TaskRun_ExecutionDetail.fromPartial(object.executionDetail)
+      : undefined;
     message.startTime = object.startTime ?? undefined;
+    return message;
+  },
+};
+
+function createBaseTaskRun_ExecutionDetail(): TaskRun_ExecutionDetail {
+  return { commandsTotal: 0, commandsCompleted: 0, commandStartPosition: undefined, commandEndPosition: undefined };
+}
+
+export const TaskRun_ExecutionDetail = {
+  encode(message: TaskRun_ExecutionDetail, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.commandsTotal !== 0) {
+      writer.uint32(16).int32(message.commandsTotal);
+    }
+    if (message.commandsCompleted !== 0) {
+      writer.uint32(24).int32(message.commandsCompleted);
+    }
+    if (message.commandStartPosition !== undefined) {
+      TaskRun_ExecutionDetail_Position.encode(message.commandStartPosition, writer.uint32(34).fork()).ldelim();
+    }
+    if (message.commandEndPosition !== undefined) {
+      TaskRun_ExecutionDetail_Position.encode(message.commandEndPosition, writer.uint32(42).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TaskRun_ExecutionDetail {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTaskRun_ExecutionDetail();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.commandsTotal = reader.int32();
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.commandsCompleted = reader.int32();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.commandStartPosition = TaskRun_ExecutionDetail_Position.decode(reader, reader.uint32());
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.commandEndPosition = TaskRun_ExecutionDetail_Position.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TaskRun_ExecutionDetail {
+    return {
+      commandsTotal: isSet(object.commandsTotal) ? globalThis.Number(object.commandsTotal) : 0,
+      commandsCompleted: isSet(object.commandsCompleted) ? globalThis.Number(object.commandsCompleted) : 0,
+      commandStartPosition: isSet(object.commandStartPosition)
+        ? TaskRun_ExecutionDetail_Position.fromJSON(object.commandStartPosition)
+        : undefined,
+      commandEndPosition: isSet(object.commandEndPosition)
+        ? TaskRun_ExecutionDetail_Position.fromJSON(object.commandEndPosition)
+        : undefined,
+    };
+  },
+
+  toJSON(message: TaskRun_ExecutionDetail): unknown {
+    const obj: any = {};
+    if (message.commandsTotal !== 0) {
+      obj.commandsTotal = Math.round(message.commandsTotal);
+    }
+    if (message.commandsCompleted !== 0) {
+      obj.commandsCompleted = Math.round(message.commandsCompleted);
+    }
+    if (message.commandStartPosition !== undefined) {
+      obj.commandStartPosition = TaskRun_ExecutionDetail_Position.toJSON(message.commandStartPosition);
+    }
+    if (message.commandEndPosition !== undefined) {
+      obj.commandEndPosition = TaskRun_ExecutionDetail_Position.toJSON(message.commandEndPosition);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TaskRun_ExecutionDetail>): TaskRun_ExecutionDetail {
+    return TaskRun_ExecutionDetail.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TaskRun_ExecutionDetail>): TaskRun_ExecutionDetail {
+    const message = createBaseTaskRun_ExecutionDetail();
+    message.commandsTotal = object.commandsTotal ?? 0;
+    message.commandsCompleted = object.commandsCompleted ?? 0;
+    message.commandStartPosition = (object.commandStartPosition !== undefined && object.commandStartPosition !== null)
+      ? TaskRun_ExecutionDetail_Position.fromPartial(object.commandStartPosition)
+      : undefined;
+    message.commandEndPosition = (object.commandEndPosition !== undefined && object.commandEndPosition !== null)
+      ? TaskRun_ExecutionDetail_Position.fromPartial(object.commandEndPosition)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseTaskRun_ExecutionDetail_Position(): TaskRun_ExecutionDetail_Position {
+  return { line: 0, column: 0 };
+}
+
+export const TaskRun_ExecutionDetail_Position = {
+  encode(message: TaskRun_ExecutionDetail_Position, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.line !== 0) {
+      writer.uint32(8).int32(message.line);
+    }
+    if (message.column !== 0) {
+      writer.uint32(16).int32(message.column);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TaskRun_ExecutionDetail_Position {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTaskRun_ExecutionDetail_Position();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.line = reader.int32();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.column = reader.int32();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TaskRun_ExecutionDetail_Position {
+    return {
+      line: isSet(object.line) ? globalThis.Number(object.line) : 0,
+      column: isSet(object.column) ? globalThis.Number(object.column) : 0,
+    };
+  },
+
+  toJSON(message: TaskRun_ExecutionDetail_Position): unknown {
+    const obj: any = {};
+    if (message.line !== 0) {
+      obj.line = Math.round(message.line);
+    }
+    if (message.column !== 0) {
+      obj.column = Math.round(message.column);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TaskRun_ExecutionDetail_Position>): TaskRun_ExecutionDetail_Position {
+    return TaskRun_ExecutionDetail_Position.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TaskRun_ExecutionDetail_Position>): TaskRun_ExecutionDetail_Position {
+    const message = createBaseTaskRun_ExecutionDetail_Position();
+    message.line = object.line ?? 0;
+    message.column = object.column ?? 0;
     return message;
   },
 };
