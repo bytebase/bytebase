@@ -683,6 +683,7 @@
       "semantic-types": {
         "self": "Tipos Semánticos",
         "add-type": "Agregar tipo",
+        "label": "Las columnas que tengan el mismo tipo semántico utilizarán los mismos algoritmos de enmascaramiento.",
         "add-from-template": "Agregar desde plantilla",
         "table": {
           "semantic-type": "Tipo Semántico",
@@ -752,6 +753,16 @@
           "description": "Descripción",
           "masking-type": "Tipo De Enmascaramiento",
           "delete": "¿Eliminar este algoritmo?"
+        },
+        "error": {
+          "title-required": "Se requiere título",
+          "substitution-required": "Se requiere sustitución",
+          "substitution-length": "La sustitución debe ser inferior a 16 bytes",
+          "salt-required": "Se requiere sal",
+          "slice-required": "Se requiere rebanada",
+          "slice-invalid-number": "El inicio o el final del segmento no es un número válido",
+          "slice-number-range": "El final del corte debe ser más pequeño que el inicio",
+          "slice-overlap": "El rango de corte no puede superponerse"
         },
         "mask": "Máscara",
         "hash": "Picadillo",
