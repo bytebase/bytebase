@@ -1,6 +1,8 @@
 <template>
-  <div class="w-full mt-4 space-y-4">
-    <div class="flex items-center justify-between">
+  <div class="w-full space-y-4">
+    <div
+      class="flex flex-col lg:flex-row items-start lg:items-center justify-between space-y-2"
+    >
       <div class="textinfolabel">
         {{ $t("settings.sensitive-data.global-rules.description") }}
         <a

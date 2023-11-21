@@ -1113,8 +1113,20 @@ func validateMaskingAlgorithm(algorithm *v1pb.MaskingAlgorithmSetting_Algorithm)
 		}
 		switch m := algorithm.Mask.(type) {
 		case *v1pb.MaskingAlgorithmSetting_Algorithm_FullMask_:
+			if m.FullMask.Substitution == "" {
+				return status.Errorf(codes.InvalidArgument, "the substitution for full mask is required")
+			}
+			if len(m.FullMask.Substitution) > 16 {
+				return status.Errorf(codes.InvalidArgument, "the substitution should less than 16 bytes")
+			}
 		case *v1pb.MaskingAlgorithmSetting_Algorithm_RangeMask_:
 			for i, slice := range m.RangeMask.Slices {
+				if slice.Substitution == "" {
+					return status.Errorf(codes.InvalidArgument, "the substitution for slice is required")
+				}
+				if len(slice.Substitution) > 16 {
+					return status.Errorf(codes.InvalidArgument, "the substitution should less than 16 bytes")
+				}
 				if slice.Start >= slice.End {
 					return status.Errorf(codes.InvalidArgument, "the slice end must smaller than the start: [%d,%d)", slice.Start, slice.End)
 				}

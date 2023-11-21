@@ -15,7 +15,7 @@
               required
               name="title"
               type="text"
-              placeholder="algorithm title"
+              :placeholder="t('settings.sensitive-data.algorithms.table.title')"
               class="textfield mt-1 w-full"
               :disabled="state.processing || readonly"
             />
@@ -29,7 +29,9 @@
               required
               name="title"
               type="text"
-              placeholder="algorithm description"
+              :placeholder="
+                t('settings.sensitive-data.algorithms.table.description')
+              "
               class="textfield mt-1 w-full"
               :disabled="state.processing || readonly"
             />
@@ -91,7 +93,9 @@
                 required
                 name="title"
                 type="text"
-                placeholder="substitution"
+                :placeholder="
+                  t('settings.sensitive-data.algorithms.full-mask.substitution')
+                "
                 class="textfield mt-2 w-full"
                 :disabled="state.processing || readonly"
               />
@@ -121,7 +125,11 @@
                   name="slice-start"
                   type="number"
                   min="0"
-                  placeholder="slice start"
+                  :placeholder="
+                    t(
+                      'settings.sensitive-data.algorithms.range-mask.slice-start'
+                    )
+                  "
                   class="textfield mt-1 w-20"
                   :disabled="state.processing || readonly"
                   @input="(e: any) => onSliceStartChange(i, Number(e.target.value))"
@@ -142,7 +150,9 @@
                   name="slice-end"
                   type="number"
                   min="1"
-                  placeholder="slice end"
+                  :placeholder="
+                    t('settings.sensitive-data.algorithms.range-mask.slice-end')
+                  "
                   class="textfield mt-1 w-20"
                   :disabled="state.processing || readonly"
                   @input="(e: any) => onSliceEndChange(i, Number(e.target.value))"
@@ -162,7 +172,11 @@
                   required
                   name="substitution"
                   type="text"
-                  placeholder="substitution"
+                  :placeholder="
+                    t(
+                      'settings.sensitive-data.algorithms.range-mask.substitution'
+                    )
+                  "
                   class="textfield mt-1 w-full"
                   :disabled="state.processing || readonly"
                 />
@@ -176,6 +190,9 @@
                   <heroicons-outline:trash class="w-4 h-4" />
                 </button>
               </div>
+            </div>
+            <div v-if="rangeMaskErrorMessage" class="text-red-600">
+              {{ rangeMaskErrorMessage }}
             </div>
             <NButton
               class="ml-auto"
@@ -201,7 +218,9 @@
                 required
                 name="title"
                 type="text"
-                placeholder="salt"
+                :placeholder="
+                  t('settings.sensitive-data.algorithms.md5-mask.salt')
+                "
                 class="textfield mt-2 w-full"
                 :disabled="state.processing || readonly"
               />
@@ -280,6 +299,7 @@ const defaultRangeMask = computed(() =>
       MaskingAlgorithmSetting_Algorithm_RangeMask_Slice.fromPartial({
         start: 0,
         end: 1,
+        substitution: "*",
       }),
     ],
   })
@@ -358,51 +378,69 @@ const maskingAlgorithm = computed((): MaskingAlgorithmSetting_Algorithm => {
   return result;
 });
 
+const rangeMaskErrorMessage = computed(() => {
+  if (state.rangeMask.slices.length === 0) {
+    return t("settings.sensitive-data.algorithms.error.slice-required");
+  }
+  for (let i = 0; i < state.rangeMask.slices.length; i++) {
+    const slice = state.rangeMask.slices[i];
+    if (
+      Number.isNaN(slice.start) ||
+      Number.isNaN(slice.end) ||
+      slice.start < 0 ||
+      slice.end <= 0
+    ) {
+      return t("settings.sensitive-data.algorithms.error.slice-invalid-number");
+    }
+    if (slice.start >= slice.end) {
+      return t("settings.sensitive-data.algorithms.error.slice-number-range");
+    }
+
+    for (let j = 0; j < i; j++) {
+      const pre = state.rangeMask.slices[j];
+      if (slice.start >= pre.end || pre.start >= slice.end) {
+        continue;
+      }
+      return t("settings.sensitive-data.algorithms.error.slice-overlap");
+    }
+
+    if (!slice.substitution) {
+      return t(
+        "settings.sensitive-data.algorithms.error.substitution-required"
+      );
+    }
+    if (slice.substitution.length > 16) {
+      return t("settings.sensitive-data.algorithms.error.substitution-length");
+    }
+  }
+  return "";
+});
+
 const errorMessage = computed(() => {
   if (!state.title) {
-    return "Title is required";
+    return t("settings.sensitive-data.algorithms.error.title-required");
   }
 
   switch (state.maskingType) {
     case "full-mask":
       if (!state.fullMask.substitution) {
-        return "Substitution is required";
+        return t(
+          "settings.sensitive-data.algorithms.error.substitution-required"
+        );
+      }
+      if (state.fullMask.substitution.length > 16) {
+        return t(
+          "settings.sensitive-data.algorithms.error.substitution-length"
+        );
       }
       return "";
     case "md5-mask":
       if (!state.md5Mask.salt) {
-        return "Salt is required";
+        return t("settings.sensitive-data.algorithms.error.salt-required");
       }
       return "";
     case "range-mask":
-      if (state.rangeMask.slices.length === 0) {
-        return "Slices is required";
-      }
-      for (let i = 0; i < state.rangeMask.slices.length; i++) {
-        const slice = state.rangeMask.slices[i];
-        if (!slice.substitution) {
-          return "Slice substitution is required";
-        }
-        if (
-          Number.isNaN(slice.start) ||
-          Number.isNaN(slice.end) ||
-          slice.start < 0 ||
-          slice.end <= 0
-        ) {
-          return "Slice start or end is not valid number";
-        }
-        if (slice.start >= slice.end) {
-          return "The slice end must smaller than the start";
-        }
-
-        for (let j = 0; j < i; j++) {
-          const pre = state.rangeMask.slices[j];
-          if (slice.start >= pre.end || pre.start >= slice.end) {
-            continue;
-          }
-          return "The slice range cannot overlap";
-        }
-      }
+      return rangeMaskErrorMessage.value;
   }
   return "";
 });
@@ -474,10 +512,12 @@ const onMaskingTypeChange = (maskingType: MaskingType) => {
 };
 
 const addSlice = () => {
+  const last = state.rangeMask.slices[state.rangeMask.slices.length - 1];
   state.rangeMask.slices.push(
     MaskingAlgorithmSetting_Algorithm_RangeMask_Slice.fromPartial({
-      start: 0,
-      end: 1,
+      start: (last?.start ?? -1) + 1,
+      end: (last?.end ?? 0) + 1,
+      substitution: "*",
     })
   );
 };
