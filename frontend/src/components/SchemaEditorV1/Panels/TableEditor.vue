@@ -105,7 +105,7 @@ import {
   SchemaEditorTabType,
 } from "@/types/v1/schemaEditor";
 import { TableTabContext } from "@/types/v1/schemaEditor";
-import { arraySwap } from "@/utils";
+import { arraySwap, instanceV1AllowsReorderColumns } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import EditColumnForeignKeyModal from "../Modals/EditColumnForeignKeyModal.vue";
 import { isColumnChanged } from "../utils";
@@ -132,7 +132,7 @@ const currentTab = computed(
   () => schemaEditorV1Store.currentTab as TableTabContext
 );
 
-const parentResouce = computed(() => {
+const parentResource = computed(() => {
   return schemaEditorV1Store.resourceMap[schemaEditorV1Store.resourceType].get(
     currentTab.value.parentName
   )!;
@@ -216,7 +216,7 @@ const getReferencedForeignKeyName = (column: Column) => {
   if (isUndefined(fk) || isUndefined(index) || index < 0) {
     return "";
   }
-  const referencedSchema = parentResouce.value.schemaList.find(
+  const referencedSchema = parentResource.value.schemaList.find(
     (schema) => schema.id === fk.referencedSchemaId
   );
   const referencedTable = referencedSchema?.tableList.find(
@@ -244,8 +244,14 @@ const disableChangeTable = computed(() => {
 });
 
 const allowReorderColumns = computed(() => {
+  if (props.searchPattern.trim().length !== 0) {
+    // The column keyword filter will break the original indexes of columns
+    return false;
+  }
+
   return (
-    table.value.status === "created" && props.searchPattern.trim().length === 0
+    instanceV1AllowsReorderColumns(engine.value) &&
+    table.value.status === "created"
   );
 });
 
@@ -317,7 +323,7 @@ const gotoForeignKeyReferencedTable = (column: Column) => {
     return;
   }
 
-  const referencedSchema = parentResouce.value.schemaList.find(
+  const referencedSchema = parentResource.value.schemaList.find(
     (schema) => schema.id === fk.referencedSchemaId
   );
   const referencedTable = referencedSchema?.tableList.find(
