@@ -157,8 +157,8 @@
               :table="state.table"
               :engine="state.engine"
               :classification-config-id="classificationConfig?.id"
-              @on-drop="onColumnDrop"
-              @on-primary-key-set="setColumnPrimaryKey"
+              @drop="onColumnDrop"
+              @primary-key-set="setColumnPrimaryKey"
             />
           </div>
         </div>
