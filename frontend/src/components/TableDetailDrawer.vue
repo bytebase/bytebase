@@ -167,7 +167,7 @@
             <div class="text-lg leading-6 font-medium text-main mb-4">
               {{ $t("database.columns") }}
             </div>
-            <ColumnTable
+            <ColumnDataTable
               :database="database"
               :schema="schemaName"
               :table="table"
@@ -214,7 +214,7 @@ import {
   isDatabaseV1Queryable,
   isGhostTable,
 } from "@/utils";
-import ColumnTable from "./ColumnTable.vue";
+import ColumnDataTable from "./ColumnDataTable/index.vue";
 import { SQLEditorButtonV1 } from "./DatabaseDetail";
 import IndexTable from "./IndexTable.vue";
 
