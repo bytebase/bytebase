@@ -1044,11 +1044,9 @@ export interface TaskRun {
   changeHistory: string;
   schemaVersion: string;
   executionStatus: TaskRun_ExecutionStatus;
-  executionDetails:
-    | TaskRun_ExecutionDetails
-    | undefined;
   /** Last execution status update timestamp. */
   executionStatusUpdateTime: Date | undefined;
+  executionDetails: TaskRun_ExecutionDetails | undefined;
   startTime: Date | undefined;
 }
 
@@ -5462,8 +5460,8 @@ function createBaseTaskRun(): TaskRun {
     changeHistory: "",
     schemaVersion: "",
     executionStatus: 0,
-    executionDetails: undefined,
     executionStatusUpdateTime: undefined,
+    executionDetails: undefined,
     startTime: undefined,
   };
 }
@@ -5506,11 +5504,11 @@ export const TaskRun = {
     if (message.executionStatus !== 0) {
       writer.uint32(96).int32(message.executionStatus);
     }
-    if (message.executionDetails !== undefined) {
-      TaskRun_ExecutionDetails.encode(message.executionDetails, writer.uint32(122).fork()).ldelim();
-    }
     if (message.executionStatusUpdateTime !== undefined) {
       Timestamp.encode(toTimestamp(message.executionStatusUpdateTime), writer.uint32(106).fork()).ldelim();
+    }
+    if (message.executionDetails !== undefined) {
+      TaskRun_ExecutionDetails.encode(message.executionDetails, writer.uint32(122).fork()).ldelim();
     }
     if (message.startTime !== undefined) {
       Timestamp.encode(toTimestamp(message.startTime), writer.uint32(114).fork()).ldelim();
@@ -5609,19 +5607,19 @@ export const TaskRun = {
 
           message.executionStatus = reader.int32() as any;
           continue;
-        case 15:
-          if (tag !== 122) {
-            break;
-          }
-
-          message.executionDetails = TaskRun_ExecutionDetails.decode(reader, reader.uint32());
-          continue;
         case 13:
           if (tag !== 106) {
             break;
           }
 
           message.executionStatusUpdateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 15:
+          if (tag !== 122) {
+            break;
+          }
+
+          message.executionDetails = TaskRun_ExecutionDetails.decode(reader, reader.uint32());
           continue;
         case 14:
           if (tag !== 114) {
@@ -5653,11 +5651,11 @@ export const TaskRun = {
       changeHistory: isSet(object.changeHistory) ? globalThis.String(object.changeHistory) : "",
       schemaVersion: isSet(object.schemaVersion) ? globalThis.String(object.schemaVersion) : "",
       executionStatus: isSet(object.executionStatus) ? taskRun_ExecutionStatusFromJSON(object.executionStatus) : 0,
-      executionDetails: isSet(object.executionDetails)
-        ? TaskRun_ExecutionDetails.fromJSON(object.executionDetails)
-        : undefined,
       executionStatusUpdateTime: isSet(object.executionStatusUpdateTime)
         ? fromJsonTimestamp(object.executionStatusUpdateTime)
+        : undefined,
+      executionDetails: isSet(object.executionDetails)
+        ? TaskRun_ExecutionDetails.fromJSON(object.executionDetails)
         : undefined,
       startTime: isSet(object.startTime) ? fromJsonTimestamp(object.startTime) : undefined,
     };
@@ -5701,11 +5699,11 @@ export const TaskRun = {
     if (message.executionStatus !== 0) {
       obj.executionStatus = taskRun_ExecutionStatusToJSON(message.executionStatus);
     }
-    if (message.executionDetails !== undefined) {
-      obj.executionDetails = TaskRun_ExecutionDetails.toJSON(message.executionDetails);
-    }
     if (message.executionStatusUpdateTime !== undefined) {
       obj.executionStatusUpdateTime = message.executionStatusUpdateTime.toISOString();
+    }
+    if (message.executionDetails !== undefined) {
+      obj.executionDetails = TaskRun_ExecutionDetails.toJSON(message.executionDetails);
     }
     if (message.startTime !== undefined) {
       obj.startTime = message.startTime.toISOString();
@@ -5730,10 +5728,10 @@ export const TaskRun = {
     message.changeHistory = object.changeHistory ?? "";
     message.schemaVersion = object.schemaVersion ?? "";
     message.executionStatus = object.executionStatus ?? 0;
+    message.executionStatusUpdateTime = object.executionStatusUpdateTime ?? undefined;
     message.executionDetails = (object.executionDetails !== undefined && object.executionDetails !== null)
       ? TaskRun_ExecutionDetails.fromPartial(object.executionDetails)
       : undefined;
-    message.executionStatusUpdateTime = object.executionStatusUpdateTime ?? undefined;
     message.startTime = object.startTime ?? undefined;
     return message;
   },

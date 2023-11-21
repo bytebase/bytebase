@@ -707,6 +707,8 @@ message TaskRun {
     POST_EXECUTING = 3;
   }
   ExecutionStatus execution_status = 12;
+  // Last execution status update timestamp.
+  google.protobuf.Timestamp execution_status_update_time = 13;
 
   message ExecutionDetails {
     // Currently, the following fields are only used for EXECUTING status.
@@ -723,8 +725,6 @@ message TaskRun {
     Position command_end_position = 5;
   }
   ExecutionDetails execution_details = 15;
-  // Last execution status update timestamp.
-  google.protobuf.Timestamp execution_status_update_time = 13;
 
   google.protobuf.Timestamp start_time = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

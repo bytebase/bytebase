@@ -7981,8 +7981,8 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | change_history | [string](#string) |  | The resource name of the change history Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
 | schema_version | [string](#string) |  |  |
 | execution_status | [TaskRun.ExecutionStatus](#bytebase-v1-TaskRun-ExecutionStatus) |  |  |
-| execution_details | [TaskRun.ExecutionDetails](#bytebase-v1-TaskRun-ExecutionDetails) |  |  |
 | execution_status_update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Last execution status update timestamp. |
+| execution_details | [TaskRun.ExecutionDetails](#bytebase-v1-TaskRun-ExecutionDetails) |  |  |
 | start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 
 
