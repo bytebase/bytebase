@@ -53,12 +53,13 @@
                 }}</router-link
               >)
             </label>
-            <NSwitch
-              class="mt-2"
-              :value="basicInfo.activation"
-              :disabled="!basicInfo.activation && availableLicenseCount === 0"
-              @update:value="changeInstanceActivation"
-            />
+            <div class="h-[34px] flex flex-row items-center mt-1">
+              <NSwitch
+                :value="basicInfo.activation"
+                :disabled="!basicInfo.activation && availableLicenseCount === 0"
+                @update:value="changeInstanceActivation"
+              />
+            </div>
           </div>
 
           <div
