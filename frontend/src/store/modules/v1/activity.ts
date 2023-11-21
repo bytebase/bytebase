@@ -80,6 +80,7 @@ export const useActivityV1Store = defineStore("activity_v1", () => {
       fetchActivityList({
         resource: `issues/${issue.uid}`,
         order: "asc",
+        pageSize: 1000, // Pagination is complex, and not high priority
       }).then((resp) => resp.logEntities),
     ];
     if (isDatabaseRelatedIssue(issue) && issue.rollout) {
@@ -88,7 +89,7 @@ export const useActivityV1Store = defineStore("activity_v1", () => {
         fetchActivityList({
           resource: `pipelines/${pipelineUID}`,
           order: "asc",
-          pageSize: 1000,
+          pageSize: 1000, // Pagination is complex, and not high priority
         }).then((resp) => resp.logEntities)
       );
     } else {
