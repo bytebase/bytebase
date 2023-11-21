@@ -122,8 +122,8 @@ const columns = computed(() => {
       title: t("common.name"),
       resizable: true,
       width: 140,
-      render: (row) => {
-        return row.name;
+      render: (column) => {
+        return column.name;
       },
     },
     {
@@ -132,12 +132,12 @@ const columns = computed(() => {
       hide: !showSensitiveColumn.value,
       resizable: true,
       width: 220,
-      render: (row) => {
+      render: (column) => {
         return h(MaskingLevelCell, {
           database: props.database,
           schema: props.schema,
           table: props.table,
-          column: row,
+          column: column,
           maskDataList: props.maskDataList,
           readonly: !hasSensitiveDataPermission.value,
         });
@@ -149,12 +149,12 @@ const columns = computed(() => {
       hide: !showSensitiveColumn.value,
       resizable: true,
       width: 140,
-      render: (row) => {
+      render: (column) => {
         return h(SemanticTypeCell, {
           database: props.database,
           schema: props.schema,
           table: props.table,
-          column: row,
+          column: column,
           readonly: !hasSensitiveDataPermission.value,
         });
       },
@@ -164,9 +164,9 @@ const columns = computed(() => {
       title: t("database.classification.self"),
       hide: !showClassificationColumn.value,
       width: 140,
-      render: (row) => {
+      render: (column) => {
         return h(ClassificationLevelBadge, {
-          classification: row.classification,
+          classification: column.classification,
           classificationConfig: props.classificationConfig,
         });
       },
@@ -176,8 +176,8 @@ const columns = computed(() => {
       title: t("common.type"),
       resizable: true,
       width: 140,
-      render: (row) => {
-        return row.type;
+      render: (column) => {
+        return column.type;
       },
     },
     {
@@ -185,8 +185,8 @@ const columns = computed(() => {
       title: t("common.default"),
       resizable: true,
       width: 140,
-      render: (row) => {
-        return getColumnDefaultValuePlaceholder(row);
+      render: (column) => {
+        return getColumnDefaultValuePlaceholder(column);
       },
     },
     {
@@ -194,8 +194,8 @@ const columns = computed(() => {
       title: t("database.nullable"),
       resizable: true,
       width: 140,
-      render: (row) => {
-        return row.nullable;
+      render: (column) => {
+        return column.nullable;
       },
     },
     {
@@ -204,8 +204,8 @@ const columns = computed(() => {
       hide: engine.value === Engine.POSTGRES,
       resizable: true,
       width: 140,
-      render: (row) => {
-        return row.characterSet;
+      render: (column) => {
+        return column.characterSet;
       },
     },
     {
@@ -214,8 +214,8 @@ const columns = computed(() => {
       hide: !showCollationColumn.value,
       resizable: true,
       width: 140,
-      render: (row) => {
-        return h(NEllipsis, null, { default: () => row.collation });
+      render: (column) => {
+        return h(NEllipsis, null, { default: () => column.collation });
       },
     },
     {
@@ -223,8 +223,8 @@ const columns = computed(() => {
       title: t("database.comment"),
       resizable: true,
       width: 140,
-      render: (row) => {
-        return h(NEllipsis, null, { default: () => row.userComment });
+      render: (column) => {
+        return h(NEllipsis, null, { default: () => column.userComment });
       },
     },
     {
@@ -232,12 +232,12 @@ const columns = computed(() => {
       resizable: true,
       width: 140,
       title: t("common.labels"),
-      render: (row) => {
+      render: (column) => {
         return h(LabelsCell, {
           database: props.database,
           schema: props.schema,
           table: props.table,
-          column: row,
+          column: column,
           readonly: !hasSensitiveDataPermission.value,
         });
       },
