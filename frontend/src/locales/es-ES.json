@@ -890,8 +890,8 @@
   },
   "issue": {
     "my-issues": "Mis Incidencias",
-    "waiting-approval": "Esperando Aprobación",
-    "waiting-rollout": "Esperando Implementación",
+    "waiting-approval": "A la espera de la aprobación",
+    "waiting-rollout": "Esperando el lanzamiento",
     "opened-by-at": "abierta por {creator} a las {time}",
     "commit-by-at": "commit {id} {title} por {author} a las {time}",
     "status-transition": {
