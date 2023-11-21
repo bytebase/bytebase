@@ -202,15 +202,26 @@ export default defineComponent({
           path: "/instance",
         });
       } else if (databaseSlug) {
-        list.push({
-          name: t("common.databases"),
-          path: "/db",
-        });
+        const database = useDatabaseV1Store().getDatabaseByUID(
+          String(idFromSlug(databaseSlug))
+        );
+
+        list.push(
+          {
+            name: t("common.projects"),
+            path: "/project",
+          },
+          {
+            name: `${database.projectEntity.title}`,
+            path: `/project/${projectV1Slug(database.projectEntity)}`,
+          },
+          {
+            name: t("common.databases"),
+            path: "/db",
+          }
+        );
 
         if (tableName) {
-          const database = useDatabaseV1Store().getDatabaseByUID(
-            String(idFromSlug(databaseSlug))
-          );
           list.push({
             name: database.databaseName,
             path: `/db/${databaseSlug}`,
@@ -237,14 +248,29 @@ export default defineComponent({
       if (route.name === "workspace.database.history.detail") {
         const parent = `instances/${route.params.instance}/databases/${route.params.database}`;
         const database = useDatabaseV1Store().getDatabaseByName(parent);
-        list.push({
-          name: database.databaseName,
-          path: `/db/${databaseV1Slug(database)}`,
-        });
-        list.push({
-          name: t("common.change"),
-          path: `/db/${databaseV1Slug(database)}#change-history`,
-        });
+
+        list.push(
+          {
+            name: t("common.projects"),
+            path: "/project",
+          },
+          {
+            name: `${database.projectEntity.title}`,
+            path: `/project/${projectV1Slug(database.projectEntity)}`,
+          },
+          {
+            name: t("common.databases"),
+            path: "/db",
+          },
+          {
+            name: database.databaseName,
+            path: `/db/${databaseV1Slug(database)}`,
+          },
+          {
+            name: t("common.change"),
+            path: `/db/${databaseV1Slug(database)}#change-history`,
+          }
+        );
       }
 
       const {
