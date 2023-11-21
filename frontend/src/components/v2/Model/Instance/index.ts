@@ -1,3 +1,4 @@
+import InstanceEngineRadioGrid from "./InstanceEngineRadioGrid.vue";
 import InstanceName from "./InstanceName.vue";
 import InstanceRoleTable from "./InstanceRoleTable";
 import InstanceV1EngineIcon from "./InstanceV1EngineIcon.vue";
@@ -7,6 +8,7 @@ import RichEngineName from "./RichEngineName.vue";
 
 export {
   InstanceName,
+  InstanceEngineRadioGrid,
   InstanceV1Name,
   InstanceV1EngineIcon,
   InstanceV1Table,

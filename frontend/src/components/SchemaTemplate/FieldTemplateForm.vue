@@ -25,32 +25,12 @@
           <label for="engine" class="textlabel">
             {{ $t("database.engine") }}
           </label>
-          <div class="grid grid-cols-4 gap-2">
-            <NButton
-              v-for="engine in engineList"
-              :key="engine"
-              size="large"
-              ghost
-              class="column-template-engine-button"
-              :type="state.engine === engine ? 'primary' : 'default'"
-              @click="changeEngine(engine)"
-            >
-              <NRadio
-                :checked="state.engine === engine"
-                size="large"
-                class="btn mr-2 pointer-events-none"
-              />
-              <EngineIcon
-                :engine="engine"
-                class="w-5 h-auto max-h-[20px] object-contain mr-1 ml-0"
-              />
-              <RichEngineName
-                :engine="engine"
-                tag="p"
-                class="text-center text-sm !text-main"
-              />
-            </NButton>
-          </div>
+          <InstanceEngineRadioGrid
+            v-model:engine="state.engine"
+            :engine-list="engineList"
+            :disabled="!allowEdit"
+            class="grid-cols-4 gap-2"
+          />
         </div>
       </div>
       <div class="space-y-6 pt-6">
@@ -245,10 +225,9 @@
 <script lang="ts" setup>
 import { isEqual, cloneDeep } from "lodash-es";
 import { XIcon, PencilIcon } from "lucide-vue-next";
-import { NButton, NInput, NRadio, NSwitch, SelectOption } from "naive-ui";
+import { NButton, NInput, NSwitch, SelectOption } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { EngineIcon } from "@/components/Icon";
 import { LabelListEditor } from "@/components/Label";
 import {
   getColumnDefaultDisplayString,
@@ -260,11 +239,10 @@ import {
 import {
   DrawerContent,
   DropdownInput,
+  InstanceEngineRadioGrid,
   MiniActionButton,
-  RichEngineName,
 } from "@/components/v2";
 import { useSettingV1Store, useNotificationStore } from "@/store";
-import { Engine } from "@/types/proto/v1/common";
 import {
   ColumnConfig,
   ColumnMetadata,
@@ -412,12 +390,6 @@ const schemaTemplateColumnTypeOptions = computed(() => {
   }));
 });
 
-const changeEngine = (engine: Engine) => {
-  if (allowEdit.value) {
-    state.engine = engine;
-  }
-};
-
 const submitDisabled = computed(() => {
   if (!state.column?.name || !state.column?.type) {
     return true;
@@ -549,9 +521,3 @@ const onSemanticTypeApply = async (semanticTypeId: string) => {
   });
 };
 </script>
-
-<style lang="postcss" scoped>
-.column-template-engine-button :deep(.n-button__content) {
-  @apply w-full justify-start;
-}
-</style>
