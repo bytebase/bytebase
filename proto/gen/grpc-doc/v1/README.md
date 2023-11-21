@@ -490,8 +490,8 @@
     - [Task.DatabaseSchemaBaseline](#bytebase-v1-Task-DatabaseSchemaBaseline)
     - [Task.DatabaseSchemaUpdate](#bytebase-v1-Task-DatabaseSchemaUpdate)
     - [TaskRun](#bytebase-v1-TaskRun)
-    - [TaskRun.ExecutionDetails](#bytebase-v1-TaskRun-ExecutionDetails)
-    - [TaskRun.ExecutionDetails.Position](#bytebase-v1-TaskRun-ExecutionDetails-Position)
+    - [TaskRun.ExecutionDetail](#bytebase-v1-TaskRun-ExecutionDetail)
+    - [TaskRun.ExecutionDetail.Position](#bytebase-v1-TaskRun-ExecutionDetail-Position)
     - [UpdatePlanRequest](#bytebase-v1-UpdatePlanRequest)
   
     - [Plan.ChangeDatabaseConfig.Type](#bytebase-v1-Plan-ChangeDatabaseConfig-Type)
@@ -7982,7 +7982,7 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | schema_version | [string](#string) |  |  |
 | execution_status | [TaskRun.ExecutionStatus](#bytebase-v1-TaskRun-ExecutionStatus) |  |  |
 | execution_status_update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Last execution status update timestamp. |
-| execution_details | [TaskRun.ExecutionDetails](#bytebase-v1-TaskRun-ExecutionDetails) |  |  |
+| execution_detail | [TaskRun.ExecutionDetail](#bytebase-v1-TaskRun-ExecutionDetail) |  |  |
 | start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 
 
@@ -7990,9 +7990,9 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 
 
 
-<a name="bytebase-v1-TaskRun-ExecutionDetails"></a>
+<a name="bytebase-v1-TaskRun-ExecutionDetail"></a>
 
-### TaskRun.ExecutionDetails
+### TaskRun.ExecutionDetail
 
 
 
@@ -8000,17 +8000,17 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | ----- | ---- | ----- | ----------- |
 | commands_total | [int32](#int32) |  | Currently, the following fields are only used for EXECUTING status. |
 | commands_completed | [int32](#int32) |  |  |
-| command_start_position | [TaskRun.ExecutionDetails.Position](#bytebase-v1-TaskRun-ExecutionDetails-Position) |  |  |
-| command_end_position | [TaskRun.ExecutionDetails.Position](#bytebase-v1-TaskRun-ExecutionDetails-Position) |  |  |
+| command_start_position | [TaskRun.ExecutionDetail.Position](#bytebase-v1-TaskRun-ExecutionDetail-Position) |  |  |
+| command_end_position | [TaskRun.ExecutionDetail.Position](#bytebase-v1-TaskRun-ExecutionDetail-Position) |  |  |
 
 
 
 
 
 
-<a name="bytebase-v1-TaskRun-ExecutionDetails-Position"></a>
+<a name="bytebase-v1-TaskRun-ExecutionDetail-Position"></a>
 
-### TaskRun.ExecutionDetails.Position
+### TaskRun.ExecutionDetail.Position
 
 
 

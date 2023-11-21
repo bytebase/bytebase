@@ -710,7 +710,7 @@ message TaskRun {
   // Last execution status update timestamp.
   google.protobuf.Timestamp execution_status_update_time = 13;
 
-  message ExecutionDetails {
+  message ExecutionDetail {
     // Currently, the following fields are only used for EXECUTING status.
     int32 commands_total = 2;
     int32 commands_completed = 3;
@@ -724,7 +724,7 @@ message TaskRun {
     Position command_start_position = 4;
     Position command_end_position = 5;
   }
-  ExecutionDetails execution_details = 15;
+  ExecutionDetail execution_detail = 15;
 
   google.protobuf.Timestamp start_time = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
