@@ -238,7 +238,7 @@ import {
 } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import TableColumnEditor from "../SchemaEditorV1/Panels/TableColumnEditor";
-import { engineList, caregoryList, classificationConfig } from "./utils";
+import { engineList, categoryList, classificationConfig } from "./utils";
 
 const props = defineProps<{
   create: boolean;
@@ -279,7 +279,7 @@ const allowEdit = computed(() => {
 });
 
 const categoryOptions = computed(() => {
-  return caregoryList.value.map((category) => ({
+  return categoryList.value.map((category) => ({
     label: category,
     key: category,
   }));
