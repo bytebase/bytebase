@@ -490,6 +490,8 @@
     - [Task.DatabaseSchemaBaseline](#bytebase-v1-Task-DatabaseSchemaBaseline)
     - [Task.DatabaseSchemaUpdate](#bytebase-v1-Task-DatabaseSchemaUpdate)
     - [TaskRun](#bytebase-v1-TaskRun)
+    - [TaskRun.ExecutionDetail](#bytebase-v1-TaskRun-ExecutionDetail)
+    - [TaskRun.ExecutionDetail.Position](#bytebase-v1-TaskRun-ExecutionDetail-Position)
     - [UpdatePlanRequest](#bytebase-v1-UpdatePlanRequest)
   
     - [Plan.ChangeDatabaseConfig.Type](#bytebase-v1-Plan-ChangeDatabaseConfig-Type)
@@ -7980,7 +7982,42 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | schema_version | [string](#string) |  |  |
 | execution_status | [TaskRun.ExecutionStatus](#bytebase-v1-TaskRun-ExecutionStatus) |  |  |
 | execution_status_update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Last execution status update timestamp. |
+| execution_detail | [TaskRun.ExecutionDetail](#bytebase-v1-TaskRun-ExecutionDetail) |  |  |
 | start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRun-ExecutionDetail"></a>
+
+### TaskRun.ExecutionDetail
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| commands_total | [int32](#int32) |  | Currently, the following fields are only used for EXECUTING status. |
+| commands_completed | [int32](#int32) |  |  |
+| command_start_position | [TaskRun.ExecutionDetail.Position](#bytebase-v1-TaskRun-ExecutionDetail-Position) |  |  |
+| command_end_position | [TaskRun.ExecutionDetail.Position](#bytebase-v1-TaskRun-ExecutionDetail-Position) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRun-ExecutionDetail-Position"></a>
+
+### TaskRun.ExecutionDetail.Position
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| line | [int32](#int32) |  | The line number, starting from 0. |
+| column | [int32](#int32) |  | The column number, starting from 0. |
 
 
 

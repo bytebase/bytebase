@@ -134,7 +134,7 @@ func (l *mysqlV2Listener) EnterCreateTable(ctx *mysql.CreateTableContext) {
 		switch {
 		// handle column
 		case tableElement.ColumnDefinition() != nil:
-			if tableElement.ColumnDefinition().FieldDefinition() == nil {
+			if tableElement.ColumnDefinition().FieldDefinition() == nil || tableElement.ColumnDefinition().ColumnName() == nil {
 				continue
 			}
 			if mysqlparser.IsAutoIncrement(tableElement.ColumnDefinition().FieldDefinition()) {
@@ -147,7 +147,8 @@ func (l *mysqlV2Listener) EnterCreateTable(ctx *mysql.CreateTableContext) {
 				}
 				hasAutoIncrement = true
 			}
-			if err := table.mysqlV2CreateColumn(l.databaseState.ctx, tableElement.ColumnDefinition()); err != nil {
+			_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
+			if err := table.mysqlV2CreateColumn(l.databaseState.ctx, columnName, tableElement.ColumnDefinition().FieldDefinition(), nil /* position */); err != nil {
 				err.Line = l.baseLine + tableElement.GetStart().GetLine()
 				l.err = err
 				return
@@ -196,6 +197,331 @@ func (l *mysqlV2Listener) EnterDropTable(ctx *mysql.DropTableContext) {
 
 		delete(schema.tableSet, table.name)
 	}
+}
+
+// EnterAlterTable is called when production alterTable is entered.
+func (l *mysqlV2Listener) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if ctx.TableRef() == nil {
+		// todo: maybe need to do error handle.
+		return
+	}
+
+	databaseName, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
+	table, err := l.databaseState.mysqlV2FindTableState(databaseName, tableName, true /* createIncompleteTable */)
+	if err != nil {
+		l.err = err
+		return
+	}
+
+	if ctx.AlterTableActions() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList() == nil {
+		return
+	}
+	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
+		return
+	}
+
+	// alter table add column, change column, modify column.
+	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
+		if item == nil {
+			continue
+		}
+
+		switch {
+		case item.ADD_SYMBOL() != nil:
+			switch {
+			// add single column.
+			case item.Identifier() != nil && item.FieldDefinition() != nil:
+				columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+				if err := table.mysqlV2CreateColumn(l.databaseState.ctx, columnName, item.FieldDefinition(), positionFromPlaceContext(item.Place())); err != nil {
+					l.err = err
+					return
+				}
+			// add multi columns.
+			case item.OPEN_PAR_SYMBOL() != nil && item.TableElementList() != nil:
+				for _, tableElement := range item.TableElementList().AllTableElement() {
+					if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().ColumnName() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil {
+						continue
+					}
+					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
+					if err := table.mysqlV2CreateColumn(l.databaseState.ctx, columnName, tableElement.ColumnDefinition().FieldDefinition(), nil); err != nil {
+						l.err = err
+						return
+					}
+				}
+			// add constraint.
+			case item.TableConstraintDef() != nil:
+				if err := table.mysqlV2CreateConstraint(l.databaseState.ctx, item.TableConstraintDef()); err != nil {
+					l.err = err
+					return
+				}
+			}
+		// drop column.
+		case item.DROP_SYMBOL() != nil && item.ALTER_SYMBOL() == nil:
+			switch {
+			// drop column.
+			case item.ColumnInternalRef() != nil:
+				columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
+				if err := table.dropColumn(l.databaseState.ctx, columnName); err != nil {
+					l.err = err
+					return
+				}
+				// drop primary key.
+			case item.PRIMARY_SYMBOL() != nil && item.KEY_SYMBOL() != nil:
+				if err := table.dropIndex(l.databaseState.ctx, PrimaryKeyName); err != nil {
+					l.err = err
+					return
+				}
+				// drop key/index.
+			case item.KeyOrIndex() != nil && item.IndexRef() != nil:
+				_, _, indexName := mysqlparser.NormalizeIndexRef(item.IndexRef())
+				if err := table.dropIndex(l.databaseState.ctx, indexName); err != nil {
+					l.err = err
+					return
+				}
+				// drop foreign key.
+			case item.FOREIGN_SYMBOL() != nil && item.KEY_SYMBOL() != nil:
+				// we do not deal with DROP FOREIGN KEY statements.
+			}
+		// modify column.
+		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil:
+			columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
+			if err := table.mysqlV2ChangeColumn(l.databaseState.ctx, columnName, columnName, item.FieldDefinition(), positionFromPlaceContext(item.Place())); err != nil {
+				l.err = err
+				return
+			}
+		// change column
+		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil:
+			oldColumnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
+			newColumnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+			if err := table.mysqlV2ChangeColumn(l.databaseState.ctx, oldColumnName, newColumnName, item.FieldDefinition(), positionFromPlaceContext(item.Place())); err != nil {
+				l.err = err
+				return
+			}
+		// rename column
+		case item.RENAME_SYMBOL() != nil && item.COLUMN_SYMBOL() != nil:
+			oldColumnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
+			newColumnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
+			if err := table.renameColumn(l.databaseState.ctx, oldColumnName, newColumnName); err != nil {
+				l.err = err
+				return
+			}
+		case item.ALTER_SYMBOL() != nil:
+			switch {
+			// alter column.
+			case item.ColumnInternalRef() != nil:
+				if err := table.mysqlV2AlterColumn(l.databaseState.ctx, item); err != nil {
+					l.err = err
+					return
+				}
+			// alter index visibility.
+			case item.INDEX_SYMBOL() != nil && item.IndexRef() != nil && item.Visibility() != nil:
+				_, _, indexName := mysqlparser.NormalizeIndexRef(item.IndexRef())
+				if err := table.mysqlV2ChangeIndexVisibility(l.databaseState.ctx, indexName, item.Visibility()); err != nil {
+					l.err = err
+					return
+				}
+			default:
+			}
+		// rename table.
+		case item.RENAME_SYMBOL() != nil && item.TableName() != nil:
+			_, newTableName := mysqlparser.NormalizeMySQLTableName(item.TableName())
+			schema := l.databaseState.schemaSet[""]
+			if err := schema.renameTable(l.databaseState.ctx, table.name, newTableName); err != nil {
+				l.err = err
+				return
+			}
+		// rename index.
+		case item.RENAME_SYMBOL() != nil && item.KeyOrIndex() != nil && item.IndexRef() != nil && item.IndexName() != nil:
+			_, _, oldIndexName := mysqlparser.NormalizeIndexRef(item.IndexRef())
+			newIndexName := mysqlparser.NormalizeIndexName(item.IndexName())
+			if err := table.renameIndex(l.databaseState.ctx, oldIndexName, newIndexName); err != nil {
+				l.err = err
+				return
+			}
+		}
+	}
+}
+
+func (t *TableState) mysqlV2ChangeIndexVisibility(ctx *FinderContext, indexName string, visibility mysql.IVisibilityContext) *WalkThroughError {
+	index, exists := t.indexSet[indexName]
+	if !exists {
+		if ctx.CheckIntegrity {
+			return NewIndexNotExistsError(t.name, indexName)
+		}
+		index = t.createIncompleteIndex(indexName)
+	}
+	switch {
+	case visibility.VISIBLE_SYMBOL() != nil:
+		index.visible = newTruePointer()
+	case visibility.INVISIBLE_SYMBOL() != nil:
+		index.visible = newFalsePointer()
+	}
+	return nil
+}
+
+func (t *TableState) mysqlV2AlterColumn(ctx *FinderContext, itemDef mysql.IAlterListItemContext) *WalkThroughError {
+	if itemDef.ColumnInternalRef() == nil {
+		// should not reach here.
+		return nil
+	}
+	columnName := mysqlparser.NormalizeMySQLColumnInternalRef(itemDef.ColumnInternalRef())
+	colState, exists := t.columnSet[columnName]
+	if !exists {
+		if ctx.CheckIntegrity {
+			return NewColumnNotExistsError(t.name, columnName)
+		}
+		colState = t.createIncompleteColumn(columnName)
+	}
+
+	switch {
+	case itemDef.SET_SYMBOL() != nil:
+		switch {
+		// SET DEFAULT.
+		case itemDef.DEFAULT_SYMBOL() != nil:
+			if itemDef.SignedLiteral() != nil && itemDef.SignedLiteral().Literal() != nil && itemDef.SignedLiteral().Literal().NullLiteral() == nil {
+				if colState.columnType != nil {
+					switch strings.ToLower(*colState.columnType) {
+					case "blob", "tinyblob", "mediumblob", "longblob",
+						"text", "tinytext", "mediumtext", "longtext",
+						"json",
+						"geometry":
+						return &WalkThroughError{
+							Type: ErrorTypeInvalidColumnTypeForDefaultValue,
+							// Content comes from MySQL Error content.
+							Content: fmt.Sprintf("BLOB, TEXT, GEOMETRY or JSON column `%s` can't have a default value", columnName),
+						}
+					}
+				}
+
+				var defaultValue string
+				switch {
+				case itemDef.ExprWithParentheses() != nil:
+					defaultValue = itemDef.ExprWithParentheses().GetText()
+				case itemDef.SignedLiteral() != nil:
+					defaultValue = itemDef.SignedLiteral().GetText()
+				}
+
+				colState.defaultValue = &defaultValue
+			} else {
+				if colState.nullable != nil && !*colState.nullable {
+					return &WalkThroughError{
+						Type: ErrorTypeSetNullDefaultForNotNullColumn,
+						// Content comes from MySQL Error content.
+						Content: fmt.Sprintf("Invalid default value for column `%s`", columnName),
+					}
+				}
+
+				colState.defaultValue = nil
+			}
+		// SET VISIBLE/INVISIBLE.
+		default:
+		}
+	case itemDef.DROP_SYMBOL() != nil && itemDef.DEFAULT_SYMBOL() != nil:
+		// DROP DEFAULT.
+		colState.defaultValue = nil
+	}
+	return nil
+}
+
+func (t *TableState) mysqlV2ChangeColumn(ctx *FinderContext, oldColumnName string, newColumnName string, fieldDef mysql.IFieldDefinitionContext, position *mysqlV2ColumnPosition) *WalkThroughError {
+	if ctx.CheckIntegrity {
+		return t.mysqlV2CompleteTableChangeColumn(ctx, oldColumnName, newColumnName, fieldDef, position)
+	}
+	return t.mysqlV2IncompleteTableChangeColumn(ctx, oldColumnName, newColumnName, fieldDef, position)
+}
+
+// mysqlV2IncompleteTableChangeColumn changes column definition.
+// It does not maintain the position of the column.
+func (t *TableState) mysqlV2IncompleteTableChangeColumn(ctx *FinderContext, oldColumnName string, newColumnName string, fieldDef mysql.IFieldDefinitionContext, position *mysqlV2ColumnPosition) *WalkThroughError {
+	delete(t.columnSet, oldColumnName)
+
+	// rename column from indexSet
+	t.renameColumnInIndexKey(oldColumnName, newColumnName)
+
+	// create a new column in columnSet
+	return t.mysqlV2CreateColumn(ctx, newColumnName, fieldDef, position)
+}
+
+// mysqlV2CompleteTableChangeColumn changes column definition.
+// It works as:
+// 1. drop column from tableState.columnSet, but do not drop column from indexSet.
+// 2. rename column from indexSet.
+// 3. create a new column in columnSet.
+func (t *TableState) mysqlV2CompleteTableChangeColumn(ctx *FinderContext, oldColumnName string, newColumnName string, fieldDef mysql.IFieldDefinitionContext, position *mysqlV2ColumnPosition) *WalkThroughError {
+	column, exists := t.columnSet[oldColumnName]
+	if !exists {
+		return NewColumnNotExistsError(t.name, oldColumnName)
+	}
+
+	pos := *column.position
+
+	if position == nil {
+		position = &mysqlV2ColumnPosition{
+			tp: ColumnPositionNone,
+		}
+	}
+	if position.tp == ColumnPositionNone {
+		if pos == 1 {
+			position.tp = ColumnPositionFirst
+		} else {
+			for _, col := range t.columnSet {
+				if *col.position == pos-1 {
+					position.tp = ColumnPositionAfter
+					position.relativeColumn = col.name
+					break
+				}
+			}
+		}
+	}
+
+	// drop column from columnSet.
+	for _, col := range t.columnSet {
+		if *col.position > pos {
+			*col.position--
+		}
+	}
+	delete(t.columnSet, column.name)
+
+	// rename column from indexSet
+	t.renameColumnInIndexKey(oldColumnName, newColumnName)
+
+	// create a new column in columnSet
+	return t.mysqlV2CreateColumn(ctx, newColumnName, fieldDef, position)
+}
+
+type columnPositionType int
+
+const (
+	ColumnPositionNone columnPositionType = iota
+	ColumnPositionFirst
+	ColumnPositionAfter
+)
+
+type mysqlV2ColumnPosition struct {
+	tp             columnPositionType
+	relativeColumn string
+}
+
+func positionFromPlaceContext(place mysql.IPlaceContext) *mysqlV2ColumnPosition {
+	columnPosition := &mysqlV2ColumnPosition{
+		tp: ColumnPositionNone,
+	}
+	if place, ok := place.(*mysql.PlaceContext); ok {
+		if place != nil {
+			switch {
+			case place.FIRST_SYMBOL() != nil:
+				columnPosition.tp = ColumnPositionFirst
+			case place.AFTER_SYMBOL() != nil:
+				columnPosition.tp = ColumnPositionAfter
+				columnName := mysqlparser.NormalizeMySQLIdentifier(place.Identifier())
+				columnPosition.relativeColumn = columnName
+			}
+		}
+	}
+	return columnPosition
 }
 
 func (d *DatabaseState) mysqlV2CopyTable(databaseName, tableName, referTable string) *WalkThroughError {
@@ -376,12 +702,7 @@ func mysqlV2GetIndexType(tableConstraint mysql.ITableConstraintDefContext) strin
 	return "BTREE"
 }
 
-func (t *TableState) mysqlV2CreateColumn(_ *FinderContext, columnDef mysql.IColumnDefinitionContext) *WalkThroughError {
-	if columnDef.ColumnName() == nil || columnDef.FieldDefinition() == nil {
-		// todo: add more error info
-		return nil
-	}
-	_, _, columnName := mysqlparser.NormalizeMySQLColumnName(columnDef.ColumnName())
+func (t *TableState) mysqlV2CreateColumn(ctx *FinderContext, columnName string, fieldDef mysql.IFieldDefinitionContext, position *mysqlV2ColumnPosition) *WalkThroughError {
 	if _, exists := t.columnSet[columnName]; exists {
 		return &WalkThroughError{
 			Type:    ErrorTypeColumnExists,
@@ -391,16 +712,23 @@ func (t *TableState) mysqlV2CreateColumn(_ *FinderContext, columnDef mysql.IColu
 
 	// todo: handle position.
 	pos := len(t.columnSet) + 1
+	if position != nil && ctx.CheckIntegrity {
+		var err *WalkThroughError
+		pos, err = t.mysqlV2ReorderColumn(position)
+		if err != nil {
+			return err
+		}
+	}
 	columnType := ""
 	characterSet := ""
 	collation := ""
-	if columnDef.FieldDefinition() == nil || columnDef.FieldDefinition().DataType() == nil {
+	if fieldDef.DataType() == nil {
 		// todo: add more error detail.
 		return nil
 	}
-	columnType = mysqlparser.NormalizeMySQLDataType(columnDef.FieldDefinition().DataType(), true /* compact */)
-	characterSet = mysqlparser.GetCharSetName(columnDef.FieldDefinition().DataType())
-	collation = mysqlparser.GetCollationName(columnDef.FieldDefinition())
+	columnType = mysqlparser.NormalizeMySQLDataType(fieldDef.DataType(), true /* compact */)
+	characterSet = mysqlparser.GetCharSetName(fieldDef.DataType())
+	collation = mysqlparser.GetCollationName(fieldDef)
 
 	col := &ColumnState{
 		name:         columnName,
@@ -414,7 +742,7 @@ func (t *TableState) mysqlV2CreateColumn(_ *FinderContext, columnDef mysql.IColu
 	}
 	setNullDefault := false
 
-	for _, attribute := range columnDef.FieldDefinition().AllColumnAttribute() {
+	for _, attribute := range fieldDef.AllColumnAttribute() {
 		if attribute == nil {
 			continue
 		}
@@ -430,7 +758,7 @@ func (t *TableState) mysqlV2CreateColumn(_ *FinderContext, columnDef mysql.IColu
 			switch attribute.GetValue().GetTokenType() {
 			// default value.
 			case mysql.MySQLParserDEFAULT_SYMBOL:
-				if err := mysqlV2CheckDefault(columnName, columnDef.FieldDefinition()); err != nil {
+				if err := mysqlV2CheckDefault(columnName, fieldDef); err != nil {
 					return err
 				}
 				if attribute.SignedLiteral() == nil {
@@ -456,7 +784,7 @@ func (t *TableState) mysqlV2CreateColumn(_ *FinderContext, columnDef mysql.IColu
 				if attribute.UPDATE_SYMBOL() == nil || attribute.NOW_SYMBOL() == nil {
 					continue
 				}
-				if !mysqlparser.IsTimeType(columnDef.FieldDefinition().DataType()) {
+				if !mysqlparser.IsTimeType(fieldDef.DataType()) {
 					return &WalkThroughError{
 						Type:    ErrorTypeOnUpdateColumnNotDatetimeOrTimestamp,
 						Content: fmt.Sprintf("Column `%s` use ON UPDATE but is not DATETIME or TIMESTAMP", col.name),
@@ -499,6 +827,35 @@ func (t *TableState) mysqlV2CreateColumn(_ *FinderContext, columnDef mysql.IColu
 
 	t.columnSet[col.name] = col
 	return nil
+}
+
+// reorderColumn reorders the columns for new column and returns the new column position.
+func (t *TableState) mysqlV2ReorderColumn(position *mysqlV2ColumnPosition) (int, *WalkThroughError) {
+	switch position.tp {
+	case ColumnPositionNone:
+		return len(t.columnSet) + 1, nil
+	case ColumnPositionFirst:
+		for _, column := range t.columnSet {
+			*column.position++
+		}
+		return 1, nil
+	case ColumnPositionAfter:
+		columnName := position.relativeColumn
+		column, exist := t.columnSet[columnName]
+		if !exist {
+			return 0, NewColumnNotExistsError(t.name, columnName)
+		}
+		for _, col := range t.columnSet {
+			if *col.position > *column.position {
+				*col.position++
+			}
+		}
+		return *column.position + 1, nil
+	}
+	return 0, &WalkThroughError{
+		Type:    ErrorTypeUnsupported,
+		Content: fmt.Sprintf("Unsupported column position type: %d", position.tp),
+	}
 }
 
 func (t *TableState) mysqlV2CreateIndex(name string, keyList []string, unique bool, tp string, tableConstraint mysql.ITableConstraintDefContext) *WalkThroughError {
