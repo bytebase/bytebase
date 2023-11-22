@@ -27,32 +27,12 @@
           <label for="engine" class="textlabel">
             {{ $t("database.engine") }}
           </label>
-          <div class="grid grid-cols-4 gap-2">
-            <NButton
-              v-for="engine in engineList"
-              :key="engine"
-              size="large"
-              ghost
-              class="table-template-engine-button"
-              :type="state.engine === engine ? 'primary' : 'default'"
-              @click="changeEngine(engine)"
-            >
-              <NRadio
-                :checked="state.engine === engine"
-                size="large"
-                class="btn mr-2 pointer-events-none"
-              />
-              <EngineIcon
-                :engine="engine"
-                class="w-5 h-auto max-h-[20px] object-contain mr-1 ml-0"
-              />
-              <RichEngineName
-                :engine="engine"
-                tag="p"
-                class="text-center text-sm !text-main"
-              />
-            </NButton>
-          </div>
+          <InstanceEngineRadioGrid
+            v-model:engine="state.engine"
+            :engine-list="engineList"
+            :disabled="!allowEdit"
+            class="grid-cols-4 gap-2"
+          />
         </div>
 
         <div v-if="classificationConfig" class="sm:col-span-2 sm:col-start-1">
@@ -194,14 +174,17 @@
 <script lang="ts" setup>
 import { isEqual, cloneDeep } from "lodash-es";
 import { PlusIcon, XIcon, PencilIcon } from "lucide-vue-next";
-import { NButton, NInput, NRadio, SelectOption } from "naive-ui";
+import { NButton, NInput, SelectOption } from "naive-ui";
 import { computed, nextTick, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
-import { EngineIcon } from "@/components/Icon";
 import TableColumnEditor from "@/components/SchemaEditorV1/Panels/TableColumnEditor";
 import { transformTableEditToMetadata } from "@/components/SchemaEditorV1/utils";
-import { Drawer, DrawerContent, RichEngineName } from "@/components/v2";
+import {
+  Drawer,
+  DrawerContent,
+  InstanceEngineRadioGrid,
+} from "@/components/v2";
 import { useSettingV1Store, useNotificationStore } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import { ColumnMetadata, TableConfig } from "@/types/proto/v1/database_service";
@@ -272,12 +255,6 @@ const categoryOptions = computed(() => {
 const allowReorderColumns = computed(() => {
   return instanceV1AllowsReorderColumns(state.engine);
 });
-
-const changeEngine = (engine: Engine) => {
-  if (allowEdit.value) {
-    state.engine = engine;
-  }
-};
 
 const submitDisabled = computed(() => {
   if (!state.table.name || state.table.columnList.length === 0) {
@@ -417,9 +394,3 @@ const handleReorderColumn = (column: Column, index: number, delta: -1 | 1) => {
   arraySwap(columnList, index, target);
 };
 </script>
-
-<style lang="postcss" scoped>
-.table-template-engine-button :deep(.n-button__content) {
-  @apply w-full justify-start;
-}
-</style>

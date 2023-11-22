@@ -360,7 +360,8 @@ func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProject
 			setting,
 			row_status
 		FROM project
-		WHERE `+strings.Join(where, " AND "),
+		WHERE `+strings.Join(where, " AND ")+`
+		ORDER BY project.id`,
 		args...,
 	)
 	if err != nil {

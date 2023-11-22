@@ -10,9 +10,7 @@
           $t('instance.archive-instance-instance-name', [instance.title])
         "
         :confirm-description="
-          $t(
-            'instance.archived-instances-will-not-be-shown-on-the-normal-interface-you-can-still-restore-later-from-the-archive-page'
-          )
+          $t('instance.archived-instances-will-not-be-displayed')
         "
         class="!border-none"
         @confirm="archiveOrRestoreInstance(true)"

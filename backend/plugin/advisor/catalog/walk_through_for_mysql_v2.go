@@ -223,6 +223,29 @@ func (l *mysqlV2Listener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 		return
 	}
 
+	for _, option := range ctx.AlterTableActions().AlterCommandList().AlterList().AllCreateTableOptionsSpaceSeparated() {
+		for _, op := range option.AllCreateTableOption() {
+			switch {
+			// engine.
+			case op.ENGINE_SYMBOL() != nil:
+				if op.EngineRef() == nil {
+					continue
+				}
+				engine := op.EngineRef().GetText()
+				table.engine = newStringPointer(engine)
+			// table comment.
+			case op.COMMENT_SYMBOL() != nil && op.TextStringLiteral() != nil:
+				comment := mysqlparser.NormalizeMySQLTextStringLiteral(op.TextStringLiteral())
+				table.comment = newStringPointer(comment)
+			// table collation.
+			case op.DefaultCollation() != nil && op.DefaultCollation().CollationName() != nil:
+				collation := mysqlparser.NormalizeMySQLCollationName(op.DefaultCollation().CollationName())
+				table.collation = newStringPointer(collation)
+			default:
+			}
+		}
+	}
+
 	// alter table add column, change column, modify column.
 	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
 		if item == nil {
