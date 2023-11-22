@@ -5,14 +5,14 @@
     class="inline-flex items-center gap-x-1"
     :class="link && !plain && 'normal-link'"
   >
-    <NEllipsis :line-clamp="1">
+    <NPerformantEllipsis :line-clamp="1">
       {{ projectV1Name(project) }}
-    </NEllipsis>
+    </NPerformantEllipsis>
   </component>
 </template>
 
 <script lang="ts" setup>
-import { NEllipsis } from "naive-ui";
+import { NPerformantEllipsis } from "naive-ui";
 import { computed } from "vue";
 import type { Project } from "@/types/proto/v1/project_service";
 import { projectV1Name, projectV1Slug } from "@/utils";
