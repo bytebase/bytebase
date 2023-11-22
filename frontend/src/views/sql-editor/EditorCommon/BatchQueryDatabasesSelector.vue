@@ -67,20 +67,18 @@
           <NDivider class="!my-3" />
         </template>
         <div class="w-full flex flex-row justify-end items-center mb-3">
-          <NInput
-            v-model:value="state.databaseNameSearch"
-            class="!w-36"
-            size="small"
-            type="text"
+          <SearchBox
+            :value="state.databaseNameSearch"
             :placeholder="$t('sql-editor.search-databases')"
+            @update:value="state.databaseNameSearch = $event"
           />
         </div>
         <NDataTable
           size="small"
           :checked-row-keys="selectedDatabaseNames"
           :columns="dataTableColumns"
-          :data="databaseRows"
-          :row-key="(row: DatabaseDataTableRow) => row.name"
+          :data="filteredDatabaseList"
+          :row-key="(row: ComposedDatabase) => row.name"
           @update:checked-row-keys="handleDatabaseRowCheck"
         />
       </div>
@@ -101,12 +99,12 @@ import {
   NDataTable,
   DataTableRowKey,
   NTag,
-  NInput,
 } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { h } from "vue";
 import { useI18n } from "vue-i18n";
 import { InstanceV1EngineIcon } from "@/components/v2";
+import LabelsColumn from "@/components/v2/Model/DatabaseV1Table/LabelsColumn.vue";
 import {
   hasFeature,
   useCurrentUserIamPolicy,
@@ -114,15 +112,7 @@ import {
   useDatabaseV1Store,
   useTabStore,
 } from "@/store/modules";
-import { ComposedInstance } from "@/types";
-import { Environment } from "@/types/proto/v1/environment_service";
-
-interface DatabaseDataTableRow {
-  name: string;
-  databaseName: string;
-  environment: Environment;
-  instance: ComposedInstance;
-}
+import { ComposedDatabase } from "@/types";
 
 interface LocalState {
   databaseNameSearch: string;
@@ -178,47 +168,50 @@ const dataTableColumns = computed(() => {
       type: "selection",
     },
     {
-      title: t("common.name"),
+      title: t("common.database"),
       key: "databaseName",
-      filter(value: string, row: DatabaseDataTableRow) {
+      render(row: ComposedDatabase) {
+        return row.databaseName;
+      },
+      filter(value: string, row: ComposedDatabase) {
         return ~row.databaseName.indexOf(value);
       },
     },
     {
       title: t("common.environment"),
       key: "environment",
-      render(row: DatabaseDataTableRow) {
-        return row.environment.title;
+      render(row: ComposedDatabase) {
+        return row.effectiveEnvironmentEntity.title;
       },
     },
     {
       title: t("common.instance"),
       key: "instance",
-      render(row: DatabaseDataTableRow) {
+      render(row: ComposedDatabase) {
         return h(
           "div",
           { class: "flex flex-row justify-start items-center gap-2" },
           [
             h(InstanceV1EngineIcon, {
-              instance: row.instance,
+              instance: row.instanceEntity,
             }),
-            h("span", {}, [row.instance.environmentEntity.title]),
+            h("span", {}, [row.effectiveEnvironmentEntity.title]),
           ]
         );
       },
     },
+    {
+      title: t("common.labels"),
+      key: "labels",
+      render(row: ComposedDatabase) {
+        return h(LabelsColumn, {
+          labels: row.labels,
+          showCount: 1,
+          placeholder: "-",
+        });
+      },
+    },
   ];
-});
-
-const databaseRows = computed(() => {
-  return filteredDatabaseList.value.map((database) => {
-    return {
-      name: database.name,
-      databaseName: database.databaseName,
-      environment: database.instanceEntity.environmentEntity,
-      instance: database.instanceEntity,
-    };
-  });
 });
 
 const handleDatabaseRowCheck = (keys: DataTableRowKey[]) => {
