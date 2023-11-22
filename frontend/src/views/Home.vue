@@ -3,9 +3,7 @@
     <IssueSearch
       v-model:params="state.params"
       :components="['status']"
-      :component-props="
-        statusTabDisabled ? { status: { disabled: true } } : undefined
-      "
+      :component-props="{ status: { disabled: statusTabDisabled } }"
       class="px-4 py-2"
     >
       <template #default>
@@ -141,6 +139,7 @@ import {
   buildIssueFilterBySearchParams,
   buildSearchTextBySearchParams,
   buildUIIssueFilterBySearchParams,
+  getValueFromSearchParams,
   maybeApplyDefaultTsRange,
   upsertScope,
 } from "@/utils";
@@ -166,21 +165,6 @@ interface LocalState {
 const { t } = useI18n();
 const subscriptionStore = useSubscriptionV1Store();
 const onboardingStateStore = useOnboardingStateStore();
-const tab = useLocalStorage<TabValue>(
-  "bb.home.issue-list-tab",
-  "APPROVAL_REQUESTED",
-  {
-    serializer: {
-      read(raw: TabValue) {
-        if (!TABS.includes(raw)) return "APPROVAL_REQUESTED";
-        return raw;
-      },
-      write(value) {
-        return value;
-      },
-    },
-  }
-);
 
 const defaultSearchParams = () => {
   const params: SearchParams = {
@@ -225,6 +209,21 @@ const tabItemList = computed((): TabFilterItem<TabValue>[] => {
   );
   return items;
 });
+const tab = useLocalStorage<TabValue>(
+  "bb.home.issue-list-tab",
+  "APPROVAL_REQUESTED",
+  {
+    serializer: {
+      read(raw: TabValue) {
+        if (!TABS.includes(raw)) return tabItemList.value[0].value;
+        return raw;
+      },
+      write(value) {
+        return value;
+      },
+    },
+  }
+);
 
 const keyForTab = (tab: TabValue) => {
   if (tab === "CREATED") return "my-issues-created";
@@ -321,27 +320,22 @@ const mergeUIIssueFilterByTab = (tab: TabValue) => {
 };
 
 watch(
-  tab,
-  (tab) => {
-    if (tab === "APPROVAL_REQUESTED" || tab === "WAITING_ROLLOUT") {
-      upsertScope(
-        state.params,
-        {
-          id: "status",
-          value: "OPEN",
-        },
-        true /* mutate */
-      );
-    }
-  },
-  { immediate: true }
-);
-
-watch(
   [hasCustomApprovalFeature, tab],
   () => {
     if (!hasCustomApprovalFeature.value && tab.value === "APPROVAL_REQUESTED") {
       tab.value = "WAITING_ROLLOUT";
+    }
+    if (tab.value === "APPROVAL_REQUESTED" || tab.value === "WAITING_ROLLOUT") {
+      if (getValueFromSearchParams(state.params, "status") === "OPEN") {
+        upsertScope(
+          state.params,
+          {
+            id: "status",
+            value: "OPEN",
+          },
+          true /* mutate */
+        );
+      }
     }
   },
   { immediate: true }
