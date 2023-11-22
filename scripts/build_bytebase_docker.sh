@@ -10,7 +10,7 @@ set -e
 cd "$(dirname "$0")/../"
 . ./scripts/build_init.sh
 
-rm -r ./backend/server/dist
+rm -rf ./backend/server/dist
 
 echo "Start building Bytebase frontend"
 
