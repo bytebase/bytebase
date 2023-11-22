@@ -1,5 +1,98 @@
 - statement: |-
     CREATE TABLE t1(
+      a INT,
+      b INT,
+      c VARCHAR(255) NOT NULL,
+      d GEOMETRY NOT NULL
+    );
+    CREATE INDEX idx1 ON t1 (a) INVISIBLE;
+    CREATE UNIQUE INDEX uk1 ON t1 (b);
+    CREATE FULLTEXT INDEX ftk1 ON t1 (c);
+    CREATE SPATIAL INDEX sk1 ON t1 (d);
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name": "test",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "t1",
+              "columns": [
+                {
+                  "name": "a",
+                  "position": 1,
+                  "nullable": true,
+                  "type": "int"
+                },
+                {
+                  "name": "b",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "int"
+                },
+                {
+                  "name": "c",
+                  "position": 3,
+                  "type": "varchar"
+                },
+                {
+                  "name": "d",
+                  "position": 4,
+                  "type": "geometry"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "ftk1",
+                  "expressions": [
+                    "c"
+                  ],
+                  "type": "FULLTEXT",
+                  "visible": true
+                },
+                {
+                  "name": "idx1",
+                  "expressions": [
+                    "a"
+                  ],
+                  "type": "BTREE"
+                },
+                {
+                  "name": "sk1",
+                  "expressions": [
+                    "d"
+                  ],
+                  "type": "SPATIAL",
+                  "visible": true
+                },
+                {
+                  "name": "uk1",
+                  "expressions": [
+                    "b"
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  err: null
+- statement: |-
+    CREATE TABLE t1(a GEOMETRY);
+    CREATE SPATIAL INDEX sk1 ON t1 (a);
+  ignore_case_sensitive: false
+  want: ""
+  err:
+    type: 507
+    content: All parts of a SPATIAL index must be NOT NULL, but `a` is nullable
+    line: 0
+    payload: null
+- statement: |-
+    CREATE TABLE t1(
       a INT PRIMARY KEY,
       b INT,
       UNIQUE uk1 (b)
