@@ -41,18 +41,6 @@ export type Project = {
   schemaChangeType: SchemaChangeType;
 };
 
-export type ProjectPatch = {
-  // Standard fields
-  rowStatus?: RowStatus;
-
-  // Domain specific fields
-  name?: string;
-  key?: string;
-  schemaChangeType?: SchemaChangeType;
-  workflowType?: ProjectWorkflowType;
-  tenantMode?: ProjectTenantMode;
-};
-
 // Project Member
 export type ProjectMember = {
   id: string; // projects/%s/roles/%s/principals/%d
