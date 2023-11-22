@@ -7,7 +7,7 @@
   err:
     type: 201
     content: Database `other` is not the current database `test`
-    line: 0
+    line: 2
     payload: null
 - statement: |-
     CREATE TABLE `test`.`t1` (a INT);
@@ -30,7 +30,7 @@
   err:
     type: 301
     content: Table `t1` already exists
-    line: 1
+    line: 3
     payload: null
 - statement: |-
     CREATE TABLE t1(a INT);
@@ -40,7 +40,7 @@
   err:
     type: 302
     content: Table `t2` does not exist
-    line: 0
+    line: 2
     payload: null
 - statement: |-
     CREATE TABLE t1 (a INT);
@@ -74,7 +74,7 @@
   err:
     type: 201
     content: Database `another` is not the current database `test`
-    line: 0
+    line: 1
     payload: null
 - statement: |-
     -- this is comment
@@ -230,7 +230,7 @@
   err:
     type: 507
     content: All parts of a SPATIAL index must be NOT NULL, but `a` is nullable
-    line: 0
+    line: 2
     payload: null
 - statement: |-
     CREATE TABLE t1(
@@ -395,7 +395,7 @@
   err:
     type: 406
     content: Invalid default value for column `a`
-    line: 0
+    line: 2
     payload: null
 - statement: |-
     CREATE TABLE t1(a INT);
@@ -406,7 +406,7 @@
   err:
     type: 407
     content: BLOB, TEXT, GEOMETRY or JSON column `a` can't have a default value
-    line: 1
+    line: 3
     payload: null
 - statement: |-
     CREATE TABLE t1(a INT);
@@ -563,7 +563,7 @@
   err:
     type: 404
     content: There can be only one auto column for table `t1`
-    line: 0
+    line: 1
     payload: null
 - statement: CREATE TABLE tvx SELECT (x,z) FROM (VALUES ROW(1,3,5), ROW(2,4,6)) AS v(x,y,z);
   ignore_case_sensitive: false
@@ -571,7 +571,7 @@
   err:
     type: 303
     content: Disallow the CREATE TABLE AS statement but "CREATE TABLE tvx SELECT (x,z) FROM (VALUES ROW(1,3,5), ROW(2,4,6)) AS v(x,y,z);" uses
-    line: 0
+    line: 1
     payload: null
 - statement: |-
     CREATE TABLE t1(a int);
@@ -581,7 +581,7 @@
   err:
     type: 303
     content: Disallow the CREATE TABLE AS statement but "CREATE TABLE t2 (b INT) SELECT a FROM t1;" uses
-    line: 0
+    line: 2
     payload: null
 - statement: |-
     CREATE TABLE t1(

@@ -35,6 +35,7 @@ type mysqlV2Listener struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine      int
+	lineNumber    int
 	text          string
 	databaseState *DatabaseState
 	err           *WalkThroughError
@@ -42,6 +43,7 @@ type mysqlV2Listener struct {
 
 func (l *mysqlV2Listener) EnterQuery(ctx *mysql.QueryContext) {
 	l.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+	l.lineNumber = l.baseLine + ctx.GetStart().GetLine()
 }
 
 func (d *DatabaseState) mysqlV2ChangeState(in *mysqlparser.ParseResult) (err *WalkThroughError) {
@@ -67,6 +69,9 @@ func (d *DatabaseState) mysqlV2ChangeState(in *mysqlparser.ParseResult) (err *Wa
 	}
 	antlr.ParseTreeWalkerDefault.Walk(listener, in.Tree)
 	if listener.err != nil {
+		if listener.err.Line == 0 {
+			listener.err.Line = listener.lineNumber
+		}
 		return listener.err
 	}
 	return nil
