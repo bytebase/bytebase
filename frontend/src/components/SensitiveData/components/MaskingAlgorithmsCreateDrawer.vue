@@ -451,7 +451,7 @@ const onUpsert = async () => {
   state.processing = true;
 
   const index = algorithmList.value.findIndex(
-    (item) => item.id === props.algorithm.id
+    (item) => item.id === maskingAlgorithm.value.id
   );
   const newList = [...algorithmList.value];
   if (index < 0) {
