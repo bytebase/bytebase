@@ -77,8 +77,8 @@
           size="small"
           :checked-row-keys="selectedDatabaseNames"
           :columns="dataTableColumns"
-          :data="databaseRows"
-          :row-key="(row: DatabaseDataTableRow) => row.name"
+          :data="filteredDatabaseList"
+          :row-key="(row: ComposedDatabase) => row.name"
           @update:checked-row-keys="handleDatabaseRowCheck"
         />
       </div>
@@ -113,11 +113,6 @@ import {
   useTabStore,
 } from "@/store/modules";
 import { ComposedDatabase } from "@/types";
-
-interface DatabaseDataTableRow {
-  name: string;
-  database: ComposedDatabase;
-}
 
 interface LocalState {
   databaseNameSearch: string;
@@ -175,32 +170,32 @@ const dataTableColumns = computed(() => {
     {
       title: t("common.database"),
       key: "databaseName",
-      render(row: DatabaseDataTableRow) {
-        return row.database.databaseName;
+      render(row: ComposedDatabase) {
+        return row.databaseName;
       },
-      filter(value: string, row: DatabaseDataTableRow) {
-        return ~row.database.databaseName.indexOf(value);
+      filter(value: string, row: ComposedDatabase) {
+        return ~row.databaseName.indexOf(value);
       },
     },
     {
       title: t("common.environment"),
       key: "environment",
-      render(row: DatabaseDataTableRow) {
-        return row.database.effectiveEnvironmentEntity.title;
+      render(row: ComposedDatabase) {
+        return row.effectiveEnvironmentEntity.title;
       },
     },
     {
       title: t("common.instance"),
       key: "instance",
-      render(row: DatabaseDataTableRow) {
+      render(row: ComposedDatabase) {
         return h(
           "div",
           { class: "flex flex-row justify-start items-center gap-2" },
           [
             h(InstanceV1EngineIcon, {
-              instance: row.database.instanceEntity,
+              instance: row.instanceEntity,
             }),
-            h("span", {}, [row.database.effectiveEnvironmentEntity.title]),
+            h("span", {}, [row.effectiveEnvironmentEntity.title]),
           ]
         );
       },
@@ -208,24 +203,15 @@ const dataTableColumns = computed(() => {
     {
       title: t("common.labels"),
       key: "labels",
-      render(row: DatabaseDataTableRow) {
+      render(row: ComposedDatabase) {
         return h(LabelsColumn, {
-          labels: row.database.labels,
+          labels: row.labels,
           showCount: 1,
           placeholder: "-",
         });
       },
     },
   ];
-});
-
-const databaseRows = computed(() => {
-  return filteredDatabaseList.value.map((database) => {
-    return {
-      name: database.name,
-      database: database,
-    };
-  });
 });
 
 const handleDatabaseRowCheck = (keys: DataTableRowKey[]) => {
