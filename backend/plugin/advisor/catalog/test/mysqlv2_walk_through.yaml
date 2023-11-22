@@ -1,3 +1,36 @@
+- statement: CREATE DATABASE another;
+  ignore_case_sensitive: false
+  want: ""
+  err:
+    type: 201
+    content: Database `another` is not the current database `test`
+    line: 0
+    payload: null
+- statement: |-
+    -- this is comment
+    DROP DATABASE test;
+    CREATE TABLE t(a int);
+  ignore_case_sensitive: false
+  want: ""
+  err:
+    type: 202
+    content: Database `test` is deleted
+    line: 1
+    payload: null
+- statement: |-
+    ALTER DATABASE CHARACTER SET = utf8mb4;
+    ALTER DATABASE test COLLATE utf8mb4_polish_ci;
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name":  "test",
+      "schemas":  [
+        {}
+      ],
+      "characterSet":  "utf8mb4",
+      "collation":  "utf8mb4_polish_ci"
+    }
+  err: null
 - statement: |-
     CREATE TABLE t1(
       a INT PRIMARY KEY,
@@ -49,67 +82,67 @@
   ignore_case_sensitive: false
   want: |-
     {
-      "name": "test",
-      "schemas": [
+      "name":  "test",
+      "schemas":  [
         {
-          "tables": [
+          "tables":  [
             {
-              "name": "t1",
-              "columns": [
+              "name":  "t1",
+              "columns":  [
                 {
-                  "name": "a",
-                  "position": 1,
-                  "nullable": true,
-                  "type": "int"
+                  "name":  "a",
+                  "position":  1,
+                  "nullable":  true,
+                  "type":  "int"
                 },
                 {
-                  "name": "b",
-                  "position": 2,
-                  "nullable": true,
-                  "type": "int"
+                  "name":  "b",
+                  "position":  2,
+                  "nullable":  true,
+                  "type":  "int"
                 },
                 {
-                  "name": "c",
-                  "position": 3,
-                  "type": "varchar"
+                  "name":  "c",
+                  "position":  3,
+                  "type":  "varchar"
                 },
                 {
-                  "name": "d",
-                  "position": 4,
-                  "type": "geometry"
+                  "name":  "d",
+                  "position":  4,
+                  "type":  "geometry"
                 }
               ],
-              "indexes": [
+              "indexes":  [
                 {
-                  "name": "ftk1",
-                  "expressions": [
+                  "name":  "ftk1",
+                  "expressions":  [
                     "c"
                   ],
-                  "type": "FULLTEXT",
-                  "visible": true
+                  "type":  "FULLTEXT",
+                  "visible":  true
                 },
                 {
-                  "name": "idx1",
-                  "expressions": [
+                  "name":  "idx1",
+                  "expressions":  [
                     "a"
                   ],
-                  "type": "BTREE"
+                  "type":  "BTREE"
                 },
                 {
-                  "name": "sk1",
-                  "expressions": [
+                  "name":  "sk1",
+                  "expressions":  [
                     "d"
                   ],
-                  "type": "SPATIAL",
-                  "visible": true
+                  "type":  "SPATIAL",
+                  "visible":  true
                 },
                 {
-                  "name": "uk1",
-                  "expressions": [
+                  "name":  "uk1",
+                  "expressions":  [
                     "b"
                   ],
-                  "type": "BTREE",
-                  "visible": true
+                  "type":  "BTREE",
+                  "visible":  true
                 }
               ]
             }
