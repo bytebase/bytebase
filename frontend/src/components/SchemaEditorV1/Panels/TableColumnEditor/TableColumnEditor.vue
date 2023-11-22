@@ -84,6 +84,7 @@ import {
   DataTypeCell,
   ForeignKeyCell,
   OperationCell,
+  ReorderCell,
   SemanticTypeCell,
 } from "./components";
 import DefaultValueCell from "./components/DefaultValueCell.vue";
@@ -105,6 +106,8 @@ const props = withDefaults(
     foreignKeyList?: ForeignKey[];
     classificationConfigId?: string;
     disableChangeTable?: boolean;
+    allowReorderColumns?: boolean;
+    maxBodyHeight?: number;
     filterColumn?: (column: Column) => boolean;
     disableAlterColumn?: (column: Column) => boolean;
     getReferencedForeignKeyName?: (column: Column) => string;
@@ -113,6 +116,8 @@ const props = withDefaults(
   {
     showForeignKey: true,
     disableChangeTable: false,
+    allowReorderColumns: false,
+    maxBodyHeight: undefined,
     foreignKeyList: () => [],
     classificationConfigId: "",
     filterColumn: (_: Column) => true,
@@ -125,7 +130,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   (event: "drop", column: Column): void;
   (event: "restore", column: Column): void;
-  (event: "edit", index: number): void;
+  (event: "reorder", column: Column, index: number, delta: -1 | 1): void;
   (event: "foreign-key-edit", column: Column): void;
   (event: "foreign-key-click", column: Column): void;
   (event: "primary-key-set", column: Column, isPrimaryKey: boolean): void;
@@ -147,7 +152,12 @@ const tableHeaderElRef = computed(
 const { height: containerHeight } = useElementSize(containerElRef);
 const { height: tableHeaderHeight } = useElementSize(tableHeaderElRef);
 const tableBodyHeight = computed(() => {
-  return containerHeight.value - tableHeaderHeight.value - 2;
+  const bodyHeight = containerHeight.value - tableHeaderHeight.value - 2;
+  const { maxBodyHeight = 0 } = props;
+  if (maxBodyHeight > 0) {
+    return Math.min(maxBodyHeight, bodyHeight);
+  }
+  return bodyHeight;
 });
 // Use this to avoid unnecessary initial rendering
 const layoutReady = computed(() => tableHeaderHeight.value > 0);
@@ -176,6 +186,23 @@ const showSemanticTypeColumn = computed(() => {
 
 const columns = computed(() => {
   const columns: (DataTableColumn<Column> & { hide?: boolean })[] = [
+    {
+      key: "reorder",
+      title: "",
+      resizable: false,
+      width: 44,
+      hide: props.readonly || !props.allowReorderColumns,
+      className: "!px-0",
+      render: (column, index) => {
+        return h(ReorderCell, {
+          column,
+          allowMoveUp: index > 0,
+          allowMoveDown: index < shownColumnList.value.length - 1,
+          disabled: props.disableChangeTable,
+          onReorder: (delta) => emit("reorder", column, index, delta),
+        });
+      },
+    },
     {
       key: "name",
       title: t("schema-editor.column.name"),

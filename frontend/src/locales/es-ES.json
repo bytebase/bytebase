@@ -534,7 +534,7 @@
       "create": "Crear SSO",
       "description": "Inicio de Sesión Único (SSO) es un método de autenticación que permite a los usuarios autenticarse en múltiples aplicaciones y sitios web a través de un solo conjunto de credenciales.",
       "archive": "Archivar este SSO",
-      "archive-info": "El SSO archivado no se mostrará en la interfaz normal. Puede hacer clic en \"Archivar\" en la parte inferior izquierda para encontrarlo y restaurarlo.",
+      "archive-info": "Los SSO archivados no se mostrarán.",
       "restore": "Restaurar este SSO",
       "form": {
         "type": "Tipo",
@@ -901,8 +901,8 @@
   },
   "issue": {
     "my-issues": "Mis Incidencias",
-    "waiting-approval": "Esperando Aprobación",
-    "waiting-rollout": "Esperando Implementación",
+    "waiting-approval": "A la espera de la aprobación",
+    "waiting-rollout": "Esperando el lanzamiento",
     "opened-by-at": "abierta por {creator} a las {time}",
     "commit-by-at": "commit {id} {title} por {author} a las {time}",
     "status-transition": {
@@ -1222,7 +1222,7 @@
     "successfully-synced-schema-for-instance-instance-value-name": "Esquema sincronizado con éxito para la instancia '{0}'.",
     "archive-this-instance": "Archivar esta instancia",
     "archive-instance-instance-name": "¿Archivar la instancia '{0}'?",
-    "archived-instances-will-not-be-shown-on-the-normal-interface-you-can-still-restore-later-from-the-archive-page": "Las instancias archivadas no se mostrarán en la interfaz normal. Puede hacer clic en \"Archivar\" en la parte inferior izquierda para encontrarlas y restaurarlas.",
+    "archived-instances-will-not-be-displayed": "Las instancias archivadas no se mostrarán.",
     "restore-this-instance": "Restaurar esta instancia",
     "restore": "Restaurar",
     "restore-instance-instance-name-to-normal-state": "¿Restaurar la instancia '{0}' al estado normal?",
@@ -1334,7 +1334,7 @@
     "id-description": "El ID del entorno es el identificador único para su entorno. No puede cambiarlo después de creado.",
     "select": "Seleccionar entorno",
     "archive": "Archivar este entorno",
-    "archive-info": "Los entornos archivados no se mostrarán en la interfaz normal. Puede hacer clic en \"Archivar\" en la parte inferior izquierda para encontrar y restaurarlo.",
+    "archive-info": "Los entornos archivados no se mostrarán.",
     "create": "Crear entorno",
     "restore": "Restaurar este entorno",
     "successfully-updated-environment": "entorno '{name}' actualizado exitosamente.",
@@ -1871,7 +1871,7 @@
       "developer": "@.upper:common.role.member",
       "archive": {
         "title": "Archivar proyecto",
-        "description": "El proyecto archivado no se mostrará en la interfaz normal. Puede hacer clic en \"Archivar\" en la parte inferior izquierda para encontrarlo y restaurarlo.",
+        "description": "Proyectos archivados no se mostrarán.",
         "btn-text": "Archivar este @.lower:{'common.project'}",
         "force": {
           "description": "Forzar a archivar. \nTodos los problemas relacionados se resolverán y todas las hojas relacionadas se eliminarán."

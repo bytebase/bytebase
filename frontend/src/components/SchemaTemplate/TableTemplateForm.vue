@@ -13,27 +13,13 @@
             {{ $t("schema-template.form.category-desc") }}
           </p>
           <div class="relative flex flex-row justify-between items-center mt-1">
-            <input
-              v-model="state.category"
-              required
-              name="category"
-              type="text"
-              :placeholder="$t('schema-template.form.unclassified')"
-              class="textfield w-full"
-              :disabled="!allowEdit"
-            />
-            <NDropdown
-              trigger="click"
+            <DropdownInput
+              v-model:value="state.category"
               :options="categoryOptions"
+              :placeholder="$t('schema-template.form.unclassified')"
               :disabled="!allowEdit"
-              @select="(category: string) => (state.category = category)"
-            >
-              <button class="absolute right-5">
-                <heroicons-solid:chevron-up-down
-                  class="w-4 h-auto text-gray-400"
-                />
-              </button>
-            </NDropdown>
+              :consistent-menu-width="true"
+            />
           </div>
         </div>
 
@@ -41,36 +27,12 @@
           <label for="engine" class="textlabel">
             {{ $t("database.engine") }}
           </label>
-          <div class="grid grid-cols-4 gap-2">
-            <template v-for="engine in engineList" :key="engine">
-              <div
-                class="flex relative justify-start p-2 border rounded"
-                :class="[
-                  state.engine === engine && 'font-medium bg-control-bg-hover',
-                  allowEdit
-                    ? 'cursor-pointer hover:bg-control-bg-hover'
-                    : 'cursor-not-allowed',
-                ]"
-                @click.capture="changeEngine(engine)"
-              >
-                <div class="flex flex-row justify-start items-center">
-                  <input
-                    type="radio"
-                    class="btn mr-2"
-                    :checked="state.engine === engine"
-                    :disabled="!allowEdit"
-                  />
-                  <EngineIcon
-                    :engine="engine"
-                    custom-class="w-5 h-auto max-h-[20px] object-contain mr-1"
-                  />
-                  <p class="text-center text-sm">
-                    {{ engineNameV1(engine) }}
-                  </p>
-                </div>
-              </div>
-            </template>
-          </div>
+          <InstanceEngineRadioGrid
+            v-model:engine="state.engine"
+            :engine-list="engineList"
+            :disabled="!allowEdit"
+            class="grid-cols-4 gap-2"
+          />
         </div>
 
         <div v-if="classificationConfig" class="sm:col-span-2 sm:col-start-1">
@@ -83,19 +45,17 @@
               :classification-config="classificationConfig"
             />
             <div v-if="allowEdit" class="flex">
-              <button
+              <MiniActionButton
                 v-if="state.table?.classification"
-                class="w-6 h-6 p-1 hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
                 @click.prevent="state.table!.classification = ''"
               >
-                <heroicons-outline:x class="w-4 h-4" />
-              </button>
-              <button
-                class="w-6 h-6 p-1 hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
+                <XIcon class="w-4 h-4" />
+              </MiniActionButton>
+              <MiniActionButton
                 @click.prevent="state.showClassificationDrawer = true"
               >
-                <heroicons-outline:pencil class="w-4 h-4" />
-              </button>
+                <PencilIcon class="w-4 h-4" />
+              </MiniActionButton>
             </div>
           </div>
         </div>
@@ -108,13 +68,9 @@
               {{ $t("schema-template.form.table-name") }}
               <span class="text-red-600 mr-2">*</span>
             </label>
-            <input
-              v-model="state.table!.name"
-              required
-              name="table-name"
-              type="text"
+            <NInput
+              v-model:value="state.table!.name"
               placeholder="table name"
-              class="textfield mt-1 w-full"
               :disabled="!allowEdit"
             />
           </div>
@@ -124,10 +80,10 @@
             <label for="comment" class="textlabel">
               {{ $t("schema-template.form.comment") }}
             </label>
-            <textarea
-              v-model="state.table!.userComment"
-              rows="3"
-              class="textfield block w-full resize-none mt-1 text-sm text-control rounded-md whitespace-pre-wrap"
+            <NInput
+              v-model:value="state.table!.userComment"
+              type="textarea"
+              :autosize="{ minRows: 3, maxRows: 3 }"
               :disabled="!allowEdit"
             />
           </div>
@@ -138,7 +94,9 @@
               class="w-full py-2 flex items-center space-x-2"
             >
               <NButton size="small" :disabled="false" @click="onColumnAdd">
-                <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
+                <template #icon>
+                  <PlusIcon class="w-4 h-4 text-control-placeholder" />
+                </template>
                 {{ $t("schema-editor.actions.add-column") }}
               </NButton>
               <NButton
@@ -146,8 +104,10 @@
                 :disabled="false"
                 @click="state.showFieldTemplateDrawer = true"
               >
-                <FeatureBadge feature="bb.feature.schema-template" />
-                <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
+                <template #icon>
+                  <FeatureBadge feature="bb.feature.schema-template" />
+                  <PlusIcon class="w-4 h-4 text-control-placeholder" />
+                </template>
                 {{ $t("schema-editor.actions.add-from-template") }}
               </NButton>
             </div>
@@ -157,7 +117,10 @@
               :table="state.table"
               :engine="state.engine"
               :classification-config-id="classificationConfig?.id"
+              :allow-reorder-columns="allowReorderColumns"
+              :max-body-height="640"
               @drop="onColumnDrop"
+              @reorder="handleReorderColumn"
               @primary-key-set="setColumnPrimaryKey"
             />
           </div>
@@ -173,9 +136,9 @@
           </NButton>
           <NButton
             v-if="allowEdit"
-            :disabled="sumbitDisabled"
+            :disabled="submitDisabled"
             type="primary"
-            @click.prevent="onSumbit"
+            @click.prevent="onSubmit"
           >
             {{ create ? $t("common.create") : $t("common.update") }}
           </NButton>
@@ -210,10 +173,18 @@
 
 <script lang="ts" setup>
 import { isEqual, cloneDeep } from "lodash-es";
+import { PlusIcon, XIcon, PencilIcon } from "lucide-vue-next";
+import { NButton, NInput, SelectOption } from "naive-ui";
 import { computed, nextTick, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
+import TableColumnEditor from "@/components/SchemaEditorV1/Panels/TableColumnEditor";
 import { transformTableEditToMetadata } from "@/components/SchemaEditorV1/utils";
-import { Drawer, DrawerContent } from "@/components/v2";
+import {
+  Drawer,
+  DrawerContent,
+  InstanceEngineRadioGrid,
+} from "@/components/v2";
 import { useSettingV1Store, useNotificationStore } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import { ColumnMetadata, TableConfig } from "@/types/proto/v1/database_service";
@@ -228,9 +199,13 @@ import {
   Table,
   convertColumnMetadataToColumn,
 } from "@/types/v1/schemaEditor";
-import { engineNameV1, useWorkspacePermissionV1 } from "@/utils";
+import {
+  arraySwap,
+  instanceV1AllowsReorderColumns,
+  useWorkspacePermissionV1,
+} from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
-import { engineList, caregoryList, classificationConfig } from "./utils";
+import { engineList, categoryList, classificationConfig } from "./utils";
 
 const props = defineProps<{
   create: boolean;
@@ -271,19 +246,17 @@ const allowEdit = computed(() => {
 });
 
 const categoryOptions = computed(() => {
-  return caregoryList.value.map((category) => ({
+  return categoryList.value.map<SelectOption>((category) => ({
     label: category,
-    key: category,
+    value: category,
   }));
 });
 
-const changeEngine = (engine: Engine) => {
-  if (allowEdit.value) {
-    state.engine = engine;
-  }
-};
+const allowReorderColumns = computed(() => {
+  return instanceV1AllowsReorderColumns(state.engine);
+});
 
-const sumbitDisabled = computed(() => {
+const submitDisabled = computed(() => {
   if (!state.table.name || state.table.columnList.length === 0) {
     return true;
   }
@@ -306,7 +279,7 @@ const sumbitDisabled = computed(() => {
   return false;
 });
 
-const onSumbit = async () => {
+const onSubmit = async () => {
   const template: SchemaTemplateSetting_TableTemplate = {
     id: state.id,
     engine: state.engine,
@@ -410,5 +383,14 @@ const handleApplyColumnTemplate = (
 
 const onClassificationSelect = (id: string) => {
   state.table.classification = id;
+};
+
+const handleReorderColumn = (column: Column, index: number, delta: -1 | 1) => {
+  const target = index + delta;
+  const { columnList } = state.table;
+  if (target < 0) return;
+  if (target >= columnList.length) return;
+
+  arraySwap(columnList, index, target);
 };
 </script>

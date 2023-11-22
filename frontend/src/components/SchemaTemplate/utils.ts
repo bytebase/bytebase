@@ -4,7 +4,7 @@ import { Engine } from "@/types/proto/v1/common";
 
 export const engineList = [Engine.MYSQL, Engine.POSTGRES];
 
-export const caregoryList = computed(() => {
+export const categoryList = computed(() => {
   const settingStore = useSettingV1Store();
   const setting = settingStore.getSettingByName("bb.workspace.schema-template");
   const fieldTemplateList =

@@ -214,6 +214,13 @@ export const instanceV1AllowsCrossDatabaseQuery = (
   ].includes(engine);
 };
 
+export const instanceV1AllowsReorderColumns = (
+  instanceOrEngine: Instance | Engine
+) => {
+  const engine = engineOfInstanceV1(instanceOrEngine);
+  return [Engine.MYSQL, Engine.TIDB].includes(engine);
+};
+
 export const engineOfInstanceV1 = (instanceOrEngine: Instance | Engine) => {
   if (typeof instanceOrEngine === "number") {
     return instanceOrEngine;

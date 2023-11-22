@@ -3,9 +3,10 @@ import { useDelayedValue } from "@/composables/useDelayedValue";
 import { ComposedDatabase } from "@/types";
 import {
   ColumnMetadata,
-  DatabaseMetaData,
+  DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
+  ViewMetadata,
 } from "@/types/proto/v1/database_service";
 
 type UpdateFn = ReturnType<typeof useDelayedValue<any>>["update"];
@@ -17,9 +18,10 @@ type Position = {
 
 export type HoverState = {
   db: ComposedDatabase;
-  database: DatabaseMetaData;
+  database: DatabaseMetadata;
   schema: SchemaMetadata;
-  table: TableMetadata;
+  table?: TableMetadata;
+  view?: ViewMetadata;
   column?: ColumnMetadata;
 };
 
