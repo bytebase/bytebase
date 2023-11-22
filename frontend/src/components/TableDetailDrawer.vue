@@ -169,16 +169,11 @@
                 {{ $t("database.columns") }}
               </div>
               <div>
-                <NInput
-                  v-model:value="state.columnNameSearchKeyword"
-                  class="!w-40"
-                  clearable
+                <SearchBox
+                  :value="state.columnNameSearchKeyword"
                   :placeholder="$t('common.filter-by-name')"
-                >
-                  <template #prefix>
-                    <Search class="w-4 h-auto text-gray-400" />
-                  </template>
-                </NInput>
+                  @update:value="state.columnNameSearchKeyword = $event"
+                />
               </div>
             </div>
             <ColumnDataTable
@@ -205,7 +200,6 @@
 </template>
 
 <script lang="ts" setup>
-import { Search } from "lucide-vue-next";
 import { computed, watch, ref, reactive } from "vue";
 import {
   DatabaseV1Name,

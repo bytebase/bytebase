@@ -106,16 +106,11 @@
             <span v-else>{{ $t("db.tables") }}</span>
           </div>
           <div>
-            <NInput
-              v-model:value="state.tableNameSearchKeyword"
-              class="!w-40"
-              clearable
+            <SearchBox
+              :value="state.tableNameSearchKeyword"
               :placeholder="$t('common.filter-by-name')"
-            >
-              <template #prefix>
-                <Search class="w-4 h-auto text-gray-400" />
-              </template>
-            </NInput>
+              @update:value="state.tableNameSearchKeyword = $event"
+            />
           </div>
         </div>
 
@@ -179,7 +174,6 @@
 
 <script lang="ts" setup>
 import { head } from "lodash-es";
-import { Search } from "lucide-vue-next";
 import { computed, reactive, watch, PropType } from "vue";
 import { useRoute } from "vue-router";
 import { useAnomalyV1List, useDBSchemaV1Store } from "@/store";
