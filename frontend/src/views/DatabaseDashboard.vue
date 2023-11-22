@@ -9,8 +9,10 @@
         @update:environment="changeEnvironment"
       />
 
-      <div class="mt-2 lg:mt-0 flex items-center">
-        <div class="hidden sm:block mr-4">
+      <div
+        class="mt-2 lg:mt-0 flex flex-col sm:flex-row items-start sm:items-center"
+      >
+        <div class="mb-2 sm:mr-4 sm:mb-0">
           <NTooltip v-if="canVisitUnassignedDatabases && !isStandaloneMode">
             <template #trigger>
               <router-link
