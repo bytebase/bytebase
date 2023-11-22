@@ -10,7 +10,7 @@
       />
 
       <div class="mt-2 lg:mt-0 flex items-center">
-        <template class="hide sm:block mr-4">
+        <div class="hidden sm:block mr-4">
           <NTooltip v-if="canVisitUnassignedDatabases && !isStandaloneMode">
             <template #trigger>
               <router-link
@@ -31,7 +31,7 @@
               {{ $t("quick-action.unassigned-db-hint") }}
             </div>
           </NTooltip>
-        </template>
+        </div>
 
         <NInputGroup style="width: auto">
           <InstanceSelect
