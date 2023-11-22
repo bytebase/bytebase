@@ -25,7 +25,7 @@ func TestGetStatementsFromSchemaGroups(t *testing.T) {
 		expectedSchemaGroupNames []string
 	}{
 		{
-			name:              "simple",
+			name:              "simple 0",
 			statement:         "ALTER TABLE salary ADD COLUMN num INT;",
 			parserEngineType:  storepb.Engine_MYSQL,
 			schemaGroupParent: "projects/p2/databaseGroups/g1",
@@ -40,6 +40,60 @@ func TestGetStatementsFromSchemaGroups(t *testing.T) {
 			},
 			expectedStatements:       []string{"ALTER TABLE salary_01 ADD COLUMN num INT\n;\n"},
 			expectedSchemaGroupNames: []string{"projects/p2/databaseGroups/g1/schemaGroups/schema group 1"},
+		},
+		{
+			name:              "simple 1",
+			statement:         "ALTER TABLE alldog ADD COLUMN num INT;",
+			parserEngineType:  storepb.Engine_MYSQL,
+			schemaGroupParent: "projects/p2/databaseGroups/g1",
+			schemaGroups: []*store.SchemaGroupMessage{
+				{
+					ResourceID:  "fishy",
+					Placeholder: "fishy",
+				},
+				{
+					ResourceID:  "allfish",
+					Placeholder: "allfish",
+				},
+				{
+					ResourceID:  "alldog",
+					Placeholder: "alldog",
+				},
+			},
+			schemaGroupMatchedTables: map[string][]string{
+				"alldog":  {"dog"},
+				"allfish": {"fish"},
+				"fishy":   {},
+			},
+			expectedStatements:       []string{"ALTER TABLE dog ADD COLUMN num INT\n;\n"},
+			expectedSchemaGroupNames: []string{"projects/p2/databaseGroups/g1/schemaGroups/alldog"},
+		},
+		{
+			name:              "simple 2",
+			statement:         "-- Uncomment to batch change table group fishy\n-- ALTER TABLE fishy ADD COLUMN <<column>> <<datatype>>;\n\n-- Uncomment to batch change table group allfish\n-- ALTER TABLE allfish ADD COLUMN <<column>> <<datatype>>;\n\n-- Uncomment to batch change table group alldog\nALTER TABLE alldog ADD COLUMN <<column>> <<datatype>>;",
+			parserEngineType:  storepb.Engine_MYSQL,
+			schemaGroupParent: "projects/p2/databaseGroups/g1",
+			schemaGroups: []*store.SchemaGroupMessage{
+				{
+					ResourceID:  "fishy",
+					Placeholder: "fishy",
+				},
+				{
+					ResourceID:  "allfish",
+					Placeholder: "allfish",
+				},
+				{
+					ResourceID:  "alldog",
+					Placeholder: "alldog",
+				},
+			},
+			schemaGroupMatchedTables: map[string][]string{
+				"alldog":  {"dog"},
+				"allfish": {"fish"},
+				"fishy":   {},
+			},
+			expectedStatements:       []string{"ALTER TABLE dog ADD COLUMN num INT\n;\n"},
+			expectedSchemaGroupNames: []string{"projects/p2/databaseGroups/g1/schemaGroups/alldog"},
 		},
 		{
 			name:              "matched but has no matched tables",
