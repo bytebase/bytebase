@@ -164,8 +164,17 @@
           </div>
 
           <div v-if="shouldShowColumnTable" class="mt-6 px-6">
-            <div class="text-lg leading-6 font-medium text-main mb-4">
-              {{ $t("database.columns") }}
+            <div class="mb-4 w-full flex flex-row justify-between items-center">
+              <div class="text-lg leading-6 font-medium text-main">
+                {{ $t("database.columns") }}
+              </div>
+              <div>
+                <SearchBox
+                  :value="state.columnNameSearchKeyword"
+                  :placeholder="$t('common.filter-by-name')"
+                  @update:value="state.columnNameSearchKeyword = $event"
+                />
+              </div>
             </div>
             <ColumnDataTable
               :database="database"
@@ -174,6 +183,7 @@
               :column-list="table.columns"
               :mask-data-list="sensitiveDataList"
               :classification-config="classificationConfig"
+              :search="state.columnNameSearchKeyword"
             />
           </div>
 
@@ -190,7 +200,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, watch, ref } from "vue";
+import { computed, watch, ref, reactive } from "vue";
 import {
   DatabaseV1Name,
   InstanceV1Name,
@@ -218,6 +228,10 @@ import ColumnDataTable from "./ColumnDataTable/index.vue";
 import { SQLEditorButtonV1 } from "./DatabaseDetail";
 import IndexTable from "./IndexTable.vue";
 
+interface LocalState {
+  columnNameSearchKeyword: string;
+}
+
 const props = defineProps<{
   show: boolean;
   // Format: /databases/:databaseName
@@ -232,6 +246,9 @@ defineEmits(["dismiss"]);
 const databaseV1Store = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const currentUserV1 = useCurrentUserV1();
+const state = reactive<LocalState>({
+  columnNameSearchKeyword: "",
+});
 const table = ref<TableMetadata>();
 
 const database = computed(() => {
