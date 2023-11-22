@@ -492,6 +492,80 @@ func (l *mysqlV2Listener) EnterCreateDatabase(ctx *mysql.CreateDatabaseContext) 
 	l.err = NewAccessOtherDatabaseError(l.databaseState.name, databaseName)
 }
 
+// EnterRenameTableStatement is called when production renameTableStatement is entered.
+func (l *mysqlV2Listener) EnterRenameTableStatement(ctx *mysql.RenameTableStatementContext) {
+	for _, pair := range ctx.AllRenamePair() {
+		schema, exists := l.databaseState.schemaSet[""]
+		if !exists {
+			schema = l.databaseState.createSchema("")
+		}
+
+		_, oldTableName := mysqlparser.NormalizeMySQLTableRef(pair.TableRef())
+		_, newTableName := mysqlparser.NormalizeMySQLTableName(pair.TableName())
+
+		if l.databaseState.mysqlV2TheCurrentDatabase(pair) {
+			if compareIdentifier(oldTableName, newTableName, l.databaseState.ctx.IgnoreCaseSensitive) {
+				return
+			}
+			table, exists := schema.getTable(oldTableName)
+			if !exists {
+				if schema.ctx.CheckIntegrity {
+					l.err = NewTableNotExistsError(oldTableName)
+					return
+				}
+				table = schema.createIncompleteTable(oldTableName)
+			}
+			if _, exists := schema.getTable(newTableName); exists {
+				l.err = NewTableExistsError(newTableName)
+				return
+			}
+			delete(schema.tableSet, table.name)
+			table.name = newTableName
+			schema.tableSet[table.name] = table
+		} else if l.databaseState.mysqlV2MoveToOtherDatabase(pair) {
+			_, exists := schema.getTable(oldTableName)
+			if !exists && schema.ctx.CheckIntegrity {
+				l.err = NewTableNotExistsError(oldTableName)
+				return
+			}
+			delete(schema.tableSet, oldTableName)
+		} else {
+			l.err = NewAccessOtherDatabaseError(l.databaseState.name, l.databaseState.mysqlV2TargetDatabase(pair))
+			return
+		}
+	}
+}
+
+func (d *DatabaseState) mysqlV2TargetDatabase(renamePair mysql.IRenamePairContext) string {
+	oldDatabaseName, _ := mysqlparser.NormalizeMySQLTableRef(renamePair.TableRef())
+	if oldDatabaseName != "" && !d.isCurrentDatabase(oldDatabaseName) {
+		return oldDatabaseName
+	}
+	newDatabaseName, _ := mysqlparser.NormalizeMySQLTableName(renamePair.TableName())
+	return newDatabaseName
+}
+
+func (d *DatabaseState) mysqlV2MoveToOtherDatabase(renamePair mysql.IRenamePairContext) bool {
+	oldDatabaseName, _ := mysqlparser.NormalizeMySQLTableRef(renamePair.TableRef())
+	if oldDatabaseName != "" && !d.isCurrentDatabase(oldDatabaseName) {
+		return false
+	}
+	newDatabaseName, _ := mysqlparser.NormalizeMySQLTableName(renamePair.TableName())
+	return oldDatabaseName != newDatabaseName
+}
+
+func (d *DatabaseState) mysqlV2TheCurrentDatabase(renamePair mysql.IRenamePairContext) bool {
+	newDatabaseName, _ := mysqlparser.NormalizeMySQLTableName(renamePair.TableName())
+	if newDatabaseName != "" && !d.isCurrentDatabase(newDatabaseName) {
+		return false
+	}
+	oldDatabaseName, _ := mysqlparser.NormalizeMySQLTableRef(renamePair.TableRef())
+	if oldDatabaseName != "" && !d.isCurrentDatabase(oldDatabaseName) {
+		return false
+	}
+	return true
+}
+
 func (t *TableState) mysqlV2ChangeIndexVisibility(ctx *FinderContext, indexName string, visibility mysql.IVisibilityContext) *WalkThroughError {
 	index, exists := t.indexSet[indexName]
 	if !exists {
