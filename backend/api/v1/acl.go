@@ -145,9 +145,11 @@ func (in *ACLInterceptor) aclInterceptorDo(ctx context.Context, fullMethod strin
 		}
 	}
 
-	if in.mode == common.ReleaseModeDev {
-		return in.checkIAMPermission(ctx, methodName, user)
-	}
+	/*
+		if in.mode == common.ReleaseModeDev {
+			return in.checkIAMPermission(ctx, methodName, user)
+		}
+	*/
 
 	return nil
 }
