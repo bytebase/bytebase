@@ -1332,7 +1332,7 @@
     "id-description": "环境 ID 是环境的唯一标识符。一旦创建不能修改。",
     "select": "选择环境",
     "archive": "归档此环境",
-    "archive-info": "已归档环境将不会再显示。",
+    "archive-info": "已归档环境将不再显示。",
     "create": "创建环境",
     "restore": "恢复此环境",
     "successfully-updated-environment": "环境'{name}'更新成功",
