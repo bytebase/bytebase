@@ -683,9 +683,9 @@
       },
       "semantic-types": {
         "self": "Semantic Types",
-        "add-type": "Add type",
+        "add-type": "Add Type",
         "label": "Columns having the same semantic type will use the same masking algorithms.",
-        "add-from-template": "Add from template",
+        "use-predefined-type": "Use Predefined Type",
         "table": {
           "semantic-type": "Semantic Type",
           "description": "Description",
