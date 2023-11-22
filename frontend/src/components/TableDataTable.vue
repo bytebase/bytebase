@@ -51,6 +51,10 @@ const props = defineProps({
     required: true,
     type: Object as PropType<TableMetadata[]>,
   },
+  search: {
+    type: String,
+    default: "",
+  },
 });
 
 const { t } = useI18n();
@@ -184,6 +188,11 @@ const reservedTableList = computed(() =>
 
 const mixedTableList = computed(() => {
   const tableList = [...regularTableList.value, ...reservedTableList.value];
+  if (props.search) {
+    return tableList.filter((table) => {
+      return table.name.toLowerCase().includes(props.search.toLowerCase());
+    });
+  }
   return tableList;
 });
 </script>
