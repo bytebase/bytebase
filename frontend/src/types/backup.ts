@@ -25,15 +25,6 @@ export type Backup = {
   comment: string;
 };
 
-export type BackupCreate = {
-  // Related fields
-  databaseId: DatabaseId;
-
-  // Domain specific fields
-  name: string;
-  type: BackupType;
-};
-
 // Backup setting.
 export type BackupSetting = {
   id: BackupSettingId;

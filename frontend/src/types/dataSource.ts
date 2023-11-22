@@ -1,13 +1,6 @@
 // For now the ADMIN requires the same database privilege as RW.
 // The seperation is to make it explicit which one serves as the ADMIN data source,
-import {
-  DatabaseId,
-  DataSourceId,
-  InstanceId,
-  IssueId,
-  PrincipalId,
-} from "./id";
-import { Principal } from "./principal";
+import { DatabaseId, DataSourceId, InstanceId } from "./id";
 
 // which from the ops perspective, having different meaning from the normal RW data source.
 export type DataSourceType = "ADMIN" | "RW" | "RO";
@@ -51,53 +44,4 @@ export type DataSource = {
   // UI-only fields
   updateSsl?: boolean;
   updateSsh?: boolean;
-};
-
-export type DataSourceCreate = {
-  // Related fields
-  databaseId: DatabaseId;
-  instanceId: InstanceId;
-
-  // Domain specific fields
-  name: string;
-  type: DataSourceType;
-  username: string;
-  password?: string;
-  sslCa?: string;
-  sslCert?: string;
-  sslKey?: string;
-  host: string;
-  port: string;
-  database: string;
-  options: DataSourceOptions;
-};
-
-export type DataSourcePatch = {
-  // Domain specific fields
-  name?: string;
-  username?: string;
-  password?: string;
-  useEmptyPassword?: boolean;
-  sslCa?: string;
-  sslCert?: string;
-  sslKey?: string;
-  host?: string;
-  port?: string;
-  database?: string;
-  options?: DataSourceOptions;
-};
-
-export type DataSourceMember = {
-  // Standard fields
-  createdTs: number;
-
-  // Domain specific fields
-  principal: Principal;
-  issueId?: IssueId;
-};
-
-export type DataSourceMemberCreate = {
-  // Domain specific fields
-  principalId: PrincipalId;
-  issueId?: IssueId;
 };

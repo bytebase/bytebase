@@ -16,19 +16,3 @@ export type Principal = {
   role: RoleType;
   serviceKey: string;
 };
-
-export type PrincipalCreate = {
-  // Domain specific fields
-  name: string;
-  email: string;
-  type: PrincipalType;
-};
-
-export type PrincipalPatch = {
-  // Domain specific fields
-  name?: string;
-  password?: string;
-  email?: string;
-  type: PrincipalType;
-  refreshKey?: boolean;
-};
