@@ -159,6 +159,9 @@ import {
   PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";
 import { databaseV1Slug, hasWorkspacePermissionV1 } from "@/utils";
+import FeatureModal from "../FeatureGuard/FeatureModal.vue";
+import GrantAccessDrawer from "./GrantAccessDrawer.vue";
+import SensitiveColumnDrawer from "./SensitiveColumnDrawer.vue";
 import SensitiveColumnTable from "./components/SensitiveColumnTable.vue";
 import { SensitiveColumn } from "./types";
 import { getMaskDataIdentifier, isCurrentColumnException } from "./utils";
