@@ -98,17 +98,27 @@
       </div>
 
       <template v-if="databaseEngine !== Engine.REDIS">
-        <div class="text-lg leading-6 font-medium text-main mb-4">
-          <span v-if="databaseEngine === Engine.MONGODB">{{
-            $t("db.collections")
-          }}</span>
-          <span v-else>{{ $t("db.tables") }}</span>
+        <div class="mb-4 w-full flex flex-row justify-between items-center">
+          <div class="text-lg leading-6 font-medium text-main">
+            <span v-if="databaseEngine === Engine.MONGODB">{{
+              $t("db.collections")
+            }}</span>
+            <span v-else>{{ $t("db.tables") }}</span>
+          </div>
+          <div>
+            <SearchBox
+              :value="state.tableNameSearchKeyword"
+              :placeholder="$t('common.filter-by-name')"
+              @update:value="state.tableNameSearchKeyword = $event"
+            />
+          </div>
         </div>
 
         <TableDataTable
           :database="database"
           :schema-name="state.selectedSchemaName"
           :table-list="tableList"
+          :search="state.tableNameSearchKeyword"
         />
 
         <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
@@ -181,6 +191,7 @@ import TaskTable from "./TaskTable.vue";
 
 interface LocalState {
   selectedSchemaName: string;
+  tableNameSearchKeyword: string;
   editingDataSource?: DataSource;
 }
 
@@ -193,6 +204,7 @@ const props = defineProps({
 const route = useRoute();
 const state = reactive<LocalState>({
   selectedSchemaName: "",
+  tableNameSearchKeyword: "",
 });
 
 const dbSchemaStore = useDBSchemaV1Store();
