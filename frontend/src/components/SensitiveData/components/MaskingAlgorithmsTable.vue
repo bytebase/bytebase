@@ -21,13 +21,7 @@
       />
     </template>
     <template
-      #body="{
-        rowData,
-        row,
-      }: {
-        rowData: MaskingAlgorithmSetting_Algorithm,
-        row: number,
-      }"
+      #body="{ rowData }: { rowData: MaskingAlgorithmSetting_Algorithm }"
     >
       <BBTableCell class="bb-grid-cell">
         <h3>
