@@ -26,11 +26,13 @@ export default defineComponent({
       useUserStore().fetchUserList(),
       useEnvironmentV1Store().fetchEnvironments(),
       useInstanceV1Store().fetchInstanceList(),
+      useProjectV1Store().fetchProjectList(true),
+    ]);
+    await Promise.all([
       useDatabaseV1Store().fetchDatabaseList({
         parent: "instances/-",
       }),
       useDBGroupStore().fetchAllDatabaseGroupList(),
-      useProjectV1Store().fetchProjectList(true),
       usePolicyV1Store().getOrFetchPolicyByName("policies/WORKSPACE_IAM"),
       useUIStateStore().restoreState(),
     ]);
