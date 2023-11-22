@@ -139,8 +139,8 @@ const tabItemList = computed((): TabFilterItem<TabValue>[] => {
   return items;
 });
 const tab = useLocalStorage<TabValue>(
-  "bb.project.issue-list",
-  "WAITING_APPROVAL",
+  "bb.project.issue-list-tab",
+  tabItemList.value[0].value,
   {
     serializer: {
       read(raw: TabValue) {
