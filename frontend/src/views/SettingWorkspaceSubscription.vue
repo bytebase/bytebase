@@ -1,10 +1,10 @@
 <template>
   <div class="mx-auto">
-    <div v-if="subscriptionStore.isSelfHostLicense" class="textinfolabel my-4">
+    <div class="textinfolabel my-4">
       {{ $t("subscription.description") }}
       <a
         class="text-accent"
-        :href="subscriptionStore.purchaseLicenseUrl"
+        href="https://hub.bytebase.com/subscription?source=console.subscription"
         target="__blank"
       >
         {{ $t("subscription.purchase-license") }}
@@ -117,10 +117,7 @@
         </dd>
       </div>
     </dl>
-    <div
-      v-if="canManageSubscription && subscriptionStore.isSelfHostLicense"
-      class="w-full mt-4 flex flex-col"
-    >
+    <div v-if="canManageSubscription" class="w-full mt-4 flex flex-col">
       <textarea
         id="license"
         v-model="state.license"
@@ -191,7 +188,6 @@ const state = reactive<LocalState>({
 });
 
 onMounted(() => {
-  console.log(`import.meta.env.MODE: ${import.meta.env.MODE}`);
   const params = new URLSearchParams(window.location.search);
   if (params.get("manageLicense")) {
     state.showInstanceAssignmentDrawer = true;
