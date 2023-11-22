@@ -130,7 +130,6 @@ import { TabFilter, TabFilterItem } from "@/components/v2";
 import {
   useSubscriptionV1Store,
   useOnboardingStateStore,
-  featureToRef,
   useCurrentUserV1,
 } from "@/store";
 import { planTypeToString } from "@/types";
