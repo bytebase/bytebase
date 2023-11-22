@@ -4,6 +4,7 @@
     <div
       ref="wrapperRef"
       class="overflow-hidden whitespace-pre font-mono"
+      :class="valueContainerAdditionalClass"
       v-html="html"
     ></div>
     <div v-if="clickable" class="absolute right-1 top-1/2 translate-y-[-45%]">
@@ -27,7 +28,6 @@ import { escape } from "lodash-es";
 import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
 import { useDatabaseV1Store, useTabStore } from "@/store";
-import { UNKNOWN_ID } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { getHighlightHTMLByRegExp } from "@/utils";
 import { useSQLResultViewContext } from "../context";
@@ -55,17 +55,26 @@ useResizeObserver(wrapperRef, (entries) => {
   }
 });
 
+const database = computed(() => {
+  const conn = useTabStore().currentTab.connection;
+  return useDatabaseV1Store().getDatabaseByUID(conn.databaseId);
+});
+
+const valueContainerAdditionalClass = computed(() => {
+  // Always only show the first line for MongoDB.
+  if (database.value.instanceEntity.engine === Engine.MONGODB) {
+    return "line-clamp-1";
+  }
+  return "";
+});
+
 const clickable = computed(() => {
   if (truncated.value) return true;
-  const conn = useTabStore().currentTab.connection;
-  if (conn.databaseId !== String(UNKNOWN_ID)) {
-    const db = useDatabaseV1Store().getDatabaseByUID(conn.databaseId);
-    if (db.instanceEntity.engine === Engine.MONGODB) {
-      // A cheap way to check JSON string without paying the parsing cost.
-      return (
-        String(props.value).startsWith("{") && String(props.value).endsWith("}")
-      );
-    }
+  if (database.value.instanceEntity.engine === Engine.MONGODB) {
+    // A cheap way to check JSON string without paying the parsing cost.
+    return (
+      String(props.value).startsWith("{") && String(props.value).endsWith("}")
+    );
   }
   return false;
 });
