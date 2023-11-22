@@ -12,20 +12,21 @@
 
         <div class="w-full">
           <p class="mb-2">{{ $t("settings.sensitive-data.action.self") }}</p>
-          <div class="flex space-x-5">
-            <BBCheckbox
+          <div class="flex space-x-4">
+            <NCheckbox
               v-for="action in ACTIONS"
               :key="action"
-              :title="
+              :checked="state.supportActions.has(action)"
+              @update:checked="toggleAction(action, $event)"
+            >
+              {{
                 $t(
                   `settings.sensitive-data.action.${maskingExceptionPolicy_MaskingException_ActionToJSON(
                     action
                   ).toLowerCase()}`
                 )
-              "
-              :value="state.supportActions.has(action)"
-              @toggle="toggleAction(action, $event)"
-            />
+              }}
+            </NCheckbox>
           </div>
         </div>
 
@@ -34,10 +35,9 @@
             {{ $t("settings.sensitive-data.masking-level.self") }}
           </p>
           <MaskingLevelRadioGroup
-            :disabled="false"
+            :level="state.maskingLevel"
             :level-list="MASKING_LEVELS"
-            :selected="state.maskingLevel"
-            @update="state.maskingLevel = $event"
+            @update:level="state.maskingLevel = $event"
           />
         </div>
 
@@ -90,7 +90,7 @@
 
 <script lang="ts" setup>
 import { groupBy, uniq } from "lodash-es";
-import { NButton, NDatePicker } from "naive-ui";
+import { NButton, NCheckbox, NDatePicker } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { Drawer, DrawerContent } from "@/components/v2";
@@ -106,6 +106,8 @@ import {
   MaskingExceptionPolicy_MaskingException_Action,
   maskingExceptionPolicy_MaskingException_ActionToJSON,
 } from "@/types/proto/v1/org_policy_service";
+import MaskingLevelRadioGroup from "./components/MaskingLevelRadioGroup.vue";
+import SensitiveColumnTable from "./components/SensitiveColumnTable.vue";
 import { SensitiveColumn } from "./types";
 import { getExpressionsForSensitiveColumn } from "./utils";
 

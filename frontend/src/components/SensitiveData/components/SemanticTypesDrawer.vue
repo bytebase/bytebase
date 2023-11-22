@@ -6,7 +6,7 @@
           :readonly="true"
           :row-clickable="true"
           :semantic-item-list="semanticItemList"
-          @on-select="onApply($event)"
+          @select="onApply($event)"
         />
       </div>
       <template #footer>
