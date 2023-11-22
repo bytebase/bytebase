@@ -46,7 +46,7 @@ func NewManager(store *store.Store) (*Manager, error) {
 	}, nil
 }
 
-func (m *Manager) getUserRoles(user *store.UserMessage) []string {
+func (*Manager) getUserRoles(user *store.UserMessage) []string {
 	var roles []string
 	switch user.Role {
 	case "OWNER":
