@@ -10,13 +10,9 @@
               {{ $t("settings.sensitive-data.algorithms.table.title") }}
               <span class="text-red-600 mr-2">*</span>
             </label>
-            <input
-              v-model="state.title"
-              required
-              name="title"
-              type="text"
+            <NInput
+              v-model:value="state.title"
               :placeholder="t('settings.sensitive-data.algorithms.table.title')"
-              class="textfield mt-1 w-full"
               :disabled="state.processing || readonly"
             />
           </div>
@@ -24,15 +20,11 @@
             <label for="description" class="textlabel">
               {{ $t("settings.sensitive-data.algorithms.table.description") }}
             </label>
-            <input
-              v-model="state.description"
-              required
-              name="title"
-              type="text"
+            <NInput
+              v-model:value="state.description"
               :placeholder="
                 t('settings.sensitive-data.algorithms.table.description')
               "
-              class="textfield mt-1 w-full"
               :disabled="state.processing || readonly"
             />
           </div>
@@ -72,15 +64,12 @@
                   )
                 }}
               </p>
-              <input
-                v-model="state.fullMask.substitution"
-                required
-                name="title"
-                type="text"
+              <NInput
+                v-model:value="state.fullMask.substitution"
                 :placeholder="
                   t('settings.sensitive-data.algorithms.full-mask.substitution')
                 "
-                class="textfield mt-2 w-full"
+                class="mt-2"
                 :disabled="state.processing || readonly"
               />
             </div>
@@ -94,7 +83,7 @@
               :key="i"
               class="flex space-x-2 items-center"
             >
-              <div class="flex-none flex flex-col">
+              <div class="flex-none flex flex-col gap-y-1">
                 <label for="slice-start" class="textlabel flex">
                   {{
                     $t(
@@ -103,23 +92,20 @@
                   }}
                   <span class="text-red-600 mr-2">*</span>
                 </label>
-                <input
+                <NInputNumber
                   :value="slice.start"
-                  required
-                  name="slice-start"
-                  type="number"
-                  min="0"
+                  :min="0"
                   :placeholder="
                     t(
                       'settings.sensitive-data.algorithms.range-mask.slice-start'
                     )
                   "
-                  class="textfield mt-1 w-20"
                   :disabled="state.processing || readonly"
-                  @input="(e: any) => onSliceStartChange(i, Number(e.target.value))"
+                  style="width: 5rem"
+                  @update:value="onSliceStartChange(i, $event)"
                 />
               </div>
-              <div class="flex-none flex flex-col">
+              <div class="flex-none flex flex-col gap-y-1">
                 <label for="slice-end" class="textlabel">
                   {{
                     $t(
@@ -128,21 +114,18 @@
                   }}
                   <span class="text-red-600 mr-2">*</span>
                 </label>
-                <input
+                <NInputNumber
                   :value="slice.end"
-                  required
-                  name="slice-end"
-                  type="number"
-                  min="1"
+                  :min="1"
                   :placeholder="
                     t('settings.sensitive-data.algorithms.range-mask.slice-end')
                   "
-                  class="textfield mt-1 w-20"
                   :disabled="state.processing || readonly"
-                  @input="(e: any) => onSliceEndChange(i, Number(e.target.value))"
+                  style="width: 5rem"
+                  @update:value="onSliceEndChange(i, $event)"
                 />
               </div>
-              <div class="flex-1 flex flex-col">
+              <div class="flex-1 flex flex-col gap-y-1">
                 <label for="substitution" class="textlabel">
                   {{
                     $t(
@@ -151,28 +134,23 @@
                   }}
                   <span class="text-red-600 mr-2">*</span>
                 </label>
-                <input
-                  v-model="slice.substitution"
-                  required
-                  name="substitution"
-                  type="text"
+                <NInput
+                  v-model:value="slice.substitution"
                   :placeholder="
                     t(
                       'settings.sensitive-data.algorithms.range-mask.substitution'
                     )
                   "
-                  class="textfield mt-1 w-full"
                   :disabled="state.processing || readonly"
                 />
               </div>
-              <div class="mt-5">
-                <button
-                  class="p-1 hover:bg-gray-300 rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
+              <div class="h-[34px] flex flex-row items-center self-end">
+                <MiniActionButton
                   :disabled="state.processing || readonly"
                   @click.stop="removeSlice(i)"
                 >
-                  <heroicons-outline:trash class="w-4 h-4" />
-                </button>
+                  <TrashIcon class="w-4 h-4" />
+                </MiniActionButton>
               </div>
             </div>
             <div v-if="rangeMaskErrorMessage" class="text-red-600">
@@ -197,15 +175,12 @@
                   $t("settings.sensitive-data.algorithms.md5-mask.salt-label")
                 }}
               </p>
-              <input
-                v-model="state.md5Mask.salt"
-                required
-                name="title"
-                type="text"
+              <NInput
+                v-model:value="state.md5Mask.salt"
                 :placeholder="
                   t('settings.sensitive-data.algorithms.md5-mask.salt')
                 "
-                class="textfield mt-2 w-full"
+                class="mt-2"
                 :disabled="state.processing || readonly"
               />
             </div>
@@ -239,6 +214,8 @@
 </template>
 <script setup lang="ts">
 import { cloneDeep } from "lodash-es";
+import { TrashIcon } from "lucide-vue-next";
+import { NInput, NInputNumber } from "naive-ui";
 import { computed, watch, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import {
@@ -247,14 +224,15 @@ import {
   RadioGrid,
   RadioGridOption,
   RadioGridItem,
+  MiniActionButton,
 } from "@/components/v2";
 import { pushNotification, useSettingV1Store } from "@/store";
 import {
-  MaskingAlgorithmSetting_Algorithm,
-  MaskingAlgorithmSetting_Algorithm_FullMask,
-  MaskingAlgorithmSetting_Algorithm_RangeMask,
-  MaskingAlgorithmSetting_Algorithm_MD5Mask,
-  MaskingAlgorithmSetting_Algorithm_RangeMask_Slice,
+  MaskingAlgorithmSetting_Algorithm as Algorithm,
+  MaskingAlgorithmSetting_Algorithm_FullMask as FullMask,
+  MaskingAlgorithmSetting_Algorithm_RangeMask as RangeMask,
+  MaskingAlgorithmSetting_Algorithm_MD5Mask as MD5Mask,
+  MaskingAlgorithmSetting_Algorithm_RangeMask_Slice as RangeMask_Slice,
 } from "@/types/proto/v1/setting_service";
 import { MaskingType, getMaskingType } from "./utils";
 
@@ -268,15 +246,15 @@ interface LocalState {
   maskingType: MaskingType;
   title: string;
   description: string;
-  fullMask: MaskingAlgorithmSetting_Algorithm_FullMask;
-  rangeMask: MaskingAlgorithmSetting_Algorithm_RangeMask;
-  md5Mask: MaskingAlgorithmSetting_Algorithm_MD5Mask;
+  fullMask: FullMask;
+  rangeMask: RangeMask;
+  md5Mask: MD5Mask;
 }
 
 const props = defineProps<{
   show: boolean;
   readonly: boolean;
-  algorithm: MaskingAlgorithmSetting_Algorithm;
+  algorithm: Algorithm;
 }>();
 
 const emit = defineEmits<{
@@ -284,9 +262,9 @@ const emit = defineEmits<{
 }>();
 
 const defaultRangeMask = computed(() =>
-  MaskingAlgorithmSetting_Algorithm_RangeMask.fromPartial({
+  RangeMask.fromPartial({
     slices: [
-      MaskingAlgorithmSetting_Algorithm_RangeMask_Slice.fromPartial({
+      RangeMask_Slice.fromPartial({
         start: 0,
         end: 1,
         substitution: "*",
@@ -300,9 +278,9 @@ const state = reactive<LocalState>({
   maskingType: "full-mask",
   title: "",
   description: "",
-  fullMask: MaskingAlgorithmSetting_Algorithm_FullMask.fromPartial({}),
+  fullMask: FullMask.fromPartial({}),
   rangeMask: cloneDeep(defaultRangeMask.value),
-  md5Mask: MaskingAlgorithmSetting_Algorithm_MD5Mask.fromPartial({}),
+  md5Mask: MD5Mask.fromPartial({}),
 });
 const { t } = useI18n();
 const settingStore = useSettingV1Store();
@@ -322,7 +300,7 @@ const maskingTypeList = computed((): MaskingTypeOption[] => [
   },
 ]);
 
-const algorithmList = computed((): MaskingAlgorithmSetting_Algorithm[] => {
+const algorithmList = computed((): Algorithm[] => {
   return (
     settingStore.getSettingByName("bb.workspace.masking-algorithm")?.value
       ?.maskingAlgorithmSettingValue?.algorithms ?? []
@@ -335,18 +313,14 @@ watch(
     state.title = algorithm.title;
     state.description = algorithm.description;
     state.maskingType = getMaskingType(algorithm) ?? "full-mask";
-    state.fullMask =
-      algorithm.fullMask ??
-      MaskingAlgorithmSetting_Algorithm_FullMask.fromPartial({});
+    state.fullMask = algorithm.fullMask ?? FullMask.fromPartial({});
     state.rangeMask = algorithm.rangeMask ?? cloneDeep(defaultRangeMask.value);
-    state.md5Mask =
-      algorithm.md5Mask ??
-      MaskingAlgorithmSetting_Algorithm_MD5Mask.fromPartial({});
+    state.md5Mask = algorithm.md5Mask ?? MD5Mask.fromPartial({});
   }
 );
 
-const maskingAlgorithm = computed((): MaskingAlgorithmSetting_Algorithm => {
-  const result = MaskingAlgorithmSetting_Algorithm.fromPartial({
+const maskingAlgorithm = computed((): Algorithm => {
+  const result = Algorithm.fromPartial({
     id: props.algorithm.id,
     title: state.title,
     description: state.description,
@@ -487,15 +461,13 @@ const onMaskingTypeChange = (maskingType: MaskingType) => {
   }
   switch (maskingType) {
     case "full-mask":
-      state.fullMask = MaskingAlgorithmSetting_Algorithm_FullMask.fromPartial(
-        {}
-      );
+      state.fullMask = FullMask.fromPartial({});
       break;
     case "range-mask":
       state.rangeMask = cloneDeep(defaultRangeMask.value);
       break;
     case "md5-mask":
-      state.md5Mask = MaskingAlgorithmSetting_Algorithm_MD5Mask.fromPartial({});
+      state.md5Mask = MD5Mask.fromPartial({});
       break;
   }
   state.maskingType = maskingType;
@@ -504,7 +476,7 @@ const onMaskingTypeChange = (maskingType: MaskingType) => {
 const addSlice = () => {
   const last = state.rangeMask.slices[state.rangeMask.slices.length - 1];
   state.rangeMask.slices.push(
-    MaskingAlgorithmSetting_Algorithm_RangeMask_Slice.fromPartial({
+    RangeMask_Slice.fromPartial({
       start: (last?.start ?? -1) + 1,
       end: (last?.end ?? 0) + 1,
       substitution: "*",
