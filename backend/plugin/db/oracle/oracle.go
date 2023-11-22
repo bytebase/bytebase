@@ -41,6 +41,7 @@ type Driver struct {
 	databaseName     string
 	serviceName      string
 	schemaTenantMode bool
+	connectionCtx    db.ConnectionContext
 }
 
 func newDriver(db.DriverConfig) db.Driver {
@@ -48,7 +49,7 @@ func newDriver(db.DriverConfig) db.Driver {
 }
 
 // Open opens a Oracle driver.
-func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig, connectionCtx db.ConnectionContext) (db.Driver, error) {
 	port, err := strconv.Atoi(config.Port)
 	if err != nil {
 		return nil, errors.Errorf("invalid port %q", config.Port)
@@ -71,6 +72,7 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 	driver.databaseName = config.Database
 	driver.serviceName = config.ServiceName
 	driver.schemaTenantMode = config.SchemaTenantMode
+	driver.connectionCtx = connectionCtx
 	return driver, nil
 }
 
@@ -167,8 +169,8 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	return results, nil
 }
 
-func (*Driver) getOracleStatementWithResultLimit(stmt string, queryContext *db.QueryContext) (string, error) {
-	engineVersion := queryContext.EngineVersion
+func (driver *Driver) getOracleStatementWithResultLimit(stmt string, queryContext *db.QueryContext) (string, error) {
+	engineVersion := driver.connectionCtx.EngineVersion
 	versionIdx := strings.Index(engineVersion, ".")
 	if versionIdx < 0 {
 		return "", errors.New("instance version number is invalid")
