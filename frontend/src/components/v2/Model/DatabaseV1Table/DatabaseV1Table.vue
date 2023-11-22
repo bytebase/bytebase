@@ -303,30 +303,30 @@ const preparePolicyList = () => {
 const columnListMap = computed(() => {
   const NAME = {
     title: t("common.name"),
-    width: "minmax(auto, 1.5fr)",
+    width: "minmax(min-content, auto)",
   };
   const SCHEMA_VERSION = props.schemaless
     ? undefined
     : {
         title: t("common.schema-version"),
-        width: { lg: "minmax(auto, 1fr)" },
+        width: { lg: "minmax(min-content, auto)" },
         class: "hidden lg:flex",
       };
   const PROJECT = {
     title: t("common.project"),
-    width: "minmax(auto, 1fr)",
+    width: "minmax(min-content, auto)",
   };
   const ENVIRONMENT = {
     title: t("common.environment"),
-    width: "minmax(auto, 1fr)",
+    width: "minmax(min-content, auto)",
   };
   const INSTANCE = {
     title: t("common.instance"),
-    width: "minmax(auto, 1fr)",
+    width: "minmax(min-content, auto)",
   };
   const LABELS = {
     title: t("common.labels"),
-    width: "auto",
+    width: "minmax(max-content, auto)",
     class: "items-center",
   };
   return new Map<Mode, (BBGridColumn | undefined)[]>([

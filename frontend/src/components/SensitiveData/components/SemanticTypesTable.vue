@@ -165,30 +165,30 @@ const columnList = computed(() => {
   const columns: BBGridColumn[] = [
     {
       title: t("settings.sensitive-data.semantic-types.table.semantic-type"),
-      width: "1fr",
+      width: "minmax(min-content, auto)",
     },
     {
       title: t("settings.sensitive-data.semantic-types.table.description"),
-      width: "1fr",
+      width: "minmax(min-content, auto)",
     },
     {
       title: t(
         "settings.sensitive-data.semantic-types.table.full-masking-algorithm"
       ),
-      width: "minmax(auto, 12rem)",
+      width: "minmax(min-content, auto)",
     },
     {
       title: t(
         "settings.sensitive-data.semantic-types.table.partial-masking-algorithm"
       ),
-      width: "minmax(auto, 12rem)",
+      width: "minmax(min-content, auto)",
     },
   ];
   if (!props.readonly) {
     // operation.
     columns.push({
       title: "",
-      width: "minmax(auto, 5rem)",
+      width: "minmax(min-content, auto)",
     });
   }
   return columns;
