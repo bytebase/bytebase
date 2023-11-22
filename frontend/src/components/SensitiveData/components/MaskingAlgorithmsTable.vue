@@ -53,7 +53,7 @@
             <heroicons-outline:pencil class="w-4 h-4" />
           </button>
 
-          <NPopconfirm v-if="!readonly" @positive-click="onRemove(row)">
+          <NPopconfirm v-if="!readonly" @positive-click="onRemove(rowData.id)">
             <template #trigger>
               <button
                 class="p-1 hover:bg-gray-300 rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
@@ -152,9 +152,9 @@ const getAlgorithmMaskingType = (
   );
 };
 
-const onRemove = async (index: number) => {
-  const item = rawAlgorithmList.value[index];
-  if (!item) {
+const onRemove = async (id: string) => {
+  const index = rawAlgorithmList.value.findIndex((item) => item.id === id);
+  if (index < 0) {
     return;
   }
   const newList = [
