@@ -188,26 +188,19 @@ const state = reactive<LocalState>({
 });
 
 const me = useCurrentUserV1();
-const hasCustomApprovalFeature = featureToRef("bb.feature.custom-approval");
 
 const tabItemList = computed((): TabFilterItem<TabValue>[] => {
-  const items: TabFilterItem<TabValue>[] = [];
-  items.push(
+  return [
     { value: "CREATED", label: t("common.created") },
-    { value: "ASSIGNED", label: t("common.assigned") }
-  );
-  if (hasCustomApprovalFeature.value) {
-    items.push({
+    { value: "ASSIGNED", label: t("common.assigned") },
+    {
       value: "APPROVAL_REQUESTED",
       label: t("issue.approval-requested"),
-    });
-  }
-  items.push(
+    },
     { value: "WAITING_ROLLOUT", label: t("issue.waiting-rollout") },
     { value: "SUBSCRIBED", label: t("common.subscribed") },
-    { value: "ALL", label: t("common.all") }
-  );
-  return items;
+    { value: "ALL", label: t("common.all") },
+  ];
 });
 const tab = useLocalStorage<TabValue>(
   "bb.home.issue-list-tab",
@@ -320,11 +313,8 @@ const mergeUIIssueFilterByTab = (tab: TabValue) => {
 };
 
 watch(
-  [hasCustomApprovalFeature, tab],
+  [tab],
   () => {
-    if (!hasCustomApprovalFeature.value && tab.value === "APPROVAL_REQUESTED") {
-      tab.value = "WAITING_ROLLOUT";
-    }
     if (tab.value === "APPROVAL_REQUESTED" || tab.value === "WAITING_ROLLOUT") {
       if (getValueFromSearchParams(state.params, "status") === "CLOSED") {
         upsertScope(
