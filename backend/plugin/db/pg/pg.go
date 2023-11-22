@@ -53,6 +53,7 @@ type Driver struct {
 	// Unregister connectionString if we don't need it.
 	connectionString string
 	databaseName     string
+	connectionCtx    db.ConnectionContext
 }
 
 func newDriver(config db.DriverConfig) db.Driver {
@@ -62,7 +63,7 @@ func newDriver(config db.DriverConfig) db.Driver {
 }
 
 // Open opens a Postgres driver.
-func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig, connectionCtx db.ConnectionContext) (db.Driver, error) {
 	// Require username for Postgres, as the guessDSN 1st guess is to use the username as the connecting database
 	// if database name is not explicitly specified.
 	if config.Username == "" {
@@ -139,6 +140,7 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 		return nil, err
 	}
 	driver.db = db
+	driver.connectionCtx = connectionCtx
 	return driver, nil
 }
 
@@ -242,9 +244,9 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 		return "", err
 	}
 	// https://www.postgresql.org/docs/current/libpq-status.html#LIBPQ-PQSERVERVERSION
-	const majorMultiplier = 10_000
-	version = fmt.Sprintf("%d.%d", versionNum/majorMultiplier, versionNum%majorMultiplier)
-	return version, nil
+	// Convert to semantic version.
+	major, minor, patch := versionNum/1_00_00, (versionNum/100)%100, versionNum%100
+	return fmt.Sprintf("%d.%d.%d", major, minor, patch), nil
 }
 
 func (driver *Driver) getPGStatStatementsVersion(ctx context.Context) (string, error) {

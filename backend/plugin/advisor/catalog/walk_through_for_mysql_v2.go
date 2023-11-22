@@ -368,6 +368,28 @@ func (l *mysqlV2Listener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 	}
 }
 
+// EnterDropIndex is called when production dropIndex is entered.
+func (l *mysqlV2Listener) EnterDropIndex(ctx *mysql.DropIndexContext) {
+	if ctx.TableRef() == nil {
+		return
+	}
+	databaseName, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
+	table, err := l.databaseState.mysqlV2FindTableState(databaseName, tableName, true /* createIncompleteTAble */)
+	if err != nil {
+		l.err = err
+		return
+	}
+
+	if ctx.IndexRef() == nil {
+		return
+	}
+
+	_, _, indexName := mysqlparser.NormalizeIndexRef(ctx.IndexRef())
+	if err := table.dropIndex(l.databaseState.ctx, indexName); err != nil {
+		l.err = err
+	}
+}
+
 func (l *mysqlV2Listener) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
 	if ctx.CreateIndexTarget() == nil || ctx.CreateIndexTarget().TableRef() == nil {
 		return
@@ -418,6 +440,56 @@ func (l *mysqlV2Listener) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
 		l.err = err
 		return
 	}
+}
+
+// EnterAlterDatabase is called when production alterDatabase is entered.
+func (l *mysqlV2Listener) EnterAlterDatabase(ctx *mysql.AlterDatabaseContext) {
+	if ctx.SchemaRef() != nil {
+		databaseName := mysqlparser.NormalizeMySQLSchemaRef(ctx.SchemaRef())
+		if !l.databaseState.isCurrentDatabase(databaseName) {
+			l.err = NewAccessOtherDatabaseError(l.databaseState.name, databaseName)
+			return
+		}
+	}
+
+	for _, option := range ctx.AllAlterDatabaseOption() {
+		if option.CreateDatabaseOption() == nil {
+			continue
+		}
+
+		switch {
+		case option.CreateDatabaseOption().DefaultCharset() != nil && option.CreateDatabaseOption().DefaultCharset().CharsetName() != nil:
+			charset := mysqlparser.NormalizeMySQLCharsetName(option.CreateDatabaseOption().DefaultCharset().CharsetName())
+			l.databaseState.characterSet = charset
+		case option.CreateDatabaseOption().DefaultCollation() != nil && option.CreateDatabaseOption().DefaultCollation().CollationName() != nil:
+			collation := mysqlparser.NormalizeMySQLCollationName(option.CreateDatabaseOption().DefaultCollation().CollationName())
+			l.databaseState.collation = collation
+		}
+	}
+}
+
+// EnterDropDatabase is called when production dropDatabase is entered.
+func (l *mysqlV2Listener) EnterDropDatabase(ctx *mysql.DropDatabaseContext) {
+	if ctx.SchemaRef() == nil {
+		return
+	}
+
+	databaseName := mysqlparser.NormalizeMySQLSchemaRef(ctx.SchemaRef())
+	if !l.databaseState.isCurrentDatabase(databaseName) {
+		l.err = NewAccessOtherDatabaseError(l.databaseState.name, databaseName)
+		return
+	}
+
+	l.databaseState.deleted = true
+}
+
+// EnterCreateDatabase is called when production createDatabase is entered.
+func (l *mysqlV2Listener) EnterCreateDatabase(ctx *mysql.CreateDatabaseContext) {
+	if ctx.SchemaName() == nil {
+		return
+	}
+	databaseName := mysqlparser.NormalizeMySQLSchemaName(ctx.SchemaName())
+	l.err = NewAccessOtherDatabaseError(l.databaseState.name, databaseName)
 }
 
 func (t *TableState) mysqlV2ChangeIndexVisibility(ctx *FinderContext, indexName string, visibility mysql.IVisibilityContext) *WalkThroughError {

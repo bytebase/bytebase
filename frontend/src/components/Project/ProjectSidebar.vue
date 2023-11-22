@@ -8,7 +8,7 @@
 </template>
 
 <script setup lang="ts">
-import { useLocalStorage } from "@vueuse/core";
+import { computedAsync, useLocalStorage } from "@vueuse/core";
 import { startCase } from "lodash-es";
 import {
   Database,
@@ -24,16 +24,18 @@ import { computed, VNode, h, reactive, watch, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter, useRoute } from "vue-router";
 import { SidebarItem } from "@/components/CommonSidebar.vue";
-import { useInitializeIssue } from "@/components/IssueV1";
 import {
   useCurrentUserIamPolicy,
   useProjectV1Store,
   useDatabaseV1Store,
+  experimentalFetchIssueByUID,
 } from "@/store";
 import {
   DEFAULT_PROJECT_V1_NAME,
   unknownProject,
   unknownDatabase,
+  UNKNOWN_ID,
+  EMPTY_ID,
 } from "@/types";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import { idFromSlug, projectSlugV1 } from "@/utils";
@@ -77,8 +79,6 @@ const props = defineProps<{
 }>();
 
 const route = useRoute();
-const issueSlug = computed(() => props.issueSlug ?? "");
-const { issue } = useInitializeIssue(issueSlug, false);
 const database = computed(() => {
   if (props.changeHistorySlug) {
     const parent = `instances/${route.params.instance}/databases/${route.params.database}`;
@@ -117,9 +117,25 @@ watch(
   (hash) => (cachedLastPage.value = hash)
 );
 
-const project = computed(() => {
-  if (props.issueSlug) {
-    return issue.value.projectEntity;
+const issueUID = computed(() => {
+  const slug = props.issueSlug;
+  if (!slug) return String(UNKNOWN_ID);
+  if (props.issueSlug.toLowerCase() === "new") return String(EMPTY_ID);
+  const uid = Number(idFromSlug(slug));
+  if (uid > 0) return String(uid);
+  return String(UNKNOWN_ID);
+});
+
+const project = computedAsync(async () => {
+  if (issueUID.value !== String(UNKNOWN_ID)) {
+    if (issueUID.value === String(EMPTY_ID)) {
+      const projectUID = route.query.project as string;
+      if (!projectUID) return unknownProject();
+      return await useProjectV1Store().getOrFetchProjectByUID(projectUID);
+    }
+
+    const existedIssue = await experimentalFetchIssueByUID(issueUID.value);
+    return existedIssue.projectEntity;
   } else if (props.projectSlug) {
     return projectV1Store.getProjectByUID(
       String(idFromSlug(props.projectSlug))
@@ -128,7 +144,7 @@ const project = computed(() => {
     return database.value.projectEntity;
   }
   return unknownProject();
-});
+}, unknownProject());
 const currentUserIamPolicy = useCurrentUserIamPolicy();
 
 const isDefaultProject = computed((): boolean => {
