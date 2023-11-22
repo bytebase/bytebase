@@ -10,7 +10,7 @@ import (
 func TestPermissionExists(t *testing.T) {
 	a := require.New(t)
 
-	m, err := NewManager()
+	m, err := NewManager(nil)
 	a.NoError(err)
 
 	for _, permissions := range m.roles {

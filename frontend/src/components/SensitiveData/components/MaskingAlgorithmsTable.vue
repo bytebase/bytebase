@@ -6,7 +6,7 @@
     class="border compact"
     @click-row="(item: Algorithm) => $emit('select', item.id)"
   >
-    <template #item="{ item, row }: AlgorithmRow">
+    <template #item="{ item }: AlgorithmRow">
       <div class="bb-grid-cell">
         {{ item.title }}
       </div>
@@ -21,8 +21,7 @@
           <MiniActionButton @click.stop="$emit('edit', item)">
             <PencilIcon class="w-4 h-4" />
           </MiniActionButton>
-
-          <NPopconfirm v-if="!readonly" @positive-click="onRemove(row)">
+          <NPopconfirm v-if="!readonly" @positive-click="onRemove(item.id)">
             <template #trigger>
               <MiniActionButton tag="div" @click.stop="">
                 <TrashIcon class="w-4 h-4" />
@@ -39,7 +38,6 @@
 </template>
 
 <script lang="ts" setup>
-import { pullAt } from "lodash-es";
 import { PencilIcon, TrashIcon } from "lucide-vue-next";
 import { NPopconfirm } from "naive-ui";
 import { computed, onMounted } from "vue";
@@ -95,18 +93,21 @@ const columnList = computed(() => {
   return columns;
 });
 
-const algorithmList = computed((): Algorithm[] => {
-  const list =
+const rawAlgorithmList = computed((): Algorithm[] => {
+  return (
     settingStore.getSettingByName("bb.workspace.masking-algorithm")?.value
-      ?.maskingAlgorithmSettingValue?.algorithms ?? [];
+      ?.maskingAlgorithmSettingValue?.algorithms ?? []
+  );
+});
 
+const algorithmList = computed((): Algorithm[] => {
   return [
     Algorithm.fromPartial({
       title: t("settings.sensitive-data.algorithms.default"),
       description: t("settings.sensitive-data.algorithms.default-desc"),
       category: "MASK",
     }),
-    ...list,
+    ...rawAlgorithmList.value,
   ];
 });
 
@@ -121,13 +122,15 @@ const getAlgorithmMaskingType = (algorithm: Algorithm) => {
   );
 };
 
-const onRemove = async (index: number) => {
-  const item = algorithmList.value[index];
-  if (!item) {
+const onRemove = async (id: string) => {
+  const index = rawAlgorithmList.value.findIndex((item) => item.id === id);
+  if (index < 0) {
     return;
   }
-  const newList = [...algorithmList.value];
-  pullAt(newList, index);
+  const newList = [
+    ...rawAlgorithmList.value.slice(0, index),
+    ...rawAlgorithmList.value.slice(index + 1),
+  ];
 
   await settingStore.upsertSetting({
     name: "bb.workspace.masking-algorithm",
