@@ -15,7 +15,7 @@
       />
     </div>
     <div class="flex justify-between items-center">
-      <div class="flex items-center">
+      <NInputGroup>
         <ProjectSelect
           :project="state.selectedProjectUid"
           :include-default-project="true"
@@ -39,7 +39,7 @@
           :database="state.selectedDatabaseUid"
           @update:database="onDatabaseSelect($event)"
         />
-      </div>
+      </NInputGroup>
       <NButton
         type="primary"
         :disabled="
@@ -77,12 +77,11 @@
     />
 
     <template v-else>
-      <div class="w-full h-full flex flex-col items-center justify-center">
-        <img
-          src="../../assets/illustration/no-data.webp"
-          class="max-h-[30vh]"
-        />
-      </div>
+      <NoData
+        :img-attrs="{
+          class: '!w-auto max-h-[30vh]',
+        }"
+      />
     </template>
   </div>
 
@@ -128,9 +127,11 @@
 
 <script lang="ts" setup>
 import { uniq } from "lodash-es";
+import { NInputGroup } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import NoData from "@/components/misc/NoData.vue";
 import {
   ProjectSelect,
   InstanceSelect,
@@ -158,6 +159,10 @@ import {
   PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";
 import { databaseV1Slug, hasWorkspacePermissionV1 } from "@/utils";
+import FeatureModal from "../FeatureGuard/FeatureModal.vue";
+import GrantAccessDrawer from "./GrantAccessDrawer.vue";
+import SensitiveColumnDrawer from "./SensitiveColumnDrawer.vue";
+import SensitiveColumnTable from "./components/SensitiveColumnTable.vue";
 import { SensitiveColumn } from "./types";
 import { getMaskDataIdentifier, isCurrentColumnException } from "./utils";
 

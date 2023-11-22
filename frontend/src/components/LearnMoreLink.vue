@@ -6,11 +6,12 @@
     target="__BLANK"
   >
     {{ $t("common.learn-more") }}
-    <heroicons-outline:external-link class="w-4 h-4 ml-1" />
+    <ExternalLinkIcon class="w-4 h-4 ml-1" />
   </a>
 </template>
 
 <script lang="ts" setup>
+import { ExternalLinkIcon } from "lucide-vue-next";
 import { PropType } from "vue";
 
 defineProps({

@@ -13,7 +13,7 @@
       <MaskingAlgorithmsTable
         :readonly="!hasPermission || !hasSensitiveDataFeature"
         :row-clickable="false"
-        @on-edit="onEdit"
+        @edit="onEdit"
       />
     </div>
   </div>
@@ -30,17 +30,19 @@ import { NButton } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive } from "vue";
 import { featureToRef, useCurrentUserV1 } from "@/store";
-import { MaskingAlgorithmSetting_Algorithm } from "@/types/proto/v1/setting_service";
+import { MaskingAlgorithmSetting_Algorithm as Algorithm } from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV1 } from "@/utils";
+import MaskingAlgorithmsCreateDrawer from "./components/MaskingAlgorithmsCreateDrawer.vue";
+import MaskingAlgorithmsTable from "./components/MaskingAlgorithmsTable.vue";
 
 interface LocalState {
   showCreateDrawer: boolean;
-  pendingEditData: MaskingAlgorithmSetting_Algorithm;
+  pendingEditData: Algorithm;
 }
 
 const state = reactive<LocalState>({
   showCreateDrawer: false,
-  pendingEditData: MaskingAlgorithmSetting_Algorithm.fromPartial({
+  pendingEditData: Algorithm.fromPartial({
     id: uuidv4(),
   }),
 });
@@ -55,7 +57,7 @@ const hasPermission = computed(() => {
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
 
 const onCreate = () => {
-  state.pendingEditData = MaskingAlgorithmSetting_Algorithm.fromPartial({
+  state.pendingEditData = Algorithm.fromPartial({
     id: uuidv4(),
   });
   state.showCreateDrawer = true;
@@ -65,7 +67,7 @@ const onDrawerDismiss = () => {
   state.showCreateDrawer = false;
 };
 
-const onEdit = (data: MaskingAlgorithmSetting_Algorithm) => {
+const onEdit = (data: Algorithm) => {
   state.pendingEditData = data;
   state.showCreateDrawer = true;
 };
