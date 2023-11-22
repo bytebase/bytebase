@@ -245,9 +245,12 @@ func mask(maskers []masker.Masker, result *v1pb.QueryResult) {
 			if value == nil {
 				continue
 			}
-			maskedValue := maskers[j].Mask(&masker.MaskData{
-				DataV2: row.Values[j],
-			})
+			maskedValue := row.Values[j]
+			if j < len(maskers) && maskers[j] != nil {
+				maskedValue = maskers[j].Mask(&masker.MaskData{
+					DataV2: row.Values[j],
+				})
+			}
 			result.Rows[i].Values[j] = maskedValue
 		}
 	}
