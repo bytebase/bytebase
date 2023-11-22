@@ -374,30 +374,30 @@ const gridColumnList = computed(() => {
   const columns: BBGridColumn[] = [
     {
       title: t("common.user"),
-      width: "minmax(auto, 1fr)",
+      width: "minmax(min-content, auto)",
     },
     {
       title: t("settings.sensitive-data.action.export"),
-      width: "auto",
+      width: "minmax(min-content, auto)",
     },
     {
       title: t("settings.sensitive-data.action.query"),
-      width: "auto",
+      width: "minmax(min-content, auto)",
     },
     {
       title: t("settings.sensitive-data.masking-level.self"),
-      width: "auto",
+      width: "minmax(min-content, auto)",
     },
     {
       title: t("common.expiration"),
-      width: "minmax(auto, 1fr)",
+      width: "minmax(min-content, auto)",
     },
   ];
   if (hasPermission.value) {
     // operation.
     columns.push({
       title: "",
-      width: "auto",
+      width: "minmax(min-content, auto)",
     });
   }
   return columns;

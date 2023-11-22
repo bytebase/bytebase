@@ -87,43 +87,43 @@ const columnList = computed((): BBGridColumn[] => {
   return [
     {
       title: t("schema-template.form.category"),
-      width: "7rem",
+      width: "minmax(min-content, auto)",
       class: "capitalize",
     },
     {
       title: t("schema-template.form.column-name"),
-      width: "auto",
+      width: "minmax(min-content, auto)",
       class: "capitalize",
     },
     {
       title: t("schema-template.classification.self"),
-      width: "auto",
+      width: "minmax(min-content, auto)",
       class: "capitalize",
       hide: !classificationConfig.value,
     },
     {
       title: t("schema-template.form.column-type"),
-      width: "auto",
+      width: "minmax(min-content, auto)",
       class: "capitalize",
     },
     {
       title: t("schema-template.form.default-value"),
-      width: "auto",
+      width: "minmax(min-content, auto)",
       class: "capitalize",
     },
     {
       title: t("schema-template.form.comment"),
-      width: "auto",
+      width: "minmax(min-content, auto)",
       class: "capitalize",
     },
     {
       title: t("common.labels"),
-      width: "auto",
+      width: "minmax(min-content, auto)",
       class: "capitalize",
     },
     {
       title: t("common.operations"),
-      width: "6rem",
+      width: "minmax(min-content, auto)",
       class: "capitalize",
     },
   ].filter((col) => !col.hide);

@@ -74,20 +74,20 @@ const columnList = computed(() => {
   const columns: BBGridColumn[] = [
     {
       title: t("settings.sensitive-data.algorithms.table.title"),
-      width: "1fr",
+      width: "minmax(min-content, auto)",
     },
     {
       title: t("settings.sensitive-data.algorithms.table.description"),
-      width: "1fr",
+      width: "minmax(min-content, auto)",
     },
     {
       title: t("settings.sensitive-data.algorithms.table.masking-type"),
-      width: "minmax(auto, 14rem)",
+      width: "minmax(min-content, auto)",
     },
     {
       // operations
       title: "",
-      width: "auto",
+      width: "minmax(min-content, auto)",
     },
   ];
   return columns;

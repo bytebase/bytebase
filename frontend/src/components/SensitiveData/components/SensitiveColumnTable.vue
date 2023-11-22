@@ -4,7 +4,7 @@
     :data-source="columnList"
     :row-clickable="rowClickable"
     :custom-header="true"
-    class="bordered"
+    class="border compact"
     @click-row="clickTableRow"
   >
     <template #header>
@@ -161,43 +161,43 @@ const gridColumnList = computed(() => {
   const columns: BBGridColumn[] = [
     {
       title: t("settings.sensitive-data.masking-level.self"),
-      width: "minmax(auto, 8rem)",
+      width: "minmax(min-content, auto)",
     },
     {
       title: t("database.column"),
-      width: "minmax(auto, 1fr)",
+      width: "minmax(min-content, auto)",
     },
     {
       title: t("common.table"),
-      width: "minmax(auto, 1fr)",
+      width: "minmax(min-content, auto)",
     },
     {
       title: t("common.database"),
-      width: "minmax(auto, 1fr)",
+      width: "minmax(min-content, auto)",
     },
     {
       title: t("common.instance"),
-      width: "minmax(auto, 1fr)",
+      width: "minmax(min-content, auto)",
     },
     {
       title: t("common.environment"),
-      width: "minmax(auto, 1fr)",
+      width: "minmax(min-content, auto)",
     },
     {
       title: t("common.project"),
-      width: "minmax(auto, 1fr)",
+      width: "minmax(min-content, auto)",
     },
   ];
   if (props.showOperation) {
     columns.push({
       title: t("common.operation"),
-      width: "auto",
+      width: "minmax(min-content, auto)",
     });
   }
   if (props.rowSelectable) {
     columns.unshift({
       title: "",
-      width: "auto",
+      width: "minmax(auto, 3rem)",
     });
   }
 

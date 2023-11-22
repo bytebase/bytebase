@@ -10,36 +10,14 @@
       <div class="bb-grid-cell text-gray-500">
         <span class="flex flex-row items-center space-x-1">
           <span>{{ project.key }}</span>
-          <NTooltip
-            v-if="project.tenantMode === TenantMode.TENANT_MODE_ENABLED"
-          >
-            <template #trigger>
-              <TenantIcon class="ml-1 text-control" />
-            </template>
-            <span class="whitespace-nowrap">
-              {{ $t("project.mode.batch") }}
-            </span>
-          </NTooltip>
-          <NTooltip v-if="project.state === State.DELETED">
-            <template #trigger>
-              <heroicons-outline:archive class="ml-1 w-4 h-4 text-control" />
-            </template>
-            <span class="whitespace-nowrap">
-              {{ $t("archive.archived") }}
-            </span>
-          </NTooltip>
-          <NTooltip v-if="project.workflow === Workflow.VCS">
-            <template #trigger>
-              <GitIcon class="ml-1 w-4 h-4 text-control" />
-            </template>
-            <span class="whitespace-nowrap">
-              {{ $t("database.gitops-enabled") }}
-            </span>
-          </NTooltip>
         </span>
       </div>
       <div class="bb-grid-cell truncate">
-        {{ projectV1Name(project) }}
+        <ProjectCol
+          mode="ALL_SHORT"
+          :project="project"
+          :show-tenant-icon="true"
+        />
       </div>
     </template>
   </BBGrid>
@@ -50,14 +28,8 @@ import { PropType, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBGridColumn, BBGridRow, BBGrid } from "@/bbkit";
-import TenantIcon from "@/components/TenantIcon.vue";
-import { State } from "@/types/proto/v1/common";
-import {
-  Project,
-  TenantMode,
-  Workflow,
-} from "@/types/proto/v1/project_service";
-import { projectV1Slug, projectV1Name } from "@/utils";
+import { Project } from "@/types/proto/v1/project_service";
+import { projectV1Slug } from "@/utils";
 
 export type ProjectGridRow = BBGridRow<Project>;
 
