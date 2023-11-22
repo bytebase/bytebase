@@ -388,7 +388,6 @@ func (s *SQLService) doQueryV2(ctx context.Context, request *v1pb.QueryRequest, 
 		CurrentDatabase:     request.ConnectionDatabase,
 		SensitiveSchemaInfo: nil,
 		EnableSensitive:     s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil,
-		EngineVersion:       instance.EngineVersion,
 	})
 	select {
 	case <-ctx.Done():
