@@ -326,7 +326,7 @@ watch(
       tab.value = "WAITING_ROLLOUT";
     }
     if (tab.value === "APPROVAL_REQUESTED" || tab.value === "WAITING_ROLLOUT") {
-      if (getValueFromSearchParams(state.params, "status") === "OPEN") {
+      if (getValueFromSearchParams(state.params, "status") === "CLOSED") {
         upsertScope(
           state.params,
           {
