@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"strings"
 	"time"
@@ -74,6 +75,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	if databaseMetadata == nil {
 		return nil, common.Errorf(common.NotFound, "database %q not found", driver.databaseName)
 	}
+	isAtLeastPG10 := isAtLeastPG10(driver.connectionCtx.EngineVersion)
 
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -85,13 +87,16 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get schemas from database %q", driver.databaseName)
 	}
-	tableMap, err := getTables(txn)
+	tableMap, err := getTables(txn, isAtLeastPG10)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get tables from database %q", driver.databaseName)
 	}
-	tablePartitionMap, err := getTablePartitions(txn)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get table partitions from database %q", driver.databaseName)
+	var tablePartitionMap map[db.TableKey][]*storepb.TablePartitionMetadata
+	if isAtLeastPG10 {
+		tablePartitionMap, err = getTablePartitions(txn)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get table partitions from database %q", driver.databaseName)
+		}
 	}
 	viewMap, err := getViews(txn)
 	if err != nil {
@@ -120,7 +125,9 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			tables = []*storepb.TableMetadata{}
 		}
 		for _, table := range tables {
-			table.Partitions = warpTablePartitions(tablePartitionMap, schemaName, table.Name)
+			if isAtLeastPG10 {
+				table.Partitions = warpTablePartitions(tablePartitionMap, schemaName, table.Name)
+			}
 		}
 		if views, exists = viewMap[schemaName]; !exists {
 			views = []*storepb.ViewMetadata{}
@@ -314,19 +321,25 @@ func getSchemas(txn *sql.Tx) ([]string, error) {
 	return result, nil
 }
 
-var listNonPartitionTableQuery = `
-SELECT tbl.schemaname, tbl.tablename,
-	pg_table_size(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass),
-	pg_indexes_size(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass),
-	GREATEST(pc.reltuples::bigint, 0::BIGINT) AS estimate,
-	obj_description(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass) AS comment
-FROM pg_catalog.pg_tables tbl
-LEFT JOIN pg_class as pc ON pc.oid = format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass` + fmt.Sprintf(`
-WHERE tbl.schemaname NOT IN (%s) AND pc.relispartition IS FALSE
-ORDER BY tbl.schemaname, tbl.tablename;`, pgparser.SystemSchemaWhereClause)
+func getListTableQuery(isAtLeastPG10 bool) string {
+	relisPartition := ""
+	if isAtLeastPG10 {
+		relisPartition = " AND pc.relispartition IS FALSE"
+	}
+	return `
+	SELECT tbl.schemaname, tbl.tablename,
+		pg_table_size(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass),
+		pg_indexes_size(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass),
+		GREATEST(pc.reltuples::bigint, 0::BIGINT) AS estimate,
+		obj_description(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass) AS comment
+	FROM pg_catalog.pg_tables tbl
+	LEFT JOIN pg_class as pc ON pc.oid = format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass` + fmt.Sprintf(`
+	WHERE tbl.schemaname NOT IN (%s)%s
+	ORDER BY tbl.schemaname, tbl.tablename;`, pgparser.SystemSchemaWhereClause, relisPartition)
+}
 
 // getTables gets all tables of a database.
-func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
+func getTables(txn *sql.Tx, isAtLeastPG10 bool) (map[string][]*storepb.TableMetadata, error) {
 	columnMap, err := getTableColumns(txn)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get table columns")
@@ -341,7 +354,8 @@ func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
 	}
 
 	tableMap := make(map[string][]*storepb.TableMetadata)
-	rows, err := txn.Query(listNonPartitionTableQuery)
+	query := getListTableQuery(isAtLeastPG10)
+	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -889,4 +903,14 @@ func (driver *Driver) CheckSlowQueryLogEnabled(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func isAtLeastPG10(version string) bool {
+	v, err := semver.ParseTolerant(version)
+	if err != nil {
+		slog.Error("invalid postgres version", slog.String("version", version))
+		// Assume the version is at least 10.0 for any error.
+		return true
+	}
+	return v.Major >= 10
 }
