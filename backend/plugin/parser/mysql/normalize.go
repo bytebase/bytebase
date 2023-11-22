@@ -175,8 +175,16 @@ func NormalizeMySQLProcedureName(ctx parser.IProcedureNameContext) (string, stri
 	return "", ""
 }
 
-// NormalizeMySQLSchemaRef noamalizes the given schemaRef.
+// NormalizeMySQLSchemaRef normalize the given schemaRef.
 func NormalizeMySQLSchemaRef(ctx parser.ISchemaRefContext) string {
+	if ctx.Identifier() != nil {
+		return NormalizeMySQLIdentifier(ctx.Identifier())
+	}
+	return ""
+}
+
+// NormalizeMySQLSchemaRef normalize the given schemaName.
+func NormalizeMySQLSchemaName(ctx parser.ISchemaNameContext) string {
 	if ctx.Identifier() != nil {
 		return NormalizeMySQLIdentifier(ctx.Identifier())
 	}
