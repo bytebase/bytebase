@@ -1,11 +1,14 @@
 <template>
-  {{ showText ? columnClassification?.title ?? placeholder : "" }}
+  <NEllipsis v-if="showText" :line-clamp="1">
+    {{ columnClassification?.title ?? placeholder }}
+  </NEllipsis>
   <span v-if="level" :class="['px-1 py-0.5 rounded text-xs', levelColor]">
     {{ level.title }}
   </span>
 </template>
 
 <script lang="ts" setup>
+import { NEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
 
