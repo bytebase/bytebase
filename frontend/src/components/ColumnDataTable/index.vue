@@ -1,7 +1,7 @@
 <template>
   <NDataTable
     :columns="columns"
-    :data="columnList"
+    :data="filteredColumnList"
     :max-height="640"
     :virtual-scroll="true"
     :striped="true"
@@ -58,6 +58,11 @@ const props = defineProps({
     type: Object as PropType<
       DataClassificationSetting_DataClassificationConfig | undefined
     >,
+  },
+  search: {
+    required: false,
+    default: "",
+    type: String,
   },
 });
 
@@ -251,5 +256,14 @@ const columns = computed(() => {
   ];
 
   return columns.filter((column) => !column.hide);
+});
+
+const filteredColumnList = computed(() => {
+  if (props.search) {
+    return props.columnList.filter((column) => {
+      return column.name.toLowerCase().includes(props.search.toLowerCase());
+    });
+  }
+  return props.columnList;
 });
 </script>
