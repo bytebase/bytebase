@@ -1,53 +1,36 @@
 <template>
-  <NDropdown
-    trigger="click"
+  <NSelect
+    :value="level"
     :options="options"
-    :disabled="disabled"
-    @select="$emit('update', $event)"
-  >
-    <div class="flex items-center">
-      {{
-        $t(
-          `settings.sensitive-data.masking-level.${maskingLevelToJSON(
-            selected
-          ).toLowerCase()}`
-        )
-      }}
-      <button
-        class="w-5 h-5 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
-      >
-        <heroicons-solid:chevron-up-down class="w-4 h-auto text-gray-400" />
-      </button>
-    </div>
-  </NDropdown>
+    @update:value="$emit('update:level', $event)"
+  />
 </template>
 
 <script lang="ts" setup>
-import { type DropdownOption, NDropdown } from "naive-ui";
+import { SelectOption, NSelect } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { MaskingLevel, maskingLevelToJSON } from "@/types/proto/v1/common";
 
 const props = defineProps<{
-  disabled: boolean;
-  selected: MaskingLevel;
+  level: MaskingLevel;
   levelList: MaskingLevel[];
 }>();
 
 defineEmits<{
-  (event: "update", level: MaskingLevel): void;
+  (event: "update:level", level: MaskingLevel): void;
 }>();
 
 const { t } = useI18n();
 
-const options = computed((): DropdownOption[] => {
-  return props.levelList.map((level) => ({
+const options = computed(() => {
+  return props.levelList.map<SelectOption>((level) => ({
     label: t(
       `settings.sensitive-data.masking-level.${maskingLevelToJSON(
         level
       ).toLowerCase()}`
     ),
-    key: level,
+    value: level,
   }));
 });
 </script>

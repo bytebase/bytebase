@@ -27,9 +27,9 @@
         :readonly="!hasPermission || !hasSensitiveDataFeature"
         :row-clickable="false"
         :semantic-item-list="state.semanticItemList"
-        @on-cancel="onCancel"
-        @on-remove="onRemove"
-        @on-confirm="onConfirm"
+        @cancel="onCancel"
+        @remove="onRemove"
+        @confirm="onConfirm"
       />
     </div>
   </div>
@@ -52,6 +52,7 @@ import {
 } from "@/store";
 import { SemanticTypeSetting_SemanticType } from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV1 } from "@/utils";
+import SemanticTemplateDrawer from "./components/SemanticTemplateDrawer.vue";
 import SemanticTypesTable, {
   SemanticItem,
 } from "./components/SemanticTypesTable.vue";

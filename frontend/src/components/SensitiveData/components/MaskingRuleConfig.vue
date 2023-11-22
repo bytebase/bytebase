@@ -1,20 +1,22 @@
 <template>
   <div class="gap-y-4 w-full">
     <div class="flex items-stretch gap-x-4 overflow-hidden">
-      <div class="flex-1 space-y-2 py-4 overflow-x-hidden overflow-y-auto">
-        <NInput
-          v-if="!readonly"
-          v-model:value="state.title"
-          class="!w-64 ml-0.5"
-          :placeholder="defaultTitle"
-          type="text"
-          size="small"
-          :disabled="disabled"
-          @input="state.dirty = true"
-        />
-        <h3 v-else class="font-medium text-sm text-main py-2">
-          {{ state.title || defaultTitle }}
-        </h3>
+      <div class="flex-1 space-y-2 overflow-x-hidden overflow-y-auto">
+        <div class="flex items-center h-[36px]">
+          <NInput
+            v-if="!readonly"
+            v-model:value="state.title"
+            class="!w-64"
+            :placeholder="defaultTitle"
+            type="text"
+            size="small"
+            :disabled="disabled"
+            @input="state.dirty = true"
+          />
+          <h3 v-else class="font-medium text-sm text-main">
+            {{ state.title || defaultTitle }}
+          </h3>
+        </div>
         <ExprEditor
           :expr="state.expr"
           :allow-admin="!readonly"
@@ -25,7 +27,7 @@
           @update="state.dirty = true"
         />
       </div>
-      <div class="space-y-2 py-4">
+      <div>
         <h3 class="font-medium text-sm text-main py-2">
           {{ $t("settings.sensitive-data.masking-level.self") }}
         </h3>
@@ -43,20 +45,24 @@
     <div v-if="!readonly" class="flex justify-between items-center">
       <NPopconfirm v-if="allowDelete" @positive-click="$emit('delete')">
         <template #trigger>
-          <button
-            class="flex items-center space-x-1 py-1 px-2 hover:bg-gray-300 rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
+          <NButton
+            tag="div"
+            size="small"
+            style="--n-padding: 0 6px; --n-icon-margin: 4px"
             :disabled="disabled"
             @click.stop=""
           >
-            <heroicons-outline:trash class="w-4 h-4" />
-            <span class="text-sm textlabel">{{ $t("common.delete") }}</span>
-          </button>
+            <template #icon>
+              <TrashIcon class="w-3.5 h-3.5" />
+            </template>
+            {{ $t("common.delete") }}
+          </NButton>
         </template>
         <div class="whitespace-nowrap">
           {{ $t("settings.sensitive-data.global-rules.delete-rule-tip") }}
         </div>
       </NPopconfirm>
-      <div class="flex justify-end gap-x-3 ml-auto">
+      <div class="flex justify-end gap-x-2 ml-auto">
         <NButton :disabled="disabled" @click="onCancel">
           {{ $t("common.cancel") }}
         </NButton>
@@ -73,6 +79,7 @@
 </template>
 
 <script lang="ts" setup>
+import { TrashIcon } from "lucide-vue-next";
 import { NSelect, SelectOption, NPopconfirm } from "naive-ui";
 import { computed, reactive, onMounted, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
