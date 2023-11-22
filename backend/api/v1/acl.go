@@ -145,7 +145,11 @@ func (in *ACLInterceptor) aclInterceptorDo(ctx context.Context, fullMethod strin
 		}
 	}
 
-	return in.checkIAMPermission(ctx, methodName, user)
+	if in.mode == common.ReleaseModeDev {
+		return in.checkIAMPermission(ctx, methodName, user)
+	}
+
+	return nil
 }
 
 func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, methodName string, user *store.UserMessage) error {
