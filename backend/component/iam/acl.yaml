@@ -8,6 +8,21 @@ roles:
       - bb.instance.delete
       - bb.instance.undelete
       - bb.instance.sync
+      - bb.database.list
+      - bb.database.get
+      - bb.database.update
+      - bb.database.sync
+      - bb.database.getMetadata
+      - bb.database.updateMetadata
+      - bb.database.getSchema
+      - bb.database.getBackupSetting
+      - bb.database.listBackups
+      - bb.database.createBackup
+      - bb.database.listChangeHistories
+      - bb.database.getChangeHistory
+      - bb.database.listSecrets
+      - bb.database.updateSecret
+      - bb.database.deleteSecret
   - name: roles/workspaceDBA
     permissions:
       - bb.instance.list
@@ -17,17 +32,76 @@ roles:
       - bb.instance.delete
       - bb.instance.undelete
       - bb.instance.sync
+      - bb.database.list
+      - bb.database.get
+      - bb.database.update
+      - bb.database.sync
+      - bb.database.getMetadata
+      - bb.database.updateMetadata
+      - bb.database.getSchema
+      - bb.database.getBackupSetting
+      - bb.database.listBackups
+      - bb.database.createBackup
+      - bb.database.listChangeHistories
+      - bb.database.getChangeHistory
+      - bb.database.listSecrets
+      - bb.database.updateSecret
+      - bb.database.deleteSecret
   - name: roles/workspaceMember
     permissions: []
   - name: roles/projectOwner
-    permissions: []
+    permissions:
+      - bb.database.list
+      - bb.database.get
+      - bb.database.update
+      - bb.database.sync
+      - bb.database.getMetadata
+      - bb.database.updateMetadata
+      - bb.database.getSchema
+      - bb.database.getBackupSetting
+      - bb.database.listBackups
+      - bb.database.createBackup
+      - bb.database.listChangeHistories
+      - bb.database.getChangeHistory
+      - bb.database.listSecrets
+      - bb.database.updateSecret
+      - bb.database.deleteSecret
   - name: roles/projectDeveloper
-    permissions: []
+    permissions:
+      - bb.database.list
+      - bb.database.get
+      - bb.database.sync
+      - bb.database.getMetadata
+      - bb.database.getSchema
+      - bb.database.getBackupSetting
+      - bb.database.listBackups
+      - bb.database.listChangeHistories
+      - bb.database.getChangeHistory
   - name: roles/projectQuerier
     permissions: []
   - name: roles/projectExporter
     permissions: []
   - name: roles/projectReleaser
-    permissions: []
+    permissions:
+      - bb.database.list
+      - bb.database.get
+      - bb.database.update
+      - bb.database.sync
+      - bb.database.getMetadata
+      - bb.database.getSchema
+      - bb.database.getBackupSetting
+      - bb.database.listBackups
+      - bb.database.listChangeHistories
+      - bb.database.getChangeHistory
   - name: roles/projectViewer
-    permissions: []
+    permissions:
+      - bb.database.list
+      - bb.database.get
+      - bb.database.update
+      - bb.database.sync
+      - bb.database.getMetadata
+      - bb.database.getSchema
+      - bb.database.getBackupSetting
+      - bb.database.listBackups
+      - bb.database.listChangeHistories
+      - bb.database.getChangeHistory
