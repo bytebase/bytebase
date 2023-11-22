@@ -3,7 +3,7 @@
     <DrawerContent
       :title="$t('settings.sensitive-data.semantic-types.add-from-template')"
     >
-      <div class="w-[52rem]">
+      <div class="w-[42rem]">
         <SemanticTypesTable
           :readonly="true"
           :row-clickable="true"

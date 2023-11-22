@@ -10,7 +10,7 @@
   >
     <template #item="{ item, row }: SemanticItemRow">
       <div class="bb-grid-cell">
-        <h3 v-if="item.mode === 'NORMAL'">
+        <h3 v-if="item.mode === 'NORMAL'" class="break-normal">
           {{ item.item.title }}
         </h3>
         <NInput
@@ -169,7 +169,7 @@ const columnList = computed(() => {
     },
     {
       title: t("settings.sensitive-data.semantic-types.table.description"),
-      width: "1.5fr",
+      width: "1fr",
     },
     {
       title: t(
