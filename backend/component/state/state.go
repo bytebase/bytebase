@@ -103,5 +103,6 @@ type InstanceSlowQuerySyncMessage struct {
 
 type TaskRunExecutionStatus struct {
 	ExecutionStatus v1pb.TaskRun_ExecutionStatus
+	ExecutionDetail *v1pb.TaskRun_ExecutionDetail
 	UpdateTime      time.Time
 }

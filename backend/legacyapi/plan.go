@@ -190,6 +190,11 @@ const (
 
 	// FeaturePluginOpenAI enables AI features powered by OpenAI.
 	FeaturePluginOpenAI FeatureType = "bb.feature.plugin.openai"
+
+	// Execution.
+
+	// FeatureChunkedSubmit enables chunked submit.
+	FeatureChunkedSubmit FeatureType = "bb.feature.chunked-submit"
 )
 
 // Name returns a readable name of the feature.
@@ -360,6 +365,8 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureSharedSQLScript: {false, true, true},
 	// Plugins
 	FeaturePluginOpenAI: {false, false, true},
+	// Execution
+	FeatureChunkedSubmit: {true, false, false},
 }
 
 // InstanceLimitFeature is the map for instance feature. Only allowed to access these feature for activate instance.

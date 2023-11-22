@@ -26,6 +26,11 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
+const (
+	chunkedSubmissionMaximumSize = 500 * 1024
+	maxChunksCount               = 200
+)
+
 var (
 	baseTableType = "BASE TABLE"
 	viewTableType = "VIEW"
@@ -177,6 +182,92 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 			return 0, err
 		}
 	}
+
+	if opts.IndividualSubmission && len(statement) <= chunkedSubmissionMaximumSize {
+		return driver.executeChunkedSubmission(ctx, conn, statement, opts)
+	}
+
+	return driver.executeBatchSubmission(ctx, conn, statement, opts)
+}
+
+func (driver *Driver) executeChunkedSubmission(ctx context.Context, conn *sql.Conn, statement string, opts db.ExecuteOptions) (int64, error) {
+	list, err := mysqlparser.SplitSQL(statement)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to split sql")
+	}
+	if len(list) == 0 {
+		return 0, nil
+	}
+
+	tx, err := conn.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to begin execute transaction")
+	}
+	defer tx.Rollback()
+
+	// Round up the number of sql per chunk.
+	sqlPerChunk := (len(list)-1)/maxChunksCount + 1
+	currentIndex := 0
+	var totalRowsAffected int64
+	for {
+		if currentIndex >= len(list) {
+			break
+		}
+
+		// Start the current chunk.
+		chunkEndIndex := currentIndex + sqlPerChunk
+		if chunkEndIndex > len(list) {
+			chunkEndIndex = len(list)
+		}
+
+		// Set the progress information for the current chunk.
+		if opts.UpdateExecutionStatus != nil {
+			fmt.Println(`111111111111111111111111111111111`)
+			fmt.Printf("currentIndex: %d, chunkEndIndex: %d\n", currentIndex, chunkEndIndex)
+			fmt.Printf("commandsTotal: %d, commandsCompleted: %d\n", len(list), currentIndex)
+			fmt.Printf("commandStartPosition: %d, commandEndPosition: %d\n", list[currentIndex].BaseLine, list[chunkEndIndex-1].BaseLine)
+			opts.UpdateExecutionStatus(&v1pb.TaskRun_ExecutionDetail{
+				CommandsTotal:     int32(len(list)),
+				CommandsCompleted: int32(currentIndex),
+				CommandStartPosition: &v1pb.TaskRun_ExecutionDetail_Position{
+					Line: int32(list[currentIndex].BaseLine),
+					// TODO(rebelice): we should also set the column position.
+				},
+				CommandEndPosition: &v1pb.TaskRun_ExecutionDetail_Position{
+					Line: int32(list[chunkEndIndex-1].BaseLine),
+					// TODO(rebelice): we should also set the column position.
+				},
+			})
+		}
+
+		var chunkBuf strings.Builder
+		for _, sql := range list[currentIndex:chunkEndIndex] {
+			if _, err := chunkBuf.WriteString(sql.Text); err != nil {
+				return 0, errors.Wrapf(err, "failed to write chunk buffer")
+			}
+		}
+		currentIndex = chunkEndIndex
+
+		sqlResult, err := tx.ExecContext(ctx, chunkBuf.String())
+		if err != nil {
+			return 0, errors.Wrapf(err, "failed to execute context in a transaction")
+		}
+		rowsAffected, err := sqlResult.RowsAffected()
+		if err != nil {
+			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
+			slog.Debug("rowsAffected returns error", log.BBError(err))
+		}
+		totalRowsAffected += rowsAffected
+	}
+
+	if err := tx.Commit(); err != nil {
+		return 0, errors.Wrapf(err, "failed to commit execute transaction")
+	}
+
+	return totalRowsAffected, nil
+}
+
+func (driver *Driver) executeBatchSubmission(ctx context.Context, conn *sql.Conn, statement string, opts db.ExecuteOptions) (int64, error) {
 	tx, err := conn.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to begin execute transaction")

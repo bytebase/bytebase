@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/gosimple/slug"
 	"github.com/pkg/errors"
@@ -29,6 +30,7 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // Executor is the task executor.
@@ -172,7 +174,7 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.P
 	return mi, nil
 }
 
-func executeMigration(ctx context.Context, driverCtx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, task *store.TaskMessage, taskRunUID int, statement string, sheetID *int, mi *db.MigrationInfo) (string, string, error) {
+func executeMigration(ctx context.Context, driverCtx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, license enterprise.LicenseService, stateCfg *state.State, task *store.TaskMessage, taskRunUID int, statement string, sheetID *int, mi *db.MigrationInfo) (string, string, error) {
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return "", "", err
@@ -212,6 +214,27 @@ func executeMigration(ctx context.Context, driverCtx context.Context, stores *st
 	if task.Type == api.TaskDatabaseDataUpdate && instance.Engine == storepb.Engine_ORACLE {
 		// getSetOracleTransactionIdFunc will update the task payload to set the Oracle transaction id, we need to re-retrieve the task to store to the RollbackGenerate.
 		opts.EndTransactionFunc = getSetOracleTransactionIDFunc(ctx, task, stores)
+	}
+
+	if err := license.IsFeatureEnabled(api.FeatureChunkedSubmit); err == nil && stateCfg != nil {
+		// nolint
+		switch task.Type {
+		case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseDataUpdate:
+			switch instance.Engine {
+			case storepb.Engine_MYSQL:
+				opts.IndividualSubmission = true
+				opts.UpdateExecutionStatus = func(detail *v1pb.TaskRun_ExecutionDetail) {
+					stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
+						state.TaskRunExecutionStatus{
+							ExecutionStatus: v1pb.TaskRun_EXECUTING,
+							ExecutionDetail: detail,
+							UpdateTime:      time.Now(),
+						})
+				}
+			default:
+				// do nothing
+			}
+		}
 	}
 
 	migrationID, schema, err := utils.ExecuteMigrationDefault(ctx, driverCtx, stores, stateCfg, taskRunUID, driver, mi, statement, sheetID, opts)
@@ -632,7 +655,7 @@ func runMigration(ctx context.Context, driverCtx context.Context, store *store.S
 		return true, nil, err
 	}
 
-	migrationID, schema, err := executeMigration(ctx, driverCtx, store, dbFactory, stateCfg, task, taskRunUID, statement, sheetID, mi)
+	migrationID, schema, err := executeMigration(ctx, driverCtx, store, dbFactory, license, stateCfg, task, taskRunUID, statement, sheetID, mi)
 	if err != nil {
 		return true, nil, err
 	}

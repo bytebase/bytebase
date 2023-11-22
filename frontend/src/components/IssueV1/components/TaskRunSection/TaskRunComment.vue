@@ -68,7 +68,11 @@ const comment = computed(() => {
     if (taskRun.executionStatus === TaskRun_ExecutionStatus.PRE_EXECUTING) {
       return t("task-run.status.dumping-schema-before-executing-sql");
     } else if (taskRun.executionStatus === TaskRun_ExecutionStatus.EXECUTING) {
-      return t("task-run.status.executing-sql");
+      let text = t("task-run.status.executing-sql");
+      if (taskRun.executionDetail) {
+        text += `: ${taskRun.executionDetail.commandsCompleted}/${taskRun.executionDetail.commandsTotal}, [${taskRun.executionDetail.commandStartPosition?.line}:${taskRun.executionDetail.commandEndPosition?.line}]]`;
+      }
+      return text;
     } else if (
       taskRun.executionStatus === TaskRun_ExecutionStatus.POST_EXECUTING
     ) {
