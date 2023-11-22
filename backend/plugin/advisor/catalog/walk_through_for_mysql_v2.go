@@ -415,7 +415,8 @@ func (l *mysqlV2Listener) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
 		isSpatial = true
 		tp = SpatialName
 	case mysql.MySQLParserINDEX_SYMBOL:
-	case mysql.MySQLParserUNIQUE_SYMBOL:
+	}
+	if ctx.UNIQUE_SYMBOL() != nil {
 		unique = true
 	}
 
