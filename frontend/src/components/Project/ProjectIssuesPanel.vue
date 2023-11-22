@@ -3,9 +3,7 @@
     <IssueSearch
       v-model:params="state.params"
       :components="['status']"
-      :component-props="
-        statusTabDisabled ? { status: { disabled: true } } : undefined
-      "
+      :component-props="{ status: { disabled: statusTabDisabled } }"
     >
       <template #default>
         <div class="flex items-center gap-x-2">
@@ -73,6 +71,7 @@ import {
   buildSearchTextBySearchParams,
   buildUIIssueFilterBySearchParams,
   extractProjectResourceName,
+  getValueFromSearchParams,
   maybeApplyDefaultTsRange,
   upsertScope,
 } from "@/utils";
@@ -140,12 +139,12 @@ const tabItemList = computed((): TabFilterItem<TabValue>[] => {
   return items;
 });
 const tab = useLocalStorage<TabValue>(
-  "bb.project.issue-list",
-  "WAITING_APPROVAL",
+  "bb.project.issue-list-tab",
+  tabItemList.value[0].value,
   {
     serializer: {
       read(raw: TabValue) {
-        if (!TABS.includes(raw)) return "WAITING_APPROVAL";
+        if (!TABS.includes(raw)) return tabItemList.value[0].value;
         return raw;
       },
       write(value) {
@@ -194,27 +193,22 @@ const mergeUIIssueFilterByTab = (tab: TabValue) => {
 };
 
 watch(
-  tab,
-  (tab) => {
-    if (tab === "WAITING_APPROVAL" || tab === "WAITING_ROLLOUT") {
-      upsertScope(
-        state.params,
-        {
-          id: "status",
-          value: "OPEN",
-        },
-        true /* mutate */
-      );
-    }
-  },
-  { immediate: true }
-);
-
-watch(
   [hasCustomApprovalFeature, tab],
   () => {
     if (!hasCustomApprovalFeature.value && tab.value === "WAITING_APPROVAL") {
       tab.value = "WAITING_ROLLOUT";
+    }
+    if (tab.value === "WAITING_APPROVAL" || tab.value === "WAITING_ROLLOUT") {
+      if (getValueFromSearchParams(state.params, "status") === "OPEN") {
+        upsertScope(
+          state.params,
+          {
+            id: "status",
+            value: "OPEN",
+          },
+          true /* mutate */
+        );
+      }
     }
   },
   { immediate: true }
