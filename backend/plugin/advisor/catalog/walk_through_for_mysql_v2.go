@@ -368,6 +368,28 @@ func (l *mysqlV2Listener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 	}
 }
 
+// EnterDropIndex is called when production dropIndex is entered.
+func (l *mysqlV2Listener) EnterDropIndex(ctx *mysql.DropIndexContext) {
+	if ctx.TableRef() == nil {
+		return
+	}
+	databaseName, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
+	table, err := l.databaseState.mysqlV2FindTableState(databaseName, tableName, true /* createIncompleteTAble */)
+	if err != nil {
+		l.err = err
+		return
+	}
+
+	if ctx.IndexRef() == nil {
+		return
+	}
+
+	_, _, indexName := mysqlparser.NormalizeIndexRef(ctx.IndexRef())
+	if err := table.dropIndex(l.databaseState.ctx, indexName); err != nil {
+		l.err = err
+	}
+}
+
 func (l *mysqlV2Listener) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
 	if ctx.CreateIndexTarget() == nil || ctx.CreateIndexTarget().TableRef() == nil {
 		return
