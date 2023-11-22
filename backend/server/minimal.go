@@ -4,6 +4,7 @@ import (
 	// This includes the first-class database, Postgres.
 
 	// Drivers.
+	_ "github.com/bytebase/bytebase/backend/plugin/db/mongodb"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
 
 	// Parsers.
