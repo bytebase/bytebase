@@ -121,18 +121,21 @@ const tableHeaderList = computed(() => {
   return list;
 });
 
-const algorithmList = computed((): MaskingAlgorithmSetting_Algorithm[] => {
-  const list =
+const rawAlgorithmList = computed((): MaskingAlgorithmSetting_Algorithm[] => {
+  return (
     settingStore.getSettingByName("bb.workspace.masking-algorithm")?.value
-      ?.maskingAlgorithmSettingValue?.algorithms ?? [];
+      ?.maskingAlgorithmSettingValue?.algorithms ?? []
+  );
+});
 
+const algorithmList = computed((): MaskingAlgorithmSetting_Algorithm[] => {
   return [
     MaskingAlgorithmSetting_Algorithm.fromPartial({
       title: t("settings.sensitive-data.algorithms.default"),
       description: t("settings.sensitive-data.algorithms.default-desc"),
       category: "MASK",
     }),
-    ...list,
+    ...rawAlgorithmList.value,
   ];
 });
 
@@ -150,13 +153,13 @@ const getAlgorithmMaskingType = (
 };
 
 const onRemove = async (index: number) => {
-  const item = algorithmList.value[index];
+  const item = rawAlgorithmList.value[index];
   if (!item) {
     return;
   }
   const newList = [
-    ...algorithmList.value.slice(0, index),
-    ...algorithmList.value.slice(index + 1),
+    ...rawAlgorithmList.value.slice(0, index),
+    ...rawAlgorithmList.value.slice(index + 1),
   ];
 
   await settingStore.upsertSetting({
