@@ -21,13 +21,7 @@
       />
     </template>
     <template
-      #body="{
-        rowData,
-        row,
-      }: {
-        rowData: MaskingAlgorithmSetting_Algorithm,
-        row: number,
-      }"
+      #body="{ rowData }: { rowData: MaskingAlgorithmSetting_Algorithm }"
     >
       <BBTableCell class="bb-grid-cell">
         <h3>
@@ -53,7 +47,7 @@
             <heroicons-outline:pencil class="w-4 h-4" />
           </button>
 
-          <NPopconfirm v-if="!readonly" @positive-click="onRemove(row)">
+          <NPopconfirm v-if="!readonly" @positive-click="onRemove(rowData.id)">
             <template #trigger>
               <button
                 class="p-1 hover:bg-gray-300 rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
@@ -121,18 +115,21 @@ const tableHeaderList = computed(() => {
   return list;
 });
 
-const algorithmList = computed((): MaskingAlgorithmSetting_Algorithm[] => {
-  const list =
+const rawAlgorithmList = computed((): MaskingAlgorithmSetting_Algorithm[] => {
+  return (
     settingStore.getSettingByName("bb.workspace.masking-algorithm")?.value
-      ?.maskingAlgorithmSettingValue?.algorithms ?? [];
+      ?.maskingAlgorithmSettingValue?.algorithms ?? []
+  );
+});
 
+const algorithmList = computed((): MaskingAlgorithmSetting_Algorithm[] => {
   return [
     MaskingAlgorithmSetting_Algorithm.fromPartial({
       title: t("settings.sensitive-data.algorithms.default"),
       description: t("settings.sensitive-data.algorithms.default-desc"),
       category: "MASK",
     }),
-    ...list,
+    ...rawAlgorithmList.value,
   ];
 });
 
@@ -149,14 +146,14 @@ const getAlgorithmMaskingType = (
   );
 };
 
-const onRemove = async (index: number) => {
-  const item = algorithmList.value[index];
-  if (!item) {
+const onRemove = async (id: string) => {
+  const index = rawAlgorithmList.value.findIndex((item) => item.id === id);
+  if (index < 0) {
     return;
   }
   const newList = [
-    ...algorithmList.value.slice(0, index),
-    ...algorithmList.value.slice(index + 1),
+    ...rawAlgorithmList.value.slice(0, index),
+    ...rawAlgorithmList.value.slice(index + 1),
   ];
 
   await settingStore.upsertSetting({

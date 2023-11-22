@@ -4,7 +4,7 @@
       <NButton
         type="primary"
         :disabled="!hasPermission || !hasSensitiveDataFeature"
-        @click="state.showCreateDrawer = true"
+        @click="onCreate"
       >
         {{ $t("settings.sensitive-data.algorithms.add") }}
       </NButton>
@@ -53,6 +53,13 @@ const hasPermission = computed(() => {
   );
 });
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
+
+const onCreate = () => {
+  state.pendingEditData = MaskingAlgorithmSetting_Algorithm.fromPartial({
+    id: uuidv4(),
+  });
+  state.showCreateDrawer = true;
+};
 
 const onDrawerDismiss = () => {
   state.showCreateDrawer = false;
