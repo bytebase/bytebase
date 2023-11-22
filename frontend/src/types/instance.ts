@@ -1,7 +1,7 @@
 import { DataSource } from ".";
 import { RowStatus } from "./common";
 import { Environment } from "./environment";
-import { InstanceId, MigrationHistoryId, ResourceId } from "./id";
+import { InstanceId, MigrationHistoryId } from "./id";
 import { Engine } from "./proto/v1/common";
 import { VCSPushEvent } from "./vcs";
 
@@ -177,49 +177,6 @@ export type Instance = {
   externalLink?: string;
   srv: boolean;
   authenticationDatabase: string;
-};
-
-export type InstanceCreate = {
-  resourceId: ResourceId;
-
-  // Related fields
-  environmentId: number;
-
-  // Domain specific fields
-  name: string;
-  engine: EngineType;
-  externalLink?: string;
-  host: string;
-  port?: string;
-  database?: string;
-  // In mysql, username can be empty which means anonymous user
-  username?: string;
-  password?: string;
-  sslCa?: string;
-  sslCert?: string;
-  sslKey?: string;
-  // DNS SRV record is only used for MongoDB.
-  srv: boolean;
-  // For MongoDB, the auth database is used to authenticate the user.
-  authenticationDatabase: string;
-  // sid and serviceName are used for Oracle database. Required one of them.
-  sid: string;
-  serviceName: string;
-  // Connection over SSH.
-  sshHost: string;
-  sshPort: string;
-  sshUser: string;
-  sshPassword: string;
-  sshPrivateKey: string;
-};
-
-export type InstancePatch = {
-  // Standard fields
-  rowStatus?: RowStatus;
-
-  // Domain specific fields
-  name?: string;
-  externalLink?: string;
 };
 
 export type MigrationSchemaStatus = "UNKNOWN" | "OK" | "NOT_EXIST";
