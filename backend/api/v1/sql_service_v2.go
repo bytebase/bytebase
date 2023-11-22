@@ -250,8 +250,8 @@ func mask(maskers []masker.Masker, result *v1pb.QueryResult) {
 				maskedValue = maskers[j].Mask(&masker.MaskData{
 					DataV2: row.Values[j],
 				})
-				result.Rows[i].Values[j] = maskedValue
 			}
+			result.Rows[i].Values[j] = maskedValue
 		}
 	}
 }
