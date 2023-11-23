@@ -3,6 +3,7 @@
     v-for="(scope, i) in params.scopes"
     :key="scope.id"
     :closable="!isReadonlyScope(scope)"
+    :disabled="isReadonlyScope(scope)"
     :data-search-scope-id="scope.id"
     :bordered="false"
     size="small"
