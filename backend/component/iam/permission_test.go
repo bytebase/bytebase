@@ -41,13 +41,13 @@ func permissionExist(p Permission) bool {
 		PermissionDatabaseGetSchema,
 		PermissionDatabaseGetBackupSetting,
 		PermissionDatabaseUpdateBackupSetting,
-		PermissionDatabaseListBackups,
-		PermissionDatabaseCreateBackup,
-		PermissionDatabaseListChangeHistories,
-		PermissionDatabaseGetChangeHistory,
-		PermissionDatabaseListSecrets,
-		PermissionDatabaseUpdateSecret,
-		PermissionDatabaseDeleteSecret:
+		PermissionBackupsList,
+		PermissionBackupsCreate,
+		PermissionChangeHistoriesList,
+		PermissionChangeHistoriesGet,
+		PermissionDatabaseSecretsList,
+		PermissionDatabaseSecretsUpdate,
+		PermissionDatabaseSecretsDelete:
 		return true
 	default:
 		return false
