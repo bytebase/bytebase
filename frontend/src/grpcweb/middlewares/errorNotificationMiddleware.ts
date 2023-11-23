@@ -5,7 +5,7 @@ import { pushNotification } from "@/store";
 
 export type SilentRequestOptions = {
   /**
-   * if set to true, will NOT show push notifications when request error occurs.
+   * If set to true, will NOT show push notifications when request error occurs.
    */
   silent?: boolean;
 

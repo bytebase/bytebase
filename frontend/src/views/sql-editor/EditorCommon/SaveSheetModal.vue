@@ -61,7 +61,10 @@ const doSaveSheet = async (title: string) => {
   const sheetId = Number(extractSheetUID(sheetName ?? ""));
 
   const conn = tabStore.currentTab.connection;
-  const database = await databaseStore.getOrFetchDatabaseByUID(conn.databaseId);
+  const database = await databaseStore.getOrFetchDatabaseByUID(
+    conn.databaseId,
+    true /* silent */
+  );
 
   let sheet: Sheet | undefined;
   if (sheetId !== UNKNOWN_ID) {
