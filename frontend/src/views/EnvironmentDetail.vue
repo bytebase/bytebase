@@ -29,27 +29,20 @@
       </p>
     </div>
 
-    <div class="flex items-center justify-end pt-4 mt-4 border-t">
-      <button
-        type="button"
-        class="btn-normal py-2 px-4"
-        @click="state.showDisableAutoBackupModal = false"
-      >
+    <div class="flex items-center justify-end gap-x-3 pt-4 mt-4 border-t">
+      <NButton @click="state.showDisableAutoBackupModal = false">
         {{ $t("common.no") }}
-      </button>
-      <button
-        type="submit"
-        class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-        @click="disableEnvironmentAutoBackup"
-      >
+      </NButton>
+      <NButton type="primary" @click="disableEnvironmentAutoBackup">
         {{ $t("common.yes") }}
-      </button>
+      </NButton>
     </div>
   </BBModal>
 </template>
 
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
+import { NButton } from "naive-ui";
 import { computed, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";

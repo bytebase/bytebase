@@ -1,11 +1,13 @@
 <template>
-  <div class="rollout-policy-config flex flex-col gap-y-2">
+  <div class="flex flex-col gap-y-2">
     <div class="flex flex-col gap-y-2">
       <NRadio
         :checked="rolloutPolicy.automatic"
+        :disabled="disabled"
+        style="--n-label-padding: 0 0 0 1rem"
         @update:checked="selectAutomaticRollout"
       >
-        <div class="flex flex-col gap-y-2">
+        <div class="flex flex-col gap-y-1">
           <div class="textlabel">
             {{ $t("policy.rollout.auto") }}
           </div>
@@ -18,9 +20,11 @@
     <div class="flex flex-col gap-y-2">
       <NRadio
         :checked="isManualRolloutByDedicatedRolesChecked"
+        :disabled="disabled"
+        style="--n-label-padding: 0 0 0 1rem"
         @update:checked="toggleAllDedicatedRoles"
       >
-        <div class="flex flex-col gap-y-2">
+        <div class="flex flex-col gap-y-1">
           <div class="textlabel flex flex-row gap-x-1">
             <span>{{ $t("policy.rollout.manual-by-dedicated-roles") }}</span>
             <FeatureBadge feature="bb.feature.approval-policy" />
@@ -33,6 +37,8 @@
       <div class="flex flex-col gap-y-2 pl-8">
         <NCheckbox
           :checked="isWorkspaceOwnerChecked"
+          :disabled="disabled"
+          style="--n-label-padding: 0 0 0 1rem"
           @update:checked="
             toggleDedicatedRoles($event, 'workspace', [VirtualRoleType.OWNER])
           "
@@ -43,6 +49,8 @@
         </NCheckbox>
         <NCheckbox
           :checked="isDBAChecked"
+          :disabled="disabled"
+          style="--n-label-padding: 0 0 0 1rem"
           @update:checked="
             toggleDedicatedRoles($event, 'workspace', [VirtualRoleType.DBA])
           "
@@ -53,6 +61,8 @@
         </NCheckbox>
         <NCheckbox
           :checked="isProjectOwnerChecked"
+          :disabled="disabled"
+          style="--n-label-padding: 0 0 0 1rem"
           @update:checked="
             toggleDedicatedRoles($event, 'project', [PresetRoleType.OWNER])
           "
@@ -63,6 +73,8 @@
         </NCheckbox>
         <NCheckbox
           :checked="isProjectReleaserChecked"
+          :disabled="disabled"
+          style="--n-label-padding: 0 0 0 1rem"
           @update:checked="
             toggleDedicatedRoles($event, 'project', [PresetRoleType.RELEASER])
           "
@@ -73,6 +85,8 @@
         </NCheckbox>
         <NCheckbox
           :checked="isIssueCreatorChecked"
+          :disabled="disabled"
+          style="--n-label-padding: 0 0 0 1rem"
           @update:checked="
             toggleDedicatedRoles($event, 'issue', [VirtualRoleType.CREATOR])
           "
@@ -86,6 +100,8 @@
     <div class="flex flex-col gap-y-2">
       <NRadio
         :checked="isIssueLastApproverChecked"
+        :disabled="disabled"
+        style="--n-label-padding: 0 0 0 1rem"
         @update:checked="toggleLastApprover"
       >
         <div class="textlabel flex flex-row gap-x-1">
@@ -108,6 +124,7 @@ import FeatureBadge from "../FeatureGuard/FeatureBadge.vue";
 
 const props = defineProps<{
   policy: Policy;
+  disabled?: boolean;
 }>();
 const emit = defineEmits<{
   (event: "update:policy", policy: Policy): void;
@@ -226,10 +243,3 @@ watch(
   { immediate: true, deep: true }
 );
 </script>
-
-<style lang="postcss" scoped>
-.rollout-policy-config :deep(.n-radio),
-.rollout-policy-config :deep(.n-checkbox) {
-  --n-label-padding: 0 0 0 1rem !important;
-}
-</style>
