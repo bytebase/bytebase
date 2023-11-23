@@ -595,7 +595,7 @@ func (checker *mysqlCreateAndDropDatabaseChecker) EnterQuery(ctx *mysql.QueryCon
 }
 
 // EnterCreateDatabase is called when production createDatabase is entered.
-func (checker *mysqlCreateAndDropDatabaseChecker) EnterCreateDatabase(ctx *mysql.CreateDatabaseContext) {
+func (checker *mysqlCreateAndDropDatabaseChecker) EnterCreateDatabase(_ *mysql.CreateDatabaseContext) {
 	checker.results = append(checker.results, &storepb.PlanCheckRunResult_Result{
 		Status:  storepb.PlanCheckRunResult_Result_ERROR,
 		Code:    common.TaskTypeCreateDatabase.Int32(),
@@ -605,7 +605,7 @@ func (checker *mysqlCreateAndDropDatabaseChecker) EnterCreateDatabase(ctx *mysql
 }
 
 // EnterDropDatabase is called when production dropDatabase is entered.
-func (checker *mysqlCreateAndDropDatabaseChecker) EnterDropDatabase(ctx *mysql.DropDatabaseContext) {
+func (checker *mysqlCreateAndDropDatabaseChecker) EnterDropDatabase(_ *mysql.DropDatabaseContext) {
 	checker.results = append(checker.results, &storepb.PlanCheckRunResult_Result{
 		Status:  storepb.PlanCheckRunResult_Result_ERROR,
 		Code:    common.TaskTypeDropDatabase.Int32(),
@@ -635,98 +635,98 @@ func (checker *mysqlTypeChecker) EnterQuery(ctx *mysql.QueryContext) {
 // truncateTableStatement
 // importStatement
 // EnterAlterStatement is called when production alterStatement is entered.
-func (checker *mysqlTypeChecker) EnterAlterStatement(ctx *mysql.AlterStatementContext) {
+func (checker *mysqlTypeChecker) EnterAlterStatement(_ *mysql.AlterStatementContext) {
 	checker.isDDL = true
 }
 
 // EnterCreateStatement is called when production createStatement is entered.
-func (checker *mysqlTypeChecker) EnterCreateStatement(ctx *mysql.CreateStatementContext) {
+func (checker *mysqlTypeChecker) EnterCreateStatement(_ *mysql.CreateStatementContext) {
 	checker.isDDL = true
 }
 
 // EnterDropStatement is called when production dropStatement is entered.
-func (checker *mysqlTypeChecker) EnterDropStatement(ctx *mysql.DropStatementContext) {
+func (checker *mysqlTypeChecker) EnterDropStatement(_ *mysql.DropStatementContext) {
 	checker.isDDL = true
 }
 
 // EnterRenameTableStatement is called when production renameTableStatement is entered.
-func (checker *mysqlTypeChecker) EnterRenameTableStatement(ctx *mysql.RenameTableStatementContext) {
+func (checker *mysqlTypeChecker) EnterRenameTableStatement(_ *mysql.RenameTableStatementContext) {
 	checker.isDDL = true
 }
 
 // EnterTruncateTableStatement is called when production truncateTableStatement is entered.
-func (checker *mysqlTypeChecker) EnterTruncateTableStatement(ctx *mysql.TruncateTableStatementContext) {
+func (checker *mysqlTypeChecker) EnterTruncateTableStatement(_ *mysql.TruncateTableStatementContext) {
 	checker.isDDL = true
 }
 
 // EnterImportStatement is called when production importStatement is entered.
-func (checker *mysqlTypeChecker) EnterImportStatement(ctx *mysql.ImportStatementContext) {
+func (checker *mysqlTypeChecker) EnterImportStatement(_ *mysql.ImportStatementContext) {
 	checker.isDDL = true
 }
 
 // EnterExplainStatement is called when production explainStatement is entered.
-func (checker *mysqlTypeChecker) EnterExplainStatement(ctx *mysql.ExplainStatementContext) {
+func (checker *mysqlTypeChecker) EnterExplainStatement(_ *mysql.ExplainStatementContext) {
 	checker.isExplain = true
 }
 
 // DML
 // EnterCallStatement is called when production callStatement is entered.
-func (checker *mysqlTypeChecker) EnterCallStatement(ctx *mysql.CallStatementContext) {
+func (checker *mysqlTypeChecker) EnterCallStatement(_ *mysql.CallStatementContext) {
 	checker.isDML = true
 }
 
 // EnterDeleteStatement is called when production deleteStatement is entered.
-func (checker *mysqlTypeChecker) EnterDeleteStatement(ctx *mysql.DeleteStatementContext) {
+func (checker *mysqlTypeChecker) EnterDeleteStatement(_ *mysql.DeleteStatementContext) {
 	checker.isDML = true
 }
 
 // EnterDoStatement is called when production doStatement is entered.
-func (checker *mysqlTypeChecker) EnterDoStatement(ctx *mysql.DoStatementContext) {
+func (checker *mysqlTypeChecker) EnterDoStatement(_ *mysql.DoStatementContext) {
 	checker.isDML = true
 }
 
 // EnterHandlerStatement is called when production handlerStatement is entered.
-func (checker *mysqlTypeChecker) EnterHandlerStatement(ctx *mysql.HandlerStatementContext) {
+func (checker *mysqlTypeChecker) EnterHandlerStatement(_ *mysql.HandlerStatementContext) {
 	checker.isDML = true
 }
 
 // EnterInsertStatement is called when production insertStatement is entered.
-func (checker *mysqlTypeChecker) EnterInsertStatement(ctx *mysql.InsertStatementContext) {
+func (checker *mysqlTypeChecker) EnterInsertStatement(_ *mysql.InsertStatementContext) {
 	checker.isDML = true
 }
 
 // EnterLoadDataFileTail is called when production loadDataFileTail is entered.
-func (checker *mysqlTypeChecker) EnterLoadDataFileTail(ctx *mysql.LoadDataFileTailContext) {
+func (checker *mysqlTypeChecker) EnterLoadDataFileTail(_ *mysql.LoadDataFileTailContext) {
 	checker.isDML = true
 }
 
 // EnterReplaceStatement is called when production replaceStatement is entered.
-func (checker *mysqlTypeChecker) EnterReplaceStatement(ctx *mysql.ReplaceStatementContext) {
+func (checker *mysqlTypeChecker) EnterReplaceStatement(_ *mysql.ReplaceStatementContext) {
 	checker.isDML = true
 }
 
 // EnterSelectStatement is called when production selectStatement is entered.
-func (checker *mysqlTypeChecker) EnterSelectStatement(ctx *mysql.SelectStatementContext) {
+func (checker *mysqlTypeChecker) EnterSelectStatement(_ *mysql.SelectStatementContext) {
 	checker.isDML = true
 }
 
 // EnterUpdateStatement is called when production updateStatement is entered.
-func (checker *mysqlTypeChecker) EnterUpdateStatement(ctx *mysql.UpdateStatementContext) {
+func (checker *mysqlTypeChecker) EnterUpdateStatement(_ *mysql.UpdateStatementContext) {
 	checker.isDML = true
 }
 
 // EnterTransactionOrLockingStatement is called when production transactionOrLockingStatement is entered.
-func (checker *mysqlTypeChecker) EnterTransactionOrLockingStatement(ctx *mysql.TransactionOrLockingStatementContext) {
+func (checker *mysqlTypeChecker) EnterTransactionOrLockingStatement(_ *mysql.TransactionOrLockingStatementContext) {
 	checker.isDML = true
 }
 
 // EnterReplicationStatement is called when production replicationStatement is entered.
-func (checker *mysqlTypeChecker) EnterReplicationStatement(ctx *mysql.ReplicationStatementContext) {
+func (checker *mysqlTypeChecker) EnterReplicationStatement(_ *mysql.ReplicationStatementContext) {
 	checker.isDML = true
 }
 
 // EnterPreparedStatement is called when production preparedStatement is entered.
-func (checker *mysqlTypeChecker) EnterPreparedStatement(ctx *mysql.PreparedStatementContext) {
+func (checker *mysqlTypeChecker) EnterPreparedStatement(_ *mysql.PreparedStatementContext) {
 	checker.isDML = true
 }
 
