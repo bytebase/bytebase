@@ -263,7 +263,7 @@ func executeChunkedSubmission(ctx context.Context, conn *sql.Conn, statement str
 	return totalRowsAffected, nil
 }
 
-func executeBatchSubmission(ctx context.Context, conn *sql.Conn, statement string, opts db.ExecuteOptions) (int64, error) {
+func executeBatchSubmission(ctx context.Context, conn *sql.Conn, statement string, _ db.ExecuteOptions) (int64, error) {
 	tx, err := conn.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to begin execute transaction")
