@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -77,7 +78,11 @@ func GetStatementsAndSchemaGroupsFromSchemaGroups(statement string, engine store
 			continue
 		}
 		for _, schemaGroup := range schemaGroups {
-			if strings.Contains(singleStatement.Text, schemaGroup.Placeholder) {
+			re, err := regexp.Compile(`\b` + schemaGroup.Placeholder + `\b`)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "failed to compile regexp")
+			}
+			if re.MatchString(singleStatement.Text) {
 				curMatch = schemaGroup
 				break
 			}
