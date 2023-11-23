@@ -88,7 +88,6 @@ roles:
     permissions:
       - bb.databases.list
       - bb.databases.get
-      - bb.databases.update
       - bb.databases.sync
       - bb.databases.getMetadata
       - bb.databases.getSchema
@@ -100,7 +99,6 @@ roles:
     permissions:
       - bb.databases.list
       - bb.databases.get
-      - bb.databases.update
       - bb.databases.sync
       - bb.databases.getMetadata
       - bb.databases.getSchema
