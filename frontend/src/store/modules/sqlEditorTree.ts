@@ -184,7 +184,10 @@ export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
   ): Promise<Connection> => {
     try {
       const [db, _] = await Promise.all([
-        useDatabaseV1Store().getOrFetchDatabaseByUID(databaseId),
+        useDatabaseV1Store().getOrFetchDatabaseByUID(
+          databaseId,
+          true /* silent */
+        ),
         useInstanceV1Store().getOrFetchInstanceByUID(instanceId),
       ]);
       await useDBSchemaV1Store().getOrFetchTableList(db.name);
