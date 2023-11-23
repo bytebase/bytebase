@@ -676,14 +676,12 @@
         "self": "Global Masking Rule",
         "description": "Use global rule to apply masking levels in batch, e.g. all columns named as \"email\" will be masked with \"Partial\" level.",
         "condition-order": "Condition order",
-        "add-rule": "Add",
         "re-order": "Re-order",
         "delete-rule-tip": "Delete this rule?",
         "check-rules": "Check global rules"
       },
       "semantic-types": {
         "self": "Semantic Types",
-        "add-type": "Add",
         "label": "Columns having the same semantic type will use the same masking algorithms.",
         "use-predefined-type": "Use Predefined Type",
         "table": {
@@ -746,7 +744,6 @@
       },
       "algorithms": {
         "self": "Masking Algorithm",
-        "add": "Add",
         "default": "Default",
         "default-desc": "Use *** as data mask",
         "table": {

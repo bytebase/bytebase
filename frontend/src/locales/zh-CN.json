@@ -674,14 +674,12 @@
         "self": "全局脱敏规则",
         "description": "全局规则用于批量指定脱敏程度，比如所有列名是 email 的字段都被设置为半脱敏。",
         "condition-order": "条件序列",
-        "add-rule": "添加",
         "re-order": "排序",
         "delete-rule-tip": "删除这条规则？",
         "check-rules": "查看全局配置"
       },
       "semantic-types": {
         "self": "语义类型",
-        "add-type": "添加",
         "label": "具有相同语义类型的列会使用相同的脱敏算法。",
         "use-predefined-type": "使用预定义类型",
         "table": {
@@ -744,7 +742,6 @@
       },
       "algorithms": {
         "self": "脱敏算法",
-        "add": "添加",
         "default": "默认",
         "default-desc": "使用 *** 为数据遮挡",
         "table": {

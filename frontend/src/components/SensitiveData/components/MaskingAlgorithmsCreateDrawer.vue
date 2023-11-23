@@ -1,6 +1,6 @@
 <template>
   <Drawer :show="show" @close="$emit('dismiss')">
-    <DrawerContent :title="$t('settings.sensitive-data.algorithms.add')">
+    <DrawerContent :title="$t('common.add')">
       <div
         class="w-[40rem] max-w-[calc(100vw-5rem)] space-y-6 divide-y divide-block-border"
       >

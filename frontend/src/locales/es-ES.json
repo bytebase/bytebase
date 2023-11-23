@@ -675,14 +675,12 @@
         "self": "Regla de enmascaramiento global",
         "description": "Utilice la regla global para aplicar niveles de enmascaramiento por lotes, p. Todas las columnas denominadas \"correo electrónico\" se enmascararán con el nivel \"Parcial\".",
         "condition-order": "Orden de condición",
-        "add-rule": "Agregar",
         "re-order": "Reordenar",
         "delete-rule-tip": "¿Eliminar esta regla?",
         "check-rules": "Check global rules"
       },
       "semantic-types": {
         "self": "Tipos Semánticos",
-        "add-type": "Agregar",
         "label": "Las columnas que tengan el mismo tipo semántico utilizarán los mismos algoritmos de enmascaramiento.",
         "use-predefined-type": "Utiliza el Tipo Predefinido",
         "table": {
@@ -745,7 +743,6 @@
       },
       "algorithms": {
         "self": "Algoritmo De Enmascaramiento",
-        "add": "Agregar",
         "default": "Por defecto",
         "default-desc": "Utilice *** como máscara de datos",
         "table": {

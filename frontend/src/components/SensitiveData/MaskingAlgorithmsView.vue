@@ -6,7 +6,7 @@
         :disabled="!hasPermission || !hasSensitiveDataFeature"
         @click="onCreate"
       >
-        {{ $t("settings.sensitive-data.algorithms.add") }}
+        {{ $t("common.add") }}
       </NButton>
     </div>
     <div class="space-y-5 divide-y-2 pb-10 divide-gray-100">
