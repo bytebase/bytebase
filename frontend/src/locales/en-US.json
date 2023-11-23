@@ -2888,7 +2888,6 @@
         "high": "High Risk Rules"
       },
       "active": "Active",
-      "add-rule": "Add",
       "edit-rule": "Edit rule",
       "delete": "Delete Risk rule",
       "default-rules": {
@@ -3082,7 +3081,6 @@
     "self": "Schema Template",
     "field-template": {
       "self": "Field Template",
-      "add": "Add",
       "description": "You can pre-define the field template, then apply the template during the schema change."
     },
     "column-type-restriction": {
@@ -3100,7 +3098,6 @@
     },
     "table-template": {
       "self": "Table Template",
-      "add": "Add",
       "description": "You can pre-define the table template, then apply the template during the schema change."
     },
     "search-by-name-or-comment": "Search by name or comment",

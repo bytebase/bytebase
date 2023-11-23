@@ -2885,7 +2885,6 @@
         "high": "Reglas de riesgo alto"
       },
       "active": "Activo",
-      "add-rule": "Agregar",
       "edit-rule": "Editar regla",
       "delete": "Eliminar regla de seguridad",
       "default-rules": {
@@ -3079,7 +3078,6 @@
     "self": "Plantilla de esquema",
     "field-template": {
       "self": "Plantilla de campo",
-      "add": "Agregar",
       "description": "Predefina la plantilla de campo, luego aplique la plantilla durante el cambio de esquema."
     },
     "column-type-restriction": {
@@ -3097,7 +3095,6 @@
     },
     "table-template": {
       "self": "Plantilla de tabla",
-      "add": "Agregar",
       "description": "Puede predefinir la plantilla de tabla y luego aplicar la plantilla durante el cambio de esquema."
     },
     "search-by-name-or-comment": "Buscar por nombre o comentario",

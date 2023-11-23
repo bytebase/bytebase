@@ -2882,7 +2882,6 @@
         "high": "高风险规则"
       },
       "active": "开启",
-      "add-rule": "添加",
       "edit-rule": "编辑规则",
       "delete": "删除安全规则",
       "default-rules": {
@@ -3075,7 +3074,6 @@
     "self": "Schema 模板",
     "field-template": {
       "self": "字段模板",
-      "add": "添加",
       "description": "预定义字段模板，之后可以在变更或设计 Schema 时应用这些模板。"
     },
     "column-type-restriction": {
@@ -3093,7 +3091,6 @@
     },
     "table-template": {
       "self": "表模板",
-      "add": "添加",
       "description": "预定义表模板，之后可以在变更或设计 Schema 时应用这些模板。"
     },
     "search-by-name-or-comment": "根据名称或备注搜索",
