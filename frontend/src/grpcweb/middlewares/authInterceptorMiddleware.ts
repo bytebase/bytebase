@@ -5,7 +5,7 @@ import { useAuthStore } from "@/store";
 
 export type IgnoreErrorsOptions = {
   /**
-   * If set to true, will NOT show redirect to other pages(403, 404).
+   * If set to true, will NOT show redirect to other pages(e.g., 403).
    */
   silent?: boolean;
 
