@@ -483,4 +483,9 @@ func Open(ctx context.Context, dbType storepb.Engine, driverConfig DriverConfig,
 type ExecuteOptions struct {
 	BeginFunc          func(ctx context.Context, conn *sql.Conn) error
 	EndTransactionFunc func(tx *sql.Tx) error
+	// ChunkedSubmission is the flag to indicate if we should use chunked submission for the statement.
+	// If true, we will submit each statement chunk, otherwise we will submit all statements in a batch.
+	// For both cases, we will use one transaction to wrap the statements.
+	ChunkedSubmission     bool
+	UpdateExecutionStatus func(*v1pb.TaskRun_ExecutionDetail)
 }
