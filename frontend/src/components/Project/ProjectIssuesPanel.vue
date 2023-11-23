@@ -2,7 +2,7 @@
   <div class="flex flex-col gap-y-2 -mt-4">
     <IssueSearch
       v-model:params="state.params"
-      :components="['status']"
+      :readonly-scopes="readonlyScopes"
       :component-props="{ status: { disabled: statusTabDisabled } }"
     >
       <template #default>
@@ -67,6 +67,7 @@ import { featureToRef } from "@/store";
 import { Project } from "@/types/proto/v1/project_service";
 import {
   SearchParams,
+  SearchScope,
   buildIssueFilterBySearchParams,
   buildSearchTextBySearchParams,
   buildUIIssueFilterBySearchParams,
@@ -94,13 +95,16 @@ const props = defineProps({
   },
 });
 
+const readonlyScopes = computed((): SearchScope[] => {
+  return [
+    { id: "project", value: extractProjectResourceName(props.project.name) },
+  ];
+});
+
 const defaultSearchParams = () => {
   const params: SearchParams = {
     query: "",
-    scopes: [
-      { id: "status", value: "OPEN" },
-      { id: "project", value: extractProjectResourceName(props.project.name) },
-    ],
+    scopes: [...readonlyScopes.value, { id: "status", value: "OPEN" }],
   };
   return params;
 };

@@ -2,7 +2,7 @@
   <NTag
     v-for="(scope, i) in params.scopes"
     :key="scope.id"
-    :closable="true"
+    :closable="!isReadonlyScope(scope)"
     :data-search-scope-id="scope.id"
     :bordered="false"
     size="small"
@@ -19,7 +19,7 @@
 <script setup lang="ts">
 import dayjs from "dayjs";
 import { NTag, TagProps } from "naive-ui";
-import { h } from "vue";
+import { computed, h } from "vue";
 import {
   SearchParams,
   SearchScope,
@@ -30,11 +30,19 @@ import {
 const props = defineProps<{
   params: SearchParams;
   focusedTagId?: SearchScopeId;
+  readonlyScopes?: SearchScope[];
 }>();
 defineEmits<{
   (event: "remove-scope", id: SearchScopeId, value: string): void;
   (event: "select-scope", id: SearchScopeId, value: string): void;
 }>();
+const readonlyScopeIds = computed(() => {
+  return new Set((props.readonlyScopes ?? []).map((s) => s.id));
+});
+
+const isReadonlyScope = (scope: SearchScope) => {
+  return readonlyScopeIds.value.has(scope.id);
+};
 
 const tagProps = (scope: SearchScope): TagProps => {
   if (props.focusedTagId !== scope.id) {

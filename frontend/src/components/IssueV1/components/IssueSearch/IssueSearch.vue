@@ -7,6 +7,7 @@
       <AdvancedSearchBox
         :params="params"
         :autofocus="autofocus"
+        :readonly-scopes="readonlyScopes"
         class="flex-1"
         v-bind="componentProps?.searchbox"
         @update:params="$emit('update:params', $event)"
@@ -44,7 +45,7 @@
 
 <script lang="ts" setup>
 import { ref } from "vue";
-import { SearchParams, SearchScopeId } from "@/utils";
+import { SearchParams, SearchScope, SearchScopeId } from "@/utils";
 import AdvancedSearchBox from "./AdvancedSearchBox.vue";
 import Status from "./Status.vue";
 import TimeRange from "./TimeRange.vue";
@@ -65,11 +66,13 @@ export type SearchComponent =
 withDefaults(
   defineProps<{
     params: SearchParams;
+    readonlyScopes?: SearchScope[];
     autofocus?: boolean;
     components?: SearchComponent[];
     componentProps?: Partial<Record<SearchComponent, any>>;
   }>(),
   {
+    readonlyScopes: () => [],
     components: () => ["searchbox", "status", "time-range"],
     componentProps: undefined,
   }

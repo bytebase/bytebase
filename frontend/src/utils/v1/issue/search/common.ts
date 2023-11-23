@@ -57,7 +57,7 @@ export const buildSearchTextBySearchParams = (
 };
 
 export const buildSearchParamsBySearchText = (text: string): SearchParams => {
-  const params = defaultSearchParams();
+  const params = emptySearchParams();
   const segments = text.split(/\s+/g);
   const querySegments: string[] = [];
 
@@ -141,7 +141,7 @@ export const upsertScope = (
   return target;
 };
 
-export const defaultSearchParams = (): SearchParams => {
+export const emptySearchParams = (): SearchParams => {
   return {
     query: "",
     scopes: [],

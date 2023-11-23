@@ -26,6 +26,7 @@
             <ScopeTags
               :params="params"
               :focused-tag-id="focusedTagId"
+              :readonly-scopes="readonlyScopes"
               @select-scope="selectScopeFromTag"
               @remove-scope="removeScope"
             />
@@ -96,8 +97,9 @@ import {
 } from "vue";
 import {
   SearchParams,
+  SearchScope,
   SearchScopeId,
-  defaultSearchParams,
+  emptySearchParams,
   getValueFromSearchParams,
   minmax,
   upsertScope,
@@ -110,11 +112,11 @@ import { useSearchScopeOptions } from "./useSearchScopeOptions";
 const props = withDefaults(
   defineProps<{
     params: SearchParams;
-    customClass?: string;
+    readonlyScopes?: SearchScope[];
     autofocus?: boolean;
   }>(),
   {
-    customClass: "",
+    readonlyScopes: () => [],
     autofocus: false,
   }
 );
@@ -129,6 +131,14 @@ interface LocalState {
   showSearchScopes: boolean;
   currentScope?: SearchScopeId;
 }
+
+const defaultSearchParams = () => {
+  const params = emptySearchParams();
+  props.readonlyScopes.forEach((s) => {
+    params.scopes.push({ ...s });
+  });
+  return params;
+};
 
 const buildSearchTextByParams = (params: SearchParams | undefined): string => {
   const prefix = (params?.scopes ?? [])
@@ -152,6 +162,12 @@ const inputRef = ref<InputInst>();
 const menuIndex = ref(0);
 const { width: containerWidth } = useElementSize(containerRef);
 const focusedTagId = ref<SearchScopeId>();
+const readonlyScopeIds = computed(() => {
+  return new Set(props.readonlyScopes.map((s) => s.id));
+});
+const editableScopes = computed(() => {
+  return props.params.scopes.filter((s) => !readonlyScopeIds.value.has(s.id));
+});
 
 watch(
   () => state.showSearchScopes,
@@ -241,7 +257,9 @@ const showMenu = computed(() => {
 });
 
 const clearable = computed(() => {
-  return inputText.value.length > 0 || props.params.scopes.length > 0;
+  return (
+    props.params.query.trim().length > 0 || editableScopes.value.length > 0
+  );
 });
 
 const hideMenu = () => {
