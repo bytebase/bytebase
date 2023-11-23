@@ -9,41 +9,34 @@ import (
 )
 
 // ChunkedSQLScript splits a SQL script into chunks.
-func ChunkedSQLScript(script []base.SingleSQL, maxChunksCount int) ([][]base.SingleSQL, error) {
-	var result [][]base.SingleSQL
-
-	if maxChunksCount <= 0 {
-		return nil, errors.New("maxChunksCount must be greater than 0")
+func ChunkedSQLScript(slice []base.SingleSQL, n int) ([][]base.SingleSQL, error) {
+	if n <= 0 {
+		return nil, errors.Errorf("invalid number of chunks: %d", n)
 	}
 
-	if len(script) == 0 {
-		return result, nil
-	}
+	length := len(slice)
+	chunkSize := length / n
+	remainder := length % n
 
-	roundDown := len(script) / maxChunksCount
-	rest := len(script) % maxChunksCount
+	chunks := make([][]base.SingleSQL, n)
+	start := 0
 
-	// We have len(script) sqls, and we want to split it into no more than maxChunksCount chunks.
-	// len(script) = roundDown * maxChunksCount + rest
-	//             = rest * (roundDown + 1)  + (maxChunksCount - rest) * roundDown
-	// So the first $rest chunks will have $(roundDown + 1) sqls, and the rest $(maxChunksCount) chunks will have $roundDown sqls.
+	for i := 0; i < n; i++ {
+		end := start + chunkSize
+		if i < remainder {
+			end++
+		}
 
-	for i := 0; i < rest; i++ {
-		start := i * (roundDown + 1)
-		end := (i + 1) * (roundDown + 1)
-		result = append(result, script[start:end])
-	}
-
-	for i := rest; i < maxChunksCount; i++ {
-		start := rest*(roundDown+1) + (i-rest)*roundDown
-		end := rest*(roundDown+1) + (i-rest+1)*roundDown
-		if start >= len(script) {
+		if start >= end {
+			// Empty chunk.
+			// We can stop here because the remaining chunks will also be empty.
 			break
 		}
-		result = append(result, script[start:end])
+		chunks[i] = slice[start:end]
+		start = end
 	}
 
-	return result, nil
+	return chunks, nil
 }
 
 // ConcatChunk is the optimization in the case that we have a 100MB text.
