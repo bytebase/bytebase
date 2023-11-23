@@ -532,7 +532,7 @@
       "create": "创建 SSO",
       "description": "单点登录（SSO）是一种认证方法，使用户能够通过其他应用程序和网站来进行登录。",
       "archive": "归档该 SSO",
-      "archive-info": "不再会显示已归档 SSO。",
+      "archive-info": "已归档 SSO 将不再显示。",
       "restore": "恢复该 SSO",
       "form": {
         "type": "类型",
@@ -1333,7 +1333,7 @@
     "id-description": "环境 ID 是环境的唯一标识符。一旦创建不能修改。",
     "select": "选择环境",
     "archive": "归档此环境",
-    "archive-info": "不再会显示已归档环境。",
+    "archive-info": "已归档环境将不再显示。",
     "create": "创建环境",
     "restore": "恢复此环境",
     "successfully-updated-environment": "环境'{name}'更新成功",
@@ -1868,7 +1868,7 @@
       "developer": "@.upper:common.role.member",
       "archive": {
         "title": "归档项目",
-        "description": "不再会显示已归档项目。",
+        "description": "已归档项目将不再显示。",
         "btn-text": "归档这个@:common.project",
         "force": {
           "description": "强制归档。所有关联的工单都将被解决，所有关联的工作表都将被删除。"
