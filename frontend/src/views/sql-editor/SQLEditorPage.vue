@@ -283,7 +283,7 @@ useEmitteryEventListener(
 }
 
 .splitpanes.default-theme .splitpanes__splitter:hover {
-  @apply bg-indigo-400;
+  @apply bg-accent;
 }
 
 .splitpanes.default-theme .splitpanes__splitter::before,
@@ -303,12 +303,6 @@ useEmitteryEventListener(
 
 <style scoped lang="postcss">
 .sqleditor--wrapper {
-  /*
-  color: var(--base);
-  --base: #444;
-  --border-color: rgba(200, 200, 200, 0.2);
-  */
-
   @apply w-full flex-1 overflow-hidden flex flex-col;
 }
 </style>
