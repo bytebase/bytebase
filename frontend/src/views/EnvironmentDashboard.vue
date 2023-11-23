@@ -22,22 +22,17 @@
         :active="index == state.selectedIndex"
         class="flex-1 overflow-y-scroll"
       >
-        <div v-if="state.reorder" class="flex justify-center pt-5">
-          <button
-            type="button"
-            class="btn-normal py-2 px-4"
-            @click.prevent="discardReorder"
-          >
+        <div v-if="state.reorder" class="flex justify-center pt-5 gap-x-3">
+          <NButton @click.prevent="discardReorder">
             {{ $t("common.cancel") }}
-          </button>
-          <button
-            type="submit"
-            class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+          </NButton>
+          <NButton
+            type="primary"
             :disabled="!orderChanged"
             @click.prevent="doReorder"
           >
             {{ $t("common.apply") }}
-          </button>
+          </NButton>
         </div>
         <EnvironmentDetail
           v-else
