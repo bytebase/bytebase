@@ -101,21 +101,26 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
   const getDatabaseByName = (name: string) => {
     return databaseMapByName.get(name) ?? unknownDatabase();
   };
-  const fetchDatabaseByName = async (name: string) => {
-    const database = await databaseServiceClient.getDatabase({
-      name,
-    });
+  const fetchDatabaseByName = async (name: string, silent = false) => {
+    const database = await databaseServiceClient.getDatabase(
+      {
+        name,
+      },
+      {
+        silent,
+      }
+    );
 
     const [composed] = await upsertDatabaseMap([database]);
 
     return composed;
   };
-  const getOrFetchDatabaseByName = async (name: string) => {
+  const getOrFetchDatabaseByName = async (name: string, silent = false) => {
     const existed = databaseMapByName.get(name);
     if (existed) {
       return existed;
     }
-    await fetchDatabaseByName(name);
+    await fetchDatabaseByName(name, silent);
     return getDatabaseByName(name);
   };
   const getDatabaseByUID = (uid: string) => {

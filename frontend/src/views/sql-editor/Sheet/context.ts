@@ -142,11 +142,16 @@ export const openSheet = async (sheet: Sheet, forceNewTab = false) => {
   let insId = String(UNKNOWN_ID);
   let dbId = String(UNKNOWN_ID);
   if (sheet.database) {
-    const database = await useDatabaseV1Store().getOrFetchDatabaseByName(
-      sheet.database
-    );
-    insId = database.instanceEntity.uid;
-    dbId = database.uid;
+    try {
+      const database = await useDatabaseV1Store().getOrFetchDatabaseByName(
+        sheet.database,
+        true /* silent */
+      );
+      insId = database.instanceEntity.uid;
+      dbId = database.uid;
+    } catch (error) {
+      return;
+    }
   }
 
   tabStore.updateCurrentTab({
