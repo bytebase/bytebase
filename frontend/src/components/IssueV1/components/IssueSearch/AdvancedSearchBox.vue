@@ -99,7 +99,6 @@ import {
   SearchScopeId,
   defaultSearchParams,
   getValueFromSearchParams,
-  maybeApplyDefaultTsRange,
   minmax,
   upsertScope,
 } from "@/utils";
@@ -446,7 +445,6 @@ const handleKeyUp = (e: KeyboardEvent) => {
 
 const handleClear = () => {
   const params = defaultSearchParams();
-  maybeApplyDefaultTsRange(params, "created", true /* mutate */);
   emit("update:params", params);
   hideMenu();
 };

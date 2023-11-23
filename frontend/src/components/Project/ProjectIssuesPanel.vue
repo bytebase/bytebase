@@ -72,7 +72,6 @@ import {
   buildUIIssueFilterBySearchParams,
   extractProjectResourceName,
   getValueFromSearchParams,
-  maybeApplyDefaultTsRange,
   upsertScope,
 } from "@/utils";
 import { IssueSearch } from "../IssueV1/components";
@@ -103,7 +102,6 @@ const defaultSearchParams = () => {
       { id: "project", value: extractProjectResourceName(props.project.name) },
     ],
   };
-  maybeApplyDefaultTsRange(params, "created", true /* mutate */);
   return params;
 };
 

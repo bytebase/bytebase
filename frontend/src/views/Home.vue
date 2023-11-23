@@ -2,27 +2,53 @@
   <div class="flex flex-col">
     <IssueSearch
       v-model:params="state.params"
-      :components="['status']"
+      :components="
+        state.advanced ? ['searchbox', 'status', 'time-range'] : ['status']
+      "
       :component-props="{ status: { disabled: statusTabDisabled } }"
-      class="px-4 py-2"
+      class="px-4 py-2 gap-y-1"
     >
-      <template #default>
-        <div class="flex items-center gap-x-2">
+      <template v-if="!state.advanced" #default>
+        <div class="h-[34px] flex items-center gap-x-2">
           <div class="flex-1 overflow-auto">
-            <TabFilter v-model:value="tab" :items="tabItemList" />
+            <TabFilter
+              v-if="!state.advanced"
+              :value="tab"
+              :items="tabItemList"
+              @update:value="selectTab($event as TabValue)"
+            />
           </div>
           <div class="flex items-center">
-            <router-link
-              :to="issueLink"
+            <div
               class="flex items-center gap-x-1 normal-link whitespace-nowrap text-sm"
+              @click="toggleAdvancedSearch(true)"
             >
               <SearchIcon class="w-4 h-4" />
               <span class="hidden md:block">
                 {{ $t("issue.advanced-search.self") }}
               </span>
-            </router-link>
+            </div>
           </div>
         </div>
+      </template>
+      <template v-if="state.advanced" #searchbox-suffix>
+        <NTooltip>
+          <template #trigger>
+            <NButton
+              style="--n-padding: 0 6px; --n-icon-size: 24px"
+              @click="toggleAdvancedSearch(false)"
+            >
+              <template #icon>
+                <ChevronDownIcon class="w-5 h-5" />
+              </template>
+            </NButton>
+          </template>
+          <template #default>
+            <div class="whitespace-nowrap">
+              {{ $t("issue.advanced-search.hide") }}
+            </div>
+          </template>
+        </NTooltip>
       </template>
     </IssueSearch>
 
@@ -39,8 +65,8 @@
         v-model:loading="state.loading"
         v-model:loading-more="state.loadingMore"
         :session-key="keyForTab(tab)"
-        :issue-filter="mergeIssueFilterByTab(tab)"
-        :ui-issue-filter="mergeUIIssueFilterByTab(tab)"
+        :issue-filter="mergedIssueFilter"
+        :ui-issue-filter="mergedUIIssueFilter"
         :page-size="50"
       >
         <template #table="{ issueList, loading }">
@@ -48,6 +74,7 @@
             class="border-x-0"
             :show-placeholder="!loading"
             :issue-list="issueList"
+            :highlight-text="state.params.query"
           />
         </template>
       </PagedIssueTableV1>
@@ -120,9 +147,11 @@
 <script lang="ts" setup>
 import { useLocalStorage } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
-import { SearchIcon } from "lucide-vue-next";
+import { ChevronDownIcon, SearchIcon } from "lucide-vue-next";
+import { NButton, NTooltip } from "naive-ui";
 import { reactive, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRoute, useRouter } from "vue-router";
 import { IssueSearch } from "@/components/IssueV1/components";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
@@ -135,11 +164,12 @@ import {
 import { planTypeToString } from "@/types";
 import {
   SearchParams,
+  SearchScopeId,
   buildIssueFilterBySearchParams,
+  buildSearchParamsBySearchText,
   buildSearchTextBySearchParams,
   buildUIIssueFilterBySearchParams,
   getValueFromSearchParams,
-  maybeApplyDefaultTsRange,
   upsertScope,
 } from "@/utils";
 
@@ -150,6 +180,7 @@ const TABS = [
   "WAITING_ROLLOUT",
   "SUBSCRIBED",
   "ALL",
+  "",
 ] as const;
 
 type TabValue = typeof TABS[number];
@@ -158,6 +189,7 @@ interface LocalState {
   loading: boolean;
   loadingMore: boolean;
   params: SearchParams;
+  advanced: boolean;
   showTrialStartModal: boolean;
 }
 
@@ -175,18 +207,12 @@ const defaultSearchParams = () => {
       },
     ],
   };
-  maybeApplyDefaultTsRange(params, "created", true /* mutate */);
   return params;
 };
 
-const state = reactive<LocalState>({
-  loading: false,
-  loadingMore: false,
-  params: defaultSearchParams(),
-  showTrialStartModal: false,
-});
-
 const me = useCurrentUserV1();
+const route = useRoute();
+const router = useRouter();
 
 const tabItemList = computed((): TabFilterItem<TabValue>[] => {
   return [
@@ -201,7 +227,7 @@ const tabItemList = computed((): TabFilterItem<TabValue>[] => {
     { value: "ALL", label: t("common.all") },
   ];
 });
-const tab = useLocalStorage<TabValue>(
+const storedTab = useLocalStorage<TabValue>(
   "bb.home.issue-list-tab",
   tabItemList.value[0].value,
   {
@@ -216,7 +242,6 @@ const tab = useLocalStorage<TabValue>(
     },
   }
 );
-
 const keyForTab = (tab: TabValue) => {
   if (tab === "CREATED") return "my-issues-created";
   if (tab === "ASSIGNED") return "my-issues-assigned";
@@ -227,8 +252,10 @@ const keyForTab = (tab: TabValue) => {
 
   return "my-issues-unknown";
 };
-const mergeSearchParamsByTab = (tab: TabValue) => {
-  const common = cloneDeep(state.params);
+const mergeSearchParamsByTab = (params: SearchParams, tab: TabValue) => {
+  const common = cloneDeep(params);
+  if (tab === "") return common;
+
   const myEmail = me.value.email;
   if (tab === "CREATED") {
     return upsertScope(common, {
@@ -254,6 +281,10 @@ const mergeSearchParamsByTab = (tab: TabValue) => {
   if (tab === "APPROVAL_REQUESTED") {
     return upsertScope(common, [
       {
+        id: "status",
+        value: "OPEN",
+      },
+      {
         id: "approval",
         value: "pending",
       },
@@ -265,6 +296,10 @@ const mergeSearchParamsByTab = (tab: TabValue) => {
   }
   if (tab === "WAITING_ROLLOUT") {
     return upsertScope(common, [
+      {
+        id: "status",
+        value: "OPEN",
+      },
       {
         id: "approval",
         value: "approved",
@@ -278,6 +313,91 @@ const mergeSearchParamsByTab = (tab: TabValue) => {
   console.error("[mergeSearchParamsByTab] should never reach this line", tab);
   return common;
 };
+const guessTabValueFromSearchParams = (params: SearchParams): TabValue => {
+  const myEmail = me.value.email;
+
+  const verifyScopes = (
+    scopes: SearchScopeId[],
+    base: SearchScopeId[] = ["status"]
+  ) => {
+    const allowed = new Set([...scopes, ...base]);
+    return params.scopes.every((s) => allowed.has(s.id));
+  };
+
+  if (
+    verifyScopes(["creator"]) &&
+    getValueFromSearchParams(params, "creator") === myEmail
+  ) {
+    return "CREATED";
+  }
+  if (
+    verifyScopes(["assignee"]) &&
+    getValueFromSearchParams(params, "assignee") === myEmail
+  ) {
+    return "ASSIGNED";
+  }
+  if (
+    verifyScopes(["subscriber"]) &&
+    getValueFromSearchParams(params, "subscriber") === myEmail
+  ) {
+    return "SUBSCRIBED";
+  }
+  if (
+    verifyScopes(["approval", "approver"]) &&
+    getValueFromSearchParams(params, "status") === "OPEN" &&
+    getValueFromSearchParams(params, "approval") === "pending" &&
+    getValueFromSearchParams(params, "approver") === myEmail
+  ) {
+    return "APPROVAL_REQUESTED";
+  }
+  if (
+    verifyScopes(["approval", "releaser"]) &&
+    getValueFromSearchParams(params, "status") === "OPEN" &&
+    getValueFromSearchParams(params, "approval") === "approved" &&
+    getValueFromSearchParams(params, "releaser") === myEmail
+  ) {
+    return "WAITING_ROLLOUT";
+  }
+  if (params.scopes.length === 0) {
+    return "ALL";
+  }
+  if (params.scopes.length === 1 && params.scopes[0].id === "status") {
+    return "ALL";
+  }
+  return "";
+};
+const initializeSearchParamsFromQueryOrLocalStorage = () => {
+  const { qs } = route.query;
+  if (typeof qs === "string" && qs.length > 0) {
+    return {
+      params: buildSearchParamsBySearchText(qs),
+      advanced: true,
+    };
+  }
+  return {
+    params: mergeSearchParamsByTab(defaultSearchParams(), storedTab.value),
+    advanced: false,
+  };
+};
+
+const state = reactive<LocalState>({
+  loading: false,
+  loadingMore: false,
+  ...initializeSearchParamsFromQueryOrLocalStorage(),
+  showTrialStartModal: false,
+});
+
+const tab = computed<TabValue>({
+  set(tab) {
+    if (tab === "") return;
+    const base = cloneDeep(state.params);
+    base.scopes = base.scopes.filter((s) => s.id === "status");
+    state.params = mergeSearchParamsByTab(base, tab);
+  },
+  get() {
+    return guessTabValueFromSearchParams(state.params);
+  },
+});
 
 const onTrialingModalClose = () => {
   state.showTrialStartModal = false;
@@ -293,22 +413,34 @@ const planImage = computed(() => {
   ).href;
 });
 
-const issueLink = computed(() => {
-  return `/issue?qs=${encodeURIComponent(
-    buildSearchTextBySearchParams(mergeSearchParamsByTab(tab.value))
-  )}`;
-});
-
 const statusTabDisabled = computed(() => {
+  if (state.advanced) return false;
   return ["APPROVAL_REQUESTED", "WAITING_ROLLOUT"].includes(tab.value);
 });
 
-const mergeIssueFilterByTab = (tab: TabValue) => {
-  return buildIssueFilterBySearchParams(mergeSearchParamsByTab(tab));
+const mergedIssueFilter = computed(() => {
+  return buildIssueFilterBySearchParams(state.params);
+});
+const mergedUIIssueFilter = computed(() => {
+  return buildUIIssueFilterBySearchParams(state.params);
+});
+
+const selectTab = (target: TabValue) => {
+  if (target === "") return;
+  storedTab.value = target;
+  tab.value = target;
 };
 
-const mergeUIIssueFilterByTab = (tab: TabValue) => {
-  return buildUIIssueFilterBySearchParams(mergeSearchParamsByTab(tab));
+const toggleAdvancedSearch = (on: boolean) => {
+  state.advanced = on;
+  if (!on) {
+    if (storedTab.value !== "") {
+      selectTab(storedTab.value);
+    } else {
+      selectTab(tabItemList.value[0].value);
+    }
+    state.params.query = "";
+  }
 };
 
 watch(
@@ -328,5 +460,28 @@ watch(
     }
   },
   { immediate: true }
+);
+
+watch(
+  [() => state.params, tab],
+  () => {
+    if (state.params.query || tab.value === "") {
+      // using custom advanced search query, sync the search query string
+      // to URL
+      router.replace({
+        query: {
+          ...route.query,
+          qs: buildSearchTextBySearchParams(state.params),
+        },
+      });
+    } else {
+      const query = cloneDeep(route.query);
+      delete query["qs"];
+      router.replace({
+        query,
+      });
+    }
+  },
+  { deep: true }
 );
 </script>

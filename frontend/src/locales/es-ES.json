@@ -994,7 +994,8 @@
           "description": "Buscar por estado de revisión del problema",
           "title": "Estado de aprobación"
         }
-      }
+      },
+      "hide": "Ocultar búsqueda avanzada"
     },
     "table": {
       "open": "Abierto",

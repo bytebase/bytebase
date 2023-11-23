@@ -1,21 +1,21 @@
 <template>
   <div class="flex flex-col">
-    <AdvancedSearchBox
+    <div
       v-if="components.includes('searchbox')"
-      :params="params"
-      :autofocus="autofocus"
-      v-bind="componentProps?.searchbox"
-      @update:params="$emit('update:params', $event)"
-      @select-unsupported-scope="handleSelectScope"
-    />
+      class="flex flex-row items-center gap-x-2"
+    >
+      <AdvancedSearchBox
+        :params="params"
+        :autofocus="autofocus"
+        class="flex-1"
+        v-bind="componentProps?.searchbox"
+        @update:params="$emit('update:params', $event)"
+        @select-unsupported-scope="handleSelectScope"
+      />
+      <slot name="searchbox-suffix" />
+    </div>
     <slot name="default" />
 
-    <template v-if="showFeatureAttention">
-      <FeatureAttention
-        v-if="!!params.query || params.scopes.length > 0"
-        feature="bb.feature.issue-advanced-search"
-      />
-    </template>
     <div class="flex flex-col md:flex-row md:items-center gap-y-1">
       <div class="flex-1 flex items-start">
         <Status
@@ -67,12 +67,10 @@ withDefaults(
     params: SearchParams;
     autofocus?: boolean;
     components?: SearchComponent[];
-    showFeatureAttention?: boolean;
     componentProps?: Partial<Record<SearchComponent, any>>;
   }>(),
   {
     components: () => ["searchbox", "status", "time-range"],
-    showFeatureAttention: false,
     componentProps: undefined,
   }
 );

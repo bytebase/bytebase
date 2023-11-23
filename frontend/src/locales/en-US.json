@@ -995,7 +995,8 @@
           "description": "Search by the issue approval status",
           "title": "Approval Status"
         }
-      }
+      },
+      "hide": "Hide advanced search"
     },
     "table": {
       "open": "Open",
