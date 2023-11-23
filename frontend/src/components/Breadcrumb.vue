@@ -271,6 +271,10 @@ export default defineComponent({
             path: `/db/${databaseV1Slug(database)}#change-history`,
           }
         );
+      } else if ((route.name ?? "")?.toString().startsWith("setting.")) {
+        list.push({
+          name: t("common.settings"),
+        });
       }
 
       const {
