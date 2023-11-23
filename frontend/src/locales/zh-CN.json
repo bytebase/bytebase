@@ -681,9 +681,9 @@
       },
       "semantic-types": {
         "self": "语义类型",
-        "add-type": "新增类型",
+        "add-type": "添加类型",
         "label": "具有相同语义类型的列会使用相同的脱敏算法。",
-        "add-from-template": "从模板添加",
+        "use-predefined-type": "使用预定义类型",
         "table": {
           "semantic-type": "语义类型",
           "description": "描述",
