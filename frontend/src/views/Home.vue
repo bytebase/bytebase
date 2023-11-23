@@ -12,7 +12,6 @@
         <div class="h-[34px] flex items-center gap-x-2">
           <div class="flex-1 overflow-auto">
             <TabFilter
-              v-if="!state.advanced"
               :value="tab"
               :items="tabItemList"
               @update:value="selectTab($event as TabValue)"
@@ -196,6 +195,9 @@ interface LocalState {
 const { t } = useI18n();
 const subscriptionStore = useSubscriptionV1Store();
 const onboardingStateStore = useOnboardingStateStore();
+const me = useCurrentUserV1();
+const route = useRoute();
+const router = useRouter();
 
 const defaultSearchParams = () => {
   const params: SearchParams = {
@@ -209,11 +211,9 @@ const defaultSearchParams = () => {
   };
   return params;
 };
-
-const me = useCurrentUserV1();
-const route = useRoute();
-const router = useRouter();
-
+const defaultScopeIds = computed(() => {
+  return new Set(defaultSearchParams().scopes.map((s) => s.id));
+});
 const tabItemList = computed((): TabFilterItem<TabValue>[] => {
   return [
     { value: "CREATED", label: t("common.created") },
@@ -254,7 +254,9 @@ const keyForTab = (tab: TabValue) => {
 };
 const mergeSearchParamsByTab = (params: SearchParams, tab: TabValue) => {
   const common = cloneDeep(params);
-  if (tab === "") return common;
+  if (tab === "" || tab === "ALL") {
+    return common;
+  }
 
   const myEmail = me.value.email;
   if (tab === "CREATED") {
@@ -274,9 +276,6 @@ const mergeSearchParamsByTab = (params: SearchParams, tab: TabValue) => {
       id: "subscriber",
       value: myEmail,
     });
-  }
-  if (tab === "ALL") {
-    return common;
   }
   if (tab === "APPROVAL_REQUESTED") {
     return upsertScope(common, [
@@ -316,12 +315,11 @@ const mergeSearchParamsByTab = (params: SearchParams, tab: TabValue) => {
 const guessTabValueFromSearchParams = (params: SearchParams): TabValue => {
   const myEmail = me.value.email;
 
-  const verifyScopes = (
-    scopes: SearchScopeId[],
-    base: SearchScopeId[] = ["status"]
-  ) => {
-    const allowed = new Set([...scopes, ...base]);
-    return params.scopes.every((s) => allowed.has(s.id));
+  const verifyScopes = (scopes: SearchScopeId[]) => {
+    const allowed = new Set([...scopes]);
+    return params.scopes.every(
+      (s) => allowed.has(s.id) || defaultScopeIds.value.has(s.id)
+    );
   };
 
   if (
@@ -358,10 +356,8 @@ const guessTabValueFromSearchParams = (params: SearchParams): TabValue => {
   ) {
     return "WAITING_ROLLOUT";
   }
-  if (params.scopes.length === 0) {
-    return "ALL";
-  }
-  if (params.scopes.length === 1 && params.scopes[0].id === "status") {
+
+  if (params.scopes.every((s) => defaultScopeIds.value.has(s.id))) {
     return "ALL";
   }
   return "";
@@ -391,7 +387,7 @@ const tab = computed<TabValue>({
   set(tab) {
     if (tab === "") return;
     const base = cloneDeep(state.params);
-    base.scopes = base.scopes.filter((s) => s.id === "status");
+    base.scopes = base.scopes.filter((s) => defaultScopeIds.value.has(s.id));
     state.params = mergeSearchParamsByTab(base, tab);
   },
   get() {
@@ -406,7 +402,7 @@ const onTrialingModalClose = () => {
 
 const planImage = computed(() => {
   return new URL(
-    `../assets/plan-${planTypeToString(
+    `@/assets/plan-${planTypeToString(
       subscriptionStore.currentPlan
     ).toLowerCase()}.png`,
     import.meta.url
