@@ -50,13 +50,12 @@ func ChunkedSQLScript(script []base.SingleSQL, maxChunksCount int) ([][]base.Sin
 func ConcatChunk(chunk []base.SingleSQL) (string, error) {
 	if len(chunk) == 1 {
 		return chunk[0].Text, nil
-	} else {
-		var chunkBuf strings.Builder
-		for _, sql := range chunk {
-			if _, err := chunkBuf.WriteString(sql.Text); err != nil {
-				return "", errors.Wrapf(err, "failed to write chunk buffer")
-			}
-		}
-		return chunkBuf.String(), nil
 	}
+	var chunkBuf strings.Builder
+	for _, sql := range chunk {
+		if _, err := chunkBuf.WriteString(sql.Text); err != nil {
+			return "", errors.Wrapf(err, "failed to write chunk buffer")
+		}
+	}
+	return chunkBuf.String(), nil
 }
