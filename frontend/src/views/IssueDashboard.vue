@@ -44,7 +44,6 @@ import {
   buildUIIssueFilterBySearchParams,
   getValueFromSearchParams,
   buildSearchTextBySearchParams,
-  maybeApplyDefaultTsRange,
 } from "@/utils";
 
 interface LocalState {
@@ -58,16 +57,25 @@ const autofocus = computed((): boolean => {
   return !!route.query.autofocus;
 });
 
+const defaultSearchParams = () => {
+  const params: SearchParams = {
+    query: "",
+    scopes: [
+      {
+        id: "status",
+        value: "OPEN",
+      },
+    ],
+  };
+  return params;
+};
+
 const initializeSearchParamsFromQuery = (): SearchParams => {
   const { qs } = route.query;
   const params: SearchParams =
     typeof qs === "string" && qs.length > 0
       ? buildSearchParamsBySearchText(qs)
-      : {
-          query: "",
-          scopes: [{ id: "status", value: "OPEN" }],
-        };
-  maybeApplyDefaultTsRange(params, "created", true /* mutate */);
+      : defaultSearchParams();
 
   return params;
 };
