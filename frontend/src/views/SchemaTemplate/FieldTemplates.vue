@@ -7,7 +7,7 @@
         </div>
         <div>
           <NButton type="primary" @click="createSchemaTemplate">
-            {{ $t("schema-template.field-template.add") }}
+            {{ $t("common.add") }}
           </NButton>
         </div>
       </div>

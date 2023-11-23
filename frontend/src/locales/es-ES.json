@@ -675,14 +675,12 @@
         "self": "Regla de enmascaramiento global",
         "description": "Utilice la regla global para aplicar niveles de enmascaramiento por lotes, p. Todas las columnas denominadas \"correo electrónico\" se enmascararán con el nivel \"Parcial\".",
         "condition-order": "Orden de condición",
-        "add-rule": "Agregar regla",
         "re-order": "Reordenar",
         "delete-rule-tip": "¿Eliminar esta regla?",
         "check-rules": "Check global rules"
       },
       "semantic-types": {
         "self": "Tipos Semánticos",
-        "add-type": "Agregar Tipo",
         "label": "Las columnas que tengan el mismo tipo semántico utilizarán los mismos algoritmos de enmascaramiento.",
         "use-predefined-type": "Utiliza el Tipo Predefinido",
         "table": {
@@ -745,7 +743,6 @@
       },
       "algorithms": {
         "self": "Algoritmo De Enmascaramiento",
-        "add": "Agregar algoritmo",
         "default": "Por defecto",
         "default-desc": "Utilice *** como máscara de datos",
         "table": {
@@ -1888,7 +1885,7 @@
       "schema-path-template-sdl-description": "El archivo de esquema describe el esquema completo de la base de datos.",
       "branch-protection-rules": {
         "self": "Branch protection rules",
-        "add-rule": "Añadir regla",
+        "add-rule": "Agregar Regla",
         "branch-name-pattern": {
           "self": "Patrón de nombre de rama",
           "description": "Soporta comodines como feature/* o *-stable"
@@ -2249,7 +2246,7 @@
       "drop-table": "Eliminar tabla",
       "restore": "Restaurar",
       "add-column": "Agregar columna",
-      "add-from-template": "Añadir desde plantilla",
+      "add-from-template": "Agregar desde plantilla",
       "drop-column": "Eliminar columna",
       "sql-preview": "Vista previa SQL",
       "reset": "Restablecer",
@@ -2888,7 +2885,6 @@
         "high": "Reglas de riesgo alto"
       },
       "active": "Activo",
-      "add-rule": "Agregar regla",
       "edit-rule": "Editar regla",
       "delete": "Eliminar regla de seguridad",
       "default-rules": {
@@ -3082,7 +3078,6 @@
     "self": "Plantilla de esquema",
     "field-template": {
       "self": "Plantilla de campo",
-      "add": "Agregar plantilla de campo",
       "description": "Predefina la plantilla de campo, luego aplique la plantilla durante el cambio de esquema."
     },
     "column-type-restriction": {
@@ -3100,7 +3095,6 @@
     },
     "table-template": {
       "self": "Plantilla de tabla",
-      "add": "Agregar plantilla de tabla",
       "description": "Puede predefinir la plantilla de tabla y luego aplicar la plantilla durante el cambio de esquema."
     },
     "search-by-name-or-comment": "Buscar por nombre o comentario",
