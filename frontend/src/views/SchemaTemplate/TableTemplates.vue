@@ -11,7 +11,7 @@
             :disabled="readonly"
             @click="createSchemaTemplate"
           >
-            {{ $t("schema-template.table-template.add") }}
+            {{ $t("common.add") }}
           </NButton>
         </div>
       </div>

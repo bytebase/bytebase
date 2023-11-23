@@ -48,7 +48,7 @@
             :disabled="!hasPermission || !hasSensitiveDataFeature"
             @click="addNewRule"
           >
-            {{ $t("settings.sensitive-data.global-rules.add-rule") }}
+            {{ $t("common.add") }}
           </NButton>
         </div>
       </div>
