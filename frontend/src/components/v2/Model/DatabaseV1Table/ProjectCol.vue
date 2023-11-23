@@ -1,41 +1,53 @@
 <template>
   <div class="flex flex-row space-x-2 items-center">
     <ProjectV1Name :project="project" :link="false" tag="div" />
-    <div
+
+    <NTooltip
       v-if="
         showTenantIcon && project.tenantMode === TenantMode.TENANT_MODE_ENABLED
       "
-      class="tooltip-wrapper"
     >
-      <span class="tooltip whitespace-nowrap">
+      <template #trigger>
+        <TenantIcon class="ml-1 text-control" />
+      </template>
+      <span class="whitespace-nowrap">
         {{ $t("project.mode.batch") }}
       </span>
-      <TenantIcon class="text-control" />
-    </div>
-    <div class="tooltip-wrapper">
-      <svg
-        v-if="project.workflow === Workflow.UI"
-        class="w-4 h-4"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        xmlns="http://www.w3.org/2000/svg"
-      ></svg>
-      <template v-else-if="project.workflow === Workflow.VCS">
-        <span v-if="mode === 'ALL_SHORT'" class="tooltip w-40">
-          {{ $t("alter-schema.vcs-info") }}
-        </span>
-        <span v-else class="tooltip whitespace-nowrap">
-          {{ $t("database.gitops-enabled") }}
-        </span>
+    </NTooltip>
 
-        <GitIcon class="w-4 h-4 text-control hover:text-control-hover" />
+    <NTooltip v-if="project.workflow === Workflow.VCS">
+      <template #trigger>
+        <GitIcon class="ml-1 w-4 h-4 text-control" />
       </template>
-    </div>
+      <span v-if="mode === 'ALL_SHORT'" class="tooltip w-40">
+        {{ $t("alter-schema.vcs-info") }}
+      </span>
+      <span v-else class="tooltip whitespace-nowrap">
+        {{ $t("database.gitops-enabled") }}
+      </span>
+    </NTooltip>
+    <svg
+      v-else-if="project.workflow === Workflow.UI"
+      class="w-4 h-4"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+    ></svg>
+
+    <NTooltip v-if="project.state === State.DELETED">
+      <template #trigger>
+        <heroicons-outline:archive class="ml-1 w-4 h-4 text-control" />
+      </template>
+      <span class="whitespace-nowrap">
+        {{ $t("archive.archived") }}
+      </span>
+    </NTooltip>
   </div>
 </template>
 
 <script setup lang="ts">
+import { State } from "@/types/proto/v1/common";
 import {
   Project,
   TenantMode,

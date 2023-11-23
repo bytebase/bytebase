@@ -156,7 +156,7 @@ func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*
 	var durationNs int64
 	if adviceStatus != advisor.Error {
 		results, durationNs, queryErr = s.doQueryV2(ctx, request, instance, maybeDatabase)
-		if queryErr == nil {
+		if queryErr == nil && s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil {
 			classificationSetting, err := s.store.GetDataClassificationSetting(ctx)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to find classification setting")
@@ -203,9 +203,12 @@ func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*
 		return nil, queryErr
 	}
 
+	allowExport := true
 	// AllowExport is a validate only check.
-	_, _, _, _, _, _, err = s.preCheck(ctx, request.Name, request.ConnectionDatabase, request.Statement, request.Limit, false /* isAdmin */, true /* isExport */)
-	allowExport := (err == nil)
+	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
+		err := s.accessCheck(ctx, instance, environment, user, request.Statement, spans, request.Limit, false /* isAdmin */, true /* isExport */)
+		allowExport = (err == nil)
+	}
 
 	response := &v1pb.QueryResponse{
 		Results:     results,
@@ -242,9 +245,12 @@ func mask(maskers []masker.Masker, result *v1pb.QueryResult) {
 			if value == nil {
 				continue
 			}
-			maskedValue := maskers[j].Mask(&masker.MaskData{
-				DataV2: row.Values[j],
-			})
+			maskedValue := row.Values[j]
+			if j < len(maskers) && maskers[j] != nil {
+				maskedValue = maskers[j].Mask(&masker.MaskData{
+					DataV2: row.Values[j],
+				})
+			}
 			result.Rows[i].Values[j] = maskedValue
 		}
 	}
@@ -284,39 +290,41 @@ func (s *SQLService) doExportV2(ctx context.Context, request *v1pb.ExportRequest
 		return nil, durationNs, errors.Errorf("expecting 1 result, but got %d", len(result))
 	}
 
-	classificationSetting, err := s.store.GetDataClassificationSetting(ctx)
-	if err != nil {
-		return nil, durationNs, errors.Wrapf(err, "failed to find classification setting")
-	}
-
-	maskingRulePolicy, err := s.store.GetMaskingRulePolicy(ctx)
-	if err != nil {
-		return nil, durationNs, errors.Wrapf(err, "failed to find masking rule policy")
-	}
-
-	algorithmSetting, err := s.store.GetMaskingAlgorithmSetting(ctx)
-	if err != nil {
-		return nil, durationNs, errors.Wrapf(err, "failed to find masking algorithm setting")
-	}
-
-	semanticTypesSetting, err := s.store.GetSemanticTypesSetting(ctx)
-	if err != nil {
-		return nil, durationNs, errors.Wrapf(err, "failed to find semantic types setting")
-	}
-
-	m := newEmptyMaskingLevelEvaluator().
-		withMaskingRulePolicy(maskingRulePolicy).
-		withDataClassificationSetting(classificationSetting).
-		withMaskingAlgorithmSetting(algorithmSetting).
-		withSemanticTypeSetting(semanticTypesSetting)
-
-	maxLen := max(len(spans), len(result))
-	for i := 0; i < maxLen; i++ {
-		maskers, err := s.getMaskersForQuerySpan(ctx, m, instance, spans[i], storepb.MaskingExceptionPolicy_MaskingException_EXPORT)
+	if s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil {
+		classificationSetting, err := s.store.GetDataClassificationSetting(ctx)
 		if err != nil {
-			return nil, durationNs, errors.Wrapf(err, "failed to get maskers for query span")
+			return nil, durationNs, errors.Wrapf(err, "failed to find classification setting")
 		}
-		mask(maskers, result[i])
+
+		maskingRulePolicy, err := s.store.GetMaskingRulePolicy(ctx)
+		if err != nil {
+			return nil, durationNs, errors.Wrapf(err, "failed to find masking rule policy")
+		}
+
+		algorithmSetting, err := s.store.GetMaskingAlgorithmSetting(ctx)
+		if err != nil {
+			return nil, durationNs, errors.Wrapf(err, "failed to find masking algorithm setting")
+		}
+
+		semanticTypesSetting, err := s.store.GetSemanticTypesSetting(ctx)
+		if err != nil {
+			return nil, durationNs, errors.Wrapf(err, "failed to find semantic types setting")
+		}
+
+		m := newEmptyMaskingLevelEvaluator().
+			withMaskingRulePolicy(maskingRulePolicy).
+			withDataClassificationSetting(classificationSetting).
+			withMaskingAlgorithmSetting(algorithmSetting).
+			withSemanticTypeSetting(semanticTypesSetting)
+
+		maxLen := max(len(spans), len(result))
+		for i := 0; i < maxLen; i++ {
+			maskers, err := s.getMaskersForQuerySpan(ctx, m, instance, spans[i], storepb.MaskingExceptionPolicy_MaskingException_EXPORT)
+			if err != nil {
+				return nil, durationNs, errors.Wrapf(err, "failed to get maskers for query span")
+			}
+			mask(maskers, result[i])
+		}
 	}
 
 	var content []byte
@@ -383,7 +391,6 @@ func (s *SQLService) doQueryV2(ctx context.Context, request *v1pb.QueryRequest, 
 		CurrentDatabase:     request.ConnectionDatabase,
 		SensitiveSchemaInfo: nil,
 		EnableSensitive:     s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil,
-		EngineVersion:       instance.EngineVersion,
 	})
 	select {
 	case <-ctx.Done():

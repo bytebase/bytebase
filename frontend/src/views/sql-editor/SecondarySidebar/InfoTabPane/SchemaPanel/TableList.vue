@@ -1,31 +1,31 @@
 <template>
   <div class="flex flex-col overflow-hidden">
     <VirtualList
-      :items="filteredTableList"
+      :items="filteredTableOrViewList"
       :key-field="`key`"
       :item-resizable="true"
       :item-size="24"
     >
-      <template
-        #default="{ item: { key, schema, table }, index }: VirtualListItem"
-      >
+      <template #default="{ item, index }: VirtualListItem">
         <div
-          class="bb-table-list--table-item text-sm leading-6 px-1"
-          :data-key="key"
+          class="text-sm leading-6 px-1"
+          :class="`bb-table-list--item`"
+          :data-key="item.key"
           :data-index="index"
-          @mouseenter="handleMouseEnter($event, schema, table)"
-          @mouseleave="handleMouseLeave($event, schema, table)"
+          @mouseenter="handleMouseEnter($event, item)"
+          @mouseleave="handleMouseLeave($event, item)"
         >
           <div
             class="flex items-center text-gray-600 whitespace-pre-wrap break-words rounded-sm px-1"
             :class="
               rowClickable && ['hover:bg-control-bg-hover/50', 'cursor-pointer']
             "
-            @click="handleClickTable(schema, table)"
+            @click="handleClickItem(item)"
           >
-            <heroicons-outline:table class="h-4 w-4 mr-1 shrink-0" />
+            <TableIcon v-if="item.table" class="w-4 h-4 mr-1 shrink-0" />
+            <ViewIcon v-if="item.view" class="w-4 h-4 mr-1 shrink-0" />
             <!-- eslint-disable-next-line vue/no-v-html -->
-            <div v-html="renderTableName(schema, table)" />
+            <div v-html="renderItem(item)" />
           </div>
         </div>
       </template>
@@ -37,24 +37,27 @@
 import { escape } from "lodash-es";
 import { computed, nextTick } from "vue";
 import { VirtualList } from "vueuc";
+import { TableIcon, ViewIcon } from "@/components/Icon";
 import { ComposedDatabase } from "@/types";
 import {
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
+  ViewMetadata,
 } from "@/types/proto/v1/database_service";
 import { findAncestor, getHighlightHTMLByRegExp } from "@/utils";
 import { useHoverStateContext } from "./HoverPanel";
 import { useSchemaPanelContext } from "./context";
 
-export type SchemaAndTable = {
+export type SchemaAndTableOrView = {
   key: string;
   schema: SchemaMetadata;
-  table: TableMetadata;
+  table?: TableMetadata;
+  view?: ViewMetadata;
 };
 
 export type VirtualListItem = {
-  item: SchemaAndTable;
+  item: SchemaAndTableOrView;
   index: number;
 };
 
@@ -76,42 +79,58 @@ const {
   update: updateHoverState,
 } = useHoverStateContext();
 
-const flattenTableList = computed(() => {
-  return props.schemaList.flatMap((schema) => {
-    return schema.tables.map<SchemaAndTable>((table) => ({
-      key: `${schema.name}.${table.name}`,
+const flattenTableOrViewList = computed(() => {
+  const { schemaList } = props;
+  const tables = schemaList.flatMap((schema) => {
+    return schema.tables.map<SchemaAndTableOrView>((table) => ({
+      key: `schemas/${schema.name}/tables/${table.name}`,
       schema,
       table,
     }));
   });
+  const views = schemaList.flatMap((schema) => {
+    return schema.views.map<SchemaAndTableOrView>((view) => ({
+      key: `schemas/${schema.name}/views/${view.name}`,
+      schema,
+      view,
+    }));
+  });
+  return [...tables, ...views];
 });
 
-const filteredTableList = computed(() => {
+const filteredTableOrViewList = computed(() => {
   const kw = keyword.value.toLowerCase().trim();
   if (!kw) {
-    return flattenTableList.value;
+    return flattenTableOrViewList.value;
   }
-  return flattenTableList.value.filter(({ schema, table }) => {
+  return flattenTableOrViewList.value.filter(({ schema, table, view }) => {
     return (
       schema.name.toLowerCase().includes(kw) ||
-      table.name.toLowerCase().includes(kw)
+      table?.name.toLowerCase().includes(kw) ||
+      view?.name.toLowerCase().includes(kw)
     );
   });
 });
 
-const handleClickTable = (schema: SchemaMetadata, table: TableMetadata) => {
+const handleClickItem = (item: SchemaAndTableOrView) => {
   if (!props.rowClickable) {
     return;
   }
-  emit("select-table", schema, table);
+  const { schema, table } = item;
+  if (table) {
+    emit("select-table", schema, table);
+  }
 };
 
-const renderTableName = (schema: SchemaMetadata, table: TableMetadata) => {
+const renderItem = (item: SchemaAndTableOrView) => {
   const parts: string[] = [];
+  const { schema, table, view } = item;
+  const name = table?.name ?? view?.name ?? "";
+  if (!name) return null;
   if (schema.name) {
     parts.push(`${schema.name}.`);
   }
-  parts.push(table.name);
+  parts.push(name);
   if (!keyword.value.trim()) {
     return parts.join("");
   }
@@ -123,27 +142,25 @@ const renderTableName = (schema: SchemaMetadata, table: TableMetadata) => {
   );
 };
 
-const handleMouseEnter = (
-  e: MouseEvent,
-  schema: SchemaMetadata,
-  table: TableMetadata
-) => {
+const handleMouseEnter = (e: MouseEvent, item: SchemaAndTableOrView) => {
   const { db, database } = props;
+  const { schema, table, view } = item;
+
   if (hoverState.value) {
     updateHoverState(
-      { db, database, schema, table },
+      { db, database, schema, table, view },
       "before",
       0 /* overrideDelay */
     );
   } else {
-    updateHoverState({ db, database, schema, table }, "before");
+    updateHoverState({ db, database, schema, table, view }, "before");
   }
   nextTick().then(() => {
     // Find the node element and put the database panel to the top-left corner
     // of the node
     const wrapper = findAncestor(
       e.target as HTMLElement,
-      ".bb-table-list--table-item"
+      ".bb-table-list--item"
     );
     if (!wrapper) {
       updateHoverState(undefined, "after", 0 /* overrideDelay */);
@@ -155,11 +172,7 @@ const handleMouseEnter = (
   });
 };
 
-const handleMouseLeave = (
-  e: MouseEvent,
-  schema: SchemaMetadata,
-  table: TableMetadata
-) => {
+const handleMouseLeave = (e: MouseEvent, item: SchemaAndTableOrView) => {
   updateHoverState(undefined, "after");
 };
 </script>

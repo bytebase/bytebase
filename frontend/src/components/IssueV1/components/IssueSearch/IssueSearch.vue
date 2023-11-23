@@ -1,21 +1,22 @@
 <template>
   <div class="flex flex-col">
-    <AdvancedSearchBox
+    <div
       v-if="components.includes('searchbox')"
-      :params="params"
-      :autofocus="autofocus"
-      v-bind="componentProps?.searchbox"
-      @update:params="$emit('update:params', $event)"
-      @select-unsupported-scope="handleSelectScope"
-    />
+      class="flex flex-row items-center gap-x-2"
+    >
+      <AdvancedSearchBox
+        :params="params"
+        :autofocus="autofocus"
+        :readonly-scopes="readonlyScopes"
+        class="flex-1"
+        v-bind="componentProps?.searchbox"
+        @update:params="$emit('update:params', $event)"
+        @select-unsupported-scope="handleSelectScope"
+      />
+      <slot name="searchbox-suffix" />
+    </div>
     <slot name="default" />
 
-    <template v-if="showFeatureAttention">
-      <FeatureAttention
-        v-if="!!params.query || params.scopes.length > 0"
-        feature="bb.feature.issue-advanced-search"
-      />
-    </template>
     <div class="flex flex-col md:flex-row md:items-center gap-y-1">
       <div class="flex-1 flex items-start">
         <Status
@@ -44,7 +45,7 @@
 
 <script lang="ts" setup>
 import { ref } from "vue";
-import { SearchParams, SearchScopeId } from "@/utils";
+import { SearchParams, SearchScope, SearchScopeId } from "@/utils";
 import AdvancedSearchBox from "./AdvancedSearchBox.vue";
 import Status from "./Status.vue";
 import TimeRange from "./TimeRange.vue";
@@ -65,14 +66,14 @@ export type SearchComponent =
 withDefaults(
   defineProps<{
     params: SearchParams;
+    readonlyScopes?: SearchScope[];
     autofocus?: boolean;
     components?: SearchComponent[];
-    showFeatureAttention?: boolean;
     componentProps?: Partial<Record<SearchComponent, any>>;
   }>(),
   {
+    readonlyScopes: () => [],
     components: () => ["searchbox", "status", "time-range"],
-    showFeatureAttention: false,
     componentProps: undefined,
   }
 );

@@ -1,24 +1,10 @@
 <template>
-  <div class="flex space-x-5">
-    <label
-      v-for="maskLevel in levelList"
-      :key="maskLevel"
-      class="radio space-x-2"
-      :class="disabled && 'cursor-not-allowed'"
-    >
-      <input
-        :disabled="disabled"
-        :checked="selected === maskLevel"
-        :name="maskingLevelToJSON(maskLevel)"
-        type="radio"
-        class="btn"
-        :value="maskLevel"
-        @input="
-          () => {
-            $emit('update', maskLevel);
-          }
-        "
-      />
+  <NRadioGroup
+    :value="level"
+    class="space-x-3"
+    @update:value="$emit('update:level', $event)"
+  >
+    <NRadio v-for="maskLevel in levelList" :key="maskLevel" :value="maskLevel">
       <span class="text-sm font-medium text-main whitespace-nowrap">
         {{
           $t(
@@ -43,21 +29,21 @@
           )
         }})
       </span>
-    </label>
-  </div>
+    </NRadio>
+  </NRadioGroup>
 </template>
 
 <script lang="ts" setup>
+import { NRadio, NRadioGroup } from "naive-ui";
 import { MaskingLevel, maskingLevelToJSON } from "@/types/proto/v1/common";
 
 defineProps<{
-  disabled: boolean;
-  selected: MaskingLevel;
+  level: MaskingLevel;
   levelList: MaskingLevel[];
   effectiveMaskingLevel?: MaskingLevel;
 }>();
 
 defineEmits<{
-  (event: "update", level: MaskingLevel): void;
+  (event: "update:level", level: MaskingLevel): void;
 }>();
 </script>

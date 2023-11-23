@@ -1,33 +1,21 @@
 <template>
-  <BBTable
-    ref="tableRef"
-    :column-list="tableHeaderList"
+  <BBGrid
+    :column-list="columnList"
     :data-source="semanticItemList"
-    :show-header="true"
-    :custom-header="true"
-    :left-bordered="true"
-    :right-bordered="true"
-    :top-bordered="true"
-    :bottom-bordered="true"
-    :compact-section="true"
     :row-clickable="rowClickable"
-    @click-row="(section: number, index: number, _) => $emit('on-select', semanticItemList[index].item.id)"
+    class="border compact"
+    @click-row="
+      (item: SemanticItem) => $emit('select', item.item.id)
+    "
   >
-    <template #header>
-      <BBTableHeaderCell
-        v-for="header in tableHeaderList"
-        :key="header.title"
-        :title="header.title"
-      />
-    </template>
-    <template #body="{ rowData, row }: { rowData: SemanticItem, row: number }">
-      <BBTableCell class="bb-grid-cell">
-        <h3 v-if="rowData.mode === 'NORMAL'">
-          {{ rowData.item.title }}
+    <template #item="{ item, row }: SemanticItemRow">
+      <div class="bb-grid-cell">
+        <h3 v-if="item.mode === 'NORMAL'" class="break-normal">
+          {{ item.item.title }}
         </h3>
         <NInput
           v-else
-          :value="rowData.item.title"
+          :value="item.item.title"
           size="small"
           type="text"
           :placeholder="
@@ -35,14 +23,14 @@
           "
           @input="(val: string) => onInput(row, (data) => data.item.title = val)"
         />
-      </BBTableCell>
-      <BBTableCell class="bb-grid-cell">
-        <h3 v-if="rowData.mode === 'NORMAL'">
-          {{ rowData.item.description }}
+      </div>
+      <div class="bb-grid-cell">
+        <h3 v-if="item.mode === 'NORMAL'">
+          {{ item.item.description }}
         </h3>
         <NInput
           v-else
-          :value="rowData.item.description"
+          :value="item.item.description"
           size="small"
           type="text"
           :placeholder="
@@ -50,103 +38,100 @@
           "
           @input="(val: string) => onInput(row, (data) => data.item.description = val)"
         />
-      </BBTableCell>
-      <BBTableCell class="bb-grid-cell">
-        <h3 v-if="rowData.mode === 'NORMAL'">
+      </div>
+      <div class="bb-grid-cell">
+        <h3 v-if="item.mode === 'NORMAL'">
           {{
-            getAlgorithmById(rowData.item.fullMaskAlgorithmId)?.label ??
+            getAlgorithmById(item.item.fullMaskAlgorithmId)?.label ??
             $t("settings.sensitive-data.algorithms.default")
           }}
         </h3>
         <NSelect
           v-else
-          :value="rowData.item.fullMaskAlgorithmId"
-          clearable
+          :value="item.item.fullMaskAlgorithmId"
           :options="algorithmList"
           :consistent-menu-width="false"
           :placeholder="$t('settings.sensitive-data.algorithms.default')"
-          size="small"
           :fallback-option="(_: string) => ({ label: $t('settings.sensitive-data.algorithms.default'), value: '' })"
+          clearable
+          size="small"
           style="min-width: 7rem; width: auto; overflow-x: hidden"
-          @update:value="(val: string) => onInput(row, (data) => data.item.fullMaskAlgorithmId = val)"
+          @update:value="
+            onInput(row, (data) => (data.item.fullMaskAlgorithmId = $event))
+          "
         />
-      </BBTableCell>
-      <BBTableCell class="bb-grid-cell">
-        <h3 v-if="rowData.mode === 'NORMAL'">
+      </div>
+      <div class="bb-grid-cell">
+        <h3 v-if="item.mode === 'NORMAL'">
           {{
-            getAlgorithmById(rowData.item.partialMaskAlgorithmId)?.label ??
+            getAlgorithmById(item.item.partialMaskAlgorithmId)?.label ??
             $t("settings.sensitive-data.algorithms.default")
           }}
         </h3>
         <NSelect
           v-else
-          :value="rowData.item.partialMaskAlgorithmId"
-          clearable
+          :value="item.item.partialMaskAlgorithmId"
           :options="algorithmList"
           :consistent-menu-width="false"
           :placeholder="$t('settings.sensitive-data.algorithms.default')"
           :fallback-option="(_: string) => ({ label: $t('settings.sensitive-data.algorithms.default'), value: '' })"
+          clearable
           size="small"
           style="min-width: 7rem; width: auto; overflow-x: hidden"
-          @update:value="(val: string) => onInput(row, (data) => data.item.partialMaskAlgorithmId = val)"
+          @update:value="
+            onInput(row, (data) => (data.item.partialMaskAlgorithmId = $event))
+          "
         />
-      </BBTableCell>
-      <BBTableCell v-if="!props.readonly" class="bb-grid-cell w-6">
-        <div class="flex justify-end items-center space-x-2">
-          <NPopconfirm
-            v-if="rowData.mode === 'EDIT'"
-            @positive-click="$emit('on-remove', row)"
-          >
-            <template #trigger>
-              <button
-                class="p-1 hover:bg-gray-300 rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
-                @click.stop=""
-              >
-                <heroicons-outline:trash class="w-4 h-4" />
-              </button>
-            </template>
+      </div>
+      <div v-if="!props.readonly" class="bb-grid-cell justify-end">
+        <NPopconfirm
+          v-if="item.mode === 'EDIT'"
+          @positive-click="$emit('remove', row)"
+        >
+          <template #trigger>
+            <MiniActionButton tag="div" @click.stop="">
+              <TrashIcon class="w-4 h-4" />
+            </MiniActionButton>
+          </template>
+          <div class="whitespace-nowrap">
+            {{ $t("settings.sensitive-data.semantic-types.table.delete") }}
+          </div>
+        </NPopconfirm>
 
-            <div class="whitespace-nowrap">
-              {{ $t("settings.sensitive-data.semantic-types.table.delete") }}
-            </div>
-          </NPopconfirm>
+        <MiniActionButton
+          v-if="item.mode !== 'NORMAL'"
+          @click="$emit('cancel', row)"
+        >
+          <Undo2Icon class="w-4 h-4" />
+        </MiniActionButton>
+        <MiniActionButton
+          v-if="item.mode !== 'NORMAL'"
+          type="primary"
+          :disabled="isConfirmDisabled(item)"
+          @click.stop="$emit('confirm', row)"
+        >
+          <CheckIcon class="w-4 h-4" />
+        </MiniActionButton>
 
-          <NButton
-            v-if="rowData.mode !== 'NORMAL'"
-            size="small"
-            @click="$emit('on-cancel', row)"
-          >
-            {{ $t("common.cancel") }}
-          </NButton>
-          <NButton
-            v-if="rowData.mode !== 'NORMAL'"
-            type="primary"
-            :disabled="isConfirmDisabled(rowData)"
-            size="small"
-            @click.stop="$emit('on-confirm', row)"
-          >
-            {{ $t("common.confirm") }}
-          </NButton>
-
-          <button
-            v-if="rowData.mode === 'NORMAL'"
-            class="p-1 hover:bg-gray-300 rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
-            @click.stop="rowData.mode = 'EDIT'"
-          >
-            <heroicons-outline:pencil class="w-4 h-4" />
-          </button>
-        </div>
-      </BBTableCell>
+        <MiniActionButton
+          v-if="item.mode === 'NORMAL'"
+          @click.stop="item.mode = 'EDIT'"
+        >
+          <PencilIcon class="w-4 h-4" />
+        </MiniActionButton>
+      </div>
     </template>
-  </BBTable>
+  </BBGrid>
 </template>
 
 <script lang="ts" setup>
-import { NPopconfirm, NButton, NSelect, NInput } from "naive-ui";
+import { CheckIcon, PencilIcon, TrashIcon, Undo2Icon } from "lucide-vue-next";
+import { NPopconfirm, NSelect, NInput } from "naive-ui";
 import type { SelectOption } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import type { BBTableColumn } from "@/bbkit/types";
+import type { BBGridColumn, BBGridRow } from "@/bbkit/types";
+import { MiniActionButton } from "@/components/v2";
 import { useSettingV1Store } from "@/store";
 import { SemanticTypeSetting_SemanticType } from "@/types/proto/v1/setting_service";
 
@@ -158,6 +143,8 @@ export interface SemanticItem {
   item: SemanticTypeSetting_SemanticType;
 }
 
+type SemanticItemRow = BBGridRow<SemanticItem>;
+
 const props = defineProps<{
   readonly: boolean;
   semanticItemList: SemanticItem[];
@@ -165,41 +152,46 @@ const props = defineProps<{
 }>();
 
 defineEmits<{
-  (event: "on-select", id: string): void;
-  (event: "on-remove", index: number): void;
-  (event: "on-cancel", index: number): void;
-  (event: "on-confirm", index: number): void;
+  (event: "select", id: string): void;
+  (event: "remove", index: number): void;
+  (event: "cancel", index: number): void;
+  (event: "confirm", index: number): void;
 }>();
 
 const { t } = useI18n();
 const settingStore = useSettingV1Store();
 
-const tableHeaderList = computed(() => {
-  const list: BBTableColumn[] = [
+const columnList = computed(() => {
+  const columns: BBGridColumn[] = [
     {
       title: t("settings.sensitive-data.semantic-types.table.semantic-type"),
+      width: "minmax(min-content, auto)",
     },
     {
       title: t("settings.sensitive-data.semantic-types.table.description"),
+      width: "minmax(min-content, auto)",
     },
     {
       title: t(
         "settings.sensitive-data.semantic-types.table.full-masking-algorithm"
       ),
+      width: "minmax(min-content, auto)",
     },
     {
       title: t(
         "settings.sensitive-data.semantic-types.table.partial-masking-algorithm"
       ),
+      width: "minmax(min-content, auto)",
     },
   ];
   if (!props.readonly) {
     // operation.
-    list.push({
+    columns.push({
       title: "",
+      width: "minmax(min-content, auto)",
     });
   }
-  return list;
+  return columns;
 });
 
 const onInput = (index: number, callback: (item: SemanticItem) => void) => {

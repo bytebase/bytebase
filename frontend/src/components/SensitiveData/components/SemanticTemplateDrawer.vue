@@ -3,12 +3,14 @@
     <DrawerContent
       :title="$t('settings.sensitive-data.semantic-types.add-from-template')"
     >
-      <SemanticTypesTable
-        :readonly="true"
-        :row-clickable="true"
-        :semantic-item-list="semanticTemplateList"
-        @on-select="onApply($event)"
-      />
+      <div class="w-[42rem]">
+        <SemanticTypesTable
+          :readonly="true"
+          :row-clickable="true"
+          :semantic-item-list="semanticTemplateList"
+          @select="onApply($event)"
+        />
+      </div>
       <template #footer>
         <div class="w-full flex justify-between items-center">
           <div class="w-full flex justify-end items-center gap-x-3">

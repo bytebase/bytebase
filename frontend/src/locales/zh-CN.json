@@ -532,7 +532,7 @@
       "create": "创建 SSO",
       "description": "单点登录（SSO）是一种认证方法，使用户能够通过其他应用程序和网站来进行登录。",
       "archive": "归档该 SSO",
-      "archive-info": "已归档 SSO 不会显示，您可以通过点击页面左下方的 \"归档\"来恢复。",
+      "archive-info": "已归档 SSO 将不再显示。",
       "restore": "恢复该 SSO",
       "form": {
         "type": "类型",
@@ -674,15 +674,14 @@
         "self": "全局脱敏规则",
         "description": "全局规则用于批量指定脱敏程度，比如所有列名是 email 的字段都被设置为半脱敏。",
         "condition-order": "条件序列",
-        "add-rule": "添加规则",
         "re-order": "排序",
         "delete-rule-tip": "删除这条规则？",
         "check-rules": "查看全局配置"
       },
       "semantic-types": {
         "self": "语义类型",
-        "add-type": "新增类型",
-        "add-from-template": "从模板添加",
+        "label": "具有相同语义类型的列会使用相同的脱敏算法。",
+        "use-predefined-type": "使用预定义类型",
         "table": {
           "semantic-type": "语义类型",
           "description": "描述",
@@ -743,7 +742,6 @@
       },
       "algorithms": {
         "self": "脱敏算法",
-        "add": "添加算法",
         "default": "默认",
         "default-desc": "使用 *** 为数据遮挡",
         "table": {
@@ -752,12 +750,22 @@
           "masking-type": "算法类型",
           "delete": "删除该算法？"
         },
+        "error": {
+          "title-required": "请填写算法名称",
+          "substitution-required": "请填写遮掩字符串",
+          "substitution-length": "遮掩字符串长度不能超过 16 个字符",
+          "salt-required": "请填写盐值",
+          "slice-required": "遮掩范围不能为空",
+          "slice-invalid-number": "遮掩范围起始值和结束值必须是数字",
+          "slice-number-range": "遮掩范围结束值必须小于起始值",
+          "slice-overlap": "遮掩范围不能有重叠"
+        },
         "mask": "遮掩",
         "hash": "哈希",
         "full-mask": {
           "self": "全遮掩",
           "substitution": "遮掩字符串",
-          "substitution-label": "遮掩字符串是用来替换原始值的字符串，最大长度不能超过16字节。"
+          "substitution-label": "遮掩字符串是用来替换原始值的字符串，最大长度不能超过 16 个字符。"
         },
         "range-mask": {
           "self": "范围遮掩",
@@ -771,8 +779,8 @@
         },
         "md5-mask": {
           "self": "MD5 哈希",
-          "salt": "盐值",
-          "salt-label": "盐值用于计算生成哈希值。"
+          "salt": "盐值 (Salt)",
+          "salt-label": "盐值 (Salt) 用于通过原始值生成哈希值。"
         }
       },
       "masking-level": {
@@ -981,7 +989,8 @@
           "description": "按工单的审批状态搜索",
           "title": "审批状态"
         }
-      }
+      },
+      "hide": "隐藏高级搜索"
     },
     "table": {
       "open": "开启中",
@@ -1209,7 +1218,7 @@
     "successfully-synced-schema-for-instance-instance-value-name": "成功为实例'{0}'同步 schema 。",
     "archive-instance-instance-name": "归档实例'{0}'?",
     "archive-this-instance": "归档该实例",
-    "archived-instances-will-not-be-shown-on-the-normal-interface-you-can-still-restore-later-from-the-archive-page": "已归档实例不会在界面上显示。您之后仍可以在归档页中恢复他。",
+    "archived-instances-will-not-be-displayed": "不再会显示已归档实例。",
     "restore-this-instance": "恢复该实例",
     "restore": "恢复",
     "restore-instance-instance-name-to-normal-state": "恢复实例'{0}'到正常状态?",
@@ -1321,7 +1330,7 @@
     "id-description": "环境 ID 是环境的唯一标识符。一旦创建不能修改。",
     "select": "选择环境",
     "archive": "归档此环境",
-    "archive-info": "已归档环境不会显示，您可以通过点击页面左下方的 \"归档\"来恢复。",
+    "archive-info": "已归档环境将不再显示。",
     "create": "创建环境",
     "restore": "恢复此环境",
     "successfully-updated-environment": "环境'{name}'更新成功",
@@ -1626,7 +1635,7 @@
     "unassigned": "不再分配",
     "show-schemaless-databases": "显示无模式的数据库。（变更 Schema 不适用于无 schema 的数据库. ）",
     "secret": {
-      "new": "新增保密变量",
+      "new": "添加保密变量",
       "edit": "编辑保密变量",
       "name-placeholder": "输入保密变量名称",
       "description-placeholder": "输入描述",
@@ -1856,7 +1865,7 @@
       "developer": "@.upper:common.role.member",
       "archive": {
         "title": "归档项目",
-        "description": "已归档的项目将不会显示在日常界面，您可以通过点击页面左下方的 \"归档\"来恢复。",
+        "description": "已归档项目将不再显示。",
         "btn-text": "归档这个@:common.project",
         "force": {
           "description": "强制归档。所有关联的工单都将被解决，所有关联的工作表都将被删除。"
@@ -2873,7 +2882,6 @@
         "high": "高风险规则"
       },
       "active": "开启",
-      "add-rule": "添加规则",
       "edit-rule": "编辑规则",
       "delete": "删除安全规则",
       "default-rules": {
@@ -3066,7 +3074,6 @@
     "self": "Schema 模板",
     "field-template": {
       "self": "字段模板",
-      "add": "新增字段模板",
       "description": "预定义字段模板，之后可以在变更或设计 Schema 时应用这些模板。"
     },
     "column-type-restriction": {
@@ -3084,7 +3091,6 @@
     },
     "table-template": {
       "self": "表模板",
-      "add": "新增表模板",
       "description": "预定义表模板，之后可以在变更或设计 Schema 时应用这些模板。"
     },
     "search-by-name-or-comment": "根据名称或备注搜索",

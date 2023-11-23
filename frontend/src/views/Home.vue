@@ -2,29 +2,52 @@
   <div class="flex flex-col">
     <IssueSearch
       v-model:params="state.params"
-      :components="['status']"
-      :component-props="
-        statusTabDisabled ? { status: { disabled: true } } : undefined
+      :components="
+        state.advanced ? ['searchbox', 'status', 'time-range'] : ['status']
       "
-      class="px-4 py-2"
+      :component-props="{ status: { disabled: statusTabDisabled } }"
+      class="px-4 py-2 gap-y-1"
     >
-      <template #default>
-        <div class="flex items-center gap-x-2">
+      <template v-if="!state.advanced" #default>
+        <div class="h-[34px] flex items-center gap-x-2">
           <div class="flex-1 overflow-auto">
-            <TabFilter v-model:value="tab" :items="tabItemList" />
+            <TabFilter
+              :value="tab"
+              :items="tabItemList"
+              @update:value="selectTab($event as TabValue)"
+            />
           </div>
           <div class="flex items-center">
-            <router-link
-              :to="issueLink"
+            <div
               class="flex items-center gap-x-1 normal-link whitespace-nowrap text-sm"
+              @click="toggleAdvancedSearch(true)"
             >
               <SearchIcon class="w-4 h-4" />
               <span class="hidden md:block">
                 {{ $t("issue.advanced-search.self") }}
               </span>
-            </router-link>
+            </div>
           </div>
         </div>
+      </template>
+      <template v-if="state.advanced" #searchbox-suffix>
+        <NTooltip>
+          <template #trigger>
+            <NButton
+              style="--n-padding: 0 6px; --n-icon-size: 24px"
+              @click="toggleAdvancedSearch(false)"
+            >
+              <template #icon>
+                <ChevronDownIcon class="w-5 h-5" />
+              </template>
+            </NButton>
+          </template>
+          <template #default>
+            <div class="whitespace-nowrap">
+              {{ $t("issue.advanced-search.hide") }}
+            </div>
+          </template>
+        </NTooltip>
       </template>
     </IssueSearch>
 
@@ -41,8 +64,8 @@
         v-model:loading="state.loading"
         v-model:loading-more="state.loadingMore"
         :session-key="keyForTab(tab)"
-        :issue-filter="mergeIssueFilterByTab(tab)"
-        :ui-issue-filter="mergeUIIssueFilterByTab(tab)"
+        :issue-filter="mergedIssueFilter"
+        :ui-issue-filter="mergedUIIssueFilter"
         :page-size="50"
       >
         <template #table="{ issueList, loading }">
@@ -50,6 +73,7 @@
             class="border-x-0"
             :show-placeholder="!loading"
             :issue-list="issueList"
+            :highlight-text="state.params.query"
           />
         </template>
       </PagedIssueTableV1>
@@ -122,9 +146,11 @@
 <script lang="ts" setup>
 import { useLocalStorage } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
-import { SearchIcon } from "lucide-vue-next";
+import { ChevronDownIcon, SearchIcon } from "lucide-vue-next";
+import { NButton, NTooltip } from "naive-ui";
 import { reactive, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRoute, useRouter } from "vue-router";
 import { IssueSearch } from "@/components/IssueV1/components";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
@@ -132,16 +158,17 @@ import { TabFilter, TabFilterItem } from "@/components/v2";
 import {
   useSubscriptionV1Store,
   useOnboardingStateStore,
-  featureToRef,
   useCurrentUserV1,
 } from "@/store";
 import { planTypeToString } from "@/types";
 import {
   SearchParams,
+  SearchScopeId,
   buildIssueFilterBySearchParams,
+  buildSearchParamsBySearchText,
   buildSearchTextBySearchParams,
   buildUIIssueFilterBySearchParams,
-  maybeApplyDefaultTsRange,
+  getValueFromSearchParams,
   upsertScope,
 } from "@/utils";
 
@@ -152,6 +179,7 @@ const TABS = [
   "WAITING_ROLLOUT",
   "SUBSCRIBED",
   "ALL",
+  "",
 ] as const;
 
 type TabValue = typeof TABS[number];
@@ -160,27 +188,16 @@ interface LocalState {
   loading: boolean;
   loadingMore: boolean;
   params: SearchParams;
+  advanced: boolean;
   showTrialStartModal: boolean;
 }
 
 const { t } = useI18n();
 const subscriptionStore = useSubscriptionV1Store();
 const onboardingStateStore = useOnboardingStateStore();
-const tab = useLocalStorage<TabValue>(
-  "bb.home.issue-list-tab",
-  "APPROVAL_REQUESTED",
-  {
-    serializer: {
-      read(raw: TabValue) {
-        if (!TABS.includes(raw)) return "APPROVAL_REQUESTED";
-        return raw;
-      },
-      write(value) {
-        return value;
-      },
-    },
-  }
-);
+const me = useCurrentUserV1();
+const route = useRoute();
+const router = useRouter();
 
 const defaultSearchParams = () => {
   const params: SearchParams = {
@@ -192,40 +209,39 @@ const defaultSearchParams = () => {
       },
     ],
   };
-  maybeApplyDefaultTsRange(params, "created", true /* mutate */);
   return params;
 };
-
-const state = reactive<LocalState>({
-  loading: false,
-  loadingMore: false,
-  params: defaultSearchParams(),
-  showTrialStartModal: false,
+const defaultScopeIds = computed(() => {
+  return new Set(defaultSearchParams().scopes.map((s) => s.id));
 });
-
-const me = useCurrentUserV1();
-const hasCustomApprovalFeature = featureToRef("bb.feature.custom-approval");
-
 const tabItemList = computed((): TabFilterItem<TabValue>[] => {
-  const items: TabFilterItem<TabValue>[] = [];
-  items.push(
+  return [
     { value: "CREATED", label: t("common.created") },
-    { value: "ASSIGNED", label: t("common.assigned") }
-  );
-  if (hasCustomApprovalFeature.value) {
-    items.push({
+    { value: "ASSIGNED", label: t("common.assigned") },
+    {
       value: "APPROVAL_REQUESTED",
       label: t("issue.approval-requested"),
-    });
-  }
-  items.push(
+    },
     { value: "WAITING_ROLLOUT", label: t("issue.waiting-rollout") },
     { value: "SUBSCRIBED", label: t("common.subscribed") },
-    { value: "ALL", label: t("common.all") }
-  );
-  return items;
+    { value: "ALL", label: t("common.all") },
+  ];
 });
-
+const storedTab = useLocalStorage<TabValue>(
+  "bb.home.issue-list-tab",
+  tabItemList.value[0].value,
+  {
+    serializer: {
+      read(raw: TabValue) {
+        if (!TABS.includes(raw)) return tabItemList.value[0].value;
+        return raw;
+      },
+      write(value) {
+        return value;
+      },
+    },
+  }
+);
 const keyForTab = (tab: TabValue) => {
   if (tab === "CREATED") return "my-issues-created";
   if (tab === "ASSIGNED") return "my-issues-assigned";
@@ -236,8 +252,12 @@ const keyForTab = (tab: TabValue) => {
 
   return "my-issues-unknown";
 };
-const mergeSearchParamsByTab = (tab: TabValue) => {
-  const common = cloneDeep(state.params);
+const mergeSearchParamsByTab = (params: SearchParams, tab: TabValue) => {
+  const common = cloneDeep(params);
+  if (tab === "" || tab === "ALL") {
+    return common;
+  }
+
   const myEmail = me.value.email;
   if (tab === "CREATED") {
     return upsertScope(common, {
@@ -257,11 +277,12 @@ const mergeSearchParamsByTab = (tab: TabValue) => {
       value: myEmail,
     });
   }
-  if (tab === "ALL") {
-    return common;
-  }
   if (tab === "APPROVAL_REQUESTED") {
     return upsertScope(common, [
+      {
+        id: "status",
+        value: "OPEN",
+      },
       {
         id: "approval",
         value: "pending",
@@ -275,6 +296,10 @@ const mergeSearchParamsByTab = (tab: TabValue) => {
   if (tab === "WAITING_ROLLOUT") {
     return upsertScope(common, [
       {
+        id: "status",
+        value: "OPEN",
+      },
+      {
         id: "approval",
         value: "approved",
       },
@@ -287,6 +312,88 @@ const mergeSearchParamsByTab = (tab: TabValue) => {
   console.error("[mergeSearchParamsByTab] should never reach this line", tab);
   return common;
 };
+const guessTabValueFromSearchParams = (params: SearchParams): TabValue => {
+  const myEmail = me.value.email;
+
+  const verifyScopes = (scopes: SearchScopeId[]) => {
+    const allowed = new Set([...scopes]);
+    return params.scopes.every(
+      (s) => allowed.has(s.id) || defaultScopeIds.value.has(s.id)
+    );
+  };
+
+  if (
+    verifyScopes(["creator"]) &&
+    getValueFromSearchParams(params, "creator") === myEmail
+  ) {
+    return "CREATED";
+  }
+  if (
+    verifyScopes(["assignee"]) &&
+    getValueFromSearchParams(params, "assignee") === myEmail
+  ) {
+    return "ASSIGNED";
+  }
+  if (
+    verifyScopes(["subscriber"]) &&
+    getValueFromSearchParams(params, "subscriber") === myEmail
+  ) {
+    return "SUBSCRIBED";
+  }
+  if (
+    verifyScopes(["approval", "approver"]) &&
+    getValueFromSearchParams(params, "status") === "OPEN" &&
+    getValueFromSearchParams(params, "approval") === "pending" &&
+    getValueFromSearchParams(params, "approver") === myEmail
+  ) {
+    return "APPROVAL_REQUESTED";
+  }
+  if (
+    verifyScopes(["approval", "releaser"]) &&
+    getValueFromSearchParams(params, "status") === "OPEN" &&
+    getValueFromSearchParams(params, "approval") === "approved" &&
+    getValueFromSearchParams(params, "releaser") === myEmail
+  ) {
+    return "WAITING_ROLLOUT";
+  }
+
+  if (params.scopes.every((s) => defaultScopeIds.value.has(s.id))) {
+    return "ALL";
+  }
+  return "";
+};
+const initializeSearchParamsFromQueryOrLocalStorage = () => {
+  const { qs } = route.query;
+  if (typeof qs === "string" && qs.length > 0) {
+    return {
+      params: buildSearchParamsBySearchText(qs),
+      advanced: true,
+    };
+  }
+  return {
+    params: mergeSearchParamsByTab(defaultSearchParams(), storedTab.value),
+    advanced: false,
+  };
+};
+
+const state = reactive<LocalState>({
+  loading: false,
+  loadingMore: false,
+  ...initializeSearchParamsFromQueryOrLocalStorage(),
+  showTrialStartModal: false,
+});
+
+const tab = computed<TabValue>({
+  set(tab) {
+    if (tab === "") return;
+    const base = cloneDeep(state.params);
+    base.scopes = base.scopes.filter((s) => defaultScopeIds.value.has(s.id));
+    state.params = mergeSearchParamsByTab(base, tab);
+  },
+  get() {
+    return guessTabValueFromSearchParams(state.params);
+  },
+});
 
 const onTrialingModalClose = () => {
   state.showTrialStartModal = false;
@@ -295,55 +402,82 @@ const onTrialingModalClose = () => {
 
 const planImage = computed(() => {
   return new URL(
-    `../assets/plan-${planTypeToString(
+    `@/assets/plan-${planTypeToString(
       subscriptionStore.currentPlan
     ).toLowerCase()}.png`,
     import.meta.url
   ).href;
 });
 
-const issueLink = computed(() => {
-  return `/issue?qs=${encodeURIComponent(
-    buildSearchTextBySearchParams(mergeSearchParamsByTab(tab.value))
-  )}`;
-});
-
 const statusTabDisabled = computed(() => {
+  if (state.advanced) return false;
   return ["APPROVAL_REQUESTED", "WAITING_ROLLOUT"].includes(tab.value);
 });
 
-const mergeIssueFilterByTab = (tab: TabValue) => {
-  return buildIssueFilterBySearchParams(mergeSearchParamsByTab(tab));
+const mergedIssueFilter = computed(() => {
+  return buildIssueFilterBySearchParams(state.params);
+});
+const mergedUIIssueFilter = computed(() => {
+  return buildUIIssueFilterBySearchParams(state.params);
+});
+
+const selectTab = (target: TabValue) => {
+  if (target === "") return;
+  storedTab.value = target;
+  tab.value = target;
 };
 
-const mergeUIIssueFilterByTab = (tab: TabValue) => {
-  return buildUIIssueFilterBySearchParams(mergeSearchParamsByTab(tab));
+const toggleAdvancedSearch = (on: boolean) => {
+  state.advanced = on;
+  if (!on) {
+    if (storedTab.value !== "") {
+      selectTab(storedTab.value);
+    } else {
+      selectTab(tabItemList.value[0].value);
+    }
+    state.params.query = "";
+  }
 };
 
 watch(
-  tab,
-  (tab) => {
-    if (tab === "APPROVAL_REQUESTED" || tab === "WAITING_ROLLOUT") {
-      upsertScope(
-        state.params,
-        {
-          id: "status",
-          value: "OPEN",
-        },
-        true /* mutate */
-      );
+  [tab],
+  () => {
+    if (tab.value === "APPROVAL_REQUESTED" || tab.value === "WAITING_ROLLOUT") {
+      if (getValueFromSearchParams(state.params, "status") === "CLOSED") {
+        upsertScope(
+          state.params,
+          {
+            id: "status",
+            value: "OPEN",
+          },
+          true /* mutate */
+        );
+      }
     }
   },
   { immediate: true }
 );
 
 watch(
-  [hasCustomApprovalFeature, tab],
+  [() => state.params, tab],
   () => {
-    if (!hasCustomApprovalFeature.value && tab.value === "APPROVAL_REQUESTED") {
-      tab.value = "WAITING_ROLLOUT";
+    if (state.params.query || tab.value === "") {
+      // using custom advanced search query, sync the search query string
+      // to URL
+      router.replace({
+        query: {
+          ...route.query,
+          qs: buildSearchTextBySearchParams(state.params),
+        },
+      });
+    } else {
+      const query = cloneDeep(route.query);
+      delete query["qs"];
+      router.replace({
+        query,
+      });
     }
   },
-  { immediate: true }
+  { deep: true }
 );
 </script>

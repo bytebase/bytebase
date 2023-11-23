@@ -33,22 +33,15 @@
         <LabelsColumn :labels="item.config?.labels ?? {}" :show-count="2" />
       </div>
       <div class="bb-grid-cell flex items-center justify-start gap-x-2">
-        <button
-          class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
-          @click.stop="$emit('view', item)"
-        >
-          <heroicons-outline:pencil class="w-4 h-4" />
-        </button>
+        <MiniActionButton @click.stop="$emit('view', item)">
+          <PencilIcon class="w-4 h-4" />
+        </MiniActionButton>
         <NPopconfirm v-if="!readonly" @positive-click="deleteTemplate(item.id)">
           <template #trigger>
-            <button
-              class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
-              @click.stop=""
-            >
-              <heroicons-outline:trash class="w-4 h-4" />
-            </button>
+            <MiniActionButton tag="div" @click.stop>
+              <TrashIcon class="w-4 h-4" />
+            </MiniActionButton>
           </template>
-
           <div class="whitespace-nowrap">
             {{ $t("common.delete") + ` '${item.column?.name}'?` }}
           </div>
@@ -60,11 +53,14 @@
 
 <script lang="ts" setup>
 import { pullAt } from "lodash-es";
+import { PencilIcon } from "lucide-vue-next";
+import { TrashIcon } from "lucide-vue-next";
 import { NPopconfirm } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGrid, BBGridColumn } from "@/bbkit";
 import { getColumnDefaultValuePlaceholder } from "@/components/SchemaEditorV1/utils/columnDefaultValue";
+import { MiniActionButton } from "@/components/v2";
 import { useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import {
@@ -91,43 +87,43 @@ const columnList = computed((): BBGridColumn[] => {
   return [
     {
       title: t("schema-template.form.category"),
-      width: "7rem",
+      width: "minmax(min-content, auto)",
       class: "capitalize",
     },
     {
       title: t("schema-template.form.column-name"),
-      width: "auto",
+      width: "minmax(min-content, auto)",
       class: "capitalize",
     },
     {
       title: t("schema-template.classification.self"),
-      width: "auto",
+      width: "minmax(min-content, auto)",
       class: "capitalize",
       hide: !classificationConfig.value,
     },
     {
       title: t("schema-template.form.column-type"),
-      width: "auto",
+      width: "minmax(min-content, auto)",
       class: "capitalize",
     },
     {
       title: t("schema-template.form.default-value"),
-      width: "auto",
+      width: "minmax(min-content, auto)",
       class: "capitalize",
     },
     {
       title: t("schema-template.form.comment"),
-      width: "auto",
+      width: "minmax(min-content, auto)",
       class: "capitalize",
     },
     {
       title: t("common.labels"),
-      width: "auto",
+      width: "minmax(min-content, auto)",
       class: "capitalize",
     },
     {
       title: t("common.operations"),
-      width: "6rem",
+      width: "minmax(min-content, auto)",
       class: "capitalize",
     },
   ].filter((col) => !col.hide);

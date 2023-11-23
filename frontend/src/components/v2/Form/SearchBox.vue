@@ -5,6 +5,7 @@
     :clearable="!!value"
     :placeholder="placeholder"
     style="width: 12rem"
+    v-bind="$attrs"
     @update:value="$emit('update:value', $event)"
   >
     <template #prefix>

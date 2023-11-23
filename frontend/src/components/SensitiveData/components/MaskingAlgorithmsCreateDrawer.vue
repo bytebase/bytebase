@@ -1,6 +1,6 @@
 <template>
   <Drawer :show="show" @close="$emit('dismiss')">
-    <DrawerContent :title="$t('settings.sensitive-data.algorithms.add')">
+    <DrawerContent :title="$t('common.add')">
       <div
         class="w-[40rem] max-w-[calc(100vw-5rem)] space-y-6 divide-y divide-block-border"
       >
@@ -10,13 +10,9 @@
               {{ $t("settings.sensitive-data.algorithms.table.title") }}
               <span class="text-red-600 mr-2">*</span>
             </label>
-            <input
-              v-model="state.title"
-              required
-              name="title"
-              type="text"
-              placeholder="algorithm title"
-              class="textfield mt-1 w-full"
+            <NInput
+              v-model:value="state.title"
+              :placeholder="t('settings.sensitive-data.algorithms.table.title')"
               :disabled="state.processing || readonly"
             />
           </div>
@@ -24,13 +20,11 @@
             <label for="description" class="textlabel">
               {{ $t("settings.sensitive-data.algorithms.table.description") }}
             </label>
-            <input
-              v-model="state.description"
-              required
-              name="title"
-              type="text"
-              placeholder="algorithm description"
-              class="textfield mt-1 w-full"
+            <NInput
+              v-model:value="state.description"
+              :placeholder="
+                t('settings.sensitive-data.algorithms.table.description')
+              "
               :disabled="state.processing || readonly"
             />
           </div>
@@ -39,33 +33,17 @@
               {{ $t("settings.sensitive-data.algorithms.table.masking-type") }}
               <span class="text-red-600 mr-2">*</span>
             </label>
-            <div class="grid grid-cols-3 gap-2">
-              <template v-for="(item, i) in maskingTypeList" :key="i">
-                <div
-                  class="flex relative justify-start p-2 border rounded"
-                  :class="[
-                    state.maskingType === item.id &&
-                      'font-medium bg-control-bg-hover',
-                    readonly
-                      ? 'cursor-not-allowed'
-                      : 'cursor-pointer hover:bg-control-bg-hover',
-                  ]"
-                  @click.capture="onMaskingTypeChange(item.id)"
-                >
-                  <div class="flex flex-row justify-start items-center">
-                    <input
-                      type="radio"
-                      class="btn mr-2"
-                      :checked="state.maskingType === item.id"
-                      :disabled="state.processing || readonly"
-                    />
-                    <p class="text-center text-sm">
-                      {{ item.title }}
-                    </p>
-                  </div>
-                </div>
+            <RadioGrid
+              :value="state.maskingType"
+              :options="maskingTypeList"
+              :disabled="readonly"
+              class="grid-cols-3 gap-2"
+              @update:value="onMaskingTypeChange($event as MaskingType)"
+            >
+              <template #item="{ option }: RadioGridItem<MaskingType>">
+                {{ option.label }}
               </template>
-            </div>
+            </RadioGrid>
           </div>
         </div>
         <div class="space-y-6 pt-6">
@@ -86,13 +64,12 @@
                   )
                 }}
               </p>
-              <input
-                v-model="state.fullMask.substitution"
-                required
-                name="title"
-                type="text"
-                placeholder="substitution"
-                class="textfield mt-2 w-full"
+              <NInput
+                v-model:value="state.fullMask.substitution"
+                :placeholder="
+                  t('settings.sensitive-data.algorithms.full-mask.substitution')
+                "
+                class="mt-2"
                 :disabled="state.processing || readonly"
               />
             </div>
@@ -106,7 +83,7 @@
               :key="i"
               class="flex space-x-2 items-center"
             >
-              <div class="flex-none flex flex-col">
+              <div class="flex-none flex flex-col gap-y-1">
                 <label for="slice-start" class="textlabel flex">
                   {{
                     $t(
@@ -115,19 +92,20 @@
                   }}
                   <span class="text-red-600 mr-2">*</span>
                 </label>
-                <input
+                <NInputNumber
                   :value="slice.start"
-                  required
-                  name="slice-start"
-                  type="number"
-                  min="0"
-                  placeholder="slice start"
-                  class="textfield mt-1 w-20"
+                  :min="0"
+                  :placeholder="
+                    t(
+                      'settings.sensitive-data.algorithms.range-mask.slice-start'
+                    )
+                  "
                   :disabled="state.processing || readonly"
-                  @input="(e: any) => onSliceStartChange(i, Number(e.target.value))"
+                  style="width: 5rem"
+                  @update:value="onSliceStartChange(i, $event)"
                 />
               </div>
-              <div class="flex-none flex flex-col">
+              <div class="flex-none flex flex-col gap-y-1">
                 <label for="slice-end" class="textlabel">
                   {{
                     $t(
@@ -136,19 +114,18 @@
                   }}
                   <span class="text-red-600 mr-2">*</span>
                 </label>
-                <input
+                <NInputNumber
                   :value="slice.end"
-                  required
-                  name="slice-end"
-                  type="number"
-                  min="1"
-                  placeholder="slice end"
-                  class="textfield mt-1 w-20"
+                  :min="1"
+                  :placeholder="
+                    t('settings.sensitive-data.algorithms.range-mask.slice-end')
+                  "
                   :disabled="state.processing || readonly"
-                  @input="(e: any) => onSliceEndChange(i, Number(e.target.value))"
+                  style="width: 5rem"
+                  @update:value="onSliceEndChange(i, $event)"
                 />
               </div>
-              <div class="flex-1 flex flex-col">
+              <div class="flex-1 flex flex-col gap-y-1">
                 <label for="substitution" class="textlabel">
                   {{
                     $t(
@@ -157,25 +134,27 @@
                   }}
                   <span class="text-red-600 mr-2">*</span>
                 </label>
-                <input
-                  v-model="slice.substitution"
-                  required
-                  name="substitution"
-                  type="text"
-                  placeholder="substitution"
-                  class="textfield mt-1 w-full"
+                <NInput
+                  v-model:value="slice.substitution"
+                  :placeholder="
+                    t(
+                      'settings.sensitive-data.algorithms.range-mask.substitution'
+                    )
+                  "
                   :disabled="state.processing || readonly"
                 />
               </div>
-              <div class="mt-5">
-                <button
-                  class="p-1 hover:bg-gray-300 rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
+              <div class="h-[34px] flex flex-row items-center self-end">
+                <MiniActionButton
                   :disabled="state.processing || readonly"
                   @click.stop="removeSlice(i)"
                 >
-                  <heroicons-outline:trash class="w-4 h-4" />
-                </button>
+                  <TrashIcon class="w-4 h-4" />
+                </MiniActionButton>
               </div>
+            </div>
+            <div v-if="rangeMaskErrorMessage" class="text-red-600">
+              {{ rangeMaskErrorMessage }}
             </div>
             <NButton
               class="ml-auto"
@@ -196,13 +175,12 @@
                   $t("settings.sensitive-data.algorithms.md5-mask.salt-label")
                 }}
               </p>
-              <input
-                v-model="state.md5Mask.salt"
-                required
-                name="title"
-                type="text"
-                placeholder="salt"
-                class="textfield mt-2 w-full"
+              <NInput
+                v-model:value="state.md5Mask.salt"
+                :placeholder="
+                  t('settings.sensitive-data.algorithms.md5-mask.salt')
+                "
+                class="mt-2"
                 :disabled="state.processing || readonly"
               />
             </div>
@@ -236,22 +214,31 @@
 </template>
 <script setup lang="ts">
 import { cloneDeep } from "lodash-es";
+import { TrashIcon } from "lucide-vue-next";
+import { NInput, NInputNumber } from "naive-ui";
 import { computed, watch, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { Drawer, DrawerContent } from "@/components/v2";
+import {
+  Drawer,
+  DrawerContent,
+  RadioGrid,
+  RadioGridOption,
+  RadioGridItem,
+  MiniActionButton,
+} from "@/components/v2";
 import { pushNotification, useSettingV1Store } from "@/store";
 import {
-  MaskingAlgorithmSetting_Algorithm,
-  MaskingAlgorithmSetting_Algorithm_FullMask,
-  MaskingAlgorithmSetting_Algorithm_RangeMask,
-  MaskingAlgorithmSetting_Algorithm_MD5Mask,
-  MaskingAlgorithmSetting_Algorithm_RangeMask_Slice,
+  MaskingAlgorithmSetting_Algorithm as Algorithm,
+  MaskingAlgorithmSetting_Algorithm_FullMask as FullMask,
+  MaskingAlgorithmSetting_Algorithm_RangeMask as RangeMask,
+  MaskingAlgorithmSetting_Algorithm_MD5Mask as MD5Mask,
+  MaskingAlgorithmSetting_Algorithm_RangeMask_Slice as RangeMask_Slice,
 } from "@/types/proto/v1/setting_service";
 import { MaskingType, getMaskingType } from "./utils";
 
-interface MaskingTypeItem {
-  id: MaskingType;
-  title: string;
+interface MaskingTypeOption extends RadioGridOption<MaskingType> {
+  value: MaskingType;
+  label: string;
 }
 
 interface LocalState {
@@ -259,15 +246,15 @@ interface LocalState {
   maskingType: MaskingType;
   title: string;
   description: string;
-  fullMask: MaskingAlgorithmSetting_Algorithm_FullMask;
-  rangeMask: MaskingAlgorithmSetting_Algorithm_RangeMask;
-  md5Mask: MaskingAlgorithmSetting_Algorithm_MD5Mask;
+  fullMask: FullMask;
+  rangeMask: RangeMask;
+  md5Mask: MD5Mask;
 }
 
 const props = defineProps<{
   show: boolean;
   readonly: boolean;
-  algorithm: MaskingAlgorithmSetting_Algorithm;
+  algorithm: Algorithm;
 }>();
 
 const emit = defineEmits<{
@@ -275,11 +262,12 @@ const emit = defineEmits<{
 }>();
 
 const defaultRangeMask = computed(() =>
-  MaskingAlgorithmSetting_Algorithm_RangeMask.fromPartial({
+  RangeMask.fromPartial({
     slices: [
-      MaskingAlgorithmSetting_Algorithm_RangeMask_Slice.fromPartial({
+      RangeMask_Slice.fromPartial({
         start: 0,
         end: 1,
+        substitution: "*",
       }),
     ],
   })
@@ -290,29 +278,29 @@ const state = reactive<LocalState>({
   maskingType: "full-mask",
   title: "",
   description: "",
-  fullMask: MaskingAlgorithmSetting_Algorithm_FullMask.fromPartial({}),
+  fullMask: FullMask.fromPartial({}),
   rangeMask: cloneDeep(defaultRangeMask.value),
-  md5Mask: MaskingAlgorithmSetting_Algorithm_MD5Mask.fromPartial({}),
+  md5Mask: MD5Mask.fromPartial({}),
 });
 const { t } = useI18n();
 const settingStore = useSettingV1Store();
 
-const maskingTypeList = computed((): MaskingTypeItem[] => [
+const maskingTypeList = computed((): MaskingTypeOption[] => [
   {
-    id: "full-mask",
-    title: t("settings.sensitive-data.algorithms.full-mask.self"),
+    value: "full-mask",
+    label: t("settings.sensitive-data.algorithms.full-mask.self"),
   },
   {
-    id: "range-mask",
-    title: t("settings.sensitive-data.algorithms.range-mask.self"),
+    value: "range-mask",
+    label: t("settings.sensitive-data.algorithms.range-mask.self"),
   },
   {
-    id: "md5-mask",
-    title: t("settings.sensitive-data.algorithms.md5-mask.self"),
+    value: "md5-mask",
+    label: t("settings.sensitive-data.algorithms.md5-mask.self"),
   },
 ]);
 
-const algorithmList = computed((): MaskingAlgorithmSetting_Algorithm[] => {
+const algorithmList = computed((): Algorithm[] => {
   return (
     settingStore.getSettingByName("bb.workspace.masking-algorithm")?.value
       ?.maskingAlgorithmSettingValue?.algorithms ?? []
@@ -325,18 +313,14 @@ watch(
     state.title = algorithm.title;
     state.description = algorithm.description;
     state.maskingType = getMaskingType(algorithm) ?? "full-mask";
-    state.fullMask =
-      algorithm.fullMask ??
-      MaskingAlgorithmSetting_Algorithm_FullMask.fromPartial({});
+    state.fullMask = algorithm.fullMask ?? FullMask.fromPartial({});
     state.rangeMask = algorithm.rangeMask ?? cloneDeep(defaultRangeMask.value);
-    state.md5Mask =
-      algorithm.md5Mask ??
-      MaskingAlgorithmSetting_Algorithm_MD5Mask.fromPartial({});
+    state.md5Mask = algorithm.md5Mask ?? MD5Mask.fromPartial({});
   }
 );
 
-const maskingAlgorithm = computed((): MaskingAlgorithmSetting_Algorithm => {
-  const result = MaskingAlgorithmSetting_Algorithm.fromPartial({
+const maskingAlgorithm = computed((): Algorithm => {
+  const result = Algorithm.fromPartial({
     id: props.algorithm.id,
     title: state.title,
     description: state.description,
@@ -358,51 +342,69 @@ const maskingAlgorithm = computed((): MaskingAlgorithmSetting_Algorithm => {
   return result;
 });
 
+const rangeMaskErrorMessage = computed(() => {
+  if (state.rangeMask.slices.length === 0) {
+    return t("settings.sensitive-data.algorithms.error.slice-required");
+  }
+  for (let i = 0; i < state.rangeMask.slices.length; i++) {
+    const slice = state.rangeMask.slices[i];
+    if (
+      Number.isNaN(slice.start) ||
+      Number.isNaN(slice.end) ||
+      slice.start < 0 ||
+      slice.end <= 0
+    ) {
+      return t("settings.sensitive-data.algorithms.error.slice-invalid-number");
+    }
+    if (slice.start >= slice.end) {
+      return t("settings.sensitive-data.algorithms.error.slice-number-range");
+    }
+
+    for (let j = 0; j < i; j++) {
+      const pre = state.rangeMask.slices[j];
+      if (slice.start >= pre.end || pre.start >= slice.end) {
+        continue;
+      }
+      return t("settings.sensitive-data.algorithms.error.slice-overlap");
+    }
+
+    if (!slice.substitution) {
+      return t(
+        "settings.sensitive-data.algorithms.error.substitution-required"
+      );
+    }
+    if (slice.substitution.length > 16) {
+      return t("settings.sensitive-data.algorithms.error.substitution-length");
+    }
+  }
+  return "";
+});
+
 const errorMessage = computed(() => {
   if (!state.title) {
-    return "Title is required";
+    return t("settings.sensitive-data.algorithms.error.title-required");
   }
 
   switch (state.maskingType) {
     case "full-mask":
       if (!state.fullMask.substitution) {
-        return "Substitution is required";
+        return t(
+          "settings.sensitive-data.algorithms.error.substitution-required"
+        );
+      }
+      if (state.fullMask.substitution.length > 16) {
+        return t(
+          "settings.sensitive-data.algorithms.error.substitution-length"
+        );
       }
       return "";
     case "md5-mask":
       if (!state.md5Mask.salt) {
-        return "Salt is required";
+        return t("settings.sensitive-data.algorithms.error.salt-required");
       }
       return "";
     case "range-mask":
-      if (state.rangeMask.slices.length === 0) {
-        return "Slices is required";
-      }
-      for (let i = 0; i < state.rangeMask.slices.length; i++) {
-        const slice = state.rangeMask.slices[i];
-        if (!slice.substitution) {
-          return "Slice substitution is required";
-        }
-        if (
-          Number.isNaN(slice.start) ||
-          Number.isNaN(slice.end) ||
-          slice.start < 0 ||
-          slice.end <= 0
-        ) {
-          return "Slice start or end is not valid number";
-        }
-        if (slice.start >= slice.end) {
-          return "The slice end must smaller than the start";
-        }
-
-        for (let j = 0; j < i; j++) {
-          const pre = state.rangeMask.slices[j];
-          if (slice.start >= pre.end || pre.start >= slice.end) {
-            continue;
-          }
-          return "The slice range cannot overlap";
-        }
-      }
+      return rangeMaskErrorMessage.value;
   }
   return "";
 });
@@ -423,7 +425,7 @@ const onUpsert = async () => {
   state.processing = true;
 
   const index = algorithmList.value.findIndex(
-    (item) => item.id === props.algorithm.id
+    (item) => item.id === maskingAlgorithm.value.id
   );
   const newList = [...algorithmList.value];
   if (index < 0) {
@@ -459,25 +461,25 @@ const onMaskingTypeChange = (maskingType: MaskingType) => {
   }
   switch (maskingType) {
     case "full-mask":
-      state.fullMask = MaskingAlgorithmSetting_Algorithm_FullMask.fromPartial(
-        {}
-      );
+      state.fullMask = FullMask.fromPartial({});
       break;
     case "range-mask":
       state.rangeMask = cloneDeep(defaultRangeMask.value);
       break;
     case "md5-mask":
-      state.md5Mask = MaskingAlgorithmSetting_Algorithm_MD5Mask.fromPartial({});
+      state.md5Mask = MD5Mask.fromPartial({});
       break;
   }
   state.maskingType = maskingType;
 };
 
 const addSlice = () => {
+  const last = state.rangeMask.slices[state.rangeMask.slices.length - 1];
   state.rangeMask.slices.push(
-    MaskingAlgorithmSetting_Algorithm_RangeMask_Slice.fromPartial({
-      start: 0,
-      end: 1,
+    RangeMask_Slice.fromPartial({
+      start: (last?.start ?? -1) + 1,
+      end: (last?.end ?? 0) + 1,
+      substitution: "*",
     })
   );
 };

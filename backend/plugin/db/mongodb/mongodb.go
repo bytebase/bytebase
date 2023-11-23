@@ -179,13 +179,17 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 	// 1. Query always short, so it's safe to execute in the command line.
 	// 2. We cannot catch the output if we use the --file option.
 
+	// When you see here, it's probable that your mongosh output has been truncated. Errrrrh!
+	// It appears that the truncation occurs specifically within a Linux container, while everything functions as expected on MacOS.
+	// This might be due to the surprising Javascript async behavior or unflushed buffer.
+	// We put a sleep(0) for the eval() to wait for its completion.
 	evalArg := statement
 	if simpleStatement {
 		limit := ""
 		if queryContext.Limit > 0 {
 			limit = fmt.Sprintf(".slice(0, %d)", queryContext.Limit)
 		}
-		evalArg = fmt.Sprintf("a = %s; if (typeof a.toArray === 'function') {print(EJSON.stringify(a.toArray()%s))} else {print(EJSON.stringify(a))}", strings.TrimRight(statement, " \t\n\r\f;"), limit)
+		evalArg = fmt.Sprintf("a = %s; if (typeof a.toArray === 'function') {print(EJSON.stringify(a.toArray()%s)); sleep(0);} else {print(EJSON.stringify(a)); sleep(0);}", strings.TrimRight(statement, " \t\n\r\f;"), limit)
 	}
 	mongoshArgs := []string{
 		connectionURI,

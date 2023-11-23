@@ -68,6 +68,28 @@ func (q *querySpanExtractor) getDatabaseMetadata(database string) (*model.Databa
 func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*base.QuerySpan, error) {
 	q.ctx = ctx
 
+	// Our querySpanExtractor is based on the pg_query_go library, which does not support listening to or walking the AST.
+	// We separate the logic for querying spans and accessing data.
+	// The second one is achieved using ParseToJson, which is simpler.
+	accessColumns, err := q.getAccessTables(stmt)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get access columns from statement: %s", stmt)
+	}
+	// We do not support simultaneous access to the system table and the user table
+	// because we do not synchronize the schema of the system table.
+	// This causes an error (NOT_FOUND) when using querySpanExtractor.findTableSchema.
+	// As a result, we exclude getting query span results for accessing only the system table.
+	allSystems, mixed := isMixedQuery(accessColumns)
+	if mixed != nil {
+		return nil, mixed
+	}
+	if allSystems {
+		return &base.QuerySpan{
+			Results:       []base.QuerySpanResult{},
+			SourceColumns: base.SourceColumnSet{},
+		}, nil
+	}
+
 	res, err := pgquery.Parse(stmt)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse statement: %s", stmt)
@@ -100,13 +122,6 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 		return nil, err
 	}
 
-	// Our querySpanExtractor is based on the pg_query_go library, which does not support listening to or walking the AST.
-	// We separate the logic for querying spans and accessing data.
-	// The second one is achieved using ParseToJson, which is simpler.
-	accessColumns, err := q.getAccessTables(stmt)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get access columns from statement: %s", stmt)
-	}
 	return &base.QuerySpan{
 		Results:       tableSource.GetQuerySpanResult(),
 		SourceColumns: accessColumns,
@@ -782,6 +797,9 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 		schemaName = "public"
 	}
 	schema := dbSchema.GetSchema(schemaName)
+	if schema == nil {
+		return nil, errors.Errorf("schema %s not found", schemaName)
+	}
 	table := schema.GetTable(tableName)
 	if table == nil {
 		return nil, errors.Errorf("table %s.%s not found", schemaName, tableName)
@@ -1026,8 +1044,12 @@ func (q *querySpanExtractor) getRangeVarsFromJSONRecursive(jsonData map[string]a
 			return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", currentDatabase)
 		}
 
-		if databaseMetadata == nil || databaseMetadata.GetSchema(resource.Schema) == nil || databaseMetadata.GetSchema(resource.Schema).GetTable(resource.Table) == nil {
-			return nil, nil
+		// If the schema is system schema, we do not need to check the table.
+		if !pg.IsSystemSchema(resource.Schema) {
+			// Access pseudo table or table we do not sync, return directly.
+			if databaseMetadata == nil || databaseMetadata.GetSchema(resource.Schema) == nil || databaseMetadata.GetSchema(resource.Schema).GetTable(resource.Table) == nil {
+				return nil, nil
+			}
 		}
 		// This is a false-positive behavior, the table we found may not be the table the query actually accesses.
 		// For example, the query is `WITH t1 AS (SELECT 1) SELECT * FROM t1` and we have a physical table `t1` in the database exactly.
@@ -1059,4 +1081,21 @@ func (q *querySpanExtractor) getRangeVarsFromJSONRecursive(jsonData map[string]a
 	}
 
 	return result, nil
+}
+
+// isMixedQuery checks whether the query accesses the user table and system table at the same time.
+func isMixedQuery(m base.SourceColumnSet) (allSystems bool, mixed error) {
+	systemSchema := ""
+	for table := range m {
+		if pg.IsSystemSchema(table.Schema) {
+			systemSchema = table.Schema
+			continue
+		}
+
+		if systemSchema != "" {
+			return false, errors.Errorf("cannot access user table %q.%q and system schema %q at the same time", table.Schema, table.Table, systemSchema)
+		}
+	}
+
+	return systemSchema != "", nil
 }

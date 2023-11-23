@@ -98,17 +98,27 @@
       </div>
 
       <template v-if="databaseEngine !== Engine.REDIS">
-        <div class="text-lg leading-6 font-medium text-main mb-4">
-          <span v-if="databaseEngine === Engine.MONGODB">{{
-            $t("db.collections")
-          }}</span>
-          <span v-else>{{ $t("db.tables") }}</span>
+        <div class="mb-4 w-full flex flex-row justify-between items-center">
+          <div class="text-lg leading-6 font-medium text-main">
+            <span v-if="databaseEngine === Engine.MONGODB">{{
+              $t("db.collections")
+            }}</span>
+            <span v-else>{{ $t("db.tables") }}</span>
+          </div>
+          <div>
+            <SearchBox
+              :value="state.tableNameSearchKeyword"
+              :placeholder="$t('common.filter-by-name')"
+              @update:value="state.tableNameSearchKeyword = $event"
+            />
+          </div>
         </div>
 
-        <TableTable
+        <TableDataTable
           :database="database"
           :schema-name="state.selectedSchemaName"
           :table-list="tableList"
+          :search="state.tableNameSearchKeyword"
         />
 
         <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
@@ -173,7 +183,7 @@ import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { BBTableSectionDataSource } from "../bbkit/types";
 import AnomalyTable from "../components/AnomalyCenter/AnomalyTable.vue";
 import FunctionTable from "../components/FunctionTable.vue";
-import TableTable from "../components/TableTable.vue";
+import TableDataTable from "../components/TableDataTable.vue";
 import ViewTable from "../components/ViewTable.vue";
 import { ComposedDatabase, DataSource } from "../types";
 import StreamTable from "./StreamTable.vue";
@@ -181,6 +191,7 @@ import TaskTable from "./TaskTable.vue";
 
 interface LocalState {
   selectedSchemaName: string;
+  tableNameSearchKeyword: string;
   editingDataSource?: DataSource;
 }
 
@@ -193,6 +204,7 @@ const props = defineProps({
 const route = useRoute();
 const state = reactive<LocalState>({
   selectedSchemaName: "",
+  tableNameSearchKeyword: "",
 });
 
 const dbSchemaStore = useDBSchemaV1Store();

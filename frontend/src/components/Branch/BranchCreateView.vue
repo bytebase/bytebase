@@ -54,6 +54,7 @@
     <div class="w-full flex-1 overflow-y-hidden">
       <SchemaEditorV1
         :key="refreshId"
+        :loading="state.loading"
         :project="project"
         :resource-type="'branch'"
         :branches="branches"
@@ -122,6 +123,7 @@ interface BaselineSchema {
 
 interface LocalState {
   projectId?: string;
+  loading: boolean;
   baselineSchema: BaselineSchema;
   schemaDesign: SchemaDesign;
   parentBranchName?: string;
@@ -144,6 +146,7 @@ const changeHistoryStore = useChangeHistoryStore();
 const sheetStore = useSheetV1Store();
 const state = reactive<LocalState>({
   projectId: props.projectId,
+  loading: false,
   baselineSchema: {},
   schemaDesign: SchemaDesign.fromPartial({
     type: SchemaDesign_Type.MAIN_BRANCH,
@@ -302,7 +305,11 @@ const handleBaselineSchemaChange = async (baselineSchema: BaselineSchema) => {
     const database = databaseStore.getDatabaseByUID(baselineSchema.databaseId);
     state.projectId = database.projectEntity.uid;
   }
+  console.time("prepareSchemaDesign");
+  state.loading = true;
   state.schemaDesign = await prepareSchemaDesign();
+  state.loading = false;
+  console.timeEnd("prepareSchemaDesign");
 };
 
 const handleConfirm = async () => {

@@ -9,6 +9,8 @@ import (
 	ghostsql "github.com/github/gh-ost/go/sql"
 	"github.com/pkg/errors"
 
+	secretcomp "github.com/bytebase/bytebase/backend/component/secret"
+
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -215,6 +217,11 @@ func NewMigrationContext(taskID int, database *store.DatabaseMessage, dataSource
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get password")
 	}
+	updatedPassword, err := secretcomp.ReplaceExternalSecret(password)
+	if err != nil {
+		return nil, err
+	}
+	password = updatedPassword
 
 	migrationContext := base.NewMigrationContext()
 	migrationContext.InspectorConnectionConfig.Key.Hostname = dataSource.Host

@@ -534,7 +534,7 @@
       "create": "Create SSO",
       "description": "Single Sign-On (SSO) is an authentication method that enables users to authenticate with multiple applications and websites via a single set of credentials.",
       "archive": "Archive this SSO",
-      "archive-info": "Archived SSO will not be shown on the normal interface. You can click \"Archive\" on the bottom left to find and restore it.",
+      "archive-info": "Archived SSO will not be displayed.",
       "restore": "Restore this SSO",
       "form": {
         "type": "Type",
@@ -676,20 +676,19 @@
         "self": "Global Masking Rule",
         "description": "Use global rule to apply masking levels in batch, e.g. all columns named as \"email\" will be masked with \"Partial\" level.",
         "condition-order": "Condition order",
-        "add-rule": "Add rule",
         "re-order": "Re-order",
         "delete-rule-tip": "Delete this rule?",
         "check-rules": "Check global rules"
       },
       "semantic-types": {
         "self": "Semantic Types",
-        "add-type": "Add type",
-        "add-from-template": "Add from template",
+        "label": "Columns having the same semantic type will use the same masking algorithms.",
+        "use-predefined-type": "Use Predefined Type",
         "table": {
-          "semantic-type": "Semantic type",
+          "semantic-type": "Semantic Type",
           "description": "Description",
-          "full-masking-algorithm": "Full-masking algorithm",
-          "partial-masking-algorithm": "Partial-masking algorithm",
+          "full-masking-algorithm": "Full Masking Algorithm",
+          "partial-masking-algorithm": "Partial Masking Algorithm",
           "delete": "Delete this semantic type?"
         },
         "template": {
@@ -745,14 +744,23 @@
       },
       "algorithms": {
         "self": "Masking Algorithm",
-        "add": "Add algorithm",
         "default": "Default",
         "default-desc": "Use *** as data mask",
         "table": {
           "title": "Title",
           "description": "Description",
-          "masking-type": "Masking type",
+          "masking-type": "Masking Type",
           "delete": "Delete this algorithm?"
+        },
+        "error": {
+          "title-required": "Title is required",
+          "substitution-required": "Substitution is required",
+          "substitution-length": "Substitution should be less than 16 bytes",
+          "salt-required": "Salt is required",
+          "slice-required": "Slice is required",
+          "slice-invalid-number": "Slice start or end is not a valid number",
+          "slice-number-range": "The slice end must be smaller than the start",
+          "slice-overlap": "The slice range cannot overlap"
         },
         "mask": "Mask",
         "hash": "Hash",
@@ -774,7 +782,7 @@
         "md5-mask": {
           "self": "MD5 mask",
           "salt": "Salt",
-          "salt-label": "Salt is the salt value to generate a different hash that with the word alone."
+          "salt-label": "Salt is used to generate a hash from the original value."
         }
       },
       "masking-level": {
@@ -891,8 +899,8 @@
   },
   "issue": {
     "my-issues": "My Issues",
-    "waiting-approval": "Waiting Approval",
-    "waiting-rollout": "Waiting Rollout",
+    "waiting-approval": "Waiting for Approval",
+    "waiting-rollout": "Waiting for Rollout",
     "opened-by-at": "opened by {creator} at {time}",
     "commit-by-at": "commit {id} {title} by {author} at {time}",
     "status-transition": {
@@ -984,7 +992,8 @@
           "description": "Search by the issue approval status",
           "title": "Approval Status"
         }
-      }
+      },
+      "hide": "Hide advanced search"
     },
     "table": {
       "open": "Open",
@@ -1212,7 +1221,7 @@
     "successfully-synced-schema-for-instance-instance-value-name": "Successfully synced schema for instance '{0}'.",
     "archive-this-instance": "Archive this instance",
     "archive-instance-instance-name": "Archive instance '{0}'?",
-    "archived-instances-will-not-be-shown-on-the-normal-interface-you-can-still-restore-later-from-the-archive-page": "Archived instances will not be shown on the normal interface. You can click \"Archive\" on the bottom left to find and restore it.",
+    "archived-instances-will-not-be-displayed": "Archived instances will not be displayed.",
     "restore-this-instance": "Restore this instance",
     "restore": "Restore",
     "restore-instance-instance-name-to-normal-state": "Restore instance '{0}' to normal state?",
@@ -1324,7 +1333,7 @@
     "id-description": "The Environment ID is the unique identifier for your environment. You cannot change it after created.",
     "select": "Select environment",
     "archive": "Archive this environment",
-    "archive-info": "Archived environment will not be shown on the normal interface. You can click \"Archive\" on the bottom left to find and restore it.",
+    "archive-info": "Archived environments will not be displayed.",
     "create": "Create Environment",
     "restore": "Restore this environment",
     "successfully-updated-environment": "Successfully updated environment '{name}'.",
@@ -1847,7 +1856,7 @@
         },
         "notify-pipeline-rollout": {
           "title": "Issue rollout needed",
-          "label": "When the issue is waiting rollout"
+          "label": "When the issue is waiting for rollout"
         }
       }
     },
@@ -1861,7 +1870,7 @@
       "developer": "@.upper:common.role.member",
       "archive": {
         "title": "Archive project",
-        "description": "Archived project will not be shown on the normal interface. You can click \"Archive\" on the bottom left to find and restore it.",
+        "description": "Archived projects will not be displayed.",
         "btn-text": "Archive this @.lower:{'common.project'}",
         "force": {
           "description": "Force to archive. All releated issues will be resolved, and all related sheets will be deleted."
@@ -2879,7 +2888,6 @@
         "high": "High Risk Rules"
       },
       "active": "Active",
-      "add-rule": "Add rule",
       "edit-rule": "Edit rule",
       "delete": "Delete Risk rule",
       "default-rules": {
@@ -2945,7 +2953,7 @@
       "search": "Search rule"
     },
     "approval-flow": {
-      "self": "Approval flow",
+      "self": "Approval Flow",
       "description": "For each operation type, configure custom condition, risk and approval flow. ",
       "approval-flows": "Approval Flows",
       "approval-nodes": "Approval nodes",
@@ -3073,7 +3081,6 @@
     "self": "Schema Template",
     "field-template": {
       "self": "Field Template",
-      "add": "Add field template",
       "description": "You can pre-define the field template, then apply the template during the schema change."
     },
     "column-type-restriction": {
@@ -3091,7 +3098,6 @@
     },
     "table-template": {
       "self": "Table Template",
-      "add": "Add table template",
       "description": "You can pre-define the table template, then apply the template during the schema change."
     },
     "search-by-name-or-comment": "Search by name or comment",

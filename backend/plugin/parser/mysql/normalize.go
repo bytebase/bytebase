@@ -175,8 +175,16 @@ func NormalizeMySQLProcedureName(ctx parser.IProcedureNameContext) (string, stri
 	return "", ""
 }
 
-// NormalizeMySQLSchemaRef noamalizes the given schemaRef.
+// NormalizeMySQLSchemaRef normalize the given schemaRef.
 func NormalizeMySQLSchemaRef(ctx parser.ISchemaRefContext) string {
+	if ctx.Identifier() != nil {
+		return NormalizeMySQLIdentifier(ctx.Identifier())
+	}
+	return ""
+}
+
+// NormalizeMySQLSchemaRef normalize the given schemaName.
+func NormalizeMySQLSchemaName(ctx parser.ISchemaNameContext) string {
 	if ctx.Identifier() != nil {
 		return NormalizeMySQLIdentifier(ctx.Identifier())
 	}
@@ -341,4 +349,14 @@ func IsTimeType(ctx parser.IDataTypeContext) bool {
 	default:
 		return false
 	}
+}
+
+// IsAutoIncrement check if this column is auto_increment.
+func IsAutoIncrement(ctx parser.IFieldDefinitionContext) bool {
+	for _, attr := range ctx.AllColumnAttribute() {
+		if attr.AUTO_INCREMENT_SYMBOL() != nil {
+			return true
+		}
+	}
+	return false
 }

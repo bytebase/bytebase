@@ -1,7 +1,6 @@
 export * from "./auth";
 export * from "./command";
 export * from "./help";
-export * from "./issue";
 export * from "./notification";
 export * from "./slowQueryPolicy";
 export * from "./router";

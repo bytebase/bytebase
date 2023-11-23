@@ -1,6 +1,6 @@
 <template>
   <div class="flex items-center max-w-full overflow-hidden gap-x-1">
-    <TableIcon />
+    <TableIcon class="w-4 h-4" />
     <HighlightLabelText
       :text="target.table.name"
       :keyword="keyword"
@@ -11,7 +11,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import TableIcon from "~icons/heroicons-outline/table-cells";
+import { TableIcon } from "@/components/Icon";
 import {
   SQLEditorTreeNode as TreeNode,
   SQLEditorTreeFactor as Factor,

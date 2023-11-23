@@ -277,7 +277,7 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 	if instance.Engine == storepb.Engine_POSTGRES {
 		return s.ExportV2(ctx, request)
 	}
-	user, instance, database, _, _, sensitiveSchemaInfo, err := s.preCheck(ctx, request.Name, request.ConnectionDatabase, request.Statement, request.Limit, false /* isAdmin */, false /* isExport */)
+	user, instance, database, _, _, sensitiveSchemaInfo, err := s.preCheck(ctx, request.Name, request.ConnectionDatabase, request.Statement, request.Limit, false /* isAdmin */, true /* isExport */)
 	if err != nil {
 		return nil, err
 	}
@@ -1048,7 +1048,6 @@ func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, in
 		CurrentDatabase:     request.ConnectionDatabase,
 		SensitiveSchemaInfo: sensitiveSchemaInfo,
 		EnableSensitive:     s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil,
-		EngineVersion:       instance.EngineVersion,
 	})
 	select {
 	case <-ctx.Done():
@@ -1138,7 +1137,7 @@ func (s *SQLService) preCheck(ctx context.Context, instanceName, connectionDatab
 		maskingType = storepb.MaskingExceptionPolicy_MaskingException_EXPORT
 	}
 	var sensitiveSchemaInfo *base.SensitiveSchemaInfo
-	if adviceStatus != advisor.Error {
+	if s.licenseService.IsFeatureEnabled(api.FeatureSensitiveData) == nil && adviceStatus != advisor.Error {
 		databaseMap := make(map[string]bool)
 		switch instance.Engine {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:

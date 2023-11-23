@@ -75,7 +75,6 @@ export function openWindowForOAuth(
   } else if (vcsType == ExternalVersionControl_Type.AZURE_DEVOPS) {
     // Scopes for Azure: https://learn.microsoft.com/zh-cn/azure/devops/integrate/get-started/authentication/oauth?view=azure-devops#scopes
     // We need full scopes in the application: https://stackoverflow.com/questions/56143321/azure-devops-oauth-enpoint-always-returns-error-invalidscope
-    // TODO: decide necessary scopes
     endpointQueryParams["scope"] =
       "vso.code_full vso.identity vso.project vso.build_execute";
     endpointQueryParams["response_type"] = "Assertion";

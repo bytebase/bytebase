@@ -1,28 +1,35 @@
 <template>
-  <div class="w-full mt-4 space-y-4">
-    <div class="flex items-center justify-end space-x-2">
-      <NButton
-        type="primary"
-        :disabled="!hasPermission || !hasSensitiveDataFeature"
-        @click="onAdd"
-      >
-        {{ $t("settings.sensitive-data.semantic-types.add-type") }}
-      </NButton>
-      <NButton
-        :disabled="!hasPermission || !hasSensitiveDataFeature"
-        @click="state.showTemplateDrawer = true"
-      >
-        {{ $t("settings.sensitive-data.semantic-types.add-from-template") }}
-      </NButton>
+  <div class="w-full space-y-4">
+    <div
+      class="flex flex-col lg:flex-row items-start lg:items-center justify-between space-y-2 lg:space-x-2"
+    >
+      <div class="textinfolabel">
+        {{ $t("settings.sensitive-data.semantic-types.label") }}
+      </div>
+      <div class="flex items-center justify-end space-x-2">
+        <NButton
+          :disabled="!hasPermission || !hasSensitiveDataFeature"
+          @click="state.showTemplateDrawer = true"
+        >
+          {{ $t("settings.sensitive-data.semantic-types.use-predefined-type") }}
+        </NButton>
+        <NButton
+          type="primary"
+          :disabled="!hasPermission || !hasSensitiveDataFeature"
+          @click="onAdd"
+        >
+          {{ $t("common.add") }}
+        </NButton>
+      </div>
     </div>
     <div class="space-y-5 divide-y-2 pb-10 divide-gray-100">
       <SemanticTypesTable
         :readonly="!hasPermission || !hasSensitiveDataFeature"
         :row-clickable="false"
         :semantic-item-list="state.semanticItemList"
-        @on-cancel="onCancel"
-        @on-remove="onRemove"
-        @on-confirm="onConfirm"
+        @cancel="onCancel"
+        @remove="onRemove"
+        @confirm="onConfirm"
       />
     </div>
   </div>
@@ -45,6 +52,7 @@ import {
 } from "@/store";
 import { SemanticTypeSetting_SemanticType } from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV1 } from "@/utils";
+import SemanticTemplateDrawer from "./components/SemanticTemplateDrawer.vue";
 import SemanticTypesTable, {
   SemanticItem,
 } from "./components/SemanticTypesTable.vue";

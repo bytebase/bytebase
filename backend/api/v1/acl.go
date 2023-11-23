@@ -12,6 +12,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/iam"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
@@ -23,15 +24,17 @@ type ACLInterceptor struct {
 	store          *store.Store
 	secret         string
 	licenseService enterprise.LicenseService
+	iamManager     *iam.Manager
 	mode           common.ReleaseMode
 }
 
 // NewACLInterceptor returns a new v1 API ACL interceptor.
-func NewACLInterceptor(store *store.Store, secret string, licenseService enterprise.LicenseService, mode common.ReleaseMode) *ACLInterceptor {
+func NewACLInterceptor(store *store.Store, secret string, licenseService enterprise.LicenseService, iamManager *iam.Manager, mode common.ReleaseMode) *ACLInterceptor {
 	return &ACLInterceptor{
 		store:          store,
 		secret:         secret,
 		licenseService: licenseService,
+		iamManager:     iamManager,
 		mode:           mode,
 	}
 }
@@ -140,6 +143,26 @@ func (in *ACLInterceptor) aclInterceptorDo(ctx context.Context, fullMethod strin
 				return status.Errorf(codes.PermissionDenied, "only project owner can transfer database to project %q", projectID)
 			}
 		}
+	}
+
+	if in.mode == common.ReleaseModeDev && user.Email == "xz@bytebase.com" {
+		return in.checkIAMPermission(ctx, methodName, user)
+	}
+
+	return nil
+}
+
+func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, methodName string, user *store.UserMessage) error {
+	p, ok := methodPermissionMap[methodName]
+	if !ok {
+		return nil
+	}
+	ok, err := in.iamManager.CheckPermission(ctx, p, user)
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to check permission for method %q, err: %v", methodName, err)
+	}
+	if !ok {
+		return status.Errorf(codes.PermissionDenied, "permission denied for method %q, user does not have permission %q", methodName, p)
 	}
 	return nil
 }
