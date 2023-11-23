@@ -682,9 +682,9 @@
       },
       "semantic-types": {
         "self": "Tipos Semánticos",
-        "add-type": "Agregar tipo",
+        "add-type": "Agregar Tipo",
         "label": "Las columnas que tengan el mismo tipo semántico utilizarán los mismos algoritmos de enmascaramiento.",
-        "add-from-template": "Agregar desde plantilla",
+        "use-predefined-type": "Utiliza el Tipo Predefinido",
         "table": {
           "semantic-type": "Tipo Semántico",
           "description": "Descripción",

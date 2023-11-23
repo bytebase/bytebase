@@ -11,7 +11,7 @@
           :disabled="!hasPermission || !hasSensitiveDataFeature"
           @click="state.showTemplateDrawer = true"
         >
-          {{ $t("settings.sensitive-data.semantic-types.add-from-template") }}
+          {{ $t("settings.sensitive-data.semantic-types.use-predefined-type") }}
         </NButton>
         <NButton
           type="primary"
