@@ -10,6 +10,7 @@ import (
 
 	pgquery "github.com/pganalyze/pg_query_go/v4"
 
+	parsererror "github.com/bytebase/bytebase/backend/plugin/parser/errors"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
@@ -793,16 +794,28 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", q.connectedDB)
 	}
+	if dbSchema == nil {
+		return nil, &parsererror.ResourceNotFoundError{
+			Database: &q.connectedDB,
+		}
+	}
 	if schemaName == "" {
 		schemaName = "public"
 	}
 	schema := dbSchema.GetSchema(schemaName)
 	if schema == nil {
-		return nil, errors.Errorf("schema %s not found", schemaName)
+		return nil, &parsererror.ResourceNotFoundError{
+			Database: &q.connectedDB,
+			Schema:   &schemaName,
+		}
 	}
 	table := schema.GetTable(tableName)
 	if table == nil {
-		return nil, errors.Errorf("table %s.%s not found", schemaName, tableName)
+		return nil, &parsererror.ResourceNotFoundError{
+			Database: &q.connectedDB,
+			Schema:   &schemaName,
+			Table:    &tableName,
+		}
 	}
 
 	var columns []string
