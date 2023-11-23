@@ -18,7 +18,7 @@
           :disabled="!hasPermission || !hasSensitiveDataFeature"
           @click="onAdd"
         >
-          {{ $t("settings.sensitive-data.semantic-types.add-type") }}
+          {{ $t("common.add") }}
         </NButton>
       </div>
     </div>
