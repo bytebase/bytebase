@@ -222,18 +222,16 @@ func (driver *Driver) executeChunkedSubmission(ctx context.Context, conn *sql.Co
 
 		// Set the progress information for the current chunk.
 		if opts.UpdateExecutionStatus != nil {
-			fmt.Println(`111111111111111111111111111111111`)
-			fmt.Printf("currentIndex: %d, chunkEndIndex: %d\n", currentIndex, chunkEndIndex)
-			fmt.Printf("commandsTotal: %d, commandsCompleted: %d\n", len(list), currentIndex)
-			fmt.Printf("commandStartPosition: %d, commandEndPosition: %d\n", list[currentIndex].BaseLine, list[chunkEndIndex-1].BaseLine)
 			opts.UpdateExecutionStatus(&v1pb.TaskRun_ExecutionDetail{
 				CommandsTotal:     int32(len(list)),
 				CommandsCompleted: int32(currentIndex),
 				CommandStartPosition: &v1pb.TaskRun_ExecutionDetail_Position{
+					// TODO(rebelice): should find the first non-comment and blank line.
 					Line: int32(list[currentIndex].BaseLine),
 					// TODO(rebelice): we should also set the column position.
 				},
 				CommandEndPosition: &v1pb.TaskRun_ExecutionDetail_Position{
+					// TODO(rebelice): should find the first non-comment and blank line.
 					Line: int32(list[chunkEndIndex-1].BaseLine),
 					// TODO(rebelice): we should also set the column position.
 				},

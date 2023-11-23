@@ -174,7 +174,7 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile config.P
 	return mi, nil
 }
 
-func executeMigration(ctx context.Context, driverCtx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, license enterprise.LicenseService, stateCfg *state.State, task *store.TaskMessage, taskRunUID int, statement string, sheetID *int, mi *db.MigrationInfo) (string, string, error) {
+func executeMigration(ctx context.Context, driverCtx context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, profile config.Profile, task *store.TaskMessage, taskRunUID int, statement string, sheetID *int, mi *db.MigrationInfo) (string, string, error) {
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return "", "", err
@@ -216,8 +216,7 @@ func executeMigration(ctx context.Context, driverCtx context.Context, stores *st
 		opts.EndTransactionFunc = getSetOracleTransactionIDFunc(ctx, task, stores)
 	}
 
-	if err := license.IsFeatureEnabled(api.FeatureChunkedSubmit); err == nil && stateCfg != nil {
-		// nolint
+	if profile.Mode == common.ReleaseModeDev && stateCfg != nil {
 		switch task.Type {
 		case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseDataUpdate:
 			switch instance.Engine {
@@ -655,7 +654,7 @@ func runMigration(ctx context.Context, driverCtx context.Context, store *store.S
 		return true, nil, err
 	}
 
-	migrationID, schema, err := executeMigration(ctx, driverCtx, store, dbFactory, license, stateCfg, task, taskRunUID, statement, sheetID, mi)
+	migrationID, schema, err := executeMigration(ctx, driverCtx, store, dbFactory, stateCfg, profile, task, taskRunUID, statement, sheetID, mi)
 	if err != nil {
 		return true, nil, err
 	}
