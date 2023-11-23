@@ -1,6 +1,8 @@
 package util
 
 import (
+	"strings"
+
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -39,4 +41,19 @@ func ChunkedSQLScript(script []base.SingleSQL, maxChunksCount int) ([][]base.Sin
 	}
 
 	return result, nil
+}
+
+// ConcatChunk is the optimization in the case that we have a 100MB text.
+func ConcatChunk(chunk []base.SingleSQL) (string, error) {
+	if len(chunk) == 1 {
+		return chunk[0].Text, nil
+	} else {
+		var chunkBuf strings.Builder
+		for _, sql := range chunk {
+			if _, err := chunkBuf.WriteString(sql.Text); err != nil {
+				return "", errors.Wrapf(err, "failed to write chunk buffer")
+			}
+		}
+		return chunkBuf.String(), nil
+	}
 }

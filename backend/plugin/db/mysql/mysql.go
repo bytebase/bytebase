@@ -178,20 +178,30 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 		}
 	}
 
+	var totalCommands int
+	var chunks [][]base.SingleSQL
 	if opts.ChunkedSubmission && len(statement) <= common.MaxSheetCheckSize {
-		return executeChunkedSubmission(ctx, conn, statement, opts)
-	}
-
-	return executeBatchSubmission(ctx, conn, statement, opts)
-}
-
-func executeChunkedSubmission(ctx context.Context, conn *sql.Conn, statement string, opts db.ExecuteOptions) (int64, error) {
-	list, err := mysqlparser.SplitSQL(statement)
-	if err != nil {
-		return 0, errors.Wrapf(err, "failed to split sql")
-	}
-	if len(list) == 0 {
-		return 0, nil
+		list, err := mysqlparser.SplitSQL(statement)
+		if err != nil {
+			return 0, errors.Wrapf(err, "failed to split sql")
+		}
+		if len(list) == 0 {
+			return 0, nil
+		}
+		totalCommands = len(list)
+		ret, err := util.ChunkedSQLScript(list, common.MaxSheetCheckSize)
+		if err != nil {
+			return 0, errors.Wrapf(err, "failed to chunk sql")
+		}
+		chunks = ret
+	} else {
+		chunks = [][]base.SingleSQL{
+			{
+				base.SingleSQL{
+					Text: statement,
+				},
+			},
+		}
 	}
 
 	tx, err := conn.BeginTx(ctx, nil)
@@ -199,11 +209,6 @@ func executeChunkedSubmission(ctx context.Context, conn *sql.Conn, statement str
 		return 0, errors.Wrapf(err, "failed to begin execute transaction")
 	}
 	defer tx.Rollback()
-
-	chunks, err := util.ChunkedSQLScript(list, common.MaxSheetCheckSize)
-	if err != nil {
-		return 0, errors.Wrapf(err, "failed to chunk sql")
-	}
 
 	currentIndex := 0
 	var totalRowsAffected int64
@@ -216,7 +221,7 @@ func executeChunkedSubmission(ctx context.Context, conn *sql.Conn, statement str
 		// Set the progress information for the current chunk.
 		if opts.UpdateExecutionStatus != nil {
 			opts.UpdateExecutionStatus(&v1pb.TaskRun_ExecutionDetail{
-				CommandsTotal:     int32(len(list)),
+				CommandsTotal:     int32(totalCommands),
 				CommandsCompleted: int32(currentIndex),
 				CommandStartPosition: &v1pb.TaskRun_ExecutionDetail_Position{
 					// TODO(rebelice): should find the first non-comment and blank line.
@@ -231,15 +236,12 @@ func executeChunkedSubmission(ctx context.Context, conn *sql.Conn, statement str
 			})
 		}
 
-		var chunkBuf strings.Builder
-		for _, sql := range chunk {
-			if _, err := chunkBuf.WriteString(sql.Text); err != nil {
-				return 0, errors.Wrapf(err, "failed to write chunk buffer")
-			}
+		chunkText, err := util.ConcatChunk(chunk)
+		if err != nil {
+			return 0, err
 		}
 
-		currentIndex += len(chunk)
-		sqlResult, err := tx.ExecContext(ctx, chunkBuf.String())
+		sqlResult, err := tx.ExecContext(ctx, chunkText)
 		if err != nil {
 			return 0, errors.Wrapf(err, "failed to execute context in a transaction")
 		}
@@ -249,33 +251,8 @@ func executeChunkedSubmission(ctx context.Context, conn *sql.Conn, statement str
 			slog.Debug("rowsAffected returns error", log.BBError(err))
 		}
 		totalRowsAffected += rowsAffected
+		currentIndex += len(chunk)
 	}
-
-	if err := tx.Commit(); err != nil {
-		return 0, errors.Wrapf(err, "failed to commit execute transaction")
-	}
-
-	return totalRowsAffected, nil
-}
-
-func executeBatchSubmission(ctx context.Context, conn *sql.Conn, statement string, _ db.ExecuteOptions) (int64, error) {
-	tx, err := conn.BeginTx(ctx, nil)
-	if err != nil {
-		return 0, errors.Wrapf(err, "failed to begin execute transaction")
-	}
-	defer tx.Rollback()
-
-	var totalRowsAffected int64
-	sqlResult, err := tx.ExecContext(ctx, statement)
-	if err != nil {
-		return 0, errors.Wrapf(err, "failed to execute context in a transaction")
-	}
-	rowsAffected, err := sqlResult.RowsAffected()
-	if err != nil {
-		// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-		slog.Debug("rowsAffected returns error", log.BBError(err))
-	}
-	totalRowsAffected += rowsAffected
 
 	if err := tx.Commit(); err != nil {
 		return 0, errors.Wrapf(err, "failed to commit execute transaction")
