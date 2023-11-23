@@ -26,11 +26,6 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-const (
-	chunkedSubmissionMaximumSize = 500 * 1024
-	maxChunksCount               = 200
-)
-
 var (
 	baseTableType = "BASE TABLE"
 	viewTableType = "VIEW"
@@ -183,7 +178,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 		}
 	}
 
-	if opts.IndividualSubmission && len(statement) <= chunkedSubmissionMaximumSize {
+	if opts.IndividualSubmission && len(statement) <= common.MaxSheetCheckSize {
 		return executeChunkedSubmission(ctx, conn, statement, opts)
 	}
 
@@ -206,7 +201,10 @@ func executeChunkedSubmission(ctx context.Context, conn *sql.Conn, statement str
 	defer tx.Rollback()
 
 	// Round up the number of sql per chunk.
-	sqlPerChunk := (len(list)-1)/maxChunksCount + 1
+	sqlPerChunk, err := util.CeilDivision(len(list), common.MaxSheetCheckSize)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to get sql count per chunk")
+	}
 	currentIndex := 0
 	var totalRowsAffected int64
 	for {
