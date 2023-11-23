@@ -184,13 +184,13 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 	}
 
 	if opts.IndividualSubmission && len(statement) <= chunkedSubmissionMaximumSize {
-		return driver.executeChunkedSubmission(ctx, conn, statement, opts)
+		return executeChunkedSubmission(ctx, conn, statement, opts)
 	}
 
-	return driver.executeBatchSubmission(ctx, conn, statement, opts)
+	return executeBatchSubmission(ctx, conn, statement, opts)
 }
 
-func (driver *Driver) executeChunkedSubmission(ctx context.Context, conn *sql.Conn, statement string, opts db.ExecuteOptions) (int64, error) {
+func executeChunkedSubmission(ctx context.Context, conn *sql.Conn, statement string, opts db.ExecuteOptions) (int64, error) {
 	list, err := mysqlparser.SplitSQL(statement)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to split sql")
@@ -265,7 +265,7 @@ func (driver *Driver) executeChunkedSubmission(ctx context.Context, conn *sql.Co
 	return totalRowsAffected, nil
 }
 
-func (driver *Driver) executeBatchSubmission(ctx context.Context, conn *sql.Conn, statement string, opts db.ExecuteOptions) (int64, error) {
+func executeBatchSubmission(ctx context.Context, conn *sql.Conn, statement string, opts db.ExecuteOptions) (int64, error) {
 	tx, err := conn.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to begin execute transaction")
