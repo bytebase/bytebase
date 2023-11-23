@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	parsererror "github.com/bytebase/bytebase/backend/plugin/parser/errors"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -188,6 +189,11 @@ func GetQuerySpan(ctx context.Context, engine storepb.Engine, statement, databas
 	for _, stmt := range statements {
 		result, err := f(ctx, stmt.Text, database, getMetadataFunc)
 		if err != nil {
+			// Try to unwrap the error to see if it's a ResourceNotFoundError to decrease the error noise.
+			var e *parsererror.ResourceNotFoundError
+			if errors.As(err, &e) {
+				return nil, e
+			}
 			return nil, err
 		}
 		results = append(results, result)
