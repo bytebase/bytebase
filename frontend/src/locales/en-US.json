@@ -676,7 +676,7 @@
         "self": "Global Masking Rule",
         "description": "Use global rule to apply masking levels in batch, e.g. all columns named as \"email\" will be masked with \"Partial\" level.",
         "condition-order": "Condition order",
-        "add-rule": "Add rule",
+        "add-rule": "Add Rule",
         "re-order": "Re-order",
         "delete-rule-tip": "Delete this rule?",
         "check-rules": "Check global rules"
@@ -2891,7 +2891,7 @@
         "high": "High Risk Rules"
       },
       "active": "Active",
-      "add-rule": "Add rule",
+      "add-rule": "Add Rule",
       "edit-rule": "Edit rule",
       "delete": "Delete Risk rule",
       "default-rules": {

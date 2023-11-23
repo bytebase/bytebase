@@ -1638,7 +1638,7 @@
     "unassigned": "不再分配",
     "show-schemaless-databases": "显示无模式的数据库。（变更 Schema 不适用于无 schema 的数据库. ）",
     "secret": {
-      "new": "新增保密变量",
+      "new": "添加保密变量",
       "edit": "编辑保密变量",
       "name-placeholder": "输入保密变量名称",
       "description-placeholder": "输入描述",
@@ -3078,7 +3078,7 @@
     "self": "Schema 模板",
     "field-template": {
       "self": "字段模板",
-      "add": "新增字段模板",
+      "add": "添加字段模板",
       "description": "预定义字段模板，之后可以在变更或设计 Schema 时应用这些模板。"
     },
     "column-type-restriction": {
@@ -3096,7 +3096,7 @@
     },
     "table-template": {
       "self": "表模板",
-      "add": "新增表模板",
+      "add": "添加表模板",
       "description": "预定义表模板，之后可以在变更或设计 Schema 时应用这些模板。"
     },
     "search-by-name-or-comment": "根据名称或备注搜索",
