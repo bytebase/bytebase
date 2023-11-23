@@ -37,6 +37,9 @@ func ChunkedSQLScript(script []base.SingleSQL, maxChunksCount int) ([][]base.Sin
 	for i := rest; i < maxChunksCount; i++ {
 		start := rest*(roundDown+1) + (i-rest)*roundDown
 		end := rest*(roundDown+1) + (i-rest+1)*roundDown
+		if start >= len(script) {
+			break
+		}
 		result = append(result, script[start:end])
 	}
 
