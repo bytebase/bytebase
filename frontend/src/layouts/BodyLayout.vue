@@ -6,7 +6,10 @@
         <div v-if="state.showMobileOverlay" class="md:hidden">
           <div class="fixed inset-0 flex z-40">
             <div class="fixed inset-0">
-              <div class="absolute inset-0 bg-gray-600 opacity-75"></div>
+              <div
+                class="absolute inset-0 bg-gray-600 opacity-75"
+                @click.prevent="state.showMobileOverlay = false"
+              ></div>
             </div>
             <div
               tabindex="0"
@@ -25,7 +28,10 @@
               </div>
               <!-- Mobile Sidebar -->
               <div class="flex-1 h-0 py-4 overflow-y-auto">
-                <router-view name="leftSidebar" />
+                <router-view
+                  name="leftSidebar"
+                  @click="state.showMobileOverlay = false"
+                />
               </div>
               <div
                 class="flex-shrink-0 flex border-t border-block-border px-3 py-1.5"
@@ -89,7 +95,10 @@
           <div class="flex flex-col w-52 bg-control-bg">
             <!-- Sidebar component, swap this element with another sidebar if you like -->
             <div class="flex-1 flex flex-col py-0 overflow-y-auto">
-              <router-view name="leftSidebar" />
+              <router-view
+                name="leftSidebar"
+                @click="state.showMobileOverlay = false"
+              />
             </div>
             <div
               class="flex-shrink-0 flex justify-between border-t border-block-border px-3 py-1.5"
