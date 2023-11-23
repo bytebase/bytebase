@@ -142,11 +142,13 @@ const generateReferenceStatement = (schemaGroupList: ComposedSchemaGroup[]) => {
   const statementList: string[] = [];
   for (const schemaGroup of schemaGroupList) {
     if (props.issueType === "bb.issue.database.schema.update") {
-      statementList.push(`-- Uncomment to batch change table group ${schemaGroup.tablePlaceholder}
--- ALTER TABLE ${schemaGroup.tablePlaceholder} ADD COLUMN <<column>> <<datatype>>;`);
+      statementList.push(
+        `ALTER TABLE ${schemaGroup.tablePlaceholder} ADD COLUMN <<column>> <<datatype>>;`
+      );
     } else {
-      statementList.push(`-- Uncomment to update data of table group ${schemaGroup.tablePlaceholder}
--- UPDATE ${schemaGroup.tablePlaceholder} SET <<column>> = <<value>> WHERE <<condition>>;`);
+      statementList.push(
+        `UPDATE ${schemaGroup.tablePlaceholder} SET <<column>> = <<value>> WHERE <<condition>>;`
+      );
     }
   }
   return statementList.join("\n\n");
