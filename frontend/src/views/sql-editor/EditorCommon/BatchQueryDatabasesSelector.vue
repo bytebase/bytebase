@@ -173,9 +173,6 @@ const dataTableColumns = computed(() => {
       render(row: ComposedDatabase) {
         return row.databaseName;
       },
-      filter(value: string, row: ComposedDatabase) {
-        return ~row.databaseName.indexOf(value);
-      },
     },
     {
       title: t("common.environment"),
@@ -207,7 +204,7 @@ const dataTableColumns = computed(() => {
         return h(LabelsColumn, {
           labels: row.labels,
           showCount: 1,
-          placeholder: "-",
+          placeholder: "",
         });
       },
     },
