@@ -303,6 +303,7 @@ const onSelect = (hash: ProjectHash | undefined) => {
   router.replace({
     name: "workspace.project.detail",
     hash: `#${hash}`,
+    query: route.query,
     params: {
       projectSlug: props.projectSlug || projectSlugV1(project.value),
     },
