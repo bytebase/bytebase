@@ -16,6 +16,7 @@ roles:
       - bb.databases.updateMetadata
       - bb.databases.getSchema
       - bb.databases.getBackupSetting
+      - bb.databases.updateBackupSetting
       - bb.backups.list
       - bb.backups.create
       - bb.changeHistories.list
@@ -40,6 +41,7 @@ roles:
       - bb.databases.updateMetadata
       - bb.databases.getSchema
       - bb.databases.getBackupSetting
+      - bb.databases.updateBackupSetting
       - bb.backups.list
       - bb.backups.create
       - bb.changeHistories.list
@@ -59,6 +61,7 @@ roles:
       - bb.databases.updateMetadata
       - bb.databases.getSchema
       - bb.databases.getBackupSetting
+      - bb.databases.updateBackupSetting
       - bb.backups.list
       - bb.backups.create
       - bb.changeHistories.list
