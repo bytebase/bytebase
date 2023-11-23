@@ -178,7 +178,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 		}
 	}
 
-	if opts.IndividualSubmission && len(statement) <= common.MaxSheetCheckSize {
+	if opts.ChunkedSubmission && len(statement) <= common.MaxSheetCheckSize {
 		return executeChunkedSubmission(ctx, conn, statement, opts)
 	}
 

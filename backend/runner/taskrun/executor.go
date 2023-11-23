@@ -221,7 +221,7 @@ func executeMigration(ctx context.Context, driverCtx context.Context, stores *st
 		case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseDataUpdate:
 			switch instance.Engine {
 			case storepb.Engine_MYSQL:
-				opts.IndividualSubmission = true
+				opts.ChunkedSubmission = true
 				opts.UpdateExecutionStatus = func(detail *v1pb.TaskRun_ExecutionDetail) {
 					stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
 						state.TaskRunExecutionStatus{
