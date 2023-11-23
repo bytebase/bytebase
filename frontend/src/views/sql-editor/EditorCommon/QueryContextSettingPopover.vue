@@ -79,11 +79,26 @@ const renderLabel: SelectRenderLabel = (option) => {
       [readableDataSourceType(dataSource.type)]
     ),
     h(
-      "span",
+      NPopover,
       {
+        placement: "top",
+        trigger: "hover",
         class: "ml-1",
       },
-      [dataSource.username]
+      {
+        trigger: () => {
+          return h(
+            "span",
+            {
+              class: "ml-1",
+            },
+            [dataSource.username]
+          );
+        },
+        default: () => {
+          return h("div", {}, [dataSource.host, ":", dataSource.port]);
+        },
+      }
     ),
   ];
   return h(
