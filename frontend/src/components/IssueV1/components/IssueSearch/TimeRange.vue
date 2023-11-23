@@ -16,13 +16,7 @@
 import dayjs from "dayjs";
 import { NDatePicker } from "naive-ui";
 import { computed } from "vue";
-import { hasFeature } from "@/store";
-import {
-  SearchParams,
-  TimeRangeLimitForFreePlanInTs,
-  getTsRangeFromSearchParams,
-  upsertScope,
-} from "@/utils";
+import { SearchParams, getTsRangeFromSearchParams, upsertScope } from "@/utils";
 
 const props = defineProps<{
   params: SearchParams;
@@ -41,11 +35,7 @@ const isDateDisabled = (ts: number) => {
   if (ts > today) {
     return true;
   }
-  if (hasFeature("bb.feature.issue-advanced-search")) {
-    return false;
-  }
-
-  return ts < today - TimeRangeLimitForFreePlanInTs;
+  return false;
 };
 
 const handleUpdate = (values: [number, number] | null) => {
