@@ -674,14 +674,14 @@
         "self": "全局脱敏规则",
         "description": "全局规则用于批量指定脱敏程度，比如所有列名是 email 的字段都被设置为半脱敏。",
         "condition-order": "条件序列",
-        "add-rule": "添加规则",
+        "add-rule": "添加",
         "re-order": "排序",
         "delete-rule-tip": "删除这条规则？",
         "check-rules": "查看全局配置"
       },
       "semantic-types": {
         "self": "语义类型",
-        "add-type": "添加类型",
+        "add-type": "添加",
         "label": "具有相同语义类型的列会使用相同的脱敏算法。",
         "use-predefined-type": "使用预定义类型",
         "table": {
@@ -744,7 +744,7 @@
       },
       "algorithms": {
         "self": "脱敏算法",
-        "add": "添加算法",
+        "add": "添加",
         "default": "默认",
         "default-desc": "使用 *** 为数据遮挡",
         "table": {
@@ -2885,7 +2885,7 @@
         "high": "高风险规则"
       },
       "active": "开启",
-      "add-rule": "添加规则",
+      "add-rule": "添加",
       "edit-rule": "编辑规则",
       "delete": "删除安全规则",
       "default-rules": {
@@ -3078,7 +3078,7 @@
     "self": "Schema 模板",
     "field-template": {
       "self": "字段模板",
-      "add": "添加字段模板",
+      "add": "添加",
       "description": "预定义字段模板，之后可以在变更或设计 Schema 时应用这些模板。"
     },
     "column-type-restriction": {
@@ -3096,7 +3096,7 @@
     },
     "table-template": {
       "self": "表模板",
-      "add": "添加表模板",
+      "add": "添加",
       "description": "预定义表模板，之后可以在变更或设计 Schema 时应用这些模板。"
     },
     "search-by-name-or-comment": "根据名称或备注搜索",

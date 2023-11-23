@@ -675,14 +675,14 @@
         "self": "Regla de enmascaramiento global",
         "description": "Utilice la regla global para aplicar niveles de enmascaramiento por lotes, p. Todas las columnas denominadas \"correo electrónico\" se enmascararán con el nivel \"Parcial\".",
         "condition-order": "Orden de condición",
-        "add-rule": "Agregar Regla",
+        "add-rule": "Agregar",
         "re-order": "Reordenar",
         "delete-rule-tip": "¿Eliminar esta regla?",
         "check-rules": "Check global rules"
       },
       "semantic-types": {
         "self": "Tipos Semánticos",
-        "add-type": "Agregar Tipo",
+        "add-type": "Agregar",
         "label": "Las columnas que tengan el mismo tipo semántico utilizarán los mismos algoritmos de enmascaramiento.",
         "use-predefined-type": "Utiliza el Tipo Predefinido",
         "table": {
@@ -745,7 +745,7 @@
       },
       "algorithms": {
         "self": "Algoritmo De Enmascaramiento",
-        "add": "Agregar algoritmo",
+        "add": "Agregar",
         "default": "Por defecto",
         "default-desc": "Utilice *** como máscara de datos",
         "table": {
@@ -2888,7 +2888,7 @@
         "high": "Reglas de riesgo alto"
       },
       "active": "Activo",
-      "add-rule": "Agregar Regla",
+      "add-rule": "Agregar",
       "edit-rule": "Editar regla",
       "delete": "Eliminar regla de seguridad",
       "default-rules": {
@@ -3082,7 +3082,7 @@
     "self": "Plantilla de esquema",
     "field-template": {
       "self": "Plantilla de campo",
-      "add": "Agregar plantilla de campo",
+      "add": "Agregar",
       "description": "Predefina la plantilla de campo, luego aplique la plantilla durante el cambio de esquema."
     },
     "column-type-restriction": {
@@ -3100,7 +3100,7 @@
     },
     "table-template": {
       "self": "Plantilla de tabla",
-      "add": "Agregar plantilla de tabla",
+      "add": "Agregar",
       "description": "Puede predefinir la plantilla de tabla y luego aplicar la plantilla durante el cambio de esquema."
     },
     "search-by-name-or-comment": "Buscar por nombre o comentario",
