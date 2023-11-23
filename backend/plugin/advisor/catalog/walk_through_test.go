@@ -48,7 +48,7 @@ func TestMySQLV2WalkThrough(t *testing.T) {
 	}
 
 	tests := []string{
-		"mysqlv2_walk_through",
+		"mysql_walk_through",
 	}
 
 	for _, test := range tests {
