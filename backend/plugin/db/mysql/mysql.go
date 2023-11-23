@@ -200,23 +200,18 @@ func executeChunkedSubmission(ctx context.Context, conn *sql.Conn, statement str
 	}
 	defer tx.Rollback()
 
-	// Round up the number of sql per chunk.
-	sqlPerChunk, err := util.CeilDivision(len(list), common.MaxSheetCheckSize)
+	chunks, err := util.ChunkedSQLScript(list, common.MaxSheetCheckSize)
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to get sql count per chunk")
+		return 0, errors.Wrapf(err, "failed to chunk sql")
 	}
+
 	currentIndex := 0
 	var totalRowsAffected int64
-	for {
-		if currentIndex >= len(list) {
-			break
+	for _, chunk := range chunks {
+		if len(chunk) == 0 {
+			continue
 		}
-
 		// Start the current chunk.
-		chunkEndIndex := currentIndex + sqlPerChunk
-		if chunkEndIndex > len(list) {
-			chunkEndIndex = len(list)
-		}
 
 		// Set the progress information for the current chunk.
 		if opts.UpdateExecutionStatus != nil {
@@ -225,25 +220,25 @@ func executeChunkedSubmission(ctx context.Context, conn *sql.Conn, statement str
 				CommandsCompleted: int32(currentIndex),
 				CommandStartPosition: &v1pb.TaskRun_ExecutionDetail_Position{
 					// TODO(rebelice): should find the first non-comment and blank line.
-					Line: int32(list[currentIndex].BaseLine),
+					Line: int32(chunk[0].BaseLine),
 					// TODO(rebelice): we should also set the column position.
 				},
 				CommandEndPosition: &v1pb.TaskRun_ExecutionDetail_Position{
 					// TODO(rebelice): should find the first non-comment and blank line.
-					Line: int32(list[chunkEndIndex-1].BaseLine),
+					Line: int32(chunk[len(chunk)-1].BaseLine),
 					// TODO(rebelice): we should also set the column position.
 				},
 			})
 		}
 
 		var chunkBuf strings.Builder
-		for _, sql := range list[currentIndex:chunkEndIndex] {
+		for _, sql := range chunk {
 			if _, err := chunkBuf.WriteString(sql.Text); err != nil {
 				return 0, errors.Wrapf(err, "failed to write chunk buffer")
 			}
 		}
-		currentIndex = chunkEndIndex
 
+		currentIndex += len(chunk)
 		sqlResult, err := tx.ExecContext(ctx, chunkBuf.String())
 		if err != nil {
 			return 0, errors.Wrapf(err, "failed to execute context in a transaction")
