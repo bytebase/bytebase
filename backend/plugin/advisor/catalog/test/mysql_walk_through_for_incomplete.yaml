@@ -160,26 +160,26 @@
                   "name": "a",
                   "position": 1,
                   "default": "1",
-                  "type": "int(11)"
+                  "type": "int"
                 },
                 {
                   "name": "b",
                   "position": 2,
-                  "type": "varchar(200)",
+                  "type": "varchar",
                   "characterSet": "utf8mb4"
                 },
                 {
                   "name": "c",
                   "position": 3,
                   "nullable": true,
-                  "type": "int(11)",
+                  "type": "int",
                   "comment": "This is a comment"
                 },
                 {
                   "name": "d",
                   "position": 4,
                   "nullable": true,
-                  "type": "varchar(10)",
+                  "type": "varchar",
                   "collation": "utf8mb4_polish_ci"
                 }
               ],
