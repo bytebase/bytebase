@@ -8,14 +8,14 @@ roles:
       - bb.instance.delete
       - bb.instance.undelete
       - bb.instance.sync
-      - bb.database.list
-      - bb.database.get
-      - bb.database.update
-      - bb.database.sync
-      - bb.database.getMetadata
-      - bb.database.updateMetadata
-      - bb.database.getSchema
-      - bb.database.getBackupSetting
+      - bb.databases.list
+      - bb.databases.get
+      - bb.databases.update
+      - bb.databases.sync
+      - bb.databases.getMetadata
+      - bb.databases.updateMetadata
+      - bb.databases.getSchema
+      - bb.databases.getBackupSetting
       - bb.backups.list
       - bb.backups.create
       - bb.changeHistories.list
@@ -32,14 +32,14 @@ roles:
       - bb.instance.delete
       - bb.instance.undelete
       - bb.instance.sync
-      - bb.database.list
-      - bb.database.get
-      - bb.database.update
-      - bb.database.sync
-      - bb.database.getMetadata
-      - bb.database.updateMetadata
-      - bb.database.getSchema
-      - bb.database.getBackupSetting
+      - bb.databases.list
+      - bb.databases.get
+      - bb.databases.update
+      - bb.databases.sync
+      - bb.databases.getMetadata
+      - bb.databases.updateMetadata
+      - bb.databases.getSchema
+      - bb.databases.getBackupSetting
       - bb.backups.list
       - bb.backups.create
       - bb.changeHistories.list
@@ -51,14 +51,14 @@ roles:
     permissions: []
   - name: roles/projectOwner
     permissions:
-      - bb.database.list
-      - bb.database.get
-      - bb.database.update
-      - bb.database.sync
-      - bb.database.getMetadata
-      - bb.database.updateMetadata
-      - bb.database.getSchema
-      - bb.database.getBackupSetting
+      - bb.databases.list
+      - bb.databases.get
+      - bb.databases.update
+      - bb.databases.sync
+      - bb.databases.getMetadata
+      - bb.databases.updateMetadata
+      - bb.databases.getSchema
+      - bb.databases.getBackupSetting
       - bb.backups.list
       - bb.backups.create
       - bb.changeHistories.list
@@ -68,12 +68,12 @@ roles:
       - bb.databaseSecrets.delete
   - name: roles/projectDeveloper
     permissions:
-      - bb.database.list
-      - bb.database.get
-      - bb.database.sync
-      - bb.database.getMetadata
-      - bb.database.getSchema
-      - bb.database.getBackupSetting
+      - bb.databases.list
+      - bb.databases.get
+      - bb.databases.sync
+      - bb.databases.getMetadata
+      - bb.databases.getSchema
+      - bb.databases.getBackupSetting
       - bb.backups.list
       - bb.changeHistories.list
       - bb.changeHistories.get
@@ -83,25 +83,25 @@ roles:
     permissions: []
   - name: roles/projectReleaser
     permissions:
-      - bb.database.list
-      - bb.database.get
-      - bb.database.update
-      - bb.database.sync
-      - bb.database.getMetadata
-      - bb.database.getSchema
-      - bb.database.getBackupSetting
+      - bb.databases.list
+      - bb.databases.get
+      - bb.databases.update
+      - bb.databases.sync
+      - bb.databases.getMetadata
+      - bb.databases.getSchema
+      - bb.databases.getBackupSetting
       - bb.backups.list
       - bb.changeHistories.list
       - bb.changeHistories.get
   - name: roles/projectViewer
     permissions:
-      - bb.database.list
-      - bb.database.get
-      - bb.database.update
-      - bb.database.sync
-      - bb.database.getMetadata
-      - bb.database.getSchema
-      - bb.database.getBackupSetting
+      - bb.databases.list
+      - bb.databases.get
+      - bb.databases.update
+      - bb.databases.sync
+      - bb.databases.getMetadata
+      - bb.databases.getSchema
+      - bb.databases.getBackupSetting
       - bb.backups.list
       - bb.changeHistories.list
       - bb.changeHistories.get
