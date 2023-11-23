@@ -209,7 +209,7 @@ func (e *WalkThroughError) Error() string {
 func (d *DatabaseState) WalkThrough(stmt string) error {
 	switch d.dbType {
 	case storepb.Engine_TIDB:
-		err := d.mysqlWalkThrough(stmt)
+		err := d.tidbWalkThrough(stmt)
 		return err
 	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		err := d.mysqlV2WalkThrough(stmt)
@@ -233,7 +233,7 @@ func (d *DatabaseState) WalkThrough(stmt string) error {
 	}
 }
 
-func (d *DatabaseState) mysqlWalkThrough(stmt string) error {
+func (d *DatabaseState) tidbWalkThrough(stmt string) error {
 	// We define the Catalog as Database -> Schema -> Table. The Schema is only for PostgreSQL.
 	// So we use a Schema whose name is empty for other engines, such as MySQL.
 	// If there is no empty-string-name schema, create it to avoid corner cases.
