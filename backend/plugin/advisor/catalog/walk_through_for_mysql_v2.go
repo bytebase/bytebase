@@ -10,7 +10,7 @@ import (
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
-func (d *DatabaseState) mysqlV2WalkThrough(stmt string) error {
+func (d *DatabaseState) mysqlWalkThrough(stmt string) error {
 	// We define the Catalog as Database -> Schema -> Table. The Schema is only for PostgreSQL.
 	// So we use a Schema whose name is empty for other engines, such as MySQL.
 	// If there is no empty-string-name schema, create it to avoid corner cases.
@@ -23,7 +23,7 @@ func (d *DatabaseState) mysqlV2WalkThrough(stmt string) error {
 		return NewParseError(err.Error())
 	}
 	for _, node := range nodeList {
-		if err := d.mysqlV2ChangeState(node); err != nil {
+		if err := d.mysqlChangeState(node); err != nil {
 			return err
 		}
 	}
@@ -31,7 +31,7 @@ func (d *DatabaseState) mysqlV2WalkThrough(stmt string) error {
 	return nil
 }
 
-type mysqlV2Listener struct {
+type mysqlListener struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine      int
@@ -41,12 +41,12 @@ type mysqlV2Listener struct {
 	err           *WalkThroughError
 }
 
-func (l *mysqlV2Listener) EnterQuery(ctx *mysql.QueryContext) {
+func (l *mysqlListener) EnterQuery(ctx *mysql.QueryContext) {
 	l.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
 	l.lineNumber = l.baseLine + ctx.GetStart().GetLine()
 }
 
-func (d *DatabaseState) mysqlV2ChangeState(in *mysqlparser.ParseResult) (err *WalkThroughError) {
+func (d *DatabaseState) mysqlChangeState(in *mysqlparser.ParseResult) (err *WalkThroughError) {
 	defer func() {
 		if err == nil {
 			return
@@ -63,7 +63,7 @@ func (d *DatabaseState) mysqlV2ChangeState(in *mysqlparser.ParseResult) (err *Wa
 		}
 	}
 
-	listener := &mysqlV2Listener{
+	listener := &mysqlListener{
 		baseLine:      in.BaseLine,
 		databaseState: d,
 	}
@@ -78,7 +78,7 @@ func (d *DatabaseState) mysqlV2ChangeState(in *mysqlparser.ParseResult) (err *Wa
 }
 
 // EnterCreateTable is called when production createTable is entered.
-func (l *mysqlV2Listener) EnterCreateTable(ctx *mysql.CreateTableContext) {
+func (l *mysqlListener) EnterCreateTable(ctx *mysql.CreateTableContext) {
 	if ctx.TableName() == nil {
 		return
 	}
@@ -116,7 +116,7 @@ func (l *mysqlV2Listener) EnterCreateTable(ctx *mysql.CreateTableContext) {
 
 	if ctx.LIKE_SYMBOL() != nil {
 		_, referTable := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
-		l.err = l.databaseState.mysqlV2CopyTable(databaseName, tableName, referTable)
+		l.err = l.databaseState.mysqlCopyTable(databaseName, tableName, referTable)
 		return
 	}
 
@@ -153,13 +153,13 @@ func (l *mysqlV2Listener) EnterCreateTable(ctx *mysql.CreateTableContext) {
 				hasAutoIncrement = true
 			}
 			_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-			if err := table.mysqlV2CreateColumn(l.databaseState.ctx, columnName, tableElement.ColumnDefinition().FieldDefinition(), nil /* position */); err != nil {
+			if err := table.mysqlCreateColumn(l.databaseState.ctx, columnName, tableElement.ColumnDefinition().FieldDefinition(), nil /* position */); err != nil {
 				err.Line = l.baseLine + tableElement.GetStart().GetLine()
 				l.err = err
 				return
 			}
 		case tableElement.TableConstraintDef() != nil:
-			if err := table.mysqlV2CreateConstraint(l.databaseState.ctx, tableElement.TableConstraintDef()); err != nil {
+			if err := table.mysqlCreateConstraint(l.databaseState.ctx, tableElement.TableConstraintDef()); err != nil {
 				err.Line = tableElement.GetStart().GetLine()
 				l.err = err
 				return
@@ -169,7 +169,7 @@ func (l *mysqlV2Listener) EnterCreateTable(ctx *mysql.CreateTableContext) {
 }
 
 // EnterDropTable is called when production dropTable is entered.
-func (l *mysqlV2Listener) EnterDropTable(ctx *mysql.DropTableContext) {
+func (l *mysqlListener) EnterDropTable(ctx *mysql.DropTableContext) {
 	if ctx.TableRefList() == nil {
 		return
 	}
@@ -205,14 +205,14 @@ func (l *mysqlV2Listener) EnterDropTable(ctx *mysql.DropTableContext) {
 }
 
 // EnterAlterTable is called when production alterTable is entered.
-func (l *mysqlV2Listener) EnterAlterTable(ctx *mysql.AlterTableContext) {
+func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 	if ctx.TableRef() == nil {
 		// todo: maybe need to do error handle.
 		return
 	}
 
 	databaseName, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
-	table, err := l.databaseState.mysqlV2FindTableState(databaseName, tableName, true /* createIncompleteTable */)
+	table, err := l.databaseState.mysqlFindTableState(databaseName, tableName, true /* createIncompleteTable */)
 	if err != nil {
 		l.err = err
 		return
@@ -263,7 +263,7 @@ func (l *mysqlV2Listener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 			// add single column.
 			case item.Identifier() != nil && item.FieldDefinition() != nil:
 				columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-				if err := table.mysqlV2CreateColumn(l.databaseState.ctx, columnName, item.FieldDefinition(), positionFromPlaceContext(item.Place())); err != nil {
+				if err := table.mysqlCreateColumn(l.databaseState.ctx, columnName, item.FieldDefinition(), positionFromPlaceContext(item.Place())); err != nil {
 					l.err = err
 					return
 				}
@@ -274,14 +274,14 @@ func (l *mysqlV2Listener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 						continue
 					}
 					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-					if err := table.mysqlV2CreateColumn(l.databaseState.ctx, columnName, tableElement.ColumnDefinition().FieldDefinition(), nil); err != nil {
+					if err := table.mysqlCreateColumn(l.databaseState.ctx, columnName, tableElement.ColumnDefinition().FieldDefinition(), nil); err != nil {
 						l.err = err
 						return
 					}
 				}
 			// add constraint.
 			case item.TableConstraintDef() != nil:
-				if err := table.mysqlV2CreateConstraint(l.databaseState.ctx, item.TableConstraintDef()); err != nil {
+				if err := table.mysqlCreateConstraint(l.databaseState.ctx, item.TableConstraintDef()); err != nil {
 					l.err = err
 					return
 				}
@@ -316,7 +316,7 @@ func (l *mysqlV2Listener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 		// modify column.
 		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil:
 			columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
-			if err := table.mysqlV2ChangeColumn(l.databaseState.ctx, columnName, columnName, item.FieldDefinition(), positionFromPlaceContext(item.Place())); err != nil {
+			if err := table.mysqlChangeColumn(l.databaseState.ctx, columnName, columnName, item.FieldDefinition(), positionFromPlaceContext(item.Place())); err != nil {
 				l.err = err
 				return
 			}
@@ -324,7 +324,7 @@ func (l *mysqlV2Listener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil:
 			oldColumnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
 			newColumnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-			if err := table.mysqlV2ChangeColumn(l.databaseState.ctx, oldColumnName, newColumnName, item.FieldDefinition(), positionFromPlaceContext(item.Place())); err != nil {
+			if err := table.mysqlChangeColumn(l.databaseState.ctx, oldColumnName, newColumnName, item.FieldDefinition(), positionFromPlaceContext(item.Place())); err != nil {
 				l.err = err
 				return
 			}
@@ -340,14 +340,14 @@ func (l *mysqlV2Listener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 			switch {
 			// alter column.
 			case item.ColumnInternalRef() != nil:
-				if err := table.mysqlV2AlterColumn(l.databaseState.ctx, item); err != nil {
+				if err := table.mysqlAlterColumn(l.databaseState.ctx, item); err != nil {
 					l.err = err
 					return
 				}
 			// alter index visibility.
 			case item.INDEX_SYMBOL() != nil && item.IndexRef() != nil && item.Visibility() != nil:
 				_, _, indexName := mysqlparser.NormalizeIndexRef(item.IndexRef())
-				if err := table.mysqlV2ChangeIndexVisibility(l.databaseState.ctx, indexName, item.Visibility()); err != nil {
+				if err := table.mysqlChangeIndexVisibility(l.databaseState.ctx, indexName, item.Visibility()); err != nil {
 					l.err = err
 					return
 				}
@@ -374,12 +374,12 @@ func (l *mysqlV2Listener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 }
 
 // EnterDropIndex is called when production dropIndex is entered.
-func (l *mysqlV2Listener) EnterDropIndex(ctx *mysql.DropIndexContext) {
+func (l *mysqlListener) EnterDropIndex(ctx *mysql.DropIndexContext) {
 	if ctx.TableRef() == nil {
 		return
 	}
 	databaseName, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
-	table, err := l.databaseState.mysqlV2FindTableState(databaseName, tableName, true /* createIncompleteTAble */)
+	table, err := l.databaseState.mysqlFindTableState(databaseName, tableName, true /* createIncompleteTAble */)
 	if err != nil {
 		l.err = err
 		return
@@ -395,12 +395,12 @@ func (l *mysqlV2Listener) EnterDropIndex(ctx *mysql.DropIndexContext) {
 	}
 }
 
-func (l *mysqlV2Listener) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
+func (l *mysqlListener) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
 	if ctx.CreateIndexTarget() == nil || ctx.CreateIndexTarget().TableRef() == nil {
 		return
 	}
 	databaseName, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.CreateIndexTarget().TableRef())
-	table, err := l.databaseState.mysqlV2FindTableState(databaseName, tableName, true /* createIncompleteTable */)
+	table, err := l.databaseState.mysqlFindTableState(databaseName, tableName, true /* createIncompleteTable */)
 	if err != nil {
 		l.err = err
 		return
@@ -437,19 +437,19 @@ func (l *mysqlV2Listener) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
 		return
 	}
 	columnList := mysqlparser.NormalizeKeyListVariants(ctx.CreateIndexTarget().KeyListVariants())
-	if err := table.mysqlV2ValidateKeyStringList(l.databaseState.ctx, columnList, false /* primary */, isSpatial); err != nil {
+	if err := table.mysqlValidateKeyStringList(l.databaseState.ctx, columnList, false /* primary */, isSpatial); err != nil {
 		l.err = err
 		return
 	}
 
-	if err := table.mysqlV2CreateIndex(indexName, columnList, unique, tp, mysql.NewEmptyTableConstraintDefContext(), ctx); err != nil {
+	if err := table.mysqlCreateIndex(indexName, columnList, unique, tp, mysql.NewEmptyTableConstraintDefContext(), ctx); err != nil {
 		l.err = err
 		return
 	}
 }
 
 // EnterAlterDatabase is called when production alterDatabase is entered.
-func (l *mysqlV2Listener) EnterAlterDatabase(ctx *mysql.AlterDatabaseContext) {
+func (l *mysqlListener) EnterAlterDatabase(ctx *mysql.AlterDatabaseContext) {
 	if ctx.SchemaRef() != nil {
 		databaseName := mysqlparser.NormalizeMySQLSchemaRef(ctx.SchemaRef())
 		if !l.databaseState.isCurrentDatabase(databaseName) {
@@ -475,7 +475,7 @@ func (l *mysqlV2Listener) EnterAlterDatabase(ctx *mysql.AlterDatabaseContext) {
 }
 
 // EnterDropDatabase is called when production dropDatabase is entered.
-func (l *mysqlV2Listener) EnterDropDatabase(ctx *mysql.DropDatabaseContext) {
+func (l *mysqlListener) EnterDropDatabase(ctx *mysql.DropDatabaseContext) {
 	if ctx.SchemaRef() == nil {
 		return
 	}
@@ -490,7 +490,7 @@ func (l *mysqlV2Listener) EnterDropDatabase(ctx *mysql.DropDatabaseContext) {
 }
 
 // EnterCreateDatabase is called when production createDatabase is entered.
-func (l *mysqlV2Listener) EnterCreateDatabase(ctx *mysql.CreateDatabaseContext) {
+func (l *mysqlListener) EnterCreateDatabase(ctx *mysql.CreateDatabaseContext) {
 	if ctx.SchemaName() == nil {
 		return
 	}
@@ -499,7 +499,7 @@ func (l *mysqlV2Listener) EnterCreateDatabase(ctx *mysql.CreateDatabaseContext) 
 }
 
 // EnterRenameTableStatement is called when production renameTableStatement is entered.
-func (l *mysqlV2Listener) EnterRenameTableStatement(ctx *mysql.RenameTableStatementContext) {
+func (l *mysqlListener) EnterRenameTableStatement(ctx *mysql.RenameTableStatementContext) {
 	for _, pair := range ctx.AllRenamePair() {
 		schema, exists := l.databaseState.schemaSet[""]
 		if !exists {
@@ -509,7 +509,7 @@ func (l *mysqlV2Listener) EnterRenameTableStatement(ctx *mysql.RenameTableStatem
 		_, oldTableName := mysqlparser.NormalizeMySQLTableRef(pair.TableRef())
 		_, newTableName := mysqlparser.NormalizeMySQLTableName(pair.TableName())
 
-		if l.databaseState.mysqlV2TheCurrentDatabase(pair) {
+		if l.databaseState.mysqlTheCurrentDatabase(pair) {
 			if compareIdentifier(oldTableName, newTableName, l.databaseState.ctx.IgnoreCaseSensitive) {
 				return
 			}
@@ -528,7 +528,7 @@ func (l *mysqlV2Listener) EnterRenameTableStatement(ctx *mysql.RenameTableStatem
 			delete(schema.tableSet, table.name)
 			table.name = newTableName
 			schema.tableSet[table.name] = table
-		} else if l.databaseState.mysqlV2MoveToOtherDatabase(pair) {
+		} else if l.databaseState.mysqlMoveToOtherDatabase(pair) {
 			_, exists := schema.getTable(oldTableName)
 			if !exists && schema.ctx.CheckIntegrity {
 				l.err = NewTableNotExistsError(oldTableName)
@@ -536,13 +536,13 @@ func (l *mysqlV2Listener) EnterRenameTableStatement(ctx *mysql.RenameTableStatem
 			}
 			delete(schema.tableSet, oldTableName)
 		} else {
-			l.err = NewAccessOtherDatabaseError(l.databaseState.name, l.databaseState.mysqlV2TargetDatabase(pair))
+			l.err = NewAccessOtherDatabaseError(l.databaseState.name, l.databaseState.mysqlTargetDatabase(pair))
 			return
 		}
 	}
 }
 
-func (d *DatabaseState) mysqlV2TargetDatabase(renamePair mysql.IRenamePairContext) string {
+func (d *DatabaseState) mysqlTargetDatabase(renamePair mysql.IRenamePairContext) string {
 	oldDatabaseName, _ := mysqlparser.NormalizeMySQLTableRef(renamePair.TableRef())
 	if oldDatabaseName != "" && !d.isCurrentDatabase(oldDatabaseName) {
 		return oldDatabaseName
@@ -551,7 +551,7 @@ func (d *DatabaseState) mysqlV2TargetDatabase(renamePair mysql.IRenamePairContex
 	return newDatabaseName
 }
 
-func (d *DatabaseState) mysqlV2MoveToOtherDatabase(renamePair mysql.IRenamePairContext) bool {
+func (d *DatabaseState) mysqlMoveToOtherDatabase(renamePair mysql.IRenamePairContext) bool {
 	oldDatabaseName, _ := mysqlparser.NormalizeMySQLTableRef(renamePair.TableRef())
 	if oldDatabaseName != "" && !d.isCurrentDatabase(oldDatabaseName) {
 		return false
@@ -560,7 +560,7 @@ func (d *DatabaseState) mysqlV2MoveToOtherDatabase(renamePair mysql.IRenamePairC
 	return oldDatabaseName != newDatabaseName
 }
 
-func (d *DatabaseState) mysqlV2TheCurrentDatabase(renamePair mysql.IRenamePairContext) bool {
+func (d *DatabaseState) mysqlTheCurrentDatabase(renamePair mysql.IRenamePairContext) bool {
 	newDatabaseName, _ := mysqlparser.NormalizeMySQLTableName(renamePair.TableName())
 	if newDatabaseName != "" && !d.isCurrentDatabase(newDatabaseName) {
 		return false
@@ -572,7 +572,7 @@ func (d *DatabaseState) mysqlV2TheCurrentDatabase(renamePair mysql.IRenamePairCo
 	return true
 }
 
-func (t *TableState) mysqlV2ChangeIndexVisibility(ctx *FinderContext, indexName string, visibility mysql.IVisibilityContext) *WalkThroughError {
+func (t *TableState) mysqlChangeIndexVisibility(ctx *FinderContext, indexName string, visibility mysql.IVisibilityContext) *WalkThroughError {
 	index, exists := t.indexSet[indexName]
 	if !exists {
 		if ctx.CheckIntegrity {
@@ -589,7 +589,7 @@ func (t *TableState) mysqlV2ChangeIndexVisibility(ctx *FinderContext, indexName 
 	return nil
 }
 
-func (t *TableState) mysqlV2AlterColumn(ctx *FinderContext, itemDef mysql.IAlterListItemContext) *WalkThroughError {
+func (t *TableState) mysqlAlterColumn(ctx *FinderContext, itemDef mysql.IAlterListItemContext) *WalkThroughError {
 	if itemDef.ColumnInternalRef() == nil {
 		// should not reach here.
 		return nil
@@ -653,31 +653,31 @@ func (t *TableState) mysqlV2AlterColumn(ctx *FinderContext, itemDef mysql.IAlter
 	return nil
 }
 
-func (t *TableState) mysqlV2ChangeColumn(ctx *FinderContext, oldColumnName string, newColumnName string, fieldDef mysql.IFieldDefinitionContext, position *mysqlV2ColumnPosition) *WalkThroughError {
+func (t *TableState) mysqlChangeColumn(ctx *FinderContext, oldColumnName string, newColumnName string, fieldDef mysql.IFieldDefinitionContext, position *mysqlColumnPosition) *WalkThroughError {
 	if ctx.CheckIntegrity {
-		return t.mysqlV2CompleteTableChangeColumn(ctx, oldColumnName, newColumnName, fieldDef, position)
+		return t.mysqlCompleteTableChangeColumn(ctx, oldColumnName, newColumnName, fieldDef, position)
 	}
-	return t.mysqlV2IncompleteTableChangeColumn(ctx, oldColumnName, newColumnName, fieldDef, position)
+	return t.mysqlIncompleteTableChangeColumn(ctx, oldColumnName, newColumnName, fieldDef, position)
 }
 
-// mysqlV2IncompleteTableChangeColumn changes column definition.
+// mysqlIncompleteTableChangeColumn changes column definition.
 // It does not maintain the position of the column.
-func (t *TableState) mysqlV2IncompleteTableChangeColumn(ctx *FinderContext, oldColumnName string, newColumnName string, fieldDef mysql.IFieldDefinitionContext, position *mysqlV2ColumnPosition) *WalkThroughError {
+func (t *TableState) mysqlIncompleteTableChangeColumn(ctx *FinderContext, oldColumnName string, newColumnName string, fieldDef mysql.IFieldDefinitionContext, position *mysqlColumnPosition) *WalkThroughError {
 	delete(t.columnSet, oldColumnName)
 
 	// rename column from indexSet
 	t.renameColumnInIndexKey(oldColumnName, newColumnName)
 
 	// create a new column in columnSet
-	return t.mysqlV2CreateColumn(ctx, newColumnName, fieldDef, position)
+	return t.mysqlCreateColumn(ctx, newColumnName, fieldDef, position)
 }
 
-// mysqlV2CompleteTableChangeColumn changes column definition.
+// mysqlCompleteTableChangeColumn changes column definition.
 // It works as:
 // 1. drop column from tableState.columnSet, but do not drop column from indexSet.
 // 2. rename column from indexSet.
 // 3. create a new column in columnSet.
-func (t *TableState) mysqlV2CompleteTableChangeColumn(ctx *FinderContext, oldColumnName string, newColumnName string, fieldDef mysql.IFieldDefinitionContext, position *mysqlV2ColumnPosition) *WalkThroughError {
+func (t *TableState) mysqlCompleteTableChangeColumn(ctx *FinderContext, oldColumnName string, newColumnName string, fieldDef mysql.IFieldDefinitionContext, position *mysqlColumnPosition) *WalkThroughError {
 	column, exists := t.columnSet[oldColumnName]
 	if !exists {
 		return NewColumnNotExistsError(t.name, oldColumnName)
@@ -686,7 +686,7 @@ func (t *TableState) mysqlV2CompleteTableChangeColumn(ctx *FinderContext, oldCol
 	pos := *column.position
 
 	if position == nil {
-		position = &mysqlV2ColumnPosition{
+		position = &mysqlColumnPosition{
 			tp: ColumnPositionNone,
 		}
 	}
@@ -716,7 +716,7 @@ func (t *TableState) mysqlV2CompleteTableChangeColumn(ctx *FinderContext, oldCol
 	t.renameColumnInIndexKey(oldColumnName, newColumnName)
 
 	// create a new column in columnSet
-	return t.mysqlV2CreateColumn(ctx, newColumnName, fieldDef, position)
+	return t.mysqlCreateColumn(ctx, newColumnName, fieldDef, position)
 }
 
 type columnPositionType int
@@ -727,13 +727,13 @@ const (
 	ColumnPositionAfter
 )
 
-type mysqlV2ColumnPosition struct {
+type mysqlColumnPosition struct {
 	tp             columnPositionType
 	relativeColumn string
 }
 
-func positionFromPlaceContext(place mysql.IPlaceContext) *mysqlV2ColumnPosition {
-	columnPosition := &mysqlV2ColumnPosition{
+func positionFromPlaceContext(place mysql.IPlaceContext) *mysqlColumnPosition {
+	columnPosition := &mysqlColumnPosition{
 		tp: ColumnPositionNone,
 	}
 	if place, ok := place.(*mysql.PlaceContext); ok {
@@ -751,8 +751,8 @@ func positionFromPlaceContext(place mysql.IPlaceContext) *mysqlV2ColumnPosition 
 	return columnPosition
 }
 
-func (d *DatabaseState) mysqlV2CopyTable(databaseName, tableName, referTable string) *WalkThroughError {
-	targetTable, err := d.mysqlV2FindTableState(databaseName, referTable, true /* createIncompleteTable */)
+func (d *DatabaseState) mysqlCopyTable(databaseName, tableName, referTable string) *WalkThroughError {
+	targetTable, err := d.mysqlFindTableState(databaseName, referTable, true /* createIncompleteTable */)
 	if err != nil {
 		return err
 	}
@@ -764,7 +764,7 @@ func (d *DatabaseState) mysqlV2CopyTable(databaseName, tableName, referTable str
 	return nil
 }
 
-func (d *DatabaseState) mysqlV2FindTableState(databaseName, tableName string, createIncompleteTable bool) (*TableState, *WalkThroughError) {
+func (d *DatabaseState) mysqlFindTableState(databaseName, tableName string, createIncompleteTable bool) (*TableState, *WalkThroughError) {
 	if databaseName != "" && !d.isCurrentDatabase(databaseName) {
 		return nil, NewAccessOtherDatabaseError(d.name, databaseName)
 	}
@@ -789,7 +789,7 @@ func (d *DatabaseState) mysqlV2FindTableState(databaseName, tableName string, cr
 	return table, nil
 }
 
-func (t *TableState) mysqlV2CreateConstraint(ctx *FinderContext, constraintDef mysql.ITableConstraintDefContext) *WalkThroughError {
+func (t *TableState) mysqlCreateConstraint(ctx *FinderContext, constraintDef mysql.ITableConstraintDefContext) *WalkThroughError {
 	if constraintDef.GetType_() != nil {
 		switch constraintDef.GetType_().GetTokenType() {
 		// PRIMARY KEY.
@@ -799,10 +799,10 @@ func (t *TableState) mysqlV2CreateConstraint(ctx *FinderContext, constraintDef m
 				return nil
 			}
 			keyList := mysqlparser.NormalizeKeyListVariants(constraintDef.KeyListVariants())
-			if err := t.mysqlV2ValidateKeyStringList(ctx, keyList, true /* primary */, false /* isSpatial*/); err != nil {
+			if err := t.mysqlValidateKeyStringList(ctx, keyList, true /* primary */, false /* isSpatial*/); err != nil {
 				return err
 			}
-			if err := t.mysqlV2CreatePrimaryKey(keyList, mysqlV2GetIndexType(constraintDef)); err != nil {
+			if err := t.mysqlCreatePrimaryKey(keyList, mysqlGetIndexType(constraintDef)); err != nil {
 				return err
 			}
 		// normal KEY/INDEX.
@@ -812,7 +812,7 @@ func (t *TableState) mysqlV2CreateConstraint(ctx *FinderContext, constraintDef m
 				return nil
 			}
 			keyList := mysqlparser.NormalizeKeyListVariants(constraintDef.KeyListVariants())
-			if err := t.mysqlV2ValidateKeyStringList(ctx, keyList, false /* primary */, false /* isSpatial */); err != nil {
+			if err := t.mysqlValidateKeyStringList(ctx, keyList, false /* primary */, false /* isSpatial */); err != nil {
 				return err
 			}
 
@@ -820,7 +820,7 @@ func (t *TableState) mysqlV2CreateConstraint(ctx *FinderContext, constraintDef m
 			if constraintDef.IndexNameAndType() != nil && constraintDef.IndexNameAndType().IndexName() != nil {
 				indexName = mysqlparser.NormalizeIndexName(constraintDef.IndexNameAndType().IndexName())
 			}
-			if err := t.mysqlV2CreateIndex(indexName, keyList, false /* unique */, mysqlV2GetIndexType(constraintDef), constraintDef, mysql.NewEmptyCreateIndexContext()); err != nil {
+			if err := t.mysqlCreateIndex(indexName, keyList, false /* unique */, mysqlGetIndexType(constraintDef), constraintDef, mysql.NewEmptyCreateIndexContext()); err != nil {
 				return err
 			}
 		// UNIQUE KEY.
@@ -830,7 +830,7 @@ func (t *TableState) mysqlV2CreateConstraint(ctx *FinderContext, constraintDef m
 				return nil
 			}
 			keyList := mysqlparser.NormalizeKeyListVariants(constraintDef.KeyListVariants())
-			if err := t.mysqlV2ValidateKeyStringList(ctx, keyList, false /* primary */, false /* isSpatial*/); err != nil {
+			if err := t.mysqlValidateKeyStringList(ctx, keyList, false /* primary */, false /* isSpatial*/); err != nil {
 				return err
 			}
 
@@ -841,7 +841,7 @@ func (t *TableState) mysqlV2CreateConstraint(ctx *FinderContext, constraintDef m
 			if constraintDef.IndexNameAndType() != nil && constraintDef.IndexNameAndType().IndexName() != nil {
 				indexName = mysqlparser.NormalizeIndexName(constraintDef.IndexNameAndType().IndexName())
 			}
-			if err := t.mysqlV2CreateIndex(indexName, keyList, true /* unique */, mysqlV2GetIndexType(constraintDef), constraintDef, mysql.NewEmptyCreateIndexContext()); err != nil {
+			if err := t.mysqlCreateIndex(indexName, keyList, true /* unique */, mysqlGetIndexType(constraintDef), constraintDef, mysql.NewEmptyCreateIndexContext()); err != nil {
 				return err
 			}
 		// FULLTEXT KEY.
@@ -851,14 +851,14 @@ func (t *TableState) mysqlV2CreateConstraint(ctx *FinderContext, constraintDef m
 				return nil
 			}
 			keyList := mysqlparser.NormalizeKeyListVariants(constraintDef.KeyListVariants())
-			if err := t.mysqlV2ValidateKeyStringList(ctx, keyList, false /* primary */, false /* isSpatial*/); err != nil {
+			if err := t.mysqlValidateKeyStringList(ctx, keyList, false /* primary */, false /* isSpatial*/); err != nil {
 				return err
 			}
 			indexName := ""
 			if constraintDef.IndexName() != nil {
 				indexName = mysqlparser.NormalizeIndexName(constraintDef.IndexName())
 			}
-			if err := t.mysqlV2CreateIndex(indexName, keyList, false /* unique */, mysqlV2GetIndexType(constraintDef), constraintDef, mysql.NewEmptyCreateIndexContext()); err != nil {
+			if err := t.mysqlCreateIndex(indexName, keyList, false /* unique */, mysqlGetIndexType(constraintDef), constraintDef, mysql.NewEmptyCreateIndexContext()); err != nil {
 				return err
 			}
 		case mysql.MySQLParserFOREIGN_SYMBOL:
@@ -871,7 +871,7 @@ func (t *TableState) mysqlV2CreateConstraint(ctx *FinderContext, constraintDef m
 	return nil
 }
 
-func (t *TableState) mysqlV2ValidateKeyStringList(ctx *FinderContext, keyList []string, primary bool, isSpatial bool) *WalkThroughError {
+func (t *TableState) mysqlValidateKeyStringList(ctx *FinderContext, keyList []string, primary bool, isSpatial bool) *WalkThroughError {
 	for _, columnName := range keyList {
 		column, exists := t.columnSet[columnName]
 		if !exists {
@@ -894,7 +894,7 @@ func (t *TableState) mysqlV2ValidateKeyStringList(ctx *FinderContext, keyList []
 	return nil
 }
 
-func mysqlV2GetIndexType(tableConstraint mysql.ITableConstraintDefContext) string {
+func mysqlGetIndexType(tableConstraint mysql.ITableConstraintDefContext) string {
 	if tableConstraint.GetType_() == nil {
 		return "BTREE"
 	}
@@ -929,7 +929,7 @@ func mysqlV2GetIndexType(tableConstraint mysql.ITableConstraintDefContext) strin
 	return "BTREE"
 }
 
-func (t *TableState) mysqlV2CreateColumn(ctx *FinderContext, columnName string, fieldDef mysql.IFieldDefinitionContext, position *mysqlV2ColumnPosition) *WalkThroughError {
+func (t *TableState) mysqlCreateColumn(ctx *FinderContext, columnName string, fieldDef mysql.IFieldDefinitionContext, position *mysqlColumnPosition) *WalkThroughError {
 	if _, exists := t.columnSet[columnName]; exists {
 		return &WalkThroughError{
 			Type:    ErrorTypeColumnExists,
@@ -941,7 +941,7 @@ func (t *TableState) mysqlV2CreateColumn(ctx *FinderContext, columnName string, 
 	pos := len(t.columnSet) + 1
 	if position != nil && ctx.CheckIntegrity {
 		var err *WalkThroughError
-		pos, err = t.mysqlV2ReorderColumn(position)
+		pos, err = t.mysqlReorderColumn(position)
 		if err != nil {
 			return err
 		}
@@ -985,7 +985,7 @@ func (t *TableState) mysqlV2CreateColumn(ctx *FinderContext, columnName string, 
 			switch attribute.GetValue().GetTokenType() {
 			// default value.
 			case mysql.MySQLParserDEFAULT_SYMBOL:
-				if err := mysqlV2CheckDefault(columnName, fieldDef); err != nil {
+				if err := mysqlCheckDefault(columnName, fieldDef); err != nil {
 					return err
 				}
 				if attribute.SignedLiteral() == nil {
@@ -1022,13 +1022,13 @@ func (t *TableState) mysqlV2CreateColumn(ctx *FinderContext, columnName string, 
 				// the key attribute for in a column meaning primary key.
 				col.nullable = newFalsePointer()
 				// we need to check the key type which generated by tidb parser.
-				if err := t.mysqlV2CreatePrimaryKey([]string{col.name}, "BTREE"); err != nil {
+				if err := t.mysqlCreatePrimaryKey([]string{col.name}, "BTREE"); err != nil {
 					return err
 				}
 			// unique key.
 			case mysql.MySQLParserUNIQUE_SYMBOL:
 				// unique index.
-				if err := t.mysqlV2CreateIndex("", []string{col.name}, true /* unique */, "BTREE", mysql.NewEmptyTableConstraintDefContext(), mysql.NewEmptyCreateIndexContext()); err != nil {
+				if err := t.mysqlCreateIndex("", []string{col.name}, true /* unique */, "BTREE", mysql.NewEmptyTableConstraintDefContext(), mysql.NewEmptyCreateIndexContext()); err != nil {
 					return err
 				}
 			// auto_increment.
@@ -1057,7 +1057,7 @@ func (t *TableState) mysqlV2CreateColumn(ctx *FinderContext, columnName string, 
 }
 
 // reorderColumn reorders the columns for new column and returns the new column position.
-func (t *TableState) mysqlV2ReorderColumn(position *mysqlV2ColumnPosition) (int, *WalkThroughError) {
+func (t *TableState) mysqlReorderColumn(position *mysqlColumnPosition) (int, *WalkThroughError) {
 	switch position.tp {
 	case ColumnPositionNone:
 		return len(t.columnSet) + 1, nil
@@ -1085,7 +1085,7 @@ func (t *TableState) mysqlV2ReorderColumn(position *mysqlV2ColumnPosition) (int,
 	}
 }
 
-func (t *TableState) mysqlV2CreateIndex(name string, keyList []string, unique bool, tp string, tableConstraint mysql.ITableConstraintDefContext, createIndexDef mysql.ICreateIndexContext) *WalkThroughError {
+func (t *TableState) mysqlCreateIndex(name string, keyList []string, unique bool, tp string, tableConstraint mysql.ITableConstraintDefContext, createIndexDef mysql.ICreateIndexContext) *WalkThroughError {
 	if len(keyList) == 0 {
 		return &WalkThroughError{
 			Type:    ErrorTypeIndexEmptyKeys,
@@ -1194,7 +1194,7 @@ func (t *TableState) mysqlV2CreateIndex(name string, keyList []string, unique bo
 	return nil
 }
 
-func (t *TableState) mysqlV2CreatePrimaryKey(keys []string, tp string) *WalkThroughError {
+func (t *TableState) mysqlCreatePrimaryKey(keys []string, tp string) *WalkThroughError {
 	if _, exists := t.indexSet[PrimaryKeyName]; exists {
 		return &WalkThroughError{
 			Type:    ErrorTypePrimaryKeyExists,
@@ -1215,7 +1215,7 @@ func (t *TableState) mysqlV2CreatePrimaryKey(keys []string, tp string) *WalkThro
 	return nil
 }
 
-func mysqlV2CheckDefault(columnName string, fieldDefinition mysql.IFieldDefinitionContext) *WalkThroughError {
+func mysqlCheckDefault(columnName string, fieldDefinition mysql.IFieldDefinitionContext) *WalkThroughError {
 	if fieldDefinition.DataType() == nil || fieldDefinition.DataType().GetType_() == nil {
 		return nil
 	}
