@@ -26,19 +26,16 @@ func ChunkedSQLScript(script []base.SingleSQL, maxChunksCount int) ([][]base.Sin
 	//             = rest * (roundDown + 1)  + (maxChunksCount - rest) * roundDown
 	// So the first $rest chunks will have $(roundDown + 1) sqls, and the rest $(maxChunksCount) chunks will have $roundDown sqls.
 
-	for i, sql := range script {
-		if i < rest*(roundDown+1) {
-			if i%(roundDown+1) == 0 {
-				result = append(result, []base.SingleSQL{})
-			}
-			result[len(result)-1] = append(result[len(result)-1], sql)
-			continue
-		}
+	for i := 0; i < rest; i++ {
+		start := i * (roundDown + 1)
+		end := (i + 1) * (roundDown + 1)
+		result = append(result, script[start:end])
+	}
 
-		if (i-rest*(roundDown+1))%roundDown == 0 {
-			result = append(result, []base.SingleSQL{})
-		}
-		result[len(result)-1] = append(result[len(result)-1], sql)
+	for i := rest; i < maxChunksCount; i++ {
+		start := rest*(roundDown+1) + (i-rest)*roundDown
+		end := rest*(roundDown+1) + (i-rest+1)*roundDown
+		result = append(result, script[start:end])
 	}
 
 	return result, nil
