@@ -1,5 +1,5 @@
 <template>
-  <div class="px-4 py-6 lg:flex">
+  <div class="py-6 lg:flex">
     <div class="text-left lg:w-1/4">
       <h1 class="text-2xl font-bold">
         {{ $t("settings.general.workspace.announcement.self") }}
@@ -103,15 +103,14 @@
           @input="handleExtraDetailsChange"
         />
 
-        <div class="flex">
-          <button
-            type="button"
-            class="btn-primary ml-auto"
+        <div class="flex justify-end">
+          <NButton
+            type="primary"
             :disabled="!allowSave"
             @click.prevent="updateAnnouncementSetting"
           >
             {{ $t("common.update") }}
-          </button>
+          </NButton>
         </div>
       </div>
     </div>

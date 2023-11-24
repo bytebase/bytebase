@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-y-2 -mt-4">
+  <div class="flex flex-col gap-y-2">
     <IssueSearch
       v-model:params="state.params"
       :readonly-scopes="readonlyScopes"

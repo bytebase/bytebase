@@ -1,107 +1,96 @@
 <template>
   <div class="w-full space-y-4">
-    <div
-      class="flex flex-col lg:flex-row items-start lg:items-center justify-between space-y-2"
-    >
-      <div class="textinfolabel">
-        {{ $t("settings.sensitive-data.global-rules.description") }}
-        <LearnMoreLink
-          url="https://www.bytebase.com/docs/security/mask-data?source=console"
-        />
-      </div>
-      <div>
-        <div v-if="state.reorderRules" class="flex items-center gap-x-3">
-          <NButton
-            :disabled="state.processing"
-            @click="
-              () => {
-                state.reorderRules = false;
-                updateList();
-              }
-            "
-          >
-            {{ $t("common.cancel") }}
-          </NButton>
-          <NButton
-            type="primary"
-            :disabled="state.processing"
-            @click="onReorderSubmit"
-          >
-            {{ $t("common.confirm") }}
-          </NButton>
-        </div>
-        <div v-else class="flex items-center gap-x-3">
-          <NButton
-            secondary
-            type="primary"
-            :disabled="
-              !hasPermission ||
-              !hasSensitiveDataFeature ||
-              state.maskingRuleItemList.length <= 1
-            "
-            @click="state.reorderRules = true"
-          >
-            {{ $t("settings.sensitive-data.global-rules.re-order") }}
-          </NButton>
-          <NButton
-            type="primary"
-            :disabled="!hasPermission || !hasSensitiveDataFeature"
-            @click="addNewRule"
-          >
-            {{ $t("common.add") }}
-          </NButton>
-        </div>
-      </div>
-    </div>
-    <div class="space-y-5 divide-y-2 pb-10 divide-gray-100">
-      <div
-        v-if="state.maskingRuleItemList.length === 0"
-        class="border-4 border-dashed border-gray-200 rounded-lg h-96 flex justify-center items-center"
-      >
-        <NoData />
-      </div>
-      <div
-        v-for="(item, index) in state.maskingRuleItemList"
-        :key="item.rule.id"
-        class="flex items-start gap-x-5 pt-4"
-      >
-        <div
-          v-if="
-            item.mode === 'NORMAL' && hasPermission && hasSensitiveDataFeature
+    <div class="flex flex-row items-center justify-end">
+      <div v-if="state.reorderRules" class="flex items-center gap-x-3">
+        <NButton
+          :disabled="state.processing"
+          @click="
+            () => {
+              state.reorderRules = false;
+              updateList();
+            }
           "
         >
-          <div v-if="state.reorderRules" class="pt-2 flex flex-col">
-            <MiniActionButton v-if="index > 0" @click="onReorder(item, -1)">
-              <ChevronUpIcon class="w-4 h-4" />
-            </MiniActionButton>
-            <MiniActionButton
-              v-if="index !== state.maskingRuleItemList.length - 1"
-              @click="onReorder(item, 1)"
-            >
-              <ChevronDownIcon class="w-4 h-4" />
-            </MiniActionButton>
-          </div>
-          <div v-else class="pt-2">
-            <MiniActionButton @click="onEdit(index)">
-              <PencilIcon class="w-4 h-4" />
-            </MiniActionButton>
-          </div>
+          {{ $t("common.cancel") }}
+        </NButton>
+        <NButton
+          type="primary"
+          :disabled="state.processing"
+          @click="onReorderSubmit"
+        >
+          {{ $t("common.confirm") }}
+        </NButton>
+      </div>
+      <div v-else class="flex items-center gap-x-3">
+        <NButton
+          secondary
+          type="primary"
+          :disabled="
+            !hasPermission ||
+            !hasSensitiveDataFeature ||
+            state.maskingRuleItemList.length <= 1
+          "
+          @click="state.reorderRules = true"
+        >
+          {{ $t("settings.sensitive-data.global-rules.re-order") }}
+        </NButton>
+        <NButton
+          type="primary"
+          :disabled="!hasPermission || !hasSensitiveDataFeature"
+          @click="addNewRule"
+        >
+          {{ $t("common.add") }}
+        </NButton>
+      </div>
+    </div>
+    <div class="textinfolabel">
+      {{ $t("settings.sensitive-data.global-rules.description") }}
+      <LearnMoreLink
+        url="https://www.bytebase.com/docs/security/mask-data?source=console"
+      />
+    </div>
+    <NoDataPlaceholder v-if="state.maskingRuleItemList.length === 0" />
+    <div
+      v-for="(item, index) in state.maskingRuleItemList"
+      :key="item.rule.id"
+      class="flex items-start gap-x-5 pt-4"
+    >
+      <div
+        v-if="
+          item.mode === 'NORMAL' && hasPermission && hasSensitiveDataFeature
+        "
+      >
+        <div v-if="state.reorderRules" class="pt-2 flex flex-col">
+          <MiniActionButton v-if="index > 0" @click="onReorder(item, -1)">
+            <ChevronUpIcon class="w-4 h-4" />
+          </MiniActionButton>
+          <MiniActionButton
+            v-if="index !== state.maskingRuleItemList.length - 1"
+            @click="onReorder(item, 1)"
+          >
+            <ChevronDownIcon class="w-4 h-4" />
+          </MiniActionButton>
         </div>
-        <div :class="['w-full', item.mode === 'NORMAL' ? '' : 'ml-[42px]']">
-          <MaskingRuleConfig
-            :key="`expr-${item.rule.id}`"
-            :index="index + 1"
-            :disabled="state.processing"
-            :masking-rule="item.rule"
-            :readonly="item.mode === 'NORMAL' || state.reorderRules"
-            :factor-list="factorList"
-            :factor-options-map="factorOptionsMap"
-            :allow-delete="item.mode === 'EDIT'"
-            @cancel="onCancel(index)"
-            @delete="onRuleDelete(index)"
-            @confirm="(rule: MaskingRulePolicy_MaskingRule) => onConfirm(rule)"
-          />
+        <div v-else class="pt-2">
+          <MiniActionButton @click="onEdit(index)">
+            <PencilIcon class="w-4 h-4" />
+          </MiniActionButton>
         </div>
+      </div>
+      <div :class="['w-full', item.mode === 'NORMAL' ? '' : 'ml-[42px]']">
+        <MaskingRuleConfig
+          :key="`expr-${item.rule.id}`"
+          :index="index + 1"
+          :disabled="state.processing"
+          :masking-rule="item.rule"
+          :readonly="item.mode === 'NORMAL' || state.reorderRules"
+          :factor-list="factorList"
+          :factor-options-map="factorOptionsMap"
+          :allow-delete="item.mode === 'EDIT'"
+          @cancel="onCancel(index)"
+          @delete="onRuleDelete(index)"
+          @confirm="(rule: MaskingRulePolicy_MaskingRule) => onConfirm(rule)"
+        />
       </div>
     </div>
   </div>

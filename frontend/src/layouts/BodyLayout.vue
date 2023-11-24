@@ -185,17 +185,11 @@
                   <heroicons-outline:menu class="h-4 w-4" />
                 </button>
               </div>
-              <div v-if="showBreadcrumb" class="ml-4">
-                <Breadcrumb />
-              </div>
             </div>
           </aside>
 
           <div class="w-full mx-auto md:flex">
             <div class="md:min-w-0 md:flex-1">
-              <div v-if="showBreadcrumb" class="hidden md:block px-4 pt-4">
-                <Breadcrumb />
-              </div>
               <div
                 class="w-full flex flex-row justify-between items-center flex-wrap px-2 gap-x-4"
               >
@@ -224,17 +218,7 @@
           </div>
         </HideInStandaloneMode>
         <!-- This area may scroll -->
-        <div
-          id="bb-layout-main"
-          class="md:min-w-0 md:flex-1 overflow-y-auto"
-          :class="
-            pageMode !== 'STANDALONE' &&
-            showBreadcrumb &&
-            quickActionList.length == 0
-              ? 'mt-2'
-              : ''
-          "
-        >
+        <div id="bb-layout-main" class="md:min-w-0 md:flex-1 overflow-y-auto">
           <!-- Start main area-->
           <router-view name="content" />
           <!-- End main area -->
@@ -274,7 +258,6 @@ import { PlanType } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV1 } from "@/utils";
 import { getQuickActionList } from "@/utils";
 import DashboardHeader from "@/views/DashboardHeader.vue";
-import Breadcrumb from "../components/Breadcrumb.vue";
 import QuickActionPanel from "../components/QuickActionPanel.vue";
 import Quickstart from "../components/Quickstart.vue";
 
@@ -318,11 +301,6 @@ const quickActionList = computed(() => {
     : new Map<RoleType, QuickActionType[]>();
 
   return getQuickActionList(listByRole);
-});
-
-const showBreadcrumb = computed(() => {
-  const name = router.currentRoute.value.name;
-  return !(name === "workspace.home" || name === "workspace.profile");
 });
 
 const version = computed(() => {

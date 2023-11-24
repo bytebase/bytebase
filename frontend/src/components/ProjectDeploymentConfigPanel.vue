@@ -36,32 +36,27 @@
         />
         <div class="pt-4 border-t flex justify-between items-center">
           <div class="flex items-center space-x-2">
-            <button v-if="allowEdit" class="btn-normal" @click="addStage">
+            <NButton v-if="allowEdit" @click="addStage">
               {{ $t("deployment-config.add-stage") }}
-            </button>
+            </NButton>
           </div>
           <div class="flex items-center space-x-2">
-            <button
+            <NButton
               v-if="allowEdit"
-              class="btn-normal"
               :disabled="!isDeploymentConfigDirty"
               @click="revertDeploymentConfig"
             >
               {{ $t("common.revert") }}
-            </button>
+            </NButton>
             <NPopover v-if="allowEdit" :disabled="!state.error" trigger="hover">
               <template #trigger>
-                <div
-                  class="btn-primary"
-                  :class="
-                    !allowUpdateDeploymentConfig
-                      ? 'bg-accent opacity-50 cursor-not-allowed'
-                      : ''
-                  "
+                <NButton
+                  type="primary"
+                  :disabled="!allowUpdateDeploymentConfig"
                   @click="updateDeploymentConfig"
                 >
                   {{ $t("common.update") }}
-                </div>
+                </NButton>
               </template>
 
               <span v-if="state.error" class="text-error">

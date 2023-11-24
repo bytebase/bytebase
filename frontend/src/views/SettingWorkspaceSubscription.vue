@@ -1,6 +1,6 @@
 <template>
   <div class="mx-auto">
-    <div class="textinfolabel my-4">
+    <div class="textinfolabel mb-4">
       {{ $t("subscription.description") }}
       <a
         class="text-accent"

@@ -1,20 +1,22 @@
 <template>
   <div
     v-bind="$attrs"
-    class="flex items-center bg-blue-100 py-3 px-2 text-main"
+    class="flex flex-col lg:flex-row items-start lg:items-center bg-blue-100 py-3 px-2 text-main gap-y-2"
   >
-    <button
-      v-if="!isStandaloneMode"
-      class="w-7 h-7 p-1 mr-3 rounded cursor-pointer"
-      @click.prevent="$emit('dismiss')"
-    >
-      <heroicons-outline:x class="w-5 h-5" />
-    </button>
-    {{
-      $t("database.selected-n-databases", {
-        n: databases.length,
-      })
-    }}
+    <div class="flex items-center">
+      <button
+        v-if="!isStandaloneMode"
+        class="w-7 h-7 p-1 mr-3 rounded cursor-pointer"
+        @click.prevent="$emit('dismiss')"
+      >
+        <heroicons-outline:x class="w-5 h-5" />
+      </button>
+      {{
+        $t("database.selected-n-databases", {
+          n: databases.length,
+        })
+      }}
+    </div>
     <div class="flex items-center gap-x-4 text-sm ml-5 text-accent">
       <template v-for="action in actions" :key="action.text">
         <NTooltip :disabled="!action.disabled">

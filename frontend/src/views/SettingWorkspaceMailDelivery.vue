@@ -1,19 +1,19 @@
 <template>
-  <div class="textinfolabel py-4">
-    {{ $t("settings.mail-delivery.description") }}
-    <a
-      class="normal-link inline-flex items-center"
-      href="https://www.bytebase.com/docs/administration/mail-delivery?source=console"
-      target="__BLANK"
-    >
-      {{ $t("common.learn-more") }}
-      <heroicons-outline:external-link class="w-4 h-4 ml-1" />
-    </a>
-  </div>
   <div class="w-full space-y-4">
+    <div class="textinfolabel">
+      {{ $t("settings.mail-delivery.description") }}
+      <a
+        class="normal-link inline-flex items-center"
+        href="https://www.bytebase.com/docs/administration/mail-delivery?source=console"
+        target="__BLANK"
+      >
+        {{ $t("common.learn-more") }}
+        <heroicons-outline:external-link class="w-4 h-4 ml-1" />
+      </a>
+    </div>
     <div class="w-full flex flex-col">
       <!-- Host and Port -->
-      <div class="w-full flex flex-row gap-4 mt-8">
+      <div class="w-full flex flex-row gap-4">
         <div class="min-w-max w-80">
           <div class="textlabel pl-1">
             {{ $t("settings.mail-delivery.field.smtp-server-host") }}
@@ -149,9 +149,8 @@
       </div>
       <div class="flex flex-row w-full">
         <div class="w-auto gap-4 mt-8 flex flex-row">
-          <button
-            type="button"
-            class="btn-primary inline-flex justify-center py-2 px-4"
+          <NButton
+            type="primary"
             :disabled="
               !allowMailDeliveryActionButton ||
               state.isSendLoading ||
@@ -160,7 +159,7 @@
             @click.prevent="updateMailDeliverySetting"
           >
             {{ mailDeliverySettingButtonText }}
-          </button>
+          </NButton>
           <BBSpin v-if="state.isCreateOrUpdateLoading" class="ml-1" />
         </div>
       </div>
@@ -171,16 +170,15 @@
           <div class="textlabel pl-1">
             {{ $t("settings.mail-delivery.field.send-test-email-to") }}
           </div>
-          <div class="flex flex-row justify-start items-center mt-2">
-            <BBTextField
+          <div class="flex flex-row justify-start items-center mt-2 space-x-4">
+            <NInput
               class="text-main h-max w-80"
               :placeholder="'someone@gmail.com'"
               :value="state.testMailTo"
               @input="(e: any) => state.testMailTo = e.target.value"
             />
-            <button
-              type="button"
-              class="btn-primary ml-5"
+            <NButton
+              type="primary"
               :disabled="
                 state.testMailTo === '' ||
                 state.isSendLoading ||
@@ -189,7 +187,7 @@
               @click.prevent="testMailDeliverySetting"
             >
               {{ $t("settings.mail-delivery.field.send") }}
-            </button>
+            </NButton>
             <BBSpin v-if="state.isSendLoading" class="ml-2" />
           </div>
         </div>

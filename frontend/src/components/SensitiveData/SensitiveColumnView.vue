@@ -76,13 +76,7 @@
       @checked:update="updateCheckedColumnList($event)"
     />
 
-    <template v-else>
-      <NoData
-        :img-attrs="{
-          class: '!w-auto max-h-[30vh]',
-        }"
-      />
-    </template>
+    <NoDataPlaceholder v-else />
   </div>
 
   <FeatureModal

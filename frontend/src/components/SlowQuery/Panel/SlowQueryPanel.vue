@@ -12,7 +12,7 @@
             {{ $t("common.configure") }}
           </NButton>
           <NButton
-            type="default"
+            type="primary"
             :disabled="!allowSync"
             :loading="syncing"
             @click="syncNow"
