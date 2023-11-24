@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-y-3">
+  <div class="flex flex-col gap-y-4">
     <NavBar :disable-project-select="!!project" />
 
     <ChangelistTable

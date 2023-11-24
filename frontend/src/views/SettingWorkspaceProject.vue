@@ -1,12 +1,8 @@
 <template>
-  <div class="flex flex-col">
-    <BBAttention
-      class="mb-4"
-      :style="'INFO'"
-      :title="$t('setting.project.description')"
-    />
+  <div class="flex flex-col space-y-4">
+    <BBAttention :style="'INFO'" :title="$t('setting.project.description')" />
 
-    <div class="py-2 flex justify-between items-center">
+    <div class="flex justify-between items-end">
       <NCheckbox v-model:checked="state.includesArchived">
         <span class="textinfolabel">
           {{ $t("setting.project.show-archived") }}

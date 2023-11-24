@@ -85,9 +85,11 @@
         "
         />
       </div>
-      <BBTableSearch
+
+      <SearchBox
         ref="searchField"
-        class="w-72"
+        v-model:value="state.searchText"
+        style="width: 18rem"
         :placeholder="
           $t('anomaly.table-search-placeholder', {
             type:
@@ -96,7 +98,6 @@
                 : $t('common.instance'),
           })
         "
-        @change-text="(text:string) => changeSearchText(text)"
       />
     </div>
     <template v-if="state.selectedTab === 'database'">
@@ -417,10 +418,6 @@ const tabItemList = computed((): AnomalyTabFilterItem[] => {
     },
   ];
 });
-
-const changeSearchText = (searchText: string) => {
-  state.searchText = searchText;
-};
 
 const hasSchemaDriftFeature = featureToRef("bb.feature.schema-drift");
 </script>

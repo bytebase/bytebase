@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="space-y-4">
     <div v-if="filterTypes.length > 0">
       <LogFilter
         :params="filter"

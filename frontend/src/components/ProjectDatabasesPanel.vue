@@ -1,7 +1,7 @@
 <template>
-  <div class="space-y-2">
+  <div class="space-y-4">
     <div
-      class="text-lg font-medium leading-7 text-main flex flex-col lg:flex-row items-start lg:items-center justify-between space-y-2"
+      class="text-lg font-medium leading-7 text-main flex flex-col lg:flex-row items-start lg:items-end justify-between space-y-2"
     >
       <EnvironmentTabFilter
         :environment="state.environment"

@@ -19,15 +19,13 @@
       />
       <SearchBox v-model:value="state.filter.keyword" />
     </div>
-    <div>
-      <SlowQueryPolicyTable
-        :composed-slow-query-policy-list="filteredComposedSlowQueryPolicyList"
-        :policy-list="policyList"
-        :toggle-active="toggleActive"
-        :ready="state.ready"
-        :show-placeholder="true"
-      />
-    </div>
+    <SlowQueryPolicyTable
+      :composed-slow-query-policy-list="filteredComposedSlowQueryPolicyList"
+      :policy-list="policyList"
+      :toggle-active="toggleActive"
+      :ready="state.ready"
+      :show-placeholder="true"
+    />
   </div>
 </template>
 
