@@ -431,7 +431,8 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			Version:       "",
 		}
 
-		if errWithPosition, ok := err.(*db.ErrorWithPosition); ok {
+		errWithPosition := &db.ErrorWithPosition{}
+		if errors.As(err, &errWithPosition) {
 			taskRunResult.StartPosition = errWithPosition.Start
 			taskRunResult.EndPosition = errWithPosition.End
 		}
