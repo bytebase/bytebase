@@ -113,12 +113,11 @@
   </div>
 
   <DatabaseGroupPanel
-    v-if="editState.showConfigurePanel"
+    v-model:show="editState.showConfigurePanel"
     :project="project"
     :resource-type="editState.type"
     :database-group="editState.databaseGroup"
     :parent-database-group="editState.parentDatabaseGroup"
-    @close="editState.showConfigurePanel = false"
   />
 
   <DatabaseGroupPrevEditorModal

@@ -18,22 +18,21 @@
           />
         </div>
         <div class="flex flex-row justify-end items-center shrink-0">
-          <label
-            for="sql-file-input"
-            class="text-sm border px-3 leading-8 flex items-center rounded cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <heroicons-outline:arrow-up-tray
-              class="w-4 h-auto mr-1 text-gray-500"
-            />
-            {{ $t("issue.upload-sql") }}
-            <input
-              id="sql-file-input"
-              type="file"
-              accept=".sql,.txt,application/sql,text/plain"
-              class="hidden"
-              @change="handleUploadFile"
-            />
-          </label>
+          <NButton class="relative">
+            <template #icon>
+              <UploadIcon class="w-4 h-4 text-control-light" />
+            </template>
+            <template #default>
+              {{ $t("issue.upload-sql") }}
+              <input
+                id="sql-file-input"
+                type="file"
+                accept=".sql,.txt,application/sql,text/plain"
+                class="opacity-0 absolute inset-0"
+                @change="handleUploadFile"
+              />
+            </template>
+          </NButton>
         </div>
       </div>
       <div class="relative w-full h-96 border rounded overflow-clip">
@@ -45,33 +44,34 @@
         />
       </div>
     </div>
-    <div class="w-full flex flex-row justify-end items-center mt-4 pr-px">
-      <div class="flex justify-end items-center space-x-3">
-        <button type="button" class="btn-normal" @click="dismissModal">
+    <div class="w-full flex flex-row justify-end items-center mt-4">
+      <div class="flex justify-end items-center gap-x-3">
+        <NButton @click="dismissModal">
           {{ $t("common.cancel") }}
-        </button>
-        <button
-          class="btn-primary whitespace-nowrap"
+        </NButton>
+        <NButton
+          type="primary"
           :disabled="!allowPreviewIssue"
           @click="handlePreviewIssue"
         >
           {{ $t("schema-editor.preview-issue") }}
-        </button>
+        </NButton>
       </div>
     </div>
   </BBModal>
 
   <!-- Close modal confirm dialog -->
   <ActionConfirmModal
-    v-if="state.showActionConfirmModal"
+    v-model:show="state.showActionConfirmModal"
     :title="$t('schema-editor.confirm-to-close.title')"
     :description="$t('schema-editor.confirm-to-close.description')"
-    @close="state.showActionConfirmModal = false"
     @confirm="emit('close')"
   />
 </template>
 
 <script lang="ts" setup>
+import { UploadIcon } from "lucide-vue-next";
+import { NButton } from "naive-ui";
 import { computed, onMounted, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
