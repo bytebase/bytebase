@@ -119,7 +119,6 @@ import {
   MaskingRulePolicy_MaskingRule,
 } from "@/types/proto/v1/org_policy_service";
 import { arraySwap, hasWorkspacePermissionV1 } from "@/utils";
-import NoData from "../misc/NoData.vue";
 import { MiniActionButton } from "../v2";
 import MaskingRuleConfig from "./components/MaskingRuleConfig.vue";
 import {
