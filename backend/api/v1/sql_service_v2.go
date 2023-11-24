@@ -196,38 +196,6 @@ func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*
 	return response, nil
 }
 
-func mask(maskers []masker.Masker, result *v1pb.QueryResult) {
-	sensitive := make([]bool, len(result.ColumnNames))
-	for i := range result.ColumnNames {
-		if i < len(maskers) {
-			switch maskers[i].(type) {
-			case *masker.NoneMasker:
-				sensitive[i] = false
-			default:
-				sensitive[i] = true
-			}
-		}
-	}
-
-	for i, row := range result.Rows {
-		for j, value := range row.Values {
-			if value == nil {
-				continue
-			}
-			maskedValue := row.Values[j]
-			if j < len(maskers) && maskers[j] != nil {
-				maskedValue = maskers[j].Mask(&masker.MaskData{
-					DataV2: row.Values[j],
-				})
-			}
-			result.Rows[i].Values[j] = maskedValue
-		}
-	}
-
-	result.Sensitive = sensitive
-	result.Masked = sensitive
-}
-
 // doExportV2 is the copy of doExport, which use query span to improve performance.
 func (s *SQLService) doExportV2(ctx context.Context, request *v1pb.ExportRequest, instance *store.InstanceMessage, database *store.DatabaseMessage, spans []*base.QuerySpan) ([]byte, int64, error) {
 	driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database, "" /* dataSourceID */)
@@ -563,47 +531,6 @@ func (s *SQLService) buildGetDatabaseMetadataFunc(instance *store.InstanceMessag
 	}
 }
 
-// maskResult masks the result in-place based on the dynamic masking policy, query-span, instance and action.
-func (s *SQLService) maskResults(ctx context.Context, spans []*base.QuerySpan, results []*v1pb.QueryResult, instance *store.InstanceMessage, action storepb.MaskingExceptionPolicy_MaskingException_Action) error {
-	classificationSetting, err := s.store.GetDataClassificationSetting(ctx)
-	if err != nil {
-		return errors.Wrapf(err, "failed to find classification setting")
-	}
-
-	maskingRulePolicy, err := s.store.GetMaskingRulePolicy(ctx)
-	if err != nil {
-		return errors.Wrapf(err, "failed to find masking rule policy")
-	}
-
-	algorithmSetting, err := s.store.GetMaskingAlgorithmSetting(ctx)
-	if err != nil {
-		return errors.Wrapf(err, "failed to find masking algorithm setting")
-	}
-
-	semanticTypesSetting, err := s.store.GetSemanticTypesSetting(ctx)
-	if err != nil {
-		return errors.Wrapf(err, "failed to find semantic types setting")
-	}
-
-	m := newEmptyMaskingLevelEvaluator().
-		withMaskingRulePolicy(maskingRulePolicy).
-		withDataClassificationSetting(classificationSetting).
-		withMaskingAlgorithmSetting(algorithmSetting).
-		withSemanticTypeSetting(semanticTypesSetting)
-
-	// We expect the len(spans) == len(results), but to avoid NPE, we use the min(len(spans), len(results)) here.
-	loopBoundary := min(len(spans), len(results))
-	for i := 0; i < loopBoundary; i++ {
-		maskers, err := s.getMaskersForQuerySpan(ctx, m, instance, spans[i], action)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get maskers for query span")
-		}
-		mask(maskers, results[i])
-	}
-
-	return nil
-}
-
 func (s *SQLService) accessCheck(
 	ctx context.Context,
 	instance *store.InstanceMessage,
@@ -670,4 +597,77 @@ func (s *SQLService) accessCheck(
 	}
 
 	return nil
+}
+
+// maskResult masks the result in-place based on the dynamic masking policy, query-span, instance and action.
+func (s *SQLService) maskResults(ctx context.Context, spans []*base.QuerySpan, results []*v1pb.QueryResult, instance *store.InstanceMessage, action storepb.MaskingExceptionPolicy_MaskingException_Action) error {
+	classificationSetting, err := s.store.GetDataClassificationSetting(ctx)
+	if err != nil {
+		return errors.Wrapf(err, "failed to find classification setting")
+	}
+
+	maskingRulePolicy, err := s.store.GetMaskingRulePolicy(ctx)
+	if err != nil {
+		return errors.Wrapf(err, "failed to find masking rule policy")
+	}
+
+	algorithmSetting, err := s.store.GetMaskingAlgorithmSetting(ctx)
+	if err != nil {
+		return errors.Wrapf(err, "failed to find masking algorithm setting")
+	}
+
+	semanticTypesSetting, err := s.store.GetSemanticTypesSetting(ctx)
+	if err != nil {
+		return errors.Wrapf(err, "failed to find semantic types setting")
+	}
+
+	m := newEmptyMaskingLevelEvaluator().
+		withMaskingRulePolicy(maskingRulePolicy).
+		withDataClassificationSetting(classificationSetting).
+		withMaskingAlgorithmSetting(algorithmSetting).
+		withSemanticTypeSetting(semanticTypesSetting)
+
+	// We expect the len(spans) == len(results), but to avoid NPE, we use the min(len(spans), len(results)) here.
+	loopBoundary := min(len(spans), len(results))
+	for i := 0; i < loopBoundary; i++ {
+		maskers, err := s.getMaskersForQuerySpan(ctx, m, instance, spans[i], action)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get maskers for query span")
+		}
+		mask(maskers, results[i])
+	}
+
+	return nil
+}
+
+func mask(maskers []masker.Masker, result *v1pb.QueryResult) {
+	sensitive := make([]bool, len(result.ColumnNames))
+	for i := range result.ColumnNames {
+		if i < len(maskers) {
+			switch maskers[i].(type) {
+			case *masker.NoneMasker:
+				sensitive[i] = false
+			default:
+				sensitive[i] = true
+			}
+		}
+	}
+
+	for i, row := range result.Rows {
+		for j, value := range row.Values {
+			if value == nil {
+				continue
+			}
+			maskedValue := row.Values[j]
+			if j < len(maskers) && maskers[j] != nil {
+				maskedValue = maskers[j].Mask(&masker.MaskData{
+					DataV2: row.Values[j],
+				})
+			}
+			result.Rows[i].Values[j] = maskedValue
+		}
+	}
+
+	result.Sensitive = sensitive
+	result.Masked = sensitive
 }
