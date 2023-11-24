@@ -236,13 +236,12 @@
 
   <!-- Close modal confirm dialog -->
   <ActionConfirmModal
-    v-if="state.showDisable2FAConfirmModal"
+    v-model:show="state.showDisable2FAConfirmModal"
     :title="$t('two-factor.disable.self')"
     :description="$t('two-factor.disable.description')"
     :positive-button-props="{
       type: 'error',
     }"
-    @close="state.showDisable2FAConfirmModal = false"
     @confirm="handleDisable2FA"
   />
 </template>

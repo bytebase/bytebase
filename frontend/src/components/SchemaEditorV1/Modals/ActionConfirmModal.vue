@@ -1,6 +1,7 @@
 <template>
   <BBModal
     :title="props.title"
+    :show="show"
     class="shadow-inner outline outline-gray-200"
     @close="dismissModal"
   >
@@ -23,6 +24,10 @@ import { ButtonProps, NButton } from "naive-ui";
 import { PropType } from "vue";
 
 const props = defineProps({
+  show: {
+    type: Boolean,
+    default: true,
+  },
   title: {
     type: String,
     default: "",
@@ -44,13 +49,16 @@ const props = defineProps({
 const emit = defineEmits<{
   (event: "close"): void;
   (event: "confirm"): void;
+  (event: "update:show", show: boolean): void;
 }>();
 
 const handleConfirmButtonClick = async () => {
   emit("confirm");
+  emit("update:show", false);
 };
 
 const dismissModal = () => {
   emit("close");
+  emit("update:show", false);
 };
 </script>
