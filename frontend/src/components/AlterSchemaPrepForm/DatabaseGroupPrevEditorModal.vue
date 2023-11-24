@@ -45,18 +45,18 @@
         />
       </div>
     </div>
-    <div class="w-full flex flex-row justify-end items-center mt-4 pr-px">
-      <div class="flex justify-end items-center space-x-3">
-        <button type="button" class="btn-normal" @click="dismissModal">
+    <div class="w-full flex flex-row justify-end items-center mt-4">
+      <div class="flex justify-end items-center gap-x-3">
+        <NButton @click="dismissModal">
           {{ $t("common.cancel") }}
-        </button>
-        <button
-          class="btn-primary whitespace-nowrap"
+        </NButton>
+        <NButton
+          type="primary"
           :disabled="!allowPreviewIssue"
           @click="handlePreviewIssue"
         >
           {{ $t("schema-editor.preview-issue") }}
-        </button>
+        </NButton>
       </div>
     </div>
   </BBModal>
@@ -72,6 +72,7 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton } from "naive-ui";
 import { computed, onMounted, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";

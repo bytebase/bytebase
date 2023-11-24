@@ -7,18 +7,21 @@
     <div class="w-80 mb-6">
       <p>{{ props.description }}</p>
     </div>
-    <div class="w-full flex items-center justify-end mt-2 space-x-3 pr-1 pb-1">
-      <button type="button" class="btn-cancel" @click="dismissModal">
+    <div class="w-full flex items-center justify-end mt-2 gap-x-3">
+      <NButton v-bind="negativeButtonProps" @click="dismissModal">
         {{ $t("common.cancel") }}
-      </button>
-      <button :class="`btn-${props.style}`" @click="handleConfirmButtonClick">
+      </NButton>
+      <NButton v-bind="positiveButtonProps" @click="handleConfirmButtonClick">
         {{ $t("common.confirm") }}
-      </button>
+      </NButton>
     </div>
   </BBModal>
 </template>
 
 <script lang="ts" setup>
+import { ButtonProps, NButton } from "naive-ui";
+import { PropType } from "vue";
+
 const props = defineProps({
   title: {
     type: String,
@@ -28,9 +31,13 @@ const props = defineProps({
     type: String,
     default: "",
   },
-  style: {
-    type: String,
-    default: "primary",
+  negativeButtonProps: {
+    type: Object as PropType<ButtonProps>,
+    default: () => ({ quaternary: true }),
+  },
+  positiveButtonProps: {
+    type: Object as PropType<ButtonProps>,
+    default: () => ({ type: "primary" }),
   },
 });
 
