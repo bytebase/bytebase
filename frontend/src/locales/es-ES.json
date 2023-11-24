@@ -2675,6 +2675,8 @@
     "no-logs": "No hay registros de depuración",
     "count-of-logs": "Se recuperaron los últimos {count} registro(s) del servidor.",
     "debug-log-detail": "Detalles del registro de depuración",
+    "enabled": "El modo de depuración está habilitado.",
+    "open-debug-mode": "Habilitar depuración",
     "table": {
       "record-ts": "Hora",
       "method": "Método",
