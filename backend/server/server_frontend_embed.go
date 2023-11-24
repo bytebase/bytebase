@@ -54,7 +54,6 @@ func embedFrontend(e *echo.Echo) {
 		HTML5:      true,
 		Filesystem: getFileSystem("dist/assets"),
 	}))
-
 }
 
 // defaultAPIRequestSkipper is echo skipper for api requests.
