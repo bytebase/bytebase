@@ -87,14 +87,6 @@ export default defineComponent({
         keywords: "navigation",
         perform: () => router.push({ name: "workspace.home" }),
       }),
-      defineAction({
-        id: "bb.navigation.anomaly-center",
-        name: "Anomaly Center",
-        shortcut: ["g", "a", "c"],
-        section: t("kbar.navigation"),
-        keywords: "navigation",
-        perform: () => router.push({ name: "workspace.anomaly-center" }),
-      }),
     ]);
 
     return {

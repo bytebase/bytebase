@@ -77,11 +77,12 @@ import { computed, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import {
-  useCurrentUser,
   useSubscriptionV1Store,
   useInboxV1Store,
+  useCurrentUserV1,
 } from "@/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
+import { extractUserUID } from "@/utils";
 import BytebaseLogo from "../components/BytebaseLogo.vue";
 import ProfileBrandingLogo from "../components/ProfileBrandingLogo.vue";
 import ProfileDropdown from "../components/ProfileDropdown.vue";
@@ -113,13 +114,13 @@ const onClickSearchButton = () => {
   handler.value.show();
 };
 
-const currentUser = useCurrentUser();
+const me = useCurrentUserV1();
 
 const { currentPlan } = storeToRefs(subscriptionStore);
 
 const prepareInboxSummary = () => {
   // It will also be called when user logout
-  if (currentUser.value.id != UNKNOWN_ID) {
+  if (extractUserUID(me.value.name) !== String(UNKNOWN_ID)) {
     inboxV1Store.fetchInboxSummary();
   }
 };
@@ -130,56 +131,24 @@ const inboxSummary = computed(() => {
   return inboxV1Store.inboxSummary;
 });
 
-const kbarActions = computed(() => [
-  defineAction({
-    id: "bb.navigation.projects",
-    name: "Projects",
-    shortcut: ["g", "p"],
-    section: t("kbar.navigation"),
-    keywords: "navigation",
-    perform: () => router.push({ name: "workspace.project" }),
-  }),
-  defineAction({
-    id: "bb.navigation.databases",
-    name: "Databases",
-    shortcut: ["g", "d"],
-    section: t("kbar.navigation"),
-    keywords: "navigation db",
-    perform: () => router.push({ name: "workspace.database" }),
-  }),
-  defineAction({
-    id: "bb.navigation.instances",
-    name: "Instances",
-    shortcut: ["g", "i"],
-    section: t("kbar.navigation"),
-    keywords: "navigation",
-    perform: () => router.push({ name: "workspace.instance" }),
-  }),
-  defineAction({
-    id: "bb.navigation.environments",
-    name: "Environments",
-    shortcut: ["g", "e"],
-    section: t("kbar.navigation"),
-    keywords: "navigation",
-    perform: () => router.push({ name: "workspace.environment" }),
-  }),
-  defineAction({
-    id: "bb.navigation.settings",
-    name: "Settings",
-    shortcut: ["g", "s"],
-    section: t("kbar.navigation"),
-    keywords: "navigation",
-    perform: () => router.push({ name: "setting.workspace.member" }),
-  }),
-  defineAction({
-    id: "bb.navigation.inbox",
-    name: "Inbox",
-    shortcut: ["g", "m"],
-    section: t("kbar.navigation"),
-    keywords: "navigation",
-    perform: () => router.push({ name: "setting.inbox" }),
-  }),
-]);
+const kbarActions = computed(() => {
+  return [
+    defineAction({
+      id: "bb.navigation.global.settings",
+      name: "Settings",
+      section: t("kbar.navigation"),
+      keywords: "navigation",
+      perform: () => router.push({ name: "setting.workspace.member" }),
+    }),
+    defineAction({
+      id: "bb.navigation.global.inbox",
+      name: "Inbox",
+      section: t("kbar.navigation"),
+      keywords: "navigation",
+      perform: () => router.push({ name: "setting.inbox" }),
+    }),
+  ];
+});
 useRegisterActions(kbarActions);
 
 const handleWantHelp = () => {
