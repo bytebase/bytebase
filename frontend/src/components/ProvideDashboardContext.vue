@@ -6,22 +6,20 @@
 import { defineComponent } from "vue";
 import {
   useUIStateStore,
-  usePolicyV1Store,
   useDatabaseV1Store,
   useDBGroupStore,
-  prepareBasicStores,
+  initCommonModelStores,
 } from "@/store";
 
 export default defineComponent({
   name: "ProvideDashboardContext",
   async setup() {
-    await prepareBasicStores();
+    await initCommonModelStores();
     await Promise.all([
       useDatabaseV1Store().fetchDatabaseList({
         parent: "instances/-",
       }),
       useDBGroupStore().fetchAllDatabaseGroupList(),
-      usePolicyV1Store().getOrFetchPolicyByName("policies/WORKSPACE_IAM"),
       useUIStateStore().restoreState(),
     ]);
   },

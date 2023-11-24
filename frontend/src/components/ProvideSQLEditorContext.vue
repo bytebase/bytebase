@@ -15,7 +15,7 @@ import {
   useSheetV1Store,
   useInstanceV1Store,
   useDatabaseV1Store,
-  prepareBasicStores,
+  initCommonModelStores,
 } from "@/store";
 import { useSQLEditorTreeStore } from "@/store/modules/sqlEditorTree";
 import { projectNamePrefix } from "@/store/modules/v1/common";
@@ -316,9 +316,9 @@ const syncURLWithConnection = () => {
 onMounted(async () => {
   if (treeStore.state === "UNSET") {
     treeStore.state = "LOADING";
-    await prepareBasicStores();
 
-    await usePolicyV1Store().getOrFetchPolicyByName("policies/WORKSPACE_IAM");
+    await initCommonModelStores();
+
     await prepareAccessControlPolicy();
     await prepareAccessibleDatabaseList();
 
