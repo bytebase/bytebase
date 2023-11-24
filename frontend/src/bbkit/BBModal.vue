@@ -1,6 +1,6 @@
 <template>
   <NModal
-    :show="true"
+    :show="show"
     :auto-focus="false"
     :trap-focus="trapFocus"
     :close-on-esc="false"
@@ -51,6 +51,10 @@ export default defineComponent({
   },
   inheritAttrs: false,
   props: {
+    show: {
+      type: Boolean,
+      default: true,
+    },
     title: {
       default: "",
       type: [String, Function] as PropType<string | RenderFunction>,
@@ -89,7 +93,7 @@ export default defineComponent({
       default: undefined,
     },
   },
-  emits: ["close"],
+  emits: ["close", "update:show"],
   setup(props, { emit }) {
     const { id, upmost, events } = useOverlayStack();
 
@@ -106,6 +110,7 @@ export default defineComponent({
         if (!pass) return;
       }
       emit("close");
+      emit("update:show", false);
     };
 
     const renderTitle = () => {
