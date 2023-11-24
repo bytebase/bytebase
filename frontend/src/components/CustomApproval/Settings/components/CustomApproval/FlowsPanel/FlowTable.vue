@@ -1,5 +1,6 @@
 <template>
   <BBGrid
+    class="border w-full"
     :column-list="COLUMN_LIST"
     :data-source="filteredApprovalRuleList"
     :row-clickable="false"

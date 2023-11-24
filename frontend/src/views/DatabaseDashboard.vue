@@ -1,7 +1,7 @@
 <template>
-  <div class="flex flex-col relative">
+  <div class="flex flex-col relative space-y-4">
     <div
-      class="px-4 py-2 flex flex-col lg:flex-row justify-between items-start lg:items-center"
+      class="px-4 flex flex-col lg:flex-row justify-between items-start lg:items-end"
     >
       <EnvironmentTabFilter
         :include-all="true"

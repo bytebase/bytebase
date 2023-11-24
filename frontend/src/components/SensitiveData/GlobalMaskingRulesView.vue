@@ -1,7 +1,7 @@
 <template>
   <div class="w-full space-y-4">
     <div class="flex flex-row items-center justify-end">
-      <div v-if="state.reorderRules" class="flex items-center gap-x-3">
+      <div v-if="state.reorderRules" class="flex items-center gap-x-2">
         <NButton
           :disabled="state.processing"
           @click="
@@ -21,7 +21,7 @@
           {{ $t("common.confirm") }}
         </NButton>
       </div>
-      <div v-else class="flex items-center gap-x-3">
+      <div v-else class="flex items-center gap-x-2">
         <NButton
           secondary
           type="primary"
