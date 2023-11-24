@@ -11,8 +11,8 @@
         "
       />
       <SearchBox
-        :placeholder="searchFieldPlaceholder"
         v-model:value="state.searchText"
+        :placeholder="searchFieldPlaceholder"
       />
     </div>
     <div class="border-x">

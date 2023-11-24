@@ -31,7 +31,6 @@ import { provideRiskFilter } from "../common/RiskFilter";
 import ExternalApprovalNodesPanel from "./ExternalApprovalNodesPanel";
 import FlowsPanel from "./FlowsPanel";
 import RulesPanel from "./RulesPanel";
-import Toolbar from "./Toolbar.vue";
 import { useCustomApprovalContext } from "./context";
 
 const { tab } = useCustomApprovalContext();

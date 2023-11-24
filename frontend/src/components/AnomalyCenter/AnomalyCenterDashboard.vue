@@ -88,6 +88,7 @@
 
       <SearchBox
         ref="searchField"
+        v-model:value="state.searchText"
         style="width: 18rem"
         :placeholder="
           $t('anomaly.table-search-placeholder', {
@@ -97,7 +98,6 @@
                 : $t('common.instance'),
           })
         "
-        v-model:value="state.searchText"
       />
     </div>
     <template v-if="state.selectedTab === 'database'">
