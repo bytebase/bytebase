@@ -28,6 +28,7 @@
         v-if="shouldShowInstanceEntry"
         to="/instance"
         class="outline-item group flex items-center"
+        :class="getRouteLinkClass('/instance')"
       >
         <div
           class="outline-item group flex items-center px-2 py-1.5 capitalize"
@@ -107,7 +108,7 @@ import {
   SquareStackIcon,
 } from "lucide-vue-next";
 import { computed } from "vue";
-import { RouterLink } from "vue-router";
+import { RouterLink, useRoute } from "vue-router";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
 import {
   useCurrentUserV1,
@@ -117,6 +118,7 @@ import {
 import { hasWorkspacePermissionV1 } from "../utils";
 
 const currentUserV1 = useCurrentUserV1();
+const route = useRoute();
 
 // Only show sync schema if the user has permission to alter schema of at least one project.
 const shouldShowSyncSchemaEntry = computed(() => {
@@ -135,4 +137,14 @@ const shouldShowInstanceEntry = computed(() => {
     currentUserV1.value.userRole
   );
 });
+
+const getRouteLinkClass = (prefix: string): string[] => {
+  const { path } = route;
+  const isActiveRoute = path === prefix || path.startsWith(`${prefix}/`);
+  const classes: string[] = [];
+  if (isActiveRoute) {
+    classes.push("router-link-active", "bg-link-hover");
+  }
+  return classes;
+};
 </script>

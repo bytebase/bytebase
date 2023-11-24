@@ -31,11 +31,10 @@
             url="https://www.bytebase.com/docs/get-started/install/external-url?source=console"
           />
         </div>
-        <BBTextField
+        <NInput
           class="mb-4 w-full"
           :disabled="!allowEdit"
-          :value="state.externalUrl"
-          @input="handleExternalUrlChange"
+          v-model:value="state.externalUrl"
         />
 
         <label
@@ -59,7 +58,7 @@
             url="https://www.bytebase.com/docs/get-started/install/external-url#gitops-webhook-url?source=console"
           />
         </div>
-        <BBTextField
+        <NInput
           class="mb-4 w-full"
           :placeholder="
             t(
@@ -67,8 +66,7 @@
             )
           "
           :disabled="!allowEdit"
-          :value="state.gitopsWebhookUrl"
-          @input="handleGitOpsWebhookUrlChange"
+          v-model:value="state.gitopsWebhookUrl"
         />
 
         <div class="flex justify-end">
@@ -133,14 +131,6 @@ const allowSave = computed((): boolean => {
       settingV1Store.workspaceProfileSetting?.gitopsWebhookUrl;
   return externalUrlChanged || gitopsWebhookUrlChanged;
 });
-
-const handleExternalUrlChange = (event: Event) => {
-  state.externalUrl = (event.target as HTMLInputElement).value;
-};
-
-const handleGitOpsWebhookUrlChange = (event: Event) => {
-  state.gitopsWebhookUrl = (event.target as HTMLInputElement).value;
-};
 
 const updateNetworkSetting = async () => {
   if (!allowSave.value) {

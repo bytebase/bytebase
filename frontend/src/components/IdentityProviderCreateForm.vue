@@ -6,7 +6,7 @@
       v-if="isCreating"
       class="w-full flex flex-col justify-start items-start"
     >
-      <div class="w-full flex flex-row justify-between items-center">
+      <div class="w-full flex flex-row items-center space-x-2">
         <p class="textlabel my-2">{{ $t("settings.sso.form.type") }}</p>
         <a
           v-if="userDocLink"
