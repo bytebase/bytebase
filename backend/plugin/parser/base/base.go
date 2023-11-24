@@ -8,8 +8,12 @@ import (
 
 // SingleSQL is a separate SQL split from multi-SQL.
 type SingleSQL struct {
-	Text     string
+	Text string
+	// BaseLine is the line number of the first line of the SQL in the original SQL.
 	BaseLine int
+	// FirstStatementLine is the line number of the first non-comment and non-blank line of the SQL in the original SQL.
+	FirstStatementLine int
+	// LastLine is the line number of the last line of the SQL in the original SQL.
 	LastLine int
 	// The sql is empty, such as `/* comments */;` or just `;`.
 	Empty bool

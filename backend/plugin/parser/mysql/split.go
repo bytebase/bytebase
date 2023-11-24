@@ -243,10 +243,11 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]base.SingleSQL, err
 			}
 
 			result = append(result, base.SingleSQL{
-				Text:     stream.GetTextFromTokens(tokens[start], tokens[i]),
-				BaseLine: tokens[start].GetLine() - 1,
-				LastLine: tokens[i].GetLine()},
-			)
+				Text:               stream.GetTextFromTokens(tokens[start], tokens[i]),
+				BaseLine:           tokens[start].GetLine() - 1,
+				LastLine:           tokens[i].GetLine(),
+				FirstStatementLine: firstDefaultChannelTokenLine(tokens[start : i+1]),
+			})
 			start = i + 1
 		case parser.MySQLParserEOF:
 			if len(stack) != 0 {
@@ -258,12 +259,22 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]base.SingleSQL, err
 
 			if start <= i-1 {
 				result = append(result, base.SingleSQL{
-					Text:     stream.GetTextFromTokens(tokens[start], tokens[i-1]),
-					BaseLine: tokens[start].GetLine() - 1,
-					LastLine: tokens[i-1].GetLine()},
-				)
+					Text:               stream.GetTextFromTokens(tokens[start], tokens[i-1]),
+					BaseLine:           tokens[start].GetLine() - 1,
+					LastLine:           tokens[i-1].GetLine(),
+					FirstStatementLine: firstDefaultChannelTokenLine(tokens[start:i]),
+				})
 			}
 		}
 	}
 	return result, nil
+}
+
+func firstDefaultChannelTokenLine(tokens []antlr.Token) int {
+	for _, token := range tokens {
+		if token.GetChannel() == antlr.TokenDefaultChannel {
+			return token.GetLine()
+		}
+	}
+	return 0
 }
