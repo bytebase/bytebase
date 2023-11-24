@@ -24,27 +24,17 @@
         </button>
       </div>
     </div>
-    <div
-      v-if="identityProviderList.length === 0"
-      class="w-full flex flex-col justify-center items-center"
-    >
-      <div
-        class="w-full border-4 border-dashed border-gray-200 rounded-lg h-96 flex justify-center items-center"
-      >
-        <div class="text-center flex flex-col justify-center items-center">
-          <img src="@/assets/illustration/no-data.webp" class="w-52" />
-          <div class="mt-6">
-            <button type="button" class="btn-primary" @click="handleCreateSSO">
-              {{ $t("settings.sso.create") }}
-              <FeatureBadge
-                :feature="'bb.feature.sso'"
-                custom-class="ml-2 !text-white"
-              />
-            </button>
-          </div>
-        </div>
+    <NoDataPlaceholder v-if="identityProviderList.length === 0">
+      <div>
+        <NButton type="primary" @click="handleCreateSSO">
+          {{ $t("settings.sso.create") }}
+          <FeatureBadge
+            :feature="'bb.feature.sso'"
+            custom-class="ml-2 !text-white"
+          />
+        </NButton>
       </div>
-    </div>
+    </NoDataPlaceholder>
     <template v-else>
       <div class="w-full flex flex-col justify-start items-start space-y-4">
         <div
