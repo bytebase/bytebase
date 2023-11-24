@@ -4,7 +4,7 @@
       code: 803
       title: index.primary-key-type-allowlist
       content: The column `id` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
-      line: 1
+      line: 0
       details: ""
 - statement: CREATE TABLE t(id INT PRIMARY KEY)
   want:
@@ -20,7 +20,7 @@
       code: 803
       title: index.primary-key-type-allowlist
       content: The column `id` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
-      line: 1
+      line: 0
       details: ""
 - statement: CREATE TABLE t(id INT, id2 VARCHAR(5), id3 VARCHAR(5), PRIMARY KEY(id, id2, id3))
   want:
@@ -28,13 +28,13 @@
       code: 803
       title: index.primary-key-type-allowlist
       content: The column `id2` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
-      line: 1
+      line: 0
       details: ""
     - status: WARN
       code: 803
       title: index.primary-key-type-allowlist
       content: The column `id3` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
-      line: 1
+      line: 0
       details: ""
 - statement: CREATE TABLE t(id INT, id2 BIGINT, PRIMARY KEY(id, id2))
   want:
@@ -60,7 +60,7 @@
       code: 803
       title: index.primary-key-type-allowlist
       content: The column `id` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
-      line: 3
+      line: 1
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
@@ -80,7 +80,7 @@
       code: 803
       title: index.primary-key-type-allowlist
       content: The column `id` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
-      line: 3
+      line: 1
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
@@ -90,13 +90,13 @@
       code: 803
       title: index.primary-key-type-allowlist
       content: The column `id2` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
-      line: 3
+      line: 1
       details: ""
     - status: WARN
       code: 803
       title: index.primary-key-type-allowlist
       content: The column `id3` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
-      line: 3
+      line: 1
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
@@ -126,7 +126,7 @@
       code: 803
       title: index.primary-key-type-allowlist
       content: The column `id` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
-      line: 3
+      line: 1
       details: ""
 - statement: |-
     CREATE TABLE t(id INT, id2 VARCHAR(5), id3 VARCHAR(5));
@@ -136,13 +136,13 @@
       code: 803
       title: index.primary-key-type-allowlist
       content: The column `id2` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
-      line: 3
+      line: 1
       details: ""
     - status: WARN
       code: 803
       title: index.primary-key-type-allowlist
       content: The column `id3` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
-      line: 3
+      line: 1
       details: ""
 - statement: |-
     CREATE TABLE t(id INT, id2 BIGINT);
@@ -172,7 +172,7 @@
       code: 803
       title: index.primary-key-type-allowlist
       content: The column `id` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
-      line: 3
+      line: 1
       details: ""
 - statement: |-
     CREATE TABLE t(id int);
@@ -192,7 +192,7 @@
       code: 803
       title: index.primary-key-type-allowlist
       content: The column `id2` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
-      line: 3
+      line: 1
       details: ""
 - statement: |-
     CREATE TABLE t(id int);

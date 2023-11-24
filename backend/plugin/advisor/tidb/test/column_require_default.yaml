@@ -16,7 +16,7 @@
       code: 420
       title: column.require-default
       content: Column `t`.`a` doesn't have DEFAULT.
-      line: 2
+      line: 1
       details: ""
 - statement: |-
     ALTER TABLE tech_book ADD COLUMN a BLOB;
@@ -27,11 +27,11 @@
       code: 420
       title: column.require-default
       content: Column `tech_book`.`b` doesn't have DEFAULT.
-      line: 2
+      line: 1
       details: ""
     - status: WARN
       code: 420
       title: column.require-default
       content: Column `tech_book`.`a` doesn't have DEFAULT.
-      line: 4
+      line: 2
       details: ""

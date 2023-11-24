@@ -4,9 +4,8 @@
       code: 111
       title: schema.backward-compatibility
       content: |-
-        "ALTER TABLE tech_book CHANGE name f2 TEXT
-        ;" may cause incompatibility with the existing data and code
-      line: 2
+        "ALTER TABLE tech_book CHANGE name f2 TEXT;" may cause incompatibility with the existing data and code
+      line: 0
       details: ""
 - statement: ALTER TABLE tech_book MODIFY name TEXT
   want:
@@ -14,9 +13,8 @@
       code: 111
       title: schema.backward-compatibility
       content: |-
-        "ALTER TABLE tech_book MODIFY name TEXT
-        ;" may cause incompatibility with the existing data and code
-      line: 2
+        "ALTER TABLE tech_book MODIFY name TEXT;" may cause incompatibility with the existing data and code
+      line: 0
       details: ""
 - statement: ALTER TABLE tech_book MODIFY name TEXT NULL
   want:
@@ -24,9 +22,8 @@
       code: 111
       title: schema.backward-compatibility
       content: |-
-        "ALTER TABLE tech_book MODIFY name TEXT NULL
-        ;" may cause incompatibility with the existing data and code
-      line: 2
+        "ALTER TABLE tech_book MODIFY name TEXT NULL;" may cause incompatibility with the existing data and code
+      line: 0
       details: ""
 - statement: ALTER TABLE tech_book MODIFY name TEXT NOT NULL
   want:
@@ -34,9 +31,8 @@
       code: 111
       title: schema.backward-compatibility
       content: |-
-        "ALTER TABLE tech_book MODIFY name TEXT NOT NULL
-        ;" may cause incompatibility with the existing data and code
-      line: 2
+        "ALTER TABLE tech_book MODIFY name TEXT NOT NULL;" may cause incompatibility with the existing data and code
+      line: 0
       details: ""
 - statement: ALTER TABLE tech_book MODIFY name TEXT COMMENT 'bla'
   want:
@@ -44,7 +40,6 @@
       code: 111
       title: schema.backward-compatibility
       content: |-
-        "ALTER TABLE tech_book MODIFY name TEXT COMMENT 'bla'
-        ;" may cause incompatibility with the existing data and code
-      line: 2
+        "ALTER TABLE tech_book MODIFY name TEXT COMMENT 'bla';" may cause incompatibility with the existing data and code
+      line: 0
       details: ""

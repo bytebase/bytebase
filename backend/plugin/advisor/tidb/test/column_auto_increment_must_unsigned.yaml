@@ -12,7 +12,7 @@
       code: 417
       title: column.auto-increment-must-unsigned
       content: Auto-increment column `t`.`a` is not UNSIGNED type
-      line: 2
+      line: 0
       details: ""
 - statement: |-
     CREATE TABLE t(b int);
@@ -22,7 +22,7 @@
       code: 417
       title: column.auto-increment-must-unsigned
       content: Auto-increment column `t`.`a` is not UNSIGNED type
-      line: 3
+      line: 1
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
@@ -32,7 +32,7 @@
       code: 417
       title: column.auto-increment-must-unsigned
       content: Auto-increment column `t`.`a` is not UNSIGNED type
-      line: 3
+      line: 1
       details: ""
 - statement: |-
     CREATE TABLE t(b int);
@@ -42,5 +42,5 @@
       code: 417
       title: column.auto-increment-must-unsigned
       content: Auto-increment column `t`.`a` is not UNSIGNED type
-      line: 3
+      line: 1
       details: ""
