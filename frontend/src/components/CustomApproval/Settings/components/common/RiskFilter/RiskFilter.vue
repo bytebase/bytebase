@@ -5,7 +5,7 @@
         <LevelFilter v-if="!hideLevelFilter" />
       </div>
 
-      <div class="flex items-center justify-end gap-x-4">
+      <div class="flex items-center justify-end gap-x-2">
         <NInput
           v-if="!hideSearch"
           v-model:value="search"
