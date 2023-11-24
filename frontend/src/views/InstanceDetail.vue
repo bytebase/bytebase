@@ -40,6 +40,7 @@
       <NTabPane name="DATABASES" :tab="$t('common.databases')">
         <DatabaseV1Table
           mode="INSTANCE"
+          table-class="border"
           :scroll-on-page-change="false"
           :database-list="databaseV1List"
         />
