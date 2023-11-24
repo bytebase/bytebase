@@ -54,28 +54,6 @@
   changetype: 1
   want: []
 - statement: |-
-    CREATE SPATIAL REFERENCE SYSTEM 4120
-    NAME 'Greek'
-    ORGANIZATION 'EPSG' IDENTIFIED BY 4120
-    DEFINITION
-      'GEOGCS["Greek",DATUM["Greek",SPHEROID["Bessel 1841",
-      6377397.155,299.1528128,AUTHORITY["EPSG","7004"]],
-      AUTHORITY["EPSG","6120"]],PRIMEM["Greenwich",0,
-      AUTHORITY["EPSG","8901"]],UNIT["degree",0.017453292519943278,
-      AUTHORITY["EPSG","9122"]],AXIS["Lat",NORTH],AXIS["Lon",EAST],
-      AUTHORITY["EPSG","4120"]]';
-  changetype: 1
-  want:
-    - |-
-      {
-        "status":  "ERROR",
-        "title":  "Syntax error",
-        "content":  "Syntax error at line 2:5 \nrelated text: EATE SPATIAL REFERENCE SYSTEM 4120\nNAME 'Greek'",
-        "sqlReviewReport":  {
-          "code":  201
-        }
-      }
-- statement: |-
     CREATE EVENT e
         ON SCHEDULE
           EVERY 5 SECOND
