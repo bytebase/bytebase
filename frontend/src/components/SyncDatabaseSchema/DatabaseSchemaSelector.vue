@@ -4,7 +4,7 @@
   >
     <div
       v-if="!disableProjectSelect"
-      class="w-full flex flex-row justify-start items-center"
+      class="w-full flex flex-col gap-y-2 lg:flex-row justify-start items-start lg:items-center"
     >
       <span class="flex w-40 items-center shrink-0 text-sm">
         {{ $t("common.project") }}
@@ -15,7 +15,9 @@
         @update:project="handleProjectSelect"
       />
     </div>
-    <div class="w-full flex flex-row justify-start items-center">
+    <div
+      class="w-full flex flex-col gap-y-2 lg:flex-row justify-start items-start lg:items-center"
+    >
       <span class="flex w-40 items-center shrink-0 text-sm">
         {{ $t("common.database") }}
       </span>
@@ -35,7 +37,9 @@
         @update:database="handleDatabaseSelect"
       />
     </div>
-    <div class="w-full flex flex-row justify-start items-center">
+    <div
+      class="w-full flex flex-col gap-y-2 lg:flex-row justify-start items-start lg:items-center"
+    >
       <span class="flex w-40 items-center shrink-0 text-sm">
         {{ $t("database.sync-schema.schema-version.self") }}
       </span>

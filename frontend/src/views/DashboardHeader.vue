@@ -1,36 +1,56 @@
 <template>
-  <div class="flex items-center justify-between h-10 pl-2 pr-4 space-x-2">
-    <div class="flex-1 flex items-center">
+  <div class="flex items-center justify-between h-10 pl-2 pr-4 space-x-3">
+    <div class="flex items-center">
       <BytebaseLogo class="block md:hidden" />
+      <div v-if="showBreadcrumb" class="hidden md:block">
+        <Breadcrumb />
+      </div>
     </div>
-    <div>
-      <div class="flex items-center space-x-3">
-        <div
-          v-if="currentPlan === PlanType.FREE"
-          class="flex justify-between items-center min-w-fit px-4 py-1 bg-emerald-500 text-sm font-medium text-white rounded-md cursor-pointer"
-          @click="handleWantHelp"
-        >
-          <span class="hidden lg:block mr-2">{{ $t("common.want-help") }}</span>
-          <heroicons-outline:chat-bubble-left-right class="w-4 h-4" />
-        </div>
-        <a href="/sql-editor" target="_blank">
-          <heroicons-outline:terminal class="w-6 h-6" />
-        </a>
-        <router-link to="/setting/general" exact-active-class="">
-          <Settings class="w-6 h-6" />
-        </router-link>
-        <router-link to="/inbox" exact-active-class="">
-          <span
-            v-if="inboxSummary.unread > 0"
-            class="absolute rounded-full ml-4 -mt-1 h-2 w-2 bg-accent opacity-75"
-          ></span>
-          <heroicons-outline:bell class="w-6 h-6" />
-        </router-link>
-        <div class="ml-2">
-          <ProfileBrandingLogo>
-            <ProfileDropdown />
-          </ProfileBrandingLogo>
-        </div>
+    <div class="flex-1 flex justify-end items-center space-x-3">
+      <button
+        class="hidden w-full max-w-xs md:flex items-center justify-between rounded-md border border-control-border bg-white hover:bg-control-bg-hover pl-2 pr-1 py-0.5 outline-none"
+        @click="onClickSearchButton"
+      >
+        <span class="text-control-placeholder text-sm">
+          {{ $t("common.search") }}
+        </span>
+        <span class="flex items-center space-x-1">
+          <kbd
+            class="h-5 flex items-center justify-center bg-black bg-opacity-10 rounded text-sm px-1 text-control overflow-y-hidden"
+          >
+            <span v-if="isMac" class="text-xl px-0.5">⌘</span>
+            <span v-else class="tracking-tighter transform scale-x-90">
+              Ctrl
+            </span>
+            <span class="ml-1 mr-0.5">K</span>
+          </kbd>
+        </span>
+      </button>
+      <div
+        v-if="currentPlan === PlanType.FREE"
+        class="flex justify-between items-center min-w-fit px-4 py-1 bg-emerald-500 text-sm font-medium text-white rounded-md cursor-pointer"
+        @click="handleWantHelp"
+      >
+        <span class="hidden lg:block mr-2">{{ $t("common.want-help") }}</span>
+        <heroicons-outline:chat-bubble-left-right class="w-4 h-4" />
+      </div>
+      <a href="/sql-editor" target="_blank">
+        <heroicons-outline:terminal class="w-6 h-6" />
+      </a>
+      <router-link to="/setting/general" exact-active-class="">
+        <Settings class="w-6 h-6" />
+      </router-link>
+      <router-link to="/inbox" exact-active-class="">
+        <span
+          v-if="inboxSummary.unread > 0"
+          class="absolute rounded-full ml-4 -mt-1 h-2 w-2 bg-accent opacity-75"
+        ></span>
+        <heroicons-outline:bell class="w-6 h-6" />
+      </router-link>
+      <div class="ml-2">
+        <ProfileBrandingLogo>
+          <ProfileDropdown />
+        </ProfileBrandingLogo>
       </div>
     </div>
   </div>
@@ -50,6 +70,7 @@
 
 <script lang="ts" setup>
 import { defineAction, useRegisterActions } from "@bytebase/vue-kbar";
+import { useKBarHandler } from "@bytebase/vue-kbar";
 import { Settings } from "lucide-vue-next";
 import { storeToRefs } from "pinia";
 import { computed, reactive, watchEffect } from "vue";
@@ -80,6 +101,17 @@ const { locale } = useLanguage();
 const state = reactive<LocalState>({
   showQRCodeModal: false,
 });
+
+const showBreadcrumb = computed(() => {
+  const name = router.currentRoute.value.name;
+  return !(name === "workspace.home" || name === "workspace.profile");
+});
+
+const isMac = navigator.platform.match(/mac/i);
+const handler = useKBarHandler();
+const onClickSearchButton = () => {
+  handler.value.show();
+};
 
 const currentUser = useCurrentUser();
 

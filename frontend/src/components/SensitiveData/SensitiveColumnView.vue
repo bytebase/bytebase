@@ -76,13 +76,7 @@
       @checked:update="updateCheckedColumnList($event)"
     />
 
-    <template v-else>
-      <NoData
-        :img-attrs="{
-          class: '!w-auto max-h-[30vh]',
-        }"
-      />
-    </template>
+    <NoDataPlaceholder v-else />
   </div>
 
   <FeatureModal
@@ -131,7 +125,6 @@ import { NInputGroup } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import NoData from "@/components/misc/NoData.vue";
 import {
   ProjectSelect,
   InstanceSelect,

@@ -1,6 +1,8 @@
 <template>
-  <div class="w-full px-4 py-1 pt-2">
-    <div class="w-full flex flex-row justify-between items-center">
+  <div class="w-full p-6">
+    <div
+      class="w-full flex flex-col lg:flex-row items-start lg:items-center justify-between gap-y-2"
+    >
       <div class="flex items-center gap-x-4">
         <NInputGroup>
           <ProjectSelect
@@ -31,7 +33,7 @@
         </NButton>
       </div>
       <div>
-        <NButton @click="handleRequestExportClick">
+        <NButton type="primary" @click="handleRequestExportClick">
           <FeatureBadge
             feature="bb.feature.access-control"
             custom-class="mr-2"

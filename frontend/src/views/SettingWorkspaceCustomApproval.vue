@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full mt-4 space-y-4 text-sm">
+  <div class="w-full space-y-4 text-sm">
     <FeatureAttentionForInstanceLicense
       v-if="hasCustomApprovalFeature"
       feature="bb.feature.custom-approval"

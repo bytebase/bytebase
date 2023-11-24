@@ -71,7 +71,7 @@
         </div>
       </BBDialog>
     </div>
-    <DebugLogEmptyView v-else />
+    <NoDataPlaceholder v-else />
   </div>
 </template>
 

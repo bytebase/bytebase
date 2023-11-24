@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-3 pt-2 w-full overflow-x-auto">
+  <div class="space-y-3 w-full overflow-x-auto">
     <div class="w-full flex flex-row justify-between items-center">
       <div class="flex flex-row justify-start items-center"></div>
       <div class="flex flex-row justify-end items-center gap-x-2">

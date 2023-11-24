@@ -1,15 +1,10 @@
 <template>
-  <div class="flex flex-col">
+  <div class="flex flex-col space-y-4">
     <FeatureAttentionForInstanceLicense
       v-if="hasSchemaDriftFeature"
-      custom-class="mb-4"
       feature="bb.feature.schema-drift"
     />
-    <FeatureAttention
-      v-else
-      custom-class="my-4"
-      feature="bb.feature.schema-drift"
-    />
+    <FeatureAttention v-else feature="bb.feature.schema-drift" />
 
     <div class="textinfolabel">
       {{ $t("anomaly.attention-desc") }}
@@ -23,7 +18,7 @@
       </a>
     </div>
 
-    <div class="mt-4 space-y-4">
+    <div class="space-y-4">
       <div v-for="(item, i) in anomalySummaryList" :key="i" class="space-y-2">
         <h3 class="text-lg leading-6 font-medium text-main">
           {{ i == 0 ? $t("common.database") : $t("common.instance") }}
