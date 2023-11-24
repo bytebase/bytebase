@@ -85,7 +85,7 @@
           !filterTypes.includes('project') &&
           !filterTypes.includes('environment')
         "
-        class="flex items-center justify-end"
+        class="flex items-center justify-end space-x-2"
       >
         <slot name="suffix" />
       </div>

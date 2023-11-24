@@ -91,14 +91,9 @@
     </div>
 
     <div v-if="allowEdit" class="flex justify-end">
-      <button
-        type="button"
-        class="btn-primary"
-        :disabled="!allowSave"
-        @click.prevent="save"
-      >
+      <NButton type="primary" :disabled="!allowSave" @click.prevent="save">
         {{ $t("common.update") }}
-      </button>
+      </NButton>
     </div>
 
     <FeatureModal

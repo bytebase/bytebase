@@ -173,7 +173,7 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
     {
       title: t("common.archived"),
       icon: h(Archive),
-      path: "/archive",
+      path: "/setting/archive",
     },
   ];
 });
