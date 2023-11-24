@@ -64,6 +64,7 @@
 
     <DatabaseV1Table
       pagination-class="mb-4"
+      table-class="border-y"
       :database-list="filteredDatabaseList"
       :database-group-list="filteredDatabaseGroupList"
       :show-placeholder="true"
