@@ -66,8 +66,7 @@ func (s *SQLService) ExportV2(ctx context.Context, request *v1pb.ExportRequest) 
 		databaseID = maybeDatabase.UID
 	}
 	// Create export activity.
-	level := api.ActivityInfo
-	activity, err := s.createExportActivity(ctx, user, level, instance.UID, api.ActivitySQLExportPayload{
+	activity, err := s.createExportActivity(ctx, user, api.ActivityInfo, instance.UID, api.ActivitySQLExportPayload{
 		Statement:    request.Statement,
 		InstanceID:   instance.UID,
 		DatabaseID:   databaseID,
@@ -127,7 +126,6 @@ func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*
 	if err != nil {
 		return nil, err
 	}
-
 	// Create query activity.
 	level := api.ActivityInfo
 	switch adviceStatus {
@@ -136,6 +134,7 @@ func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*
 	case advisor.Warn:
 		level = api.ActivityWarn
 	}
+
 	databaseID := 0
 	if maybeDatabase != nil {
 		databaseID = maybeDatabase.UID
