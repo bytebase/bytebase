@@ -174,7 +174,7 @@
           <FeatureBadge :feature="'bb.feature.2fa'" custom-class="ml-2" />
         </span>
         <div class="space-x-2">
-          <NButton @click="enable2FA">
+          <NButton v-if="user.email === currentUserV1.email" @click="enable2FA">
             {{ isMFAEnabled ? $t("common.edit") : $t("common.enable") }}
           </NButton>
           <NButton v-if="isMFAEnabled" @click="disable2FA">
