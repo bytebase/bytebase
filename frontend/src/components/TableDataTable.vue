@@ -133,8 +133,8 @@ const columns = computed(() => {
       hide: !hasClassificationProperty.value,
       render: (table) => {
         return h(ClassificationLevelBadge, {
-          level: table.classification,
-          config: classificationConfig.value,
+          classification: table.classification,
+          classificationConfig: classificationConfig.value,
         });
       },
     },
