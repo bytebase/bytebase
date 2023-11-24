@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/antlr4-go/antlr/v4"
 	tidbp "github.com/pingcap/tidb/parser"
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pkg/errors"
@@ -13,6 +14,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
@@ -125,8 +127,21 @@ func (e *StatementTypeExecutor) runForDatabaseTarget(ctx context.Context, config
 			return nil, err
 		}
 		results = append(results, checkResults...)
-	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-		checkResults, err := mysqlStatementTypeCheck(renderedStatement, dbSchema.GetMetadata().CharacterSet, dbSchema.GetMetadata().Collation, changeType)
+	case storepb.Engine_TIDB:
+		checkResults, err := tidbStatementTypeCheck(renderedStatement, dbSchema.GetMetadata().CharacterSet, dbSchema.GetMetadata().Collation, changeType)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, checkResults...)
+		if changeType == storepb.PlanCheckRunConfig_SDL {
+			sdlAdvice, err := e.tidbSDLTypeCheck(ctx, renderedStatement, instance, database)
+			if err != nil {
+				return nil, err
+			}
+			results = append(results, sdlAdvice...)
+		}
+	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
+		checkResults, err := mysqlStatementTypeCheck(renderedStatement, changeType)
 		if err != nil {
 			return nil, err
 		}
@@ -287,8 +302,21 @@ func (e *StatementTypeExecutor) runForDatabaseGroupTarget(ctx context.Context, c
 						return nil, err
 					}
 					results = append(results, checkResults...)
-				case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-					checkResults, err := mysqlStatementTypeCheck(renderedStatement, dbSchema.GetMetadata().CharacterSet, dbSchema.GetMetadata().Collation, changeType)
+				case storepb.Engine_TIDB:
+					checkResults, err := tidbStatementTypeCheck(renderedStatement, dbSchema.GetMetadata().CharacterSet, dbSchema.GetMetadata().Collation, changeType)
+					if err != nil {
+						return nil, err
+					}
+					results = append(results, checkResults...)
+					if changeType == storepb.PlanCheckRunConfig_SDL {
+						sdlAdvice, err := e.tidbSDLTypeCheck(ctx, renderedStatement, instance, database)
+						if err != nil {
+							return nil, err
+						}
+						results = append(results, sdlAdvice...)
+					}
+				case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
+					checkResults, err := mysqlStatementTypeCheck(renderedStatement, changeType)
 					if err != nil {
 						return nil, err
 					}
@@ -335,7 +363,7 @@ func (e *StatementTypeExecutor) runForDatabaseGroupTarget(ctx context.Context, c
 	return results, nil
 }
 
-func (e *StatementTypeExecutor) mysqlSDLTypeCheck(ctx context.Context, newSchema string, instance *store.InstanceMessage, database *store.DatabaseMessage) ([]*storepb.PlanCheckRunResult_Result, error) {
+func (e *StatementTypeExecutor) tidbSDLTypeCheck(ctx context.Context, newSchema string, instance *store.InstanceMessage, database *store.DatabaseMessage) ([]*storepb.PlanCheckRunResult_Result, error) {
 	ddl, err := runnerutils.ComputeDatabaseSchemaDiff(ctx, instance, database, e.dbFactory, newSchema)
 	if err != nil {
 		return nil, err
@@ -456,7 +484,7 @@ func (e *StatementTypeExecutor) mysqlSDLTypeCheck(ctx context.Context, newSchema
 	return results, nil
 }
 
-func mysqlCreateAndDropDatabaseCheck(nodeList []tidbast.StmtNode) []*storepb.PlanCheckRunResult_Result {
+func tidbCreateAndDropDatabaseCheck(nodeList []tidbast.StmtNode) []*storepb.PlanCheckRunResult_Result {
 	var results []*storepb.PlanCheckRunResult_Result
 	for _, node := range nodeList {
 		switch node.(type) {
@@ -480,7 +508,108 @@ func mysqlCreateAndDropDatabaseCheck(nodeList []tidbast.StmtNode) []*storepb.Pla
 	return results
 }
 
-func mysqlStatementTypeCheck(statement string, charset string, collation string, changeType storepb.PlanCheckRunConfig_ChangeDatabaseType) ([]*storepb.PlanCheckRunResult_Result, error) {
+func mysqlStatementTypeCheck(statement string, changeType storepb.PlanCheckRunConfig_ChangeDatabaseType) ([]*storepb.PlanCheckRunResult_Result, error) {
+	stmts, err := mysqlparser.ParseMySQL(statement)
+	if err != nil {
+		// nolint:nilerr
+		return []*storepb.PlanCheckRunResult_Result{
+			{
+				Status:  storepb.PlanCheckRunResult_Result_ERROR,
+				Code:    0,
+				Title:   "Syntax error",
+				Content: err.Error(),
+				Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
+					SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
+						Line:   0,
+						Detail: "",
+						Code:   advisor.StatementSyntaxError.Int32(),
+					},
+				},
+			},
+		}, nil
+	}
+
+	var results []*storepb.PlanCheckRunResult_Result
+
+	// Disallow CREATE/DROP DATABASE statements.
+	results = append(results, mysqlCreateAndDropDatabaseCheck(stmts)...)
+
+	switch changeType {
+	case storepb.PlanCheckRunConfig_DML:
+		for _, node := range stmts {
+			checker := &mysqlparser.StatementTypeChecker{}
+			antlr.ParseTreeWalkerDefault.Walk(checker, node.Tree)
+			// We only want to disallow DDL statements in CHANGE DATA.
+			// We need to run some common statements, e.g. COMMIT.
+			if checker.IsDDL {
+				results = append(results, &storepb.PlanCheckRunResult_Result{
+					Status:  storepb.PlanCheckRunResult_Result_WARNING,
+					Title:   "Data change can only run DML",
+					Content: fmt.Sprintf("\"%s\" is not DML", checker.Text),
+					Code:    common.TaskTypeNotDML.Int32(),
+					Report:  nil,
+				})
+			}
+		}
+	case storepb.PlanCheckRunConfig_DDL, storepb.PlanCheckRunConfig_SDL:
+		for _, node := range stmts {
+			checker := &mysqlparser.StatementTypeChecker{}
+			antlr.ParseTreeWalkerDefault.Walk(checker, node.Tree)
+			if checker.IsDML || checker.IsExplain {
+				results = append(results, &storepb.PlanCheckRunResult_Result{
+					Status:  storepb.PlanCheckRunResult_Result_WARNING,
+					Title:   "Alter schema can only run DDL",
+					Content: fmt.Sprintf("\"%s\" is not DDL", checker.Text),
+					Code:    common.TaskTypeNotDDL.Int32(),
+					Report:  nil,
+				})
+			}
+		}
+	default:
+		return nil, common.Errorf(common.Invalid, "invalid check statement type task type: %s", changeType)
+	}
+
+	return results, nil
+}
+
+func mysqlCreateAndDropDatabaseCheck(stmtList []*mysqlparser.ParseResult) []*storepb.PlanCheckRunResult_Result {
+	checker := &mysqlparser.CreateAndDropDatabaseChecker{}
+	for _, stmt := range stmtList {
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
+	}
+
+	return checker.Results
+}
+
+func (e *StatementTypeExecutor) mysqlSDLTypeCheck(ctx context.Context, newSchema string, instance *store.InstanceMessage, database *store.DatabaseMessage) ([]*storepb.PlanCheckRunResult_Result, error) {
+	ddl, err := runnerutils.ComputeDatabaseSchemaDiff(ctx, instance, database, e.dbFactory, newSchema)
+	if err != nil {
+		return nil, err
+	}
+
+	list, err := base.SplitMultiSQL(storepb.Engine_MYSQL, ddl)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to split SQL")
+	}
+
+	var results []*storepb.PlanCheckRunResult_Result
+	for _, stmt := range list {
+		nodeList, err := mysqlparser.ParseMySQL(stmt.Text)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse schema %q", stmt.Text)
+		}
+		if len(nodeList) != 1 {
+			return nil, errors.Errorf("Expect one statement after splitting but found %d", len(nodeList))
+		}
+
+		checker := &mysqlparser.SDLTypeChecker{}
+		antlr.ParseTreeWalkerDefault.Walk(checker, nodeList[0].Tree)
+	}
+
+	return results, nil
+}
+
+func tidbStatementTypeCheck(statement string, charset string, collation string, changeType storepb.PlanCheckRunConfig_ChangeDatabaseType) ([]*storepb.PlanCheckRunResult_Result, error) {
 	// Due to the limitation of TiDB parser, we should split the multi-statement into single statements, and extract
 	// the TiDB unsupported statements, otherwise, the parser will panic or return the error.
 	unsupportStmt, supportStmt, err := tidbparser.ExtractTiDBUnsupportedStmts(statement)
@@ -534,7 +663,7 @@ func mysqlStatementTypeCheck(statement string, charset string, collation string,
 	var results []*storepb.PlanCheckRunResult_Result
 
 	// Disallow CREATE/DROP DATABASE statements.
-	results = append(results, mysqlCreateAndDropDatabaseCheck(stmts)...)
+	results = append(results, tidbCreateAndDropDatabaseCheck(stmts)...)
 
 	switch changeType {
 	case storepb.PlanCheckRunConfig_DML:

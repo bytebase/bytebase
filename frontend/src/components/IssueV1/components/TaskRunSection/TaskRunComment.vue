@@ -82,6 +82,17 @@ const comment = computed(() => {
     ) {
       return t("task-run.status.dumping-schema-after-executing-sql");
     }
+  } else if (taskRun.status === TaskRun_Status.FAILED) {
+    if (
+      taskRun.executionDetail?.commandStartPosition &&
+      taskRun.executionDetail?.commandEndPosition
+    ) {
+      return t("task-run.status.failed-sql-detail", {
+        start: taskRun.executionDetail.commandStartPosition?.line ?? 0 + 1,
+        end: taskRun.executionDetail.commandEndPosition?.line ?? 0 + 1,
+        message: taskRun.detail,
+      });
+    }
   }
   return taskRun.detail;
 });
