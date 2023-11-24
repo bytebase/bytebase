@@ -62,6 +62,8 @@
         </div>
       </router-link>
 
+      <div class="border-t border-gray-300 my-4" />
+
       <router-link
         v-if="shouldShowSyncSchemaEntry"
         to="/sync-schema"
