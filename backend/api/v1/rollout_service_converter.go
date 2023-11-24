@@ -494,6 +494,19 @@ func convertToTaskRun(stateCfg *state.State, taskRun *store.TaskRunMessage) *v1p
 		}
 	}
 
+	if taskRun.Status == api.TaskRunFailed && taskRun.ResultProto.StartPosition != nil && taskRun.ResultProto.EndPosition != nil {
+		t.ExecutionDetail = &v1pb.TaskRun_ExecutionDetail{
+			CommandStartPosition: &v1pb.TaskRun_ExecutionDetail_Position{
+				Line:   taskRun.ResultProto.StartPosition.Line,
+				Column: taskRun.ResultProto.StartPosition.Column,
+			},
+			CommandEndPosition: &v1pb.TaskRun_ExecutionDetail_Position{
+				Line:   taskRun.ResultProto.EndPosition.Line,
+				Column: taskRun.ResultProto.EndPosition.Column,
+			},
+		}
+	}
+
 	return t
 }
 
