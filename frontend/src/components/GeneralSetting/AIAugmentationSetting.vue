@@ -47,9 +47,9 @@
           </i18n-t>
         </div>
         <NInput
+          v-model:value="state.openAIKey"
           class="mb-4 w-full"
           :disabled="!allowEdit"
-          v-model:value="state.openAIKey"
           :placeholder="
             $t(
               'settings.general.workspace.plugin.openai.openai-key.placeholder'
@@ -79,9 +79,9 @@
           }}
         </div>
         <NInput
+          v-model:value="state.openAIEndpoint"
           class="mb-4 w-full"
           :disabled="!allowEdit"
-          v-model:value="state.openAIEndpoint"
         />
         <div class="flex justify-end">
           <NButton

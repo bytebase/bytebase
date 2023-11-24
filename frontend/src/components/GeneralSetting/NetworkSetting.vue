@@ -32,9 +32,9 @@
           />
         </div>
         <NInput
+          v-model:value="state.externalUrl"
           class="mb-4 w-full"
           :disabled="!allowEdit"
-          v-model:value="state.externalUrl"
         />
 
         <label
@@ -59,6 +59,7 @@
           />
         </div>
         <NInput
+          v-model:value="state.gitopsWebhookUrl"
           class="mb-4 w-full"
           :placeholder="
             t(
@@ -66,7 +67,6 @@
             )
           "
           :disabled="!allowEdit"
-          v-model:value="state.gitopsWebhookUrl"
         />
 
         <div class="flex justify-end">

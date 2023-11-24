@@ -66,12 +66,12 @@
           {{ $t("settings.general.workspace.announcement-text.description") }}
         </div>
         <NInput
+          v-model:value="state.announcement.text"
           class="mb-3 w-full"
           :placeholder="
             $t('settings.general.workspace.announcement-text.placeholder')
           "
           :disabled="!allowEdit"
-          v-model:value="state.announcement.text"
         />
 
         <label
@@ -94,10 +94,10 @@
           </span>
         </label>
         <NInput
+          v-model:value="state.announcement.link"
           class="mb-5 w-full"
           :placeholder="$t('settings.general.workspace.extra-link.placeholder')"
           :disabled="!allowEdit"
-          v-model:value="state.announcement.link"
         />
 
         <div class="flex justify-end">

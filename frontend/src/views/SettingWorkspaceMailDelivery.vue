@@ -20,9 +20,9 @@
             <span class="text-red-600">*</span>
           </div>
           <NInput
+            v-model:value="state.mailDeliverySetting.server"
             class="text-main w-full h-max mt-2"
             :placeholder="'smtp.gmail.com'"
-            v-model:value="state.mailDeliverySetting.server"
           />
         </div>
         <div class="min-w-max w-48">
@@ -32,12 +32,12 @@
           </div>
           <NInput
             id="port"
+            v-model:value="state.mailDeliverySetting.port"
             type="number"
             name="port"
             class="text-main w-full h-max mt-2 rounded-md border-control-border focus:ring-control focus:border-control disabled:bg-gray-50"
             :placeholder="'587'"
             :required="true"
-            v-model:value="state.mailDeliverySetting.port"
             @wheel="(event: MouseEvent) => {(event.target as HTMLInputElement).blur()}"
           />
         </div>
@@ -49,9 +49,9 @@
             <span class="text-red-600">*</span>
           </div>
           <NInput
+            v-model:value="state.mailDeliverySetting.from"
             class="text-main w-full h-max mt-2"
             :placeholder="'from@gmail.com'"
-            v-model:value="state.mailDeliverySetting.from"
           />
         </div>
       </div>
@@ -87,9 +87,9 @@
               </label>
             </div>
             <NInput
+              v-model:value="state.mailDeliverySetting.username"
               class="text-main w-full h-max mt-2"
               :placeholder="'support@bytebase.com'"
-              v-model:value="state.mailDeliverySetting.username"
             />
           </div>
           <div class="min-w-max w-80">
@@ -105,10 +105,10 @@
               />
             </div>
             <NInput
+              v-model:value="state.mailDeliverySetting.password"
               class="text-main w-full h-max mt-2"
               :disabled="state.useEmptyPassword"
               :placeholder="'PASSWORD - INPUT_ONLY'"
-              v-model:value="state.mailDeliverySetting.password"
             />
           </div>
         </div>
@@ -154,9 +154,9 @@
           </div>
           <div class="flex flex-row justify-start items-center mt-2 space-x-4">
             <NInput
+              v-model:value="state.testMailTo"
               class="text-main h-max w-80"
               :placeholder="'someone@gmail.com'"
-              v-model:value="state.testMailTo"
             />
             <NButton
               type="primary"
