@@ -5,7 +5,7 @@
   >
     <!-- Profile header -->
     <div>
-      <div class="h-32 w-full bg-accent lg:h-48"></div>
+      <div class="-m-6 h-32 bg-accent lg:h-48"></div>
       <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="-mt-20 sm:flex sm:items-end sm:space-x-5">
           <UserAvatar :user="user" size="HUGE" />

@@ -308,19 +308,6 @@ const routes: Array<RouteRecordRaw> = [
             },
           },
           {
-            path: "archive",
-            name: "workspace.archive",
-            meta: { title: () => t("common.archived") },
-            components: {
-              content: () => import("../views/Archive.vue"),
-              leftSidebar: SettingSidebar,
-            },
-            props: {
-              content: true,
-              leftSidebar: true,
-            },
-          },
-          {
             // "u" stands for user. Strictly speaking, it's not accurate because we
             // may refer to other principal type in the future. But from the endusers'
             // perspective, they are more familiar with the "user" concept.
@@ -596,6 +583,13 @@ const routes: Array<RouteRecordRaw> = [
                 },
                 component: () =>
                   import("../views/SettingWorkspaceDebugLog.vue"),
+                props: true,
+              },
+              {
+                path: "archive",
+                name: "setting.workspace.archive",
+                meta: { title: () => t("common.archived") },
+                component: () => import("../views/Archive.vue"),
                 props: true,
               },
             ],
@@ -1133,7 +1127,6 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.project" ||
     to.name === "workspace.instance" ||
     to.name === "workspace.database" ||
-    to.name === "workspace.archive" ||
     to.name === "workspace.issue" ||
     to.name === "workspace.environment" ||
     to.name === "sql-editor.home" ||

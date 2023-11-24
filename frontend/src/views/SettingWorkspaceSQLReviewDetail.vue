@@ -1,5 +1,5 @@
 <template>
-  <FeatureAttention custom-class="my-4" feature="bb.feature.sql-review" />
+  <FeatureAttention custom-class="mb-4" feature="bb.feature.sql-review" />
   <SQLReviewCreation
     v-if="state.editMode"
     key="sql-review-creation"
@@ -9,7 +9,7 @@
     :selected-rule-list="ruleListOfPolicy"
     @cancel="state.editMode = false"
   />
-  <div v-else class="mt-4">
+  <div v-else>
     <div
       class="flex flex-col items-center space-x-2 justify-center md:flex-row"
     >

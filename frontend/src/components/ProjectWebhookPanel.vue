@@ -1,13 +1,9 @@
 <template>
   <div class="space-y-4 divide-y divide-block-border">
     <div v-if="allowEdit" class="flex items-center justify-end">
-      <button
-        type="button"
-        class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-        @click.prevent="addProjectWebhook"
-      >
+      <NButton type="primary" @click.prevent="addProjectWebhook">
         {{ $t("project.webhook.add-a-webhook") }}
-      </button>
+      </NButton>
     </div>
     <div class="pt-4">
       <div v-if="projectWebhookList.length > 0" class="space-y-6">

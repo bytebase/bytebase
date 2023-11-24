@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-row items-center justify-between py-0.5">
+  <div class="flex flex-row items-center justify-between">
     <div class="flex items-center justify-start">
       <ProjectSelect
         v-if="!disableProjectSelect"

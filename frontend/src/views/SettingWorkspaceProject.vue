@@ -1,29 +1,23 @@
 <template>
   <div class="flex flex-col">
+    <BBAttention
+      class="mb-4"
+      :style="'INFO'"
+      :title="$t('setting.project.description')"
+    />
+
     <div class="py-2 flex justify-between items-center">
-      <div class="flex justify-start items-center gap-x-2">
-        <BBAttention
-          :style="'INFO'"
-          :title="$t('setting.project.description')"
-        />
-      </div>
-
-      <div class="flex justify-end items-center gap-x-2">
-        <SearchBox
-          :value="state.searchText"
-          :placeholder="$t('common.filter-by-name')"
-          :autofocus="true"
-          @update:value="changeSearchText($event)"
-        />
-      </div>
-    </div>
-
-    <div class="py-2">
       <NCheckbox v-model:checked="state.includesArchived">
         <span class="textinfolabel">
           {{ $t("setting.project.show-archived") }}
         </span>
       </NCheckbox>
+      <SearchBox
+        :value="state.searchText"
+        :placeholder="$t('common.filter-by-name')"
+        :autofocus="true"
+        @update:value="changeSearchText($event)"
+      />
     </div>
 
     <ProjectV1Table :project-list="filteredProjectList" />

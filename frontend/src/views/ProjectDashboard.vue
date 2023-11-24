@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col">
-    <div class="px-2 py-2 flex justify-between items-center">
+    <div class="px-2 py-2 flex justify-end items-center">
       <SearchBox
         :value="state.searchText"
         :placeholder="$t('common.filter-by-name')"

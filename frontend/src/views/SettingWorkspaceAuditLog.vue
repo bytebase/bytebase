@@ -1,7 +1,7 @@
 <template>
-  <div class="w-full mt-4 space-y-4">
+  <div class="w-full space-y-4">
     <FeatureAttention feature="bb.feature.audit-log" />
-    <div class="flex justify-end items-center mt-1 space-x-2">
+    <div class="flex justify-end items-center space-x-2">
       <MemberSelect
         class="w-52"
         :disabled="!hasAuditLogFeature"

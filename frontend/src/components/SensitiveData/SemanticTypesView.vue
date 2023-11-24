@@ -1,37 +1,33 @@
 <template>
   <div class="w-full space-y-4">
-    <div
-      class="flex flex-col lg:flex-row items-start lg:items-center justify-between space-y-2 lg:space-x-2"
-    >
-      <div class="textinfolabel">
-        {{ $t("settings.sensitive-data.semantic-types.label") }}
-      </div>
-      <div class="flex items-center justify-end space-x-2">
-        <NButton
-          :disabled="!hasPermission || !hasSensitiveDataFeature"
-          @click="state.showTemplateDrawer = true"
-        >
-          {{ $t("settings.sensitive-data.semantic-types.use-predefined-type") }}
-        </NButton>
-        <NButton
-          type="primary"
-          :disabled="!hasPermission || !hasSensitiveDataFeature"
-          @click="onAdd"
-        >
-          {{ $t("common.add") }}
-        </NButton>
-      </div>
+    <div class="flex items-center justify-end space-x-2">
+      <NButton
+        :disabled="!hasPermission || !hasSensitiveDataFeature"
+        @click="state.showTemplateDrawer = true"
+      >
+        {{ $t("settings.sensitive-data.semantic-types.use-predefined-type") }}
+      </NButton>
+      <NButton
+        type="primary"
+        :disabled="!hasPermission || !hasSensitiveDataFeature"
+        @click="onAdd"
+      >
+        {{ $t("common.add") }}
+      </NButton>
     </div>
-    <div class="space-y-5 divide-y-2 pb-10 divide-gray-100">
-      <SemanticTypesTable
-        :readonly="!hasPermission || !hasSensitiveDataFeature"
-        :row-clickable="false"
-        :semantic-item-list="state.semanticItemList"
-        @cancel="onCancel"
-        @remove="onRemove"
-        @confirm="onConfirm"
-      />
+    <div class="textinfolabel">
+      {{ $t("settings.sensitive-data.semantic-types.label") }}
     </div>
+    <SemanticTypesTable
+      v-if="state.semanticItemList.length > 0"
+      :readonly="!hasPermission || !hasSensitiveDataFeature"
+      :row-clickable="false"
+      :semantic-item-list="state.semanticItemList"
+      @cancel="onCancel"
+      @remove="onRemove"
+      @confirm="onConfirm"
+    />
+    <NoDataPlaceholder v-else />
   </div>
   <SemanticTemplateDrawer
     :show="state.showTemplateDrawer"

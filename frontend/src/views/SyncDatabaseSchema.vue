@@ -1,5 +1,5 @@
 <template>
-  <div class="px-4 h-full">
+  <div class="p-6 h-full">
     <SyncDatabaseSchema />
   </div>
 </template>

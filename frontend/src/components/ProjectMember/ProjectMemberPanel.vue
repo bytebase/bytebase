@@ -1,20 +1,8 @@
 <template>
-  <div class="w-full mx-auto">
-    <FeatureAttention custom-class="my-4" feature="bb.feature.rbac" />
+  <div class="w-full mx-auto space-y-4">
+    <FeatureAttention feature="bb.feature.rbac" />
 
-    <div class="mb-4 textinfolabel">
-      {{ $t("project.members.description") }}
-      <a
-        href="https://www.bytebase.com/docs/concepts/roles-and-permissions/#project-roles?source=console"
-        target="_blank"
-        class="normal-link inline-flex flex-row items-center"
-      >
-        {{ $t("common.learn-more") }}
-        <heroicons-outline:external-link class="w-4 h-4" />
-      </a>
-    </div>
-
-    <div class="mb-4 w-full flex flex-row justify-between items-center">
+    <div class="w-full flex flex-row justify-between items-center">
       <div>
         <SearchBox
           v-model:value="state.searchText"
@@ -37,6 +25,18 @@
           {{ $t("project.members.grant-access") }}
         </NButton>
       </div>
+    </div>
+
+    <div class="textinfolabel">
+      {{ $t("project.members.description") }}
+      <a
+        href="https://www.bytebase.com/docs/concepts/roles-and-permissions/#project-roles?source=console"
+        target="_blank"
+        class="normal-link inline-flex flex-row items-center"
+      >
+        {{ $t("common.learn-more") }}
+        <heroicons-outline:external-link class="w-4 h-4" />
+      </a>
     </div>
 
     <NTabs v-model:value="state.selectedTab" type="bar">
@@ -104,15 +104,13 @@
       </NTabPane>
     </NTabs>
 
-    <div class="mt-2">
-      <BBButtonConfirm
-        v-if="allowRemoveExpiredRoles"
-        :style="'DELETE'"
-        :button-text="$t('project.members.clean-up-expired-roles')"
-        :require-confirm="true"
-        @confirm="handleRemoveExpiredRoles"
-      />
-    </div>
+    <BBButtonConfirm
+      v-if="allowRemoveExpiredRoles"
+      :style="'DELETE'"
+      :button-text="$t('project.members.clean-up-expired-roles')"
+      :require-confirm="true"
+      @confirm="handleRemoveExpiredRoles"
+    />
   </div>
 
   <AddProjectMembersPanel

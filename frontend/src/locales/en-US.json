@@ -2377,7 +2377,7 @@
     "successfully-upgrade-trial": "Successfully upgrade free trial to {plan}",
     "require-subscription": "This feature requires {requiredPlan}, please purchase Bytebase license to unlock this feature.",
     "feature-require-subscription": "{feature} requires {requiredPlan}.",
-    "required-plan-with-trial": "This feature requires {requiredPlan}. {startTrial}.",
+    "required-plan-with-trial": "This feature requires {requiredPlan}. {startTrial}",
     "trial-for-plan": "You can start a free trial for {plan} with {days} days - no credit card required.",
     "trial-for-days": "You can start a free trial for {days} days - no credit card required.",
     "upgrade-trial": "You can upgrade your free trial to this plan.",

@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full mt-4 space-y-4">
+  <div class="w-full space-y-4">
     <div class="w-full flex flex-row justify-between items-center">
       <div class="textinfolabel mr-4">
         {{ $t("settings.sso.description") }}

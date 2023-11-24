@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-4">
-    <div class="textinfolabel py-4">
+    <div class="textinfolabel">
       {{ $t("gitops.setting.description") }}
       <a
         class="text-accent hover:opacity-80"
