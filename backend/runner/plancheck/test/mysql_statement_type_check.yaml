@@ -1,0 +1,156 @@
+- statement: CREATE TABLE t1(a INT);
+  changetype: 1
+  want: []
+- statement: DELETE FROM t1;
+  changetype: 1
+  want:
+    - |-
+      {
+        "status": "WARNING",
+        "title": "Alter schema can only run DDL",
+        "content": "\"DELETE FROM t1;\" is not DDL",
+        "code": 402
+      }
+- statement: SELECT 1;
+  changetype: 2
+  want: []
+- statement: DROP TABLE t1;
+  changetype: 2
+  want:
+    - |-
+      {
+        "status": "WARNING",
+        "title": "Data change can only run DML",
+        "content": "\"DROP TABLE t1;\" is not DML",
+        "code": 401
+      }
+- statement: CREATE DATABASE bbdev;
+  changetype: 1
+  want:
+    - |-
+      {
+        "status": "ERROR",
+        "title": "Cannot create database",
+        "content": "The statement \"CREATE DATABASE bbdev;\" creates database",
+        "code": 404
+      }
+- statement: DROP DATABASE bbdev;
+  changetype: 2
+  want:
+    - |-
+      {
+        "status": "ERROR",
+        "title": "Cannot drop database",
+        "content": "The statement \"DROP DATABASE bbdev;\" drops database",
+        "code": 403
+      }
+    - |-
+      {
+        "status": "WARNING",
+        "title": "Data change can only run DML",
+        "content": "\"DROP DATABASE bbdev;\" is not DML",
+        "code": 401
+      }
+- statement: RENAME TABLE t1 To t2;
+  changetype: 2
+  want:
+    - |-
+      {
+        "status": "WARNING",
+        "title": "Data change can only run DML",
+        "content": "\"RENAME TABLE t1 To t2;\" is not DML",
+        "code": 401
+      }
+- statement: TRUNCATE TABLE t1;
+  changetype: 2
+  want:
+    - |-
+      {
+        "status": "WARNING",
+        "title": "Data change can only run DML",
+        "content": "\"TRUNCATE TABLE t1;\" is not DML",
+        "code": 401
+      }
+- statement: ALTER TABLE t1 ADD COLUMN col1 INT;
+  changetype: 2
+  want:
+    - |-
+      {
+        "status": "WARNING",
+        "title": "Data change can only run DML",
+        "content": "\"ALTER TABLE t1 ADD COLUMN col1 INT;\" is not DML",
+        "code": 401
+      }
+- statement: DELETE FROM t1 WHERE id = 1;
+  changetype: 1
+  want:
+    - |-
+      {
+        "status": "WARNING",
+        "title": "Alter schema can only run DDL",
+        "content": "\"DELETE FROM t1 WHERE id = 1;\" is not DDL",
+        "code": 402
+      }
+- statement: INSERT INTO t1(id) VALUE(1);
+  changetype: 1
+  want:
+    - |-
+      {
+        "status": "WARNING",
+        "title": "Alter schema can only run DDL",
+        "content": "\"INSERT INTO t1(id) VALUE(1);\" is not DDL",
+        "code": 402
+      }
+- statement: UPDATE t1 SET name = 'zp' WHERE id = 1;
+  changetype: 1
+  want:
+    - |-
+      {
+        "status": "WARNING",
+        "title": "Alter schema can only run DDL",
+        "content": "\"UPDATE t1 SET name = 'zp' WHERE id = 1;\" is not DDL",
+        "code": 402
+      }
+- statement: |-
+    update t_ci_job_artifact_config c
+    inner join (
+    select
+    structure.id as structure_id,
+    structure.job_id as job_id
+    from
+    t_ci_job_stage_group_structure structure,
+    t_ci_stage_template_group stg
+    where
+    structure.stage_template_group_id = stg.id
+    and stg.template_type = 3
+    and stg.artifact_type in (4,5,6,7)
+    ) tmp on c.job_id = tmp.job_id and c.type in (4,5,6,7)
+    set c.structure_id = tmp.structure_id
+    where c.structure_id is null;
+  changetype: 1
+  want:
+    - |-
+      {
+        "status": "WARNING",
+        "title": "Alter schema can only run DDL",
+        "content": "\"update t_ci_job_artifact_config c\ninner join (\nselect\nstructure.id as structure_id,\nstructure.job_id as job_id\nfrom\nt_ci_job_stage_group_structure structure,\nt_ci_stage_template_group stg\nwhere\nstructure.stage_template_group_id = stg.id\nand stg.template_type = 3\nand stg.artifact_type in (4,5,6,7)\n) tmp on c.job_id = tmp.job_id and c.type in (4,5,6,7)\nset c.structure_id = tmp.structure_id\nwhere c.structure_id is null;\" is not DDL",
+        "code": 402
+      }
+- statement: |-
+    update t_ci_job_artifact_config c
+    inner join (
+    select
+    structure.id as structure_id,
+    structure.job_id as job_id
+    from
+    t_ci_job_stage_group_structure structure,
+    t_ci_stage_template_group stg
+    where
+    structure.stage_template_group_id = stg.id
+    and stg.template_type = 3
+    and stg.artifact_type in (4,5,6,7)
+    ) tmp on c.job_id = tmp.job_id and c.type in (4,5,6,7)
+    set c.structure_id = tmp.structure_id
+    where c.structure_id is null;
+  changetype: 2
+  want: []
