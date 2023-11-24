@@ -1,8 +1,15 @@
 <template>
   <slot v-if="!isLoading" />
+  <div
+    v-else
+    class="absolute bg-white/50 inset-0 flex flex-col items-center justify-center"
+  >
+    <NSpin size="medium" />
+  </div>
 </template>
 
 <script lang="ts" setup>
+import { NSpin } from "naive-ui";
 import { onMounted, computed, watch, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
