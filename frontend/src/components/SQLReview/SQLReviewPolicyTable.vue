@@ -31,7 +31,7 @@
           @toggle="toggleReviewEnabled(review!, $event)"
         />
       </div>
-      <div class="bb-grid-cell gap-x-[14px] !pr-[3rem]">
+      <div class="bb-grid-cell gap-x-2 !pr-[3rem]">
         <template v-if="!review">
           <button
             type="button"

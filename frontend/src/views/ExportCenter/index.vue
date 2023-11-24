@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full p-6">
+  <div class="w-full px-4 py-6">
     <div
       class="w-full flex flex-col lg:flex-row items-start lg:items-center justify-between gap-y-2"
     >
@@ -36,7 +36,7 @@
         <NButton type="primary" @click="handleRequestExportClick">
           <FeatureBadge
             feature="bb.feature.access-control"
-            custom-class="mr-2"
+            custom-class="text-white pointer-events-none mr-2"
           />
           {{ $t("quick-action.request-export-data") }}
         </NButton>
