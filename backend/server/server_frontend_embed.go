@@ -36,6 +36,13 @@ func embedFrontend(e *echo.Echo) {
 	}))
 
 	g := e.Group("assets")
+	// Use echo gzip middleware to compress the response.
+	// refer: https://echo.labstack.com/docs/middleware/gzip
+	g.Use(middleware.GzipWithConfig(middleware.GzipConfig{
+		Skipper: defaultAPIRequestSkipper,
+		Level:   5,
+	}))
+
 	g.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			c.Response().Header().Set(echo.HeaderCacheControl, "max-age=31536000, immutable")
@@ -47,6 +54,7 @@ func embedFrontend(e *echo.Echo) {
 		HTML5:      true,
 		Filesystem: getFileSystem("dist/assets"),
 	}))
+
 }
 
 // defaultAPIRequestSkipper is echo skipper for api requests.
