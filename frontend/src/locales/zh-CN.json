@@ -408,7 +408,8 @@
       "dumping-schema-before-executing-sql": "准备执行，正在导出 schema。",
       "executing-sql": "正在执行 SQL。",
       "executing-sql-detail": "正在执行 SQL {current} / {total}。 SQL 语句位于 {start} 行到 {end} 行。",
-      "dumping-schema-after-executing-sql": "SQL 执行完毕，正在导出 schema。"
+      "dumping-schema-after-executing-sql": "SQL 执行完毕，正在导出 schema。",
+      "failed-sql-detail": "从 {start} 行到 {end} 行执行失败：{message}。"
     }
   },
   "banner": {

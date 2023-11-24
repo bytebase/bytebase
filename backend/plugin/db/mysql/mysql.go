@@ -243,7 +243,17 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 
 		sqlResult, err := tx.ExecContext(ctx, chunkText)
 		if err != nil {
-			return 0, errors.Wrapf(err, "failed to execute context in a transaction")
+			return 0, &db.ErrorWithPosition{
+				Err: errors.Wrapf(err, "failed to execute context in a transaction"),
+				Start: &storepb.TaskRunResult_Position{
+					// TODO(rebelice): should find the first non-comment and blank line and column.
+					Line: int32(chunk[0].BaseLine),
+				},
+				End: &storepb.TaskRunResult_Position{
+					// TODO(rebelice): should find the first non-comment and blank line and column.
+					Line: int32(chunk[len(chunk)-1].BaseLine),
+				},
+			}
 		}
 		rowsAffected, err := sqlResult.RowsAffected()
 		if err != nil {

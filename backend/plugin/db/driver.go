@@ -488,3 +488,14 @@ type ExecuteOptions struct {
 	ChunkedSubmission     bool
 	UpdateExecutionStatus func(*v1pb.TaskRun_ExecutionDetail)
 }
+
+// ErrorWithPosition is the error with the position information.
+type ErrorWithPosition struct {
+	Err   error
+	Start *storepb.TaskRunResult_Position
+	End   *storepb.TaskRunResult_Position
+}
+
+func (e *ErrorWithPosition) Error() string {
+	return e.Err.Error()
+}
