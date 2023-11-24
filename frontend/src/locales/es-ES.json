@@ -410,8 +410,8 @@
       "dumping-schema-before-executing-sql": "Listo para ejecutar, exportando esquema.",
       "executing-sql": "Ejecutando SQL.",
       "dumping-schema-after-executing-sql": "Ejecución SQL completada, exportando esquema ahora.",
-      "executing-sql-detail": "Ejecutando SQL {current} de {total}, desde la línea {start} hasta la línea {end}.",
-      "failed-sql-detail": "La ejecución falló desde la línea {start} hasta la línea {end}: {message}."
+      "executing-sql-detail": "Ejecutando SQL {actual} de {total}, desde ({startLine}, {startColumn}) hasta ({endLine}, {endColumn}).",
+      "failed-sql-detail": "La ejecución falló desde ({startLine}, {startColumn}) hasta ({endLine}, {endColumn}): {message}."
     }
   },
   "banner": {

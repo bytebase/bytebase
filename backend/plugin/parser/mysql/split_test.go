@@ -41,12 +41,15 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 		{
 			statement: `-- klsjdfjasldf
 			-- klsjdflkjaskldfj
-			`,
+`,
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:     "-- klsjdfjasldf\n\t\t\t-- klsjdflkjaskldfj\n;",
-						LastLine: 3,
+						Text:                 "-- klsjdfjasldf\n\t\t\t-- klsjdflkjaskldfj\n",
+						FirstStatementLine:   1,
+						FirstStatementColumn: 22,
+						LastLine:             1,
+						LastColumn:           22,
 					},
 				},
 			},
@@ -57,12 +60,18 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:     `select * from t;`,
-						LastLine: 1,
+						Text:                 `select * from t;`,
+						LastLine:             0,
+						LastColumn:           15,
+						FirstStatementLine:   0,
+						FirstStatementColumn: 0,
 					},
 					{
-						Text:     "\n\t\t\t/* sdfasdf */\n;",
-						LastLine: 3,
+						Text:                 "\n\t\t\t/* sdfasdf */",
+						LastLine:             1,
+						LastColumn:           3,
+						FirstStatementLine:   1,
+						FirstStatementColumn: 3,
 					},
 				},
 			},
@@ -74,17 +83,24 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:     `select * from t;`,
-						LastLine: 1,
+						Text:       `select * from t;`,
+						LastLine:   0,
+						LastColumn: 15,
 					},
 					{
-						Text:     "\n\t\t\t/* sdfasdf */;",
-						LastLine: 2,
+						Text:                 "\n\t\t\t/* sdfasdf */;",
+						LastLine:             1,
+						LastColumn:           16,
+						FirstStatementLine:   1,
+						FirstStatementColumn: 16,
 					},
 					{
-						Text:     "\n\t\t\tselect * from t\n;",
-						BaseLine: 1,
-						LastLine: 4,
+						Text:                 "\n\t\t\tselect * from t;",
+						BaseLine:             1,
+						LastLine:             2,
+						LastColumn:           18,
+						FirstStatementLine:   2,
+						FirstStatementColumn: 3,
 					},
 				},
 			},
@@ -120,9 +136,9 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 
 		   RETURN income;
 
-		END
-;`,
-						LastLine: 15,
+		END ;`,
+						LastLine:   13,
+						LastColumn: 6,
 					},
 				},
 			},
@@ -132,8 +148,9 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:     bigSQL + "\n;",
-						LastLine: 2,
+						Text:       bigSQL + ";",
+						LastLine:   0,
+						LastColumn: len(bigSQL),
 					},
 				},
 			},
@@ -143,12 +160,16 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:     "    CREATE TABLE t(a int);",
-						LastLine: 1,
+						Text:                 "    CREATE TABLE t(a int);",
+						LastLine:             0,
+						LastColumn:           25,
+						FirstStatementColumn: 4,
 					},
 					{
-						Text:     " CREATE TABLE t1(a int)\n;",
-						LastLine: 2,
+						Text:                 " CREATE TABLE t1(a int);",
+						LastLine:             0,
+						LastColumn:           49,
+						FirstStatementColumn: 27,
 					},
 				},
 			},
@@ -159,12 +180,15 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:     "CREATE TABLE `tech_Book`(id int, name varchar(255));",
-						LastLine: 1,
+						Text:       "CREATE TABLE `tech_Book`(id int, name varchar(255));",
+						LastLine:   0,
+						LastColumn: 51,
 					},
 					{
-						Text:     "\nINSERT INTO `tech_Book` VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\\'jdfl;\"ka')\n;",
-						LastLine: 3,
+						Text:               "\nINSERT INTO `tech_Book` VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\\'jdfl;\"ka');",
+						LastLine:           1,
+						LastColumn:         77,
+						FirstStatementLine: 1,
 					},
 				},
 			},
@@ -180,18 +204,27 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:     "\n\t\t\t\t\t\t/* this is the comment. */\n\t\t\t\t\t\tCREATE /* inline comment */TABLE tech_Book(id int, name varchar(255));",
-						LastLine: 3,
+						Text:                 "\n\t\t\t\t\t\t/* this is the comment. */\n\t\t\t\t\t\tCREATE /* inline comment */TABLE tech_Book(id int, name varchar(255));",
+						LastLine:             2,
+						LastColumn:           75,
+						FirstStatementLine:   2,
+						FirstStatementColumn: 6,
 					},
 					{
-						Text:     "\n\t\t\t\t\t\t-- this is the comment.\n\t\t\t\t\t\tINSERT INTO tech_Book VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\\'jdfl;\"ka');",
-						BaseLine: 2,
-						LastLine: 5,
+						Text:                 "\n\t\t\t\t\t\t-- this is the comment.\n\t\t\t\t\t\tINSERT INTO tech_Book VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\\'jdfl;\"ka');",
+						BaseLine:             2,
+						LastLine:             4,
+						LastColumn:           81,
+						FirstStatementLine:   4,
+						FirstStatementColumn: 6,
 					},
 					{
-						Text:     "\n\t\t\t\t\t\t# this is the comment.\n\t\t\t\t\t\tINSERT INTO tech_Book VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\\'jdfl;\"ka')\n;",
-						BaseLine: 4,
-						LastLine: 8,
+						Text:                 "\n\t\t\t\t\t\t# this is the comment.\n\t\t\t\t\t\tINSERT INTO tech_Book VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\\'jdfl;\"ka');",
+						BaseLine:             4,
+						LastLine:             6,
+						LastColumn:           81,
+						FirstStatementLine:   6,
+						FirstStatementColumn: 6,
 					},
 				},
 			},
@@ -210,18 +243,35 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:     "# test for defining stored programs\n\t\t\t\t\t\tCREATE PROCEDURE dorepeat(p1 INT)\n\t\t\t\t\t\tBEGIN\n\t\t\t\t\t\t\tSET @x = 0;\n\t\t\t\t\t\t\tREPEAT SET @x = @x + 1; UNTIL @x > p1 END REPEAT;\n\t\t\t\t\t\tEND\n\t\t\t\t\t\t;",
-						LastLine: 7,
+						Text:                 "# test for defining stored programs\n\t\t\t\t\t\tCREATE PROCEDURE dorepeat(p1 INT)\n\t\t\t\t\t\tBEGIN\n\t\t\t\t\t\t\tSET @x = 0;\n\t\t\t\t\t\t\tREPEAT SET @x = @x + 1; UNTIL @x > p1 END REPEAT;\n\t\t\t\t\t\tEND\n\t\t\t\t\t\t;",
+						LastLine:             6,
+						LastColumn:           6,
+						FirstStatementLine:   1,
+						FirstStatementColumn: 6,
 					},
 					{
-						Text:     "\n\t\t\t\t\t\tCALL dorepeat(1000);",
-						BaseLine: 6,
-						LastLine: 8,
+						Text:                 "\n\t\t\t\t\t\tCALL dorepeat(1000);",
+						BaseLine:             6,
+						LastLine:             7,
+						LastColumn:           25,
+						FirstStatementLine:   7,
+						FirstStatementColumn: 6,
 					},
 					{
-						Text:     "\n\t\t\t\t\t\tSELECT @x\n;",
-						BaseLine: 7,
-						LastLine: 10,
+						Text:                 "\n\t\t\t\t\t\tSELECT @x;",
+						BaseLine:             7,
+						LastLine:             8,
+						LastColumn:           15,
+						FirstStatementLine:   8,
+						FirstStatementColumn: 6,
+					},
+					{
+						Text:                 "\n\t\t\t\t\t\t",
+						BaseLine:             8,
+						LastLine:             9,
+						LastColumn:           5,
+						FirstStatementLine:   9,
+						FirstStatementColumn: 5,
 					},
 				},
 			},
@@ -241,18 +291,35 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:     "# test for defining stored programs\n\t\t\t\t\t\tCREATE PROCEDURE dorepeat(p1 INT)\n\t\t\t\t\t\t/* This is a comment */\n\t\t\t\t\t\tBEGIN\n\t\t\t\t\t\t\tSET @x = 0;\n\t\t\t\t\t\t\tREPEAT SET @x = @x + 1; UNTIL @x > p1 END REPEAT;\n\t\t\t\t\t\tEND\n\t\t\t\t\t\t;",
-						LastLine: 8,
+						Text:                 "# test for defining stored programs\n\t\t\t\t\t\tCREATE PROCEDURE dorepeat(p1 INT)\n\t\t\t\t\t\t/* This is a comment */\n\t\t\t\t\t\tBEGIN\n\t\t\t\t\t\t\tSET @x = 0;\n\t\t\t\t\t\t\tREPEAT SET @x = @x + 1; UNTIL @x > p1 END REPEAT;\n\t\t\t\t\t\tEND\n\t\t\t\t\t\t;",
+						FirstStatementLine:   1,
+						FirstStatementColumn: 6,
+						LastLine:             7,
+						LastColumn:           6,
 					},
 					{
-						Text:     "\n\t\t\t\t\t\tCALL dorepeat(1000);",
-						BaseLine: 7,
-						LastLine: 9,
+						Text:                 "\n\t\t\t\t\t\tCALL dorepeat(1000);",
+						BaseLine:             7,
+						LastLine:             8,
+						LastColumn:           25,
+						FirstStatementLine:   8,
+						FirstStatementColumn: 6,
 					},
 					{
-						Text:     "\n\t\t\t\t\t\tSELECT @x\n;",
-						BaseLine: 8,
-						LastLine: 11,
+						Text:                 "\n\t\t\t\t\t\tSELECT @x;",
+						BaseLine:             8,
+						LastLine:             9,
+						LastColumn:           15,
+						FirstStatementLine:   9,
+						FirstStatementColumn: 6,
+					},
+					{
+						Text:                 "\n\t\t\t\t\t\t",
+						BaseLine:             9,
+						LastLine:             10,
+						LastColumn:           5,
+						FirstStatementLine:   10,
+						FirstStatementColumn: 5,
 					},
 				},
 			},
@@ -263,13 +330,17 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:     "CREATE TABLE t\r\n(a int);",
-						LastLine: 2,
+						Text:       "CREATE TABLE t\r\n(a int);",
+						LastLine:   1,
+						LastColumn: 7,
 					},
 					{
-						Text:     "\r\nCREATE TABLE t1(b int)\n;",
-						BaseLine: 1,
-						LastLine: 4,
+						Text:                 "\r\nCREATE TABLE t1(b int);",
+						BaseLine:             1,
+						LastLine:             2,
+						LastColumn:           22,
+						FirstStatementLine:   2,
+						FirstStatementColumn: 0,
 					},
 				},
 			},

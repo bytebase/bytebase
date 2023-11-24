@@ -2,7 +2,6 @@ package mysql
 
 import (
 	"io"
-	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/mysql-parser"
@@ -20,7 +19,7 @@ func init() {
 
 // SplitSQL splits the given SQL statement into multiple SQL statements.
 func SplitSQL(statement string) ([]base.SingleSQL, error) {
-	statement = strings.TrimRight(statement, " \r\n\t\f;") + "\n;"
+	statement = mysqlAddSemicolonIfNeeded(statement)
 	var err error
 	statement, err = DealWithDelimiter(statement)
 	if err != nil {
@@ -243,10 +242,12 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]base.SingleSQL, err
 			}
 
 			line, col := firstDefaultChannelTokenPosition(tokens[start : i+1])
+			// From antlr4, the line is ONE based, and the column is ZERO based.
+			// So we should minus 1 for the line.
 			result = append(result, base.SingleSQL{
 				Text:                 stream.GetTextFromTokens(tokens[start], tokens[i]),
 				BaseLine:             tokens[start].GetLine() - 1,
-				LastLine:             tokens[i].GetLine(),
+				LastLine:             tokens[i].GetLine() - 1,
 				LastColumn:           tokens[i].GetColumn(),
 				FirstStatementLine:   line,
 				FirstStatementColumn: col,
@@ -262,10 +263,12 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]base.SingleSQL, err
 
 			if start <= i-1 {
 				line, col := firstDefaultChannelTokenPosition(tokens[start:i])
+				// From antlr4, the line is ONE based, and the column is ZERO based.
+				// So we should minus 1 for the line.
 				result = append(result, base.SingleSQL{
 					Text:                 stream.GetTextFromTokens(tokens[start], tokens[i-1]),
 					BaseLine:             tokens[start].GetLine() - 1,
-					LastLine:             tokens[i-1].GetLine(),
+					LastLine:             tokens[i-1].GetLine() - 1,
 					LastColumn:           tokens[i-1].GetColumn(),
 					FirstStatementLine:   line,
 					FirstStatementColumn: col,
@@ -276,11 +279,17 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]base.SingleSQL, err
 	return result, nil
 }
 
+// firstDefaultChannelTokenPosition returns the first token position of the default channel.
+// Both line and column are ZERO based.
 func firstDefaultChannelTokenPosition(tokens []antlr.Token) (int, int) {
 	for _, token := range tokens {
 		if token.GetChannel() == antlr.TokenDefaultChannel {
-			return token.GetLine(), token.GetColumn()
+			// From antlr4, the line is ONE based, and the column is ZERO based.
+			// So we should minus 1 for the line.
+			return token.GetLine() - 1, token.GetColumn()
 		}
 	}
-	return tokens[len(tokens)-1].GetLine(), tokens[len(tokens)-1].GetColumn()
+	// From antlr4, the line is ONE based, and the column is ZERO based.
+	// So we should minus 1 for the line.
+	return tokens[len(tokens)-1].GetLine() - 1, tokens[len(tokens)-1].GetColumn()
 }

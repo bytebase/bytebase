@@ -409,9 +409,9 @@
       "enqueued-with-rollout-time": "Waiting to execute after {time}.",
       "dumping-schema-before-executing-sql": "Preparing to execute, dumping schema.",
       "executing-sql": "Executing SQL.",
-      "executing-sql-detail": "Executing SQL {current} of {total}, from line {start} to line {end}.",
+      "executing-sql-detail": "Executing SQL {current} of {total}, from ({startLine}, {startColumn}) to ({endLine}, {endColumn}).",
       "dumping-schema-after-executing-sql": "SQL execution completed, dumping schema.",
-      "failed-sql-detail": "Execution failed from line {start} to line {end}: {message}."
+      "failed-sql-detail": "Execution failed from ({startLine}, {startColumn}) to ({endLine}, {endColumn}): {message}."
     }
   },
   "banner": {

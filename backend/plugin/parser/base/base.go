@@ -10,14 +10,19 @@ import (
 type SingleSQL struct {
 	Text string
 	// BaseLine is the line number of the first line of the SQL in the original SQL.
+	// HINT: ZERO based.
 	BaseLine int
 	// FirstStatementLine is the line number of the first non-comment and non-blank line of the SQL in the original SQL.
+	// HINT: ZERO based.
 	FirstStatementLine int
 	// FirstStatementColumn is the column number of the first non-comment and non-blank line of the SQL in the original SQL.
+	// HINT: ZERO based.
 	FirstStatementColumn int
 	// LastLine is the line number of the last line of the SQL in the original SQL.
+	// HINT: ZERO based.
 	LastLine int
 	// LastColumn is the column number of the last line of the SQL in the original SQL.
+	// HINT: ZERO based.
 	LastColumn int
 	// The sql is empty, such as `/* comments */;` or just `;`.
 	Empty bool

@@ -72,8 +72,13 @@ const comment = computed(() => {
         return t("task-run.status.executing-sql-detail", {
           current: taskRun.executionDetail.commandsCompleted + 1,
           total: taskRun.executionDetail.commandsTotal,
-          start: taskRun.executionDetail.commandStartPosition?.line ?? 0 + 1,
-          end: taskRun.executionDetail.commandEndPosition?.line ?? 0 + 1,
+          startLine:
+            (taskRun.executionDetail.commandStartPosition?.line ?? 0) + 1,
+          startColumn:
+            (taskRun.executionDetail.commandStartPosition?.column ?? 0) + 1,
+          endLine: (taskRun.executionDetail.commandEndPosition?.line ?? 0) + 1,
+          endColumn:
+            (taskRun.executionDetail.commandEndPosition?.column ?? 0) + 1,
         });
       }
       return t("task-run.status.executing-sql");
@@ -88,8 +93,13 @@ const comment = computed(() => {
       taskRun.executionDetail?.commandEndPosition
     ) {
       return t("task-run.status.failed-sql-detail", {
-        start: taskRun.executionDetail.commandStartPosition?.line ?? 0 + 1,
-        end: taskRun.executionDetail.commandEndPosition?.line ?? 0 + 1,
+        startLine:
+          (taskRun.executionDetail.commandStartPosition?.line ?? 0) + 1,
+        startColumn:
+          (taskRun.executionDetail.commandStartPosition?.column ?? 0) + 1,
+        endLine: (taskRun.executionDetail.commandEndPosition?.line ?? 0) + 1,
+        endColumn:
+          (taskRun.executionDetail.commandEndPosition?.column ?? 0) + 1,
         message: taskRun.detail,
       });
     }
