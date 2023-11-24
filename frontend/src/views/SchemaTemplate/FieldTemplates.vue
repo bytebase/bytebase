@@ -12,7 +12,7 @@
         </div>
       </div>
     </div>
-    <div class="flex items-center justify-between gap-x-2 my-4 pb-5 border-b">
+    <div class="flex items-center justify-between gap-x-2 my-4">
       <div class="flex flex-row items-center justify-start gap-x-4">
         <template v-if="showEngineFilter">
           <NCheckbox

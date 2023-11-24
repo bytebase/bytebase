@@ -44,7 +44,7 @@
 
     <NTooltip v-if="helpName">
       <template #trigger>
-        <HelpTriggerIcon class="ml-1" :id="helpName" :is-guide="true" />
+        <HelpTriggerIcon :id="helpName" class="ml-1" :is-guide="true" />
       </template>
       {{ $t("common.show-help") }}
     </NTooltip>

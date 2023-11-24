@@ -56,7 +56,7 @@
         </NButton>
       </div>
     </div>
-    <NDivider class="w-full" />
+    <NDivider class="w-full py-2" />
     <div class="w-full flex flex-col justify-start items-start gap-2">
       <div class="w-full flex flex-row justify-between items-center">
         <div class="flex flex-row justify-start items-center">
