@@ -196,6 +196,7 @@
   
 - [store/task_run.proto](#store_task_run-proto)
     - [TaskRunResult](#bytebase-store-TaskRunResult)
+    - [TaskRunResult.Position](#bytebase-store-TaskRunResult-Position)
   
 - [store/user.proto](#store_user-proto)
     - [MFAConfig](#bytebase-store-MFAConfig)
@@ -3008,6 +3009,24 @@ SlowQueryStatisticsItem is the item of slow query statistics.
 | detail | [string](#string) |  |  |
 | change_history | [string](#string) |  | Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
 | version | [string](#string) |  |  |
+| start_position | [TaskRunResult.Position](#bytebase-store-TaskRunResult-Position) |  |  |
+| end_position | [TaskRunResult.Position](#bytebase-store-TaskRunResult-Position) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-TaskRunResult-Position"></a>
+
+### TaskRunResult.Position
+The following fields are used for error reporting.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| line | [int32](#int32) |  |  |
+| column | [int32](#int32) |  |  |
 
 
 

@@ -9,4 +9,12 @@ message TaskRunResult {
   // Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
   string change_history = 2;
   string version = 3;
+
+  // The following fields are used for error reporting.
+  message Position {
+    int32 line = 1;
+    int32 column = 2;
+  }
+  Position start_position = 4;
+  Position end_position = 5;
 }
