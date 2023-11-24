@@ -1,9 +1,6 @@
 <template>
   <div class="w-full">
     <NTabs v-model:value="tab">
-      <template #suffix>
-        <Toolbar />
-      </template>
       <NTabPane
         name="rules"
         :tab="$t('custom-approval.rule.rules')"

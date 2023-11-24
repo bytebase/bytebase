@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-2">
+  <div class="space-y-4">
     <div class="flex items-center justify-between">
       <div>
         <LevelFilter v-if="!hideLevelFilter" />

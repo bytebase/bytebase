@@ -36,7 +36,7 @@
         <NButton type="primary" @click="handleRequestExportClick">
           <FeatureBadge
             feature="bb.feature.access-control"
-            custom-class="mr-2"
+            custom-class="text-white pointer-events-none mr-2"
           />
           {{ $t("quick-action.request-export-data") }}
         </NButton>
