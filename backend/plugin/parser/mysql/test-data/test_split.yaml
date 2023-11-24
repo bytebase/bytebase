@@ -1,12 +1,12 @@
 - statement: |-
     -- klsjdfjasldf
-       -- klsjdflkjaskldfj
+          -- klsjdflkjaskldfj
 
   want:
     res:
       - text: |-
           -- klsjdfjasldf
-             -- klsjdflkjaskldfj
+                -- klsjdflkjaskldfj
           ;
         baseline: 0
         firststatementline: 0
@@ -17,7 +17,7 @@
     err: ""
 - statement: |-
     select * from t;
-       /* sdfasdf */
+          /* sdfasdf */
   want:
     res:
       - text: select * from t;
@@ -39,8 +39,8 @@
     err: ""
 - statement: |-
     select * from t;
-       /* sdfasdf */;
-       select * from t;
+          /* sdfasdf */;
+          select * from t;
   want:
     res:
         - text: select * from t;
@@ -59,7 +59,7 @@
           lastcolumn: 0
           empty: false
         - text: |4-
-               select * from t
+                  select * from t
             ;
           baseline: 1
           firststatementline: 0
@@ -72,34 +72,34 @@
     CREATE DEFINER=`root`@`%` FUNCTION `CalcIncome`( starting_value INT ) RETURNS int
     BEGIN
 
-         DECLARE income INT;
+           DECLARE income INT;
 
-         SET income = 0;
+           SET income = 0;
 
-         label1: WHILE income <= 3000 DO
-        SET income = income + starting_value;
-         END WHILE label1;
+           label1: WHILE income <= 3000 DO
+           SET income = income + starting_value;
+           END WHILE label1;
 
-         RETURN income;
+           RETURN income;
 
-      END ;
+        END ;
   want:
     res:
         - text: |-
             CREATE DEFINER=`root`@`%` FUNCTION `CalcIncome`( starting_value INT ) RETURNS int
             BEGIN
 
-                 DECLARE income INT;
+                   DECLARE income INT;
 
-                 SET income = 0;
+                   SET income = 0;
 
-                 label1: WHILE income <= 3000 DO
-                SET income = income + starting_value;
-                 END WHILE label1;
+                   label1: WHILE income <= 3000 DO
+                   SET income = income + starting_value;
+                   END WHILE label1;
 
-                 RETURN income;
+                   RETURN income;
 
-              END
+                END
             ;
           baseline: 0
           firststatementline: 0
@@ -151,17 +151,17 @@
           empty: false
     err: ""
 - statement: |4-
-          /* this is the comment. */
-          CREATE /* inline comment */TABLE tech_Book(id int, name varchar(255));
-          -- this is the comment.
-          INSERT INTO tech_Book VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\'jdfl;"ka');
-          # this is the comment.
-          INSERT INTO tech_Book VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\'jdfl;"ka');
+                /* this is the comment. */
+                CREATE /* inline comment */TABLE tech_Book(id int, name varchar(255));
+                -- this is the comment.
+                INSERT INTO tech_Book VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\'jdfl;"ka');
+                # this is the comment.
+                INSERT INTO tech_Book VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\'jdfl;"ka');
   want:
     res:
         - text: |4-
-                  /* this is the comment. */
-                  CREATE /* inline comment */TABLE tech_Book(id int, name varchar(255));
+                        /* this is the comment. */
+                        CREATE /* inline comment */TABLE tech_Book(id int, name varchar(255));
           baseline: 0
           firststatementline: 0
           firststatementcolumn: 0
@@ -169,8 +169,8 @@
           lastcolumn: 0
           empty: false
         - text: |4-
-                  -- this is the comment.
-                  INSERT INTO tech_Book VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\'jdfl;"ka');
+                        -- this is the comment.
+                        INSERT INTO tech_Book VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\'jdfl;"ka');
           baseline: 2
           firststatementline: 0
           firststatementcolumn: 0
@@ -178,8 +178,8 @@
           lastcolumn: 0
           empty: false
         - text: |4-
-                  # this is the comment.
-                  INSERT INTO tech_Book VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\'jdfl;"ka')
+                        # this is the comment.
+                        INSERT INTO tech_Book VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\'jdfl;"ka')
             ;
           baseline: 4
           firststatementline: 0
@@ -190,25 +190,25 @@
     err: ""
 - statement: |-
     # test for defining stored programs
-          CREATE PROCEDURE dorepeat(p1 INT)
-          BEGIN
-           SET @x = 0;
-           REPEAT SET @x = @x + 1; UNTIL @x > p1 END REPEAT;
-          END
-          ;
-          CALL dorepeat(1000);
-          SELECT @x;
+                CREATE PROCEDURE dorepeat(p1 INT)
+                BEGIN
+                  SET @x = 0;
+                  REPEAT SET @x = @x + 1; UNTIL @x > p1 END REPEAT;
+                END
+                ;
+                CALL dorepeat(1000);
+                SELECT @x;
 
   want:
     res:
         - text: |-
             # test for defining stored programs
-                  CREATE PROCEDURE dorepeat(p1 INT)
-                  BEGIN
-                   SET @x = 0;
-                   REPEAT SET @x = @x + 1; UNTIL @x > p1 END REPEAT;
-                  END
-                  ;
+                        CREATE PROCEDURE dorepeat(p1 INT)
+                        BEGIN
+                          SET @x = 0;
+                          REPEAT SET @x = @x + 1; UNTIL @x > p1 END REPEAT;
+                        END
+                        ;
           baseline: 0
           firststatementline: 0
           firststatementcolumn: 0
@@ -216,7 +216,7 @@
           lastcolumn: 0
           empty: false
         - text: |4-
-                  CALL dorepeat(1000);
+                        CALL dorepeat(1000);
           baseline: 6
           firststatementline: 0
           firststatementcolumn: 0
@@ -224,7 +224,7 @@
           lastcolumn: 0
           empty: false
         - text: |4-
-                  SELECT @x
+                        SELECT @x
             ;
           baseline: 7
           firststatementline: 0
@@ -235,27 +235,27 @@
     err: ""
 - statement: |-
     # test for defining stored programs
-          CREATE PROCEDURE dorepeat(p1 INT)
-          /* This is a comment */
-          BEGIN
-           SET @x = 0;
-           REPEAT SET @x = @x + 1; UNTIL @x > p1 END REPEAT;
-          END
-          ;
-          CALL dorepeat(1000);
-          SELECT @x;
+                CREATE PROCEDURE dorepeat(p1 INT)
+                /* This is a comment */
+                BEGIN
+                  SET @x = 0;
+                  REPEAT SET @x = @x + 1; UNTIL @x > p1 END REPEAT;
+                END
+                ;
+                CALL dorepeat(1000);
+                SELECT @x;
 
   want:
     res:
         - text: |-
             # test for defining stored programs
-                  CREATE PROCEDURE dorepeat(p1 INT)
-                  /* This is a comment */
-                  BEGIN
-                   SET @x = 0;
-                   REPEAT SET @x = @x + 1; UNTIL @x > p1 END REPEAT;
-                  END
-                  ;
+                        CREATE PROCEDURE dorepeat(p1 INT)
+                        /* This is a comment */
+                        BEGIN
+                          SET @x = 0;
+                          REPEAT SET @x = @x + 1; UNTIL @x > p1 END REPEAT;
+                        END
+                        ;
           baseline: 0
           firststatementline: 0
           firststatementcolumn: 0
@@ -263,7 +263,7 @@
           lastcolumn: 0
           empty: false
         - text: |4-
-                  CALL dorepeat(1000);
+                        CALL dorepeat(1000);
           baseline: 7
           firststatementline: 0
           firststatementcolumn: 0
@@ -271,7 +271,7 @@
           lastcolumn: 0
           empty: false
         - text: |4-
-                  SELECT @x
+                        SELECT @x
             ;
           baseline: 8
           firststatementline: 0
