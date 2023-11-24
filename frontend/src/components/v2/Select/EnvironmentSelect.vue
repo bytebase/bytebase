@@ -6,6 +6,7 @@
     :placeholder="$t('environment.select')"
     :filterable="true"
     :filter="filterByName"
+    :render-label="renderLabel"
     class="bb-environment-select"
     @update:value="$emit('update:environment', $event)"
   />
@@ -13,10 +14,11 @@
 
 <script lang="ts" setup>
 import { NSelect, SelectOption } from "naive-ui";
-import { computed, watchEffect } from "vue";
+import { computed, h, watchEffect } from "vue";
 import { useEnvironmentV1Store, useProjectV1Store } from "@/store";
 import { State } from "@/types/proto/v1/common";
 import { Environment } from "@/types/proto/v1/environment_service";
+import { EnvironmentV1Name } from "../Model";
 
 interface EnvironmentSelectOption extends SelectOption {
   value: string;
@@ -27,11 +29,13 @@ const props = withDefaults(
   defineProps<{
     environment?: string | undefined;
     includeArchived?: boolean;
+    showProductionIcon?: boolean;
     filter?: (environment: Environment, index: number) => boolean;
   }>(),
   {
     environment: undefined,
     includeArchived: false,
+    showProductionIcon: true,
     filter: () => true,
   }
 );
@@ -79,6 +83,15 @@ const options = computed(() => {
     }
   );
 });
+
+const renderLabel = (option: SelectOption) => {
+  const { environment } = option as EnvironmentSelectOption;
+  return h(EnvironmentV1Name, {
+    environment,
+    showIcon: props.showProductionIcon,
+    link: false,
+  });
+};
 
 const filterByName = (pattern: string, option: SelectOption) => {
   const { environment } = option as EnvironmentSelectOption;

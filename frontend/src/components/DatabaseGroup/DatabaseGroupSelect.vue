@@ -1,37 +1,32 @@
 <template>
-  <BBSelect
-    :selected-item="state.selectedDatabaseGroup"
-    :item-list="dbGroupList"
+  <NSelect
+    :value="state.selectedDatabaseGroup"
+    :options="dbGroupOptions"
     :disabled="disabled"
     :placeholder="'Select Database Group'"
-    :show-prefix-item="true"
-    @select-item="(item: DatabaseGroup) => $emit('select-database-group-id', item.name)"
-  >
-    <template #menuItem="{ item }">
-      {{ item.databasePlaceholder }}
-    </template>
-  </BBSelect>
+    @update:value="$emit('update:selected', $event)"
+  />
 </template>
 
 <script lang="ts" setup>
+import { SelectOption } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useDBGroupStore } from "@/store";
-import { ComposedDatabaseGroup } from "@/types";
 import { DatabaseGroup } from "@/types/proto/v1/project_service";
 
 interface LocalState {
-  selectedDatabaseGroup?: ComposedDatabaseGroup;
+  selectedDatabaseGroup?: string;
 }
 
 const props = defineProps<{
-  projectId: string;
-  selectedId?: string;
-  environmentId?: string;
+  project: string;
+  selected?: string;
+  environment?: string;
   disabled?: boolean;
 }>();
 
 const emit = defineEmits<{
-  (event: "select-database-group-id", name?: string): void;
+  (event: "update:selected", name: string | undefined): void;
 }>();
 
 const state = reactive<LocalState>({
@@ -42,33 +37,37 @@ const dbGroupStore = useDBGroupStore();
 
 const dbGroupList = computed(() => {
   return dbGroupStore
-    .getDBGroupListByProjectName(props.projectId)
+    .getDBGroupListByProjectName(props.project)
     .filter((dbGroup) =>
-      props.environmentId
-        ? dbGroup.environment.uid === props.environmentId
-        : true
+      props.environment ? dbGroup.environment.uid === props.environment : true
     );
+});
+const dbGroupOptions = computed(() => {
+  return dbGroupList.value.map<SelectOption>((dbGroup) => ({
+    value: dbGroup.name,
+    label: dbGroup.databaseGroupName,
+  }));
 });
 
 const invalidateSelectionIfNeeded = () => {
   if (
     state.selectedDatabaseGroup &&
     !dbGroupList.value.find(
-      (item: DatabaseGroup) => item.name == state.selectedDatabaseGroup?.name
+      (item: DatabaseGroup) => item.name == state.selectedDatabaseGroup
     )
   ) {
     state.selectedDatabaseGroup = undefined;
-    emit("select-database-group-id", undefined);
+    emit("update:selected", undefined);
   }
 };
 
 watch(
-  () => props,
+  [() => props.project, () => props.selected, () => props.environment],
   () => {
     invalidateSelectionIfNeeded();
     state.selectedDatabaseGroup = dbGroupList.value.find(
-      (item) => item.name === props.selectedId
-    );
+      (item) => item.name === props.selected
+    )?.name;
   },
   { immediate: true, deep: true }
 );

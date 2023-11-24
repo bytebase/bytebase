@@ -1,0 +1,843 @@
+- statement: CREATE TABLE t(a date default '');
+  ignore_case_sensitive: false
+  want: ""
+  err:
+    type: 407
+    content: '[types:1292]Incorrect datetime value: '''''
+    line: 1
+    payload: null
+- statement: |-
+    CREATE TABLE t(a TEXT);
+    ALTER TABLE T ALTER COLUMN a SET DEFAULT '1';
+  ignore_case_sensitive: true
+  want: ""
+  err:
+    type: 407
+    content: BLOB, TEXT, GEOMETRY or JSON column `a` can't have a default value
+    line: 2
+    payload: null
+- statement: '      CREATE TABLE t(a TEXT DEFAULT ''1'')'
+  ignore_case_sensitive: false
+  want: ""
+  err:
+    type: 407
+    content: BLOB, TEXT, GEOMETRY or JSON column `a` can't have a default value
+    line: 1
+    payload: null
+- statement: |-
+    CREATE TABLE t(a INT NOT NULL);
+    ALTER TABLE t ALTER COLUMN a SET DEFAULT NULL;
+  ignore_case_sensitive: false
+  want: ""
+  err:
+    type: 406
+    content: Invalid default value for column `a`
+    line: 2
+    payload: null
+- statement: '      CREATE TABLE t(a INT NOT NULL DEFAULT NULL)'
+  ignore_case_sensitive: false
+  want: ""
+  err:
+    type: 406
+    content: Invalid default value for column `a`
+    line: 1
+    payload: null
+- statement: '      CREATE TABLE t(a int ON UPDATE NOW())'
+  ignore_case_sensitive: false
+  want: ""
+  err:
+    type: 405
+    content: Column `a` use ON UPDATE but is not DATETIME or TIMESTAMP
+    line: 1
+    payload: null
+- statement: '      CREATE TABLE t(a int auto_increment, b int auto_increment);'
+  ignore_case_sensitive: false
+  want: ""
+  err:
+    type: 404
+    content: There can be only one auto column for table `t`
+    line: 1
+    payload: null
+- statement: '      CREATE TABLE t as select * from t1;'
+  ignore_case_sensitive: false
+  want: ""
+  err:
+    type: 303
+    content: Disallow the CREATE TABLE AS statement but "CREATE TABLE t as select * from t1;" uses
+    line: 1
+    payload: null
+- statement: "\n\t\t\t\tCREATE TABLE t(a int, b int); \n\t\t\t\tCREATE INDEX idx_c on t(c);\n\t\t\t"
+  ignore_case_sensitive: false
+  want: ""
+  err:
+    type: 402
+    content: Column `c` does not exist in table `t`
+    line: 3
+    payload: null
+- statement: "\n\t\t\t\tCREATE TABLE t(a int, b int); \n\t\t\t\tALTER TABLE t MODIFY COLUMN c int;\n\t\t\t"
+  ignore_case_sensitive: false
+  want: ""
+  err:
+    type: 402
+    content: Column `c` does not exist in table `t`
+    line: 3
+    payload: null
+- statement: "\n\t\t\t\tCREATE TABLE t(a int, b int); \n\t\t\t\tALTER TABLE t CHANGE COLUMN c aa int;\n\t\t\t"
+  ignore_case_sensitive: false
+  want: ""
+  err:
+    type: 402
+    content: Column `c` does not exist in table `t`
+    line: 3
+    payload: null
+- statement: "\n\t\t\t\tCREATE TABLE t(a int, b int); \n\t\t\t\tALTER TABLE t DROP COLUMN c;\n\t\t\t"
+  ignore_case_sensitive: false
+  want: ""
+  err:
+    type: 402
+    content: Column `c` does not exist in table `t`
+    line: 3
+    payload: null
+- statement: "\n\t\t\t\tCREATE TABLE t(a int, b int); \n\t\t\t\tALTER TABLE t RENAME COLUMN c TO cc;\n\t\t\t"
+  ignore_case_sensitive: false
+  want: ""
+  err:
+    type: 402
+    content: Column `c` does not exist in table `t`
+    line: 3
+    payload: null
+- statement: "\n\t\t\t\tCREATE TABLE t(a int, b int); \n\t\t\t\tALTER TABLE t RENAME COLUMN c TO cc;\n\t\t\t"
+  ignore_case_sensitive: false
+  want: ""
+  err:
+    type: 402
+    content: Column `c` does not exist in table `t`
+    line: 3
+    payload: null
+- statement: "\n\t\t\t\tCREATE TABLE t(a int, b int); \n\t\t\t\tALTER TABLE t ALTER COLUMN c DROP DEFAULT;\n\t\t\t"
+  ignore_case_sensitive: false
+  want: ""
+  err:
+    type: 402
+    content: Column `c` does not exist in table `t`
+    line: 3
+    payload: null
+- statement: |-
+    ALTER DATABASE CHARACTER SET = utf8mb4;
+    ALTER DATABASE test COLLATE utf8mb4_polish_ci;
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name": "test",
+      "schemas": [
+        {}
+      ],
+      "characterSet": "utf8mb4",
+      "collation": "utf8mb4_polish_ci"
+    }
+  err: null
+- statement: |-
+    CREATE TABLE t(
+      a int PRIMARY KEY DEFAULT 1,
+      b varchar(200) CHARACTER SET utf8mb4 NOT NULL UNIQUE,
+      c int auto_increment NULL COMMENT 'This is a comment' DEFAULT NULL,
+      d varchar(10) COLLATE utf8mb4_polish_ci,
+      KEY idx_a (a),
+      INDEX (b, a),
+      UNIQUE (b, c, d),
+      FULLTEXT (b, d) WITH PARSER ngram INVISIBLE
+    );
+    CREATE TABLE t_copy like t;
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name": "test",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "a",
+                  "position": 1,
+                  "default": "1",
+                  "type": "int(11)"
+                },
+                {
+                  "name": "b",
+                  "position": 2,
+                  "type": "varchar(200)",
+                  "characterSet": "utf8mb4"
+                },
+                {
+                  "name": "c",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "int(11)",
+                  "comment": "This is a comment"
+                },
+                {
+                  "name": "d",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "varchar(10)",
+                  "collation": "utf8mb4_polish_ci"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "a"
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "b",
+                  "expressions": [
+                    "b"
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
+                },
+                {
+                  "name": "b_2",
+                  "expressions": [
+                    "b",
+                    "a"
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "b_3",
+                  "expressions": [
+                    "b",
+                    "c",
+                    "d"
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
+                },
+                {
+                  "name": "b_4",
+                  "expressions": [
+                    "b",
+                    "d"
+                  ],
+                  "type": "FULLTEXT"
+                },
+                {
+                  "name": "idx_a",
+                  "expressions": [
+                    "a"
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ]
+            },
+            {
+              "name": "t_copy",
+              "columns": [
+                {
+                  "name": "a",
+                  "position": 1,
+                  "default": "1",
+                  "type": "int(11)"
+                },
+                {
+                  "name": "b",
+                  "position": 2,
+                  "type": "varchar(200)",
+                  "characterSet": "utf8mb4"
+                },
+                {
+                  "name": "c",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "int(11)",
+                  "comment": "This is a comment"
+                },
+                {
+                  "name": "d",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "varchar(10)",
+                  "collation": "utf8mb4_polish_ci"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "a"
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "b",
+                  "expressions": [
+                    "b"
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
+                },
+                {
+                  "name": "b_2",
+                  "expressions": [
+                    "b",
+                    "a"
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "b_3",
+                  "expressions": [
+                    "b",
+                    "c",
+                    "d"
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
+                },
+                {
+                  "name": "b_4",
+                  "expressions": [
+                    "b",
+                    "d"
+                  ],
+                  "type": "FULLTEXT"
+                },
+                {
+                  "name": "idx_a",
+                  "expressions": [
+                    "a"
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  err: null
+- statement: |-
+    CREATE TABLE t(
+      a int PRIMARY KEY DEFAULT 1,
+      b varchar(200) CHARACTER SET utf8mb4 NOT NULL UNIQUE,
+      c int auto_increment NULL COMMENT 'This is a comment',
+      d varchar(10) COLLATE utf8mb4_polish_ci,
+      KEY idx_a (a),
+      INDEX (b, a),
+      UNIQUE (b, c, d),
+      FULLTEXT (b, d) WITH PARSER ngram INVISIBLE
+    )
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name": "test",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "a",
+                  "position": 1,
+                  "default": "1",
+                  "type": "int(11)"
+                },
+                {
+                  "name": "b",
+                  "position": 2,
+                  "type": "varchar(200)",
+                  "characterSet": "utf8mb4"
+                },
+                {
+                  "name": "c",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "int(11)",
+                  "comment": "This is a comment"
+                },
+                {
+                  "name": "d",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "varchar(10)",
+                  "collation": "utf8mb4_polish_ci"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "a"
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "b",
+                  "expressions": [
+                    "b"
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
+                },
+                {
+                  "name": "b_2",
+                  "expressions": [
+                    "b",
+                    "a"
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "b_3",
+                  "expressions": [
+                    "b",
+                    "c",
+                    "d"
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
+                },
+                {
+                  "name": "b_4",
+                  "expressions": [
+                    "b",
+                    "d"
+                  ],
+                  "type": "FULLTEXT"
+                },
+                {
+                  "name": "idx_a",
+                  "expressions": [
+                    "a"
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  err: null
+- statement: |-
+    CREATE TABLE t(
+      a int,
+      b int,
+      PRIMARY KEY (a, b)
+    )
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name": "test",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "a",
+                  "position": 1,
+                  "type": "int(11)"
+                },
+                {
+                  "name": "b",
+                  "position": 2,
+                  "type": "int(11)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "a",
+                    "b"
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  err: null
+- statement: |-
+    CREATE TABLE t1(a int, b int, c int);
+    CREATE TABLE t2(a int);
+    DROP TABLE t1, t2
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name": "test",
+      "schemas": [
+        {}
+      ]
+    }
+  err: null
+- statement: '      DROP TABLE t1, t2'
+  ignore_case_sensitive: false
+  want: ""
+  err:
+    type: 302
+    content: Table `t1` does not exist
+    line: 1
+    payload: null
+- statement: |-
+    CREATE TABLE t(a int);
+    RENAME TABLE t to other_db.t1
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name": "test",
+      "schemas": [
+        {}
+      ]
+    }
+  err: null
+- statement: |-
+    CREATE TABLE t(a int);
+    RENAME TABLE t to test.t1
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name": "test",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "t1",
+              "columns": [
+                {
+                  "name": "a",
+                  "position": 1,
+                  "nullable": true,
+                  "type": "int(11)"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  err: null
+- statement: |-
+    -- this is comment
+            DROP DATABASE test;
+            CREATE TABLE t(a int);
+  ignore_case_sensitive: false
+  want: ""
+  err:
+    type: 202
+    content: Database `test` is deleted
+    line: 3
+    payload: null
+- statement: |-
+    CREATE TABLE t(
+      a int PRIMARY KEY DEFAULT 1,
+      b varchar(200) CHARACTER SET utf8mb4 NOT NULL UNIQUE,
+      c int auto_increment NULL COMMENT 'This is a comment',
+      d varchar(10) COLLATE utf8mb4_polish_ci,
+      e int,
+      KEY idx_a (a),
+      INDEX (b, a),
+      UNIQUE (b, c, d),
+      FULLTEXT (b, d) WITH PARSER ngram INVISIBLE
+    );
+    ALTER TABLE t COLLATE utf8mb4_0900_ai_ci, ENGINE = INNODB, COMMENT 'This is a table comment';
+    ALTER TABLE t ADD COLUMN a1 int AFTER a;
+    ALTER TABLE t ADD INDEX idx_a_b (a, b);
+    ALTER TABLE t DROP COLUMN c;
+    ALTER TABLE t DROP PRIMARY KEY;
+    ALTER TABLE t DROP INDEX b_2;
+    ALTER TABLE t MODIFY COLUMN b varchar(20) FIRST;
+    ALTER TABLE t CHANGE COLUMN d d_copy varchar(10) COLLATE utf8mb4_polish_ci;
+    ALTER TABLE t RENAME COLUMN a to a_copy;
+    ALTER TABLE t RENAME TO t_copy;
+    ALTER TABLE t_copy ALTER COLUMN a_copy DROP DEFAULT;
+    ALTER TABLE t_copy RENAME INDEX b TO idx_b;
+    ALTER TABLE t_copy ALTER INDEX b_3 INVISIBLE;
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name": "test",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "t_copy",
+              "columns": [
+                {
+                  "name": "b",
+                  "position": 1,
+                  "nullable": true,
+                  "type": "varchar(20)"
+                },
+                {
+                  "name": "a_copy",
+                  "position": 2,
+                  "type": "int(11)"
+                },
+                {
+                  "name": "a1",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "int(11)"
+                },
+                {
+                  "name": "d_copy",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "varchar(10)",
+                  "collation": "utf8mb4_polish_ci"
+                },
+                {
+                  "name": "e",
+                  "position": 5,
+                  "nullable": true,
+                  "type": "int(11)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "b_3",
+                  "expressions": [
+                    "b",
+                    "d_copy"
+                  ],
+                  "type": "BTREE",
+                  "unique": true
+                },
+                {
+                  "name": "b_4",
+                  "expressions": [
+                    "b",
+                    "d_copy"
+                  ],
+                  "type": "FULLTEXT"
+                },
+                {
+                  "name": "idx_a",
+                  "expressions": [
+                    "a_copy"
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "idx_a_b",
+                  "expressions": [
+                    "a_copy",
+                    "b"
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "idx_b",
+                  "expressions": [
+                    "b"
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
+                }
+              ],
+              "engine": "INNODB",
+              "collation": "utf8mb4_0900_ai_ci",
+              "comment": "This is a table comment"
+            }
+          ]
+        }
+      ]
+    }
+  err: null
+- statement: |-
+    CREATE TABLE t(
+      a int PRIMARY KEY DEFAULT 1,
+      b varchar(200) CHARACTER SET utf8mb4 NOT NULL UNIQUE,
+      c int auto_increment NULL COMMENT 'This is a comment',
+      d varchar(10) COLLATE utf8mb4_polish_ci
+    );
+    CREATE INDEX idx_a on t(a);
+    CREATE INDEX b_2 on t(b, a);
+    CREATE UNIQUE INDEX b_3 on t(b, c, d);
+    CREATE FULLTEXT INDEX b_4 on t(b, d) WITH PARSER ngram INVISIBLE;
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name": "test",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "a",
+                  "position": 1,
+                  "default": "1",
+                  "type": "int(11)"
+                },
+                {
+                  "name": "b",
+                  "position": 2,
+                  "type": "varchar(200)",
+                  "characterSet": "utf8mb4"
+                },
+                {
+                  "name": "c",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "int(11)",
+                  "comment": "This is a comment"
+                },
+                {
+                  "name": "d",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "varchar(10)",
+                  "collation": "utf8mb4_polish_ci"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "a"
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "b",
+                  "expressions": [
+                    "b"
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
+                },
+                {
+                  "name": "b_2",
+                  "expressions": [
+                    "b",
+                    "a"
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "b_3",
+                  "expressions": [
+                    "b",
+                    "c",
+                    "d"
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
+                },
+                {
+                  "name": "b_4",
+                  "expressions": [
+                    "b",
+                    "d"
+                  ],
+                  "type": "FULLTEXT"
+                },
+                {
+                  "name": "idx_a",
+                  "expressions": [
+                    "a"
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  err: null
+- statement: |-
+    CREATE TABLE t(
+      a int PRIMARY KEY DEFAULT 1,
+      b varchar(200) CHARACTER SET utf8mb4 NOT NULL UNIQUE
+    );
+    DROP INDEX b on t;
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name": "test",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "a",
+                  "position": 1,
+                  "default": "1",
+                  "type": "int(11)"
+                },
+                {
+                  "name": "b",
+                  "position": 2,
+                  "type": "varchar(200)",
+                  "characterSet": "utf8mb4"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "a"
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  err: null

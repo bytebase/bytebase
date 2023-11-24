@@ -28,7 +28,21 @@ type testData struct {
 	Err                 *WalkThroughError
 }
 
-func TestMySQLWalkThrough(t *testing.T) {
+func TestTiDBWalkThrough(t *testing.T) {
+	originDatabase := &storepb.DatabaseSchemaMetadata{
+		Name: "test",
+	}
+
+	tests := []string{
+		"tidb_walk_through",
+	}
+
+	for _, test := range tests {
+		runWalkThroughTest(t, test, storepb.Engine_TIDB, originDatabase, false /* record */)
+	}
+}
+
+func TestMySQLV2WalkThrough(t *testing.T) {
 	originDatabase := &storepb.DatabaseSchemaMetadata{
 		Name: "test",
 	}
@@ -39,20 +53,6 @@ func TestMySQLWalkThrough(t *testing.T) {
 
 	for _, test := range tests {
 		runWalkThroughTest(t, test, storepb.Engine_MYSQL, originDatabase, false /* record */)
-	}
-}
-
-func TestMySQLV2WalkThrough(t *testing.T) {
-	originDatabase := &storepb.DatabaseSchemaMetadata{
-		Name: "test",
-	}
-
-	tests := []string{
-		"mysqlv2_walk_through",
-	}
-
-	for _, test := range tests {
-		runWalkThroughTest(t, test, storepb.Engine_ENGINE_UNSPECIFIED, originDatabase, false /* record */)
 	}
 }
 

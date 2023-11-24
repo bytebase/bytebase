@@ -409,7 +409,8 @@
       "enqueued-with-rollout-time": "Esperando para ejecutar, {time} para ejecutar.",
       "dumping-schema-before-executing-sql": "Listo para ejecutar, exportando esquema.",
       "executing-sql": "Ejecutando SQL.",
-      "dumping-schema-after-executing-sql": "Ejecución SQL completada, exportando esquema ahora."
+      "dumping-schema-after-executing-sql": "Ejecución SQL completada, exportando esquema ahora.",
+      "executing-sql-detail": "Ejecutando SQL {current} de {total}, desde la línea {start} hasta la línea {end}."
     }
   },
   "banner": {

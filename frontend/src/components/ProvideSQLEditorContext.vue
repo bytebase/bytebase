@@ -15,13 +15,11 @@ import {
   useSheetV1Store,
   useInstanceV1Store,
   useDatabaseV1Store,
-  useEnvironmentV1Store,
-  useUserStore,
+  initCommonModelStores,
 } from "@/store";
 import { useSQLEditorTreeStore } from "@/store/modules/sqlEditorTree";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { usePolicyV1Store } from "@/store/modules/v1/policy";
-import { useSettingV1Store } from "@/store/modules/v1/setting";
 import {
   Connection,
   CoreTabInfo,
@@ -78,7 +76,6 @@ const prepareAccessibleDatabaseList = async () => {
   if (currentUserV1.value.name === UNKNOWN_USER_NAME) {
     return;
   }
-  instanceStore.fetchInstanceList();
 
   // `databaseList` is the database list accessible by current user.
   // Only accessible instances and databases will be listed in the tree.
@@ -155,11 +152,16 @@ const prepareSheet = async () => {
   let insId = String(UNKNOWN_ID);
   let dbId = String(UNKNOWN_ID);
   if (sheet.database) {
-    const database = await databaseStore.getOrFetchDatabaseByName(
-      sheet.database
-    );
-    insId = database.instanceEntity.uid;
-    dbId = database.uid;
+    try {
+      const database = await databaseStore.getOrFetchDatabaseByName(
+        sheet.database,
+        true /* silent */
+      );
+      insId = database.instanceEntity.uid;
+      dbId = database.uid;
+    } catch {
+      // Skip.
+    }
   }
 
   tabStore.updateCurrentTab({
@@ -312,19 +314,11 @@ const syncURLWithConnection = () => {
 };
 
 onMounted(async () => {
-  await useUserStore().fetchUserList();
-  await useSettingV1Store().fetchSettingList();
-
   if (treeStore.state === "UNSET") {
     treeStore.state = "LOADING";
 
-    // Initialize project list state for iam policy.
-    await useProjectV1Store().fetchProjectList(true /* include archived */);
-    // Initialize environment list for composing.
-    await useEnvironmentV1Store().fetchEnvironments(
-      true /* include archived */
-    );
-    await usePolicyV1Store().getOrFetchPolicyByName("policies/WORKSPACE_IAM");
+    await initCommonModelStores();
+
     await prepareAccessControlPolicy();
     await prepareAccessibleDatabaseList();
 
