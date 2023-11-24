@@ -242,11 +242,14 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]base.SingleSQL, err
 				continue
 			}
 
+			line, col := firstDefaultChannelTokenPosition(tokens[start : i+1])
 			result = append(result, base.SingleSQL{
-				Text:               stream.GetTextFromTokens(tokens[start], tokens[i]),
-				BaseLine:           tokens[start].GetLine() - 1,
-				LastLine:           tokens[i].GetLine(),
-				FirstStatementLine: firstDefaultChannelTokenLine(tokens[start : i+1]),
+				Text:                 stream.GetTextFromTokens(tokens[start], tokens[i]),
+				BaseLine:             tokens[start].GetLine() - 1,
+				LastLine:             tokens[i].GetLine(),
+				LastColumn:           tokens[i].GetColumn(),
+				FirstStatementLine:   line,
+				FirstStatementColumn: col,
 			})
 			start = i + 1
 		case parser.MySQLParserEOF:
@@ -258,11 +261,14 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]base.SingleSQL, err
 			}
 
 			if start <= i-1 {
+				line, col := firstDefaultChannelTokenPosition(tokens[start:i])
 				result = append(result, base.SingleSQL{
-					Text:               stream.GetTextFromTokens(tokens[start], tokens[i-1]),
-					BaseLine:           tokens[start].GetLine() - 1,
-					LastLine:           tokens[i-1].GetLine(),
-					FirstStatementLine: firstDefaultChannelTokenLine(tokens[start:i]),
+					Text:                 stream.GetTextFromTokens(tokens[start], tokens[i-1]),
+					BaseLine:             tokens[start].GetLine() - 1,
+					LastLine:             tokens[i-1].GetLine(),
+					LastColumn:           tokens[i-1].GetColumn(),
+					FirstStatementLine:   line,
+					FirstStatementColumn: col,
 				})
 			}
 		}
@@ -270,11 +276,11 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]base.SingleSQL, err
 	return result, nil
 }
 
-func firstDefaultChannelTokenLine(tokens []antlr.Token) int {
+func firstDefaultChannelTokenPosition(tokens []antlr.Token) (int, int) {
 	for _, token := range tokens {
 		if token.GetChannel() == antlr.TokenDefaultChannel {
-			return token.GetLine()
+			return token.GetLine(), token.GetColumn()
 		}
 	}
-	return 0
+	return tokens[len(tokens)-1].GetLine(), tokens[len(tokens)-1].GetColumn()
 }

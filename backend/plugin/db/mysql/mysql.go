@@ -224,12 +224,12 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 				CommandsTotal:     int32(totalCommands),
 				CommandsCompleted: int32(currentIndex),
 				CommandStartPosition: &v1pb.TaskRun_ExecutionDetail_Position{
-					Line: int32(chunk[0].FirstStatementLine),
-					// TODO(rebelice): we should also set the column position.
+					Line:   int32(chunk[0].FirstStatementLine),
+					Column: int32(chunk[0].FirstStatementColumn),
 				},
 				CommandEndPosition: &v1pb.TaskRun_ExecutionDetail_Position{
-					Line: int32(chunk[len(chunk)-1].LastLine),
-					// TODO(rebelice): we should also set the column position.
+					Line:   int32(chunk[len(chunk)-1].LastLine),
+					Column: int32(chunk[len(chunk)-1].LastColumn),
 				},
 			})
 		}
@@ -244,12 +244,12 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 			return 0, &db.ErrorWithPosition{
 				Err: errors.Wrapf(err, "failed to execute context in a transaction"),
 				Start: &storepb.TaskRunResult_Position{
-					// TODO(rebelice): should find the first non-comment and blank column.
-					Line: int32(chunk[0].FirstStatementLine),
+					Line:   int32(chunk[0].FirstStatementLine),
+					Column: int32(chunk[0].FirstStatementColumn),
 				},
 				End: &storepb.TaskRunResult_Position{
-					// TODO(rebelice): should find the first non-comment and blank column.
-					Line: int32(chunk[len(chunk)-1].LastLine),
+					Line:   int32(chunk[len(chunk)-1].LastLine),
+					Column: int32(chunk[len(chunk)-1].LastColumn),
 				},
 			}
 		}

@@ -13,8 +13,12 @@ type SingleSQL struct {
 	BaseLine int
 	// FirstStatementLine is the line number of the first non-comment and non-blank line of the SQL in the original SQL.
 	FirstStatementLine int
+	// FirstStatementColumn is the column number of the first non-comment and non-blank line of the SQL in the original SQL.
+	FirstStatementColumn int
 	// LastLine is the line number of the last line of the SQL in the original SQL.
 	LastLine int
+	// LastColumn is the column number of the last line of the SQL in the original SQL.
+	LastColumn int
 	// The sql is empty, such as `/* comments */;` or just `;`.
 	Empty bool
 }
