@@ -16,6 +16,7 @@ delay = 500
 exclude_dir = [
   ".air",
   "bytebase-build",
+  "backend/server/dist",
   "docs",
   "frontend",
   "helm-charts",
