@@ -64,7 +64,7 @@
 import { useClipboard } from "@vueuse/core";
 import dayjs from "dayjs";
 import { escape } from "lodash-es";
-import { computed, reactive } from "vue";
+import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   pushNotification,
@@ -168,4 +168,8 @@ const handleQueryHistoryClick = async (queryHistory: QueryHistory) => {
     statement,
   });
 };
+
+onMounted(async () => {
+  await sqlEditorStore.fetchQueryHistoryList();
+});
 </script>
