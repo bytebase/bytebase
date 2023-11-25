@@ -57,6 +57,12 @@ export interface GetInstanceRequest {
 
 export interface ListInstancesRequest {
   /**
+   * The parent parameter's value depends on the target resource for the request.
+   * - instances.list(): An empty string. This method doesn't require a resource; it simply returns all instances the user has access to.
+   * - projects.instances.list(): projects/{PROJECT_ID}. This method lists all instances that have databases in the project.
+   */
+  parent: string;
+  /**
    * The maximum number of instances to return. The service may return fewer than
    * this value.
    * If unspecified, at most 50 instances will be returned.
@@ -344,11 +350,14 @@ export const GetInstanceRequest = {
 };
 
 function createBaseListInstancesRequest(): ListInstancesRequest {
-  return { pageSize: 0, pageToken: "", showDeleted: false };
+  return { parent: "", pageSize: 0, pageToken: "", showDeleted: false };
 }
 
 export const ListInstancesRequest = {
   encode(message: ListInstancesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(34).string(message.parent);
+    }
     if (message.pageSize !== 0) {
       writer.uint32(8).int32(message.pageSize);
     }
@@ -368,6 +377,13 @@ export const ListInstancesRequest = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.parent = reader.string();
+          continue;
         case 1:
           if (tag !== 8) {
             break;
@@ -400,6 +416,7 @@ export const ListInstancesRequest = {
 
   fromJSON(object: any): ListInstancesRequest {
     return {
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
       pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
       showDeleted: isSet(object.showDeleted) ? globalThis.Boolean(object.showDeleted) : false,
@@ -408,6 +425,9 @@ export const ListInstancesRequest = {
 
   toJSON(message: ListInstancesRequest): unknown {
     const obj: any = {};
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
     if (message.pageSize !== 0) {
       obj.pageSize = Math.round(message.pageSize);
     }
@@ -425,6 +445,7 @@ export const ListInstancesRequest = {
   },
   fromPartial(object: DeepPartial<ListInstancesRequest>): ListInstancesRequest {
     const message = createBaseListInstancesRequest();
+    message.parent = object.parent ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
     message.showDeleted = object.showDeleted ?? false;
@@ -2047,7 +2068,63 @@ export const InstanceServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([0])],
-          578365826: [new Uint8Array([15, 18, 13, 47, 118, 49, 47, 105, 110, 115, 116, 97, 110, 99, 101, 115])],
+          578365826: [
+            new Uint8Array([
+              52,
+              90,
+              35,
+              18,
+              33,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              125,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              18,
+              13,
+              47,
+              118,
+              49,
+              47,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+            ]),
+          ],
         },
       },
     },
