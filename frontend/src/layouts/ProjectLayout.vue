@@ -14,7 +14,7 @@
     />
   </HideInStandaloneMode>
 
-  <div class="p-6 h-full">
+  <div class="p-6 h-full overflow-auto">
     <router-view
       :project-slug="projectSlug"
       :project-webhook-slug="projectWebhookSlug"
