@@ -83,12 +83,17 @@ const prepareAccessibleDatabaseList = async () => {
   if (currentUserV1.value.name === UNKNOWN_USER_NAME) {
     return;
   }
+  let filter = "";
+  if (treeStore.selectedProject) {
+    filter = `project == "${treeStore.selectedProject.name}"`;
+  }
 
   // `databaseList` is the database list accessible by current user.
   // Only accessible instances and databases will be listed in the tree.
   const databaseList = (
     await databaseStore.fetchDatabaseList({
       parent: "instances/-",
+      filter: filter,
     })
   ).filter(
     (db) =>
@@ -99,7 +104,7 @@ const prepareAccessibleDatabaseList = async () => {
   treeStore.databaseList = databaseList;
 };
 
-const initializeTree = async () => {
+const prepareProject = async () => {
   const projectName = route.query.project;
   if (projectName) {
     try {
@@ -112,6 +117,9 @@ const initializeTree = async () => {
       treeStore.selectedProject = unknownProject();
     }
   }
+};
+
+const initializeTree = async () => {
   treeStore.buildTree();
 };
 
@@ -326,6 +334,7 @@ onMounted(async () => {
 
     await initCommonModelStores();
 
+    await prepareProject();
     await prepareAccessControlPolicy();
     await prepareAccessibleDatabaseList();
 
