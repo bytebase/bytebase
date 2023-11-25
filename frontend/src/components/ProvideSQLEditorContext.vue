@@ -330,7 +330,6 @@ onMounted(async () => {
     await prepareAccessibleDatabaseList();
 
     await setConnectionFromQuery();
-    await sqlEditorStore.fetchQueryHistoryList();
 
     await initializeTree();
     treeStore.state = "READY";
