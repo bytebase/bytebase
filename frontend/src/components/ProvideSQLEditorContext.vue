@@ -87,8 +87,8 @@ const prepareAccessibleDatabaseList = async () => {
     return;
   }
   let filter = "";
-  if (treeStore.selectedProject) {
-    filter = `project == "${treeStore.selectedProject.name}"`;
+  if (route.query.project) {
+    filter = `project == "${route.query.project}"`;
   }
 
   // `databaseList` is the database list accessible by current user.
