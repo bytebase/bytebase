@@ -257,18 +257,6 @@ const routes: Array<RouteRecordRaw> = [
             },
           },
           {
-            path: "/project/:projectSlug/branches/:branchName",
-            name: "workspace.branch.detail",
-            meta: {
-              overrideTitle: true,
-            },
-            components: {
-              content: () => import("../views/branch/BranchDetail.vue"),
-              leftSidebar: ProjectSidebar,
-            },
-            props: { content: true, leftSidebar: true },
-          },
-          {
             path: "sync-schema",
             name: "workspace.sync-schema",
             meta: { title: () => startCase(t("database.sync-schema.title")) },
@@ -732,6 +720,15 @@ const routes: Array<RouteRecordRaw> = [
                   },
                 },
                 component: () => import("../views/ProjectWebhookDetail.vue"),
+                props: true,
+              },
+              {
+                path: "branches/:branchName",
+                name: "workspace.branch.detail",
+                meta: {
+                  overrideTitle: true,
+                },
+                component: () => import("../views/branch/BranchDetail.vue"),
                 props: true,
               },
             ],
