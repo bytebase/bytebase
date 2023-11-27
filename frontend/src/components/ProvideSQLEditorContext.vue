@@ -14,19 +14,22 @@ import { onMounted, computed, watch, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import {
+  useEnvironmentV1Store,
+  useInstanceV1Store,
+  usePolicyV1Store,
+  useProjectV1Store,
+  useRoleStore,
+  useSettingV1Store,
+  useUserStore,
   useSQLEditorStore,
   useTabStore,
   pushNotification,
-  useProjectV1Store,
   useCurrentUserV1,
   useSheetV1Store,
-  useInstanceV1Store,
   useDatabaseV1Store,
-  initCommonModelStores,
 } from "@/store";
 import { useSQLEditorTreeStore } from "@/store/modules/sqlEditorTree";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import { usePolicyV1Store } from "@/store/modules/v1/policy";
 import {
   Connection,
   CoreTabInfo,
@@ -84,8 +87,8 @@ const prepareAccessibleDatabaseList = async () => {
     return;
   }
   let filter = "";
-  if (treeStore.selectedProject) {
-    filter = `project == "${treeStore.selectedProject.name}"`;
+  if (route.query.project) {
+    filter = `project == "${route.query.project}"`;
   }
 
   // `databaseList` is the database list accessible by current user.
@@ -332,7 +335,15 @@ onMounted(async () => {
   if (treeStore.state === "UNSET") {
     treeStore.state = "LOADING";
 
-    await initCommonModelStores();
+    await Promise.all([
+      useUserStore().fetchUserList(),
+      useSettingV1Store().fetchSettingList(),
+      useRoleStore().fetchRoleList(),
+      useEnvironmentV1Store().fetchEnvironments(),
+      useInstanceV1Store().fetchInstanceList(),
+      useProjectV1Store().fetchProjectList(true),
+      usePolicyV1Store().getOrFetchPolicyByName("policies/WORKSPACE_IAM"),
+    ]);
 
     await prepareProject();
     await prepareAccessControlPolicy();
