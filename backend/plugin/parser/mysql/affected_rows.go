@@ -15,13 +15,8 @@ import (
 )
 
 // GetStatementType return the type of statement.
-func GetStatementType(stmt *ParseResult) (result string) {
-	defer func() {
-		if result == "" {
-			result = "UNKNOWN"
-		}
-	}()
-
+func GetStatementType(stmt *ParseResult) string {
+	result := "UNKNOWN"
 	for _, child := range stmt.Tree.GetChildren() {
 		switch ctx := child.(type) {
 		case *mysql.QueryContext:
