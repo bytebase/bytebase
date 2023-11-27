@@ -2026,13 +2026,6 @@
       }
     }
   },
-  "archive": {
-    "archived": "已归档",
-    "project-search-bar-placeholder": "搜索@.lower:{'common.project'}的名称",
-    "instance-search-bar-placeholder": "搜索@.lower:{'common.instance'}的名称",
-    "environment-search-bar-placeholder": "搜索@.lower:{'common.environment'}的名称",
-    "sso-search-bar-placeholder": "搜索 SSO 的名称"
-  },
   "deployment-config": {
     "stage-n": "阶段 {n}",
     "add-selector": "添加选择条件",

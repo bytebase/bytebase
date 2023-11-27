@@ -50,7 +50,7 @@
           </template>
         </i18n-t>
         <a
-          href="https://www.bytebase.com/docs/get-started/install/local-mysql-instance?source=console"
+          href="https://www.bytebase.com/docs/tutorials/local-mysql-instance?source=console"
           target="_blank"
           class="normal-link"
         >

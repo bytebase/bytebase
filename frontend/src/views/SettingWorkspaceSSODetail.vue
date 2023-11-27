@@ -1,8 +1,8 @@
 <template>
-  <div class="w-full sticky top-0">
-    <ArchiveBanner v-if="isDeleted" />
+  <div v-if="isDeleted" class="w-full sticky top-0 mb-4">
+    <ArchiveBanner />
   </div>
-  <div class="w-full mt-4 space-y-4">
+  <div class="w-full space-y-4">
     <div class="w-full flex flex-row justify-between items-center">
       <div class="textinfolabel mr-4">
         {{ $t("settings.sso.description") }}

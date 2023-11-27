@@ -2,11 +2,10 @@
   <div class="flex flex-col space-y-4">
     <div class="px-4 flex justify-end items-center">
       <SearchBox
-        :value="state.searchText"
+        v-model:value="state.searchText"
         :placeholder="$t('common.filter-by-name')"
         :autofocus="true"
         style="width: 12rem"
-        @update:value="changeSearchText($event)"
       />
     </div>
     <ProjectV1Table :project-list="filteredProjectList" class="border-x-0" />
@@ -33,10 +32,6 @@ const state = reactive<LocalState>({
 });
 const currentUserV1 = useCurrentUserV1();
 const { projectList } = useProjectV1ListByCurrentUser();
-
-const changeSearchText = (searchText: string) => {
-  state.searchText = searchText;
-};
 
 const filteredProjectList = computed(() => {
   const list = projectList.value.filter(
