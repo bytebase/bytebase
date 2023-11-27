@@ -16,7 +16,7 @@ func TestLinkHealth(t *testing.T) {
 	// Extract all the links prefix with https://bytebase.com or https://www.bytebase.com in frontend code.
 	regexp := regexp.MustCompile(`(?m)https?:\/\/(www\.)?bytebase.com([-a-zA-Z0-9()@:%_\+.~#?&\/\/=]*)`)
 	// Our website may be re-deployed, so we need to retry a few times before we give up.
-	defaultInterval := 1 * time.Second
+	defaultInterval := 1 * time.Minute
 	defaultRetryTimes := 3
 
 	directory := "../frontend"
