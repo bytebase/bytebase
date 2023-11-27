@@ -12,16 +12,27 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestLinkHealth(t *testing.T) {
+var (
 	// Extract all the links prefix with https://bytebase.com or https://www.bytebase.com in frontend code.
-	regexp := regexp.MustCompile(`(?m)https?:\/\/(www\.)?bytebase.com([-a-zA-Z0-9()@:%_\+.~#?&\/\/=]*)`)
+	linkMatcher = regexp.MustCompile(`(?m)https?:\/\/(www\.)?bytebase.com([-a-zA-Z0-9()@:%_\+.~#?&\/\/=]*)`)
 
-	directory := "../frontend"
-	ignores := map[string]struct{}{
-		"node_modules": {},
+	ignores = map[string]bool{
+		"node_modules": true,
 	}
 
-	links, err := extractLinkRecursive(directory, ignores, regexp)
+	extensions = map[string]bool{
+		".html": true,
+		".js":   true,
+		".json": true,
+		".ts":   true,
+		".vue":  true,
+	}
+
+	frontendDirectory = "../frontend"
+)
+
+func TestLinkHealth(t *testing.T) {
+	links, err := extractLinkRecursive()
 	require.NoError(t, err)
 
 	// Check all the links are reachable.
@@ -32,76 +43,64 @@ func TestLinkHealth(t *testing.T) {
 	}
 }
 
-func extractLinkRecursive(directory string, ignores map[string]struct{}, regexp *regexp.Regexp) (map[string]struct{}, error) {
-	extensions := map[string]struct{}{
-		".html": {},
-		".js":   {},
-		".vue":  {},
-		".ts":   {},
-		".json": {},
-	}
-
+func extractLinkRecursive() (map[string]bool, error) {
 	// Initialize the result map
-	links := make(map[string]struct{})
+	links := make(map[string]bool)
 
 	// Define the function to be used with os.Walk
 	walkFn := func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
+
 		if _, ok := ignores[info.Name()]; ok {
 			return filepath.SkipDir
 		}
+		if info.IsDir() || (info.Mode()&os.ModeSymlink) == os.ModeSymlink {
+			return nil
+		}
+		// Check if the file has a valid extension
+		if _, ok := extensions[filepath.Ext(info.Name())]; !ok {
+			return nil
+		}
 
-		if !info.IsDir() {
-			// Check if the file has a valid extension
-			_, validExtension := extensions[filepath.Ext(info.Name())]
-			if !validExtension {
-				return nil
-			}
+		// Read the file content
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
 
-			// Read the file content
-			content, err := os.ReadFile(path)
-			if err != nil {
-				return err
-			}
-
-			// Find all matches using the regular expression
-			matches := regexp.FindAllString(string(content), -1)
-
-			// Add matches to the result map
-			for _, match := range matches {
-				links[match] = struct{}{}
-			}
+		// Find all matches using the regular expression
+		matches := linkMatcher.FindAllString(string(content), -1)
+		// Add matches to the result map
+		for _, match := range matches {
+			links[match] = true
 		}
 
 		return nil
 	}
 
 	// Start the recursive traversal using os.Walk
-	if err := filepath.Walk(directory, walkFn); err != nil {
-		// Handle the error, e.g., log or return it
-		return nil, errors.Wrapf(err, "failed to walk directory: %s", directory)
+	if err := filepath.Walk(frontendDirectory, walkFn); err != nil {
+		return nil, errors.Wrapf(err, "failed to walk directory: %s", frontendDirectory)
 	}
 
 	return links, nil
 }
 
 func checkLinkWithRetry(link string) error {
-	defaultRetryTimes := 3
-	defaultInterval := 1 * time.Minute
-	for i := 0; i < defaultRetryTimes; i++ {
+	for i := 0; i < 3; i++ {
 		// Request the link and check the response status code is 200.
 		res, err := http.Get(link)
 		if err != nil {
 			return errors.Wrapf(err, "failed to request link: %s", link)
 		}
 		if res.StatusCode != http.StatusOK {
-			time.Sleep(defaultInterval)
+			time.Sleep(1 * time.Minute)
 			continue
 		}
 		return nil
 	}
 
-	return errors.Errorf("Link %s is not reachable after %d retries", link, defaultRetryTimes)
+	return errors.Errorf("Link %s is not reachable after %d retries", link, 3)
 }
