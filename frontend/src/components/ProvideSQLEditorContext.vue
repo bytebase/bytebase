@@ -90,7 +90,7 @@ const prepareDatabases = async () => {
   treeStore.databaseList = databaseList;
 };
 
-const prepareProject = async () => {
+const prepareProjects = async () => {
   const projectName = route.query.project;
   if (projectName) {
     try {
@@ -102,6 +102,8 @@ const prepareProject = async () => {
     } catch (error) {
       treeStore.selectedProject = unknownProject();
     }
+  } else {
+    await useProjectV1Store().fetchProjectList(false);
   }
 };
 
@@ -332,7 +334,7 @@ onMounted(async () => {
       useRoleStore().fetchRoleList(),
       useEnvironmentV1Store().fetchEnvironments(),
       prepareInstances,
-      useProjectV1Store().fetchProjectList(false),
+      prepareProjects,
       policyV1Store.fetchPolicies({
         resourceType: PolicyResourceType.ENVIRONMENT,
         policyType: PolicyType.DISABLE_COPY_DATA,
@@ -340,7 +342,6 @@ onMounted(async () => {
       usePolicyV1Store().getOrFetchPolicyByName("policies/WORKSPACE_IAM"),
     ]);
 
-    await prepareProject();
     await prepareDatabases();
 
     await setConnectionFromQuery();
