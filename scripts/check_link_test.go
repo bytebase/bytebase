@@ -95,6 +95,8 @@ func checkLinkWithRetry(link string) error {
 		if err != nil {
 			return errors.Wrapf(err, "failed to request link: %s", link)
 		}
+		defer res.Body.Close()
+
 		if res.StatusCode != http.StatusOK {
 			time.Sleep(1 * time.Minute)
 			continue
