@@ -12,15 +12,14 @@
       class="flex flex-col lg:flex-row items-start justify-between gap-y-3 lg:items-center border-t border-control-border pt-4"
     >
       <SQLReviewCategoryTabFilter
-        :selected="params.selectedCategory"
+        v-model:value="params.selectedCategory"
         :category-list="categoryFilterList"
-        @select="$emit('change-category', $event)"
       />
-      <BBTableSearch
+      <SearchBox
         ref="searchField"
         class="w-full lg:w-auto"
+        v-model:value="params.searchText"
         :placeholder="$t('common.filter-by-name')"
-        @change-text="$emit('change-search-text', $event)"
       />
     </div>
   </div>
@@ -46,7 +45,6 @@ defineEmits<{
   (event: "toggle-checked-engine", engine: Engine): void;
   (event: "toggle-checked-level", level: SQLReviewRuleLevel): void;
   (event: "change-category", category: string | undefined): void;
-  (event: "change-search-text", keyword: string): void;
 }>();
 
 const { t } = useI18n();

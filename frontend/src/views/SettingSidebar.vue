@@ -28,10 +28,18 @@ const currentUserV1 = useCurrentUserV1();
 
 const getItemClass = (path: string | undefined) => {
   const list = [];
-  if (route.name === "workspace.profile") {
-    if (path === "/setting/member") {
-      list.push("router-link-active", "bg-link-hover");
-    }
+  switch (route.name) {
+    case "setting.workspace.sso.detail":
+    case "setting.workspace.sso.create":
+      if (path === "/setting/sso") {
+        list.push("router-link-active", "bg-link-hover");
+      }
+      break;
+    case "workspace.profile":
+      if (path === "/setting/member") {
+        list.push("router-link-active", "bg-link-hover");
+      }
+      break;
   }
   return list;
 };

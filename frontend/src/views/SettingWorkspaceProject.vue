@@ -9,10 +9,9 @@
         </span>
       </NCheckbox>
       <SearchBox
-        :value="state.searchText"
+        v-model:value="state.searchText"
         :placeholder="$t('common.filter-by-name')"
         :autofocus="true"
-        @update:value="changeSearchText($event)"
       />
     </div>
 
@@ -40,10 +39,6 @@ const state = reactive<LocalState>({
   searchText: "",
   includesArchived: false,
 });
-
-const changeSearchText = (searchText: string) => {
-  state.searchText = searchText;
-};
 
 const filteredProjectList = computed(() => {
   let list = [...projectList.value];

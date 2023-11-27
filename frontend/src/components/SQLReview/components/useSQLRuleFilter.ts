@@ -36,12 +36,6 @@ export const useSQLRuleFilter = (ruleList: MaybeRef<RuleTemplate[]>) => {
         params.checkedLevel.add(level);
       }
     },
-    changeCategory(category: string | undefined) {
-      params.selectedCategory = category;
-    },
-    changeSearchText(keyword: string) {
-      params.searchText = keyword;
-    },
   };
   const filteredRuleList = computed(() => {
     return unref(ruleList)

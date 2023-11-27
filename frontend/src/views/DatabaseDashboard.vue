@@ -46,10 +46,9 @@
             "
           />
           <SearchBox
-            :value="state.searchText"
+            v-model:value="state.searchText"
             :placeholder="$t('database.filter-database')"
             :autofocus="true"
-            @update:value="changeSearchText($event)"
           />
         </NInputGroup>
       </div>
@@ -267,10 +266,6 @@ const changeEnvironment = (environment: string | undefined) => {
   } else {
     router.replace({ name: "workspace.database" });
   }
-};
-
-const changeSearchText = (searchText: string) => {
-  state.searchText = searchText;
 };
 
 const filteredDatabaseList = computed(() => {
