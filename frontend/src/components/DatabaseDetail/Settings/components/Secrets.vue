@@ -16,7 +16,7 @@
           <i18n-t keypath="database.secret.description">
             <template #guide>
               <a
-                href="https://www.bytebase.com/docs/change-database/secret?source=console"
+                href="https://www.bytebase.com/docs/security/secret?source=console"
                 target="_blank"
                 class="normal-link"
               >

@@ -46,7 +46,7 @@
             {{ $t("custom-approval.risk-rule.condition.description-tips") }}
             <LearnMoreLink
               v-if="false"
-              url="https://www.bytebase.com/404"
+              url="https://www.bytebase.com/docs/administration/risk-center/#configuration?source=console"
               class="ml-1"
             />
           </div>
