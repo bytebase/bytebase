@@ -8,7 +8,8 @@ on:
     paths:
       - "frontend/**"
 
- go-tests:
+jobs:
+  go-tests:
     runs-on: self-hosted
     timeout-minutes: 30
     steps:
