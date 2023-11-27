@@ -50,7 +50,7 @@ var transferDatabaseMethods = map[string]bool{
 }
 
 var methodPermissionMap = map[string]iam.Permission{
-	"InstanceService/ListInstance":      iam.PermissionInstanceList,
+	"InstanceService/ListInstances":     iam.PermissionInstanceList,
 	"InstanceService/GetInstance":       iam.PermissionInstanceGet,
 	"InstanceService/CreateInstance":    iam.PermissionInstanceCreate,
 	"InstanceService/UpdateInstance":    iam.PermissionInstanceUpdate,
@@ -62,6 +62,28 @@ var methodPermissionMap = map[string]iam.Permission{
 	"InstanceService/RemoveDataSource":  iam.PermissionInstanceUpdate,
 	"InstanceService/UpdateDataSource":  iam.PermissionInstanceUpdate,
 	"InstanceService/SyncSlowQueries":   iam.PermissionInstanceSync,
+
+	"DatabaseService/GetDatabase":            iam.PermissionDatabasesGet,
+	"DatabaseService/ListDatabases":          iam.PermissionDatabasesList,
+	"DatabaseService/SearchDatabases":        iam.PermissionDatabasesList,
+	"DatabaseService/UpdateDatabase":         iam.PermissionDatabasesUpdate,
+	"DatabaseService/BatchUpdateDatabases":   iam.PermissionDatabasesUpdate,
+	"DatabaseService/SyncDatabase":           iam.PermissionDatabasesSync,
+	"DatabaseService/GetDatabaseMetadata":    iam.PermissionDatabasesGetMetadata,
+	"DatabaseService/UpdateDatabaseMetadata": iam.PermissionDatabasesUpdateMetadata,
+	"DatabaseService/GetDatabaseSchema":      iam.PermissionDatabasesGetSchema,
+	"DatabaseService/DiffSchema":             "", // handled in the method.
+	"DatabaseService/GetBackupSetting":       iam.PermissionDatabasesGetBackupSetting,
+	"DatabaseService/UpdateBackupSetting":    iam.PermissionDatabasesUpdateBackupSetting,
+	"DatabaseService/CreateBackup":           iam.PermissionBackupsCreate,
+	"DatabaseService/ListBackups":            iam.PermissionBackupsList,
+	"DatabaseService/ListSlowQueries":        "", // TODO(p0ny): slow query is somewhat related to the workspace slow query setting. Do this one together with the workspace slow query.
+	"DatabaseService/ListSecrets":            iam.PermissionDatabaseSecretsList,
+	"DatabaseService/UpdateSecret":           iam.PermissionDatabaseSecretsUpdate,
+	"DatabaseService/DeleteSecret":           iam.PermissionDatabaseSecretsDelete,
+	"DatabaseService/AdviseIndex":            "", // TODO(p0ny): not critical, implement later.
+	"DatabaseService/ListChangeHistories":    iam.PermissionChangeHistoriesList,
+	"DatabaseService/GetChangeHistory":       iam.PermissionChangeHistoriesGet,
 }
 
 func isOwnerAndDBAMethod(methodName string) bool {
