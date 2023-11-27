@@ -63,12 +63,12 @@ export const useMonaco = async () => {
     ]);
   };
 
-  const formatContent = (
+  const formatContent = async (
     editorInstance: Editor.IStandaloneCodeEditor,
     dialect: SQLDialect
   ) => {
     const sql = editorInstance.getValue();
-    const { data, error } = sqlFormatter(sql, dialect);
+    const { data, error } = await sqlFormatter(sql, dialect);
     if (error) {
       return;
     }

@@ -98,8 +98,11 @@ import DetailPanel from "./DetailPanel.vue";
 import EmptyView from "./EmptyView.vue";
 import ErrorView from "./ErrorView.vue";
 import RequestQueryButton from "./RequestQueryButton.vue";
-import SingleResultViewV1 from "./SingleResultViewV1.vue";
 import { provideSQLResultViewContext, SQLResultViewContext } from "./context";
+
+const { default: SingleResultViewV1 } = await import(
+  "./SingleResultViewV1.vue"
+);
 
 type ViewMode = "SINGLE-RESULT" | "MULTI-RESULT" | "EMPTY" | "ERROR";
 
