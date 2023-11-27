@@ -130,12 +130,7 @@
 </template>
 
 <script lang="ts" setup>
-import {
-  ColumnDef,
-  getCoreRowModel,
-  getPaginationRowModel,
-  useVueTable,
-} from "@tanstack/vue-table";
+import type { ColumnDef } from "@tanstack/vue-table";
 import { sortBy } from "lodash-es";
 import cloneDeep from "lodash-es/cloneDeep";
 import { NPagination } from "naive-ui";
@@ -171,6 +166,10 @@ import {
 import DatabaseGroupTableRow from "./DatabaseGroupTableRow.vue";
 import DatabaseTableRow from "./DatabaseTableRow.vue";
 import { isDatabase } from "./utils";
+
+const { getCoreRowModel, getPaginationRowModel, useVueTable } = await import(
+  "@tanstack/vue-table"
+);
 
 type Mode =
   | "ALL"

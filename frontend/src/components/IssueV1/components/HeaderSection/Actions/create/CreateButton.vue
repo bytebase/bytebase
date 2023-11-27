@@ -147,7 +147,7 @@ const createSheets = async () => {
       sheet.database = config.target;
       pendingCreateSheetMap.set(sheet.name, sheet);
 
-      maybeFormatSQL(sheet, sheet.database);
+      await maybeFormatSQL(sheet, sheet.database);
     }
   }
   const pendingCreateSheetList = Array.from(pendingCreateSheetMap.values());
@@ -184,7 +184,7 @@ const createPlan = async () => {
   return createdPlan;
 };
 
-const maybeFormatSQL = (sheet: Sheet, target: string) => {
+const maybeFormatSQL = async (sheet: Sheet, target: string) => {
   if (!formatOnSave.value) {
     return;
   }
@@ -202,7 +202,7 @@ const maybeFormatSQL = (sheet: Sheet, target: string) => {
   if (statement.length > MAX_FORMATTABLE_STATEMENT_SIZE) {
     return;
   }
-  const { error, data: formatted } = formatSQL(statement, dialect);
+  const { error, data: formatted } = await formatSQL(statement, dialect);
   if (error) {
     return;
   }

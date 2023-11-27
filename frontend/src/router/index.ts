@@ -14,7 +14,6 @@ import DatabaseLayout from "@/layouts/DatabaseLayout.vue";
 import InstanceLayout from "@/layouts/InstanceLayout.vue";
 import SQLEditorLayout from "@/layouts/SQLEditorLayout.vue";
 import SplashLayout from "@/layouts/SplashLayout.vue";
-import { useConversationStore } from "@/plugins/ai/store";
 import { t } from "@/plugins/i18n";
 import {
   hasFeature,
@@ -1002,7 +1001,9 @@ router.beforeEach((to, from, next) => {
     to.name === PASSWORD_FORGOT_MODULE
   ) {
     useTabStore().reset();
-    useConversationStore().reset();
+    import("@/plugins/ai/store").then(({ useConversationStore }) => {
+      useConversationStore().reset();
+    });
     if (isLoggedIn) {
       if (typeof to.query.redirect === "string") {
         location.replace(to.query.redirect);
