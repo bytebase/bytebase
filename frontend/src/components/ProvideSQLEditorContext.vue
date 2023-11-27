@@ -19,8 +19,6 @@ import {
   usePolicyV1Store,
   useProjectV1Store,
   useRoleStore,
-  useSettingV1Store,
-  useUserStore,
   useSQLEditorStore,
   useTabStore,
   pushNotification,
@@ -69,14 +67,7 @@ const treeStore = useSQLEditorTreeStore();
 const tabStore = useTabStore();
 const sheetV1Store = useSheetV1Store();
 
-const prepareAccessControlPolicy = async () => {
-  await policyV1Store.fetchPolicies({
-    resourceType: PolicyResourceType.ENVIRONMENT,
-    policyType: PolicyType.DISABLE_COPY_DATA,
-  });
-};
-
-const prepareAccessibleDatabaseList = async () => {
+const prepareDatabases = async () => {
   // It will also be called when user logout
   if (currentUserV1.value.name === UNKNOWN_USER_NAME) {
     return;
@@ -327,18 +318,19 @@ onMounted(async () => {
     treeStore.state = "LOADING";
 
     await Promise.all([
-      useUserStore().fetchUserList(),
-      useSettingV1Store().fetchSettingList(),
       useRoleStore().fetchRoleList(),
       useEnvironmentV1Store().fetchEnvironments(),
       useInstanceV1Store().fetchInstanceList(),
-      useProjectV1Store().fetchProjectList(true),
+      useProjectV1Store().fetchProjectList(false),
+      policyV1Store.fetchPolicies({
+        resourceType: PolicyResourceType.ENVIRONMENT,
+        policyType: PolicyType.DISABLE_COPY_DATA,
+      }),
       usePolicyV1Store().getOrFetchPolicyByName("policies/WORKSPACE_IAM"),
     ]);
 
     await prepareProject();
-    await prepareAccessControlPolicy();
-    await prepareAccessibleDatabaseList();
+    await prepareDatabases();
 
     await setConnectionFromQuery();
 
