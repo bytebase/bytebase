@@ -40,7 +40,7 @@
         <heroicons-outline:archive class="ml-1 w-4 h-4 text-control" />
       </template>
       <span class="whitespace-nowrap">
-        {{ $t("archive.archived") }}
+        {{ $t("common.archived") }}
       </span>
     </NTooltip>
   </div>

@@ -12,15 +12,16 @@
       class="flex flex-col lg:flex-row items-start justify-between gap-y-3 lg:items-center border-t border-control-border pt-4"
     >
       <SQLReviewCategoryTabFilter
-        :selected="params.selectedCategory"
+        :value="params.selectedCategory"
         :category-list="categoryFilterList"
-        @select="$emit('change-category', $event)"
+        @update:value="$emit('change-category', $event)"
       />
-      <BBTableSearch
+      <SearchBox
         ref="searchField"
+        :value="params.searchText"
         class="w-full lg:w-auto"
         :placeholder="$t('common.filter-by-name')"
-        @change-text="$emit('change-search-text', $event)"
+        @update:value="$emit('change-search-text', $event)"
       />
     </div>
   </div>

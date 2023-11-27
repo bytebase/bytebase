@@ -43,25 +43,18 @@
         />
       </div>
       <div v-if="hasPermission" class="flex space-x-2">
-        <button
+        <NButton
           v-if="reviewPolicy.enforce"
-          type="button"
-          class="btn-normal py-2 px-4"
           @click.prevent="state.showDisableModal = true"
         >
           {{ $t("common.disable") }}
-        </button>
-        <button
-          v-else
-          type="button"
-          class="btn-normal py-2 px-4"
-          @click.prevent="state.showEnableModal = true"
-        >
+        </NButton>
+        <NButton v-else @click.prevent="state.showEnableModal = true">
           {{ $t("common.enable") }}
-        </button>
-        <button type="button" class="btn-primary" @click="onEdit">
+        </NButton>
+        <NButton type="primary" @click="onEdit">
           {{ $t("sql-review.create.configure-rule.change-template") }}
-        </button>
+        </NButton>
       </div>
     </div>
     <BBAttention
@@ -98,12 +91,12 @@
       v-if="state.rulesUpdated"
       class="w-full mt-4 py-4 border-t border-block-border flex justify-between bg-white sticky bottom-0 z-10"
     >
-      <button type="button" class="btn-normal" @click.prevent="onCancelChanges">
+      <NButton @click.prevent="onCancelChanges">
         <span> {{ $t("common.cancel") }}</span>
-      </button>
-      <button type="button" class="btn-primary" @click.prevent="onApplyChanges">
+      </NButton>
+      <NButton type="primary" @click.prevent="onApplyChanges">
         {{ $t("common.confirm-and-update") }}
-      </button>
+      </NButton>
     </div>
   </div>
   <BBAlert
