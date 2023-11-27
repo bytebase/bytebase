@@ -54,7 +54,7 @@ func newSchemaState(s *storepb.SchemaMetadata, context *FinderContext) *SchemaSt
 	}
 
 	for _, table := range s.Tables {
-		tableState := newTableState(table)
+		tableState := newTableState(table, context)
 		schema.tableSet[table.Name] = tableState
 
 		schema.identifierMap[table.Name] = true
@@ -80,7 +80,7 @@ func newViewState(v *storepb.ViewMetadata) *ViewState {
 	}
 }
 
-func newTableState(t *storepb.TableMetadata) *TableState {
+func newTableState(t *storepb.TableMetadata, context *FinderContext) *TableState {
 	table := &TableState{
 		name:          t.Name,
 		engine:        newStringPointer(t.Engine),
@@ -92,11 +92,21 @@ func newTableState(t *storepb.TableMetadata) *TableState {
 	}
 
 	for i, column := range t.Columns {
-		table.columnSet[column.Name] = newColumnState(column, i+1)
+		columnName := column.Name
+		switch context.EngineType {
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB:
+			columnName = strings.ToLower(columnName)
+		}
+		table.columnSet[columnName] = newColumnState(column, i+1)
 	}
 
 	for _, index := range t.Indexes {
-		table.indexSet[index.Name] = newIndexState(index)
+		indexName := index.Name
+		switch context.EngineType {
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB:
+			indexName = strings.ToLower(indexName)
+		}
+		table.indexSet[indexName] = newIndexState(index)
 	}
 
 	return table

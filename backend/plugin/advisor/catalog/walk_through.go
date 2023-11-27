@@ -560,7 +560,7 @@ func (d *DatabaseState) alterTable(node *tidbast.AlterTableStmt) *WalkThroughErr
 }
 
 func (t *TableState) changeIndexVisibility(ctx *FinderContext, indexName string, visibility tidbast.IndexVisibility) *WalkThroughError {
-	index, exists := t.indexSet[indexName]
+	index, exists := t.indexSet[strings.ToLower(indexName)]
 	if !exists {
 		if ctx.CheckIntegrity {
 			return NewIndexNotExistsError(t.name, indexName)
@@ -590,7 +590,7 @@ func (t *TableState) renameIndex(ctx *FinderContext, oldName string, newName str
 		}
 	}
 
-	index, exists := t.indexSet[oldName]
+	index, exists := t.indexSet[strings.ToLower(oldName)]
 	if !exists {
 		if ctx.CheckIntegrity {
 			return NewIndexNotExistsError(t.name, oldName)
@@ -598,13 +598,13 @@ func (t *TableState) renameIndex(ctx *FinderContext, oldName string, newName str
 		index = t.createIncompleteIndex(oldName)
 	}
 
-	if _, exists := t.indexSet[newName]; exists {
+	if _, exists := t.indexSet[strings.ToLower(newName)]; exists {
 		return NewIndexExistsError(t.name, newName)
 	}
 
 	index.name = newName
-	delete(t.indexSet, oldName)
-	t.indexSet[newName] = index
+	delete(t.indexSet, strings.ToLower(oldName))
+	t.indexSet[strings.ToLower(newName)] = index
 	return nil
 }
 
@@ -612,12 +612,12 @@ func (t *TableState) createIncompleteIndex(name string) *IndexState {
 	index := &IndexState{
 		name: name,
 	}
-	t.indexSet[name] = index
+	t.indexSet[strings.ToLower(name)] = index
 	return index
 }
 
 func (t *TableState) changeColumnDefault(ctx *FinderContext, column *tidbast.ColumnDef) *WalkThroughError {
-	columnName := column.Name.Name.O
+	columnName := column.Name.Name.L
 	colState, exists := t.columnSet[columnName]
 	if !exists {
 		if ctx.CheckIntegrity {
@@ -705,11 +705,11 @@ func (s *SchemaState) createIncompleteTable(name string) *TableState {
 }
 
 func (t *TableState) renameColumn(ctx *FinderContext, oldName string, newName string) *WalkThroughError {
-	if oldName == newName {
+	if strings.EqualFold(oldName, newName) {
 		return nil
 	}
 
-	column, exists := t.columnSet[oldName]
+	column, exists := t.columnSet[strings.ToLower(oldName)]
 	if !exists {
 		if ctx.CheckIntegrity {
 			return &WalkThroughError{
@@ -720,7 +720,7 @@ func (t *TableState) renameColumn(ctx *FinderContext, oldName string, newName st
 		column = t.createIncompleteColumn(oldName)
 	}
 
-	if _, exists := t.columnSet[newName]; exists {
+	if _, exists := t.columnSet[strings.ToLower(newName)]; exists {
 		return &WalkThroughError{
 			Type:    ErrorTypeColumnExists,
 			Content: fmt.Sprintf("Column `%s` already exists in table `%s", newName, t.name),
@@ -728,8 +728,8 @@ func (t *TableState) renameColumn(ctx *FinderContext, oldName string, newName st
 	}
 
 	column.name = newName
-	delete(t.columnSet, oldName)
-	t.columnSet[newName] = column
+	delete(t.columnSet, strings.ToLower(oldName))
+	t.columnSet[strings.ToLower(newName)] = column
 
 	t.renameColumnInIndexKey(oldName, newName)
 	return nil
@@ -739,17 +739,17 @@ func (t *TableState) createIncompleteColumn(name string) *ColumnState {
 	column := &ColumnState{
 		name: name,
 	}
-	t.columnSet[name] = column
+	t.columnSet[strings.ToLower(name)] = column
 	return column
 }
 
 func (t *TableState) renameColumnInIndexKey(oldName string, newName string) {
-	if oldName == newName {
+	if strings.EqualFold(oldName, newName) {
 		return
 	}
 	for _, index := range t.indexSet {
 		for i, key := range index.expressionList {
-			if key == oldName {
+			if strings.EqualFold(key, oldName) {
 				index.expressionList[i] = newName
 			}
 		}
@@ -762,7 +762,7 @@ func (t *TableState) renameColumnInIndexKey(oldName string, newName string) {
 // 2. rename column from indexSet.
 // 3. create a new column in columnSet.
 func (t *TableState) completeTableChangeColumn(ctx *FinderContext, oldName string, newColumn *tidbast.ColumnDef, position *tidbast.ColumnPosition) *WalkThroughError {
-	column, exists := t.columnSet[oldName]
+	column, exists := t.columnSet[strings.ToLower(oldName)]
 	if !exists {
 		return NewColumnNotExistsError(t.name, oldName)
 	}
@@ -793,7 +793,7 @@ func (t *TableState) completeTableChangeColumn(ctx *FinderContext, oldName strin
 			*col.position--
 		}
 	}
-	delete(t.columnSet, column.name)
+	delete(t.columnSet, strings.ToLower(column.name))
 
 	// rename column from indexSet
 	t.renameColumnInIndexKey(oldName, newColumn.Name.Name.O)
@@ -805,7 +805,7 @@ func (t *TableState) completeTableChangeColumn(ctx *FinderContext, oldName strin
 // incompleteTableChangeColumn changes column definition.
 // It does not maintain the position of the column.
 func (t *TableState) incompleteTableChangeColumn(ctx *FinderContext, oldName string, newColumn *tidbast.ColumnDef, position *tidbast.ColumnPosition) *WalkThroughError {
-	delete(t.columnSet, oldName)
+	delete(t.columnSet, strings.ToLower(oldName))
 
 	// rename column from indexSet
 	t.renameColumnInIndexKey(oldName, newColumn.Name.Name.O)
@@ -823,8 +823,8 @@ func (t *TableState) changeColumn(ctx *FinderContext, oldName string, newColumn 
 
 func (t *TableState) dropIndex(ctx *FinderContext, indexName string) *WalkThroughError {
 	if ctx.CheckIntegrity {
-		if _, exists := t.indexSet[indexName]; !exists {
-			if indexName == PrimaryKeyName {
+		if _, exists := t.indexSet[strings.ToLower(indexName)]; !exists {
+			if strings.EqualFold(indexName, PrimaryKeyName) {
 				return &WalkThroughError{
 					Type:    ErrorTypePrimaryKeyNotExists,
 					Content: fmt.Sprintf("Primary key does not exist in table `%s`", t.name),
@@ -834,12 +834,12 @@ func (t *TableState) dropIndex(ctx *FinderContext, indexName string) *WalkThroug
 		}
 	}
 
-	delete(t.indexSet, indexName)
+	delete(t.indexSet, strings.ToLower(indexName))
 	return nil
 }
 
 func (t *TableState) completeTableDropColumn(columnName string) *WalkThroughError {
-	column, exists := t.columnSet[columnName]
+	column, exists := t.columnSet[strings.ToLower(columnName)]
 	if !exists {
 		return NewColumnNotExistsError(t.name, columnName)
 	}
@@ -858,7 +858,7 @@ func (t *TableState) completeTableDropColumn(columnName string) *WalkThroughErro
 		index.dropColumn(columnName)
 		// If all columns that make up an index are dropped, the index is dropped as well.
 		if len(index.expressionList) == 0 {
-			delete(t.indexSet, index.name)
+			delete(t.indexSet, strings.ToLower(index.name))
 		}
 	}
 
@@ -869,7 +869,7 @@ func (t *TableState) completeTableDropColumn(columnName string) *WalkThroughErro
 		}
 	}
 
-	delete(t.columnSet, columnName)
+	delete(t.columnSet, strings.ToLower(columnName))
 	return nil
 }
 
@@ -886,7 +886,7 @@ func (t *TableState) incompleteTableDropColumn(columnName string) *WalkThroughEr
 		}
 	}
 
-	delete(t.columnSet, columnName)
+	delete(t.columnSet, strings.ToLower(columnName))
 	return nil
 }
 
@@ -903,7 +903,7 @@ func (idx *IndexState) dropColumn(columnName string) {
 	}
 	var newKeyList []string
 	for _, key := range idx.expressionList {
-		if key != columnName {
+		if !strings.EqualFold(key, columnName) {
 			newKeyList = append(newKeyList, key)
 		}
 	}
@@ -922,7 +922,7 @@ func (t *TableState) reorderColumn(position *tidbast.ColumnPosition) (int, *Walk
 		}
 		return 1, nil
 	case tidbast.ColumnPositionAfter:
-		columnName := position.RelativeColumn.Name.O
+		columnName := position.RelativeColumn.Name.L
 		column, exist := t.columnSet[columnName]
 		if !exist {
 			return 0, NewColumnNotExistsError(t.name, columnName)
@@ -1111,7 +1111,7 @@ func (t *TableState) validateAndGetKeyStringList(ctx *FinderContext, keyList []*
 			}
 			res = append(res, str)
 		} else {
-			columnName := key.Column.Name.O
+			columnName := key.Column.Name.L
 			column, exists := t.columnSet[columnName]
 			if !exists {
 				if ctx.CheckIntegrity {
@@ -1170,7 +1170,7 @@ func checkDefault(columnName string, columnType *types.FieldType, value tidbast.
 }
 
 func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef, position *tidbast.ColumnPosition) *WalkThroughError {
-	if _, exists := t.columnSet[column.Name.Name.O]; exists {
+	if _, exists := t.columnSet[column.Name.Name.L]; exists {
 		return &WalkThroughError{
 			Type:    ErrorTypeColumnExists,
 			Content: fmt.Sprintf("Column `%s` already exists in table `%s`", column.Name.Name.O, t.name),
@@ -1188,7 +1188,7 @@ func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef,
 
 	vTrue := true
 	col := &ColumnState{
-		name:         column.Name.Name.O,
+		name:         column.Name.Name.L,
 		position:     &pos,
 		defaultValue: nil,
 		nullable:     &vTrue,
@@ -1269,7 +1269,7 @@ func (t *TableState) createColumn(ctx *FinderContext, column *tidbast.ColumnDef,
 		}
 	}
 
-	t.columnSet[col.name] = col
+	t.columnSet[strings.ToLower(col.name)] = col
 	return nil
 }
 
@@ -1281,7 +1281,7 @@ func (t *TableState) createIndex(name string, keyList []string, unique bool, tp 
 		}
 	}
 	if name != "" {
-		if _, exists := t.indexSet[name]; exists {
+		if _, exists := t.indexSet[strings.ToLower(name)]; exists {
 			return NewIndexExistsError(t.name, name)
 		}
 	} else {
@@ -1291,7 +1291,7 @@ func (t *TableState) createIndex(name string, keyList []string, unique bool, tp 
 			if suffix > 1 {
 				name = fmt.Sprintf("%s_%d", keyList[0], suffix)
 			}
-			if _, exists := t.indexSet[name]; !exists {
+			if _, exists := t.indexSet[strings.ToLower(name)]; !exists {
 				break
 			}
 			suffix++
@@ -1312,7 +1312,7 @@ func (t *TableState) createIndex(name string, keyList []string, unique bool, tp 
 		index.visible = newFalsePointer()
 	}
 
-	t.indexSet[name] = index
+	t.indexSet[strings.ToLower(name)] = index
 	return nil
 }
 
