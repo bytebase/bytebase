@@ -90,28 +90,17 @@ func extractLinkRecursive() (map[string]bool, error) {
 
 func checkLinkWithRetry(link string) error {
 	for i := 0; i < 3; i++ {
-		success, err := checkLink(link)
+		// Request the link and check the response status code is 200.
+		res, err := http.Get(link)
 		if err != nil {
 			return errors.Wrapf(err, "failed to request link: %s", link)
 		}
-		if success {
-			return nil
+		if res.StatusCode != http.StatusOK {
+			time.Sleep(1 * time.Minute)
+			continue
 		}
-		time.Sleep(1 * time.Minute)
+		return nil
 	}
 
 	return errors.Errorf("Link %s is not reachable after %d retries", link, 3)
-}
-
-func checkLink(link string) (bool, error) {
-	// Request the link and check the response status code is 200.
-	res, err := http.Get(link)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to request link: %s", link)
-	}
-	defer res.Body.Close()
-	if res.StatusCode != http.StatusOK {
-		return false, nil
-	}
-	return true, nil
 }
