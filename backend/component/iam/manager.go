@@ -82,6 +82,7 @@ func (m *Manager) hasPermissionOnWorkspace(p Permission, workspaceRoles []string
 
 func (m *Manager) hasPermissionOnEveryProject(p Permission, projectRoles [][]string) bool {
 	for _, projectRole := range projectRoles {
+		has := false
 		for _, role := range projectRole {
 			permissions, ok := m.roles[role]
 			if !ok {
@@ -89,12 +90,16 @@ func (m *Manager) hasPermissionOnEveryProject(p Permission, projectRoles [][]str
 			}
 			for _, permission := range permissions {
 				if permission == p {
-					return true
+					has = true
+					break
 				}
 			}
 		}
+		if !has {
+			return false
+		}
 	}
-	return false
+	return true
 }
 func (*Manager) getWorkspaceRoles(user *store.UserMessage) ([]string, error) {
 	role, err := convertWorkspaceRole(user.Role.String())
