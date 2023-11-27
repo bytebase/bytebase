@@ -65,8 +65,22 @@ func (s *InstanceService) GetInstance(ctx context.Context, request *v1pb.GetInst
 
 // ListInstances lists all instances.
 func (s *InstanceService) ListInstances(ctx context.Context, request *v1pb.ListInstancesRequest) (*v1pb.ListInstancesResponse, error) {
+	var project *store.ProjectMessage
+	if request.Parent != "" {
+		p, err := s.getProjectMessage(ctx, request.Parent)
+		if err != nil {
+			return nil, err
+		}
+		if p.Deleted {
+			return nil, status.Errorf(codes.NotFound, "project %q has been deleted", request.Parent)
+		}
+		project = p
+	}
 	find := &store.FindInstanceMessage{
 		ShowDeleted: request.ShowDeleted,
+	}
+	if project != nil {
+		find.ProjectUID = &project.UID
 	}
 	instances, err := s.store.ListInstancesV2(ctx, find)
 	if err != nil {
