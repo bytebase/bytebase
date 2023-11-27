@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center justify-end gap-3">
+  <div v-if="!isCreating" class="flex items-center justify-end gap-3">
     <div class="flex items-center justify-end gap-1">
       <NTooltip>
         <template #trigger>
