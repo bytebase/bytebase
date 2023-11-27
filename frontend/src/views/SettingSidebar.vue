@@ -40,6 +40,12 @@ const getItemClass = (path: string | undefined) => {
         list.push("router-link-active", "bg-link-hover");
       }
       break;
+    case "setting.workspace.sql-review.create":
+    case "setting.workspace.sql-review.detail":
+      if (path === "/setting/sql-review") {
+        list.push("router-link-active", "bg-link-hover");
+      }
+      break;
   }
   return list;
 };
