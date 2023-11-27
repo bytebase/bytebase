@@ -75,7 +75,7 @@ const prepareDatabases = async () => {
   }
   let filter = "";
   if (route.query.project) {
-    filter = `project == "${route.query.project}"`;
+    filter = `project == "${projectNamePrefix}${route.query.project}"`;
   }
 
   // `databaseList` is the database list accessible by current user.
