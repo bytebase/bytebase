@@ -22,7 +22,9 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 	switch fullMethod {
 	// handled in the method because checking is complex.
 	case
-		v1pb.DatabaseService_ListDatabases_FullMethodName:
+		v1pb.DatabaseService_ListDatabases_FullMethodName,
+		v1pb.DatabaseService_SearchDatabases_FullMethodName,
+		v1pb.DatabaseService_DiffSchema_FullMethodName:
 
 	// below are "workspace-level" permissions.
 	// we don't have to go down to the project level.
@@ -47,7 +49,13 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 			return status.Errorf(codes.PermissionDenied, "permission denied for method %q, user does not have permission %q", fullMethod, p)
 		}
 	case
-		v1pb.DatabaseService_GetDatabase_FullMethodName:
+		v1pb.DatabaseService_GetDatabase_FullMethodName,
+		v1pb.DatabaseService_UpdateDatabase_FullMethodName,
+		v1pb.DatabaseService_BatchUpdateDatabases_FullMethodName,
+		v1pb.DatabaseService_SyncDatabase_FullMethodName,
+		v1pb.DatabaseService_GetDatabaseMetadata_FullMethodName,
+		v1pb.DatabaseService_UpdateDatabaseMetadata_FullMethodName,
+		v1pb.DatabaseService_GetDatabaseSchema_FullMethodName:
 		projectIDs, err := in.getProjectIDsForDatabaseService(ctx, req)
 		if err != nil {
 			return status.Errorf(codes.Internal, "failed to check permission, err %v", err)
@@ -109,7 +117,11 @@ func (in *ACLInterceptor) getProjectIDsForDatabaseService(ctx context.Context, r
 	case *v1pb.SyncDatabaseRequest:
 		databaseNames = append(databaseNames, r.GetName())
 	case *v1pb.GetDatabaseMetadataRequest:
-		databaseNames = append(databaseNames, r.GetName())
+		databaseName, err := common.TrimSuffix(r.GetName(), "/metadata")
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get databaseName from %q", r.GetName())
+		}
+		databaseNames = append(databaseNames, databaseName)
 	case *v1pb.UpdateDatabaseMetadataRequest:
 		databaseName, err := common.TrimSuffix(r.GetDatabaseMetadata().GetName(), "/metadata")
 		if err != nil {
@@ -125,6 +137,23 @@ func (in *ACLInterceptor) getProjectIDsForDatabaseService(ctx context.Context, r
 			}
 			projectIDs = append(projectIDs, projectID)
 		}
+	case *v1pb.BatchUpdateDatabasesRequest:
+		for _, request := range r.Requests {
+			databaseNames = append(databaseNames, request.GetDatabase().GetName())
+			if hasPath(request.GetUpdateMask(), "project") {
+				projectID, err := common.GetProjectID(request.GetDatabase().GetProject())
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to get projectID from %q", request.GetDatabase().GetProject())
+				}
+				projectIDs = append(projectIDs, projectID)
+			}
+		}
+	case *v1pb.GetDatabaseSchemaRequest:
+		databaseName, err := common.TrimSuffix(r.GetName(), "/schema")
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get databaseName from %q", r.GetName())
+		}
+		databaseNames = append(databaseNames, databaseName)
 	}
 
 	for _, databaseName := range databaseNames {
