@@ -1,5 +1,10 @@
 <template>
-  <BBBadge :text="text" :can-remove="false" :badge-style="style" />
+  <BBBadge
+    :text="text"
+    :can-remove="false"
+    :badge-style="style"
+    :size="'small'"
+  />
 </template>
 
 <script lang="ts" setup>

@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex flex-col items-start xl:flex-row xl:items-center gap-y-5 gap-x-5"
+    class="flex flex-col items-start 2xl:flex-row 2xl:items-center gap-y-5 gap-x-5"
   >
     <div class="flex items-center gap-x-5">
       <label
@@ -27,7 +27,7 @@
         </span>
       </label>
     </div>
-    <div class="hidden xl:block h-[1.5rem] border-l border-control-border" />
+    <div class="hidden 2xl:block h-[1.5rem] border-l border-control-border" />
     <div class="flex items-center gap-x-5">
       <label
         v-for="stats in errorLevelList"
