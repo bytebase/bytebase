@@ -1,15 +1,9 @@
 package v1
 
 import (
-	"strings"
-
 	"github.com/bytebase/bytebase/backend/component/iam"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
-)
-
-const (
-	apiPackagePrefix = "/bytebase.v1."
 )
 
 var ownerAndDBAMethods = map[string]bool{
@@ -51,40 +45,40 @@ var transferDatabaseMethods = map[string]bool{
 }
 
 var methodPermissionMap = map[string]iam.Permission{
-	"InstanceService/ListInstances":     iam.PermissionInstanceList,
-	"InstanceService/GetInstance":       iam.PermissionInstanceGet,
-	"InstanceService/CreateInstance":    iam.PermissionInstanceCreate,
-	"InstanceService/UpdateInstance":    iam.PermissionInstanceUpdate,
-	"InstanceService/DeleteInstance":    iam.PermissionInstanceDelete,
-	"InstanceService/UndeleteInstance":  iam.PermissionInstanceUndelete,
-	"InstanceService/SyncInstance":      iam.PermissionInstanceSync,
-	"InstanceService/BatchSyncInstance": iam.PermissionInstanceSync,
-	"InstanceService/AddDataSource":     iam.PermissionInstanceUpdate,
-	"InstanceService/RemoveDataSource":  iam.PermissionInstanceUpdate,
-	"InstanceService/UpdateDataSource":  iam.PermissionInstanceUpdate,
-	"InstanceService/SyncSlowQueries":   iam.PermissionInstanceSync,
+	v1pb.InstanceService_ListInstances_FullMethodName:     iam.PermissionInstancesList,
+	v1pb.InstanceService_GetInstance_FullMethodName:       iam.PermissionInstancesGet,
+	v1pb.InstanceService_CreateInstance_FullMethodName:    iam.PermissionInstancesCreate,
+	v1pb.InstanceService_UpdateInstance_FullMethodName:    iam.PermissionInstancesUpdate,
+	v1pb.InstanceService_DeleteInstance_FullMethodName:    iam.PermissionInstancesDelete,
+	v1pb.InstanceService_UndeleteInstance_FullMethodName:  iam.PermissionInstancesUndelete,
+	v1pb.InstanceService_SyncInstance_FullMethodName:      iam.PermissionInstancesSync,
+	v1pb.InstanceService_BatchSyncInstance_FullMethodName: iam.PermissionInstancesSync,
+	v1pb.InstanceService_AddDataSource_FullMethodName:     iam.PermissionInstancesUpdate,
+	v1pb.InstanceService_RemoveDataSource_FullMethodName:  iam.PermissionInstancesUpdate,
+	v1pb.InstanceService_UpdateDataSource_FullMethodName:  iam.PermissionInstancesUpdate,
+	v1pb.InstanceService_SyncSlowQueries_FullMethodName:   iam.PermissionInstancesSync,
 
-	"DatabaseService/GetDatabase":            iam.PermissionDatabasesGet,
-	"DatabaseService/ListDatabases":          iam.PermissionDatabasesList,
-	"DatabaseService/SearchDatabases":        iam.PermissionDatabasesList,
-	"DatabaseService/UpdateDatabase":         iam.PermissionDatabasesUpdate,
-	"DatabaseService/BatchUpdateDatabases":   iam.PermissionDatabasesUpdate,
-	"DatabaseService/SyncDatabase":           iam.PermissionDatabasesSync,
-	"DatabaseService/GetDatabaseMetadata":    iam.PermissionDatabasesGetMetadata,
-	"DatabaseService/UpdateDatabaseMetadata": iam.PermissionDatabasesUpdateMetadata,
-	"DatabaseService/GetDatabaseSchema":      iam.PermissionDatabasesGetSchema,
-	"DatabaseService/DiffSchema":             "", // handled in the method.
-	"DatabaseService/GetBackupSetting":       iam.PermissionDatabasesGetBackupSetting,
-	"DatabaseService/UpdateBackupSetting":    iam.PermissionDatabasesUpdateBackupSetting,
-	"DatabaseService/CreateBackup":           iam.PermissionBackupsCreate,
-	"DatabaseService/ListBackups":            iam.PermissionBackupsList,
-	"DatabaseService/ListSlowQueries":        "", // TODO(p0ny): slow query is somewhat related to the workspace slow query setting. Do this one together with the workspace slow query.
-	"DatabaseService/ListSecrets":            iam.PermissionDatabaseSecretsList,
-	"DatabaseService/UpdateSecret":           iam.PermissionDatabaseSecretsUpdate,
-	"DatabaseService/DeleteSecret":           iam.PermissionDatabaseSecretsDelete,
-	"DatabaseService/AdviseIndex":            "", // TODO(p0ny): not critical, implement later.
-	"DatabaseService/ListChangeHistories":    iam.PermissionChangeHistoriesList,
-	"DatabaseService/GetChangeHistory":       iam.PermissionChangeHistoriesGet,
+	v1pb.DatabaseService_GetDatabase_FullMethodName:            iam.PermissionDatabasesGet,
+	v1pb.DatabaseService_ListDatabases_FullMethodName:          iam.PermissionDatabasesList,
+	v1pb.DatabaseService_SearchDatabases_FullMethodName:        iam.PermissionDatabasesList,
+	v1pb.DatabaseService_UpdateDatabase_FullMethodName:         iam.PermissionDatabasesUpdate,
+	v1pb.DatabaseService_BatchUpdateDatabases_FullMethodName:   iam.PermissionDatabasesUpdate,
+	v1pb.DatabaseService_SyncDatabase_FullMethodName:           iam.PermissionDatabasesSync,
+	v1pb.DatabaseService_GetDatabaseMetadata_FullMethodName:    iam.PermissionDatabasesGetMetadata,
+	v1pb.DatabaseService_UpdateDatabaseMetadata_FullMethodName: iam.PermissionDatabasesUpdateMetadata,
+	v1pb.DatabaseService_GetDatabaseSchema_FullMethodName:      iam.PermissionDatabasesGetSchema,
+	v1pb.DatabaseService_DiffSchema_FullMethodName:             "", // handled in the method.
+	v1pb.DatabaseService_GetBackupSetting_FullMethodName:       iam.PermissionDatabasesGetBackupSetting,
+	v1pb.DatabaseService_UpdateBackupSetting_FullMethodName:    iam.PermissionDatabasesUpdateBackupSetting,
+	v1pb.DatabaseService_CreateBackup_FullMethodName:           iam.PermissionBackupsCreate,
+	v1pb.DatabaseService_ListBackups_FullMethodName:            iam.PermissionBackupsList,
+	v1pb.DatabaseService_ListSlowQueries_FullMethodName:        "", // TODO(p0ny): slow query is somewhat related to the workspace slow query setting. Do this one together with the workspace slow query.
+	v1pb.DatabaseService_ListSecrets_FullMethodName:            iam.PermissionDatabaseSecretsList,
+	v1pb.DatabaseService_UpdateSecret_FullMethodName:           iam.PermissionDatabaseSecretsUpdate,
+	v1pb.DatabaseService_DeleteSecret_FullMethodName:           iam.PermissionDatabaseSecretsDelete,
+	v1pb.DatabaseService_AdviseIndex_FullMethodName:            "", // TODO(p0ny): not critical, implement later.
+	v1pb.DatabaseService_ListChangeHistories_FullMethodName:    iam.PermissionChangeHistoriesList,
+	v1pb.DatabaseService_GetChangeHistory_FullMethodName:       iam.PermissionChangeHistoriesGet,
 }
 
 func isOwnerAndDBAMethod(methodName string) bool {
@@ -97,11 +91,6 @@ func isProjectOwnerMethod(methodName string) bool {
 
 func isTransferDatabaseMethods(methodName string) bool {
 	return transferDatabaseMethods[methodName]
-}
-
-// getShortMethodName gets the short method name from v1 API.
-func getShortMethodName(fullMethod string) string {
-	return strings.TrimPrefix(fullMethod, apiPackagePrefix)
 }
 
 func isOwnerOrDBA(role api.Role) bool {

@@ -1,13 +1,13 @@
 roles:
   - name: roles/workspaceAdmin
     permissions:
-      - bb.instance.list
-      - bb.instance.get
-      - bb.instance.create
-      - bb.instance.update
-      - bb.instance.delete
-      - bb.instance.undelete
-      - bb.instance.sync
+      - bb.instances.list
+      - bb.instances.get
+      - bb.instances.create
+      - bb.instances.update
+      - bb.instances.delete
+      - bb.instances.undelete
+      - bb.instances.sync
       - bb.databases.list
       - bb.databases.get
       - bb.databases.update
@@ -26,13 +26,13 @@ roles:
       - bb.databaseSecrets.delete
   - name: roles/workspaceDBA
     permissions:
-      - bb.instance.list
-      - bb.instance.get
-      - bb.instance.create
-      - bb.instance.update
-      - bb.instance.delete
-      - bb.instance.undelete
-      - bb.instance.sync
+      - bb.instances.list
+      - bb.instances.get
+      - bb.instances.create
+      - bb.instances.update
+      - bb.instances.delete
+      - bb.instances.undelete
+      - bb.instances.sync
       - bb.databases.list
       - bb.databases.get
       - bb.databases.update
