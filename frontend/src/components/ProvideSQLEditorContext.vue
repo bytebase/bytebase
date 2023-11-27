@@ -50,7 +50,6 @@ import {
   sheetSlugV1,
   connectionV1Slug as makeConnectionV1Slug,
   isSheetReadableV1,
-  isDatabaseV1Queryable,
   getSuggestedTabNameFromConnection,
   isSimilarTab,
 } from "@/utils";
@@ -71,10 +70,6 @@ const tabStore = useTabStore();
 const sheetV1Store = useSheetV1Store();
 
 const prepareAccessControlPolicy = async () => {
-  treeStore.accessControlPolicyList = await policyV1Store.fetchPolicies({
-    policyType: PolicyType.WORKSPACE_IAM,
-    resourceType: PolicyResourceType.WORKSPACE,
-  });
   await policyV1Store.fetchPolicies({
     resourceType: PolicyResourceType.ENVIRONMENT,
     policyType: PolicyType.DISABLE_COPY_DATA,
@@ -98,11 +93,7 @@ const prepareAccessibleDatabaseList = async () => {
       parent: "instances/-",
       filter: filter,
     })
-  ).filter(
-    (db) =>
-      db.syncState === State.ACTIVE &&
-      isDatabaseV1Queryable(db, currentUserV1.value)
-  );
+  ).filter((db) => db.syncState === State.ACTIVE);
 
   treeStore.databaseList = databaseList;
 };

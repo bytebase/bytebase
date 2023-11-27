@@ -5,7 +5,6 @@
         <template #trigger>
           <div class="flex items-center gap-x-1 textlabel">
             <span>{{ $t("common.assignee") }}</span>
-            <span v-if="isCreating" class="text-red-600">*</span>
           </div>
         </template>
         <template #default>
