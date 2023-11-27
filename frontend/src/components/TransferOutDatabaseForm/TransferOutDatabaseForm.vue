@@ -17,9 +17,7 @@
           </span>
           <ProjectSelect
             v-model:project="targetProjectId"
-            :allowed-project-role-list="
-              hasWorkspaceManageProjectPermission ? [] : [PresetRoleType.OWNER]
-            "
+            :allowed-project-role-list="[PresetRoleType.OWNER]"
             :include-default-project="true"
             :filter="filterTargetProject"
           />
@@ -89,7 +87,6 @@ import { useI18n } from "vue-i18n";
 import { ProjectV1Name, ProjectSelect, DrawerContent } from "@/components/v2";
 import {
   pushNotification,
-  useCurrentUserV1,
   useDatabaseV1Store,
   useGracefulRequest,
   useProjectV1ByUID,
@@ -97,7 +94,6 @@ import {
 } from "@/store";
 import { ComposedDatabase, PresetRoleType, UNKNOWN_ID } from "@/types";
 import { Project } from "@/types/proto/v1/project_service";
-import { hasWorkspacePermissionV1 } from "@/utils";
 import Label from "./Label.vue";
 import {
   DatabaseTreeOption,
@@ -117,18 +113,10 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const currentUser = useCurrentUserV1();
 const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
 const loading = ref(false);
 const transfer = ref<InstanceType<typeof NTransfer>>();
-
-const hasWorkspaceManageProjectPermission = computed(() =>
-  hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-project",
-    currentUser.value.userRole
-  )
-);
 
 const databaseList = computed(() => {
   const project = projectStore.getProjectByUID(props.projectId);
