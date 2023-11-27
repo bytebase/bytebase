@@ -9,9 +9,7 @@
         <ProjectSelect
           style="width: 100%"
           :project="targetProject.uid"
-          :allowed-project-role-list="
-            hasWorkspaceManageProjectPermission ? [] : [PresetRoleType.OWNER]
-          "
+          :allowed-project-role-list="[PresetRoleType.OWNER]"
           :include-default-project="allowTransferToDefaultProject"
           @update:project="handleSelectProject"
         />
