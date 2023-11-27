@@ -19,6 +19,7 @@ import {
   usePolicyV1Store,
   useProjectV1Store,
   useRoleStore,
+  useSettingV1Store,
   useSQLEditorStore,
   useTabStore,
   pushNotification,
@@ -318,6 +319,7 @@ onMounted(async () => {
     treeStore.state = "LOADING";
 
     await Promise.all([
+      useSettingV1Store().fetchSettingList(),
       useRoleStore().fetchRoleList(),
       useEnvironmentV1Store().fetchEnvironments(),
       useInstanceV1Store().fetchInstanceList(),
