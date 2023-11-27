@@ -212,6 +212,10 @@ type IndexFind struct {
 
 // FindIndex finds the index.
 func (d *DatabaseState) FindIndex(find *IndexFind) (string, *IndexState) {
+	switch d.dbType {
+	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB:
+		find.IndexName = strings.ToLower(find.IndexName)
+	}
 	// There are two cases to find a index:
 	// 1. find an index in specific table. e.g. MySQL and TiDB.
 	// 2. find an index in the schema. e.g. PostgreSQL.
@@ -311,6 +315,10 @@ type ColumnFind struct {
 
 // FindColumn finds the column.
 func (d *DatabaseState) FindColumn(find *ColumnFind) *ColumnState {
+	switch d.dbType {
+	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB:
+		find.ColumnName = strings.ToLower(find.ColumnName)
+	}
 	schema, exists := d.schemaSet[find.SchemaName]
 	if !exists {
 		return nil
