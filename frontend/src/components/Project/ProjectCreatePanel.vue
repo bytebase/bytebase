@@ -80,7 +80,7 @@
                 />
                 <label class="label">{{ $t("project.mode.batch") }}</label>
                 <LearnMoreLink
-                  url="https://www.bytebase.com/docs/concepts/batch-mode/?source=console"
+                  url="https://www.bytebase.com/docs/change-database/batch-change/?source=console"
                 />
                 <FeatureBadge feature="bb.feature.multi-tenancy" />
               </div>

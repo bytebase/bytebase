@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-3 w-full overflow-x-auto px-4 pt-1" v-bind="$attrs">
+  <div class="space-y-3 w-full overflow-x-auto" v-bind="$attrs">
     <div class="w-full flex flex-row justify-between items-center">
       <div class="w-full flex flex-row justify-start items-center gap-x-2">
         <NInput

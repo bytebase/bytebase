@@ -1,6 +1,6 @@
 <template>
   <div class="w-full space-y-4">
-    <div class="flex items-center justify-end mt-2">
+    <div class="flex items-center justify-end">
       <NButton
         type="primary"
         :disabled="!hasPermission || !hasSensitiveDataFeature"

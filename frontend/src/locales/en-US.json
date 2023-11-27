@@ -2679,6 +2679,8 @@
     "no-logs": "No debug logs",
     "count-of-logs": "Fetched latest {count} log(s) from server.",
     "debug-log-detail": "Debug Log Details",
+    "enabled": "Debug mode is enabled.",
+    "open-debug-mode": "Enable debug",
     "table": {
       "record-ts": "Time",
       "method": "Method",

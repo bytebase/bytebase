@@ -62,6 +62,8 @@
         </div>
       </router-link>
 
+      <div class="border-t border-gray-300 my-1" />
+
       <router-link
         v-if="shouldShowSyncSchemaEntry"
         to="/sync-schema"
@@ -96,6 +98,7 @@
 </template>
 
 <script lang="ts" setup>
+import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import {
   HomeIcon,
   DatabaseIcon,
@@ -108,8 +111,10 @@ import {
   SquareStackIcon,
 } from "lucide-vue-next";
 import { computed } from "vue";
-import { RouterLink, useRoute } from "vue-router";
+import { useI18n } from "vue-i18n";
+import { RouterLink, useRoute, useRouter } from "vue-router";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
+import { useGlobalDatabaseActions } from "@/components/KBar/useDatabaseActions";
 import {
   useCurrentUserV1,
   useCurrentUserIamPolicy,
@@ -117,8 +122,10 @@ import {
 } from "@/store";
 import { hasWorkspacePermissionV1 } from "../utils";
 
+const { t } = useI18n();
 const currentUserV1 = useCurrentUserV1();
 const route = useRoute();
+const router = useRouter();
 
 // Only show sync schema if the user has permission to alter schema of at least one project.
 const shouldShowSyncSchemaEntry = computed(() => {
@@ -147,4 +154,91 @@ const getRouteLinkClass = (prefix: string): string[] => {
   }
   return classes;
 };
+
+const navigationKbarActions = computed(() => {
+  const actions: Action[] = [];
+  actions.push(
+    defineAction({
+      id: "bb.navigation.projects",
+      name: "Projects",
+      shortcut: ["g", "p"],
+      section: t("kbar.navigation"),
+      keywords: "navigation",
+      perform: () => router.push({ name: "workspace.project" }),
+    }),
+    defineAction({
+      id: "bb.navigation.databases",
+      name: "Databases",
+      shortcut: ["g", "d"],
+      section: t("kbar.navigation"),
+      keywords: "navigation db",
+      perform: () => router.push({ name: "workspace.database" }),
+    })
+  );
+
+  if (shouldShowInstanceEntry.value) {
+    actions.push(
+      defineAction({
+        id: "bb.navigation.instances",
+        name: "Instances",
+        shortcut: ["g", "i"],
+        section: t("kbar.navigation"),
+        keywords: "navigation",
+        perform: () => router.push({ name: "workspace.instance" }),
+      })
+    );
+  }
+  actions.push(
+    defineAction({
+      id: "bb.navigation.environments",
+      name: "Environments",
+      shortcut: ["g", "e"],
+      section: t("kbar.navigation"),
+      keywords: "navigation",
+      perform: () => router.push({ name: "workspace.environment" }),
+    })
+  );
+  if (shouldShowSyncSchemaEntry.value) {
+    actions.push(
+      defineAction({
+        id: "bb.navigation.sync-schema",
+        name: "Sync Schema",
+        shortcut: ["g", "s", "s"],
+        section: t("kbar.navigation"),
+        keywords: "sync schema",
+        perform: () => router.push({ name: "workspace.sync-schema" }),
+      })
+    );
+  }
+  actions.push(
+    defineAction({
+      id: "bb.navigation.slow-query",
+      name: "Slow Query",
+      section: t("kbar.navigation"),
+      shortcut: ["g", "s", "q"],
+      keywords: "slow query",
+      perform: () => router.push({ name: "workspace.slow-query" }),
+    }),
+    defineAction({
+      id: "bb.navigation.export-center",
+      name: "Export Center",
+      section: t("kbar.navigation"),
+      shortcut: ["g", "x", "c"],
+      keywords: "export center",
+      perform: () => router.push({ name: "workspace.export-center" }),
+    }),
+    defineAction({
+      id: "bb.navigation.anomaly-center",
+      name: "Anomaly Center",
+      shortcut: ["g", "a", "c"],
+      section: t("kbar.navigation"),
+      keywords: "anomaly center",
+      perform: () => router.push({ name: "workspace.anomaly-center" }),
+    })
+  );
+  return actions;
+});
+useRegisterActions(navigationKbarActions);
+
+useGlobalDatabaseActions();
 </script>

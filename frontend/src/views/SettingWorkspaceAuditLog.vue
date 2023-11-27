@@ -52,9 +52,6 @@
     </PagedActivityTable>
     <template v-else>
       <AuditLogTable :audit-log-list="[]" />
-      <div class="w-full h-full flex flex-col items-center justify-center">
-        <img src="../assets/illustration/no-data.webp" class="max-h-[30vh]" />
-      </div>
     </template>
 
     <BBDialog

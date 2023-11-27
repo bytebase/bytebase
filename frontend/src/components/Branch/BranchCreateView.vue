@@ -1,6 +1,6 @@
 <template>
   <div
-    class="w-full h-full flex flex-col gap-y-3 overflow-y-hidden overflow-x-auto px-4 py-4"
+    class="w-full h-full flex flex-col gap-y-3 overflow-y-hidden overflow-x-auto"
   >
     <div
       v-if="showProjectSelector"

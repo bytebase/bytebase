@@ -7,7 +7,7 @@
         <EngineIcon :engine="instance.engine" custom-class="!h-6" />
         <span class="text-lg font-medium">{{ instanceV1Name(instance) }}</span>
       </div>
-      <div class="flex items-center gap-x-4">
+      <div class="flex items-center gap-x-2">
         <NButton
           v-if="allowEdit"
           :loading="state.syncingSchema"
