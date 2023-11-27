@@ -4,7 +4,6 @@ on:
   pull_request:
     branches:
       - main
-      - "release/*.*.*"
     paths:
       - "frontend/**"
 
@@ -18,4 +17,4 @@ on:
           go-version: 1.21.3
           cache: false
       - name: Test link in product is valid
-        run: go test -v ./scripts/... -p=10 | tee test.log; exit ${PIPESTATUS[0]}
+        run: go test -timeout 600s -v ./scripts/... -p=10 | tee test.log; exit ${PIPESTATUS[0]}
