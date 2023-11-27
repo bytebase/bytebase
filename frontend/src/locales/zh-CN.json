@@ -2669,7 +2669,7 @@
     "count-of-logs": "从服务端获取的最新 {count} 条日志。",
     "debug-log-detail": "日志详情",
     "enabled": "Debug 模式已开启",
-    "open-debug-mode": "开启 Debug",
+    "open-debug-mode": "开启 Debug 模式",
     "table": {
       "record-ts": "时间",
       "method": "方法",
