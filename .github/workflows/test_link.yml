@@ -1,13 +1,15 @@
 name: Release Test Link
 
 on:
+  workflow_dispatch:
   pull_request:
     branches:
       - main
     paths:
       - "frontend/**"
 
- go-tests:
+jobs:
+  go-tests:
     runs-on: self-hosted
     timeout-minutes: 30
     steps:
