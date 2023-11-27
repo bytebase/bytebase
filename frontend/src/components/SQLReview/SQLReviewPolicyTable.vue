@@ -97,7 +97,7 @@
             {{ policy.review?.name }}
           </span>
           <span v-else class="italic textinfo text-gray-400">
-            No SQL Review
+            {{ $t("sql-review.no-policy-set") }}
           </span>
         </div>
         <div class="flex items-center gap-x-2">
