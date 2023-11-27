@@ -3,13 +3,13 @@ package iam
 type Permission string
 
 const (
-	PermissionInstanceList     Permission = "bb.instance.list"
-	PermissionInstanceGet      Permission = "bb.instance.get"
-	PermissionInstanceCreate   Permission = "bb.instance.create"
-	PermissionInstanceUpdate   Permission = "bb.instance.update"
-	PermissionInstanceDelete   Permission = "bb.instance.delete"
-	PermissionInstanceUndelete Permission = "bb.instance.undelete"
-	PermissionInstanceSync     Permission = "bb.instance.sync"
+	PermissionInstancesList     Permission = "bb.instances.list"
+	PermissionInstancesGet      Permission = "bb.instances.get"
+	PermissionInstancesCreate   Permission = "bb.instances.create"
+	PermissionInstancesUpdate   Permission = "bb.instances.update"
+	PermissionInstancesDelete   Permission = "bb.instances.delete"
+	PermissionInstancesUndelete Permission = "bb.instances.undelete"
+	PermissionInstancesSync     Permission = "bb.instances.sync"
 
 	PermissionDatabasesList                Permission = "bb.databases.list"
 	PermissionDatabasesGet                 Permission = "bb.databases.get"
