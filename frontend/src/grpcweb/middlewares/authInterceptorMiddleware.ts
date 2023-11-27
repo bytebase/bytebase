@@ -5,7 +5,7 @@ import { useAuthStore } from "@/store";
 
 export type IgnoreErrorsOptions = {
   /**
-   * If set to true, will NOT show redirect to other pages(e.g., 403).
+   * If set to true, will NOT show redirect to other pages(e.g., 403, sign in page).
    */
   silent?: boolean;
 
@@ -32,6 +32,7 @@ export const authInterceptorMiddleware: ClientMiddleware<IgnoreErrorsOptions> =
           // omit specified errors
         } else {
           if (code === Status.UNAUTHENTICATED) {
+            if (options.silent) return;
             // "Kick out" sign in status if access token expires.
             try {
               await useAuthStore().logout();
