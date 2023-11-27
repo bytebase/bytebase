@@ -21,7 +21,7 @@ func TestGetStatementType(t *testing.T) {
 	tests := []statementTypeTest{}
 
 	const (
-		record = true
+		record = false
 	)
 
 	var (
