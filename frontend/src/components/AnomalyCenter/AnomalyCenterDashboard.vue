@@ -1,15 +1,10 @@
 <template>
-  <div class="flex flex-col">
+  <div class="flex flex-col space-y-4">
     <FeatureAttentionForInstanceLicense
       v-if="hasSchemaDriftFeature"
-      custom-class="mb-4"
       feature="bb.feature.schema-drift"
     />
-    <FeatureAttention
-      v-else
-      custom-class="my-4"
-      feature="bb.feature.schema-drift"
-    />
+    <FeatureAttention v-else feature="bb.feature.schema-drift" />
 
     <div class="textinfolabel">
       {{ $t("anomaly.attention-desc") }}
@@ -23,7 +18,7 @@
       </a>
     </div>
 
-    <div class="mt-4 space-y-4">
+    <div class="space-y-4">
       <div v-for="(item, i) in anomalySummaryList" :key="i" class="space-y-2">
         <h3 class="text-lg leading-6 font-medium text-main">
           {{ i == 0 ? $t("common.database") : $t("common.instance") }}
@@ -76,23 +71,12 @@
     </div>
 
     <div class="mt-4 py-2 flex justify-between items-center">
-      <div>
-        <BBTabFilter
-          v-if="!project"
-          :tab-item-list="tabItemList"
-          :selected-index="
-            tabItemList.findIndex((tab) => tab.id === state.selectedTab)
-          "
-          @select-index="
-          (index: number) => {
-            state.selectedTab = tabItemList[index].id;
-          }
-        "
-        />
-      </div>
-      <BBTableSearch
+      <TabFilter v-model:value="state.selectedTab" :items="tabItemList" />
+
+      <SearchBox
         ref="searchField"
-        class="w-72"
+        v-model:value="state.searchText"
+        style="width: 18rem"
         :placeholder="
           $t('anomaly.table-search-placeholder', {
             type:
@@ -101,7 +85,6 @@
                 : $t('common.instance'),
           })
         "
-        @change-text="(text:string) => changeSearchText(text)"
       />
     </div>
     <template v-if="state.selectedTab === 'database'">
@@ -138,7 +121,7 @@
 <script lang="ts" setup>
 import { computed, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBTabFilterItem, BBTableSectionDataSource } from "@/bbkit/types";
+import { BBTableSectionDataSource } from "@/bbkit/types";
 import {
   featureToRef,
   useAnomalyV1List,
@@ -168,10 +151,6 @@ type Summary = {
 };
 
 export type AnomalyTabId = "database" | "instance";
-
-interface AnomalyTabFilterItem extends BBTabFilterItem {
-  id: AnomalyTabId;
-}
 
 interface LocalState {
   selectedTab: AnomalyTabId;
@@ -408,24 +387,20 @@ const anomalySummaryList = computed(() => {
   return list;
 });
 
-const tabItemList = computed((): AnomalyTabFilterItem[] => {
+const tabItemList = computed(() => {
   return [
     {
-      id: "database",
-      title: t("common.database"),
+      value: "database",
+      label: t("common.database"),
       alert: databaseAnomalySectionList.value.length > 0,
     },
     {
-      id: "instance",
-      title: t("common.instance"),
+      value: "instance",
+      label: t("common.instance"),
       alert: instanceAnomalySectionList.value.length > 0,
     },
   ];
 });
-
-const changeSearchText = (searchText: string) => {
-  state.searchText = searchText;
-};
 
 const hasSchemaDriftFeature = featureToRef("bb.feature.schema-drift");
 </script>

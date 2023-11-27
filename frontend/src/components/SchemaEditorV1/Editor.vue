@@ -1,11 +1,11 @@
 <template>
-  <main class="px-2 pt-2 w-full h-full flex flex-col overflow-y-auto">
+  <main class="px-2 py-2 w-full h-full flex flex-col overflow-y-hidden">
     <template v-if="currentTab">
       <TabsContainer
         @on-table-search-pattern="handleTableSearchPattern"
         @on-column-search-pattern="handleColumnSearchPattern"
       />
-      <div :key="currentTab.id" class="w-full h-full relative overflow-y-auto">
+      <div :key="currentTab.id" class="w-full flex-1 relative overflow-hidden">
         <DatabaseEditor
           v-if="currentTab.type === SchemaEditorTabType.TabForDatabase"
           :search-pattern="state.tableSearchPattern"

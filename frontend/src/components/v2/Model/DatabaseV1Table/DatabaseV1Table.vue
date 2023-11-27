@@ -130,12 +130,7 @@
 </template>
 
 <script lang="ts" setup>
-import {
-  ColumnDef,
-  getCoreRowModel,
-  getPaginationRowModel,
-  useVueTable,
-} from "@tanstack/vue-table";
+import type { ColumnDef } from "@tanstack/vue-table";
 import { sortBy } from "lodash-es";
 import cloneDeep from "lodash-es/cloneDeep";
 import { NPagination } from "naive-ui";
@@ -171,6 +166,10 @@ import {
 import DatabaseGroupTableRow from "./DatabaseGroupTableRow.vue";
 import DatabaseTableRow from "./DatabaseTableRow.vue";
 import { isDatabase } from "./utils";
+
+const { getCoreRowModel, getPaginationRowModel, useVueTable } = await import(
+  "@tanstack/vue-table"
+);
 
 type Mode =
   | "ALL"
@@ -303,30 +302,30 @@ const preparePolicyList = () => {
 const columnListMap = computed(() => {
   const NAME = {
     title: t("common.name"),
-    width: "minmax(auto, 1.5fr)",
+    width: "minmax(min-content, auto)",
   };
   const SCHEMA_VERSION = props.schemaless
     ? undefined
     : {
         title: t("common.schema-version"),
-        width: { lg: "minmax(auto, 1fr)" },
+        width: { lg: "minmax(min-content, auto)" },
         class: "hidden lg:flex",
       };
   const PROJECT = {
     title: t("common.project"),
-    width: "minmax(auto, 1fr)",
+    width: "minmax(min-content, auto)",
   };
   const ENVIRONMENT = {
     title: t("common.environment"),
-    width: "minmax(auto, 1fr)",
+    width: "minmax(min-content, auto)",
   };
   const INSTANCE = {
     title: t("common.instance"),
-    width: "minmax(auto, 1fr)",
+    width: "minmax(min-content, auto)",
   };
   const LABELS = {
     title: t("common.labels"),
-    width: "auto",
+    width: "minmax(max-content, auto)",
     class: "items-center",
   };
   return new Map<Mode, (BBGridColumn | undefined)[]>([

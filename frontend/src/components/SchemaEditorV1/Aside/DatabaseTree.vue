@@ -1,5 +1,7 @@
 <template>
-  <div class="w-full h-full pl-1 pr-2 relative overflow-y-hidden">
+  <div
+    class="w-full h-full pl-1 pr-2 flex flex-col gap-y-2 relative overflow-y-hidden"
+  >
     <div class="w-full sticky top-0 pt-2 h-12 bg-white z-10">
       <NInput
         v-model:value="searchPattern"
@@ -11,13 +13,18 @@
       </NInput>
     </div>
     <div
-      class="schema-editor-database-tree pb-2 overflow-y-auto h-full text-sm"
+      ref="treeContainerElRef"
+      class="schema-editor-database-tree flex-1 pb-1 text-sm overflow-hidden select-none"
+      :data-height="treeContainerHeight"
     >
       <NTree
+        v-if="treeContainerHeight > 0"
         ref="treeRef"
         block-line
         virtual-scroll
-        style="height: 100%"
+        :style="{
+          height: `${treeContainerHeight}px`,
+        }"
         :data="treeDataRef"
         :pattern="searchPattern"
         :render-prefix="renderPrefix"
@@ -61,6 +68,7 @@
 </template>
 
 <script lang="ts" setup>
+import { useElementSize } from "@vueuse/core";
 import { escape, head, isUndefined } from "lodash-es";
 import { TreeOption, NEllipsis, NInput, NDropdown, NTree } from "naive-ui";
 import { computed, onMounted, watch, ref, h, reactive, nextTick } from "vue";
@@ -161,6 +169,14 @@ const contextMenu = reactive<TreeContextMenu>({
   clientY: 0,
   treeNode: undefined,
 });
+const treeContainerElRef = ref<HTMLElement>();
+const { height: treeContainerHeight } = useElementSize(
+  treeContainerElRef,
+  undefined,
+  {
+    box: "content-box",
+  }
+);
 const treeRef = ref<InstanceType<typeof NTree>>();
 const searchPattern = ref("");
 const expandedKeysRef = ref<string[]>([]);
@@ -800,37 +816,30 @@ const handleExpandedKeysChange = (expandedKeys: string[]) => {
 };
 </script>
 
-<style lang="postcss">
-.schema-editor-database-tree .n-tree-node-wrapper {
+<style lang="postcss" scoped>
+.schema-editor-database-tree :deep(.n-tree-node-wrapper) {
   @apply !p-0;
 }
-.schema-editor-database-tree .n-tree-node-content {
+.schema-editor-database-tree :deep(.n-tree-node-content) {
   @apply !pl-2 text-sm;
 }
-.schema-editor-database-tree .n-tree-node-indent {
+.schema-editor-database-tree :deep(.n-tree-node-indent) {
   width: 0.25rem;
 }
-.schema-editor-database-tree .n-tree-node-content__prefix {
+.schema-editor-database-tree :deep(.n-tree-node-content__prefix) {
   @apply shrink-0 !mr-1;
 }
 .schema-editor-database-tree
-  .n-tree-node-wrapper:hover
-  .n-tree-node-content__suffix {
+  :deep(.n-tree-node-wrapper:hover .n-tree-node-content__suffix) {
   @apply !flex;
 }
 .schema-editor-database-tree
-  .n-tree-node-wrapper
-  .n-tree-node--selected
-  .n-tree-node-content__suffix {
+  :deep(.n-tree-node-wrapper
+    .n-tree-node--selected
+    .n-tree-node-content__suffix) {
   @apply !flex;
 }
-.schema-editor-database-tree .n-tree-node-switcher {
+.schema-editor-database-tree :deep(.n-tree-node-switcher) {
   @apply px-0 !w-4 !h-7;
-}
-</style>
-
-<style scoped>
-.schema-editor-database-tree {
-  max-height: calc(100% - 48px);
 }
 </style>

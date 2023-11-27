@@ -5,25 +5,27 @@
     @close="dismissModal"
   >
     <div class="w-72">
-      <BBTextField
-        class="my-2 w-full"
-        :value="state.expression"
-        @input="handleExpressionChange"
+      <NInput
+        ref="inputRef"
+        v-model:value="state.expression"
+        class="my-2"
+        :autofocus="true"
       />
     </div>
-    <div class="w-full flex items-center justify-end mt-2 space-x-3 pr-1 pb-1">
-      <button type="button" class="btn-normal" @click="dismissModal">
+    <div class="w-full flex items-center justify-end mt-2 space-x-3">
+      <NButton @click="dismissModal">
         {{ $t("common.cancel") }}
-      </button>
-      <button class="btn-primary" @click="handleConfirmButtonClick">
+      </NButton>
+      <NButton type="primary" @click="handleConfirmButtonClick">
         {{ $t("common.save") }}
-      </button>
+      </NButton>
     </div>
   </BBModal>
 </template>
 
 <script lang="ts" setup>
-import { reactive } from "vue";
+import { InputInst, NButton, NInput } from "naive-ui";
+import { onMounted, reactive, ref } from "vue";
 import { useNotificationStore } from "@/store";
 
 interface LocalState {
@@ -39,14 +41,11 @@ const emit = defineEmits<{
   (event: "update:expression", value: string): void;
 }>();
 
+const inputRef = ref<InputInst>();
 const notificationStore = useNotificationStore();
 const state = reactive<LocalState>({
   expression: props.expression || "",
 });
-
-const handleExpressionChange = (event: Event) => {
-  state.expression = (event.target as HTMLInputElement).value;
-};
 
 const handleConfirmButtonClick = async () => {
   if (!state.expression) {
@@ -65,4 +64,8 @@ const handleConfirmButtonClick = async () => {
 const dismissModal = () => {
   emit("close");
 };
+
+onMounted(() => {
+  inputRef.value?.focus();
+});
 </script>

@@ -1,51 +1,84 @@
 package v1
 
 import (
-	"strings"
-
+	"github.com/bytebase/bytebase/backend/component/iam"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-)
-
-const (
-	apiPackagePrefix = "/bytebase.v1."
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 var ownerAndDBAMethods = map[string]bool{
-	"EnvironmentService/CreateEnvironment":   true,
-	"EnvironmentService/UpdateEnvironment":   true,
-	"EnvironmentService/DeleteEnvironment":   true,
-	"EnvironmentService/UndeleteEnvironment": true,
-	"EnvironmentService/UpdateBackupSetting": true,
-	"InstanceService/CreateInstance":         true,
-	"InstanceService/UpdateInstance":         true,
-	"InstanceService/DeleteInstance":         true,
-	"InstanceService/UndeleteInstance":       true,
-	"InstanceService/AddDataSource":          true,
-	"InstanceService/RemoveDataSource":       true,
-	"InstanceService/UpdateDataSource":       true,
-	"SubscriptionService/TrialSubscription":  true,
-	"RiskService/CreateRisk":                 true,
-	"RiskService/UpdateRisk":                 true,
-	"RiskService/DeleteRisk":                 true,
-	"SettingService/SetSetting":              true,
-	"RoleService/CreateRole":                 true,
-	"RoleService/UpdateRole":                 true,
-	"RoleService/DeleteRole":                 true,
-	"ActuatorService/UpdateActuatorInfo":     true,
-	"ActuatorService/ListDebugLog":           true,
+	v1pb.EnvironmentService_CreateEnvironment_FullMethodName:   true,
+	v1pb.EnvironmentService_UpdateEnvironment_FullMethodName:   true,
+	v1pb.EnvironmentService_DeleteEnvironment_FullMethodName:   true,
+	v1pb.EnvironmentService_UndeleteEnvironment_FullMethodName: true,
+	v1pb.EnvironmentService_UpdateBackupSetting_FullMethodName: true,
+	v1pb.InstanceService_CreateInstance_FullMethodName:         true,
+	v1pb.InstanceService_UpdateInstance_FullMethodName:         true,
+	v1pb.InstanceService_DeleteInstance_FullMethodName:         true,
+	v1pb.InstanceService_UndeleteInstance_FullMethodName:       true,
+	v1pb.InstanceService_AddDataSource_FullMethodName:          true,
+	v1pb.InstanceService_RemoveDataSource_FullMethodName:       true,
+	v1pb.InstanceService_UpdateDataSource_FullMethodName:       true,
+	v1pb.SubscriptionService_TrialSubscription_FullMethodName:  true,
+	v1pb.RiskService_CreateRisk_FullMethodName:                 true,
+	v1pb.RiskService_UpdateRisk_FullMethodName:                 true,
+	v1pb.RiskService_DeleteRisk_FullMethodName:                 true,
+	v1pb.SettingService_SetSetting_FullMethodName:              true,
+	v1pb.RoleService_CreateRole_FullMethodName:                 true,
+	v1pb.RoleService_UpdateRole_FullMethodName:                 true,
+	v1pb.RoleService_DeleteRole_FullMethodName:                 true,
+	v1pb.ActuatorService_UpdateActuatorInfo_FullMethodName:     true,
+	v1pb.ActuatorService_ListDebugLog_FullMethodName:           true,
 }
 
 var projectOwnerMethods = map[string]bool{
-	"ProjectService/UpdateProject":           true,
-	"ProjectService/DeleteProject":           true,
-	"ProjectService/UndeleteProject":         true,
-	"ProjectService/SetIamPolicy":            true,
-	"SubscriptionService/UpdateSubscription": true,
+	v1pb.ProjectService_UpdateProject_FullMethodName:           true,
+	v1pb.ProjectService_DeleteProject_FullMethodName:           true,
+	v1pb.ProjectService_UndeleteProject_FullMethodName:         true,
+	v1pb.ProjectService_SetIamPolicy_FullMethodName:            true,
+	v1pb.SubscriptionService_UpdateSubscription_FullMethodName: true,
 }
 
 var transferDatabaseMethods = map[string]bool{
-	"DatabaseService/UpdateDatabase":       true,
-	"DatabaseService/BatchUpdateDatabases": true,
+	v1pb.DatabaseService_UpdateDatabase_FullMethodName:       true,
+	v1pb.DatabaseService_BatchUpdateDatabases_FullMethodName: true,
+}
+
+var methodPermissionMap = map[string]iam.Permission{
+	v1pb.InstanceService_ListInstances_FullMethodName:     iam.PermissionInstancesList,
+	v1pb.InstanceService_GetInstance_FullMethodName:       iam.PermissionInstancesGet,
+	v1pb.InstanceService_CreateInstance_FullMethodName:    iam.PermissionInstancesCreate,
+	v1pb.InstanceService_UpdateInstance_FullMethodName:    iam.PermissionInstancesUpdate,
+	v1pb.InstanceService_DeleteInstance_FullMethodName:    iam.PermissionInstancesDelete,
+	v1pb.InstanceService_UndeleteInstance_FullMethodName:  iam.PermissionInstancesUndelete,
+	v1pb.InstanceService_SyncInstance_FullMethodName:      iam.PermissionInstancesSync,
+	v1pb.InstanceService_BatchSyncInstance_FullMethodName: iam.PermissionInstancesSync,
+	v1pb.InstanceService_AddDataSource_FullMethodName:     iam.PermissionInstancesUpdate,
+	v1pb.InstanceService_RemoveDataSource_FullMethodName:  iam.PermissionInstancesUpdate,
+	v1pb.InstanceService_UpdateDataSource_FullMethodName:  iam.PermissionInstancesUpdate,
+	v1pb.InstanceService_SyncSlowQueries_FullMethodName:   iam.PermissionInstancesSync,
+
+	v1pb.DatabaseService_GetDatabase_FullMethodName:            iam.PermissionDatabasesGet,
+	v1pb.DatabaseService_ListDatabases_FullMethodName:          iam.PermissionDatabasesList,
+	v1pb.DatabaseService_SearchDatabases_FullMethodName:        iam.PermissionDatabasesList,
+	v1pb.DatabaseService_UpdateDatabase_FullMethodName:         iam.PermissionDatabasesUpdate,
+	v1pb.DatabaseService_BatchUpdateDatabases_FullMethodName:   iam.PermissionDatabasesUpdate,
+	v1pb.DatabaseService_SyncDatabase_FullMethodName:           iam.PermissionDatabasesSync,
+	v1pb.DatabaseService_GetDatabaseMetadata_FullMethodName:    iam.PermissionDatabasesGetMetadata,
+	v1pb.DatabaseService_UpdateDatabaseMetadata_FullMethodName: iam.PermissionDatabasesUpdateMetadata,
+	v1pb.DatabaseService_GetDatabaseSchema_FullMethodName:      iam.PermissionDatabasesGetSchema,
+	v1pb.DatabaseService_DiffSchema_FullMethodName:             "", // handled in the method.
+	v1pb.DatabaseService_GetBackupSetting_FullMethodName:       iam.PermissionDatabasesGetBackupSetting,
+	v1pb.DatabaseService_UpdateBackupSetting_FullMethodName:    iam.PermissionDatabasesUpdateBackupSetting,
+	v1pb.DatabaseService_CreateBackup_FullMethodName:           iam.PermissionBackupsCreate,
+	v1pb.DatabaseService_ListBackups_FullMethodName:            iam.PermissionBackupsList,
+	v1pb.DatabaseService_ListSlowQueries_FullMethodName:        "", // TODO(p0ny): slow query is somewhat related to the workspace slow query setting. Do this one together with the workspace slow query.
+	v1pb.DatabaseService_ListSecrets_FullMethodName:            iam.PermissionDatabaseSecretsList,
+	v1pb.DatabaseService_UpdateSecret_FullMethodName:           iam.PermissionDatabaseSecretsUpdate,
+	v1pb.DatabaseService_DeleteSecret_FullMethodName:           iam.PermissionDatabaseSecretsDelete,
+	v1pb.DatabaseService_AdviseIndex_FullMethodName:            "", // TODO(p0ny): not critical, implement later.
+	v1pb.DatabaseService_ListChangeHistories_FullMethodName:    iam.PermissionChangeHistoriesList,
+	v1pb.DatabaseService_GetChangeHistory_FullMethodName:       iam.PermissionChangeHistoriesGet,
 }
 
 func isOwnerAndDBAMethod(methodName string) bool {
@@ -58,11 +91,6 @@ func isProjectOwnerMethod(methodName string) bool {
 
 func isTransferDatabaseMethods(methodName string) bool {
 	return transferDatabaseMethods[methodName]
-}
-
-// getShortMethodName gets the short method name from v1 API.
-func getShortMethodName(fullMethod string) string {
-	return strings.TrimPrefix(fullMethod, apiPackagePrefix)
 }
 
 func isOwnerOrDBA(role api.Role) bool {

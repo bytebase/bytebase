@@ -4,86 +4,128 @@
     <BytebaseLogo class="w-full px-4 shrink-0" />
 
     <div class="flex-1 overflow-y-auto px-2">
-      <button
-        class="mb-2 w-full flex items-center justify-between rounded-md border border-control-border bg-white hover:bg-control-bg-hover pl-2 pr-1 py-0.5 outline-none"
-        @click="onClickSearchButton"
-      >
-        <span class="text-control-placeholder">{{ $t("common.search") }}</span>
-        <span class="flex items-center space-x-1">
-          <kbd
-            class="h-5 flex items-center justify-center bg-black bg-opacity-10 rounded text-sm px-1 text-control overflow-y-hidden"
-          >
-            <span v-if="isMac" class="text-xl px-0.5">⌘</span>
-            <span v-else class="tracking-tighter transform scale-x-90"
-              >Ctrl</span
-            >
-            <span class="ml-1 mr-0.5">K</span>
-          </kbd>
-        </span>
-      </button>
-
       <router-link to="/" class="outline-item group flex items-center">
         <div
           class="outline-item group flex items-center px-2 py-1.5 capitalize"
           data-label="bb-dashboard-sidebar-home-button"
         >
-          <heroicons-outline:home class="w-5 h-5 mr-2" />
+          <HomeIcon class="w-5 h-5 mr-2" />
           {{ $t("issue.my-issues") }}
         </div>
       </router-link>
+
+      <router-link to="/project" class="outline-item group flex items-center">
+        <div
+          class="outline-item group flex items-center px-2 py-1.5 capitalize"
+          data-label="bb-dashboard-sidebar-home-button"
+        >
+          <GalleryHorizontalEndIcon class="w-5 h-5 mr-2" />
+          {{ $t("common.projects") }}
+        </div>
+      </router-link>
+
+      <router-link
+        v-if="shouldShowInstanceEntry"
+        to="/instance"
+        class="outline-item group flex items-center"
+        :class="getRouteLinkClass('/instance')"
+      >
+        <div
+          class="outline-item group flex items-center px-2 py-1.5 capitalize"
+          data-label="bb-dashboard-sidebar-home-button"
+        >
+          <LayersIcon class="w-5 h-5 mr-2" />
+          {{ $t("common.instances") }}
+        </div>
+      </router-link>
+
+      <router-link to="/db" class="outline-item group flex items-center">
+        <div
+          class="outline-item group flex items-center px-2 py-1.5 capitalize"
+          data-label="bb-dashboard-sidebar-home-button"
+        >
+          <DatabaseIcon class="w-5 h-5 mr-2" />
+          {{ $t("common.databases") }}
+        </div>
+      </router-link>
+
+      <router-link
+        to="/environment"
+        class="outline-item group flex items-center"
+      >
+        <div
+          class="outline-item group flex items-center px-2 py-1.5 capitalize"
+          data-label="bb-dashboard-sidebar-home-button"
+        >
+          <SquareStackIcon class="w-5 h-5 mr-2" />
+          {{ $t("common.environments") }}
+        </div>
+      </router-link>
+
+      <div class="border-t border-gray-300 my-1" />
+
       <router-link
         v-if="shouldShowSyncSchemaEntry"
         to="/sync-schema"
         class="outline-item group flex items-center px-2 py-1.5 capitalize"
       >
-        <heroicons-outline:refresh class="w-5 h-5 mr-2" />
+        <RefreshCcwIcon class="w-5 h-5 mr-2" />
         {{ $t("database.sync-schema.title") }}
       </router-link>
       <router-link
         to="/slow-query"
         class="outline-item group flex items-center px-2 py-1.5 capitalize"
       >
-        <img src="../assets/slow-query.svg" class="w-5 h-auto mr-2" />
+        <TurtleIcon class="w-5 h-auto mr-2" />
         {{ $t("slow-query.slow-queries") }}
       </router-link>
       <router-link
         to="/export-center"
         class="outline-item group flex items-center px-2 py-1.5 capitalize"
       >
-        <heroicons-outline:download class="w-5 h-5 mr-2" />
+        <DownloadIcon class="w-5 h-5 mr-2" />
         {{ $t("export-center.self") }}
       </router-link>
       <router-link
         to="/anomaly-center"
         class="outline-item group flex items-center px-2 py-1.5 capitalize"
       >
-        <heroicons-outline:shield-exclamation class="w-5 h-5 mr-2" />
+        <ShieldAlertIcon class="w-5 h-5 mr-2" />
         {{ $t("anomaly-center") }}
       </router-link>
-      <div>
-        <ProjectListSidePanel />
-      </div>
-      <div>
-        <DatabaseListSidePanel />
-      </div>
     </div>
   </nav>
 </template>
 
 <script lang="ts" setup>
-import { useKBarHandler } from "@bytebase/vue-kbar";
-import { computed } from "vue";
-import BytebaseLogo from "@/components/BytebaseLogo.vue";
-import DatabaseListSidePanel from "@/components/DatabaseListSidePanel.vue";
-import ProjectListSidePanel from "@/components/ProjectListSidePanel.vue";
+import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import {
+  HomeIcon,
+  DatabaseIcon,
+  TurtleIcon,
+  RefreshCcwIcon,
+  DownloadIcon,
+  ShieldAlertIcon,
+  GalleryHorizontalEndIcon,
+  LayersIcon,
+  SquareStackIcon,
+} from "lucide-vue-next";
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import { RouterLink, useRoute, useRouter } from "vue-router";
+import BytebaseLogo from "@/components/BytebaseLogo.vue";
+import { useGlobalDatabaseActions } from "@/components/KBar/useDatabaseActions";
+import {
+  useCurrentUserV1,
   useCurrentUserIamPolicy,
   useProjectV1ListByCurrentUser,
 } from "@/store";
+import { hasWorkspacePermissionV1 } from "../utils";
 
-const isMac = navigator.platform.match(/mac/i);
-
-const handler = useKBarHandler();
+const { t } = useI18n();
+const currentUserV1 = useCurrentUserV1();
+const route = useRoute();
+const router = useRouter();
 
 // Only show sync schema if the user has permission to alter schema of at least one project.
 const shouldShowSyncSchemaEntry = computed(() => {
@@ -96,7 +138,107 @@ const shouldShowSyncSchemaEntry = computed(() => {
     .includes(true);
 });
 
-const onClickSearchButton = () => {
-  handler.value.show();
+const shouldShowInstanceEntry = computed(() => {
+  return hasWorkspacePermissionV1(
+    "bb.permission.workspace.manage-instance",
+    currentUserV1.value.userRole
+  );
+});
+
+const getRouteLinkClass = (prefix: string): string[] => {
+  const { path } = route;
+  const isActiveRoute = path === prefix || path.startsWith(`${prefix}/`);
+  const classes: string[] = [];
+  if (isActiveRoute) {
+    classes.push("router-link-active", "bg-link-hover");
+  }
+  return classes;
 };
+
+const navigationKbarActions = computed(() => {
+  const actions: Action[] = [];
+  actions.push(
+    defineAction({
+      id: "bb.navigation.projects",
+      name: "Projects",
+      shortcut: ["g", "p"],
+      section: t("kbar.navigation"),
+      keywords: "navigation",
+      perform: () => router.push({ name: "workspace.project" }),
+    }),
+    defineAction({
+      id: "bb.navigation.databases",
+      name: "Databases",
+      shortcut: ["g", "d"],
+      section: t("kbar.navigation"),
+      keywords: "navigation db",
+      perform: () => router.push({ name: "workspace.database" }),
+    })
+  );
+
+  if (shouldShowInstanceEntry.value) {
+    actions.push(
+      defineAction({
+        id: "bb.navigation.instances",
+        name: "Instances",
+        shortcut: ["g", "i"],
+        section: t("kbar.navigation"),
+        keywords: "navigation",
+        perform: () => router.push({ name: "workspace.instance" }),
+      })
+    );
+  }
+  actions.push(
+    defineAction({
+      id: "bb.navigation.environments",
+      name: "Environments",
+      shortcut: ["g", "e"],
+      section: t("kbar.navigation"),
+      keywords: "navigation",
+      perform: () => router.push({ name: "workspace.environment" }),
+    })
+  );
+  if (shouldShowSyncSchemaEntry.value) {
+    actions.push(
+      defineAction({
+        id: "bb.navigation.sync-schema",
+        name: "Sync Schema",
+        shortcut: ["g", "s", "s"],
+        section: t("kbar.navigation"),
+        keywords: "sync schema",
+        perform: () => router.push({ name: "workspace.sync-schema" }),
+      })
+    );
+  }
+  actions.push(
+    defineAction({
+      id: "bb.navigation.slow-query",
+      name: "Slow Query",
+      section: t("kbar.navigation"),
+      shortcut: ["g", "s", "q"],
+      keywords: "slow query",
+      perform: () => router.push({ name: "workspace.slow-query" }),
+    }),
+    defineAction({
+      id: "bb.navigation.export-center",
+      name: "Export Center",
+      section: t("kbar.navigation"),
+      shortcut: ["g", "x", "c"],
+      keywords: "export center",
+      perform: () => router.push({ name: "workspace.export-center" }),
+    }),
+    defineAction({
+      id: "bb.navigation.anomaly-center",
+      name: "Anomaly Center",
+      shortcut: ["g", "a", "c"],
+      section: t("kbar.navigation"),
+      keywords: "anomaly center",
+      perform: () => router.push({ name: "workspace.anomaly-center" }),
+    })
+  );
+  return actions;
+});
+useRegisterActions(navigationKbarActions);
+
+useGlobalDatabaseActions();
 </script>

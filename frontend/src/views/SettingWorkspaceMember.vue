@@ -1,17 +1,18 @@
 <template>
-  <FeatureAttention
-    v-if="remainingUserCount <= 3"
-    custom-class="m-4"
-    feature="bb.feature.user-count"
-    :description="userCountAttention"
-  />
+  <div class="w-full overflow-x-hidden space-y-4">
+    <FeatureAttention
+      v-if="remainingUserCount <= 3"
+      feature="bb.feature.user-count"
+      :description="userCountAttention"
+    />
+    <FeatureAttention feature="bb.feature.rbac" />
 
-  <div class="w-full overflow-x-hidden pb-4">
-    <div v-if="allowAddOrInvite" class="w-full flex justify-center mb-6">
+    <div
+      v-if="allowAddOrInvite"
+      class="w-full flex justify-center mb-6 border-b pb-6"
+    >
       <MemberAddOrInvite />
     </div>
-
-    <FeatureAttention custom-class="my-4" feature="bb.feature.rbac" />
 
     <div class="flex justify-between items-center">
       <div class="flex-1 flex space-x-2">

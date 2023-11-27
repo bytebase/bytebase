@@ -1,5 +1,6 @@
 <template>
   <BBGrid
+    class="border"
     :column-list="columnList"
     :data-source="instanceRoleList"
     :row-clickable="false"

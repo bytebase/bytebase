@@ -1,4 +1,5 @@
 import { Action, CompareFn } from "@bytebase/vue-kbar";
+import { findLastIndex } from "lodash-es";
 
 const MAX_RANKING = Infinity;
 
@@ -6,6 +7,7 @@ export const ACTION_RANKINGS = [
   "bb.recently_visited.",
   "bb.quickaction.",
   "bb.navigation.",
+  "bb.navigation.global.",
   "bb.project.",
   "bb.database.",
   "bb.preferences.",
@@ -23,7 +25,7 @@ export const compareAction: CompareFn = (a, b) => {
 };
 
 function getActionRankingById(action: Action) {
-  const rank = ACTION_RANKINGS.findIndex((prefix) =>
+  const rank = findLastIndex(ACTION_RANKINGS, (prefix) =>
     action.id.startsWith(prefix)
   );
   // non-specified namespaces should always rank behind specified ones.

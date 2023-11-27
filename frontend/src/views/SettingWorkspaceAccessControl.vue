@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full mt-4 space-y-4">
+  <div class="w-full space-y-4">
     <FeatureAttention
       v-if="!hasDataAccessControlFeature"
       feature="bb.feature.access-control"
@@ -101,6 +101,7 @@ import {
   useEnvironmentV1List,
 } from "@/store";
 import { usePolicyV1Store } from "@/store/modules/v1/policy";
+import { ALL_USERS_USER_NAME } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { Binding, IamPolicy } from "@/types/proto/v1/iam_policy";
 import {
@@ -178,7 +179,7 @@ onMounted(async () => {
     }
 
     for (const binding of policy.workspaceIamPolicy.bindings) {
-      if (!binding.members.includes("allUsers")) {
+      if (!binding.members.includes(ALL_USERS_USER_NAME)) {
         continue;
       }
 
@@ -248,7 +249,7 @@ const buildWorkspaceIAMPolicy = (envPolicyList: EnvironmentPolicy[]) => {
     workspaceIamPolicy.bindings.push(
       Binding.fromPartial({
         role: "roles/QUERIER",
-        members: ["allUsers"],
+        members: [ALL_USERS_USER_NAME],
         condition: {
           expression: `resource.environment_name in ["${allowQueryEnvNameList.join(
             '", "'
@@ -261,7 +262,7 @@ const buildWorkspaceIAMPolicy = (envPolicyList: EnvironmentPolicy[]) => {
     workspaceIamPolicy.bindings.push(
       Binding.fromPartial({
         role: "roles/EXPORTER",
-        members: ["allUsers"],
+        members: [ALL_USERS_USER_NAME],
         condition: {
           expression: `resource.environment_name in ["${allowExportEnvNameList.join(
             '", "'

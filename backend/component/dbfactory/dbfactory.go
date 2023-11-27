@@ -62,7 +62,7 @@ func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *store.
 	if instance.Options != nil && instance.Options.SchemaTenantMode {
 		schemaTenantMode = true
 	}
-	return d.GetDataSourceDriver(ctx, instance.Engine, dataSource, databaseName, instance.ResourceID, instance.UID, datashare, false /* readOnly */, schemaTenantMode)
+	return d.GetDataSourceDriver(ctx, instance, dataSource, databaseName, datashare, false /* readOnly */, schemaTenantMode)
 }
 
 // GetReadOnlyDatabaseDriver gets the read-only database driver using the instance's read-only data source.
@@ -111,13 +111,13 @@ func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *sto
 	if database != nil {
 		dataShare = database.DataShare
 	}
-	return d.GetDataSourceDriver(ctx, instance.Engine, dataSource, databaseName, instance.ResourceID, instance.UID, dataShare, true /* readOnly */, schemaTenantMode)
+	return d.GetDataSourceDriver(ctx, instance, dataSource, databaseName, dataShare, true /* readOnly */, schemaTenantMode)
 }
 
 // GetDataSourceDriver returns the database driver for a data source.
-func (d *DBFactory) GetDataSourceDriver(ctx context.Context, engine storepb.Engine, dataSource *store.DataSourceMessage, databaseName, instanceID string, instanceUID int, datashare, readOnly bool, schemaTenantMode bool) (db.Driver, error) {
+func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.InstanceMessage, dataSource *store.DataSourceMessage, databaseName string, datashare, readOnly bool, schemaTenantMode bool) (db.Driver, error) {
 	dbBinDir := ""
-	switch engine {
+	switch instance.Engine {
 	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		// TODO(d): use maria mysqlbinlog for MariaDB.
 		dbBinDir = d.mysqlBinDir
@@ -172,10 +172,10 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, engine storepb.Engi
 	}
 	driver, err := db.Open(
 		ctx,
-		engine,
+		instance.Engine,
 		db.DriverConfig{
 			DbBinDir:  dbBinDir,
-			BinlogDir: common.GetBinlogAbsDir(d.dataDir, instanceUID),
+			BinlogDir: common.GetBinlogAbsDir(d.dataDir, instance.UID),
 		},
 		db.ConnectionConfig{
 			Username: dataSource.Username,
@@ -198,7 +198,8 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, engine storepb.Engi
 			SchemaTenantMode:       schemaTenantMode,
 		},
 		db.ConnectionContext{
-			InstanceID: instanceID,
+			InstanceID:    instance.ResourceID,
+			EngineVersion: instance.EngineVersion,
 		},
 	)
 	if err != nil {

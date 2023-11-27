@@ -3,7 +3,7 @@
     <RiskFilter class="my-4">
       <template #suffix>
         <NButton type="primary" :disabled="!allowAdmin" @click="addRisk">
-          {{ $t("custom-approval.risk-rule.add-rule") }}
+          {{ $t("common.add") }}
         </NButton>
       </template>
     </RiskFilter>

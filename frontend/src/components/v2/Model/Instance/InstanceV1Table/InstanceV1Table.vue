@@ -53,11 +53,8 @@
             "
           />
         </div>
-        <div class="bb-grid-cell justify-center">
-          <InstanceV1EngineIcon :instance="instance" />
-        </div>
         <div class="bb-grid-cell">
-          {{ instanceV1Name(instance) }}
+          <InstanceV1Name :instance="instance" :link="false" tag="div" />
         </div>
         <div class="bb-grid-cell">
           <EnvironmentV1Name
@@ -91,14 +88,8 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBGrid, BBGridColumn, BBGridRow } from "@/bbkit";
 import { ComposedInstance } from "@/types";
-import {
-  urlfy,
-  instanceV1Slug,
-  instanceV1Name,
-  hostPortOfInstanceV1,
-} from "@/utils";
+import { urlfy, instanceV1Slug, hostPortOfInstanceV1 } from "@/utils";
 import EnvironmentV1Name from "../../EnvironmentV1Name.vue";
-import InstanceV1EngineIcon from "../InstanceV1EngineIcon.vue";
 
 export type InstanceRow = BBGridRow<ComposedInstance>;
 
@@ -128,31 +119,26 @@ const columnList = computed((): BBGridColumn[] => {
       width: "minmax(auto, 3rem)",
       hide: !props.allowSelection,
     },
-    // engine icon
-    {
-      title: "",
-      width: "minmax(auto, 2rem)",
-    },
     {
       title: t("common.name"),
-      width: "minmax(auto, 3fr)",
+      width: "minmax(min-content, auto)",
     },
     {
       title: t("common.environment"),
-      width: "minmax(auto, 1fr)",
+      width: "minmax(min-content, auto)",
     },
     {
       title: t("common.Address"),
-      width: "minmax(auto, 2fr)",
+      width: "minmax(min-content, auto)",
     },
     {
       title: t("instance.external-link"),
-      width: { sm: "1fr" },
+      width: { sm: "minmax(min-content, auto)" },
       class: "hidden sm:flex",
     },
     {
       title: t("subscription.instance-assignment.license"),
-      width: "minmax(auto, 1fr)",
+      width: "minmax(min-content, auto)",
       hide: !props.canAssignLicense,
     },
   ];

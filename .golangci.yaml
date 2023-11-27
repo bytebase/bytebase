@@ -17,6 +17,7 @@ linters:
     - forbidigo
     - mirror
     - bodyclose
+    - exhaustive
 
 # golangci-lint run --exclude="Rollback,logger.Sync,pgInstance.Stop"
 issues:
@@ -78,6 +79,9 @@ linters-settings:
         disabled: true
       - name: early-return
         disabled: true
+      - name: comment-spacings
+        arguments:
+          - exhaustive
   gocritic:
     disabled-checks:
       - ifElseChain
@@ -90,6 +94,8 @@ linters-settings:
     disable:
       - fieldalignment
       - shadow
+  exhaustive:
+    explicit-exhaustive-switch: true
   forbidigo:
     forbid:
       - 'fmt\.Errorf(# Please use errors\.Wrap\|Wrapf\|Errorf instead)?'

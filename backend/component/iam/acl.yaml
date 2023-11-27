@@ -1,0 +1,108 @@
+roles:
+  - name: roles/workspaceAdmin
+    permissions:
+      - bb.instances.list
+      - bb.instances.get
+      - bb.instances.create
+      - bb.instances.update
+      - bb.instances.delete
+      - bb.instances.undelete
+      - bb.instances.sync
+      - bb.databases.list
+      - bb.databases.get
+      - bb.databases.update
+      - bb.databases.sync
+      - bb.databases.getMetadata
+      - bb.databases.updateMetadata
+      - bb.databases.getSchema
+      - bb.databases.getBackupSetting
+      - bb.databases.updateBackupSetting
+      - bb.backups.list
+      - bb.backups.create
+      - bb.changeHistories.list
+      - bb.changeHistories.get
+      - bb.databaseSecrets.list
+      - bb.databaseSecrets.update
+      - bb.databaseSecrets.delete
+  - name: roles/workspaceDBA
+    permissions:
+      - bb.instances.list
+      - bb.instances.get
+      - bb.instances.create
+      - bb.instances.update
+      - bb.instances.delete
+      - bb.instances.undelete
+      - bb.instances.sync
+      - bb.databases.list
+      - bb.databases.get
+      - bb.databases.update
+      - bb.databases.sync
+      - bb.databases.getMetadata
+      - bb.databases.updateMetadata
+      - bb.databases.getSchema
+      - bb.databases.getBackupSetting
+      - bb.databases.updateBackupSetting
+      - bb.backups.list
+      - bb.backups.create
+      - bb.changeHistories.list
+      - bb.changeHistories.get
+      - bb.databaseSecrets.list
+      - bb.databaseSecrets.update
+      - bb.databaseSecrets.delete
+  - name: roles/workspaceMember
+    permissions: []
+  - name: roles/projectOwner
+    permissions:
+      - bb.databases.list
+      - bb.databases.get
+      - bb.databases.update
+      - bb.databases.sync
+      - bb.databases.getMetadata
+      - bb.databases.updateMetadata
+      - bb.databases.getSchema
+      - bb.databases.getBackupSetting
+      - bb.databases.updateBackupSetting
+      - bb.backups.list
+      - bb.backups.create
+      - bb.changeHistories.list
+      - bb.changeHistories.get
+      - bb.databaseSecrets.list
+      - bb.databaseSecrets.update
+      - bb.databaseSecrets.delete
+  - name: roles/projectDeveloper
+    permissions:
+      - bb.databases.list
+      - bb.databases.get
+      - bb.databases.sync
+      - bb.databases.getMetadata
+      - bb.databases.getSchema
+      - bb.databases.getBackupSetting
+      - bb.backups.list
+      - bb.changeHistories.list
+      - bb.changeHistories.get
+  - name: roles/projectQuerier
+    permissions: []
+  - name: roles/projectExporter
+    permissions: []
+  - name: roles/projectReleaser
+    permissions:
+      - bb.databases.list
+      - bb.databases.get
+      - bb.databases.sync
+      - bb.databases.getMetadata
+      - bb.databases.getSchema
+      - bb.databases.getBackupSetting
+      - bb.backups.list
+      - bb.changeHistories.list
+      - bb.changeHistories.get
+  - name: roles/projectViewer
+    permissions:
+      - bb.databases.list
+      - bb.databases.get
+      - bb.databases.sync
+      - bb.databases.getMetadata
+      - bb.databases.getSchema
+      - bb.databases.getBackupSetting
+      - bb.backups.list
+      - bb.changeHistories.list
+      - bb.changeHistories.get

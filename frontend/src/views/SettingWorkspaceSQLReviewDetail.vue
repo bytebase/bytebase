@@ -1,5 +1,5 @@
 <template>
-  <FeatureAttention custom-class="my-4" feature="bb.feature.sql-review" />
+  <FeatureAttention custom-class="mb-4" feature="bb.feature.sql-review" />
   <SQLReviewCreation
     v-if="state.editMode"
     key="sql-review-creation"
@@ -9,9 +9,9 @@
     :selected-rule-list="ruleListOfPolicy"
     @cancel="state.editMode = false"
   />
-  <div v-else class="mt-4">
+  <div v-else>
     <div
-      class="flex flex-col items-center space-x-2 justify-center md:flex-row"
+      class="flex flex-col gap-y-2 items-start md:items-center gap-x-2 justify-center md:flex-row"
     >
       <div class="flex-1 flex space-x-2 items-center justify-start">
         <BBBadge
@@ -28,11 +28,12 @@
           <BBBadge
             :text="$t('sql-review.disabled')"
             :can-remove="false"
+            :badge-style="'DISABLED'"
             ::badge-style="'DISABLED'"
           />
         </div>
         <BBTextField
-          class="flex-1 text-3xl py-0.5 px-0.5 font-bold truncate"
+          class="flex-1 text-xl md:text-3xl py-0.5 px-0.5 font-bold truncate"
           :disabled="!hasPermission"
           :required="true"
           :focus-on-mount="false"
@@ -42,26 +43,19 @@
           @end-editing="changeName"
         />
       </div>
-      <div v-if="hasPermission" class="flex space-x-2">
-        <button
+      <div v-if="hasPermission" class="flex gap-x-2">
+        <NButton
           v-if="reviewPolicy.enforce"
-          type="button"
-          class="btn-normal py-2 px-4"
           @click.prevent="state.showDisableModal = true"
         >
           {{ $t("common.disable") }}
-        </button>
-        <button
-          v-else
-          type="button"
-          class="btn-normal py-2 px-4"
-          @click.prevent="state.showEnableModal = true"
-        >
+        </NButton>
+        <NButton v-else @click.prevent="state.showEnableModal = true">
           {{ $t("common.enable") }}
-        </button>
-        <button type="button" class="btn-primary" @click="onEdit">
+        </NButton>
+        <NButton type="primary" @click="onEdit">
           {{ $t("sql-review.create.configure-rule.change-template") }}
-        </button>
+        </NButton>
       </div>
     </div>
     <BBAttention
@@ -98,12 +92,12 @@
       v-if="state.rulesUpdated"
       class="w-full mt-4 py-4 border-t border-block-border flex justify-between bg-white sticky bottom-0 z-10"
     >
-      <button type="button" class="btn-normal" @click.prevent="onCancelChanges">
+      <NButton @click.prevent="onCancelChanges">
         <span> {{ $t("common.cancel") }}</span>
-      </button>
-      <button type="button" class="btn-primary" @click.prevent="onApplyChanges">
+      </NButton>
+      <NButton type="primary" @click.prevent="onApplyChanges">
         {{ $t("common.confirm-and-update") }}
-      </button>
+      </NButton>
     </div>
   </div>
   <BBAlert

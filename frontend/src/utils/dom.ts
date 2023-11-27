@@ -103,3 +103,7 @@ export const getScrollParent = (
     return getScrollParent(element.parentElement);
   }
 };
+
+export const nextAnimationFrame = () => {
+  return new Promise<number>((resolve) => requestAnimationFrame(resolve));
+};

@@ -109,8 +109,8 @@ export interface GetDatabaseRequest {
 export interface ListDatabasesRequest {
   /**
    * The parent, which owns this collection of databases.
-   * Format: instances/{instance}
-   * Use "instances/-" to list all databases.
+   * - instances/{instance}: list all databases for an instance. Use "instances/-" to list all databases.
+   * - projects/{project}: list all databases in a project.
    */
   parent: string;
   /**
@@ -131,6 +131,7 @@ export interface ListDatabasesRequest {
   /**
    * Filter is used to filter databases returned in the list.
    * For example, "project = projects/{project}" can be used to list databases in a project.
+   * Note: the project filter will be moved to parent.
    */
   filter: string;
 }
@@ -8214,7 +8215,44 @@ export const DatabaseServiceDefinition = {
           8410: [new Uint8Array([0])],
           578365826: [
             new Uint8Array([
-              36,
+              73,
+              90,
+              35,
+              18,
+              33,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              125,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
               18,
               34,
               47,

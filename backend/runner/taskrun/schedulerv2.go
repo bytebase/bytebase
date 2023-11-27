@@ -16,6 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -424,11 +425,19 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			log.BBError(err),
 		)
 
-		resultBytes, marshalErr := protojson.Marshal(&storepb.TaskRunResult{
+		taskRunResult := &storepb.TaskRunResult{
 			Detail:        err.Error(),
 			ChangeHistory: "",
 			Version:       "",
-		})
+		}
+
+		var errWithPosition *db.ErrorWithPosition
+		if errors.As(err, &errWithPosition) {
+			taskRunResult.StartPosition = errWithPosition.Start
+			taskRunResult.EndPosition = errWithPosition.End
+		}
+
+		resultBytes, marshalErr := protojson.Marshal(taskRunResult)
 		if marshalErr != nil {
 			slog.Error("Failed to marshal task run result",
 				slog.Int("task_id", task.ID),

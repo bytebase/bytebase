@@ -14,11 +14,11 @@
               {{ $t("settings.sensitive-data.masking-level.self") }}
             </h1>
             <MaskingLevelRadioGroup
+              :level="state.maskingLevel"
               :level-list="MASKING_LEVELS"
-              :selected="state.maskingLevel"
               :disabled="!hasPermission || state.processing"
               :effective-masking-level="columnMetadata?.effectiveMaskingLevel"
-              @update="onMaskingLevelUpdate($event)"
+              @update:level="onMaskingLevelUpdate($event)"
             />
           </div>
           <div class="w-full">
@@ -57,74 +57,79 @@
               {{ $t("settings.sensitive-data.grant-access") }}
             </NButton>
           </div>
-          <BBTable
-            ref="tableRef"
-            :column-list="tableHeaderList"
+          <BBGrid
+            :column-list="gridColumnList"
             :data-source="accessUserList"
-            :show-header="true"
-            :left-bordered="true"
-            :right-bordered="true"
-            :top-bordered="true"
-            :bottom-bordered="true"
-            :compact-section="true"
             :row-clickable="false"
+            class="border compact"
           >
-            <template
-              #body="{
-                rowData: item,
-                row,
-              }: {
-                rowData: AccessUser,
-                row: number,
-              }"
-            >
-              <BBTableCell class="bb-grid-cell">
-                <div class="flex items-center space-x-2">
-                  <UserAvatar size="SMALL" :user="item.user" />
-                  <div class="flex flex-col">
-                    <router-link
-                      :to="`/users/${item.user.email}`"
-                      class="normal-link"
-                    >
-                      {{ item.user.title }}
-                    </router-link>
-                    <span class="textinfolabel">
-                      {{ item.user.email }}
-                    </span>
-                  </div>
+            <template #item="{ item, row }: AccessUserRow">
+              <div class="bb-grid-cell gap-x-2">
+                <UserAvatar size="SMALL" :user="item.user" />
+                <div class="flex flex-col">
+                  <router-link
+                    :to="`/users/${item.user.email}`"
+                    class="normal-link"
+                  >
+                    {{ item.user.title }}
+                  </router-link>
+                  <span class="textinfolabel">
+                    {{ item.user.email }}
+                  </span>
                 </div>
-              </BBTableCell>
-              <BBTableCell class="bb-grid-cell">
-                <BBCheckbox
-                  :value="
+              </div>
+              <div class="bb-grid-cell">
+                <NCheckbox
+                  :checked="
                     item.supportActions.has(
                       MaskingExceptionPolicy_MaskingException_Action.EXPORT
                     )
                   "
                   :disabled="!hasPermission || state.processing"
-                  @toggle="(checked: boolean) => onAccessControlUpdate(row, (item) => toggleAction(item, MaskingExceptionPolicy_MaskingException_Action.EXPORT, checked))"
+                  @update-checked="
+                    onAccessControlUpdate(row, (item) =>
+                      toggleAction(
+                        item,
+                        MaskingExceptionPolicy_MaskingException_Action.EXPORT,
+                        $event
+                      )
+                    )
+                  "
                 />
-              </BBTableCell>
-              <BBTableCell class="bb-grid-cell">
-                <BBCheckbox
-                  :value="
+              </div>
+              <div class="bb-grid-cell">
+                <NCheckbox
+                  :checked="
                     item.supportActions.has(
                       MaskingExceptionPolicy_MaskingException_Action.QUERY
                     )
                   "
                   :disabled="!hasPermission || state.processing"
-                  @toggle="(checked: boolean) => onAccessControlUpdate(row, (item) => toggleAction(item, MaskingExceptionPolicy_MaskingException_Action.QUERY, checked))"
+                  @update:checked="
+                    onAccessControlUpdate(row, (item) =>
+                      toggleAction(
+                        item,
+                        MaskingExceptionPolicy_MaskingException_Action.QUERY,
+                        $event
+                      )
+                    )
+                  "
                 />
-              </BBTableCell>
-              <BBTableCell class="bb-grid-cell">
+              </div>
+              <div class="bb-grid-cell">
                 <MaskingLevelDropdown
                   :disabled="!hasPermission || state.processing"
-                  :selected="item.maskingLevel"
+                  :level="item.maskingLevel"
                   :level-list="[MaskingLevel.PARTIAL, MaskingLevel.NONE]"
-                  @update="(level: MaskingLevel) => onAccessControlUpdate(row, (item) => item.maskingLevel = level)"
+                  @update:level="
+                    onAccessControlUpdate(
+                      row,
+                      (item) => (item.maskingLevel = $event)
+                    )
+                  "
                 />
-              </BBTableCell>
-              <BBTableCell class="bb-grid-cell">
+              </div>
+              <div class="bb-grid-cell">
                 <NDatePicker
                   :value="item.expirationTimestamp"
                   style="width: 100%"
@@ -134,17 +139,17 @@
                   :disabled="!hasPermission || state.processing"
                   @update:value="(val: number | undefined) => onAccessControlUpdate(row, (item) => item.expirationTimestamp = val)"
                 />
-              </BBTableCell>
-              <BBTableCell v-if="hasPermission" class="bb-grid-cell">
+              </div>
+              <div v-if="hasPermission" class="bb-grid-cell">
                 <NPopconfirm @positive-click="onRemove(row)">
                   <template #trigger>
-                    <button
-                      class="w-5 h-5 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
+                    <MiniActionButton
+                      tag="div"
                       :disabled="!hasPermission || state.processing"
                       @click.stop=""
                     >
-                      <heroicons-outline:trash class="w-4 h-4" />
-                    </button>
+                      <TrashIcon class="w-4 h-4" />
+                    </MiniActionButton>
                   </template>
 
                   <div class="whitespace-nowrap">
@@ -155,9 +160,9 @@
                     }}
                   </div>
                 </NPopconfirm>
-              </BBTableCell>
+              </div>
             </template>
-          </BBTable>
+          </BBGrid>
         </div>
       </div>
 
@@ -173,7 +178,7 @@
     </DrawerContent>
 
     <GrantAccessDrawer
-      v-if="state.showGrantAccessDrawer"
+      :show="state.showGrantAccessDrawer"
       :column-list="[props.column]"
       @dismiss="state.showGrantAccessDrawer = false"
     />
@@ -181,10 +186,12 @@
 </template>
 
 <script lang="ts" setup>
-import { NButton, NDatePicker, NPopconfirm } from "naive-ui";
+import { TrashIcon } from "lucide-vue-next";
+import { NButton, NCheckbox, NDatePicker, NPopconfirm } from "naive-ui";
 import { computed, reactive, watch, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import type { BBTableColumn } from "@/bbkit/types";
+import { BBGrid } from "@/bbkit";
+import type { BBGridColumn, BBGridRow } from "@/bbkit/types";
 import { Drawer, DrawerContent } from "@/components/v2";
 import {
   usePolicyV1Store,
@@ -207,6 +214,10 @@ import {
   MaskingExceptionPolicy_MaskingException_Action,
 } from "@/types/proto/v1/org_policy_service";
 import { hasWorkspacePermissionV1 } from "@/utils";
+import UserAvatar from "../User/UserAvatar.vue";
+import GrantAccessDrawer from "./GrantAccessDrawer.vue";
+import MaskingLevelDropdown from "./components/MaskingLevelDropdown.vue";
+import MaskingLevelRadioGroup from "./components/MaskingLevelRadioGroup.vue";
 import { SensitiveColumn } from "./types";
 import { getMaskDataIdentifier, isCurrentColumnException } from "./utils";
 
@@ -217,6 +228,8 @@ interface AccessUser {
   expirationTimestamp?: number;
   rawExpression: string;
 }
+
+type AccessUserRow = BBGridRow<AccessUser>;
 
 interface LocalState {
   dirty: boolean;
@@ -357,31 +370,37 @@ watch(
   }
 );
 
-const tableHeaderList = computed(() => {
-  const list: BBTableColumn[] = [
+const gridColumnList = computed(() => {
+  const columns: BBGridColumn[] = [
     {
       title: t("common.user"),
+      width: "minmax(min-content, auto)",
     },
     {
       title: t("settings.sensitive-data.action.export"),
+      width: "minmax(min-content, auto)",
     },
     {
       title: t("settings.sensitive-data.action.query"),
+      width: "minmax(min-content, auto)",
     },
     {
       title: t("settings.sensitive-data.masking-level.self"),
+      width: "minmax(min-content, auto)",
     },
     {
       title: t("common.expiration"),
+      width: "minmax(min-content, auto)",
     },
   ];
   if (hasPermission.value) {
     // operation.
-    list.push({
+    columns.push({
       title: "",
+      width: "minmax(min-content, auto)",
     });
   }
-  return list;
+  return columns;
 });
 
 const onRemove = async (index: number) => {

@@ -58,6 +58,7 @@ type FindInstanceMessage struct {
 	EnvironmentID *string
 	ResourceID    *string
 	ShowDeleted   bool
+	ProjectUID    *int
 }
 
 // GetInstanceV2 gets an instance by the resource_id.
@@ -392,6 +393,9 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 	}
 	if v := find.UID; v != nil {
 		where, args = append(where, fmt.Sprintf("instance.id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.ProjectUID; v != nil {
+		where, args = append(where, fmt.Sprintf("instance.id IN (SELECT DISTINCT instance_id FROM db WHERE project_id = $%d)", len(args)+1)), append(args, *v)
 	}
 	if !find.ShowDeleted {
 		where, args = append(where, fmt.Sprintf("instance.row_status = $%d", len(args)+1)), append(args, api.Normal)

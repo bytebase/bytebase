@@ -15,7 +15,9 @@ cmd = """
 delay = 500
 exclude_dir = [
   ".air",
+  "backend/server/dist",
   "bytebase-build",
+  "backend/server/dist",
   "docs",
   "frontend",
   "helm-charts",

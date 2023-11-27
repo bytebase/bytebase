@@ -89,14 +89,14 @@
         <span class="ml-1 text-control-light">{{
           $t("database.backup.disabled")
         }}</span>
-        <button
-          v-if="allowAdmin && !state.autoBackupEnabled"
-          type="button"
-          class="ml-4 btn-primary"
-          @click.prevent="state.showBackupSettingModal = true"
-        >
-          {{ $t("database.enable-backup") }}
-        </button>
+        <div v-if="allowAdmin && !state.autoBackupEnabled" class="ml-4">
+          <NButton
+            type="primary"
+            @click.prevent="state.showBackupSettingModal = true"
+          >
+            {{ $t("database.enable-backup") }}
+          </NButton>
+        </div>
       </div>
     </div>
     <div class="pt-6 space-y-4">
@@ -112,14 +112,13 @@
             :allow-admin="allowAdmin"
           />
 
-          <button
+          <NButton
             v-if="allowEdit && !disableBackupButton"
-            type="button"
-            class="btn-normal whitespace-nowrap items-center"
+            type="primary"
             @click.prevent="state.showCreateBackupModal = true"
           >
             {{ $t("database.backup-now") }}
-          </button>
+          </NButton>
         </div>
       </div>
       <BackupTable

@@ -5,6 +5,11 @@ import { useAuthStore } from "@/store";
 
 export type IgnoreErrorsOptions = {
   /**
+   * If set to true, will NOT show redirect to other pages(e.g., 403, sign in page).
+   */
+  silent?: boolean;
+
+  /**
    * If set, will NOT handle specified status codes is this array.
    */
   ignoredCodes?: Status[];
@@ -27,6 +32,7 @@ export const authInterceptorMiddleware: ClientMiddleware<IgnoreErrorsOptions> =
           // omit specified errors
         } else {
           if (code === Status.UNAUTHENTICATED) {
+            if (options.silent) return;
             // "Kick out" sign in status if access token expires.
             try {
               await useAuthStore().logout();
@@ -34,6 +40,7 @@ export const authInterceptorMiddleware: ClientMiddleware<IgnoreErrorsOptions> =
               router.push({ name: "auth.signin" });
             }
           } else if (code === Status.PERMISSION_DENIED) {
+            if (options.silent) return;
             // Jump to 403 page
             router.push({ name: "error.403" });
           }

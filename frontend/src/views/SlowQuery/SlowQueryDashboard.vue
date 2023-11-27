@@ -1,5 +1,5 @@
 <template>
-  <div class="p-2">
+  <div class="px-4 py-6">
     <SlowQueryPanel v-if="ready" v-model:filter="filter" />
   </div>
 </template>

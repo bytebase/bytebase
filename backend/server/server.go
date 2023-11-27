@@ -28,6 +28,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/activity"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/demo"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
@@ -81,6 +82,7 @@ type Server struct {
 	runnerWG           sync.WaitGroup
 
 	activityManager *activity.Manager
+	iamManager      *iam.Manager
 
 	licenseService enterprise.LicenseService
 
@@ -234,6 +236,10 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	}
 	s.secret = secret
 	s.activityManager = activity.NewManager(storeInstance)
+	s.iamManager, err = iam.NewManager(storeInstance)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create iam manager")
+	}
 	s.dbFactory = dbfactory.New(s.mysqlBinDir, s.mongoBinDir, s.pgBinDir, profile.DataDir, s.secret)
 
 	// Configure echo server.
@@ -299,7 +305,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	// Setup the gRPC and grpc-gateway.
 	authProvider := auth.New(s.store, s.secret, tokenDuration, s.licenseService, s.stateCfg, profile.Mode)
-	aclProvider := apiv1.NewACLInterceptor(s.store, s.secret, s.licenseService, profile.Mode)
+	aclProvider := apiv1.NewACLInterceptor(s.store, s.secret, s.licenseService, s.iamManager, profile.Mode)
 	debugProvider := apiv1.NewDebugInterceptor(&s.errorRecordRing, &profile, s.metricReporter)
 	onPanic := func(p any) error {
 		stack := stacktrace.TakeStacktrace(20 /* n */, 5 /* skip */)

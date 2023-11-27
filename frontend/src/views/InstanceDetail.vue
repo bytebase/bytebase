@@ -1,13 +1,13 @@
 <template>
-  <div class="py-4 space-y-2">
+  <div class="p-6 space-y-2">
     <ArchiveBanner v-if="instance.state === State.DELETED" />
 
-    <div class="px-6 flex items-center justify-between">
+    <div class="flex items-center justify-between">
       <div class="flex items-center gap-x-2">
         <EngineIcon :engine="instance.engine" custom-class="!h-6" />
         <span class="text-lg font-medium">{{ instanceV1Name(instance) }}</span>
       </div>
-      <div class="flex items-center gap-x-4">
+      <div class="flex items-center gap-x-2">
         <NButton
           v-if="allowEdit"
           :loading="state.syncingSchema"
@@ -33,23 +33,22 @@
       </div>
     </div>
 
-    <div class="px-6">
-      <NTabs>
-        <NTabPane name="OVERVIEW" :tab="$t('common.overview')">
-          <InstanceForm :instance="instance" />
-        </NTabPane>
-        <NTabPane name="DATABASES" :tab="$t('common.databases')">
-          <DatabaseV1Table
-            mode="INSTANCE"
-            :scroll-on-page-change="false"
-            :database-list="databaseV1List"
-          />
-        </NTabPane>
-        <NTabPane name="USERS" :tab="$t('instance.users')">
-          <InstanceRoleTable :instance-role-list="instanceRoleList" />
-        </NTabPane>
-      </NTabs>
-    </div>
+    <NTabs>
+      <NTabPane name="OVERVIEW" :tab="$t('common.overview')">
+        <InstanceForm :instance="instance" />
+      </NTabPane>
+      <NTabPane name="DATABASES" :tab="$t('common.databases')">
+        <DatabaseV1Table
+          mode="INSTANCE"
+          table-class="border"
+          :scroll-on-page-change="false"
+          :database-list="databaseV1List"
+        />
+      </NTabPane>
+      <NTabPane name="USERS" :tab="$t('instance.users')">
+        <InstanceRoleTable :instance-role-list="instanceRoleList" />
+      </NTabPane>
+    </NTabs>
   </div>
 
   <Drawer

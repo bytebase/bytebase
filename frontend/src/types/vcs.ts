@@ -13,6 +13,7 @@ export type VCSUIType =
   | "GITHUB_ENTERPRISE"
   | "BITBUCKET_ORG"
   | "AZURE_DEVOPS";
+
 export interface VCSConfig {
   type: ExternalVersionControl_Type;
   uiType: VCSUIType;
@@ -33,11 +34,6 @@ export type VCS = {
   apiUrl: string;
   applicationId: string;
   secret: string;
-};
-
-export type VCSTokenCreate = {
-  code: string;
-  redirectUrl: string;
 };
 
 export type VCSFileCommit = {

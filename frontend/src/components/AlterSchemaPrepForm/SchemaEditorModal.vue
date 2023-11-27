@@ -2,7 +2,7 @@
   <BBModal
     :title="$t('database.edit-schema')"
     :trap-focus="false"
-    class="schema-editor-modal-container !w-[96rem] h-auto overflow-auto !max-w-[calc(100%-40px)] !max-h-[calc(100%-40px)]"
+    class="schema-editor-modal-container !w-[96rem] h-auto overflow-auto !max-w-[calc(100vw-40px)] !max-h-[calc(100vh-40px)]"
     @close="dismissModal"
   >
     <div
@@ -123,10 +123,9 @@
 
   <!-- Close modal confirm dialog -->
   <ActionConfirmModal
-    v-if="state.showActionConfirmModal"
+    v-model:show="state.showActionConfirmModal"
     :title="$t('schema-editor.confirm-to-close.title')"
     :description="$t('schema-editor.confirm-to-close.description')"
-    @close="state.showActionConfirmModal = false"
     @confirm="emit('close')"
   />
 </template>

@@ -107,9 +107,9 @@ watch(currentTabId, () => {
 
 watch(
   () => sqlEditorStore.shouldFormatContent,
-  () => {
+  async () => {
     if (sqlEditorStore.shouldFormatContent) {
-      editorRef.value?.formatEditorContent();
+      await editorRef.value?.formatEditorContent();
       sqlEditorStore.setShouldFormatContent(false);
     }
   }

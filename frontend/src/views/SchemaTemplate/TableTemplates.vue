@@ -11,38 +11,36 @@
             :disabled="readonly"
             @click="createSchemaTemplate"
           >
-            {{ $t("schema-template.table-template.add") }}
+            {{ $t("common.add") }}
           </NButton>
         </div>
       </div>
     </div>
-    <div class="flex items-center gap-x-5 my-4 pb-5 border-b">
-      <template v-if="showEngineFilter">
-        <label
-          v-for="item in engineList"
-          :key="item"
-          class="flex items-center gap-x-1 text-sm text-gray-600"
-        >
-          <input
-            type="checkbox"
-            :value="item"
+    <div class="flex items-center justify-between gap-x-2 my-4">
+      <div class="flex flex-row items-center justify-start gap-x-4">
+        <template v-if="showEngineFilter">
+          <NCheckbox
+            v-for="item in engineList"
+            :key="item"
             :checked="state.selectedEngine.has(item)"
-            class="h-4 w-4 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500"
-            @input="toggleEngineCheck(item)"
-          />
-          <EngineIcon :engine="item" custom-class="ml-0 mr-1" />
-          <span
-            class="items-center text-xs px-2 py-0.5 rounded-full bg-gray-200 text-gray-800"
+            @update:checked="toggleEngineCheck(item)"
           >
-            {{ countTemplateByEngine(item) }}
-          </span>
-        </label>
-      </template>
-      <BBTableSearch
-        ref="searchField"
-        class="ml-auto w-72"
+            <div class="flex items-center gap-x-1 text-sm text-gray-600">
+              <EngineIcon :engine="item" class="ml-0 mr-1" />
+              <span
+                class="items-center text-xs px-2 py-0.5 rounded-full bg-gray-200 text-gray-800"
+              >
+                {{ countTemplateByEngine(item) }}
+              </span>
+            </div>
+          </NCheckbox>
+        </template>
+      </div>
+      <SearchBox
+        v-model:value="state.searchText"
+        :autofocus="true"
         :placeholder="$t('schema-template.search-by-name-or-comment')"
-        @change-text="(val: string) => state.searchText = val"
+        style="width: 18rem"
       />
     </div>
     <TableTemplateView
@@ -64,11 +62,13 @@
 </template>
 
 <script lang="ts" setup>
-import { NButton } from "naive-ui";
+import { NButton, NCheckbox } from "naive-ui";
 import { v1 as uuidv1 } from "uuid";
 import { reactive, computed, onMounted } from "vue";
+import TableTemplateForm from "@/components/SchemaTemplate/TableTemplateForm.vue";
+import TableTemplateView from "@/components/SchemaTemplate/TableTemplateView.vue";
 import { engineList } from "@/components/SchemaTemplate/utils";
-import { Drawer } from "@/components/v2";
+import { Drawer, SearchBox } from "@/components/v2";
 import { useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import { TableMetadata, TableConfig } from "@/types/proto/v1/database_service";

@@ -41,70 +41,66 @@
         <TabList />
 
         <div class="w-full flex-1 overflow-hidden">
-          <template v-if="allowAccess">
-            <template v-if="tabStore.currentTab.mode === TabMode.ReadOnly">
-              <Splitpanes
-                v-if="allowReadOnlyMode"
-                horizontal
-                class="default-theme"
-                :dbl-click-splitter="false"
-              >
-                <Pane class="flex flex-row overflow-hidden">
-                  <div class="h-full flex-1 overflow-hidden">
-                    <Splitpanes
-                      vertical
-                      class="default-theme"
-                      :dbl-click-splitter="false"
-                    >
-                      <Pane>
-                        <EditorPanel />
-                      </Pane>
-                      <Pane
-                        v-if="showSecondarySidebar && windowWidth >= 1024"
-                        :size="25"
-                      >
-                        <SecondarySidebar />
-                      </Pane>
-                    </Splitpanes>
-                  </div>
-
-                  <div
-                    v-if="windowWidth >= 1024"
-                    class="h-full border-l shrink-0"
+          <template v-if="tabStore.currentTab.mode === TabMode.ReadOnly">
+            <Splitpanes
+              v-if="allowReadOnlyMode"
+              horizontal
+              class="default-theme"
+              :dbl-click-splitter="false"
+            >
+              <Pane class="flex flex-row overflow-hidden">
+                <div class="h-full flex-1 overflow-hidden">
+                  <Splitpanes
+                    vertical
+                    class="default-theme"
+                    :dbl-click-splitter="false"
                   >
-                    <SecondaryGutterBar />
-                  </div>
-                </Pane>
-                <Pane v-if="!isDisconnected" class="relative" :size="40">
-                  <ResultPanel />
-                </Pane>
-              </Splitpanes>
+                    <Pane>
+                      <EditorPanel />
+                    </Pane>
+                    <Pane
+                      v-if="showSecondarySidebar && windowWidth >= 1024"
+                      :size="25"
+                    >
+                      <SecondarySidebar />
+                    </Pane>
+                  </Splitpanes>
+                </div>
 
-              <div
-                v-else
-                class="w-full h-full flex flex-col items-center justify-center gap-y-2"
-              >
-                <img
-                  src="../../assets/illustration/403.webp"
-                  class="max-h-[40%]"
-                />
-                <i18n-t
-                  class="textinfolabel flex items-center"
-                  keypath="sql-editor.allow-admin-mode-only"
-                  tag="div"
+                <div
+                  v-if="windowWidth >= 1024"
+                  class="h-full border-l shrink-0"
                 >
-                  <template #instance>
-                    <InstanceV1Name :instance="instance" :link="false" />
-                  </template>
-                </i18n-t>
-                <AdminModeButton />
-              </div>
-            </template>
+                  <SecondaryGutterBar />
+                </div>
+              </Pane>
+              <Pane v-if="!isDisconnected" class="relative" :size="40">
+                <ResultPanel />
+              </Pane>
+            </Splitpanes>
 
-            <TerminalPanelV1
-              v-if="tabStore.currentTab.mode === TabMode.Admin"
-            />
+            <div
+              v-else
+              class="w-full h-full flex flex-col items-center justify-center gap-y-2"
+            >
+              <img
+                src="../../assets/illustration/403.webp"
+                class="max-h-[40%]"
+              />
+              <i18n-t
+                class="textinfolabel flex items-center"
+                keypath="sql-editor.allow-admin-mode-only"
+                tag="div"
+              >
+                <template #instance>
+                  <InstanceV1Name :instance="instance" :link="false" />
+                </template>
+              </i18n-t>
+              <AdminModeButton />
+            </div>
           </template>
+
+          <TerminalPanelV1 v-if="tabStore.currentTab.mode === TabMode.Admin" />
           <div
             v-else
             class="w-full h-full flex flex-col items-center justify-center"
@@ -153,18 +149,13 @@ import { Drawer, DrawerContent, InstanceV1Name } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
   useActuatorV1Store,
-  useCurrentUserV1,
   useDatabaseV1Store,
   useInstanceV1ByUID,
   useSQLEditorStore,
   useTabStore,
 } from "@/store";
-import { DatabaseId, TabMode, UNKNOWN_ID } from "@/types";
-import {
-  allowUsingSchemaEditorV1,
-  instanceV1HasReadonlyMode,
-  isDatabaseV1Queryable,
-} from "@/utils";
+import { DatabaseId, TabMode } from "@/types";
+import { allowUsingSchemaEditorV1, instanceV1HasReadonlyMode } from "@/utils";
 import AsidePanel from "./AsidePanel/AsidePanel.vue";
 import AdminModeButton from "./EditorCommon/AdminModeButton.vue";
 import EditorPanel from "./EditorPanel/EditorPanel.vue";
@@ -197,7 +188,6 @@ const tabStore = useTabStore();
 const databaseStore = useDatabaseV1Store();
 const actuatorStore = useActuatorV1Store();
 const sqlEditorStore = useSQLEditorStore();
-const currentUserV1 = useCurrentUserV1();
 // provide context for SQL Editor
 const { events: editorEvents } = provideSQLEditorContext();
 // provide context for sheets
@@ -210,16 +200,6 @@ const isDisconnected = computed(() => tabStore.isDisconnected);
 const isFetchingSheet = computed(() => sqlEditorStore.isFetchingSheet);
 
 const { width: windowWidth } = useWindowSize();
-
-const allowAccess = computed(() => {
-  const { databaseId } = tabStore.currentTab.connection;
-  const database = databaseStore.getDatabaseByUID(databaseId);
-  if (database.uid === String(UNKNOWN_ID)) {
-    // Allowed if connected to an instance
-    return true;
-  }
-  return isDatabaseV1Queryable(database, currentUserV1.value);
-});
 
 const { instance } = useInstanceV1ByUID(
   computed(() => tabStore.currentTab.connection.instanceId)
@@ -283,7 +263,7 @@ useEmitteryEventListener(
 }
 
 .splitpanes.default-theme .splitpanes__splitter:hover {
-  @apply bg-indigo-400;
+  @apply bg-accent;
 }
 
 .splitpanes.default-theme .splitpanes__splitter::before,
@@ -303,12 +283,6 @@ useEmitteryEventListener(
 
 <style scoped lang="postcss">
 .sqleditor--wrapper {
-  /*
-  color: var(--base);
-  --base: #444;
-  --border-color: rgba(200, 200, 200, 0.2);
-  */
-
   @apply w-full flex-1 overflow-hidden flex flex-col;
 }
 </style>

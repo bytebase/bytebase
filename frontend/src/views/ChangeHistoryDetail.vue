@@ -279,7 +279,6 @@
 </template>
 
 <script lang="ts" setup>
-import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { computed, reactive, watch, ref } from "vue";
 import ChangeHistoryStatusIcon from "@/components/ChangeHistory/ChangeHistoryStatusIcon.vue";
 import DiffEditor from "@/components/MonacoEditor/DiffEditor.vue";
@@ -309,6 +308,7 @@ import {
   extractUserResourceName,
   uidFromSlug,
   getAffectedTablesOfChangeHistory,
+  toClipboard,
 } from "@/utils";
 
 interface LocalState {

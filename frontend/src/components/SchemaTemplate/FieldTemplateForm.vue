@@ -11,27 +11,13 @@
             {{ $t("schema-template.form.category-desc") }}
           </p>
           <div class="relative flex flex-row justify-between items-center mt-1">
-            <input
-              v-model="state.category"
-              required
-              name="category"
-              type="text"
-              :placeholder="$t('schema-template.form.unclassified')"
-              class="textfield w-full"
-              :disabled="!allowEdit"
-            />
-            <NDropdown
-              trigger="click"
+            <DropdownInput
+              v-model:value="state.category"
               :options="categoryOptions"
+              :placeholder="$t('schema-template.form.unclassified')"
               :disabled="!allowEdit"
-              @select="(category: string) => (state.category = category)"
-            >
-              <button class="absolute right-5">
-                <heroicons-solid:chevron-up-down
-                  class="w-4 h-auto text-gray-400"
-                />
-              </button>
-            </NDropdown>
+              :consistent-menu-width="true"
+            />
           </div>
         </div>
 
@@ -39,36 +25,12 @@
           <label for="engine" class="textlabel">
             {{ $t("database.engine") }}
           </label>
-          <div class="grid grid-cols-4 gap-2">
-            <template v-for="engine in engineList" :key="engine">
-              <div
-                class="flex relative justify-start p-2 border rounded"
-                :class="[
-                  state.engine === engine && 'font-medium bg-control-bg-hover',
-                  allowEdit
-                    ? 'cursor-pointer hover:bg-control-bg-hover'
-                    : 'cursor-not-allowed',
-                ]"
-                @click.capture="changeEngine(engine)"
-              >
-                <div class="flex flex-row justify-start items-center">
-                  <input
-                    type="radio"
-                    class="btn mr-2"
-                    :checked="state.engine === engine"
-                    :disabled="!allowEdit"
-                  />
-                  <EngineIcon
-                    :engine="engine"
-                    custom-class="w-5 h-auto max-h-[20px] object-contain mr-1"
-                  />
-                  <p class="text-center text-sm">
-                    {{ engineNameV1(engine) }}
-                  </p>
-                </div>
-              </div>
-            </template>
-          </div>
+          <InstanceEngineRadioGrid
+            v-model:engine="state.engine"
+            :engine-list="engineList"
+            :disabled="!allowEdit"
+            class="grid-cols-4 gap-2"
+          />
         </div>
       </div>
       <div class="space-y-6 pt-6">
@@ -79,13 +41,9 @@
               {{ $t("schema-template.form.column-name") }}
               <span class="text-red-600 mr-2">*</span>
             </label>
-            <input
-              v-model="state.column!.name"
-              required
-              name="column-name"
-              type="text"
+            <NInput
+              v-model:value="state.column!.name"
               placeholder="column name"
-              class="textfield mt-1 w-full"
               :disabled="!allowEdit"
             />
           </div>
@@ -94,22 +52,20 @@
             <label for="semantic-types" class="textlabel">
               {{ $t("settings.sensitive-data.semantic-types.self") }}
             </label>
-            <div class="flex items-center gap-x-2 mt-3">
+            <div class="flex items-center gap-x-2 mt-3 text-sm">
               {{ columnSemanticType?.title }}
               <div v-if="allowEdit" class="flex items-center">
-                <button
+                <MiniActionButton
                   v-if="columnSemanticType"
-                  class="w-6 h-6 p-1 hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
                   @click.prevent="onSemanticTypeApply('')"
                 >
-                  <heroicons-outline:x class="w-4 h-4" />
-                </button>
-                <button
-                  class="w-6 h-6 p-1 hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
+                  <XIcon class="w-4 h-4" />
+                </MiniActionButton>
+                <MiniActionButton
                   @click.prevent="state.showSemanticTypesDrawer = true"
                 >
-                  <heroicons-outline:pencil class="w-4 h-4" />
-                </button>
+                  <PencilIcon class="w-4 h-4" />
+                </MiniActionButton>
               </div>
             </div>
           </div>
@@ -124,19 +80,17 @@
                 :classification-config="classificationConfig"
               />
               <div v-if="allowEdit" class="flex items-center">
-                <button
+                <MiniActionButton
                   v-if="state.column?.classification"
-                  class="w-6 h-6 p-1 hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
                   @click.prevent="state.column!.classification = ''"
                 >
-                  <heroicons-outline:x class="w-4 h-4" />
-                </button>
-                <button
-                  class="w-6 h-6 p-1 hover:bg-control-bg-hover rounded cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-white disabled:text-gray-400"
+                  <XIcon class="w-4 h-4" />
+                </MiniActionButton>
+                <MiniActionButton
                   @click.prevent="state.showClassificationDrawer = true"
                 >
-                  <heroicons-outline:pencil class="w-4 h-4" />
-                </button>
+                  <PencilIcon class="w-4 h-4" />
+                </MiniActionButton>
               </div>
             </div>
           </div>
@@ -150,41 +104,20 @@
             <div
               class="relative flex flex-row justify-between items-center mt-1"
             >
-              <BBSelect
-                v-if="schemaTemplateColumnTypes.length > 0"
-                :selected-item="state.column!.type"
-                :item-list="schemaTemplateColumnTypes"
-                :show-prefix-item="false"
+              <DropdownInput
+                :value="state.column!.type || null"
+                :allow-input-value="
+                  schemaTemplateColumnTypeOptions.length === 0
+                "
+                :options="
+                  schemaTemplateColumnTypeOptions.length > 0
+                    ? schemaTemplateColumnTypeOptions
+                    : dataTypeOptions
+                "
+                :disabled="!allowEdit"
                 placeholder="column type"
-                @select-item="(item: string) => state.column!.type = item"
-              >
-                <template #menuItem="{ item }">
-                  {{ item }}
-                </template>
-              </BBSelect>
-              <template v-else>
-                <input
-                  v-model="state.column!.type"
-                  required
-                  name="column-type"
-                  type="text"
-                  placeholder="column type"
-                  class="textfield w-full"
-                  :disabled="!allowEdit"
-                />
-                <NDropdown
-                  trigger="click"
-                  :options="dataTypeOptions"
-                  :disabled="!allowEdit"
-                  @select="(dataType: string) => (state.column!.type = dataType)"
-                >
-                  <button class="absolute right-5">
-                    <heroicons-solid:chevron-up-down
-                      class="w-4 h-auto text-gray-400"
-                    />
-                  </button>
-                </NDropdown>
-              </template>
+                @update:value="state.column!.type = $event"
+              />
             </div>
           </div>
 
@@ -194,41 +127,28 @@
               {{ $t("schema-template.form.default-value") }}
             </label>
             <div class="flex flex-row items-center relative">
-              <input
-                class="textfield mt-1 w-full"
-                type="text"
-                :value="getColumnDefaultDisplayString(state.column!)"
+              <DropdownInput
+                :value="getColumnDefaultDisplayString(state.column!)||null"
+                :options="defaultValueOptions"
                 :disabled="!allowEdit"
                 :placeholder="getColumnDefaultValuePlaceholder(state.column!)"
-                @change="(e) => handleColumnDefaultInputChange(e)"
+                @update:value="handleColumnDefaultChange"
               />
-              <NDropdown
-                trigger="click"
-                :disabled="!allowEdit"
-                :options="getColumnDefaultValueOptions(state.engine, state.column!.type)"
-                @select="(key: string) => handleColumnDefaultFieldChange(key)"
-              >
-                <button class="absolute right-5">
-                  <heroicons-solid:chevron-up-down
-                    class="w-4 h-auto text-gray-400"
-                  />
-                </button>
-              </NDropdown>
             </div>
           </div>
 
           <!-- nullable -->
-          <div class="sm:col-span-2 ml-0 sm:ml-3 flex flex-col">
+          <div class="sm:col-span-2 ml-0 sm:ml-3">
             <label for="nullable" class="textlabel">
               {{ $t("schema-template.form.nullable") }}
             </label>
-            <BBSwitch
-              class="mt-4"
-              :text="false"
-              :value="state.column?.nullable"
-              :disabled="!allowEdit"
-              @toggle="(on: boolean) => state.column!.nullable = on"
-            />
+            <div class="flex flex-row items-center h-[34px]">
+              <NSwitch
+                v-model:value="state.column!.nullable"
+                :text="false"
+                :disabled="!allowEdit"
+              />
+            </div>
           </div>
 
           <!-- comment -->
@@ -236,15 +156,16 @@
             <label for="comment" class="textlabel">
               {{ $t("schema-template.form.comment") }}
             </label>
-            <textarea
-              v-model="state.column!.userComment"
-              rows="3"
-              class="textfield block w-full resize-none mt-1 text-sm text-control rounded-md whitespace-pre-wrap"
+            <NInput
+              v-model:value="state.column!.userComment"
+              type="textarea"
+              :autosize="{ minRows: 3, maxRows: 3 }"
               :disabled="!allowEdit"
             />
           </div>
         </div>
       </div>
+
       <div class="space-y-1 pt-6">
         <label for="category" class="textlabel">
           {{ $t("common.labels") }}
@@ -267,9 +188,9 @@
           </NButton>
           <NButton
             v-if="allowEdit"
-            :disabled="sumbitDisabled"
+            :disabled="submitDisabled"
             type="primary"
-            @click.prevent="sumbit"
+            @click.prevent="submit"
           >
             {{ create ? $t("common.create") : $t("common.update") }}
           </NButton>
@@ -303,18 +224,25 @@
 
 <script lang="ts" setup>
 import { isEqual, cloneDeep } from "lodash-es";
-import { NDropdown } from "naive-ui";
+import { XIcon, PencilIcon } from "lucide-vue-next";
+import { NButton, NInput, NSwitch, SelectOption } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { LabelListEditor } from "@/components/Label";
 import {
   getColumnDefaultDisplayString,
   getColumnDefaultValuePlaceholder,
   getDefaultValueByKey,
   getColumnDefaultValueOptions,
+  isTextOfColumnType,
 } from "@/components/SchemaEditorV1/utils/columnDefaultValue";
-import { DrawerContent } from "@/components/v2";
+import {
+  DrawerContent,
+  DropdownInput,
+  InstanceEngineRadioGrid,
+  MiniActionButton,
+} from "@/components/v2";
 import { useSettingV1Store, useNotificationStore } from "@/store";
-import { Engine } from "@/types/proto/v1/common";
 import {
   ColumnConfig,
   ColumnMetadata,
@@ -325,12 +253,13 @@ import {
 } from "@/types/proto/v1/setting_service";
 import {
   getDataTypeSuggestionList,
-  engineNameV1,
   useWorkspacePermissionV1,
   convertKVListToLabels,
   convertLabelsToKVList,
 } from "@/utils";
-import { engineList, caregoryList, classificationConfig } from "./utils";
+import ColumnDefaultValueExpressionModal from "../SchemaEditorV1/Modals/ColumnDefaultValueExpressionModal.vue";
+import SemanticTypesDrawer from "../SensitiveData/components/SemanticTypesDrawer.vue";
+import { engineList, categoryList, classificationConfig } from "./utils";
 
 const props = defineProps<{
   create: boolean;
@@ -412,18 +341,32 @@ const dirty = computed(() => {
 });
 
 const dataTypeOptions = computed(() => {
-  return getDataTypeSuggestionList(state.engine).map((dataType) => {
-    return {
-      label: dataType,
-      key: dataType,
-    };
-  });
+  return getDataTypeSuggestionList(state.engine).map<SelectOption>(
+    (dataType) => {
+      return {
+        label: dataType,
+        value: dataType,
+      };
+    }
+  );
 });
 
 const categoryOptions = computed(() => {
-  return caregoryList.value.map((category) => ({
+  return categoryList.value.map<SelectOption>((category) => ({
     label: category,
-    key: category,
+    value: category,
+  }));
+});
+
+const defaultValueOptions = computed(() => {
+  if (!state.column) return [];
+  return getColumnDefaultValueOptions(
+    state.engine,
+    state.column.type
+  ).map<SelectOption>((opt) => ({
+    value: opt.key,
+    label: opt.label as string,
+    defaultValue: opt.value,
   }));
 });
 
@@ -440,14 +383,14 @@ const schemaTemplateColumnTypes = computed(() => {
   }
   return [];
 });
+const schemaTemplateColumnTypeOptions = computed(() => {
+  return schemaTemplateColumnTypes.value.map<SelectOption>((type) => ({
+    label: type,
+    value: type,
+  }));
+});
 
-const changeEngine = (engine: Engine) => {
-  if (allowEdit.value) {
-    state.engine = engine;
-  }
-};
-
-const sumbitDisabled = computed(() => {
+const submitDisabled = computed(() => {
   if (!state.column?.name || !state.column?.type) {
     return true;
   }
@@ -457,7 +400,7 @@ const sumbitDisabled = computed(() => {
   return false;
 });
 
-const sumbit = async () => {
+const submit = async () => {
   const template = SchemaTemplateSetting_FieldTemplate.fromPartial({
     ...state,
     config: ColumnConfig.fromPartial({
@@ -508,22 +451,37 @@ const onClassificationSelect = (id: string) => {
   state.column.classification = id;
 };
 
-const handleColumnDefaultInputChange = (event: Event) => {
-  const value = (event.target as HTMLInputElement).value;
-  if (!state.column) {
+const handleColumnDefaultChange = (key: string) => {
+  const value = getDefaultValueByKey(key);
+  if (value) {
+    handleColumnDefaultSelect(key);
     return;
   }
-  state.column.hasDefault = true;
-  state.column.defaultNull = undefined;
-  if (state.column.defaultString !== undefined) {
-    state.column.defaultString = value;
-    return;
-  }
-  // By default, user input is treated as expression.
-  state.column.defaultExpression = value;
-};
 
-const handleColumnDefaultFieldChange = (key: string) => {
+  handleColumnDefaultInput(key);
+};
+const handleColumnDefaultInput = (value: string) => {
+  const { column } = state;
+  if (!column) return;
+
+  column.hasDefault = true;
+  column.defaultNull = undefined;
+  // If column is text type or has default string, we will treat user's input as string.
+  if (
+    isTextOfColumnType(state.engine, column.type) ||
+    column.defaultString !== undefined
+  ) {
+    column.defaultString = value;
+    column.defaultExpression = undefined;
+    return;
+  }
+  // Otherwise we will treat user's input as expression.
+  column.defaultExpression = value;
+};
+const handleColumnDefaultSelect = (key: string) => {
+  const { column } = state;
+  if (!column) return;
+
   if (key === "expression") {
     state.showColumnDefaultValueExpressionModal = true;
     return;

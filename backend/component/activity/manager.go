@@ -690,7 +690,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 				log.BBError(err))
 			return nil, err
 		}
-		title = fmt.Sprintf("Issue is waiting rollout (%s) - %s", payload.StageName, meta.Issue.Title)
+		title = fmt.Sprintf("Issue is waiting for rollout (%s) - %s", payload.StageName, meta.Issue.Title)
 		var usersGetters []func(context.Context) ([]*store.UserMessage, error)
 		if payload.RolloutPolicy.GetAutomatic() {
 			usersGetters = append(usersGetters, getUsersFromUsers(meta.Issue.Creator))

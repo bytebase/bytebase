@@ -1,100 +1,25 @@
 <template>
-  <div class="w-full h-full">
-    <BBGrid
-      class="border"
-      :column-list="tableHeaderList"
-      :data-source="tableList"
-      :custom-header="true"
-      :row-clickable="false"
-    >
-      <template #header>
-        <div role="table-row" class="bb-grid-row bb-grid-header-row group">
-          <div
-            v-for="(header, index) in tableHeaderList"
-            :key="index"
-            role="table-cell"
-            class="bb-grid-header-cell"
-          >
-            {{ header.title }}
-          </div>
-        </div>
-      </template>
-      <template #item="{ item: table, row }: { item: Table, row: number }">
-        <div class="bb-grid-cell" :class="getTableClassList(table, row)">
-          <NEllipsis
-            class="w-full cursor-pointer leading-6 my-2 hover:text-accent"
-          >
-            <span @click="handleTableItemClick(table)">
-              {{ table.name }}
-            </span>
-          </NEllipsis>
-        </div>
-        <div
-          v-if="supportClassification"
-          class="bb-grid-cell flex items-center gap-x-2 text-sm"
-          :class="getTableClassList(table, row)"
-        >
-          <ClassificationLevelBadge
-            :classification="table.classification"
-            :classification-config="classificationConfig"
-          />
-          <div v-if="!readonly && !disableChangeTable(table)" class="flex">
-            <button
-              v-if="table.classification"
-              class="w-4 h-4 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer"
-              @click.prevent="table.classification = ''"
-            >
-              <heroicons-outline:x class="w-3 h-3" />
-            </button>
-            <button
-              class="w-4 h-4 p-0.5 hover:bg-control-bg-hover rounded cursor-pointer"
-              @click.prevent="showClassificationDrawer(table)"
-            >
-              <heroicons-outline:pencil class="w-3 h-3" />
-            </button>
-          </div>
-        </div>
-        <div class="bb-grid-cell" :class="getTableClassList(table, row)">
-          {{ table.rowCount }}
-        </div>
-        <div class="bb-grid-cell" :class="getTableClassList(table, row)">
-          {{ bytesToString(table.dataSize.toNumber()) }}
-        </div>
-        <div class="bb-grid-cell" :class="getTableClassList(table, row)">
-          {{ table.engine }}
-        </div>
-        <div class="bb-grid-cell" :class="getTableClassList(table, row)">
-          {{ table.collation }}
-        </div>
-        <div class="bb-grid-cell" :class="getTableClassList(table, row)">
-          {{ table.userComment }}
-        </div>
-        <div
-          v-if="!readonly"
-          class="bb-grid-cell !px-0.5 flex justify-start items-center"
-          :class="getTableClassList(table, row)"
-        >
-          <NTooltip v-if="!isDroppedTable(table)" trigger="hover" to="body">
-            <template #trigger>
-              <heroicons:trash
-                class="w-4 h-auto text-gray-500 cursor-pointer hover:opacity-80"
-                @click="handleDropTable(table)"
-              />
-            </template>
-            <span>{{ $t("schema-editor.actions.drop-table") }}</span>
-          </NTooltip>
-          <NTooltip v-else trigger="hover" to="body">
-            <template #trigger>
-              <heroicons:arrow-uturn-left
-                class="w-4 h-auto text-gray-500 cursor-pointer hover:opacity-80"
-                @click="handleRestoreTable(table)"
-              />
-            </template>
-            <span>{{ $t("schema-editor.actions.restore") }}</span>
-          </NTooltip>
-        </div>
-      </template>
-    </BBGrid>
+  <div
+    ref="containerElRef"
+    class="w-full h-full"
+    :data-height="containerHeight"
+    :data-table-header-height="tableHeaderHeight"
+    :data-table-body-height="tableBodyHeight"
+  >
+    <NDataTable
+      v-bind="$attrs"
+      size="small"
+      :row-key="(table: Table) => table.id"
+      :columns="columns"
+      :data="layoutReady ? tableList : []"
+      :row-class-name="classesForRow"
+      :max-height="tableBodyHeight"
+      :virtual-scroll="true"
+      :striped="true"
+      :bordered="true"
+      :bottom-bordered="true"
+      class="schema-editor-table-list"
+    />
   </div>
 
   <TableNameModal
@@ -136,9 +61,12 @@
 </template>
 
 <script lang="ts" setup>
-import { NEllipsis, NTooltip } from "naive-ui";
-import { computed, reactive } from "vue";
+import { useElementSize } from "@vueuse/core";
+import { DataTableColumn, NDataTable } from "naive-ui";
+import { computed, h, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import FeatureModal from "@/components/FeatureGuard/FeatureModal.vue";
+import SelectClassificationDrawer from "@/components/SchemaTemplate/SelectClassificationDrawer.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import {
   hasFeature,
@@ -155,8 +83,9 @@ import {
 } from "@/types/v1/schemaEditor";
 import { bytesToString } from "@/utils";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
-import TableNameModal from "../Modals/TableNameModal.vue";
-import { isTableChanged } from "../utils";
+import TableNameModal from "../../Modals/TableNameModal.vue";
+import { isTableChanged } from "../../utils";
+import { NameCell, ClassificationCell, OperationCell } from "./components";
 
 const props = defineProps<{
   schemaId: string;
@@ -176,6 +105,20 @@ interface LocalState {
 }
 
 const { t } = useI18n();
+const containerElRef = ref<HTMLElement>();
+const tableHeaderElRef = computed(
+  () =>
+    containerElRef.value?.querySelector("thead.n-data-table-thead") as
+      | HTMLElement
+      | undefined
+);
+const { height: containerHeight } = useElementSize(containerElRef);
+const { height: tableHeaderHeight } = useElementSize(tableHeaderElRef);
+const tableBodyHeight = computed(() => {
+  return containerHeight.value - tableHeaderHeight.value - 2;
+});
+// Use this to avoid unnecessary initial rendering
+const layoutReady = computed(() => tableHeaderHeight.value > 0);
 const editorStore = useSchemaEditorV1Store();
 const settingStore = useSettingV1Store();
 const currentTab = computed(
@@ -207,26 +150,6 @@ const classificationConfig = computed(() => {
     editorStore.project.dataClassificationConfigId
   );
 });
-const disableChangeTable = (table: Table): boolean => {
-  return table.status === "dropped";
-};
-
-const getTableClassList = (table: Table, index: number): string[] => {
-  const classList = [];
-  if (table.status === "dropped") {
-    classList.push("text-red-700 !bg-red-50 opacity-70");
-  } else if (table.status === "created") {
-    classList.push("text-green-700 !bg-green-50");
-  } else if (
-    isTableChanged(currentTab.value.parentName, props.schemaId, table.id)
-  ) {
-    classList.push("text-yellow-700 !bg-yellow-50");
-  }
-  if (index % 2 === 1) {
-    classList.push("bg-gray-50");
-  }
-  return classList;
-};
 
 const showClassificationDrawer = (table: Table) => {
   state.activeTableId = table.id;
@@ -244,58 +167,112 @@ const onClassificationSelect = (classificationId: string) => {
   state.activeTableId = undefined;
 };
 
-const supportClassification = computed(() => {
-  return classificationConfig.value;
-});
-
-const tableHeaderList = computed(() => {
-  return [
+const columns = computed(() => {
+  const columns: (DataTableColumn<Table> & { hide?: boolean })[] = [
     {
       key: "name",
       title: t("schema-editor.database.name"),
-      width: "minmax(auto, 1fr)",
+      resizable: true,
+      width: 140,
+      className: "truncate",
+      render: (table) => {
+        return h(NameCell, {
+          table,
+          onClick: () => handleTableItemClick(table),
+        });
+      },
     },
     {
       key: "classification",
       title: t("schema-editor.column.classification"),
-      hide: !supportClassification.value,
-      width: "minmax(auto, 1.5fr)",
+      resizable: true,
+      width: 140,
+      hide: !classificationConfig.value,
+      render: (table) => {
+        return h(ClassificationCell, {
+          table,
+          readonly: readonly.value,
+          disabled: !disableChangeTable(table),
+          classificationConfig: classificationConfig.value,
+          onEdit: () => showClassificationDrawer(table),
+          onRemove: () => (table.classification = ""),
+        });
+      },
     },
     {
-      key: "raw-count",
+      key: "rowCount",
       title: t("schema-editor.database.row-count"),
-      width: "minmax(auto, 0.7fr)",
+      resizable: true,
+      width: 120,
+      render: (table) => {
+        return table.rowCount.toString();
+      },
     },
     {
-      key: "data-size",
+      key: "dataSize",
       title: t("schema-editor.database.data-size"),
-      width: "minmax(auto, 0.7fr)",
+      resizable: true,
+      width: 120,
+      render: (table) => {
+        return bytesToString(table.dataSize.toNumber());
+      },
     },
     {
       key: "engine",
       title: t("schema-editor.database.engine"),
-      width: "minmax(auto, 0.7fr)",
+      resizable: true,
+      width: 120,
+      render: (table) => {
+        return table.engine;
+      },
     },
     {
       key: "collation",
       title: t("schema-editor.database.collation"),
-      width: "minmax(auto, 1fr)",
+      resizable: true,
+      width: 120,
+      ellipsis: true,
+      ellipsisComponent: "performant-ellipsis",
     },
     {
       key: "comment",
       title: t("schema-editor.database.comment"),
-      width: "minmax(auto, 1fr)",
+      resizable: true,
+      width: 140,
+      ellipsis: true,
+      ellipsisComponent: "performant-ellipsis",
     },
     {
+      key: "operations",
       title: "",
-      width: "30px",
+      resizable: false,
+      width: 30,
       hide: readonly.value,
+      className: "!px-0",
+      render: (table) => {
+        return h(OperationCell, {
+          table,
+          dropped: isDroppedTable(table),
+          onDrop: () => handleDropTable(table),
+          onRestore: () => handleRestoreTable(table),
+        });
+      },
     },
-  ].filter((header) => !header.hide);
+  ];
+  return columns.filter((header) => !header.hide);
 });
 
-const isDroppedTable = (table: Table) => {
-  return table.status === "dropped";
+const classesForRow = (table: Table, index: number) => {
+  if (table.status === "dropped") {
+    return "dropped";
+  } else if (table.status === "created") {
+    return "created";
+  } else if (
+    isTableChanged(currentTab.value.parentName, props.schemaId, table.id)
+  ) {
+    return "updated";
+  }
+  return "";
 };
 
 const handleTableItemClick = (table: Table) => {
@@ -352,4 +329,28 @@ const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
     });
   }
 };
+
+const disableChangeTable = (table: Table): boolean => {
+  return table.status === "dropped";
+};
+const isDroppedTable = (table: Table) => {
+  return table.status === "dropped";
+};
 </script>
+
+<style lang="postcss" scoped>
+.schema-editor-table-list
+  :deep(.n-data-table-th .n-data-table-resize-button::after) {
+  @apply bg-control-bg h-2/3;
+}
+.schema-editor-table-list :deep(.n-data-table-tr.created .n-data-table-td) {
+  @apply text-green-700 !bg-green-50;
+}
+.schema-editor-table-list :deep(.n-data-table-tr.dropped .n-data-table-td) {
+  @apply text-red-700 !bg-red-50 opacity-70;
+}
+
+.schema-editor-table-list :deep(.n-data-table-tr.updated .n-data-table-td) {
+  @apply text-yellow-700 !bg-yellow-50;
+}
+</style>

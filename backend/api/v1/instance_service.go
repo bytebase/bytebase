@@ -65,8 +65,22 @@ func (s *InstanceService) GetInstance(ctx context.Context, request *v1pb.GetInst
 
 // ListInstances lists all instances.
 func (s *InstanceService) ListInstances(ctx context.Context, request *v1pb.ListInstancesRequest) (*v1pb.ListInstancesResponse, error) {
+	var project *store.ProjectMessage
+	if request.Parent != "" {
+		p, err := s.getProjectMessage(ctx, request.Parent)
+		if err != nil {
+			return nil, err
+		}
+		if p.Deleted {
+			return nil, status.Errorf(codes.NotFound, "project %q has been deleted", request.Parent)
+		}
+		project = p
+	}
 	find := &store.FindInstanceMessage{
 		ShowDeleted: request.ShowDeleted,
+	}
+	if project != nil {
+		find.ProjectUID = &project.UID
 	}
 	instances, err := s.store.ListInstancesV2(ctx, find)
 	if err != nil {
@@ -101,7 +115,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 	if request.ValidateOnly {
 		for _, ds := range instanceMessage.DataSources {
 			err := func() error {
-				driver, err := s.dbFactory.GetDataSourceDriver(ctx, instanceMessage.Engine, ds, "", "", 0, false /* datashare */, ds.Type == api.RO, false /* schemaTenantMode */)
+				driver, err := s.dbFactory.GetDataSourceDriver(ctx, instanceMessage, ds, "", false /* datashare */, ds.Type == api.RO, false /* schemaTenantMode */)
 				if err != nil {
 					return err
 				}
@@ -588,7 +602,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 	// Test connection.
 	if request.ValidateOnly {
 		err := func() error {
-			driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance.Engine, dataSource, "", "", 0, false /* datashare */, dataSource.Type == api.RO, false /* schemaTenantMode */)
+			driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, dataSource, "", false /* datashare */, dataSource.Type == api.RO, false /* schemaTenantMode */)
 			if err != nil {
 				return err
 			}
@@ -749,7 +763,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	// Test connection.
 	if request.ValidateOnly {
 		err := func() error {
-			driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance.Engine, &dataSource, "", "", 0, false /* datashare */, dataSource.Type == api.RO, false /* schemaTenantMode */)
+			driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, &dataSource, "", false /* datashare */, dataSource.Type == api.RO, false /* schemaTenantMode */)
 			if err != nil {
 				return err
 			}

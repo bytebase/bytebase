@@ -1,5 +1,5 @@
 import { isObject, isArray } from "lodash-es";
-import { Parser, AST } from "node-sql-parser";
+import type { AST } from "node-sql-parser";
 
 type ParseResult = {
   data: AST | AST[] | null;
@@ -10,7 +10,9 @@ const DDL_TYPE = ["create", "alter", "drop"];
 const DML_TYPE = ["insert", "update", "delete"];
 const SELECT = "select";
 
-export const parseSQL = (sql: string): ParseResult => {
+export const parseSQL = async (sql: string): Promise<ParseResult> => {
+  const { Parser } = await import("node-sql-parser");
+
   if (sql === "") {
     return { data: [], error: null };
   }
@@ -76,11 +78,6 @@ export const isDMLStatement = (
       DML_TYPE.includes(statement.type.toLowerCase())
     );
   }
-};
-
-export const transformSQL = (data: AST | AST[], database = "MySQL") => {
-  const parser = new Parser();
-  return parser.sqlify(data, { database });
 };
 
 export default parseSQL;

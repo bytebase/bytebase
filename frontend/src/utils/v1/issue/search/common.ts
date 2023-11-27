@@ -1,10 +1,4 @@
-import dayjs from "dayjs";
 import { cloneDeep, pullAt } from "lodash-es";
-import { hasFeature } from "@/store";
-
-// TimeRangeLimitForFreePlanInTs is the search time limit in ts format.
-// should be 60 days.
-export const TimeRangeLimitForFreePlanInTs = 60 * 24 * 60 * 60 * 1000;
 
 export type SemanticIssueStatus = "OPEN" | "CLOSED";
 
@@ -63,7 +57,7 @@ export const buildSearchTextBySearchParams = (
 };
 
 export const buildSearchParamsBySearchText = (text: string): SearchParams => {
-  const params = defaultSearchParams();
+  const params = emptySearchParams();
   const segments = text.split(/\s+/g);
   const querySegments: string[] = [];
 
@@ -147,30 +141,9 @@ export const upsertScope = (
   return target;
 };
 
-export const defaultSearchParams = (): SearchParams => {
+export const emptySearchParams = (): SearchParams => {
   return {
     query: "",
     scopes: [],
   };
-};
-
-export const maybeApplyDefaultTsRange = (
-  params: SearchParams,
-  key: SearchScopeId,
-  mutate = false
-) => {
-  if (hasFeature("bb.feature.issue-advanced-search")) {
-    return mutate ? params : cloneDeep(params);
-  }
-
-  const endOfToday = dayjs().add(1, "day").endOf("day").valueOf();
-  const begin = endOfToday - TimeRangeLimitForFreePlanInTs;
-  return upsertScope(
-    params,
-    {
-      id: key,
-      value: `${begin},${endOfToday}`,
-    },
-    mutate
-  );
 };

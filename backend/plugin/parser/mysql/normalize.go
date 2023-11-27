@@ -105,6 +105,15 @@ func NormalizeMySQLTextStringLiteral(ctx parser.ITextStringLiteralContext) strin
 	return textString[1 : len(textString)-1]
 }
 
+// NormalizeMySQLSignedStringLiteral normalize the given SignedLiteral.
+func NormalizeMySQLSignedLiteral(ctx parser.ISignedLiteralContext) string {
+	textString := ctx.GetText()
+	if (strings.HasPrefix(textString, "'") && strings.HasSuffix(textString, "'")) || (strings.HasPrefix(textString, "\"") && strings.HasSuffix(textString, "\"")) {
+		textString = textString[1 : len(textString)-1]
+	}
+	return textString
+}
+
 // NormalizeMySQLSelectAlias normalizes the given select alias.
 func NormalizeMySQLSelectAlias(selectAlias parser.ISelectAliasContext) string {
 	if selectAlias.Identifier() != nil {
@@ -166,8 +175,16 @@ func NormalizeMySQLProcedureName(ctx parser.IProcedureNameContext) (string, stri
 	return "", ""
 }
 
-// NormalizeMySQLSchemaRef noamalizes the given schemaRef.
+// NormalizeMySQLSchemaRef normalize the given schemaRef.
 func NormalizeMySQLSchemaRef(ctx parser.ISchemaRefContext) string {
+	if ctx.Identifier() != nil {
+		return NormalizeMySQLIdentifier(ctx.Identifier())
+	}
+	return ""
+}
+
+// NormalizeMySQLSchemaRef normalize the given schemaName.
+func NormalizeMySQLSchemaName(ctx parser.ISchemaNameContext) string {
 	if ctx.Identifier() != nil {
 		return NormalizeMySQLIdentifier(ctx.Identifier())
 	}
@@ -318,4 +335,28 @@ func GetCollationName(ctx parser.IFieldDefinitionContext) string {
 		}
 	}
 	return ""
+}
+
+// IsTypeType check if the dataType is time type.
+func IsTimeType(ctx parser.IDataTypeContext) bool {
+	if ctx.GetType_() == nil {
+		return false
+	}
+
+	switch ctx.GetType_().GetTokenType() {
+	case parser.MySQLParserDATETIME_SYMBOL, parser.MySQLParserTIMESTAMP_SYMBOL:
+		return true
+	default:
+		return false
+	}
+}
+
+// IsAutoIncrement check if this column is auto_increment.
+func IsAutoIncrement(ctx parser.IFieldDefinitionContext) bool {
+	for _, attr := range ctx.AllColumnAttribute() {
+		if attr.AUTO_INCREMENT_SYMBOL() != nil {
+			return true
+		}
+	}
+	return false
 }

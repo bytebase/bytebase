@@ -28,7 +28,21 @@ type testData struct {
 	Err                 *WalkThroughError
 }
 
-func TestMySQLWalkThrough(t *testing.T) {
+func TestTiDBWalkThrough(t *testing.T) {
+	originDatabase := &storepb.DatabaseSchemaMetadata{
+		Name: "test",
+	}
+
+	tests := []string{
+		"tidb_walk_through",
+	}
+
+	for _, test := range tests {
+		runWalkThroughTest(t, test, storepb.Engine_TIDB, originDatabase, false /* record */)
+	}
+}
+
+func TestMySQLV2WalkThrough(t *testing.T) {
 	originDatabase := &storepb.DatabaseSchemaMetadata{
 		Name: "test",
 	}
@@ -39,20 +53,6 @@ func TestMySQLWalkThrough(t *testing.T) {
 
 	for _, test := range tests {
 		runWalkThroughTest(t, test, storepb.Engine_MYSQL, originDatabase, false /* record */)
-	}
-}
-
-func TestMySQLV2WalkThrough(t *testing.T) {
-	originDatabase := &storepb.DatabaseSchemaMetadata{
-		Name: "test",
-	}
-
-	tests := []string{
-		"mysqlv2_walk_through",
-	}
-
-	for _, test := range tests {
-		runWalkThroughTest(t, test, storepb.Engine_ENGINE_UNSPECIFIED, originDatabase, false /* record */)
 	}
 }
 
@@ -155,6 +155,7 @@ func runWalkThroughTest(t *testing.T, file string, engineType storepb.Engine, or
 				walkThroughError, ok := err.(*WalkThroughError)
 				require.True(t, ok)
 				tests[i].Err = walkThroughError
+				tests[i].Want = ""
 			} else {
 				err, yes := err.(*WalkThroughError)
 				require.True(t, yes)
@@ -176,6 +177,7 @@ func runWalkThroughTest(t *testing.T, file string, engineType storepb.Engine, or
 
 		if record {
 			tests[i].Want = protojson.Format(state.convertToDatabaseMetadata())
+			tests[i].Err = nil
 		} else {
 			want := &storepb.DatabaseSchemaMetadata{}
 			err = protojson.Unmarshal([]byte(test.Want), want)

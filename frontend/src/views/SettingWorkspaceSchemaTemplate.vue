@@ -1,31 +1,33 @@
 <template>
-  <FeatureAttention feature="bb.feature.schema-template" custom-class="my-4" />
-  <NTabs v-model:value="state.selectedTab" type="line">
-    <NTabPane
-      name="FIELD_TEMPLATE"
-      :tab="$t('schema-template.field-template.self')"
-    >
-      <FieldTemplates
-        :show-engine-filter="true"
-        :readonly="!hasFeature || !hasPermission"
-      />
-    </NTabPane>
-    <NTabPane
-      name="TABLE_TEMPLATE"
-      :tab="$t('schema-template.table-template.self')"
-    >
-      <TableTemplates
-        :show-engine-filter="true"
-        :readonly="!hasFeature || !hasPermission"
-      />
-    </NTabPane>
-    <NTabPane
-      name="COLUMN_TYPE_RESTRICTION"
-      :tab="$t('schema-template.column-type-restriction.self')"
-    >
-      <ColumnTypes :readonly="!hasFeature || !hasPermission" />
-    </NTabPane>
-  </NTabs>
+  <div class="w-full space-y-4">
+    <FeatureAttention feature="bb.feature.schema-template" />
+    <NTabs v-model:value="state.selectedTab" type="line">
+      <NTabPane
+        name="FIELD_TEMPLATE"
+        :tab="$t('schema-template.field-template.self')"
+      >
+        <FieldTemplates
+          :show-engine-filter="true"
+          :readonly="!hasFeature || !hasPermission"
+        />
+      </NTabPane>
+      <NTabPane
+        name="TABLE_TEMPLATE"
+        :tab="$t('schema-template.table-template.self')"
+      >
+        <TableTemplates
+          :show-engine-filter="true"
+          :readonly="!hasFeature || !hasPermission"
+        />
+      </NTabPane>
+      <NTabPane
+        name="COLUMN_TYPE_RESTRICTION"
+        :tab="$t('schema-template.column-type-restriction.self')"
+      >
+        <ColumnTypes :readonly="!hasFeature || !hasPermission" />
+      </NTabPane>
+    </NTabs>
+  </div>
 </template>
 
 <script lang="ts" setup>

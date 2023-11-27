@@ -10,7 +10,7 @@
 </template>
 
 <script lang="ts" setup>
-import { editor as Editor } from "monaco-editor";
+import type { editor as Editor } from "monaco-editor";
 import {
   onMounted,
   ref,
@@ -55,7 +55,15 @@ const editorInstanceRef = shallowRef<Editor.IStandaloneDiffEditor>();
 
 const isEditorLoaded = ref(false);
 
-const initEditorInstance = () => {
+const initEditorInstance = async () => {
+  const { editor: Editor } = await import("monaco-editor");
+  if (!editorContainerRef.value) {
+    // Give up creating monaco editor if the component has been unmounted
+    // very quickly.
+    console.debug("<DiffEditor> has been unmounted before useMonaco is ready");
+    return;
+  }
+
   const originalModel = Editor.createModel(props.original, props.language);
   const modifiedEditor = Editor.createModel(sqlCode.value, props.language);
   const editorInstance = Editor.createDiffEditor(editorContainerRef.value!, {
@@ -101,22 +109,15 @@ const initEditorInstance = () => {
 };
 
 onMounted(async () => {
-  if (!editorContainerRef.value) {
-    // Give up creating monaco editor if the component has been unmounted
-    // very quickly.
-    console.debug(
-      "<MonacoEditor> has been unmounted before useMonaco is ready"
-    );
-    return;
+  const editorInstance = await initEditorInstance();
+  if (editorInstance) {
+    editorInstanceRef.value = editorInstance;
+    isEditorLoaded.value = true;
+
+    nextTick(() => {
+      emit("ready");
+    });
   }
-
-  const editorInstance = initEditorInstance();
-  editorInstanceRef.value = editorInstance;
-  isEditorLoaded.value = true;
-
-  nextTick(() => {
-    emit("ready");
-  });
 });
 
 onBeforeUnmount(() => {

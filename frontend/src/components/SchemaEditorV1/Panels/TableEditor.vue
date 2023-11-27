@@ -1,11 +1,11 @@
 <template>
-  <div class="flex flex-col w-full h-full overflow-y-auto">
-    <div class="py-2 w-full flex flex-row justify-between items-center">
+  <div class="flex flex-col pt-2 gap-y-2 w-full h-full overflow-y-hidden">
+    <div
+      v-if="!readonly"
+      class="w-full flex flex-row justify-between items-center"
+    >
       <div>
-        <div
-          v-if="!readonly"
-          class="w-full flex justify-between items-center space-x-2"
-        >
+        <div class="w-full flex justify-between items-center space-x-2">
           <NButton
             size="small"
             :disabled="disableChangeTable"
@@ -27,24 +27,28 @@
       </div>
     </div>
 
-    <TableColumnEditor
-      :readonly="readonly"
-      :show-foreign-key="true"
-      :table="table"
-      :engine="engine"
-      :foreign-key-list="foreignKeyList"
-      :classification-config-id="project.dataClassificationConfigId"
-      :disable-change-table="disableChangeTable"
-      :filter-column="(column: Column) => column.name.includes(props.searchPattern.trim())"
-      :disable-alter-column="disableAlterColumn"
-      :get-referenced-foreign-key-name="getReferencedForeignKeyName"
-      :get-column-item-computed-class-list="getColumnItemComputedClassList"
-      @on-drop="handleDropColumn"
-      @on-restore="handleRestoreColumn"
-      @on-primary-key-set="setColumnPrimaryKey"
-      @on-foreign-key-edit="handleEditColumnForeignKey"
-      @on-foreign-key-click="gotoForeignKeyReferencedTable"
-    />
+    <div class="flex-1 overflow-y-hidden">
+      <TableColumnEditor
+        :readonly="readonly"
+        :show-foreign-key="true"
+        :table="table"
+        :engine="engine"
+        :foreign-key-list="foreignKeyList"
+        :classification-config-id="project.dataClassificationConfigId"
+        :disable-change-table="disableChangeTable"
+        :allow-reorder-columns="allowReorderColumns"
+        :filter-column="(column: Column) => column.name.includes(props.searchPattern.trim())"
+        :disable-alter-column="disableAlterColumn"
+        :get-referenced-foreign-key-name="getReferencedForeignKeyName"
+        :get-column-item-computed-class-list="getColumnItemComputedClassList"
+        @drop="handleDropColumn"
+        @restore="handleRestoreColumn"
+        @reorder="handleReorderColumn"
+        @primary-key-set="setColumnPrimaryKey"
+        @foreign-key-edit="handleEditColumnForeignKey"
+        @foreign-key-click="gotoForeignKeyReferencedTable"
+      />
+    </div>
   </div>
 
   <EditColumnForeignKeyModal
@@ -101,10 +105,11 @@ import {
   SchemaEditorTabType,
 } from "@/types/v1/schemaEditor";
 import { TableTabContext } from "@/types/v1/schemaEditor";
+import { arraySwap, instanceV1AllowsReorderColumns } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import EditColumnForeignKeyModal from "../Modals/EditColumnForeignKeyModal.vue";
 import { isColumnChanged } from "../utils";
-import TableColumnEditor from "./TableColumnEditor.vue";
+import TableColumnEditor from "./TableColumnEditor";
 
 const props = withDefaults(
   defineProps<{
@@ -127,7 +132,7 @@ const currentTab = computed(
   () => schemaEditorV1Store.currentTab as TableTabContext
 );
 
-const parentResouce = computed(() => {
+const parentResource = computed(() => {
   return schemaEditorV1Store.resourceMap[schemaEditorV1Store.resourceType].get(
     currentTab.value.parentName
   )!;
@@ -171,11 +176,11 @@ const isDroppedTable = computed(() => {
   return table.value.status === "dropped";
 });
 
-const getColumnItemComputedClassList = (column: Column) => {
+const getColumnItemComputedClassList = (column: Column): string => {
   if (column.status === "dropped") {
-    return ["text-red-700", "cursor-not-allowed", "!bg-red-50", "opacity-70"];
+    return "dropped";
   } else if (column.status === "created") {
-    return ["text-green-700", "!bg-green-50"];
+    return "created";
   } else if (
     isColumnChanged(
       currentTab.value.parentName,
@@ -184,9 +189,9 @@ const getColumnItemComputedClassList = (column: Column) => {
       column.id
     )
   ) {
-    return ["text-yellow-700", "!bg-yellow-50"];
+    return "updated";
   }
-  return [];
+  return "";
 };
 
 const checkColumnHasForeignKey = (column: Column): boolean => {
@@ -211,7 +216,7 @@ const getReferencedForeignKeyName = (column: Column) => {
   if (isUndefined(fk) || isUndefined(index) || index < 0) {
     return "";
   }
-  const referencedSchema = parentResouce.value.schemaList.find(
+  const referencedSchema = parentResource.value.schemaList.find(
     (schema) => schema.id === fk.referencedSchemaId
   );
   const referencedTable = referencedSchema?.tableList.find(
@@ -236,6 +241,18 @@ const isDroppedColumn = (column: Column): boolean => {
 
 const disableChangeTable = computed(() => {
   return isDroppedSchema.value || isDroppedTable.value;
+});
+
+const allowReorderColumns = computed(() => {
+  if (props.searchPattern.trim().length !== 0) {
+    // The column keyword filter will break the original indexes of columns
+    return false;
+  }
+
+  return (
+    instanceV1AllowsReorderColumns(engine.value) &&
+    table.value.status === "created"
+  );
 });
 
 const disableAlterColumn = (column: Column): boolean => {
@@ -306,7 +323,7 @@ const gotoForeignKeyReferencedTable = (column: Column) => {
     return;
   }
 
-  const referencedSchema = parentResouce.value.schemaList.find(
+  const referencedSchema = parentResource.value.schemaList.find(
     (schema) => schema.id === fk.referencedSchemaId
   );
   const referencedTable = referencedSchema?.tableList.find(
@@ -393,5 +410,14 @@ const handleRestoreColumn = (column: Column) => {
     return;
   }
   column.status = "normal";
+};
+
+const handleReorderColumn = (column: Column, index: number, delta: -1 | 1) => {
+  const target = index + delta;
+  const { columnList } = table.value;
+  if (target < 0) return;
+  if (target >= columnList.length) return;
+
+  arraySwap(columnList, index, target);
 };
 </script>

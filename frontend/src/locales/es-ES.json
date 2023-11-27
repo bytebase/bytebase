@@ -409,7 +409,9 @@
       "enqueued-with-rollout-time": "Esperando para ejecutar, {time} para ejecutar.",
       "dumping-schema-before-executing-sql": "Listo para ejecutar, exportando esquema.",
       "executing-sql": "Ejecutando SQL.",
-      "dumping-schema-after-executing-sql": "Ejecución SQL completada, exportando esquema ahora."
+      "dumping-schema-after-executing-sql": "Ejecución SQL completada, exportando esquema ahora.",
+      "executing-sql-detail": "Ejecutando SQL {current} de {total}, desde la línea {start} hasta la línea {end}.",
+      "failed-sql-detail": "La ejecución falló desde la línea {start} hasta la línea {end}: {message}."
     }
   },
   "banner": {
@@ -534,7 +536,7 @@
       "create": "Crear SSO",
       "description": "Inicio de Sesión Único (SSO) es un método de autenticación que permite a los usuarios autenticarse en múltiples aplicaciones y sitios web a través de un solo conjunto de credenciales.",
       "archive": "Archivar este SSO",
-      "archive-info": "El SSO archivado no se mostrará en la interfaz normal. Puede hacer clic en \"Archivar\" en la parte inferior izquierda para encontrarlo y restaurarlo.",
+      "archive-info": "Los SSO archivados no se mostrarán.",
       "restore": "Restaurar este SSO",
       "form": {
         "type": "Tipo",
@@ -668,27 +670,26 @@
       "description": "A las siguientes columnas se les asignan niveles de enmascaramiento explícitamente y tienen prioridad sobre la regla de enmascaramiento global.",
       "remove-sensitive-column-tips": "¿Exponer esta columna?",
       "sensitive-column-list": "Columnas Explícitas Enmascaradas",
-      "global-masking-rule": "Regla de enmascaramiento global",
+      "global-masking-rule": "Regla De Enmascaramiento Global",
       "grant-access": "Autorizará el acceso",
       "never-expires": "Nunca expira",
       "global-rules": {
         "self": "Regla de enmascaramiento global",
         "description": "Utilice la regla global para aplicar niveles de enmascaramiento por lotes, p. Todas las columnas denominadas \"correo electrónico\" se enmascararán con el nivel \"Parcial\".",
         "condition-order": "Orden de condición",
-        "add-rule": "Agregar regla",
         "re-order": "Reordenar",
         "delete-rule-tip": "¿Eliminar esta regla?",
         "check-rules": "Check global rules"
       },
       "semantic-types": {
-        "self": "Tipos semánticos",
-        "add-type": "Agregar tipo",
-        "add-from-template": "Agregar desde plantilla",
+        "self": "Tipos Semánticos",
+        "label": "Las columnas que tengan el mismo tipo semántico utilizarán los mismos algoritmos de enmascaramiento.",
+        "use-predefined-type": "Utiliza el Tipo Predefinido",
         "table": {
-          "semantic-type": "Tipo semántico",
+          "semantic-type": "Tipo Semántico",
           "description": "Descripción",
-          "full-masking-algorithm": "Algoritmo de enmascaramiento completo",
-          "partial-masking-algorithm": "Algoritmo de enmascaramiento parcial",
+          "full-masking-algorithm": "Algoritmo De Enmascaramiento Completo",
+          "partial-masking-algorithm": "Algoritmo De Enmascaramiento Parcial",
           "delete": "¿Eliminar este tipo semántico?"
         },
         "template": {
@@ -743,15 +744,24 @@
         "column-effective-masking-tips": "Esta columna no configura su propio nivel de enmascaramiento.\nMostramos su nivel de enmascaramiento efectivo con reglas de enmascaramiento globales. {link}"
       },
       "algorithms": {
-        "self": "Algoritmo de enmascaramiento",
-        "add": "Agregar algoritmo",
+        "self": "Algoritmo De Enmascaramiento",
         "default": "Por defecto",
         "default-desc": "Utilice *** como máscara de datos",
         "table": {
           "title": "Título",
           "description": "Descripción",
-          "masking-type": "Tipo de enmascaramiento",
+          "masking-type": "Tipo De Enmascaramiento",
           "delete": "¿Eliminar este algoritmo?"
+        },
+        "error": {
+          "title-required": "Se requiere título",
+          "substitution-required": "Se requiere sustitución",
+          "substitution-length": "La sustitución debe ser inferior a 16 bytes",
+          "salt-required": "Se requiere sal",
+          "slice-required": "Se requiere rebanada",
+          "slice-invalid-number": "El inicio o el final del segmento no es un número válido",
+          "slice-number-range": "El final del corte debe ser más pequeño que el inicio",
+          "slice-overlap": "El rango de corte no puede superponerse"
         },
         "mask": "Máscara",
         "hash": "Picadillo",
@@ -772,8 +782,8 @@
         },
         "md5-mask": {
           "self": "Máscara MD5",
-          "salt": "Sal",
-          "salt-label": "La sal es el valor de la sal para generar un hash diferente al de la palabra sola."
+          "salt": "Sal (Salt)",
+          "salt-label": "La sal (Salt) se utiliza para generar un hash a partir del valor original."
         }
       },
       "masking-level": {
@@ -890,8 +900,8 @@
   },
   "issue": {
     "my-issues": "Mis Incidencias",
-    "waiting-approval": "Esperando Aprobación",
-    "waiting-rollout": "Esperando Implementación",
+    "waiting-approval": "A la espera de la aprobación",
+    "waiting-rollout": "Esperando el lanzamiento",
     "opened-by-at": "abierta por {creator} a las {time}",
     "commit-by-at": "commit {id} {title} por {author} a las {time}",
     "status-transition": {
@@ -983,7 +993,8 @@
           "description": "Buscar por estado de revisión del problema",
           "title": "Estado de aprobación"
         }
-      }
+      },
+      "hide": "Ocultar búsqueda avanzada"
     },
     "table": {
       "open": "Abierto",
@@ -1211,7 +1222,7 @@
     "successfully-synced-schema-for-instance-instance-value-name": "Esquema sincronizado con éxito para la instancia '{0}'.",
     "archive-this-instance": "Archivar esta instancia",
     "archive-instance-instance-name": "¿Archivar la instancia '{0}'?",
-    "archived-instances-will-not-be-shown-on-the-normal-interface-you-can-still-restore-later-from-the-archive-page": "Las instancias archivadas no se mostrarán en la interfaz normal. Puede hacer clic en \"Archivar\" en la parte inferior izquierda para encontrarlas y restaurarlas.",
+    "archived-instances-will-not-be-displayed": "Las instancias archivadas no se mostrarán.",
     "restore-this-instance": "Restaurar esta instancia",
     "restore": "Restaurar",
     "restore-instance-instance-name-to-normal-state": "¿Restaurar la instancia '{0}' al estado normal?",
@@ -1323,7 +1334,7 @@
     "id-description": "El ID del entorno es el identificador único para su entorno. No puede cambiarlo después de creado.",
     "select": "Seleccionar entorno",
     "archive": "Archivar este entorno",
-    "archive-info": "Los entornos archivados no se mostrarán en la interfaz normal. Puede hacer clic en \"Archivar\" en la parte inferior izquierda para encontrar y restaurarlo.",
+    "archive-info": "Los entornos archivados no se mostrarán.",
     "create": "Crear entorno",
     "restore": "Restaurar este entorno",
     "successfully-updated-environment": "entorno '{name}' actualizado exitosamente.",
@@ -1860,7 +1871,7 @@
       "developer": "@.upper:common.role.member",
       "archive": {
         "title": "Archivar proyecto",
-        "description": "El proyecto archivado no se mostrará en la interfaz normal. Puede hacer clic en \"Archivar\" en la parte inferior izquierda para encontrarlo y restaurarlo.",
+        "description": "Proyectos archivados no se mostrarán.",
         "btn-text": "Archivar este @.lower:{'common.project'}",
         "force": {
           "description": "Forzar a archivar. \nTodos los problemas relacionados se resolverán y todas las hojas relacionadas se eliminarán."
@@ -1876,7 +1887,7 @@
       "schema-path-template-sdl-description": "El archivo de esquema describe el esquema completo de la base de datos.",
       "branch-protection-rules": {
         "self": "Branch protection rules",
-        "add-rule": "Añadir regla",
+        "add-rule": "Agregar Regla",
         "branch-name-pattern": {
           "self": "Patrón de nombre de rama",
           "description": "Soporta comodines como feature/* o *-stable"
@@ -2015,13 +2026,6 @@
         "delete-confirm": "¿Eliminar el proveedor de Git \"{name}\"?"
       }
     }
-  },
-  "archive": {
-    "archived": "Archivado",
-    "project-search-bar-placeholder": "Buscar nombre de @.lower:{'common.project'}",
-    "instance-search-bar-placeholder": "Buscar nombre de @.lower:{'common.instance'}",
-    "environment-search-bar-placeholder": "Buscar nombre de @.lower:{'common.environment'}",
-    "sso-search-bar-placeholder": "Buscar nombre de SSO"
   },
   "deployment-config": {
     "stage-n": "Etapa {n}",
@@ -2237,7 +2241,7 @@
       "drop-table": "Eliminar tabla",
       "restore": "Restaurar",
       "add-column": "Agregar columna",
-      "add-from-template": "Añadir desde plantilla",
+      "add-from-template": "Agregar desde plantilla",
       "drop-column": "Eliminar columna",
       "sql-preview": "Vista previa SQL",
       "reset": "Restablecer",
@@ -2361,9 +2365,9 @@
     "start-n-days-trial": "Comienza una prueba de {days} días (no se requiere tarjeta de crédito)",
     "successfully-start-trial": "Prueba gratuita iniciada con éxito por {days} días",
     "successfully-upgrade-trial": "Prueba gratuita actualizada con éxito a {plan}",
-    "require-subscription": "Esta función requiere {requiredPlan}, por favor compra la licencia Bytebase para desbloquear esta función.",
-    "feature-require-subscription": "{feature} requiere {requiredPlan}.",
-    "required-plan-with-trial": "Esta función requiere {requiredPlan}. {startTrial}.",
+    "require-subscription": "Esta función requiere una suscripción a {requiredPlan}. Compre una licencia de Bytebase para desbloquear esta función.",
+    "feature-require-subscription": "{feature} requiere suscripción a {requiredPlan}.",
+    "required-plan-with-trial": "Esta función requiere {requiredPlan}. {startTrial}",
     "trial-for-plan": "Puedes iniciar una prueba gratuita de {plan} por {days} días - no se requiere tarjeta de crédito.",
     "trial-for-days": "Puedes iniciar una prueba gratuita por {days} días - no se requiere tarjeta de crédito.",
     "upgrade-trial": "Puedes actualizar tu prueba gratuita a este plan.",
@@ -2664,6 +2668,8 @@
     "no-logs": "No hay registros de depuración",
     "count-of-logs": "Se recuperaron los últimos {count} registro(s) del servidor.",
     "debug-log-detail": "Detalles del registro de depuración",
+    "enabled": "El modo de depuración está habilitado.",
+    "open-debug-mode": "Habilitar depuración",
     "table": {
       "record-ts": "Hora",
       "method": "Método",
@@ -2876,7 +2882,6 @@
         "high": "Reglas de riesgo alto"
       },
       "active": "Activo",
-      "add-rule": "Agregar regla",
       "edit-rule": "Editar regla",
       "delete": "Eliminar regla de seguridad",
       "default-rules": {
@@ -3070,7 +3075,6 @@
     "self": "Plantilla de esquema",
     "field-template": {
       "self": "Plantilla de campo",
-      "add": "Agregar plantilla de campo",
       "description": "Predefina la plantilla de campo, luego aplique la plantilla durante el cambio de esquema."
     },
     "column-type-restriction": {
@@ -3088,7 +3092,6 @@
     },
     "table-template": {
       "self": "Plantilla de tabla",
-      "add": "Agregar plantilla de tabla",
       "description": "Puede predefinir la plantilla de tabla y luego aplicar la plantilla durante el cambio de esquema."
     },
     "search-by-name-or-comment": "Buscar por nombre o comentario",

@@ -1,5 +1,5 @@
 <template>
-  <div class="px-4 py-6 lg:flex">
+  <div class="lg:flex">
     <div class="text-left lg:w-1/4">
       <h1 class="text-2xl font-bold">
         {{ $t("settings.general.workspace.network") }}
@@ -31,11 +31,10 @@
             url="https://www.bytebase.com/docs/get-started/install/external-url?source=console"
           />
         </div>
-        <BBTextField
+        <NInput
+          v-model:value="state.externalUrl"
           class="mb-4 w-full"
           :disabled="!allowEdit"
-          :value="state.externalUrl"
-          @input="handleExternalUrlChange"
         />
 
         <label
@@ -59,7 +58,8 @@
             url="https://www.bytebase.com/docs/get-started/install/external-url#gitops-webhook-url?source=console"
           />
         </div>
-        <BBTextField
+        <NInput
+          v-model:value="state.gitopsWebhookUrl"
           class="mb-4 w-full"
           :placeholder="
             t(
@@ -67,19 +67,16 @@
             )
           "
           :disabled="!allowEdit"
-          :value="state.gitopsWebhookUrl"
-          @input="handleGitOpsWebhookUrlChange"
         />
 
-        <div class="flex">
-          <button
-            type="button"
-            class="btn-primary ml-auto"
+        <div class="flex justify-end">
+          <NButton
+            type="primary"
             :disabled="!allowSave"
             @click.prevent="updateNetworkSetting"
           >
             {{ $t("common.update") }}
-          </button>
+          </NButton>
         </div>
       </div>
     </div>
@@ -134,14 +131,6 @@ const allowSave = computed((): boolean => {
       settingV1Store.workspaceProfileSetting?.gitopsWebhookUrl;
   return externalUrlChanged || gitopsWebhookUrlChanged;
 });
-
-const handleExternalUrlChange = (event: Event) => {
-  state.externalUrl = (event.target as HTMLInputElement).value;
-};
-
-const handleGitOpsWebhookUrlChange = (event: Event) => {
-  state.gitopsWebhookUrl = (event.target as HTMLInputElement).value;
-};
 
 const updateNetworkSetting = async () => {
   if (!allowSave.value) {

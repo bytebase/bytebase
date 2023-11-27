@@ -6,32 +6,34 @@
 import { defineComponent } from "vue";
 import {
   useEnvironmentV1Store,
-  useRoleStore,
-  useUIStateStore,
-  useUserStore,
-  useProjectV1Store,
+  useInstanceV1Store,
   usePolicyV1Store,
+  useProjectV1Store,
+  useRoleStore,
+  useSettingV1Store,
+  useUserStore,
+  useUIStateStore,
   useDatabaseV1Store,
   useDBGroupStore,
 } from "@/store";
-import { useInstanceV1Store } from "@/store/modules/v1/instance";
-import { useSettingV1Store } from "@/store/modules/v1/setting";
 
 export default defineComponent({
   name: "ProvideDashboardContext",
   async setup() {
     await Promise.all([
+      useUserStore().fetchUserList(),
       useSettingV1Store().fetchSettingList(),
       useRoleStore().fetchRoleList(),
-      useUserStore().fetchUserList(),
       useEnvironmentV1Store().fetchEnvironments(),
       useInstanceV1Store().fetchInstanceList(),
+      useProjectV1Store().fetchProjectList(true),
+      usePolicyV1Store().getOrFetchPolicyByName("policies/WORKSPACE_IAM"),
+    ]);
+    await Promise.all([
       useDatabaseV1Store().fetchDatabaseList({
         parent: "instances/-",
       }),
       useDBGroupStore().fetchAllDatabaseGroupList(),
-      useProjectV1Store().fetchProjectList(true),
-      usePolicyV1Store().getOrFetchPolicyByName("policies/WORKSPACE_IAM"),
       useUIStateStore().restoreState(),
     ]);
   },

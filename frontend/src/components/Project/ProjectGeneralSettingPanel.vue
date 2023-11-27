@@ -82,7 +82,7 @@
             />
             <span class="label">{{ $t("project.mode.batch") }}</span>
             <LearnMoreLink
-              url="https://www.bytebase.com/docs/concepts/batch-mode/?source=console"
+              url="https://www.bytebase.com/docs/change-database/batch-change/?source=console"
             />
             <FeatureBadge feature="bb.feature.multi-tenancy" />
           </label>
@@ -91,14 +91,9 @@
     </div>
 
     <div v-if="allowEdit" class="flex justify-end">
-      <button
-        type="button"
-        class="btn-primary"
-        :disabled="!allowSave"
-        @click.prevent="save"
-      >
+      <NButton type="primary" :disabled="!allowSave" @click.prevent="save">
         {{ $t("common.update") }}
-      </button>
+      </NButton>
     </div>
 
     <FeatureModal

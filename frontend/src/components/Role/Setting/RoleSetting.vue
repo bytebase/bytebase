@@ -1,36 +1,32 @@
 <template>
-  <div class="space-y-4 pb-4">
-    <div class="flex items-center justify-between gap-x-6">
-      <div class="flex-1 textinfolabel">
-        {{ $t("role.setting.description") }}
-        <a
-          href="https://www.bytebase.com/docs/administration/custom-roles?source=console"
-          class="normal-link text-sm inline-flex flex-row items-center"
-          target="_blank"
-        >
-          {{ $t("common.learn-more") }}
-          <heroicons-outline:external-link class="w-4 h-4" />
-        </a>
-      </div>
-      <div>
-        <NButton type="primary" :disabled="!allowAdmin" @click="addRole">
-          {{ $t("role.setting.add") }}
-        </NButton>
-      </div>
+  <div class="space-y-4">
+    <div class="flex items-center justify-end">
+      <NButton type="primary" :disabled="!allowAdmin" @click="addRole">
+        {{ $t("role.setting.add") }}
+      </NButton>
     </div>
-    <div>
-      <RoleTable
-        :role-list="filteredRoleList"
-        :show-placeholder="state.ready"
-        @select-role="selectRole($event, 'EDIT')"
-      />
-
-      <div
-        v-if="!state.ready"
-        class="relative flex flex-col h-[8rem] items-center justify-center"
+    <div class="textinfolabel">
+      {{ $t("role.setting.description") }}
+      <a
+        href="https://www.bytebase.com/docs/administration/custom-roles?source=console"
+        class="normal-link text-sm inline-flex flex-row items-center"
+        target="_blank"
       >
-        <BBSpin />
-      </div>
+        {{ $t("common.learn-more") }}
+        <heroicons-outline:external-link class="w-4 h-4" />
+      </a>
+    </div>
+    <RoleTable
+      :role-list="filteredRoleList"
+      :show-placeholder="state.ready"
+      @select-role="selectRole($event, 'EDIT')"
+    />
+
+    <div
+      v-if="!state.ready"
+      class="relative flex flex-col h-[8rem] items-center justify-center"
+    >
+      <BBSpin />
     </div>
 
     <RolePanel
