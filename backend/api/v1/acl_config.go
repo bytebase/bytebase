@@ -5,6 +5,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/component/iam"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 const (
@@ -12,41 +13,41 @@ const (
 )
 
 var ownerAndDBAMethods = map[string]bool{
-	"EnvironmentService/CreateEnvironment":   true,
-	"EnvironmentService/UpdateEnvironment":   true,
-	"EnvironmentService/DeleteEnvironment":   true,
-	"EnvironmentService/UndeleteEnvironment": true,
-	"EnvironmentService/UpdateBackupSetting": true,
-	"InstanceService/CreateInstance":         true,
-	"InstanceService/UpdateInstance":         true,
-	"InstanceService/DeleteInstance":         true,
-	"InstanceService/UndeleteInstance":       true,
-	"InstanceService/AddDataSource":          true,
-	"InstanceService/RemoveDataSource":       true,
-	"InstanceService/UpdateDataSource":       true,
-	"SubscriptionService/TrialSubscription":  true,
-	"RiskService/CreateRisk":                 true,
-	"RiskService/UpdateRisk":                 true,
-	"RiskService/DeleteRisk":                 true,
-	"SettingService/SetSetting":              true,
-	"RoleService/CreateRole":                 true,
-	"RoleService/UpdateRole":                 true,
-	"RoleService/DeleteRole":                 true,
-	"ActuatorService/UpdateActuatorInfo":     true,
-	"ActuatorService/ListDebugLog":           true,
+	v1pb.EnvironmentService_CreateEnvironment_FullMethodName:   true,
+	v1pb.EnvironmentService_UpdateEnvironment_FullMethodName:   true,
+	v1pb.EnvironmentService_DeleteEnvironment_FullMethodName:   true,
+	v1pb.EnvironmentService_UndeleteEnvironment_FullMethodName: true,
+	v1pb.EnvironmentService_UpdateBackupSetting_FullMethodName: true,
+	v1pb.InstanceService_CreateInstance_FullMethodName:         true,
+	v1pb.InstanceService_UpdateInstance_FullMethodName:         true,
+	v1pb.InstanceService_DeleteInstance_FullMethodName:         true,
+	v1pb.InstanceService_UndeleteInstance_FullMethodName:       true,
+	v1pb.InstanceService_AddDataSource_FullMethodName:          true,
+	v1pb.InstanceService_RemoveDataSource_FullMethodName:       true,
+	v1pb.InstanceService_UpdateDataSource_FullMethodName:       true,
+	v1pb.SubscriptionService_TrialSubscription_FullMethodName:  true,
+	v1pb.RiskService_CreateRisk_FullMethodName:                 true,
+	v1pb.RiskService_UpdateRisk_FullMethodName:                 true,
+	v1pb.RiskService_DeleteRisk_FullMethodName:                 true,
+	v1pb.SettingService_SetSetting_FullMethodName:              true,
+	v1pb.RoleService_CreateRole_FullMethodName:                 true,
+	v1pb.RoleService_UpdateRole_FullMethodName:                 true,
+	v1pb.RoleService_DeleteRole_FullMethodName:                 true,
+	v1pb.ActuatorService_UpdateActuatorInfo_FullMethodName:     true,
+	v1pb.ActuatorService_ListDebugLog_FullMethodName:           true,
 }
 
 var projectOwnerMethods = map[string]bool{
-	"ProjectService/UpdateProject":           true,
-	"ProjectService/DeleteProject":           true,
-	"ProjectService/UndeleteProject":         true,
-	"ProjectService/SetIamPolicy":            true,
-	"SubscriptionService/UpdateSubscription": true,
+	v1pb.ProjectService_UpdateProject_FullMethodName:           true,
+	v1pb.ProjectService_DeleteProject_FullMethodName:           true,
+	v1pb.ProjectService_UndeleteProject_FullMethodName:         true,
+	v1pb.ProjectService_SetIamPolicy_FullMethodName:            true,
+	v1pb.SubscriptionService_UpdateSubscription_FullMethodName: true,
 }
 
 var transferDatabaseMethods = map[string]bool{
-	"DatabaseService/UpdateDatabase":       true,
-	"DatabaseService/BatchUpdateDatabases": true,
+	v1pb.DatabaseService_UpdateDatabase_FullMethodName:       true,
+	v1pb.DatabaseService_BatchUpdateDatabases_FullMethodName: true,
 }
 
 var methodPermissionMap = map[string]iam.Permission{

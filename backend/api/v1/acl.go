@@ -108,12 +108,11 @@ func (s overrideStream) Context() context.Context {
 }
 
 func (in *ACLInterceptor) aclInterceptorDo(ctx context.Context, fullMethod string, request any, user *store.UserMessage) error {
-	methodName := getShortMethodName(fullMethod)
-	if isOwnerAndDBAMethod(methodName) {
-		return status.Errorf(codes.PermissionDenied, "only workspace owner and DBA can access method %q", methodName)
+	if isOwnerAndDBAMethod(fullMethod) {
+		return status.Errorf(codes.PermissionDenied, "only workspace owner and DBA can access method %q", fullMethod)
 	}
 
-	if isProjectOwnerMethod(methodName) {
+	if isProjectOwnerMethod(fullMethod) {
 		projectIDs, err := getProjectIDs(request)
 		if err != nil {
 			return status.Errorf(codes.PermissionDenied, err.Error())
@@ -124,12 +123,12 @@ func (in *ACLInterceptor) aclInterceptorDo(ctx context.Context, fullMethod strin
 				return status.Errorf(codes.PermissionDenied, err.Error())
 			}
 			if !projectRoles[api.Owner] {
-				return status.Errorf(codes.PermissionDenied, "only the owner of project %q can access method %q", projectID, methodName)
+				return status.Errorf(codes.PermissionDenied, "only the owner of project %q can access method %q", projectID, fullMethod)
 			}
 		}
 	}
 
-	if isTransferDatabaseMethods(methodName) {
+	if isTransferDatabaseMethods(fullMethod) {
 		projectIDs, err := in.getTransferDatabaseToProjects(ctx, request)
 		if err != nil {
 			return status.Errorf(codes.PermissionDenied, err.Error())
@@ -146,7 +145,7 @@ func (in *ACLInterceptor) aclInterceptorDo(ctx context.Context, fullMethod strin
 	}
 
 	if in.mode == common.ReleaseModeDev && user.Email == "xz@bytebase.com" {
-		return in.checkIAMPermission(ctx, methodName, user)
+		return in.checkIAMPermission(ctx, getShortMethodName(fullMethod), user)
 	}
 
 	return nil
