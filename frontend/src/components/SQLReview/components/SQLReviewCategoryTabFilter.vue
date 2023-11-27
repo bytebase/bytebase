@@ -1,20 +1,19 @@
 <template>
-  <BBTabFilter
-    :tab-item-list="tabItemList"
-    :selected-index="state.selectedIndex"
-    @select-index="
-      (index) => {
-        state.selectedIndex = index;
-        $emit('select', index == 0 ? undefined : categoryList[index - 1].id);
+  <TabFilter
+    :value="state.selectedTab"
+    :items="tabItemList"
+    @update:value="
+    (val) => {
+        state.selectedTab = val as string;
+        $emit('update:value', val == 'all' ? undefined : state.selectedTab);
       }
     "
   />
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, PropType, watch } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBTabFilter, type BBTabFilterItem } from "@/bbkit";
 import { CategoryType } from "@/types/sqlReview";
 
 export interface CategoryFilterItem {
@@ -23,53 +22,48 @@ export interface CategoryFilterItem {
 }
 
 interface LocalState {
-  selectedIndex: number;
+  selectedTab: string;
 }
 
-const props = defineProps({
-  selected: {
-    required: false,
-    default: undefined,
-    type: String,
-  },
-  categoryList: {
-    required: true,
-    type: Object as PropType<CategoryFilterItem[]>,
-  },
-});
-
-defineEmits(["select"]);
-
-const { t } = useI18n();
-
-const getSelectedIndex = (): number => {
-  return props.selected
-    ? props.categoryList.findIndex((c) => c.id === props.selected) + 1
-    : 0;
-};
-const state = reactive<LocalState>({
-  selectedIndex: getSelectedIndex(),
-});
-
-watch(
-  () => props.selected,
-  () => {
-    state.selectedIndex = getSelectedIndex();
+const props = withDefaults(
+  defineProps<{
+    value?: string;
+    categoryList: CategoryFilterItem[];
+  }>(),
+  {
+    value: undefined,
   }
 );
 
-const tabItemList = computed((): BBTabFilterItem[] => {
-  const list: BBTabFilterItem[] = [
+defineEmits<{
+  (event: "update:value", value: string | undefined): void;
+}>();
+
+const { t } = useI18n();
+
+const state = reactive<LocalState>({
+  selectedTab: "all",
+});
+
+watch(
+  () => props.value,
+  (selected) => {
+    state.selectedTab = selected ?? "all";
+  }
+);
+
+const tabItemList = computed(() => {
+  const list = [
     {
-      title: t("common.all"),
-      alert: false,
+      value: "all",
+      label: t("common.all"),
     },
   ];
   list.push(
     ...props.categoryList.map((category) => {
       return {
-        title: category.name,
-        alert: false,
+        value: category.id,
+        label: category.name,
       };
     })
   );

@@ -2,7 +2,7 @@
   <div
     class="h-8 w-full text-base font-medium bg-gray-700 text-white flex justify-center items-center"
   >
-    {{ $t("archive.archived") }}
+    {{ $t("common.archived") }}
   </div>
 </template>
 
