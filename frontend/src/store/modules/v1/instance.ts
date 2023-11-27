@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watch, watchEffect } from "vue";
 import { instanceRoleServiceClient, instanceServiceClient } from "@/grpcweb";
+import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
   ComposedInstance,
   emptyInstance,
@@ -60,6 +61,13 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
   const fetchInstanceList = async (showDeleted = false) => {
     const { instances } = await instanceServiceClient.listInstances({
       showDeleted,
+    });
+    const composed = await upsertInstances(instances);
+    return composed;
+  };
+  const fetchProjectInstanceList = async (project: string) => {
+    const { instances } = await instanceServiceClient.listInstances({
+      parent: `${projectNamePrefix}${project}`,
     });
     const composed = await upsertInstances(instances);
     return composed;
@@ -223,6 +231,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     syncInstance,
     batchSyncInstance,
     fetchInstanceList,
+    fetchProjectInstanceList,
     fetchInstanceByName,
     getInstanceByName,
     getOrFetchInstanceByName,
