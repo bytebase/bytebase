@@ -26,7 +26,7 @@ import {
   TenantMode,
   Workflow,
 } from "@/types/proto/v1/project_service";
-import { roleListInProjectV1 } from "@/utils";
+import { hasWorkspacePermissionV1, roleListInProjectV1 } from "@/utils";
 
 interface ProjectSelectOption extends SelectOption {
   value: string;
@@ -75,6 +75,13 @@ const prepare = () => {
   projectV1Store.fetchProjectList(true /* showDeleted */);
 };
 
+const hasWorkspaceManageProjectPermission = computed(() =>
+  hasWorkspacePermissionV1(
+    "bb.permission.workspace.manage-project",
+    currentUserV1.value.userRole
+  )
+);
+
 const rawProjectList = computed(() => {
   let list = props.filterByCurrentUser
     ? projectV1Store.getProjectListByUser(
@@ -113,7 +120,11 @@ const combinedProjectList = computed(() => {
     return false;
   });
 
-  if (props.allowedProjectRoleList.length > 0) {
+  // If the current user is not workspace admin/DBA, filter the project list by the given role list.
+  if (
+    !hasWorkspaceManageProjectPermission.value &&
+    props.allowedProjectRoleList.length > 0
+  ) {
     list = list.filter((project) => {
       const roles = roleListInProjectV1(project.iamPolicy, currentUserV1.value);
       return intersection(props.allowedProjectRoleList, roles).length > 0;
