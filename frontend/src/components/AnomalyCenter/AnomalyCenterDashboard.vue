@@ -71,20 +71,7 @@
     </div>
 
     <div class="mt-4 py-2 flex justify-between items-center">
-      <div>
-        <BBTabFilter
-          v-if="!project"
-          :tab-item-list="tabItemList"
-          :selected-index="
-            tabItemList.findIndex((tab) => tab.id === state.selectedTab)
-          "
-          @select-index="
-          (index: number) => {
-            state.selectedTab = tabItemList[index].id;
-          }
-        "
-        />
-      </div>
+      <TabFilter v-model:value="state.selectedTab" :items="tabItemList" />
 
       <SearchBox
         ref="searchField"
@@ -134,7 +121,7 @@
 <script lang="ts" setup>
 import { computed, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBTabFilterItem, BBTableSectionDataSource } from "@/bbkit/types";
+import { BBTableSectionDataSource } from "@/bbkit/types";
 import {
   featureToRef,
   useAnomalyV1List,
@@ -164,10 +151,6 @@ type Summary = {
 };
 
 export type AnomalyTabId = "database" | "instance";
-
-interface AnomalyTabFilterItem extends BBTabFilterItem {
-  id: AnomalyTabId;
-}
 
 interface LocalState {
   selectedTab: AnomalyTabId;
@@ -404,16 +387,16 @@ const anomalySummaryList = computed(() => {
   return list;
 });
 
-const tabItemList = computed((): AnomalyTabFilterItem[] => {
+const tabItemList = computed(() => {
   return [
     {
-      id: "database",
-      title: t("common.database"),
+      value: "database",
+      label: t("common.database"),
       alert: databaseAnomalySectionList.value.length > 0,
     },
     {
-      id: "instance",
-      title: t("common.instance"),
+      value: "instance",
+      label: t("common.instance"),
       alert: instanceAnomalySectionList.value.length > 0,
     },
   ];

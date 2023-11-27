@@ -1,16 +1,20 @@
 <template>
   <NSelect
+    :filterable="true"
+    :virtual-scroll="true"
     :multiple="multiple"
     :value="value"
     :options="options"
-    :filterable="true"
-    :filter="filterByTitle"
-    :virtual-scroll="true"
-    :render-label="renderLabel"
+    :show="showStatus"
     :fallback-option="fallbackOption"
+    :filter="filterByTitle"
+    :render-label="renderLabel"
     :placeholder="$t('principal.select')"
     class="bb-user-select"
     style="width: 12rem"
+    @update:show="(show: boolean)=>{
+      if (show) showStatus = true
+    }"
     @update:value="handleValueUpdated"
   />
 </template>
@@ -23,7 +27,7 @@ import {
   SelectOption,
   SelectProps,
 } from "naive-ui";
-import { computed, watch, watchEffect, h } from "vue";
+import { computed, watch, watchEffect, h, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import UserIcon from "~icons/heroicons-outline/user";
 import UserAvatar from "@/components/User/UserAvatar.vue";
@@ -98,6 +102,7 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const projectV1Store = useProjectV1Store();
 const userStore = useUserStore();
+const showStatus = ref(false);
 
 const value = computed(() => {
   if (props.multiple) {
@@ -214,6 +219,7 @@ const combinedUserList = computed(() => {
 });
 
 const handleValueUpdated = (value: string | string[]) => {
+  showStatus.value = false;
   if (props.multiple) {
     emit("update:users", value as string[]);
   } else {
