@@ -44,8 +44,10 @@ func (ctl *controller) GetSQLReviewResult(ctx context.Context, plan *v1pb.Plan) 
 			return nil, err
 		}
 		for _, check := range resp.PlanCheckRuns {
-			if check.Status == v1pb.PlanCheckRun_DONE && check.Type == v1pb.PlanCheckRun_DATABASE_STATEMENT_ADVISE {
-				return check, nil
+			if check.Type == v1pb.PlanCheckRun_DATABASE_STATEMENT_ADVISE {
+				if check.Status == v1pb.PlanCheckRun_DONE || check.Status == v1pb.PlanCheckRun_FAILED {
+					return check, nil
+				}
 			}
 		}
 	}
