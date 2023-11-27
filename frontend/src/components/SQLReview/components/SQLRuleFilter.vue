@@ -9,7 +9,7 @@
       @toggle-checked-level="$emit('toggle-checked-level', $event)"
     />
     <div
-      class="flex flex-col lg:flex-row items-start justify-between gap-y-3 lg:items-center border-t border-control-border pt-4"
+      class="flex flex-row sm:flex-col lg:flex-row items-center sm:items-start lg:items-center justify-between gap-y-2 gap-x-2 border-t border-control-border pt-4"
     >
       <SQLReviewCategoryTabFilter
         :value="params.selectedCategory"
@@ -19,7 +19,6 @@
       <SearchBox
         ref="searchField"
         :value="params.searchText"
-        class="w-full lg:w-auto"
         :placeholder="$t('common.filter-by-name')"
         @update:value="$emit('change-search-text', $event)"
       />

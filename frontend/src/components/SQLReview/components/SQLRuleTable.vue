@@ -13,7 +13,7 @@
         :column-list="columnList"
         :data-source="category.ruleList"
         :row-clickable="false"
-        class="border"
+        class="border hidden lg:grid"
       >
         <template #item="{ item: rule }: { item: RuleTemplate }">
           <div class="bb-grid-cell justify-center">
@@ -89,6 +89,81 @@
           </div>
         </template>
       </BBGrid>
+      <div
+        class="flex flex-col lg:hidden border px-2 pb-4 divide-y space-y-4 divide-block-border"
+      >
+        <div
+          v-for="rule in category.ruleList"
+          :key="rule.type"
+          class="pt-4 space-y-3"
+        >
+          <div class="flex justify-between items-center gap-x-2">
+            <div class="flex items-center gap-x-1">
+              <NTooltip
+                v-if="!isRuleAvailable(rule)"
+                trigger="hover"
+                :show-arrow="false"
+              >
+                <template #trigger>
+                  <div class="flex justify-center">
+                    <heroicons-outline:exclamation
+                      class="h-5 w-5 text-yellow-600"
+                    />
+                  </div>
+                </template>
+                <span class="whitespace-nowrap">
+                  {{
+                    $t("sql-review.not-available-for-free", {
+                      plan: $t(
+                        `subscription.plan.${planTypeToString(
+                          currentPlan
+                        )}.title`
+                      ),
+                    })
+                  }}
+                </span>
+              </NTooltip>
+              <span>
+                {{ getRuleLocalization(rule.type).title }}
+                <a
+                  :href="`https://www.bytebase.com/docs/sql-review/review-rules#${rule.type}`"
+                  target="_blank"
+                  class="inline-block"
+                >
+                  <ExternalLinkIcon class="w-4 h-4" />
+                </a>
+              </span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <PencilIcon
+                v-if="editable"
+                class="w-4 h-4"
+                @click="setActiveRule(rule)"
+              />
+              <BBSwitch
+                :class="[!editable && 'pointer-events-none']"
+                :disabled="!isRuleAvailable(rule)"
+                :value="rule.level !== SQLReviewRuleLevel.DISABLED"
+                size="small"
+                @toggle="toggleActivity(rule, $event)"
+              />
+            </div>
+          </div>
+          <div class="flex gap-x-2 items-center">
+            <RuleEngineIcons :rule="rule" />
+          </div>
+          <RuleLevelSwitch
+            class="text-xs"
+            :level="rule.level"
+            :disabled="!isRuleAvailable(rule)"
+            :editable="editable"
+            @level-change="$emit('level-change', rule, $event)"
+          />
+          <p class="textinfolabel">
+            {{ getRuleLocalization(rule.type).description }}
+          </p>
+        </div>
+      </div>
     </template>
 
     <SQLRuleEditDialog
@@ -105,6 +180,7 @@
 </template>
 
 <script lang="ts" setup>
+import { ExternalLinkIcon, PencilIcon } from "lucide-vue-next";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSwitch, BBGrid, type BBGridColumn } from "@/bbkit";
