@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -14,12 +15,10 @@ import (
 var aclYaml []byte
 
 type acl struct {
-	Roles []Role `yaml:"roles"`
-}
-
-type Role struct {
-	Name        string   `yaml:"name"`
-	Permissions []string `yaml:"permissions"`
+	Roles []struct {
+		Name        string   `yaml:"name"`
+		Permissions []string `yaml:"permissions"`
+	} `yaml:"roles"`
 }
 
 type Manager struct {
@@ -46,26 +45,28 @@ func NewManager(store *store.Store) (*Manager, error) {
 	}, nil
 }
 
-func (*Manager) getUserRoles(user *store.UserMessage) []string {
-	var roles []string
-	switch user.Role {
-	case "OWNER":
-		roles = append(roles, "roles/workspaceAdmin")
-	case "DBA":
-		roles = append(roles, "roles/workspaceDBA")
-	case "DEVELOPER":
-		roles = append(roles, "roles/workspaceMember")
+// Check if the user has the permission p
+// or has the permission p in every project.
+func (m *Manager) CheckPermission(ctx context.Context, p Permission, user *store.UserMessage, projectIDs ...string) (bool, error) {
+	workspaceRoles, err := m.getWorkspaceRoles(user)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get workspace roles")
 	}
-	return roles
+	projectRoles, err := m.getProjectRoles(ctx, user, projectIDs)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get project roles")
+	}
+
+	return m.hasPermission(p, workspaceRoles, projectRoles), nil
 }
 
-func (m *Manager) CheckPermission(_ context.Context, p Permission, user *store.UserMessage) (bool, error) {
-	roles := m.getUserRoles(user)
-	return m.hasPermission(p, roles...), nil
+func (m *Manager) hasPermission(p Permission, workspaceRoles []string, projectRoles [][]string) bool {
+	return m.hasPermissionOnWorkspace(p, workspaceRoles) ||
+		m.hasPermissionOnEveryProject(p, projectRoles)
 }
 
-func (m *Manager) hasPermission(p Permission, roles ...string) bool {
-	for _, role := range roles {
+func (m *Manager) hasPermissionOnWorkspace(p Permission, workspaceRoles []string) bool {
+	for _, role := range workspaceRoles {
 		permissions, ok := m.roles[role]
 		if !ok {
 			continue
@@ -76,6 +77,88 @@ func (m *Manager) hasPermission(p Permission, roles ...string) bool {
 			}
 		}
 	}
-
 	return false
+}
+
+func (m *Manager) hasPermissionOnEveryProject(p Permission, projectRoles [][]string) bool {
+	for _, projectRole := range projectRoles {
+		for _, role := range projectRole {
+			permissions, ok := m.roles[role]
+			if !ok {
+				continue
+			}
+			for _, permission := range permissions {
+				if permission == p {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+func (*Manager) getWorkspaceRoles(user *store.UserMessage) ([]string, error) {
+	role, err := convertWorkspaceRole(user.Role.String())
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get workspace roles")
+	}
+	return []string{role}, nil
+}
+
+func (m *Manager) getProjectRoles(ctx context.Context, user *store.UserMessage, projectIDs []string) ([][]string, error) {
+	var roles [][]string
+	for _, projectID := range projectIDs {
+		iamPolicy, err := m.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &projectID})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get iam policy for project %q", projectID)
+		}
+		projectRoles := getRolesFromProjectPolicy(user, iamPolicy)
+		roles = append(roles, projectRoles)
+	}
+	return roles, nil
+}
+
+func getRolesFromProjectPolicy(user *store.UserMessage, policy *store.IAMPolicyMessage) []string {
+	var roles []string
+	for _, binding := range policy.Bindings {
+		// TODO(p0ny): eval binding.Condition
+		for _, member := range binding.Members {
+			if member.ID == user.ID || member.Email == api.AllUsers {
+				roles = append(roles, convertProjectRole(binding.Role.String()))
+				break
+			}
+		}
+	}
+	return roles
+}
+
+func convertProjectRole(role string) string {
+	switch role {
+	case "OWNER":
+		return "roles/projectOwner"
+	case "DEVELOPER":
+		return "roles/projectDeveloper"
+	case "QUERIER":
+		return "roles/projectQuerier"
+	case "EXPORTER":
+		return "roles/projectExporter"
+	case "RELEASER":
+		return "roles/projectReleaser"
+	case "VIEWER":
+		return "roles/projectViewer"
+	default:
+		return "roles/" + role
+	}
+}
+
+func convertWorkspaceRole(role string) (string, error) {
+	switch role {
+	case "OWNER":
+		return "roles/workspaceAdmin", nil
+	case "DBA":
+		return "roles/workspaceDBA", nil
+	case "DEVELOPER":
+		return "roles/workspaceMember", nil
+	default:
+		return "", errors.Errorf("unexpected workspace role %q", role)
+	}
 }

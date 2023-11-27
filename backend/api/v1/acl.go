@@ -145,24 +145,9 @@ func (in *ACLInterceptor) aclInterceptorDo(ctx context.Context, fullMethod strin
 	}
 
 	if in.mode == common.ReleaseModeDev && user.Email == "xz@bytebase.com" {
-		return in.checkIAMPermission(ctx, getShortMethodName(fullMethod), user)
+		return in.checkIAMPermission(ctx, getShortMethodName(fullMethod), request, user)
 	}
 
-	return nil
-}
-
-func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, methodName string, user *store.UserMessage) error {
-	p, ok := methodPermissionMap[methodName]
-	if !ok {
-		return nil
-	}
-	ok, err := in.iamManager.CheckPermission(ctx, p, user)
-	if err != nil {
-		return status.Errorf(codes.Internal, "failed to check permission for method %q, err: %v", methodName, err)
-	}
-	if !ok {
-		return status.Errorf(codes.PermissionDenied, "permission denied for method %q, user does not have permission %q", methodName, p)
-	}
 	return nil
 }
 
