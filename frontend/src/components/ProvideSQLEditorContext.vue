@@ -105,6 +105,15 @@ const prepareProject = async () => {
   }
 };
 
+const prepareInstances = async () => {
+  const projectName = route.query.project;
+  if (projectName) {
+    await useInstanceV1Store().fetchProjectInstanceList(projectName as string);
+  } else {
+    await useInstanceV1Store().fetchInstanceList();
+  }
+};
+
 const initializeTree = async () => {
   treeStore.buildTree();
 };
@@ -322,7 +331,7 @@ onMounted(async () => {
       useSettingV1Store().fetchSettingList(),
       useRoleStore().fetchRoleList(),
       useEnvironmentV1Store().fetchEnvironments(),
-      useInstanceV1Store().fetchInstanceList(),
+      prepareInstances,
       useProjectV1Store().fetchProjectList(false),
       policyV1Store.fetchPolicies({
         resourceType: PolicyResourceType.ENVIRONMENT,
