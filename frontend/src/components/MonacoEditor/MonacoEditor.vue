@@ -345,14 +345,14 @@ const setEditorContentHeight = (height: number) => {
   }px`;
 };
 
-const formatEditorContent = () => {
+const formatEditorContent = async () => {
   if (readOnly.value) {
     return;
   }
   if (props.language !== "sql") {
     return;
   }
-  monacoInstanceRef.value?.formatContent(
+  await monacoInstanceRef.value?.formatContent(
     editorInstanceRef.value!,
     dialect.value
   );

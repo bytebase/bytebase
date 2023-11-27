@@ -19,7 +19,7 @@
 </template>
 
 <script setup lang="ts">
-import { useLocalStorage } from "@vueuse/core";
+import { computedAsync, useLocalStorage } from "@vueuse/core";
 import { NCheckbox } from "naive-ui";
 import { computed } from "vue";
 import MonacoEditor from "@/components/MonacoEditor";
@@ -56,16 +56,25 @@ const name = computed(() => {
   return view.name;
 });
 
-const formatted = computed(() => {
-  const sql = props.view.definition;
-  try {
-    const result = formatSQL(sql, dialectOfEngineV1(instanceEngine.value));
-    return result;
-  } catch (err) {
-    return {
-      error: err,
-      data: sql,
-    };
+const formatted = computedAsync(
+  async () => {
+    const sql = props.view.definition;
+    try {
+      const result = await formatSQL(
+        sql,
+        dialectOfEngineV1(instanceEngine.value)
+      );
+      return result;
+    } catch (err) {
+      return {
+        error: err,
+        data: sql,
+      };
+    }
+  },
+  {
+    error: null,
+    data: props.view.definition,
   }
-});
+);
 </script>
