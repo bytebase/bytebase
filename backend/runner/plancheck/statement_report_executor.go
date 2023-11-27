@@ -19,6 +19,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tidb"
@@ -127,7 +128,16 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, conf
 		sqlDB := driver.GetDB()
 
 		return reportForPostgres(ctx, sqlDB, database.DatabaseName, renderedStatement, dbSchema.GetMetadata())
-	case storepb.Engine_MYSQL, storepb.Engine_OCEANBASE:
+	case storepb.Engine_OCEANBASE:
+		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
+		if err != nil {
+			return nil, err
+		}
+		defer driver.Close(ctx)
+		sqlDB := driver.GetDB()
+
+		return reportForOceanBase(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema.GetMetadata())
+	case storepb.Engine_MYSQL:
 		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 		if err != nil {
 			return nil, err
@@ -284,7 +294,16 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 					sqlDB := driver.GetDB()
 
 					return reportForPostgres(ctx, sqlDB, database.DatabaseName, renderedStatement, dbSchema.GetMetadata())
-				case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
+				case storepb.Engine_OCEANBASE:
+					driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
+					if err != nil {
+						return nil, err
+					}
+					defer driver.Close(ctx)
+					sqlDB := driver.GetDB()
+
+					return reportForOceanBase(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema.GetMetadata())
+				case storepb.Engine_MYSQL, storepb.Engine_MARIADB:
 					driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 					if err != nil {
 						return nil, err
@@ -385,6 +404,84 @@ func reportForOracle(databaseName string, schemaName string, statement string) (
 }
 
 func reportForMySQL(ctx context.Context, sqlDB *sql.DB, engine storepb.Engine, databaseName string, statement string, dbMetadata *storepb.DatabaseSchemaMetadata) ([]*storepb.PlanCheckRunResult_Result, error) {
+	singleSQLs, err := base.SplitMultiSQL(engine, statement)
+	if err != nil {
+		// nolint:nilerr
+		return []*storepb.PlanCheckRunResult_Result{
+			{
+				Status:  storepb.PlanCheckRunResult_Result_ERROR,
+				Title:   "Syntax error",
+				Content: err.Error(),
+				Code:    0,
+				Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
+					SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
+						Code: advisor.StatementSyntaxError.Int32(),
+					},
+				},
+			},
+		}, nil
+	}
+
+	sqlTypeSet := map[string]struct{}{}
+	var totalAffectedRows int64
+	var changedResources []base.SchemaResource
+
+	for _, stmt := range singleSQLs {
+		if stmt.Empty || stmt.Text == "" {
+			continue
+		}
+
+		stmts, err := mysqlparser.ParseMySQL(statement)
+		if err != nil {
+			slog.Error("failed to parse statement", slog.String("statement", stmt.Text), log.BBError(err))
+			continue
+		}
+
+		if len(stmts) != 1 {
+			slog.Debug("failed to parse statement, expect to get one node from parser", slog.String("statement", stmt.Text))
+			continue
+		}
+
+		sqlType := mysqlparser.GetStatementType(stmts[0])
+		sqlTypeSet[sqlType] = struct{}{}
+		if !isDML(sqlType) {
+			resources, err := base.ExtractChangedResources(storepb.Engine_MYSQL, databaseName, "" /* currentSchema */, stmt.Text)
+			if err != nil {
+				slog.Error("failed to extract changed resources", slog.String("statement", stmt.Text), log.BBError(err))
+			} else {
+				changedResources = append(changedResources, resources...)
+			}
+		}
+
+		affectedRows, err := getAffectedRowsForMySQL(ctx, sqlDB, dbMetadata, stmts[0])
+		if err != nil {
+			slog.Error("failed to get affected rows for mysql", slog.String("database", databaseName), log.BBError(err))
+		} else {
+			totalAffectedRows += affectedRows
+		}
+	}
+
+	var sqlTypes []string
+	for sqlType := range sqlTypeSet {
+		sqlTypes = append(sqlTypes, sqlType)
+	}
+	return []*storepb.PlanCheckRunResult_Result{
+		{
+			Status: storepb.PlanCheckRunResult_Result_SUCCESS,
+			Code:   common.Ok.Int32(),
+			Title:  "OK",
+			Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
+				SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
+					StatementTypes:   sqlTypes,
+					AffectedRows:     int32(totalAffectedRows),
+					ChangedResources: convertToChangedResources(changedResources),
+				},
+			},
+		},
+	}, nil
+}
+
+func reportForOceanBase(ctx context.Context, sqlDB *sql.DB, engine storepb.Engine, databaseName string, statement string, dbMetadata *storepb.DatabaseSchemaMetadata) ([]*storepb.PlanCheckRunResult_Result, error) {
 	charset := dbMetadata.CharacterSet
 	collation := dbMetadata.Collation
 
@@ -445,7 +542,7 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, engine storepb.Engine, d
 			}
 		}
 
-		affectedRows, err := getAffectedRowsForMysql(ctx, engine, sqlDB, dbMetadata, root[0])
+		affectedRows, err := getAffectedRowsForOceanBase(ctx, engine, sqlDB, dbMetadata, root[0])
 		if err != nil {
 			slog.Error("failed to get affected rows for mysql", slog.String("database", databaseName), log.BBError(err))
 		} else {

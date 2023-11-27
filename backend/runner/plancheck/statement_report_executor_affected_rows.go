@@ -12,6 +12,8 @@ import (
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pkg/errors"
 
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -220,7 +222,11 @@ func query(ctx context.Context, connection *sql.DB, statement string) ([]any, er
 	return []any{columnNames, columnTypeNames, data}, nil
 }
 
-func getAffectedRowsForMysql(ctx context.Context, engine storepb.Engine, sqlDB *sql.DB, metadata *storepb.DatabaseSchemaMetadata, node tidbast.StmtNode) (int64, error) {
+func getAffectedRowsForMySQL(ctx context.Context, sqlDB *sql.DB, metadata *storepb.DatabaseSchemaMetadata, stmt *mysqlparser.ParseResult) (int64, error) {
+	return mysqlparser.GetAffectedRows(ctx, sqlDB, metadata, stmt)
+}
+
+func getAffectedRowsForOceanBase(ctx context.Context, engine storepb.Engine, sqlDB *sql.DB, metadata *storepb.DatabaseSchemaMetadata, node tidbast.StmtNode) (int64, error) {
 	switch node := node.(type) {
 	case *tidbast.InsertStmt, *tidbast.UpdateStmt, *tidbast.DeleteStmt:
 		if node, ok := node.(*tidbast.InsertStmt); ok && node.Select == nil {
