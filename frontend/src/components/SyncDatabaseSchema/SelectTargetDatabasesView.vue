@@ -228,7 +228,6 @@
 </template>
 
 <script lang="ts" setup>
-import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { head } from "lodash-es";
 import { NEllipsis } from "naive-ui";
 import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
@@ -244,7 +243,12 @@ import {
 import { ComposedDatabase, UNKNOWN_ID } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { ChangeHistory } from "@/types/proto/v1/database_service";
-import { changeHistoryLink, databaseV1Slug, projectV1Slug } from "@/utils";
+import {
+  changeHistoryLink,
+  databaseV1Slug,
+  projectV1Slug,
+  toClipboard,
+} from "@/utils";
 import DiffViewPanel from "./DiffViewPanel.vue";
 import RawSQLEditorPanel from "./RawSQLEditorPanel.vue";
 import TargetDatabasesSelectPanel from "./TargetDatabasesSelectPanel.vue";
