@@ -13,7 +13,9 @@
               @close="removeNotification"
             />
           </template>
-          <HelpDrawer />
+          <Suspense>
+            <HelpDrawer />
+          </Suspense>
         </KBarWrapper>
       </OverlayStackManager>
     </NDialogProvider>
