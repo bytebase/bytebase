@@ -333,8 +333,8 @@ onMounted(async () => {
       useSettingV1Store().fetchSettingList(),
       useRoleStore().fetchRoleList(),
       useEnvironmentV1Store().fetchEnvironments(),
-      prepareInstances,
-      prepareProjects,
+      prepareInstances(),
+      prepareProjects(),
       policyV1Store.fetchPolicies({
         resourceType: PolicyResourceType.ENVIRONMENT,
         policyType: PolicyType.DISABLE_COPY_DATA,
