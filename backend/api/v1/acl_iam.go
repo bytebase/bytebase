@@ -13,51 +13,51 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, methodName string, req any, user *store.UserMessage) error {
-	p, ok := methodPermissionMap[methodName]
+func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod string, req any, user *store.UserMessage) error {
+	p, ok := methodPermissionMap[fullMethod]
 	if !ok {
 		return nil
 	}
 
-	switch methodName {
+	switch fullMethod {
 	// handled in the method because checking is complex.
 	case
-		"DatabaseService/ListDatabases":
+		v1pb.DatabaseService_ListDatabases_FullMethodName:
 
 	// below are "workspace-level" permissions.
 	// we don't have to go down to the project level.
 	case
-		"InstanceService/ListInstances",
-		"InstanceService/GetInstance",
-		"InstanceService/CreateInstance",
-		"InstanceService/UpdateInstance",
-		"InstanceService/DeleteInstance",
-		"InstanceService/UndeleteInstance",
-		"InstanceService/SyncInstance",
-		"InstanceService/BatchSyncInstance",
-		"InstanceService/AddDataSource",
-		"InstanceService/RemoveDataSource",
-		"InstanceService/UpdateDataSource",
-		"InstanceService/SyncSlowQueries":
+		v1pb.InstanceService_ListInstances_FullMethodName,
+		v1pb.InstanceService_GetInstance_FullMethodName,
+		v1pb.InstanceService_CreateInstance_FullMethodName,
+		v1pb.InstanceService_UpdateInstance_FullMethodName,
+		v1pb.InstanceService_DeleteInstance_FullMethodName,
+		v1pb.InstanceService_UndeleteInstance_FullMethodName,
+		v1pb.InstanceService_SyncInstance_FullMethodName,
+		v1pb.InstanceService_BatchSyncInstance_FullMethodName,
+		v1pb.InstanceService_AddDataSource_FullMethodName,
+		v1pb.InstanceService_RemoveDataSource_FullMethodName,
+		v1pb.InstanceService_UpdateDataSource_FullMethodName,
+		v1pb.InstanceService_SyncSlowQueries_FullMethodName:
 		ok, err := in.iamManager.CheckPermission(ctx, p, user)
 		if err != nil {
-			return status.Errorf(codes.Internal, "failed to check permission for method %q, err: %v", methodName, err)
+			return status.Errorf(codes.Internal, "failed to check permission for method %q, err: %v", fullMethod, err)
 		}
 		if !ok {
-			return status.Errorf(codes.PermissionDenied, "permission denied for method %q, user does not have permission %q", methodName, p)
+			return status.Errorf(codes.PermissionDenied, "permission denied for method %q, user does not have permission %q", fullMethod, p)
 		}
 	case
-		"DatabaseService/GetDatabase":
+		v1pb.DatabaseService_GetDatabase_FullMethodName:
 		projectIDs, err := in.getProjectIDsForDatabaseService(ctx, req)
 		if err != nil {
 			return status.Errorf(codes.Internal, "failed to check permission, err %v", err)
 		}
 		ok, err = in.iamManager.CheckPermission(ctx, p, user, projectIDs...)
 		if err != nil {
-			return status.Errorf(codes.Internal, "failed to check permission for method %q, err: %v", methodName, err)
+			return status.Errorf(codes.Internal, "failed to check permission for method %q, err: %v", fullMethod, err)
 		}
 		if !ok {
-			return status.Errorf(codes.PermissionDenied, "permission denied for method %q, user does not have permission %q", methodName, p)
+			return status.Errorf(codes.PermissionDenied, "permission denied for method %q, user does not have permission %q", fullMethod, p)
 		}
 	}
 
