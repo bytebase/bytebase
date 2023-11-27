@@ -15,11 +15,24 @@ import (
 func TestLinkHealth(t *testing.T) {
 	// Extract all the links prefix with https://bytebase.com or https://www.bytebase.com in frontend code.
 	regexp := regexp.MustCompile(`(?m)https?:\/\/(www\.)?bytebase.com([-a-zA-Z0-9()@:%_\+.~#?&\/\/=]*)`)
-	// Our website may be re-deployed, so we need to retry a few times before we give up.
-	defaultInterval := 1 * time.Minute
-	defaultRetryTimes := 3
 
 	directory := "../frontend"
+	ignores := map[string]struct{}{
+		"node_modules": {},
+	}
+
+	links, err := extractLinkRecursive(directory, ignores, regexp)
+	require.NoError(t, err)
+
+	// Check all the links are reachable.
+	for link := range links {
+		if err := checkLinkWithRetry(link); err != nil {
+			require.NoError(t, err)
+		}
+	}
+}
+
+func extractLinkRecursive(directory string, ignores map[string]struct{}, regexp *regexp.Regexp) (map[string]struct{}, error) {
 	extensions := map[string]struct{}{
 		".html": {},
 		".js":   {},
@@ -27,22 +40,7 @@ func TestLinkHealth(t *testing.T) {
 		".ts":   {},
 		".json": {},
 	}
-	blackList := map[string]struct{}{
-		"node_modules": {},
-	}
 
-	links, err := extractLinkRecursive(directory, blackList, extensions, regexp)
-	require.NoError(t, err)
-
-	// Check all the links are reachable.
-	for link := range links {
-		if err := checkLinkWithRetry(link, defaultRetryTimes, defaultInterval); err != nil {
-			require.NoError(t, err)
-		}
-	}
-}
-
-func extractLinkRecursive(directory string, blackList map[string]struct{}, extensions map[string]struct{}, regexp *regexp.Regexp) (map[string]struct{}, error) {
 	// Initialize the result map
 	links := make(map[string]struct{})
 
@@ -51,7 +49,7 @@ func extractLinkRecursive(directory string, blackList map[string]struct{}, exten
 		if err != nil {
 			return err
 		}
-		if _, ok := blackList[info.Name()]; ok {
+		if _, ok := ignores[info.Name()]; ok {
 			return filepath.SkipDir
 		}
 
@@ -89,19 +87,21 @@ func extractLinkRecursive(directory string, blackList map[string]struct{}, exten
 	return links, nil
 }
 
-func checkLinkWithRetry(link string, retry int, interval time.Duration) error {
-	for i := 0; i < retry; i++ {
+func checkLinkWithRetry(link string) error {
+	defaultRetryTimes := 3
+	defaultInterval := 1 * time.Minute
+	for i := 0; i < defaultRetryTimes; i++ {
 		// Request the link and check the response status code is 200.
 		res, err := http.Get(link)
 		if err != nil {
 			return errors.Wrapf(err, "failed to request link: %s", link)
 		}
 		if res.StatusCode != http.StatusOK {
-			time.Sleep(interval)
+			time.Sleep(defaultInterval)
 			continue
 		}
 		return nil
 	}
 
-	return errors.Errorf("Link %s is not reachable after %d retries", link, retry)
+	return errors.Errorf("Link %s is not reachable after %d retries", link, defaultRetryTimes)
 }
