@@ -25,13 +25,13 @@ func permissionExist(p Permission) bool {
 	//exhaustive:enforce
 	switch p {
 	case
-		PermissionInstanceList,
-		PermissionInstanceGet,
-		PermissionInstanceCreate,
-		PermissionInstanceUpdate,
-		PermissionInstanceDelete,
-		PermissionInstanceUndelete,
-		PermissionInstanceSync,
+		PermissionInstancesList,
+		PermissionInstancesGet,
+		PermissionInstancesCreate,
+		PermissionInstancesUpdate,
+		PermissionInstancesDelete,
+		PermissionInstancesUndelete,
+		PermissionInstancesSync,
 		PermissionDatabasesList,
 		PermissionDatabasesGet,
 		PermissionDatabasesUpdate,
