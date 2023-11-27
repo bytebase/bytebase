@@ -829,7 +829,6 @@
 </template>
 
 <script lang="ts" setup>
-import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { cloneDeep, head, isEqual } from "lodash-es";
 import { NRadioGroup, NRadio, NTooltip } from "naive-ui";
 import { ClientError, Status } from "nice-grpc-common";
@@ -861,6 +860,7 @@ import {
   identityProviderTemplateList,
   identityProviderTypeToString,
   openWindowForSSO,
+  toClipboard,
 } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
 

@@ -143,14 +143,13 @@
 </template>
 
 <script lang="ts" setup>
-import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { reactive, PropType, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
 import { languageOfEngineV1 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
-import { engineNameV1 } from "@/utils";
+import { engineNameV1, toClipboard } from "@/utils";
 
 interface LocalState {
   showCreateUserExample: boolean;
