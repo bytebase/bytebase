@@ -1190,12 +1190,12 @@ func (t *TableState) mysqlCreateIndex(name string, keyList []string, unique bool
 		}
 	}
 
-	t.indexSet[name] = index
+	t.indexSet[strings.ToLower(name)] = index
 	return nil
 }
 
 func (t *TableState) mysqlCreatePrimaryKey(keys []string, tp string) *WalkThroughError {
-	if _, exists := t.indexSet[PrimaryKeyName]; exists {
+	if _, exists := t.indexSet[strings.ToLower(PrimaryKeyName)]; exists {
 		return &WalkThroughError{
 			Type:    ErrorTypePrimaryKeyExists,
 			Content: fmt.Sprintf("Primary key exists in table `%s`", t.name),
@@ -1211,7 +1211,7 @@ func (t *TableState) mysqlCreatePrimaryKey(keys []string, tp string) *WalkThroug
 		visible:        newTruePointer(),
 		comment:        newEmptyStringPointer(),
 	}
-	t.indexSet[pk.name] = pk
+	t.indexSet[strings.ToLower(pk.name)] = pk
 	return nil
 }
 

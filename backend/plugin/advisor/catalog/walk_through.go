@@ -882,7 +882,7 @@ func (t *TableState) incompleteTableDropColumn(columnName string) *WalkThroughEr
 		index.dropColumn(columnName)
 		// If all columns that make up an index are dropped, the index is dropped as well.
 		if len(index.expressionList) == 0 {
-			delete(t.indexSet, index.name)
+			delete(t.indexSet, strings.ToLower(index.name))
 		}
 	}
 
@@ -1317,7 +1317,7 @@ func (t *TableState) createIndex(name string, keyList []string, unique bool, tp 
 }
 
 func (t *TableState) createPrimaryKey(keys []string, tp string) *WalkThroughError {
-	if _, exists := t.indexSet[PrimaryKeyName]; exists {
+	if _, exists := t.indexSet[strings.ToLower(PrimaryKeyName)]; exists {
 		return &WalkThroughError{
 			Type:    ErrorTypePrimaryKeyExists,
 			Content: fmt.Sprintf("Primary key exists in table `%s`", t.name),
@@ -1333,7 +1333,7 @@ func (t *TableState) createPrimaryKey(keys []string, tp string) *WalkThroughErro
 		visible:        newTruePointer(),
 		comment:        newEmptyStringPointer(),
 	}
-	t.indexSet[pk.name] = pk
+	t.indexSet[strings.ToLower(pk.name)] = pk
 	return nil
 }
 
