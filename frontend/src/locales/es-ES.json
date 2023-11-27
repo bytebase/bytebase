@@ -2027,13 +2027,6 @@
       }
     }
   },
-  "archive": {
-    "archived": "Archivado",
-    "project-search-bar-placeholder": "Buscar nombre de @.lower:{'common.project'}",
-    "instance-search-bar-placeholder": "Buscar nombre de @.lower:{'common.instance'}",
-    "environment-search-bar-placeholder": "Buscar nombre de @.lower:{'common.environment'}",
-    "sso-search-bar-placeholder": "Buscar nombre de SSO"
-  },
   "deployment-config": {
     "stage-n": "Etapa {n}",
     "add-selector": "Agregar selector",

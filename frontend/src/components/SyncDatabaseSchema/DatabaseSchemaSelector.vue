@@ -28,7 +28,7 @@
         @update:environment="handleEnvironmentSelect"
       />
       <DatabaseSelect
-        class="!w-128"
+        class="!w-128 max-w-full"
         :database="state.databaseId"
         :environment="state.environmentId"
         :project="state.projectId"
