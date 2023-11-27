@@ -82,7 +82,7 @@ const useExecuteSQL = () => {
     }
 
     const tab = tabStore.currentTab;
-    const { data } = parseSQL(query);
+    const { data } = await parseSQL(query);
 
     if (data === undefined) {
       notify("CRITICAL", t("sql-editor.notify-invalid-sql-statement"));
