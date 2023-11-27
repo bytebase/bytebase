@@ -1,38 +1,31 @@
 <template>
   <div class="flex flex-col space-y-4">
     <div class="flex justify-between items-end">
-      <BBTabFilter
-        :tab-item-list="tabItemList"
-        :selected-index="state.selectedIndex"
-        @select-index="
-          (index: number) => {
-            state.selectedIndex = index;
-          }
-        "
-      />
+      <TabFilter v-model:value="state.selectedTab" :items="tabItemList" />
+
       <SearchBox
         v-model:value="state.searchText"
-        :placeholder="searchFieldPlaceholder"
+        :placeholder="$t('common.filter-by-name')"
       />
     </div>
     <div class="border-x">
       <ProjectV1Table
-        v-if="state.selectedIndex == PROJECT_TAB"
+        v-if="state.selectedTab == 'PROJECT'"
         :project-list="filteredProjectList"
         class="border-x-0"
       />
       <InstanceV1Table
-        v-else-if="state.selectedIndex == INSTANCE_TAB"
+        v-else-if="state.selectedTab == 'INSTANCE'"
         :allow-selection="false"
         :can-assign-license="false"
         :instance-list="filteredInstanceList"
       />
       <EnvironmentV1Table
-        v-else-if="state.selectedIndex == ENVIRONMENT_TAB"
+        v-else-if="state.selectedTab == 'ENVIRONMENT'"
         :environment-list="filteredEnvironmentList"
       />
       <IdentityProviderTable
-        v-else-if="state.selectedIndex == SSO_TAB"
+        v-else-if="state.selectedTab == 'SSO'"
         :identity-provider-list="filteredSSOList(deletedSSOList)"
       />
     </div>
@@ -42,7 +35,6 @@
 <script lang="ts" setup>
 import { computed, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBTabFilterItem } from "@/bbkit/types";
 import IdentityProviderTable from "@/components/IdentityProviderTable.vue";
 import {
   EnvironmentV1Table,
@@ -63,13 +55,8 @@ import {
   hasWorkspacePermissionV1,
 } from "@/utils";
 
-const PROJECT_TAB = 0;
-const INSTANCE_TAB = 1;
-const ENVIRONMENT_TAB = 2;
-const SSO_TAB = 3;
-
 interface LocalState {
-  selectedIndex: number;
+  selectedTab: "PROJECT" | "INSTANCE" | "ENVIRONMENT" | "SSO";
   searchText: string;
 }
 
@@ -77,25 +64,11 @@ const { t } = useI18n();
 const instanceStore = useInstanceV1Store();
 
 const state = reactive<LocalState>({
-  selectedIndex: PROJECT_TAB,
+  selectedTab: "PROJECT",
   searchText: "",
 });
 
 const currentUserV1 = useCurrentUserV1();
-
-const searchFieldPlaceholder = computed(() => {
-  if (state.selectedIndex == PROJECT_TAB) {
-    return t("archive.project-search-bar-placeholder");
-  } else if (state.selectedIndex == INSTANCE_TAB) {
-    return t("archive.instance-search-bar-placeholder");
-  } else if (state.selectedIndex == ENVIRONMENT_TAB) {
-    return t("archive.environment-search-bar-placeholder");
-  } else if (state.selectedIndex == SSO_TAB) {
-    return t("archive.sso-search-bar-placeholder");
-  } else {
-    return "";
-  }
-});
 
 const { projectList } = useProjectV1ListByCurrentUser(true /* showDeleted */);
 
@@ -130,10 +103,8 @@ const deletedSSOList = computed(() => {
   return useIdentityProviderStore().deletedIdentityProviderList;
 });
 
-const tabItemList = computed((): BBTabFilterItem[] => {
-  const list: BBTabFilterItem[] = [
-    { title: t("common.project"), alert: false },
-  ];
+const tabItemList = computed(() => {
+  const list = [{ value: "PROJECT", label: t("common.project") }];
 
   if (
     hasWorkspacePermissionV1(
@@ -141,7 +112,7 @@ const tabItemList = computed((): BBTabFilterItem[] => {
       currentUserV1.value.userRole
     )
   ) {
-    list.push({ title: t("common.instance"), alert: false });
+    list.push({ value: "INSTANCE", label: t("common.instance") });
   }
 
   if (
@@ -150,7 +121,7 @@ const tabItemList = computed((): BBTabFilterItem[] => {
       currentUserV1.value.userRole
     )
   ) {
-    list.push({ title: t("common.environment"), alert: false });
+    list.push({ value: "ENVIRONMENT", label: t("common.environment") });
   }
 
   if (
@@ -159,7 +130,7 @@ const tabItemList = computed((): BBTabFilterItem[] => {
       currentUserV1.value.userRole
     )
   ) {
-    list.push({ title: t("settings.sidebar.sso"), alert: false });
+    list.push({ value: "SSO", label: t("settings.sidebar.sso") });
   }
 
   return list;
