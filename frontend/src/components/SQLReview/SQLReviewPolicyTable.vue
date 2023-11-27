@@ -24,6 +24,9 @@
           <template v-if="review">
             {{ review.name }}
           </template>
+          <span v-else class="italic textinfo text-gray-400">
+            {{ $t("sql-review.no-policy-set") }}
+          </span>
         </div>
         <div class="bb-grid-cell justify-center">
           <BBCheckbox
