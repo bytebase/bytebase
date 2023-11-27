@@ -11,7 +11,7 @@
   />
   <div v-else>
     <div
-      class="flex flex-col items-center space-x-2 justify-center md:flex-row"
+      class="flex flex-col gap-y-2 items-start md:items-center gap-x-2 justify-center md:flex-row"
     >
       <div class="flex-1 flex space-x-2 items-center justify-start">
         <BBBadge
@@ -28,11 +28,12 @@
           <BBBadge
             :text="$t('sql-review.disabled')"
             :can-remove="false"
+            :badge-style="'DISABLED'"
             ::badge-style="'DISABLED'"
           />
         </div>
         <BBTextField
-          class="flex-1 text-3xl py-0.5 px-0.5 font-bold truncate"
+          class="flex-1 text-xl md:text-3xl py-0.5 px-0.5 font-bold truncate"
           :disabled="!hasPermission"
           :required="true"
           :focus-on-mount="false"
@@ -42,7 +43,7 @@
           @end-editing="changeName"
         />
       </div>
-      <div v-if="hasPermission" class="flex space-x-2">
+      <div v-if="hasPermission" class="flex gap-x-2">
         <NButton
           v-if="reviewPolicy.enforce"
           @click.prevent="state.showDisableModal = true"
