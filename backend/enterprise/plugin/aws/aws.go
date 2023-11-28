@@ -34,7 +34,7 @@ type Provider struct {
 // to subscribe our test product in the marketplace,
 // and expose AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION and PRODUCT_ID in the environment.
 // And the AWS account must have the permission to access the AWS license manager.
-func NewProvider(providerConfig *plugin.ProviderConfig) (plugin.LicenseProvider, error) {
+func NewProvider(_ *plugin.ProviderConfig) (plugin.LicenseProvider, error) {
 	projectID := os.Getenv("PRODUCT_ID")
 	if projectID == "" {
 		return nil, errors.Errorf("cannot find aws project id")
