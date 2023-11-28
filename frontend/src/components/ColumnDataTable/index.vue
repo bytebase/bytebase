@@ -6,7 +6,6 @@
     :virtual-scroll="true"
     :striped="true"
     :bordered="true"
-    :bottom-bordered="true"
   />
 </template>
 
