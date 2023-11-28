@@ -5,7 +5,7 @@ import type {
   CompletionItem,
 } from "vscode-languageserver/browser";
 import { CompletionTriggerKind } from "vscode-languageserver/browser";
-import { EngineTypesUsingSQL } from "@/types";
+import { EngineTypesUsingSQL } from "@/types/sqlEditor";
 import { complete } from "./complete";
 import { initializeConnection } from "./initializeConnection";
 
