@@ -95,7 +95,6 @@ import {
   HomeIcon,
   DatabaseIcon,
   TurtleIcon,
-  RefreshCcwIcon,
   DownloadIcon,
   ShieldAlertIcon,
   GalleryHorizontalEndIcon,
