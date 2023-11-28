@@ -175,6 +175,7 @@ func (l *AffectedRowsListener) EnterUpdateStatement(ctx *mysql.UpdateStatementCo
 	affectedRows, err := l.getAffectedRowsByQueryFunc(l.ctx, l.text)
 	if err != nil {
 		l.err = err
+		return
 	}
 	l.affectedRows = affectedRows
 }
@@ -197,6 +198,7 @@ func (l *AffectedRowsListener) EnterDeleteStatement(ctx *mysql.DeleteStatementCo
 	affectedRows, err := l.getAffectedRowsByQueryFunc(l.ctx, l.text)
 	if err != nil {
 		l.err = err
+		return
 	}
 	l.affectedRows = affectedRows
 }
