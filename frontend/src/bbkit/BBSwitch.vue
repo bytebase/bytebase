@@ -44,7 +44,8 @@
             : '',
         }"
       >
-        {{ state.dirtyOn ? $t("common.on") : $t("common.off") }}
+        <slot v-if="state.dirtyOn" name="on">{{ $t("common.on") }}</slot>
+        <slot v-else name="off">{{ $t("common.off") }}</slot>
       </span>
     </button>
     <span

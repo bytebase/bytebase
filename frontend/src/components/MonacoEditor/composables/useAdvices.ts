@@ -1,16 +1,15 @@
 import { maxBy } from "lodash-es";
-import type { editor as Editor } from "monaco-editor";
+import type monaco from "monaco-editor";
 import { unref, watchEffect } from "vue";
 import type { MaybeRef } from "@/types";
-import { escapeMarkdown, callCssVariable } from "@/utils";
-import type { AdviceOption } from "../types";
+import { callCssVariable, escapeMarkdown } from "@/utils";
+import type { AdviceOption, MonacoModule } from "../types";
 
-export const useAdvices = async (
-  editor: Editor.IStandaloneCodeEditor,
+export const useAdvices = (
+  monaco: MonacoModule,
+  editor: monaco.editor.IStandaloneCodeEditor,
   advices: MaybeRef<AdviceOption[]>
 ) => {
-  const monaco = await import("monaco-editor");
-
   watchEffect((onCleanup) => {
     const _advices = unref(advices);
     const maxSeverity =

@@ -1,8 +1,5 @@
-import {
-  CloseAction,
-  ErrorAction,
-  MonacoLanguageClient,
-} from "monaco-languageclient";
+import { MonacoLanguageClient } from "monaco-languageclient";
+import { CloseAction, ErrorAction } from "vscode-languageclient";
 import {
   BrowserMessageReader,
   BrowserMessageWriter,

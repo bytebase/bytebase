@@ -2,12 +2,15 @@
   <div class="flex items-start w-full">
     <div class="flex-1 overflow-x-hidden">
       <MonacoEditor
-        ref="editorRef"
+        v-model:content="state.code"
         class="border h-auto"
-        language="sql"
-        :value="state.code"
         :readonly="!state.editing"
         :auto-focus="false"
+        :auto-height="{
+          min: 48,
+          max: 120,
+          padding: 2,
+        }"
         :options="{
           automaticLayout: true,
           fontSize: 12,
@@ -23,8 +26,6 @@
             alwaysConsumeMouseWheel: false,
           },
         }"
-        @ready="handleMonacoEditorReady"
-        @change="state.code = $event"
       />
     </div>
     <div class="flex flex-col gap-y-2 ml-0.5 mt-1">
@@ -103,11 +104,11 @@
 
 <script lang="ts" setup>
 import { NTooltip } from "naive-ui";
-import { reactive, ref, watch } from "vue";
+import { reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import MonacoEditor from "@/components/MonacoEditor";
+import { MonacoEditor } from "@/components/MonacoEditor";
 import { pushNotification } from "@/store";
-import { minmax, toClipboard } from "@/utils";
+import { toClipboard } from "@/utils";
 import { useAIContext } from "../../logic";
 import { useConversationStore } from "../../store";
 import type { Message } from "../../types";
@@ -121,31 +122,12 @@ const props = defineProps<{
   message: Message;
 }>();
 
-const EDITOR_HEIGHT = {
-  min: 48,
-  max: 120,
-};
-
 const state = reactive<LocalState>({
   code: props.message.content,
   editing: false,
 });
 const { t } = useI18n();
 const { events, showHistoryDialog } = useAIContext();
-const editorRef = ref<InstanceType<typeof MonacoEditor>>();
-
-const updateEditorSize = () => {
-  const contentHeight =
-    editorRef.value?.editorInstance?.getContentHeight() as number;
-  const paddings = 2;
-  editorRef.value?.setEditorContentHeight(
-    minmax(contentHeight + paddings, EDITOR_HEIGHT.min, EDITOR_HEIGHT.max)
-  );
-};
-
-const handleMonacoEditorReady = () => {
-  updateEditorSize();
-};
 
 const handleExecute = () => {
   events.emit("apply-statement", {

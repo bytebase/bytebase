@@ -3,6 +3,7 @@ import { Status } from "nice-grpc-common";
 import { markRaw } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBNotificationStyle } from "@/bbkit/types";
+import { parseSQL } from "@/components/MonacoEditor/sqlParser";
 import {
   pushNotification,
   useTabStore,
@@ -22,7 +23,6 @@ import {
   advice_StatusToJSON,
 } from "@/types/proto/v1/sql_service";
 import { isDatabaseV1Alterable } from "@/utils";
-import { parseSQL } from "../components/MonacoEditor/sqlParser";
 
 const useExecuteSQL = () => {
   const { t } = useI18n();

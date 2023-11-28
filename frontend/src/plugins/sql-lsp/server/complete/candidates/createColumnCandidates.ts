@@ -1,6 +1,6 @@
-import { Table } from "@sql-lsp/types";
+import type { Table } from "@sql-lsp/types";
 import { uniqBy } from "lodash-es";
-import { CompletionItem } from "vscode-languageserver-types";
+import type { CompletionItem } from "vscode-languageserver-types";
 import { ICONS, SortText } from "../utils";
 
 export const createColumnCandidates = (
