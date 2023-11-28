@@ -1,9 +1,8 @@
 import type monaco from "monaco-editor";
 import { Ref, watchEffect } from "vue";
-import { SQLDialect } from "@/types";
-import sqlFormatter from "../sqlFormatter";
+import type { SQLDialect } from "@/types";
 import type { MonacoModule } from "../types";
-import { trySetContentWithUndo } from "../utils";
+import { formatEditorContent } from "../utils";
 import { useTextModelLanguage } from "./common";
 
 export const useFormatContent = async (
@@ -24,12 +23,12 @@ export const useFormatContent = async (
         ],
         contextMenuGroupId: "operation",
         contextMenuOrder: 1,
-        run: () => {
+        run: async () => {
           const readonly = editor.getOption(
             monaco.editor.EditorOption.readOnly
           );
           if (readonly) return;
-          formatEditorContent(editor, dialect.value);
+          await formatEditorContent(editor, dialect.value);
         },
       });
       onCleanup(() => {
@@ -40,25 +39,4 @@ export const useFormatContent = async (
       // format the document (the native feature of monaco-editor).
     }
   });
-};
-
-export const formatEditorContent = (
-  editor: monaco.editor.IStandaloneCodeEditor,
-  dialect: SQLDialect | undefined
-) => {
-  const model = editor.getModel();
-  if (!model) return;
-  const sql = model.getValue();
-  const { data, error } = sqlFormatter(sql, dialect);
-  if (error) {
-    return;
-  }
-  const pos = editor.getPosition();
-
-  trySetContentWithUndo(editor, data, "Format content");
-
-  if (pos) {
-    // Not that smart but best efforts to keep the cursor position
-    editor.setPosition(pos);
-  }
 };

@@ -1,7 +1,8 @@
 import { Range } from "monaco-editor";
 import { isRef, unref, watch } from "vue";
-import { Language, MaybeRef } from "@/types";
-import { IStandaloneCodeEditor } from "./types";
+import type { Language, MaybeRef, SQLDialect } from "@/types";
+import sqlFormatter from "./sqlFormatter";
+import type { IStandaloneCodeEditor } from "./types";
 
 export const extensionNameOfLanguage = (lang: Language) => {
   switch (lang) {
@@ -47,4 +48,25 @@ export const trySetContentWithUndo = (
       forceMoveMarkers: true,
     },
   ]);
+};
+
+export const formatEditorContent = async (
+  editor: IStandaloneCodeEditor,
+  dialect: SQLDialect | undefined
+) => {
+  const model = editor.getModel();
+  if (!model) return;
+  const sql = model.getValue();
+  const { data, error } = await sqlFormatter(sql, dialect);
+  if (error) {
+    return;
+  }
+  const pos = editor.getPosition();
+
+  trySetContentWithUndo(editor, data, "Format content");
+
+  if (pos) {
+    // Not that smart but best efforts to keep the cursor position
+    editor.setPosition(pos);
+  }
 };

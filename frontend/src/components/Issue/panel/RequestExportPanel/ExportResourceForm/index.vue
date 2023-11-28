@@ -49,7 +49,7 @@
 import { isUndefined } from "lodash-es";
 import { NRadioGroup, NRadio, NTooltip } from "naive-ui";
 import { computed, onMounted, reactive, watch } from "vue";
-import { MonacoEditor } from "@/components/MonacoEditor/";
+import { MonacoEditor } from "@/components/MonacoEditor";
 import { useDatabaseV1Store, useProjectV1Store } from "@/store";
 import {
   DatabaseResource,

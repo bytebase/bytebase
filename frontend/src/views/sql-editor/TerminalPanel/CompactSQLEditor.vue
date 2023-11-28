@@ -44,15 +44,11 @@ import {
   checkEndsWithSemicolon,
 } from "./utils";
 
-const [
-  { default: MonacoEditor },
-  { formatEditorContent },
-  { useEditorContextKey },
-] = await Promise.all([
-  import("@/components/MonacoEditor/MonacoEditor.vue"),
-  import("@/components/MonacoEditor"),
-  import("@/components/MonacoEditor/utils"),
-]);
+const [{ MonacoEditor }, { useEditorContextKey, formatEditorContent }] =
+  await Promise.all([
+    import("@/components/MonacoEditor"),
+    import("@/components/MonacoEditor/utils"),
+  ]);
 
 const props = defineProps({
   sql: {
@@ -270,9 +266,9 @@ const handleEditorReady = (
 
   watch(
     () => sqlEditorStore.shouldFormatContent,
-    (shouldFormat) => {
+    async (shouldFormat) => {
       if (shouldFormat) {
-        formatEditorContent(editor, dialect.value);
+        await formatEditorContent(editor, dialect.value);
         sqlEditorStore.setShouldFormatContent(false);
       }
     },

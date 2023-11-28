@@ -24,13 +24,10 @@
 <script lang="ts" setup>
 import { computed, nextTick, ref, watch } from "vue";
 import {
-  AdviceOption,
-  IStandaloneCodeEditor,
-  MonacoEditor,
-  MonacoModule,
-  formatEditorContent,
+  type AdviceOption,
+  type IStandaloneCodeEditor,
+  type MonacoModule,
 } from "@/components/MonacoEditor";
-import { extensionNameOfLanguage } from "@/components/MonacoEditor/utils";
 import {
   useTabStore,
   useSQLEditorStore,
@@ -47,6 +44,12 @@ import {
 } from "@/types";
 import { formatEngineV1, useInstanceV1EditorLanguage } from "@/utils";
 import { useSQLEditorContext } from "../context";
+
+const [{ MonacoEditor }, { extensionNameOfLanguage, formatEditorContent }] =
+  await Promise.all([
+    import("@/components/MonacoEditor"),
+    import("@/components/MonacoEditor/utils"),
+  ]);
 
 const emit = defineEmits<{
   (
@@ -173,9 +176,9 @@ const handleEditorReady = (
 
   watch(
     () => sqlEditorStore.shouldFormatContent,
-    (shouldFormat) => {
+    async (shouldFormat) => {
       if (shouldFormat) {
-        formatEditorContent(editor, dialect.value);
+        await formatEditorContent(editor, dialect.value);
         sqlEditorStore.setShouldFormatContent(false);
       }
     },
