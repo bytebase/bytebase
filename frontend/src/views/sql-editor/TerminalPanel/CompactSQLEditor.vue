@@ -23,7 +23,7 @@
 </template>
 
 <script lang="ts" setup>
-import { editor as Editor } from "monaco-editor";
+import type { editor as Editor } from "monaco-editor";
 import { computed, nextTick, ref, toRef, watch } from "vue";
 import {
   IStandaloneCodeEditor,
