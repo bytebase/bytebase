@@ -2310,7 +2310,7 @@ func (s *SQLService) checkQueryRights(
 	}
 
 	for _, resource := range resourceList {
-		databaseResourceURL := fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, resource.Database)
+		databaseResourceURL := common.FormatDatabase(instance.ResourceID, resource.Database)
 		attributes := map[string]any{
 			"request.time":      time.Now(),
 			"resource.database": databaseResourceURL,

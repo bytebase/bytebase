@@ -1940,7 +1940,7 @@ func convertToDatabase(database *store.DatabaseMessage) *v1pb.Database {
 		effectiveEnvironment = fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, database.EffectiveEnvironmentID)
 	}
 	return &v1pb.Database{
-		Name:                 fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName),
+		Name:                 common.FormatDatabase(database.InstanceID, database.DatabaseName),
 		Uid:                  fmt.Sprintf("%d", database.UID),
 		SyncState:            syncState,
 		SuccessfulSyncTime:   timestamppb.New(time.Unix(database.SuccessfulSyncTimeTs, 0)),

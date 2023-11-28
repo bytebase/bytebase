@@ -75,7 +75,7 @@ func transformDeploymentConfigTargetToSteps(ctx context.Context, s *store.Store,
 				Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
 					ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
 						Type:            c.Type,
-						Target:          fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName),
+						Target:          common.FormatDatabase(database.InstanceID, database.DatabaseName),
 						Sheet:           c.Sheet,
 						SchemaVersion:   getOrDefaultSchemaVersion(c.SchemaVersion),
 						RollbackEnabled: c.RollbackEnabled,

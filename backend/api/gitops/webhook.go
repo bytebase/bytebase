@@ -1640,7 +1640,7 @@ func (s *Service) createIssueFromMigrationDetailsV2(ctx context.Context, project
 				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 						Type:          getChangeType(migrationDetail.migrationType),
-						Target:        fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName),
+						Target:        common.FormatDatabase(database.InstanceID, database.DatabaseName),
 						Sheet:         fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, migrationDetail.sheetID),
 						SchemaVersion: migrationDetail.schemaVersion.Version,
 					},
@@ -2184,7 +2184,7 @@ func (s *Service) tryUpdateTasksFromModifiedFile(ctx context.Context, databases 
 					if !ok {
 						continue
 					}
-					if v.ChangeDatabaseConfig.SchemaVersion == schemaVersion && v.ChangeDatabaseConfig.Target == fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName) {
+					if v.ChangeDatabaseConfig.SchemaVersion == schemaVersion && v.ChangeDatabaseConfig.Target == common.FormatDatabase(database.InstanceID, database.DatabaseName) {
 						v.ChangeDatabaseConfig.Sheet = fmt.Sprintf("projects/%s/sheets/%d", issue.Project.ResourceID, sheet.UID)
 					}
 				}

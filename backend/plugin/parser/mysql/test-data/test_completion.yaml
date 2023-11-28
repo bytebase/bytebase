@@ -1,3 +1,13 @@
+- input: SELECT * from t1 cc1 JOIN t2 on cc1.|
+  want:
+    - text: c1
+      type: COLUMN
+- input: SELECT MAX(cc1.|) FROM t2 cc1
+  want:
+    - text: c1
+      type: COLUMN
+    - text: c2
+      type: COLUMN
 - input: SELECT * FROM |
   want:
     - text: db
