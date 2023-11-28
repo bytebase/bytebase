@@ -1063,11 +1063,6 @@ func (q *querySpanExtractor) getRangeVarsFromJSONRecursive(jsonData map[string]a
 		// XXX(rebelice/zp): Can we pass more information here to make this function know the context and then
 		// figure out whether the table is the table the query actually accesses?
 
-		// User can access the system table/view by name directly without database/schema name.
-		// For example: `SELECT * FROM pg_database`, which will access the system table `pg_database`.
-		// Additionally, user can create a table/view with the same name with system table/view and access them
-		// by specify the schema name, for example:
-		// `CREATE TABLE pg_database(id INT); SELECT * FROM public.pg_database;` which will access the user table `pg_database`.
 		// Bytebase do not sync the system objects, so we skip finding for system objects in the metadata.
 		if msg := isSystemResource(resource); msg == "" {
 			// Backfill the default database/schema name.
@@ -1135,6 +1130,11 @@ func isMixedQuery(m base.SourceColumnSet) (allSystems bool, mixed error) {
 }
 
 func isSystemResource(resource base.ColumnResource) string {
+	// User can access the system table/view by name directly without database/schema name.
+	// For example: `SELECT * FROM pg_database`, which will access the system table `pg_database`.
+	// Additionally, user can create a table/view with the same name with system table/view and access them
+	// by specify the schema name, for example:
+	// `CREATE TABLE pg_database(id INT); SELECT * FROM public.pg_database;` which will access the user table `pg_database`.
 	if pg.IsSystemSchema(resource.Schema) {
 		return fmt.Sprintf("system schema %q", resource.Schema)
 	}
