@@ -26,9 +26,9 @@
 import { useElementSize } from "@vueuse/core";
 import { ref, watch } from "vue";
 import {
-  IStandaloneCodeEditor,
+  type IStandaloneCodeEditor,
+  type MonacoModule,
   MonacoEditor,
-  MonacoModule,
 } from "@/components/MonacoEditor";
 import UploadProgressButton from "@/components/misc/UploadProgressButton.vue";
 
