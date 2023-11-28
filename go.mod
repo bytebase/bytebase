@@ -11,6 +11,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.25.5
 	github.com/aws/aws-sdk-go-v2/credentials v1.16.4
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.87
+	github.com/aws/aws-sdk-go-v2/service/licensemanager v1.22.3
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.40.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bytebase/mysql-parser v0.0.0-20231117080012-40c25c7c076c
@@ -96,7 +97,6 @@ require (
 	github.com/antlr/antlr4/runtime/Go/antlr/v4 v4.0.0-20230512164433-5d1fd1a340c9 // indirect
 	github.com/apache/arrow/go/v12 v12.0.1 // indirect
 	github.com/apache/thrift v0.19.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/licensemanager v1.22.3 // indirect
 	github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc // indirect
 	github.com/danieljoos/wincred v1.2.0 // indirect
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
@@ -160,7 +160,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.15.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.17.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.20.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.25.4 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.25.4
 	github.com/aws/smithy-go v1.17.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
