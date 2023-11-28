@@ -1,6 +1,6 @@
 import { createLanguageServerWorker } from "@sql-lsp/server";
-import { ConnectionScope, Schema } from "@sql-lsp/types";
-import { MonacoLanguageClient } from "monaco-languageclient";
+import type { ConnectionScope, Schema } from "@sql-lsp/types";
+import type { MonacoLanguageClient } from "monaco-languageclient";
 import type { ExecuteCommandParams } from "vscode-languageclient";
 import type { SQLDialect } from "@/types";
 import { createLanguageClient } from "./createLanguageClient";
