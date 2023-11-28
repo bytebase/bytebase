@@ -25,7 +25,7 @@
       code: 813
       title: index.total-number-limit
       content: The count of index in table `tech_book` should be no more than 5, but found 8
-      line: 6
+      line: 4
       details: ""
 - statement: |-
     CREATE TABLE t(a int PRIMARY KEY, b int, c int);
@@ -39,7 +39,7 @@
       code: 813
       title: index.total-number-limit
       content: The count of index in table `t` should be no more than 5, but found 6
-      line: 7
+      line: 5
       details: ""
 - statement: |-
     CREATE TABLE t(
@@ -56,5 +56,5 @@
       code: 813
       title: index.total-number-limit
       content: The count of index in table `t` should be no more than 5, but found 6
-      line: 10
+      line: 8
       details: ""
