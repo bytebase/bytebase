@@ -11,6 +11,8 @@ import {
 import {
   SchemaMetadata,
   DatabaseMetadataView,
+  TableMetadata,
+  TablePartitionMetadata,
 } from "@/types/proto/v1/database_service";
 
 const createDummyNode = (
@@ -53,14 +55,88 @@ const mapTableNodes = (
   schema: SchemaMetadata,
   parent: SQLEditorTreeNode
 ) => {
-  const children = schema.tables.map((table) =>
-    mapTreeNodeByType("table", { database, schema, table }, parent)
-  );
+  const children = schema.tables.map((table) => {
+    const node = mapTreeNodeByType(
+      "table",
+      { database, schema, table },
+      parent
+    );
+
+    // Map table-level partitions.
+    if (table.partitions.length > 0) {
+      node.isLeaf = false;
+      node.children = [];
+      for (const partition of table.partitions) {
+        const subnode = mapTreeNodeByType(
+          "partition-table",
+          { database, schema, table, partition },
+          node
+        );
+        if (partition.subpartitions.length > 0) {
+          subnode.isLeaf = false;
+          subnode.children = mapPartitionTableNodes(
+            database,
+            schema,
+            table,
+            partition,
+            subnode
+          );
+        } else {
+          subnode.isLeaf = true;
+        }
+        node.children.push(subnode);
+      }
+    } else {
+      node.isLeaf = true;
+    }
+    return node;
+  });
   if (children.length === 0) {
     return [createDummyNode("table", parent)];
   }
   return children;
 };
+
+// Map partition-table-level partitions.
+const mapPartitionTableNodes = (
+  database: ComposedDatabase,
+  schema: SchemaMetadata,
+  table: TableMetadata,
+  parentPartition: TablePartitionMetadata,
+  parent: SQLEditorTreeNode
+) => {
+  const children = parentPartition.subpartitions.map((partition) => {
+    const node = mapTreeNodeByType(
+      "partition-table",
+      {
+        database,
+        schema,
+        table,
+        parentPartition,
+        partition: partition,
+      },
+      parent
+    );
+    if (partition.subpartitions.length > 0) {
+      node.isLeaf = false;
+      node.children = mapPartitionTableNodes(
+        database,
+        schema,
+        table,
+        partition,
+        node
+      );
+    } else {
+      node.isLeaf = true;
+    }
+    return node;
+  });
+  if (children.length === 0) {
+    return [createDummyNode("table", parent)];
+  }
+  return children;
+};
+
 const mapViewNodes = (
   database: ComposedDatabase,
   schema: SchemaMetadata,
