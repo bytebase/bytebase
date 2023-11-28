@@ -4,13 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
 
 	"log/slog"
 
 	pgquery "github.com/pganalyze/pg_query_go/v4"
-	tidbparser "github.com/pingcap/tidb/parser"
-	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -19,10 +16,11 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
-	"github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -135,7 +133,7 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, conf
 		defer driver.Close(ctx)
 		sqlDB := driver.GetDB()
 
-		return reportForMySQL(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema.GetMetadata())
+		return reportForMySQL(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema)
 	case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
 		schema := ""
 		if instance.Options == nil || !instance.Options.SchemaTenantMode {
@@ -292,7 +290,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 					defer driver.Close(ctx)
 					sqlDB := driver.GetDB()
 
-					return reportForMySQL(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema.GetMetadata())
+					return reportForMySQL(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema)
 				case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
 					schema := ""
 					if instance.Options == nil || !instance.Options.SchemaTenantMode {
@@ -384,10 +382,7 @@ func reportForOracle(databaseName string, schemaName string, statement string) (
 	}, nil
 }
 
-func reportForMySQL(ctx context.Context, sqlDB *sql.DB, engine storepb.Engine, databaseName string, statement string, dbMetadata *storepb.DatabaseSchemaMetadata) ([]*storepb.PlanCheckRunResult_Result, error) {
-	charset := dbMetadata.CharacterSet
-	collation := dbMetadata.Collation
-
+func reportForMySQL(ctx context.Context, sqlDB *sql.DB, engine storepb.Engine, databaseName string, statement string, dbMetadata *model.DBSchema) ([]*storepb.PlanCheckRunResult_Result, error) {
 	singleSQLs, err := base.SplitMultiSQL(engine, statement)
 	if err != nil {
 		// nolint:nilerr
@@ -410,42 +405,34 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, engine storepb.Engine, d
 	var totalAffectedRows int64
 	var changedResources []base.SchemaResource
 
-	p := tidbparser.New()
-	p.EnableWindowFunc(true)
-
 	for _, stmt := range singleSQLs {
-		if stmt.Empty {
+		if stmt.Empty || stmt.Text == "" {
 			continue
 		}
-		if tidb.IsTiDBUnsupportDDLStmt(stmt.Text) {
-			continue
-		}
-		root, _, err := p.Parse(stmt.Text, charset, collation)
+
+		stmts, err := mysqlparser.ParseMySQL(statement)
 		if err != nil {
 			slog.Error("failed to parse statement", slog.String("statement", stmt.Text), log.BBError(err))
 			continue
 		}
 
-		if len(root) != 1 {
+		if len(stmts) != 1 {
 			slog.Debug("failed to parse statement, expect to get one node from parser", slog.String("statement", stmt.Text))
 			continue
 		}
-		sqlType, resources := getStatementTypeFromTidbAstNode(strings.ToLower(databaseName), root[0])
+
+		sqlType := mysqlparser.GetStatementType(stmts[0])
 		sqlTypeSet[sqlType] = struct{}{}
 		if !isDML(sqlType) {
-			if engine != storepb.Engine_TIDB {
-				resources, err := base.ExtractChangedResources(storepb.Engine_MYSQL, databaseName, "" /* currentSchema */, stmt.Text)
-				if err != nil {
-					slog.Error("failed to get statement changed resources", log.BBError(err))
-				} else {
-					changedResources = append(changedResources, resources...)
-				}
+			resources, err := base.ExtractChangedResources(storepb.Engine_MYSQL, databaseName, "" /* currentSchema */, stmt.Text)
+			if err != nil {
+				slog.Error("failed to extract changed resources", slog.String("statement", stmt.Text), log.BBError(err))
 			} else {
 				changedResources = append(changedResources, resources...)
 			}
 		}
 
-		affectedRows, err := getAffectedRowsForMysql(ctx, engine, sqlDB, dbMetadata, root[0])
+		affectedRows, err := base.GetAffectedRows(ctx, engine, stmts[0], buildGetRowsCountByQueryForMySQL(sqlDB, engine), buildGetTableDataSizeFuncForMySQL(dbMetadata))
 		if err != nil {
 			slog.Error("failed to get affected rows for mysql", slog.String("database", databaseName), log.BBError(err))
 		} else {
@@ -457,7 +444,6 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, engine storepb.Engine, d
 	for sqlType := range sqlTypeSet {
 		sqlTypes = append(sqlTypes, sqlType)
 	}
-
 	return []*storepb.PlanCheckRunResult_Result{
 		{
 			Status: storepb.PlanCheckRunResult_Result_SUCCESS,
@@ -694,113 +680,6 @@ func convertColumnName(node *pgquery.Node_List) (string, string, string, error) 
 	default:
 		return "", "", "", errors.Errorf("expect to get 2 or 3 items but got %d", len(list))
 	}
-}
-
-func getStatementTypeFromTidbAstNode(database string, node tidbast.StmtNode) (string, []base.SchemaResource) {
-	var result []base.SchemaResource
-	switch n := node.(type) {
-	// DDL
-
-	// CREATE
-	case *tidbast.CreateDatabaseStmt:
-		return "CREATE_DATABASE", result
-	case *tidbast.CreateIndexStmt:
-		return "CREATE_INDEX", result
-	case *tidbast.CreateTableStmt:
-		resource := base.SchemaResource{
-			Database: n.Table.Schema.L,
-			Table:    n.Table.Name.L,
-		}
-		if resource.Database == "" {
-			resource.Database = database
-		}
-		result = append(result, resource)
-		return "CREATE_TABLE", result
-	case *tidbast.CreateViewStmt:
-		return "CREATE_VIEW", result
-	case *tidbast.CreateSequenceStmt:
-		return "CREATE_SEQUENCE", result
-	case *tidbast.CreatePlacementPolicyStmt:
-		return "CREATE_PLACEMENT_POLICY", result
-
-	// DROP
-	case *tidbast.DropIndexStmt:
-		return "DROP_INDEX", result
-	case *tidbast.DropTableStmt:
-		for _, table := range n.Tables {
-			resource := base.SchemaResource{
-				Database: table.Schema.L,
-				Table:    table.Name.L,
-			}
-			if resource.Database == "" {
-				resource.Database = database
-			}
-			result = append(result, resource)
-		}
-		return "DROP_TABLE", result
-	case *tidbast.DropSequenceStmt:
-		return "DROP_SEQUENCE", result
-	case *tidbast.DropPlacementPolicyStmt:
-		return "DROP_PLACEMENT_POLICY", result
-	case *tidbast.DropDatabaseStmt:
-		return "DROP_DATABASE", result
-
-	// ALTER
-	case *tidbast.AlterTableStmt:
-		resource := base.SchemaResource{
-			Database: n.Table.Schema.L,
-			Table:    n.Table.Name.L,
-		}
-		if resource.Database == "" {
-			resource.Database = database
-		}
-		result = append(result, resource)
-		return "ALTER_TABLE", result
-	case *tidbast.AlterSequenceStmt:
-		return "ALTER_SEQUENCE", result
-	case *tidbast.AlterPlacementPolicyStmt:
-		return "ALTER_PLACEMENT_POLICY", result
-
-	// TRUNCATE
-	case *tidbast.TruncateTableStmt:
-		return "TRUNCATE", result
-
-	// RENAME
-	case *tidbast.RenameTableStmt:
-		for _, pair := range n.TableToTables {
-			resource := base.SchemaResource{
-				Database: pair.OldTable.Schema.L,
-				Table:    pair.OldTable.Name.L,
-			}
-			if resource.Database == "" {
-				resource.Database = database
-			}
-			result = append(result, resource)
-
-			newResource := base.SchemaResource{
-				Database: pair.NewTable.Schema.L,
-				Table:    pair.NewTable.Name.L,
-			}
-			if newResource.Database == "" {
-				newResource.Database = resource.Database
-			}
-			result = append(result, newResource)
-		}
-		return "RENAME_TABLE", result
-
-	// DML
-
-	case *tidbast.InsertStmt:
-		if n.IsReplace {
-			return "REPLACE", result
-		}
-		return "INSERT", result
-	case *tidbast.DeleteStmt:
-		return "DELETE", result
-	case *tidbast.UpdateStmt:
-		return "UPDATE", result
-	}
-	return "UNKNOWN", result
 }
 
 func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.Node) (string, []base.SchemaResource) {
