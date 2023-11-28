@@ -63,8 +63,10 @@ func buildGetRowsCountByQuery(sqlDB *sql.DB, engine storepb.Engine) base.GetAffe
 		switch engine {
 		case storepb.Engine_OCEANBASE:
 			return getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN FORMAT=JSON %s", statement), getAffectedRowsCountForOceanBase)
-		default:
+		case storepb.Engine_MYSQL, storepb.Engine_MARIADB:
 			return getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN %s", statement), getAffectedRowsCountForMysql)
+		default:
+			return 0, nil
 		}
 	}
 }
