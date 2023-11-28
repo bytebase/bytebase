@@ -7,7 +7,9 @@ import "monaco-editor/esm/vs/editor/editor.all.js";
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
 import "monaco-editor/esm/vs/editor/standalone/browser/standaloneCodeEditorService";
 import "monaco-editor/esm/vs/language/typescript/monaco.contribution.js";
+import { useLanguageClient } from "@/plugins/sql-lsp/client";
 import { defer } from "@/utils";
+import { StoredLSPType } from "./dev";
 import { initializeLSPClient } from "./lsp-client";
 import { initializeMonacoServices } from "./services";
 import { getBBTheme } from "./themes/bb";
@@ -41,7 +43,12 @@ const initializeTheme = () => {
 
 const initialize = async () => {
   await initializeMonacoServices();
-  await initializeLSPClient();
+  if (StoredLSPType.value === "NEW") {
+    await initializeLSPClient();
+  } else {
+    const { start } = useLanguageClient();
+    start();
+  }
 
   initializeTheme();
 };

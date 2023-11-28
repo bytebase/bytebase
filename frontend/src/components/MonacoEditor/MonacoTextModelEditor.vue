@@ -21,6 +21,7 @@ import {
   watch,
   watchEffect,
 } from "vue";
+import { useLegacyAutoComplete } from "@/plugins/sql-lsp/client";
 import type { SQLDialect } from "@/types";
 import {
   type AutoCompleteContext,
@@ -36,6 +37,7 @@ import {
   useSelectedContent,
   useSuggestOptionByLanguage,
 } from "./composables";
+import { StoredLSPType } from "./dev";
 import type { AdviceOption, MonacoModule } from "./types";
 
 const props = withDefaults(
@@ -109,7 +111,15 @@ onMounted(async () => {
     const selectedContent = useSelectedContent(monaco, editor);
     useAdvices(monaco, editor, toRef(props, "advices"));
     useAutoHeight(monaco, editor, containerRef, toRef(props, "autoHeight"));
-    useAutoComplete(monaco, editor, toRef(props, "autoCompleteContext"));
+    if (StoredLSPType.value === "NEW") {
+      useAutoComplete(monaco, editor, toRef(props, "autoCompleteContext"));
+    } else {
+      useLegacyAutoComplete(
+        monaco,
+        editor,
+        toRef(props, "autoCompleteContext")
+      );
+    }
 
     ready.value = true;
 

@@ -98,6 +98,9 @@
         </a>
       </div>
       <div class="border-t border-gray-100"></div>
+      <div v-if="isDev" class="py-1 menu-item">
+        <LSPTypeSwitch />
+      </div>
       <div v-if="allowToggleDebug" class="py-1 menu-item">
         <div class="flex flex-row items-center space-x-2 justify-between">
           <span>Debug</span>
@@ -119,6 +122,7 @@ import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { BBContextMenu, BBSwitch } from "@/bbkit";
+import { LSPTypeSwitch } from "@/components/MonacoEditor/dev";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import { useLanguage } from "@/composables/useLanguage";
 import {
