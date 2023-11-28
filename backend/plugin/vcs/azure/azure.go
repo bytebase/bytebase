@@ -11,12 +11,12 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
-	"golang.org/x/exp/slices"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
@@ -505,8 +505,8 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx *common.
 	}
 
 	// Sort result by FullPath.
-	slices.SortFunc[*vcs.Repository](result, func(i, j *vcs.Repository) bool {
-		return i.FullPath < j.FullPath
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].FullPath < result[j].FullPath
 	})
 
 	return result, nil

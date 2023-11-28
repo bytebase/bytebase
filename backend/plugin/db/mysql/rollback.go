@@ -10,8 +10,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/pingcap/tidb/parser"
-	"github.com/pingcap/tidb/parser/ast"
+	"github.com/pingcap/tidb/pkg/parser"
+	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
