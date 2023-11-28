@@ -1,10 +1,11 @@
-import { EngineTypesUsingSQL, LanguageState } from "@sql-lsp/types";
-import {
+import type { LanguageState } from "@sql-lsp/types";
+import type {
   InitializeResult,
   CompletionParams,
-  CompletionTriggerKind,
   CompletionItem,
 } from "vscode-languageserver/browser";
+import { CompletionTriggerKind } from "vscode-languageserver/browser";
+import { EngineTypesUsingSQL } from "@/types/sqlEditor";
 import { complete } from "./complete";
 import { initializeConnection } from "./initializeConnection";
 

@@ -29,11 +29,10 @@
       <span class="flex items-center textlabel mb-2">SQL</span>
       <div class="w-full border rounded">
         <MonacoEditor
-          class="w-full h-[300px] py-2"
-          readonly
-          :value="state.statement"
+          class="w-full h-[300px]"
+          :content="state.statement"
           :auto-focus="false"
-          :language="'sql'"
+          :readonly="true"
         />
       </div>
     </div>
@@ -59,7 +58,7 @@
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { computed, onMounted, reactive, ref } from "vue";
-import MonacoEditor from "@/components/MonacoEditor";
+import { MonacoEditor } from "@/components/MonacoEditor";
 import { PresetRoleType } from "@/types";
 import { DatabaseResource } from "@/types";
 import { convertFromCELString } from "@/utils/issue/cel";

@@ -6,7 +6,8 @@ import type {
   TableNode,
 } from "@joe-re/sql-parser";
 import { parseFromClause } from "@joe-re/sql-parser";
-import type { Column, SQLDialect, Table } from "@/plugins/sql-lsp/types";
+import type { Column, Table } from "@/plugins/sql-lsp/types";
+import type { SQLDialect } from "@/types";
 import { isDialectWithSchema } from "./common";
 
 export const getFromClauses = (sql: string) => {

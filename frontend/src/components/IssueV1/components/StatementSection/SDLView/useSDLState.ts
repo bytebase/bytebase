@@ -3,6 +3,7 @@ import { computed, reactive, watch } from "vue";
 import { sqlServiceClient } from "@/grpcweb";
 import { useSilentRequest } from "@/plugins/silent-request";
 import { useChangeHistoryStore, useDatabaseV1Store } from "@/store";
+import { ChangeHistoryView } from "@/types/proto/v1/database_service";
 import {
   Task,
   TaskRun_Status,
@@ -123,6 +124,7 @@ export const useSDLState = () => {
     const history = await useChangeHistoryStore().fetchChangeHistory({
       name: changeHistoryName,
       sdlFormat: true,
+      view: ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL,
     });
     // The latestChangeHistoryName might change during fetching the
     // ChangeHistory.

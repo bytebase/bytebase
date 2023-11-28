@@ -17,17 +17,21 @@
         :data-height="queryListHeight"
       >
         <div v-for="query in queryList" :key="query.id" class="relative">
-          <CompactSQLEditor
-            v-model:sql="query.sql"
-            class="min-h-[2rem]"
-            :class="[
-              isEditableQueryItem(query) ? 'active-editor' : 'read-only-editor',
-            ]"
-            :readonly="!isEditableQueryItem(query)"
-            @execute="handleExecute"
-            @history="handleHistory"
-            @clear-screen="handleClearScreen"
-          />
+          <Suspense>
+            <CompactSQLEditor
+              v-model:sql="query.sql"
+              class="min-h-[2rem]"
+              :class="[
+                isEditableQueryItem(query)
+                  ? 'active-editor'
+                  : 'read-only-editor',
+              ]"
+              :readonly="!isEditableQueryItem(query)"
+              @execute="handleExecute"
+              @history="handleHistory"
+              @clear-screen="handleClearScreen"
+            />
+          </Suspense>
           <ResultViewV1
             v-if="query.params && query.resultSet"
             class="max-h-[20rem] flex-1 flex flex-col overflow-hidden"

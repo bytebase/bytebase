@@ -1,47 +1,57 @@
 <template>
-  <div class="whitespace-pre-wrap w-full overflow-hidden compact-sql-editor">
+  <div class="whitespace-pre-wrap w-full overflow-hidden bb-compact-sql-editor">
     <MonacoEditor
-      ref="editorRef"
-      class="w-full h-auto max-h-[360px]"
-      :value="sql"
-      :language="selectedLanguage"
-      :dialect="selectedDialect"
+      class="w-full h-auto"
+      :style="{
+        'min-height': `${MIN_EDITOR_HEIGHT}px`,
+        'max-height': `${MAX_EDITOR_HEIGHT}px`,
+      }"
+      :content="sql"
+      :language="language"
+      :dialect="dialect"
       :readonly="readonly"
       :options="EDITOR_OPTIONS"
-      @change="handleChange"
-      @change-selection="handleChangeSelection"
+      :auto-height="{
+        min: MIN_EDITOR_HEIGHT,
+        max: MAX_EDITOR_HEIGHT,
+      }"
+      @update:content="handleChange"
+      @select-content="handleChangeSelection"
       @ready="handleEditorReady"
     />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { editor as Editor } from "monaco-editor";
-import { computed, nextTick, ref, watch, watchEffect } from "vue";
-import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
+import type { editor as Editor } from "monaco-editor";
+import { computed, nextTick, ref, toRef, watch } from "vue";
+import type {
+  IStandaloneCodeEditor,
+  MonacoModule,
+} from "@/components/MonacoEditor";
+import { useTabStore, useSQLEditorStore, useInstanceV1ByUID } from "@/store";
 import {
-  useTabStore,
-  useSQLEditorStore,
-  useDBSchemaV1Store,
-  useDatabaseV1Store,
-  useInstanceV1ByUID,
-} from "@/store";
-import {
-  ComposedDatabase,
   dialectOfEngineV1,
   ExecuteConfig,
   ExecuteOption,
   SQLDialect,
-  UNKNOWN_ID,
 } from "@/types";
-import { TableMetadata } from "@/types/proto/v1/database_service";
 import { formatEngineV1, useInstanceV1EditorLanguage } from "@/utils";
-import {
-  checkCursorAtFirstLine,
-  checkCursorAtLast,
-  checkCursorAtLastLine,
-  checkEndsWithSemicolon,
-} from "./utils";
+
+const [
+  { default: MonacoEditor },
+  { useEditorContextKey, formatEditorContent },
+  {
+    checkCursorAtFirstLine,
+    checkCursorAtLast,
+    checkCursorAtLastLine,
+    checkEndsWithSemicolon,
+  },
+] = await Promise.all([
+  import("@/components/MonacoEditor/MonacoEditor.vue"),
+  import("@/components/MonacoEditor/utils"),
+  import("./utils"),
+]);
 
 const props = defineProps({
   sql: {
@@ -67,28 +77,20 @@ const emit = defineEmits<{
 }>();
 
 const MIN_EDITOR_HEIGHT = 40; // ~= 1 line
+const MAX_EDITOR_HEIGHT = 360; // ~= 2 lines
 
 const tabStore = useTabStore();
-const databaseStore = useDatabaseV1Store();
-const dbSchemaStore = useDBSchemaV1Store();
 const sqlEditorStore = useSQLEditorStore();
 
-const editorRef = ref<InstanceType<typeof MonacoEditor>>();
-
-const { instance: selectedInstance } = useInstanceV1ByUID(
+const { instance } = useInstanceV1ByUID(
   computed(() => tabStore.currentTab.connection.instanceId)
 );
-const selectedDatabase = computed(() => {
-  const id = tabStore.currentTab.connection.databaseId;
-  if (id === String(UNKNOWN_ID)) return undefined;
-  return databaseStore.getDatabaseByUID(id);
+const instanceEngine = computed(() => {
+  return formatEngineV1(instance.value);
 });
-const selectedInstanceEngine = computed(() => {
-  return formatEngineV1(selectedInstance.value);
-});
-const selectedLanguage = useInstanceV1EditorLanguage(selectedInstance);
-const selectedDialect = computed((): SQLDialect => {
-  const engine = selectedInstance.value.engine;
+const language = useInstanceV1EditorLanguage(instance);
+const dialect = computed((): SQLDialect => {
+  const engine = instance.value.engine;
   return dialectOfEngineV1(engine);
 });
 const currentTabId = computed(() => tabStore.currentTabId);
@@ -101,18 +103,8 @@ watch(currentTabId, () => {
   });
 });
 
-watch(
-  () => sqlEditorStore.shouldFormatContent,
-  async () => {
-    if (sqlEditorStore.shouldFormatContent) {
-      await editorRef.value?.formatEditorContent();
-      sqlEditorStore.setShouldFormatContent(false);
-    }
-  }
-);
-
 const firstLinePrompt = computed(() => {
-  const lang = selectedLanguage.value;
+  const lang = language.value;
   if (lang === "javascript") return "MONGO>";
   if (lang === "redis") return "REDIS>";
   return "SQL>";
@@ -143,7 +135,6 @@ const handleChange = (value: string) => {
   });
 
   emit("update:sql", value);
-  updateEditorHeight();
 };
 
 const handleChangeSelection = (value: string) => {
@@ -152,52 +143,42 @@ const handleChangeSelection = (value: string) => {
   });
 };
 
-const handleEditorReady = async () => {
-  const monaco = await import("monaco-editor");
-  const editor = editorRef.value?.editorInstance;
-  const readonly = editor?.createContextKey<boolean>(
-    "readonly",
-    props.readonly
+const execute = (explain = false) => {
+  emit(
+    "execute",
+    props.sql,
+    { databaseType: instanceEngine.value },
+    { explain }
   );
-  watch(
-    () => props.readonly,
-    () => readonly?.set(props.readonly)
-  );
+};
 
-  editor?.addAction({
+const handleEditorReady = (
+  monaco: MonacoModule,
+  editor: IStandaloneCodeEditor
+) => {
+  useEditorContextKey(editor, "readonly", toRef(props, "readonly"));
+
+  editor.addAction({
     id: "RunQuery",
     label: "Run Query",
     keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
     contextMenuGroupId: "operation",
     contextMenuOrder: 0,
     precondition: "!readonly",
-    run: async () => {
-      emit("execute", props.sql, {
-        databaseType: selectedInstanceEngine.value,
-      });
-    },
+    run: () => execute(false),
   });
 
-  editor?.addAction({
+  editor.addAction({
     id: "ExplainQuery",
     label: "Explain Query",
     keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyE],
     contextMenuGroupId: "operation",
     contextMenuOrder: 1,
     precondition: "!readonly",
-    run: async () => {
-      emit(
-        "execute",
-        props.sql,
-        {
-          databaseType: selectedInstanceEngine.value,
-        },
-        { explain: true }
-      );
-    },
+    run: () => execute(true),
   });
 
-  editor?.addAction({
+  editor.addAction({
     id: "ClearScreen",
     label: "Clear Screen",
     keybindings: [
@@ -206,29 +187,29 @@ const handleEditorReady = async () => {
     contextMenuGroupId: "operation",
     contextMenuOrder: 3,
     precondition: "!readonly",
-    run: () => {
-      emit("clear-screen");
-    },
+    run: () => emit("clear-screen"),
   });
 
   // Create an editor context value to check if the SQL ends with semicolon ";"
-  const endsWithSemicolon = editor?.createContextKey<boolean>(
+  const endsWithSemicolon = useEditorContextKey(
+    editor,
     "endsWithSemicolon",
     checkEndsWithSemicolon(editor)
   );
-  editor?.onDidChangeModelContent(() => {
-    endsWithSemicolon?.set(checkEndsWithSemicolon(editor));
+  editor.onDidChangeModelContent(() => {
+    endsWithSemicolon.set(checkEndsWithSemicolon(editor));
   });
   // Another editor context value to check if the cursor is at the end of the
   // editor.
-  const cursorAtLast = editor?.createContextKey<boolean>(
+  const cursorAtLast = useEditorContextKey(
+    editor,
     "cursorAtLast",
     checkCursorAtLast(editor)
   );
-  editor?.onDidChangeCursorPosition(() => {
-    cursorAtLast?.set(checkCursorAtLast(editor));
+  editor.onDidChangeCursorPosition(() => {
+    cursorAtLast.set(checkCursorAtLast(editor));
   });
-  editor?.addCommand(
+  editor.addCommand(
     monaco.KeyCode.Enter,
     () => {
       // When
@@ -236,30 +217,30 @@ const handleEditorReady = async () => {
       // - and the cursor is at the end of the editor
       // - then press "Enter"
       // We trigger the "execute" event
-      emit("execute", props.sql, {
-        databaseType: selectedInstanceEngine.value,
-      });
+      execute(false);
     },
     // Tell the editor this should be only
     // triggered when both of the two conditions are satisfied.
     "!readonly && endsWithSemicolon && cursorAtLast && editorTextFocus && !suggestWidgetVisible && !renameInputVisible && !inSnippetMode && !quickFixWidgetVisible"
   );
 
-  const cursorAtFirstLine = editor?.createContextKey<boolean>(
+  const cursorAtFirstLine = useEditorContextKey(
+    editor,
     "cursorAtFirstLine",
     checkCursorAtFirstLine(editor)
   );
-  const cursorAtLastLine = editor?.createContextKey<boolean>(
+  const cursorAtLastLine = useEditorContextKey(
+    editor,
     "cursorAtLastLine",
     checkCursorAtLastLine(editor)
   );
-  editor?.onDidChangeCursorPosition(() => {
+  editor.onDidChangeCursorPosition(() => {
     cursorAtFirstLine?.set(checkCursorAtFirstLine(editor));
   });
-  editor?.onDidChangeCursorPosition(() => {
+  editor.onDidChangeCursorPosition(() => {
     cursorAtLastLine?.set(checkCursorAtLastLine(editor));
   });
-  editor?.addCommand(
+  editor.addCommand(
     monaco.KeyCode.UpArrow,
     () => {
       // When
@@ -272,7 +253,7 @@ const handleEditorReady = async () => {
     // triggered when both of the two conditions are satisfied.
     "!readonly && cursorAtFirstLine && editorTextFocus && !suggestWidgetVisible && !renameInputVisible && !inSnippetMode && !quickFixWidgetVisible"
   );
-  editor?.addCommand(
+  editor.addCommand(
     monaco.KeyCode.DownArrow,
     () => {
       // When
@@ -286,38 +267,18 @@ const handleEditorReady = async () => {
     "!readonly && cursorAtLastLine && editorTextFocus && !suggestWidgetVisible && !renameInputVisible && !inSnippetMode && !quickFixWidgetVisible"
   );
 
-  watchEffect(async () => {
-    if (selectedInstance.value) {
-      const databaseMap: Map<ComposedDatabase, TableMetadata[]> = new Map();
-      const databaseList = selectedDatabase.value
-        ? [selectedDatabase.value]
-        : databaseStore.databaseListByInstance(selectedInstance.value.name);
-      // Only provide auto-complete context for those opened database.
-      for (const database of databaseList) {
-        const tableList = dbSchemaStore.getTableList(database.name);
-        if (tableList.length > 0) {
-          databaseMap.set(database, tableList);
-        }
+  watch(
+    () => sqlEditorStore.shouldFormatContent,
+    async (shouldFormat) => {
+      if (shouldFormat) {
+        await formatEditorContent(editor, dialect.value);
+        sqlEditorStore.setShouldFormatContent(false);
       }
-      const connectionScope = selectedDatabase.value ? "database" : "instance";
-      editorRef.value?.setEditorAutoCompletionContextV1(
-        databaseMap,
-        connectionScope
-      );
+    },
+    {
+      immediate: true,
     }
-  });
-
-  updateEditorHeight();
-};
-
-const updateEditorHeight = () => {
-  const contentHeight =
-    editorRef.value?.editorInstance?.getContentHeight() as number;
-  let actualHeight = contentHeight;
-  if (actualHeight < MIN_EDITOR_HEIGHT) {
-    actualHeight = MIN_EDITOR_HEIGHT;
-  }
-  editorRef.value?.setEditorContentHeight(actualHeight);
+  );
 };
 
 const EDITOR_OPTIONS = computed<Editor.IStandaloneEditorConstructionOptions>(
@@ -338,14 +299,10 @@ const EDITOR_OPTIONS = computed<Editor.IStandaloneEditorConstructionOptions>(
     cursorStyle: "block",
   })
 );
-watch(
-  firstLinePrompt,
-  (prompt) => (EDITOR_OPTIONS.value.lineNumbersMinChars = prompt.length + 1)
-);
 </script>
 
-<style lang="postcss">
-.compact-sql-editor .monaco-editor .line-numbers {
-  @apply pr-0;
+<style lang="postcss" scoped>
+.bb-compact-sql-editor :deep(.monaco-editor .line-numbers) {
+  @apply !pr-0;
 }
 </style>

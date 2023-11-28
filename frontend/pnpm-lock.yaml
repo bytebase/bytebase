@@ -8,9 +8,6 @@ dependencies:
   '@bytebase/vue-kbar':
     specifier: 0.1.8
     version: 0.1.8(vue@3.2.47)
-  '@codingame/monaco-vscode-api':
-    specifier: 1.69.12
-    version: 1.69.12(vscode-oniguruma@1.6.2)(vscode-textmate@7.0.4)
   '@joe-re/sql-parser':
     specifier: ^1.7.0
     version: 1.7.0
@@ -108,11 +105,14 @@ dependencies:
     specifier: ^3.17.0
     version: 3.17.0(dayjs@1.11.9)(libphonenumber-js@1.10.47)(typescript@5.2.2)(vue-router@4.2.4)(vue@3.2.47)
   monaco-editor:
-    specifier: 0.34.1
-    version: 0.34.1
+    specifier: 0.44.0
+    version: 0.44.0
+  monaco-editor-workers:
+    specifier: 0.44.0
+    version: 0.44.0(monaco-editor@0.44.0)
   monaco-languageclient:
-    specifier: 4.0.1
-    version: 4.0.1(vscode-oniguruma@1.6.2)(vscode-textmate@7.0.4)
+    specifier: 7.0.0
+    version: 7.0.0(@codingame/monaco-vscode-api@1.83.5)(monaco-editor@0.44.0)
   naive-ui:
     specifier: 2.35.0
     version: 2.35.0(vue@3.2.47)
@@ -179,6 +179,12 @@ dependencies:
   vdirs:
     specifier: ^0.1.8
     version: 0.1.8(vue@3.2.47)
+  vscode:
+    specifier: npm:@codingame/monaco-vscode-api@1.83.5
+    version: /@codingame/monaco-vscode-api@1.83.5
+  vscode-languageclient:
+    specifier: 9.0.1
+    version: 9.0.1
   vscode-languageserver:
     specifier: 8.0.2
     version: 8.0.2
@@ -191,6 +197,9 @@ dependencies:
   vscode-languageserver-types:
     specifier: 3.17.3
     version: 3.17.3
+  vscode-ws-jsonrpc:
+    specifier: 3.0.0
+    version: 3.0.0
   vue:
     specifier: 3.2.47
     version: 3.2.47
@@ -286,6 +295,9 @@ devDependencies:
   '@types/uuid':
     specifier: 9.0.6
     version: 9.0.6
+  '@types/vscode':
+    specifier: 1.84.1
+    version: 1.84.1
   '@typescript-eslint/eslint-plugin':
     specifier: 6.7.3
     version: 6.7.3(@typescript-eslint/parser@6.7.3)(eslint@8.49.0)(typescript@5.2.2)
@@ -370,12 +382,6 @@ devDependencies:
   vitest:
     specifier: 0.34.4
     version: 0.34.4
-  vscode-oniguruma:
-    specifier: 1.6.2
-    version: 1.6.2
-  vscode-textmate:
-    specifier: 7.0.4
-    version: 7.0.4
   vue-i18n:
     specifier: 9.4.1
     version: 9.4.1(vue@3.2.47)
@@ -559,15 +565,32 @@ packages:
     bundledDependencies:
       - is-unicode-supported
 
-  /@codingame/monaco-vscode-api@1.69.12(vscode-oniguruma@1.6.2)(vscode-textmate@7.0.4):
-    resolution: {integrity: sha512-ES1xRnU232t82tcdM2ImikkjGfAMgJtrF0XkLa4poEnvcUH0SFqUhYvcqk5CFggQWh16jqxifVvozcu0/mbH7A==}
-    peerDependencies:
-      vscode-oniguruma: ^1.6.2
-      vscode-textmate: ^7.0.1
+  /@codingame/monaco-vscode-api@1.83.5:
+    resolution: {integrity: sha512-HWmI3e2LooNkJG7AB5KYkzqkFma6G7tlk8QO6RI54HykazMQEFNpOEkrnS9UJHGsvpT+1hDCtIkufalLdxqMzA==}
+    hasBin: true
     dependencies:
-      monaco-editor: 0.34.1
-      vscode-oniguruma: 1.6.2
-      vscode-textmate: 7.0.4
+      monaco-editor: 0.44.0
+    dev: false
+
+  /@codingame/monaco-vscode-editor-service-override@1.83.5:
+    resolution: {integrity: sha512-MORmlcfBHmhHmnkXq6jAH9uB4N08RIgFGOC2gpySgCMWpD0dHd/hsJdJNS39FSRpbPj69gbaZvDW4daKvJABrA==}
+    dependencies:
+      monaco-editor: 0.44.0
+      vscode: /@codingame/monaco-vscode-api@1.83.5
+    dev: false
+
+  /@codingame/monaco-vscode-languages-service-override@1.83.5:
+    resolution: {integrity: sha512-8mo9qGEBYl0whFq0PQslLBwFb2zV9asyOJYuR+BIrUyGb73NYJjKd0PghaDi8NBsBS7EBSxx3bugVNs1FXQNYw==}
+    dependencies:
+      monaco-editor: 0.44.0
+      vscode: /@codingame/monaco-vscode-api@1.83.5
+    dev: false
+
+  /@codingame/monaco-vscode-model-service-override@1.83.5:
+    resolution: {integrity: sha512-/mNyXlBdv+55taMuuCX4mHGwmMqvcNzlatYAX45QPLFW48hyQYUt+xQBYX1jBNcyjcFY4Mx7VzxT6SvNJGJA3A==}
+    dependencies:
+      monaco-editor: 0.44.0
+      vscode: /@codingame/monaco-vscode-api@1.83.5
     dev: false
 
   /@css-render/plugin-bem@0.15.12(css-render@0.15.12):
@@ -1688,6 +1711,10 @@ packages:
     resolution: {integrity: sha512-BT2Krtx4xaO6iwzwMFUYvWBWkV2pr37zD68Vmp1CDV196MzczBRxuEpD6Pr395HAgebC/co7hOphs53r8V7jew==}
     dev: true
 
+  /@types/vscode@1.84.1:
+    resolution: {integrity: sha512-DB10vBRLEPA/us7p3gQilU2Tq5HDu6JWTyCpD9qtb7MKWIvJS5In9HU3YgVGCXf/miwHJiY62aXwjtUSMpT8HA==}
+    dev: true
+
   /@types/web-bluetooth@0.0.17:
     resolution: {integrity: sha512-4p9vcSmxAayx72yn70joFoL44c9MO/0+iVEBIQXe3v2h2SiAsEIo/G5v6ObFWvNKRFjbrVadNf9LqEEZeQPzdA==}
     dev: false
@@ -2342,12 +2369,12 @@ packages:
     dependencies:
       balanced-match: 1.0.2
       concat-map: 0.0.1
+    dev: true
 
   /brace-expansion@2.0.1:
     resolution: {integrity: sha512-XnAIvQ8eM+kC6aULx6wuQiwVsnzsi9d3WxzV3FpWTGA19F621kwdbsAcFKXgKUHZWsy+mY6iL1sHTxWEFCytDA==}
     dependencies:
       balanced-match: 1.0.2
-    dev: true
 
   /braces@3.0.2:
     resolution: {integrity: sha512-b8um+L1RzM3WDSzvhm6gIz1yfTbBt6YTlcEKAvsmqCZZFw46z626lVj9j1yEPW33H5H+lBQpZMP1k8l+78Ha0A==}
@@ -2591,6 +2618,7 @@ packages:
 
   /concat-map@0.0.1:
     resolution: {integrity: sha512-/Srv4dswyQNBfohGpz9o6Yb3Gz3SrUDqBH5rTuhGR7ahtlbYKnVxw2bCFMRljaA7EXHaXZ8wsHdodFvbkhKmqg==}
+    dev: true
 
   /core-util-is@1.0.3:
     resolution: {integrity: sha512-ZQBvi1DcpJ4GDqanjucZ2Hj3wEO5pZDS89BWbkcrvdxksJorwUDDZamX9ldFkp9aw2lmBDLgkObEA4DWNJ9FYQ==}
@@ -4177,6 +4205,14 @@ packages:
     resolution: {integrity: sha512-J7p63hRiAjw1NDEww1W7i37+ByIrOWO5XQQAzZ3VOcL0PNybwpfmV/N05zFAzwQ9USyEcX6t3UO+K5aqBQOIHw==}
     dependencies:
       brace-expansion: 1.1.11
+    dev: true
+
+  /minimatch@5.1.6:
+    resolution: {integrity: sha512-lKwV/1brpG6mBUFHtb7NUmtABCb2WZZmm2wNiOA5hAb8VdCS4B3dtMWyvcoViccwAW/COERjXLt0zP1zXUN26g==}
+    engines: {node: '>=10'}
+    dependencies:
+      brace-expansion: 2.0.1
+    dev: false
 
   /minimatch@9.0.3:
     resolution: {integrity: sha512-RHiac9mvaRw0x3AYRgDC1CxAP7HTcNrrECeA8YYJeWnpo+2Q5CegtZjaotWTWxDG3UeGA1coE05iH1mPjT/2mg==}
@@ -4205,20 +4241,31 @@ packages:
       ufo: 1.3.1
     dev: true
 
-  /monaco-editor@0.34.1:
-    resolution: {integrity: sha512-FKc80TyiMaruhJKKPz5SpJPIjL+dflGvz4CpuThaPMc94AyN7SeC9HQ8hrvaxX7EyHdJcUY5i4D0gNyJj1vSZQ==}
+  /monaco-editor-workers@0.44.0(monaco-editor@0.44.0):
+    resolution: {integrity: sha512-rvdO292CMnxs9Y3Hl6nAjVx8d0SjcDgmXmZNVoaOCNJrdnTEEzcWcHJzEQsajTAAq4H2oeBmDZRpDE0US5DhXA==}
+    peerDependencies:
+      monaco-editor: ~0.44.0
+    dependencies:
+      monaco-editor: 0.44.0
     dev: false
 
-  /monaco-languageclient@4.0.1(vscode-oniguruma@1.6.2)(vscode-textmate@7.0.4):
-    resolution: {integrity: sha512-mUIq/7gQM/8CyOBVGv0thLRAR80vk49Ur0ROJveoh6R0/uwaUoyri+5OBslxsa5BICftLTsC8/Y+at6/iW50Ww==}
-    engines: {node: '>=16.11.0', npm: '>=8.0.0'}
+  /monaco-editor@0.44.0:
+    resolution: {integrity: sha512-5SmjNStN6bSuSE5WPT2ZV+iYn1/yI9sd4Igtk23ChvqB7kDk9lZbB9F5frsuvpB+2njdIeGGFf2G4gbE6rCC9Q==}
+    dev: false
+
+  /monaco-languageclient@7.0.0(@codingame/monaco-vscode-api@1.83.5)(monaco-editor@0.44.0):
+    resolution: {integrity: sha512-UuFYGKaZe13HwUfugzRZPTrp9Q95+47g7jGtR7loX5psiuqB/q9H+V5AkBbWfDJ03SOWkw0qPpmJ2ZIomOIvaw==}
+    engines: {node: '>=16.11.0', npm: '>=9.0.0'}
+    peerDependencies:
+      monaco-editor: 0.44.0
+      vscode: npm:@codingame/monaco-vscode-api@>=1.83.5 <1.84.0
     dependencies:
-      vscode: /@codingame/monaco-vscode-api@1.69.12(vscode-oniguruma@1.6.2)(vscode-textmate@7.0.4)
-      vscode-jsonrpc: 8.0.2
-      vscode-languageclient: 8.0.2
-    transitivePeerDependencies:
-      - vscode-oniguruma
-      - vscode-textmate
+      '@codingame/monaco-vscode-editor-service-override': 1.83.5
+      '@codingame/monaco-vscode-languages-service-override': 1.83.5
+      '@codingame/monaco-vscode-model-service-override': 1.83.5
+      monaco-editor: 0.44.0
+      vscode: /@codingame/monaco-vscode-api@1.83.5
+      vscode-languageclient: 9.0.1
     dev: false
 
   /moo@0.5.2:
@@ -5773,13 +5820,18 @@ packages:
     engines: {node: '>=14.0.0'}
     dev: false
 
-  /vscode-languageclient@8.0.2:
-    resolution: {integrity: sha512-lHlthJtphG9gibGb/y72CKqQUxwPsMXijJVpHEC2bvbFqxmkj9LwQ3aGU9dwjBLqsX1S4KjShYppLvg1UJDF/Q==}
-    engines: {vscode: ^1.67.0}
+  /vscode-jsonrpc@8.2.0:
+    resolution: {integrity: sha512-C+r0eKJUIfiDIfwJhria30+TYWPtuHJXHtI7J0YlOmKAo7ogxP20T0zxB7HZQIFhIyvoBPwWskjxrvAtfjyZfA==}
+    engines: {node: '>=14.0.0'}
+    dev: false
+
+  /vscode-languageclient@9.0.1:
+    resolution: {integrity: sha512-JZiimVdvimEuHh5olxhxkht09m3JzUGwggb5eRUkzzJhZ2KjCN0nh55VfiED9oez9DyF8/fz1g1iBV3h+0Z2EA==}
+    engines: {vscode: ^1.82.0}
     dependencies:
-      minimatch: 3.1.2
+      minimatch: 5.1.6
       semver: 7.5.4
-      vscode-languageserver-protocol: 3.17.2
+      vscode-languageserver-protocol: 3.17.5
     dev: false
 
   /vscode-languageserver-protocol@3.17.2:
@@ -5796,6 +5848,13 @@ packages:
       vscode-languageserver-types: 3.17.3
     dev: false
 
+  /vscode-languageserver-protocol@3.17.5:
+    resolution: {integrity: sha512-mb1bvRJN8SVznADSGWM9u/b07H7Ecg0I3OgXDuLdn307rl/J3A9YD6/eYOssqhecL27hK1IPZAsaqh00i/Jljg==}
+    dependencies:
+      vscode-jsonrpc: 8.2.0
+      vscode-languageserver-types: 3.17.5
+    dev: false
+
   /vscode-languageserver-textdocument@1.0.8:
     resolution: {integrity: sha512-1bonkGqQs5/fxGT5UchTgjGVnfysL0O8v1AYMBjqTbWQTFn721zaPGDYFkOKtfDgFiSgXM3KwaG3FMGfW4Ed9Q==}
     dev: false
@@ -5808,6 +5867,10 @@ packages:
     resolution: {integrity: sha512-SYU4z1dL0PyIMd4Vj8YOqFvHu7Hz/enbWtpfnVbJHU4Nd1YNYx8u0ennumc6h48GQNeOLxmwySmnADouT/AuZA==}
     dev: false
 
+  /vscode-languageserver-types@3.17.5:
+    resolution: {integrity: sha512-Ld1VelNuX9pdF39h2Hgaeb5hEZM2Z3jUrrMgWQAu82jMtZp7p3vJT3BzToKtZI7NgQssZje5o0zryOrhQvzQAg==}
+    dev: false
+
   /vscode-languageserver@8.0.2:
     resolution: {integrity: sha512-bpEt2ggPxKzsAOZlXmCJ50bV7VrxwCS5BI4+egUmure/oI/t4OlFzi/YNtVvY24A2UDOZAgwFGgnZPwqSJubkA==}
     hasBin: true
@@ -5815,11 +5878,12 @@ packages:
       vscode-languageserver-protocol: 3.17.2
     dev: false
 
-  /vscode-oniguruma@1.6.2:
-    resolution: {integrity: sha512-KH8+KKov5eS/9WhofZR8M8dMHWN2gTxjMsG4jd04YhpbPR91fUj7rYQ2/XjeHCJWbg7X++ApRIU9NUwM2vTvLA==}
-
-  /vscode-textmate@7.0.4:
-    resolution: {integrity: sha512-9hJp0xL7HW1Q5OgGe03NACo7yiCTMEk3WU/rtKXUbncLtdg6rVVNJnHwD88UhbIYU2KoxY0Dih0x+kIsmUKn2A==}
+  /vscode-ws-jsonrpc@3.0.0:
+    resolution: {integrity: sha512-22IbVb2K691np9pOubyahNBj1BicsbtlbiaHOJu5/rvyWDqmqPMAqpAfojwGjdBztp8EtO8TAO7lmyY6hnmYAA==}
+    engines: {node: '>=16.11.0', npm: '>=8.0.0'}
+    dependencies:
+      vscode-jsonrpc: 8.1.0
+    dev: false
 
   /vue-clipboard3@2.0.0:
     resolution: {integrity: sha512-Q9S7dzWGax7LN5iiSPcu/K1GGm2gcBBlYwmMsUc5/16N6w90cbKow3FnPmPs95sungns4yvd9/+JhbAznECS2A==}
