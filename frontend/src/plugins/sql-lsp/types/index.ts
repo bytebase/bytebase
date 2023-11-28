@@ -1,6 +1,7 @@
-import { Schema } from "./schema";
-import { SQLDialect } from "./sql";
+import type { SQLDialect } from "@/types";
+import type { Schema } from "./schema";
 
+export * from "./monaco-editor";
 export * from "./schema";
 export * from "./sql";
 

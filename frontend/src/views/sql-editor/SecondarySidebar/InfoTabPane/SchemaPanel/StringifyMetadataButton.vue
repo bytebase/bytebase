@@ -13,7 +13,7 @@
       <BBSpin v-if="isFetching" />
       <MonacoEditor
         v-else
-        :value="schemaString || ''"
+        :content="schemaString || ''"
         :readonly="true"
         class="border w-full h-full"
       />

@@ -1,5 +1,6 @@
 import type { SubqueryNode } from "@joe-re/sql-parser";
-import type { SQLDialect, Table } from "@sql-lsp/types";
+import type { Table } from "@sql-lsp/types";
+import type { SQLDialect } from "@/types";
 import { getColumnsFromSelectStatement } from "./utils";
 
 export class SubQueryMapping {

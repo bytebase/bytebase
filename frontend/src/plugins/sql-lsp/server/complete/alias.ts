@@ -1,6 +1,7 @@
 import type { TableNode } from "@joe-re/sql-parser";
-import type { SQLDialect, Table } from "@sql-lsp/types";
+import type { Table } from "@sql-lsp/types";
 import { uniq } from "lodash-es";
+import type { SQLDialect } from "@/types";
 import { createColumnCandidatesByAlias } from "./candidates";
 import { getTableNameFromTableNode } from "./utils";
 

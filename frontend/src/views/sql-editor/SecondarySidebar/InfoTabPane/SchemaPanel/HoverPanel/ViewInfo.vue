@@ -11,7 +11,7 @@
       </div>
     </div>
     <MonacoEditor
-      :value="format ? formatted.data : view.definition"
+      :content="format ? formatted.data : view.definition"
       :readonly="true"
       class="border w-full flex-1"
     />
