@@ -163,6 +163,25 @@
             </div>
           </div>
 
+          <div v-if="shouldShowPartitionTablesDataTable" class="mt-6 px-6">
+            <div class="mb-4 w-full flex flex-row justify-between items-center">
+              <div class="text-lg leading-6 font-medium text-main">
+                {{ $t("database.partition-tables") }}
+              </div>
+              <div>
+                <SearchBox
+                  :value="state.partitionTableNameSearchKeyword"
+                  :placeholder="$t('common.filter-by-name')"
+                  @update:value="state.partitionTableNameSearchKeyword = $event"
+                />
+              </div>
+            </div>
+            <PartitionTablesDataTable
+              :table="table"
+              :search="state.partitionTableNameSearchKeyword"
+            />
+          </div>
+
           <div v-if="shouldShowColumnTable" class="mt-6 px-6">
             <div class="mb-4 w-full flex flex-row justify-between items-center">
               <div class="text-lg leading-6 font-medium text-main">
@@ -227,9 +246,11 @@ import {
 import ColumnDataTable from "./ColumnDataTable/index.vue";
 import { SQLEditorButtonV1 } from "./DatabaseDetail";
 import IndexTable from "./IndexTable.vue";
+import PartitionTablesDataTable from "./PartitionTablesDataTable.vue";
 
 interface LocalState {
   columnNameSearchKeyword: string;
+  partitionTableNameSearchKeyword: string;
 }
 
 const props = defineProps<{
@@ -248,6 +269,7 @@ const dbSchemaStore = useDBSchemaV1Store();
 const currentUserV1 = useCurrentUserV1();
 const state = reactive<LocalState>({
   columnNameSearchKeyword: "",
+  partitionTableNameSearchKeyword: "",
 });
 const table = ref<TableMetadata>();
 
@@ -277,9 +299,24 @@ const hasSchemaProperty = computed(
     instanceEngine.value === Engine.POSTGRES ||
     instanceEngine.value === Engine.RISINGWAVE
 );
+
+const hasPartitionTables = computed(() => {
+  return (
+    // Only show partition tables for PostgreSQL.
+    database.value.instanceEntity.engine === Engine.POSTGRES &&
+    table.value &&
+    table.value.partitions.length > 0
+  );
+});
+
+const shouldShowPartitionTablesDataTable = computed(() => {
+  return hasPartitionTables.value;
+});
+
 const shouldShowColumnTable = computed(() => {
   return instanceEngine.value !== Engine.MONGODB;
 });
+
 const getTableName = (tableName: string) => {
   if (hasSchemaProperty.value) {
     return `"${props.schemaName}"."${tableName}"`;
