@@ -3,7 +3,6 @@ import type { Schema } from "./schema";
 
 export * from "./monaco-editor";
 export * from "./schema";
-export * from "./sql";
 
 export type ConnectionScope = "instance" | "database";
 
