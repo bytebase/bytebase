@@ -11,8 +11,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/store/model"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
@@ -255,10 +253,6 @@ func query(ctx context.Context, connection *sql.DB, statement string) ([]any, er
 	}
 
 	return []any{columnNames, columnTypeNames, data}, nil
-}
-
-func getAffectedRowsForMySQL(ctx context.Context, engine storepb.Engine, sqlDB *sql.DB, metadata *model.DBSchema, stmt *mysqlparser.ParseResult) (int64, error) {
-	return base.GetAffectedRows(ctx, engine, stmt, buildGetRowsCountByQuery(sqlDB, engine), buildGetTableDataSizeFunc(metadata))
 }
 
 // OceanBaseQueryPlan represents the query plan of OceanBase.
