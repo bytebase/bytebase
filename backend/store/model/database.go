@@ -306,6 +306,7 @@ func buildTablesMetadata(table *storepb.TableMetadata) ([]*TableMetadata, []stri
 		tableMetadata.internal[column.Name] = column
 		tableMetadata.columns = append(tableMetadata.columns, column)
 	}
+	tableMetadata.rowCount = table.RowCount
 	result = append(result, tableMetadata)
 	name = append(name, table.Name)
 
@@ -354,6 +355,7 @@ type TableMetadata struct {
 
 	internal map[string]*storepb.ColumnMetadata
 	columns  []*storepb.ColumnMetadata
+	rowCount int64
 }
 
 // GetColumn gets the column by name.
@@ -364,6 +366,10 @@ func (t *TableMetadata) GetColumn(name string) *storepb.ColumnMetadata {
 // GetColumns gets the columns.
 func (t *TableMetadata) GetColumns() []*storepb.ColumnMetadata {
 	return t.columns
+}
+
+func (t *TableMetadata) GetRowCount() int64 {
+	return t.rowCount
 }
 
 // ViewMetadata is the metadata for a view.
