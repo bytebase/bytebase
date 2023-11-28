@@ -1031,9 +1031,12 @@ func (q *querySpanExtractor) getRangeVarsFromJSONRecursive(jsonData map[string]a
 	if jsonData["RangeVar"] != nil {
 		resource := base.ColumnResource{
 			Server:   "",
-			Database: currentDatabase,
-			Schema:   currentSchema,
+			Database: "",
+			Schema:   "",
+			Table:    "",
+			Column:   "",
 		}
+
 		rangeVar, ok := jsonData["RangeVar"].(map[string]any)
 		if !ok {
 			return nil, errors.Errorf("failed to convert range var")
@@ -1057,18 +1060,41 @@ func (q *querySpanExtractor) getRangeVarsFromJSONRecursive(jsonData map[string]a
 			return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", currentDatabase)
 		}
 
-		// If the schema is system schema, we do not need to check the table.
-		if !pg.IsSystemSchema(resource.Schema) {
+		// This is a false-positive behavior, the table we found may not be the table the query actually accesses.
+		// For example, the query is `WITH t1 AS (SELECT 1) SELECT * FROM t1` and we have a physical table `t1` in the database exactly,
+		// what we found is the physical table `t1`, but the query actually accesses the CTE `t1`.
+		// We do this because we do not have too much time to implement the real behavior.
+		// XXX(rebelice/zp): Can we pass more information here to make this function know the context and then
+		// figure out whether the table is the table the query actually accesses?
+
+		// User can access the system table/view by name directly without database/schema name.
+		// For example: `SELECT * FROM pg_database`, which will access the system table `pg_database`.
+		// Additionally, user can create a table/view with the same name with system table/view and access them
+		// by specify the schema name, for example:
+		// `CREATE TABLE pg_database(id INT); SELECT * FROM public.pg_database;` which will access the user table `pg_database`.
+		isSystemResource := func(resource base.ColumnResource) bool {
+			if resource.Database == "" && resource.Schema == "" && (pg.IsSystemView(resource.Table) || pg.IsSystemTable(resource.Table)) {
+				return true
+			}
+			if resource.Schema != "" && pg.IsSystemSchema(resource.Schema) {
+				return true
+			}
+			return false
+		}
+
+		if !isSystemResource(resource) {
+			// Backfill the default database/schema name.
+			if resource.Database == "" {
+				resource.Database = currentDatabase
+			}
+			if resource.Schema == "" {
+				resource.Schema = currentSchema
+			}
 			// Access pseudo table or table we do not sync, return directly.
 			if databaseMetadata == nil || databaseMetadata.GetSchema(resource.Schema) == nil || databaseMetadata.GetSchema(resource.Schema).GetTable(resource.Table) == nil {
 				return nil, nil
 			}
 		}
-		// This is a false-positive behavior, the table we found may not be the table the query actually accesses.
-		// For example, the query is `WITH t1 AS (SELECT 1) SELECT * FROM t1` and we have a physical table `t1` in the database exactly.
-		// We do this because we do not have too much time to implement the real behavior.
-		// XXX(rebelice/zp): Can we pass more information here to make this function know the context and then
-		// figure out whether the table is the table the query actually accesses?
 		result = append(result, resource)
 	}
 
@@ -1098,17 +1124,25 @@ func (q *querySpanExtractor) getRangeVarsFromJSONRecursive(jsonData map[string]a
 
 // isMixedQuery checks whether the query accesses the user table and system table at the same time.
 func isMixedQuery(m base.SourceColumnSet) (allSystems bool, mixed error) {
-	systemSchema := ""
+	userMsg, systemMsg := "", ""
 	for table := range m {
 		if pg.IsSystemSchema(table.Schema) {
-			systemSchema = table.Schema
+			systemMsg = fmt.Sprintf("system schema %q", table.Schema)
 			continue
 		}
-
-		if systemSchema != "" {
-			return false, errors.Errorf("cannot access user table %q.%q and system schema %q at the same time", table.Schema, table.Table, systemSchema)
+		if table.Database == "" && table.Schema == "" && pg.IsSystemView(table.Table) {
+			systemMsg = fmt.Sprintf("system view %q", table.Table)
+			continue
+		}
+		userMsg := fmt.Sprintf("user table %q.%q", table.Schema, table.Table)
+		if systemMsg != "" {
+			return false, errors.Errorf("cannot access %s and %s at the same time", userMsg, systemMsg)
 		}
 	}
 
-	return systemSchema != "", nil
+	if userMsg != "" && systemMsg != "" {
+		return false, errors.Errorf("cannot access %s and %s at the same time", userMsg, systemMsg)
+	}
+
+	return userMsg == "" && systemMsg != "", nil
 }
