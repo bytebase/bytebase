@@ -66,9 +66,9 @@
 <script lang="ts" setup>
 import { NTabs, NTab } from "naive-ui";
 import { ref } from "vue";
+import { DiffEditor, MonacoEditor } from "@/components/MonacoEditor";
 import { dialectOfEngineV1 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import { DiffEditor, MonacoEditor } from "../MonacoEditor";
 
 defineProps<{
   statement: string;
