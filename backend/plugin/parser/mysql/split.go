@@ -28,15 +28,7 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 	lexer := parser.NewMySQLLexer(antlr.NewInputStream(statement))
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 
-	list, err := splitMySQLStatement(stream)
-	if err != nil {
-		return nil, err
-	}
-	var results []base.SingleSQL
-	for _, sql := range list {
-		results = append(results, sql)
-	}
-	return results, nil
+	return splitMySQLStatement(stream)
 }
 
 // SplitMultiSQLStream splits MySQL multiSQL to stream.
