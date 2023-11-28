@@ -66,7 +66,7 @@ func buildGetRowsCountByQuery(sqlDB *sql.DB, engine storepb.Engine) base.GetAffe
 		case storepb.Engine_MYSQL, storepb.Engine_MARIADB:
 			return getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN %s", statement), getAffectedRowsCountForMysql)
 		default:
-			return 0, nil
+			return 0, errors.Errorf("engine %v is not supported", engine)
 		}
 	}
 }
