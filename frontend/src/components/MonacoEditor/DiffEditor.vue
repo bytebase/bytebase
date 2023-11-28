@@ -1,5 +1,5 @@
 <template>
-  <div ref="editorContainerRef" v-bind="$attrs" class="relative">
+  <div ref="containerRef" class="relative bb-monaco-diff-editor">
     <div
       v-if="!isEditorLoaded"
       class="absolute inset-0 flex flex-col items-center justify-center"
@@ -10,7 +10,8 @@
 </template>
 
 <script lang="ts" setup>
-import { editor as Editor } from "monaco-editor";
+import type monaco from "monaco-editor";
+import { v4 as uuidv4 } from "uuid";
 import {
   onMounted,
   ref,
@@ -18,133 +19,167 @@ import {
   nextTick,
   watch,
   shallowRef,
-  PropType,
   onBeforeUnmount,
+  computed,
 } from "vue";
-import { Language } from "@/types";
+import type { Language } from "@/types";
+import type { AutoHeightOptions } from "./composables";
+import type { MonacoModule } from "./types";
 
-const props = defineProps({
-  original: {
-    type: String,
-    default: "",
-  },
-  value: {
-    type: String,
-    default: "",
-  },
-  language: {
-    type: String as PropType<Language>,
-    default: "sql",
-  },
-  readonly: {
-    type: Boolean,
-    default: false,
-  },
-});
+const [
+  { useMonacoTextModel },
+  { useAutoHeight, useOptionByKey },
+  { extensionNameOfLanguage },
+] = await Promise.all([
+  import("./text-model"),
+  import("./composables"),
+  import("./utils"),
+]);
+
+export type DiffEditorAutoHeightOptions = AutoHeightOptions & {
+  alignment: "original" | "modified";
+};
+
+const props = withDefaults(
+  defineProps<{
+    original?: string;
+    modified?: string;
+    language?: Language;
+    readonly?: boolean;
+    autoHeight?: DiffEditorAutoHeightOptions;
+  }>(),
+  {
+    original: "",
+    modified: "",
+    language: "sql",
+    readonly: false,
+    autoHeight: undefined,
+  }
+);
 
 const emit = defineEmits<{
-  (e: "change", content: string): void;
-  (e: "ready"): void;
+  (e: "update:modified", modified: string): void;
+  (
+    e: "ready",
+    monaco: MonacoModule,
+    editor: monaco.editor.IStandaloneDiffEditor
+  ): void;
 }>();
 
-const sqlCode = toRef(props, "value");
-const readOnly = toRef(props, "readonly");
-const editorContainerRef = ref<HTMLDivElement>();
+const containerRef = ref<HTMLDivElement>();
 // use shallowRef to avoid deep conversion which will cause page crash.
-const editorInstanceRef = shallowRef<Editor.IStandaloneDiffEditor>();
+const editorRef = shallowRef<monaco.editor.IStandaloneDiffEditor>();
 
 const isEditorLoaded = ref(false);
 
-const initEditorInstance = () => {
-  const originalModel = Editor.createModel(props.original, props.language);
-  const modifiedEditor = Editor.createModel(sqlCode.value, props.language);
-  const editorInstance = Editor.createDiffEditor(editorContainerRef.value!, {
-    readOnly: readOnly.value,
-    // Learn more: https://github.com/microsoft/monaco-editor/issues/311
-    enableSplitViewResizing: false,
-    renderValidationDecorations: "on",
-    theme: "bb",
-    autoClosingQuotes: "always",
-    folding: false,
-    automaticLayout: true,
-    minimap: {
-      enabled: false,
-    },
-    wordWrap: "on",
-    fixedOverflowWidgets: true,
-    fontSize: 14,
-    lineHeight: 24,
-    scrollBeyondLastLine: false,
-    padding: {
-      top: 8,
-      bottom: 8,
-    },
-    renderLineHighlight: "none",
-    codeLens: false,
-    scrollbar: {
-      alwaysConsumeMouseWheel: false,
-    },
-  });
+const useDiffModels = (
+  monaco: MonacoModule,
+  editor: monaco.editor.IStandaloneDiffEditor
+) => {
+  const language = toRef(props, "language");
+  const original = useMonacoTextModel(
+    computed(() => `${uuidv4()}.${extensionNameOfLanguage(props.language)}`),
+    toRef(props, "original"),
+    language
+  );
+  const modified = useMonacoTextModel(
+    computed(() => `${uuidv4()}.${extensionNameOfLanguage(props.language)}`),
+    toRef(props, "modified"),
+    language
+  );
 
-  editorInstance.setModel({
-    original: originalModel,
-    modified: modifiedEditor,
-  });
+  watch(
+    [original, modified],
+    () => {
+      if (!original.value) return;
+      if (!modified.value) return;
+      editor.setModel({
+        original: original.value,
+        modified: modified.value,
+      });
+    },
+    {
+      immediate: true,
+    }
+  );
+};
 
-  // When typed something, change the text
-  editorInstance.onDidUpdateDiff(() => {
-    const value = editorInstance.getModifiedEditor().getValue();
-    emit("change", value);
-  });
+const useModifiedContent = (
+  monaco: MonacoModule,
+  editor: monaco.editor.IStandaloneDiffEditor
+) => {
+  const modified = ref(getModifiedContent(editor));
+  const update = () => {
+    modified.value = getModifiedContent(editor);
+  };
 
-  return editorInstance;
+  editor.onDidChangeModel(update);
+  editor.onDidUpdateDiff(update);
+
+  return modified;
+};
+
+const getModifiedContent = (editor: monaco.editor.IStandaloneDiffEditor) => {
+  const model = editor.getModel();
+  if (!model) return "";
+
+  return model.modified.getValue();
 };
 
 onMounted(async () => {
-  if (!editorContainerRef.value) {
+  const { default: monaco, createMonacoDiffEditor } = await import("./editor");
+
+  const container = containerRef.value;
+  if (!container) {
     // Give up creating monaco editor if the component has been unmounted
     // very quickly.
     console.debug(
-      "<MonacoEditor> has been unmounted before useMonaco is ready"
+      "<MonacoEditor> has been unmounted before monaco-editor initialized"
     );
     return;
   }
 
-  const editorInstance = initEditorInstance();
-  editorInstanceRef.value = editorInstance;
+  const editor = await createMonacoDiffEditor({ container });
+  useDiffModels(monaco, editor);
+  // Use "plugin" composable features
+  useOptionByKey(monaco, editor, "readOnly", toRef(props, "readonly"));
+  const modifiedContent = useModifiedContent(monaco, editor);
+  if (props.autoHeight) {
+    useAutoHeight(
+      monaco,
+      props.autoHeight.alignment === "original"
+        ? editor.getOriginalEditor()
+        : editor.getModifiedEditor(),
+      containerRef,
+      toRef(props, "autoHeight")
+    );
+  }
+
+  editorRef.value = editor;
   isEditorLoaded.value = true;
 
+  await nextTick();
   nextTick(() => {
-    emit("ready");
+    emit("ready", monaco, editor);
+  });
+  watch(modifiedContent, () => {
+    emit("update:modified", modifiedContent.value);
   });
 });
 
 onBeforeUnmount(() => {
-  editorInstanceRef.value?.dispose();
+  editorRef.value?.dispose();
 });
-
-watch(
-  () => readOnly.value,
-  (readOnly) => {
-    editorInstanceRef.value?.updateOptions({
-      readOnly: readOnly,
-    });
-  },
-  {
-    deep: true,
-    immediate: true,
-  }
-);
 </script>
 
-<style>
-.monaco-editor .monaco-mouse-cursor-text {
+<style lang="postcss" scoped>
+.bb-monaco-diff-editor :deep(.monaco-editor .monaco-mouse-cursor-text) {
   box-shadow: none !important;
 }
-.monaco-editor .scroll-decoration {
+.bb-monaco-diff-editor :deep(.monaco-editor .scroll-decoration) {
   display: none !important;
 }
-.monaco-editor .line-numbers {
+.bb-monaco-diff-editor :deep(.monaco-editor .line-numbers) {
   @apply pr-2;
 }
 </style>

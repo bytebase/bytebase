@@ -59,8 +59,8 @@
             :key="state.targetBranchName"
             class="h-full"
             :original="targetBranch.schema"
-            :value="state.editingSchema"
-            @change="state.editingSchema = $event"
+            :modified="state.editingSchema"
+            @update:modified="state.editingSchema = $event"
           />
           <div
             v-else
@@ -81,7 +81,6 @@ import { NButton, NInput, NCheckbox, useDialog } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import DiffEditor from "@/components/MonacoEditor/DiffEditor.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { pushNotification, useSheetV1Store } from "@/store";
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
@@ -95,6 +94,7 @@ import {
   Sheet_Type,
   Sheet_Visibility,
 } from "@/types/proto/v1/sheet_service";
+import { DiffEditor } from "../MonacoEditor";
 
 interface LocalState {
   targetBranchName: string;

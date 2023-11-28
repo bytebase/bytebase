@@ -23,12 +23,11 @@
     class="w-full h-[300px] border rounded"
   >
     <MonacoEditor
+      v-model:content="state.statement"
       class="w-full h-full py-2"
-      :value="state.statement"
       :auto-focus="false"
       :language="'sql'"
       :dialect="dialect"
-      @change="handleStatementChange"
     />
   </div>
   <template v-if="!props.statementOnly">
@@ -50,7 +49,7 @@
 import { isUndefined } from "lodash-es";
 import { NRadioGroup, NRadio, NTooltip } from "naive-ui";
 import { computed, onMounted, reactive, watch } from "vue";
-import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
+import { MonacoEditor } from "@/components/MonacoEditor";
 import { useDatabaseV1Store, useProjectV1Store } from "@/store";
 import {
   DatabaseResource,
@@ -152,10 +151,6 @@ watch(
     immediate: true,
   }
 );
-
-const handleStatementChange = (value: string) => {
-  state.statement = value;
-};
 
 const handleTableResourceUpdate = (
   databaseResourceList: DatabaseResource[]

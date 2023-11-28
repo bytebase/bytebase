@@ -59,6 +59,11 @@ export default defineConfig(() => {
           changeOrigin: true,
           ws: true,
         },
+        "/lsp": {
+          target: `ws://${extractHostPort(LOCAL_ENDPOINT)}/`,
+          changeOrigin: true,
+          ws: true,
+        },
         "/api": {
           target: `${LOCAL_ENDPOINT}/api`,
           changeOrigin: true,
@@ -82,6 +87,7 @@ export default defineConfig(() => {
       alias: {
         "@/": `${resolve(__dirname, "src")}/`,
         "@sql-lsp/": `${resolve(__dirname, "src/plugins/sql-lsp")}/`,
+        "@public/": `${resolve(__dirname, "public")}/`,
       },
     },
     test: {

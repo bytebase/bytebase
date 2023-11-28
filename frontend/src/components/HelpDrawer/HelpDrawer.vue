@@ -58,15 +58,24 @@
 </template>
 
 <script lang="ts" setup>
-import Markdoc, { Node, Tag } from "@markdoc/markdoc";
-import DOMPurify from "dompurify";
-import yaml from "js-yaml";
+import type { Node, Tag } from "@markdoc/markdoc";
 import { storeToRefs } from "pinia";
 import { ref, reactive, watch, computed } from "vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useLanguage } from "@/composables/useLanguage";
 import { useUIStateStore, useHelpStore, usePageMode } from "@/store";
-import { markdocConfig, DOMPurifyConfig } from "./config";
+
+const [
+  { default: Markdoc },
+  { markdocConfig, DOMPurifyConfig },
+  { default: yaml },
+  { default: DOMPurify },
+] = await Promise.all([
+  import("@markdoc/markdoc"),
+  import("./config"),
+  import("js-yaml"),
+  import("dompurify"),
+]);
 
 interface State {
   frontmatter: Record<string, string>;

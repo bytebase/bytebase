@@ -2,7 +2,6 @@ package mysql
 
 import (
 	"io"
-	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/mysql-parser"
@@ -20,7 +19,7 @@ func init() {
 
 // SplitSQL splits the given SQL statement into multiple SQL statements.
 func SplitSQL(statement string) ([]base.SingleSQL, error) {
-	statement = strings.TrimRight(statement, " \r\n\t\f;") + "\n;"
+	statement = mysqlAddSemicolonIfNeeded(statement)
 	var err error
 	statement, err = DealWithDelimiter(statement)
 	if err != nil {
@@ -29,18 +28,7 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 	lexer := parser.NewMySQLLexer(antlr.NewInputStream(statement))
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 
-	list, err := splitMySQLStatement(stream)
-	if err != nil {
-		return nil, err
-	}
-	var results []base.SingleSQL
-	for _, sql := range list {
-		if sql.Empty {
-			continue
-		}
-		results = append(results, sql)
-	}
-	return results, nil
+	return splitMySQLStatement(stream)
 }
 
 // SplitMultiSQLStream splits MySQL multiSQL to stream.
@@ -242,11 +230,18 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]base.SingleSQL, err
 				continue
 			}
 
+			line, col := firstDefaultChannelTokenPosition(tokens[start : i+1])
+			// From antlr4, the line is ONE based, and the column is ZERO based.
+			// So we should minus 1 for the line.
 			result = append(result, base.SingleSQL{
-				Text:     stream.GetTextFromTokens(tokens[start], tokens[i]),
-				BaseLine: tokens[start].GetLine() - 1,
-				LastLine: tokens[i].GetLine()},
-			)
+				Text:                 stream.GetTextFromTokens(tokens[start], tokens[i]),
+				BaseLine:             tokens[start].GetLine() - 1,
+				LastLine:             tokens[i].GetLine() - 1,
+				LastColumn:           tokens[i].GetColumn(),
+				FirstStatementLine:   line,
+				FirstStatementColumn: col,
+				Empty:                isEmpty(tokens[start : i+1]),
+			})
 			start = i + 1
 		case parser.MySQLParserEOF:
 			if len(stack) != 0 {
@@ -257,13 +252,44 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]base.SingleSQL, err
 			}
 
 			if start <= i-1 {
+				line, col := firstDefaultChannelTokenPosition(tokens[start:i])
+				// From antlr4, the line is ONE based, and the column is ZERO based.
+				// So we should minus 1 for the line.
 				result = append(result, base.SingleSQL{
-					Text:     stream.GetTextFromTokens(tokens[start], tokens[i-1]),
-					BaseLine: tokens[start].GetLine() - 1,
-					LastLine: tokens[i-1].GetLine()},
-				)
+					Text:                 stream.GetTextFromTokens(tokens[start], tokens[i-1]),
+					BaseLine:             tokens[start].GetLine() - 1,
+					LastLine:             tokens[i-1].GetLine() - 1,
+					LastColumn:           tokens[i-1].GetColumn(),
+					FirstStatementLine:   line,
+					FirstStatementColumn: col,
+					Empty:                isEmpty(tokens[start:i]),
+				})
 			}
 		}
 	}
 	return result, nil
+}
+
+func isEmpty(tokens []antlr.Token) bool {
+	for _, token := range tokens {
+		if token.GetChannel() == antlr.TokenDefaultChannel && token.GetTokenType() != parser.MySQLParserSEMICOLON_SYMBOL && token.GetTokenType() != parser.MySQLParserEOF {
+			return false
+		}
+	}
+	return true
+}
+
+// firstDefaultChannelTokenPosition returns the first token position of the default channel.
+// Both line and column are ZERO based.
+func firstDefaultChannelTokenPosition(tokens []antlr.Token) (int, int) {
+	for _, token := range tokens {
+		if token.GetChannel() == antlr.TokenDefaultChannel {
+			// From antlr4, the line is ONE based, and the column is ZERO based.
+			// So we should minus 1 for the line.
+			return token.GetLine() - 1, token.GetColumn()
+		}
+	}
+	// From antlr4, the line is ONE based, and the column is ZERO based.
+	// So we should minus 1 for the line.
+	return tokens[len(tokens)-1].GetLine() - 1, tokens[len(tokens)-1].GetColumn()
 }

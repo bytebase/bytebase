@@ -20,7 +20,6 @@ import {
   useProjectV1Store,
   useRoleStore,
   useSettingV1Store,
-  useUserStore,
   useSQLEditorStore,
   useTabStore,
   pushNotification,
@@ -50,7 +49,6 @@ import {
   sheetSlugV1,
   connectionV1Slug as makeConnectionV1Slug,
   isSheetReadableV1,
-  isDatabaseV1Queryable,
   getSuggestedTabNameFromConnection,
   isSimilarTab,
 } from "@/utils";
@@ -70,25 +68,14 @@ const treeStore = useSQLEditorTreeStore();
 const tabStore = useTabStore();
 const sheetV1Store = useSheetV1Store();
 
-const prepareAccessControlPolicy = async () => {
-  treeStore.accessControlPolicyList = await policyV1Store.fetchPolicies({
-    policyType: PolicyType.WORKSPACE_IAM,
-    resourceType: PolicyResourceType.WORKSPACE,
-  });
-  await policyV1Store.fetchPolicies({
-    resourceType: PolicyResourceType.ENVIRONMENT,
-    policyType: PolicyType.DISABLE_COPY_DATA,
-  });
-};
-
-const prepareAccessibleDatabaseList = async () => {
+const prepareDatabases = async () => {
   // It will also be called when user logout
   if (currentUserV1.value.name === UNKNOWN_USER_NAME) {
     return;
   }
   let filter = "";
   if (route.query.project) {
-    filter = `project == "${route.query.project}"`;
+    filter = `project == "${projectNamePrefix}${route.query.project}"`;
   }
 
   // `databaseList` is the database list accessible by current user.
@@ -98,16 +85,12 @@ const prepareAccessibleDatabaseList = async () => {
       parent: "instances/-",
       filter: filter,
     })
-  ).filter(
-    (db) =>
-      db.syncState === State.ACTIVE &&
-      isDatabaseV1Queryable(db, currentUserV1.value)
-  );
+  ).filter((db) => db.syncState === State.ACTIVE);
 
   treeStore.databaseList = databaseList;
 };
 
-const prepareProject = async () => {
+const prepareProjects = async () => {
   const projectName = route.query.project;
   if (projectName) {
     try {
@@ -119,6 +102,17 @@ const prepareProject = async () => {
     } catch (error) {
       treeStore.selectedProject = unknownProject();
     }
+  } else {
+    await useProjectV1Store().fetchProjectList(false);
+  }
+};
+
+const prepareInstances = async () => {
+  const projectName = route.query.project;
+  if (projectName) {
+    await useInstanceV1Store().fetchProjectInstanceList(projectName as string);
+  } else {
+    await useInstanceV1Store().fetchInstanceList();
   }
 };
 
@@ -336,18 +330,19 @@ onMounted(async () => {
     treeStore.state = "LOADING";
 
     await Promise.all([
-      useUserStore().fetchUserList(),
       useSettingV1Store().fetchSettingList(),
       useRoleStore().fetchRoleList(),
       useEnvironmentV1Store().fetchEnvironments(),
-      useInstanceV1Store().fetchInstanceList(),
-      useProjectV1Store().fetchProjectList(true),
+      prepareInstances(),
+      prepareProjects(),
+      policyV1Store.fetchPolicies({
+        resourceType: PolicyResourceType.ENVIRONMENT,
+        policyType: PolicyType.DISABLE_COPY_DATA,
+      }),
       usePolicyV1Store().getOrFetchPolicyByName("policies/WORKSPACE_IAM"),
     ]);
 
-    await prepareProject();
-    await prepareAccessControlPolicy();
-    await prepareAccessibleDatabaseList();
+    await prepareDatabases();
 
     await setConnectionFromQuery();
 

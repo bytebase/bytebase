@@ -13,7 +13,7 @@
       <BBSpin v-if="isFetching" />
       <MonacoEditor
         v-else
-        :value="schemaString || ''"
+        :content="schemaString || ''"
         :readonly="true"
         class="border w-full h-full"
       />
@@ -26,6 +26,7 @@ import { cloneDeep } from "lodash-es";
 import { Code } from "lucide-vue-next";
 import { NButton, NPopover } from "naive-ui";
 import { onMounted, ref } from "vue";
+import { MonacoEditor } from "@/components/MonacoEditor";
 import { sqlServiceClient } from "@/grpcweb";
 import { useDBSchemaV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";

@@ -7,14 +7,18 @@
 
       <SheetForIssueTipsBar />
 
-      <SQLEditor @execute="handleExecute" />
+      <Suspense>
+        <SQLEditor @execute="handleExecute" />
+      </Suspense>
     </template>
 
-    <AIChatToSQL
-      v-if="!tabStore.isDisconnected && showAIChatBox"
-      :allow-config="pageMode === 'BUNDLED'"
-      @apply-statement="handleApplyStatement"
-    />
+    <Suspense>
+      <AIChatToSQL
+        v-if="!tabStore.isDisconnected && showAIChatBox"
+        :allow-config="pageMode === 'BUNDLED'"
+        @apply-statement="handleApplyStatement"
+      />
+    </Suspense>
 
     <ExecutingHintModal />
 

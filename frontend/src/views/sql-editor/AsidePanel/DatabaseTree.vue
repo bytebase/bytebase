@@ -385,7 +385,7 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         if (type === "instance" || type === "database") {
           setConnection(node);
         }
-        if (type === "table") {
+        if (type === "table" || type === "partition-table") {
           maybeSelectTable(node);
         }
       }

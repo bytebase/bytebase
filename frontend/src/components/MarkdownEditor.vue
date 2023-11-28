@@ -105,10 +105,8 @@
 </template>
 
 <script lang="ts" setup>
-import DOMPurify from "dompurify";
 import hljs from "highlight.js/lib/core";
 import codeStyle from "highlight.js/styles/github.css?raw";
-import MarkdownIt from "markdown-it";
 import { computed, nextTick, ref, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { ComposedIssue } from "@/types";
@@ -120,6 +118,11 @@ import {
 } from "@/utils";
 import markdownStyle from "../assets/css/github-markdown-style.css?raw";
 import IssueStatusIcon from "./IssueV1/components/IssueStatusIcon.vue";
+
+const [{ default: MarkdownIt }, { default: DOMPurify }] = await Promise.all([
+  import("markdown-it"),
+  import("dompurify"),
+]);
 
 const md = new MarkdownIt({
   html: true,

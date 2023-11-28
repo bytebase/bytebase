@@ -20,9 +20,9 @@
 </template>
 
 <script lang="ts" setup>
-import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
+import { toClipboard } from "@/utils";
 
 const props = defineProps({
   secret: {

@@ -17,7 +17,6 @@
       title: column.disallow-change
       content: |-
         "
-        ALTER TABLE t CHANGE COLUMN b a int
-        ;" contains CHANGE COLUMN statement
-      line: 3
+        ALTER TABLE t CHANGE COLUMN b a int;" contains CHANGE COLUMN statement
+      line: 1
       details: ""

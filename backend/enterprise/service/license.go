@@ -4,6 +4,7 @@ package service
 import (
 	"context"
 	"math"
+	"time"
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/pkg/errors"
@@ -116,7 +117,11 @@ func (s *LicenseService) GetInstanceLicenseCount(ctx context.Context) int {
 // GetEffectivePlan gets the effective plan.
 func (s *LicenseService) GetEffectivePlan() api.PlanType {
 	ctx := context.Background()
-	return s.provider.GetEffectivePlan(ctx)
+	subscription := s.LoadSubscription(ctx)
+	if expireTime := time.Unix(subscription.ExpiresTs, 0); expireTime.Before(time.Now()) {
+		return api.FREE
+	}
+	return subscription.Plan
 }
 
 // GetPlanLimitValue gets the limit value for the plan.

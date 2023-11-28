@@ -12,6 +12,7 @@ import (
 	"golang.org/x/exp/slices"
 	"google.golang.org/genproto/googleapis/type/expr"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/tests/fake"
@@ -564,12 +565,12 @@ func TestCreateGroupingChangeIssue(t *testing.T) {
 					},
 					wantDatabaseTaskStatement: map[string][]string{
 						"employee_01": {
-							"ALTER TABLE salary_01 ADD COLUMN num INT\n;\n",
-							"ALTER TABLE salary_02 ADD COLUMN num INT\n;\n",
+							"ALTER TABLE salary_01 ADD COLUMN num INT;\n",
+							"ALTER TABLE salary_02 ADD COLUMN num INT;\n",
 						},
 						"employee_02": {
-							"ALTER TABLE salary_03 ADD COLUMN num INT\n;\n",
-							"ALTER TABLE salary_04 ADD COLUMN num INT\n;\n",
+							"ALTER TABLE salary_03 ADD COLUMN num INT;\n",
+							"ALTER TABLE salary_04 ADD COLUMN num INT;\n",
 						},
 					},
 				},
@@ -618,7 +619,7 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 							"\nALTER TABLE part_partially_01 ADD COLUMN num INT;\n",
 							"\nALTER TABLE person_01 ADD COLUMN name VARCHAR(30);\n",
 							"\nALTER TABLE person_02 ADD COLUMN name VARCHAR(30);\n",
-							"\nALTER TABLE singleton ADD COLUMN num INT\n;\n",
+							"\nALTER TABLE singleton ADD COLUMN num INT;\n",
 							"\nCREATE TABLE singleton(id INT);\n",
 							"ALTER TABLE salary_01 ADD COLUMN num INT;\n\nCREATE INDEX salary_01_num_idx ON salary_01 (num);\n",
 							"ALTER TABLE salary_02 ADD COLUMN num INT;\n\nCREATE INDEX salary_02_num_idx ON salary_02 (num);\n",
@@ -626,7 +627,7 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 						"employee_02": {
 							"\nALTER TABLE person_03 ADD COLUMN name VARCHAR(30);\n",
 							"\nALTER TABLE person_04 ADD COLUMN name VARCHAR(30);\n",
-							"\nALTER TABLE singleton ADD COLUMN num INT\n;\n",
+							"\nALTER TABLE singleton ADD COLUMN num INT;\n",
 							"\nCREATE TABLE singleton(id INT);\n",
 							"ALTER TABLE salary_03 ADD COLUMN num INT;\n\nCREATE INDEX salary_03_num_idx ON salary_03 (num);\n",
 							"ALTER TABLE salary_04 ADD COLUMN num INT;\n\nCREATE INDEX salary_04_num_idx ON salary_04 (num);\n",
@@ -650,7 +651,7 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 						"employee_03": {
 							"\nALTER TABLE person_05 ADD COLUMN name VARCHAR(30);\n",
 							"\nALTER TABLE person_06 ADD COLUMN name VARCHAR(30);\n",
-							"\nALTER TABLE singleton ADD COLUMN num INT\n;\n",
+							"\nALTER TABLE singleton ADD COLUMN num INT;\n",
 							"\nCREATE TABLE singleton(id INT);\n",
 							"ALTER TABLE salary_05 ADD COLUMN num INT;\n\nCREATE INDEX salary_05_num_idx ON salary_05 (num);\n",
 							"ALTER TABLE salary_06 ADD COLUMN num INT;\n\nCREATE INDEX salary_06_num_idx ON salary_06 (num);\n",
@@ -659,7 +660,7 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 							"\nALTER TABLE part_partially_02 ADD COLUMN num INT;\n",
 							"\nALTER TABLE person_07 ADD COLUMN name VARCHAR(30);\n",
 							"\nALTER TABLE person_08 ADD COLUMN name VARCHAR(30);\n",
-							"\nALTER TABLE singleton ADD COLUMN num INT\n;\n",
+							"\nALTER TABLE singleton ADD COLUMN num INT;\n",
 							"\nCREATE TABLE singleton(id INT);\n",
 							"ALTER TABLE salary_07 ADD COLUMN num INT;\n\nCREATE INDEX salary_07_num_idx ON salary_07 (num);\n",
 							"ALTER TABLE salary_08 ADD COLUMN num INT;\n\nCREATE INDEX salary_08_num_idx ON salary_08 (num);\n",
@@ -834,7 +835,7 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 
 			for _, prepareInstance := range tc.prepareInstances {
 				for wantDatabaseName, wantDatabaseStatements := range prepareInstance.wantDatabaseTaskStatement {
-					database := fmt.Sprintf("instances/%s/databases/%s", prepareInstance.instanceID, wantDatabaseName)
+					database := common.FormatDatabase(prepareInstance.instanceID, wantDatabaseName)
 					gotDatabaseStatements := gotDatabaseToTaskStatement[database]
 					slices.Sort(gotDatabaseStatements)
 					a.Equal(wantDatabaseStatements, gotDatabaseStatements)

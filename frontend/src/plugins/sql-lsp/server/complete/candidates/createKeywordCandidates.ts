@@ -3,7 +3,7 @@ import type {
   CompletionItem,
   CompletionItemKind,
 } from "vscode-languageserver-types";
-import { SQLDialect } from "@/plugins/sql-lsp/types";
+import type { SQLDialect } from "@/types";
 import { ICONS, SortText } from "../utils";
 import { keywordGroupsOfDialect } from "./keywords";
 

@@ -11,7 +11,7 @@
       </div>
     </div>
     <MonacoEditor
-      :value="format ? formatted.data : view.definition"
+      :content="format ? formatted.data : view.definition"
       :readonly="true"
       class="border w-full flex-1"
     />
@@ -19,10 +19,10 @@
 </template>
 
 <script setup lang="ts">
-import { useLocalStorage } from "@vueuse/core";
+import { computedAsync, useLocalStorage } from "@vueuse/core";
 import { NCheckbox } from "naive-ui";
 import { computed } from "vue";
-import MonacoEditor from "@/components/MonacoEditor";
+import { MonacoEditor } from "@/components/MonacoEditor";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import { ComposedDatabase, dialectOfEngineV1 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
@@ -56,16 +56,25 @@ const name = computed(() => {
   return view.name;
 });
 
-const formatted = computed(() => {
-  const sql = props.view.definition;
-  try {
-    const result = formatSQL(sql, dialectOfEngineV1(instanceEngine.value));
-    return result;
-  } catch (err) {
-    return {
-      error: err,
-      data: sql,
-    };
+const formatted = computedAsync(
+  async () => {
+    const sql = props.view.definition;
+    try {
+      const result = await formatSQL(
+        sql,
+        dialectOfEngineV1(instanceEngine.value)
+      );
+      return result;
+    } catch (err) {
+      return {
+        error: err,
+        data: sql,
+      };
+    }
+  },
+  {
+    error: null,
+    data: props.view.definition,
   }
-});
+);
 </script>
