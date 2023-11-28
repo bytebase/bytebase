@@ -25,13 +25,10 @@
 <script lang="ts" setup>
 import type { editor as Editor } from "monaco-editor";
 import { computed, nextTick, ref, toRef, watch } from "vue";
-import {
+import type {
   IStandaloneCodeEditor,
-  MonacoEditor,
   MonacoModule,
-  formatEditorContent,
 } from "@/components/MonacoEditor";
-import { useEditorContextKey } from "@/components/MonacoEditor/utils";
 import { useTabStore, useSQLEditorStore, useInstanceV1ByUID } from "@/store";
 import {
   dialectOfEngineV1,
@@ -46,6 +43,16 @@ import {
   checkCursorAtLastLine,
   checkEndsWithSemicolon,
 } from "./utils";
+
+const [
+  { default: MonacoEditor },
+  { formatEditorContent },
+  { useEditorContextKey },
+] = await Promise.all([
+  import("@/components/MonacoEditor/MonacoEditor.vue"),
+  import("@/components/MonacoEditor"),
+  import("@/components/MonacoEditor/utils"),
+]);
 
 const props = defineProps({
   sql: {

@@ -22,15 +22,19 @@ import {
   onBeforeUnmount,
   computed,
 } from "vue";
-import { Language } from "@/types";
-import {
-  AutoHeightOptions,
-  useAutoHeight,
-  useOptionByKey,
-} from "./composables";
-import { useMonacoTextModel } from "./text-model";
+import type { Language } from "@/types";
+import type { AutoHeightOptions } from "./composables";
 import type { MonacoModule } from "./types";
-import { extensionNameOfLanguage } from "./utils";
+
+const [
+  { useMonacoTextModel },
+  { useAutoHeight, useOptionByKey },
+  { extensionNameOfLanguage },
+] = await Promise.all([
+  import("./text-model"),
+  import("./composables"),
+  import("./utils"),
+]);
 
 export type DiffEditorAutoHeightOptions = AutoHeightOptions & {
   alignment: "original" | "modified";

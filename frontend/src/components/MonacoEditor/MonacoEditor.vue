@@ -9,9 +9,16 @@
 import { v4 as uuidv4 } from "uuid";
 import { computed, toRef } from "vue";
 import type { Language } from "@/types";
-import MonacoTextModelEditor from "./MonacoTextModelEditor.vue";
-import { useMonacoTextModel } from "./text-model";
-import { extensionNameOfLanguage } from "./utils";
+
+const [
+  { default: MonacoTextModelEditor },
+  { useMonacoTextModel },
+  { extensionNameOfLanguage },
+] = await Promise.all([
+  import("./MonacoTextModelEditor.vue"),
+  import("./text-model"),
+  import("./utils"),
+]);
 
 const props = withDefaults(
   defineProps<{
