@@ -34,9 +34,6 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 	}
 	var results []base.SingleSQL
 	for _, sql := range list {
-		if sql.Empty {
-			continue
-		}
 		results = append(results, sql)
 	}
 	return results, nil
@@ -251,6 +248,7 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]base.SingleSQL, err
 				LastColumn:           tokens[i].GetColumn(),
 				FirstStatementLine:   line,
 				FirstStatementColumn: col,
+				Empty:                isEmpty(tokens[start : i+1]),
 			})
 			start = i + 1
 		case parser.MySQLParserEOF:
@@ -272,11 +270,21 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]base.SingleSQL, err
 					LastColumn:           tokens[i-1].GetColumn(),
 					FirstStatementLine:   line,
 					FirstStatementColumn: col,
+					Empty:                isEmpty(tokens[start:i]),
 				})
 			}
 		}
 	}
 	return result, nil
+}
+
+func isEmpty(tokens []antlr.Token) bool {
+	for _, token := range tokens {
+		if token.GetChannel() == antlr.TokenDefaultChannel && token.GetTokenType() != parser.MySQLParserSEMICOLON_SYMBOL && token.GetTokenType() != parser.MySQLParserEOF {
+			return false
+		}
+	}
+	return true
 }
 
 // firstDefaultChannelTokenPosition returns the first token position of the default channel.
