@@ -397,7 +397,7 @@ func TestForeignKeyDefination(t *testing.T) {
 			CREATE TABLE employee(id INT, name VARCHAR(50) NOT NULL, department_id INT, PRIMARY KEY(id), FOREIGN KEY employee_ibfk_1(department_id) REFERENCES department(id));`,
 			new: `CREATE TABLE department(id INT, name VARCHAR(50) NOT NULL, PRIMARY KEY(department));
 			CREATE TABLE employee(id INT, name VARCHAR(50) NOT NULL, department_id INT, PRIMARY KEY(id), FOREIGN KEY fk_2(department_id) REFERENCES department(id));`,
-			want: "ALTER TABLE `employee` DROP FOREIGN KEY `employee_ibfk_1`;\n\nALTER TABLE `employee` ADD CONSTRAINT `fk_2` FOREIGN KEY (`department_id`) REFERENCES `department` (`id`);\n\n",
+			want: "ALTER TABLE `employee` DROP FOREIGN KEY `employee_ibfk_1`;\n\nALTER TABLE `employee` ADD CONSTRAINT `fk_2` FOREIGN KEY (`department_id`) REFERENCES `department`(`id`);\n\n",
 		},
 		{
 			old: "CREATE TABLE `department` (" +
@@ -439,7 +439,7 @@ func TestForeignKeyDefination(t *testing.T) {
 				"DROP INDEX `department_id_name_idx` ON `employee`;\n\n" +
 				"CREATE INDEX `id_idx` ON `department` (`id`);\n\n" +
 				"CREATE INDEX `department_id_idx` ON `employee` (`department_id`);\n\n" +
-				"ALTER TABLE `employee` ADD CONSTRAINT `employee_ibfk_1` FOREIGN KEY (`department_id`) REFERENCES `department` (`id`);\n\n",
+				"ALTER TABLE `employee` ADD CONSTRAINT `employee_ibfk_1` FOREIGN KEY (`department_id`) REFERENCES `department`(`id`);\n\n",
 		},
 		// Reference itself.
 		{
@@ -462,7 +462,7 @@ func TestForeignKeyDefination(t *testing.T) {
 
 			want: "ALTER TABLE `employeee` DROP FOREIGN KEY `employee_ibfk_1`;\n\n" +
 				"ALTER TABLE `employeee` ADD COLUMN `manager_id` INT DEFAULT NULL AFTER `leader_id`;\n\n" +
-				"ALTER TABLE `employeee` ADD CONSTRAINT `employee_ibfk_1` FOREIGN KEY (`manager_id`) REFERENCES `employeee` (`id`);\n\n",
+				"ALTER TABLE `employeee` ADD CONSTRAINT `employee_ibfk_1` FOREIGN KEY (`manager_id`) REFERENCES `employeee`(`id`);\n\n",
 		},
 	}
 
