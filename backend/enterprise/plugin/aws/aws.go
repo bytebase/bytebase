@@ -30,8 +30,9 @@ type Provider struct {
 }
 
 // NewProvider will create a new AWS license provider.
-// To use the aws provider in local development, you need to expose
-// AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION and PRODUCT_ID in the environment.
+// To use the aws provider in local development, you need to follow the guide https://catalog.workshops.aws/mpseller/en-US/container/integrate-contract#task-1:-create-a-test-license
+// to subscribe our test product in the marketplace,
+// and expose AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION and PRODUCT_ID in the environment.
 // And the AWS account must have the permission to access the AWS license manager.
 func NewProvider(providerConfig *plugin.ProviderConfig) (plugin.LicenseProvider, error) {
 	projectID := os.Getenv("PRODUCT_ID")
