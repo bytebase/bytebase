@@ -1,6 +1,6 @@
 import { useEventListener } from "@vueuse/core";
 import { unref } from "vue";
-import { MaybeRef } from "@/types";
+import type { MaybeRef } from "@/types";
 import { isDescendantOf } from "@/utils";
 
 const FOCUS_ATTRACTIVE_KEYS: (RegExp | string)[] = [

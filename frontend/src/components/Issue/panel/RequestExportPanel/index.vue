@@ -55,14 +55,12 @@
               SQL
               <RequiredStar />
             </span>
-            <div class="w-full h-[300px] border rounded">
+            <div class="w-full h-[300px]">
               <MonacoEditor
-                class="w-full h-full py-2"
-                :value="state.statement"
+                v-model:content="state.statement"
+                class="w-full h-full rounded border"
                 :auto-focus="false"
-                :language="'sql'"
                 :dialect="dialect"
-                @change="(value: string) => (state.statement = value)"
               />
             </div>
           </div>
@@ -142,6 +140,7 @@ import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
+import { MonacoEditor } from "@/components/MonacoEditor";
 import RequiredStar from "@/components/RequiredStar.vue";
 import {
   ProjectSelect,

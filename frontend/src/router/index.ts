@@ -991,6 +991,10 @@ router.beforeEach((to, from, next) => {
     next();
     return;
   }
+  if (to.name === "workspace.debug-lsp") {
+    next();
+    return;
+  }
 
   if (
     to.name === SIGNIN_MODULE ||

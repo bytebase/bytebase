@@ -1,4 +1,4 @@
-import { SQLDialect } from "@/plugins/sql-lsp/types";
+import type { SQLDialect } from "@/types";
 
 export enum SortText {
   DATABASE = "0",

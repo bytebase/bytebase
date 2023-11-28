@@ -1,9 +1,9 @@
+import { TextDocuments } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import {
   createConnection,
   BrowserMessageReader,
   BrowserMessageWriter,
-  TextDocuments,
 } from "vscode-languageserver/browser";
 
 export const initializeConnection = (

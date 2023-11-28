@@ -37,10 +37,8 @@
       </div>
       <div class="relative w-full h-96 border rounded overflow-clip">
         <MonacoEditor
-          ref="editorRef"
+          v-model:content="state.editStatement"
           class="w-full min-h-full"
-          :value="state.editStatement"
-          @change="handleStatementChange"
         />
       </div>
     </div>
@@ -75,6 +73,7 @@ import { NButton } from "naive-ui";
 import { computed, onMounted, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { MonacoEditor } from "@/components/MonacoEditor";
 import ActionConfirmModal from "@/components/SchemaEditorV1/Modals/ActionConfirmModal.vue";
 import { useDBGroupStore, useNotificationStore } from "@/store";
 import { ComposedDatabaseGroup, ComposedSchemaGroup } from "@/types";
@@ -133,10 +132,6 @@ onMounted(async () => {
   // Initial statement with schema group list;
   state.editStatement = generateReferenceStatement(schemaGroupList);
 });
-
-const handleStatementChange = (value: string) => {
-  state.editStatement = value;
-};
 
 const generateReferenceStatement = (schemaGroupList: ComposedSchemaGroup[]) => {
   const statementList: string[] = [];
