@@ -1071,18 +1071,9 @@ func (q *querySpanExtractor) getRangeVarsFromJSONRecursive(jsonData map[string]a
 		// For example: `SELECT * FROM pg_database`, which will access the system table `pg_database`.
 		// Additionally, user can create a table/view with the same name with system table/view and access them
 		// by specify the schema name, for example:
-		// `CREATE TABLE pg_database(id INT); SELECT * FROM public.pg_database;` which will access the user table `pg_database`.
-		isSystemResource := func(resource base.ColumnResource) bool {
-			if resource.Database == "" && resource.Schema == "" && (pg.IsSystemView(resource.Table) || pg.IsSystemTable(resource.Table)) {
-				return true
-			}
-			if resource.Schema != "" && pg.IsSystemSchema(resource.Schema) {
-				return true
-			}
-			return false
-		}
+		// `CREATE TABLE pg_database(id INT); SELECT * FROM public.pg_database;` which will access the user table `pg_database`
 
-		if !isSystemResource(resource) {
+		if msg := isSystemResource(resource); msg != "" {
 			// Backfill the default database/schema name.
 			if resource.Database == "" {
 				resource.Database = currentDatabase
@@ -1126,12 +1117,8 @@ func (q *querySpanExtractor) getRangeVarsFromJSONRecursive(jsonData map[string]a
 func isMixedQuery(m base.SourceColumnSet) (allSystems bool, mixed error) {
 	userMsg, systemMsg := "", ""
 	for table := range m {
-		if pg.IsSystemSchema(table.Schema) {
-			systemMsg = fmt.Sprintf("system schema %q", table.Schema)
-			continue
-		}
-		if table.Database == "" && table.Schema == "" && pg.IsSystemView(table.Table) {
-			systemMsg = fmt.Sprintf("system view %q", table.Table)
+		if msg := isSystemResource(table); msg != "" {
+			systemMsg = msg
 			continue
 		}
 		userMsg := fmt.Sprintf("user table %q.%q", table.Schema, table.Table)
@@ -1145,4 +1132,14 @@ func isMixedQuery(m base.SourceColumnSet) (allSystems bool, mixed error) {
 	}
 
 	return userMsg == "" && systemMsg != "", nil
+}
+
+func isSystemResource(resource base.ColumnResource) string {
+	if pg.IsSystemSchema(resource.Schema) {
+		return fmt.Sprintf("system schema %q", resource.Schema)
+	}
+	if resource.Database == "" && resource.Schema == "" && pg.IsSystemView(resource.Table) {
+		return fmt.Sprintf("system view %q", resource.Table)
+	}
+	return ""
 }
