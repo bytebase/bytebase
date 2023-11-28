@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"sort"
 
 	"github.com/pkg/errors"
 	"github.com/sourcegraph/go-lsp"
@@ -53,14 +52,13 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 		return newEmptyCompletionList(), nil
 	}
 
-	candidates = sortCandidates(candidates, params)
-
 	var items []lsp.CompletionItem
 	for _, candidate := range candidates {
 		items = append(items, lsp.CompletionItem{
-			Label:  candidate.Text,
-			Detail: fmt.Sprintf("<%s>", string(candidate.Type)),
-			Kind:   convertLSPCompletionItemKind(candidate.Type),
+			Label:    candidate.Text,
+			Detail:   fmt.Sprintf("<%s>", string(candidate.Type)),
+			Kind:     convertLSPCompletionItemKind(candidate.Type),
+			SortText: generateSortText(params, candidate),
 		})
 	}
 
@@ -70,41 +68,29 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 	}, nil
 }
 
-func sortCandidates(candidates []base.Candidate, params lsp.CompletionParams) []base.Candidate {
+func generateSortText(params lsp.CompletionParams, candidate base.Candidate) string {
 	switch params.Context.TriggerCharacter {
 	case ".":
-		sort.Slice(candidates, func(i, j int) bool {
-			priorityI := candidateTypePriorityAfterDot(candidates[i].Type)
-			priorityJ := candidateTypePriorityAfterDot(candidates[j].Type)
-			if priorityI != priorityJ {
-				return priorityI < priorityJ
-			}
-			if candidates[i].Type != candidates[j].Type {
-				return candidates[i].Type < candidates[j].Type
-			}
-			return candidates[i].Text < candidates[j].Text
-		})
+		return generateSortTextAfterDot(candidate)
 	default:
-		// do nothing
+		return string(candidate.Type) + candidate.Text
 	}
-
-	return candidates
 }
 
-func candidateTypePriorityAfterDot(tp base.CandidateType) int {
-	switch tp {
-	case base.CandidateTypeSchema:
-		return 1
-	case base.CandidateTypeTable:
-		return 2
-	case base.CandidateTypeView:
-		return 3
+func generateSortTextAfterDot(candidate base.Candidate) string {
+	switch candidate.Type {
 	case base.CandidateTypeColumn:
-		return 4
+		return "01" + candidate.Text
+	case base.CandidateTypeSchema:
+		return "02" + candidate.Text
+	case base.CandidateTypeTable:
+		return "03" + candidate.Text
+	case base.CandidateTypeView:
+		return "04" + candidate.Text
 	case base.CandidateTypeFunction:
-		return 5
+		return "05" + candidate.Text
 	default:
-		return 100000
+		return "10" + string(candidate.Type) + candidate.Text
 	}
 }
 
