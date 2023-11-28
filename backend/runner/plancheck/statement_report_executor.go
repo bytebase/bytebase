@@ -20,6 +20,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -132,7 +133,7 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, conf
 		defer driver.Close(ctx)
 		sqlDB := driver.GetDB()
 
-		return reportForMySQL(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema.GetMetadata())
+		return reportForMySQL(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema)
 	case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
 		schema := ""
 		if instance.Options == nil || !instance.Options.SchemaTenantMode {
@@ -289,7 +290,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 					defer driver.Close(ctx)
 					sqlDB := driver.GetDB()
 
-					return reportForMySQL(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema.GetMetadata())
+					return reportForMySQL(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema)
 				case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
 					schema := ""
 					if instance.Options == nil || !instance.Options.SchemaTenantMode {
@@ -381,7 +382,7 @@ func reportForOracle(databaseName string, schemaName string, statement string) (
 	}, nil
 }
 
-func reportForMySQL(ctx context.Context, sqlDB *sql.DB, engine storepb.Engine, databaseName string, statement string, dbMetadata *storepb.DatabaseSchemaMetadata) ([]*storepb.PlanCheckRunResult_Result, error) {
+func reportForMySQL(ctx context.Context, sqlDB *sql.DB, engine storepb.Engine, databaseName string, statement string, dbMetadata *model.DBSchema) ([]*storepb.PlanCheckRunResult_Result, error) {
 	singleSQLs, err := base.SplitMultiSQL(engine, statement)
 	if err != nil {
 		// nolint:nilerr

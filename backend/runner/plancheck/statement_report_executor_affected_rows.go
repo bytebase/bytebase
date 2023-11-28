@@ -37,17 +37,13 @@ func getTableDataSize(metadata *storepb.DatabaseSchemaMetadata, schemaName, tabl
 	return 0
 }
 
-func buildGetTableDataSizeFunc(metadata *storepb.DatabaseSchemaMetadata) base.GetTableDataSizeFunc {
-	var schemaMetadata *model.DBSchema
+func buildGetTableDataSizeFunc(metadata *model.DBSchema) base.GetTableDataSizeFunc {
 	return func(schemaName, tableName string) int64 {
 		// initialize schemaMetadata when the function is first used.
-		if schemaMetadata == nil {
-			schemaMetadata = model.NewDBSchema(metadata, nil /* schema */, nil /* schema */)
-		}
-		if schemaMetadata == nil {
+		if metadata == nil {
 			return 0
 		}
-		dbMeta := schemaMetadata.GetDatabaseMetadata()
+		dbMeta := metadata.GetDatabaseMetadata()
 		if dbMeta == nil {
 			return 0
 		}
@@ -260,7 +256,7 @@ func query(ctx context.Context, connection *sql.DB, statement string) ([]any, er
 	return []any{columnNames, columnTypeNames, data}, nil
 }
 
-func getAffectedRowsForMySQL(ctx context.Context, engine storepb.Engine, sqlDB *sql.DB, metadata *storepb.DatabaseSchemaMetadata, stmt *mysqlparser.ParseResult) (int64, error) {
+func getAffectedRowsForMySQL(ctx context.Context, engine storepb.Engine, sqlDB *sql.DB, metadata *model.DBSchema, stmt *mysqlparser.ParseResult) (int64, error) {
 	return mysqlparser.GetAffectedRows(ctx, stmt, buildGetRowsCountByQuery(sqlDB, engine), buildGetTableDataSizeFunc(metadata))
 }
 
