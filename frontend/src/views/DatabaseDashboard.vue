@@ -153,6 +153,7 @@ import {
   UNKNOWN_USER_NAME,
   ComposedDatabase,
   ComposedDatabaseGroup,
+  DEFAULT_PROJECT_V1_NAME,
 } from "../types";
 
 interface LocalState {
@@ -194,9 +195,7 @@ const preparePolicyList = () => {
 
 watchEffect(preparePolicyList);
 
-const isStandaloneMode = computed(() => {
-  return pageMode.value === "STANDALONE";
-});
+const isStandaloneMode = computed(() => pageMode.value === "STANDALONE");
 
 const selectedEnvironment = computed(() => {
   const { environment } = route.query;
@@ -279,6 +278,11 @@ const filteredDatabaseList = computed(() => {
   if (state.instanceFilter !== String(UNKNOWN_ID)) {
     list = list.filter(
       (db) => db.instanceEntity.uid === String(state.instanceFilter)
+    );
+  }
+  if (isStandaloneMode.value) {
+    list = list.filter(
+      (db) => db.projectEntity.name !== DEFAULT_PROJECT_V1_NAME
     );
   }
   const keyword = state.searchText.trim().toLowerCase();

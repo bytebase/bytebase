@@ -27,6 +27,7 @@ import {
   DEFAULT_PROJECT_V1_NAME,
   RichViewMetadata,
   TextTarget,
+  RichPartitionTableMetadata,
 } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { emptyConnection, getSemanticLabelValue, groupBy } from "@/utils";
@@ -347,6 +348,13 @@ export const idForSQLEditorTreeNodeTarget = <T extends NodeType>(
       table.name
     }`;
   }
+  if (type === "partition-table") {
+    const { database, schema, table, partition } =
+      target as RichPartitionTableMetadata;
+    return `${database.name}/schemas/${schema.name || "-"}/tables/${
+      table.name
+    }/partitions/${partition.name}`;
+  }
   if (type === "view") {
     const { database, schema, view } = target as RichViewMetadata;
     return `${database.name}/schemas/${schema.name || "-"}/views/${view.name}`;
@@ -496,7 +504,7 @@ export const mapTreeNodeByType = <T extends NodeType>(
     meta: { type, target },
     parent,
     label: readableTargetByType(type, target),
-    isLeaf: LeafTreeNodeTypes.includes(type),
+    isLeaf: isLeafNodeType(type),
     ...overrides,
   };
 
@@ -527,6 +535,9 @@ const readableTargetByType = <T extends NodeType>(
   if (type === "table") {
     return (target as RichTableMetadata).table.name;
   }
+  if (type === "partition-table") {
+    return (target as RichPartitionTableMetadata).partition.name;
+  }
   if (type === "view") {
     return (target as RichViewMetadata).view.name;
   }
@@ -540,6 +551,10 @@ const readableTargetByType = <T extends NodeType>(
     return "";
   }
   return (target as NodeTarget<"label">).value;
+};
+
+const isLeafNodeType = (type: NodeType) => {
+  return LeafTreeNodeTypes.includes(type);
 };
 
 const getSemanticFactorValue = (db: ComposedDatabase, factor: Factor) => {

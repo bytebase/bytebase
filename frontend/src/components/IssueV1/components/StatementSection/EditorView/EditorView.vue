@@ -117,19 +117,22 @@
       </template>
     </BBAttention>
 
-    <div class="whitespace-pre-wrap overflow-hidden border">
+    <div class="whitespace-pre-wrap overflow-hidden">
       <MonacoEditor
-        ref="editorRef"
-        class="w-full h-auto max-h-[360px] min-h-[120px]"
-        data-label="bb-issue-sql-editor"
-        :value="state.statement"
-        :readonly="isEditorReadonly"
+        class="w-full h-auto max-h-[360px] min-h-[120px] border rounded-[3px]"
+        :filename="`${selectedTask.name}.sql`"
+        :content="state.statement"
+        :language="'sql'"
         :auto-focus="false"
-        :language="language"
+        :readonly="isEditorReadonly"
         :dialect="dialect"
         :advices="isEditorReadonly ? markers : []"
-        @change="handleStatementChange"
-        @ready="handleMonacoEditorReady"
+        :auto-height="{ min: 120, max: 360 }"
+        :auto-complete-context="{
+          instance: database.instance,
+          database: database.name,
+        }"
+        @update:content="handleStatementChange"
       />
     </div>
   </div>
@@ -160,7 +163,7 @@
 import { cloneDeep } from "lodash-es";
 import Long from "long";
 import { NButton, NTooltip, useDialog } from "naive-ui";
-import { computed, h, reactive, ref, watch } from "vue";
+import { computed, h, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import { ErrorList } from "@/components/IssueV1/components/common";
@@ -176,7 +179,7 @@ import {
   notifyNotEditableLegacyIssue,
   isDeploymentConfigChangeTaskV1,
 } from "@/components/IssueV1/logic";
-import MonacoEditor from "@/components/MonacoEditor";
+import { MonacoEditor } from "@/components/MonacoEditor";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import UploadProgressButton from "@/components/misc/UploadProgressButton.vue";
 import { rolloutServiceClient } from "@/grpcweb";
@@ -205,8 +208,6 @@ import {
 import { readFileAsync } from "@/utils";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import FormatOnSaveCheckbox from "./FormatOnSaveCheckbox.vue";
-import { useAutoEditorHeight } from "./useAutoEditorHeight";
-import { useEditorAutoCompletion } from "./useEditorAutoCompletion";
 import { EditState, useTempEditState } from "./useTempEditState";
 
 type LocalState = EditState & {
@@ -229,20 +230,15 @@ const state = reactive<LocalState>({
   isUploadingFile: false,
 });
 
-const editorRef = ref<InstanceType<typeof MonacoEditor>>();
-const { updateEditorHeight } = useAutoEditorHeight(editorRef);
-const { updateEditorAutoCompletionContext } =
-  useEditorAutoCompletion(editorRef);
-
-const selectedDatabase = computed(() => {
+const database = computed(() => {
   return databaseForTask(issue.value, selectedTask.value);
 });
 
 const language = useInstanceV1EditorLanguage(
-  computed(() => selectedDatabase.value.instanceEntity)
+  computed(() => database.value.instanceEntity)
 );
 const dialect = computed((): SQLDialect => {
-  const db = selectedDatabase.value;
+  const db = database.value;
   return dialectOfEngineV1(db.instanceEntity.engine);
 });
 const statementTitle = computed(() => {
@@ -541,7 +537,6 @@ const handleUploadAndOverwrite = async (event: Event) => {
     }
 
     resetTempEditState();
-    updateEditorHeight();
   } finally {
     state.isUploadingFile = false;
   }
@@ -557,7 +552,6 @@ const handleUploadFile = async (event: Event) => {
     }
 
     resetTempEditState();
-    updateEditorHeight();
   } finally {
     state.isUploadingFile = false;
   }
@@ -660,13 +654,6 @@ const handleStatementChange = (value: string) => {
     if (!sheet.value) return;
     setSheetStatement(sheet.value, value);
   }
-
-  updateEditorHeight();
-};
-
-const handleMonacoEditorReady = () => {
-  updateEditorAutoCompletionContext();
-  updateEditorHeight();
 };
 
 watch(
@@ -681,7 +668,6 @@ watch(isCreating, (curr, prev) => {
   // Reset the edit state after creating the issue.
   if (!curr && prev) {
     state.isEditing = false;
-    updateEditorHeight();
   }
 });
 </script>

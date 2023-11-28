@@ -8,9 +8,8 @@
       title: statement.disallow-commit
       content: |-
         Commit is not allowed, related statement: "
-        COMMIT
-        ;"
-      line: 4
+        COMMIT;"
+      line: 2
       details: ""
 - statement: |-
     START TRANSACTION;
@@ -27,14 +26,13 @@
       content: |-
         Commit is not allowed, related statement: "
         COMMIT;"
-      line: 3
+      line: 2
       details: ""
     - status: WARN
       code: 206
       title: statement.disallow-commit
       content: |-
         Commit is not allowed, related statement: "
-        COMMIT
-        ;"
-      line: 8
+        COMMIT;"
+      line: 6
       details: ""

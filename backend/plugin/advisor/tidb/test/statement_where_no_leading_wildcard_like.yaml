@@ -12,9 +12,8 @@
       code: 204
       title: statement.where.no-leading-wildcard-like
       content: |-
-        "SELECT * FROM t WHERE a LIKE '%abc'
-        ;" uses leading wildcard LIKE
-      line: 2
+        "SELECT * FROM t WHERE a LIKE '%abc';" uses leading wildcard LIKE
+      line: 0
       details: ""
 - statement: SELECT * FROM t WHERE a LIKE 'abc' OR a LIKE '%abc'
   want:
@@ -22,9 +21,8 @@
       code: 204
       title: statement.where.no-leading-wildcard-like
       content: |-
-        "SELECT * FROM t WHERE a LIKE 'abc' OR a LIKE '%abc'
-        ;" uses leading wildcard LIKE
-      line: 2
+        "SELECT * FROM t WHERE a LIKE 'abc' OR a LIKE '%abc';" uses leading wildcard LIKE
+      line: 0
       details: ""
 - statement: SELECT * FROM t WHERE a LIKE '%acc' OR a LIKE '%abc'
   want:
@@ -32,9 +30,8 @@
       code: 204
       title: statement.where.no-leading-wildcard-like
       content: |-
-        "SELECT * FROM t WHERE a LIKE '%acc' OR a LIKE '%abc'
-        ;" uses leading wildcard LIKE
-      line: 2
+        "SELECT * FROM t WHERE a LIKE '%acc' OR a LIKE '%abc';" uses leading wildcard LIKE
+      line: 0
       details: ""
 - statement: SELECT * FROM (SELECT * FROM t WHERE a LIKE '%acc' OR a LIKE '%abc') t1
   want:
@@ -42,7 +39,6 @@
       code: 204
       title: statement.where.no-leading-wildcard-like
       content: |-
-        "SELECT * FROM (SELECT * FROM t WHERE a LIKE '%acc' OR a LIKE '%abc') t1
-        ;" uses leading wildcard LIKE
-      line: 2
+        "SELECT * FROM (SELECT * FROM t WHERE a LIKE '%acc' OR a LIKE '%abc') t1;" uses leading wildcard LIKE
+      line: 0
       details: ""

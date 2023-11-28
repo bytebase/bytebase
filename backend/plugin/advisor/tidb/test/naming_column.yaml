@@ -4,15 +4,15 @@
       code: 302
       title: naming.column
       content: '`book`.`creatorId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      line: 1
+      line: 0
       details: ""
 - statement: CREATE TABLE book(id int, gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx int)
   want:
     - status: WARN
       code: 302
       title: naming.column
-      content: '`book`.`gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx` mismatches column naming convention, its length should be within 64 characters'
-      line: 1
+      content: "`book`.`gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx` mismatches column naming convention, its length should be within 64 characters"
+      line: 0
       details: ""
 - statement: CREATE TABLE book(id int, creator_id int)
   want:
@@ -30,7 +30,7 @@
       code: 302
       title: naming.column
       content: '`book`.`creatorId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      line: 3
+      line: 1
       details: ""
 - statement: ALTER TABLE tech_book RENAME COLUMN id TO creator_id;
   want:
@@ -53,7 +53,7 @@
       code: 302
       title: naming.column
       content: '`book`.`creatorId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      line: 8
+      line: 6
       details: ""
 - statement: ALTER TABLE tech_book CHANGE COLUMN id creator_id int;
   want:
@@ -83,7 +83,7 @@
       code: 302
       title: naming.column
       content: '`book`.`contentString` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      line: 7
+      line: 5
       details: ""
 - statement: |-
     CREATE TABLE book(
@@ -100,23 +100,23 @@
       code: 302
       title: naming.column
       content: '`book`.`createdTs` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      line: 3
+      line: 2
       details: ""
     - status: WARN
       code: 302
       title: naming.column
       content: '`book`.`updaterId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      line: 4
+      line: 3
       details: ""
     - status: WARN
       code: 302
       title: naming.column
       content: '`student`.`createdTs` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      line: 8
+      line: 7
       details: ""
     - status: WARN
       code: 302
       title: naming.column
       content: '`student`.`updatedTs` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      line: 9
+      line: 8
       details: ""

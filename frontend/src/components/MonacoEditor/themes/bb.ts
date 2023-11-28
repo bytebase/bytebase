@@ -6,6 +6,7 @@ export const getBBTheme = (): Editor.IStandaloneThemeData => ({
   inherit: true,
   rules: [],
   colors: {
+    "editor.background": "#fffffe00",
     "editorCursor.foreground": callCssVariable("--color-accent"),
     "editorLineNumber.foreground": callCssVariable(
       "--color-control-placeholder"
