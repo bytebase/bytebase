@@ -131,9 +131,6 @@ const mapPartitionTableNodes = (
     }
     return node;
   });
-  if (children.length === 0) {
-    return [createDummyNode("table", parent)];
-  }
   return children;
 };
 
