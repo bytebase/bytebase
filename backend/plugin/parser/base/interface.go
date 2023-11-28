@@ -205,6 +205,7 @@ func GetQuerySpan(ctx context.Context, engine storepb.Engine, statement, databas
 	return results, nil
 }
 
+// RegisterGetAffectedRows registers the getAffectedRows function for the engine.
 func RegisterGetAffectedRows(engine storepb.Engine, f GetAffectedRowsFunc) {
 	mux.Lock()
 	defer mux.Unlock()
@@ -214,6 +215,7 @@ func RegisterGetAffectedRows(engine storepb.Engine, f GetAffectedRowsFunc) {
 	affectedRows[engine] = f
 }
 
+// GetAffectedRows returns the affected rows for the parse result.
 func GetAffectedRows(ctx context.Context, engine storepb.Engine, stmt any, getAffectedRowsByQueryFunc func(ctx context.Context, statement string) (int64, error), getTableDataSizeFunc func(schemaName, tableName string) int64) (int64, error) {
 	f, ok := affectedRows[engine]
 	if !ok {
