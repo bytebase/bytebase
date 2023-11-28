@@ -66,8 +66,7 @@ func (s *SQLService) ExportV2(ctx context.Context, request *v1pb.ExportRequest) 
 		databaseID = maybeDatabase.UID
 	}
 	// Create export activity.
-	level := api.ActivityInfo
-	activity, err := s.createExportActivity(ctx, user, level, instance.UID, api.ActivitySQLExportPayload{
+	activity, err := s.createExportActivity(ctx, user, api.ActivityInfo, instance.UID, api.ActivitySQLExportPayload{
 		Statement:    request.Statement,
 		InstanceID:   instance.UID,
 		DatabaseID:   databaseID,
@@ -113,7 +112,7 @@ func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*
 	// Get query span.
 	spans, err := base.GetQuerySpan(ctx, instance.Engine, statement, request.ConnectionDatabase, s.buildGetDatabaseMetadataFunc(instance))
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to get query span")
 	}
 
 	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
@@ -127,7 +126,6 @@ func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*
 	if err != nil {
 		return nil, err
 	}
-
 	// Create query activity.
 	level := api.ActivityInfo
 	switch adviceStatus {
@@ -136,6 +134,7 @@ func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*
 	case advisor.Warn:
 		level = api.ActivityWarn
 	}
+
 	databaseID := 0
 	if maybeDatabase != nil {
 		databaseID = maybeDatabase.UID
@@ -157,39 +156,8 @@ func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*
 	if adviceStatus != advisor.Error {
 		results, durationNs, queryErr = s.doQueryV2(ctx, request, instance, maybeDatabase)
 		if queryErr == nil && s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil {
-			classificationSetting, err := s.store.GetDataClassificationSetting(ctx)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to find classification setting")
-			}
-
-			maskingRulePolicy, err := s.store.GetMaskingRulePolicy(ctx)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to find masking rule policy")
-			}
-
-			algorithmSetting, err := s.store.GetMaskingAlgorithmSetting(ctx)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to find masking algorithm setting")
-			}
-
-			semanticTypesSetting, err := s.store.GetSemanticTypesSetting(ctx)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to find semantic types setting")
-			}
-
-			m := newEmptyMaskingLevelEvaluator().
-				withMaskingRulePolicy(maskingRulePolicy).
-				withDataClassificationSetting(classificationSetting).
-				withMaskingAlgorithmSetting(algorithmSetting).
-				withSemanticTypeSetting(semanticTypesSetting)
-
-			maxLen := max(len(spans), len(results))
-			for i := 0; i < maxLen; i++ {
-				maskers, err := s.getMaskersForQuerySpan(ctx, m, instance, spans[i], storepb.MaskingExceptionPolicy_MaskingException_QUERY)
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to get maskers for query span")
-				}
-				mask(maskers, results[i])
+			if err := s.maskResults(ctx, spans, results, instance, storepb.MaskingExceptionPolicy_MaskingException_QUERY); err != nil {
+				return nil, err
 			}
 		}
 	}
@@ -227,35 +195,6 @@ func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*
 	return response, nil
 }
 
-func mask(maskers []masker.Masker, result *v1pb.QueryResult) {
-	sensitive := make([]bool, len(result.ColumnNames))
-	for i := range result.ColumnNames {
-		if i < len(maskers) {
-			switch maskers[i].(type) {
-			case *masker.NoneMasker:
-				sensitive[i] = false
-			default:
-				sensitive[i] = true
-			}
-		}
-	}
-
-	for i, row := range result.Rows {
-		for j, value := range row.Values {
-			if value == nil {
-				continue
-			}
-			maskedValue := row.Values[j]
-			if j < len(maskers) && maskers[j] != nil {
-				maskedValue = maskers[j].Mask(&masker.MaskData{
-					DataV2: row.Values[j],
-				})
-			}
-			result.Rows[i].Values[j] = maskedValue
-		}
-	}
-}
-
 // doExportV2 is the copy of doExport, which use query span to improve performance.
 func (s *SQLService) doExportV2(ctx context.Context, request *v1pb.ExportRequest, instance *store.InstanceMessage, database *store.DatabaseMessage, spans []*base.QuerySpan) ([]byte, int64, error) {
 	driver, err := s.dbFactory.GetReadOnlyDatabaseDriver(ctx, instance, database, "" /* dataSourceID */)
@@ -291,39 +230,8 @@ func (s *SQLService) doExportV2(ctx context.Context, request *v1pb.ExportRequest
 	}
 
 	if s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil {
-		classificationSetting, err := s.store.GetDataClassificationSetting(ctx)
-		if err != nil {
-			return nil, durationNs, errors.Wrapf(err, "failed to find classification setting")
-		}
-
-		maskingRulePolicy, err := s.store.GetMaskingRulePolicy(ctx)
-		if err != nil {
-			return nil, durationNs, errors.Wrapf(err, "failed to find masking rule policy")
-		}
-
-		algorithmSetting, err := s.store.GetMaskingAlgorithmSetting(ctx)
-		if err != nil {
-			return nil, durationNs, errors.Wrapf(err, "failed to find masking algorithm setting")
-		}
-
-		semanticTypesSetting, err := s.store.GetSemanticTypesSetting(ctx)
-		if err != nil {
-			return nil, durationNs, errors.Wrapf(err, "failed to find semantic types setting")
-		}
-
-		m := newEmptyMaskingLevelEvaluator().
-			withMaskingRulePolicy(maskingRulePolicy).
-			withDataClassificationSetting(classificationSetting).
-			withMaskingAlgorithmSetting(algorithmSetting).
-			withSemanticTypeSetting(semanticTypesSetting)
-
-		maxLen := max(len(spans), len(result))
-		for i := 0; i < maxLen; i++ {
-			maskers, err := s.getMaskersForQuerySpan(ctx, m, instance, spans[i], storepb.MaskingExceptionPolicy_MaskingException_EXPORT)
-			if err != nil {
-				return nil, durationNs, errors.Wrapf(err, "failed to get maskers for query span")
-			}
-			mask(maskers, result[i])
+		if err := s.maskResults(ctx, spans, result, instance, storepb.MaskingExceptionPolicy_MaskingException_EXPORT); err != nil {
+			return nil, durationNs, err
 		}
 	}
 
@@ -688,4 +596,77 @@ func (s *SQLService) accessCheck(
 	}
 
 	return nil
+}
+
+// maskResult masks the result in-place based on the dynamic masking policy, query-span, instance and action.
+func (s *SQLService) maskResults(ctx context.Context, spans []*base.QuerySpan, results []*v1pb.QueryResult, instance *store.InstanceMessage, action storepb.MaskingExceptionPolicy_MaskingException_Action) error {
+	classificationSetting, err := s.store.GetDataClassificationSetting(ctx)
+	if err != nil {
+		return errors.Wrapf(err, "failed to find classification setting")
+	}
+
+	maskingRulePolicy, err := s.store.GetMaskingRulePolicy(ctx)
+	if err != nil {
+		return errors.Wrapf(err, "failed to find masking rule policy")
+	}
+
+	algorithmSetting, err := s.store.GetMaskingAlgorithmSetting(ctx)
+	if err != nil {
+		return errors.Wrapf(err, "failed to find masking algorithm setting")
+	}
+
+	semanticTypesSetting, err := s.store.GetSemanticTypesSetting(ctx)
+	if err != nil {
+		return errors.Wrapf(err, "failed to find semantic types setting")
+	}
+
+	m := newEmptyMaskingLevelEvaluator().
+		withMaskingRulePolicy(maskingRulePolicy).
+		withDataClassificationSetting(classificationSetting).
+		withMaskingAlgorithmSetting(algorithmSetting).
+		withSemanticTypeSetting(semanticTypesSetting)
+
+	// We expect the len(spans) == len(results), but to avoid NPE, we use the min(len(spans), len(results)) here.
+	loopBoundary := min(len(spans), len(results))
+	for i := 0; i < loopBoundary; i++ {
+		maskers, err := s.getMaskersForQuerySpan(ctx, m, instance, spans[i], action)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get maskers for query span")
+		}
+		mask(maskers, results[i])
+	}
+
+	return nil
+}
+
+func mask(maskers []masker.Masker, result *v1pb.QueryResult) {
+	sensitive := make([]bool, len(result.ColumnNames))
+	for i := range result.ColumnNames {
+		if i < len(maskers) {
+			switch maskers[i].(type) {
+			case *masker.NoneMasker:
+				sensitive[i] = false
+			default:
+				sensitive[i] = true
+			}
+		}
+	}
+
+	for i, row := range result.Rows {
+		for j, value := range row.Values {
+			if value == nil {
+				continue
+			}
+			maskedValue := row.Values[j]
+			if j < len(maskers) && maskers[j] != nil {
+				maskedValue = maskers[j].Mask(&masker.MaskData{
+					DataV2: row.Values[j],
+				})
+			}
+			result.Rows[i].Values[j] = maskedValue
+		}
+	}
+
+	result.Sensitive = sensitive
+	result.Masked = sensitive
 }

@@ -1,13 +1,13 @@
 <template>
   <div
-    class="flex-1 overflow-auto focus:outline-none"
+    class="flex-1 overflow-auto focus:outline-none p-6 space-y-4"
     tabindex="0"
     v-bind="$attrs"
   >
-    <main class="flex-1 relative overflow-y-auto">
+    <main class="flex-1 relative">
       <!-- Highlight Panel -->
       <div
-        class="px-4 pb-4 space-y-2 lg:space-y-0 lg:flex lg:items-center lg:justify-between"
+        class="gap-y-2 flex flex-col items-start lg:flex-row lg:items-center lg:justify-between"
       >
         <div class="flex-1 min-w-0 shrink-0">
           <!-- Summary -->
@@ -15,7 +15,7 @@
             <div>
               <div class="flex items-center">
                 <h1
-                  class="pt-2 pb-2.5 text-xl font-bold leading-6 text-main truncate flex items-center gap-x-3"
+                  class="pb-2.5 text-xl font-bold leading-6 text-main truncate flex items-center gap-x-3"
                 >
                   {{ database.databaseName }}
 
@@ -85,85 +85,87 @@
         </div>
         <div
           v-if="allowToChangeDatabase"
-          class="flex flex-row justify-end items-center flex-wrap shrink gap-x-2 gap-y-2"
+          class="flex flex-row justify-start items-center flex-wrap shrink gap-x-2 gap-y-2"
           data-label="bb-database-detail-action-buttons-container"
         >
           <BBSpin v-if="state.syncingSchema" :title="$t('instance.syncing')" />
-          <button
-            type="button"
-            class="btn-normal"
+          <NButton
             :disabled="state.syncingSchema"
             @click.prevent="syncDatabaseSchema"
           >
             {{ $t("common.sync-now") }}
-          </button>
-          <button
+          </NButton>
+          <NButton
             v-if="allowTransferProject"
-            type="button"
-            class="btn-normal"
             @click.prevent="tryTransferProject"
           >
             <span>{{ $t("database.transfer-project") }}</span>
             <heroicons-outline:switch-horizontal
               class="-mr-1 ml-2 h-5 w-5 text-control-light"
             />
-          </button>
-          <button
+          </NButton>
+          <NButton
             v-if="allowAlterSchemaOrChangeData"
-            type="button"
-            class="btn-normal"
             @click="createMigration('bb.issue.database.data.update')"
           >
             <span>{{ $t("database.change-data") }}</span>
-          </button>
-          <button
+          </NButton>
+          <NButton
             v-if="allowAlterSchema"
-            type="button"
-            class="btn-normal"
             @click="createMigration('bb.issue.database.schema.update')"
           >
             <span>{{ $t("database.edit-schema") }}</span>
-          </button>
+          </NButton>
         </div>
       </div>
     </main>
 
-    <BBTabFilter
-      class="px-3 pb-2 border-b border-block-border"
-      :responsive="false"
-      :tab-item-list="tabItemList"
-      :selected-index="state.selectedIndex"
-      data-label="bb-database-detail-tab"
-      @select-index="
-        (index: number) => {
-          selectTab(index);
-        }
-      "
-    />
-    <div class="py-6 px-6">
-      <template v-if="selectedTabItem?.hash === 'overview'">
+    <NTabs v-model:value="state.selectedTab">
+      <NTabPane name="overview" :tab="$t('common.overview')">
         <DatabaseOverviewPanel :database="database" />
-      </template>
-      <template v-if="selectedTabItem?.hash === 'change-history'">
+      </NTabPane>
+      <NTabPane
+        v-if="allowToChangeDatabase"
+        name="change-history"
+        :tab="$t('change-history.self')"
+      >
         <DatabaseChangeHistoryPanel
           :database="database"
           :allow-edit="allowEdit"
         />
-      </template>
-      <template v-if="selectedTabItem?.hash === 'backup-and-restore'">
+      </NTabPane>
+      <NTabPane
+        v-if="
+          allowToChangeDatabase &&
+          instanceV1HasBackupRestore(database.instanceEntity)
+        "
+        name="backup-and-restore"
+        :tab="$t('common.backup-and-restore')"
+      >
         <DatabaseBackupPanel
           :database="database"
           :allow-admin="allowAdmin"
           :allow-edit="allowEdit"
         />
-      </template>
-      <template v-if="selectedTabItem?.hash === 'slow-query'">
+      </NTabPane>
+      <NTabPane
+        v-if="
+          allowToChangeDatabase &&
+          instanceV1SupportSlowQuery(database.instanceEntity)
+        "
+        name="slow-query"
+        :tab="$t('slow-query.slow-queries')"
+      >
         <DatabaseSlowQueryPanel :database="database" />
-      </template>
-      <template v-if="selectedTabItem?.hash === 'settings'">
+      </NTabPane>
+      <NTabPane
+        v-if="allowToChangeDatabase"
+        name="setting"
+        :tab="$t('common.settings')"
+      >
         <DatabaseSettingsPanel :database="database" :allow-edit="allowEdit" />
-      </template>
-    </div>
+      </NTabPane>
+    </NTabs>
 
     <TransferSingleDatabase
       v-if="state.showTransferDatabaseModal"
@@ -228,13 +230,12 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
-import { startCase } from "lodash-es";
+import { NButton, NTabPane, NTabs } from "naive-ui";
 import { ClientError } from "nice-grpc-web";
-import { computed, onMounted, reactive, watch } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useRoute } from "vue-router";
-import { BBTabFilterItem } from "@/bbkit/types";
 import DatabaseBackupPanel from "@/components/DatabaseBackupPanel.vue";
 import DatabaseChangeHistoryPanel from "@/components/DatabaseChangeHistoryPanel.vue";
 import {
@@ -279,10 +280,16 @@ import {
   allowUsingSchemaEditorV1,
 } from "@/utils";
 
-type DatabaseTabItem = {
-  name: string;
-  hash: string;
-};
+const databaseHashList = [
+  "overview",
+  "change-history",
+  "backup-and-restore",
+  "slow-query",
+  "setting",
+] as const;
+export type DatabaseHash = typeof databaseHashList[number];
+const isDatabaseHash = (x: any): x is DatabaseHash =>
+  databaseHashList.includes(x);
 
 interface LocalState {
   showTransferDatabaseModal: boolean;
@@ -292,6 +299,7 @@ interface LocalState {
   selectedIndex: number;
   syncingSchema: boolean;
   showSchemaDiagram: boolean;
+  selectedTab: DatabaseHash;
 }
 
 const props = defineProps({
@@ -306,20 +314,6 @@ const router = useRouter();
 const databaseV1Store = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 
-const databaseTabItemList = computed((): DatabaseTabItem[] => {
-  if (!allowToChangeDatabase.value) {
-    return [{ name: t("common.overview"), hash: "overview" }];
-  }
-
-  return [
-    { name: t("common.overview"), hash: "overview" },
-    { name: t("change-history.self"), hash: "change-history" },
-    { name: t("common.backup-and-restore"), hash: "backup-and-restore" },
-    { name: startCase(t("slow-query.slow-queries")), hash: "slow-query" },
-    { name: t("common.settings"), hash: "settings" },
-  ];
-});
-
 const state = reactive<LocalState>({
   showTransferDatabaseModal: false,
   showIncorrectProjectModal: false,
@@ -328,10 +322,36 @@ const state = reactive<LocalState>({
   selectedIndex: 0,
   syncingSchema: false,
   showSchemaDiagram: false,
+  selectedTab: "overview",
 });
 const route = useRoute();
 const currentUserV1 = useCurrentUserV1();
 const currentUserIamPolicy = useCurrentUserIamPolicy();
+
+watch(
+  () => route.hash,
+  (hash) => {
+    let targetHash = hash.replace(/^#?/g, "") as DatabaseHash;
+    if (!isDatabaseHash(targetHash)) {
+      targetHash = "overview";
+    }
+    state.selectedTab = targetHash;
+  },
+  {
+    immediate: true,
+  }
+);
+
+watch(
+  () => state.selectedTab,
+  (tab) => {
+    router.replace({
+      name: "workspace.database.detail",
+      hash: `#${tab}`,
+      query: route.query,
+    });
+  }
+);
 
 const database = computed(() => {
   return databaseV1Store.getDatabaseByUID(
@@ -468,25 +488,6 @@ const allowAlterSchema = computed(() => {
   );
 });
 
-const availableDatabaseTabItemList = computed(() => {
-  const db = database.value;
-  return databaseTabItemList.value.filter((item) => {
-    if (item.hash === "backup-and-restore") {
-      return instanceV1HasBackupRestore(db.instanceEntity);
-    }
-    if (item.hash === "slow-query") {
-      return instanceV1SupportSlowQuery(db.instanceEntity);
-    }
-    return true;
-  });
-});
-
-const tabItemList = computed((): BBTabFilterItem[] => {
-  return availableDatabaseTabItemList.value.map((item) => {
-    return { title: item.name, alert: false };
-  });
-});
-
 const tryTransferProject = () => {
   state.currentProjectId = project.value.uid;
   state.showTransferDatabaseModal = true;
@@ -531,53 +532,10 @@ const createMigration = async (
   });
 };
 
-const selectedTabItem = computed(() => {
-  return availableDatabaseTabItemList.value[state.selectedIndex];
-});
-
-const selectTab = (index: number) => {
-  const item = availableDatabaseTabItemList.value[index];
-  state.selectedIndex = index;
-  router.replace({
-    name: "workspace.database.detail",
-    hash: "#" + item.hash,
-    query: route.query,
-  });
-};
-
-const selectDatabaseTabOnHash = () => {
-  if (router.currentRoute.value.hash) {
-    for (let i = 0; i < availableDatabaseTabItemList.value.length; i++) {
-      if (
-        availableDatabaseTabItemList.value[i].hash ==
-        router.currentRoute.value.hash.slice(1)
-      ) {
-        selectTab(i);
-        break;
-      }
-    }
-  } else {
-    selectTab(0);
-  }
-};
-
 const handleGotoSQLEditorFailed = () => {
   state.currentProjectId = database.value.projectEntity.uid;
   state.showIncorrectProjectModal = true;
 };
-
-onMounted(() => {
-  selectDatabaseTabOnHash();
-});
-
-watch(
-  () => router.currentRoute.value.hash,
-  () => {
-    if (router.currentRoute.value.name == "workspace.database.detail") {
-      selectDatabaseTabOnHash();
-    }
-  }
-);
 
 const syncDatabaseSchema = async () => {
   state.syncingSchema = true;

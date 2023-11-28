@@ -29,7 +29,6 @@ import {
   TextTarget,
 } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
-import { Policy } from "@/types/proto/v1/org_policy_service";
 import { emptyConnection, getSemanticLabelValue, groupBy } from "@/utils";
 import { useTabStore } from "./tab";
 import {
@@ -85,7 +84,6 @@ const factorListInLocalStorage = useLocalStorage<StatefulFactor[]>(
 export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
   const nodeListMapById = reactive(new Map<string, TreeNode[]>());
   // states
-  const accessControlPolicyList = ref<Policy[]>([]);
   const databaseList = ref<ComposedDatabase[]>([]);
   const factorList = ref<StatefulFactor[]>(
     cloneDeep(factorListInLocalStorage.value)
@@ -184,7 +182,10 @@ export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
   ): Promise<Connection> => {
     try {
       const [db, _] = await Promise.all([
-        useDatabaseV1Store().getOrFetchDatabaseByUID(databaseId),
+        useDatabaseV1Store().getOrFetchDatabaseByUID(
+          databaseId,
+          true /* silent */
+        ),
         useInstanceV1Store().getOrFetchInstanceByUID(instanceId),
       ]);
       await useDBSchemaV1Store().getOrFetchTableList(db.name);
@@ -214,7 +215,6 @@ export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
     }
   };
   const cleanup = () => {
-    accessControlPolicyList.value = [];
     databaseList.value = [];
     selectedProject.value = undefined;
     tree.value = [];
@@ -234,7 +234,6 @@ export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
 
   return {
     expandedKeys,
-    accessControlPolicyList,
     databaseList,
     factorList,
     filteredFactorList,

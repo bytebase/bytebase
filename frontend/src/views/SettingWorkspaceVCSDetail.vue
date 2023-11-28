@@ -1,5 +1,5 @@
 <template>
-  <div class="mt-4 space-y-4">
+  <div class="space-y-4">
     <div class="flex justify-end">
       <div v-if="vcsWithUIType" class="flex flex-row items-center space-x-2">
         <div class="textlabel whitespace-nowrap">

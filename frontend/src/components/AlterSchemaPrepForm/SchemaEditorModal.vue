@@ -122,10 +122,9 @@
 
   <!-- Close modal confirm dialog -->
   <ActionConfirmModal
-    v-if="state.showActionConfirmModal"
+    v-model:show="state.showActionConfirmModal"
     :title="$t('schema-editor.confirm-to-close.title')"
     :description="$t('schema-editor.confirm-to-close.description')"
-    @close="state.showActionConfirmModal = false"
     @confirm="emit('close')"
   />
 </template>

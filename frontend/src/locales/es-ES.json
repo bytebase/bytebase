@@ -409,7 +409,9 @@
       "enqueued-with-rollout-time": "Esperando para ejecutar, {time} para ejecutar.",
       "dumping-schema-before-executing-sql": "Listo para ejecutar, exportando esquema.",
       "executing-sql": "Ejecutando SQL.",
-      "dumping-schema-after-executing-sql": "Ejecución SQL completada, exportando esquema ahora."
+      "dumping-schema-after-executing-sql": "Ejecución SQL completada, exportando esquema ahora.",
+      "executing-sql-detail": "Ejecutando SQL {current} de {total}, desde la línea {start} hasta la línea {end}.",
+      "failed-sql-detail": "La ejecución falló desde la línea {start} hasta la línea {end}: {message}."
     }
   },
   "banner": {
@@ -2025,13 +2027,6 @@
       }
     }
   },
-  "archive": {
-    "archived": "Archivado",
-    "project-search-bar-placeholder": "Buscar nombre de @.lower:{'common.project'}",
-    "instance-search-bar-placeholder": "Buscar nombre de @.lower:{'common.instance'}",
-    "environment-search-bar-placeholder": "Buscar nombre de @.lower:{'common.environment'}",
-    "sso-search-bar-placeholder": "Buscar nombre de SSO"
-  },
   "deployment-config": {
     "stage-n": "Etapa {n}",
     "add-selector": "Agregar selector",
@@ -2370,9 +2365,9 @@
     "start-n-days-trial": "Comienza una prueba de {days} días (no se requiere tarjeta de crédito)",
     "successfully-start-trial": "Prueba gratuita iniciada con éxito por {days} días",
     "successfully-upgrade-trial": "Prueba gratuita actualizada con éxito a {plan}",
-    "require-subscription": "Esta función requiere {requiredPlan}, por favor compra la licencia Bytebase para desbloquear esta función.",
-    "feature-require-subscription": "{feature} requiere {requiredPlan}.",
-    "required-plan-with-trial": "Esta función requiere {requiredPlan}. {startTrial}.",
+    "require-subscription": "Esta función requiere una suscripción a {requiredPlan}. Compre una licencia de Bytebase para desbloquear esta función.",
+    "feature-require-subscription": "{feature} requiere suscripción a {requiredPlan}.",
+    "required-plan-with-trial": "Esta función requiere {requiredPlan}. {startTrial}",
     "trial-for-plan": "Puedes iniciar una prueba gratuita de {plan} por {days} días - no se requiere tarjeta de crédito.",
     "trial-for-days": "Puedes iniciar una prueba gratuita por {days} días - no se requiere tarjeta de crédito.",
     "upgrade-trial": "Puedes actualizar tu prueba gratuita a este plan.",
@@ -2673,6 +2668,8 @@
     "no-logs": "No hay registros de depuración",
     "count-of-logs": "Se recuperaron los últimos {count} registro(s) del servidor.",
     "debug-log-detail": "Detalles del registro de depuración",
+    "enabled": "El modo de depuración está habilitado.",
+    "open-debug-mode": "Habilitar depuración",
     "table": {
       "record-ts": "Hora",
       "method": "Método",

@@ -17,7 +17,7 @@
         />
       </div>
 
-      <div class="flex items-center justify-end gap-x-3">
+      <div class="flex items-center justify-end gap-x-2">
         <slot name="suffix" />
       </div>
     </div>
@@ -85,7 +85,7 @@
           !filterTypes.includes('project') &&
           !filterTypes.includes('environment')
         "
-        class="flex items-center justify-end"
+        class="flex items-center justify-end space-x-2"
       >
         <slot name="suffix" />
       </div>

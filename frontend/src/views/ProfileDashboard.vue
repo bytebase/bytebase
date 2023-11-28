@@ -5,7 +5,7 @@
   >
     <!-- Profile header -->
     <div>
-      <div class="h-32 w-full bg-accent lg:h-48"></div>
+      <div class="-m-6 h-32 bg-accent lg:h-48"></div>
       <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="-mt-20 sm:flex sm:items-end sm:space-x-5">
           <UserAvatar :user="user" size="HUGE" />
@@ -174,7 +174,7 @@
           <FeatureBadge :feature="'bb.feature.2fa'" custom-class="ml-2" />
         </span>
         <div class="space-x-2">
-          <NButton @click="enable2FA">
+          <NButton v-if="user.email === currentUserV1.email" @click="enable2FA">
             {{ isMFAEnabled ? $t("common.edit") : $t("common.enable") }}
           </NButton>
           <NButton v-if="isMFAEnabled" @click="disable2FA">
@@ -236,11 +236,12 @@
 
   <!-- Close modal confirm dialog -->
   <ActionConfirmModal
-    v-if="state.showDisable2FAConfirmModal"
+    v-model:show="state.showDisable2FAConfirmModal"
     :title="$t('two-factor.disable.self')"
     :description="$t('two-factor.disable.description')"
-    :style="'danger'"
-    @close="state.showDisable2FAConfirmModal = false"
+    :positive-button-props="{
+      type: 'error',
+    }"
     @confirm="handleDisable2FA"
   />
 </template>

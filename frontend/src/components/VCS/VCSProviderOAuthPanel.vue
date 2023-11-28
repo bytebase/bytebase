@@ -546,8 +546,7 @@
 </template>
 
 <script lang="ts">
-import { toClipboard } from "@soerenmartius/vue3-clipboard";
-import isEmpty from "lodash-es/isEmpty";
+import { isEmpty } from "lodash-es";
 import {
   computed,
   defineComponent,
@@ -564,6 +563,7 @@ import {
   redirectUrl,
 } from "@/types";
 import { ExternalVersionControl_Type } from "@/types/proto/v1/externalvs_service";
+import { toClipboard } from "@/utils";
 
 interface LocalState {
   applicationIdValidationTimer?: ReturnType<typeof setTimeout>;

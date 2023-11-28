@@ -409,7 +409,9 @@
       "enqueued-with-rollout-time": "Waiting to execute after {time}.",
       "dumping-schema-before-executing-sql": "Preparing to execute, dumping schema.",
       "executing-sql": "Executing SQL.",
-      "dumping-schema-after-executing-sql": "SQL execution completed, dumping schema."
+      "executing-sql-detail": "Executing SQL {current} of {total}, from line {start} to line {end}.",
+      "dumping-schema-after-executing-sql": "SQL execution completed, dumping schema.",
+      "failed-sql-detail": "Execution failed from line {start} to line {end}: {message}."
     }
   },
   "banner": {
@@ -2029,13 +2031,6 @@
       }
     }
   },
-  "archive": {
-    "archived": "Archived",
-    "project-search-bar-placeholder": "Search @.lower:{'common.project'} name",
-    "instance-search-bar-placeholder": "Search @.lower:{'common.instance'} name",
-    "environment-search-bar-placeholder": "Search @.lower:{'common.environment'} name",
-    "sso-search-bar-placeholder": "Search SSO name"
-  },
   "deployment-config": {
     "stage-n": "Stage {n}",
     "add-selector": "Add selector",
@@ -2374,9 +2369,9 @@
     "start-n-days-trial": "Start {days} days trial (no credit card required)",
     "successfully-start-trial": "Successfully start free trial for {days} days",
     "successfully-upgrade-trial": "Successfully upgrade free trial to {plan}",
-    "require-subscription": "This feature requires {requiredPlan}, please purchase Bytebase license to unlock this feature.",
-    "feature-require-subscription": "{feature} requires {requiredPlan}.",
-    "required-plan-with-trial": "This feature requires {requiredPlan}. {startTrial}.",
+    "require-subscription": "This feature requires {requiredPlan} subscription, please purchase Bytebase license to unlock this feature.",
+    "feature-require-subscription": "{feature} requires {requiredPlan} subscription.",
+    "required-plan-with-trial": "This feature requires {requiredPlan}. {startTrial}",
     "trial-for-plan": "You can start a free trial for {plan} with {days} days - no credit card required.",
     "trial-for-days": "You can start a free trial for {days} days - no credit card required.",
     "upgrade-trial": "You can upgrade your free trial to this plan.",
@@ -2677,6 +2672,8 @@
     "no-logs": "No debug logs",
     "count-of-logs": "Fetched latest {count} log(s) from server.",
     "debug-log-detail": "Debug Log Details",
+    "enabled": "Debug mode is enabled.",
+    "open-debug-mode": "Enable debug",
     "table": {
       "record-ts": "Time",
       "method": "Method",

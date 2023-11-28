@@ -1,6 +1,6 @@
 <template>
-  <div class="mx-auto">
-    <div class="textinfolabel my-4">
+  <div class="mx-auto space-y-4">
+    <div class="textinfolabel">
       {{ $t("sql-review.description") }}
       <a
         href="https://www.bytebase.com/docs/sql-review/review-rules"
@@ -12,7 +12,7 @@
       </a>
     </div>
 
-    <SQLReviewPolicyTable class="my-4" />
+    <SQLReviewPolicyTable />
   </div>
 </template>
 

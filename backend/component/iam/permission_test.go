@@ -24,19 +24,30 @@ func TestPermissionExists(t *testing.T) {
 func permissionExist(p Permission) bool {
 	//exhaustive:enforce
 	switch p {
-	case PermissionInstanceList:
-		return true
-	case PermissionInstanceGet:
-		return true
-	case PermissionInstanceCreate:
-		return true
-	case PermissionInstanceUpdate:
-		return true
-	case PermissionInstanceDelete:
-		return true
-	case PermissionInstanceUndelete:
-		return true
-	case PermissionInstanceSync:
+	case
+		PermissionInstancesList,
+		PermissionInstancesGet,
+		PermissionInstancesCreate,
+		PermissionInstancesUpdate,
+		PermissionInstancesDelete,
+		PermissionInstancesUndelete,
+		PermissionInstancesSync,
+		PermissionDatabasesList,
+		PermissionDatabasesGet,
+		PermissionDatabasesUpdate,
+		PermissionDatabasesSync,
+		PermissionDatabasesGetMetadata,
+		PermissionDatabasesUpdateMetadata,
+		PermissionDatabasesGetSchema,
+		PermissionDatabasesGetBackupSetting,
+		PermissionDatabasesUpdateBackupSetting,
+		PermissionBackupsList,
+		PermissionBackupsCreate,
+		PermissionChangeHistoriesList,
+		PermissionChangeHistoriesGet,
+		PermissionDatabaseSecretsList,
+		PermissionDatabaseSecretsUpdate,
+		PermissionDatabaseSecretsDelete:
 		return true
 	default:
 		return false

@@ -6,7 +6,7 @@
       v-if="isCreating"
       class="w-full flex flex-col justify-start items-start"
     >
-      <div class="w-full flex flex-row justify-between items-center">
+      <div class="w-full flex flex-row items-center space-x-2">
         <p class="textlabel my-2">{{ $t("settings.sso.form.type") }}</p>
         <a
           v-if="userDocLink"
@@ -829,7 +829,6 @@
 </template>
 
 <script lang="ts" setup>
-import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { cloneDeep, head, isEqual } from "lodash-es";
 import { NRadioGroup, NRadio, NTooltip } from "naive-ui";
 import { ClientError, Status } from "nice-grpc-common";
@@ -861,6 +860,7 @@ import {
   identityProviderTemplateList,
   identityProviderTypeToString,
   openWindowForSSO,
+  toClipboard,
 } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
 

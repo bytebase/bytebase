@@ -1,9 +1,12 @@
 <template>
-  <div class="px-4 py-6 lg:flex">
+  <div class="py-6 lg:flex">
     <div class="text-left lg:w-1/4">
-      <h1 class="text-2xl font-bold">
-        {{ $t("settings.general.workspace.security") }}
-      </h1>
+      <div class="flex items-center space-x-2">
+        <h1 class="text-2xl font-bold">
+          {{ $t("settings.general.workspace.security") }}
+        </h1>
+        <FeatureBadge feature="bb.feature.watermark" />
+      </div>
       <span v-if="!allowEdit" class="text-sm text-gray-400">
         {{ $t("settings.general.workspace.only-admin-can-edit") }}
       </span>
@@ -22,8 +25,6 @@
           <span class="font-medium">{{
             $t("settings.general.workspace.watermark.enable")
           }}</span>
-
-          <FeatureBadge feature="bb.feature.watermark" />
 
           <span
             v-if="!allowEdit"
@@ -50,8 +51,6 @@
             $t("settings.general.workspace.disallow-signup.enable")
           }}</span>
 
-          <FeatureBadge feature="bb.feature.disallow-signup" />
-
           <span
             v-if="!allowEdit"
             class="text-sm text-gray-400 -translate-y-2 tooltip"
@@ -76,7 +75,6 @@
           <span class="font-medium">{{
             $t("settings.general.workspace.require-2fa.enable")
           }}</span>
-          <FeatureBadge feature="bb.feature.2fa" />
           <span
             v-if="!allowEdit"
             class="text-sm text-gray-400 -translate-y-2 tooltip"

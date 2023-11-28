@@ -1,7 +1,7 @@
 <template>
-  <div class="w-full mt-4 space-y-4">
+  <div class="w-full space-y-4">
     <FeatureAttention feature="bb.feature.audit-log" />
-    <div class="flex justify-end items-center mt-1 space-x-2">
+    <div class="flex justify-end items-center space-x-2">
       <MemberSelect
         class="w-52"
         :disabled="!hasAuditLogFeature"
@@ -52,9 +52,6 @@
     </PagedActivityTable>
     <template v-else>
       <AuditLogTable :audit-log-list="[]" />
-      <div class="w-full h-full flex flex-col items-center justify-center">
-        <img src="../assets/illustration/no-data.webp" class="max-h-[30vh]" />
-      </div>
     </template>
 
     <BBDialog

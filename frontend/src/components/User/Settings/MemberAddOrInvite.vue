@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4">
+  <div class="w-full space-y-4">
     <div class="space-y-2">
       <div
         v-for="(user, index) in state.userList"
@@ -14,7 +14,6 @@
             <NInput
               v-model:value="user.email"
               :input-props="{ type: 'text', autocomplete: 'off' }"
-              class="!w-10 sm:!w-20 shrink-0"
               placeholder="foo"
               @blur="validateUser(user, index)"
               @input="clearValidationError(index)"

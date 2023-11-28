@@ -14,9 +14,10 @@ import {
 } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { Connection } from "@/types";
-import { useChatByTab, provideAIContext } from "../logic";
 import type { AIContextEvents } from "../types";
-import ChatPanel from "./ChatPanel.vue";
+
+const [{ useChatByTab, provideAIContext }, { default: ChatPanel }] =
+  await Promise.all([import("../logic"), import("./ChatPanel.vue")]);
 
 type LocalState = {
   showHistoryDialog: boolean;

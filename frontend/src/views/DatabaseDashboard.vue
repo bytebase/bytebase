@@ -1,7 +1,7 @@
 <template>
-  <div class="flex flex-col relative">
+  <div class="flex flex-col relative space-y-4">
     <div
-      class="px-4 py-2 flex flex-col lg:flex-row justify-between items-start lg:items-center"
+      class="px-4 flex flex-col lg:flex-row justify-between items-start lg:items-end"
     >
       <EnvironmentTabFilter
         :include-all="true"
@@ -46,10 +46,9 @@
             "
           />
           <SearchBox
-            :value="state.searchText"
+            v-model:value="state.searchText"
             :placeholder="$t('database.filter-database')"
             :autofocus="true"
-            @update:value="changeSearchText($event)"
           />
         </NInputGroup>
       </div>
@@ -64,6 +63,7 @@
 
     <DatabaseV1Table
       pagination-class="mb-4"
+      table-class="border-y"
       :database-list="filteredDatabaseList"
       :database-group-list="filteredDatabaseGroupList"
       :show-placeholder="true"
@@ -266,10 +266,6 @@ const changeEnvironment = (environment: string | undefined) => {
   } else {
     router.replace({ name: "workspace.database" });
   }
-};
-
-const changeSearchText = (searchText: string) => {
-  state.searchText = searchText;
 };
 
 const filteredDatabaseList = computed(() => {

@@ -103,12 +103,12 @@
 </template>
 
 <script lang="ts" setup>
-import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { NTooltip } from "naive-ui";
 import { reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { pushNotification } from "@/store";
+import { toClipboard } from "@/utils";
 import { useAIContext } from "../../logic";
 import { useConversationStore } from "../../store";
 import type { Message } from "../../types";

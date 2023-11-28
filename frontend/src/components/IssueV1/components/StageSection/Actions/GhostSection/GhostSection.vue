@@ -54,6 +54,7 @@ import { computed } from "vue";
 import FeatureBadgeForInstanceLicense from "@/components/FeatureGuard/FeatureBadgeForInstanceLicense.vue";
 import { databaseForTask, useIssueContext } from "@/components/IssueV1/logic";
 import { featureToRef } from "@/store";
+import { Engine } from "@/types/proto/v1/common";
 import { flattenTaskV1List } from "@/utils";
 import GhostConfigButton from "./GhostConfigButton.vue";
 import GhostFlagsPanel from "./GhostFlagsPanel.vue";
@@ -71,8 +72,14 @@ const shouldShowGhostSection = computed(() => {
   if (isCreating.value) {
     // When an issue is pending create, we should show the gh-ost section
     // whenever gh-ost is on or off.
-    return tasks.every(
-      (task) => ghostViewTypeForTask(issue.value, task) !== "NONE"
+    // But only show the gh-ost section when at least one of the tasks
+    // is MySQL
+    return (
+      tasks.some((task) => {
+        const database = databaseForTask(issue.value, task);
+        return database.instanceEntity.engine === Engine.MYSQL;
+      }) &&
+      tasks.every((task) => ghostViewTypeForTask(issue.value, task) !== "NONE")
     );
   } else {
     return viewType.value === "ON";

@@ -1,30 +1,28 @@
 <template>
-  <div class="textinfolabel py-4">
-    {{ $t("settings.mail-delivery.description") }}
-    <a
-      class="normal-link inline-flex items-center"
-      href="https://www.bytebase.com/docs/administration/mail-delivery?source=console"
-      target="__BLANK"
-    >
-      {{ $t("common.learn-more") }}
-      <heroicons-outline:external-link class="w-4 h-4 ml-1" />
-    </a>
-  </div>
   <div class="w-full space-y-4">
+    <div class="textinfolabel">
+      {{ $t("settings.mail-delivery.description") }}
+      <a
+        class="normal-link inline-flex items-center"
+        href="https://www.bytebase.com/docs/administration/mail-delivery?source=console"
+        target="__BLANK"
+      >
+        {{ $t("common.learn-more") }}
+        <heroicons-outline:external-link class="w-4 h-4 ml-1" />
+      </a>
+    </div>
     <div class="w-full flex flex-col">
       <!-- Host and Port -->
-      <div class="w-full flex flex-row gap-4 mt-8">
+      <div class="w-full flex flex-row gap-4">
         <div class="min-w-max w-80">
           <div class="textlabel pl-1">
             {{ $t("settings.mail-delivery.field.smtp-server-host") }}
             <span class="text-red-600">*</span>
           </div>
-          <BBTextField
+          <NInput
+            v-model:value="state.mailDeliverySetting.server"
             class="text-main w-full h-max mt-2"
             :placeholder="'smtp.gmail.com'"
-            :value="state.mailDeliverySetting.server"
-            @input="(e: any) =>
-              state.mailDeliverySetting.server = e.target.value"
           />
         </div>
         <div class="min-w-max w-48">
@@ -32,16 +30,15 @@
             {{ $t("settings.mail-delivery.field.smtp-server-port") }}
             <span class="text-red-600">*</span>
           </div>
-          <input
+          <NInput
             id="port"
+            v-model:value="state.mailDeliverySetting.port"
             type="number"
             name="port"
             class="text-main w-full h-max mt-2 rounded-md border-control-border focus:ring-control focus:border-control disabled:bg-gray-50"
             :placeholder="'587'"
             :required="true"
-            :value="state.mailDeliverySetting.port"
             @wheel="(event: MouseEvent) => {(event.target as HTMLInputElement).blur()}"
-            @input="(event) => {state.mailDeliverySetting.port = (event.target as HTMLInputElement).valueAsNumber}"
           />
         </div>
       </div>
@@ -51,11 +48,10 @@
             {{ $t("settings.mail-delivery.field.from") }}
             <span class="text-red-600">*</span>
           </div>
-          <BBTextField
+          <NInput
+            v-model:value="state.mailDeliverySetting.from"
             class="text-main w-full h-max mt-2"
             :placeholder="'from@gmail.com'"
-            :value="state.mailDeliverySetting.from"
-            @input="(e: any) => state.mailDeliverySetting.from = e.target.value"
           />
         </div>
       </div>
@@ -65,20 +61,14 @@
           <div class="textlabel pl-1">
             {{ $t("settings.mail-delivery.field.authentication-method") }}
           </div>
-          <BBSelect
+          <NSelect
             class="mt-2"
-            :selected-item="getSelectedAuthenticationTypeItem"
-            :item-list="['NONE', 'PLAIN', 'LOGIN', 'CRAM-MD5']"
-            :disabled="false"
-            :show-prefix-item="true"
-            @select-item="handleSelectAuthenticationType"
-          >
-            <template #menuItem="{ item }">
-              <div class="text-main flex items-center gap-x-2">
-                {{ item }}
-              </div>
-            </template></BBSelect
-          >
+            :value="getSelectedAuthenticationTypeItem"
+            :options="authenticationTypeOptions"
+            :virtual-scroll="true"
+            :fallback-option="false"
+            @update:value="handleSelectAuthenticationType"
+          />
         </div>
       </div>
       <!-- Not NONE Authentication-->
@@ -96,11 +86,10 @@
                 <span class="text-red-600">*</span>
               </label>
             </div>
-            <BBTextField
+            <NInput
+              v-model:value="state.mailDeliverySetting.username"
               class="text-main w-full h-max mt-2"
               :placeholder="'support@bytebase.com'"
-              :value="state.mailDeliverySetting.username"
-              @input="(e: any) => state.mailDeliverySetting.username = e.target.value"
             />
           </div>
           <div class="min-w-max w-80">
@@ -115,12 +104,11 @@
                 @toggle="handleToggleUseEmptyPassword"
               />
             </div>
-            <BBTextField
+            <NInput
+              v-model:value="state.mailDeliverySetting.password"
               class="text-main w-full h-max mt-2"
               :disabled="state.useEmptyPassword"
               :placeholder="'PASSWORD - INPUT_ONLY'"
-              :value="state.mailDeliverySetting.password"
-              @input="(e: any) => state.mailDeliverySetting.password = e.target.value"
             />
           </div>
         </div>
@@ -131,27 +119,20 @@
           <div class="textlabel pl-1">
             {{ $t("settings.mail-delivery.field.encryption") }}
           </div>
-          <BBSelect
+          <NSelect
             class="mt-2"
-            :selected-item="getSelectedEncryptionTypeItem"
-            :item-list="['NONE', 'SSL/TLS', 'STARTTLS']"
-            :disabled="false"
-            :show-prefix-item="true"
-            @select-item="handleSelectEncryptionType"
-          >
-            <template #menuItem="{ item }">
-              <div class="text-main flex items-center gap-x-2">
-                {{ item }}
-              </div>
-            </template></BBSelect
-          >
+            :value="getSelectedEncryptionTypeItem"
+            :options="encryptionTypeOptions"
+            :virtual-scroll="true"
+            :fallback-option="false"
+            @update:value="handleSelectEncryptionType"
+          />
         </div>
       </div>
       <div class="flex flex-row w-full">
         <div class="w-auto gap-4 mt-8 flex flex-row">
-          <button
-            type="button"
-            class="btn-primary inline-flex justify-center py-2 px-4"
+          <NButton
+            type="primary"
             :disabled="
               !allowMailDeliveryActionButton ||
               state.isSendLoading ||
@@ -160,7 +141,7 @@
             @click.prevent="updateMailDeliverySetting"
           >
             {{ mailDeliverySettingButtonText }}
-          </button>
+          </NButton>
           <BBSpin v-if="state.isCreateOrUpdateLoading" class="ml-1" />
         </div>
       </div>
@@ -171,16 +152,14 @@
           <div class="textlabel pl-1">
             {{ $t("settings.mail-delivery.field.send-test-email-to") }}
           </div>
-          <div class="flex flex-row justify-start items-center mt-2">
-            <BBTextField
+          <div class="flex flex-row justify-start items-center mt-2 space-x-4">
+            <NInput
+              v-model:value="state.testMailTo"
               class="text-main h-max w-80"
               :placeholder="'someone@gmail.com'"
-              :value="state.testMailTo"
-              @input="(e: any) => state.testMailTo = e.target.value"
             />
-            <button
-              type="button"
-              class="btn-primary ml-5"
+            <NButton
+              type="primary"
               :disabled="
                 state.testMailTo === '' ||
                 state.isSendLoading ||
@@ -189,7 +168,7 @@
               @click.prevent="testMailDeliverySetting"
             >
               {{ $t("settings.mail-delivery.field.send") }}
-            </button>
+            </NButton>
             <BBSpin v-if="state.isSendLoading" class="ml-2" />
           </div>
         </div>
@@ -199,10 +178,11 @@
 </template>
 <script lang="ts" setup>
 import { cloneDeep, isEqual } from "lodash-es";
+import { SelectOption } from "naive-ui";
 import { ClientError } from "nice-grpc-web";
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBCheckbox, BBSelect, BBTextField } from "@/bbkit";
+import { BBCheckbox } from "@/bbkit";
 import { pushNotification } from "@/store";
 import { useWorkspaceMailDeliverySettingStore } from "@/store/modules/workspaceMailDeliverySetting";
 import {
@@ -340,6 +320,21 @@ const handleSelectEncryptionType = (method: string) => {
       break;
   }
 };
+
+const encryptionTypeOptions = computed((): SelectOption[] => {
+  return ["NONE", "SSL/TLS", "STARTTLS"].map((item) => ({
+    value: item,
+    label: item,
+  }));
+});
+
+const authenticationTypeOptions = computed((): SelectOption[] => {
+  return ["NONE", "PLAIN", "LOGIN", "CRAM-MD5"].map((item) => ({
+    value: item,
+    label: item,
+  }));
+});
+
 const getSelectedEncryptionTypeItem = computed(() => {
   switch (state.mailDeliverySetting.encryption) {
     case SMTPMailDeliverySettingValue_Encryption.ENCRYPTION_NONE:

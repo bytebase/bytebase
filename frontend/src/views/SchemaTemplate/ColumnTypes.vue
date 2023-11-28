@@ -7,7 +7,7 @@
         </div>
       </div>
     </div>
-    <div class="w-full max-w-lg flex flex-col justify-start items-start gap-2">
+    <div class="w-full flex flex-col justify-start items-start gap-2">
       <div class="w-full flex flex-row justify-between items-center">
         <div class="flex flex-row justify-start items-center">
           <EngineIcon :engine="Engine.MYSQL" :custom-class="'mr-1'" />
@@ -46,7 +46,7 @@
           maxRows: 10,
         }"
       />
-      <div class="w-full flex flex-row justify-end items-center">
+      <div class="w-full flex flex-row justify-end items-center mt-2">
         <NButton
           type="primary"
           :disabled="!allowToUpdateColumnTypeTemplateForMySQL"
@@ -56,8 +56,8 @@
         </NButton>
       </div>
     </div>
-    <NDivider class="w-full max-w-lg" />
-    <div class="w-full max-w-lg flex flex-col justify-start items-start gap-2">
+    <NDivider class="w-full py-2" />
+    <div class="w-full flex flex-col justify-start items-start gap-2">
       <div class="w-full flex flex-row justify-between items-center">
         <div class="flex flex-row justify-start items-center">
           <EngineIcon :engine="Engine.POSTGRES" :custom-class="'mr-1'" />
@@ -96,7 +96,7 @@
           maxRows: 10,
         }"
       />
-      <div class="w-full flex flex-row justify-end items-center">
+      <div class="w-full flex flex-row justify-end items-center mt-2">
         <NButton
           type="primary"
           :disabled="!allowToUpdateColumnTypeTemplateForPostgreSQL"

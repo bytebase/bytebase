@@ -1,4 +1,4 @@
-import { format, FormatOptionsWithLanguage } from "sql-formatter";
+import type { FormatOptionsWithLanguage } from "sql-formatter";
 import { SQLDialect } from "../../types";
 
 type FormatResult = {
@@ -18,10 +18,11 @@ const convertDialectToFormatterLanguage = (
   return "sql";
 };
 
-const formatSQL = (
+const formatSQL = async (
   sql: string,
   dialect: SQLDialect | undefined
-): FormatResult => {
+): Promise<FormatResult> => {
+  const { format } = await import("sql-formatter");
   const options: Partial<FormatOptionsWithLanguage> = {
     language: convertDialectToFormatterLanguage(dialect),
   };

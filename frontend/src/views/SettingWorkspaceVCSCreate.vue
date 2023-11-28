@@ -1,5 +1,5 @@
 <template>
-  <div class="mt-4 space-y-4 divide-y divide-block-border">
+  <div class="space-y-4 divide-y divide-block-border">
     <div class="textinfolabel">
       <i18n-t keypath="gitops.setting.add-git-provider.description">
         <template #guide>

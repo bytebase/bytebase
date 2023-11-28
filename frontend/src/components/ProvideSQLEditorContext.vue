@@ -1,27 +1,34 @@
 <template>
   <slot v-if="!isLoading" />
+  <div
+    v-else
+    class="absolute bg-white/50 inset-0 flex flex-col items-center justify-center"
+  >
+    <NSpin size="medium" />
+  </div>
 </template>
 
 <script lang="ts" setup>
+import { NSpin } from "naive-ui";
 import { onMounted, computed, watch, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import {
+  useEnvironmentV1Store,
+  useInstanceV1Store,
+  usePolicyV1Store,
+  useProjectV1Store,
+  useRoleStore,
+  useSettingV1Store,
   useSQLEditorStore,
   useTabStore,
   pushNotification,
-  useProjectV1Store,
   useCurrentUserV1,
   useSheetV1Store,
-  useInstanceV1Store,
   useDatabaseV1Store,
-  useEnvironmentV1Store,
-  useUserStore,
 } from "@/store";
 import { useSQLEditorTreeStore } from "@/store/modules/sqlEditorTree";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import { usePolicyV1Store } from "@/store/modules/v1/policy";
-import { useSettingV1Store } from "@/store/modules/v1/setting";
 import {
   Connection,
   CoreTabInfo,
@@ -42,7 +49,6 @@ import {
   sheetSlugV1,
   connectionV1Slug as makeConnectionV1Slug,
   isSheetReadableV1,
-  isDatabaseV1Queryable,
   getSuggestedTabNameFromConnection,
   isSimilarTab,
 } from "@/utils";
@@ -62,40 +68,29 @@ const treeStore = useSQLEditorTreeStore();
 const tabStore = useTabStore();
 const sheetV1Store = useSheetV1Store();
 
-const prepareAccessControlPolicy = async () => {
-  treeStore.accessControlPolicyList = await policyV1Store.fetchPolicies({
-    policyType: PolicyType.WORKSPACE_IAM,
-    resourceType: PolicyResourceType.WORKSPACE,
-  });
-  await policyV1Store.fetchPolicies({
-    resourceType: PolicyResourceType.ENVIRONMENT,
-    policyType: PolicyType.DISABLE_COPY_DATA,
-  });
-};
-
-const prepareAccessibleDatabaseList = async () => {
+const prepareDatabases = async () => {
   // It will also be called when user logout
   if (currentUserV1.value.name === UNKNOWN_USER_NAME) {
     return;
   }
-  instanceStore.fetchInstanceList();
+  let filter = "";
+  if (route.query.project) {
+    filter = `project == "${projectNamePrefix}${route.query.project}"`;
+  }
 
   // `databaseList` is the database list accessible by current user.
   // Only accessible instances and databases will be listed in the tree.
   const databaseList = (
     await databaseStore.fetchDatabaseList({
       parent: "instances/-",
+      filter: filter,
     })
-  ).filter(
-    (db) =>
-      db.syncState === State.ACTIVE &&
-      isDatabaseV1Queryable(db, currentUserV1.value)
-  );
+  ).filter((db) => db.syncState === State.ACTIVE);
 
   treeStore.databaseList = databaseList;
 };
 
-const initializeTree = async () => {
+const prepareProjects = async () => {
   const projectName = route.query.project;
   if (projectName) {
     try {
@@ -107,7 +102,21 @@ const initializeTree = async () => {
     } catch (error) {
       treeStore.selectedProject = unknownProject();
     }
+  } else {
+    await useProjectV1Store().fetchProjectList(false);
   }
+};
+
+const prepareInstances = async () => {
+  const projectName = route.query.project;
+  if (projectName) {
+    await useInstanceV1Store().fetchProjectInstanceList(projectName as string);
+  } else {
+    await useInstanceV1Store().fetchInstanceList();
+  }
+};
+
+const initializeTree = async () => {
   treeStore.buildTree();
 };
 
@@ -155,11 +164,16 @@ const prepareSheet = async () => {
   let insId = String(UNKNOWN_ID);
   let dbId = String(UNKNOWN_ID);
   if (sheet.database) {
-    const database = await databaseStore.getOrFetchDatabaseByName(
-      sheet.database
-    );
-    insId = database.instanceEntity.uid;
-    dbId = database.uid;
+    try {
+      const database = await databaseStore.getOrFetchDatabaseByName(
+        sheet.database,
+        true /* silent */
+      );
+      insId = database.instanceEntity.uid;
+      dbId = database.uid;
+    } catch {
+      // Skip.
+    }
   }
 
   tabStore.updateCurrentTab({
@@ -312,24 +326,25 @@ const syncURLWithConnection = () => {
 };
 
 onMounted(async () => {
-  await useUserStore().fetchUserList();
-  await useSettingV1Store().fetchSettingList();
-
   if (treeStore.state === "UNSET") {
     treeStore.state = "LOADING";
 
-    // Initialize project list state for iam policy.
-    await useProjectV1Store().fetchProjectList(true /* include archived */);
-    // Initialize environment list for composing.
-    await useEnvironmentV1Store().fetchEnvironments(
-      true /* include archived */
-    );
-    await usePolicyV1Store().getOrFetchPolicyByName("policies/WORKSPACE_IAM");
-    await prepareAccessControlPolicy();
-    await prepareAccessibleDatabaseList();
+    await Promise.all([
+      useSettingV1Store().fetchSettingList(),
+      useRoleStore().fetchRoleList(),
+      useEnvironmentV1Store().fetchEnvironments(),
+      prepareInstances(),
+      prepareProjects(),
+      policyV1Store.fetchPolicies({
+        resourceType: PolicyResourceType.ENVIRONMENT,
+        policyType: PolicyType.DISABLE_COPY_DATA,
+      }),
+      usePolicyV1Store().getOrFetchPolicyByName("policies/WORKSPACE_IAM"),
+    ]);
+
+    await prepareDatabases();
 
     await setConnectionFromQuery();
-    await sqlEditorStore.fetchQueryHistoryList();
 
     await initializeTree();
     treeStore.state = "READY";

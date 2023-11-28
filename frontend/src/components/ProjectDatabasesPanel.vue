@@ -1,15 +1,13 @@
 <template>
-  <div class="space-y-2">
+  <div class="space-y-4">
     <div
-      class="text-lg font-medium leading-7 text-main flex items-center justify-between"
+      class="text-lg font-medium leading-7 text-main flex flex-col lg:flex-row items-start lg:items-end justify-between space-y-2"
     >
-      <div class="flex items-center">
-        <EnvironmentTabFilter
-          :environment="state.environment"
-          :include-all="true"
-          @update:environment="state.environment = $event"
-        />
-      </div>
+      <EnvironmentTabFilter
+        :environment="state.environment"
+        :include-all="true"
+        @update:environment="state.environment = $event"
+      />
       <NInputGroup style="width: auto">
         <DatabaseLabelFilter
           v-model:selected="state.selectedLabels"
@@ -25,11 +23,13 @@
             state.instance = $event ? String($event) : String(UNKNOWN_ID)
           "
         />
-        <SearchBox
-          :value="state.keyword"
-          :placeholder="$t('common.filter-by-name')"
-          @update:value="state.keyword = $event"
-        />
+        <div class="hidden md:block">
+          <SearchBox
+            :value="state.keyword"
+            :placeholder="$t('common.filter-by-name')"
+            @update:value="state.keyword = $event"
+          />
+        </div>
       </NInputGroup>
     </div>
 

@@ -1,11 +1,10 @@
 <template>
-  <div class="flex items-center justify-end gap-3">
+  <div v-if="!isCreating" class="flex items-center justify-end gap-3">
     <div class="flex items-center justify-end gap-1">
       <NTooltip>
         <template #trigger>
           <div class="flex items-center gap-x-1 textlabel">
             <span>{{ $t("common.assignee") }}</span>
-            <span v-if="isCreating" class="text-red-600">*</span>
           </div>
         </template>
         <template #default>

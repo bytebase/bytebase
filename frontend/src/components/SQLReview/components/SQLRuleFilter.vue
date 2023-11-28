@@ -9,18 +9,18 @@
       @toggle-checked-level="$emit('toggle-checked-level', $event)"
     />
     <div
-      class="flex flex-col lg:flex-row items-start justify-between gap-y-3 lg:items-center border-t border-control-border pt-4"
+      class="flex flex-row sm:flex-col lg:flex-row items-center sm:items-start lg:items-center justify-between gap-y-2 gap-x-2 border-t border-control-border pt-4"
     >
       <SQLReviewCategoryTabFilter
-        :selected="params.selectedCategory"
+        :value="params.selectedCategory"
         :category-list="categoryFilterList"
-        @select="$emit('change-category', $event)"
+        @update:value="$emit('change-category', $event)"
       />
-      <BBTableSearch
+      <SearchBox
         ref="searchField"
-        class="w-full lg:w-auto"
+        :value="params.searchText"
         :placeholder="$t('common.filter-by-name')"
-        @change-text="$emit('change-search-text', $event)"
+        @update:value="$emit('change-search-text', $event)"
       />
     </div>
   </div>

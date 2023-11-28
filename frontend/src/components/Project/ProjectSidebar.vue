@@ -8,6 +8,7 @@
 </template>
 
 <script setup lang="ts">
+import { defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { computedAsync, useLocalStorage } from "@vueuse/core";
 import { startCase } from "lodash-es";
 import {
@@ -39,6 +40,7 @@ import {
 } from "@/types";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import { idFromSlug, projectSlugV1 } from "@/utils";
+import { useProjectDatabaseActions } from "../KBar/useDatabaseActions";
 
 const projectHashList = [
   "databases",
@@ -357,4 +359,41 @@ watch(
     immediate: true,
   }
 );
+
+const navigationKbarActions = computed(() => {
+  const navigationItems = projectSidebarItemList.value.flatMap<{
+    path: ProjectHash;
+    title: string;
+    hide?: boolean;
+  }>((item) => {
+    if (item.children && item.children.length > 0) {
+      return item.children.map((child) => ({
+        path: child.path as ProjectHash,
+        title: child.title,
+        hide: child.hide,
+      }));
+    }
+    return [
+      {
+        path: item.path as ProjectHash,
+        title: item.title,
+        hide: item.hide,
+      },
+    ];
+  });
+
+  const actions = navigationItems.map((item) =>
+    defineAction({
+      id: `bb.navigation.project.${project.value.uid}.${item.path}`,
+      name: item.title,
+      section: t("kbar.navigation"),
+      keywords: [item.title.toLowerCase(), item.path].join(" "),
+      perform: () => onSelect(item.path),
+    })
+  );
+  return actions;
+});
+useRegisterActions(navigationKbarActions);
+
+useProjectDatabaseActions(project);
 </script>

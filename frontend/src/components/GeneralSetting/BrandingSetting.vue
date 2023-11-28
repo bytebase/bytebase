@@ -1,9 +1,12 @@
 <template>
-  <div class="px-4 py-6 lg:flex">
+  <div class="py-6 lg:flex">
     <div class="text-left lg:w-1/4">
-      <h1 class="text-2xl font-bold">
-        {{ $t("settings.general.workspace.branding") }}
-      </h1>
+      <div class="flex items-center space-x-2">
+        <h1 class="text-2xl font-bold">
+          {{ $t("settings.general.workspace.branding") }}
+        </h1>
+        <FeatureBadge feature="bb.feature.branding" />
+      </div>
       <span v-if="!allowEdit" class="text-sm text-gray-400">
         {{ $t("settings.general.workspace.only-admin-can-edit") }}
       </span>
@@ -77,9 +80,8 @@
             {{ t("settings.general.workspace.confirm-delete-custom-logo") }}
           </template>
         </NPopconfirm>
-        <button
-          type="button"
-          class="btn-primary"
+        <NButton
+          type="primary"
           :disabled="!allowSave"
           @click.prevent="uploadLogo"
         >
@@ -88,7 +90,7 @@
             custom-class="text-white pointer-events-none"
           />
           {{ $t("common.update") }}
-        </button>
+        </NButton>
       </div>
     </div>
   </div>

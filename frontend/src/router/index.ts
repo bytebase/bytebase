@@ -14,7 +14,6 @@ import DatabaseLayout from "@/layouts/DatabaseLayout.vue";
 import InstanceLayout from "@/layouts/InstanceLayout.vue";
 import SQLEditorLayout from "@/layouts/SQLEditorLayout.vue";
 import SplashLayout from "@/layouts/SplashLayout.vue";
-import { useConversationStore } from "@/plugins/ai/store";
 import { t } from "@/plugins/i18n";
 import {
   hasFeature,
@@ -266,18 +265,6 @@ const routes: Array<RouteRecordRaw> = [
             },
           },
           {
-            path: "/project/:projectSlug/branches/:branchName",
-            name: "workspace.branch.detail",
-            meta: {
-              overrideTitle: true,
-            },
-            components: {
-              content: () => import("../views/branch/BranchDetail.vue"),
-              leftSidebar: ProjectSidebar,
-            },
-            props: { content: true, leftSidebar: true },
-          },
-          {
             path: "sync-schema",
             name: "workspace.sync-schema",
             meta: { title: () => startCase(t("database.sync-schema.title")) },
@@ -310,19 +297,6 @@ const routes: Array<RouteRecordRaw> = [
             components: {
               content: () => import("../views/AnomalyCenterDashboard.vue"),
               leftSidebar: DashboardSidebar,
-            },
-            props: {
-              content: true,
-              leftSidebar: true,
-            },
-          },
-          {
-            path: "archive",
-            name: "workspace.archive",
-            meta: { title: () => t("common.archived") },
-            components: {
-              content: () => import("../views/Archive.vue"),
-              leftSidebar: SettingSidebar,
             },
             props: {
               content: true,
@@ -607,6 +581,13 @@ const routes: Array<RouteRecordRaw> = [
                   import("../views/SettingWorkspaceDebugLog.vue"),
                 props: true,
               },
+              {
+                path: "archive",
+                name: "setting.workspace.archive",
+                meta: { title: () => t("common.archived") },
+                component: () => import("../views/Archive.vue"),
+                props: true,
+              },
             ],
           },
           {
@@ -747,6 +728,15 @@ const routes: Array<RouteRecordRaw> = [
                   },
                 },
                 component: () => import("../views/ProjectWebhookDetail.vue"),
+                props: true,
+              },
+              {
+                path: "branches/:branchName",
+                name: "workspace.branch.detail",
+                meta: {
+                  overrideTitle: true,
+                },
+                component: () => import("../views/branch/BranchDetail.vue"),
                 props: true,
               },
             ],
@@ -1024,7 +1014,9 @@ router.beforeEach((to, from, next) => {
     to.name === PASSWORD_FORGOT_MODULE
   ) {
     useTabStore().reset();
-    useConversationStore().reset();
+    import("@/plugins/ai/store").then(({ useConversationStore }) => {
+      useConversationStore().reset();
+    });
     if (isLoggedIn) {
       if (typeof to.query.redirect === "string") {
         location.replace(to.query.redirect);
@@ -1146,7 +1138,6 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.project" ||
     to.name === "workspace.instance" ||
     to.name === "workspace.database" ||
-    to.name === "workspace.archive" ||
     to.name === "workspace.issue" ||
     to.name === "workspace.environment" ||
     to.name === "sql-editor.home" ||
