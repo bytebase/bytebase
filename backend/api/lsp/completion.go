@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sort"
 
 	"github.com/pkg/errors"
 	"github.com/sourcegraph/go-lsp"
@@ -52,6 +53,8 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 		return newEmptyCompletionList(), nil
 	}
 
+	candidates = sortCandidates(candidates, params)
+
 	var items []lsp.CompletionItem
 	for _, candidate := range candidates {
 		items = append(items, lsp.CompletionItem{
@@ -65,6 +68,42 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 		IsIncomplete: false,
 		Items:        items,
 	}, nil
+}
+
+func sortCandidates(candidates []base.Candidate, params lsp.CompletionParams) []base.Candidate {
+	switch params.Context.TriggerCharacter {
+	case ".":
+		sort.Slice(candidates, func(i, j int) bool {
+			priorityI := candidateTypePriorityAfterDot(candidates[i].Type)
+			priorityJ := candidateTypePriorityAfterDot(candidates[j].Type)
+			if priorityI != priorityJ {
+				return priorityI < priorityJ
+			}
+			if candidates[i].Type != candidates[j].Type {
+				return candidates[i].Type < candidates[j].Type
+			}
+			return candidates[i].Text < candidates[j].Text
+		})
+	}
+
+	return candidates
+}
+
+func candidateTypePriorityAfterDot(tp base.CandidateType) int {
+	switch tp {
+	case base.CandidateTypeSchema:
+		return 1
+	case base.CandidateTypeTable:
+		return 2
+	case base.CandidateTypeView:
+		return 3
+	case base.CandidateTypeColumn:
+		return 4
+	case base.CandidateTypeFunction:
+		return 5
+	default:
+		return 6
+	}
 }
 
 func convertLSPCompletionItemKind(tp base.CandidateType) lsp.CompletionItemKind {
