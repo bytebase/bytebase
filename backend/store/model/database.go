@@ -242,14 +242,10 @@ func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *DatabaseMeta
 			internalViews:  make(map[string]*ViewMetadata),
 		}
 		for _, table := range schema.Tables {
-			tableMetadata := &TableMetadata{
-				internal: make(map[string]*storepb.ColumnMetadata),
+			tables, names := buildTablesMetadata(table)
+			for i, table := range tables {
+				schemaMetadata.internalTables[names[i]] = table
 			}
-			for _, column := range table.Columns {
-				tableMetadata.internal[column.Name] = column
-				tableMetadata.columns = append(tableMetadata.columns, column)
-			}
-			schemaMetadata.internalTables[table.Name] = tableMetadata
 		}
 		for _, view := range schema.Views {
 			schemaMetadata.internalViews[view.Name] = &ViewMetadata{}
@@ -297,8 +293,65 @@ func (s *SchemaMetadata) ListViewNames() []string {
 	return result
 }
 
+func buildTablesMetadata(table *storepb.TableMetadata) ([]*TableMetadata, []string) {
+	if table == nil {
+		return nil, nil
+	}
+	var result []*TableMetadata
+	var name []string
+	tableMetadata := &TableMetadata{
+		internal: make(map[string]*storepb.ColumnMetadata),
+	}
+	for _, column := range table.Columns {
+		tableMetadata.internal[column.Name] = column
+		tableMetadata.columns = append(tableMetadata.columns, column)
+	}
+	result = append(result, tableMetadata)
+	name = append(name, table.Name)
+
+	if table.Partitions != nil {
+		partitionTables, partitionNames := buildTablesMetadataRecursive(table.Columns, table.Partitions, tableMetadata)
+		result = append(result, partitionTables...)
+		name = append(name, partitionNames...)
+	}
+	return result, name
+}
+
+// buildTablesMetadataRecursive builds the partition tables recursively,
+// returns the table metadata and the partition names, the length of them must be the same.
+func buildTablesMetadataRecursive(originalColumn []*storepb.ColumnMetadata, partitions []*storepb.TablePartitionMetadata, root *TableMetadata) ([]*TableMetadata, []string) {
+	if partitions == nil {
+		return nil, nil
+	}
+
+	var tables []*TableMetadata
+	var names []string
+
+	for _, partition := range partitions {
+		partitionMetadata := &TableMetadata{
+			partitionOf: root,
+			internal:    make(map[string]*storepb.ColumnMetadata),
+		}
+		for _, column := range originalColumn {
+			partitionMetadata.internal[column.Name] = column
+			partitionMetadata.columns = append(partitionMetadata.columns, column)
+		}
+		tables = append(tables, partitionMetadata)
+		names = append(names, partition.Name)
+		if partition.Subpartitions != nil {
+			subTables, subNames := buildTablesMetadataRecursive(originalColumn, partition.Subpartitions, partitionMetadata)
+			tables = append(tables, subTables...)
+			names = append(names, subNames...)
+		}
+	}
+	return tables, names
+}
+
 // TableMetadata is the metadata for a table.
 type TableMetadata struct {
+	// If partitionOf is not nil, it means this table is a partition table.
+	partitionOf *TableMetadata
+
 	internal map[string]*storepb.ColumnMetadata
 	columns  []*storepb.ColumnMetadata
 }
