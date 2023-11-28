@@ -59,7 +59,14 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 		v1pb.DatabaseService_GetBackupSetting_FullMethodName,
 		v1pb.DatabaseService_UpdateBackupSetting_FullMethodName,
 		v1pb.DatabaseService_CreateBackup_FullMethodName,
-		v1pb.DatabaseService_ListBackups_FullMethodName:
+		v1pb.DatabaseService_ListBackups_FullMethodName,
+		v1pb.DatabaseService_ListSlowQueries_FullMethodName, // TODO(p0ny): implement.
+		v1pb.DatabaseService_ListSecrets_FullMethodName,
+		v1pb.DatabaseService_UpdateSecret_FullMethodName,
+		v1pb.DatabaseService_DeleteSecret_FullMethodName,
+		v1pb.DatabaseService_AdviseIndex_FullMethodName, // TODO(p0ny): implement.
+		v1pb.DatabaseService_ListChangeHistories_FullMethodName,
+		v1pb.DatabaseService_GetChangeHistory_FullMethodName:
 		projectIDs, err := in.getProjectIDsForDatabaseService(ctx, req)
 		if err != nil {
 			return status.Errorf(codes.Internal, "failed to check permission, err %v", err)
@@ -174,6 +181,29 @@ func (in *ACLInterceptor) getProjectIDsForDatabaseService(ctx context.Context, r
 		databaseNames = append(databaseNames, r.GetParent())
 	case *v1pb.ListBackupsRequest:
 		databaseNames = append(databaseNames, r.GetParent())
+	case *v1pb.ListSlowQueriesRequest: // TODO(p0ny): implement.
+	case *v1pb.ListSecretsRequest:
+		databaseNames = append(databaseNames, r.GetParent())
+	case *v1pb.UpdateSecretRequest:
+		instance, database, _, err := common.GetInstanceDatabaseIDSecretName(r.GetSecret().GetName())
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get databaseName from %q", r.GetSecret().GetName())
+		}
+		databaseNames = append(databaseNames, common.FormatDatabase(instance, database))
+	case *v1pb.DeleteSecretRequest:
+		instance, database, _, err := common.GetInstanceDatabaseIDSecretName(r.GetName())
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get databaseName from %q", r.GetName())
+		}
+		databaseNames = append(databaseNames, common.FormatDatabase(instance, database))
+	case *v1pb.ListChangeHistoriesRequest:
+		databaseNames = append(databaseNames, r.GetParent())
+	case *v1pb.GetChangeHistoryRequest:
+		instance, database, _, err := common.GetInstanceDatabaseIDChangeHistory(r.GetName())
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get databaseName from %q", r.GetName())
+		}
+		databaseNames = append(databaseNames, common.FormatDatabase(instance, database))
 	}
 
 	for _, databaseName := range databaseNames {
