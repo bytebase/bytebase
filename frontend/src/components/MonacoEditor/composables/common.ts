@@ -1,7 +1,7 @@
 import type monaco from "monaco-editor";
 import { ref } from "vue";
-import { Language } from "@/types";
-import { SupportedLanguages } from "../services";
+import type { Language } from "@/types";
+import { SupportedLanguages } from "../types";
 
 export type EditorType =
   | monaco.editor.IStandaloneCodeEditor

@@ -1,31 +1,11 @@
 import { languages } from "monaco-editor";
 import { initialize as initializeExtensions } from "vscode/extensions";
 import { initialize as initializeServices } from "vscode/services";
+import { SupportedLanguages } from "./types";
 
 const state = {
   servicesInitialized: undefined as Promise<void> | undefined,
 };
-
-export const SupportedLanguages: languages.ILanguageExtensionPoint[] = [
-  {
-    id: "sql",
-    extensions: [".sql"],
-    aliases: ["SQL", "sql"],
-    mimetypes: ["application/x-sql"],
-  },
-  {
-    id: "javascript",
-    extensions: [".js"],
-    aliases: ["JS", "js"],
-    mimetypes: ["application/javascript"],
-  },
-  {
-    id: "redis",
-    extensions: [".redis"],
-    aliases: ["REDIS", "redis"],
-    mimetypes: ["application/redis"],
-  },
-];
 
 const initializeRunner = async () => {
   await initializeServices({});

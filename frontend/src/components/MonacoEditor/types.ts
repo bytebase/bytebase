@@ -14,3 +14,24 @@ export type AdviceOption = {
   endLineNumber: number; // starts from 1
   endColumn: number; // starts from 1
 };
+
+export const SupportedLanguages: monaco.languages.ILanguageExtensionPoint[] = [
+  {
+    id: "sql",
+    extensions: [".sql"],
+    aliases: ["SQL", "sql"],
+    mimetypes: ["application/x-sql"],
+  },
+  {
+    id: "javascript",
+    extensions: [".js"],
+    aliases: ["JS", "js"],
+    mimetypes: ["application/javascript"],
+  },
+  {
+    id: "redis",
+    extensions: [".redis"],
+    aliases: ["REDIS", "redis"],
+    mimetypes: ["application/redis"],
+  },
+];
