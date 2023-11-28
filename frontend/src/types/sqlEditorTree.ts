@@ -6,6 +6,7 @@ import { Engine } from "./proto/v1/common";
 import {
   SchemaMetadata,
   TableMetadata,
+  TablePartitionMetadata,
   ViewMetadata,
 } from "./proto/v1/database_service";
 import { Environment } from "./proto/v1/environment_service";
@@ -31,6 +32,7 @@ export type SQLEditorTreeNodeType =
   | "table"
   | "label"
   | "view"
+  | "partition-table"
   | "expandable-text" // Text nodes to display "Tables / Views / Functions / Triggers" etc.
   | "dummy"; // Dummy nodes to display "<Empty>" etc.
 
@@ -42,6 +44,13 @@ export type RichTableMetadata = {
   database: ComposedDatabase;
   schema: SchemaMetadata;
   table: TableMetadata;
+};
+export type RichPartitionTableMetadata = {
+  database: ComposedDatabase;
+  schema: SchemaMetadata;
+  table: TableMetadata;
+  parentPartition?: TablePartitionMetadata;
+  partition: TablePartitionMetadata;
 };
 export type RichViewMetadata = {
   database: ComposedDatabase;
@@ -69,6 +78,8 @@ export type SQLEditorTreeNodeTarget<T extends SQLEditorTreeNodeType = any> =
     ? RichSchemaMetadata
     : T extends "table"
     ? RichTableMetadata
+    : T extends "partition-table"
+    ? RichPartitionTableMetadata
     : T extends "view"
     ? RichViewMetadata
     : T extends "label"
@@ -108,6 +119,8 @@ export const ExpandableTreeNodeTypes: readonly SQLEditorTreeNodeType[] = [
   "instance",
   "environment",
   "project",
+  "table",
+  "partition-table",
   "expandable-text",
   "label",
 ] as const;
@@ -118,7 +131,6 @@ export const ConnectableTreeNodeTypes: readonly SQLEditorTreeNodeType[] = [
 ] as const;
 
 export const LeafTreeNodeTypes: readonly SQLEditorTreeNodeType[] = [
-  "table",
   "view",
   "dummy",
 ] as const;
