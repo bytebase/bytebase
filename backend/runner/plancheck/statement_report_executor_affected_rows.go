@@ -39,8 +39,12 @@ func getTableDataSize(metadata *storepb.DatabaseSchemaMetadata, schemaName, tabl
 }
 
 func buildGetTableDataSizeFunc(metadata *storepb.DatabaseSchemaMetadata) base.GetTableDataSizeFunc {
-	schemaMetadata := model.NewDBSchema(metadata, nil /* schema */, nil /* schema */)
+	var schemaMetadata *model.DBSchema
 	return func(schemaName, tableName string) int64 {
+		// initialize schemaMetadata when the function is first used.
+		if schemaMetadata == nil {
+			schemaMetadata = model.NewDBSchema(metadata, nil /* schema */, nil /* schema */)
+		}
 		if schemaMetadata == nil {
 			return 0
 		}

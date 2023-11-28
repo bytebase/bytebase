@@ -128,16 +128,7 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, conf
 		sqlDB := driver.GetDB()
 
 		return reportForPostgres(ctx, sqlDB, database.DatabaseName, renderedStatement, dbSchema.GetMetadata())
-	case storepb.Engine_OCEANBASE:
-		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
-		if err != nil {
-			return nil, err
-		}
-		defer driver.Close(ctx)
-		sqlDB := driver.GetDB()
-
-		return reportForOceanBase(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema.GetMetadata())
-	case storepb.Engine_MYSQL:
+	case storepb.Engine_MYSQL, storepb.Engine_OCEANBASE:
 		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 		if err != nil {
 			return nil, err
@@ -294,16 +285,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 					sqlDB := driver.GetDB()
 
 					return reportForPostgres(ctx, sqlDB, database.DatabaseName, renderedStatement, dbSchema.GetMetadata())
-				case storepb.Engine_OCEANBASE:
-					driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
-					if err != nil {
-						return nil, err
-					}
-					defer driver.Close(ctx)
-					sqlDB := driver.GetDB()
-
-					return reportForOceanBase(ctx, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema.GetMetadata())
-				case storepb.Engine_MYSQL, storepb.Engine_MARIADB:
+				case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 					driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
 					if err != nil {
 						return nil, err
