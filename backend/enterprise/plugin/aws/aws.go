@@ -15,7 +15,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
-	lm "github.com/aws/aws-sdk-go-v2/service/licensemanager"
+	"github.com/aws/aws-sdk-go-v2/service/licensemanager"
 	"github.com/aws/aws-sdk-go-v2/service/licensemanager/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 )
@@ -25,18 +25,21 @@ var _ plugin.LicenseProvider = (*Provider)(nil)
 // Provider is the AWS license provider.
 type Provider struct {
 	projectID      string
-	licenseManager *lm.Client
+	licenseManager *licensemanager.Client
 	identity       *sts.GetCallerIdentityOutput
 }
 
 // NewProvider will create a new AWS license provider.
+// To use the aws provider in local development, you need to expose
+// AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION and PRODUCT_ID in the environment.
+// And the AWS account must have the permission to access the AWS license manager.
 func NewProvider(providerConfig *plugin.ProviderConfig) (plugin.LicenseProvider, error) {
 	projectID := os.Getenv("PRODUCT_ID")
 	if projectID == "" {
 		return nil, errors.Errorf("cannot find aws project id")
 	}
 
-	ctx := context.TODO()
+	ctx := context.Background()
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return nil, err
@@ -51,16 +54,16 @@ func NewProvider(providerConfig *plugin.ProviderConfig) (plugin.LicenseProvider,
 	return &Provider{
 		projectID:      projectID,
 		identity:       identity,
-		licenseManager: lm.NewFromConfig(cfg),
+		licenseManager: licensemanager.NewFromConfig(cfg),
 	}, nil
 }
 
-// StoreLicense will store the hub license.
+// StoreLicense will store the aws license.
 func (*Provider) StoreLicense(_ context.Context, _ *enterprise.SubscriptionPatch) error {
 	return nil
 }
 
-// LoadSubscription will load the hub subscription.
+// LoadSubscription will load the aws subscription.
 func (p *Provider) LoadSubscription(ctx context.Context) *enterprise.Subscription {
 	subscription := &enterprise.Subscription{
 		InstanceCount: 0,
@@ -71,7 +74,7 @@ func (p *Provider) LoadSubscription(ctx context.Context) *enterprise.Subscriptio
 
 	license, err := p.checkoutLicense(ctx)
 	if err != nil {
-		slog.Debug("failed to checkout license",
+		slog.Error("failed to checkout license",
 			log.BBError(err),
 		)
 		return subscription
@@ -86,7 +89,7 @@ func (p *Provider) LoadSubscription(ctx context.Context) *enterprise.Subscriptio
 	if v := license.Validity; v != nil {
 		begin, err := time.Parse(time.RFC3339, aws.ToString(v.Begin))
 		if err != nil {
-			slog.Debug("failed to parse subscription begin time",
+			slog.Error("failed to parse subscription begin time",
 				slog.String("begin", *v.Begin),
 				log.BBError(err),
 			)
@@ -96,7 +99,7 @@ func (p *Provider) LoadSubscription(ctx context.Context) *enterprise.Subscriptio
 
 		end, err := time.Parse(time.RFC3339, aws.ToString(v.End))
 		if err != nil {
-			slog.Debug("failed to parse subscription end time",
+			slog.Error("failed to parse subscription end time",
 				slog.String("end", *v.Begin),
 				log.BBError(err),
 			)
@@ -117,13 +120,18 @@ func (p *Provider) LoadSubscription(ctx context.Context) *enterprise.Subscriptio
 
 func (p *Provider) checkoutLicense(ctx context.Context) (*types.GrantedLicense, error) {
 	productSKUField := "ProductSKU"
+	issuerNameField := "IssuerName"
 	var maxResults int32 = 1
 
-	res, err := p.licenseManager.ListReceivedLicenses(ctx, &lm.ListReceivedLicensesInput{
+	res, err := p.licenseManager.ListReceivedLicenses(ctx, &licensemanager.ListReceivedLicensesInput{
 		Filters: []types.Filter{
 			{
 				Name:   &productSKUField,
 				Values: []string{p.projectID},
+			},
+			{
+				Name:   &issuerNameField,
+				Values: []string{"AWS/Marketplace"},
 			},
 		},
 		MaxResults: &maxResults,
