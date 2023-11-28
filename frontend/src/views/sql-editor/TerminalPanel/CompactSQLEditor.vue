@@ -37,18 +37,21 @@ import {
   SQLDialect,
 } from "@/types";
 import { formatEngineV1, useInstanceV1EditorLanguage } from "@/utils";
-import {
-  checkCursorAtFirstLine,
-  checkCursorAtLast,
-  checkCursorAtLastLine,
-  checkEndsWithSemicolon,
-} from "./utils";
 
-const [{ MonacoEditor }, { useEditorContextKey, formatEditorContent }] =
-  await Promise.all([
-    import("@/components/MonacoEditor"),
-    import("@/components/MonacoEditor/utils"),
-  ]);
+const [
+  { MonacoEditor },
+  { useEditorContextKey, formatEditorContent },
+  {
+    checkCursorAtFirstLine,
+    checkCursorAtLast,
+    checkCursorAtLastLine,
+    checkEndsWithSemicolon,
+  },
+] = await Promise.all([
+  import("@/components/MonacoEditor"),
+  import("@/components/MonacoEditor/utils"),
+  import("./utils"),
+]);
 
 const props = defineProps({
   sql: {
@@ -302,8 +305,8 @@ const EDITOR_OPTIONS = computed<Editor.IStandaloneEditorConstructionOptions>(
 // );
 </script>
 
-<style lang="postcss">
-.compact-sql-editor .monaco-editor .line-numbers {
+<style lang="postcss" scoped>
+.compact-sql-editor :deep(.monaco-editor .line-numbers) {
   @apply pr-0;
 }
 </style>
