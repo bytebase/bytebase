@@ -62,16 +62,8 @@
         </div>
       </router-link>
 
-      <div class="border-t border-gray-300 my-1" />
+      <div class="border-t border-gray-300 my-2" />
 
-      <router-link
-        v-if="shouldShowSyncSchemaEntry"
-        to="/sync-schema"
-        class="outline-item group flex items-center px-2 py-1.5 capitalize"
-      >
-        <RefreshCcwIcon class="w-5 h-5 mr-2" />
-        {{ $t("database.sync-schema.title") }}
-      </router-link>
       <router-link
         to="/slow-query"
         class="outline-item group flex items-center px-2 py-1.5 capitalize"
