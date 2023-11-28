@@ -35,7 +35,7 @@ func getTableDataSize(metadata *storepb.DatabaseSchemaMetadata, schemaName, tabl
 	return 0
 }
 
-func buildGetTableDataSizeFunc(metadata *model.DBSchema) func(schemaName, tableName string) int64 {
+func buildGetTableDataSizeFuncForMySQL(metadata *model.DBSchema) func(schemaName, tableName string) int64 {
 	return func(schemaName, tableName string) int64 {
 		if metadata == nil {
 			return 0
@@ -56,7 +56,7 @@ func buildGetTableDataSizeFunc(metadata *model.DBSchema) func(schemaName, tableN
 	}
 }
 
-func buildGetRowsCountByQuery(sqlDB *sql.DB, engine storepb.Engine) func(ctx context.Context, statement string) (int64, error) {
+func buildGetRowsCountByQueryForMySQL(sqlDB *sql.DB, engine storepb.Engine) func(ctx context.Context, statement string) (int64, error) {
 	return func(ctx context.Context, statement string) (int64, error) {
 		switch engine {
 		case storepb.Engine_OCEANBASE:

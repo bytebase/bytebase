@@ -432,7 +432,7 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, engine storepb.Engine, d
 			}
 		}
 
-		affectedRows, err := base.GetAffectedRows(ctx, engine, stmts[0], buildGetRowsCountByQuery(sqlDB, engine), buildGetTableDataSizeFunc(dbMetadata))
+		affectedRows, err := base.GetAffectedRows(ctx, engine, stmts[0], buildGetRowsCountByQueryForMySQL(sqlDB, engine), buildGetTableDataSizeFuncForMySQL(dbMetadata))
 		if err != nil {
 			slog.Error("failed to get affected rows for mysql", slog.String("database", databaseName), log.BBError(err))
 		} else {
