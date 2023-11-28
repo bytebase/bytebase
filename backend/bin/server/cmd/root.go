@@ -80,6 +80,7 @@ var (
 		disableMetric bool
 		// disableSample is the flag to disable the sample instance.
 		disableSample bool
+		lsp           bool
 
 		// Cloud backup configs.
 		backupRegion     string
@@ -122,6 +123,7 @@ func init() {
 	// Must be one of the subpath name in the ../migrator/demo directory
 	rootCmd.PersistentFlags().StringVar(&flags.demoName, "demo", "", "name of the demo to use. Empty means not running in demo mode.")
 	rootCmd.PersistentFlags().BoolVar(&flags.debug, "debug", false, "whether to enable debug level logging")
+	rootCmd.PersistentFlags().BoolVar(&flags.lsp, "lsp", false, "whether to enable lsp in SQL Editor")
 	// Support environment variable for deploying to render.com using its blueprint file.
 	// Render blueprint allows to specify a postgres database along with a service.
 	// It allows to pass the postgres connection string as an ENV to the service.
