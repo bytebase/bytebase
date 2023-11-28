@@ -189,15 +189,6 @@ const routes: Array<RouteRecordRaw> = [
             },
           },
           {
-            path: "debug-lsp",
-            name: "workspace.debug-lsp",
-            components: {
-              content: () =>
-                import("../components/misc/TestMonacoEditorV2.vue"),
-              leftSidebar: DashboardSidebar,
-            },
-          },
-          {
             path: "403",
             name: "error.403",
             components: {
