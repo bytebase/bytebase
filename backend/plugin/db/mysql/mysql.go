@@ -185,6 +185,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 		if err != nil {
 			return 0, errors.Wrapf(err, "failed to split sql")
 		}
+		list = filterEmptySQL(list)
 		if len(list) == 0 {
 			return 0, nil
 		}
@@ -275,6 +276,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	if err != nil {
 		return nil, err
 	}
+	singleSQLs = filterEmptySQL(singleSQLs)
 	if len(singleSQLs) == 0 {
 		return nil, nil
 	}
@@ -339,4 +341,14 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 // RunStatement runs a SQL statement in a given connection.
 func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
 	return util.RunStatement(ctx, storepb.Engine_MYSQL, conn, statement)
+}
+
+func filterEmptySQL(list []base.SingleSQL) []base.SingleSQL {
+	var result []base.SingleSQL
+	for _, sql := range list {
+		if !sql.Empty {
+			result = append(result, sql)
+		}
+	}
+	return result
 }
