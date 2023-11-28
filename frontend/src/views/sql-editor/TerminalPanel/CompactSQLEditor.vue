@@ -1,5 +1,5 @@
 <template>
-  <div class="whitespace-pre-wrap w-full overflow-hidden compact-sql-editor">
+  <div class="whitespace-pre-wrap w-full overflow-hidden bb-compact-sql-editor">
     <MonacoEditor
       class="w-full h-auto"
       :style="{
@@ -306,7 +306,7 @@ const EDITOR_OPTIONS = computed<Editor.IStandaloneEditorConstructionOptions>(
 </script>
 
 <style lang="postcss" scoped>
-.compact-sql-editor :deep(.monaco-editor .line-numbers) {
-  @apply pr-0;
+.bb-compact-sql-editor :deep(.monaco-editor .line-numbers) {
+  @apply !pr-0;
 }
 </style>

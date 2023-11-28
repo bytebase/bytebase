@@ -1,5 +1,6 @@
 <template>
   <MonacoTextModelEditor
+    class="bb-monaco-editor"
     :model="model"
     @update:content="(...args) => $emit('update:content', ...args)"
   />
@@ -51,3 +52,15 @@ const filename = computed(() => {
 });
 const model = useMonacoTextModel(filename, content, toRef(props, "language"));
 </script>
+
+<style lang="postcss" scoped>
+.bb-monaco-editor :deep(.monaco-editor .monaco-mouse-cursor-text) {
+  box-shadow: none !important;
+}
+.bb-monaco-editor :deep(.monaco-editor .scroll-decoration) {
+  display: none !important;
+}
+.bb-monaco-editor :deep(.monaco-editor .line-numbers) {
+  @apply pr-2;
+}
+</style>

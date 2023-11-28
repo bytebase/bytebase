@@ -1,5 +1,5 @@
 <template>
-  <div ref="containerRef" class="relative bb-diff-editor">
+  <div ref="containerRef" class="relative bb-monaco-diff-editor">
     <div
       v-if="!isEditorLoaded"
       class="absolute inset-0 flex flex-col items-center justify-center"
@@ -173,13 +173,13 @@ onBeforeUnmount(() => {
 </script>
 
 <style lang="postcss" scoped>
-.bb-diff-editor :deep(.monaco-editor .monaco-mouse-cursor-text) {
+.bb-monaco-diff-editor :deep(.monaco-editor .monaco-mouse-cursor-text) {
   box-shadow: none !important;
 }
-.bb-diff-editor :deep(.monaco-editor .scroll-decoration) {
+.bb-monaco-diff-editor :deep(.monaco-editor .scroll-decoration) {
   display: none !important;
 }
-.bb-diff-editor :deep(.monaco-editor .line-numbers) {
+.bb-monaco-diff-editor :deep(.monaco-editor .line-numbers) {
   @apply pr-2;
 }
 </style>
