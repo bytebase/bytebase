@@ -521,3 +521,7 @@ func FormatUserEmail(email string) string {
 func FormatUserUID(uid int) string {
 	return fmt.Sprintf("%s%d", UserNamePrefix, uid)
 }
+
+func FormatDatabase(instance string, database string) string {
+	return fmt.Sprintf("%s%s/%s%s", InstanceNamePrefix, instance, DatabaseIDPrefix, database)
+}
