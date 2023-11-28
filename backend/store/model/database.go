@@ -316,7 +316,7 @@ func (t *TableMetadata) GetColumns() []*storepb.ColumnMetadata {
 }
 
 func (t *TableMetadata) GetRowCount() int64 {
-	return int64(t.rowCount)
+	return t.rowCount
 }
 
 // ViewMetadata is the metadata for a view.

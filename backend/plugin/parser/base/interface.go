@@ -34,7 +34,10 @@ type CompletionFunc func(ctx context.Context, statement string, caretLine int, c
 // GetQuerySpanFunc is the interface of getting the query span for a query.
 type GetQuerySpanFunc func(ctx context.Context, statement, database string, metadataFunc GetDatabaseMetadataFunc) (*QuerySpan, error)
 
+// GetAffectedRowsCountByQueryFunc is the interface of getting the affected rows by querying a explain statement.
 type GetAffectedRowsCountByQueryFunc func(ctx context.Context, explainSQL string) (int64, error)
+
+// GetTableDataSizeFunc is the interface of getting rowCount of tableMetaData.
 type GetTableDataSizeFunc func(schemaName, tableName string) int64
 
 func RegisterQueryValidator(engine storepb.Engine, f ValidateSQLForEditorFunc) {
