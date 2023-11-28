@@ -48,15 +48,6 @@ export default defineConfig(() => {
           main: resolve(__dirname, "index.html"),
           "explain-visualizer": resolve(__dirname, "explain-visualizer.html"),
         },
-        output: {
-          manualChunks: (id) => {
-            // put huge packages to individual chunks manually
-            if (id.includes("node_modules")) {
-              if (id.includes("vscode")) return "vscode";
-              if (id.includes("monaco-editor")) return "monaco-editor";
-            }
-          },
-        },
       },
     },
     server: {
