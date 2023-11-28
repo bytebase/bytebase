@@ -37,7 +37,7 @@ import {
   useSelectedContent,
   useSuggestOptionByLanguage,
 } from "./composables";
-import { StoredLSPType } from "./dev";
+import { shouldUseNewLSP } from "./dev";
 import type { AdviceOption, MonacoModule } from "./types";
 
 const props = withDefaults(
@@ -111,7 +111,7 @@ onMounted(async () => {
     const selectedContent = useSelectedContent(monaco, editor);
     useAdvices(monaco, editor, toRef(props, "advices"));
     useAutoHeight(monaco, editor, containerRef, toRef(props, "autoHeight"));
-    if (StoredLSPType.value === "NEW") {
+    if (shouldUseNewLSP()) {
       useAutoComplete(monaco, editor, toRef(props, "autoCompleteContext"));
     } else {
       useLegacyAutoComplete(

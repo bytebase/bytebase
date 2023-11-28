@@ -1,6 +1,7 @@
 import { useLocalStorage } from "@vueuse/core";
 import { defineComponent, h } from "vue";
 import { BBSwitch } from "@/bbkit";
+import { isDev } from "@/utils";
 
 export const SupportedLSPTypes = ["OLD", "NEW"] as const;
 export type LSPType = typeof SupportedLSPTypes[number];
@@ -20,6 +21,10 @@ export const StoredLSPType = useLocalStorage<LSPType>(
     },
   }
 );
+
+export const shouldUseNewLSP = () => {
+  return isDev() && StoredLSPType.value === "NEW";
+};
 
 export const LSPTypeSwitch = defineComponent({
   name: "LSPTypeSwitch",
