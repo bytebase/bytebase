@@ -84,6 +84,8 @@ func sortCandidates(candidates []base.Candidate, params lsp.CompletionParams) []
 			}
 			return candidates[i].Text < candidates[j].Text
 		})
+	default:
+		// do nothing
 	}
 
 	return candidates
@@ -102,7 +104,7 @@ func candidateTypePriorityAfterDot(tp base.CandidateType) int {
 	case base.CandidateTypeFunction:
 		return 5
 	default:
-		return 6
+		return 100000
 	}
 }
 
