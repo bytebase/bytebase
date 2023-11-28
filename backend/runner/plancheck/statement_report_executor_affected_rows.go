@@ -152,7 +152,9 @@ func getAffectedRowsCountForPostgres(res []any) (int64, error) {
 	return value, nil
 }
 
-func getAffectedRowsCount(ctx context.Context, sqlDB *sql.DB, explainSQL string, extractor base.AffectedRowsCountExtractFunc) (int64, error) {
+type affectedRowsCountExtractor func(res []any) (int64, error)
+
+func getAffectedRowsCount(ctx context.Context, sqlDB *sql.DB, explainSQL string, extractor affectedRowsCountExtractor) (int64, error) {
 	res, err := query(ctx, sqlDB, explainSQL)
 	if err != nil {
 		return 0, err
