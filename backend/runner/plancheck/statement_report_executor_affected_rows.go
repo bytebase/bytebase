@@ -12,7 +12,9 @@ import (
 	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/store/model"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -34,6 +36,39 @@ func getTableDataSize(metadata *storepb.DatabaseSchemaMetadata, schemaName, tabl
 		}
 	}
 	return 0
+}
+
+func buildGetTableDataSizeFunc(metadata *storepb.DatabaseSchemaMetadata) base.GetTableDataSizeFunc {
+	schemaMetadata := model.NewDBSchema(metadata, nil /* schema */, nil /* schema */)
+	return func(schemaName, tableName string) int64 {
+		if schemaMetadata == nil {
+			return 0
+		}
+		dbMeta := schemaMetadata.GetDatabaseMetadata()
+		if dbMeta == nil {
+			return 0
+		}
+		schemaMeta := dbMeta.GetSchema(schemaName)
+		if schemaMeta == nil {
+			return 0
+		}
+		tableMeta := schemaMeta.GetTable(tableName)
+		if tableMeta == nil {
+			return 0
+		}
+		return tableMeta.GetRowCount()
+	}
+}
+
+func buildGetRowsCountByQuery(sqlDB *sql.DB, engine storepb.Engine) base.GetAffectedRowsCountByQueryFunc {
+	return func(ctx context.Context, statement string) (int64, error) {
+		switch engine {
+		case storepb.Engine_OCEANBASE:
+			return getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN FORMAT=JSON %s", statement), getAffectedRowsCountForOceanBase)
+		default:
+			return getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN %s", statement), getAffectedRowsCountForMysql)
+		}
+	}
 }
 
 func getAffectedRowsForPostgres(ctx context.Context, sqlDB *sql.DB, metadata *storepb.DatabaseSchemaMetadata, node ast.Node) (int64, error) {
@@ -117,9 +152,7 @@ func getAffectedRowsCountForPostgres(res []any) (int64, error) {
 	return value, nil
 }
 
-type affectedRowsCountExtractor func(res []any) (int64, error)
-
-func getAffectedRowsCount(ctx context.Context, sqlDB *sql.DB, explainSQL string, extractor affectedRowsCountExtractor) (int64, error) {
+func getAffectedRowsCount(ctx context.Context, sqlDB *sql.DB, explainSQL string, extractor base.AffectedRowsCountExtractFunc) (int64, error) {
 	res, err := query(ctx, sqlDB, explainSQL)
 	if err != nil {
 		return 0, err
@@ -222,8 +255,8 @@ func query(ctx context.Context, connection *sql.DB, statement string) ([]any, er
 	return []any{columnNames, columnTypeNames, data}, nil
 }
 
-func getAffectedRowsForMySQL(ctx context.Context, sqlDB *sql.DB, metadata *storepb.DatabaseSchemaMetadata, stmt *mysqlparser.ParseResult) (int64, error) {
-	return mysqlparser.GetAffectedRows(ctx, sqlDB, metadata, stmt)
+func getAffectedRowsForMySQL(ctx context.Context, engine storepb.Engine, sqlDB *sql.DB, metadata *storepb.DatabaseSchemaMetadata, stmt *mysqlparser.ParseResult) (int64, error) {
+	return mysqlparser.GetAffectedRows(ctx, stmt, buildGetRowsCountByQuery(sqlDB, engine), buildGetTableDataSizeFunc(metadata))
 }
 
 func getAffectedRowsForOceanBase(ctx context.Context, engine storepb.Engine, sqlDB *sql.DB, metadata *storepb.DatabaseSchemaMetadata, node tidbast.StmtNode) (int64, error) {

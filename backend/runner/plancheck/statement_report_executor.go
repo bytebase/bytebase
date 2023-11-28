@@ -453,7 +453,7 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, engine storepb.Engine, d
 			}
 		}
 
-		affectedRows, err := getAffectedRowsForMySQL(ctx, sqlDB, dbMetadata, stmts[0])
+		affectedRows, err := getAffectedRowsForMySQL(ctx, engine, sqlDB, dbMetadata, stmts[0])
 		if err != nil {
 			slog.Error("failed to get affected rows for mysql", slog.String("database", databaseName), log.BBError(err))
 		} else {

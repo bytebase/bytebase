@@ -34,6 +34,11 @@ type CompletionFunc func(ctx context.Context, statement string, caretLine int, c
 // GetQuerySpanFunc is the interface of getting the query span for a query.
 type GetQuerySpanFunc func(ctx context.Context, statement, database string, metadataFunc GetDatabaseMetadataFunc) (*QuerySpan, error)
 
+type GetDatabaseSchemaMetadataFunc func(ctx context.Context, database string) (*storepb.DatabaseSchemaMetadata, error)
+type AffectedRowsCountExtractFunc func(res []any) (int64, error)
+type GetAffectedRowsCountByQueryFunc func(ctx context.Context, explainSQL string) (int64, error)
+type GetTableDataSizeFunc func(schemaName, tableName string) int64
+
 func RegisterQueryValidator(engine storepb.Engine, f ValidateSQLForEditorFunc) {
 	mux.Lock()
 	defer mux.Unlock()
