@@ -7,7 +7,9 @@
 
       <SheetForIssueTipsBar />
 
-      <SQLEditor @execute="handleExecute" />
+      <Suspense>
+        <SQLEditor @execute="handleExecute" />
+      </Suspense>
     </template>
 
     <Suspense>
