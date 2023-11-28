@@ -1672,7 +1672,9 @@
     "classification": {
       "self": "Classification"
     },
-    "recent": "Recent"
+    "recent": "Recent",
+    "partitioned": "Partitioned",
+    "partition-tables": "Partition tables"
   },
   "repository": {
     "our-webhook-link": "The webhook created by Bytebase can be found at {webhookLink}.",

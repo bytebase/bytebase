@@ -1671,7 +1671,9 @@
     "classification": {
       "self": "Clasificación"
     },
-    "recent": "Reciente"
+    "recent": "Reciente",
+    "partitioned": "Particionado",
+    "partition-tabled": "Tabla particionada"
   },
   "repository": {
     "branch-observe-file-change": "La rama donde Bytebase observa el cambio de archivo.",

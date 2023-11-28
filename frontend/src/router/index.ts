@@ -1325,7 +1325,7 @@ router.beforeEach((to, from, next) => {
           .getOrFetchDatabaseMetadata({
             database: database.name,
             skipCache: false,
-            view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
+            view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
           })
           .then(() => {
             next();
