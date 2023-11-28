@@ -12,6 +12,7 @@ import (
 	"golang.org/x/exp/slices"
 	"google.golang.org/genproto/googleapis/type/expr"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/tests/fake"
@@ -834,7 +835,7 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 
 			for _, prepareInstance := range tc.prepareInstances {
 				for wantDatabaseName, wantDatabaseStatements := range prepareInstance.wantDatabaseTaskStatement {
-					database := fmt.Sprintf("instances/%s/databases/%s", prepareInstance.instanceID, wantDatabaseName)
+					database := common.FormatDatabase(prepareInstance.instanceID, wantDatabaseName)
 					gotDatabaseStatements := gotDatabaseToTaskStatement[database]
 					slices.Sort(gotDatabaseStatements)
 					a.Equal(wantDatabaseStatements, gotDatabaseStatements)
