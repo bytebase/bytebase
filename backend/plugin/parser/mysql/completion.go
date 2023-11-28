@@ -928,7 +928,11 @@ func (c *Completer) listColumns(databases, tables map[string]bool) []string {
 		}
 
 		for table := range tables {
-			for _, column := range c.metadataCache[database].GetSchema("").GetTable(table).GetColumns() {
+			tableMeta := c.metadataCache[database].GetSchema("").GetTable(table)
+			if tableMeta == nil {
+				continue
+			}
+			for _, column := range tableMeta.GetColumns() {
 				result = append(result, column.Name)
 			}
 		}
