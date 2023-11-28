@@ -133,7 +133,6 @@
           database: database.name,
         }"
         @update:content="handleStatementChange"
-        @ready="handleMonacoEditorReady"
       />
     </div>
   </div>
@@ -164,7 +163,7 @@
 import { cloneDeep } from "lodash-es";
 import Long from "long";
 import { NButton, NTooltip, useDialog } from "naive-ui";
-import { computed, h, reactive, ref, watch } from "vue";
+import { computed, h, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import { ErrorList } from "@/components/IssueV1/components/common";
@@ -209,7 +208,6 @@ import {
 import { readFileAsync } from "@/utils";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
 import FormatOnSaveCheckbox from "./FormatOnSaveCheckbox.vue";
-import { useEditorAutoCompletion } from "./useEditorAutoCompletion";
 import { EditState, useTempEditState } from "./useTempEditState";
 
 type LocalState = EditState & {
@@ -231,10 +229,6 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
   isUploadingFile: false,
 });
-
-const editorRef = ref<InstanceType<typeof MonacoEditor>>();
-const { updateEditorAutoCompletionContext } =
-  useEditorAutoCompletion(editorRef);
 
 const database = computed(() => {
   return databaseForTask(issue.value, selectedTask.value);
@@ -660,10 +654,6 @@ const handleStatementChange = (value: string) => {
     if (!sheet.value) return;
     setSheetStatement(sheet.value, value);
   }
-};
-
-const handleMonacoEditorReady = () => {
-  updateEditorAutoCompletionContext();
 };
 
 watch(
