@@ -246,7 +246,6 @@ func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *DatabaseMeta
 			for i, table := range tables {
 				schemaMetadata.internalTables[names[i]] = table
 			}
-
 		}
 		for _, view := range schema.Views {
 			schemaMetadata.internalViews[view.Name] = &ViewMetadata{}
