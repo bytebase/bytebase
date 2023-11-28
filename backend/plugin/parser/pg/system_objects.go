@@ -23,6 +23,45 @@ var (
 		"template1": true,
 	}
 
+	// systemViews is the list of system views that we will exclude from the schema sync.
+	// https://www.postgresql.org/docs/16/views.html
+	systemViews = map[string]bool{
+		"pg_available_extensions":         true,
+		"pg_available_extension_versions": true,
+		"pg_backend_memory_contexts":      true,
+		"pg_config":                       true,
+		"pg_cursors":                      true,
+		"pg_file_settings":                true,
+		"pg_group":                        true,
+		"pg_hba_file_rules":               true,
+		"pg_ident_file_mappings":          true,
+		"pg_indexes":                      true,
+		"pg_locks":                        true,
+		"pg_matview":                      true,
+		"pg_policies":                     true,
+		"pg_prepared_statement":           true,
+		"pg_prepared_xacts":               true,
+		"pg_publication_tables":           true,
+		"pg_replication_origin_status":    true,
+		"pg_replication_slots":            true,
+		"pg_roles":                        true,
+		"pg_rules":                        true,
+		"pg_seclabels":                    true,
+		"pg_sequences":                    true,
+		"pg_settings":                     true,
+		"pg_shadow":                       true,
+		"pg_shmem_allocations":            true,
+		"pg_stats":                        true,
+		"pg_stats_ext":                    true,
+		"pg_stats_ext_exprs":              true,
+		"pg_tables":                       true,
+		"pg_timezone_abbrevs":             true,
+		"pg_timezone_names":               true,
+		"pg_user":                         true,
+		"pg_user_mappings":                true,
+		"pg_views":                        true,
+	}
+
 	// systemSchemas is the list of system schemas that we will exclude from the schema sync.
 	systemSchemas = map[string]bool{
 		"information_schema":       true,
@@ -38,6 +77,7 @@ var (
 	}
 
 	// systemTables is the list of system tables that we will exclude from the schema sync.
+	// https://www.postgresql.org/docs/16/catalogs.html
 	systemTables = map[string]bool{
 		"pg_aggregate":               true,
 		"pg_am":                      true,
@@ -165,6 +205,9 @@ func IsSystemTable(table string) bool {
 }
 
 func IsSystemView(view string) bool {
+	if _, ok := systemViews[view]; ok {
+		return true
+	}
 	if strings.HasPrefix(view, "g_columnar_") {
 		return true
 	}
