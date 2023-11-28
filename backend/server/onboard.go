@@ -236,7 +236,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 							Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 								ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 									Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
-									Target: fmt.Sprintf("instances/%s/databases/%s", testDatabase.InstanceID, testDatabase.DatabaseName),
+									Target: common.FormatDatabase(testDatabase.InstanceID, testDatabase.DatabaseName),
 									Sheet:  fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, testSheet.UID),
 								},
 							},
@@ -250,7 +250,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 							Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 								ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 									Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
-									Target: fmt.Sprintf("instances/%s/databases/%s", prodDatabase.InstanceID, prodDatabase.DatabaseName),
+									Target: common.FormatDatabase(prodDatabase.InstanceID, prodDatabase.DatabaseName),
 									// This will violate the NOT NULL SQL Review policy configured above and emit a
 									// warning. Thus to demonstrate the SQL Review capability.
 									Sheet: fmt.Sprintf("projects/%s/sheets/%d", project.ResourceID, prodSheet.UID),
