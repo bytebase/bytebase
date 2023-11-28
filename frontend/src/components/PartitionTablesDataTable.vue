@@ -75,14 +75,20 @@ const dataTableRows = computed(() => {
   const generateRows = (
     partitionTables: TablePartitionMetadata[]
   ): PartitionTableRowData[] => {
-    return partitionTables.map((table: TablePartitionMetadata) => {
-      return {
-        name: table.name,
-        type: stringifyPartitionTableType(table.type),
-        expression: table.expression,
-        children: generateRows(table.subpartitions),
-      };
-    });
+    return partitionTables
+      .filter((table) =>
+        props.search
+          ? table.name.toLowerCase().includes(props.search?.toLowerCase())
+          : true
+      )
+      .map((table: TablePartitionMetadata) => {
+        return {
+          name: table.name,
+          type: stringifyPartitionTableType(table.type),
+          expression: table.expression,
+          children: generateRows(table.subpartitions),
+        };
+      });
   };
 
   return generateRows(partitionTables.value);
