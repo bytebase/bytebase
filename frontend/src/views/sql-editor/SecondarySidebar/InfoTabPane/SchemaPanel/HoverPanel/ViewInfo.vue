@@ -22,7 +22,7 @@
 import { computedAsync, useLocalStorage } from "@vueuse/core";
 import { NCheckbox } from "naive-ui";
 import { computed } from "vue";
-import MonacoEditor from "@/components/MonacoEditor";
+import { MonacoEditor } from "@/components/MonacoEditor";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import { ComposedDatabase, dialectOfEngineV1 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";

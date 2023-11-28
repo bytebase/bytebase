@@ -77,7 +77,7 @@ import ActionConfirmModal from "@/components/SchemaEditorV1/Modals/ActionConfirm
 import { useDBGroupStore, useNotificationStore } from "@/store";
 import { ComposedDatabaseGroup, ComposedSchemaGroup } from "@/types";
 import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
-import MonacoEditor from "../MonacoEditor";
+import { MonacoEditor } from "../MonacoEditor";
 
 const MAX_UPLOAD_FILE_SIZE_MB = 1;
 

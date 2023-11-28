@@ -1,6 +1,6 @@
 import { maxBy } from "lodash-es";
 import { computed } from "vue";
-import { AdviceOption } from "@/components/MonacoEditor";
+import type { AdviceOption } from "@/components/MonacoEditor";
 import {
   PlanCheckRun,
   PlanCheckRun_Result_Status,

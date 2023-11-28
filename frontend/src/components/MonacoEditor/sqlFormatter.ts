@@ -1,5 +1,5 @@
 import type { FormatOptionsWithLanguage } from "sql-formatter";
-import { SQLDialect } from "../../types";
+import type { SQLDialect } from "../../types";
 
 type FormatResult = {
   data: string;
