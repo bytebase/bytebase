@@ -10,6 +10,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -64,8 +65,8 @@ func TestGetAffectedRows(t *testing.T) {
 	}
 }
 
-func getMetadataForAffectedRowsTest() *storepb.DatabaseSchemaMetadata {
-	return &storepb.DatabaseSchemaMetadata{
+func getMetadataForAffectedRowsTest() *model.DBSchema {
+	metadata := &storepb.DatabaseSchemaMetadata{
 		Name: "testdb",
 		Schemas: []*storepb.SchemaMetadata{
 			{
@@ -96,4 +97,5 @@ func getMetadataForAffectedRowsTest() *storepb.DatabaseSchemaMetadata {
 			},
 		},
 	}
+	return model.NewDBSchema(metadata, nil /* schema */, nil /* config */)
 }
