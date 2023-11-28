@@ -45,11 +45,13 @@ import {
 import { formatEngineV1, useInstanceV1EditorLanguage } from "@/utils";
 import { useSQLEditorContext } from "../context";
 
-const [{ MonacoEditor }, { extensionNameOfLanguage, formatEditorContent }] =
-  await Promise.all([
-    import("@/components/MonacoEditor"),
-    import("@/components/MonacoEditor/utils"),
-  ]);
+const [
+  { default: MonacoEditor },
+  { extensionNameOfLanguage, formatEditorContent },
+] = await Promise.all([
+  import("@/components/MonacoEditor/MonacoEditor.vue"),
+  import("@/components/MonacoEditor/utils"),
+]);
 
 const emit = defineEmits<{
   (

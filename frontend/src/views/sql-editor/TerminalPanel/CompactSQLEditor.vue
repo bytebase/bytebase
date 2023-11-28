@@ -39,7 +39,7 @@ import {
 import { formatEngineV1, useInstanceV1EditorLanguage } from "@/utils";
 
 const [
-  { MonacoEditor },
+  { default: MonacoEditor },
   { useEditorContextKey, formatEditorContent },
   {
     checkCursorAtFirstLine,
@@ -48,7 +48,7 @@ const [
     checkEndsWithSemicolon,
   },
 ] = await Promise.all([
-  import("@/components/MonacoEditor"),
+  import("@/components/MonacoEditor/MonacoEditor.vue"),
   import("@/components/MonacoEditor/utils"),
   import("./utils"),
 ]);
@@ -299,10 +299,6 @@ const EDITOR_OPTIONS = computed<Editor.IStandaloneEditorConstructionOptions>(
     cursorStyle: "block",
   })
 );
-// watch(
-//   firstLinePrompt,
-//   (prompt) => (EDITOR_OPTIONS.value.lineNumbersMinChars = prompt.length + 1)
-// );
 </script>
 
 <style lang="postcss" scoped>
