@@ -37,7 +37,7 @@ func getTableDataSize(metadata *storepb.DatabaseSchemaMetadata, schemaName, tabl
 	return 0
 }
 
-func buildGetTableDataSizeFunc(metadata *model.DBSchema) base.GetTableDataSizeFunc {
+func buildGetTableDataSizeFunc(metadata *model.DBSchema) func(schemaName, tableName string) int64 {
 	return func(schemaName, tableName string) int64 {
 		if metadata == nil {
 			return 0
@@ -58,7 +58,7 @@ func buildGetTableDataSizeFunc(metadata *model.DBSchema) base.GetTableDataSizeFu
 	}
 }
 
-func buildGetRowsCountByQuery(sqlDB *sql.DB, engine storepb.Engine) base.GetAffectedRowsCountByQueryFunc {
+func buildGetRowsCountByQuery(sqlDB *sql.DB, engine storepb.Engine) func(ctx context.Context, statement string) (int64, error) {
 	return func(ctx context.Context, statement string) (int64, error) {
 		switch engine {
 		case storepb.Engine_OCEANBASE:
@@ -258,7 +258,7 @@ func query(ctx context.Context, connection *sql.DB, statement string) ([]any, er
 }
 
 func getAffectedRowsForMySQL(ctx context.Context, engine storepb.Engine, sqlDB *sql.DB, metadata *model.DBSchema, stmt *mysqlparser.ParseResult) (int64, error) {
-	return mysqlparser.GetAffectedRows(ctx, stmt, buildGetRowsCountByQuery(sqlDB, engine), buildGetTableDataSizeFunc(metadata))
+	return base.GetAffectedRows(ctx, engine, stmt, buildGetRowsCountByQuery(sqlDB, engine), buildGetTableDataSizeFunc(metadata))
 }
 
 // OceanBaseQueryPlan represents the query plan of OceanBase.

@@ -5,96 +5,16 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	mysql "github.com/bytebase/mysql-parser"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// GetStatementType return the type of statement.
-func GetStatementType(stmt *ParseResult) string {
-	for _, child := range stmt.Tree.GetChildren() {
-		switch ctx := child.(type) {
-		case *mysql.QueryContext:
-			for _, child := range ctx.GetChildren() {
-				switch ctx := child.(type) {
-				case *mysql.SimpleStatementContext:
-					for _, child := range ctx.GetChildren() {
-						switch ctx := child.(type) {
-						case *mysql.CreateStatementContext:
-							for _, child := range ctx.GetChildren() {
-								switch child.(type) {
-								case *mysql.CreateDatabaseContext:
-									return "CREATE_DATABASE"
-								case *mysql.CreateIndexContext:
-									return "CREATE_INDEX"
-								case *mysql.CreateTableContext:
-									return "CREATE_TABLE"
-								case *mysql.CreateViewContext:
-									return "CREATE_VIEW"
-								case *mysql.CreateEventContext:
-									return "CREATE_EVENT"
-								case *mysql.CreateTriggerContext:
-									return "CREATE_TRIGGER"
-								case *mysql.CreateFunctionContext:
-									return "CREATE_FUNCTION"
-								case *mysql.CreateProcedureContext:
-									return "CREATE_PROCEDURE"
-								}
-							}
-						case *mysql.DropStatementContext:
-							for _, child := range ctx.GetChildren() {
-								switch child.(type) {
-								case *mysql.DropIndexContext:
-									return "DROP_INDEX"
-								case *mysql.DropTableContext:
-									return "DROP_TABLE"
-								case *mysql.DropDatabaseContext:
-									return "DROP_DATABASE"
-								case *mysql.DropViewContext:
-									return "DROP_VIEW"
-								case *mysql.DropTriggerContext:
-									return "DROP_TRIGGER"
-								case *mysql.DropEventContext:
-									return "DROP_EVENT"
-								case *mysql.DropFunctionContext:
-									return "DROP_FUNCTION"
-								case *mysql.DropProcedureContext:
-									return "DROP_PROCEDURE"
-								}
-							}
-						case *mysql.AlterStatementContext:
-							for _, child := range ctx.GetChildren() {
-								switch child.(type) {
-								case *mysql.AlterTableContext:
-									return "ALTER_TABLE"
-								case *mysql.AlterDatabaseContext:
-									return "ALTER_DATABASE"
-								case *mysql.AlterViewContext:
-									return "ALTER_VIEW"
-								case *mysql.AlterEventContext:
-									return "ALTER_EVENT"
-								}
-							}
-						case *mysql.TruncateTableStatementContext:
-							return "TRUNCATE"
-						case *mysql.RenameTableStatementContext:
-							return "RENAME"
-
-						// dml.
-						case *mysql.DeleteStatementContext:
-							return "DELETE"
-						case *mysql.InsertStatementContext:
-							return "INSERT"
-						case *mysql.UpdateStatementContext:
-							return "UPDATE"
-						}
-					}
-				default:
-				}
-			}
-		default:
-		}
-	}
-	return "UNKNOWN"
+func init() {
+	base.RegisterGetAffectedRows(storepb.Engine_MYSQL, GetAffectedRows)
+	base.RegisterGetAffectedRows(storepb.Engine_MARIADB, GetAffectedRows)
+	base.RegisterGetAffectedRows(storepb.Engine_OCEANBASE, GetAffectedRows)
 }
 
 type AffectedRowsListener struct {
@@ -102,20 +22,25 @@ type AffectedRowsListener struct {
 
 	ctx                        context.Context
 	text                       string
-	getAffectedRowsByQueryFunc base.GetAffectedRowsCountByQueryFunc
-	getTableDataSizeFunc       base.GetTableDataSizeFunc
+	getAffectedRowsByQueryFunc func(ctx context.Context, explainSQL string) (int64, error)
+	getTableDataSizeFunc       func(schemaName, tableName string) int64
 	affectedRows               int64
 	err                        error
 }
 
 // GetAffectedRows return the rows count affected by the sql.
-func GetAffectedRows(ctx context.Context, stmt *ParseResult, getAffectedRowsByQuery base.GetAffectedRowsCountByQueryFunc, getTableDataSizeFunc base.GetTableDataSizeFunc) (int64, error) {
+func GetAffectedRows(ctx context.Context, stmt any, getAffectedRowsByQuery func(ctx context.Context, statement string) (int64, error), getTableDataSizeFunc func(schemaName, tableName string) int64) (int64, error) {
+	root, ok := stmt.(*ParseResult)
+	if !ok {
+		return 0, errors.New("failed to convert stmt to mysql parse result")
+	}
+
 	listener := &AffectedRowsListener{
 		ctx:                        ctx,
 		getAffectedRowsByQueryFunc: getAffectedRowsByQuery,
 		getTableDataSizeFunc:       getTableDataSizeFunc,
 	}
-	antlr.ParseTreeWalkerDefault.Walk(listener, stmt.Tree)
+	antlr.ParseTreeWalkerDefault.Walk(listener, root.Tree)
 	if listener.err != nil {
 		return 0, listener.err
 	}
@@ -261,4 +186,92 @@ func (l *AffectedRowsListener) EnterDropTable(ctx *mysql.DropTableContext) {
 		}
 		l.affectedRows += l.getTableDataSizeFunc(databaseName, tableName)
 	}
+}
+
+// GetStatementType return the type of statement.
+func GetStatementType(stmt *ParseResult) string {
+	for _, child := range stmt.Tree.GetChildren() {
+		switch ctx := child.(type) {
+		case *mysql.QueryContext:
+			for _, child := range ctx.GetChildren() {
+				switch ctx := child.(type) {
+				case *mysql.SimpleStatementContext:
+					for _, child := range ctx.GetChildren() {
+						switch ctx := child.(type) {
+						case *mysql.CreateStatementContext:
+							for _, child := range ctx.GetChildren() {
+								switch child.(type) {
+								case *mysql.CreateDatabaseContext:
+									return "CREATE_DATABASE"
+								case *mysql.CreateIndexContext:
+									return "CREATE_INDEX"
+								case *mysql.CreateTableContext:
+									return "CREATE_TABLE"
+								case *mysql.CreateViewContext:
+									return "CREATE_VIEW"
+								case *mysql.CreateEventContext:
+									return "CREATE_EVENT"
+								case *mysql.CreateTriggerContext:
+									return "CREATE_TRIGGER"
+								case *mysql.CreateFunctionContext:
+									return "CREATE_FUNCTION"
+								case *mysql.CreateProcedureContext:
+									return "CREATE_PROCEDURE"
+								}
+							}
+						case *mysql.DropStatementContext:
+							for _, child := range ctx.GetChildren() {
+								switch child.(type) {
+								case *mysql.DropIndexContext:
+									return "DROP_INDEX"
+								case *mysql.DropTableContext:
+									return "DROP_TABLE"
+								case *mysql.DropDatabaseContext:
+									return "DROP_DATABASE"
+								case *mysql.DropViewContext:
+									return "DROP_VIEW"
+								case *mysql.DropTriggerContext:
+									return "DROP_TRIGGER"
+								case *mysql.DropEventContext:
+									return "DROP_EVENT"
+								case *mysql.DropFunctionContext:
+									return "DROP_FUNCTION"
+								case *mysql.DropProcedureContext:
+									return "DROP_PROCEDURE"
+								}
+							}
+						case *mysql.AlterStatementContext:
+							for _, child := range ctx.GetChildren() {
+								switch child.(type) {
+								case *mysql.AlterTableContext:
+									return "ALTER_TABLE"
+								case *mysql.AlterDatabaseContext:
+									return "ALTER_DATABASE"
+								case *mysql.AlterViewContext:
+									return "ALTER_VIEW"
+								case *mysql.AlterEventContext:
+									return "ALTER_EVENT"
+								}
+							}
+						case *mysql.TruncateTableStatementContext:
+							return "TRUNCATE"
+						case *mysql.RenameTableStatementContext:
+							return "RENAME"
+
+						// dml.
+						case *mysql.DeleteStatementContext:
+							return "DELETE"
+						case *mysql.InsertStatementContext:
+							return "INSERT"
+						case *mysql.UpdateStatementContext:
+							return "UPDATE"
+						}
+					}
+				default:
+				}
+			}
+		default:
+		}
+	}
+	return "UNKNOWN"
 }

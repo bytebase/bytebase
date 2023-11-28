@@ -21,6 +21,7 @@ var (
 	schemaDiffers           = make(map[storepb.Engine]SchemaDiffFunc)
 	completers              = make(map[storepb.Engine]CompletionFunc)
 	spans                   = make(map[storepb.Engine]GetQuerySpanFunc)
+	affectedRows            = make(map[storepb.Engine]GetAffectedRowsFunc)
 )
 
 type ValidateSQLForEditorFunc func(string) (bool, error)
@@ -34,11 +35,8 @@ type CompletionFunc func(ctx context.Context, statement string, caretLine int, c
 // GetQuerySpanFunc is the interface of getting the query span for a query.
 type GetQuerySpanFunc func(ctx context.Context, statement, database string, metadataFunc GetDatabaseMetadataFunc) (*QuerySpan, error)
 
-// GetAffectedRowsCountByQueryFunc is the interface of getting the affected rows by querying a explain statement.
-type GetAffectedRowsCountByQueryFunc func(ctx context.Context, explainSQL string) (int64, error)
-
-// GetTableDataSizeFunc is the interface of getting rowCount of tableMetaData.
-type GetTableDataSizeFunc func(schemaName, tableName string) int64
+// GetAffectedRows is the interface of getting the affected rows for a statement.
+type GetAffectedRowsFunc func(ctx context.Context, stmt any, getAffectedRowsByQuery func(ctx context.Context, statement string) (int64, error), getTableDataSizeFunc func(schemaName, tableName string) int64) (int64, error)
 
 func RegisterQueryValidator(engine storepb.Engine, f ValidateSQLForEditorFunc) {
 	mux.Lock()
@@ -205,4 +203,21 @@ func GetQuerySpan(ctx context.Context, engine storepb.Engine, statement, databas
 		results = append(results, result)
 	}
 	return results, nil
+}
+
+func RegisterGetAffectedRows(engine storepb.Engine, f GetAffectedRowsFunc) {
+	mux.Lock()
+	defer mux.Unlock()
+	if _, dup := affectedRows[engine]; dup {
+		panic(fmt.Sprintf("Register called twice %s", engine))
+	}
+	affectedRows[engine] = f
+}
+
+func GetAffectedRows(ctx context.Context, engine storepb.Engine, stmt any, getAffectedRowsByQueryFunc func(ctx context.Context, statement string) (int64, error), getTableDataSizeFunc func(schemaName, tableName string) int64) (int64, error) {
+	f, ok := affectedRows[engine]
+	if !ok {
+		return 0, errors.Errorf("engine %s is not supported", engine)
+	}
+	return f(ctx, stmt, getAffectedRowsByQueryFunc, getTableDataSizeFunc)
 }
