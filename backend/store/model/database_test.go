@@ -15,6 +15,24 @@ func TestBuildTablesMetadata(t *testing.T) {
 		wantNames   []string
 		wantColumns []*storepb.ColumnMetadata
 	}{
+		// No partitions.
+		{
+			input: &storepb.TableMetadata{
+				Name: "orders",
+				Columns: []*storepb.ColumnMetadata{
+					{
+						Name: "id",
+					},
+				},
+			},
+			wantNames: []string{"orders"},
+			wantColumns: []*storepb.ColumnMetadata{
+				{
+					Name: "id",
+				},
+			},
+		},
+		// Nested partitions.
 		{
 			input: &storepb.TableMetadata{
 				Name: "orders",
