@@ -1055,10 +1055,6 @@ func (q *querySpanExtractor) getRangeVarsFromJSONRecursive(jsonData map[string]a
 			}
 			resource.Table = table
 		}
-		databaseMetadata, err := q.getDatabaseMetadata(currentDatabase)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", currentDatabase)
-		}
 
 		// This is a false-positive behavior, the table we found may not be the table the query actually accesses.
 		// For example, the query is `WITH t1 AS (SELECT 1) SELECT * FROM t1` and we have a physical table `t1` in the database exactly,
@@ -1071,15 +1067,19 @@ func (q *querySpanExtractor) getRangeVarsFromJSONRecursive(jsonData map[string]a
 		// For example: `SELECT * FROM pg_database`, which will access the system table `pg_database`.
 		// Additionally, user can create a table/view with the same name with system table/view and access them
 		// by specify the schema name, for example:
-		// `CREATE TABLE pg_database(id INT); SELECT * FROM public.pg_database;` which will access the user table `pg_database`
-
-		if msg := isSystemResource(resource); msg != "" {
+		// `CREATE TABLE pg_database(id INT); SELECT * FROM public.pg_database;` which will access the user table `pg_database`.
+		// Bytebase do not sync the system objects, so we skip finding for system objects in the metadata.
+		if msg := isSystemResource(resource); msg == "" {
 			// Backfill the default database/schema name.
 			if resource.Database == "" {
 				resource.Database = currentDatabase
 			}
 			if resource.Schema == "" {
 				resource.Schema = currentSchema
+			}
+			databaseMetadata, err := q.getDatabaseMetadata(currentDatabase)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", currentDatabase)
 			}
 			// Access pseudo table or table we do not sync, return directly.
 			if databaseMetadata == nil || databaseMetadata.GetSchema(resource.Schema) == nil || databaseMetadata.GetSchema(resource.Schema).GetTable(resource.Table) == nil {
@@ -1121,7 +1121,7 @@ func isMixedQuery(m base.SourceColumnSet) (allSystems bool, mixed error) {
 			systemMsg = msg
 			continue
 		}
-		userMsg := fmt.Sprintf("user table %q.%q", table.Schema, table.Table)
+		userMsg = fmt.Sprintf("user table %q.%q", table.Schema, table.Table)
 		if systemMsg != "" {
 			return false, errors.Errorf("cannot access %s and %s at the same time", userMsg, systemMsg)
 		}
@@ -1140,6 +1140,9 @@ func isSystemResource(resource base.ColumnResource) string {
 	}
 	if resource.Database == "" && resource.Schema == "" && pg.IsSystemView(resource.Table) {
 		return fmt.Sprintf("system view %q", resource.Table)
+	}
+	if resource.Database == "" && resource.Schema == "" && pg.IsSystemTable(resource.Table) {
+		return fmt.Sprintf("system table %q", resource.Table)
 	}
 	return ""
 }
