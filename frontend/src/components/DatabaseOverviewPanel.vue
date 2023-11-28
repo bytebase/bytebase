@@ -231,7 +231,7 @@ watch(
     await dbSchemaStore.getOrFetchDatabaseMetadata({
       database: database,
       skipCache: false,
-      view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
+      view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
     });
     if (schemaList.value.length > 0) {
       const schemaInQuery = route.query.schema as string;
