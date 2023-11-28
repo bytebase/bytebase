@@ -20,7 +20,7 @@
       code: 601
       title: table.require-pk
       content: Table `t` requires PRIMARY KEY
-      line: 2
+      line: 0
       details: ""
 - statement: |-
     CREATE TABLE t(id INT);
@@ -50,7 +50,7 @@
       code: 601
       title: table.require-pk
       content: Table `t` requires PRIMARY KEY
-      line: 3
+      line: 1
       details: ""
 - statement: |-
     CREATE TABLE t(id INT PRIMARY KEY);
@@ -60,7 +60,7 @@
       code: 601
       title: table.require-pk
       content: Table `t` requires PRIMARY KEY
-      line: 3
+      line: 1
       details: ""
 - statement: |-
     CREATE TABLE t(id INT);
@@ -126,7 +126,7 @@
       code: 601
       title: table.require-pk
       content: Table `t` requires PRIMARY KEY
-      line: 3
+      line: 1
       details: ""
 - statement: ALTER TABLE tech_book ADD COLUMN a int, DROP COLUMN id, DROP COLUMN name
   want:
@@ -134,7 +134,7 @@
       code: 601
       title: table.require-pk
       content: Table `tech_book` requires PRIMARY KEY
-      line: 2
+      line: 0
       details: ""
 - statement: ALTER TABLE tech_book DROP COLUMN name
   want:
@@ -152,5 +152,5 @@
       code: 601
       title: table.require-pk
       content: Table `tech_book` requires PRIMARY KEY
-      line: 3
+      line: 1
       details: ""

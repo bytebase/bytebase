@@ -12,9 +12,8 @@
       code: 1103
       title: statement.disallow-limit
       content: |-
-        LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but "INSERT INTO tech_book SELECT * FROM tech_book LIMIT 1
-        ;" uses
-      line: 2
+        LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but "INSERT INTO tech_book SELECT * FROM tech_book LIMIT 1;" uses
+      line: 0
       details: ""
 - statement: INSERT INTO tech_book SELECT * FROM tech_book UNION SELECT * FROM tech_book LIMIT 1
   want:
@@ -22,9 +21,8 @@
       code: 1103
       title: statement.disallow-limit
       content: |-
-        LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but "INSERT INTO tech_book SELECT * FROM tech_book UNION SELECT * FROM tech_book LIMIT 1
-        ;" uses
-      line: 2
+        LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but "INSERT INTO tech_book SELECT * FROM tech_book UNION SELECT * FROM tech_book LIMIT 1;" uses
+      line: 0
       details: ""
 - statement: UPDATE tech_book SET name = 'my name' LIMIT 10
   want:
@@ -32,9 +30,8 @@
       code: 1102
       title: statement.disallow-limit
       content: |-
-        LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but "UPDATE tech_book SET name = 'my name' LIMIT 10
-        ;" uses
-      line: 2
+        LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but "UPDATE tech_book SET name = 'my name' LIMIT 10;" uses
+      line: 0
       details: ""
 - statement: DELETE FROM tech_book LIMIT 10
   want:
@@ -42,7 +39,6 @@
       code: 1106
       title: statement.disallow-limit
       content: |-
-        LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but "DELETE FROM tech_book LIMIT 10
-        ;" uses
-      line: 2
+        LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but "DELETE FROM tech_book LIMIT 10;" uses
+      line: 0
       details: ""

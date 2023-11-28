@@ -13,7 +13,7 @@ func TestTrigger(t *testing.T) {
 				"CREATE DEFINER=`root`@`%` TRIGGER `ins_sum` BEFORE INSERT ON account FOR EACH ROW SET @sum = sum + NEW.amount * NEW.price;",
 			want: "ALTER TABLE `account` ADD COLUMN `price` INT AFTER `amount`;\n\n" +
 				"DROP TRIGGER IF EXISTS `ins_sum`;\n\n" +
-				"CREATE DEFINER=`root`@`%` TRIGGER `ins_sum` BEFORE INSERT ON account FOR EACH ROW SET @sum = sum + NEW.amount * NEW.price\n;\n\n",
+				"CREATE DEFINER=`root`@`%` TRIGGER `ins_sum` BEFORE INSERT ON account FOR EACH ROW SET @sum = sum + NEW.amount * NEW.price;\n\n",
 		},
 	}
 	testDiffWithoutDisableForeignKeyCheck(t, tests)
@@ -28,7 +28,7 @@ func TestFunction(t *testing.T) {
 				"BEGIN   DECLARE a INT;   SET a = v;   SET a = a * 1 + 1;   RETURN a; END ;\n",
 			want: "DROP FUNCTION IF EXISTS `AddOne`;\n\n" +
 				"CREATE DEFINER=`root`@`%` FUNCTION `AddOne`(v INT) RETURNS int\n" +
-				"BEGIN   DECLARE a INT;   SET a = v;   SET a = a * 1 + 1;   RETURN a; END\n;\n\n",
+				"BEGIN   DECLARE a INT;   SET a = v;   SET a = a * 1 + 1;   RETURN a; END ;\n\n",
 		},
 	}
 	testDiffWithoutDisableForeignKeyCheck(t, tests)
@@ -52,7 +52,7 @@ func TestProcedure(t *testing.T) {
 				"SQL SECURITY INVOKER\n" +
 				"BEGIN\n" +
 				"SELECT 'Number of accounts:', (COUNT(*)-1) FROM mysql.user;\n" +
-				"END\n;\n\n",
+				"END ;\n\n",
 		},
 	}
 	testDiffWithoutDisableForeignKeyCheck(t, tests)
@@ -74,8 +74,7 @@ func TestEvent(t *testing.T) {
 				`CREATE EVENT purge_old_users
 			ON SCHEDULE EVERY 1 DAY STARTS '2023-07-01 00:00:00'
 			DO 
-			DELETE FROM users WHERE age > 110
-;
+			DELETE FROM users WHERE age > 110;
 
 `,
 		},

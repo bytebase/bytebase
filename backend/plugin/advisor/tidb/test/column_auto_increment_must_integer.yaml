@@ -12,7 +12,7 @@
       code: 410
       title: column.auto-increment-must-integer
       content: Auto-increment column `t`.`a` requires integer type
-      line: 2
+      line: 0
       details: ""
 - statement: |-
     CREATE TABLE t(b int);
@@ -22,7 +22,7 @@
       code: 410
       title: column.auto-increment-must-integer
       content: Auto-increment column `t`.`a` requires integer type
-      line: 3
+      line: 1
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
@@ -32,7 +32,7 @@
       code: 410
       title: column.auto-increment-must-integer
       content: Auto-increment column `t`.`a` requires integer type
-      line: 3
+      line: 1
       details: ""
 - statement: |-
     CREATE TABLE t(b int);
@@ -42,5 +42,5 @@
       code: 410
       title: column.auto-increment-must-integer
       content: Auto-increment column `t`.`a` requires integer type
-      line: 3
+      line: 1
       details: ""
