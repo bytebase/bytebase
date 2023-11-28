@@ -3,8 +3,8 @@
     - status: WARN
       code: 401
       title: column.required
-      content: 'Table `book` requires columns: created_ts, creator_id, updated_ts, updater_id'
-      line: 2
+      content: "Table `book` requires columns: created_ts, creator_id, updated_ts, updater_id"
+      line: 0
       details: ""
 - statement: |-
     CREATE TABLE book(
@@ -32,8 +32,8 @@
     - status: WARN
       code: 401
       title: column.required
-      content: 'Table `book` requires columns: creator_id'
-      line: 8
+      content: "Table `book` requires columns: creator_id"
+      line: 6
       details: ""
 - statement: |-
     CREATE TABLE book(
@@ -62,8 +62,8 @@
     - status: WARN
       code: 401
       title: column.required
-      content: 'Table `book` requires columns: creator_id'
-      line: 8
+      content: "Table `book` requires columns: creator_id"
+      line: 6
       details: ""
 - statement: |-
     CREATE TABLE book(
@@ -92,8 +92,8 @@
     - status: WARN
       code: 401
       title: column.required
-      content: 'Table `book` requires columns: creator_id'
-      line: 8
+      content: "Table `book` requires columns: creator_id"
+      line: 6
       details: ""
 - statement: |-
     CREATE TABLE book(
@@ -122,8 +122,8 @@
     - status: WARN
       code: 401
       title: column.required
-      content: 'Table `book` requires columns: updater_id'
-      line: 5
+      content: "Table `book` requires columns: updater_id"
+      line: 4
       details: ""
 - statement: |-
     CREATE TABLE book(
@@ -154,14 +154,14 @@
     - status: WARN
       code: 401
       title: column.required
-      content: 'Table `book` requires columns: creator_id'
-      line: 5
+      content: "Table `book` requires columns: creator_id"
+      line: 4
       details: ""
     - status: WARN
       code: 401
       title: column.required
-      content: 'Table `student` requires columns: creator_id, updater_id'
-      line: 10
+      content: "Table `student` requires columns: creator_id, updater_id"
+      line: 8
       details: ""
 - statement: |-
     CREATE TABLE book(

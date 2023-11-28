@@ -92,15 +92,6 @@ func (p *Provider) LoadSubscription(ctx context.Context) *enterprise.Subscriptio
 	}
 }
 
-// GetEffectivePlan gets the effective plan.
-func (p *Provider) GetEffectivePlan(ctx context.Context) api.PlanType {
-	subscription := p.LoadSubscription(ctx)
-	if expireTime := time.Unix(subscription.ExpiresTs, 0); expireTime.Before(time.Now()) {
-		return api.FREE
-	}
-	return subscription.Plan
-}
-
 func (p *Provider) fetchLicense(ctx context.Context) (*enterprise.License, error) {
 	license, err := p.remoteProvider.FetchLicense(ctx)
 	if err != nil {

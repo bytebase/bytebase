@@ -57,7 +57,7 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 		items = append(items, lsp.CompletionItem{
 			Label:  candidate.Text,
 			Detail: fmt.Sprintf("<%s>", string(candidate.Type)),
-			Kind:   lsp.CIKKeyword,
+			Kind:   convertLSPCompletionItemKind(candidate.Type),
 		})
 	}
 
@@ -65,6 +65,23 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 		IsIncomplete: false,
 		Items:        items,
 	}, nil
+}
+
+func convertLSPCompletionItemKind(tp base.CandidateType) lsp.CompletionItemKind {
+	switch tp {
+	case base.CandidateTypeDatabase:
+		return lsp.CIKClass
+	case base.CandidateTypeTable:
+		return lsp.CIKField
+	case base.CandidateTypeColumn:
+		return lsp.CIKInterface
+	case base.CandidateTypeFunction:
+		return lsp.CIKFunction
+	case base.CandidateTypeView:
+		return lsp.CIKVariable
+	default:
+		return lsp.CIKText
+	}
 }
 
 func (h *Handler) GetDatabaseMetadataFunc(ctx context.Context, databaseName string) (*model.DatabaseMetadata, error) {

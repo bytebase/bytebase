@@ -185,6 +185,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 		if err != nil {
 			return 0, errors.Wrapf(err, "failed to split sql")
 		}
+		list = filterEmptySQL(list)
 		if len(list) == 0 {
 			return 0, nil
 		}
@@ -224,14 +225,12 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 				CommandsTotal:     int32(totalCommands),
 				CommandsCompleted: int32(currentIndex),
 				CommandStartPosition: &v1pb.TaskRun_ExecutionDetail_Position{
-					// TODO(rebelice): should find the first non-comment and blank line.
-					Line: int32(chunk[0].BaseLine),
-					// TODO(rebelice): we should also set the column position.
+					Line:   int32(chunk[0].FirstStatementLine),
+					Column: int32(chunk[0].FirstStatementColumn),
 				},
 				CommandEndPosition: &v1pb.TaskRun_ExecutionDetail_Position{
-					// TODO(rebelice): should find the first non-comment and blank line.
-					Line: int32(chunk[len(chunk)-1].BaseLine),
-					// TODO(rebelice): we should also set the column position.
+					Line:   int32(chunk[len(chunk)-1].LastLine),
+					Column: int32(chunk[len(chunk)-1].LastColumn),
 				},
 			})
 		}
@@ -246,12 +245,12 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 			return 0, &db.ErrorWithPosition{
 				Err: errors.Wrapf(err, "failed to execute context in a transaction"),
 				Start: &storepb.TaskRunResult_Position{
-					// TODO(rebelice): should find the first non-comment and blank line and column.
-					Line: int32(chunk[0].BaseLine),
+					Line:   int32(chunk[0].FirstStatementLine),
+					Column: int32(chunk[0].FirstStatementColumn),
 				},
 				End: &storepb.TaskRunResult_Position{
-					// TODO(rebelice): should find the first non-comment and blank line and column.
-					Line: int32(chunk[len(chunk)-1].BaseLine),
+					Line:   int32(chunk[len(chunk)-1].LastLine),
+					Column: int32(chunk[len(chunk)-1].LastColumn),
 				},
 			}
 		}
@@ -277,6 +276,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	if err != nil {
 		return nil, err
 	}
+	singleSQLs = filterEmptySQL(singleSQLs)
 	if len(singleSQLs) == 0 {
 		return nil, nil
 	}
@@ -341,4 +341,14 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 // RunStatement runs a SQL statement in a given connection.
 func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
 	return util.RunStatement(ctx, storepb.Engine_MYSQL, conn, statement)
+}
+
+func filterEmptySQL(list []base.SingleSQL) []base.SingleSQL {
+	var result []base.SingleSQL
+	for _, sql := range list {
+		if !sql.Empty {
+			result = append(result, sql)
+		}
+	}
+	return result
 }

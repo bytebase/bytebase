@@ -4,7 +4,7 @@
       code: 602
       title: table.no-foreign-key
       content: Foreign key is not allowed in the table `tech_book`
-      line: 2
+      line: 0
       details: ""
 - statement: CREATE TABLE book(id INT, author_id INT, FOREIGN KEY fk_book_author_id_author_id (author_id) REFERENCES author (id))
   want:
@@ -12,5 +12,5 @@
       code: 602
       title: table.no-foreign-key
       content: Foreign key is not allowed in the table `book`
-      line: 1
+      line: 0
       details: ""

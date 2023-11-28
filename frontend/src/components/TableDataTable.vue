@@ -7,7 +7,6 @@
     :virtual-scroll="true"
     :striped="true"
     :bordered="true"
-    :bottom-bordered="true"
   />
 
   <TableDetailDrawer
@@ -102,6 +101,13 @@ const hasEngineProperty = computed(() => {
   return !isPostgres.value;
 });
 
+const hasPartitionTables = computed(() => {
+  return (
+    // Only show partition tables for PostgreSQL.
+    engine.value === Engine.POSTGRES
+  );
+});
+
 const columns = computed(() => {
   const columns: (DataTableColumn<TableMetadata> & { hide?: boolean })[] = [
     {
@@ -136,6 +142,14 @@ const columns = computed(() => {
           classification: table.classification,
           classificationConfig: classificationConfig.value,
         });
+      },
+    },
+    {
+      key: "partitioned",
+      title: t("database.partitioned"),
+      hide: !hasPartitionTables.value,
+      render: (table) => {
+        return table.partitions.length > 0 ? "True" : "";
       },
     },
     {
