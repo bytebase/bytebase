@@ -47,7 +47,7 @@ func TestGetAffectedRows(t *testing.T) {
 			t.Fatalf("the length of parse result of stmt %v is not one", test.Statement)
 		}
 
-		affectedRows, err := mysqlparser.GetAffectedRows(context.Background(), stmts[0], nil, buildGetTableDataSizeFunc(getMetadataForAffectedRowsTest()))
+		affectedRows, err := mysqlparser.GetAffectedRows(context.Background(), stmts[0], nil, buildGetTableDataSizeFuncForMySQL(getMetadataForAffectedRowsTest()))
 		a.NoError(err)
 
 		if record {
