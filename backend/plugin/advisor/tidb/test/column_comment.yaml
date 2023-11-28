@@ -16,19 +16,19 @@
       code: 409
       title: column.comment
       content: The length of column `t`.`a` comment should be within 10 characters
-      line: 2
+      line: 1
       details: ""
     - status: WARN
       code: 408
       title: column.comment
       content: Column `t`.`b` requires comments
-      line: 3
+      line: 2
       details: ""
     - status: WARN
       code: 408
       title: column.comment
       content: Column `t`.`c` requires comments
-      line: 4
+      line: 3
       details: ""
 - statement: |-
     CREATE TABLE t(a int COMMENT 'comment');
@@ -38,7 +38,7 @@
       code: 408
       title: column.comment
       content: Column `t`.`b` requires comments
-      line: 3
+      line: 1
       details: ""
 - statement: |-
     CREATE TABLE t(a int COMMENT 'this is comment');
@@ -48,13 +48,13 @@
       code: 409
       title: column.comment
       content: The length of column `t`.`a` comment should be within 10 characters
-      line: 1
+      line: 0
       details: ""
     - status: WARN
       code: 408
       title: column.comment
       content: Column `t`.`b` requires comments
-      line: 3
+      line: 1
       details: ""
 - statement: |-
     CREATE TABLE t(b int COMMENT 'It is comment');
@@ -64,13 +64,13 @@
       code: 409
       title: column.comment
       content: The length of column `t`.`b` comment should be within 10 characters
-      line: 1
+      line: 0
       details: ""
     - status: WARN
       code: 408
       title: column.comment
       content: Column `t`.`b` requires comments
-      line: 3
+      line: 1
       details: ""
 - statement: |-
     CREATE TABLE t(b int COMMENT 'It is COMMENT');
@@ -80,11 +80,11 @@
       code: 409
       title: column.comment
       content: The length of column `t`.`b` comment should be within 10 characters
-      line: 1
+      line: 0
       details: ""
     - status: WARN
       code: 409
       title: column.comment
       content: The length of column `t`.`b` comment should be within 10 characters
-      line: 3
+      line: 1
       details: ""

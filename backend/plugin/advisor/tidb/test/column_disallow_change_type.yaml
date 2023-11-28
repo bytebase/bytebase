@@ -4,9 +4,8 @@
       code: 403
       title: column.disallow-change-type
       content: |-
-        "ALTER TABLE tech_book MODIFY id INTEGER UNSIGNED
-        ;" changes column type
-      line: 2
+        "ALTER TABLE tech_book MODIFY id INTEGER UNSIGNED;" changes column type
+      line: 0
       details: ""
 - statement: ALTER TABLE tech_book MODIFY id int
   want:
@@ -22,9 +21,8 @@
       code: 403
       title: column.disallow-change-type
       content: |-
-        "ALTER TABLE tech_book MODIFY id bigint
-        ;" changes column type
-      line: 2
+        "ALTER TABLE tech_book MODIFY id bigint;" changes column type
+      line: 0
       details: ""
 - statement: ALTER TABLE tech_book CHANGE name uname varchar(20)
   want:
@@ -32,7 +30,6 @@
       code: 403
       title: column.disallow-change-type
       content: |-
-        "ALTER TABLE tech_book CHANGE name uname varchar(20)
-        ;" changes column type
-      line: 2
+        "ALTER TABLE tech_book CHANGE name uname varchar(20);" changes column type
+      line: 0
       details: ""

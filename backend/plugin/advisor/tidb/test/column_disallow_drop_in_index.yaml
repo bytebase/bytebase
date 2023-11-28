@@ -17,7 +17,7 @@
       code: 424
       title: "column.disallow-drop-in-index"
       content: "`t`.`b` cannot drop index column"
-      line: 3
+      line: 1
       details: ""
 - statement: |-
     CREATE TABLE t(a int, c int, INDEX idx_ac(a,c));
@@ -27,7 +27,7 @@
       code: 424
       title: "column.disallow-drop-in-index"
       content: "`t`.`c` cannot drop index column"
-      line: 3
+      line: 1
       details: ""
 
 - statement: |-
@@ -51,11 +51,11 @@
       code: 424
       title: "column.disallow-drop-in-index"
       content: "`t`.`a` cannot drop index column"
-      line: 2
+      line: 1
       details: ""
     - status: WARN
       code: 424
       title: "column.disallow-drop-in-index"
       content: "`t`.`c` cannot drop index column"
-      line: 4
+      line: 2
       details: ""

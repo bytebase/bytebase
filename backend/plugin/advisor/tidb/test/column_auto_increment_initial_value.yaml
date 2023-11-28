@@ -20,5 +20,5 @@
       code: 416
       title: column.auto-increment-initial-value
       content: The initial auto-increment value in table `t` is 2, which doesn't equal 20
-      line: 2
+      line: 0
       details: ""
