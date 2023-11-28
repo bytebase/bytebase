@@ -38,7 +38,7 @@ func TestGetStatementsFromSchemaGroups(t *testing.T) {
 			schemaGroupMatchedTables: map[string][]string{
 				"schema group 1": {"salary_01"},
 			},
-			expectedStatements:       []string{"ALTER TABLE salary_01 ADD COLUMN num INT\n;\n"},
+			expectedStatements:       []string{"ALTER TABLE salary_01 ADD COLUMN num INT;\n"},
 			expectedSchemaGroupNames: []string{"projects/p2/databaseGroups/g1/schemaGroups/schema group 1"},
 		},
 		{
@@ -80,7 +80,7 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 			expectedStatements: []string{
 				"ALTER TABLE salary_01 ADD COLUMN num INT;\n\nCREATE INDEX salary_01_num_idx ON salary_01 (num);\n",
 				"ALTER TABLE salary_02 ADD COLUMN num INT;\n\nCREATE INDEX salary_02_num_idx ON salary_02 (num);\n",
-				"\nCREATE TABLE singleton(id INT);\n\nALTER TABLE person ADD COLUMN name VARCHAR(30);\n\nALTER TABLE partpartially ADD COLUMN num INT;\n\nALTER TABLE singleton ADD COLUMN num INT\n;\n",
+				"\nCREATE TABLE singleton(id INT);\n\nALTER TABLE person ADD COLUMN name VARCHAR(30);\n\nALTER TABLE partpartially ADD COLUMN num INT;\n\nALTER TABLE singleton ADD COLUMN num INT;\n",
 			},
 			expectedSchemaGroupNames: []string{
 				"projects/p2/databaseGroups/g1/schemaGroups/schema group 1",
@@ -117,7 +117,7 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 				"ALTER TABLE salary_02 ADD COLUMN num INT;\n\nCREATE INDEX salary_02_num_idx ON salary_02 (num);\n",
 				"\nCREATE TABLE singleton_00(id INT);\n",
 				"\nALTER TABLE person ADD COLUMN name VARCHAR(30);\n\nALTER TABLE partpartially ADD COLUMN num INT;\n",
-				"\nALTER TABLE singleton_00 ADD COLUMN num INT\n;\n",
+				"\nALTER TABLE singleton_00 ADD COLUMN num INT;\n",
 			},
 			expectedSchemaGroupNames: []string{
 				"projects/p2/databaseGroups/g1/schemaGroups/schema group 1",

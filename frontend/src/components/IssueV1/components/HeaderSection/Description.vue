@@ -1,6 +1,6 @@
 <template>
   <div class="flex items-center gap-x-4 py-1">
-    <div class="flex items-center gap-x-1">
+    <div v-if="showProjectInfo" class="flex items-center gap-x-1">
       <div class="textlabel">{{ $t("common.project") }}</div>
       <div>-</div>
       <ProjectV1Name :project="project" />
@@ -29,10 +29,11 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
-import { useUserStore } from "@/store";
+import { usePageMode, useUserStore } from "@/store";
 import { extractUserResourceName } from "@/utils";
 import { useIssueContext } from "../../logic";
 
+const pageMode = usePageMode();
 const { isCreating, issue } = useIssueContext();
 
 const creator = computed(() => {
@@ -41,4 +42,6 @@ const creator = computed(() => {
 });
 
 const project = computed(() => issue.value.projectEntity);
+
+const showProjectInfo = computed(() => pageMode.value === "BUNDLED");
 </script>

@@ -115,8 +115,15 @@ func parseSingleStatement(statement string) (antlr.Tree, *antlr.CommonTokenStrea
 
 func mysqlAddSemicolonIfNeeded(sql string) string {
 	lexer := parser.NewMySQLLexer(antlr.NewInputStream(sql))
+	lexerErrorListener := &base.ParseErrorListener{}
+	lexer.RemoveErrorListeners()
+	lexer.AddErrorListener(lexerErrorListener)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	stream.Fill()
+	if lexerErrorListener.Err != nil {
+		// If the lexer fails, we cannot add semicolon.
+		return sql
+	}
 	tokens := stream.GetAllTokens()
 	for i := len(tokens) - 1; i >= 0; i-- {
 		if tokens[i].GetChannel() != antlr.TokenDefaultChannel || tokens[i].GetTokenType() == parser.MySQLParserEOF {

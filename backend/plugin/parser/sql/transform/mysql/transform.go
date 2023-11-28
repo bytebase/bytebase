@@ -121,8 +121,11 @@ func (t *SchemaTransformer) Normalize(schema string, standard string) (string, e
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to parse schema %q", schema)
 		}
-		if len(nodeList) != 1 {
-			return "", errors.Errorf("Expect one statement after splitting but found %d", len(nodeList))
+		if len(nodeList) == 0 {
+			continue
+		}
+		if len(nodeList) > 1 {
+			return "", errors.Errorf("Expect one statement after splitting but found %d, text %q", len(nodeList), stmt.Text)
 		}
 
 		switch node := nodeList[0].(type) {
@@ -154,8 +157,11 @@ func (t *SchemaTransformer) Normalize(schema string, standard string) (string, e
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to parse schema %q", schema)
 		}
-		if len(nodeList) != 1 {
-			return "", errors.Errorf("Expect one statement after splitting but found %d", len(nodeList))
+		if len(nodeList) == 0 {
+			continue
+		}
+		if len(nodeList) > 1 {
+			return "", errors.Errorf("Expect one statement after splitting but found %d, text %q", len(nodeList), stmt.Text)
 		}
 
 		switch node := nodeList[0].(type) {
@@ -191,8 +197,11 @@ func (t *SchemaTransformer) Normalize(schema string, standard string) (string, e
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to parse schema %q", schema)
 		}
-		if len(nodeList) != 1 {
-			return "", errors.Errorf("Expect one statement after splitting but found %d", len(nodeList))
+		if len(nodeList) == 0 {
+			continue
+		}
+		if len(nodeList) > 1 {
+			return "", errors.Errorf("Expect one statement after splitting but found %d, text %q", len(nodeList), stmt.Text)
 		}
 
 		switch node := nodeList[0].(type) {
@@ -372,8 +381,11 @@ func (*SchemaTransformer) Check(schema string) (int, error) {
 		if err != nil {
 			return stmt.LastLine, errors.Wrapf(err, "failed to parse schema %q", schema)
 		}
-		if len(nodeList) != 1 {
-			return stmt.LastLine, errors.Errorf("Expect one statement after splitting but found %d", len(nodeList))
+		if len(nodeList) == 0 {
+			continue
+		}
+		if len(nodeList) > 1 {
+			return stmt.LastLine, errors.Errorf("Expect one statement after splitting but found %d, text %q", len(nodeList), stmt.Text)
 		}
 
 		switch node := nodeList[0].(type) {
@@ -469,8 +481,11 @@ func (*SchemaTransformer) Transform(schema string) (string, error) {
 			result = append(result, stmt.Text+"\n\n")
 			continue
 		}
-		if len(nodeList) != 1 {
-			return "", errors.Errorf("Expect one statement after splitting but found %d", len(nodeList))
+		if len(nodeList) == 0 {
+			continue
+		}
+		if len(nodeList) > 1 {
+			return "", errors.Errorf("Expect one statement after splitting but found %d, text %q", len(nodeList), stmt.Text)
 		}
 
 		switch node := nodeList[0].(type) {

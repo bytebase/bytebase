@@ -55,9 +55,10 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 	var items []lsp.CompletionItem
 	for _, candidate := range candidates {
 		items = append(items, lsp.CompletionItem{
-			Label:  candidate.Text,
-			Detail: fmt.Sprintf("<%s>", string(candidate.Type)),
-			Kind:   lsp.CIKKeyword,
+			Label:    candidate.Text,
+			Detail:   fmt.Sprintf("<%s>", string(candidate.Type)),
+			Kind:     convertLSPCompletionItemKind(candidate.Type),
+			SortText: generateSortText(params, candidate),
 		})
 	}
 
@@ -65,6 +66,49 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 		IsIncomplete: false,
 		Items:        items,
 	}, nil
+}
+
+func generateSortText(params lsp.CompletionParams, candidate base.Candidate) string {
+	switch params.Context.TriggerCharacter {
+	case ".":
+		return generateSortTextAfterDot(candidate)
+	default:
+		return string(candidate.Type) + candidate.Text
+	}
+}
+
+func generateSortTextAfterDot(candidate base.Candidate) string {
+	switch candidate.Type {
+	case base.CandidateTypeColumn:
+		return "01" + candidate.Text
+	case base.CandidateTypeSchema:
+		return "02" + candidate.Text
+	case base.CandidateTypeTable:
+		return "03" + candidate.Text
+	case base.CandidateTypeView:
+		return "04" + candidate.Text
+	case base.CandidateTypeFunction:
+		return "05" + candidate.Text
+	default:
+		return "10" + string(candidate.Type) + candidate.Text
+	}
+}
+
+func convertLSPCompletionItemKind(tp base.CandidateType) lsp.CompletionItemKind {
+	switch tp {
+	case base.CandidateTypeDatabase:
+		return lsp.CIKClass
+	case base.CandidateTypeTable:
+		return lsp.CIKField
+	case base.CandidateTypeColumn:
+		return lsp.CIKInterface
+	case base.CandidateTypeFunction:
+		return lsp.CIKFunction
+	case base.CandidateTypeView:
+		return lsp.CIKVariable
+	default:
+		return lsp.CIKText
+	}
 }
 
 func (h *Handler) GetDatabaseMetadataFunc(ctx context.Context, databaseName string) (*model.DatabaseMetadata, error) {

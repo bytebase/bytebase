@@ -358,27 +358,14 @@ const getButtonText = (plan: Plan): string => {
 const onButtonClick = (plan: Plan) => {
   switch (plan.type) {
     case PlanType.TEAM:
-      if (subscriptionStore.currentPlan === PlanType.FREE) {
-        window.open(
-          "https://hub.bytebase.com/workspace?source=console.subscription",
-          "__blank"
-        );
-      } else if (subscriptionStore.currentPlan === PlanType.TEAM) {
-        window.open(
-          "https://hub.bytebase.com/subscription?source=console.subscription",
-          "__blank"
-        );
-      }
+      window.open(subscriptionStore.purchaseLicenseUrl, "__blank");
       return;
     case PlanType.ENTERPRISE:
       if (subscriptionStore.currentPlan === PlanType.ENTERPRISE) {
         if (subscriptionStore.isTrialing) {
           window.open(enterprisePlanFormLink, "__blank");
         } else {
-          window.open(
-            "https://hub.bytebase.com/subscription?source=console.subscription",
-            "__blank"
-          );
+          window.open(subscriptionStore.purchaseLicenseUrl, "__blank");
         }
       } else {
         window.open(enterprisePlanFormLink, "__blank");

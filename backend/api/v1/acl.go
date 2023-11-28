@@ -145,7 +145,7 @@ func (in *ACLInterceptor) aclInterceptorDo(ctx context.Context, fullMethod strin
 	}
 
 	if in.mode == common.ReleaseModeDev && user.Email == "xz@bytebase.com" {
-		return in.checkIAMPermission(ctx, getShortMethodName(fullMethod), request, user)
+		return in.checkIAMPermission(ctx, fullMethod, request, user)
 	}
 
 	return nil

@@ -64,6 +64,7 @@
 </template>
 
 <script lang="ts" setup>
+import { computedAsync } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
@@ -94,10 +95,10 @@ const sqlStatement = computed(
   () => tabStore.currentTab.selectedStatement || tabStore.currentTab.statement
 );
 
-const isDDL = computed(() => {
-  const { data } = parseSQL(sqlStatement.value);
+const isDDL = computedAsync(async () => {
+  const { data } = await parseSQL(sqlStatement.value);
   return data !== null ? isDDLStatement(data, "some") : false;
-});
+}, false);
 
 const showActionButtons = computed(() => pageMode.value === "BUNDLED");
 

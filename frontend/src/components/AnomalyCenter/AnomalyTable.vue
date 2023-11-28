@@ -63,7 +63,7 @@
       <DiffEditor
         class="flex-1 w-full border rounded-md overflow-clip"
         :original="schemaDriftDetail.payload?.expectedSchema"
-        :value="schemaDriftDetail.payload?.actualSchema"
+        :modified="schemaDriftDetail.payload?.actualSchema"
         :readonly="true"
       />
       <div class="flex justify-end">
@@ -80,7 +80,6 @@ import { computed, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBTableSectionDataSource } from "@/bbkit/types";
-import DiffEditor from "@/components/MonacoEditor/DiffEditor.vue";
 import { useDatabaseV1Store, useInstanceV1Store } from "@/store";
 import { useEnvironmentV1Store } from "@/store";
 import { UNKNOWN_ENVIRONMENT_NAME } from "@/types";
@@ -95,6 +94,7 @@ import {
   humanizeTs,
   extractDatabaseResourceName,
 } from "@/utils";
+import { DiffEditor } from "../MonacoEditor";
 
 type Action = {
   onClick: () => void;

@@ -211,7 +211,7 @@
             v-if="state.showDiff"
             class="h-[64rem] max-h-full border rounded-md overflow-clip"
             :original="changeHistory.prevSchema"
-            :value="changeHistory.schema"
+            :modified="changeHistory.schema"
             :readonly="true"
           />
           <template v-else>
@@ -252,7 +252,7 @@
         <DiffEditor
           class="flex-1 w-full border rounded-md overflow-clip"
           :original="previousHistory.schema"
-          :value="changeHistory.schema"
+          :modified="changeHistory.schema"
           :readonly="true"
         />
         <div class="flex justify-end">
@@ -279,10 +279,8 @@
 </template>
 
 <script lang="ts" setup>
-import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { computed, reactive, watch, ref } from "vue";
 import ChangeHistoryStatusIcon from "@/components/ChangeHistory/ChangeHistoryStatusIcon.vue";
-import DiffEditor from "@/components/MonacoEditor/DiffEditor.vue";
 import TableDetailDrawer from "@/components/TableDetailDrawer.vue";
 import {
   pushNotification,
@@ -309,6 +307,7 @@ import {
   extractUserResourceName,
   uidFromSlug,
   getAffectedTablesOfChangeHistory,
+  toClipboard,
 } from "@/utils";
 
 interface LocalState {

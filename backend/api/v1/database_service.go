@@ -2764,10 +2764,14 @@ func convertTableMetadata(table *storepb.TableMetadata, view v1pb.DatabaseMetada
 		Classification: table.Classification,
 		UserComment:    table.UserComment,
 	}
+	for _, partition := range table.Partitions {
+		t.Partitions = append(t.Partitions, convertTablePartitionMetadata(partition))
+	}
 	// We only return the table info for basic view.
 	if view != v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL {
 		return t
 	}
+
 	for _, column := range table.Columns {
 		t.Columns = append(t.Columns, convertColumnMetadata(column))
 	}
@@ -2793,9 +2797,6 @@ func convertTableMetadata(table *storepb.TableMetadata, view v1pb.DatabaseMetada
 			OnUpdate:          foreignKey.OnUpdate,
 			MatchType:         foreignKey.MatchType,
 		})
-	}
-	for _, partition := range table.Partitions {
-		t.Partitions = append(t.Partitions, convertTablePartitionMetadata(partition))
 	}
 	return t
 }

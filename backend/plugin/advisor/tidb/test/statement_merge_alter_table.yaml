@@ -14,7 +14,7 @@
       code: 207
       title: statement.merge-alter-table
       content: There are 2 statements to modify table `tech_book`
-      line: 3
+      line: 1
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
@@ -26,13 +26,13 @@
       code: 207
       title: statement.merge-alter-table
       content: There are 2 statements to modify table `t`
-      line: 3
+      line: 2
       details: ""
     - status: WARN
       code: 207
       title: statement.merge-alter-table
       content: There are 2 statements to modify table `tech_book`
-      line: 5
+      line: 3
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
@@ -44,11 +44,11 @@
       code: 207
       title: statement.merge-alter-table
       content: There are 2 statements to modify table `tech_book`
-      line: 3
+      line: 2
       details: ""
     - status: WARN
       code: 207
       title: statement.merge-alter-table
       content: There are 2 statements to modify table `t`
-      line: 5
+      line: 3
       details: ""
