@@ -1,6 +1,6 @@
-import DiffEditor from "./DiffEditor.vue";
-import MonacoEditor from "./MonacoEditor.vue";
+import WrappedDiffEditor from "./WrappedDiffEditor.vue";
+import WrappedMonacoEditor from "./WrappedMonacoEditor.vue";
 
 export * from "./types";
 
-export { MonacoEditor, DiffEditor };
+export { WrappedMonacoEditor as MonacoEditor, WrappedDiffEditor as DiffEditor };
