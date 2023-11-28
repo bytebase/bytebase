@@ -106,6 +106,7 @@ import { useI18n } from "vue-i18n";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
 import { useGlobalDatabaseActions } from "@/components/KBar/useDatabaseActions";
+import { useProjectActions } from "@/components/KBar/useProjectActions";
 import {
   useCurrentUserV1,
   useCurrentUserIamPolicy,
@@ -231,5 +232,6 @@ const navigationKbarActions = computed(() => {
 });
 useRegisterActions(navigationKbarActions);
 
+useProjectActions();
 useGlobalDatabaseActions();
 </script>
