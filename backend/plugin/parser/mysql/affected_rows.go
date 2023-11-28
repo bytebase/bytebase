@@ -29,7 +29,7 @@ type AffectedRowsListener struct {
 }
 
 // GetAffectedRows return the rows count affected by the sql.
-func GetAffectedRows(ctx context.Context, stmt any, getAffectedRowsByQuery func(ctx context.Context, statement string) (int64, error), getTableDataSizeFunc func(schemaName, tableName string) int64) (int64, error) {
+func GetAffectedRows(ctx context.Context, stmt any, getAffectedRowsByQuery base.GetAffectedRowsCountByQueryFunc, getTableDataSizeFunc base.GetTableDataSizeFunc) (int64, error) {
 	root, ok := stmt.(*ParseResult)
 	if !ok {
 		return 0, errors.New("failed to convert stmt to mysql parse result")

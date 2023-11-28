@@ -36,7 +36,7 @@ type CompletionFunc func(ctx context.Context, statement string, caretLine int, c
 type GetQuerySpanFunc func(ctx context.Context, statement, database string, metadataFunc GetDatabaseMetadataFunc) (*QuerySpan, error)
 
 // GetAffectedRows is the interface of getting the affected rows for a statement.
-type GetAffectedRowsFunc func(ctx context.Context, stmt any, getAffectedRowsByQuery func(ctx context.Context, statement string) (int64, error), getTableDataSizeFunc func(schemaName, tableName string) int64) (int64, error)
+type GetAffectedRowsFunc func(ctx context.Context, stmt any, getAffectedRowsByQuery GetAffectedRowsCountByQueryFunc, getTableDataSizeFunc GetTableDataSizeFunc) (int64, error)
 
 func RegisterQueryValidator(engine storepb.Engine, f ValidateSQLForEditorFunc) {
 	mux.Lock()
@@ -216,7 +216,7 @@ func RegisterGetAffectedRows(engine storepb.Engine, f GetAffectedRowsFunc) {
 }
 
 // GetAffectedRows returns the affected rows for the parse result.
-func GetAffectedRows(ctx context.Context, engine storepb.Engine, stmt any, getAffectedRowsByQueryFunc func(ctx context.Context, statement string) (int64, error), getTableDataSizeFunc func(schemaName, tableName string) int64) (int64, error) {
+func GetAffectedRows(ctx context.Context, engine storepb.Engine, stmt any, getAffectedRowsByQueryFunc GetAffectedRowsCountByQueryFunc, getTableDataSizeFunc GetTableDataSizeFunc) (int64, error) {
 	f, ok := affectedRows[engine]
 	if !ok {
 		return 0, errors.Errorf("engine %s is not supported", engine)
