@@ -5,7 +5,6 @@ import {
   extractDatabaseResourceName,
   extractInstanceResourceName,
 } from "@/utils";
-import { executeCommand, useLSPClient } from "../lsp-client";
 import type { MonacoModule } from "../types";
 
 export type AutoCompleteContext = {
@@ -18,11 +17,13 @@ type SetMetadataParams = {
   databaseName: string;
 };
 
-export const useAutoComplete = (
+export const useAutoComplete = async (
   monaco: MonacoModule,
   editor: monaco.editor.IStandaloneCodeEditor,
   context: Ref<AutoCompleteContext | undefined>
 ) => {
+  const { executeCommand, useLSPClient } = await import("../lsp-client");
+
   const client = useLSPClient();
   const params = computed(() => {
     const p: SetMetadataParams = {

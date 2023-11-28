@@ -18,18 +18,19 @@ import {
   type MonacoModule,
   type Schema,
 } from "../types";
-import { useLanguageClient } from "./useLanguageClient";
 
 export type AutoCompleteContext = {
   instance: string; // instances/{instance}
   database?: string; // instances/{instance}/databases/{database_name}
 };
 
-export const useLegacyAutoComplete = (
+export const useLegacyAutoComplete = async (
   monaco: MonacoModule,
   editor: monaco.editor.IStandaloneCodeEditor,
   context: Ref<AutoCompleteContext | undefined>
 ) => {
+  const { useLanguageClient } = await import("./useLanguageClient");
+
   const { changeConnectionScope, changeDialect, changeSchema } =
     useLanguageClient();
   const database = computed(() => {
