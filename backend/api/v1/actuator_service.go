@@ -111,6 +111,7 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		WorkspaceId:      workspaceID,
 		GitopsWebhookUrl: setting.GitopsWebhookUrl,
 		Debug:            slog.Default().Enabled(ctx, slog.LevelDebug),
+		Lsp:              s.profile.Lsp,
 	}
 
 	return &serverInfo, nil
