@@ -640,10 +640,10 @@ func analyzeSlowLog(engine storepb.Engine, logs []*slowLog) (map[string]*storepb
 			return nil, errors.Wrapf(err, "get sql fingerprint failed, sql: %s", log.details.SqlText)
 		}
 		if len(fingerprint) > db.SlowQueryMaxLen {
-			fingerprint = fingerprint[:db.SlowQueryMaxLen]
+			fingerprint, _ = common.TruncateString(fingerprint, db.SlowQueryMaxLen)
 		}
 		if len(log.details.SqlText) > db.SlowQueryMaxLen {
-			log.details.SqlText = log.details.SqlText[:db.SlowQueryMaxLen]
+			log.details.SqlText, _ = common.TruncateString(log.details.SqlText, db.SlowQueryMaxLen)
 		}
 
 		for _, db := range databaseList {

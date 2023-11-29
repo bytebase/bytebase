@@ -836,7 +836,7 @@ func (driver *Driver) SyncSlowQuery(ctx context.Context, _ time.Time) (map[strin
 			return nil, err
 		}
 		if len(fingerprint) > db.SlowQueryMaxLen {
-			fingerprint = fingerprint[:db.SlowQueryMaxLen]
+			fingerprint, _ = common.TruncateString(fingerprint, db.SlowQueryMaxLen)
 		}
 		item := storepb.SlowQueryStatisticsItem{
 			SqlFingerprint:   fingerprint,
