@@ -69,7 +69,7 @@
 
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
-import { escape, head, isUndefined } from "lodash-es";
+import { escape, head, isUndefined, pick } from "lodash-es";
 import { TreeOption, NEllipsis, NInput, NDropdown, NTree } from "naive-ui";
 import { computed, onMounted, watch, ref, h, reactive, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
@@ -189,9 +189,15 @@ const schemaList = computed(() =>
   Array.from(schemaEditorV1Store.resourceMap["database"].values())
     .map((item) => item.schemaList)
     .flat()
-);
-const tableList = computed(() =>
-  schemaList.value.map((schema) => schema.tableList).flat()
+    .map((schema) => {
+      return {
+        ...schema,
+        tableList: schema.tableList.map((table) => {
+          // Don't watch column changes in database tree.
+          return pick(table, ["id", "name", "status"]);
+        }),
+      };
+    })
 );
 const contextMenuOptions = computed(() => {
   const treeNode = contextMenu.treeNode;
@@ -323,11 +329,7 @@ onMounted(async () => {
 });
 
 watch(
-  [
-    () => schemaList.value,
-    () => tableList.value,
-    () => databaseDataLoadedSet.value,
-  ],
+  [() => schemaList.value],
   () => {
     const databaseTreeNodeList: TreeNodeForDatabase[] = [];
     for (const treeNode of treeDataRef.value) {
@@ -472,17 +474,20 @@ watch(
   }
 );
 
-watch(searchPattern, () => {
-  for (const treeNode of treeDataRef.value) {
-    if (treeNode.type === "instance" && treeNode.children) {
-      for (const databaseTreeNode of treeNode.children) {
-        if (databaseTreeNode.children === undefined) {
-          loadSubTree(databaseTreeNode);
+watch(
+  () => searchPattern.value,
+  () => {
+    for (const treeNode of treeDataRef.value) {
+      if (treeNode.type === "instance" && treeNode.children) {
+        for (const databaseTreeNode of treeNode.children) {
+          if (databaseTreeNode.children === undefined) {
+            loadSubTree(databaseTreeNode);
+          }
         }
       }
     }
   }
-});
+);
 
 // Render prefix icons before label text.
 const renderPrefix = ({ option }: { option: TreeOption }) => {
