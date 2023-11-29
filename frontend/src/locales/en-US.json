@@ -276,7 +276,8 @@
     "license": "License",
     "show-all": "Show all",
     "view-details": "View details",
-    "force-verb": "Force {verb}"
+    "force-verb": "Force {verb}",
+    "nothing-changed": "Nothing changed"
   },
   "error-page": {
     "go-back-home": "Go back home"
