@@ -79,6 +79,7 @@ type UpdateInstanceChangeHistoryMessage struct {
 	Status              *db.MigrationStatus
 	ExecutionDurationNs *int64
 	Schema              *string
+	SchemaPrev          *string
 	Sheet               *int
 }
 
@@ -663,6 +664,9 @@ func (s *Store) UpdateInstanceChangeHistory(ctx context.Context, update *UpdateI
 	}
 	if v := update.Schema; v != nil {
 		set, args = append(set, fmt.Sprintf("schema = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := update.SchemaPrev; v != nil {
+		set, args = append(set, fmt.Sprintf("schema_prev = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := update.Sheet; v != nil {
 		set, args = append(set, fmt.Sprintf("sheet_id = $%d", len(args)+1)), append(args, *v)
