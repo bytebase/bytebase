@@ -2,8 +2,7 @@
   <SQLCheckButton
     v-if="database"
     :database="database"
-    :statement="statement"
-    :errors="errors"
+    :get-statement="getStatement"
     class="justify-end"
     :button-style="{
       height: '28px',
@@ -20,9 +19,8 @@
 </template>
 
 <script lang="ts" setup>
-import { asyncComputed } from "@vueuse/core";
-import { cloneDeep, debounce } from "lodash-es";
-import { computed, ref, watch } from "vue";
+import { cloneDeep } from "lodash-es";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { SQLCheckButton, SQLCheckSummary } from "@/components/SQLCheck";
 import {
@@ -31,7 +29,6 @@ import {
 } from "@/components/SchemaEditorV1/utils";
 import { schemaDesignServiceClient } from "@/grpcweb";
 import { useDatabaseV1Store, useSchemaEditorV1Store } from "@/store";
-import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import { fetchBaselineMetadataOfBranch } from "../SchemaEditorV1/utils/branch";
 
@@ -46,13 +43,12 @@ const database = computed(() => {
   return databaseStore.getDatabaseByName(props.schemaDesign.baselineDatabase);
 });
 
-const sourceMetadata = asyncComputed(async () => {
+const getSourceMetadata = async () => {
   const branch = props.schemaDesign;
 
   return await fetchBaselineMetadataOfBranch(branch);
-}, undefined);
-
-const editingMetadata = asyncComputed(async () => {
+};
+const getEditingMetadata = async () => {
   const branchSchema = schemaEditorV1Store.resourceMap["branch"].get(
     props.schemaDesign.name
   );
@@ -68,43 +64,29 @@ const editingMetadata = asyncComputed(async () => {
   );
 
   return metadata;
-}, undefined);
+};
 
-const targetMetadata = ref<DatabaseMetadata>();
-const statement = ref("");
-const errors = ref<string[]>([]);
+const getStatement = async () => {
+  const editingMetadata = await getEditingMetadata();
 
-const evaluateTargetMetadataAndDiff = async () => {
-  const metadata = editingMetadata.value;
-
-  const setState = (
-    metadata: DatabaseMetadata | undefined,
-    stmt: string,
-    errs: string[]
-  ) => {
-    targetMetadata.value = metadata;
-    statement.value = stmt;
-    errors.value = errs;
-  };
-
-  if (!metadata) {
-    setState(undefined, "", [t("schema-editor.message.invalid-schema")]);
-    return;
+  if (!editingMetadata) {
+    return {
+      statement: "",
+      errors: [t("schema-editor.message.invalid-schema")],
+    };
   }
-  const validationMessages = validateDatabaseMetadata(metadata);
+  const validationMessages = validateDatabaseMetadata(editingMetadata);
   if (validationMessages.length > 0) {
-    setState(undefined, "", validationMessages);
-    return;
+    return {
+      statement: "",
+      errors: validationMessages,
+    };
   }
 
   // Prepare to diff
-  setState(metadata, "", []);
   const db = database.value;
-  const source = sourceMetadata.value;
-  const target = targetMetadata.value;
-  if (!db) return;
-  if (!source) return;
-  if (!target) return;
+  const source = await getSourceMetadata();
+  const target = editingMetadata;
 
   try {
     const diffResponse = await schemaDesignServiceClient.diffMetadata(
@@ -119,44 +101,16 @@ const evaluateTargetMetadataAndDiff = async () => {
     );
     const diff = diffResponse.diff;
     const errs = diff.length === 0 ? [t("schema-editor.nothing-changed")] : [];
-    setState(metadata, diff, errs);
+    return {
+      statement: diff,
+      errors: errs,
+    };
   } catch {
     // The grpc error message is too long not readable. So we won't use it here.
-    setState(metadata, "", [t("schema-editor.message.invalid-schema")]);
+    return {
+      statement: "",
+      errors: [t("schema-editor.message.invalid-schema")],
+    };
   }
 };
-
-watch(
-  editingMetadata,
-  (metadata) => {
-    if (!metadata) {
-      errors.value = [t("schema-editor.message.invalid-schema")];
-    } else {
-      errors.value = validateDatabaseMetadata(metadata);
-    }
-  },
-  {
-    immediate: true,
-  }
-);
-
-const watchKey = computed(() => {
-  return [
-    database.value?.name,
-    JSON.stringify(
-      DatabaseMetadata.toJSON(
-        sourceMetadata.value ?? DatabaseMetadata.fromPartial({})
-      )
-    ),
-    JSON.stringify(
-      DatabaseMetadata.toJSON(
-        editingMetadata.value ?? DatabaseMetadata.fromPartial({})
-      )
-    ),
-  ].join("\n");
-});
-
-evaluateTargetMetadataAndDiff();
-// Won't update too frequently since this costs pretty high.
-watch(watchKey, debounce(evaluateTargetMetadataAndDiff, 250));
 </script>

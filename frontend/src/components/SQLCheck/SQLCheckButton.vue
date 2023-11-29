@@ -2,11 +2,11 @@
   <div class="flex flex-row items-center gap-2">
     <slot name="result" :advices="advices" :is-running="isRunning" />
 
-    <NPopover :disabled="tooltipDisabled" to="body">
+    <NPopover :disabled="policyErrors.length === 0" to="body">
       <template #trigger>
         <NButton
           style="--n-padding: 0 14px 0 10px"
-          :disabled="buttonDisabled"
+          :disabled="policyErrors.length > 0"
           :style="buttonStyle"
           tag="div"
           v-bind="buttonProps"
@@ -43,7 +43,7 @@
             </template>
           </i18n-t>
         </template>
-        <ErrorList v-else :errors="combinedErrors" />
+        <ErrorList v-else :errors="policyErrors" />
       </template>
     </NPopover>
 
@@ -59,9 +59,8 @@
 </template>
 
 <script lang="ts" setup>
-import { debounce } from "lodash-es";
 import { ButtonProps, NButton, NPopover } from "naive-ui";
-import { computed, onUnmounted, ref, watch } from "vue";
+import { computed, onUnmounted, ref } from "vue";
 import { onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { sqlServiceClient } from "@/grpcweb";
@@ -76,16 +75,14 @@ import { useSQLCheckContext } from "./context";
 
 const props = withDefaults(
   defineProps<{
-    statement: string;
+    getStatement: () => Promise<{ errors: string[]; statement: string }>;
     database: ComposedDatabase;
     buttonProps?: ButtonProps;
     buttonStyle?: VueStyle;
-    errors?: string[];
   }>(),
   {
     buttonProps: undefined,
     buttonStyle: undefined,
-    errors: undefined,
   }
 );
 
@@ -120,29 +117,13 @@ const noReviewPolicyTips = computed(() => {
   return "";
 });
 
-const isStatementTooLarge = computed(() => {
-  return props.statement.length > SKIP_CHECK_THRESHOLD;
+const policyErrors = computed(() => {
+  if (noReviewPolicyTips.value) return [noReviewPolicyTips.value];
+  return [];
 });
 
-const buttonDisabled = computed(() => {
-  if (noReviewPolicyTips.value) return true;
-  if (!props.statement) return true;
-  if (isStatementTooLarge.value) return true;
-  return props.errors && props.errors.length > 0;
-});
-const tooltipDisabled = computed(() => {
-  return !buttonDisabled.value;
-});
-
-const combinedErrors = computed(() => {
-  if (isStatementTooLarge.value) {
-    return [t("issue.sql-check.statement-is-too-large")];
-  }
-  return props.errors ?? [];
-});
-
-const runCheckInternal = async () => {
-  const { statement, database } = props;
+const runCheckInternal = async (statement: string) => {
+  const { database } = props;
   const result = await sqlServiceClient.check({
     statement,
     database: database.name,
@@ -152,35 +133,48 @@ const runCheckInternal = async () => {
 };
 
 const runChecks = async () => {
-  if (buttonDisabled.value) {
+  if (policyErrors.value.length > 0) {
     return;
   }
+
+  const handleErrors = (errors: string[]) => {
+    // Mock the pre-check errors to advices
+    advices.value = errors.map((err) =>
+      Advice.fromPartial({
+        title: "Pre check",
+        status: Advice_Status.WARNING,
+        content: err,
+      })
+    );
+    isRunning.value = false;
+  };
 
   isRunning.value = true;
   if (!advices.value) {
     advices.value = [];
   }
+  const { statement, errors } = await props.getStatement();
+  if (statement.length === 0) {
+    return handleErrors([t("common.nothing-changed")]);
+  }
+  if (statement.length > SKIP_CHECK_THRESHOLD) {
+    return handleErrors([t("issue.sql-check.statement-is-too-large")]);
+  }
+  if (errors.length > 0) {
+    return handleErrors(errors);
+  }
   try {
-    const result = await runCheckInternal();
+    const result = await runCheckInternal(statement);
     advices.value = result.advices;
   } finally {
     isRunning.value = false;
   }
 };
 
-watch(
-  [() => props.statement, () => props.database.name, () => props.errors],
-
-  debounce(runChecks, 1000),
-  {
-    immediate: true,
-  }
-);
-
 onMounted(() => {
   if (!context) return;
   context.runSQLCheck.value = async () => {
-    if (buttonDisabled.value) {
+    if (policyErrors.value.length > 0) {
       // If SQL Check is disabled, we will do nothing to stop the user.
       return true;
     }
