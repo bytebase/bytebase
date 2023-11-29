@@ -252,14 +252,7 @@ func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 
 	insertedID, err := BeginMigration(ctx, s, m, prevSchemaBuf.String(), statement, sheetID)
 	if err != nil {
-		if common.ErrorCode(err) == common.MigrationAlreadyApplied {
-			return insertedID, prevSchemaBuf.String(), nil
-		}
-		msg := "failed to begin migration"
-		if m.IssueUID != nil {
-			msg += fmt.Sprintf(" for issue %d", *m.IssueUID)
-		}
-		return "", "", errors.Wrapf(err, msg)
+		return "", "", errors.Wrapf(err, "failed to begin migration")
 	}
 
 	startedNs := time.Now().UnixNano()
@@ -347,7 +340,7 @@ func BeginMigration(ctx context.Context, stores *store.Store, m *db.MigrationInf
 		migrationHistory := list[0]
 		switch migrationHistory.Status {
 		case db.Done:
-			return migrationHistory.UID, common.Errorf(common.MigrationAlreadyApplied, "database %q has already applied version %s", m.Database, m.Version.Version)
+			return "", common.Errorf(common.MigrationAlreadyApplied, "database %q has already applied version %s, hint: the version might be duplicate, please check the version", m.Database, m.Version.Version)
 		case db.Pending:
 			err := errors.Errorf("database %q version %s migration is already in progress", m.Database, m.Version.Version)
 			slog.Debug(err.Error())
