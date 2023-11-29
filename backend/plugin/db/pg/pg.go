@@ -481,7 +481,6 @@ func getStatementWithResultLimit(stmt string, limit int) string {
 	// eg. select * from t1 -- this is comment;
 	// Add two new line symbol here.
 	return fmt.Sprintf("WITH result AS (\n%s\n) SELECT * FROM result LIMIT %d;", stmt, limit)
-	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, limit)
 }
 
 func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
