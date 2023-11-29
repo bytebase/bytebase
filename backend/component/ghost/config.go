@@ -41,7 +41,7 @@ var defaultConfig = struct {
 	dmlBatchSize:                        10,   // dml-batch-size
 	maxLagMillisecondsThrottleThreshold: 1500, // max-lag-millis
 	defaultNumRetries:                   60,   // default-retries
-	cutoverLockTimeoutSeconds:           60,   // cut-over-lock-timeout-seconds
+	cutoverLockTimeoutSeconds:           10,   // cut-over-lock-timeout-seconds
 	exponentialBackoffMaxInterval:       64,   // exponential-backoff-max-interval
 	throttleHTTPIntervalMillis:          100,  // throttle-http-interval-millis
 	throttleHTTPTimeoutMillis:           1000, // throttle-http-timeout-millis
