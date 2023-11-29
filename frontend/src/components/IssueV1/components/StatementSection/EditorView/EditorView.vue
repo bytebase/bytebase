@@ -164,20 +164,22 @@
     v-model:show="state.showEditorModal"
     :title="statementTitle"
     :trap-focus="true"
-    header-class="!border-b-0 !mx-4"
-    container-class="!pt-0 !px-4"
+    header-class="!border-b-0"
+    container-class="!pt-0 !overflow-hidden"
   >
     <div
       id="modal-editor-container"
       style="
-        width: calc(100vw - 8rem);
-        height: calc(100vh - 8rem);
+        width: calc(100vw - 10rem);
+        height: calc(100vh - 10rem);
+        overflow: hidden;
         position: relative;
       "
+      class="border rounded-[3px]"
     >
       <MonacoEditor
         v-if="state.showEditorModal"
-        class="w-full h-full border"
+        class="w-full h-full"
         :filename="filename"
         :content="state.statement"
         :language="language"
