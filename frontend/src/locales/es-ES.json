@@ -276,7 +276,8 @@
     "license": "Licencia",
     "show-all": "Mostrar todo",
     "view-details": "Ver detalles",
-    "force-verb": "forzar {verbo}"
+    "force-verb": "forzar {verbo}",
+    "nothing-changed": "nada ha cambiado"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -2224,7 +2225,9 @@
       "description": "Consulta por lotes {count} bases de datos adicionales en {project}."
     },
     "executing-query": "Ejecutando consulta",
-    "grouping": "Agrupamiento"
+    "grouping": "Agrupamiento",
+    "previous-row": "Fila anterior",
+    "next-row": "siguiente fila"
   },
   "schema-editor": {
     "self": "Editor de esquema",

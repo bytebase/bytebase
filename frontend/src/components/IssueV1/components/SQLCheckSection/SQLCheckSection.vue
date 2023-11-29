@@ -7,7 +7,7 @@
     <SQLCheckButton
       v-if="database"
       :key="selectedTask.uid"
-      :statement="sheetStatement"
+      :get-statement="getStatement"
       :database="database"
       :button-props="{
         size: 'tiny',
@@ -41,6 +41,13 @@ const { sheetStatement } = useTaskSheet();
 const database = computed(() => {
   return databaseForTask(issue.value, selectedTask.value);
 });
+
+const getStatement = async () => {
+  return {
+    statement: sheetStatement.value,
+    errors: [],
+  };
+};
 
 const show = computed(() => {
   const type = selectedTask.value.type;

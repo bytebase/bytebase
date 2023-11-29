@@ -29,17 +29,6 @@ export const useSchemaEditorSQLCheck = (params: {
     return databaseList.value[0];
   });
 
-  const watchKey = computed(() => {
-    if (selectedTab.value === "raw-sql") {
-      return editStatement.value;
-    } else {
-      const databaseSchema = schemaEditorV1Store.resourceMap["database"].get(
-        database.value.name
-      );
-      return JSON.stringify(databaseSchema);
-    }
-  });
-
   const fetchDatabaseEditStatement = async (): Promise<{
     errors: string[];
     statement: string;
@@ -127,5 +116,5 @@ export const useSchemaEditorSQLCheck = (params: {
     }
   };
 
-  return { show, database, watchKey, getStatement };
+  return { show, database, getStatement };
 };
