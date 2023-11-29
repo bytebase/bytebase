@@ -117,7 +117,7 @@
       </template>
     </BBAttention>
 
-    <div class="whitespace-pre-wrap overflow-hidden">
+    <div class="whitespace-pre-wrap overflow-hidden min-h-[120px] relative">
       <MonacoEditor
         class="w-full h-auto max-h-[360px] min-h-[120px] border rounded-[3px]"
         :filename="`${selectedTask.name}.sql`"

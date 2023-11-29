@@ -10,7 +10,6 @@
 </template>
 
 <script lang="ts" setup>
-import type monaco from "monaco-editor";
 import { v4 as uuidv4 } from "uuid";
 import {
   onMounted,
@@ -24,17 +23,11 @@ import {
 } from "vue";
 import type { Language } from "@/types";
 import type { AutoHeightOptions } from "./composables";
-import type { MonacoModule } from "./types";
-
-const [
-  { useMonacoTextModel },
-  { useAutoHeight, useOptionByKey },
-  { extensionNameOfLanguage },
-] = await Promise.all([
-  import("./text-model"),
-  import("./composables"),
-  import("./utils"),
-]);
+import { useAutoHeight, useOptionByKey } from "./composables";
+import monaco, { createMonacoDiffEditor } from "./editor";
+import { useMonacoTextModel } from "./text-model";
+import type { IStandaloneDiffEditor, MonacoModule } from "./types";
+import { extensionNameOfLanguage } from "./utils";
 
 export type DiffEditorAutoHeightOptions = AutoHeightOptions & {
   alignment: "original" | "modified";
@@ -59,23 +52,16 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (e: "update:modified", modified: string): void;
-  (
-    e: "ready",
-    monaco: MonacoModule,
-    editor: monaco.editor.IStandaloneDiffEditor
-  ): void;
+  (e: "ready", monaco: MonacoModule, editor: IStandaloneDiffEditor): void;
 }>();
 
 const containerRef = ref<HTMLDivElement>();
 // use shallowRef to avoid deep conversion which will cause page crash.
-const editorRef = shallowRef<monaco.editor.IStandaloneDiffEditor>();
+const editorRef = shallowRef<IStandaloneDiffEditor>();
 
 const isEditorLoaded = ref(false);
 
-const useDiffModels = (
-  monaco: MonacoModule,
-  editor: monaco.editor.IStandaloneDiffEditor
-) => {
+const useDiffModels = (monaco: MonacoModule, editor: IStandaloneDiffEditor) => {
   const language = toRef(props, "language");
   const original = useMonacoTextModel(
     computed(() => `${uuidv4()}.${extensionNameOfLanguage(props.language)}`),
@@ -106,7 +92,7 @@ const useDiffModels = (
 
 const useModifiedContent = (
   monaco: MonacoModule,
-  editor: monaco.editor.IStandaloneDiffEditor
+  editor: IStandaloneDiffEditor
 ) => {
   const modified = ref(getModifiedContent(editor));
   const update = () => {
@@ -119,7 +105,7 @@ const useModifiedContent = (
   return modified;
 };
 
-const getModifiedContent = (editor: monaco.editor.IStandaloneDiffEditor) => {
+const getModifiedContent = (editor: IStandaloneDiffEditor) => {
   const model = editor.getModel();
   if (!model) return "";
 
@@ -127,8 +113,6 @@ const getModifiedContent = (editor: monaco.editor.IStandaloneDiffEditor) => {
 };
 
 onMounted(async () => {
-  const { default: monaco, createMonacoDiffEditor } = await import("./editor");
-
   const container = containerRef.value;
   if (!container) {
     // Give up creating monaco editor if the component has been unmounted
