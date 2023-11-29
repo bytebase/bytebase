@@ -3,7 +3,7 @@
     <div
       class="w-full flex flex-col lg:flex-row items-start lg:items-center justify-between gap-y-2"
     >
-      <div class="flex items-center gap-x-4">
+      <div class="flex max-w-full items-center gap-x-4">
         <NInputGroup>
           <ProjectSelect
             :project="state.filterParams.project?.uid ?? String(UNKNOWN_ID)"
@@ -32,15 +32,13 @@
           <heroicons:x-mark class="w-4 h-4 ml-1 -mr-1.5" />
         </NButton>
       </div>
-      <div>
-        <NButton type="primary" @click="handleRequestExportClick">
-          <FeatureBadge
-            feature="bb.feature.access-control"
-            custom-class="text-white pointer-events-none mr-2"
-          />
-          {{ $t("quick-action.request-export-data") }}
-        </NButton>
-      </div>
+      <NButton type="primary" @click="handleRequestExportClick">
+        <FeatureBadge
+          feature="bb.feature.access-control"
+          custom-class="text-white pointer-events-none mr-2"
+        />
+        {{ $t("quick-action.request-export-data") }}
+      </NButton>
     </div>
     <div class="w-full mt-4">
       <ExportRecordTable :export-records="filterExportRecords" />

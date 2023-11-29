@@ -247,29 +247,29 @@ const getGridColumns = (role: string) => {
   };
   const conditionName = {
     title: t("project.members.condition-name"),
-    width: "1fr",
+    width: "minmax(min-content, auto)",
   };
   const databaseRelatedColumns = [
     {
       title: t("common.database"),
-      width: "12rem",
+      width: "minmax(min-content, auto)",
     },
     {
       title: t("common.schema"),
-      width: "8rem",
+      width: "minmax(min-content, auto)",
     },
     {
       title: t("common.table"),
-      width: "8rem",
+      width: "minmax(min-content, auto)",
     },
   ];
   const expiration = {
     title: t("common.expiration"),
-    width: "12rem",
+    width: "minmax(min-content, auto)",
   };
   const description = {
     title: t("common.description"),
-    width: "8rem",
+    width: "minmax(min-content, auto)",
   };
   if (isRoleShouldShowDatabaseRelatedColumns(role)) {
     return [
