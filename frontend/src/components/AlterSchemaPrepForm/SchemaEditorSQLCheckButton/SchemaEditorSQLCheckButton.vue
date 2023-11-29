@@ -2,8 +2,7 @@
   <SQLCheckButton
     v-if="show"
     :database="database"
-    :statement="statement"
-    :errors="errors"
+    :get-statement="getStatement"
     :button-props="{
       size: 'small',
     }"
@@ -19,8 +18,7 @@
   </SQLCheckButton>
 </template>
 <script lang="ts" setup>
-import { debounce } from "lodash-es";
-import { ref, toRefs, watch } from "vue";
+import { toRefs } from "vue";
 import { SQLCheckButton, SQLCheckSummary } from "@/components/SQLCheck";
 import { ComposedDatabase } from "@/types";
 import { useSchemaEditorSQLCheck } from "./useSchemaEditorSQLCheck";
@@ -31,18 +29,5 @@ const props = defineProps<{
   editStatement: string;
 }>();
 
-const { show, database, watchKey, getStatement } = useSchemaEditorSQLCheck(
-  toRefs(props)
-);
-const errors = ref<string[]>([]);
-const statement = ref("");
-
-const update = async () => {
-  const result = await getStatement();
-  errors.value = result.errors;
-  statement.value = result.statement;
-};
-
-watch(watchKey, debounce(update, 250));
-update();
+const { show, database, getStatement } = useSchemaEditorSQLCheck(toRefs(props));
 </script>
