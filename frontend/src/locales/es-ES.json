@@ -276,7 +276,8 @@
     "license": "Licencia",
     "show-all": "Mostrar todo",
     "view-details": "Ver detalles",
-    "force-verb": "forzar {verbo}"
+    "force-verb": "forzar {verbo}",
+    "nothing-changed": "nada ha cambiado"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"

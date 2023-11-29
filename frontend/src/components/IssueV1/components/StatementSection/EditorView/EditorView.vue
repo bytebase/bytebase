@@ -119,15 +119,15 @@
 
     <div class="whitespace-pre-wrap overflow-hidden min-h-[120px] relative">
       <MonacoEditor
-        class="w-full h-auto max-h-[360px] min-h-[120px] border rounded-[3px]"
-        :filename="`${selectedTask.name}.sql`"
+        class="w-full h-auto max-h-[240px] min-h-[120px] border rounded-[3px]"
+        :filename="filename"
         :content="state.statement"
-        :language="'sql'"
+        :language="language"
         :auto-focus="false"
         :readonly="isEditorReadonly"
         :dialect="dialect"
         :advices="isEditorReadonly ? markers : []"
-        :auto-height="{ min: 120, max: 360 }"
+        :auto-height="{ min: 120, max: 240 }"
         :auto-complete-context="{
           instance: database.instance,
           database: database.name,
@@ -180,6 +180,7 @@ import {
   isDeploymentConfigChangeTaskV1,
 } from "@/components/IssueV1/logic";
 import { MonacoEditor } from "@/components/MonacoEditor";
+import { extensionNameOfLanguage } from "@/components/MonacoEditor/utils";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import UploadProgressButton from "@/components/misc/UploadProgressButton.vue";
 import { rolloutServiceClient } from "@/grpcweb";
@@ -237,6 +238,11 @@ const database = computed(() => {
 const language = useInstanceV1EditorLanguage(
   computed(() => database.value.instanceEntity)
 );
+const filename = computed(() => {
+  return `${selectedTask.value.name}.${extensionNameOfLanguage(
+    language.value
+  )}`;
+});
 const dialect = computed((): SQLDialect => {
   const db = database.value;
   return dialectOfEngineV1(db.instanceEntity.engine);
