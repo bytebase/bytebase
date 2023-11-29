@@ -258,7 +258,7 @@ func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 	startedNs := time.Now().UnixNano()
 
 	defer func() {
-		if err := EndMigration(ctx, s, startedNs, insertedID, updatedSchema, sheetID, resErr == nil /* isDone */); err != nil {
+		if err := EndMigration(ctx, s, startedNs, insertedID, updatedSchema, prevSchemaBuf.String(), sheetID, resErr == nil /* isDone */); err != nil {
 			slog.Error("Failed to update migration history record",
 				log.BBError(err),
 				slog.String("migration_id", migrationHistoryID),
@@ -365,13 +365,15 @@ func BeginMigration(ctx context.Context, stores *store.Store, m *db.MigrationInf
 }
 
 // EndMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
-func EndMigration(ctx context.Context, storeInstance *store.Store, startedNs int64, insertedID string, updatedSchema string, sheetID *int, isDone bool) error {
+func EndMigration(ctx context.Context, storeInstance *store.Store, startedNs int64, insertedID string, updatedSchema, schemaPrev string, sheetID *int, isDone bool) error {
 	migrationDurationNs := time.Now().UnixNano() - startedNs
 	update := &store.UpdateInstanceChangeHistoryMessage{
 		ID:                  insertedID,
 		ExecutionDurationNs: &migrationDurationNs,
 		// Update the sheet ID just in case it has been updated.
 		Sheet: sheetID,
+		// Update schemaPrev because we might be re-using a previous change history entry.
+		SchemaPrev: &schemaPrev,
 	}
 	if isDone {
 		// Upon success, update the migration history as 'DONE', execution_duration_ns, updated schema.
