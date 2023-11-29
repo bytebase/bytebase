@@ -331,7 +331,7 @@ const currentUserIamPolicy = useCurrentUserIamPolicy();
 watch(
   () => route.hash,
   (hash) => {
-    let targetHash = hash.replace(/^#?/g, "") as DatabaseHash;
+    const targetHash = hash.replace(/^#?/g, "") as DatabaseHash;
     if (isDatabaseHash(targetHash)) {
       state.selectedTab = targetHash;
     }
