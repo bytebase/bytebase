@@ -24,7 +24,7 @@
 </template>
 
 <script lang="ts" setup>
-import { PropType, computed } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBGridColumn, BBGridRow, BBGrid } from "@/bbkit";
@@ -33,12 +33,13 @@ import { projectV1Slug } from "@/utils";
 
 export type ProjectGridRow = BBGridRow<Project>;
 
-defineProps({
-  projectList: {
-    required: true,
-    type: Object as PropType<Project[]>,
-  },
-});
+defineProps<{
+  projectList: Project[];
+}>();
+
+const emit = defineEmits<{
+  (event: "click"): void;
+}>();
 
 const router = useRouter();
 const { t } = useI18n();
@@ -65,5 +66,6 @@ const clickProject = function (
   } else {
     router.push(url);
   }
+  emit("click");
 };
 </script>
