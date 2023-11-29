@@ -10,7 +10,6 @@
 </template>
 
 <script lang="ts" setup>
-import type monaco from "monaco-editor";
 import {
   onMounted,
   ref,
@@ -38,18 +37,25 @@ import {
   useSuggestOptionByLanguage,
 } from "./composables";
 import { shouldUseNewLSP } from "./dev";
-import type { AdviceOption, MonacoModule } from "./types";
+import monaco, { createMonacoEditor } from "./editor";
+import type {
+  AdviceOption,
+  IStandaloneCodeEditor,
+  IStandaloneEditorConstructionOptions,
+  ITextModel,
+  MonacoModule,
+} from "./types";
 
 const props = withDefaults(
   defineProps<{
-    model?: monaco.editor.ITextModel;
+    model?: ITextModel;
     sqlDialect?: SQLDialect;
     readonly?: boolean;
     autoFocus?: boolean;
     autoHeight?: AutoHeightOptions;
     autoCompleteContext?: AutoCompleteContext;
     advices?: AdviceOption[];
-    options?: monaco.editor.IStandaloneEditorConstructionOptions;
+    options?: IStandaloneEditorConstructionOptions;
   }>(),
   {
     model: undefined,
@@ -66,21 +72,15 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: "update:content", content: string): void;
   (e: "select-content", content: string): void;
-  (
-    e: "ready",
-    monaco: MonacoModule,
-    editor: monaco.editor.IStandaloneCodeEditor
-  ): void;
+  (e: "ready", monaco: MonacoModule, editor: IStandaloneCodeEditor): void;
 }>();
 
 const containerRef = ref<HTMLDivElement>();
 // use shallowRef to avoid deep conversion which will cause page crash.
-const editorRef = shallowRef<monaco.editor.IStandaloneCodeEditor>();
+const editorRef = shallowRef<IStandaloneCodeEditor>();
 const ready = ref(false);
 
 onMounted(async () => {
-  const { default: monaco, createMonacoEditor } = await import("./editor");
-
   const container = containerRef.value;
   if (!container) {
     // Give up creating monaco editor if the component has been unmounted
