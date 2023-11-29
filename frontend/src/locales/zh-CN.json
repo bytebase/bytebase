@@ -2224,7 +2224,9 @@
       "description": "批量查询 {project} 下的 {count} 个数据库。"
     },
     "executing-query": "执行查询",
-    "grouping": "分组"
+    "grouping": "分组",
+    "previous-row": "上一行",
+    "next-row": "下一行"
   },
   "schema-editor": {
     "self": "Schema 编辑器",
