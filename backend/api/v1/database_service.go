@@ -13,9 +13,9 @@ import (
 	"time"
 	"unicode"
 
-	tidbparser "github.com/pingcap/tidb/parser"
-	tidbast "github.com/pingcap/tidb/parser/ast"
-	"github.com/pingcap/tidb/parser/format"
+	tidbparser "github.com/pingcap/tidb/pkg/parser"
+	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
+	"github.com/pingcap/tidb/pkg/parser/format"
 	"github.com/pkg/errors"
 	openai "github.com/sashabaranov/go-openai"
 	"google.golang.org/grpc/codes"

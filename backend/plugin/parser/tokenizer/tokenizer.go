@@ -7,7 +7,7 @@ import (
 	"strings"
 	"unicode"
 
-	tidbast "github.com/pingcap/tidb/parser/ast"
+	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
