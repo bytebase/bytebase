@@ -57,7 +57,7 @@
     @close="dismissModal"
   >
     <div
-      class="space-y-4 flex flex-col overflow-hidden"
+      class="space-y-4 flex flex-col overflow-hidden relative"
       style="width: calc(100vw - 10rem); height: calc(100vh - 12rem)"
     >
       <DiffEditor

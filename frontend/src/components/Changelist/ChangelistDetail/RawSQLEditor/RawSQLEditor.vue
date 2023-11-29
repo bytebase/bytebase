@@ -8,7 +8,7 @@
 
     <div
       ref="editorWrapperRef"
-      class="flex-1 overflow-hidden"
+      class="flex-1 overflow-hidden relative"
       :data-height="editorWrapperHeight"
     >
       <MonacoEditor
