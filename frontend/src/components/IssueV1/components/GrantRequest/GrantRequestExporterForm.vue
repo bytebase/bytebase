@@ -27,7 +27,7 @@
       class="w-full flex flex-col justify-start items-start"
     >
       <span class="flex items-center textlabel mb-2">SQL</span>
-      <div class="w-full border rounded">
+      <div class="w-full border rounded min-h-[6rem] relative">
         <MonacoEditor
           class="w-full h-[300px]"
           :content="state.statement"

@@ -3,7 +3,13 @@ import type * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
 export type MonacoModule = typeof monaco;
 
 export type IStandaloneCodeEditor = monaco.editor.IStandaloneCodeEditor;
+export type IStandaloneEditorConstructionOptions =
+  monaco.editor.IStandaloneEditorConstructionOptions;
 export type IStandaloneDiffEditor = monaco.editor.IStandaloneDiffEditor;
+export type IStandaloneDiffEditorConstructionOptions =
+  monaco.editor.IStandaloneDiffEditorConstructionOptions;
+
+export type ITextModel = monaco.editor.ITextModel;
 
 export type AdviceOption = {
   severity: "ERROR" | "WARNING";

@@ -10,11 +10,13 @@
         </NCheckbox>
       </div>
     </div>
-    <MonacoEditor
-      :content="format ? formatted.data : view.definition"
-      :readonly="true"
-      class="border w-full flex-1"
-    />
+    <div class="w-full flex-1 relative">
+      <MonacoEditor
+        :content="format ? formatted.data : view.definition"
+        :readonly="true"
+        class="border w-full h-full"
+      />
+    </div>
   </div>
 </template>
 
