@@ -7,14 +7,14 @@
       "
       feature="bb.feature.sensitive-data"
     />
-    <div>
-      <EnvironmentTabFilter
-        :environment="state.selectedEnvironmentName"
-        :include-all="true"
-        @update:environment="state.selectedEnvironmentName = $event"
-      />
-    </div>
-    <div class="flex justify-between items-center">
+    <EnvironmentTabFilter
+      :environment="state.selectedEnvironmentName"
+      :include-all="true"
+      @update:environment="state.selectedEnvironmentName = $event"
+    />
+    <div
+      class="flex flex-col sm:flex-row gap-y-4 justify-between items-end sm:items-center"
+    >
       <NInputGroup>
         <ProjectSelect
           :project="state.selectedProjectUid"

@@ -1,6 +1,8 @@
 <template>
   <div class="space-y-4">
-    <div class="flex items-center justify-between">
+    <div
+      class="flex flex-col md:flex-row md:items-center justify-between gap-y-2"
+    >
       <div>
         <LevelFilter v-if="!hideLevelFilter" />
       </div>

@@ -56,12 +56,11 @@
       <label for="name" class="textlabel">
         {{ $t("common.name") }} <span class="text-red-600">*</span>
       </label>
-      <input
+      <NInput
         id="name"
-        v-model="state.webhook.title"
+        v-model:value="state.webhook.title"
         name="name"
-        type="text"
-        class="textfield mt-1 w-full"
+        class="mt-1 w-full"
         :placeholder="namePlaceholder"
         :disabled="!allowEdit"
       />
@@ -198,12 +197,11 @@
           >.
         </template>
       </div>
-      <input
+      <NInput
         id="url"
-        v-model="state.webhook.url"
+        v-model:value="state.webhook.url"
         name="url"
-        type="text"
-        class="textfield mt-1 w-full"
+        class="mt-1 w-full"
         :placeholder="urlPlaceholder"
         :disabled="!allowEdit"
       />
@@ -229,13 +227,9 @@
         />
       </div>
     </div>
-    <button
-      type="button"
-      class="btn-normal whitespace-nowrap items-center"
-      @click.prevent="testWebhook"
-    >
+    <NButton @click.prevent="testWebhook">
       {{ $t("project.webhook.test-webhook") }}
-    </button>
+    </NButton>
     <div
       class="flex pt-5"
       :class="!create && allowEdit ? 'justify-between' : 'justify-end'"
