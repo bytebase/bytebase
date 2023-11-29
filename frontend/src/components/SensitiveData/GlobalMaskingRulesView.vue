@@ -77,7 +77,14 @@
           </MiniActionButton>
         </div>
       </div>
-      <div :class="['w-full', item.mode === 'NORMAL' ? '' : 'ml-[42px]']">
+      <div
+        class="pb-5"
+        :class="[
+          'w-full',
+          item.mode === 'NORMAL' ? '' : 'ml-[42px]',
+          index === state.maskingRuleItemList.length - 1 ? '' : 'border-b',
+        ]"
+      >
         <MaskingRuleConfig
           :key="`expr-${item.rule.id}`"
           :index="index + 1"

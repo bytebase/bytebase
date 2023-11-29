@@ -1,7 +1,7 @@
 <template>
   <Drawer :show="true" @close="onDismiss">
     <DrawerContent :title="$t('settings.sensitive-data.grant-access')">
-      <div class="divide-block-border space-y-8 w-[60rem] h-full">
+      <div class="divide-block-border space-y-8 h-full">
         <SensitiveColumnTable
           :row-clickable="false"
           :show-operation="false"

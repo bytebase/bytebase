@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center justify-between h-10 pl-2 pr-4 space-x-3">
+  <div class="flex items-center justify-between h-10 pl-2 pr-4 my-1 space-x-3">
     <div class="flex items-center">
       <BytebaseLogo class="block md:hidden" />
 

@@ -159,7 +159,7 @@
           </span>
         </div>
 
-        <p class="text-gray-500">
+        <p class="text-gray-500 text-center">
           {{ $t(`subscription.plan.${plan.title}.desc`) }}
         </p>
 

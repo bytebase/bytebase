@@ -2,29 +2,20 @@
   <div class="w-full mx-auto space-y-4">
     <FeatureAttention feature="bb.feature.rbac" />
 
-    <div class="w-full flex flex-row justify-between items-center">
-      <div>
-        <SearchBox
-          v-model:value="state.searchText"
-          style="width: 12rem"
-          :placeholder="$t('project.members.search-member')"
-        />
-      </div>
-      <div v-if="allowAdmin" class="flex gap-x-2">
-        <NButton
-          v-if="state.selectedTab === 'users'"
-          :disabled="state.selectedMemberNameList.size === 0"
-          @click="handleRevokeSelectedMembers"
-        >
-          {{ $t("project.members.revoke-access") }}
-        </NButton>
-        <NButton type="primary" @click="state.showAddMemberPanel = true">
-          <template #icon>
-            <heroicons-outline:user-add class="w-4 h-4" />
-          </template>
-          {{ $t("project.members.grant-access") }}
-        </NButton>
-      </div>
+    <div v-if="allowAdmin" class="flex justify-end gap-x-2">
+      <NButton
+        v-if="state.selectedTab === 'users'"
+        :disabled="state.selectedMemberNameList.size === 0"
+        @click="handleRevokeSelectedMembers"
+      >
+        {{ $t("project.members.revoke-access") }}
+      </NButton>
+      <NButton type="primary" @click="state.showAddMemberPanel = true">
+        <template #icon>
+          <heroicons-outline:user-add class="w-4 h-4" />
+        </template>
+        {{ $t("project.members.grant-access") }}
+      </NButton>
     </div>
 
     <div class="textinfolabel">
@@ -40,6 +31,13 @@
     </div>
 
     <NTabs v-model:value="state.selectedTab" type="bar">
+      <template #suffix>
+        <SearchBox
+          v-model:value="state.searchText"
+          style="width: 12rem"
+          :placeholder="$t('project.members.search-member')"
+        />
+      </template>
       <NTabPane name="users" :tab="$t('project.members.users')">
         <ProjectMemberTable
           :project="project"

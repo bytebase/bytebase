@@ -1,7 +1,6 @@
 <template>
   <div>
     <BBStepTab
-      class="mt-4 mb-8"
       :sticky="true"
       :step-item-list="STEP_LIST"
       :allow-next="allowNext"
