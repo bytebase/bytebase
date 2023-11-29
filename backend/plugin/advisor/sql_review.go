@@ -13,8 +13,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	tidbparser "github.com/pingcap/tidb/parser"
-	tidbast "github.com/pingcap/tidb/parser/ast"
+	tidbparser "github.com/pingcap/tidb/pkg/parser"
+	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"

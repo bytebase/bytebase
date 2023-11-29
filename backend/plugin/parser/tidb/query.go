@@ -3,8 +3,8 @@ package tidb
 import (
 	"sort"
 
-	tidbast "github.com/pingcap/tidb/parser/ast"
-	"github.com/pingcap/tidb/parser/model"
+	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
+	"github.com/pingcap/tidb/pkg/parser/model"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"

@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/antlr4-go/antlr/v4"
-	tidbp "github.com/pingcap/tidb/parser"
-	tidbast "github.com/pingcap/tidb/parser/ast"
+	tidbp "github.com/pingcap/tidb/pkg/parser"
+	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"

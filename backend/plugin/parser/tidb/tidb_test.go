@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	tidbparser "github.com/pingcap/tidb/parser"
-	tidbast "github.com/pingcap/tidb/parser/ast"
+	tidbparser "github.com/pingcap/tidb/pkg/parser"
+	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"

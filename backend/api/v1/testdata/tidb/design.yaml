@@ -217,7 +217,7 @@
       `id` int(11) NOT NULL COMMENT 'ID',
       `age` varbinary(500) NULL,
       `name` binary(10) NULL,
-      PRIMARY KEY(`id`) CLUSTERED
+      PRIMARY KEY (`id`) CLUSTERED
     ) ENGINE = InnoDB DEFAULT CHARACTER SET = UTF8MB4 DEFAULT COLLATE = UTF8MB4_BIN COMMENT 'hello';
     CREATE TABLE `rds` (
       `id` bigint(20) NOT NULL COMMENT 'ID',

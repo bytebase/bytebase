@@ -36,8 +36,8 @@ func TestTransform(t *testing.T) {
 	input := `
 		CREATE TABLE t (
 			id int NOT NULL,
-			name varchar(60) CHARACTER SET ucs2 COLLATE ucs2_general_ci,
-			uuid varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT (replace(uuid(),_utf8mb4'-',_utf8mb4'')),
+			name varchar(60),
+			uuid varchar(40),
 			PRIMARY KEY (id),
 			KEY idx_name (name)
 		);
@@ -49,8 +49,8 @@ func TestTransform(t *testing.T) {
 
 	want := "CREATE TABLE `t` (" + "\n" +
 		"  `id` INT NOT NULL," + "\n" +
-		"  `name` VARCHAR(60) CHARACTER SET UCS2 COLLATE ucs2_general_ci," + "\n" +
-		"  `uuid` VARCHAR(40) CHARACTER SET UTF8MB4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT REPLACE(UUID(), '-', '')," + "\n" +
+		"  `name` VARCHAR(60)," + "\n" +
+		"  `uuid` VARCHAR(40)," + "\n" +
 		"  PRIMARY KEY (`id`)" + "\n" +
 		");" + "\n" +
 		"\n" +

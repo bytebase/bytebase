@@ -5,9 +5,9 @@ package tidb
 import (
 	"fmt"
 
-	"github.com/pingcap/tidb/parser/ast"
-	"github.com/pingcap/tidb/parser/mysql"
-	"github.com/pingcap/tidb/parser/types"
+	"github.com/pingcap/tidb/pkg/parser/ast"
+	"github.com/pingcap/tidb/pkg/parser/mysql"
+	"github.com/pingcap/tidb/pkg/parser/types"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -236,11 +236,11 @@ func (v *indexPkTypeChecker) getPKColumnType(tableName string, columnName string
 // getIntOrBigIntStr returns the type string of tp.
 func (*indexPkTypeChecker) getIntOrBigIntStr(tp *types.FieldType) string {
 	switch tp.GetType() {
-	// https://pkg.go.dev/github.com/pingcap/tidb/parser/mysql#TypeLong
+	// https://pkg.go.dev/github.com/pingcap/tidb/pkg/parser/mysql#TypeLong
 	case mysql.TypeLong:
 		// tp.String() return int(11)
 		return "INT"
-		// https://pkg.go.dev/github.com/pingcap/tidb/parser/mysql#TypeLonglong
+		// https://pkg.go.dev/github.com/pingcap/tidb/pkg/parser/mysql#TypeLonglong
 	case mysql.TypeLonglong:
 		// tp.String() return bigint(20)
 		return "BIGINT"
