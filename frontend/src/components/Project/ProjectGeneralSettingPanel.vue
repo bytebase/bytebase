@@ -9,14 +9,11 @@
           {{ $t("common.name") }} <span class="text-red-600">*</span>
         </dt>
         <dd class="mt-1 text-sm text-main">
-          <input
+          <NInput
             id="projectName"
-            v-model="state.title"
+            v-model:value="state.title"
             :disabled="!allowEdit"
             required
-            autocomplete="off"
-            type="text"
-            class="textfield"
           />
         </dd>
         <div class="mt-1">
@@ -40,14 +37,12 @@
           <span class="text-red-600">*</span>
         </dt>
         <dd class="mt-1 text-sm text-main">
-          <input
+          <NInput
             id="projectKey"
-            v-model="state.key"
+            v-model:value="state.key"
             :disabled="!allowEdit"
             required
-            autocomplete="off"
-            type="text"
-            class="textfield uppercase"
+            @update:value="(val: string) => state.key = val.toUpperCase()"
           />
         </dd>
       </dl>

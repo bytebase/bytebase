@@ -332,14 +332,11 @@ watch(
   () => route.hash,
   (hash) => {
     let targetHash = hash.replace(/^#?/g, "") as DatabaseHash;
-    if (!isDatabaseHash(targetHash)) {
-      targetHash = "overview";
+    if (isDatabaseHash(targetHash)) {
+      state.selectedTab = targetHash;
     }
-    state.selectedTab = targetHash;
   },
-  {
-    immediate: true,
-  }
+  { immediate: true }
 );
 
 watch(
