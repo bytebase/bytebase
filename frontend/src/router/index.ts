@@ -664,14 +664,6 @@ const routes: Array<RouteRecordRaw> = [
                 path: "",
                 name: "workspace.project.detail",
                 meta: {
-                  overrideBreadcrumb: (route: RouteLocationNormalized) => {
-                    const slug = route.params.projectSlug as string;
-                    const projectId = idFromSlug(slug);
-                    if (projectId === DEFAULT_PROJECT_ID) {
-                      return true;
-                    }
-                    return false;
-                  },
                   title: (route: RouteLocationNormalized) => {
                     const slug = route.params.projectSlug as string;
                     const projectId = idFromSlug(slug);
