@@ -21,7 +21,7 @@
     </div>
     <div class="flex-1 flex justify-end items-center space-x-3">
       <button
-        class="hidden w-full max-w-xs md:flex items-center justify-between rounded-sm border border-control-border bg-white hover:bg-control-bg-hover pl-2 pr-1 py-0.5 outline-none"
+        class="hidden w-full max-w-xs md:flex items-center justify-between rounded-sm border border-control-border bg-gray-100 hover:bg-control-bg-hover pl-2 pr-1 py-0.5 outline-none"
         @click="onClickSearchButton"
       >
         <span class="text-control-placeholder text-sm">

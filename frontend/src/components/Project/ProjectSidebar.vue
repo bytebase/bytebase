@@ -1,6 +1,5 @@
 <template>
   <CommonSidebar
-    type="div"
     :item-list="projectSidebarItemList"
     :get-item-class="getItemClass"
     @select="(val: string | undefined) => onSelect(val as ProjectHash)"
@@ -21,7 +20,7 @@ import {
   RefreshCcw,
   PencilRuler,
 } from "lucide-vue-next";
-import { computed, VNode, h, reactive, watch, nextTick } from "vue";
+import { computed, h, reactive, watch, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter, useRoute } from "vue-router";
 import { SidebarItem } from "@/components/CommonSidebar.vue";
@@ -51,15 +50,15 @@ const projectHashList = [
 export type ProjectHash = typeof projectHashList[number];
 const isProjectHash = (x: any): x is ProjectHash => projectHashList.includes(x);
 
-interface ProjectSidebarItem {
+interface ProjectSidebarItem extends SidebarItem {
   title: string;
   path?: ProjectHash;
-  icon: VNode;
-  hide?: boolean;
+  type: "div";
   children?: {
     title: string;
     path: ProjectHash;
     hide?: boolean;
+    type: "div";
   }[];
 }
 
@@ -126,19 +125,22 @@ const isTenantProject = computed((): boolean => {
   return project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED;
 });
 
-const projectSidebarItemList = computed((): SidebarItem[] => {
-  const fullList: ProjectSidebarItem[] = [
+const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
+  return [
     {
       title: t("common.database"),
       icon: h(Database),
+      type: "div",
       children: [
         {
           title: t("common.databases"),
           path: "databases",
+          type: "div",
         },
         {
           title: t("common.groups"),
           path: "database-groups",
+          type: "div",
           hide:
             !isTenantProject.value ||
             !currentUserIamPolicy.isMemberOfProject(project.value.name),
@@ -146,6 +148,7 @@ const projectSidebarItemList = computed((): SidebarItem[] => {
         {
           title: t("common.change-history"),
           path: "change-history",
+          type: "div",
           hide:
             isTenantProject.value ||
             !currentUserIamPolicy.isMemberOfProject(project.value.name),
@@ -153,11 +156,13 @@ const projectSidebarItemList = computed((): SidebarItem[] => {
         {
           title: startCase(t("slow-query.slow-queries")),
           path: "slow-query",
+          type: "div",
           hide: !currentUserIamPolicy.isMemberOfProject(project.value.name),
         },
         {
           title: t("common.anomalies"),
           path: "anomalies",
+          type: "div",
           hide: !currentUserIamPolicy.isMemberOfProject(project.value.name),
         },
       ],
@@ -166,6 +171,7 @@ const projectSidebarItemList = computed((): SidebarItem[] => {
       title: t("common.issues"),
       path: "issues",
       icon: h(CircleDot),
+      type: "div",
       hide:
         isDefaultProject.value ||
         !currentUserIamPolicy.allowToChangeDatabaseOfProject(
@@ -176,6 +182,7 @@ const projectSidebarItemList = computed((): SidebarItem[] => {
       title: t("common.branches"),
       path: "branches",
       icon: h(GitBranch),
+      type: "div",
       hide:
         isDefaultProject.value ||
         !currentUserIamPolicy.allowToChangeDatabaseOfProject(
@@ -186,6 +193,7 @@ const projectSidebarItemList = computed((): SidebarItem[] => {
       title: t("changelist.changelists"),
       path: "changelists",
       icon: h(PencilRuler),
+      type: "div",
       hide:
         isDefaultProject.value ||
         !currentUserIamPolicy.allowToChangeDatabaseOfProject(
@@ -196,6 +204,7 @@ const projectSidebarItemList = computed((): SidebarItem[] => {
       title: t("database.sync-schema.title"),
       path: "sync-schema",
       icon: h(RefreshCcw),
+      type: "div",
       hide:
         isDefaultProject.value ||
         !currentUserIamPolicy.allowToChangeDatabaseOfProject(
@@ -205,6 +214,7 @@ const projectSidebarItemList = computed((): SidebarItem[] => {
     {
       title: t("settings.sidebar.integration"),
       icon: h(Link),
+      type: "div",
       hide:
         isDefaultProject.value ||
         !currentUserIamPolicy.allowToChangeDatabaseOfProject(
@@ -214,16 +224,19 @@ const projectSidebarItemList = computed((): SidebarItem[] => {
         {
           title: t("common.gitops"),
           path: "gitops",
+          type: "div",
         },
         {
           title: t("common.webhooks"),
           path: "webhook",
+          type: "div",
         },
       ],
     },
     {
       title: t("common.manage"),
       icon: h(Users),
+      type: "div",
       hide:
         isDefaultProject.value ||
         !currentUserIamPolicy.isMemberOfProject(project.value.name),
@@ -231,10 +244,12 @@ const projectSidebarItemList = computed((): SidebarItem[] => {
         {
           title: t("common.members"),
           path: "members",
+          type: "div",
         },
         {
           title: t("common.activities"),
           path: "activities",
+          type: "div",
         },
       ],
     },
@@ -242,13 +257,12 @@ const projectSidebarItemList = computed((): SidebarItem[] => {
       title: t("common.setting"),
       icon: h(Settings),
       path: "setting",
+      type: "div",
       hide:
         isDefaultProject.value ||
         !currentUserIamPolicy.isMemberOfProject(project.value.name),
     },
   ];
-
-  return fullList as SidebarItem[];
 });
 
 const getItemClass = (hash: string | undefined) => {
