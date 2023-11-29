@@ -365,7 +365,7 @@ export const idForSQLEditorTreeNodeTarget = <T extends NodeType>(
   }
   if (type === "expandable-text") {
     const { text, type } = target as NodeTarget<"expandable-text">;
-    return `texts-${type}/${text}`;
+    return `texts-${type}/${typeof text === "function" ? text() : text}`;
   }
   if (type === "dummy") {
     const dummyType = (target as NodeTarget<"dummy">).type;
