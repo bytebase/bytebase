@@ -117,7 +117,11 @@
       </template>
     </BBAttention>
 
-    <div class="whitespace-pre-wrap overflow-hidden min-h-[120px] relative">
+    <div
+      ref="editorContainerElRef"
+      class="whitespace-pre-wrap overflow-hidden min-h-[120px] relative"
+      :data-height="editorContainerHeight"
+    >
       <MonacoEditor
         class="w-full h-auto max-h-[240px] min-h-[120px] border rounded-[3px]"
         :filename="filename"
@@ -134,8 +138,61 @@
         }"
         @update:content="handleStatementChange"
       />
+      <div
+        class="absolute bottom-[3px] right-[18px] transition-opacity"
+        :class="
+          editorContainerHeight >= 240
+            ? 'opacity-100'
+            : 'opacity-0 pointer-events-none'
+        "
+      >
+        <NButton
+          size="small"
+          :quaternary="true"
+          style="--n-padding: 0 5px"
+          @click="state.showEditorModal = true"
+        >
+          <template #icon>
+            <ExpandIcon class="w-4 h-4" />
+          </template>
+        </NButton>
+      </div>
     </div>
   </div>
+
+  <BBModal
+    v-model:show="state.showEditorModal"
+    :title="statementTitle"
+    :trap-focus="true"
+    header-class="!border-b-0 !mx-4"
+    container-class="!pt-0 !px-4"
+  >
+    <div
+      id="modal-editor-container"
+      style="
+        width: calc(100vw - 8rem);
+        height: calc(100vh - 8rem);
+        position: relative;
+      "
+    >
+      <MonacoEditor
+        v-if="state.showEditorModal"
+        class="w-full h-full border"
+        :filename="filename"
+        :content="state.statement"
+        :language="language"
+        :auto-focus="false"
+        :readonly="isEditorReadonly"
+        :dialect="dialect"
+        :advices="isEditorReadonly ? markers : []"
+        :auto-complete-context="{
+          instance: database.instance,
+          database: database.name,
+        }"
+        @update:content="handleStatementChange"
+      />
+    </div>
+  </BBModal>
 
   <FeatureModal
     :open="state.showFeatureModal"
@@ -160,10 +217,12 @@
 </template>
 
 <script setup lang="ts">
+import { useElementSize } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
 import Long from "long";
+import { ExpandIcon } from "lucide-vue-next";
 import { NButton, NTooltip, useDialog } from "naive-ui";
-import { computed, h, reactive, watch } from "vue";
+import { computed, h, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import { ErrorList } from "@/components/IssueV1/components/common";
@@ -213,6 +272,7 @@ import { EditState, useTempEditState } from "./useTempEditState";
 
 type LocalState = EditState & {
   showFeatureModal: boolean;
+  showEditorModal: boolean;
   isUploadingFile: boolean;
 };
 
@@ -223,11 +283,14 @@ const { events, isCreating, issue, selectedTask, formatOnSave } =
   useIssueContext();
 const project = computed(() => issue.value.projectEntity);
 const dialog = useDialog();
+const editorContainerElRef = ref<HTMLElement>();
+const { height: editorContainerHeight } = useElementSize(editorContainerElRef);
 
 const state = reactive<LocalState>({
   isEditing: false,
   statement: "",
   showFeatureModal: false,
+  showEditorModal: false,
   isUploadingFile: false,
 });
 
