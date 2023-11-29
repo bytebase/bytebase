@@ -115,15 +115,17 @@
           {{ $t("two-factor.enabled") }}
         </span>
       </BBTableCell>
-      <BBTableCell class="whitespace-nowrap tooltip-wrapper w-36">
-        <span v-if="changeRoleTooltip(user)" class="tooltip">{{
-          changeRoleTooltip(user)
-        }}</span>
-        <WorkspaceRoleSelect
-          :role="user.userRole"
-          :disabled="!allowChangeRole(user)"
-          @update:role="changeRole(user, $event)"
-        />
+      <BBTableCell class="whitespace-nowrap w-36">
+        <NTooltip :disabled="!changeRoleTooltip(user)">
+          <template #trigger>
+            <WorkspaceRoleSelect
+              :role="user.userRole"
+              :disabled="!allowChangeRole(user)"
+              @update:role="changeRole(user, $event)"
+            />
+          </template>
+          {{ changeRoleTooltip(user) }}
+        </NTooltip>
       </BBTableCell>
       <BBTableCell>
         <BBButtonConfirm
