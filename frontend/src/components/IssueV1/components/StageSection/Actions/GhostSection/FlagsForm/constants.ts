@@ -11,7 +11,7 @@ export const SupportedGhostParameters: GhostParameter[] = [
   { key: "chunk-size", type: "int", defaults: "1000" },
   { key: "dml-batch-size", type: "int", defaults: "10" },
   { key: "default-retries", type: "int", defaults: "60" },
-  { key: "cut-over-lock-timeout-seconds", type: "int", defaults: "60" },
+  { key: "cut-over-lock-timeout-seconds", type: "int", defaults: "10" },
   { key: "exponential-backoff-max-interval", type: "int", defaults: "64" },
   { key: "max-lag-millis", type: "int", defaults: "1500" },
   { key: "allow-on-master", type: "bool", defaults: "true" },
