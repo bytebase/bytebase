@@ -1,5 +1,6 @@
 <template>
   <CommonSidebar
+    :key="'project'"
     :item-list="projectSidebarItemList"
     :get-item-class="getItemClass"
     @select="(val: string | undefined) => onSelect(val as ProjectHash)"
