@@ -1,11 +1,10 @@
 <template>
   <!-- Navigation -->
-  <nav class="overflow-y-hidden flex flex-col">
-    <CommonSidebar
-      :item-list="dashboardSidebarItemList"
-      :get-item-class="getItemClass"
-    />
-  </nav>
+  <CommonSidebar
+    :key="'dashboard'"
+    :item-list="dashboardSidebarItemList"
+    :get-item-class="getItemClass"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -107,6 +106,7 @@ const dashboardSidebarItemList = computed((): SidebarItem[] => {
       icon: h(TurtleIcon),
       path: "/slow-query",
       type: "route",
+      hide: !shouldShowSyncSchemaEntry.value,
     },
     {
       title: t("export-center.self"),
