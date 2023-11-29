@@ -664,6 +664,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | workspace_id | [string](#string) |  | workspace_id is the identifier for the workspace. |
 | gitops_webhook_url | [string](#string) |  | gitops_webhook_url is the webhook URL for GitOps. |
 | debug | [bool](#bool) |  | debug flag means if the debug mode is enabled. |
+| lsp | [bool](#bool) |  | lsp is the enablement of lsp in SQL Editor. |
 
 
 

@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/pingcap/tidb/parser/ast"
-	"github.com/pingcap/tidb/parser/format"
+	"github.com/pingcap/tidb/pkg/parser/ast"
+	"github.com/pingcap/tidb/pkg/parser/format"
 )
 
 type columnSet map[string]bool

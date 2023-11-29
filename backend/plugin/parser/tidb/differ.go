@@ -3,7 +3,6 @@ package tidb
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"log/slog"
 	"regexp"
 	"sort"
@@ -11,19 +10,19 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/log"
 
-	"github.com/pingcap/tidb/parser"
-	"github.com/pingcap/tidb/parser/ast"
-	"github.com/pingcap/tidb/parser/format"
-	"github.com/pingcap/tidb/parser/model"
-	"github.com/pingcap/tidb/parser/mysql"
-	"github.com/pingcap/tidb/types"
+	"github.com/pingcap/tidb/pkg/parser"
+	"github.com/pingcap/tidb/pkg/parser/ast"
+	"github.com/pingcap/tidb/pkg/parser/format"
+	"github.com/pingcap/tidb/pkg/parser/model"
+	"github.com/pingcap/tidb/pkg/parser/mysql"
+	"github.com/pingcap/tidb/pkg/types"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	// Register pingcap parser driver.
-	driver "github.com/pingcap/tidb/types/parser_driver"
+	driver "github.com/pingcap/tidb/pkg/types/parser_driver"
 )
 
 func init() {
@@ -602,7 +601,7 @@ func IsDelimiter(stmt string) bool {
 	return re.MatchString(stmt)
 }
 
-func writeNodeStatement(w io.Writer, n ast.Node, flags format.RestoreFlags) error {
+func writeNodeStatement(w format.RestoreWriter, n ast.Node, flags format.RestoreFlags) error {
 	restoreCtx := format.NewRestoreCtx(flags, w)
 	if err := n.Restore(restoreCtx); err != nil {
 		return err
@@ -650,7 +649,7 @@ func getID(node ast.Node) string {
 	return ""
 }
 
-func sortAndWriteNodeList(w io.Writer, ns []ast.Node, flags format.RestoreFlags) error {
+func sortAndWriteNodeList(w format.RestoreWriter, ns []ast.Node, flags format.RestoreFlags) error {
 	sort.Slice(ns, func(i, j int) bool {
 		return getID(ns[i]) < getID(ns[j])
 	})

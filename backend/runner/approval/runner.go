@@ -449,6 +449,25 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 		return 0, store.RiskSourceUnknown, true, nil
 	}
 
+	// If any plan check run is skipped because of large SQL,
+	// return the max risk level in the risks of the same risk source.
+	for _, run := range latestPlanCheckRun {
+		for _, result := range run.Result.GetResults() {
+			if result.GetCode() == common.SizeExceeded.Int32() {
+				var maxRiskLevel int32
+				for _, risk := range risks {
+					if risk.Source != riskSource {
+						continue
+					}
+					if risk.Level > maxRiskLevel {
+						maxRiskLevel = risk.Level
+					}
+				}
+				return maxRiskLevel, riskSource, true, nil
+			}
+		}
+	}
+
 	e, err := cel.NewEnv(common.RiskFactors...)
 	if err != nil {
 		return 0, store.RiskSourceUnknown, false, err

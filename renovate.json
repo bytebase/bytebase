@@ -8,6 +8,6 @@
     "gomodTidy"
   ],
   "ignoreDeps": [
-    "github.com/pingcap/tidb/parser"
+    "github.com/pingcap/tidb/pkg/parser"
   ]
 }

@@ -3,8 +3,8 @@ package tidb
 import (
 	"fmt"
 
-	"github.com/pingcap/tidb/parser/ast"
-	"github.com/pingcap/tidb/parser/format"
+	"github.com/pingcap/tidb/pkg/parser/ast"
+	"github.com/pingcap/tidb/pkg/parser/format"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -77,7 +77,7 @@ type noLeadingWildcardLikeChecker struct {
 
 // Enter implements the ast.Visitor interface.
 func (v *noLeadingWildcardLikeChecker) Enter(in ast.Node) (ast.Node, bool) {
-	if node, ok := in.(*ast.PatternLikeExpr); !v.leadingWildcardLike && ok {
+	if node, ok := in.(*ast.PatternLikeOrIlikeExpr); !v.leadingWildcardLike && ok {
 		pattern, err := restoreNode(node.Pattern, format.RestoreStringWithoutCharset)
 		if err != nil {
 			v.adviceList = append(v.adviceList, advisor.Advice{

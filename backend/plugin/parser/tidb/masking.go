@@ -7,8 +7,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/pingcap/tidb/parser"
-	tidbast "github.com/pingcap/tidb/parser/ast"
+	"github.com/pingcap/tidb/pkg/parser"
+	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
@@ -447,7 +447,7 @@ func (extractor *fieldExtractor) extractColumnFromExprNode(in tidbast.ExprNode) 
 		nodeList = append(nodeList, node.List...)
 		nodeList = append(nodeList, node.Sel)
 		return extractor.extractColumnFromExprNodeList(nodeList)
-	case *tidbast.PatternLikeExpr:
+	case *tidbast.PatternLikeOrIlikeExpr:
 		return extractor.extractColumnFromExprNodeList([]tidbast.ExprNode{node.Expr, node.Pattern})
 	case *tidbast.PatternRegexpExpr:
 		return extractor.extractColumnFromExprNodeList([]tidbast.ExprNode{node.Expr, node.Pattern})

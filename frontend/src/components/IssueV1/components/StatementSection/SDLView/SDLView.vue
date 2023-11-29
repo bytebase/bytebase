@@ -52,37 +52,39 @@
           </NTab>
         </NTabs>
 
-        <DiffEditor
-          v-if="state.tab === 'DIFF'"
-          class="border rounded-[3px] overflow-clip"
-          :original="sdlState.detail.previousSDL"
-          :modified="sdlState.detail.prettyExpectedSDL"
-          :readonly="true"
-          :auto-height="{
-            alignment: 'modified',
-            min: 120,
-            max: 480,
-          }"
-        />
-        <MonacoEditor
-          v-if="state.tab === 'STATEMENT'"
-          class="w-full h-auto border rounded-[3px] overflow-clip"
-          data-label="bb-issue-sql-editor"
-          :content="sdlState.detail.diffDDL"
-          :readonly="true"
-          :auto-focus="false"
-          :auto-height="{ min: 120, max: 360 }"
-        />
-        <MonacoEditor
-          v-if="state.tab === 'SCHEMA'"
-          class="w-full h-auto border rounded-[3px] overflow-clip"
-          data-label="bb-issue-sql-editor"
-          :content="sdlState.detail.expectedSDL"
-          :readonly="true"
-          :auto-focus="false"
-          :auto-height="{ min: 120, max: 360 }"
-          :advices="markers"
-        />
+        <div class="relative min-h-[6rem]">
+          <DiffEditor
+            v-if="state.tab === 'DIFF'"
+            class="border rounded-[3px] overflow-clip"
+            :original="sdlState.detail.previousSDL"
+            :modified="sdlState.detail.prettyExpectedSDL"
+            :readonly="true"
+            :auto-height="{
+              alignment: 'modified',
+              min: 120,
+              max: 480,
+            }"
+          />
+          <MonacoEditor
+            v-if="state.tab === 'STATEMENT'"
+            class="w-full h-auto border rounded-[3px] overflow-clip"
+            data-label="bb-issue-sql-editor"
+            :content="sdlState.detail.diffDDL"
+            :readonly="true"
+            :auto-focus="false"
+            :auto-height="{ min: 120, max: 360 }"
+          />
+          <MonacoEditor
+            v-if="state.tab === 'SCHEMA'"
+            class="w-full h-auto border rounded-[3px] overflow-clip"
+            data-label="bb-issue-sql-editor"
+            :content="sdlState.detail.expectedSDL"
+            :readonly="true"
+            :auto-focus="false"
+            :auto-height="{ min: 120, max: 360 }"
+            :advices="markers"
+          />
+        </div>
       </template>
     </div>
   </div>

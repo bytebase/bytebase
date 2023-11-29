@@ -29,6 +29,11 @@ import type {
   IStandaloneCodeEditor,
   MonacoModule,
 } from "@/components/MonacoEditor";
+import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
+import {
+  useEditorContextKey,
+  formatEditorContent,
+} from "@/components/MonacoEditor/utils";
 import { useTabStore, useSQLEditorStore, useInstanceV1ByUID } from "@/store";
 import {
   dialectOfEngineV1,
@@ -37,21 +42,12 @@ import {
   SQLDialect,
 } from "@/types";
 import { formatEngineV1, useInstanceV1EditorLanguage } from "@/utils";
-
-const [
-  { default: MonacoEditor },
-  { useEditorContextKey, formatEditorContent },
-  {
-    checkCursorAtFirstLine,
-    checkCursorAtLast,
-    checkCursorAtLastLine,
-    checkEndsWithSemicolon,
-  },
-] = await Promise.all([
-  import("@/components/MonacoEditor/MonacoEditor.vue"),
-  import("@/components/MonacoEditor/utils"),
-  import("./utils"),
-]);
+import {
+  checkCursorAtFirstLine,
+  checkCursorAtLast,
+  checkCursorAtLastLine,
+  checkEndsWithSemicolon,
+} from "./utils";
 
 const props = defineProps({
   sql: {

@@ -17,7 +17,7 @@ import (
 	server "github.com/bytebase/bytebase/backend/sql-server"
 
 	// Register pingcap parser driver.
-	_ "github.com/pingcap/tidb/types/parser_driver"
+	_ "github.com/pingcap/tidb/pkg/types/parser_driver"
 	// Register tidb advisor.
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/tidb"
 	// Register mysql advisor.

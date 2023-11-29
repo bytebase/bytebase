@@ -9,6 +9,13 @@
 
       <Suspense>
         <SQLEditor @execute="handleExecute" />
+        <template #fallback>
+          <div
+            class="w-full h-auto flex-grow flex flex-col items-center justify-center"
+          >
+            <BBSpin />
+          </div>
+        </template>
       </Suspense>
     </template>
 
@@ -27,6 +34,7 @@
 </template>
 
 <script lang="ts" setup>
+import { defineAsyncComponent } from "vue";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { AIChatToSQL } from "@/plugins/ai";
 import {
@@ -44,8 +52,9 @@ import {
   SaveSheetModal,
 } from "../EditorCommon";
 import { useSQLEditorContext } from "../context";
-import SQLEditor from "./SQLEditor.vue";
 import SheetForIssueTipsBar from "./SheetForIssueTipsBar.vue";
+
+const SQLEditor = defineAsyncComponent(() => import("./SQLEditor.vue"));
 
 const tabStore = useTabStore();
 const tab = useCurrentTab();
