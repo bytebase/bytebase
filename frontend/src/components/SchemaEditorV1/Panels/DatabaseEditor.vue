@@ -244,7 +244,7 @@ const schemaSelectorOptionList = computed(() => {
 });
 
 watch(
-  [() => currentTab.value, () => schemaList],
+  [() => currentTab.value],
   () => {
     const schemaIdList = schemaList.value.map((schema) => schema.id);
     if (

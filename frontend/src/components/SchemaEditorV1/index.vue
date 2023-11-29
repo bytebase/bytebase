@@ -138,7 +138,6 @@ const initialSchemaEditorState = async () => {
 onMounted(async () => {
   await settingStore.getOrFetchSettingByName("bb.workspace.schema-template");
   await prepareBranchContext();
-
   await initialSchemaEditorState();
   state.initialized = true;
 });
