@@ -5,12 +5,12 @@ import (
 	"strconv"
 	"strings"
 
-	tidbparser "github.com/pingcap/tidb/parser"
-	"github.com/pingcap/tidb/parser/ast"
-	"github.com/pingcap/tidb/parser/mysql"
+	tidbparser "github.com/pingcap/tidb/pkg/parser"
+	"github.com/pingcap/tidb/pkg/parser/ast"
+	"github.com/pingcap/tidb/pkg/parser/mysql"
 
 	// The packege parser_driver has to be imported.
-	_ "github.com/pingcap/tidb/types/parser_driver"
+	_ "github.com/pingcap/tidb/pkg/types/parser_driver"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"

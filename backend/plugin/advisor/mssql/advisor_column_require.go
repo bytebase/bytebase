@@ -3,11 +3,11 @@ package mssql
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/tsql-parser"
 	"github.com/pkg/errors"
-	"golang.org/x/exp/slices"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
@@ -117,8 +117,8 @@ func (l *columnRequireChecker) ExitCreate_table(ctx *parser.Create_tableContext)
 		return
 	}
 
-	slices.SortFunc[string](columnNames, func(i, j string) bool {
-		return i < j
+	sort.Slice(columnNames, func(i, j int) bool {
+		return columnNames[i] < columnNames[j]
 	})
 	for _, column := range columnNames {
 		l.adviceList = append(l.adviceList, advisor.Advice{

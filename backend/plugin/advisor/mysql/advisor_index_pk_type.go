@@ -218,11 +218,11 @@ func (checker *indexPkTypeChecker) getPKColumnType(tableName string, columnName 
 // getIntOrBigIntStr returns the type string of tp.
 func (*indexPkTypeChecker) getIntOrBigIntStr(ctx mysql.IDataTypeContext) string {
 	switch ctx.GetType_().GetTokenType() {
-	// https://pkg.go.dev/github.com/pingcap/tidb/parser/mysql#TypeLong
+	// https://pkg.go.dev/github.com/pingcap/tidb/pkg/parser/mysql#TypeLong
 	case mysql.MySQLParserINT_SYMBOL:
 		// tp.String() return int(11)
 		return "INT"
-		// https://pkg.go.dev/github.com/pingcap/tidb/parser/mysql#TypeLonglong
+		// https://pkg.go.dev/github.com/pingcap/tidb/pkg/parser/mysql#TypeLonglong
 	case mysql.MySQLParserBIGINT_SYMBOL:
 		// tp.String() return bigint(20)
 		return "BIGINT"

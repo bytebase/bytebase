@@ -8,7 +8,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
-	"github.com/pingcap/tidb/parser/ast"
+	"github.com/pingcap/tidb/pkg/parser/ast"
 )
 
 var (
