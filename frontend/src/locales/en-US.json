@@ -2229,7 +2229,9 @@
       "description": "Batch query {count} additional databases under {project}."
     },
     "executing-query": "Executing query",
-    "grouping": "Grouping"
+    "grouping": "Grouping",
+    "previous-row": "Previous row",
+    "next-row": "Next row"
   },
   "schema-editor": {
     "self": "Schema Editor",
