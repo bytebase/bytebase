@@ -293,9 +293,9 @@ replace github.com/dgrijalva/jwt-go => github.com/form3tech-oss/jwt-go v3.2.6-0.
 
 replace github.com/github/gh-ost => github.com/bytebase/gh-ost v1.1.3-0.20230915044519-b37a6525f8f9
 
-replace github.com/pingcap/tidb => github.com/bytebase/tidb2 v0.0.0-20231128180019-61b93d07265d
+replace github.com/pingcap/tidb => github.com/bytebase/tidb2 v0.0.0-20231129002249-5bbb6bb83940
 
-replace github.com/pingcap/tidb/pkg/parser => github.com/bytebase/tidb2/pkg/parser v0.0.0-20231128180019-61b93d07265d
+replace github.com/pingcap/tidb/pkg/parser => github.com/bytebase/tidb2/pkg/parser v0.0.0-20231129002249-5bbb6bb83940
 
 replace github.com/pganalyze/pg_query_go/v4 => github.com/bytebase/pg_query_go/v4 v4.0.0-20230802100607-2f34e68d96f5
 

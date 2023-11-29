@@ -175,10 +175,10 @@ github.com/bytebase/postgresql-parser v0.0.0-20230926094140-aa337757cdd0 h1:AT9y
 github.com/bytebase/postgresql-parser v0.0.0-20230926094140-aa337757cdd0/go.mod h1:Jft7oabwuwD+t5BYiUfTjcNVaihZ8F5KT8TsROG0EaE=
 github.com/bytebase/snowsql-parser v0.0.0-20230706111031-cafd8faa2dc9 h1:XLSpYgrzleY2HFnCSDnYMbqOoZ3QrAdwXs7rca39Fjc=
 github.com/bytebase/snowsql-parser v0.0.0-20230706111031-cafd8faa2dc9/go.mod h1:gJ1aclz1e9xLArQTbCpDjL+A79Jt3Ro9+/QEw8A6vMM=
-github.com/bytebase/tidb2 v0.0.0-20231128180019-61b93d07265d h1:4rBr7wkgv6A9J80GLxo3uvtKvgLybILSoq3bDXSBJo8=
-github.com/bytebase/tidb2 v0.0.0-20231128180019-61b93d07265d/go.mod h1:JNOIGqHyjLs7vMlnzvnpfTqh4qAE1xsMILj7onmuqOM=
-github.com/bytebase/tidb2/pkg/parser v0.0.0-20231128180019-61b93d07265d h1:srj06cG3I/zQmTkB7zC9wP79qhfiQ5jCEzUIOK68hSA=
-github.com/bytebase/tidb2/pkg/parser v0.0.0-20231128180019-61b93d07265d/go.mod h1:yRkiqLFwIqibYg2P7h4bclHjHcJiIFRLKhGRyBcKYus=
+github.com/bytebase/tidb2 v0.0.0-20231129002249-5bbb6bb83940 h1:EgmWx2TWEnHySUhiRrwmihFOcRIMfPGQLUtzmoblaTs=
+github.com/bytebase/tidb2 v0.0.0-20231129002249-5bbb6bb83940/go.mod h1:JNOIGqHyjLs7vMlnzvnpfTqh4qAE1xsMILj7onmuqOM=
+github.com/bytebase/tidb2/pkg/parser v0.0.0-20231129002249-5bbb6bb83940 h1:PZ22FTyHYk/qJKUTDk3kwOBktS7QFc20ocgmZP/ZmwM=
+github.com/bytebase/tidb2/pkg/parser v0.0.0-20231129002249-5bbb6bb83940/go.mod h1:yRkiqLFwIqibYg2P7h4bclHjHcJiIFRLKhGRyBcKYus=
 github.com/bytebase/tsql-parser v0.0.0-20231019070007-fc13b1c3c56d h1:ZONgYtlZ74yUGpBz9r3p7gz1siP8MtqYzrMOPIudYfs=
 github.com/bytebase/tsql-parser v0.0.0-20231019070007-fc13b1c3c56d/go.mod h1:RGdpxRQZHTqMjTKZUKGGZduIXu2lPyboIuWsqV7drX8=
 github.com/casbin/casbin/v2 v2.1.2/go.mod h1:YcPU1XXisHhLzuxH9coDNf2FbKpjGlbCg3n9yuLkIJQ=
