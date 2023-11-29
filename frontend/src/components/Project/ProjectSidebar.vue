@@ -9,7 +9,7 @@
 
 <script setup lang="ts">
 import { defineAction, useRegisterActions } from "@bytebase/vue-kbar";
-import { computedAsync, useLocalStorage } from "@vueuse/core";
+import { useLocalStorage } from "@vueuse/core";
 import { startCase } from "lodash-es";
 import {
   Database,
@@ -25,22 +25,12 @@ import { computed, VNode, h, reactive, watch, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter, useRoute } from "vue-router";
 import { SidebarItem } from "@/components/CommonSidebar.vue";
-import {
-  useCurrentUserIamPolicy,
-  useProjectV1Store,
-  useDatabaseV1Store,
-  experimentalFetchIssueByUID,
-} from "@/store";
-import {
-  DEFAULT_PROJECT_V1_NAME,
-  unknownProject,
-  unknownDatabase,
-  UNKNOWN_ID,
-  EMPTY_ID,
-} from "@/types";
+import { useCurrentUserIamPolicy } from "@/store";
+import { DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { TenantMode } from "@/types/proto/v1/project_service";
-import { idFromSlug, projectSlugV1 } from "@/utils";
+import { projectSlugV1 } from "@/utils";
 import { useProjectDatabaseActions } from "../KBar/useDatabaseActions";
+import { useCurrentProject } from "./useCurrentProject";
 
 const projectHashList = [
   "databases",
@@ -81,26 +71,6 @@ const props = defineProps<{
 }>();
 
 const route = useRoute();
-const database = computed(() => {
-  if (props.changeHistorySlug) {
-    const parent = `instances/${route.params.instance}/databases/${route.params.database}`;
-    return useDatabaseV1Store().getDatabaseByName(parent);
-  } else if (props.databaseSlug) {
-    return useDatabaseV1Store().getDatabaseByUID(
-      String(idFromSlug(props.databaseSlug))
-    );
-  }
-  return unknownDatabase();
-});
-
-const cachedLastPage = useLocalStorage<ProjectHash>(
-  `bb.project.${props.projectSlug}.page`,
-  "databases"
-);
-
-const defaultHash = computed((): ProjectHash => {
-  return cachedLastPage.value;
-});
 
 interface LocalState {
   selectedHash: ProjectHash;
@@ -108,45 +78,44 @@ interface LocalState {
 
 const { t } = useI18n();
 const router = useRouter();
-const projectV1Store = useProjectV1Store();
 
 const state = reactive<LocalState>({
-  selectedHash: defaultHash.value,
+  selectedHash: "databases",
+});
+
+const params = computed(() => {
+  return {
+    projectSlug: props.projectSlug,
+    issueSlug: props.issueSlug,
+    databaseSlug: props.databaseSlug,
+    changeHistorySlug: props.changeHistorySlug,
+  };
+});
+
+const { project } = useCurrentProject(params);
+
+const cachedLastPage = computed(() => {
+  const cache = useLocalStorage<ProjectHash>(
+    `bb.project.${projectSlugV1(project.value)}.page`,
+    "databases"
+  );
+  return cache;
+});
+
+const defaultHash = computed((): ProjectHash => {
+  return cachedLastPage.value.value;
 });
 
 watch(
   () => state.selectedHash,
-  (hash) => (cachedLastPage.value = hash)
+  (hash) => (cachedLastPage.value.value = hash)
 );
 
-const issueUID = computed(() => {
-  const slug = props.issueSlug;
-  if (!slug) return String(UNKNOWN_ID);
-  if (props.issueSlug.toLowerCase() === "new") return String(EMPTY_ID);
-  const uid = Number(idFromSlug(slug));
-  if (uid > 0) return String(uid);
-  return String(UNKNOWN_ID);
-});
+watch(
+  () => cachedLastPage.value,
+  (cache) => (state.selectedHash = cache.value)
+);
 
-const project = computedAsync(async () => {
-  if (issueUID.value !== String(UNKNOWN_ID)) {
-    if (issueUID.value === String(EMPTY_ID)) {
-      const projectUID = route.query.project as string;
-      if (!projectUID) return unknownProject();
-      return await useProjectV1Store().getOrFetchProjectByUID(projectUID);
-    }
-
-    const existedIssue = await experimentalFetchIssueByUID(issueUID.value);
-    return existedIssue.projectEntity;
-  } else if (props.projectSlug) {
-    return projectV1Store.getProjectByUID(
-      String(idFromSlug(props.projectSlug))
-    );
-  } else if (props.databaseSlug || props.changeHistorySlug) {
-    return database.value.projectEntity;
-  }
-  return unknownProject();
-}, unknownProject());
 const currentUserIamPolicy = useCurrentUserIamPolicy();
 
 const isDefaultProject = computed((): boolean => {
