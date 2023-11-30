@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+import "store/database.proto";
+
+option go_package = "generated-go/store";
+
+message BranchSnapshot {
+  string schema = 1;
+  DatabaseSchemaMetadata metadata = 2;
+  DatabaseConfig database_config = 3;
+}
+
+message BranchConfig {
+  // The id of source database.
+  // Optional.
+  int64 source_database_id = 1;
+  // The id of the source branch.
+  // Optional.
+  int64 source_branch_id = 2;
+}
