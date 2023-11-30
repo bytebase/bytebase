@@ -240,22 +240,6 @@ const routes: Array<RouteRecordRaw> = [
             },
           },
           {
-            path: "/project/:projectSlug/changelists/:changelistName",
-            name: "workspace.changelist.detail",
-            meta: {
-              overrideTitle: true,
-            },
-            components: {
-              content: () =>
-                import("../components/Changelist/ChangelistDetail/"),
-              leftSidebar: ProjectSidebar,
-            },
-            props: {
-              content: true,
-              leftSidebar: true,
-            },
-          },
-          {
             path: "sync-schema",
             name: "workspace.sync-schema",
             meta: { title: () => startCase(t("database.sync-schema.title")) },
@@ -715,11 +699,33 @@ const routes: Array<RouteRecordRaw> = [
               },
               {
                 path: "branches/:branchName",
-                name: "workspace.branch.detail",
+                name: "workspace.project.branch.detail",
                 meta: {
                   overrideTitle: true,
                 },
                 component: () => import("../views/branch/BranchDetail.vue"),
+                props: true,
+              },
+              {
+                path: "changelists/:changelistName",
+                name: "workspace.project.changelist.detail",
+                meta: {
+                  overrideTitle: true,
+                },
+                component: () =>
+                  import("../components/Changelist/ChangelistDetail/"),
+                props: true,
+              },
+              {
+                path: "database-groups/:databaseGroupName",
+                name: "workspace.project.database-group.detail",
+                component: () => import("../views/DatabaseGroupDetail.vue"),
+                props: true,
+              },
+              {
+                path: "database-groups/:databaseGroupName/table-groups/:schemaGroupName",
+                name: "workspace.project.database-group.table-group.detail",
+                component: () => import("../views/SchemaGroupDetail.vue"),
                 props: true,
               },
             ],
@@ -874,30 +880,6 @@ const routes: Array<RouteRecordRaw> = [
               leftSidebar: ProjectSidebar,
             },
             props: { content: true, leftSidebar: true },
-          },
-          // Resource name related routes.
-          {
-            path: "project/:projectSlug",
-            children: [
-              {
-                path: "database-groups/:databaseGroupName",
-                name: "workspace.database-group.detail",
-                components: {
-                  content: () => import("../views/DatabaseGroupDetail.vue"),
-                  leftSidebar: ProjectSidebar,
-                },
-                props: true,
-              },
-              {
-                path: "database-groups/:databaseGroupName/table-groups/:schemaGroupName",
-                name: "workspace.database-group.table-group.detail",
-                components: {
-                  content: () => import("../views/SchemaGroupDetail.vue"),
-                  leftSidebar: ProjectSidebar,
-                },
-                props: true,
-              },
-            ],
           },
         ],
       },
@@ -1234,7 +1216,7 @@ router.beforeEach((to, from, next) => {
             });
             throw new Error("not found");
           }
-        } else if (to.name === "workspace.changelist.detail") {
+        } else if (to.name === "workspace.project.changelist.detail") {
           const name = `${project.name}/changelists/${to.params.changelistName}`;
           useChangelistStore()
             .fetchChangelistByName(name)
@@ -1257,7 +1239,7 @@ router.beforeEach((to, from, next) => {
               throw error;
             });
         } else if (
-          to.name === "workspace.branch.detail" &&
+          to.name === "workspace.project.branch.detail" &&
           to.params.branchName !== "new"
         ) {
           const name = `${project.name}/schemaDesigns/${to.params.branchName}`;
@@ -1302,7 +1284,7 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  if (to.name === "workspace.branch.detail") {
+  if (to.name === "workspace.project.branch.detail") {
     if (to.params.branchName === "new") {
       next();
       return;

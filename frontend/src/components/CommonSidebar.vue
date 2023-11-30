@@ -6,7 +6,7 @@
         <router-link
           v-if="item.type === 'route' && item.path"
           :to="item.path"
-          class="outline-item group w-full flex items-center px-2 py-1.5 !text-base"
+          class="outline-item group w-full font-medium flex items-center px-2 py-1.5 !text-base"
           :class="getItemClass(item.path)"
         >
           <component :is="item.icon" class="mr-2 w-5 h-5 text-gray-500" />

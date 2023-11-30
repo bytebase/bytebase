@@ -312,14 +312,14 @@ const selectProjectTabOnHash = () => {
     case "workspace.project.hook.detail":
       state.selectedHash = "webhook";
       return;
-    case "workspace.changelist.detail":
+    case "workspace.project.changelist.detail":
       state.selectedHash = "changelists";
       return;
-    case "workspace.branch.detail":
+    case "workspace.project.branch.detail":
       state.selectedHash = "branches";
       return;
-    case "workspace.database-group.detail":
-    case "workspace.database-group.table-group.detail":
+    case "workspace.project.database-group.detail":
+    case "workspace.project.database-group.table-group.detail":
       state.selectedHash = "database-groups";
       return;
     case "workspace.issue.detail":
