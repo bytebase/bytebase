@@ -1695,14 +1695,11 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 
 	var canAccessDBs []*store.DatabaseMessage
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
+		return nil, status.Errorf(codes.Internal, "user not found")
 	}
-	user, err := s.store.GetUserByID(ctx, principalID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find user %q", err.Error())
-	}
+
 	switch user.Role {
 	case api.Owner, api.DBA:
 		canAccessDBs = databases
@@ -1712,7 +1709,7 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to find project policy %q", err.Error())
 			}
-			if isProjectOwnerOrDeveloper(principalID, policy) {
+			if isProjectOwnerOrDeveloper(user.ID, policy) {
 				canAccessDBs = append(canAccessDBs, database)
 			}
 
