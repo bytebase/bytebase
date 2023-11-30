@@ -29,6 +29,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/component/iam"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -69,16 +70,18 @@ type DatabaseService struct {
 	schemaSyncer   *schemasync.Syncer
 	licenseService enterprise.LicenseService
 	profile        *config.Profile
+	iamManager     *iam.Manager
 }
 
 // NewDatabaseService creates a new DatabaseService.
-func NewDatabaseService(store *store.Store, br *backuprun.Runner, schemaSyncer *schemasync.Syncer, licenseService enterprise.LicenseService, profile *config.Profile) *DatabaseService {
+func NewDatabaseService(store *store.Store, br *backuprun.Runner, schemaSyncer *schemasync.Syncer, licenseService enterprise.LicenseService, profile *config.Profile, iamManager *iam.Manager) *DatabaseService {
 	return &DatabaseService{
 		store:          store,
 		backupRunner:   br,
 		schemaSyncer:   schemaSyncer,
 		licenseService: licenseService,
 		profile:        profile,
+		iamManager:     iamManager,
 	}
 }
 
@@ -1711,6 +1714,16 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 			}
 			if isProjectOwnerOrDeveloper(principalID, policy) {
 				canAccessDBs = append(canAccessDBs, database)
+			}
+
+			if s.profile.DevelopmentIAM {
+				ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionSlowQueriesList, user, database.ProjectID)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to check permission, err: %v", err.Error())
+				}
+				if ok {
+					canAccessDBs = append(canAccessDBs, database)
+				}
 			}
 		}
 	default:
