@@ -10,22 +10,9 @@ set -e
 cd "$(dirname "$0")/../"
 . ./scripts/build_init.sh
 
-rm -rf ./backend/server/dist
-
-echo "Start building Bytebase frontend"
-
-if command -v pnpm > /dev/null
-then
-    pnpm --dir ./frontend i && pnpm --dir ./frontend release
-else
-    npm --prefix ./frontend run release
-fi
-
-echo "Completed building Bytebase frontend."
-
 echo "Start building Bytebase docker image ${VERSION}..."
 
-docker build -f ./scripts/Dockerfile.depot \
+docker build -f ./scripts/Dockerfile \
     --build-arg VERSION=${VERSION} \
     --build-arg GO_VERSION="$(go version)" \
     --build-arg GIT_COMMIT="$(git rev-parse HEAD)"\
