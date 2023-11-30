@@ -27,4 +27,5 @@ const (
 	PermissionDatabaseSecretsList          Permission = "bb.databaseSecrets.list"
 	PermissionDatabaseSecretsUpdate        Permission = "bb.databaseSecrets.update"
 	PermissionDatabaseSecretsDelete        Permission = "bb.databaseSecrets.delete"
+	PermissionSlowQueriesList              Permission = "bb.slowQueries.list"
 )
