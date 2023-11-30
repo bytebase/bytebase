@@ -46,13 +46,6 @@ message SheetPayload {
     string baseline_schema_design_id = 4;
     // The id of the baseline change history including the baseline change history.(optional)
     string baseline_change_history_id = 5;
-
-    message Protection {
-      // Permits force pushes to the branch.
-      bool allow_force_pushes = 1;
-    }
-    // The protection of the schema design.
-    Protection protection = 6;
   }
   SchemaDesign schema_design = 3;
 
