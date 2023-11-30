@@ -12,6 +12,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -25,17 +26,17 @@ type ACLInterceptor struct {
 	secret         string
 	licenseService enterprise.LicenseService
 	iamManager     *iam.Manager
-	mode           common.ReleaseMode
+	profile        *config.Profile
 }
 
 // NewACLInterceptor returns a new v1 API ACL interceptor.
-func NewACLInterceptor(store *store.Store, secret string, licenseService enterprise.LicenseService, iamManager *iam.Manager, mode common.ReleaseMode) *ACLInterceptor {
+func NewACLInterceptor(store *store.Store, secret string, licenseService enterprise.LicenseService, iamManager *iam.Manager, profile *config.Profile) *ACLInterceptor {
 	return &ACLInterceptor{
 		store:          store,
 		secret:         secret,
 		licenseService: licenseService,
 		iamManager:     iamManager,
-		mode:           mode,
+		profile:        profile,
 	}
 }
 
@@ -144,7 +145,7 @@ func (in *ACLInterceptor) aclInterceptorDo(ctx context.Context, fullMethod strin
 		}
 	}
 
-	if in.mode == common.ReleaseModeDev && user.Email == "xz@bytebase.com" {
+	if in.profile.DevelopmentIAM {
 		return in.checkIAMPermission(ctx, fullMethod, request, user)
 	}
 
