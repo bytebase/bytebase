@@ -3,13 +3,11 @@
     :key="'project'"
     :item-list="projectSidebarItemList"
     :get-item-class="getItemClass"
-    @select="(val: string | undefined) => onSelect(val as ProjectHash)"
   />
 </template>
 
 <script setup lang="ts">
 import { defineAction, useRegisterActions } from "@bytebase/vue-kbar";
-import { useLocalStorage } from "@vueuse/core";
 import { startCase } from "lodash-es";
 import {
   Database,
@@ -54,12 +52,12 @@ const isProjectHash = (x: any): x is ProjectHash => projectHashList.includes(x);
 interface ProjectSidebarItem extends SidebarItem {
   title: string;
   path?: ProjectHash;
-  type: "div";
+  type: "div" | "link";
   children?: {
     title: string;
     path: ProjectHash;
     hide?: boolean;
-    type: "div";
+    type: "link";
   }[];
 }
 
@@ -94,27 +92,9 @@ const params = computed(() => {
 
 const { project } = useCurrentProject(params);
 
-const cachedLastPage = computed(() => {
-  const cache = useLocalStorage<ProjectHash>(
-    `bb.project.${projectSlugV1(project.value)}.page`,
-    "databases"
-  );
-  return cache;
-});
-
 const defaultHash = computed((): ProjectHash => {
-  return cachedLastPage.value.value;
+  return "databases";
 });
-
-watch(
-  () => state.selectedHash,
-  (hash) => (cachedLastPage.value.value = hash)
-);
-
-watch(
-  () => cachedLastPage.value,
-  (cache) => (state.selectedHash = cache.value)
-);
 
 const currentUserIamPolicy = useCurrentUserIamPolicy();
 
@@ -136,12 +116,12 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
         {
           title: t("common.databases"),
           path: "databases",
-          type: "div",
+          type: "link",
         },
         {
           title: t("common.groups"),
           path: "database-groups",
-          type: "div",
+          type: "link",
           hide:
             !isTenantProject.value ||
             !currentUserIamPolicy.isMemberOfProject(project.value.name),
@@ -149,7 +129,7 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
         {
           title: t("common.change-history"),
           path: "change-history",
-          type: "div",
+          type: "link",
           hide:
             isTenantProject.value ||
             !currentUserIamPolicy.isMemberOfProject(project.value.name),
@@ -157,13 +137,13 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
         {
           title: startCase(t("slow-query.slow-queries")),
           path: "slow-query",
-          type: "div",
+          type: "link",
           hide: !currentUserIamPolicy.isMemberOfProject(project.value.name),
         },
         {
           title: t("common.anomalies"),
           path: "anomalies",
-          type: "div",
+          type: "link",
           hide: !currentUserIamPolicy.isMemberOfProject(project.value.name),
         },
       ],
@@ -172,7 +152,7 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       title: t("common.issues"),
       path: "issues",
       icon: h(CircleDot),
-      type: "div",
+      type: "link",
       hide:
         isDefaultProject.value ||
         !currentUserIamPolicy.allowToChangeDatabaseOfProject(
@@ -183,7 +163,7 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       title: t("common.branches"),
       path: "branches",
       icon: h(GitBranch),
-      type: "div",
+      type: "link",
       hide:
         isDefaultProject.value ||
         !currentUserIamPolicy.allowToChangeDatabaseOfProject(
@@ -194,7 +174,7 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       title: t("changelist.changelists"),
       path: "changelists",
       icon: h(PencilRuler),
-      type: "div",
+      type: "link",
       hide:
         isDefaultProject.value ||
         !currentUserIamPolicy.allowToChangeDatabaseOfProject(
@@ -205,7 +185,7 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       title: t("database.sync-schema.title"),
       path: "sync-schema",
       icon: h(RefreshCcw),
-      type: "div",
+      type: "link",
       hide:
         isDefaultProject.value ||
         !currentUserIamPolicy.allowToChangeDatabaseOfProject(
@@ -225,12 +205,12 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
         {
           title: t("common.gitops"),
           path: "gitops",
-          type: "div",
+          type: "link",
         },
         {
           title: t("common.webhooks"),
           path: "webhook",
-          type: "div",
+          type: "link",
         },
       ],
     },
@@ -245,12 +225,12 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
         {
           title: t("common.members"),
           path: "members",
-          type: "div",
+          type: "link",
         },
         {
           title: t("common.activities"),
           path: "activities",
-          type: "div",
+          type: "link",
         },
       ],
     },
@@ -258,7 +238,7 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       title: t("common.setting"),
       icon: h(Settings),
       path: "setting",
-      type: "div",
+      type: "link",
       hide:
         isDefaultProject.value ||
         !currentUserIamPolicy.isMemberOfProject(project.value.name),
@@ -285,10 +265,15 @@ const onSelect = (hash: ProjectHash | undefined) => {
   if (!hash || !isProjectHash(hash)) {
     return;
   }
-  state.selectedHash = hash;
+  let validHash = hash || defaultHash.value;
+  const tab = flattenNavigationItems.value.find((item) => item.path === hash);
+  if (!tab || tab.hide) {
+    validHash = defaultHash.value;
+  }
+  state.selectedHash = validHash;
   router.replace({
     name: "workspace.project.detail",
-    hash: `#${hash}`,
+    hash: `#${validHash}`,
     query: route.query,
     params: {
       projectSlug: props.projectSlug || projectSlugV1(project.value),
@@ -344,8 +329,8 @@ watch(
   }
 );
 
-const navigationKbarActions = computed(() => {
-  const navigationItems = projectSidebarItemList.value.flatMap<{
+const flattenNavigationItems = computed(() => {
+  return projectSidebarItemList.value.flatMap<{
     path: ProjectHash;
     title: string;
     hide?: boolean;
@@ -365,8 +350,10 @@ const navigationKbarActions = computed(() => {
       },
     ];
   });
+});
 
-  const actions = navigationItems.map((item) =>
+const navigationKbarActions = computed(() => {
+  const actions = flattenNavigationItems.value.map((item) =>
     defineAction({
       id: `bb.navigation.project.${project.value.uid}.${item.path}`,
       name: item.title,

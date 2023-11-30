@@ -7,6 +7,12 @@
     @click-row="clickProject"
   >
     <template #item="{ item: project }: ProjectGridRow">
+      <div v-if="currentProject" class="bb-grid-cell">
+        <CheckIcon
+          v-if="currentProject.name === project.name"
+          class="w-4 text-accent"
+        />
+      </div>
       <div class="bb-grid-cell text-gray-500">
         <span class="flex flex-row items-center space-x-1">
           <span>{{ project.key }}</span>
@@ -24,6 +30,7 @@
 </template>
 
 <script lang="ts" setup>
+import { CheckIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -33,8 +40,9 @@ import { projectV1Slug } from "@/utils";
 
 export type ProjectGridRow = BBGridRow<Project>;
 
-defineProps<{
+const props = defineProps<{
   projectList: Project[];
+  currentProject?: Project;
 }>();
 
 const emit = defineEmits<{
@@ -43,16 +51,25 @@ const emit = defineEmits<{
 
 const router = useRouter();
 const { t } = useI18n();
-const columnList = computed((): BBGridColumn[] => [
-  {
-    title: t("project.table.key"),
-    width: "minmax(auto, 25%)",
-  },
-  {
-    title: t("project.table.name"),
-    width: "1fr",
-  },
-]);
+const columnList = computed((): BBGridColumn[] => {
+  const list = [
+    {
+      title: t("project.table.key"),
+      width: "minmax(min-content, 25%)",
+    },
+    {
+      title: t("project.table.name"),
+      width: "minmax(min-content, auto)",
+    },
+  ];
+  if (props.currentProject) {
+    list.unshift({
+      title: "",
+      width: "minmax(min-content, 3rem)",
+    });
+  }
+  return list;
+});
 
 const clickProject = function (
   project: Project,
@@ -60,7 +77,9 @@ const clickProject = function (
   row: number,
   e: MouseEvent
 ) {
-  const url = `/project/${projectV1Slug(project)}`;
+  const url = `/project/${projectV1Slug(project)}${
+    router.currentRoute.value.hash
+  }`;
   if (e.ctrlKey || e.metaKey) {
     window.open(url, "_blank");
   } else {
