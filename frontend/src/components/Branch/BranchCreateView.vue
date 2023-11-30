@@ -372,10 +372,6 @@ const handleConfirm = async () => {
         baselineDatabase: baselineDatabase,
         baselineSheetName: baselineSheet.name,
         baselineChangeHistoryId: state.baselineSchema.changeHistory?.uid,
-        protection: {
-          // For main branches, we don't allow force pushes by default.
-          allowForcePushes: false,
-        },
       })
     );
   } else {

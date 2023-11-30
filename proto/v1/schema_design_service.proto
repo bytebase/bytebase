@@ -125,14 +125,6 @@ message SchemaDesign {
   // The etag of the schema design.
   string etag = 12;
 
-  message Protection {
-    // Permits force pushes to the branch.
-    bool allow_force_pushes = 1;
-  }
-
-  // The protection of the schema design branch.
-  Protection protection = 13;
-
   // The creator of the schema design.
   // Format: users/{email}
   string creator = 14 [(google.api.field_behavior) = OUTPUT_ONLY];

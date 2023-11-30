@@ -96,10 +96,6 @@ export interface SchemaDesign {
   type: SchemaDesign_Type;
   /** The etag of the schema design. */
   etag: string;
-  /** The protection of the schema design branch. */
-  protection:
-    | SchemaDesign_Protection
-    | undefined;
   /**
    * The creator of the schema design.
    * Format: users/{email}
@@ -157,11 +153,6 @@ export function schemaDesign_TypeToJSON(object: SchemaDesign_Type): string {
     default:
       return "UNRECOGNIZED";
   }
-}
-
-export interface SchemaDesign_Protection {
-  /** Permits force pushes to the branch. */
-  allowForcePushes: boolean;
 }
 
 export interface GetSchemaDesignRequest {
@@ -296,7 +287,6 @@ function createBaseSchemaDesign(): SchemaDesign {
     baselineChangeHistoryId: undefined,
     type: 0,
     etag: "",
-    protection: undefined,
     creator: "",
     updater: "",
     createTime: undefined,
@@ -341,9 +331,6 @@ export const SchemaDesign = {
     }
     if (message.etag !== "") {
       writer.uint32(98).string(message.etag);
-    }
-    if (message.protection !== undefined) {
-      SchemaDesign_Protection.encode(message.protection, writer.uint32(106).fork()).ldelim();
     }
     if (message.creator !== "") {
       writer.uint32(114).string(message.creator);
@@ -451,13 +438,6 @@ export const SchemaDesign = {
 
           message.etag = reader.string();
           continue;
-        case 13:
-          if (tag !== 106) {
-            break;
-          }
-
-          message.protection = SchemaDesign_Protection.decode(reader, reader.uint32());
-          continue;
         case 14:
           if (tag !== 114) {
             break;
@@ -513,7 +493,6 @@ export const SchemaDesign = {
         : undefined,
       type: isSet(object.type) ? schemaDesign_TypeFromJSON(object.type) : 0,
       etag: isSet(object.etag) ? globalThis.String(object.etag) : "",
-      protection: isSet(object.protection) ? SchemaDesign_Protection.fromJSON(object.protection) : undefined,
       creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
       updater: isSet(object.updater) ? globalThis.String(object.updater) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
@@ -559,9 +538,6 @@ export const SchemaDesign = {
     if (message.etag !== "") {
       obj.etag = message.etag;
     }
-    if (message.protection !== undefined) {
-      obj.protection = SchemaDesign_Protection.toJSON(message.protection);
-    }
     if (message.creator !== "") {
       obj.creator = message.creator;
     }
@@ -599,70 +575,10 @@ export const SchemaDesign = {
     message.baselineChangeHistoryId = object.baselineChangeHistoryId ?? undefined;
     message.type = object.type ?? 0;
     message.etag = object.etag ?? "";
-    message.protection = (object.protection !== undefined && object.protection !== null)
-      ? SchemaDesign_Protection.fromPartial(object.protection)
-      : undefined;
     message.creator = object.creator ?? "";
     message.updater = object.updater ?? "";
     message.createTime = object.createTime ?? undefined;
     message.updateTime = object.updateTime ?? undefined;
-    return message;
-  },
-};
-
-function createBaseSchemaDesign_Protection(): SchemaDesign_Protection {
-  return { allowForcePushes: false };
-}
-
-export const SchemaDesign_Protection = {
-  encode(message: SchemaDesign_Protection, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.allowForcePushes === true) {
-      writer.uint32(8).bool(message.allowForcePushes);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): SchemaDesign_Protection {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSchemaDesign_Protection();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.allowForcePushes = reader.bool();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): SchemaDesign_Protection {
-    return { allowForcePushes: isSet(object.allowForcePushes) ? globalThis.Boolean(object.allowForcePushes) : false };
-  },
-
-  toJSON(message: SchemaDesign_Protection): unknown {
-    const obj: any = {};
-    if (message.allowForcePushes === true) {
-      obj.allowForcePushes = message.allowForcePushes;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<SchemaDesign_Protection>): SchemaDesign_Protection {
-    return SchemaDesign_Protection.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<SchemaDesign_Protection>): SchemaDesign_Protection {
-    const message = createBaseSchemaDesign_Protection();
-    message.allowForcePushes = object.allowForcePushes ?? false;
     return message;
   },
 };

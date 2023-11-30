@@ -239,9 +239,8 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 	schemaDesignSheetPayload := &storepb.SheetPayload{
 		Type: storepb.SheetPayload_SCHEMA_DESIGN,
 		SchemaDesign: &storepb.SheetPayload_SchemaDesign{
-			Type:       schemaDesignType,
-			Engine:     storepb.Engine(schemaDesign.Engine),
-			Protection: convertProtectionToStore(schemaDesign.Protection),
+			Type:   schemaDesignType,
+			Engine: storepb.Engine(schemaDesign.Engine),
 		},
 		DatabaseConfig: convertV1DatabaseConfig(&v1pb.DatabaseConfig{
 			Name:          databaseName,
@@ -763,7 +762,6 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 		Engine:                 engine,
 		BaselineDatabase:       fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Type:                   schemaDesignType,
-		Protection:             convertProtectionFromStore(sheet.Payload.SchemaDesign.Protection),
 		Creator:                common.FormatUserEmail(creator.Email),
 		Updater:                common.FormatUserEmail(updater.Email),
 		CreateTime:             timestamppb.New(sheet.CreatedTime),
@@ -820,26 +818,6 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 	schemaDesign.BaselineSchemaMetadata = baselineSchemaMetadata
 
 	return schemaDesign, nil
-}
-
-func convertProtectionToStore(protection *v1pb.SchemaDesign_Protection) *storepb.SheetPayload_SchemaDesign_Protection {
-	if protection == nil {
-		return &storepb.SheetPayload_SchemaDesign_Protection{}
-	}
-
-	return &storepb.SheetPayload_SchemaDesign_Protection{
-		AllowForcePushes: protection.AllowForcePushes,
-	}
-}
-
-func convertProtectionFromStore(protection *storepb.SheetPayload_SchemaDesign_Protection) *v1pb.SchemaDesign_Protection {
-	if protection == nil {
-		return &v1pb.SchemaDesign_Protection{}
-	}
-
-	return &v1pb.SchemaDesign_Protection{
-		AllowForcePushes: protection.AllowForcePushes,
-	}
 }
 
 func sanitizeSchemaDesignSchemaMetadata(design *v1pb.SchemaDesign) {
