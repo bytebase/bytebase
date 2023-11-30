@@ -82,6 +82,7 @@
 
   <ProjectSwitchModal
     v-if="state.showProjectModal"
+    :project="project"
     @dismiss="state.showProjectModal = false"
   />
 </template>

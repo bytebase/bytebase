@@ -4,7 +4,7 @@
     :value="value"
     :clearable="!!value"
     :placeholder="placeholder"
-    style="width: 12rem"
+    style="max-width: 18rem; flex: 1 1 0%"
     v-bind="$attrs"
     @update:value="$emit('update:value', $event)"
   >

@@ -29,6 +29,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/component/iam"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -69,16 +70,18 @@ type DatabaseService struct {
 	schemaSyncer   *schemasync.Syncer
 	licenseService enterprise.LicenseService
 	profile        *config.Profile
+	iamManager     *iam.Manager
 }
 
 // NewDatabaseService creates a new DatabaseService.
-func NewDatabaseService(store *store.Store, br *backuprun.Runner, schemaSyncer *schemasync.Syncer, licenseService enterprise.LicenseService, profile *config.Profile) *DatabaseService {
+func NewDatabaseService(store *store.Store, br *backuprun.Runner, schemaSyncer *schemasync.Syncer, licenseService enterprise.LicenseService, profile *config.Profile, iamManager *iam.Manager) *DatabaseService {
 	return &DatabaseService{
 		store:          store,
 		backupRunner:   br,
 		schemaSyncer:   schemaSyncer,
 		licenseService: licenseService,
 		profile:        profile,
+		iamManager:     iamManager,
 	}
 }
 
@@ -121,6 +124,10 @@ func (s *DatabaseService) GetDatabase(ctx context.Context, request *v1pb.GetData
 
 // ListDatabases lists all databases.
 func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListDatabasesRequest) (*v1pb.ListDatabasesResponse, error) {
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "failed to retrieve user from context")
+	}
 	instanceID, err := common.GetInstanceID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -152,6 +159,15 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 				continue
 			}
 			return nil, err
+		}
+		if s.profile.DevelopmentIAM {
+			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionDatabasesList, user, database.ProjectID)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
+			}
+			if !ok {
+				continue
+			}
 		}
 		response.Databases = append(response.Databases, convertToDatabase(database))
 	}
@@ -1692,14 +1708,11 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 
 	var canAccessDBs []*store.DatabaseMessage
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
+		return nil, status.Errorf(codes.Internal, "user not found")
 	}
-	user, err := s.store.GetUserByID(ctx, principalID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find user %q", err.Error())
-	}
+
 	switch user.Role {
 	case api.Owner, api.DBA:
 		canAccessDBs = databases
@@ -1709,8 +1722,18 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to find project policy %q", err.Error())
 			}
-			if isProjectOwnerOrDeveloper(principalID, policy) {
+			if isProjectOwnerOrDeveloper(user.ID, policy) {
 				canAccessDBs = append(canAccessDBs, database)
+			}
+
+			if s.profile.DevelopmentIAM {
+				ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionSlowQueriesList, user, database.ProjectID)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to check permission, err: %v", err.Error())
+				}
+				if ok {
+					canAccessDBs = append(canAccessDBs, database)
+				}
 			}
 		}
 	default:

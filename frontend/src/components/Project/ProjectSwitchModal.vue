@@ -14,7 +14,7 @@
             v-model:value="state.searchText"
             :placeholder="$t('common.filter-by-name')"
             :autofocus="false"
-            style="flex: 1 1 0%"
+            style="max-width: 100%"
           />
           <NButton @click="state.showCreateDrawer = true">
             {{ $t("quick-action.new-project") }}
@@ -23,6 +23,7 @@
       </div>
       <ProjectV1Table
         :project-list="filteredProjectList"
+        :current-project="currentProject"
         class="border"
         @click="$emit('dismiss')"
       />
@@ -43,13 +44,22 @@ import { computed, reactive } from "vue";
 import { SearchBox, ProjectV1Table } from "@/components/v2";
 import { Drawer } from "@/components/v2";
 import { useProjectV1ListByCurrentUser } from "@/store";
-import { DEFAULT_PROJECT_ID } from "@/types";
+import {
+  DEFAULT_PROJECT_ID,
+  UNKNOWN_PROJECT_NAME,
+  EMPTY_PROJECT_NAME,
+  ComposedProject,
+} from "@/types";
 import { filterProjectV1ListByKeyword } from "@/utils";
 
 interface LocalState {
   searchText: string;
   showCreateDrawer: boolean;
 }
+
+const props = defineProps<{
+  project?: ComposedProject;
+}>();
 
 const emit = defineEmits<{
   (event: "dismiss"): void;
@@ -66,6 +76,16 @@ const filteredProjectList = computed(() => {
     (project) => project.uid !== String(DEFAULT_PROJECT_ID)
   );
   return filterProjectV1ListByKeyword(list, state.searchText);
+});
+
+const currentProject = computed(() => {
+  if (
+    props.project?.name === UNKNOWN_PROJECT_NAME ||
+    props.project?.name === EMPTY_PROJECT_NAME
+  ) {
+    return undefined;
+  }
+  return props.project;
 });
 
 const onCreate = () => {

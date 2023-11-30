@@ -729,6 +729,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 					slog.Warn("failed to parse phone number",
 						slog.String("issue_name", meta.Issue.Title),
 						log.BBError(err))
+					continue
 				}
 				if phone != "" {
 					mentions = append(mentions, phone)
@@ -972,6 +973,12 @@ func maybeGetPhoneFromUser(user *store.UserMessage) (string, error) {
 	phoneNumber, err := phonenumbers.Parse(user.Phone, "")
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to parse phone number %q", user.Phone)
+	}
+	if phoneNumber == nil {
+		return "", nil
+	}
+	if phoneNumber.NationalNumber == nil {
+		return "", nil
 	}
 	return strconv.FormatInt(int64(*phoneNumber.NationalNumber), 10), nil
 }

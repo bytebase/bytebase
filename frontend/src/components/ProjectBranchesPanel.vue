@@ -1,19 +1,15 @@
 <template>
   <div class="space-y-4 w-full overflow-x-auto">
-    <div class="w-full flex flex-row justify-between items-center">
-      <div class="flex flex-row justify-start items-center"></div>
-      <div class="flex flex-row justify-end items-center gap-x-2">
-        <NInput
-          v-model:value="state.searchKeyword"
-          class="!w-36"
-          clearable
-          :placeholder="$t('common.filter-by-name')"
-        />
-        <NButton type="primary" @click="handleCreateBranch">
-          <heroicons-solid:plus class="w-4 h-auto mr-0.5" />
-          <span>{{ $t("database.new-branch") }}</span>
-        </NButton>
-      </div>
+    <div class="flex flex-row justify-end items-center gap-x-2">
+      <SearchBox
+        v-model:value="state.searchKeyword"
+        :autofocus="true"
+        :placeholder="$t('common.filter-by-name')"
+      />
+      <NButton type="primary" @click="handleCreateBranch">
+        <heroicons-solid:plus class="w-4 h-auto mr-0.5" />
+        <span>{{ $t("database.new-branch") }}</span>
+      </NButton>
     </div>
 
     <BranchDataTable
@@ -28,7 +24,7 @@
 
 <script lang="ts" setup>
 import { orderBy } from "lodash-es";
-import { NButton, NInput } from "naive-ui";
+import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
 import BranchDataTable from "@/components/Branch/BranchDataTable.vue";
@@ -73,7 +69,7 @@ const filteredBranches = computed(() => {
 
 const handleCreateBranch = () => {
   router.push({
-    name: "workspace.branch.detail",
+    name: "workspace.project.branch.detail",
     params: {
       projectSlug: projectV1Slug(project.value),
       branchName: "new",
@@ -84,7 +80,7 @@ const handleCreateBranch = () => {
 const handleBranchClick = async (schemaDesign: SchemaDesign) => {
   const [_, sheetId] = getProjectAndSchemaDesignSheetId(schemaDesign.name);
   router.push({
-    name: "workspace.branch.detail",
+    name: "workspace.project.branch.detail",
     params: {
       projectSlug: projectV1Slug(project.value),
       branchName: `${sheetId}`,

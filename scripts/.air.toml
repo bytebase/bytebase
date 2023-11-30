@@ -10,6 +10,7 @@ bin = './.air/bytebase --port 8080 --data . --debug --disable-sample'
 cmd = """
   go build \
   -gcflags="all=-N -l" \
+  -p=16 \
   --tags "minimal" \
   -o ./.air/bytebase ./backend/bin/server/main.go"""
 delay = 500

@@ -4,9 +4,9 @@
     <div class="flex-1 overflow-y-auto px-2">
       <div v-for="(item, i) in filteredSidebarList" :key="i">
         <router-link
-          v-if="item.type === 'route' && item.path"
-          :to="item.path"
-          class="outline-item group w-full flex items-center px-2 py-1.5 !text-base"
+          v-if="item.type === 'route'"
+          :to="item.path ?? ''"
+          class="outline-item group w-full font-medium flex items-center px-2 py-1.5 !text-base"
           :class="getItemClass(item.path)"
         >
           <component :is="item.icon" class="mr-2 w-5 h-5 text-gray-500" />
@@ -28,6 +28,16 @@
             <ChevronDown v-else class="w-4 h-4" />
           </div>
         </div>
+        <a
+          v-if="item.type === 'link'"
+          class="group flex items-center px-2 py-1.5 leading-5 font-medium rounded-md text-gray-700 outline-item !text-base"
+          :class="getItemClass(item.path)"
+          :href="`#${item.path}`"
+          @click="$emit('select', item.path)"
+        >
+          <component :is="item.icon" class="mr-2 w-5 h-5 text-gray-500" />
+          {{ item.title }}
+        </a>
         <div
           v-else-if="item.type === 'divider'"
           class="border-t border-gray-300 my-2"
@@ -37,14 +47,15 @@
           class=""
         >
           <template v-for="(child, j) in item.children" :key="`${i}-${j}`">
-            <div
-              v-if="child.type === 'div'"
+            <a
+              v-if="child.type === 'link'"
               class="group w-full flex items-center pl-11 pr-2 py-1.5 rounded-md outline-item"
               :class="getItemClass(child.path)"
+              :href="`#${child.path}`"
               @click="$emit('select', child.path)"
             >
               {{ child.title }}
-            </div>
+            </a>
             <router-link
               v-else-if="child.type === 'route'"
               :to="child.path"
@@ -69,12 +80,12 @@ export interface SidebarItem {
   path?: string;
   icon?: VNode;
   hide?: boolean;
-  type: "route" | "div" | "divider";
+  type: "route" | "div" | "divider" | "link";
   children?: {
     title: string;
     path: string;
     hide?: boolean;
-    type: "route" | "div" | "divider";
+    type: "route" | "link" | "divider";
   }[];
 }
 
