@@ -518,7 +518,6 @@
     - [ParseSchemaStringRequest](#bytebase-v1-ParseSchemaStringRequest)
     - [ParseSchemaStringResponse](#bytebase-v1-ParseSchemaStringResponse)
     - [SchemaDesign](#bytebase-v1-SchemaDesign)
-    - [SchemaDesign.Protection](#bytebase-v1-SchemaDesign-Protection)
     - [UpdateSchemaDesignRequest](#bytebase-v1-UpdateSchemaDesignRequest)
   
     - [SchemaDesign.Type](#bytebase-v1-SchemaDesign-Type)
@@ -8413,26 +8412,10 @@ When paginating, all other parameters provided to `ListSchemaDesigns` must match
 | baseline_change_history_id | [string](#string) | optional | The baseline change history id. |
 | type | [SchemaDesign.Type](#bytebase-v1-SchemaDesign-Type) |  | The type of the schema design. |
 | etag | [string](#string) |  | The etag of the schema design. |
-| protection | [SchemaDesign.Protection](#bytebase-v1-SchemaDesign-Protection) |  | The protection of the schema design branch. |
 | creator | [string](#string) |  | The creator of the schema design. Format: users/{email} |
 | updater | [string](#string) |  | The updater of the schema design. Format: users/{email} |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the schema design was created. |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the schema design was last updated. |
-
-
-
-
-
-
-<a name="bytebase-v1-SchemaDesign-Protection"></a>
-
-### SchemaDesign.Protection
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| allow_force_pushes | [bool](#bool) |  | Permits force pushes to the branch. |
 
 
 

@@ -187,7 +187,6 @@
 - [store/sheet.proto](#store_sheet-proto)
     - [SheetPayload](#bytebase-store-SheetPayload)
     - [SheetPayload.SchemaDesign](#bytebase-store-SheetPayload-SchemaDesign)
-    - [SheetPayload.SchemaDesign.Protection](#bytebase-store-SheetPayload-SchemaDesign-Protection)
     - [SheetPayload.VCSPayload](#bytebase-store-SheetPayload-VCSPayload)
   
     - [SheetPayload.SchemaDesign.Type](#bytebase-store-SheetPayload-SchemaDesign-Type)
@@ -2892,22 +2891,6 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | baseline_sheet_id | [string](#string) |  | The id of the baseline sheet including the baseline full schema. |
 | baseline_schema_design_id | [string](#string) |  | The sheet id of the baseline schema design. Only valid when the schema design is a personal draft. |
 | baseline_change_history_id | [string](#string) |  | The id of the baseline change history including the baseline change history.(optional) |
-| protection | [SheetPayload.SchemaDesign.Protection](#bytebase-store-SheetPayload-SchemaDesign-Protection) |  | The protection of the schema design. |
-
-
-
-
-
-
-<a name="bytebase-store-SheetPayload-SchemaDesign-Protection"></a>
-
-### SheetPayload.SchemaDesign.Protection
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| allow_force_pushes | [bool](#bool) |  | Permits force pushes to the branch. |
 
 
 
