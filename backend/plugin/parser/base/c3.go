@@ -26,11 +26,16 @@ type CodeCompletionCore struct {
 	// shortcutMap     map[int]map[int]RuleEndStatus
 	statesProcessed int
 	tokenStartIndex int
-	tokens          []int
+	tokens          []*Token
 
 	callStack                  *RuleList
 	lastQueryRuleContext       *RuleContext
 	lastShadowQueryRuleContext *RuleContext
+}
+
+type Token struct {
+	Type          int
+	StartPosition int
 }
 
 // NewCodeCompletionCore creates a new CodeCompletionCore.
@@ -344,7 +349,7 @@ func (c *CodeCompletionCore) CollectCandidates(caretTokenIndex int, context antl
 
 	// Initialize the c.tokens:
 	//   Set to the token types of tokenStream[ruleStartIndex, caretTokenIndex].
-	c.tokens = []int{}
+	c.tokens = []*Token{}
 	tokenStream := c.parser.GetTokenStream()
 	currentOffset := tokenStream.Index()
 	tokenStream.Seek(c.tokenStartIndex)
@@ -352,7 +357,10 @@ func (c *CodeCompletionCore) CollectCandidates(caretTokenIndex int, context antl
 	for {
 		token := tokenStream.LT(offset)
 		offset++
-		c.tokens = append(c.tokens, token.GetTokenType())
+		c.tokens = append(c.tokens, &Token{
+			Type:          token.GetTokenType(),
+			StartPosition: token.GetStart(),
+		})
 
 		if token.GetTokenIndex() >= caretTokenIndex || token.GetTokenType() == antlr.TokenEOF {
 			break
@@ -439,7 +447,7 @@ func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenInde
 
 	// If the current token and Epsilon are not in the follow sets, we should stop.
 	currentSymbol := c.tokens[tokenIndex]
-	if !followSets.combined.Contains(antlr.TokenEpsilon) && !followSets.combined.Contains(currentSymbol) {
+	if !followSets.combined.Contains(antlr.TokenEpsilon) && !followSets.combined.Contains(currentSymbol.Type) {
 		c.callStack.Pop()
 		return RuleEndStatus{}
 	}
@@ -482,13 +490,13 @@ func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenInde
 						if c.lastQueryRuleContext.SelectItemAliases == nil {
 							c.lastQueryRuleContext.SelectItemAliases = make(map[int]bool)
 						}
-						c.lastQueryRuleContext.SelectItemAliases[currentEntry.TokenIndex] = true
+						c.lastQueryRuleContext.SelectItemAliases[c.tokens[currentEntry.TokenIndex].StartPosition] = true
 					}
 					if c.lastShadowQueryRuleContext != nil {
 						if c.lastShadowQueryRuleContext.SelectItemAliases == nil {
 							c.lastShadowQueryRuleContext.SelectItemAliases = make(map[int]bool)
 						}
-						c.lastShadowQueryRuleContext.SelectItemAliases[currentEntry.TokenIndex] = true
+						c.lastShadowQueryRuleContext.SelectItemAliases[c.tokens[currentEntry.TokenIndex].StartPosition] = true
 					}
 				}
 			case *antlr.PredicateTransition:
@@ -550,7 +558,7 @@ func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenInde
 						}
 					} else {
 						currentSymbol := c.tokens[currentEntry.TokenIndex]
-						if set.Contains(currentSymbol) {
+						if set.Contains(currentSymbol.Type) {
 							statePipeline = append(statePipeline, PipelineEntry{
 								State:      transition.GetTarget(),
 								TokenIndex: currentEntry.TokenIndex + 1,

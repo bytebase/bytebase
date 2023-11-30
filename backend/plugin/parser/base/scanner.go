@@ -196,12 +196,8 @@ func (s *Scanner) GetFollowingText() string {
 	return stream.GetText(s.tokens[s.index].GetStart(), stream.Size()-1)
 }
 
-// GetFollowingTextAfter returns the following text after the given index.
-func (s *Scanner) GetFollowingTextAfter(index int) string {
-	if index >= len(s.tokens) || index < 0 {
-		return ""
-	}
-
-	stream := s.tokens[index].GetInputStream()
-	return stream.GetText(s.tokens[index].GetStart(), stream.Size()-1)
+// GetFollowingTextAfter returns the following text after the given position.
+func (s *Scanner) GetFollowingTextAfter(pos int) string {
+	stream := s.tokens[s.index].GetInputStream()
+	return stream.GetText(pos, stream.Size()-1)
 }
