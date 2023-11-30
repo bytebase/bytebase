@@ -729,6 +729,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 					slog.Warn("failed to parse phone number",
 						slog.String("issue_name", meta.Issue.Title),
 						log.BBError(err))
+					continue
 				}
 				if phone != "" {
 					mentions = append(mentions, phone)
