@@ -10,7 +10,7 @@ WORKDIR /frontend-build
 
 COPY . .
 
-RUN cd frontend && pnpm install --frozen-lockfile && pnpm ${RELEASE}-docker
+RUN cd frontend && pnpm install --frozen-lockfile && pnpm "${RELEASE}-docker"
 
 FROM golang:1.21.3 as backend
 ADD go.mod go.sum /
