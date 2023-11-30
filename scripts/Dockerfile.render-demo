@@ -8,17 +8,10 @@ RUN npm i -g pnpm
 
 WORKDIR /frontend-build
 
-# Install build dependency (e.g. vite)
-COPY ./frontend/package.json ./frontend/pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+COPY . .
 
-COPY ./frontend/ .
-# Copy the SQL review config files to the frontend
-COPY ./backend/plugin/advisor/config/ ./src/types
-COPY ./backend/enterprise/api/plan.yaml ./src/types/
-
-# Build frontend
-RUN pnpm "${RELEASE}-docker"
+RUN pnpm --dir frontend install --frozen-lockfile
+RUN pnpm --dir frontend "${RELEASE}-docker"
 
 FROM golang:1.21.3 as backend
 ADD go.mod go.sum /
@@ -41,7 +34,7 @@ WORKDIR /backend-build
 COPY . .
 
 # Copy frontend asset
-COPY --from=frontend /frontend-build/dist ./backend/server/dist
+COPY --from=frontend /frontend-build/frontend/dist ./backend/server/dist
 
 COPY ./scripts/VERSION .
 
