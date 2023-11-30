@@ -11,7 +11,7 @@ CREATE TABLE branch (
   config JSONB NOT NULL DEFAULT '{}'
 );
 
-CREATE UNIQUE INDEX idx_branch_unique_resource_id ON idp(resource_id);
+CREATE UNIQUE INDEX idx_branch_unique_project_id_name ON branch(project_id, name);
 
 ALTER SEQUENCE branch_id_seq RESTART WITH 101;
 
