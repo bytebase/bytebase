@@ -27,14 +27,13 @@
     >
       <NTree
         v-if="treeContainerHeight > 0"
-        :key="treeKeyRef"
         ref="treeRef"
         block-line
         virtual-scroll
         :style="{
           height: `${treeContainerHeight}px`,
         }"
-        :data="treeData"
+        :data="treeDataRef"
         :pattern="searchPattern"
         :render-prefix="renderPrefix"
         :render-label="renderLabel"
@@ -76,7 +75,7 @@
 
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
-import { escape, head, isUndefined } from "lodash-es";
+import { debounce, escape, head, isUndefined, pick } from "lodash-es";
 import { TreeOption, NEllipsis, NInput, NDropdown, NTree } from "naive-ui";
 import { v1 as uuidv1 } from "uuid";
 import { computed, watch, ref, h, reactive, nextTick, onMounted } from "vue";
@@ -94,7 +93,6 @@ import { getHighlightHTMLByKeyWords, isDescendantOf } from "@/utils";
 import SchemaNameModal from "../Modals/SchemaNameModal.vue";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import { isTableChanged } from "../utils";
-import { isSchemaChanged } from "../utils/schema";
 
 interface BaseTreeNode extends TreeOption {
   key: string;
@@ -155,8 +153,7 @@ const treeRef = ref<InstanceType<typeof NTree>>();
 const searchPattern = ref("");
 const expandedKeysRef = ref<string[]>([]);
 const selectedKeysRef = ref<string[]>([]);
-// Trigger re-render when the tree data is changed.
-const treeKeyRef = ref<string>("");
+const treeDataRef = ref<TreeNode[]>([]);
 const contextMenu = reactive<TreeContextMenu>({
   showDropdown: false,
   clientX: 0,
@@ -175,37 +172,20 @@ const engine = computed(() => {
   return (branchSchema.value.branch as any as SchemaDesign).engine;
 });
 
-const schemaList = computed(() => branchSchema.value.schemaList);
-const tableList = computed(() =>
-  schemaList.value.map((schema) => schema.tableList).flat()
-);
-const treeData = computed(() => {
-  const treeNodeList: TreeNode[] = [];
-  for (const schema of schemaList.value) {
-    const schemaTreeNode: TreeNodeForSchema = {
-      type: "schema",
-      key: `s-${schema.id}`,
-      label: schema.name,
-      isLeaf: false,
-      schemaId: schema.id,
-      children: schema.tableList.map((table) => ({
-        type: "table",
-        key: `t-${schema.id}-${table.id}`,
-        label: table.name,
-        children: [],
-        isLeaf: true,
-        schemaId: schema.id,
-        tableId: table.id,
-      })),
+const schemaList = computed(() =>
+  branchSchema.value.schemaList.map((schema) => {
+    return {
+      ...schema,
+      tableList: schema.tableList.map((table) => {
+        // Don't watch column changes in database tree.
+        return pick(table, ["id", "name", "status"]);
+      }),
     };
-    if (schemaTreeNode.children!.length === 0) {
-      schemaTreeNode.isLeaf = true;
-    }
-    treeNodeList.push(schemaTreeNode);
-  }
-
-  return treeNodeList;
-});
+  })
+);
+const tableList = computed(() =>
+  branchSchema.value.schemaList.map((schema) => schema.tableList).flat()
+);
 
 const contextMenuOptions = computed(() => {
   const treeNode = contextMenu.treeNode;
@@ -286,25 +266,47 @@ onMounted(() => {
   if (!branchSchema.value) {
     throw new Error("branch should not be empty");
   }
+
+  buildBranchTreeData();
+  const firstChildNode = head(treeDataRef.value);
+  if (firstChildNode) {
+    nextTick(() => {
+      // Auto expand the first tree node.
+      openTabForTreeNode(firstChildNode);
+    });
+  }
 });
 
-watch(
-  () => treeData.value,
-  () => {
-    treeKeyRef.value = Math.random().toString();
-    const firstChildNode = head(treeData.value);
-    if (firstChildNode) {
-      nextTick(() => {
-        // Auto expand the first tree node.
-        openTabForTreeNode(firstChildNode);
-      });
+const buildBranchTreeData = () => {
+  const treeNodeList: TreeNode[] = [];
+  for (const schema of schemaList.value) {
+    const schemaTreeNode: TreeNodeForSchema = {
+      type: "schema",
+      key: `s-${schema.id}`,
+      label: schema.name,
+      isLeaf: false,
+      schemaId: schema.id,
+      children: schema.tableList.map((table) => ({
+        type: "table",
+        key: `t-${schema.id}-${table.id}`,
+        label: table.name,
+        children: [],
+        isLeaf: true,
+        schemaId: schema.id,
+        tableId: table.id,
+      })),
+    };
+    if (schemaTreeNode.children!.length === 0) {
+      schemaTreeNode.isLeaf = true;
     }
-  },
-  {
-    deep: true,
-    immediate: true,
+    treeNodeList.push(schemaTreeNode);
   }
-);
+  treeDataRef.value = treeNodeList;
+};
+
+watch(() => schemaList.value, debounce(buildBranchTreeData, 250), {
+  deep: true,
+});
 
 watch(
   () => currentTab.value,
@@ -365,21 +367,16 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
     );
     if (schema) {
       if (engine.value !== Engine.POSTGRES) {
-        label = "Tables";
+        label = t("db.tables");
       }
       if (schema.status === "created") {
         additionalClassList.push("text-green-700");
       } else if (schema.status === "dropped") {
         additionalClassList.push("text-red-700 line-through");
       } else {
-        if (
-          isSchemaChanged(branchSchema.value.branch.name, treeNode.schemaId)
-        ) {
-          additionalClassList.push("text-yellow-700");
-        }
+        // To optimize the performance of the comparison, skip check if schema is changed for now.
       }
     }
-    // do nothing
   } else if (treeNode.type === "table") {
     const table = tableList.value.find(
       (table) => table.id === treeNode.tableId

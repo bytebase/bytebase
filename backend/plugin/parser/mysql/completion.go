@@ -878,6 +878,7 @@ func (l *TableRefListener) ExitSubquery(_ *mysql.SubqueryContext) {
 }
 
 func prepareParserAndScanner(statement string, caretLine int, caretOffset int) (*mysql.MySQLParser, *mysql.MySQLLexer, *base.Scanner) {
+	statement, caretLine, caretOffset = skipHeadingSQLs(statement, caretLine, caretOffset)
 	input := antlr.NewInputStream(statement)
 	lexer := mysql.NewMySQLLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
@@ -888,6 +889,53 @@ func prepareParserAndScanner(statement string, caretLine int, caretOffset int) (
 	scanner.SeekPosition(caretLine, caretOffset)
 	scanner.Push()
 	return parser, lexer, scanner
+}
+
+func notEmptySQLCount(list []base.SingleSQL) int {
+	count := 0
+	for _, sql := range list {
+		if !sql.Empty {
+			count++
+		}
+	}
+	return count
+}
+
+// caretLine is 1-based and caretOffset is 0-based.
+func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, int, int) {
+	newCaretLine, newCaretOffset := caretLine, caretOffset
+	list, err := SplitSQL(statement)
+	if err != nil || notEmptySQLCount(list) <= 1 {
+		return statement, caretLine, caretOffset
+	}
+
+	caretLine-- // Convert to 0-based.
+
+	start := 0
+	for i, sql := range list {
+		if sql.LastLine > caretLine || (sql.LastLine == caretLine && sql.LastColumn >= caretOffset) {
+			start = i
+			if i == 0 {
+				// The caret is in the first SQL statement, so we don't need to skip any SQL statements.
+				continue
+			}
+			newCaretLine = caretLine - list[i-1].LastLine + 1 // Convert to 1-based.
+			if caretLine == list[i-1].LastLine {
+				// The caret is in the same line as the last line of the previous SQL statement.
+				// We need to adjust the caret offset.
+				newCaretOffset = caretOffset - list[i-1].LastColumn - 1 // Convert to 0-based.
+			}
+		}
+	}
+
+	var buf strings.Builder
+	for i := start; i < len(list); i++ {
+		if _, err := buf.WriteString(list[i].Text); err != nil {
+			return statement, caretLine, caretOffset
+		}
+	}
+
+	return buf.String(), newCaretLine, newCaretOffset
 }
 
 func unquote(s string) string {
