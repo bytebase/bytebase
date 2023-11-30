@@ -206,14 +206,14 @@ type PhysicalTableReference struct {
 	Alias    string
 }
 
-func (t *PhysicalTableReference) isTableReference() {}
+func (*PhysicalTableReference) isTableReference() {}
 
 type VirtualTableReference struct {
 	Table   string
 	Columns []string
 }
 
-func (t *VirtualTableReference) isTableReference() {}
+func (*VirtualTableReference) isTableReference() {}
 
 type Completer struct {
 	ctx                 context.Context
@@ -475,7 +475,6 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 								}
 							}
 						}
-
 					}
 				} else if len(c.references) > 0 && candidate == mysql.MySQLParserRULE_columnRef {
 					for _, reference := range c.references {
@@ -848,7 +847,6 @@ func (l *TableRefListener) EnterDerivedTable(ctx *mysql.DerivedTableContext) {
 					reference.Columns = append(reference.Columns, column.Name)
 				}
 			}
-
 		}
 
 		l.context.referencesStack[0] = append(l.context.referencesStack[0], reference)
