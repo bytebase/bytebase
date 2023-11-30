@@ -81,6 +81,9 @@ func (m *Manager) hasPermissionOnWorkspace(p Permission, workspaceRoles []string
 }
 
 func (m *Manager) hasPermissionOnEveryProject(p Permission, projectRoles [][]string) bool {
+	if len(projectRoles) == 0 {
+		return false
+	}
 	for _, projectRole := range projectRoles {
 		has := false
 		for _, role := range projectRole {
