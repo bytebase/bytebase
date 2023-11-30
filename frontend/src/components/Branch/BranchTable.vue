@@ -38,7 +38,7 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
-import { NEllipsis } from "naive-ui";
+import { NPerformantEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGridColumn } from "@/bbkit";
