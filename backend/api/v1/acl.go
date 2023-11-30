@@ -49,6 +49,7 @@ func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request any, serve
 	if user != nil {
 		// Store workspace role into context.
 		ctx = context.WithValue(ctx, common.RoleContextKey, user.Role)
+		ctx = context.WithValue(ctx, common.UserContextKey, user)
 	}
 
 	if auth.IsAuthenticationAllowed(serverInfo.FullMethod) {
@@ -79,6 +80,7 @@ func (in *ACLInterceptor) ACLStreamInterceptor(request any, ss grpc.ServerStream
 	if user != nil {
 		// Store workspace role into context.
 		ctx = context.WithValue(ctx, common.RoleContextKey, user.Role)
+		ctx = context.WithValue(ctx, common.UserContextKey, user)
 		ss = overrideStream{ServerStream: ss, childCtx: ctx}
 	}
 
