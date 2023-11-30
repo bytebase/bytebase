@@ -5,7 +5,6 @@
         v-model:value="state.searchText"
         :placeholder="$t('common.filter-by-name')"
         :autofocus="true"
-        style="width: 12rem"
       />
     </div>
     <ProjectV1Table :project-list="filteredProjectList" class="border-x-0" />
