@@ -462,7 +462,7 @@ const handleSaveBranch = async () => {
               );
               state.isEditing = false;
               router.replace({
-                name: "workspace.branch.detail",
+                name: "workspace.project.branch.detail",
                 params: {
                   projectSlug: projectV1Slug(project.value),
                   branchName: sheetId,
@@ -525,7 +525,7 @@ const handleMergeAfterConflictResolved = (branchName: string) => {
   state.isEditing = false;
   const [_, sheetId] = getProjectAndSchemaDesignSheetId(branchName);
   router.replace({
-    name: "workspace.branch.detail",
+    name: "workspace.project.branch.detail",
     params: {
       projectSlug: projectV1Slug(project.value),
       branchName: sheetId,

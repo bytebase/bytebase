@@ -5,11 +5,6 @@
         <div class="flex-1 textinfolabel">
           {{ $t("schema-template.field-template.description") }}
         </div>
-        <div>
-          <NButton type="primary" @click="createSchemaTemplate">
-            {{ $t("common.add") }}
-          </NButton>
-        </div>
       </div>
     </div>
     <div class="flex items-center justify-between gap-x-2 my-4">
@@ -32,12 +27,18 @@
           </NCheckbox>
         </template>
       </div>
-      <SearchBox
-        v-model:value="state.searchText"
-        :autofocus="true"
-        :placeholder="$t('schema-template.search-by-name-or-comment')"
-        style="width: 18rem"
-      />
+      <div class="flex items-center space-x-2">
+        <div class="hidden md:block">
+          <SearchBox
+            v-model:value="state.searchText"
+            :autofocus="true"
+            :placeholder="$t('schema-template.search-by-name-or-comment')"
+          />
+        </div>
+        <NButton type="primary" @click="createSchemaTemplate">
+          {{ $t("common.add") }}
+        </NButton>
+      </div>
     </div>
     <FieldTemplateView
       :engine="engine"
