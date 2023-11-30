@@ -54,7 +54,7 @@ func TestCompletion(t *testing.T) {
 		if record {
 			tests[i].Want = filteredResult
 		} else {
-			a.Equal(t.Want, filteredResult)
+			a.Equal(t.Want, filteredResult, t.Input)
 		}
 	}
 
