@@ -22,6 +22,7 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 	switch fullMethod {
 	// handled in the method because checking is complex.
 	case
+		v1pb.DatabaseService_ListSlowQueries_FullMethodName,
 		v1pb.DatabaseService_ListDatabases_FullMethodName,
 		v1pb.DatabaseService_SearchDatabases_FullMethodName,
 		v1pb.DatabaseService_DiffSchema_FullMethodName:
@@ -60,7 +61,6 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 		v1pb.DatabaseService_UpdateBackupSetting_FullMethodName,
 		v1pb.DatabaseService_CreateBackup_FullMethodName,
 		v1pb.DatabaseService_ListBackups_FullMethodName,
-		v1pb.DatabaseService_ListSlowQueries_FullMethodName, // TODO(p0ny): implement.
 		v1pb.DatabaseService_ListSecrets_FullMethodName,
 		v1pb.DatabaseService_UpdateSecret_FullMethodName,
 		v1pb.DatabaseService_DeleteSecret_FullMethodName,
@@ -181,7 +181,6 @@ func (in *ACLInterceptor) getProjectIDsForDatabaseService(ctx context.Context, r
 		databaseNames = append(databaseNames, r.GetParent())
 	case *v1pb.ListBackupsRequest:
 		databaseNames = append(databaseNames, r.GetParent())
-	case *v1pb.ListSlowQueriesRequest: // TODO(p0ny): implement.
 	case *v1pb.ListSecretsRequest:
 		databaseNames = append(databaseNames, r.GetParent())
 	case *v1pb.UpdateSecretRequest:
