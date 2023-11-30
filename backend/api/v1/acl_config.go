@@ -72,7 +72,7 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.DatabaseService_UpdateBackupSetting_FullMethodName:    iam.PermissionDatabasesUpdateBackupSetting,
 	v1pb.DatabaseService_CreateBackup_FullMethodName:           iam.PermissionBackupsCreate,
 	v1pb.DatabaseService_ListBackups_FullMethodName:            iam.PermissionBackupsList,
-	v1pb.DatabaseService_ListSlowQueries_FullMethodName:        "", // TODO(p0ny): slow query is somewhat related to the workspace slow query setting. Do this one together with the workspace slow query.
+	v1pb.DatabaseService_ListSlowQueries_FullMethodName:        iam.PermissionSlowQueriesList,
 	v1pb.DatabaseService_ListSecrets_FullMethodName:            iam.PermissionDatabaseSecretsList,
 	v1pb.DatabaseService_UpdateSecret_FullMethodName:           iam.PermissionDatabaseSecretsUpdate,
 	v1pb.DatabaseService_DeleteSecret_FullMethodName:           iam.PermissionDatabaseSecretsDelete,

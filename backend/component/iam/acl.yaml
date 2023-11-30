@@ -24,6 +24,7 @@ roles:
       - bb.databaseSecrets.list
       - bb.databaseSecrets.update
       - bb.databaseSecrets.delete
+      - bb.slowQueries.list
   - name: roles/workspaceDBA
     permissions:
       - bb.instances.list
@@ -49,6 +50,7 @@ roles:
       - bb.databaseSecrets.list
       - bb.databaseSecrets.update
       - bb.databaseSecrets.delete
+      - bb.slowQueries.list
   - name: roles/workspaceMember
     permissions: []
   - name: roles/projectOwner
@@ -69,6 +71,7 @@ roles:
       - bb.databaseSecrets.list
       - bb.databaseSecrets.update
       - bb.databaseSecrets.delete
+      - bb.slowQueries.list
   - name: roles/projectDeveloper
     permissions:
       - bb.databases.list
@@ -80,6 +83,7 @@ roles:
       - bb.backups.list
       - bb.changeHistories.list
       - bb.changeHistories.get
+      - bb.slowQueries.list
   - name: roles/projectQuerier
     permissions: []
   - name: roles/projectExporter
@@ -95,6 +99,7 @@ roles:
       - bb.backups.list
       - bb.changeHistories.list
       - bb.changeHistories.get
+      - bb.slowQueries.list
   - name: roles/projectViewer
     permissions:
       - bb.databases.list
@@ -106,3 +111,4 @@ roles:
       - bb.backups.list
       - bb.changeHistories.list
       - bb.changeHistories.get
+      - bb.slowQueries.list
