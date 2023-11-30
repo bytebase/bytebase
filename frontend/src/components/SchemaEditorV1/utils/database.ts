@@ -1,4 +1,5 @@
 import { cloneDeep } from "lodash-es";
+import { markRaw } from "vue";
 import {
   useDBSchemaV1Store,
   useDatabaseV1Store,
@@ -38,7 +39,7 @@ export const fetchSchemaListByDatabaseName = async ({
   schemaEditorV1Store.resourceMap.database.set(database, {
     database: db,
     schemaList,
-    originSchemaList: cloneDeep(schemaList),
+    originSchemaList: markRaw(cloneDeep(schemaList)),
   });
   return schemaList;
 };

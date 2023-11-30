@@ -6,6 +6,7 @@ import (
 	"path"
 	"strconv"
 
+	lru "github.com/hashicorp/golang-lru/v2"
 	"golang.org/x/exp/slices"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -19,6 +20,10 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+)
+
+var (
+	schemaDesignCache, _ = lru.New[string, *v1pb.SchemaDesign](32768)
 )
 
 // SchemaDesignService implements SchemaDesignServiceServer interface.
@@ -38,6 +43,9 @@ func NewSchemaDesignService(store *store.Store, licenseService enterprise.Licens
 
 // GetSchemaDesign gets the schema design.
 func (s *SchemaDesignService) GetSchemaDesign(ctx context.Context, request *v1pb.GetSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
+	if v, ok := schemaDesignCache.Get(request.Name); ok {
+		return v, nil
+	}
 	_, sheetID, err := common.GetProjectResourceIDAndSchemaDesignSheetID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -63,6 +71,7 @@ func (s *SchemaDesignService) GetSchemaDesign(ctx context.Context, request *v1pb
 	if err != nil {
 		return nil, err
 	}
+	schemaDesignCache.Add(request.Name, schemaDesign)
 	return schemaDesign, nil
 }
 
