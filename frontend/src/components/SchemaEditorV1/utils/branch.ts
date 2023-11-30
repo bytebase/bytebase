@@ -1,3 +1,4 @@
+import { markRaw } from "vue";
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import {
@@ -26,9 +27,9 @@ export const convertBranchToBranchSchema = async (
   );
 
   return {
-    branch,
+    branch: markRaw(branch),
     schemaList: editableSchemas,
-    originSchemaList: originalSchemas,
+    originSchemaList: markRaw(originalSchemas),
   };
 };
 
