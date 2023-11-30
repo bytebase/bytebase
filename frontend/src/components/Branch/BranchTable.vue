@@ -13,20 +13,24 @@
         {{ projectV1Name(getFormattedValue(branch).project) }}
       </div>
       <div class="bb-grid-cell">
-        <NEllipsis :line-clamp="1">{{ branch.title }}</NEllipsis>
+        <NPerformantEllipsis :line-clamp="1">{{
+          branch.title
+        }}</NPerformantEllipsis>
       </div>
       <div class="bb-grid-cell">
-        <NEllipsis :line-clamp="1">{{
+        <NPerformantEllipsis :line-clamp="1">{{
           getFormattedValue(branch).parentBranch
-        }}</NEllipsis>
+        }}</NPerformantEllipsis>
       </div>
       <div class="bb-grid-cell">
         <DatabaseInfo :database="getFormattedValue(branch).database" />
       </div>
       <div class="bb-grid-cell">
-        <span class="text-gray-400">{{
-          getFormattedValue(branch).updatedTimeStr
-        }}</span>
+        <NPerformantEllipsis>
+          <span class="text-gray-400">
+            {{ getFormattedValue(branch).updatedTimeStr }}</span
+          >
+        </NPerformantEllipsis>
       </div>
     </template>
   </BBGrid>

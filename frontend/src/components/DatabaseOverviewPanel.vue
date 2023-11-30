@@ -105,13 +105,11 @@
             }}</span>
             <span v-else>{{ $t("db.tables") }}</span>
           </div>
-          <div>
-            <SearchBox
-              :value="state.tableNameSearchKeyword"
-              :placeholder="$t('common.filter-by-name')"
-              @update:value="state.tableNameSearchKeyword = $event"
-            />
-          </div>
+          <SearchBox
+            :value="state.tableNameSearchKeyword"
+            :placeholder="$t('common.filter-by-name')"
+            @update:value="state.tableNameSearchKeyword = $event"
+          />
         </div>
 
         <TableDataTable

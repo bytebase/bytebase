@@ -14,7 +14,7 @@
             v-model:value="state.searchText"
             :placeholder="$t('common.filter-by-name')"
             :autofocus="false"
-            style="flex: 1 1 0%"
+            style="max-width: 100%"
           />
           <NButton @click="state.showCreateDrawer = true">
             {{ $t("quick-action.new-project") }}
