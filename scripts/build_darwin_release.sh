@@ -1,4 +1,5 @@
 #!/bin/sh
+set -eu
 
 ./scripts/build_bytebase.sh
 ./scripts/build_bb.sh
