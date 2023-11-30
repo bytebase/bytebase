@@ -1725,7 +1725,6 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 					canAccessDBs = append(canAccessDBs, database)
 				}
 			}
-
 		}
 	default:
 		return nil, status.Errorf(codes.PermissionDenied, "unknown role %q", user.Role)
