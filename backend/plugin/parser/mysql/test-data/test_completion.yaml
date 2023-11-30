@@ -1,3 +1,15 @@
+- input: SELECT FROM basdkfjasldf;SELECT | FROM t1
+  want:
+    - text: db
+      type: DATABASE
+    - text: t1
+      type: TABLE
+    - text: t2
+      type: TABLE
+    - text: c1
+      type: COLUMN
+    - text: v1
+      type: VIEW
 - input: SELECT | FROM (SELECT c1 FROM t1) cc1(cc1c1)
   want:
     - text: db
