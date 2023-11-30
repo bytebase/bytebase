@@ -45,7 +45,7 @@ func TestCompletion(t *testing.T) {
 		var filteredResult []base.Candidate
 		for _, r := range result {
 			switch r.Type {
-			case base.CandidateTypeKeyword:
+			case base.CandidateTypeKeyword, base.CandidateTypeFunction:
 				continue
 			default:
 				filteredResult = append(filteredResult, r)
