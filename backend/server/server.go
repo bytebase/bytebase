@@ -305,7 +305,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 
 	// Setup the gRPC and grpc-gateway.
 	authProvider := auth.New(s.store, s.secret, tokenDuration, s.licenseService, s.stateCfg, profile.Mode)
-	aclProvider := apiv1.NewACLInterceptor(s.store, s.secret, s.licenseService, s.iamManager, profile.Mode)
+	aclProvider := apiv1.NewACLInterceptor(s.store, s.secret, s.licenseService, s.iamManager, &profile)
 	debugProvider := apiv1.NewDebugInterceptor(&s.errorRecordRing, &profile, s.metricReporter)
 	onPanic := func(p any) error {
 		stack := stacktrace.TakeStacktrace(20 /* n */, 5 /* skip */)
