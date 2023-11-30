@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/url"
 	"strings"
@@ -21,6 +22,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
+	tsqlbatch "github.com/bytebase/bytebase/backend/plugin/parser/tsql/batch"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -99,20 +101,68 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 	}
 	defer tx.Rollback()
 
-	sqlResult, err := tx.ExecContext(ctx, statement)
-	if err != nil {
-		return 0, errors.Wrap(err, "failed to execute statement")
+	totalAffectRows := int64(0)
+
+	// Split to batches to support some client commands like GO.
+	s := strings.Split(statement, "\n")
+	scanner := func() (string, error) {
+		if len(s) > 0 {
+			z := s[0]
+			s = s[1:]
+			return z, nil
+		}
+		return "", io.EOF
 	}
-	rowsAffected, err := sqlResult.RowsAffected()
-	if err != nil {
-		// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-		slog.Debug("rowsAffected returns error", log.BBError(err))
+	batch := tsqlbatch.NewBatch(scanner)
+	for {
+		command, err := batch.Next()
+		if err != nil {
+			if err == io.EOF {
+				// Try send the last batch to server.
+				v := batch.String()
+				if v != "" {
+					sqlResult, err := tx.ExecContext(ctx, v)
+					if err != nil {
+						return 0, errors.Wrap(err, "failed to execute statement")
+					}
+					if rowsAffected, err := sqlResult.RowsAffected(); err != nil {
+						// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
+						slog.Debug("rowsAffected returns error", log.BBError(err))
+					} else {
+						totalAffectRows += rowsAffected
+					}
+				}
+				break
+			}
+			return 0, errors.Wrapf(err, "failed to execute batch statement: %s", batch.String())
+		}
+		if command != nil {
+			switch v := command.(type) {
+			case *tsqlbatch.GoCommand:
+				// Try send the batch to server.
+				for i := uint(0); i < v.Count; i++ {
+					sqlResult, err := tx.ExecContext(ctx, batch.String())
+					if err != nil {
+						return 0, errors.Wrap(err, "failed to execute statement")
+					}
+					if rowsAffected, err := sqlResult.RowsAffected(); err != nil {
+						// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
+						slog.Debug("rowsAffected returns error", log.BBError(err))
+					} else {
+						totalAffectRows += rowsAffected
+					}
+				}
+			default:
+				return 0, errors.Errorf("unsupported command type: %T", v)
+			}
+			batch.Reset(nil)
+		}
 	}
 
 	if err := tx.Commit(); err != nil {
 		return 0, err
 	}
-	return rowsAffected, nil
+	return totalAffectRows, nil
 }
 
 // QueryConn queries a SQL statement in a given connection.
