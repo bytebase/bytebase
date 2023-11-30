@@ -973,5 +973,11 @@ func maybeGetPhoneFromUser(user *store.UserMessage) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to parse phone number %q", user.Phone)
 	}
+	if phoneNumber == nil {
+		return "", nil
+	}
+	if phoneNumber.NationalNumber == nil {
+		return "", nil
+	}
 	return strconv.FormatInt(int64(*phoneNumber.NationalNumber), 10), nil
 }
