@@ -13,10 +13,12 @@ message BranchSnapshot {
 }
 
 message BranchConfig {
-  // The id of source database.
+  // The name of source database.
   // Optional.
-  int64 source_database_id = 1;
-  // The id of the source branch.
+  // Example: instances/instance-id/databases/database-name.
+  int64 source_database = 1;
+  // The name of the source branch.
   // Optional.
-  int64 source_branch_id = 2;
+  // Example: projects/project-id/branches/branch-id.
+  int64 source_branch = 2;
 }

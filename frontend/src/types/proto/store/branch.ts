@@ -13,15 +13,17 @@ export interface BranchSnapshot {
 
 export interface BranchConfig {
   /**
-   * The id of source database.
+   * The name of source database.
    * Optional.
+   * Example: instances/instance-id/databases/database-name.
    */
-  sourceDatabaseId: Long;
+  sourceDatabase: Long;
   /**
-   * The id of the source branch.
+   * The name of the source branch.
    * Optional.
+   * Example: projects/project-id/branches/branch-id.
    */
-  sourceBranchId: Long;
+  sourceBranch: Long;
 }
 
 function createBaseBranchSnapshot(): BranchSnapshot {
@@ -118,16 +120,16 @@ export const BranchSnapshot = {
 };
 
 function createBaseBranchConfig(): BranchConfig {
-  return { sourceDatabaseId: Long.ZERO, sourceBranchId: Long.ZERO };
+  return { sourceDatabase: Long.ZERO, sourceBranch: Long.ZERO };
 }
 
 export const BranchConfig = {
   encode(message: BranchConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (!message.sourceDatabaseId.isZero()) {
-      writer.uint32(8).int64(message.sourceDatabaseId);
+    if (!message.sourceDatabase.isZero()) {
+      writer.uint32(8).int64(message.sourceDatabase);
     }
-    if (!message.sourceBranchId.isZero()) {
-      writer.uint32(16).int64(message.sourceBranchId);
+    if (!message.sourceBranch.isZero()) {
+      writer.uint32(16).int64(message.sourceBranch);
     }
     return writer;
   },
@@ -144,14 +146,14 @@ export const BranchConfig = {
             break;
           }
 
-          message.sourceDatabaseId = reader.int64() as Long;
+          message.sourceDatabase = reader.int64() as Long;
           continue;
         case 2:
           if (tag !== 16) {
             break;
           }
 
-          message.sourceBranchId = reader.int64() as Long;
+          message.sourceBranch = reader.int64() as Long;
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -164,18 +166,18 @@ export const BranchConfig = {
 
   fromJSON(object: any): BranchConfig {
     return {
-      sourceDatabaseId: isSet(object.sourceDatabaseId) ? Long.fromValue(object.sourceDatabaseId) : Long.ZERO,
-      sourceBranchId: isSet(object.sourceBranchId) ? Long.fromValue(object.sourceBranchId) : Long.ZERO,
+      sourceDatabase: isSet(object.sourceDatabase) ? Long.fromValue(object.sourceDatabase) : Long.ZERO,
+      sourceBranch: isSet(object.sourceBranch) ? Long.fromValue(object.sourceBranch) : Long.ZERO,
     };
   },
 
   toJSON(message: BranchConfig): unknown {
     const obj: any = {};
-    if (!message.sourceDatabaseId.isZero()) {
-      obj.sourceDatabaseId = (message.sourceDatabaseId || Long.ZERO).toString();
+    if (!message.sourceDatabase.isZero()) {
+      obj.sourceDatabase = (message.sourceDatabase || Long.ZERO).toString();
     }
-    if (!message.sourceBranchId.isZero()) {
-      obj.sourceBranchId = (message.sourceBranchId || Long.ZERO).toString();
+    if (!message.sourceBranch.isZero()) {
+      obj.sourceBranch = (message.sourceBranch || Long.ZERO).toString();
     }
     return obj;
   },
@@ -185,11 +187,11 @@ export const BranchConfig = {
   },
   fromPartial(object: DeepPartial<BranchConfig>): BranchConfig {
     const message = createBaseBranchConfig();
-    message.sourceDatabaseId = (object.sourceDatabaseId !== undefined && object.sourceDatabaseId !== null)
-      ? Long.fromValue(object.sourceDatabaseId)
+    message.sourceDatabase = (object.sourceDatabase !== undefined && object.sourceDatabase !== null)
+      ? Long.fromValue(object.sourceDatabase)
       : Long.ZERO;
-    message.sourceBranchId = (object.sourceBranchId !== undefined && object.sourceBranchId !== null)
-      ? Long.fromValue(object.sourceBranchId)
+    message.sourceBranch = (object.sourceBranch !== undefined && object.sourceBranch !== null)
+      ? Long.fromValue(object.sourceBranch)
       : Long.ZERO;
     return message;
   },
