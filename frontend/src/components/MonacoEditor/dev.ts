@@ -29,6 +29,7 @@ export const shouldUseNewLSP = () => {
     return useActuatorV1Store().serverInfo?.lsp;
   }
 
+  // Use the value from UI switch in dev mode
   return StoredLSPType.value === "NEW";
 };
 
