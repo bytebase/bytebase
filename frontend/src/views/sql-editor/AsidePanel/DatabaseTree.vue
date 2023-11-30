@@ -68,6 +68,7 @@ import { NTree, NInput, NDropdown, DropdownOption, TreeOption } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { ref, computed, nextTick, watch, h } from "vue";
 import { useI18n } from "vue-i18n";
+import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import {
   useActuatorV1Store,
   useCurrentUserV1,
@@ -77,7 +78,10 @@ import {
   useIsLoggedIn,
   useTabStore,
 } from "@/store";
-import { useSQLEditorTreeStore } from "@/store/modules/sqlEditorTree";
+import {
+  idForSQLEditorTreeNodeTarget,
+  useSQLEditorTreeStore,
+} from "@/store/modules/sqlEditorTree";
 import type {
   ComposedDatabase,
   ComposedInstance,
@@ -91,10 +95,12 @@ import {
   UNKNOWN_ID,
   instanceOfSQLEditorTreeNode,
   isConnectableSQLEditorTreeNode,
+  languageOfEngineV1,
 } from "@/types";
 import {
   emptyConnection,
   findAncestor,
+  formatEngineV1,
   getSuggestedTabNameFromConnection,
   hasWorkspacePermissionV1,
   instanceV1AllowsCrossDatabaseQuery,
@@ -102,6 +108,7 @@ import {
   instanceV1HasReadonlyMode,
   isDescendantOf,
   isSimilarTab,
+  wrapSQLIdentifier,
 } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import DatabaseHoverPanel from "./DatabaseHoverPanel.vue";
@@ -135,6 +142,7 @@ const instanceStore = useInstanceV1Store();
 const dbSchemaV1Store = useDBSchemaV1Store();
 const isLoggedIn = useIsLoggedIn();
 const me = useCurrentUserV1();
+const { executeReadonly } = useExecuteSQL();
 const { selectedDatabaseSchemaByDatabaseName, events: editorEvents } =
   useSQLEditorContext();
 const { node: hoverNode, update: updateHoverNode } = provideHoverStateContext();
@@ -372,6 +380,75 @@ const maybeSelectTable = async (node: SQLEditorTreeNode) => {
   });
 };
 
+const selectAllFromTableOrView = async (node: SQLEditorTreeNode) => {
+  const { type, target } = (node as SQLEditorTreeNode<"table" | "view">).meta;
+  const { database } = target;
+  const { engine } = database.instanceEntity;
+  const LIMIT = 50; // default pagesize of SQL Editor
+
+  const runQuery = async (query: string) => {
+    const tab: CoreTabInfo = {
+      connection: {
+        instanceId: database.instanceEntity.uid,
+        databaseId: database.uid,
+      },
+      mode: TabMode.ReadOnly,
+    };
+    if (tabStore.currentTab.isFreshNew) {
+      // If the current tab is "fresh new", update its connection directly.
+      tabStore.updateCurrentTab(tab);
+    } else {
+      // Otherwise select or add a new tab and set its connection
+      tabStore.addTab(
+        {
+          ...tab,
+          name: getSuggestedTabNameFromConnection(tab.connection),
+          statement: query,
+        },
+        /* beside */ true
+      );
+    }
+    await nextTick();
+    executeReadonly(query, {
+      databaseType: formatEngineV1(database.instanceEntity),
+    });
+  };
+
+  const language = languageOfEngineV1(engine);
+  if (language === "redis") {
+    return; // not supported
+  }
+  const tableOrViewName =
+    type === "table"
+      ? (target as SQLEditorTreeNodeTarget<"table">).table.name
+      : type === "view"
+      ? (target as SQLEditorTreeNodeTarget<"view">).view.name
+      : "";
+  if (!tableOrViewName) {
+    return;
+  }
+
+  if (language === "javascript" && type === "table") {
+    // mongodb
+    const query = `db["${tableOrViewName}"].find().limit(${LIMIT});`;
+    runQuery(query);
+    return;
+  }
+
+  if (type === "table") {
+    maybeSelectTable(node);
+  }
+
+  const tableNameParts: string[] = [];
+  if (target.schema.name) {
+    tableNameParts.push(wrapSQLIdentifier(target.schema.name, engine));
+  }
+  tableNameParts.push(wrapSQLIdentifier(tableOrViewName, engine));
+
+  const query = `SELECT * FROM ${tableNameParts.join(".")} LIMIT ${LIMIT}`;
+  runQuery(query);
+};
+
 const nodeProps = ({ option }: { option: TreeOption }) => {
   const node = option as any as SQLEditorTreeNode;
   return {
@@ -427,7 +504,18 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
     onmouseleave() {
       updateHoverNode(undefined, "after");
     },
-    "data-node-type": node.type,
+    ondblclick() {
+      if (node.meta.type === "table" || node.meta.type === "view") {
+        selectAllFromTableOrView(node);
+      }
+    },
+    // attrs below for trouble-shooting
+    "data-node-meta-type": node.meta.type,
+    "data-node-meta-id": idForSQLEditorTreeNodeTarget(
+      node.meta.type,
+      node.meta.target
+    ),
+    "data-node-key": node.key,
   };
 };
 

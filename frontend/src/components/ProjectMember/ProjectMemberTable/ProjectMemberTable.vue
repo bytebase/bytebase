@@ -188,19 +188,19 @@ const { policy: iamPolicy } = useProjectIamPolicy(projectResourceName);
 const columnList = computed(() => {
   const ACCOUNT: BBGridColumn = {
     title: t("common.user"),
-    width: hasRBACFeature.value ? "minmax(auto, 18rem)" : "1fr",
+    width: hasRBACFeature.value ? "minmax(min-content, auto)" : "1fr",
   };
   const ROLE: BBGridColumn = {
     title: t("common.role.self"),
-    width: "1fr",
+    width: "minmax(min-content, auto)",
   };
   const EXPIRATION: BBGridColumn = {
     title: t("common.expiration"),
-    width: "16rem",
+    width: "minmax(min-content, auto)",
   };
   const OPERATIONS: BBGridColumn = {
     title: "",
-    width: "4rem",
+    width: "minmax(min-content, auto)",
   };
   const list = hasRBACFeature.value
     ? [ACCOUNT, ROLE, EXPIRATION, OPERATIONS]

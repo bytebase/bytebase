@@ -1,0 +1,6 @@
+- statement: INSERT INTO t1 VALUES(1), (2), (3);
+  want: 3
+- statement: ALTER TABLE t1 ADD COLUMN c2 INT;
+  want: 100
+- statement: DROP TABLE t2;
+  want: 1000

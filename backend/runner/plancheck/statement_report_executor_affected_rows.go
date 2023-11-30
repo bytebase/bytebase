@@ -9,8 +9,9 @@ import (
 	"strconv"
 	"strings"
 
-	tidbast "github.com/pingcap/tidb/parser/ast"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/store/model"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -32,6 +33,40 @@ func getTableDataSize(metadata *storepb.DatabaseSchemaMetadata, schemaName, tabl
 		}
 	}
 	return 0
+}
+
+func buildGetTableDataSizeFuncForMySQL(metadata *model.DBSchema) func(schemaName, tableName string) int64 {
+	return func(schemaName, tableName string) int64 {
+		if metadata == nil {
+			return 0
+		}
+		dbMeta := metadata.GetDatabaseMetadata()
+		if dbMeta == nil {
+			return 0
+		}
+		schemaMeta := dbMeta.GetSchema(schemaName)
+		if schemaMeta == nil {
+			return 0
+		}
+		tableMeta := schemaMeta.GetTable(tableName)
+		if tableMeta == nil {
+			return 0
+		}
+		return tableMeta.GetRowCount()
+	}
+}
+
+func buildGetRowsCountByQueryForMySQL(sqlDB *sql.DB, engine storepb.Engine) func(ctx context.Context, statement string) (int64, error) {
+	return func(ctx context.Context, statement string) (int64, error) {
+		switch engine {
+		case storepb.Engine_OCEANBASE:
+			return getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN FORMAT=JSON %s", statement), getAffectedRowsCountForOceanBase)
+		case storepb.Engine_MYSQL, storepb.Engine_MARIADB:
+			return getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN %s", statement), getAffectedRowsCountForMysql)
+		default:
+			return 0, errors.Errorf("engine %v is not supported", engine)
+		}
+	}
 }
 
 func getAffectedRowsForPostgres(ctx context.Context, sqlDB *sql.DB, metadata *storepb.DatabaseSchemaMetadata, node ast.Node) (int64, error) {
@@ -218,35 +253,6 @@ func query(ctx context.Context, connection *sql.DB, statement string) ([]any, er
 	}
 
 	return []any{columnNames, columnTypeNames, data}, nil
-}
-
-func getAffectedRowsForMysql(ctx context.Context, engine storepb.Engine, sqlDB *sql.DB, metadata *storepb.DatabaseSchemaMetadata, node tidbast.StmtNode) (int64, error) {
-	switch node := node.(type) {
-	case *tidbast.InsertStmt, *tidbast.UpdateStmt, *tidbast.DeleteStmt:
-		if node, ok := node.(*tidbast.InsertStmt); ok && node.Select == nil {
-			return int64(len(node.Lists)), nil
-		}
-		if engine == storepb.Engine_OCEANBASE {
-			return getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN FORMAT=JSON %s", node.Text()), getAffectedRowsCountForOceanBase)
-		}
-		return getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN %s", node.Text()), getAffectedRowsCountForMysql)
-
-	case *tidbast.AlterTableStmt:
-		schemaName := ""
-		tableName := node.Table.Name.L
-		return getTableDataSize(metadata, schemaName, tableName), nil
-
-	case *tidbast.DropTableStmt:
-		var total int64
-		schemaName := ""
-		for _, table := range node.Tables {
-			tableName := table.Name.L
-			total += getTableDataSize(metadata, schemaName, tableName)
-		}
-		return total, nil
-	default:
-		return 0, nil
-	}
 }
 
 // OceanBaseQueryPlan represents the query plan of OceanBase.

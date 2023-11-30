@@ -80,11 +80,14 @@ var (
 		disableMetric bool
 		// disableSample is the flag to disable the sample instance.
 		disableSample bool
+		lsp           bool
 
 		// Cloud backup configs.
 		backupRegion     string
 		backupBucket     string
 		backupCredential string
+
+		developmentIAM bool
 	}
 
 	rootCmd = &cobra.Command{
@@ -122,6 +125,7 @@ func init() {
 	// Must be one of the subpath name in the ../migrator/demo directory
 	rootCmd.PersistentFlags().StringVar(&flags.demoName, "demo", "", "name of the demo to use. Empty means not running in demo mode.")
 	rootCmd.PersistentFlags().BoolVar(&flags.debug, "debug", false, "whether to enable debug level logging")
+	rootCmd.PersistentFlags().BoolVar(&flags.lsp, "lsp", false, "whether to enable lsp in SQL Editor")
 	// Support environment variable for deploying to render.com using its blueprint file.
 	// Render blueprint allows to specify a postgres database along with a service.
 	// It allows to pass the postgres connection string as an ENV to the service.
@@ -134,6 +138,8 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&flags.backupBucket, "backup-bucket", "", "bucket where Bytebase stores backup data, e.g., s3://example-bucket. When provided, Bytebase will store data to the S3 bucket.")
 	rootCmd.PersistentFlags().StringVar(&flags.backupRegion, "backup-region", "", "region of the backup bucket, e.g., us-west-2 for AWS S3.")
 	rootCmd.PersistentFlags().StringVar(&flags.backupCredential, "backup-credential", "", "credentials file to use for the backup bucket. It should be the same format as the AWS/GCP credential files.")
+
+	rootCmd.PersistentFlags().BoolVar(&flags.developmentIAM, "development-iam", false, "(development only) whether to use the IAM manager")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------

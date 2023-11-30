@@ -7,13 +7,13 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/exp/slices"
 	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
@@ -186,12 +186,13 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 
 		adviceList, err := SQLReviewCheck(tc.Statement, ruleList, ctx)
 		// Sort adviceList by (line, content)
-		slices.SortFunc[Advice](adviceList, func(i, j Advice) bool {
-			if i.Line != j.Line {
-				return i.Line < j.Line
+		sort.Slice(adviceList, func(i, j int) bool {
+			if adviceList[i].Line != adviceList[j].Line {
+				return adviceList[i].Line < adviceList[j].Line
 			}
-			return i.Content < j.Content
+			return adviceList[i].Content < adviceList[j].Content
 		})
+
 		require.NoError(t, err)
 		if record {
 			tests[i].Want = adviceList

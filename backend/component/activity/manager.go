@@ -672,15 +672,13 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 
 	case api.ActivityNotifyIssueApproved:
 		title = "Issue approved - " + meta.Issue.Title
-		user := meta.Issue.Creator
-		phoneNumber, err := phonenumbers.Parse(user.Phone, "")
+
+		phone, err := maybeGetPhoneFromUser(meta.Issue.Creator)
 		if err != nil {
-			slog.Warn("Failed to post webhook event after changing the issue approval node status, failed to parse phone number",
-				slog.String("issue_name", meta.Issue.Title),
-				log.BBError(err))
+			slog.Warn("failed to parse phone number", slog.String("issue_title", meta.Issue.Title), log.BBError(err))
+		} else if phone != "" {
+			mentions = append(mentions, phone)
 		}
-		phone := strconv.FormatInt(int64(*phoneNumber.NationalNumber), 10)
-		mentions = append(mentions, phone)
 
 	case api.ActivityNotifyPipelineRollout:
 		payload := &api.ActivityNotifyPipelineRolloutPayload{}
@@ -726,14 +724,15 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 					continue
 				}
 				mentionedUser[user.ID] = true
-				phoneNumber, err := phonenumbers.Parse(user.Phone, "")
+				phone, err := maybeGetPhoneFromUser(user)
 				if err != nil {
 					slog.Warn("failed to parse phone number",
 						slog.String("issue_name", meta.Issue.Title),
 						log.BBError(err))
 				}
-				phone := strconv.FormatInt(int64(*phoneNumber.NationalNumber), 10)
-				mentions = append(mentions, phone)
+				if phone != "" {
+					mentions = append(mentions, phone)
+				}
 			}
 		}
 
@@ -797,15 +796,16 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 			return nil, err
 		}
 		for _, user := range users {
-			phoneNumber, err := phonenumbers.Parse(user.Phone, "")
+			phone, err := maybeGetPhoneFromUser(user)
 			if err != nil {
-				slog.Warn("Failed to post webhook event after changing the issue approval node status, failed to parse phone number",
+				slog.Warn("failed to parse phone number",
 					slog.String("issue_name", meta.Issue.Title),
 					log.BBError(err))
 				continue
 			}
-			phone := strconv.FormatInt(int64(*phoneNumber.NationalNumber), 10)
-			mentions = append(mentions, phone)
+			if phone != "" {
+				mentions = append(mentions, phone)
+			}
 		}
 	}
 
@@ -960,4 +960,24 @@ func getTaskSkippedAndReason(task *store.TaskMessage) (bool, string, error) {
 		return false, "", err
 	}
 	return payload.Skipped, payload.SkippedReason, nil
+}
+
+func maybeGetPhoneFromUser(user *store.UserMessage) (string, error) {
+	if user == nil {
+		return "", nil
+	}
+	if user.Phone == "" {
+		return "", nil
+	}
+	phoneNumber, err := phonenumbers.Parse(user.Phone, "")
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to parse phone number %q", user.Phone)
+	}
+	if phoneNumber == nil {
+		return "", nil
+	}
+	if phoneNumber.NationalNumber == nil {
+		return "", nil
+	}
+	return strconv.FormatInt(int64(*phoneNumber.NationalNumber), 10), nil
 }

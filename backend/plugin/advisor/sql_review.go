@@ -13,8 +13,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	tidbparser "github.com/pingcap/tidb/parser"
-	tidbast "github.com/pingcap/tidb/parser/ast"
+	tidbparser "github.com/pingcap/tidb/pkg/parser"
+	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
@@ -581,7 +581,7 @@ func newTiDBParser() *tidbparser.Parser {
 }
 
 func mysqlSyntaxCheck(statement string) (any, []Advice) {
-	res, err := mysqlparser.ParseMySQL(statement + ";")
+	res, err := mysqlparser.ParseMySQL(statement)
 	if err != nil {
 		if syntaxErr, ok := err.(*base.SyntaxError); ok {
 			return nil, []Advice{
@@ -610,7 +610,7 @@ func mysqlSyntaxCheck(statement string) (any, []Advice) {
 }
 
 func tidbSyntaxCheck(statement string) (any, []Advice) {
-	list, err := mysqlparser.SplitSQL(statement)
+	list, err := base.SplitMultiSQL(storepb.Engine_MYSQL, statement)
 	if err != nil {
 		return nil, []Advice{
 			{
@@ -629,33 +629,15 @@ func tidbSyntaxCheck(statement string) (any, []Advice) {
 	for _, item := range list {
 		nodes, _, err := p.Parse(item.Text, "", "")
 		if err != nil {
-			// TiDB parser doesn't fully support MySQL syntax, so we need to use MySQL parser to parse the statement.
-			// But MySQL parser has some performance issue, so we only use it to parse the statement after TiDB parser failed.
-			if _, err := mysqlparser.ParseMySQL(item.Text); err != nil {
-				if syntaxErr, ok := err.(*base.SyntaxError); ok {
-					return nil, []Advice{
-						{
-							Status:  Error,
-							Code:    StatementSyntaxError,
-							Title:   SyntaxErrorTitle,
-							Content: syntaxErr.Message,
-							Line:    syntaxErr.Line,
-							Column:  syntaxErr.Column,
-						},
-					}
-				}
-				return nil, []Advice{
-					{
-						Status:  Warn,
-						Code:    Internal,
-						Title:   "Parse error",
-						Content: err.Error(),
-						Line:    1,
-					},
-				}
+			return nil, []Advice{
+				{
+					Status:  Warn,
+					Code:    Internal,
+					Title:   "Parse error",
+					Content: err.Error(),
+					Line:    1,
+				},
 			}
-			// If MySQL parser can parse the statement, but TiDB parser can't, we just ignore the statement.
-			continue
 		}
 
 		if len(nodes) != 1 {

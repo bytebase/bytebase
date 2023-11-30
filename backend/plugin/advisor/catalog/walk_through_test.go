@@ -42,7 +42,7 @@ func TestTiDBWalkThrough(t *testing.T) {
 	}
 }
 
-func TestMySQLV2WalkThrough(t *testing.T) {
+func TestMySQLWalkThrough(t *testing.T) {
 	originDatabase := &storepb.DatabaseSchemaMetadata{
 		Name: "test",
 	}

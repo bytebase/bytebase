@@ -13,9 +13,9 @@ import (
 	"time"
 	"unicode"
 
-	tidbparser "github.com/pingcap/tidb/parser"
-	tidbast "github.com/pingcap/tidb/parser/ast"
-	"github.com/pingcap/tidb/parser/format"
+	tidbparser "github.com/pingcap/tidb/pkg/parser"
+	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
+	"github.com/pingcap/tidb/pkg/parser/format"
 	"github.com/pkg/errors"
 	openai "github.com/sashabaranov/go-openai"
 	"google.golang.org/grpc/codes"
@@ -29,6 +29,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/component/iam"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -69,16 +70,18 @@ type DatabaseService struct {
 	schemaSyncer   *schemasync.Syncer
 	licenseService enterprise.LicenseService
 	profile        *config.Profile
+	iamManager     *iam.Manager
 }
 
 // NewDatabaseService creates a new DatabaseService.
-func NewDatabaseService(store *store.Store, br *backuprun.Runner, schemaSyncer *schemasync.Syncer, licenseService enterprise.LicenseService, profile *config.Profile) *DatabaseService {
+func NewDatabaseService(store *store.Store, br *backuprun.Runner, schemaSyncer *schemasync.Syncer, licenseService enterprise.LicenseService, profile *config.Profile, iamManager *iam.Manager) *DatabaseService {
 	return &DatabaseService{
 		store:          store,
 		backupRunner:   br,
 		schemaSyncer:   schemaSyncer,
 		licenseService: licenseService,
 		profile:        profile,
+		iamManager:     iamManager,
 	}
 }
 
@@ -1712,6 +1715,16 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 			if isProjectOwnerOrDeveloper(principalID, policy) {
 				canAccessDBs = append(canAccessDBs, database)
 			}
+
+			if s.profile.DevelopmentIAM {
+				ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionSlowQueriesList, user, database.ProjectID)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to check permission, err: %v", err.Error())
+				}
+				if ok {
+					canAccessDBs = append(canAccessDBs, database)
+				}
+			}
 		}
 	default:
 		return nil, status.Errorf(codes.PermissionDenied, "unknown role %q", user.Role)
@@ -1940,7 +1953,7 @@ func convertToDatabase(database *store.DatabaseMessage) *v1pb.Database {
 		effectiveEnvironment = fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, database.EffectiveEnvironmentID)
 	}
 	return &v1pb.Database{
-		Name:                 fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName),
+		Name:                 common.FormatDatabase(database.InstanceID, database.DatabaseName),
 		Uid:                  fmt.Sprintf("%d", database.UID),
 		SyncState:            syncState,
 		SuccessfulSyncTime:   timestamppb.New(time.Unix(database.SuccessfulSyncTimeTs, 0)),

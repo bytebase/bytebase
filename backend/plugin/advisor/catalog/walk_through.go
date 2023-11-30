@@ -6,13 +6,12 @@ import (
 
 	mysqlparser "github.com/bytebase/mysql-parser"
 
-	tidbparser "github.com/pingcap/tidb/parser"
-	tidbast "github.com/pingcap/tidb/parser/ast"
-	"github.com/pingcap/tidb/parser/format"
-	"github.com/pingcap/tidb/parser/model"
-	"github.com/pingcap/tidb/parser/mysql"
-	"github.com/pingcap/tidb/sessionctx/stmtctx"
-	"github.com/pingcap/tidb/types"
+	tidbparser "github.com/pingcap/tidb/pkg/parser"
+	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
+	"github.com/pingcap/tidb/pkg/parser/format"
+	"github.com/pingcap/tidb/pkg/parser/model"
+	"github.com/pingcap/tidb/pkg/parser/mysql"
+	"github.com/pingcap/tidb/pkg/types"
 
 	mysqlbbparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	tidbbbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
@@ -1159,7 +1158,7 @@ func checkDefault(columnName string, columnType *types.FieldType, value tidbast.
 
 	if valueExpr, yes := value.(tidbast.ValueExpr); yes {
 		datum := types.NewDatum(valueExpr.GetValue())
-		if _, err := datum.ConvertTo(&stmtctx.StatementContext{}, columnType); err != nil {
+		if _, err := datum.ConvertTo(types.Context{}, columnType); err != nil {
 			return &WalkThroughError{
 				Type:    ErrorTypeInvalidColumnTypeForDefaultValue,
 				Content: err.Error(),

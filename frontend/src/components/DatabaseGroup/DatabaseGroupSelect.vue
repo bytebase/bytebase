@@ -9,6 +9,7 @@
 </template>
 
 <script lang="ts" setup>
+import { head } from "lodash-es";
 import { SelectOption } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useDBGroupStore } from "@/store";
@@ -68,6 +69,10 @@ watch(
     state.selectedDatabaseGroup = dbGroupList.value.find(
       (item) => item.name === props.selected
     )?.name;
+    if (!state.selectedDatabaseGroup) {
+      state.selectedDatabaseGroup = head(dbGroupList.value)?.name;
+    }
+    emit("update:selected", state.selectedDatabaseGroup);
   },
   { immediate: true, deep: true }
 );

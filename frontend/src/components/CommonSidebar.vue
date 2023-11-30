@@ -1,20 +1,20 @@
 <template>
   <nav class="flex-1 flex flex-col overflow-y-hidden">
-    <BytebaseLogo class="w-full px-4 shrink-0" />
-    <div class="flex-1 overflow-y-auto px-2 pb-4">
+    <BytebaseLogo v-if="showLogo" class="w-full px-4 shrink-0" />
+    <div class="flex-1 overflow-y-auto px-2">
       <div v-for="(item, i) in filteredSidebarList" :key="i">
         <router-link
-          v-if="type === 'route' && item.path"
-          :to="item.path"
-          class="outline-item group w-full flex items-center px-2 py-1.5"
+          v-if="item.type === 'route'"
+          :to="item.path ?? ''"
+          class="outline-item group w-full font-medium flex items-center px-2 py-1.5 !text-base"
           :class="getItemClass(item.path)"
         >
           <component :is="item.icon" class="mr-2 w-5 h-5 text-gray-500" />
           {{ item.title }}
         </router-link>
         <div
-          v-else
-          class="group flex items-center px-2 py-1.5 text-sm leading-5 font-medium rounded-md text-gray-700 outline-item"
+          v-else-if="item.type === 'div'"
+          class="group flex items-center px-2 py-1.5 leading-5 font-medium rounded-md text-gray-700 outline-item !text-base"
           :class="getItemClass(item.path)"
           @click="onClick(i)"
         >
@@ -28,21 +28,36 @@
             <ChevronDown v-else class="w-4 h-4" />
           </div>
         </div>
+        <a
+          v-if="item.type === 'link'"
+          class="group flex items-center px-2 py-1.5 leading-5 font-medium rounded-md text-gray-700 outline-item !text-base"
+          :class="getItemClass(item.path)"
+          :href="`#${item.path}`"
+          @click="$emit('select', item.path)"
+        >
+          <component :is="item.icon" class="mr-2 w-5 h-5 text-gray-500" />
+          {{ item.title }}
+        </a>
+        <div
+          v-else-if="item.type === 'divider'"
+          class="border-t border-gray-300 my-2"
+        />
         <div
           v-if="item.children.length > 0 && state.expandedSidebar.has(i)"
           class=""
         >
           <template v-for="(child, j) in item.children" :key="`${i}-${j}`">
-            <div
-              v-if="type === 'div'"
+            <a
+              v-if="child.type === 'link'"
               class="group w-full flex items-center pl-11 pr-2 py-1.5 rounded-md outline-item"
               :class="getItemClass(child.path)"
+              :href="`#${child.path}`"
               @click="$emit('select', child.path)"
             >
               {{ child.title }}
-            </div>
+            </a>
             <router-link
-              v-else
+              v-else-if="child.type === 'route'"
               :to="child.path"
               class="outline-item group w-full flex items-center pl-11 pr-2 py-1.5"
               :class="getItemClass(child.path)"
@@ -61,14 +76,16 @@ import { ChevronDown, ChevronRight } from "lucide-vue-next";
 import { computed, VNode, reactive, onMounted } from "vue";
 
 export interface SidebarItem {
-  title: string;
+  title?: string;
   path?: string;
-  icon: VNode;
+  icon?: VNode;
   hide?: boolean;
+  type: "route" | "div" | "divider" | "link";
   children?: {
     title: string;
     path: string;
     hide?: boolean;
+    type: "route" | "link" | "divider";
   }[];
 }
 
@@ -79,10 +96,11 @@ interface LocalState {
 const props = withDefaults(
   defineProps<{
     itemList: SidebarItem[];
-    type: "route" | "div";
+    showLogo?: boolean;
     getItemClass: (path: string | undefined) => string[];
   }>(),
   {
+    showLogo: true,
     getItemClass: (_: string | undefined) => [],
   }
 );
@@ -101,7 +119,12 @@ const filteredSidebarList = computed(() => {
       ...item,
       children: (item.children ?? []).filter((child) => !child.hide),
     }))
-    .filter((item) => !item.hide && (!!item.path || item.children.length > 0));
+    .filter((item) => {
+      if (item.type === "divider") {
+        return true;
+      }
+      return !item.hide && (!!item.path || item.children.length > 0);
+    });
 });
 
 onMounted(() => {

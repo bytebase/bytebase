@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col items-stretch gap-y-4 px-4 relative">
+  <div class="flex flex-col items-stretch gap-y-4 relative">
     <NavBar />
 
     <ChangeTable
@@ -124,7 +124,7 @@ const handleReorderMove = (row: number, delta: -1 | 1) => {
 };
 
 const documentTitle = computed(() => {
-  if (route.name !== "workspace.changelist.detail") {
+  if (route.name !== "workspace.project.changelist.detail") {
     return undefined;
   }
   return changelist.value.description;

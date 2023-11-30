@@ -8,10 +8,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	tidbast "github.com/pingcap/tidb/parser/ast"
-	tidbformat "github.com/pingcap/tidb/parser/format"
-	tidbmysql "github.com/pingcap/tidb/parser/mysql"
-	tidbtypes "github.com/pingcap/tidb/parser/types"
+	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
+	tidbformat "github.com/pingcap/tidb/pkg/parser/format"
+	tidbmysql "github.com/pingcap/tidb/pkg/parser/mysql"
+	tidbtypes "github.com/pingcap/tidb/pkg/parser/types"
 
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -191,11 +191,11 @@ func (t *tidbTransformer) Enter(in tidbast.Node) (tidbast.Node, bool) {
 // columnTypeStr returns the type string of tp.
 func columnTypeStr(tp *tidbtypes.FieldType) string {
 	switch tp.GetType() {
-	// https://pkg.go.dev/github.com/pingcap/tidb/parser/mysql#TypeLong
+	// https://pkg.go.dev/github.com/pingcap/tidb/pkg/parser/mysql#TypeLong
 	case tidbmysql.TypeLong:
 		// tp.String() return int(11)
 		return "int"
-		// https://pkg.go.dev/github.com/pingcap/tidb/parser/mysql#TypeLonglong
+		// https://pkg.go.dev/github.com/pingcap/tidb/pkg/parser/mysql#TypeLonglong
 	case tidbmysql.TypeLonglong:
 		// tp.String() return bigint(20)
 		return "bigint"

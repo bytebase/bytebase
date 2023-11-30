@@ -95,6 +95,8 @@ export interface ActuatorInfo {
   gitopsWebhookUrl: string;
   /** debug flag means if the debug mode is enabled. */
   debug: boolean;
+  /** lsp is the enablement of lsp in SQL Editor. */
+  lsp: boolean;
 }
 
 function createBaseGetActuatorInfoRequest(): GetActuatorInfoRequest {
@@ -543,6 +545,7 @@ function createBaseActuatorInfo(): ActuatorInfo {
     workspaceId: "",
     gitopsWebhookUrl: "",
     debug: false,
+    lsp: false,
   };
 }
 
@@ -592,6 +595,9 @@ export const ActuatorInfo = {
     }
     if (message.debug === true) {
       writer.uint32(120).bool(message.debug);
+    }
+    if (message.lsp === true) {
+      writer.uint32(128).bool(message.lsp);
     }
     return writer;
   },
@@ -708,6 +714,13 @@ export const ActuatorInfo = {
 
           message.debug = reader.bool();
           continue;
+        case 16:
+          if (tag !== 128) {
+            break;
+          }
+
+          message.lsp = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -734,6 +747,7 @@ export const ActuatorInfo = {
       workspaceId: isSet(object.workspaceId) ? globalThis.String(object.workspaceId) : "",
       gitopsWebhookUrl: isSet(object.gitopsWebhookUrl) ? globalThis.String(object.gitopsWebhookUrl) : "",
       debug: isSet(object.debug) ? globalThis.Boolean(object.debug) : false,
+      lsp: isSet(object.lsp) ? globalThis.Boolean(object.lsp) : false,
     };
   },
 
@@ -784,6 +798,9 @@ export const ActuatorInfo = {
     if (message.debug === true) {
       obj.debug = message.debug;
     }
+    if (message.lsp === true) {
+      obj.lsp = message.lsp;
+    }
     return obj;
   },
 
@@ -807,6 +824,7 @@ export const ActuatorInfo = {
     message.workspaceId = object.workspaceId ?? "";
     message.gitopsWebhookUrl = object.gitopsWebhookUrl ?? "";
     message.debug = object.debug ?? false;
+    message.lsp = object.lsp ?? false;
     return message;
   },
 };

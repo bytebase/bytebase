@@ -8,7 +8,6 @@ declare module "vue-router" {
     quickActionListByRole?: (
       route: RouteLocationNormalized
     ) => Map<RoleType, QuickActionType[]>;
-    overrideBreadcrumb?: (route: RouteLocationNormalized) => boolean;
     overrideTitle?: boolean;
   }
 }

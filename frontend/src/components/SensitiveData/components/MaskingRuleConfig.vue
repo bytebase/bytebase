@@ -1,6 +1,8 @@
 <template>
-  <div class="gap-y-4 w-full">
-    <div class="flex items-stretch gap-x-4 overflow-hidden">
+  <div class="space-y-4 w-full">
+    <div
+      class="flex flex-col md:flex-row items-start md:items-stretch gap-x-4 gap-y-4 overflow-hidden"
+    >
       <div class="flex-1 space-y-2 overflow-x-hidden overflow-y-auto">
         <div class="flex items-center h-[36px]">
           <NInput
@@ -47,7 +49,6 @@
         <template #trigger>
           <NButton
             tag="div"
-            size="small"
             style="--n-padding: 0 6px; --n-icon-margin: 4px"
             :disabled="disabled"
             @click.stop=""

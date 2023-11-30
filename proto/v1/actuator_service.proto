@@ -130,4 +130,7 @@ message ActuatorInfo {
 
   // debug flag means if the debug mode is enabled.
   bool debug = 15;
+
+  // lsp is the enablement of lsp in SQL Editor.
+  bool lsp = 16;
 }

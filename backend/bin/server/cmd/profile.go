@@ -38,5 +38,7 @@ func getBaseProfile(dataDir string) config.Profile {
 		BackupBucket:         flags.backupBucket,
 		BackupCredentialFile: flags.backupCredential,
 		LastActiveTs:         time.Now().Unix(),
+		Lsp:                  flags.lsp,
+		DevelopmentIAM:       flags.developmentIAM,
 	}
 }

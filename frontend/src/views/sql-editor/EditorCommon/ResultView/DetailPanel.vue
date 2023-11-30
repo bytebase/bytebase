@@ -9,24 +9,49 @@
     >
       <div class="flex items-center justify-between gap-x-4">
         <div class="flex items-center gap-x-2">
-          <NButton size="tiny" :disabled="detail.row === 0" @click="move(-1)">
-            <template #icon>
-              <heroicons:chevron-up />
+          <NTooltip :delay="500">
+            <template #trigger>
+              <NButton
+                size="tiny"
+                tag="div"
+                :disabled="detail.row === 0"
+                @click="move(-1)"
+              >
+                <template #icon>
+                  <ChevronUpIcon class="w-4 h-4" />
+                </template>
+              </NButton>
             </template>
-          </NButton>
-          <NButton
-            size="tiny"
-            :disabled="detail.row === totalCount - 1"
-            @click="move(1)"
-          >
-            <template #icon>
-              <heroicons:chevron-down />
+            <template #default>
+              <div class="whitespace-nowrap">
+                {{ $t("sql-editor.previous-row") }}
+              </div>
             </template>
-          </NButton>
+          </NTooltip>
+          <NTooltip :delay="500">
+            <template #trigger>
+              <NButton
+                size="tiny"
+                tag="div"
+                :disabled="detail.row === totalCount - 1"
+                @click="move(1)"
+              >
+                <template #icon>
+                  <ChevronDownIcon class="w-4 h-4" />
+                </template>
+              </NButton>
+            </template>
+            <template #default>
+              <div class="whitespace-nowrap">
+                {{ $t("sql-editor.next-row") }}
+              </div>
+            </template>
+          </NTooltip>
           <div class="text-xs text-control-light flex items-center gap-x-1">
             <span>{{ detail.row + 1 }}</span>
             <span>/</span>
             <span>{{ totalCount }}</span>
+            <span>{{ $t("sql-editor.rows", totalCount) }}</span>
           </div>
         </div>
 
@@ -54,7 +79,8 @@
 <script setup lang="ts">
 import { onKeyStroke, useClipboard } from "@vueuse/core";
 import { escape, get } from "lodash-es";
-import { NButton } from "naive-ui";
+import { ChevronDownIcon, ChevronUpIcon } from "lucide-vue-next";
+import { NButton, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { DrawerContent } from "@/components/v2";

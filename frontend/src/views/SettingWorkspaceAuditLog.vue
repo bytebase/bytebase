@@ -18,7 +18,7 @@
           @update-selected-type-list="selectAuditType"
         />
       </div>
-      <div class="w-112">
+      <div class="hidden sm:block w-112">
         <NDatePicker
           v-model:value="selectedTimeRange"
           type="datetimerange"

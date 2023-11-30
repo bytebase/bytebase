@@ -1,92 +1,10 @@
 <template>
   <!-- Navigation -->
-  <nav class="overflow-y-hidden flex flex-col">
-    <BytebaseLogo class="w-full px-4 shrink-0" />
-
-    <div class="flex-1 overflow-y-auto px-2">
-      <router-link to="/" class="outline-item group flex items-center">
-        <div
-          class="outline-item group flex items-center px-2 py-1.5 capitalize"
-          data-label="bb-dashboard-sidebar-home-button"
-        >
-          <HomeIcon class="w-5 h-5 mr-2" />
-          {{ $t("issue.my-issues") }}
-        </div>
-      </router-link>
-
-      <router-link to="/project" class="outline-item group flex items-center">
-        <div
-          class="outline-item group flex items-center px-2 py-1.5 capitalize"
-          data-label="bb-dashboard-sidebar-home-button"
-        >
-          <GalleryHorizontalEndIcon class="w-5 h-5 mr-2" />
-          {{ $t("common.projects") }}
-        </div>
-      </router-link>
-
-      <router-link
-        v-if="shouldShowInstanceEntry"
-        to="/instance"
-        class="outline-item group flex items-center"
-        :class="getRouteLinkClass('/instance')"
-      >
-        <div
-          class="outline-item group flex items-center px-2 py-1.5 capitalize"
-          data-label="bb-dashboard-sidebar-home-button"
-        >
-          <LayersIcon class="w-5 h-5 mr-2" />
-          {{ $t("common.instances") }}
-        </div>
-      </router-link>
-
-      <router-link to="/db" class="outline-item group flex items-center">
-        <div
-          class="outline-item group flex items-center px-2 py-1.5 capitalize"
-          data-label="bb-dashboard-sidebar-home-button"
-        >
-          <DatabaseIcon class="w-5 h-5 mr-2" />
-          {{ $t("common.databases") }}
-        </div>
-      </router-link>
-
-      <router-link
-        to="/environment"
-        class="outline-item group flex items-center"
-      >
-        <div
-          class="outline-item group flex items-center px-2 py-1.5 capitalize"
-          data-label="bb-dashboard-sidebar-home-button"
-        >
-          <SquareStackIcon class="w-5 h-5 mr-2" />
-          {{ $t("common.environments") }}
-        </div>
-      </router-link>
-
-      <div class="border-t border-gray-300 my-2" />
-
-      <router-link
-        to="/slow-query"
-        class="outline-item group flex items-center px-2 py-1.5 capitalize"
-      >
-        <TurtleIcon class="w-5 h-auto mr-2" />
-        {{ $t("slow-query.slow-queries") }}
-      </router-link>
-      <router-link
-        to="/export-center"
-        class="outline-item group flex items-center px-2 py-1.5 capitalize"
-      >
-        <DownloadIcon class="w-5 h-5 mr-2" />
-        {{ $t("export-center.self") }}
-      </router-link>
-      <router-link
-        to="/anomaly-center"
-        class="outline-item group flex items-center px-2 py-1.5 capitalize"
-      >
-        <ShieldAlertIcon class="w-5 h-5 mr-2" />
-        {{ $t("anomaly-center") }}
-      </router-link>
-    </div>
-  </nav>
+  <CommonSidebar
+    :key="'dashboard'"
+    :item-list="dashboardSidebarItemList"
+    :get-item-class="getItemClass"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -101,11 +19,12 @@ import {
   LayersIcon,
   SquareStackIcon,
 } from "lucide-vue-next";
-import { computed } from "vue";
+import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
-import { RouterLink, useRoute, useRouter } from "vue-router";
-import BytebaseLogo from "@/components/BytebaseLogo.vue";
+import { useRoute, useRouter } from "vue-router";
+import { SidebarItem } from "@/components/CommonSidebar.vue";
 import { useGlobalDatabaseActions } from "@/components/KBar/useDatabaseActions";
+import { useProjectActions } from "@/components/KBar/useProjectActions";
 import {
   useCurrentUserV1,
   useCurrentUserIamPolicy,
@@ -136,15 +55,73 @@ const shouldShowInstanceEntry = computed(() => {
   );
 });
 
-const getRouteLinkClass = (prefix: string): string[] => {
-  const { path } = route;
-  const isActiveRoute = path === prefix || path.startsWith(`${prefix}/`);
+const getItemClass = (path: string | undefined): string[] => {
+  const { path: current } = route;
+  const isActiveRoute = path === current || current.startsWith(`${path}/`);
   const classes: string[] = [];
   if (isActiveRoute) {
     classes.push("router-link-active", "bg-link-hover");
   }
   return classes;
 };
+
+const dashboardSidebarItemList = computed((): SidebarItem[] => {
+  return [
+    {
+      title: t("issue.my-issues"),
+      icon: h(HomeIcon),
+      path: "/",
+      type: "route",
+    },
+    {
+      title: t("common.projects"),
+      icon: h(GalleryHorizontalEndIcon),
+      path: "/project",
+      type: "route",
+    },
+    {
+      title: t("common.instances"),
+      icon: h(LayersIcon),
+      path: "/instance",
+      type: "route",
+      hide: !shouldShowInstanceEntry.value,
+    },
+    {
+      title: t("common.databases"),
+      icon: h(DatabaseIcon),
+      path: "/db",
+      type: "route",
+    },
+    {
+      title: t("common.environments"),
+      icon: h(SquareStackIcon),
+      path: "/environment",
+      type: "route",
+    },
+    {
+      type: "divider",
+    },
+    {
+      title: t("slow-query.slow-queries"),
+      icon: h(TurtleIcon),
+      path: "/slow-query",
+      type: "route",
+      hide: !shouldShowSyncSchemaEntry.value,
+    },
+    {
+      title: t("export-center.self"),
+      icon: h(DownloadIcon),
+      path: "/export-center",
+      type: "route",
+    },
+    {
+      title: t("anomaly-center"),
+      icon: h(ShieldAlertIcon),
+      path: "/anomaly-center",
+      type: "route",
+    },
+  ];
+});
 
 const navigationKbarActions = computed(() => {
   const actions: Action[] = [];
@@ -231,5 +208,6 @@ const navigationKbarActions = computed(() => {
 });
 useRegisterActions(navigationKbarActions);
 
+useProjectActions();
 useGlobalDatabaseActions();
 </script>

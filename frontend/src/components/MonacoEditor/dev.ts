@@ -1,6 +1,7 @@
 import { useLocalStorage } from "@vueuse/core";
 import { defineComponent, h } from "vue";
 import { BBSwitch } from "@/bbkit";
+import { useActuatorV1Store } from "@/store";
 import { isDev } from "@/utils";
 
 export const SupportedLSPTypes = ["OLD", "NEW"] as const;
@@ -23,7 +24,13 @@ export const StoredLSPType = useLocalStorage<LSPType>(
 );
 
 export const shouldUseNewLSP = () => {
-  return isDev() && StoredLSPType.value === "NEW";
+  if (!isDev()) {
+    // In release mode, look up the actuator service for CLI flag
+    return useActuatorV1Store().serverInfo?.lsp;
+  }
+
+  // Use the value from UI switch in dev mode
+  return StoredLSPType.value === "NEW";
 };
 
 export const LSPTypeSwitch = defineComponent({

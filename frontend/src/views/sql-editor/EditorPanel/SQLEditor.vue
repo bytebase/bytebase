@@ -28,6 +28,11 @@ import type {
   IStandaloneCodeEditor,
   MonacoModule,
 } from "@/components/MonacoEditor";
+import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
+import {
+  extensionNameOfLanguage,
+  formatEditorContent,
+} from "@/components/MonacoEditor/utils";
 import {
   useTabStore,
   useSQLEditorStore,
@@ -44,14 +49,6 @@ import {
 } from "@/types";
 import { formatEngineV1, useInstanceV1EditorLanguage } from "@/utils";
 import { useSQLEditorContext } from "../context";
-
-const [
-  { default: MonacoEditor },
-  { extensionNameOfLanguage, formatEditorContent },
-] = await Promise.all([
-  import("@/components/MonacoEditor/MonacoEditor.vue"),
-  import("@/components/MonacoEditor/utils"),
-]);
 
 const emit = defineEmits<{
   (
