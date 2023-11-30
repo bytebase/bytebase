@@ -237,7 +237,15 @@ func NewCompleter(ctx context.Context, statement string, caretLine int, caretOff
 	parser, lexer, scanner := prepareParserAndScanner(statement, caretLine, caretOffset)
 	// For all MySQL completers, we use one global follow sets by state.
 	// The FollowSetsByState is the thread-safe struct.
-	core := base.NewCodeCompletionCore(parser, newIgnoredTokens(), newPreferredRules(), &globalFollowSetsByState)
+	core := base.NewCodeCompletionCore(
+		parser,
+		newIgnoredTokens(),
+		newPreferredRules(),
+		&globalFollowSetsByState,
+		mysql.MySQLParserRULE_querySpecification,
+		mysql.MySQLParserRULE_queryExpression,
+		mysql.MySQLParserRULE_selectAlias,
+	)
 	return &Completer{
 		ctx:                 ctx,
 		core:                core,
@@ -477,6 +485,13 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 						}
 					}
 				} else if len(c.references) > 0 && candidate == mysql.MySQLParserRULE_columnRef {
+					list := c.fetchSelectItemAliases(candidates.Rules[candidate])
+					for _, alias := range list {
+						columnEntries.Insert(base.Candidate{
+							Type: base.CandidateTypeColumn,
+							Text: alias,
+						})
+					}
 					for _, reference := range c.references {
 						switch reference := reference.(type) {
 						case *PhysicalTableReference:
@@ -527,6 +542,72 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 	result = append(result, columnEntries.toSLice()...)
 	result = append(result, viewEntries.toSLice()...)
 	return result, nil
+}
+
+func (c *Completer) fetchSelectItemAliases(ruleStack []*base.RuleContext) []string {
+	canUseAliases := false
+	for i := len(ruleStack) - 1; i >= 0; i-- {
+		switch ruleStack[i].ID {
+		case mysql.MySQLParserRULE_queryExpression, mysql.MySQLParserRULE_querySpecification:
+			if !canUseAliases {
+				return nil
+			}
+			aliasMap := make(map[string]bool)
+			for pos := range ruleStack[i].SelectItemAliases {
+				if aliasText := c.extractAliasText(pos); len(aliasText) > 0 {
+					aliasMap[aliasText] = true
+				}
+			}
+
+			var result []string
+			for alias := range aliasMap {
+				result = append(result, alias)
+			}
+			sort.Slice(result, func(i, j int) bool {
+				return result[i] < result[j]
+			})
+			return result
+		case mysql.MySQLParserRULE_orderClause, mysql.MySQLParserRULE_groupByClause, mysql.MySQLParserRULE_havingClause:
+			canUseAliases = true
+		}
+	}
+
+	return nil
+}
+
+func (c *Completer) extractAliasText(pos int) string {
+	followingText := c.scanner.GetFollowingTextAfter(pos)
+	if len(followingText) == 0 {
+		return ""
+	}
+
+	input := antlr.NewInputStream(followingText)
+	lexer := mysql.NewMySQLLexer(input)
+	tokens := antlr.NewCommonTokenStream(lexer, 0)
+	parser := mysql.NewMySQLParser(tokens)
+
+	parser.BuildParseTrees = true
+	parser.RemoveErrorListeners()
+	tree := parser.SelectAlias()
+
+	listener := &SelectAliasListener{}
+	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
+
+	return listener.result
+}
+
+type SelectAliasListener struct {
+	*mysql.BaseMySQLParserListener
+
+	result string
+}
+
+func (l *SelectAliasListener) EnterSelectAlias(ctx *mysql.SelectAliasContext) {
+	if ctx.Identifier() != nil {
+		l.result = unquote(ctx.Identifier().GetText())
+	} else if ctx.TextStringLiteral() != nil {
+		l.result = unquote(ctx.TextStringLiteral().GetText())
+	}
 }
 
 type ObjectFlags int

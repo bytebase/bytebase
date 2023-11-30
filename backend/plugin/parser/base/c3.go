@@ -12,6 +12,13 @@ type CodeCompletionCore struct {
 	IgnoredTokens  map[int]bool
 	PreferredRules map[int]bool
 
+	// QueryRule and SelectItemAliasRule are used to determine the select item alias
+	// for the completion candidates.
+	// They can be used in GROUP BY, ORDER BY and HAVING clauses.
+	QueryRule           int
+	ShadowQueryRule     int
+	SelectItemAliasRule int
+
 	parser            antlr.Parser
 	atn               *antlr.ATN
 	candidates        *CandidatesCollection
@@ -19,19 +26,37 @@ type CodeCompletionCore struct {
 	// shortcutMap     map[int]map[int]RuleEndStatus
 	statesProcessed int
 	tokenStartIndex int
-	tokens          []int
+	tokens          []*Token
 
-	callStack *RuleList
+	callStack                  *RuleList
+	lastQueryRuleContext       *RuleContext
+	lastShadowQueryRuleContext *RuleContext
+}
+
+type Token struct {
+	Type          int
+	StartPosition int
 }
 
 // NewCodeCompletionCore creates a new CodeCompletionCore.
-func NewCodeCompletionCore(parser antlr.Parser, ignoredTokens, preferredRules map[int]bool, followSets *FollowSetsByState) *CodeCompletionCore {
+func NewCodeCompletionCore(
+	parser antlr.Parser,
+	ignoredTokens,
+	preferredRules map[int]bool,
+	followSets *FollowSetsByState,
+	queryRule int,
+	shadowQueryRule int,
+	selectItemAliasRule int,
+) *CodeCompletionCore {
 	return &CodeCompletionCore{
-		IgnoredTokens:     ignoredTokens,
-		PreferredRules:    preferredRules,
-		parser:            parser,
-		atn:               parser.GetATN(),
-		followSetsByState: followSets,
+		IgnoredTokens:       ignoredTokens,
+		PreferredRules:      preferredRules,
+		QueryRule:           queryRule,
+		ShadowQueryRule:     shadowQueryRule,
+		SelectItemAliasRule: selectItemAliasRule,
+		parser:              parser,
+		atn:                 parser.GetATN(),
+		followSetsByState:   followSets,
 	}
 }
 
@@ -41,25 +66,38 @@ type PipelineEntry struct {
 	TokenIndex int
 }
 
+// RuleContext is the context of a rule.
+type RuleContext struct {
+	ID int
+	// SelectItemAliases is the map of token index of select item aliases.
+	// Only the QueryRule has the SelectItemAliases.
+	SelectItemAliases map[int]bool
+}
+
 // RuleList is the list of rules.
 // Use a bitset to check existence of a rule in the list efficiently.
 type RuleList struct {
-	rules  []int
+	rules  []*RuleContext
 	bitSet *antlr.BitSet
 }
 
 // NewRuleList creates a new RuleList.
 func NewRuleList() *RuleList {
 	return &RuleList{
-		rules:  []int{},
+		rules:  []*RuleContext{},
 		bitSet: antlr.NewBitSet(),
 	}
 }
 
 // Copy copies the RuleList.
 func (l *RuleList) Copy() *RuleList {
-	rules := make([]int, len(l.rules))
-	copy(rules, l.rules)
+	rules := make([]*RuleContext, len(l.rules))
+	for i, rule := range l.rules {
+		rules[i] = &RuleContext{
+			ID:                rule.ID,
+			SelectItemAliases: rule.SelectItemAliases,
+		}
+	}
 	bitSet := antlr.NewBitSet()
 	bitSet.Or(l.bitSet)
 	return &RuleList{
@@ -82,16 +120,16 @@ func (l *RuleList) Contains(rule int) bool {
 }
 
 // Push appends the rule to the list.
-func (l *RuleList) Push(rule int) {
+func (l *RuleList) Push(rule *RuleContext) {
 	l.rules = append(l.rules, rule)
-	l.bitSet.Add(rule)
+	l.bitSet.Add(rule.ID)
 }
 
 // Pop pops the last rule from the list.
 // HINT: Each Push should not push the existing rule, otherwise Pop will destroy the bitSet.
-func (l *RuleList) Pop() int {
+func (l *RuleList) Pop() *RuleContext {
 	result := l.rules[len(l.rules)-1]
-	l.bitSet.Remove(result)
+	l.bitSet.Remove(result.ID)
 	l.rules = l.rules[:len(l.rules)-1]
 	return result
 }
@@ -102,7 +140,7 @@ func (l *RuleList) Pop() int {
 // Rules are the parser rules that can be reduced at the caret position.
 type CandidatesCollection struct {
 	Tokens map[int][]int
-	Rules  map[int][]int
+	Rules  map[int][]*RuleContext
 }
 
 type FollowSetWithPath struct {
@@ -224,7 +262,7 @@ func collectFollowSets(
 				continue
 			}
 
-			ruleStack.Push(ruleTransition.GetTarget().GetRuleIndex())
+			ruleStack.Push(&RuleContext{ID: ruleTransition.GetTarget().GetRuleIndex()})
 			collectFollowSets(parser, transition.GetTarget(), stopState, followSets, seen, ruleStack, ignoredTokens)
 			ruleStack.Pop()
 		} else if predicateTransition, ok := transition.(*antlr.PredicateTransition); ok {
@@ -299,7 +337,7 @@ func (c *CodeCompletionCore) CollectCandidates(caretTokenIndex int, context antl
 
 	c.candidates = &CandidatesCollection{
 		Tokens: make(map[int][]int),
-		Rules:  make(map[int][]int),
+		Rules:  make(map[int][]*RuleContext),
 	}
 	c.statesProcessed = 0
 
@@ -311,7 +349,7 @@ func (c *CodeCompletionCore) CollectCandidates(caretTokenIndex int, context antl
 
 	// Initialize the c.tokens:
 	//   Set to the token types of tokenStream[ruleStartIndex, caretTokenIndex].
-	c.tokens = []int{}
+	c.tokens = []*Token{}
 	tokenStream := c.parser.GetTokenStream()
 	currentOffset := tokenStream.Index()
 	tokenStream.Seek(c.tokenStartIndex)
@@ -319,7 +357,10 @@ func (c *CodeCompletionCore) CollectCandidates(caretTokenIndex int, context antl
 	for {
 		token := tokenStream.LT(offset)
 		offset++
-		c.tokens = append(c.tokens, token.GetTokenType())
+		c.tokens = append(c.tokens, &Token{
+			Type:          token.GetTokenType(),
+			StartPosition: token.GetStart(),
+		})
 
 		if token.GetTokenIndex() >= caretTokenIndex || token.GetTokenType() == antlr.TokenEOF {
 			break
@@ -345,7 +386,23 @@ func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenInde
 	c.followSetsByState.CollectFollowSets(c.parser, startState, c.IgnoredTokens)
 
 	followSets := c.followSetsByState.Get(startState.GetStateNumber())
-	c.callStack.Push(startState.GetRuleIndex())
+	ruleContext := &RuleContext{ID: startState.GetRuleIndex()}
+	c.callStack.Push(ruleContext)
+	if startState.GetRuleIndex() == c.QueryRule {
+		oldContext := c.lastQueryRuleContext
+		c.lastQueryRuleContext = ruleContext
+		defer func() {
+			c.lastQueryRuleContext = oldContext
+		}()
+	}
+
+	if startState.GetRuleIndex() == c.ShadowQueryRule {
+		oldContext := c.lastShadowQueryRuleContext
+		c.lastShadowQueryRuleContext = ruleContext
+		defer func() {
+			c.lastShadowQueryRuleContext = oldContext
+		}()
+	}
 
 	if tokenIndex >= len(c.tokens)-1 {
 		if _, exists := c.PreferredRules[startState.GetRuleIndex()]; exists {
@@ -390,7 +447,7 @@ func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenInde
 
 	// If the current token and Epsilon are not in the follow sets, we should stop.
 	currentSymbol := c.tokens[tokenIndex]
-	if !followSets.combined.Contains(antlr.TokenEpsilon) && !followSets.combined.Contains(currentSymbol) {
+	if !followSets.combined.Contains(antlr.TokenEpsilon) && !followSets.combined.Contains(currentSymbol.Type) {
 		c.callStack.Pop()
 		return RuleEndStatus{}
 	}
@@ -427,6 +484,20 @@ func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenInde
 						State:      transition.GetFollowState(),
 						TokenIndex: status,
 					})
+				}
+				if startState.GetRuleIndex() == c.SelectItemAliasRule {
+					if c.lastQueryRuleContext != nil {
+						if c.lastQueryRuleContext.SelectItemAliases == nil {
+							c.lastQueryRuleContext.SelectItemAliases = make(map[int]bool)
+						}
+						c.lastQueryRuleContext.SelectItemAliases[c.tokens[currentEntry.TokenIndex].StartPosition] = true
+					}
+					if c.lastShadowQueryRuleContext != nil {
+						if c.lastShadowQueryRuleContext.SelectItemAliases == nil {
+							c.lastShadowQueryRuleContext.SelectItemAliases = make(map[int]bool)
+						}
+						c.lastShadowQueryRuleContext.SelectItemAliases[c.tokens[currentEntry.TokenIndex].StartPosition] = true
+					}
 				}
 			case *antlr.PredicateTransition:
 				if checkPredicate(c.parser, transition) {
@@ -487,7 +558,7 @@ func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenInde
 						}
 					} else {
 						currentSymbol := c.tokens[currentEntry.TokenIndex]
-						if set.Contains(currentSymbol) {
+						if set.Contains(currentSymbol.Type) {
 							statePipeline = append(statePipeline, PipelineEntry{
 								State:      transition.GetTarget(),
 								TokenIndex: currentEntry.TokenIndex + 1,
@@ -509,15 +580,15 @@ func (c *CodeCompletionCore) translateToRuleIndex(ruleStack *RuleList) bool {
 	}
 
 	for i, rule := range ruleStack.rules {
-		if _, exists := c.PreferredRules[rule]; exists {
-			var path []int
+		if _, exists := c.PreferredRules[rule.ID]; exists {
+			var path []*RuleContext
 			path = append(path, ruleStack.rules[:i]...)
 			addNew := true
 
-			if candidates, exists := c.candidates.Rules[rule]; exists && len(candidates) == len(path) {
+			if candidates, exists := c.candidates.Rules[rule.ID]; exists && len(candidates) == len(path) {
 				equal := true
 				for j, item := range candidates {
-					if item != path[j] {
+					if item.ID != path[j].ID {
 						equal = false
 						break
 					}
@@ -529,7 +600,7 @@ func (c *CodeCompletionCore) translateToRuleIndex(ruleStack *RuleList) bool {
 			}
 
 			if addNew {
-				c.candidates.Rules[ruleStack.rules[i]] = path
+				c.candidates.Rules[ruleStack.rules[i].ID] = path
 			}
 			return true
 		}
