@@ -30,7 +30,6 @@
             v-if="showSearchBox"
             v-model:value="state.keyword"
             :placeholder="$t('common.filter-by-name')"
-            style="width: 12rem"
           />
         </NInputGroup>
       </div>

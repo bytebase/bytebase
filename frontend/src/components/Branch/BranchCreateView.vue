@@ -400,7 +400,7 @@ const handleConfirm = async () => {
     createdSchemaDesign.name
   );
   router.replace({
-    name: "workspace.branch.detail",
+    name: "workspace.project.branch.detail",
     params: {
       projectSlug: projectV1Slug(project.value),
       branchName: sheetId,

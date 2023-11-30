@@ -34,7 +34,6 @@
       <template #suffix>
         <SearchBox
           v-model:value="state.searchText"
-          style="width: 12rem"
           :placeholder="$t('project.members.search-member')"
         />
       </template>

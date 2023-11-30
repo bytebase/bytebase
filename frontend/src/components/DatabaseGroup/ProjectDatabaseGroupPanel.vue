@@ -28,6 +28,7 @@
     :project="project"
     :resource-type="state.resourceType"
     :database-group="state.editingDatabaseGroup"
+    @close="state.showDatabaseGroupPanel = false"
   />
 
   <FeatureModal
