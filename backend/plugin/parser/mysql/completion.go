@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"strings"
 
@@ -195,11 +196,24 @@ func newSynonyms() map[int][]string {
 	}
 }
 
-type TableReference struct {
+type TableReference interface {
+	isTableReference()
+}
+
+type PhysicalTableReference struct {
 	Database string
 	Table    string
 	Alias    string
 }
+
+func (t *PhysicalTableReference) isTableReference() {}
+
+type VirtualTableReference struct {
+	Table   string
+	Columns []string
+}
+
+func (t *VirtualTableReference) isTableReference() {}
 
 type Completer struct {
 	ctx                 context.Context
@@ -213,10 +227,10 @@ type Completer struct {
 	noSeparatorRequired map[int]bool
 	// referencesStack is a hierarchical stack of table references.
 	// We'll update the stack when we encounter a new FROM clauses.
-	referencesStack [][]*TableReference
+	referencesStack [][]TableReference
 	// references is the flattened table references.
 	// It's helpful to look up the table reference.
-	references []*TableReference
+	references []TableReference
 }
 
 func NewCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata base.GetDatabaseMetadataFunc) *Completer {
@@ -242,7 +256,7 @@ func (c *Completer) completion() ([]base.Candidate, error) {
 	if caretIndex > 0 && !c.noSeparatorRequired[c.scanner.GetPreviousTokenType(false /* skipHidden */)] {
 		caretIndex--
 	}
-	c.referencesStack = append([][]*TableReference{{}}, c.referencesStack...)
+	c.referencesStack = append([][]TableReference{{}}, c.referencesStack...)
 	c.parser.Reset()
 	// TODO: we can just skip the head of the caret statement.
 	context := c.parser.Script()
@@ -376,18 +390,20 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 				viewEntries.insertViews(c, schemas)
 			}
 		case mysql.MySQLParserRULE_tableWild, mysql.MySQLParserRULE_columnRef:
-			schema, table, flags := c.determineSchemaTableQualifier()
+			database, table, flags := c.determineSchemaTableQualifier()
 			if flags&ObjectFlagsShowSchemas != 0 {
 				schemaEntries.insertDatabases(c)
 			}
 
 			schemas := make(map[string]bool)
-			if len(schema) != 0 {
-				schemas[schema] = true
+			if len(database) != 0 {
+				schemas[database] = true
 			} else if len(c.references) > 0 {
 				for _, reference := range c.references {
-					if len(reference.Database) != 0 {
-						schemas[reference.Database] = true
+					if physicalTable, ok := reference.(*PhysicalTableReference); ok {
+						if len(physicalTable.Database) != 0 {
+							schemas[physicalTable.Database] = true
+						}
 					}
 				}
 			}
@@ -402,25 +418,37 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 					viewEntries.insertViews(c, schemas)
 
 					for _, reference := range c.references {
-						if (len(schema) == 0 && len(reference.Database) == 0) || schemas[reference.Database] {
-							if len(reference.Alias) == 0 {
-								tableEntries.Insert(base.Candidate{
-									Type: base.CandidateTypeTable,
-									Text: reference.Table,
-								})
-							} else {
-								tableEntries.Insert(base.Candidate{
-									Type: base.CandidateTypeTable,
-									Text: reference.Alias,
-								})
+						switch reference := reference.(type) {
+						case *PhysicalTableReference:
+							if (len(database) == 0 && len(reference.Database) == 0) || schemas[reference.Database] {
+								if len(reference.Alias) == 0 {
+									tableEntries.Insert(base.Candidate{
+										Type: base.CandidateTypeTable,
+										Text: reference.Table,
+									})
+								} else {
+									tableEntries.Insert(base.Candidate{
+										Type: base.CandidateTypeTable,
+										Text: reference.Alias,
+									})
+								}
 							}
+						case *VirtualTableReference:
+							// User specified a database qualifier, so we don't show virtual tables.
+							if len(database) > 0 {
+								continue
+							}
+							tableEntries.Insert(base.Candidate{
+								Type: base.CandidateTypeTable,
+								Text: reference.Table,
+							})
 						}
 					}
 				}
 			}
 
 			if flags&ObjectFlagsShowColumns != 0 {
-				if schema == table { // Schema and table are equal if it's not clear if we see a schema or table qualifier.
+				if database == table { // Schema and table are equal if it's not clear if we see a schema or table qualifier.
 					schemas[c.defaultDatabase] = true
 				}
 
@@ -428,16 +456,40 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 				if len(table) != 0 {
 					tables[table] = true
 
-					// Could be an alias
 					for _, reference := range c.references {
-						if strings.EqualFold(reference.Alias, table) {
-							tables[reference.Table] = true
-							schemas[reference.Database] = true
+						switch reference := reference.(type) {
+						case *PhysicalTableReference:
+							// Could be an alias
+							if strings.EqualFold(reference.Alias, table) {
+								tables[reference.Table] = true
+								schemas[reference.Database] = true
+							}
+						case *VirtualTableReference:
+							// Could be a virtual table
+							if strings.EqualFold(reference.Table, table) {
+								for _, column := range reference.Columns {
+									columnEntries.Insert(base.Candidate{
+										Type: base.CandidateTypeColumn,
+										Text: column,
+									})
+								}
+							}
 						}
+
 					}
 				} else if len(c.references) > 0 && candidate == mysql.MySQLParserRULE_columnRef {
 					for _, reference := range c.references {
-						tables[reference.Table] = true
+						switch reference := reference.(type) {
+						case *PhysicalTableReference:
+							tables[reference.Table] = true
+						case *VirtualTableReference:
+							for _, column := range reference.Columns {
+								columnEntries.Insert(base.Candidate{
+									Type: base.CandidateTypeColumn,
+									Text: column,
+								})
+							}
+						}
 					}
 				}
 
@@ -648,7 +700,7 @@ func (c *Completer) collectLeadingTableReferences(caretIndex int, forTableAlter 
 		if c.scanner.GetTokenType() == mysql.MySQLLexerALTER_SYMBOL {
 			c.scanner.SkipTokenSequence([]int{mysql.MySQLLexerALTER_SYMBOL, mysql.MySQLLexerTABLE_SYMBOL})
 
-			var reference TableReference
+			var reference PhysicalTableReference
 			reference.Table = unquote(c.scanner.GetTokenText())
 			if c.scanner.Forward(false /* skipHidden */) && c.scanner.IsTokenType(mysql.MySQLLexerDOT_SYMBOL) {
 				reference.Database = reference.Table
@@ -672,7 +724,7 @@ func (c *Completer) collectLeadingTableReferences(caretIndex int, forTableAlter 
 				switch c.scanner.GetTokenType() {
 				case mysql.MySQLLexerOPEN_PAR_SYMBOL:
 					level++
-					c.referencesStack = append([][]*TableReference{{}}, c.referencesStack...)
+					c.referencesStack = append([][]TableReference{{}}, c.referencesStack...)
 				case mysql.MySQLLexerCLOSE_PAR_SYMBOL:
 					if level == 0 {
 						c.scanner.PopAndRestore()
@@ -733,7 +785,7 @@ func (l *TableRefListener) ExitTableRef(ctx *mysql.TableRefContext) {
 	}
 
 	if !l.fromClauseMode || l.level == 0 {
-		reference := &TableReference{}
+		reference := &PhysicalTableReference{}
 		if ctx.QualifiedIdentifier() != nil {
 			reference.Table = unquote(ctx.QualifiedIdentifier().Identifier().GetText())
 			if ctx.QualifiedIdentifier().DotIdentifier() != nil {
@@ -754,9 +806,52 @@ func (l *TableRefListener) ExitTableAlias(ctx *mysql.TableAliasContext) {
 
 	if l.level == 0 && len(l.context.referencesStack) != 0 && len(l.context.referencesStack[0]) != 0 {
 		// Appears after a single or derived table.
-		// Since derived tables can be very complex it is not possible here to determine possible columns for
-		// completion, hence we just walk over them and thus have no field where to store the found alias.
-		l.context.referencesStack[0][len(l.context.referencesStack[0])-1].Alias = unquote(ctx.Identifier().GetText())
+
+		if _, ok := ctx.GetParent().(*mysql.DerivedTableContext); ok {
+			// We are no need to set the alias for the derived table.
+			// We handle the derived table in the EnterDerivedTable() methods.
+			return
+		}
+
+		// We are in the single table.
+		if physicalTable, ok := l.context.referencesStack[0][len(l.context.referencesStack[0])-1].(*PhysicalTableReference); ok {
+			physicalTable.Alias = unquote(ctx.Identifier().GetText())
+		}
+	}
+}
+
+func (l *TableRefListener) EnterDerivedTable(ctx *mysql.DerivedTableContext) {
+	if l.done {
+		return
+	}
+
+	if l.level == 0 && len(l.context.referencesStack) > 0 && ctx.TableAlias() != nil {
+		reference := &VirtualTableReference{
+			Table: unquote(ctx.TableAlias().Identifier().GetText()),
+		}
+
+		if ctx.ColumnInternalRefList() != nil {
+			for _, column := range ctx.ColumnInternalRefList().AllColumnInternalRef() {
+				reference.Columns = append(reference.Columns, unquote(column.Identifier().GetText()))
+			}
+		} else {
+			// User didn't specify the column list, so we should extract the column list from the select statement.
+			// TODO(zp): GetQuerySpan doesn't support MySQL yet.
+			if span, err := base.GetQuerySpan(
+				l.context.ctx,
+				store.Engine_MYSQL,
+				fmt.Sprintf("SELECT * FROM %s;", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Subquery())),
+				l.context.defaultDatabase,
+				l.context.getMetadata,
+			); err == nil && len(span) == 1 {
+				for _, column := range span[0].Results {
+					reference.Columns = append(reference.Columns, column.Name)
+				}
+			}
+
+		}
+
+		l.context.referencesStack[0] = append(l.context.referencesStack[0], reference)
 	}
 }
 
@@ -768,7 +863,7 @@ func (l *TableRefListener) EnterSubquery(_ *mysql.SubqueryContext) {
 	if l.fromClauseMode {
 		l.level++
 	} else {
-		l.context.referencesStack = append([][]*TableReference{{}}, l.context.referencesStack...)
+		l.context.referencesStack = append([][]TableReference{{}}, l.context.referencesStack...)
 	}
 }
 
