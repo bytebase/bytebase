@@ -44,7 +44,7 @@
     - [MaskingRulePolicy](#bytebase-v1-MaskingRulePolicy)
     - [MaskingRulePolicy.MaskingRule](#bytebase-v1-MaskingRulePolicy-MaskingRule)
     - [Policy](#bytebase-v1-Policy)
-    - [RestrictPrecreateIssuePolicy](#bytebase-v1-RestrictPrecreateIssuePolicy)
+    - [RestrictIssueCreationForSQLReviewPolicy](#bytebase-v1-RestrictIssueCreationForSQLReviewPolicy)
     - [RolloutPolicy](#bytebase-v1-RolloutPolicy)
     - [SQLReviewPolicy](#bytebase-v1-SQLReviewPolicy)
     - [SQLReviewRule](#bytebase-v1-SQLReviewRule)
@@ -1237,15 +1237,15 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 
 
 
-<a name="bytebase-v1-RestrictPrecreateIssuePolicy"></a>
+<a name="bytebase-v1-RestrictIssueCreationForSQLReviewPolicy"></a>
 
-### RestrictPrecreateIssuePolicy
+### RestrictIssueCreationForSQLReviewPolicy
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| bypass_sql_review | [bool](#bool) |  |  |
+| disallow | [bool](#bool) |  |  |
 
 
 
@@ -1428,7 +1428,7 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 | DISABLE_COPY_DATA | 8 |  |
 | MASKING_RULE | 9 |  |
 | MASKING_EXCEPTION | 10 |  |
-| RESTRICT_PRECREATE_ISSUE | 12 |  |
+| RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW | 12 |  |
 
 
 

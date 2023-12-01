@@ -23,7 +23,7 @@ export enum PolicyType {
   DISABLE_COPY_DATA = 8,
   MASKING_RULE = 9,
   MASKING_EXCEPTION = 10,
-  RESTRICT_PRECREATE_ISSUE = 12,
+  RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW = 12,
   UNRECOGNIZED = -1,
 }
 
@@ -63,8 +63,8 @@ export function policyTypeFromJSON(object: any): PolicyType {
     case "MASKING_EXCEPTION":
       return PolicyType.MASKING_EXCEPTION;
     case 12:
-    case "RESTRICT_PRECREATE_ISSUE":
-      return PolicyType.RESTRICT_PRECREATE_ISSUE;
+    case "RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW":
+      return PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -96,8 +96,8 @@ export function policyTypeToJSON(object: PolicyType): string {
       return "MASKING_RULE";
     case PolicyType.MASKING_EXCEPTION:
       return "MASKING_EXCEPTION";
-    case PolicyType.RESTRICT_PRECREATE_ISSUE:
-      return "RESTRICT_PRECREATE_ISSUE";
+    case PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW:
+      return "RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW";
     case PolicyType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -592,8 +592,8 @@ export interface MaskingRulePolicy_MaskingRule {
   maskingLevel: MaskingLevel;
 }
 
-export interface RestrictPrecreateIssuePolicy {
-  bypassSqlReview: boolean;
+export interface RestrictIssueCreationForSQLReviewPolicy {
+  disallow: boolean;
 }
 
 function createBaseCreatePolicyRequest(): CreatePolicyRequest {
@@ -2618,22 +2618,22 @@ export const MaskingRulePolicy_MaskingRule = {
   },
 };
 
-function createBaseRestrictPrecreateIssuePolicy(): RestrictPrecreateIssuePolicy {
-  return { bypassSqlReview: false };
+function createBaseRestrictIssueCreationForSQLReviewPolicy(): RestrictIssueCreationForSQLReviewPolicy {
+  return { disallow: false };
 }
 
-export const RestrictPrecreateIssuePolicy = {
-  encode(message: RestrictPrecreateIssuePolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.bypassSqlReview === true) {
-      writer.uint32(8).bool(message.bypassSqlReview);
+export const RestrictIssueCreationForSQLReviewPolicy = {
+  encode(message: RestrictIssueCreationForSQLReviewPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.disallow === true) {
+      writer.uint32(8).bool(message.disallow);
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): RestrictPrecreateIssuePolicy {
+  decode(input: _m0.Reader | Uint8Array, length?: number): RestrictIssueCreationForSQLReviewPolicy {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseRestrictPrecreateIssuePolicy();
+    const message = createBaseRestrictIssueCreationForSQLReviewPolicy();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -2642,7 +2642,7 @@ export const RestrictPrecreateIssuePolicy = {
             break;
           }
 
-          message.bypassSqlReview = reader.bool();
+          message.disallow = reader.bool();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -2653,24 +2653,24 @@ export const RestrictPrecreateIssuePolicy = {
     return message;
   },
 
-  fromJSON(object: any): RestrictPrecreateIssuePolicy {
-    return { bypassSqlReview: isSet(object.bypassSqlReview) ? globalThis.Boolean(object.bypassSqlReview) : false };
+  fromJSON(object: any): RestrictIssueCreationForSQLReviewPolicy {
+    return { disallow: isSet(object.disallow) ? globalThis.Boolean(object.disallow) : false };
   },
 
-  toJSON(message: RestrictPrecreateIssuePolicy): unknown {
+  toJSON(message: RestrictIssueCreationForSQLReviewPolicy): unknown {
     const obj: any = {};
-    if (message.bypassSqlReview === true) {
-      obj.bypassSqlReview = message.bypassSqlReview;
+    if (message.disallow === true) {
+      obj.disallow = message.disallow;
     }
     return obj;
   },
 
-  create(base?: DeepPartial<RestrictPrecreateIssuePolicy>): RestrictPrecreateIssuePolicy {
-    return RestrictPrecreateIssuePolicy.fromPartial(base ?? {});
+  create(base?: DeepPartial<RestrictIssueCreationForSQLReviewPolicy>): RestrictIssueCreationForSQLReviewPolicy {
+    return RestrictIssueCreationForSQLReviewPolicy.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<RestrictPrecreateIssuePolicy>): RestrictPrecreateIssuePolicy {
-    const message = createBaseRestrictPrecreateIssuePolicy();
-    message.bypassSqlReview = object.bypassSqlReview ?? false;
+  fromPartial(object: DeepPartial<RestrictIssueCreationForSQLReviewPolicy>): RestrictIssueCreationForSQLReviewPolicy {
+    const message = createBaseRestrictIssueCreationForSQLReviewPolicy();
+    message.disallow = object.disallow ?? false;
     return message;
   },
 };
