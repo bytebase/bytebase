@@ -5,7 +5,7 @@ go 1.21.3
 require (
 	cloud.google.com/go/spanner v1.53.0
 	gitee.com/chunanyong/dm v1.8.13
-	github.com/ClickHouse/clickhouse-go/v2 v2.14.1
+	github.com/ClickHouse/clickhouse-go/v2 v2.15.0
 	github.com/antlr4-go/antlr/v4 v4.13.0
 	github.com/aws/aws-sdk-go-v2 v1.23.4
 	github.com/aws/aws-sdk-go-v2/config v1.25.10
@@ -44,32 +44,32 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/lor00x/goldap v0.0.0-20180618054307-a546dffdd1a3
 	github.com/mattn/go-oci8 v0.1.1
-	github.com/mattn/go-sqlite3 v1.14.17
+	github.com/mattn/go-sqlite3 v1.14.18
 	github.com/microsoft/go-mssqldb v1.6.0
-	github.com/nyaruka/phonenumbers v1.1.8
+	github.com/nyaruka/phonenumbers v1.2.2
 	github.com/paulmach/orb v0.10.0
-	github.com/pganalyze/pg_query_go/v4 v4.0.0-00010101000000-000000000000
+	github.com/pganalyze/pg_query_go/v4 v4.2.3
 	github.com/pingcap/tidb v1.1.0-beta.0.20220825063022-5263a0abda61
 	github.com/pingcap/tidb/pkg/parser v0.0.0-20221101143359-5b0be9af540e
 	github.com/pkg/errors v0.9.1
-	github.com/redis/go-redis/v9 v9.2.1
-	github.com/sashabaranov/go-openai v1.15.4
+	github.com/redis/go-redis/v9 v9.3.0
+	github.com/sashabaranov/go-openai v1.17.9
 	github.com/segmentio/analytics-go v3.1.0+incompatible
 	github.com/shopspring/decimal v1.3.1
-	github.com/sijms/go-ora/v2 v2.7.18
-	github.com/snowflakedb/gosnowflake v1.6.25
+	github.com/sijms/go-ora/v2 v2.7.24
+	github.com/snowflakedb/gosnowflake v1.7.0
 	github.com/sourcegraph/go-lsp v0.0.0-20200429204803-219e11d77f5d
 	github.com/sourcegraph/jsonrpc2 v0.2.0
-	github.com/spf13/cobra v1.7.0
+	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.8.4
 	github.com/swaggo/echo-swagger v1.4.1
 	github.com/swaggo/swag v1.16.2
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20220101234140-673ab2c3ae75
 	github.com/vjeantet/ldapserver v1.0.1
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8
-	github.com/xo/dburl v0.16.0
+	github.com/xo/dburl v0.18.3
 	github.com/xuri/excelize/v2 v2.8.0
-	go.mongodb.org/mongo-driver v1.12.1
+	go.mongodb.org/mongo-driver v1.13.0
 	go.uber.org/multierr v1.11.0
 	golang.org/x/crypto v0.16.0
 	golang.org/x/exp v0.0.0-20231127185646-65229373498e
@@ -89,9 +89,9 @@ require (
 require (
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
 	github.com/99designs/keyring v1.2.2 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.8.0 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/internal v1.3.0 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.1.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.9.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/internal v1.5.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.2.0 // indirect
 	github.com/Azure/go-ntlmssp v0.0.0-20221128193559-754e69321358 // indirect
 	github.com/JohnCGriffin/overflow v0.0.0-20211019200055-46fa312c352c // indirect
 	github.com/apache/arrow/go/v12 v12.0.1 // indirect
@@ -129,7 +129,7 @@ require (
 	github.com/jcmturner/gokrb5/v8 v8.4.4 // indirect
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
 	github.com/klauspost/asmfmt v1.3.2 // indirect
-	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
+	github.com/klauspost/cpuid/v2 v2.2.6 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
@@ -168,9 +168,9 @@ require (
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	cloud.google.com/go/iam v1.1.5 // indirect
 	cloud.google.com/go/longrunning v0.5.4 // indirect
-	github.com/ClickHouse/ch-go v0.58.2 // indirect
+	github.com/ClickHouse/ch-go v0.60.0 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
-	github.com/andybalholm/brotli v1.0.5 // indirect
+	github.com/andybalholm/brotli v1.0.6 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.5.3 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.14.8 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.2.7 // indirect
@@ -201,9 +201,9 @@ require (
 	github.com/envoyproxy/go-control-plane v0.11.1 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.0.2 // indirect
 	github.com/form3tech-oss/jwt-go v3.2.5+incompatible // indirect
-	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
+	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
 	github.com/go-faster/city v1.0.1 // indirect
-	github.com/go-faster/errors v0.6.1 // indirect
+	github.com/go-faster/errors v0.7.0 // indirect
 	github.com/go-ini/ini v1.67.0 // indirect
 	github.com/go-mysql-org/go-mysql v1.6.0 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
@@ -229,7 +229,7 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
-	github.com/klauspost/compress v1.17.1 // indirect
+	github.com/klauspost/compress v1.17.3 // indirect
 	github.com/labstack/gommon v0.4.1 // indirect
 	github.com/lestrrat-go/blackmagic v1.0.1 // indirect
 	github.com/lestrrat-go/httpcc v1.0.1 // indirect
