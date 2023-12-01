@@ -16,9 +16,9 @@ message BranchConfig {
   // The name of source database.
   // Optional.
   // Example: instances/instance-id/databases/database-name.
-  int64 source_database = 1;
+  string source_database = 1;
   // The name of the source branch.
   // Optional.
   // Example: projects/project-id/branches/branch-id.
-  int64 source_branch = 2;
+  string source_branch = 2;
 }

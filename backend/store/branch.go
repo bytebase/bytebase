@@ -49,7 +49,7 @@ type UpdateBranchMessage struct {
 
 // GetBranch gets a branch.
 func (s *Store) GetBranch(ctx context.Context, find *FindBranchMessage) (*BranchMessage, error) {
-	branches, err := s.ListBranchs(ctx, find)
+	branches, err := s.ListBranches(ctx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -62,8 +62,8 @@ func (s *Store) GetBranch(ctx context.Context, find *FindBranchMessage) (*Branch
 	return branches[0], nil
 }
 
-// ListBranchs returns a list of branches.
-func (s *Store) ListBranchs(ctx context.Context, find *FindBranchMessage) ([]*BranchMessage, error) {
+// ListBranches returns a list of branches.
+func (s *Store) ListBranches(ctx context.Context, find *FindBranchMessage) ([]*BranchMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 
 	if v := find.ProjectID; v != nil {

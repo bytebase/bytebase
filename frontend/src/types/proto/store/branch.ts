@@ -17,13 +17,13 @@ export interface BranchConfig {
    * Optional.
    * Example: instances/instance-id/databases/database-name.
    */
-  sourceDatabase: Long;
+  sourceDatabase: string;
   /**
    * The name of the source branch.
    * Optional.
    * Example: projects/project-id/branches/branch-id.
    */
-  sourceBranch: Long;
+  sourceBranch: string;
 }
 
 function createBaseBranchSnapshot(): BranchSnapshot {
@@ -120,16 +120,16 @@ export const BranchSnapshot = {
 };
 
 function createBaseBranchConfig(): BranchConfig {
-  return { sourceDatabase: Long.ZERO, sourceBranch: Long.ZERO };
+  return { sourceDatabase: "", sourceBranch: "" };
 }
 
 export const BranchConfig = {
   encode(message: BranchConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (!message.sourceDatabase.isZero()) {
-      writer.uint32(8).int64(message.sourceDatabase);
+    if (message.sourceDatabase !== "") {
+      writer.uint32(10).string(message.sourceDatabase);
     }
-    if (!message.sourceBranch.isZero()) {
-      writer.uint32(16).int64(message.sourceBranch);
+    if (message.sourceBranch !== "") {
+      writer.uint32(18).string(message.sourceBranch);
     }
     return writer;
   },
@@ -142,18 +142,18 @@ export const BranchConfig = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
+          if (tag !== 10) {
             break;
           }
 
-          message.sourceDatabase = reader.int64() as Long;
+          message.sourceDatabase = reader.string();
           continue;
         case 2:
-          if (tag !== 16) {
+          if (tag !== 18) {
             break;
           }
 
-          message.sourceBranch = reader.int64() as Long;
+          message.sourceBranch = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -166,18 +166,18 @@ export const BranchConfig = {
 
   fromJSON(object: any): BranchConfig {
     return {
-      sourceDatabase: isSet(object.sourceDatabase) ? Long.fromValue(object.sourceDatabase) : Long.ZERO,
-      sourceBranch: isSet(object.sourceBranch) ? Long.fromValue(object.sourceBranch) : Long.ZERO,
+      sourceDatabase: isSet(object.sourceDatabase) ? globalThis.String(object.sourceDatabase) : "",
+      sourceBranch: isSet(object.sourceBranch) ? globalThis.String(object.sourceBranch) : "",
     };
   },
 
   toJSON(message: BranchConfig): unknown {
     const obj: any = {};
-    if (!message.sourceDatabase.isZero()) {
-      obj.sourceDatabase = (message.sourceDatabase || Long.ZERO).toString();
+    if (message.sourceDatabase !== "") {
+      obj.sourceDatabase = message.sourceDatabase;
     }
-    if (!message.sourceBranch.isZero()) {
-      obj.sourceBranch = (message.sourceBranch || Long.ZERO).toString();
+    if (message.sourceBranch !== "") {
+      obj.sourceBranch = message.sourceBranch;
     }
     return obj;
   },
@@ -187,12 +187,8 @@ export const BranchConfig = {
   },
   fromPartial(object: DeepPartial<BranchConfig>): BranchConfig {
     const message = createBaseBranchConfig();
-    message.sourceDatabase = (object.sourceDatabase !== undefined && object.sourceDatabase !== null)
-      ? Long.fromValue(object.sourceDatabase)
-      : Long.ZERO;
-    message.sourceBranch = (object.sourceBranch !== undefined && object.sourceBranch !== null)
-      ? Long.fromValue(object.sourceBranch)
-      : Long.ZERO;
+    message.sourceDatabase = object.sourceDatabase ?? "";
+    message.sourceBranch = object.sourceBranch ?? "";
     return message;
   },
 };
