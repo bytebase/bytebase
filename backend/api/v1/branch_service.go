@@ -26,31 +26,31 @@ func NewBranchService(store *store.Store, licenseService enterprise.LicenseServi
 }
 
 // GetSchemaDesign gets the schema design.
-func (s *BranchService) GetSchemaDesign(ctx context.Context, request *v1pb.GetSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
+func (*BranchService) GetSchemaDesign(_ context.Context, _ *v1pb.GetSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
 	return nil, nil
 }
 
 // ListSchemaDesigns lists schema designs.
-func (s *BranchService) ListSchemaDesigns(ctx context.Context, request *v1pb.ListSchemaDesignsRequest) (*v1pb.ListSchemaDesignsResponse, error) {
+func (*BranchService) ListSchemaDesigns(_ context.Context, _ *v1pb.ListSchemaDesignsRequest) (*v1pb.ListSchemaDesignsResponse, error) {
 	return nil, nil
 }
 
 // CreateSchemaDesign creates a new schema design.
-func (s *BranchService) CreateSchemaDesign(ctx context.Context, request *v1pb.CreateSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
+func (*BranchService) CreateSchemaDesign(_ context.Context, _ *v1pb.CreateSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
 	return nil, nil
 }
 
 // UpdateSchemaDesign updates an existing schema design.
-func (s *BranchService) UpdateSchemaDesign(ctx context.Context, request *v1pb.UpdateSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
+func (*BranchService) UpdateSchemaDesign(_ context.Context, _ *v1pb.UpdateSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
 	return nil, nil
 }
 
 // MergeSchemaDesign merges a personal draft schema design to the target schema design.
-func (s *BranchService) MergeSchemaDesign(ctx context.Context, request *v1pb.MergeSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
+func (*BranchService) MergeSchemaDesign(_ context.Context, _ *v1pb.MergeSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
 	return nil, nil
 }
 
 // DeleteSchemaDesign deletes an existing schema design.
-func (s *BranchService) DeleteSchemaDesign(ctx context.Context, request *v1pb.DeleteSchemaDesignRequest) (*emptypb.Empty, error) {
+func (*BranchService) DeleteSchemaDesign(_ context.Context, _ *v1pb.DeleteSchemaDesignRequest) (*emptypb.Empty, error) {
 	return nil, nil
 }
