@@ -17,7 +17,11 @@
       <NButton @click="confirm.resolve(false)">
         {{ $t("issue.sql-check.back-to-edit") }}
       </NButton>
-      <NButton type="primary" @click="confirm.resolve(true)">
+      <NButton
+        v-if="!restrictIssueCreationForSQLReview"
+        type="primary"
+        @click="confirm.resolve(true)"
+      >
         {{ $t("issue.sql-check.continue-anyway") }}
       </NButton>
     </div>
@@ -26,6 +30,8 @@
 
 <script setup lang="ts">
 import { NButton } from "naive-ui";
+import { computed, onMounted } from "vue";
+import { usePolicyV1Store } from "@/store";
 import { ComposedDatabase } from "@/types";
 import { Advice } from "@/types/proto/v1/sql_service";
 import { Defer } from "@/utils";
@@ -41,4 +47,24 @@ defineProps<{
 defineEmits<{
   (event: "close"): void;
 }>();
+
+const policyV1Store = usePolicyV1Store();
+
+const restrictIssueCreationForSQLReview = computed((): boolean => {
+  return (
+    policyV1Store.getPolicyByName(
+      "policies/RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW"
+    )?.restrictIssueCreationForSqlReviewPolicy?.disallow ?? false
+  );
+});
+
+onMounted(async () => {
+  await prepareOrgPolicy();
+});
+
+const prepareOrgPolicy = async () => {
+  await policyV1Store.getOrFetchPolicyByName(
+    "policies/RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW"
+  );
+};
 </script>
