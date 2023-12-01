@@ -129,7 +129,7 @@ const handleModeChange = (targetMode: Mode) => {
     emit(
       "update:scan-interval",
       Duration.fromPartial({
-        seconds: 1440 * 60,
+        seconds: 24 * 60 * 60,
       })
     );
   }
