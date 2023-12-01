@@ -1,4 +1,4 @@
-lockfileVersion: '6.1'
+lockfileVersion: '6.0'
 
 settings:
   autoInstallPeers: true
@@ -212,8 +212,8 @@ dependencies:
 
 devDependencies:
   '@iconify/json':
-    specifier: 2.2.135
-    version: 2.2.135
+    specifier: 2.2.150
+    version: 2.2.150
   '@intlify/unplugin-vue-i18n':
     specifier: 1.2.0
     version: 1.2.0(rollup@3.29.2)(vue-i18n@9.4.1)
@@ -224,8 +224,8 @@ devDependencies:
     specifier: 4.1.2
     version: 4.1.2(rollup@3.29.2)
   '@tailwindcss/forms':
-    specifier: 0.5.6
-    version: 0.5.6(tailwindcss@3.3.3)
+    specifier: 0.5.7
+    version: 0.5.7(tailwindcss@3.3.3)
   '@tailwindcss/typography':
     specifier: 0.5.10
     version: 0.5.10(tailwindcss@3.3.3)
@@ -916,8 +916,8 @@ packages:
     resolution: {integrity: sha512-ZnQMnLV4e7hDlUvw8H+U8ASL02SS2Gn6+9Ac3wGGLIe7+je2AeAOxPY+izIPJDfFDb7eDjev0Us8MO1iFRN8hA==}
     dev: true
 
-  /@iconify/json@2.2.135:
-    resolution: {integrity: sha512-SrssFU+P37j3QhxatYazLgNfvlwP3NVMFRUBlKfb8MvMtXqT46lT1KZsXLsRsORbLjm89+VJqXKOyK4u5K6T8A==}
+  /@iconify/json@2.2.150:
+    resolution: {integrity: sha512-SltvXzHpr919VfTXlxYaO9hWIOZnDl3DMnqdB+BVsh2nHs7QkKHEdimx3XhDmX5wJAKg7gup7sGDwwh9P3aTqQ==}
     dependencies:
       '@iconify/types': 2.0.0
       pathe: 1.1.1
@@ -1207,8 +1207,8 @@ packages:
       clipboard: 2.0.11
     dev: false
 
-  /@tailwindcss/forms@0.5.6(tailwindcss@3.3.3):
-    resolution: {integrity: sha512-Fw+2BJ0tmAwK/w01tEFL5TiaJBX1NLT1/YbWgvm7ws3Qcn11kiXxzNTEQDMs5V3mQemhB56l3u0i9dwdzSQldA==}
+  /@tailwindcss/forms@0.5.7(tailwindcss@3.3.3):
+    resolution: {integrity: sha512-QE7X69iQI+ZXwldE+rzasvbJiyV/ju1FGHH0Qn2W3FKbuYtqp8LKcy6iSw79fVUT5/Vvf+0XgLCeYVG+UV6hOw==}
     peerDependencies:
       tailwindcss: '>=3.0.0 || >= 3.0.0-alpha.1'
     dependencies:
