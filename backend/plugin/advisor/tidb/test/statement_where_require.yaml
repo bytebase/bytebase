@@ -1,68 +1,234 @@
-- statement: INSERT INTO tech_book(id) values (1)
+- statement: WITH cte AS (SELECT * FROM t1) SELECT * FROM t1;
+  want:
+    - status: WARN
+      code: 202
+      title: statement.where.require
+      content: '"WITH cte AS (SELECT * FROM t1) SELECT * FROM t1;" requires WHERE clause'
+      line: 0
+      column: 0
+      details: ""
+    - status: WARN
+      code: 202
+      title: statement.where.require
+      content: '"WITH cte AS (SELECT * FROM t1) SELECT * FROM t1;" requires WHERE clause'
+      line: 0
+      column: 0
+      details: ""
+- statement: SELECT COUNT(*), (SELECT COUNT(*) FROM t2) FROM t1;
+  want:
+    - status: WARN
+      code: 202
+      title: statement.where.require
+      content: '"SELECT COUNT(*), (SELECT COUNT(*) FROM t2) FROM t1;" requires WHERE clause'
+      line: 0
+      column: 0
+      details: ""
+    - status: WARN
+      code: 202
+      title: statement.where.require
+      content: '"SELECT COUNT(*), (SELECT COUNT(*) FROM t2) FROM t1;" requires WHERE clause'
+      line: 0
+      column: 0
+      details: ""
+- statement: SELECT * FROM t1 WHERE 1=1 UNION SELECT * FROM t2;
+  want:
+    - status: WARN
+      code: 202
+      title: statement.where.require
+      content: '"SELECT * FROM t1 WHERE 1=1 UNION SELECT * FROM t2;" requires WHERE clause'
+      line: 0
+      column: 0
+      details: ""
+- statement: SELECT * FROM t1 UNION SELECT * FROM t2;
+  want:
+    - status: WARN
+      code: 202
+      title: statement.where.require
+      content: '"SELECT * FROM t1 UNION SELECT * FROM t2;" requires WHERE clause'
+      line: 0
+      column: 0
+      details: ""
+    - status: WARN
+      code: 202
+      title: statement.where.require
+      content: '"SELECT * FROM t1 UNION SELECT * FROM t2;" requires WHERE clause'
+      line: 0
+      column: 0
+      details: ""
+- statement: WITH cte AS (SELECT * FROM t1) SELECT * FROM t3;
+  want:
+    - status: WARN
+      code: 202
+      title: statement.where.require
+      content: '"WITH cte AS (SELECT * FROM t1) SELECT * FROM t3;" requires WHERE clause'
+      line: 0
+      column: 0
+      details: ""
+    - status: WARN
+      code: 202
+      title: statement.where.require
+      content: '"WITH cte AS (SELECT * FROM t1) SELECT * FROM t3;" requires WHERE clause'
+      line: 0
+      column: 0
+      details: ""
+- statement: WITH cte1 AS (SELECT * FROM t1) SELECT * FROM cte1;
+  want:
+    - status: WARN
+      code: 202
+      title: statement.where.require
+      content: '"WITH cte1 AS (SELECT * FROM t1) SELECT * FROM cte1;" requires WHERE clause'
+      line: 0
+      column: 0
+      details: ""
+- statement: with cte1 as (select * from t1), cte2 as (select * from t3) select count(*), (select count(*) from cte2) from cte1;
+  want:
+    - status: WARN
+      code: 202
+      title: statement.where.require
+      content: '"with cte1 as (select * from t1), cte2 as (select * from t3) select count(*), (select count(*) from cte2) from cte1;" requires WHERE clause'
+      line: 0
+      column: 0
+      details: ""
+    - status: WARN
+      code: 202
+      title: statement.where.require
+      content: '"with cte1 as (select * from t1), cte2 as (select * from t3) select count(*), (select count(*) from cte2) from cte1;" requires WHERE clause'
+      line: 0
+      column: 0
+      details: ""
+- statement: SELECT * FROM t1 AS v1 WHERE 1=1;
   want:
     - status: SUCCESS
       code: 0
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
-- statement: DELETE FROM tech_book
+- statement: SELECT * FROM t1 AS v1;
   want:
     - status: WARN
       code: 202
       title: statement.where.require
-      content: |-
-        "DELETE FROM tech_book;" requires WHERE clause
+      content: '"SELECT * FROM t1 AS v1;" requires WHERE clause'
       line: 0
+      column: 0
       details: ""
-- statement: UPDATE tech_book SET id = 1
-  want:
-    - status: WARN
-      code: 202
-      title: statement.where.require
-      content: |-
-        "UPDATE tech_book SET id = 1;" requires WHERE clause
-      line: 0
-      details: ""
-- statement: DELETE FROM tech_book WHERE id > 0
+- statement: SELECT * FROM t1 WHERE id < (SELECT AVG(id) FROM t1 WHERE 1=1);
   want:
     - status: SUCCESS
       code: 0
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
-- statement: UPDATE tech_book SET id = 1 WHERE id > 10
+- statement: SELECT * FROM (SELECT * FROM t1) AS t2 WHERE t2.id < (SELECT AVG(id) FROM t1);
+  want:
+    - status: WARN
+      code: 202
+      title: statement.where.require
+      content: '"SELECT * FROM (SELECT * FROM t1) AS t2 WHERE t2.id < (SELECT AVG(id) FROM t1);" requires WHERE clause'
+      line: 0
+      column: 0
+      details: ""
+    - status: WARN
+      code: 202
+      title: statement.where.require
+      content: '"SELECT * FROM (SELECT * FROM t1) AS t2 WHERE t2.id < (SELECT AVG(id) FROM t1);" requires WHERE clause'
+      line: 0
+      column: 0
+      details: ""
+- statement: SELECT * FROM (SELECT * FROM t1 WHERE 1=1) AS t2 WHERE t2.id < (SELECT AVG(id) FROM t1);
+  want:
+    - status: WARN
+      code: 202
+      title: statement.where.require
+      content: '"SELECT * FROM (SELECT * FROM t1 WHERE 1=1) AS t2 WHERE t2.id < (SELECT AVG(id) FROM t1);" requires WHERE clause'
+      line: 0
+      column: 0
+      details: ""
+- statement: SELECT * FROM (SELECT * FROM t1 WHERE 1=1) AS t2 WHERE t2.id < (SELECT AVG(id) FROM t1 WHERE 1=1);
   want:
     - status: SUCCESS
       code: 0
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
-- statement: SELECT id FROM tech_book
+- statement: SELECT * FROM (SELECT * FROM t1) AS t2;
   want:
     - status: WARN
       code: 202
       title: statement.where.require
-      content: |-
-        "SELECT id FROM tech_book;" requires WHERE clause
+      content: '"SELECT * FROM (SELECT * FROM t1) AS t2;" requires WHERE clause'
       line: 0
+      column: 0
       details: ""
-- statement: SELECT id FROM tech_book WHERE id > 0
+- statement: SELECT * FROM (SELECT * FROM t1 WHERE 1=1) AS v2;
   want:
     - status: SUCCESS
       code: 0
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
-- statement: SELECT id FROM tech_book WHERE id > (SELECT max(id) FROM tech_book)
+- statement: SELECT * FROM t1;
   want:
     - status: WARN
       code: 202
       title: statement.where.require
-      content: |-
-        "SELECT id FROM tech_book WHERE id > (SELECT max(id) FROM tech_book);" requires WHERE clause
+      content: '"SELECT * FROM t1;" requires WHERE clause'
       line: 0
+      column: 0
+      details: ""
+- statement: SELECT * FROM t1 WHERE 1=1;
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      column: 0
+      details: ""
+- statement: |-
+    SELECT
+      *
+    FROM
+      (
+        SELECT
+          *
+        FROM
+          (
+            SELECT
+              *
+            FROM
+              `COLUMNS`
+            WHERE
+              1 = 1
+          ) AS COLUMNS
+      ) AS t1
+    WHERE
+      `ORDINAL_POSITION` < (
+        SELECT
+          *
+        FROM
+          (
+            SELECT
+              COUNT(*)
+            FROM
+              `COLUMNS`
+            WHERE
+              1 = 1
+          ) AS COLUMNS
+      );
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      column: 0
       details: ""
