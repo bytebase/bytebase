@@ -180,6 +180,7 @@
 
           <ScanIntervalInput
             v-if="!isCreating"
+            ref="scanIntervalInputRef"
             :scan-interval="basicInfo.options?.syncInterval"
             :allow-edit="allowEdit"
             @update:scan-interval="changeScanInterval"
@@ -439,6 +440,7 @@ const instanceV1Store = useInstanceV1Store();
 const settingV1Store = useSettingV1Store();
 const actuatorStore = useActuatorV1Store();
 const subscriptionStore = useSubscriptionV1Store();
+const scanIntervalInputRef = ref<InstanceType<typeof ScanIntervalInput>>();
 
 const state = reactive<LocalState>({
   editingDataSourceId: props.instance?.dataSources.find(
@@ -582,6 +584,12 @@ const valueChanged = computed(() => {
 const allowUpdate = computed((): boolean => {
   if (!valueChanged.value) {
     return false;
+  }
+  if (scanIntervalInputRef.value) {
+    const scanIntervalInput = scanIntervalInputRef.value;
+    if (!scanIntervalInput.validate()) {
+      return false;
+    }
   }
   if (basicInfo.value.engine === Engine.SPANNER) {
     if (!isValidSpannerHost(adminDataSource.value.host)) {
