@@ -49,7 +49,7 @@
                   "nullable":  true,
                   "type":  "int",
                   "hasDefault": true,
-                  "defaultExpression": "auto_increment"
+                  "defaultExpression": "AUTO_INCREMENT"
                 }
               ],
               "indexes":  [
@@ -222,7 +222,7 @@
     CREATE TABLE `rds` (
       `id` bigint(20) NOT NULL COMMENT 'ID',
       `binlog_format` enum('ROW','MIXED','STATEMENT',''),
-      `c1` int auto_increment
+      `c1` int AUTO_INCREMENT
     ) COMMENT 'hello';
 
     CREATE TABLE `t2` (
@@ -237,13 +237,13 @@
       `a` int primary key
     );
     CREATE TABLE `t2` (
-      `a` int auto_increment primary key
+      `a` int AUTO_INCREMENT primary key
     );
     CREATE TABLE `t3` (
       `a` int default 1 primary key
     );
     CREATE TABLE `t4` (
-      `a` int auto_increment primary key
+      `a` int AUTO_INCREMENT primary key
     );
   target: |-
     {
@@ -258,7 +258,7 @@
                   "nullable":  true,
                   "type":  "int",
                   "hasDefault": true,
-                  "defaultExpression": "auto_increment"
+                  "defaultExpression": "AUTO_INCREMENT"
                 }
               ]
             },
@@ -270,7 +270,7 @@
                   "nullable":  true,
                   "type":  "int",
                   "hasDefault": true,
-                  "defaultExpression": "auto_increment"
+                  "defaultExpression": "AUTO_INCREMENT"
                 }
               ]
             },
@@ -282,7 +282,7 @@
                   "nullable":  true,
                   "type":  "int",
                   "hasDefault": true,
-                  "defaultExpression": "auto_increment"
+                  "defaultExpression": "AUTO_INCREMENT"
                 }
               ]
             },
@@ -304,13 +304,13 @@
     }
   result: |
     CREATE TABLE `t1` (
-      `a` int auto_increment PRIMARY KEY
+      `a` int AUTO_INCREMENT PRIMARY KEY
     );
     CREATE TABLE `t2` (
-      `a` int auto_increment PRIMARY KEY
+      `a` int AUTO_INCREMENT PRIMARY KEY
     );
     CREATE TABLE `t3` (
-      `a` int auto_increment PRIMARY KEY
+      `a` int AUTO_INCREMENT PRIMARY KEY
     );
     CREATE TABLE `t4` (
       `a` int DEFAULT 1 PRIMARY KEY

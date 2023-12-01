@@ -118,7 +118,7 @@ func (t *tidbTransformer) Enter(in tidbast.Node) (tidbast.Node, bool) {
 					}
 					columnState.comment = comment
 				case tidbast.ColumnOptionAutoIncrement:
-					defaultValue := "auto_increment"
+					defaultValue := autoIncrementSymbol
 					columnState.hasDefault = true
 					columnState.defaultValue = &defaultValueExpression{value: defaultValue}
 				}
