@@ -48,10 +48,11 @@ func TestGetQuerySpan(t *testing.T) {
 		databaseMetadataGetter := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
 		result, err := GetQuerySpan(context.TODO(), tc.Statement, tc.ConnectedDatabase, databaseMetadataGetter)
 		a.NoError(err)
+		resultYaml := result.ToYaml()
 		if record {
-			testCases[i].QuerySpan = result.ToYaml()
+			testCases[i].QuerySpan = resultYaml
 		} else {
-			a.Equal(tc.QuerySpan, result.ToYaml(), "statement: %s", tc.Statement)
+			a.Equal(tc.QuerySpan, resultYaml, "statement: %s", tc.Statement)
 		}
 	}
 

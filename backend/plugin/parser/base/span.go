@@ -189,9 +189,15 @@ func (c ColumnResource) String() string {
 type GetDatabaseMetadataFunc func(context.Context, string) (*model.DatabaseMetadata, error)
 
 func (s *QuerySpan) ToYaml() *YamlQuerySpan {
-	y := &YamlQuerySpan{}
+	y := &YamlQuerySpan{
+		Results:       []YamlQuerySpanResult{},
+		SourceColumns: []ColumnResource{},
+	}
 	for _, result := range s.Results {
-		yamlResult := &YamlQuerySpanResult{Name: result.Name}
+		yamlResult := &YamlQuerySpanResult{
+			Name:          result.Name,
+			SourceColumns: []ColumnResource{},
+		}
 		for k := range result.SourceColumns {
 			yamlResult.SourceColumns = append(yamlResult.SourceColumns, k)
 		}
