@@ -19,55 +19,64 @@
         <p class="mb-3 text-sm text-gray-400">
           {{ $t("settings.general.workspace.logo-aspect") }}
         </p>
-        <div
-          class="flex justify-center border-2 border-gray-300 border-dashed rounded-md relative h-48"
-        >
-          <div
-            class="w-full bg-no-repeat bg-contain bg-center rounded-md pointer-events-none m-4"
-            :style="`background-image: url(${state.logoUrl});`"
-          ></div>
-          <SingleFileSelector
-            class="space-y-1 text-center flex flex-col justify-center items-center absolute top-0 bottom-0 left-0 right-0"
-            :class="[state.logoUrl ? 'opacity-0 hover:opacity-90' : '']"
-            :max-file-size-in-mi-b="maxFileSizeInMiB"
-            :support-file-extensions="supportImageExtensions"
-            :disabled="!allowEdit"
-            @on-select="onLogoSelect"
-          >
-            <svg
-              class="mx-auto h-12 w-12 text-gray-400 pointer-events-none"
-              stroke="currentColor"
-              fill="none"
-              viewBox="0 0 48 48"
-              aria-hidden="true"
+        <NTooltip placement="top-start" :disabled="allowEdit">
+          <template #trigger>
+            <div
+              class="flex justify-center border-2 border-gray-300 border-dashed rounded-md relative h-48"
             >
-              <path
-                d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div class="text-sm text-gray-600 inline-flex pointer-events-none">
-              <span
-                class="relative cursor-pointer rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
+              <div
+                class="w-full bg-no-repeat bg-contain bg-center rounded-md pointer-events-none m-4"
+                :style="`background-image: url(${state.logoUrl});`"
+              ></div>
+              <SingleFileSelector
+                class="space-y-1 text-center flex flex-col justify-center items-center absolute top-0 bottom-0 left-0 right-0"
+                :class="[state.logoUrl ? 'opacity-0 hover:opacity-90' : '']"
+                :max-file-size-in-mi-b="maxFileSizeInMiB"
+                :support-file-extensions="supportImageExtensions"
+                :disabled="!allowEdit"
+                @on-select="onLogoSelect"
               >
-                {{ $t("settings.general.workspace.select-logo") }}
-              </span>
-              <p class="pl-1">
-                {{ $t("settings.general.workspace.drag-logo") }}
-              </p>
+                <svg
+                  class="mx-auto h-12 w-12 text-gray-400 pointer-events-none"
+                  stroke="currentColor"
+                  fill="none"
+                  viewBox="0 0 48 48"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+                <div
+                  class="text-sm text-gray-600 inline-flex pointer-events-none"
+                >
+                  <span
+                    class="relative cursor-pointer rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
+                  >
+                    {{ $t("settings.general.workspace.select-logo") }}
+                  </span>
+                  <p class="pl-1">
+                    {{ $t("settings.general.workspace.drag-logo") }}
+                  </p>
+                </div>
+                <p class="text-xs text-gray-500 pointer-events-none">
+                  {{
+                    $t("settings.general.workspace.logo-upload-tip", {
+                      extension: supportImageExtensions.join(", "),
+                      size: maxFileSizeInMiB,
+                    })
+                  }}
+                </p>
+              </SingleFileSelector>
             </div>
-            <p class="text-xs text-gray-500 pointer-events-none">
-              {{
-                $t("settings.general.workspace.logo-upload-tip", {
-                  extension: supportImageExtensions.join(", "),
-                  size: maxFileSizeInMiB,
-                })
-              }}
-            </p>
-          </SingleFileSelector>
-        </div>
+          </template>
+          <span class="text-sm text-gray-400 -translate-y-2">
+            {{ $t("settings.general.workspace.only-admin-can-edit") }}
+          </span>
+        </NTooltip>
       </div>
       <div class="flex justify-end gap-x-3">
         <NPopconfirm v-if="allowDelete" @positive-click="deleteLogo">

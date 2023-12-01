@@ -107,7 +107,7 @@
           </template>
         </div>
       </BBTableCell>
-      <BBTableCell class="whitespace-nowrap tooltip-wrapper w-auto">
+      <BBTableCell class="whitespace-nowrap w-auto">
         <span
           v-if="is2FAEnabled(user)"
           class="text-xs p-1 px-2 rounded-lg bg-green-600 text-white"
