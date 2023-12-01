@@ -271,9 +271,7 @@ func tidbRestoreFieldType(fieldType *tidbtypes.FieldType) (string, error) {
 	}
 	var buffer strings.Builder
 	// we want to use Default format flags but with lowercase keyword.
-	flag := tidbformat.DefaultRestoreFlags
-	flag &= ^tidbformat.RestoreKeyWordUppercase
-	flag |= tidbformat.RestoreKeyWordLowercase
+	flag := tidbformat.RestoreKeyWordLowercase | tidbformat.RestoreStringSingleQuotes | tidbformat.RestoreNameBackQuotes
 	ctx := tidbformat.NewRestoreCtx(flag, &buffer)
 	if err := fieldType.Restore(ctx); err != nil {
 		return "", err
