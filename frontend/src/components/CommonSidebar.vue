@@ -1,21 +1,19 @@
 <template>
   <nav class="flex-1 flex flex-col overflow-y-hidden">
     <BytebaseLogo v-if="showLogo" class="w-full px-4 shrink-0" />
-    <div class="flex-1 overflow-y-auto px-2.5">
+    <div class="flex-1 overflow-y-auto px-2.5 space-y-1">
       <div v-for="(item, i) in filteredSidebarList" :key="i">
         <router-link
           v-if="item.type === 'route'"
           :to="item.path ?? ''"
-          class="outline-item group w-full font-medium flex items-center px-2 py-1.5 !text-sm rounded-md mb-1"
-          :class="getItemClass(item.path)"
+          :class="[parentRouteClass, getItemClass(item.path)]"
         >
           <component :is="item.icon" class="mr-2 w-5 h-5 text-gray-500" />
           {{ item.title }}
         </router-link>
         <div
           v-else-if="item.type === 'div'"
-          class="group flex items-center px-2 py-1.5 leading-normal font-medium rounded-md text-gray-700 outline-item !text-sm mt-1"
-          :class="getItemClass(item.path)"
+          :class="[parentRouteClass, getItemClass(item.path)]"
           @click="onClick(i)"
         >
           <component :is="item.icon" class="mr-2 w-5 h-5 text-gray-500" />
@@ -30,8 +28,7 @@
         </div>
         <a
           v-if="item.type === 'link'"
-          class="group flex items-center px-2 py-1.5 leading-5 font-medium rounded-md text-gray-700 outline-item !text-item"
-          :class="getItemClass(item.path)"
+          :class="[parentRouteClass, getItemClass(item.path)]"
           :href="item.path"
           @click="$emit('select', item.path)"
         >
@@ -44,13 +41,12 @@
         />
         <div
           v-if="item.children.length > 0 && state.expandedSidebar.has(i)"
-          class=""
+          class="space-y-1 mt-1"
         >
           <template v-for="(child, j) in item.children" :key="`${i}-${j}`">
             <a
               v-if="child.type === 'link'"
-              class="group w-full flex items-center pl-9 pr-2 py-1.5 outline-item mb-0.5 mt-1"
-              :class="getItemClass(child.path)"
+              :class="[childRouteClass, getItemClass(child.path)]"
               :href="child.path"
               @click="$emit('select', child.path)"
             >
@@ -59,8 +55,7 @@
             <router-link
               v-else-if="child.type === 'route'"
               :to="child.path"
-              class="outline-item group w-full flex items-center pl-9 pr-2 py-1 rounded-md my-0.5"
-              :class="getItemClass(child.path)"
+              :class="[childRouteClass, getItemClass(child.path)]"
             >
               {{ child.title }}
             </router-link>
@@ -111,6 +106,14 @@ const emit = defineEmits<{
 
 const state = reactive<LocalState>({
   expandedSidebar: new Set(),
+});
+
+const parentRouteClass = computed(() => {
+  return "group flex items-center px-2 py-1.5 leading-normal font-medium rounded-md text-gray-700 outline-item !text-sm";
+});
+
+const childRouteClass = computed(() => {
+  return "group w-full flex items-center pl-9 pr-2 py-1 outline-item mb-0.5 rounded-md";
 });
 
 const filteredSidebarList = computed(() => {
