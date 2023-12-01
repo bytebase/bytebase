@@ -4,7 +4,7 @@
 
     <ExportCenterButton v-if="actionType === 'EXPORT-CENTER'" />
 
-    <SQLEditorButton v-if="actionType === 'SQL-EDITOR'" />
+    <TinySQLEditorButton v-if="actionType === 'SQL-EDITOR'" />
 
     <IssueReviewButtonGroup v-if="actionType === 'REVIEW'" />
 
@@ -22,7 +22,7 @@ import { isGrantRequestIssue } from "@/utils";
 import { convertFromCELString } from "@/utils/issue/cel";
 import { useIssueContext } from "../../../logic";
 import { CreateButton } from "./create";
-import { ExportCenterButton, SQLEditorButton } from "./request";
+import { ExportCenterButton, TinySQLEditorButton } from "./request";
 import { IssueReviewButtonGroup } from "./review";
 import { CombinedRolloutButtonGroup } from "./rollout";
 

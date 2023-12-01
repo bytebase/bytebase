@@ -1,16 +1,20 @@
 <template>
   <div class="border border-gray-300 rounded">
-    <div class="flex flex-wrap gap-4 p-3 bg-gray-50 rounded">
-      <div
-        v-for="template in templateList"
-        :key="template.id"
-        class="px-4 py-1 rounded text-sm font-sm font-normal border border-gray-300 bg-gray-100 cursor-pointer tooltip-wrapper hover:bg-gray-200"
-        @click="() => onTemplateAdd(template)"
-      >
-        {{ template.id }}
-        <span v-if="template.description" class="tooltip whitespace-nowrap">{{
-          $t(template.description)
-        }}</span>
+    <div class="flex flex-wrap gap-2 p-3 bg-gray-50 rounded">
+      <div v-for="template in templateList" :key="template.id">
+        <NTooltip :disabled="!template.description">
+          <template #trigger>
+            <div
+              class="px-4 py-1 rounded text-sm font-sm font-normal border border-gray-300 bg-gray-100 cursor-pointer hover:bg-gray-200"
+              @click="() => onTemplateAdd(template)"
+            >
+              {{ template.id }}
+            </div>
+          </template>
+          <span v-if="template.description" class="whitespace-nowrap">
+            {{ $t(template.description) }}
+          </span>
+        </NTooltip>
       </div>
     </div>
     <div class="p-2 border-t border-gray-300">

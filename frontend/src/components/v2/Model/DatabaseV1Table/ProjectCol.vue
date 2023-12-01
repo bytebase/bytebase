@@ -19,7 +19,7 @@
       <template #trigger>
         <GitIcon class="ml-1 w-4 h-4 text-control" />
       </template>
-      <span v-if="mode === 'ALL_SHORT'" class="tooltip w-40">
+      <span v-if="mode === 'ALL_SHORT'" class="w-40">
         {{ $t("alter-schema.vcs-info") }}
       </span>
       <span v-else class="tooltip whitespace-nowrap">

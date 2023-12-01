@@ -222,7 +222,7 @@
       >
         <button
           type="button"
-          class="btn-normal flex justify-center w-full h-10 mb-2 tooltip-wrapper"
+          class="btn-normal flex justify-center w-full h-10 mb-2"
           @click.prevent="trySigninWithIdentityProvider(identityProvider)"
         >
           <span class="text-center align-middle">

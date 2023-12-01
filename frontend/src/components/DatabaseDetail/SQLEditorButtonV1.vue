@@ -78,9 +78,6 @@ const showTooltip = computed((): boolean => {
 
 const classes = computed(() => {
   const classes: string[] = [];
-  if (showTooltip.value) {
-    classes.push("tooltip-wrapper");
-  }
   if (props.disabled) {
     classes.push("text-gray-400");
   } else {

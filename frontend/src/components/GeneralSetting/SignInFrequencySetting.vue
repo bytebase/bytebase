@@ -9,26 +9,33 @@
     <p class="text-sm text-gray-400 mt-1">
       {{ $t("settings.general.workspace.sign-in-frequency.description") }}
     </p>
-    <div class="mt-3 w-full flex flex-row justify-start items-center">
-      <NInputNumber
-        v-model:value="state.inputValue"
-        class="w-20 mr-4"
-        :disabled="!allowEdit"
-        :min="1"
-        :max="state.timeFormat === 'HOURS' ? 23 : undefined"
-        :precision="0"
-      />
-      <NRadioGroup v-model:value="state.timeFormat" :disabled="!allowEdit">
-        <NRadio
-          :value="'HOURS'"
-          :label="$t('settings.general.workspace.sign-in-frequency.hours')"
-        />
-        <NRadio
-          :value="'DAYS'"
-          :label="$t('settings.general.workspace.sign-in-frequency.days')"
-        />
-      </NRadioGroup>
-    </div>
+    <NTooltip placement="top-start" :disabled="allowEdit">
+      <template #trigger>
+        <div class="mt-3 w-full flex flex-row justify-start items-center">
+          <NInputNumber
+            v-model:value="state.inputValue"
+            class="w-20 mr-4"
+            :disabled="!allowEdit"
+            :min="1"
+            :max="state.timeFormat === 'HOURS' ? 23 : undefined"
+            :precision="0"
+          />
+          <NRadioGroup v-model:value="state.timeFormat" :disabled="!allowEdit">
+            <NRadio
+              :value="'HOURS'"
+              :label="$t('settings.general.workspace.sign-in-frequency.hours')"
+            />
+            <NRadio
+              :value="'DAYS'"
+              :label="$t('settings.general.workspace.sign-in-frequency.days')"
+            />
+          </NRadioGroup>
+        </div>
+      </template>
+      <span class="text-sm text-gray-400 -translate-y-2">
+        {{ $t("settings.general.workspace.only-admin-can-edit") }}
+      </span>
+    </NTooltip>
   </div>
 
   <FeatureModal
