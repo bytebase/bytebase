@@ -54,8 +54,42 @@ func (s *BranchService) GetSchemaDesign(ctx context.Context, request *v1pb.GetSc
 }
 
 // ListSchemaDesigns lists schema designs.
-func (*BranchService) ListSchemaDesigns(_ context.Context, _ *v1pb.ListSchemaDesignsRequest) (*v1pb.ListSchemaDesignsResponse, error) {
-	return nil, nil
+func (s *BranchService) ListSchemaDesigns(ctx context.Context, request *v1pb.ListSchemaDesignsRequest) (*v1pb.ListSchemaDesignsResponse, error) {
+	projectID, err := common.GetProjectID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.getProject(ctx, projectID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkBranchPermission(ctx, projectID); err != nil {
+		return nil, err
+	}
+
+	branchFind := &store.FindBranchMessage{
+		ProjectID: &project.ResourceID,
+	}
+	if request.View == v1pb.SchemaDesignView_SCHEMA_DESIGN_VIEW_FULL {
+		branchFind.LoadFull = true
+	}
+	branches, err := s.store.ListBranches(ctx, branchFind)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to list sheet: %v", err))
+	}
+
+	var schemaDesigns []*v1pb.SchemaDesign
+	for _, branch := range branches {
+		schemaDesign, err := s.convertBranchToSchemaDesign(ctx, project, branch, request.View)
+		if err != nil {
+			return nil, err
+		}
+		schemaDesigns = append(schemaDesigns, schemaDesign)
+	}
+	response := &v1pb.ListSchemaDesignsResponse{
+		SchemaDesigns: schemaDesigns,
+	}
+	return response, nil
 }
 
 // CreateSchemaDesign creates a new schema design.
@@ -74,8 +108,23 @@ func (*BranchService) MergeSchemaDesign(_ context.Context, _ *v1pb.MergeSchemaDe
 }
 
 // DeleteSchemaDesign deletes an existing schema design.
-func (*BranchService) DeleteSchemaDesign(_ context.Context, _ *v1pb.DeleteSchemaDesignRequest) (*emptypb.Empty, error) {
-	return nil, nil
+func (s *BranchService) DeleteSchemaDesign(ctx context.Context, request *v1pb.DeleteSchemaDesignRequest) (*emptypb.Empty, error) {
+	projectID, branchID, err := common.GetProjectAndBranchID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	project, branch, err := s.getBranch(ctx, projectID, branchID, false /* loadFull */)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkBranchPermission(ctx, project.ResourceID); err != nil {
+		return nil, err
+	}
+
+	if err := s.store.DeleteBranch(ctx, project.ResourceID, branch.ResourceID); err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to delete sheet: %v", err))
+	}
+	return &emptypb.Empty{}, nil
 }
 
 func (s *BranchService) getProject(ctx context.Context, projectID string) (*store.ProjectMessage, error) {
