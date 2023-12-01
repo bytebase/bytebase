@@ -20,7 +20,7 @@
                 {
                   "name": "c",
                   "hasDefault": true,
-                  "defaultExpression": "auto_increment",
+                  "defaultExpression": "AUTO_INCREMENT",
                   "nullable": true,
                   "type": "int"
                 },
