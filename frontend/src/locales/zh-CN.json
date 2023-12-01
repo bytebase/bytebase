@@ -1325,7 +1325,8 @@
     "scan-interval": {
       "self": "扫描间隔",
       "default-never": "默认（永不）",
-      "description": "Bytebase 会定期同步实例的 schema 以及进行异常检测。"
+      "description": "Bytebase 会定期同步实例的 schema 以及进行异常检测。",
+      "min-value": "最小值 {value} 分钟"
     }
   },
   "environment": {

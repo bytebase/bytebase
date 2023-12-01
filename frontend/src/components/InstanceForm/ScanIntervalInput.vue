@@ -36,13 +36,14 @@
               :disabled="state.mode !== 'CUSTOM'"
               @update:value="handleMinuteChange"
             />
-            <span>{{ $t("common.minutes") }}</span>
-            <span
-              v-if="!state.isValid && (state.minutes ?? 0) < MIN_MINUTES"
-              class="text-error"
-            >
-              Min value 30
+            <span v-if="!state.isValid" class="text-error">
+              {{
+                $t("instance.scan-interval.min-value", {
+                  value: MIN_MINUTES,
+                })
+              }}
             </span>
+            <span v-else>{{ $t("common.minutes") }}</span>
           </div>
         </NRadio>
         <FeatureBadge

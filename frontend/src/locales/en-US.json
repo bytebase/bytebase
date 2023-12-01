@@ -1328,7 +1328,8 @@
     "scan-interval": {
       "self": "Scan Interval",
       "default-never": "Default (never)",
-      "description": "Bytebase periodically syncs instance schema and detects anomalies."
+      "description": "Bytebase periodically syncs instance schema and detects anomalies.",
+      "min-value": "Min value {value} minutes"
     }
   },
   "environment": {
