@@ -154,31 +154,28 @@ func (s *BranchService) convertBranchToSchemaDesign(ctx context.Context, project
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("cannot find the updater: %d", branch.UpdaterID))
 	}
 
-	var baselineDatabase string
+	var baselineDatabase, baselineBranch string
 	schemaDesignType := v1pb.SchemaDesign_MAIN_BRANCH
 	if branch.Config != nil {
 		baselineDatabase = branch.Config.SourceDatabase
 		if branch.Config.SourceBranch != "" {
 			schemaDesignType = v1pb.SchemaDesign_PERSONAL_DRAFT
+			baselineBranch = branch.Config.SourceBranch
 		}
 	}
 
 	schemaDesign := &v1pb.SchemaDesign{
-		Name:                   fmt.Sprintf("%s%s/%s%v", common.ProjectNamePrefix, project.ResourceID, common.BranchPrefix, branch.ResourceID),
-		Title:                  branch.ResourceID,
-		Etag:                   fmt.Sprintf("%d", branch.CreatedTime.UnixMilli()),
-		Schema:                 branch.Head.Schema,
-		SchemaMetadata:         nil,
-		BaselineSchema:         branch.Base.Schema,
-		BaselineSchemaMetadata: nil,
-		BaselineSheetName:      "", /* deprecated */
-		Engine:                 v1pb.Engine(branch.Engine),
-		BaselineDatabase:       baselineDatabase,
-		Type:                   schemaDesignType,
-		Creator:                common.FormatUserEmail(creator.Email),
-		Updater:                common.FormatUserEmail(updater.Email),
-		CreateTime:             timestamppb.New(branch.CreatedTime),
-		UpdateTime:             timestamppb.New(branch.UpdatedTime),
+		Name:              fmt.Sprintf("%s%s/%s%v", common.ProjectNamePrefix, project.ResourceID, common.BranchPrefix, branch.ResourceID),
+		Title:             branch.ResourceID,
+		Etag:              fmt.Sprintf("%d", branch.CreatedTime.UnixMilli()),
+		BaselineSheetName: baselineBranch,
+		Engine:            v1pb.Engine(branch.Engine),
+		BaselineDatabase:  baselineDatabase,
+		Type:              schemaDesignType,
+		Creator:           common.FormatUserEmail(creator.Email),
+		Updater:           common.FormatUserEmail(updater.Email),
+		CreateTime:        timestamppb.New(branch.CreatedTime),
+		UpdateTime:        timestamppb.New(branch.UpdatedTime),
 	}
 
 	if view != v1pb.SchemaDesignView_SCHEMA_DESIGN_VIEW_FULL {
