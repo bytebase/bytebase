@@ -2,6 +2,7 @@ package base
 
 import (
 	"context"
+	"sort"
 	"strings"
 
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -186,3 +187,36 @@ func (c ColumnResource) String() string {
 
 // GetDatabaseMetadataFunc is the function to get database metadata.
 type GetDatabaseMetadataFunc func(context.Context, string) (*model.DatabaseMetadata, error)
+
+func (s *QuerySpan) ToYaml() *YamlQuerySpan {
+	y := &YamlQuerySpan{}
+	for _, result := range s.Results {
+		yamlResult := &YamlQuerySpanResult{Name: result.Name}
+		for k := range result.SourceColumns {
+			yamlResult.SourceColumns = append(yamlResult.SourceColumns, k)
+		}
+		sort.Slice(yamlResult.SourceColumns, func(i, j int) bool {
+			vi, vj := yamlResult.SourceColumns[i], yamlResult.SourceColumns[j]
+			return vi.String() < vj.String()
+		})
+		y.Results = append(y.Results, *yamlResult)
+	}
+	for k := range s.SourceColumns {
+		y.SourceColumns = append(y.SourceColumns, k)
+	}
+	sort.Slice(y.SourceColumns, func(i, j int) bool {
+		vi, vj := y.SourceColumns[i], y.SourceColumns[j]
+		return vi.String() < vj.String()
+	})
+	return y
+}
+
+type YamlQuerySpan struct {
+	Results       []YamlQuerySpanResult
+	SourceColumns []ColumnResource
+}
+
+type YamlQuerySpanResult struct {
+	Name          string
+	SourceColumns []ColumnResource
+}

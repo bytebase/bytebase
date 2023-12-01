@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -23,8 +23,8 @@ func TestGetQuerySpan(t *testing.T) {
 		ConnectedDatabase string `yaml:"connectedDatabase,omitempty"`
 		// Metadata is the protojson encoded storepb.DatabaseSchemaMetadata,
 		// if it's empty, we will use the defaultDatabaseMetadata.
-		Metadata  string          `yaml:"metadata,omitempty"`
-		QuerySpan *base.QuerySpan `yaml:"querySpan,omitempty"`
+		Metadata  string              `yaml:"metadata,omitempty"`
+		QuerySpan *base.YamlQuerySpan `yaml:"querySpan,omitempty"`
 	}
 
 	const (
@@ -49,9 +49,9 @@ func TestGetQuerySpan(t *testing.T) {
 		result, err := GetQuerySpan(context.TODO(), tc.Statement, tc.ConnectedDatabase, databaseMetadataGetter)
 		a.NoError(err)
 		if record {
-			testCases[i].QuerySpan = result
+			testCases[i].QuerySpan = result.ToYaml()
 		} else {
-			a.Equal(tc.QuerySpan, result, "statement: %s", tc.Statement)
+			a.Equal(tc.QuerySpan, result.ToYaml(), "statement: %s", tc.Statement)
 		}
 	}
 
