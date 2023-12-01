@@ -29,8 +29,7 @@
             <NInputNumber
               :value="state.minutes"
               :show-button="false"
-              :min="MIN_MINUTES"
-              placeholder=""
+              :placeholder="`>= ${MIN_MINUTES}`"
               size="small"
               style="width: 4rem"
               :status="state.isValid ? undefined : 'error'"
@@ -38,6 +37,12 @@
               @update:value="handleMinuteChange"
             />
             <span>{{ $t("common.minutes") }}</span>
+            <span
+              v-if="!state.isValid && (state.minutes ?? 0) < MIN_MINUTES"
+              class="text-error"
+            >
+              Min value 30
+            </span>
           </div>
         </NRadio>
         <FeatureBadge
