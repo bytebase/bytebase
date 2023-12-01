@@ -51,6 +51,8 @@ const (
 	PolicyTypeDisableCopyData PolicyType = "bb.policy.disable-copy-data"
 	// PolicyTypeMaskingRule is the masking rule policy type.
 	PolicyTypeMaskingRule PolicyType = "bb.policy.masking-rule"
+	// PolicyTypeRestrictIssueCreationForSQLReview is the policy type for restricting issue creation for SQL review.
+	PolicyTypeRestrictIssueCreationForSQLReview PolicyType = "bb.policy.restrict-issue-creation-for-sql-review"
 
 	// PipelineApprovalValueManualNever means the pipeline will automatically be approved without user intervention.
 	PipelineApprovalValueManualNever PipelineApprovalValue = "MANUAL_APPROVAL_NEVER"
@@ -91,17 +93,18 @@ const (
 var (
 	// AllowedResourceTypes includes allowed resource types for each policy type.
 	AllowedResourceTypes = map[PolicyType][]PolicyResourceType{
-		PolicyTypeWorkspaceIAM:     {PolicyResourceTypeWorkspace},
-		PolicyTypePipelineApproval: {PolicyResourceTypeEnvironment},
-		PolicyTypeRollout:          {PolicyResourceTypeEnvironment},
-		PolicyTypeBackupPlan:       {PolicyResourceTypeEnvironment},
-		PolicyTypeSQLReview:        {PolicyResourceTypeEnvironment},
-		PolicyTypeEnvironmentTier:  {PolicyResourceTypeEnvironment},
-		PolicyTypeMasking:          {PolicyResourceTypeDatabase},
-		PolicyTypeSlowQuery:        {PolicyResourceTypeInstance},
-		PolicyTypeDisableCopyData:  {PolicyResourceTypeEnvironment},
-		PolicyTypeMaskingRule:      {PolicyResourceTypeWorkspace},
-		PolicyTypeMaskingException: {PolicyResourceTypeProject},
+		PolicyTypeWorkspaceIAM:                      {PolicyResourceTypeWorkspace},
+		PolicyTypePipelineApproval:                  {PolicyResourceTypeEnvironment},
+		PolicyTypeRollout:                           {PolicyResourceTypeEnvironment},
+		PolicyTypeBackupPlan:                        {PolicyResourceTypeEnvironment},
+		PolicyTypeSQLReview:                         {PolicyResourceTypeEnvironment},
+		PolicyTypeEnvironmentTier:                   {PolicyResourceTypeEnvironment},
+		PolicyTypeMasking:                           {PolicyResourceTypeDatabase},
+		PolicyTypeSlowQuery:                         {PolicyResourceTypeInstance},
+		PolicyTypeDisableCopyData:                   {PolicyResourceTypeEnvironment},
+		PolicyTypeMaskingRule:                       {PolicyResourceTypeWorkspace},
+		PolicyTypeMaskingException:                  {PolicyResourceTypeProject},
+		PolicyTypeRestrictIssueCreationForSQLReview: {PolicyResourceTypeWorkspace},
 	}
 )
 
@@ -238,6 +241,28 @@ func UnmarshalDisableCopyDataPolicyPolicy(payload string) (*DisableCopyDataPolic
 
 // String will return the string representation of the policy.
 func (p *DisableCopyDataPolicy) String() (string, error) {
+	s, err := json.Marshal(p)
+	if err != nil {
+		return "", err
+	}
+	return string(s), nil
+}
+
+// RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restricting issue creation for SQL review.
+type RestrictIssueCreationForSQLReviewPolicy struct {
+	Disallow bool `json:"disallow"`
+}
+
+// UnmarshalRestrictIssueCreationForSQLReviewPolicy will unmarshal payload to restrict issue creation for SQL review policy.
+func UnmarshalRestrictIssueCreationForSQLReviewPolicy(payload string) (*RestrictIssueCreationForSQLReviewPolicy, error) {
+	var p RestrictIssueCreationForSQLReviewPolicy
+	if err := json.Unmarshal([]byte(payload), &p); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal restrict issue creation for SQL review policy %q", payload)
+	}
+	return &p, nil
+}
+
+func (p *RestrictIssueCreationForSQLReviewPolicy) String() (string, error) {
 	s, err := json.Marshal(p)
 	if err != nil {
 		return "", err
