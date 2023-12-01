@@ -137,13 +137,13 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 				if v != "" {
 					rowsAffected, err := execute(ctx, tx, v)
 					if err != nil {
-						return 0, errors.Wrapf(err, "failed to execute statement: %s", v)
+						return 0, err
 					}
 					totalAffectRows += rowsAffected
 				}
 				break
 			}
-			return 0, errors.Wrapf(err, "failed to execute batch statement: %s", batch.String())
+			return 0, errors.Wrapf(err, "failed to get next batch for statement: %s", batch.String())
 		}
 		if command != nil {
 			switch v := command.(type) {
