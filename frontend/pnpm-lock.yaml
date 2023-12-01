@@ -242,8 +242,8 @@ devDependencies:
     specifier: 3.0.2
     version: 3.0.2
   '@types/downloadjs':
-    specifier: 1.4.5
-    version: 1.4.5
+    specifier: 1.4.6
+    version: 1.4.6
   '@types/file-saver':
     specifier: ^2.0.5
     version: 2.0.5
@@ -1467,8 +1467,8 @@ packages:
       '@types/trusted-types': 2.0.4
     dev: true
 
-  /@types/downloadjs@1.4.5:
-    resolution: {integrity: sha512-pr3zSKY0QwP+1tQumJGNfziGNi1xLVHtGsrclGsgjVpfWSPoW/9He42w6X+GTp4PO5I2wuHDU2wJdxI7dqjW+w==}
+  /@types/downloadjs@1.4.6:
+    resolution: {integrity: sha512-mp3w70vsaiLRT9ix92fmI9Ob2yJAPZm6tShJtofo2uHbN11G2i6a0ApIEjBl/kv3e9V7Pv7jMjk1bUwYWvMHvA==}
     dev: true
 
   /@types/estree@1.0.2:
