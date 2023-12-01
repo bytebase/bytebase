@@ -339,7 +339,7 @@ onMounted(async () => {
         resourceType: PolicyResourceType.ENVIRONMENT,
         policyType: PolicyType.DISABLE_COPY_DATA,
       }),
-      usePolicyV1Store().getOrFetchPolicyByName("policies/WORKSPACE_IAM"),
+      policyV1Store.getOrFetchPolicyByName("policies/WORKSPACE_IAM"),
     ]);
 
     await prepareDatabases();
