@@ -1065,8 +1065,8 @@ ViewMetadata is the metadata for views.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| source_database | [int64](#int64) |  | The name of source database. Optional. Example: instances/instance-id/databases/database-name. |
-| source_branch | [int64](#int64) |  | The name of the source branch. Optional. Example: projects/project-id/branches/branch-id. |
+| source_database | [string](#string) |  | The name of source database. Optional. Example: instances/instance-id/databases/database-name. |
+| source_branch | [string](#string) |  | The name of the source branch. Optional. Example: projects/project-id/branches/branch-id. |
 
 
 

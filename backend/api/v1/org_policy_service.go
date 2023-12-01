@@ -664,6 +664,15 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (st
 			return "", errors.Wrap(err, "failed to marshal masking exception policy")
 		}
 		return string(payloadBytes), nil
+	case v1pb.PolicyType_RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW:
+		if err := s.licenseService.IsFeatureEnabled(api.FeatureAccessControl); err != nil {
+			return "", status.Errorf(codes.PermissionDenied, err.Error())
+		}
+		payload, err := convertToRestrictIssueCreationForSQLReviewPayload(policy.GetRestrictIssueCreationForSqlReviewPolicy())
+		if err != nil {
+			return "", status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		return payload.String()
 	}
 
 	return "", status.Errorf(codes.InvalidArgument, "invalid policy %v", policy.Type)
@@ -780,6 +789,13 @@ func convertToPolicy(parentPath string, policyMessage *store.PolicyMessage) (*v1
 		policy.Policy = &v1pb.Policy_MaskingExceptionPolicy{
 			MaskingExceptionPolicy: payload,
 		}
+	case api.PolicyTypeRestrictIssueCreationForSQLReview:
+		pType = v1pb.PolicyType_RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
+		payload, err := convertToV1PBRestrictIssueCreationForSQLReviewPolicy(policyMessage.Payload)
+		if err != nil {
+			return nil, err
+		}
+		policy.Policy = payload
 	}
 
 	policy.Type = pType
@@ -1294,6 +1310,24 @@ func convertToV1PBMaskingExceptionPolicyPayload(policy *storepb.MaskingException
 	}, nil
 }
 
+func convertToV1PBRestrictIssueCreationForSQLReviewPolicy(payloadStr string) (*v1pb.Policy_RestrictIssueCreationForSqlReviewPolicy, error) {
+	payload, err := api.UnmarshalRestrictIssueCreationForSQLReviewPolicy(payloadStr)
+	if err != nil {
+		return nil, err
+	}
+	return &v1pb.Policy_RestrictIssueCreationForSqlReviewPolicy{
+		RestrictIssueCreationForSqlReviewPolicy: &v1pb.RestrictIssueCreationForSQLReviewPolicy{
+			Disallow: payload.Disallow,
+		},
+	}, nil
+}
+
+func convertToRestrictIssueCreationForSQLReviewPayload(policy *v1pb.RestrictIssueCreationForSQLReviewPolicy) (*api.RestrictIssueCreationForSQLReviewPolicy, error) {
+	return &api.RestrictIssueCreationForSQLReviewPolicy{
+		Disallow: policy.Disallow,
+	}, nil
+}
+
 // This is to be deprecated.
 const (
 	// IssueDatabaseCreate is the issue type for creating databases.
@@ -1350,6 +1384,8 @@ func convertPolicyType(pType string) (api.PolicyType, error) {
 		return api.PolicyTypeSlowQuery, nil
 	case v1pb.PolicyType_DISABLE_COPY_DATA.String():
 		return api.PolicyTypeDisableCopyData, nil
+	case v1pb.PolicyType_RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW.String():
+		return api.PolicyTypeRestrictIssueCreationForSQLReview, nil
 	}
 	return policyType, errors.Errorf("invalid policy type %v", pType)
 }

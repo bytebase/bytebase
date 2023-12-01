@@ -118,7 +118,7 @@ func (t *tidbTransformer) Enter(in tidbast.Node) (tidbast.Node, bool) {
 					}
 					columnState.comment = comment
 				case tidbast.ColumnOptionAutoIncrement:
-					defaultValue := "auto_increment"
+					defaultValue := autoIncrementSymbol
 					columnState.hasDefault = true
 					columnState.defaultValue = &defaultValueExpression{value: defaultValue}
 				}
@@ -270,7 +270,8 @@ func tidbRestoreFieldType(fieldType *tidbtypes.FieldType) (string, error) {
 		return fieldType.CompactStr(), nil
 	}
 	var buffer strings.Builder
-	flag := tidbformat.RestoreKeyWordLowercase | tidbformat.RestoreStringSingleQuotes
+	// we want to use Default format flags but with lowercase keyword.
+	flag := tidbformat.RestoreKeyWordLowercase | tidbformat.RestoreStringSingleQuotes | tidbformat.RestoreNameBackQuotes
 	ctx := tidbformat.NewRestoreCtx(flag, &buffer)
 	if err := fieldType.Restore(ctx); err != nil {
 		return "", err
