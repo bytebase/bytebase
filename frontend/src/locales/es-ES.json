@@ -664,7 +664,11 @@
           "days": "Días",
           "config-updated": "La configuración se ha actualizado. Necesita reiniciar Bytebase y volver a iniciar sesión para que surta efecto."
         },
-        "confirm-delete-custom-logo": "¿Eliminar el logotipo de marca personalizado?"
+        "confirm-delete-custom-logo": "¿Eliminar el logotipo de marca personalizado?",
+        "restrict-issue-creation-for-sql-review": {
+          "title": "Restringir la creación de incidencias para la revisión de SQL",
+          "description": "Cuando está habilitado, solo los usuarios con el rol de DBA pueden crear incidencias para la revisión de SQL."
+        }
       }
     },
     "sensitive-data": {

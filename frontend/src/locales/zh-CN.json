@@ -663,7 +663,11 @@
           "self": "链接",
           "placeholder": "输入公告链接"
         },
-        "confirm-delete-custom-logo": "删除自定义品牌 Logo？"
+        "confirm-delete-custom-logo": "删除自定义品牌 Logo？",
+        "restrict-issue-creation-for-sql-review": {
+          "title": "通过 SQL 审核限制工单的创建",
+          "description": "开启后，只有具有 SQL 审核通过时用户才能创建工单。"
+        }
       }
     },
     "sensitive-data": {

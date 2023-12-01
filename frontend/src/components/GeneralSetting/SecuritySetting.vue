@@ -13,53 +13,77 @@
     </div>
     <div class="flex-1 lg:px-4">
       <div class="mb-7 mt-4 lg:mt-0">
-        <NTooltip placement="top-start" :disabled="allowEdit">
-          <template #trigger>
-            <label
-              class="flex items-center gap-x-2"
-              :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
-            >
-              <NCheckbox
-                :disabled="!allowEdit"
-                :checked="watermarkEnabled"
-                @update:checked="handleWatermarkToggle"
-              />
-              <span class="font-medium">{{
-                $t("settings.general.workspace.watermark.enable")
-              }}</span>
-            </label>
-          </template>
-          <span class="text-sm text-gray-400 -translate-y-2">
+        <label
+          class="flex items-center gap-x-2 tooltip-wrapper"
+          :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
+        >
+          <NCheckbox
+            :disabled="!allowEdit"
+            :checked="watermarkEnabled"
+            @update:checked="handleWatermarkToggle"
+          />
+          <span class="font-medium">{{
+            $t("settings.general.workspace.watermark.enable")
+          }}</span>
+
+          <span
+            v-if="!allowEdit"
+            class="text-sm text-gray-400 -translate-y-2 tooltip"
+          >
             {{ $t("settings.general.workspace.watermark.only-admin-can-edit") }}
           </span>
-        </NTooltip>
+        </label>
         <div class="mb-3 text-sm text-gray-400">
           {{ $t("settings.general.workspace.watermark.description") }}
         </div>
       </div>
       <div v-if="!isSaaSMode" class="mb-7 mt-4 lg:mt-0">
-        <NTooltip placement="top-start" :disabled="allowEdit">
-          <template #trigger>
-            <label
-              class="flex items-center gap-x-2"
-              :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
-            >
-              <NCheckbox
-                :disabled="!allowEdit"
-                :checked="disallowSignupEnabled"
-                @update:checked="handleDisallowSignupToggle"
-              />
-              <span class="font-medium">{{
-                $t("settings.general.workspace.disallow-signup.enable")
-              }}</span>
-            </label>
-          </template>
-          <span class="text-sm text-gray-400 -translate-y-2">
+        <label
+          class="flex items-center gap-x-2 tooltip-wrapper"
+          :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
+        >
+          <NCheckbox
+            :disabled="!allowEdit"
+            :checked="disallowSignupEnabled"
+            @update:checked="handleDisallowSignupToggle"
+          />
+          <span class="font-medium">{{
+            $t("settings.general.workspace.disallow-signup.enable")
+          }}</span>
+
+          <span
+            v-if="!allowEdit"
+            class="text-sm text-gray-400 -translate-y-2 tooltip"
+          >
             {{ $t("settings.general.workspace.only-admin-can-edit") }}
           </span>
-        </NTooltip>
+        </label>
         <div class="mb-3 text-sm text-gray-400">
           {{ $t("settings.general.workspace.disallow-signup.description") }}
+        </div>
+      </div>
+      <div class="mb-7 mt-4 lg:mt-0">
+        <label
+          class="flex items-center gap-x-2 tooltip-wrapper"
+          :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
+        >
+          <NCheckbox
+            :disabled="!allowEdit"
+            :checked="require2FAEnabled"
+            @update:checked="handleRequire2FAToggle"
+          />
+          <span class="font-medium">{{
+            $t("settings.general.workspace.require-2fa.enable")
+          }}</span>
+          <span
+            v-if="!allowEdit"
+            class="text-sm text-gray-400 -translate-y-2 tooltip"
+          >
+            {{ $t("settings.general.workspace.only-admin-can-edit") }}
+          </span>
+        </label>
+        <div class="mb-3 text-sm text-gray-400">
+          {{ $t("settings.general.workspace.require-2fa.description") }}
         </div>
       </div>
       <div class="mb-7 mt-4 lg:mt-0">
@@ -71,11 +95,13 @@
             >
               <NCheckbox
                 :disabled="!allowEdit"
-                :checked="require2FAEnabled"
-                @update:checked="handleRequire2FAToggle"
+                :checked="restrictIssueCreationForSQLReview"
+                @update:checked="handleRestrictIssueCreationForSQLReviewToggle"
               />
               <span class="font-medium">{{
-                $t("settings.general.workspace.require-2fa.enable")
+                $t(
+                  "settings.general.workspace.restrict-issue-creation-for-sql-review.title"
+                )
               }}</span>
             </label>
           </template>
@@ -84,7 +110,11 @@
           </span>
         </NTooltip>
         <div class="mb-3 text-sm text-gray-400">
-          {{ $t("settings.general.workspace.require-2fa.description") }}
+          {{
+            $t(
+              "settings.general.workspace.restrict-issue-creation-for-sql-review.description"
+            )
+          }}
         </div>
       </div>
       <SignInFrequencySetting />
@@ -101,16 +131,21 @@
 <script lang="ts" setup>
 import { NCheckbox } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { computed, reactive } from "vue";
+import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   featureToRef,
   pushNotification,
   useCurrentUserV1,
   useActuatorV1Store,
+  usePolicyV1Store,
 } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { FeatureType } from "@/types";
+import {
+  PolicyResourceType,
+  PolicyType,
+} from "@/types/proto/v1/org_policy_service";
 import { hasWorkspacePermissionV1 } from "@/utils";
 import SignInFrequencySetting from "./SignInFrequencySetting.vue";
 
@@ -122,6 +157,7 @@ const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
 const currentUserV1 = useCurrentUserV1();
 const actuatorStore = useActuatorV1Store();
+const policyV1Store = usePolicyV1Store();
 
 const { isSaaSMode } = storeToRefs(actuatorStore);
 const hasWatermarkFeature = featureToRef("bb.feature.branding");
@@ -146,6 +182,23 @@ const disallowSignupEnabled = computed((): boolean => {
 const require2FAEnabled = computed((): boolean => {
   return settingV1Store.workspaceProfileSetting?.require2fa ?? false;
 });
+const restrictIssueCreationForSQLReview = computed((): boolean => {
+  return (
+    policyV1Store.getPolicyByName(
+      "policies/RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW"
+    )?.restrictIssueCreationForSqlReviewPolicy?.disallow ?? false
+  );
+});
+
+onMounted(async () => {
+  await prepareOrgPolicy();
+});
+
+const prepareOrgPolicy = async () => {
+  await policyV1Store.getOrFetchPolicyByName(
+    "policies/RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW"
+  );
+};
 
 const handleDisallowSignupToggle = async (on: boolean) => {
   if (!hasDisallowSignupFeature.value && on) {
@@ -194,6 +247,22 @@ const handleWatermarkToggle = async (on: boolean) => {
     module: "bytebase",
     style: "SUCCESS",
     title: t("settings.general.workspace.watermark.update-success"),
+  });
+};
+
+const handleRestrictIssueCreationForSQLReviewToggle = async (on: boolean) => {
+  await policyV1Store.createPolicy("", {
+    type: PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW,
+    resourceType: PolicyResourceType.WORKSPACE,
+    restrictIssueCreationForSqlReviewPolicy: {
+      disallow: on,
+    },
+  });
+
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("settings.general.workspace.config-updated"),
   });
 };
 </script>
