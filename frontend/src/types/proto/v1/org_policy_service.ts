@@ -450,6 +450,7 @@ export interface Policy {
   disableCopyDataPolicy?: DisableCopyDataPolicy | undefined;
   maskingRulePolicy?: MaskingRulePolicy | undefined;
   maskingExceptionPolicy?: MaskingExceptionPolicy | undefined;
+  restrictIssueCreationForSqlReviewPolicy?: RestrictIssueCreationForSQLReviewPolicy | undefined;
   enforce: boolean;
   /** The resource type for the policy. */
   resourceType: PolicyResourceType;
@@ -1101,6 +1102,7 @@ function createBasePolicy(): Policy {
     disableCopyDataPolicy: undefined,
     maskingRulePolicy: undefined,
     maskingExceptionPolicy: undefined,
+    restrictIssueCreationForSqlReviewPolicy: undefined,
     enforce: false,
     resourceType: 0,
     resourceUid: "",
@@ -1150,6 +1152,12 @@ export const Policy = {
     }
     if (message.maskingExceptionPolicy !== undefined) {
       MaskingExceptionPolicy.encode(message.maskingExceptionPolicy, writer.uint32(146).fork()).ldelim();
+    }
+    if (message.restrictIssueCreationForSqlReviewPolicy !== undefined) {
+      RestrictIssueCreationForSQLReviewPolicy.encode(
+        message.restrictIssueCreationForSqlReviewPolicy,
+        writer.uint32(162).fork(),
+      ).ldelim();
     }
     if (message.enforce === true) {
       writer.uint32(104).bool(message.enforce);
@@ -1268,6 +1276,16 @@ export const Policy = {
 
           message.maskingExceptionPolicy = MaskingExceptionPolicy.decode(reader, reader.uint32());
           continue;
+        case 20:
+          if (tag !== 162) {
+            break;
+          }
+
+          message.restrictIssueCreationForSqlReviewPolicy = RestrictIssueCreationForSQLReviewPolicy.decode(
+            reader,
+            reader.uint32(),
+          );
+          continue;
         case 13:
           if (tag !== 104) {
             break;
@@ -1322,6 +1340,9 @@ export const Policy = {
       maskingExceptionPolicy: isSet(object.maskingExceptionPolicy)
         ? MaskingExceptionPolicy.fromJSON(object.maskingExceptionPolicy)
         : undefined,
+      restrictIssueCreationForSqlReviewPolicy: isSet(object.restrictIssueCreationForSqlReviewPolicy)
+        ? RestrictIssueCreationForSQLReviewPolicy.fromJSON(object.restrictIssueCreationForSqlReviewPolicy)
+        : undefined,
       enforce: isSet(object.enforce) ? globalThis.Boolean(object.enforce) : false,
       resourceType: isSet(object.resourceType) ? policyResourceTypeFromJSON(object.resourceType) : 0,
       resourceUid: isSet(object.resourceUid) ? globalThis.String(object.resourceUid) : "",
@@ -1371,6 +1392,11 @@ export const Policy = {
     }
     if (message.maskingExceptionPolicy !== undefined) {
       obj.maskingExceptionPolicy = MaskingExceptionPolicy.toJSON(message.maskingExceptionPolicy);
+    }
+    if (message.restrictIssueCreationForSqlReviewPolicy !== undefined) {
+      obj.restrictIssueCreationForSqlReviewPolicy = RestrictIssueCreationForSQLReviewPolicy.toJSON(
+        message.restrictIssueCreationForSqlReviewPolicy,
+      );
     }
     if (message.enforce === true) {
       obj.enforce = message.enforce;
@@ -1425,6 +1451,11 @@ export const Policy = {
     message.maskingExceptionPolicy =
       (object.maskingExceptionPolicy !== undefined && object.maskingExceptionPolicy !== null)
         ? MaskingExceptionPolicy.fromPartial(object.maskingExceptionPolicy)
+        : undefined;
+    message.restrictIssueCreationForSqlReviewPolicy =
+      (object.restrictIssueCreationForSqlReviewPolicy !== undefined &&
+          object.restrictIssueCreationForSqlReviewPolicy !== null)
+        ? RestrictIssueCreationForSQLReviewPolicy.fromPartial(object.restrictIssueCreationForSqlReviewPolicy)
         : undefined;
     message.enforce = object.enforce ?? false;
     message.resourceType = object.resourceType ?? 0;
