@@ -23,6 +23,7 @@ export enum PolicyType {
   DISABLE_COPY_DATA = 8,
   MASKING_RULE = 9,
   MASKING_EXCEPTION = 10,
+  PRECREATE_ISSUE = 12,
   UNRECOGNIZED = -1,
 }
 
@@ -61,6 +62,9 @@ export function policyTypeFromJSON(object: any): PolicyType {
     case 10:
     case "MASKING_EXCEPTION":
       return PolicyType.MASKING_EXCEPTION;
+    case 12:
+    case "PRECREATE_ISSUE":
+      return PolicyType.PRECREATE_ISSUE;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -92,6 +96,8 @@ export function policyTypeToJSON(object: PolicyType): string {
       return "MASKING_RULE";
     case PolicyType.MASKING_EXCEPTION:
       return "MASKING_EXCEPTION";
+    case PolicyType.PRECREATE_ISSUE:
+      return "PRECREATE_ISSUE";
     case PolicyType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -584,6 +590,10 @@ export interface MaskingRulePolicy_MaskingRule {
   id: string;
   condition: Expr | undefined;
   maskingLevel: MaskingLevel;
+}
+
+export interface PrecreateIssuePolicy {
+  bypassSqlReview: boolean;
 }
 
 function createBaseCreatePolicyRequest(): CreatePolicyRequest {
@@ -2604,6 +2614,63 @@ export const MaskingRulePolicy_MaskingRule = {
       ? Expr.fromPartial(object.condition)
       : undefined;
     message.maskingLevel = object.maskingLevel ?? 0;
+    return message;
+  },
+};
+
+function createBasePrecreateIssuePolicy(): PrecreateIssuePolicy {
+  return { bypassSqlReview: false };
+}
+
+export const PrecreateIssuePolicy = {
+  encode(message: PrecreateIssuePolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.bypassSqlReview === true) {
+      writer.uint32(8).bool(message.bypassSqlReview);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PrecreateIssuePolicy {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePrecreateIssuePolicy();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.bypassSqlReview = reader.bool();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PrecreateIssuePolicy {
+    return { bypassSqlReview: isSet(object.bypassSqlReview) ? globalThis.Boolean(object.bypassSqlReview) : false };
+  },
+
+  toJSON(message: PrecreateIssuePolicy): unknown {
+    const obj: any = {};
+    if (message.bypassSqlReview === true) {
+      obj.bypassSqlReview = message.bypassSqlReview;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<PrecreateIssuePolicy>): PrecreateIssuePolicy {
+    return PrecreateIssuePolicy.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<PrecreateIssuePolicy>): PrecreateIssuePolicy {
+    const message = createBasePrecreateIssuePolicy();
+    message.bypassSqlReview = object.bypassSqlReview ?? false;
     return message;
   },
 };
