@@ -51,11 +51,10 @@ const isProjectHash = (x: any): x is ProjectHash => projectHashList.includes(x);
 
 interface ProjectSidebarItem extends SidebarItem {
   title: string;
-  path?: ProjectHash;
   type: "div" | "link";
   children?: {
     title: string;
-    path: ProjectHash;
+    path: string;
     hide?: boolean;
     type: "link";
   }[];
@@ -107,6 +106,7 @@ const isTenantProject = computed((): boolean => {
 });
 
 const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
+  const projectPath = `/project/${projectSlugV1(project.value)}`;
   return [
     {
       title: t("common.database"),
@@ -115,12 +115,12 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       children: [
         {
           title: t("common.databases"),
-          path: "databases",
+          path: `${projectPath}#databases`,
           type: "link",
         },
         {
           title: t("common.groups"),
-          path: "database-groups",
+          path: `${projectPath}#database-groups`,
           type: "link",
           hide:
             !isTenantProject.value ||
@@ -128,7 +128,7 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
         },
         {
           title: t("common.change-history"),
-          path: "change-history",
+          path: `${projectPath}#change-history`,
           type: "link",
           hide:
             isTenantProject.value ||
@@ -136,13 +136,13 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
         },
         {
           title: startCase(t("slow-query.slow-queries")),
-          path: "slow-query",
+          path: `${projectPath}#slow-query`,
           type: "link",
           hide: !currentUserIamPolicy.isMemberOfProject(project.value.name),
         },
         {
           title: t("common.anomalies"),
-          path: "anomalies",
+          path: `${projectPath}#anomalies`,
           type: "link",
           hide: !currentUserIamPolicy.isMemberOfProject(project.value.name),
         },
@@ -150,7 +150,7 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
     },
     {
       title: t("common.issues"),
-      path: "issues",
+      path: `${projectPath}#issues`,
       icon: h(CircleDot),
       type: "link",
       hide:
@@ -161,7 +161,7 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
     },
     {
       title: t("common.branches"),
-      path: "branches",
+      path: `${projectPath}#branches`,
       icon: h(GitBranch),
       type: "link",
       hide:
@@ -172,7 +172,7 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
     },
     {
       title: t("changelist.changelists"),
-      path: "changelists",
+      path: `${projectPath}#changelists`,
       icon: h(PencilRuler),
       type: "link",
       hide:
@@ -183,7 +183,7 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
     },
     {
       title: t("database.sync-schema.title"),
-      path: "sync-schema",
+      path: `${projectPath}#sync-schema`,
       icon: h(RefreshCcw),
       type: "link",
       hide:
@@ -204,12 +204,12 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       children: [
         {
           title: t("common.gitops"),
-          path: "gitops",
+          path: `${projectPath}#gitops`,
           type: "link",
         },
         {
           title: t("common.webhooks"),
-          path: "webhook",
+          path: `${projectPath}#webhook`,
           type: "link",
         },
       ],
@@ -224,12 +224,12 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       children: [
         {
           title: t("common.members"),
-          path: "members",
+          path: `${projectPath}#members`,
           type: "link",
         },
         {
           title: t("common.activities"),
-          path: "activities",
+          path: `${projectPath}#activities`,
           type: "link",
         },
       ],
@@ -237,7 +237,7 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
     {
       title: t("common.setting"),
       icon: h(Settings),
-      path: "setting",
+      path: `${projectPath}#setting`,
       type: "link",
       hide:
         isDefaultProject.value ||
@@ -246,10 +246,15 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
   ];
 });
 
-const getItemClass = (hash: string | undefined) => {
-  if (!hash) {
-    return [];
+const getHashByFullPath = (fullpath: string | undefined): ProjectHash => {
+  if (!fullpath) {
+    return "" as ProjectHash;
   }
+  return fullpath.split("#").splice(-1)[0] as ProjectHash;
+};
+
+const getItemClass = (fullpath: string | undefined) => {
+  const hash = getHashByFullPath(fullpath);
   const list = ["outline-item"];
   if (!isProjectHash(hash)) {
     return list;
@@ -337,14 +342,14 @@ const flattenNavigationItems = computed(() => {
   }>((item) => {
     if (item.children && item.children.length > 0) {
       return item.children.map((child) => ({
-        path: child.path as ProjectHash,
+        path: getHashByFullPath(child.path),
         title: child.title,
         hide: child.hide,
       }));
     }
     return [
       {
-        path: item.path as ProjectHash,
+        path: getHashByFullPath(item.path),
         title: item.title,
         hide: item.hide,
       },

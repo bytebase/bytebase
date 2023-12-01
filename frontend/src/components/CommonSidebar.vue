@@ -32,7 +32,7 @@
           v-if="item.type === 'link'"
           class="group flex items-center px-2 py-1.5 leading-5 font-medium rounded-md text-gray-700 outline-item !text-base"
           :class="getItemClass(item.path)"
-          :href="`#${item.path}`"
+          :href="item.path"
           @click="$emit('select', item.path)"
         >
           <component :is="item.icon" class="mr-2 w-5 h-5 text-gray-500" />
@@ -51,7 +51,7 @@
               v-if="child.type === 'link'"
               class="group w-full flex items-center pl-11 pr-2 py-1.5 rounded-md outline-item"
               :class="getItemClass(child.path)"
-              :href="`#${child.path}`"
+              :href="child.path"
               @click="$emit('select', child.path)"
             >
               {{ child.title }}
