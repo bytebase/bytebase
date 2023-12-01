@@ -2350,7 +2350,7 @@ func hasDatabaseAccessRights(principalID int, projectPolicy *store.IAMPolicyMess
 			continue
 		}
 		for _, member := range binding.Members {
-			if member.ID != principalID {
+			if member.ID != principalID && member.Email != api.AllUsers {
 				continue
 			}
 			ok, err := evaluateQueryExportPolicyCondition(binding.Condition.Expression, attributes)
