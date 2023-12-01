@@ -113,7 +113,12 @@ const handleModeChange = (targetMode: Mode) => {
   }
   state.mode = targetMode;
   if (targetMode === "DEFAULT") {
-    emit("update:scan-interval", undefined);
+    emit(
+      "update:scan-interval",
+      Duration.fromPartial({
+        seconds: 0,
+      })
+    );
   } else {
     emit(
       "update:scan-interval",
