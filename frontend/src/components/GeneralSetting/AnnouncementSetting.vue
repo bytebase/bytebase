@@ -17,7 +17,7 @@
     <div class="flex-1 lg:px-5">
       <div class="mb-7 mt-5 lg:mt-0">
         <label
-          class="flex items-center gap-x-2 tooltip-wrapper"
+          class="flex items-center gap-x-2"
           :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
         >
           <span class="font-medium">{{
@@ -25,80 +25,83 @@
               "settings.general.workspace.announcement-alert-level.description"
             )
           }}</span>
-          <span
-            v-if="!allowEdit"
-            class="text-sm text-gray-400 -translate-y-2 tooltip"
-          >
+        </label>
+        <NTooltip placement="top-start" :disabled="allowEdit">
+          <template #trigger>
+            <div class="flex flex-wrap py-2 radio-set-row gap-4">
+              <AnnouncementLevelSelect
+                v-model:level="state.announcement.level"
+                :allow-edit="allowEdit"
+              />
+            </div>
+          </template>
+          <span class="text-sm text-gray-400 -translate-y-2">
             {{
               $t(
                 "settings.general.workspace.announcement.admin-or-dba-can-edit"
               )
             }}
           </span>
-        </label>
-        <div class="flex flex-wrap py-2 radio-set-row gap-4">
-          <AnnouncementLevelSelect
-            v-model:level="state.announcement.level"
-            :allow-edit="allowEdit"
-          />
-        </div>
+        </NTooltip>
 
         <label
-          class="flex items-center mt-2 gap-x-2 tooltip-wrapper"
+          class="flex items-center mt-2 gap-x-2"
           :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
         >
           <span class="font-medium"
             >{{ $t("settings.general.workspace.announcement-text.self") }}
           </span>
-
-          <span
-            v-if="!allowEdit"
-            class="text-sm text-gray-400 -translate-y-2 tooltip"
-          >
+        </label>
+        <div class="mb-3 text-sm text-gray-400">
+          {{ $t("settings.general.workspace.announcement-text.description") }}
+        </div>
+        <NTooltip placement="top-start" :disabled="allowEdit">
+          <template #trigger>
+            <NInput
+              v-model:value="state.announcement.text"
+              class="mb-3 w-full"
+              :placeholder="
+                $t('settings.general.workspace.announcement-text.placeholder')
+              "
+              :disabled="!allowEdit"
+            />
+          </template>
+          <span class="text-sm text-gray-400 -translate-y-2">
             {{
               $t(
                 "settings.general.workspace.announcement.admin-or-dba-can-edit"
               )
             }}
           </span>
-        </label>
-        <div class="mb-3 text-sm text-gray-400">
-          {{ $t("settings.general.workspace.announcement-text.description") }}
-        </div>
-        <NInput
-          v-model:value="state.announcement.text"
-          class="mb-3 w-full"
-          :placeholder="
-            $t('settings.general.workspace.announcement-text.placeholder')
-          "
-          :disabled="!allowEdit"
-        />
+        </NTooltip>
 
         <label
-          class="flex items-center py-2 gap-x-2 tooltip-wrapper"
+          class="flex items-center py-2 gap-x-2"
           :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
         >
           <span class="font-medium">{{
             $t("settings.general.workspace.extra-link.self")
           }}</span>
-
-          <span
-            v-if="!allowEdit"
-            class="text-sm text-gray-400 -translate-y-2 tooltip"
-          >
+        </label>
+        <NTooltip placement="top-start" :disabled="allowEdit">
+          <template #trigger>
+            <NInput
+              v-model:value="state.announcement.link"
+              class="mb-5 w-full"
+              :placeholder="
+                $t('settings.general.workspace.extra-link.placeholder')
+              "
+              :disabled="!allowEdit"
+            />
+          </template>
+          <span class="text-sm text-gray-400 -translate-y-2">
             {{
               $t(
                 "settings.general.workspace.announcement.admin-or-dba-can-edit"
               )
             }}
           </span>
-        </label>
-        <NInput
-          v-model:value="state.announcement.link"
-          class="mb-5 w-full"
-          :placeholder="$t('settings.general.workspace.extra-link.placeholder')"
-          :disabled="!allowEdit"
-        />
+        </NTooltip>
 
         <div class="flex justify-end">
           <NButton

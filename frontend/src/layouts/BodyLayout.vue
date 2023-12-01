@@ -62,7 +62,7 @@
                   {{ $t(currentPlan) }}
                 </div>
                 <div
-                  class="text-sm flex items-center gap-x-1 ml-auto tooltip-wrapper"
+                  class="text-sm flex items-center gap-x-1 ml-auto"
                   :class="
                     canUpgrade
                       ? 'text-success cursor-pointer'
@@ -75,9 +75,6 @@
                     class="h-4 w-4"
                   />
                   {{ version }}
-                  <span v-if="gitCommit" class="tooltip"
-                    >Git hash {{ gitCommit }}</span
-                  >
                 </div>
               </div>
             </div>
@@ -128,27 +125,29 @@
                 <heroicons-solid:sparkles class="w-5 h-5" />
                 {{ $t(currentPlan) }}
               </div>
-              <div
-                class="text-xs flex items-center gap-x-1 tooltip-wrapper whitespace-nowrap"
-                :class="
-                  canUpgrade
-                    ? 'text-success cursor-pointer'
-                    : 'text-control-light cursor-default'
-                "
-                @click="state.showReleaseModal = canUpgrade"
-              >
-                <heroicons-outline:volume-up
-                  v-if="canUpgrade"
-                  class="h-4 w-4"
-                />
-                {{ version }}
-                <span v-if="canUpgrade" class="tooltip whitespace-nowrap">
+              <NTooltip :disabled="!canUpgrade && !gitCommit">
+                <template #trigger>
+                  <div
+                    class="text-xs flex items-center gap-x-1 whitespace-nowrap"
+                    :class="
+                      canUpgrade
+                        ? 'text-success cursor-pointer'
+                        : 'text-control-light cursor-default'
+                    "
+                    @click="state.showReleaseModal = canUpgrade"
+                  >
+                    <heroicons-outline:volume-up
+                      v-if="canUpgrade"
+                      class="h-4 w-4"
+                    />
+                    {{ version }}
+                  </div>
+                </template>
+                <span v-if="canUpgrade" class="whitespace-nowrap">
                   {{ $t("settings.release.new-version-available") }}
                 </span>
-                <span v-else-if="gitCommit" class="tooltip">
-                  Git hash {{ gitCommit }}
-                </span>
-              </div>
+                <span v-else-if="gitCommit"> Git hash {{ gitCommit }} </span>
+              </NTooltip>
             </div>
           </div>
         </aside>

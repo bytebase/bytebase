@@ -14,19 +14,12 @@
     <div class="flex-1 lg:px-4">
       <div class="mb-7 mt-4 lg:mt-0">
         <label
-          class="flex items-center gap-x-2 tooltip-wrapper"
+          class="flex items-center gap-x-2"
           :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
         >
           <span class="font-medium">{{
             $t("settings.general.workspace.plugin.openai.openai-key.self")
           }}</span>
-
-          <span
-            v-if="!allowEdit"
-            class="text-sm text-gray-400 -translate-y-2 tooltip"
-          >
-            {{ $t("settings.general.workspace.only-admin-can-edit") }}
-          </span>
         </label>
         <div class="mb-3 text-sm text-gray-400">
           <i18n-t
@@ -46,30 +39,31 @@
             </template>
           </i18n-t>
         </div>
-        <NInput
-          v-model:value="state.openAIKey"
-          class="mb-4 w-full"
-          :disabled="!allowEdit"
-          :placeholder="
-            $t(
-              'settings.general.workspace.plugin.openai.openai-key.placeholder'
-            )
-          "
-        />
+        <NTooltip placement="top-start" :disabled="allowEdit">
+          <template #trigger>
+            <NInput
+              v-model:value="state.openAIKey"
+              class="mb-4 w-full"
+              :disabled="!allowEdit"
+              :placeholder="
+                $t(
+                  'settings.general.workspace.plugin.openai.openai-key.placeholder'
+                )
+              "
+            />
+          </template>
+          <span class="text-sm text-gray-400 -translate-y-2">
+            {{ $t("settings.general.workspace.only-admin-can-edit") }}
+          </span>
+        </NTooltip>
+
         <label
-          class="flex items-center gap-x-2 tooltip-wrapper"
+          class="flex items-center gap-x-2"
           :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
         >
           <span class="font-medium">{{
             $t("settings.general.workspace.plugin.openai.openai-endpoint.self")
           }}</span>
-
-          <span
-            v-if="!allowEdit"
-            class="text-sm text-gray-400 -translate-y-2 tooltip"
-          >
-            {{ $t("settings.general.workspace.only-admin-can-edit") }}
-          </span>
         </label>
         <div class="mb-3 text-sm text-gray-400">
           {{
@@ -78,11 +72,19 @@
             )
           }}
         </div>
-        <NInput
-          v-model:value="state.openAIEndpoint"
-          class="mb-4 w-full"
-          :disabled="!allowEdit"
-        />
+        <NTooltip placement="top-start" :disabled="allowEdit">
+          <template #trigger>
+            <NInput
+              v-model:value="state.openAIEndpoint"
+              class="mb-4 w-full"
+              :disabled="!allowEdit"
+            />
+          </template>
+          <span class="text-sm text-gray-400 -translate-y-2">
+            {{ $t("settings.general.workspace.only-admin-can-edit") }}
+          </span>
+        </NTooltip>
+
         <div class="flex justify-end">
           <NButton
             type="primary"
