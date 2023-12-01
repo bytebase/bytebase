@@ -1,12 +1,12 @@
 <template>
   <nav class="flex-1 flex flex-col overflow-y-hidden">
     <BytebaseLogo v-if="showLogo" class="w-full px-4 shrink-0" />
-    <div class="flex-1 overflow-y-auto px-2">
+    <div class="flex-1 overflow-y-auto px-2.5">
       <div v-for="(item, i) in filteredSidebarList" :key="i">
         <router-link
           v-if="item.type === 'route'"
           :to="item.path ?? ''"
-          class="outline-item group w-full font-medium flex items-center px-2 py-1.5 !text-base"
+          class="outline-item group w-full font-medium flex items-center px-2 py-1.5 !text-sm rounded-md mb-1"
           :class="getItemClass(item.path)"
         >
           <component :is="item.icon" class="mr-2 w-5 h-5 text-gray-500" />
@@ -14,7 +14,7 @@
         </router-link>
         <div
           v-else-if="item.type === 'div'"
-          class="group flex items-center px-2 py-1.5 leading-5 font-medium rounded-md text-gray-700 outline-item !text-base"
+          class="group flex items-center px-2 py-1.5 leading-normal font-medium rounded-md text-gray-700 outline-item !text-sm mt-1"
           :class="getItemClass(item.path)"
           @click="onClick(i)"
         >
@@ -30,7 +30,7 @@
         </div>
         <a
           v-if="item.type === 'link'"
-          class="group flex items-center px-2 py-1.5 leading-5 font-medium rounded-md text-gray-700 outline-item !text-base"
+          class="group flex items-center px-2 py-1.5 leading-5 font-medium rounded-md text-gray-700 outline-item !text-item"
           :class="getItemClass(item.path)"
           :href="item.path"
           @click="$emit('select', item.path)"
@@ -40,7 +40,7 @@
         </a>
         <div
           v-else-if="item.type === 'divider'"
-          class="border-t border-gray-300 my-2"
+          class="border-t border-gray-300 my-2.5 mr-4 ml-2"
         />
         <div
           v-if="item.children.length > 0 && state.expandedSidebar.has(i)"
@@ -49,7 +49,7 @@
           <template v-for="(child, j) in item.children" :key="`${i}-${j}`">
             <a
               v-if="child.type === 'link'"
-              class="group w-full flex items-center pl-11 pr-2 py-1.5 rounded-md outline-item"
+              class="group w-full flex items-center pl-9 pr-2 py-1.5 outline-item mb-0.5 mt-1"
               :class="getItemClass(child.path)"
               :href="child.path"
               @click="$emit('select', child.path)"
@@ -59,7 +59,7 @@
             <router-link
               v-else-if="child.type === 'route'"
               :to="child.path"
-              class="outline-item group w-full flex items-center pl-11 pr-2 py-1.5"
+              class="outline-item group w-full flex items-center pl-9 pr-2 py-1 rounded-md my-0.5"
               :class="getItemClass(child.path)"
             >
               {{ child.title }}
