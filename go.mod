@@ -8,10 +8,10 @@ require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.15.0
 	github.com/antlr4-go/antlr/v4 v4.13.0
 	github.com/aws/aws-sdk-go-v2 v1.23.4
-	github.com/aws/aws-sdk-go-v2/config v1.25.5
-	github.com/aws/aws-sdk-go-v2/credentials v1.16.4
+	github.com/aws/aws-sdk-go-v2/config v1.25.10
+	github.com/aws/aws-sdk-go-v2/credentials v1.16.8
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.87
-	github.com/aws/aws-sdk-go-v2/service/licensemanager v1.22.3
+	github.com/aws/aws-sdk-go-v2/service/licensemanager v1.23.1
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.40.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bytebase/mysql-parser v0.0.0-20231117080012-40c25c7c076c
