@@ -2299,8 +2299,6 @@ func (s *SQLService) checkQueryRights(
 		}
 	}
 
-	println("project", project.Title)
-
 	if project == nil {
 		// Never happen
 		return status.Error(codes.Internal, "project not found")
