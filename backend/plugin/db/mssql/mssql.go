@@ -114,19 +114,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 		return "", io.EOF
 	}
 	batch := tsqlbatch.NewBatch(scanner)
-	execute := func(ctx context.Context, tx *sql.Tx, s string) (int64, error) {
-		sqlResult, err := tx.ExecContext(ctx, s)
-		if err != nil {
-			return 0, errors.Wrapf(err, "failed to execute statement: %s", s)
-		}
-		rowsAffected, err := sqlResult.RowsAffected()
-		if err != nil {
-			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-			slog.Debug("rowsAffected returns error", log.BBError(err))
-			return 0, nil
-		}
-		return rowsAffected, nil
-	}
 
 	for {
 		command, err := batch.Next()
@@ -145,29 +132,44 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 			}
 			return 0, errors.Wrapf(err, "failed to get next batch for statement: %s", batch.String())
 		}
-		if command != nil {
-			switch v := command.(type) {
-			case *tsqlbatch.GoCommand:
-				// Try send the batch to server.
-				for i := uint(0); i < v.Count; i++ {
-					stmt := batch.String()
-					rowsAffected, err := execute(ctx, tx, stmt)
-					if err != nil {
-						return 0, err
-					}
-					totalAffectRows += rowsAffected
-				}
-			default:
-				return 0, errors.Errorf("unsupported command type: %T", v)
-			}
-			batch.Reset(nil)
+		if command == nil {
+			continue
 		}
+		switch v := command.(type) {
+		case *tsqlbatch.GoCommand:
+			stmt := batch.String()
+			// Try send the batch to server.
+			for i := uint(0); i < v.Count; i++ {
+				rowsAffected, err := execute(ctx, tx, stmt)
+				if err != nil {
+					return 0, err
+				}
+				totalAffectRows += rowsAffected
+			}
+		default:
+			return 0, errors.Errorf("unsupported command type: %T", v)
+		}
+		batch.Reset(nil)
 	}
 
 	if err := tx.Commit(); err != nil {
 		return 0, err
 	}
 	return totalAffectRows, nil
+}
+
+func execute(ctx context.Context, tx *sql.Tx, statement string) (int64, error) {
+	sqlResult, err := tx.ExecContext(ctx, statement)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to execute statement: %s", statement)
+	}
+	rowsAffected, err := sqlResult.RowsAffected()
+	if err != nil {
+		// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
+		slog.Debug("rowsAffected returns error", log.BBError(err))
+		return 0, nil
+	}
+	return rowsAffected, nil
 }
 
 // QueryConn queries a SQL statement in a given connection.
