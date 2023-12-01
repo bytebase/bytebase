@@ -239,6 +239,7 @@ enum PolicyType {
   DISABLE_COPY_DATA = 8;
   MASKING_RULE = 9;
   MASKING_EXCEPTION = 10;
+  RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW = 12;
 }
 
 enum PolicyResourceType {
@@ -371,4 +372,8 @@ message MaskingRulePolicy {
     MaskingLevel masking_level = 3;
   }
   repeated MaskingRule rules = 1;
+}
+
+message RestrictIssueCreationForSQLReviewPolicy {
+  bool disallow = 1;
 }

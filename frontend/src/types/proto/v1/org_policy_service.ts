@@ -23,6 +23,7 @@ export enum PolicyType {
   DISABLE_COPY_DATA = 8,
   MASKING_RULE = 9,
   MASKING_EXCEPTION = 10,
+  RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW = 12,
   UNRECOGNIZED = -1,
 }
 
@@ -61,6 +62,9 @@ export function policyTypeFromJSON(object: any): PolicyType {
     case 10:
     case "MASKING_EXCEPTION":
       return PolicyType.MASKING_EXCEPTION;
+    case 12:
+    case "RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW":
+      return PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -92,6 +96,8 @@ export function policyTypeToJSON(object: PolicyType): string {
       return "MASKING_RULE";
     case PolicyType.MASKING_EXCEPTION:
       return "MASKING_EXCEPTION";
+    case PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW:
+      return "RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW";
     case PolicyType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -584,6 +590,10 @@ export interface MaskingRulePolicy_MaskingRule {
   id: string;
   condition: Expr | undefined;
   maskingLevel: MaskingLevel;
+}
+
+export interface RestrictIssueCreationForSQLReviewPolicy {
+  disallow: boolean;
 }
 
 function createBaseCreatePolicyRequest(): CreatePolicyRequest {
@@ -2604,6 +2614,63 @@ export const MaskingRulePolicy_MaskingRule = {
       ? Expr.fromPartial(object.condition)
       : undefined;
     message.maskingLevel = object.maskingLevel ?? 0;
+    return message;
+  },
+};
+
+function createBaseRestrictIssueCreationForSQLReviewPolicy(): RestrictIssueCreationForSQLReviewPolicy {
+  return { disallow: false };
+}
+
+export const RestrictIssueCreationForSQLReviewPolicy = {
+  encode(message: RestrictIssueCreationForSQLReviewPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.disallow === true) {
+      writer.uint32(8).bool(message.disallow);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): RestrictIssueCreationForSQLReviewPolicy {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRestrictIssueCreationForSQLReviewPolicy();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.disallow = reader.bool();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RestrictIssueCreationForSQLReviewPolicy {
+    return { disallow: isSet(object.disallow) ? globalThis.Boolean(object.disallow) : false };
+  },
+
+  toJSON(message: RestrictIssueCreationForSQLReviewPolicy): unknown {
+    const obj: any = {};
+    if (message.disallow === true) {
+      obj.disallow = message.disallow;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<RestrictIssueCreationForSQLReviewPolicy>): RestrictIssueCreationForSQLReviewPolicy {
+    return RestrictIssueCreationForSQLReviewPolicy.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<RestrictIssueCreationForSQLReviewPolicy>): RestrictIssueCreationForSQLReviewPolicy {
+    const message = createBaseRestrictIssueCreationForSQLReviewPolicy();
+    message.disallow = object.disallow ?? false;
     return message;
   },
 };
