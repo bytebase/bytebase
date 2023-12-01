@@ -665,7 +665,11 @@
           "self": "Link",
           "placeholder": "Input announcement link"
         },
-        "confirm-delete-custom-logo": "Delete custom branding logo?"
+        "confirm-delete-custom-logo": "Delete custom branding logo?",
+        "restrict-issue-creation-for-sql-review": {
+          "title": "Restrict issue creation for SQL review",
+          "description": "Once enabled, users can only create issues after SQL review has passed."
+        }
       }
     },
     "sensitive-data": {
