@@ -27,6 +27,10 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+const (
+	autoIncrementSymbol = "AUTO_INCREMENT"
+)
+
 var (
 	systemDatabases = map[string]bool{
 		"information_schema": true,
@@ -268,8 +272,9 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			}
 		} else {
 			// TODO(zp): refactor column default value.
-			if strings.Contains(strings.ToLower(extra), "auto_increment") {
-				column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: "auto_increment"}
+			if strings.Contains(strings.ToUpper(extra), autoIncrementSymbol) {
+				// Use the upper case to consistent with MySQL Dump.
+				column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: autoIncrementSymbol}
 			}
 		}
 		isNullBool, err := util.ConvertYesNo(nullable)
