@@ -2303,7 +2303,7 @@ func (s *SQLService) checkQueryRights(
 		// Background: We allow users to execute queries at the instance level in MySQL.
 		// However, for certain statements like `select 1`, we cannot get its related project.
 		// So for those users without admin permission in workspace, we'd like to return permission denied.
-		return status.Error(codes.Internal, "permission denied on instance-level queries")
+		return status.Error(codes.PermissionDenied, "permission denied on instance-level queries")
 	}
 
 	projectPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
