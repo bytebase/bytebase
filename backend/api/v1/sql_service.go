@@ -2299,6 +2299,8 @@ func (s *SQLService) checkQueryRights(
 		}
 	}
 
+	println("project", project.Title)
+
 	if project == nil {
 		// Never happen
 		return status.Error(codes.Internal, "project not found")
@@ -2350,7 +2352,7 @@ func hasDatabaseAccessRights(principalID int, projectPolicy *store.IAMPolicyMess
 			continue
 		}
 		for _, member := range binding.Members {
-			if member.ID != principalID {
+			if member.ID != principalID && member.Email != api.AllUsers {
 				continue
 			}
 			ok, err := evaluateQueryExportPolicyCondition(binding.Condition.Expression, attributes)
