@@ -6,7 +6,7 @@
         <router-link
           v-if="item.type === 'route'"
           :to="item.path ?? ''"
-          class="outline-item group w-full font-medium flex items-center px-2 py-1.5 !text--sm rounded-md mb-1"
+          class="outline-item group w-full font-medium flex items-center px-2 py-1.5 !text-sm rounded-md mb-1"
           :class="getItemClass(item.path)"
         >
           <component :is="item.icon" class="mr-2 w-5 h-5 text-gray-500" />
@@ -14,7 +14,7 @@
         </router-link>
         <div
           v-else-if="item.type === 'div'"
-          class="group flex items-center px-2 py-1.5 leading-5 font-medium rounded-md text-gray-700 outline-item !text-base"
+          class="group flex items-center px-2 py-1.5 leading-5 font-medium rounded-md text-gray-700 outline-item !text-sm mb-1"
           :class="getItemClass(item.path)"
           @click="onClick(i)"
         >
