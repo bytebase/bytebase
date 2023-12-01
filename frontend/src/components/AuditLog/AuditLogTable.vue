@@ -35,11 +35,8 @@
         }}</span>
       </BBTableCell>
       <BBTableCell class="table-cell w-28">
-        <div>
-          <div class="tooltip-wrapper">
-            <div class="tooltip whitespace-nowrap">
-              {{ $t("audit-log.table.view-details") }}
-            </div>
+        <NTooltip>
+          <template #trigger>
             <button
               type="button"
               class="group btn-normal items-center !px-3 !text-accent hover:!bg-gray-50"
@@ -51,8 +48,11 @@
             >
               <heroicons-outline:document-magnifying-glass class="h-5 w-5" />
             </button>
-          </div>
-        </div>
+          </template>
+          <span class="whitespace-nowrap">
+            {{ $t("audit-log.table.view-details") }}
+          </span>
+        </NTooltip>
       </BBTableCell>
     </template>
   </BBTable>

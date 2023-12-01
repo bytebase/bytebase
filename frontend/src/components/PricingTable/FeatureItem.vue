@@ -1,6 +1,6 @@
 <template>
   <td
-    class="font-semibold tooltip-wrapper"
+    class="font-semibold"
     :class="plan.highlight ? 'text-indigo-600' : 'text-gray-600'"
   >
     <NTooltip

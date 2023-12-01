@@ -5,17 +5,15 @@
     </template>
     <template v-else>
       <template v-if="config?.rollbackSqlStatus === RollbackSqlStatus.FAILED">
-        <div class="tooltip-wrapper">
-          <NTooltip>
-            <template #trigger>
-              <span class="text-error">{{ $t("task.rollback.failed") }}</span>
-            </template>
+        <NTooltip>
+          <template #trigger>
+            <span class="text-error">{{ $t("task.rollback.failed") }}</span>
+          </template>
 
-            <div v-if="config.rollbackError" class="max-w-[20rem]">
-              {{ config.rollbackError }}
-            </div>
-          </NTooltip>
-        </div>
+          <div v-if="config.rollbackError" class="max-w-[20rem]">
+            {{ config.rollbackError }}
+          </div>
+        </NTooltip>
       </template>
       <template
         v-else-if="config?.rollbackSqlStatus === RollbackSqlStatus.DONE"

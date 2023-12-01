@@ -28,8 +28,37 @@
           :class="`lg:grid-cols-${item.length}`"
         >
           <template v-for="(summary, index) in item" :key="index">
-            <div class="px-4 py-2 border tooltip-wrapper">
-              <span class="text-sm tooltip">
+            <NTooltip>
+              <template #trigger>
+                <div class="px-4 py-2 border">
+                  <div class="flex justify-between items-center">
+                    <dt class="textlabel">
+                      {{ summary.environmentName }}
+                    </dt>
+                    <dd class="flex flex-row text-main space-x-2">
+                      <span class="flex flex-row items-center">
+                        <heroicons-outline:exclamation-circle
+                          class="w-4 h-4 mr-1 text-error"
+                        />
+                        {{ summary.criticalCount }}
+                      </span>
+                      <span class="flex flex-row items-center">
+                        <heroicons-outline:exclamation
+                          class="w-4 h-4 mr-1 text-warning"
+                        />
+                        {{ summary.highCount }}
+                      </span>
+                      <span class="flex flex-row items-center">
+                        <heroicons-outline:information-circle
+                          class="w-4 h-4 mr-1 text-info"
+                        />
+                        {{ summary.mediumCount }}
+                      </span>
+                    </dd>
+                  </div>
+                </div>
+              </template>
+              <span class="text-sm">
                 {{
                   $t("anomaly.tooltip", {
                     env: summary.environmentName,
@@ -39,32 +68,7 @@
                   })
                 }}
               </span>
-              <div class="flex justify-between items-center">
-                <dt class="textlabel">
-                  {{ summary.environmentName }}
-                </dt>
-                <dd class="flex flex-row text-main space-x-2">
-                  <span class="flex flex-row items-center">
-                    <heroicons-outline:exclamation-circle
-                      class="w-4 h-4 mr-1 text-error"
-                    />
-                    {{ summary.criticalCount }}
-                  </span>
-                  <span class="flex flex-row items-center">
-                    <heroicons-outline:exclamation
-                      class="w-4 h-4 mr-1 text-warning"
-                    />
-                    {{ summary.highCount }}
-                  </span>
-                  <span class="flex flex-row items-center">
-                    <heroicons-outline:information-circle
-                      class="w-4 h-4 mr-1 text-info"
-                    />
-                    {{ summary.mediumCount }}
-                  </span>
-                </dd>
-              </div>
-            </div>
+            </NTooltip>
           </template>
         </dl>
       </div>
