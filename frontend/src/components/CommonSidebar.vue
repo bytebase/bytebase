@@ -1,12 +1,12 @@
 <template>
   <nav class="flex-1 flex flex-col overflow-y-hidden">
     <BytebaseLogo v-if="showLogo" class="w-full px-4 shrink-0" />
-    <div class="flex-1 overflow-y-auto px-2">
+    <div class="flex-1 overflow-y-auto px-2.5">
       <div v-for="(item, i) in filteredSidebarList" :key="i">
         <router-link
           v-if="item.type === 'route'"
           :to="item.path ?? ''"
-          class="outline-item group w-full font-medium flex items-center px-2 py-1.5 !text-base"
+          class="outline-item group w-full font-medium flex items-center px-2 py-1.5 !text--sm rounded-md mb-1"
           :class="getItemClass(item.path)"
         >
           <component :is="item.icon" class="mr-2 w-5 h-5 text-gray-500" />
@@ -40,7 +40,7 @@
         </a>
         <div
           v-else-if="item.type === 'divider'"
-          class="border-t border-gray-300 my-2"
+          class="border-t border-gray-300 my-2.5 mr-4 ml-2"
         />
         <div
           v-if="item.children.length > 0 && state.expandedSidebar.has(i)"
