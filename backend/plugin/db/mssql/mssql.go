@@ -114,6 +114,20 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 		return "", io.EOF
 	}
 	batch := tsqlbatch.NewBatch(scanner)
+	execute := func(ctx context.Context, tx *sql.Tx, s string) (int64, error) {
+		sqlResult, err := tx.ExecContext(ctx, s)
+		if err != nil {
+			return 0, errors.Wrapf(err, "failed to execute statement: %s", s)
+		}
+		rowsAffected, err := sqlResult.RowsAffected()
+		if err != nil {
+			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
+			slog.Debug("rowsAffected returns error", log.BBError(err))
+			return 0, nil
+		}
+		return rowsAffected, nil
+	}
+
 	for {
 		command, err := batch.Next()
 		if err != nil {
@@ -121,16 +135,11 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 				// Try send the last batch to server.
 				v := batch.String()
 				if v != "" {
-					sqlResult, err := tx.ExecContext(ctx, v)
+					rowsAffected, err := execute(ctx, tx, v)
 					if err != nil {
-						return 0, errors.Wrap(err, "failed to execute statement")
+						return 0, errors.Wrapf(err, "failed to execute statement: %s", v)
 					}
-					if rowsAffected, err := sqlResult.RowsAffected(); err != nil {
-						// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-						slog.Debug("rowsAffected returns error", log.BBError(err))
-					} else {
-						totalAffectRows += rowsAffected
-					}
+					totalAffectRows += rowsAffected
 				}
 				break
 			}
@@ -141,16 +150,12 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 			case *tsqlbatch.GoCommand:
 				// Try send the batch to server.
 				for i := uint(0); i < v.Count; i++ {
-					sqlResult, err := tx.ExecContext(ctx, batch.String())
+					stmt := batch.String()
+					rowsAffected, err := execute(ctx, tx, stmt)
 					if err != nil {
-						return 0, errors.Wrap(err, "failed to execute statement")
+						return 0, err
 					}
-					if rowsAffected, err := sqlResult.RowsAffected(); err != nil {
-						// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-						slog.Debug("rowsAffected returns error", log.BBError(err))
-					} else {
-						totalAffectRows += rowsAffected
-					}
+					totalAffectRows += rowsAffected
 				}
 			default:
 				return 0, errors.Errorf("unsupported command type: %T", v)
