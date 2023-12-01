@@ -18,6 +18,10 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
+const (
+	autoIncrementSymbol = "AUTO_INCREMENT"
+)
+
 func transformDatabaseMetadataToSchemaString(engine v1pb.Engine, database *v1pb.DatabaseMetadata) (string, error) {
 	switch engine {
 	case v1pb.Engine_MYSQL:
@@ -787,7 +791,7 @@ func (t *mysqlTransformer) EnterColumnDefinition(ctx *mysql.ColumnDefinitionCont
 			}
 		// todo(zp): refactor column attribute.
 		case attribute.AUTO_INCREMENT_SYMBOL() != nil:
-			defaultValue := "auto_increment"
+			defaultValue := autoIncrementSymbol
 			columnState.hasDefault = true
 			columnState.defaultValue = &defaultValueExpression{value: defaultValue}
 		}
@@ -1490,7 +1494,7 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 				}
 			} else if column.hasDefault {
 				// todo(zp): refactor column attribute.
-				if strings.EqualFold(column.defaultValue.toString(), "auto_increment") {
+				if strings.EqualFold(column.defaultValue.toString(), autoIncrementSymbol) {
 					if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 						Start: startPos,
 						Stop:  attribute.DEFAULT_SYMBOL().GetSymbol().GetTokenIndex() - 1,

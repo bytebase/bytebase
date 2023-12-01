@@ -242,14 +242,14 @@ devDependencies:
     specifier: 3.0.2
     version: 3.0.2
   '@types/downloadjs':
-    specifier: 1.4.5
-    version: 1.4.5
+    specifier: 1.4.6
+    version: 1.4.6
   '@types/file-saver':
     specifier: ^2.0.5
     version: 2.0.5
   '@types/js-yaml':
-    specifier: 4.0.6
-    version: 4.0.6
+    specifier: 4.0.9
+    version: 4.0.9
   '@types/lodash-es':
     specifier: 4.17.9
     version: 4.17.9
@@ -1467,8 +1467,8 @@ packages:
       '@types/trusted-types': 2.0.4
     dev: true
 
-  /@types/downloadjs@1.4.5:
-    resolution: {integrity: sha512-pr3zSKY0QwP+1tQumJGNfziGNi1xLVHtGsrclGsgjVpfWSPoW/9He42w6X+GTp4PO5I2wuHDU2wJdxI7dqjW+w==}
+  /@types/downloadjs@1.4.6:
+    resolution: {integrity: sha512-mp3w70vsaiLRT9ix92fmI9Ob2yJAPZm6tShJtofo2uHbN11G2i6a0ApIEjBl/kv3e9V7Pv7jMjk1bUwYWvMHvA==}
     dev: true
 
   /@types/estree@1.0.2:
@@ -1483,8 +1483,8 @@ packages:
     resolution: {integrity: sha512-L7A0AINMXQpVwxHJ4jxD6/XjZ4NDufaRlUJHjNIFKYUFBH1SvOW+neaqb0VTRSLW5suSrSu19ObFEFnfNcr+qg==}
     dev: false
 
-  /@types/js-yaml@4.0.6:
-    resolution: {integrity: sha512-ACTuifTSIIbyksx2HTon3aFtCKWcID7/h3XEmRpDYdMCXxPbl+m9GteOJeaAkiAta/NJaSFuA7ahZ0NkwajDSw==}
+  /@types/js-yaml@4.0.9:
+    resolution: {integrity: sha512-k4MGaQl5TGo/iipqb2UDG2UwjXziSWkh0uysQelTlJpX1qGlpUZYm8PnO4DxG1qBomtJUdYJ6qR6xdIah10JLg==}
     dev: true
 
   /@types/json-schema@7.0.13:
