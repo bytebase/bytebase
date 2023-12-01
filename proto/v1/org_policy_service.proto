@@ -214,6 +214,7 @@ message Policy {
     DisableCopyDataPolicy disable_copy_data_policy = 16;
     MaskingRulePolicy masking_rule_policy = 17;
     MaskingExceptionPolicy masking_exception_policy = 18;
+    RestrictIssueCreationForSQLReviewPolicy restrict_issue_creation_for_sql_review_policy = 20;
   }
 
   bool enforce = 13;
