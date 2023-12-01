@@ -25,6 +25,7 @@ const (
 	LSPMethodShutdown       Method = "shutdown"
 	LSPMethodExit           Method = "exit"
 	LSPMethodCancelRequest  Method = "$/cancelRequest"
+	LSPMethodSetTrace       Method = "$/setTrace"
 	LSPMethodExecuteCommand Method = "workspace/executeCommand"
 	LSPMethodCompletion     Method = "textDocument/completion"
 
@@ -210,6 +211,9 @@ func (h *Handler) handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 		h.ShutDown()
 		return nil, nil
 	case LSPMethodCancelRequest:
+		// Do nothing for now.
+		return nil, nil
+	case LSPMethodSetTrace:
 		// Do nothing for now.
 		return nil, nil
 	case LSPMethodExecuteCommand:
