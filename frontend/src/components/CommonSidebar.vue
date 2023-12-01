@@ -14,7 +14,7 @@
         </router-link>
         <div
           v-else-if="item.type === 'div'"
-          class="group flex items-center px-2 py-1.5 leading-5 font-medium rounded-md text-gray-700 outline-item !text-sm mb-1"
+          class="group flex items-center px-2 py-1.5 leading-5 font-medium rounded-md text-gray-700 outline-item !text-sm mt-1"
           :class="getItemClass(item.path)"
           @click="onClick(i)"
         >
@@ -49,7 +49,7 @@
           <template v-for="(child, j) in item.children" :key="`${i}-${j}`">
             <a
               v-if="child.type === 'link'"
-              class="group w-full flex items-center pl-11 pr-2 py-1.5 rounded-md outline-item"
+              class="group w-full flex items-center pl-9 pr-2 py-1.5 outline-item mb-0.5 mt-1"
               :class="getItemClass(child.path)"
               :href="child.path"
               @click="$emit('select', child.path)"
@@ -59,7 +59,7 @@
             <router-link
               v-else-if="child.type === 'route'"
               :to="child.path"
-              class="outline-item group w-full flex items-center pl-11 pr-2 py-1.5"
+              class="outline-item group w-full flex items-center pl-9 pr-2 py-1 rounded-md my-0.5"
               :class="getItemClass(child.path)"
             >
               {{ child.title }}
