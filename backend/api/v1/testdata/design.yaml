@@ -48,7 +48,7 @@
                   "name": "c",
                   "type": "int",
                   "hasDefault": true,
-                  "defaultExpression": "auto_increment"
+                  "defaultExpression": "AUTO_INCREMENT"
                 },
                 {
                   "name": "e",
@@ -130,7 +130,7 @@
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
     CREATE TABLE `t4` (
       `a` varchar(10) NOT NULL DEFAULT 'default value' COMMENT 'this is comment, aha',
-      `c` int NOT NULL auto_increment,
+      `c` int NOT NULL AUTO_INCREMENT,
       `e` int  NULL,
       `b` char(10) NOT NULL,
       PRIMARY KEY (`a`, `b`, `c`),
@@ -199,7 +199,7 @@
                   "nullable":  true,
                   "type":  "int",
                   "hasDefault": true,
-                  "defaultExpression": "auto_increment"
+                  "defaultExpression": "AUTO_INCREMENT"
                 }
               ]
             },
@@ -211,7 +211,7 @@
                   "nullable":  true,
                   "type":  "int",
                   "hasDefault": true,
-                  "defaultExpression": "auto_increment"
+                  "defaultExpression": "AUTO_INCREMENT"
                 }
               ]
             },
@@ -223,7 +223,7 @@
                   "nullable":  true,
                   "type":  "int",
                   "hasDefault": true,
-                  "defaultExpression": "auto_increment"
+                  "defaultExpression": "AUTO_INCREMENT"
                 }
               ]
             },
@@ -245,13 +245,13 @@
     }
   result: |
     CREATE TABLE `t1` (
-      `a` int primary key auto_increment
+      `a` int primary key AUTO_INCREMENT
     );
     CREATE TABLE `t2` (
-      `a` int auto_increment primary key
+      `a` int AUTO_INCREMENT primary key
     );
     CREATE TABLE `t3` (
-      `a` int auto_increment primary key
+      `a` int AUTO_INCREMENT primary key
     );
     CREATE TABLE `t4` (
       `a` int DEFAULT 1 primary key
