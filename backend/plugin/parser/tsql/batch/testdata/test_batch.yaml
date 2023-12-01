@@ -171,178 +171,178 @@
     GO
   description: Sanitize user script#2
   batches:
-    - statements: USE [smp_inv]
-      command: GO 1
-    - statements: |-
-        /****** Object:  StoredProcedure [dbo].[user_script_2]    Script Date: 2023/11/30 17:27:18 ******/
-        SET ANSI_NULLS ON
-      command: GO 1
-    - statements: SET QUOTED_IDENTIFIER ON
-      command: GO 1
-    - statements: |-
-        -- =============================================
-        -- Author:    Bytebase
-        -- Create date: 2023-11-30
-        -- Description: Adjust
-        -- =============================================
-        CREATE PROCEDURE [dbo].[user_script_2]
-          @TenantCode VARCHAR(20),
-            @OrgId VARCHAR(10),      -- Organization Id
-                                    -- @StoreCode VARCHAR(20),  -- Store Code
-                                    -- @GoodsGid INT,           -- Goods Id
-            @GoodsCode CHAR(8),      -- 8-digit Goods Code
-            @BarCode VARCHAR(20),    -- International Bar Code
-            @GoodsName VARCHAR(50),  -- Goods Name
-            @SrcChannel VARCHAR(30), -- Source Channel
-            @BillType VARCHAR(10),   -- Business Type
-            @BillNo VARCHAR(50),     -- Bill Number
-            @BeginTime DATETIME,     -- Start Time
-            @EndTime DATETIME,       -- End Time
-            @Sorting VARCHAR(50),    -- Sorting
-            @SkipCount INT,          -- Skip Count
-            @MaxResultCount INT      -- Maximum Result Count
-        AS
-        -- [Important] Template tags to generate dynamic scripts for different architectures
-        BEGIN
-            SET NOCOUNT ON;
-            DECLARE @bts BIGINT,
-                    @ets BIGINT;
-            IF ISNULL(@BeginTime, '') <> ''
-            BEGIN
-                SET @bts = CONCAT(DATEDIFF(SS, '1970-1-1 00:00:00', @BeginTime), '000');
-            END;
-            IF ISNULL(@EndTime, '') <> ''
-            BEGIN
-                SET @ets = CONCAT(DATEDIFF(SS, '1970-1-1 00:00:00', @EndTime), '000');
-            END;
-          -- Bill types
-          IF OBJECT_ID('tempdb..#tp_bill_type') IS NOT NULL
-          DROP TABLE #tp_bill_type;
-          SELECT DISTINCT BillType,BillName INTO #tp_bill_type FROM t_cod_inv_bill_rule;
-          -- Output total count
-            SELECT COUNT(1)
-            FROM smp_his.dbo.t_log_inv_flow flw WITH (NOLOCK)
-                LEFT JOIN smp_mid..syst_smp_md_goods_basic_information_v1_0 md WITH (NOLOCK)
-                    ON md.myj_goods_id = flw.GoodsGid
-              AND md.companycode=@TenantCode
-            WHERE flw.OrgId = @OrgId
-                  AND flw.ChgOccQty <> 0
-                  AND
-                  (
-                      ISNULL(@GoodsCode, '') = ''
-                      OR flw.GoodsCode = @GoodsCode
-                  )
-                  AND
-                  (
-                      ISNULL(@BarCode, '') = ''
-                      OR md.goods_common_code = @BarCode
-                  )
-                  AND
-                  (
-                      ISNULL(@GoodsName, '') = ''
-                      OR md.myj_goods_chname LIKE CONCAT('%', @GoodsName, '%')
-                  )
-                  AND
-                  (
-                      ISNULL(@SrcChannel, '') = ''
-                      OR flw.SrcChannel = @SrcChannel
-                  )
-                  AND
-                  (
-                      ISNULL(@BillType, '') = ''
-                      OR flw.BillType = @BillType
-                  )
-                  AND
-                  (
-                      ISNULL(@BillNo, '') = ''
-                      OR flw.BillNo = @BillNo
-                  )
-                  AND
-                  (
-                      @bts IS NULL
-                      OR flw.OccurTime >= @bts
-                  )
-                  AND
-                  (
-                      @ets IS NULL
-                      OR flw.OccurTime <= @ets
-                  );
-          -- Output data
-            SELECT flw.OrgId,
-                  flw.OrgCode,
-                  flw.GoodsGid,
-                  flw.GoodsCode,
-                  md.goods_common_code AS BarCode,
-                  md.myj_goods_chname AS GoodsName,
-                  flw.BillType,
-              bt.BillName,
-                  flw.BillNo,
-                  CASE
-                      WHEN flw.ChgOccQty > 0 THEN
-                          'Inbound (Increase Inventory)'
-                      ELSE
-                          'Outbound (Decrease Inventory)'
-                  END AS ChangeMsg,
-                  flw.ChgOccQty AS ChangeQty,
-                  flw.OccQtyBef AS QtyBef,
-                  flw.OccQtyAft AS QtyAft,
-                  flw.SrcChannel,
-                  flw.Remark,
-                  flw.Operator,
-                  flw.OccurTime,
-              flw.CreationTime
-            FROM smp_his.dbo.t_log_inv_flow flw WITH (NOLOCK)
-                LEFT JOIN smp_mid..syst_smp_md_goods_basic_information_v1_0 md WITH (NOLOCK)
-                    ON md.myj_goods_id = flw.GoodsGid
-              AND md.companycode=@TenantCode
-            INNER JOIN #tp_bill_type bt ON bt.BillType = flw.BillType
-            WHERE flw.OrgId = @OrgId
-                  AND flw.ChgOccQty <> 0
-                  AND
-                  (
-                      ISNULL(@GoodsCode, '') = ''
-                      OR flw.GoodsCode = @GoodsCode
-                  )
-                  AND
-                  (
-                      ISNULL(@BarCode, '') = ''
-                      OR md.goods_common_code = @BarCode
-                  )
-                  AND
-                  (
-                      ISNULL(@GoodsName, '') = ''
-                      OR md.myj_goods_chname LIKE CONCAT('%', @GoodsName, '%')
-                  )
-                  AND
-                  (
-                      ISNULL(@SrcChannel, '') = ''
-                      OR flw.SrcChannel = @SrcChannel
-                  )
-                  AND
-                  (
-                      ISNULL(@BillType, '') = ''
-                      OR flw.BillType = @BillType
-                  )
-                  AND
-                  (
-                      ISNULL(@BillNo, '') = ''
-                      OR flw.BillNo = @BillNo
-                  )
-                  AND
-                  (
-                      @bts IS NULL
-                      OR flw.OccurTime >= @bts
-                  )
-                  AND
-                  (
-                      @ets IS NULL
-                      OR flw.OccurTime <= @ets
-                  )
-            ORDER BY flw.CreationTime DESC,
-                    flw.OrgId,
-                    flw.GoodsGid DESC OFFSET @SkipCount ROWS FETCH NEXT @MaxResultCount ROWS ONLY;
-        END;
-      command: GO 1
+  - statements: USE [smp_inv]
+    command: GO 1
+  - statements: |-
+      /****** Object:  StoredProcedure [dbo].[user_script_2]    Script Date: 2023/11/30 17:27:18 ******/
+      SET ANSI_NULLS ON
+    command: GO 1
+  - statements: SET QUOTED_IDENTIFIER ON
+    command: GO 1
+  - statements: |-
+      -- =============================================
+      -- Author:    Bytebase
+      -- Create date: 2023-11-30
+      -- Description: Adjust
+      -- =============================================
+      CREATE PROCEDURE [dbo].[user_script_2]
+        @TenantCode VARCHAR(20),
+          @OrgId VARCHAR(10),      -- Organization Id
+                                  -- @StoreCode VARCHAR(20),  -- Store Code
+                                  -- @GoodsGid INT,           -- Goods Id
+          @GoodsCode CHAR(8),      -- 8-digit Goods Code
+          @BarCode VARCHAR(20),    -- International Bar Code
+          @GoodsName VARCHAR(50),  -- Goods Name
+          @SrcChannel VARCHAR(30), -- Source Channel
+          @BillType VARCHAR(10),   -- Business Type
+          @BillNo VARCHAR(50),     -- Bill Number
+          @BeginTime DATETIME,     -- Start Time
+          @EndTime DATETIME,       -- End Time
+          @Sorting VARCHAR(50),    -- Sorting
+          @SkipCount INT,          -- Skip Count
+          @MaxResultCount INT      -- Maximum Result Count
+      AS
+      -- [Important] Template tags to generate dynamic scripts for different architectures
+      BEGIN
+          SET NOCOUNT ON;
+          DECLARE @bts BIGINT,
+                  @ets BIGINT;
+          IF ISNULL(@BeginTime, '') <> ''
+          BEGIN
+              SET @bts = CONCAT(DATEDIFF(SS, '1970-1-1 00:00:00', @BeginTime), '000');
+          END;
+          IF ISNULL(@EndTime, '') <> ''
+          BEGIN
+              SET @ets = CONCAT(DATEDIFF(SS, '1970-1-1 00:00:00', @EndTime), '000');
+          END;
+        -- Bill types
+        IF OBJECT_ID('tempdb..#tp_bill_type') IS NOT NULL
+        DROP TABLE #tp_bill_type;
+        SELECT DISTINCT BillType,BillName INTO #tp_bill_type FROM t_cod_inv_bill_rule;
+        -- Output total count
+          SELECT COUNT(1)
+          FROM smp_his.dbo.t_log_inv_flow flw WITH (NOLOCK)
+              LEFT JOIN smp_mid..syst_smp_md_goods_basic_information_v1_0 md WITH (NOLOCK)
+                  ON md.myj_goods_id = flw.GoodsGid
+            AND md.companycode=@TenantCode
+          WHERE flw.OrgId = @OrgId
+                AND flw.ChgOccQty <> 0
+                AND
+                (
+                    ISNULL(@GoodsCode, '') = ''
+                    OR flw.GoodsCode = @GoodsCode
+                )
+                AND
+                (
+                    ISNULL(@BarCode, '') = ''
+                    OR md.goods_common_code = @BarCode
+                )
+                AND
+                (
+                    ISNULL(@GoodsName, '') = ''
+                    OR md.myj_goods_chname LIKE CONCAT('%', @GoodsName, '%')
+                )
+                AND
+                (
+                    ISNULL(@SrcChannel, '') = ''
+                    OR flw.SrcChannel = @SrcChannel
+                )
+                AND
+                (
+                    ISNULL(@BillType, '') = ''
+                    OR flw.BillType = @BillType
+                )
+                AND
+                (
+                    ISNULL(@BillNo, '') = ''
+                    OR flw.BillNo = @BillNo
+                )
+                AND
+                (
+                    @bts IS NULL
+                    OR flw.OccurTime >= @bts
+                )
+                AND
+                (
+                    @ets IS NULL
+                    OR flw.OccurTime <= @ets
+                );
+        -- Output data
+          SELECT flw.OrgId,
+                flw.OrgCode,
+                flw.GoodsGid,
+                flw.GoodsCode,
+                md.goods_common_code AS BarCode,
+                md.myj_goods_chname AS GoodsName,
+                flw.BillType,
+            bt.BillName,
+                flw.BillNo,
+                CASE
+                    WHEN flw.ChgOccQty > 0 THEN
+                        'Inbound (Increase Inventory)'
+                    ELSE
+                        'Outbound (Decrease Inventory)'
+                END AS ChangeMsg,
+                flw.ChgOccQty AS ChangeQty,
+                flw.OccQtyBef AS QtyBef,
+                flw.OccQtyAft AS QtyAft,
+                flw.SrcChannel,
+                flw.Remark,
+                flw.Operator,
+                flw.OccurTime,
+            flw.CreationTime
+          FROM smp_his.dbo.t_log_inv_flow flw WITH (NOLOCK)
+              LEFT JOIN smp_mid..syst_smp_md_goods_basic_information_v1_0 md WITH (NOLOCK)
+                  ON md.myj_goods_id = flw.GoodsGid
+            AND md.companycode=@TenantCode
+          INNER JOIN #tp_bill_type bt ON bt.BillType = flw.BillType
+          WHERE flw.OrgId = @OrgId
+                AND flw.ChgOccQty <> 0
+                AND
+                (
+                    ISNULL(@GoodsCode, '') = ''
+                    OR flw.GoodsCode = @GoodsCode
+                )
+                AND
+                (
+                    ISNULL(@BarCode, '') = ''
+                    OR md.goods_common_code = @BarCode
+                )
+                AND
+                (
+                    ISNULL(@GoodsName, '') = ''
+                    OR md.myj_goods_chname LIKE CONCAT('%', @GoodsName, '%')
+                )
+                AND
+                (
+                    ISNULL(@SrcChannel, '') = ''
+                    OR flw.SrcChannel = @SrcChannel
+                )
+                AND
+                (
+                    ISNULL(@BillType, '') = ''
+                    OR flw.BillType = @BillType
+                )
+                AND
+                (
+                    ISNULL(@BillNo, '') = ''
+                    OR flw.BillNo = @BillNo
+                )
+                AND
+                (
+                    @bts IS NULL
+                    OR flw.OccurTime >= @bts
+                )
+                AND
+                (
+                    @ets IS NULL
+                    OR flw.OccurTime <= @ets
+                )
+          ORDER BY flw.CreationTime DESC,
+                  flw.OrgId,
+                  flw.GoodsGid DESC OFFSET @SkipCount ROWS FETCH NEXT @MaxResultCount ROWS ONLY;
+      END;
+    command: GO 1
 - input: |-
     USE [run]
     GO
@@ -406,76 +406,79 @@
     GO
   description: Sanitize user script#1
   batches:
-    - statements: USE [run]
-      command: GO 1
-    - statements: |4-
-        SET ANSI_NULLS ON
-      command: GO 1
-    - statements: SET QUOTED_IDENTIFIER OFF
-      command: GO 1
-    - statements: |4-
-        if exists(select * from sys.objects where name = 'user_proc_01')
-        drop proc user_proc_01
-      command: GO 1
-    - statements: |4
-        CREATE proc [dbo].[user_proc_01]
-          @p_orgid    dtorgid,
-          @p_custid   dtcustid,
-          @p_flag     dtkind
-        as
+  - statements: USE [run]
+    command: GO 1
+  - statements: |2-
 
-          declare @serverid dtsno, @sysdate dtdate,@p_qsdm dtchar255
-          declare @money_rmb dtkind, @money_hk dtkind
+      SET ANSI_NULLS ON
+    command: GO 1
+  - statements: SET QUOTED_IDENTIFIER OFF
+    command: GO 1
+  - statements: |2-
 
-          select @money_rmb = dbo.convertmoneytype('RMB') --0
-          select @money_hk = dbo.convertmoneytype('HK')   --1
-          declare @szAmarket dtkind,@szBmarket dtkind,@thirdAmarket dtkind, @thirdBmarket dtkind,@HGTmarket dtkind,@shBmarket dtkind
-          select @szAmarket = dbo.convertmarket('SZAG')   --0
-          select @szBmarket = dbo.convertmarket('SZBG')   --2
-          select @shBmarket = dbo.convertmarket('SHBG')   --3
-          select @thirdAmarket = dbo.convertmarket('ZRA') --6
-          select @thirdBmarket = dbo.convertmarket('ZRB') --7
-          select @HGTmarket = dbo.convertmarket('HGT')    --5
-          select  @serverid = 0
-          select top 1 @sysdate = sysdate,@serverid = serverid from sysconfig
-          select @p_qsdm = paravalue from dbo.mixedconfig where paraid = 'oes_zqgsdm_zy'
-          select errorcode = 0 , errormsg =  'Success'
+      if exists(select * from sys.objects where name = 'user_proc_01')
+      drop proc user_proc_01
+    command: GO 1
+  - statements: |2
 
-          begin
-            select sum(cn.num) as num from(
-              select count(1) as num
-                from dbo.logasset a
-                inner join dbo.custbaseinfo c on a.custid = c.custid and a.serverid = c.serverid
-                where a.serverid = @serverid and a.digestid in (220000,221001)
-                  and a.bizdate = @sysdate and a.orgid = @p_orgid and a.custid = @p_custid
-            union all
-              select count(1) as num
-                from dbo.logmateno a
-                inner join dbo.custbaseinfo c on a.custid = c.custid and a.serverid = c.serverid
-                where a.serverid = @serverid and a.bizdate = @sysdate and a.orgid = @p_orgid and a.custid = @p_custid
-              union all
-              select count(1) as num
-                from dbo.logasset a
+      CREATE proc [dbo].[user_proc_01]
+        @p_orgid    dtorgid,
+        @p_custid   dtcustid,
+        @p_flag     dtkind
+      as
+
+        declare @serverid dtsno, @sysdate dtdate,@p_qsdm dtchar255
+        declare @money_rmb dtkind, @money_hk dtkind
+
+        select @money_rmb = dbo.convertmoneytype('RMB') --0
+        select @money_hk = dbo.convertmoneytype('HK')   --1
+        declare @szAmarket dtkind,@szBmarket dtkind,@thirdAmarket dtkind, @thirdBmarket dtkind,@HGTmarket dtkind,@shBmarket dtkind
+        select @szAmarket = dbo.convertmarket('SZAG')   --0
+        select @szBmarket = dbo.convertmarket('SZBG')   --2
+        select @shBmarket = dbo.convertmarket('SHBG')   --3
+        select @thirdAmarket = dbo.convertmarket('ZRA') --6
+        select @thirdBmarket = dbo.convertmarket('ZRB') --7
+        select @HGTmarket = dbo.convertmarket('HGT')    --5
+        select  @serverid = 0
+        select top 1 @sysdate = sysdate,@serverid = serverid from sysconfig
+        select @p_qsdm = paravalue from dbo.mixedconfig where paraid = 'oes_zqgsdm_zy'
+        select errorcode = 0 , errormsg =  'Success'
+
+        begin
+          select sum(cn.num) as num from(
+            select count(1) as num
+              from dbo.logasset a
               inner join dbo.custbaseinfo c on a.custid = c.custid and a.serverid = c.serverid
-              where a.digestid in(221008,221009,250163)
-              and a.bizdate = @sysdate and a.serverid = @serverid
-              and a.orgid = @p_orgid and a.custid = @p_custid) cn
+              where a.serverid = @serverid and a.digestid in (220000,221001)
+                and a.bizdate = @sysdate and a.orgid = @p_orgid and a.custid = @p_custid
+          union all
+            select count(1) as num
+              from dbo.logmateno a
+              inner join dbo.custbaseinfo c on a.custid = c.custid and a.serverid = c.serverid
+              where a.serverid = @serverid and a.bizdate = @sysdate and a.orgid = @p_orgid and a.custid = @p_custid
+            union all
+            select count(1) as num
+              from dbo.logasset a
+            inner join dbo.custbaseinfo c on a.custid = c.custid and a.serverid = c.serverid
+            where a.digestid in(221008,221009,250163)
+            and a.bizdate = @sysdate and a.serverid = @serverid
+            and a.orgid = @p_orgid and a.custid = @p_custid) cn
 
 
-          end
-          return 0
-      command: GO 1
+        end
+        return 0
+    command: GO 1
 - input: |-
     INSERT INTO T VALUES ('
       Bytebase Inc.
     ');
   description: Cross line string using `'` as quote.
   batches:
-    - statements: |-
-        INSERT INTO T VALUES ('
-          Bytebase Inc.
-        ');
-      command: ""
+  - statements: |-
+      INSERT INTO T VALUES ('
+        Bytebase Inc.
+      ');
+    command: ""
 - input: |-
     SELECT * FROM T;
     GO
@@ -483,10 +486,10 @@
     GO
   description: Multiple batches
   batches:
-    - statements: SELECT * FROM T;
-      command: GO 1
-    - statements: INSERT INTO T VALUES (1);
-      command: GO 1
+  - statements: SELECT * FROM T;
+    command: GO 1
+  - statements: INSERT INTO T VALUES (1);
+    command: GO 1
 - input: |-
     /*
     * Bytebase Inc.
@@ -496,32 +499,32 @@
     INSERT INTO T VALUES (1);
   description: Multi-line comment
   batches:
-    - statements: |-
-        /*
-        * Bytebase Inc.
-        * Migration SQL File 2023/11/30
-        * INSERT INTO XXX VALUES (1);
-        */
-        INSERT INTO T VALUES (1);
-      command: ""
+  - statements: |-
+      /*
+      * Bytebase Inc.
+      * Migration SQL File 2023/11/30
+      * INSERT INTO XXX VALUES (1);
+      */
+      INSERT INTO T VALUES (1);
+    command: ""
 - input: |-
     -- Migration SQL File 2023/11/30
     INSERT INTO T VALUES (1);
   description: ""
   batches:
-    - statements: |-
-        -- Migration SQL File 2023/11/30
-        INSERT INTO T VALUES (1);
-      command: ""
+  - statements: |-
+      -- Migration SQL File 2023/11/30
+      INSERT INTO T VALUES (1);
+    command: ""
 - input: |-
     SELECT * FROM T;
     GO 2
   description: Run a batch twice
   batches:
-    - statements: SELECT * FROM T;
-      command: GO 2
+  - statements: SELECT * FROM T;
+    command: GO 2
 - input: SELECT * FROM T;
   description: Simple statement
   batches:
-    - statements: SELECT * FROM T;
-      command: ""
+  - statements: SELECT * FROM T;
+    command: ""
