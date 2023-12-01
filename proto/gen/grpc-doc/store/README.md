@@ -28,20 +28,6 @@
     - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Action](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Action)
     - [ActivityIssueCommentCreatePayload.ExternalApprovalEvent.Type](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent-Type)
   
-- [store/changelist.proto](#store_changelist-proto)
-    - [Changelist](#bytebase-store-Changelist)
-    - [Changelist.Change](#bytebase-store-Changelist-Change)
-  
-- [store/common.proto](#store_common-proto)
-    - [PageToken](#bytebase-store-PageToken)
-  
-    - [Engine](#bytebase-store-Engine)
-    - [MaskingLevel](#bytebase-store-MaskingLevel)
-    - [VcsType](#bytebase-store-VcsType)
-  
-- [store/data_source.proto](#store_data_source-proto)
-    - [DataSourceOptions](#bytebase-store-DataSourceOptions)
-  
 - [store/database.proto](#store_database-proto)
     - [ColumnConfig](#bytebase-store-ColumnConfig)
     - [ColumnConfig.LabelsEntry](#bytebase-store-ColumnConfig-LabelsEntry)
@@ -71,6 +57,24 @@
     - [StreamMetadata.Type](#bytebase-store-StreamMetadata-Type)
     - [TablePartitionMetadata.Type](#bytebase-store-TablePartitionMetadata-Type)
     - [TaskMetadata.State](#bytebase-store-TaskMetadata-State)
+  
+- [store/branch.proto](#store_branch-proto)
+    - [BranchConfig](#bytebase-store-BranchConfig)
+    - [BranchSnapshot](#bytebase-store-BranchSnapshot)
+  
+- [store/changelist.proto](#store_changelist-proto)
+    - [Changelist](#bytebase-store-Changelist)
+    - [Changelist.Change](#bytebase-store-Changelist-Change)
+  
+- [store/common.proto](#store_common-proto)
+    - [PageToken](#bytebase-store-PageToken)
+  
+    - [Engine](#bytebase-store-Engine)
+    - [MaskingLevel](#bytebase-store-MaskingLevel)
+    - [VcsType](#bytebase-store-VcsType)
+  
+- [store/data_source.proto](#store_data_source-proto)
+    - [DataSourceOptions](#bytebase-store-DataSourceOptions)
   
 - [store/idp.proto](#store_idp-proto)
     - [FieldMapping](#bytebase-store-FieldMapping)
@@ -183,7 +187,6 @@
 - [store/sheet.proto](#store_sheet-proto)
     - [SheetPayload](#bytebase-store-SheetPayload)
     - [SheetPayload.SchemaDesign](#bytebase-store-SheetPayload-SchemaDesign)
-    - [SheetPayload.SchemaDesign.Protection](#bytebase-store-SheetPayload-SchemaDesign-Protection)
     - [SheetPayload.VCSPayload](#bytebase-store-SheetPayload-VCSPayload)
   
     - [SheetPayload.SchemaDesign.Type](#bytebase-store-SheetPayload-SchemaDesign-Type)
@@ -535,181 +538,6 @@ convert to the expected struct there.
 | TYPE_UNSPECIFIED | 0 |  |
 | TYPE_FEISHU | 1 |  |
 
-
- 
-
- 
-
- 
-
-
-
-<a name="store_changelist-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/changelist.proto
-
-
-
-<a name="bytebase-store-Changelist"></a>
-
-### Changelist
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| description | [string](#string) |  |  |
-| changes | [Changelist.Change](#bytebase-store-Changelist-Change) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-Changelist-Change"></a>
-
-### Changelist.Change
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| sheet | [string](#string) |  | The name of a sheet. |
-| source | [string](#string) |  | The source of origin. 1) change history: instances/{instance}/databases/{database}/changeHistories/{changeHistory}. 2) branch: projects/{project}/schemaDesigns/{schemaDesign}. 3) raw SQL if empty. |
-
-
-
-
-
- 
-
- 
-
- 
-
- 
-
-
-
-<a name="store_common-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/common.proto
-
-
-
-<a name="bytebase-store-PageToken"></a>
-
-### PageToken
-Used internally for obfuscating the page token.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| limit | [int32](#int32) |  |  |
-| offset | [int32](#int32) |  |  |
-
-
-
-
-
- 
-
-
-<a name="bytebase-store-Engine"></a>
-
-### Engine
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ENGINE_UNSPECIFIED | 0 |  |
-| CLICKHOUSE | 1 |  |
-| MYSQL | 2 |  |
-| POSTGRES | 3 |  |
-| SNOWFLAKE | 4 |  |
-| SQLITE | 5 |  |
-| TIDB | 6 |  |
-| MONGODB | 7 |  |
-| REDIS | 8 |  |
-| ORACLE | 9 |  |
-| SPANNER | 10 |  |
-| MSSQL | 11 |  |
-| REDSHIFT | 12 |  |
-| MARIADB | 13 |  |
-| OCEANBASE | 14 |  |
-| DM | 15 |  |
-| RISINGWAVE | 16 |  |
-| OCEANBASE_ORACLE | 17 |  |
-
-
-
-<a name="bytebase-store-MaskingLevel"></a>
-
-### MaskingLevel
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| MASKING_LEVEL_UNSPECIFIED | 0 |  |
-| NONE | 1 |  |
-| PARTIAL | 2 |  |
-| FULL | 3 |  |
-
-
-
-<a name="bytebase-store-VcsType"></a>
-
-### VcsType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| VCS_TYPE_UNSPECIFIED | 0 |  |
-| GITLAB | 1 |  |
-| GITHUB | 2 |  |
-| BITBUCKET | 3 |  |
-
-
- 
-
- 
-
- 
-
-
-
-<a name="store_data_source-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/data_source.proto
-
-
-
-<a name="bytebase-store-DataSourceOptions"></a>
-
-### DataSourceOptions
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| srv | [bool](#bool) |  | srv is a boolean flag that indicates whether the host is a DNS SRV record. |
-| authentication_database | [string](#string) |  | authentication_database is the database name to authenticate against, which stores the user credentials. |
-| sid | [string](#string) |  | sid and service_name are used for Oracle. |
-| service_name | [string](#string) |  |  |
-| ssh_host | [string](#string) |  | SSH related The hostname of the SSH server agent. |
-| ssh_port | [string](#string) |  | The port of the SSH server agent. It&#39;s 22 typically. |
-| ssh_user | [string](#string) |  | The user to login the server. |
-| ssh_obfuscated_password | [string](#string) |  | The password to login the server. If it&#39;s empty string, no password is required. |
-| ssh_obfuscated_private_key | [string](#string) |  | The private key to login the server. If it&#39;s empty string, we will use the system default private key from os.Getenv(&#34;SSH_AUTH_SOCK&#34;). |
-
-
-
-
-
- 
 
  
 
@@ -1213,6 +1041,230 @@ ViewMetadata is the metadata for views.
 | STATE_STARTED | 1 |  |
 | STATE_SUSPENDED | 2 |  |
 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_branch-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/branch.proto
+
+
+
+<a name="bytebase-store-BranchConfig"></a>
+
+### BranchConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| source_database | [int64](#int64) |  | The name of source database. Optional. Example: instances/instance-id/databases/database-name. |
+| source_branch | [int64](#int64) |  | The name of the source branch. Optional. Example: projects/project-id/branches/branch-id. |
+
+
+
+
+
+
+<a name="bytebase-store-BranchSnapshot"></a>
+
+### BranchSnapshot
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema | [string](#string) |  |  |
+| metadata | [DatabaseSchemaMetadata](#bytebase-store-DatabaseSchemaMetadata) |  |  |
+| database_config | [DatabaseConfig](#bytebase-store-DatabaseConfig) |  |  |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_changelist-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/changelist.proto
+
+
+
+<a name="bytebase-store-Changelist"></a>
+
+### Changelist
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| description | [string](#string) |  |  |
+| changes | [Changelist.Change](#bytebase-store-Changelist-Change) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-Changelist-Change"></a>
+
+### Changelist.Change
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sheet | [string](#string) |  | The name of a sheet. |
+| source | [string](#string) |  | The source of origin. 1) change history: instances/{instance}/databases/{database}/changeHistories/{changeHistory}. 2) branch: projects/{project}/schemaDesigns/{schemaDesign}. 3) raw SQL if empty. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_common-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/common.proto
+
+
+
+<a name="bytebase-store-PageToken"></a>
+
+### PageToken
+Used internally for obfuscating the page token.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| limit | [int32](#int32) |  |  |
+| offset | [int32](#int32) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-Engine"></a>
+
+### Engine
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ENGINE_UNSPECIFIED | 0 |  |
+| CLICKHOUSE | 1 |  |
+| MYSQL | 2 |  |
+| POSTGRES | 3 |  |
+| SNOWFLAKE | 4 |  |
+| SQLITE | 5 |  |
+| TIDB | 6 |  |
+| MONGODB | 7 |  |
+| REDIS | 8 |  |
+| ORACLE | 9 |  |
+| SPANNER | 10 |  |
+| MSSQL | 11 |  |
+| REDSHIFT | 12 |  |
+| MARIADB | 13 |  |
+| OCEANBASE | 14 |  |
+| DM | 15 |  |
+| RISINGWAVE | 16 |  |
+| OCEANBASE_ORACLE | 17 |  |
+
+
+
+<a name="bytebase-store-MaskingLevel"></a>
+
+### MaskingLevel
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MASKING_LEVEL_UNSPECIFIED | 0 |  |
+| NONE | 1 |  |
+| PARTIAL | 2 |  |
+| FULL | 3 |  |
+
+
+
+<a name="bytebase-store-VcsType"></a>
+
+### VcsType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| VCS_TYPE_UNSPECIFIED | 0 |  |
+| GITLAB | 1 |  |
+| GITHUB | 2 |  |
+| BITBUCKET | 3 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_data_source-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/data_source.proto
+
+
+
+<a name="bytebase-store-DataSourceOptions"></a>
+
+### DataSourceOptions
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| srv | [bool](#bool) |  | srv is a boolean flag that indicates whether the host is a DNS SRV record. |
+| authentication_database | [string](#string) |  | authentication_database is the database name to authenticate against, which stores the user credentials. |
+| sid | [string](#string) |  | sid and service_name are used for Oracle. |
+| service_name | [string](#string) |  |  |
+| ssh_host | [string](#string) |  | SSH related The hostname of the SSH server agent. |
+| ssh_port | [string](#string) |  | The port of the SSH server agent. It&#39;s 22 typically. |
+| ssh_user | [string](#string) |  | The user to login the server. |
+| ssh_obfuscated_password | [string](#string) |  | The password to login the server. If it&#39;s empty string, no password is required. |
+| ssh_obfuscated_private_key | [string](#string) |  | The private key to login the server. If it&#39;s empty string, we will use the system default private key from os.Getenv(&#34;SSH_AUTH_SOCK&#34;). |
+
+
+
+
+
+ 
 
  
 
@@ -2839,22 +2891,6 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | baseline_sheet_id | [string](#string) |  | The id of the baseline sheet including the baseline full schema. |
 | baseline_schema_design_id | [string](#string) |  | The sheet id of the baseline schema design. Only valid when the schema design is a personal draft. |
 | baseline_change_history_id | [string](#string) |  | The id of the baseline change history including the baseline change history.(optional) |
-| protection | [SheetPayload.SchemaDesign.Protection](#bytebase-store-SheetPayload-SchemaDesign-Protection) |  | The protection of the schema design. |
-
-
-
-
-
-
-<a name="bytebase-store-SheetPayload-SchemaDesign-Protection"></a>
-
-### SheetPayload.SchemaDesign.Protection
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| allow_force_pushes | [bool](#bool) |  | Permits force pushes to the branch. |
 
 
 

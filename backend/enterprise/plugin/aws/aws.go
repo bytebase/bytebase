@@ -85,7 +85,7 @@ func (p *Provider) LoadSubscription(ctx context.Context) *enterprise.Subscriptio
 		return subscription
 	}
 
-	subscription.Plan = api.TEAM
+	subscription.Plan = api.ENTERPRISE
 
 	if v := license.Validity; v != nil {
 		begin, err := time.Parse(time.RFC3339, aws.ToString(v.Begin))

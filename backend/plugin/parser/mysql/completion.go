@@ -237,7 +237,15 @@ func NewCompleter(ctx context.Context, statement string, caretLine int, caretOff
 	parser, lexer, scanner := prepareParserAndScanner(statement, caretLine, caretOffset)
 	// For all MySQL completers, we use one global follow sets by state.
 	// The FollowSetsByState is the thread-safe struct.
-	core := base.NewCodeCompletionCore(parser, newIgnoredTokens(), newPreferredRules(), &globalFollowSetsByState)
+	core := base.NewCodeCompletionCore(
+		parser,
+		newIgnoredTokens(),
+		newPreferredRules(),
+		&globalFollowSetsByState,
+		mysql.MySQLParserRULE_querySpecification,
+		mysql.MySQLParserRULE_queryExpression,
+		mysql.MySQLParserRULE_selectAlias,
+	)
 	return &Completer{
 		ctx:                 ctx,
 		core:                core,
@@ -477,6 +485,13 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 						}
 					}
 				} else if len(c.references) > 0 && candidate == mysql.MySQLParserRULE_columnRef {
+					list := c.fetchSelectItemAliases(candidates.Rules[candidate])
+					for _, alias := range list {
+						columnEntries.Insert(base.Candidate{
+							Type: base.CandidateTypeColumn,
+							Text: alias,
+						})
+					}
 					for _, reference := range c.references {
 						switch reference := reference.(type) {
 						case *PhysicalTableReference:
@@ -527,6 +542,72 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 	result = append(result, columnEntries.toSLice()...)
 	result = append(result, viewEntries.toSLice()...)
 	return result, nil
+}
+
+func (c *Completer) fetchSelectItemAliases(ruleStack []*base.RuleContext) []string {
+	canUseAliases := false
+	for i := len(ruleStack) - 1; i >= 0; i-- {
+		switch ruleStack[i].ID {
+		case mysql.MySQLParserRULE_queryExpression, mysql.MySQLParserRULE_querySpecification:
+			if !canUseAliases {
+				return nil
+			}
+			aliasMap := make(map[string]bool)
+			for pos := range ruleStack[i].SelectItemAliases {
+				if aliasText := c.extractAliasText(pos); len(aliasText) > 0 {
+					aliasMap[aliasText] = true
+				}
+			}
+
+			var result []string
+			for alias := range aliasMap {
+				result = append(result, alias)
+			}
+			sort.Slice(result, func(i, j int) bool {
+				return result[i] < result[j]
+			})
+			return result
+		case mysql.MySQLParserRULE_orderClause, mysql.MySQLParserRULE_groupByClause, mysql.MySQLParserRULE_havingClause:
+			canUseAliases = true
+		}
+	}
+
+	return nil
+}
+
+func (c *Completer) extractAliasText(pos int) string {
+	followingText := c.scanner.GetFollowingTextAfter(pos)
+	if len(followingText) == 0 {
+		return ""
+	}
+
+	input := antlr.NewInputStream(followingText)
+	lexer := mysql.NewMySQLLexer(input)
+	tokens := antlr.NewCommonTokenStream(lexer, 0)
+	parser := mysql.NewMySQLParser(tokens)
+
+	parser.BuildParseTrees = true
+	parser.RemoveErrorListeners()
+	tree := parser.SelectAlias()
+
+	listener := &SelectAliasListener{}
+	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
+
+	return listener.result
+}
+
+type SelectAliasListener struct {
+	*mysql.BaseMySQLParserListener
+
+	result string
+}
+
+func (l *SelectAliasListener) EnterSelectAlias(ctx *mysql.SelectAliasContext) {
+	if ctx.Identifier() != nil {
+		l.result = unquote(ctx.Identifier().GetText())
+	} else if ctx.TextStringLiteral() != nil {
+		l.result = unquote(ctx.TextStringLiteral().GetText())
+	}
 }
 
 type ObjectFlags int
@@ -878,6 +959,7 @@ func (l *TableRefListener) ExitSubquery(_ *mysql.SubqueryContext) {
 }
 
 func prepareParserAndScanner(statement string, caretLine int, caretOffset int) (*mysql.MySQLParser, *mysql.MySQLLexer, *base.Scanner) {
+	statement, caretLine, caretOffset = skipHeadingSQLs(statement, caretLine, caretOffset)
 	input := antlr.NewInputStream(statement)
 	lexer := mysql.NewMySQLLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
@@ -888,6 +970,53 @@ func prepareParserAndScanner(statement string, caretLine int, caretOffset int) (
 	scanner.SeekPosition(caretLine, caretOffset)
 	scanner.Push()
 	return parser, lexer, scanner
+}
+
+func notEmptySQLCount(list []base.SingleSQL) int {
+	count := 0
+	for _, sql := range list {
+		if !sql.Empty {
+			count++
+		}
+	}
+	return count
+}
+
+// caretLine is 1-based and caretOffset is 0-based.
+func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, int, int) {
+	newCaretLine, newCaretOffset := caretLine, caretOffset
+	list, err := SplitSQL(statement)
+	if err != nil || notEmptySQLCount(list) <= 1 {
+		return statement, caretLine, caretOffset
+	}
+
+	caretLine-- // Convert to 0-based.
+
+	start := 0
+	for i, sql := range list {
+		if sql.LastLine > caretLine || (sql.LastLine == caretLine && sql.LastColumn >= caretOffset) {
+			start = i
+			if i == 0 {
+				// The caret is in the first SQL statement, so we don't need to skip any SQL statements.
+				continue
+			}
+			newCaretLine = caretLine - list[i-1].LastLine + 1 // Convert to 1-based.
+			if caretLine == list[i-1].LastLine {
+				// The caret is in the same line as the last line of the previous SQL statement.
+				// We need to adjust the caret offset.
+				newCaretOffset = caretOffset - list[i-1].LastColumn - 1 // Convert to 0-based.
+			}
+		}
+	}
+
+	var buf strings.Builder
+	for i := start; i < len(list); i++ {
+		if _, err := buf.WriteString(list[i].Text); err != nil {
+			return statement, caretLine, caretOffset
+		}
+	}
+
+	return buf.String(), newCaretLine, newCaretOffset
 }
 
 func unquote(s string) string {
