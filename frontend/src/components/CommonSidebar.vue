@@ -30,7 +30,7 @@
         </div>
         <a
           v-if="item.type === 'link'"
-          class="group flex items-center px-2 py-1.5 leading-5 font-medium rounded-md text-gray-700 outline-item !text-base"
+          class="group flex items-center px-2 py-1.5 leading-5 font-medium rounded-md text-gray-700 outline-item !text-item"
           :class="getItemClass(item.path)"
           :href="item.path"
           @click="$emit('select', item.path)"
