@@ -13,75 +13,76 @@
     </div>
     <div class="flex-1 lg:px-4">
       <div class="mb-7 mt-4 lg:mt-0">
-        <label
-          class="flex items-center gap-x-2 tooltip-wrapper"
-          :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
-        >
-          <NCheckbox
-            :disabled="!allowEdit"
-            :checked="watermarkEnabled"
-            @update:checked="handleWatermarkToggle"
-          />
-          <span class="font-medium">{{
-            $t("settings.general.workspace.watermark.enable")
-          }}</span>
-
-          <span
-            v-if="!allowEdit"
-            class="text-sm text-gray-400 -translate-y-2 tooltip"
-          >
+        <NTooltip placement="top-start" :disabled="allowEdit">
+          <template #trigger>
+            <label
+              class="flex items-center gap-x-2"
+              :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
+            >
+              <NCheckbox
+                :disabled="!allowEdit"
+                :checked="watermarkEnabled"
+                @update:checked="handleWatermarkToggle"
+              />
+              <span class="font-medium">{{
+                $t("settings.general.workspace.watermark.enable")
+              }}</span>
+            </label>
+          </template>
+          <span class="text-sm text-gray-400 -translate-y-2">
             {{ $t("settings.general.workspace.watermark.only-admin-can-edit") }}
           </span>
-        </label>
+        </NTooltip>
         <div class="mb-3 text-sm text-gray-400">
           {{ $t("settings.general.workspace.watermark.description") }}
         </div>
       </div>
       <div v-if="!isSaaSMode" class="mb-7 mt-4 lg:mt-0">
-        <label
-          class="flex items-center gap-x-2 tooltip-wrapper"
-          :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
-        >
-          <NCheckbox
-            :disabled="!allowEdit"
-            :checked="disallowSignupEnabled"
-            @update:checked="handleDisallowSignupToggle"
-          />
-          <span class="font-medium">{{
-            $t("settings.general.workspace.disallow-signup.enable")
-          }}</span>
-
-          <span
-            v-if="!allowEdit"
-            class="text-sm text-gray-400 -translate-y-2 tooltip"
-          >
+        <NTooltip placement="top-start" :disabled="allowEdit">
+          <template #trigger>
+            <label
+              class="flex items-center gap-x-2"
+              :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
+            >
+              <NCheckbox
+                :disabled="!allowEdit"
+                :checked="disallowSignupEnabled"
+                @update:checked="handleDisallowSignupToggle"
+              />
+              <span class="font-medium">{{
+                $t("settings.general.workspace.disallow-signup.enable")
+              }}</span>
+            </label>
+          </template>
+          <span class="text-sm text-gray-400 -translate-y-2">
             {{ $t("settings.general.workspace.only-admin-can-edit") }}
           </span>
-        </label>
+        </NTooltip>
         <div class="mb-3 text-sm text-gray-400">
           {{ $t("settings.general.workspace.disallow-signup.description") }}
         </div>
       </div>
       <div class="mb-7 mt-4 lg:mt-0">
-        <label
-          class="flex items-center gap-x-2 tooltip-wrapper"
-          :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
-        >
-          <NCheckbox
-            :disabled="!allowEdit"
-            :checked="require2FAEnabled"
-            @update:checked="handleRequire2FAToggle"
-          />
-          <span class="font-medium">{{
-            $t("settings.general.workspace.require-2fa.enable")
-          }}</span>
-          <span
-            v-if="!allowEdit"
-            class="text-sm text-gray-400 -translate-y-2 tooltip"
-          >
+        <NTooltip placement="top-start" :disabled="allowEdit">
+          <template #trigger>
+            <label
+              class="flex items-center gap-x-2"
+              :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
+            >
+              <NCheckbox
+                :disabled="!allowEdit"
+                :checked="require2FAEnabled"
+                @update:checked="handleRequire2FAToggle"
+              />
+              <span class="font-medium">{{
+                $t("settings.general.workspace.require-2fa.enable")
+              }}</span>
+            </label>
+          </template>
+          <span class="text-sm text-gray-400 -translate-y-2">
             {{ $t("settings.general.workspace.only-admin-can-edit") }}
           </span>
-        </label>
+        </NTooltip>
         <div class="mb-3 text-sm text-gray-400">
           {{ $t("settings.general.workspace.require-2fa.description") }}
         </div>
