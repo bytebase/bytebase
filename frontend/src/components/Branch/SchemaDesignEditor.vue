@@ -26,10 +26,7 @@
         </button>
       </div>
       <div v-if="!hideSQLCheckButton" class="flex items-center flex-end">
-        <SchemaDesignSQLCheckButton
-          class="justify-end"
-          :schema-design="branch"
-        />
+        <BranchSQLCheckButton class="justify-end" :branch="branch" />
       </div>
     </div>
     <div class="grow w-full h-auto overflow-auto">
@@ -64,14 +61,14 @@
 import { cloneDeep } from "lodash-es";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { schemaDesignServiceClient } from "@/grpcweb";
+import { branchServiceClient } from "@/grpcweb";
 import {
   pushNotification,
   useDatabaseV1Store,
   useSchemaEditorV1Store,
 } from "@/store";
 import { ComposedProject } from "@/types";
-import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
+import { Branch } from "@/types/proto/v1/branch_service";
 import { MonacoEditor } from "../MonacoEditor";
 import {
   mergeSchemaEditToMetadata,
@@ -87,7 +84,7 @@ interface LocalState {
 
 const props = defineProps<{
   project: ComposedProject;
-  branch: SchemaDesign;
+  branch: Branch;
   readonly?: boolean;
   hideSQLCheckButton?: boolean;
 }>();
@@ -160,7 +157,7 @@ const fetchRawSQLPreview = async () => {
 
   try {
     rawSQLPreviewState.isFetching = true;
-    const diffResponse = await schemaDesignServiceClient.diffMetadata(
+    const diffResponse = await branchServiceClient.diffMetadata(
       {
         sourceMetadata,
         targetMetadata: metadata,

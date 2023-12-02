@@ -13,7 +13,7 @@ import {
   isBranchChangeSource,
   isChangeHistoryChangeSource,
 } from "@/utils";
-import { useSchemaDesignStore } from "../schemaDesign";
+import { useBranchStore } from "../branch";
 import { useChangeHistoryStore } from "./changeHistory";
 import { useSheetV1Store } from "./sheet";
 
@@ -105,10 +105,7 @@ export const useChangelistStore = defineStore("changelist", () => {
       );
     } else if (isBranchChangeSource(change)) {
       composer.collect(source, () =>
-        useSchemaDesignStore().fetchSchemaDesignByName(
-          source,
-          true /* useCache */
-        )
+        useBranchStore().fetchBranchByName(source, true /* useCache */)
       );
     } else {
       // Raw SQL, no need to compose

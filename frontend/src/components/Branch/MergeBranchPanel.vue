@@ -83,12 +83,12 @@ import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { pushNotification, useSheetV1Store } from "@/store";
-import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
+import { useBranchStore } from "@/store/modules/branch";
 import {
-  getProjectAndSchemaDesignSheetId,
+  getProjectAndBranchId,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
-import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
+import { Branch } from "@/types/proto/v1/branch_service";
 import {
   Sheet_Source,
   Sheet_Type,
@@ -120,10 +120,10 @@ const state = reactive<LocalState>({
 const { t } = useI18n();
 const dialog = useDialog();
 const sheetStore = useSheetV1Store();
-const schemaDesignStore = useSchemaDesignStore();
+const branchStore = useBranchStore();
 const isLoadingSourceBranch = ref(false);
 const isLoadingTargetBranch = ref(false);
-const emptyBranch = () => SchemaDesign.fromPartial({});
+const emptyBranch = () => Branch.fromPartial({});
 
 const sourceBranch = asyncComputed(
   async () => {
@@ -131,10 +131,7 @@ const sourceBranch = asyncComputed(
     if (!name) {
       return emptyBranch();
     }
-    return await schemaDesignStore.fetchSchemaDesignByName(
-      name,
-      true /* useCache */
-    );
+    return await branchStore.fetchBranchByName(name, true /* useCache */);
   },
   emptyBranch(),
   {
@@ -148,10 +145,7 @@ const targetBranch = asyncComputed(
     if (!name) {
       return emptyBranch();
     }
-    return await schemaDesignStore.fetchSchemaDesignByName(
-      name,
-      true /* useCache */
-    );
+    return await branchStore.fetchBranchByName(name, true /* useCache */);
   },
   emptyBranch(),
   {
@@ -164,7 +158,7 @@ const ready = computed(() => {
   return !isLoadingSourceBranch.value && !isLoadingTargetBranch.value;
 });
 
-const targetBranchFilter = (branch: SchemaDesign) => {
+const targetBranchFilter = (branch: Branch) => {
   return (
     branch.name !== props.sourceBranchName &&
     branch.engine === sourceBranch.value.engine
@@ -173,9 +167,7 @@ const targetBranchFilter = (branch: SchemaDesign) => {
 
 const handleSaveDraft = async (ignoreNotify?: boolean) => {
   const updateMask = ["schema", "parent_branch"];
-  const [projectName] = getProjectAndSchemaDesignSheetId(
-    sourceBranch.value.name
-  );
+  const [projectName] = getProjectAndBranchId(sourceBranch.value.name);
   // Create a baseline sheet for the schema design.
   const baselineSheet = await sheetStore.createSheet(
     `${projectNamePrefix}${projectName}`,
@@ -190,8 +182,8 @@ const handleSaveDraft = async (ignoreNotify?: boolean) => {
   );
 
   // Update the schema design draft first.
-  await schemaDesignStore.updateSchemaDesign(
-    SchemaDesign.fromPartial({
+  await branchStore.updateBranch(
+    Branch.fromPartial({
       name: sourceBranch.value.name,
       engine: sourceBranch.value.engine,
       baselineDatabase: sourceBranch.value.baselineDatabase,
@@ -215,7 +207,7 @@ const handleMergeBranch = async () => {
   await handleSaveDraft(true);
 
   try {
-    await schemaDesignStore.mergeSchemaDesign({
+    await branchStore.mergeBranch({
       name: sourceBranch.value.name,
       targetName: targetBranch.value.name,
     });
@@ -236,7 +228,7 @@ const handleMergeBranch = async () => {
         },
         onPositiveClick: async () => {
           // Fetching the latest target branch.
-          await schemaDesignStore.fetchSchemaDesignByName(
+          await branchStore.fetchBranchByName(
             state.targetBranchName,
             false /* !useCache */
           );
@@ -261,7 +253,7 @@ const handleMergeBranch = async () => {
 
   emit("merged", state.targetBranchName);
   if (state.deleteBranchAfterMerged) {
-    await schemaDesignStore.deleteSchemaDesign(props.sourceBranchName);
+    await branchStore.deleteBranch(props.sourceBranchName);
   }
 };
 

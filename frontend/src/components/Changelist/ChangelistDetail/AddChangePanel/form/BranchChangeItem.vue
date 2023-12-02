@@ -40,12 +40,12 @@ import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { RichDatabaseName } from "@/components/v2";
 import { useDatabaseV1Store } from "@/store";
+import { Branch } from "@/types/proto/v1/branch_service";
 import { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
-import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 
 const props = defineProps<{
   change: Change;
-  branch: SchemaDesign | undefined;
+  branch: Branch | undefined;
 }>();
 
 defineEmits<{
@@ -56,7 +56,7 @@ defineEmits<{
 const branch = computed(() => {
   return (
     props.branch ??
-    SchemaDesign.fromPartial({
+    Branch.fromPartial({
       name: props.change.source,
       title: "<<Unknown Branch>>",
     })

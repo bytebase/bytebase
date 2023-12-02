@@ -8,7 +8,7 @@
     v-bind="$attrs"
     @click-row="clickBranch"
   >
-    <template #item="{ item: branch }: { item: SchemaDesign }">
+    <template #item="{ item: branch }: { item: Branch }">
       <div v-if="!hideProjectColumn" class="bb-grid-cell">
         {{ projectV1Name(getFormattedValue(branch).project) }}
       </div>
@@ -45,21 +45,18 @@ import { BBGridColumn } from "@/bbkit";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
 import { useDatabaseV1Store, useProjectV1Store, useUserStore } from "@/store";
 import {
-  getProjectAndSchemaDesignSheetId,
+  getProjectAndBranchId,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
-import {
-  SchemaDesign,
-  SchemaDesign_Type,
-} from "@/types/proto/v1/schema_design_service";
+import { Branch } from "@/types/proto/v1/branch_service";
 import { projectV1Name } from "@/utils";
 
 const emit = defineEmits<{
-  (event: "click", schemaDesign: SchemaDesign): void;
+  (event: "click", branch: Branch): void;
 }>();
 
 const props = defineProps<{
-  branches: SchemaDesign[];
+  branches: Branch[];
   hideProjectColumn?: boolean;
   ready?: boolean;
 }>();
@@ -86,13 +83,13 @@ const COLUMN_LIST = computed(() => {
   return columns;
 });
 
-const getFormattedValue = (branch: SchemaDesign) => {
-  const [projectName] = getProjectAndSchemaDesignSheetId(branch.name);
+const getFormattedValue = (branch: Branch) => {
+  const [projectName] = getProjectAndBranchId(branch.name);
   const project = projectV1Store.getProjectByName(
     `${projectNamePrefix}${projectName}`
   );
   let parentBranch = "";
-  if (branch.type === SchemaDesign_Type.PERSONAL_DRAFT) {
+  if (branch.parentBranch !== "") {
     const parentSchemaDesign = props.branches.find(
       (br) => br.name === branch.parentBranch
     );
@@ -118,7 +115,7 @@ const getFormattedValue = (branch: SchemaDesign) => {
   };
 };
 
-const clickBranch = (branch: SchemaDesign) => {
+const clickBranch = (branch: Branch) => {
   emit("click", branch);
 };
 </script>

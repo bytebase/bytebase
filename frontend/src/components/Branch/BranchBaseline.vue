@@ -15,11 +15,11 @@
 import { computed } from "vue";
 import { RichDatabaseName } from "@/components/v2";
 import { useDatabaseV1Store } from "@/store";
-import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
+import { Branch } from "@/types/proto/v1/branch_service";
 
 const props = withDefaults(
   defineProps<{
-    branch: SchemaDesign;
+    branch: Branch;
     showInstanceIcon?: boolean;
   }>(),
   {

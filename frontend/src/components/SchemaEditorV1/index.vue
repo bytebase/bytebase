@@ -24,12 +24,9 @@ import { isEqual } from "lodash-es";
 import { Splitpanes, Pane } from "splitpanes";
 import { onMounted, watch, reactive, computed } from "vue";
 import { useSchemaEditorV1Store, useSettingV1Store } from "@/store";
-import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
+import { useBranchStore } from "@/store/modules/branch";
 import { ComposedProject, ComposedDatabase } from "@/types";
-import {
-  SchemaDesign,
-  SchemaDesign_Type,
-} from "@/types/proto/v1/schema_design_service";
+import { Branch } from "@/types/proto/v1/branch_service";
 import { BranchSchema } from "@/types/v1/schemaEditor";
 import { nextAnimationFrame } from "@/utils";
 import MaskSpinner from "../misc/MaskSpinner.vue";
@@ -43,7 +40,7 @@ const props = defineProps<{
   readonly?: boolean;
   databases?: ComposedDatabase[];
   // NOTE: we only support editing one branch for now.
-  branches?: SchemaDesign[];
+  branches?: Branch[];
   loading?: boolean;
 }>();
 
@@ -54,7 +51,7 @@ interface LocalState {
 
 const settingStore = useSettingV1Store();
 const schemaEditorV1Store = useSchemaEditorV1Store();
-const schemaDesignStore = useSchemaDesignStore();
+const branchStore = useBranchStore();
 const state = reactive<LocalState>({
   loading: false,
   initialized: false,
@@ -69,12 +66,9 @@ const prepareBranchContext = async () => {
     return;
   }
   for (const branch of props.branches) {
-    if (
-      branch.type === SchemaDesign_Type.PERSONAL_DRAFT &&
-      branch.parentBranch
-    ) {
+    if (branch.parentBranch !== "") {
       // Prepare parent branch for personal draft.
-      await schemaDesignStore.fetchSchemaDesignByName(
+      await branchStore.fetchBranchByName(
         branch.parentBranch,
         true /* useCache */
       );
@@ -82,7 +76,7 @@ const prepareBranchContext = async () => {
   }
 };
 
-const batchConvertBranchSchemas = async (branches: SchemaDesign[]) => {
+const batchConvertBranchSchemas = async (branches: Branch[]) => {
   try {
     state.loading = true;
     await nextAnimationFrame();

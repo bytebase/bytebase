@@ -91,17 +91,14 @@ import {
   useSchemaEditorV1Store,
   useSheetV1Store,
 } from "@/store";
-import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
+import { useBranchStore } from "@/store/modules/branch";
 import {
   databaseNamePrefix,
-  getProjectAndSchemaDesignSheetId,
+  getProjectAndBranchId,
 } from "@/store/modules/v1/common";
 import { UNKNOWN_ID } from "@/types";
+import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import {
-  SchemaDesign,
-  SchemaDesign_Type,
-} from "@/types/proto/v1/schema_design_service";
 import {
   Sheet_Source,
   Sheet_Type,
@@ -122,7 +119,7 @@ interface LocalState {
   projectId?: string;
   loading: boolean;
   baselineSchema: BaselineSchema;
-  schemaDesign: SchemaDesign;
+  branch: Branch;
   parentBranchName?: string;
   isCreating: boolean;
 }
@@ -138,15 +135,13 @@ const { t } = useI18n();
 const router = useRouter();
 const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
-const schemaDesignStore = useSchemaDesignStore();
+const branchStore = useBranchStore();
 const sheetStore = useSheetV1Store();
 const state = reactive<LocalState>({
   projectId: props.projectId,
   loading: false,
   baselineSchema: {},
-  schemaDesign: SchemaDesign.fromPartial({
-    type: SchemaDesign_Type.MAIN_BRANCH,
-  }),
+  branch: Branch.fromPartial({}),
   isCreating: false,
 });
 const branchTitle = ref<string>("");
@@ -163,7 +158,7 @@ const disallowToChangeBaseline = computed(() => {
 });
 
 // Avoid to create array or object literals in template to improve performance
-const branches = computed(() => [state.schemaDesign]);
+const branches = computed(() => [state.branch]);
 
 onMounted(async () => {
   if (props.projectId) {
@@ -174,10 +169,7 @@ onMounted(async () => {
 });
 
 watch(
-  () => [
-    state.schemaDesign.baselineDatabase,
-    state.schemaDesign.baselineSchema,
-  ],
+  () => [state.branch.baselineDatabase, state.branch.baselineSchema],
   () => {
     refreshId.value = uniqueId();
   }
@@ -188,13 +180,11 @@ watch(
   async () => {
     if (!state.parentBranchName) {
       state.baselineSchema = {};
-      state.schemaDesign = SchemaDesign.fromPartial({
-        type: SchemaDesign_Type.MAIN_BRANCH,
-      });
+      state.branch = Branch.fromPartial({});
       return;
     }
 
-    const branch = await schemaDesignStore.fetchSchemaDesignByName(
+    const branch = await branchStore.fetchBranchByName(
       state.parentBranchName,
       false /* !useCache */
     );
@@ -205,7 +195,7 @@ watch(
     state.baselineSchema.databaseId = database.uid;
     state.baselineSchema.schema = undefined;
     state.baselineSchema.databaseMetadata = undefined;
-    state.schemaDesign = branch;
+    state.branch = branch;
     refreshId.value = uniqueId();
   }
 );
@@ -219,18 +209,15 @@ const prepareSchemaDesign = async () => {
     const database = databaseStore.getDatabaseByUID(
       state.baselineSchema.databaseId
     );
-    return SchemaDesign.fromPartial({
+    return Branch.fromPartial({
       engine: database.instanceEntity.engine,
       baselineSchema: state.baselineSchema.schema,
       baselineSchemaMetadata: state.baselineSchema.databaseMetadata,
       schema: state.baselineSchema.schema,
       schemaMetadata: state.baselineSchema.databaseMetadata,
-      type: SchemaDesign_Type.MAIN_BRANCH,
     });
   }
-  return SchemaDesign.fromPartial({
-    type: SchemaDesign_Type.MAIN_BRANCH,
-  });
+  return Branch.fromPartial({});
 };
 
 const allowConfirm = computed(() => {
@@ -266,13 +253,13 @@ const handleBaselineSchemaChange = async (baselineSchema: BaselineSchema) => {
   }
   console.time("prepareSchemaDesign");
   state.loading = true;
-  state.schemaDesign = await prepareSchemaDesign();
+  state.branch = await prepareSchemaDesign();
   state.loading = false;
   console.timeEnd("prepareSchemaDesign");
 };
 
 const handleConfirm = async () => {
-  if (!state.schemaDesign) {
+  if (!state.branch) {
     return;
   }
 
@@ -290,7 +277,7 @@ const handleConfirm = async () => {
   );
   const schemaEditorV1Store = useSchemaEditorV1Store();
   const branchSchema = schemaEditorV1Store.resourceMap["branch"].get(
-    state.schemaDesign.name
+    state.branch.name
   );
   if (!branchSchema) {
     return;
@@ -300,8 +287,7 @@ const handleConfirm = async () => {
   const metadata = mergeSchemaEditToMetadata(
     branchSchema.schemaList,
     cloneDeep(
-      state.schemaDesign.baselineSchemaMetadata ||
-        DatabaseMetadata.fromPartial({})
+      state.branch.baselineSchemaMetadata || DatabaseMetadata.fromPartial({})
     )
   );
   const baselineDatabase = `${database.instanceEntity.name}/${databaseNamePrefix}${state.baselineSchema.databaseId}`;
@@ -309,7 +295,7 @@ const handleConfirm = async () => {
   const baselineSheet = await sheetStore.createSheet(project.value.name, {
     title: `baseline schema of ${branchTitle.value}`,
     database: baselineDatabase,
-    content: new TextEncoder().encode(state.schemaDesign.baselineSchema),
+    content: new TextEncoder().encode(state.branch.baselineSchema),
     visibility: Sheet_Visibility.VISIBILITY_PROJECT,
     source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
     type: Sheet_Type.TYPE_SQL,
@@ -317,27 +303,26 @@ const handleConfirm = async () => {
 
   let createdSchemaDesign;
   if (!state.parentBranchName) {
-    createdSchemaDesign = await schemaDesignStore.createSchemaDesign(
+    createdSchemaDesign = await branchStore.createBranch(
       project.value.name,
-      SchemaDesign.fromPartial({
+      Branch.fromPartial({
         title: branchTitle.value,
         // Keep schema empty in frontend. Backend will generate the design schema.
         schema: "",
         schemaMetadata: metadata,
-        baselineSchema: state.schemaDesign.baselineSchema,
-        baselineSchemaMetadata: state.schemaDesign.baselineSchemaMetadata,
-        engine: state.schemaDesign.engine,
-        type: SchemaDesign_Type.MAIN_BRANCH,
+        baselineSchema: state.branch.baselineSchema,
+        baselineSchemaMetadata: state.branch.baselineSchemaMetadata,
+        engine: state.branch.engine,
         baselineDatabase: baselineDatabase,
         parentBranch: baselineSheet.name,
       })
     );
   } else {
-    const parentBranch = await schemaDesignStore.fetchSchemaDesignByName(
+    const parentBranch = await branchStore.fetchBranchByName(
       state.parentBranchName,
       false /* useCache */
     );
-    createdSchemaDesign = await schemaDesignStore.createSchemaDesignDraft({
+    createdSchemaDesign = await branchStore.createBranchDraft({
       ...parentBranch,
       title: branchTitle.value,
     });
@@ -350,14 +335,12 @@ const handleConfirm = async () => {
   });
 
   // Go to branch detail page after created.
-  const [_, sheetId] = getProjectAndSchemaDesignSheetId(
-    createdSchemaDesign.name
-  );
+  const [_, branchId] = getProjectAndBranchId(createdSchemaDesign.name);
   router.replace({
     name: "workspace.project.branch.detail",
     params: {
       projectSlug: projectV1Slug(project.value),
-      branchName: sheetId,
+      branchName: branchId,
     },
   });
 };

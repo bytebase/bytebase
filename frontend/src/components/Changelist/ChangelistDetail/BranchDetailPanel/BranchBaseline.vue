@@ -14,10 +14,10 @@
 import { computed } from "vue";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
 import { useDatabaseV1Store } from "@/store";
-import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
+import { Branch } from "@/types/proto/v1/branch_service";
 
 const props = defineProps<{
-  branch: SchemaDesign;
+  branch: Branch;
 }>();
 
 const baselineDatabase = computed(() => {
