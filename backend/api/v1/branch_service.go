@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path"
 
+	"golang.org/x/exp/slices"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -226,13 +227,164 @@ func (s *BranchService) CreateSchemaDesign(ctx context.Context, request *v1pb.Cr
 }
 
 // UpdateSchemaDesign updates an existing schema design.
-func (*BranchService) UpdateSchemaDesign(_ context.Context, _ *v1pb.UpdateSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
-	return nil, nil
+func (s *BranchService) UpdateSchemaDesign(ctx context.Context, request *v1pb.UpdateSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
+	projectID, branchID, err := common.GetProjectAndBranchID(request.SchemaDesign.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid schema design name: %v", err))
+	}
+	if request.UpdateMask == nil || len(request.UpdateMask.Paths) == 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "update_mask is required")
+	}
+	project, err := s.getProject(ctx, projectID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkBranchPermission(ctx, projectID); err != nil {
+		return nil, err
+	}
+
+	branch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &projectID, ResourceID: &branchID, LoadFull: true})
+	if err != nil {
+		return nil, err
+	}
+	if branch == nil {
+		return nil, status.Errorf(codes.NotFound, "branch %q not found", branchID)
+	}
+	schemaDesign := request.SchemaDesign
+
+	// TODO(d): handle etag.
+	// TODO(d): support branch id update.
+	// if slices.Contains(request.UpdateMask.Paths, "title") {
+	// }
+
+	headUpdate := branch.Head
+	hasHeadUpdate := false
+	// TODO(d): this section needs some clarifications for merging branches.
+	if slices.Contains(request.UpdateMask.Paths, "schema") && slices.Contains(request.UpdateMask.Paths, "metadata") {
+		headUpdate.Schema = []byte(schemaDesign.Schema)
+		sanitizeSchemaDesignSchemaMetadata(schemaDesign)
+		// TODO(d): update database metadata and config.
+		hasHeadUpdate = true
+	} else if slices.Contains(request.UpdateMask.Paths, "schema") {
+		headUpdate.Schema = []byte(schemaDesign.Schema)
+		hasHeadUpdate = true
+		// TODO(d): convert schema to metadata.
+		// Try to transform the schema string to database metadata to make sure it's valid.
+		// if _, err := transformSchemaStringToDatabaseMetadata(schemaDesign.Engine, *sheetUpdate.Statement); err != nil {
+		// 	return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
+		// }
+	} else if slices.Contains(request.UpdateMask.Paths, "metadata") {
+		sanitizeSchemaDesignSchemaMetadata(schemaDesign)
+		// schema, err := getDesignSchema(schemaDesign.Engine, schemaDesign.BaselineSchema, schemaDesign.SchemaMetadata)
+		// if err != nil {
+		// 	return nil, err
+		// }
+		// TODO(d): convert metadata to schema.
+		hasHeadUpdate = true
+	}
+	// TODO(d): handle database config as well.
+
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+	updateBranchMessage := &store.UpdateBranchMessage{ProjectID: projectID, ResourceID: branchID, UpdaterID: principalID}
+	if hasHeadUpdate {
+		updateBranchMessage.Head = headUpdate
+	}
+	if err := s.store.UpdateBranch(ctx, updateBranchMessage); err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to update branch, error %v", err))
+	}
+
+	branch, err = s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &projectID, ResourceID: &branchID, LoadFull: true})
+	if err != nil {
+		return nil, err
+	}
+	schemaDesign, err = s.convertBranchToSchemaDesign(ctx, project, branch, v1pb.SchemaDesignView_SCHEMA_DESIGN_VIEW_FULL)
+	if err != nil {
+		return nil, err
+	}
+	return schemaDesign, nil
 }
 
 // MergeSchemaDesign merges a personal draft schema design to the target schema design.
-func (*BranchService) MergeSchemaDesign(_ context.Context, _ *v1pb.MergeSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
-	return nil, nil
+func (s *BranchService) MergeSchemaDesign(ctx context.Context, request *v1pb.MergeSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
+	projectID, branchID, err := common.GetProjectAndBranchID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	if _, err := s.getProject(ctx, projectID); err != nil {
+		return nil, err
+	}
+	if err := s.checkBranchPermission(ctx, projectID); err != nil {
+		return nil, err
+	}
+	branch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &projectID, ResourceID: &branchID, LoadFull: true})
+	if err != nil {
+		return nil, err
+	}
+	if branch == nil {
+		return nil, status.Errorf(codes.NotFound, "branch %q not found", branchID)
+	}
+
+	targetProjectID, targetBranchID, err := common.GetProjectAndBranchID(request.TargetName)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	targetProject, err := s.getProject(ctx, targetProjectID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkBranchPermission(ctx, targetProjectID); err != nil {
+		return nil, err
+	}
+	targetBranch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &targetProjectID, ResourceID: &targetBranchID, LoadFull: true})
+	if err != nil {
+		return nil, err
+	}
+	if targetBranch == nil {
+		return nil, status.Errorf(codes.NotFound, "branch %q not found", targetBranchID)
+	}
+
+	// Restrict merging only when the target schema design is not updated.
+	// Maybe we can support auto-merging in the future.
+	baseMetadata := convertDatabaseMetadata(nil, branch.Base.Metadata, nil, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil)
+	headMetadata := convertDatabaseMetadata(nil, branch.Head.Metadata, nil, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil)
+	targetHeadMetadata := convertDatabaseMetadata(nil, targetBranch.Head.Metadata, nil, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil)
+	mergedTarget, err := tryMerge(baseMetadata, headMetadata, targetHeadMetadata)
+	if err != nil {
+		return nil, status.Errorf(codes.FailedPrecondition, fmt.Sprintf("failed to merge schema design: %v", err))
+	}
+	if mergedTarget == nil {
+		return nil, status.Errorf(codes.FailedPrecondition, "failed to merge schema design: no change")
+	}
+	mergedTargetSchema, err := getDesignSchema(v1pb.Engine(branch.Engine), string(targetBranch.Head.Schema), mergedTarget)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert merged metadata to schema string, %v", err)
+	}
+	// TODO(d): handle database config.
+
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+	if err := s.store.UpdateBranch(ctx, &store.UpdateBranchMessage{
+		ProjectID:  targetProjectID,
+		ResourceID: targetBranchID,
+		UpdaterID:  principalID,
+		Head: &storepb.BranchSnapshot{
+			Schema: []byte(mergedTargetSchema),
+			// TODO(d): Metadata: mergedTarget,
+			// TODO(d): handle config.
+		}}); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed update branch, error %v", err)
+	}
+
+	targetSchemaDesign, err := s.convertBranchToSchemaDesign(ctx, targetProject, targetBranch, v1pb.SchemaDesignView_SCHEMA_DESIGN_VIEW_FULL)
+	if err != nil {
+		return nil, err
+	}
+	return targetSchemaDesign, nil
 }
 
 // DeleteSchemaDesign deletes an existing schema design.
