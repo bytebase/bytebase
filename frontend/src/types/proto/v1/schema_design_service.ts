@@ -88,10 +88,6 @@ export interface SchemaDesign {
    * For personal draft, its format will be: projects/{project}/schemaDesigns/{schemaDesign}
    */
   baselineSheetName: string;
-  /** The baseline change history id. */
-  baselineChangeHistoryId?:
-    | string
-    | undefined;
   /** The type of the schema design. */
   type: SchemaDesign_Type;
   /** The etag of the schema design. */
@@ -284,7 +280,6 @@ function createBaseSchemaDesign(): SchemaDesign {
     engine: 0,
     baselineDatabase: "",
     baselineSheetName: "",
-    baselineChangeHistoryId: undefined,
     type: 0,
     etag: "",
     creator: "",
@@ -322,9 +317,6 @@ export const SchemaDesign = {
     }
     if (message.baselineSheetName !== "") {
       writer.uint32(74).string(message.baselineSheetName);
-    }
-    if (message.baselineChangeHistoryId !== undefined) {
-      writer.uint32(82).string(message.baselineChangeHistoryId);
     }
     if (message.type !== 0) {
       writer.uint32(88).int32(message.type);
@@ -417,13 +409,6 @@ export const SchemaDesign = {
 
           message.baselineSheetName = reader.string();
           continue;
-        case 10:
-          if (tag !== 82) {
-            break;
-          }
-
-          message.baselineChangeHistoryId = reader.string();
-          continue;
         case 11:
           if (tag !== 88) {
             break;
@@ -488,9 +473,6 @@ export const SchemaDesign = {
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
       baselineDatabase: isSet(object.baselineDatabase) ? globalThis.String(object.baselineDatabase) : "",
       baselineSheetName: isSet(object.baselineSheetName) ? globalThis.String(object.baselineSheetName) : "",
-      baselineChangeHistoryId: isSet(object.baselineChangeHistoryId)
-        ? globalThis.String(object.baselineChangeHistoryId)
-        : undefined,
       type: isSet(object.type) ? schemaDesign_TypeFromJSON(object.type) : 0,
       etag: isSet(object.etag) ? globalThis.String(object.etag) : "",
       creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
@@ -528,9 +510,6 @@ export const SchemaDesign = {
     }
     if (message.baselineSheetName !== "") {
       obj.baselineSheetName = message.baselineSheetName;
-    }
-    if (message.baselineChangeHistoryId !== undefined) {
-      obj.baselineChangeHistoryId = message.baselineChangeHistoryId;
     }
     if (message.type !== 0) {
       obj.type = schemaDesign_TypeToJSON(message.type);
@@ -572,7 +551,6 @@ export const SchemaDesign = {
     message.engine = object.engine ?? 0;
     message.baselineDatabase = object.baselineDatabase ?? "";
     message.baselineSheetName = object.baselineSheetName ?? "";
-    message.baselineChangeHistoryId = object.baselineChangeHistoryId ?? undefined;
     message.type = object.type ?? 0;
     message.etag = object.etag ?? "";
     message.creator = object.creator ?? "";

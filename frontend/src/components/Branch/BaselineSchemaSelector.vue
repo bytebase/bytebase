@@ -40,7 +40,6 @@ import {
 import { UNKNOWN_ID } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import {
-  ChangeHistory,
   DatabaseMetadata,
   DatabaseMetadataView,
 } from "@/types/proto/v1/database_service";
@@ -50,7 +49,6 @@ const props = defineProps<{
   databaseId?: string;
   schema?: string;
   databaseMetadata?: DatabaseMetadata;
-  changeHistory?: ChangeHistory;
   readonly?: boolean;
 }>();
 
@@ -63,7 +61,6 @@ interface LocalState {
   databaseId?: string;
   schema?: string;
   databaseMetadata?: DatabaseMetadata;
-  changeHistory?: ChangeHistory;
 }
 
 const state = reactive<LocalState>({});
@@ -130,7 +127,7 @@ watch(
     );
     const databaseMetadata = await dbSchemaStore.getOrFetchDatabaseMetadata({
       database: database.value.name,
-      skipCache: false,
+      skipCache: true,
       view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
     });
 

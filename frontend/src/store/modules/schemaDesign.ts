@@ -1,8 +1,6 @@
 import { defineStore } from "pinia";
 import { reactive, ref, watchEffect } from "vue";
 import { schemaDesignServiceClient } from "@/grpcweb";
-import { Engine } from "@/types/proto/v1/common";
-import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import {
   MergeSchemaDesignRequest,
   SchemaDesign,
@@ -126,28 +124,6 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
     schemaDesignMapByName.delete(name);
   };
 
-  // Util functions
-  const parseSchemaString = async (
-    schema: string,
-    engine: Engine
-  ): Promise<DatabaseMetadata> => {
-    try {
-      const { schemaMetadata } =
-        await schemaDesignServiceClient.parseSchemaString(
-          {
-            schemaString: schema,
-            engine,
-          },
-          {
-            silent: true,
-          }
-        );
-      return schemaMetadata || DatabaseMetadata.fromPartial({});
-    } catch (error) {
-      return DatabaseMetadata.fromPartial({});
-    }
-  };
-
   return {
     fetchSchemaDesignList,
     createSchemaDesign,
@@ -156,7 +132,6 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
     mergeSchemaDesign,
     fetchSchemaDesignByName,
     getSchemaDesignByName,
-    parseSchemaString,
     deleteSchemaDesign,
   };
 });
