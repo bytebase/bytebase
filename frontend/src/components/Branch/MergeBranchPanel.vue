@@ -208,8 +208,8 @@ const handleMergeBranch = async () => {
 
   try {
     await branchStore.mergeBranch({
-      name: sourceBranch.value.name,
-      targetName: targetBranch.value.name,
+      name: targetBranch.value.name,
+      headBranch: sourceBranch.value.name,
     });
   } catch (error: any) {
     // If there is conflict, we need to show the conflict and let user resolve it.

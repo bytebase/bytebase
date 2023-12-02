@@ -104,6 +104,11 @@ func (s *BranchService) ListBranches(ctx context.Context, request *v1pb.ListBran
 
 // CreateBranch creates a new branch.
 func (s *BranchService) CreateBranch(ctx context.Context, request *v1pb.CreateBranchRequest) (*v1pb.Branch, error) {
+	branchID := request.BranchId
+	// TODO(d): regex check.
+	if branchID == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "branch ID is empty")
+	}
 	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -116,11 +121,6 @@ func (s *BranchService) CreateBranch(ctx context.Context, request *v1pb.CreateBr
 		return nil, err
 	}
 
-	// TODO(d): move to resource_id in the request.
-	projectID, branchID, err := common.GetProjectAndBranchID(request.Branch.Name)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
 	branch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &projectID, ResourceID: &branchID, LoadFull: false})
 	if err != nil {
 		return nil, err
@@ -310,48 +310,49 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 
 // MergeBranch merges a personal draft branch to the target branch.
 func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBranchRequest) (*v1pb.Branch, error) {
-	projectID, branchID, err := common.GetProjectAndBranchID(request.Name)
+	baseProjectID, baseBranchID, err := common.GetProjectAndBranchID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	if _, err := s.getProject(ctx, projectID); err != nil {
-		return nil, err
-	}
-	if err := s.checkBranchPermission(ctx, projectID); err != nil {
-		return nil, err
-	}
-	branch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &projectID, ResourceID: &branchID, LoadFull: true})
+	baseProject, err := s.getProject(ctx, baseProjectID)
 	if err != nil {
 		return nil, err
 	}
-	if branch == nil {
-		return nil, status.Errorf(codes.NotFound, "branch %q not found", branchID)
+	if err := s.checkBranchPermission(ctx, baseProjectID); err != nil {
+		return nil, err
+	}
+	baseBranch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &baseProjectID, ResourceID: &baseBranchID, LoadFull: true})
+	if err != nil {
+		return nil, err
+	}
+	if baseBranch == nil {
+		return nil, status.Errorf(codes.NotFound, "branch %q not found", baseBranchID)
 	}
 
-	targetProjectID, targetBranchID, err := common.GetProjectAndBranchID(request.TargetName)
+	headProjectID, headBranchID, err := common.GetProjectAndBranchID(request.HeadBranch)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	targetProject, err := s.getProject(ctx, targetProjectID)
+	_, err = s.getProject(ctx, headProjectID)
 	if err != nil {
 		return nil, err
 	}
-	if err := s.checkBranchPermission(ctx, targetProjectID); err != nil {
+	if err := s.checkBranchPermission(ctx, headProjectID); err != nil {
 		return nil, err
 	}
-	targetBranch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &targetProjectID, ResourceID: &targetBranchID, LoadFull: true})
+	headBranch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &headProjectID, ResourceID: &headBranchID, LoadFull: true})
 	if err != nil {
 		return nil, err
 	}
-	if targetBranch == nil {
-		return nil, status.Errorf(codes.NotFound, "branch %q not found", targetBranchID)
+	if headBranch == nil {
+		return nil, status.Errorf(codes.NotFound, "branch %q not found", headBranchID)
 	}
 
-	// Restrict merging only when the target branch is not updated.
+	// Restrict merging only when the head branch is not updated.
 	// Maybe we can support auto-merging in the future.
-	baseMetadata := convertDatabaseMetadata(nil, branch.Base.Metadata, nil, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil)
-	headMetadata := convertDatabaseMetadata(nil, branch.Head.Metadata, nil, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil)
-	targetHeadMetadata := convertDatabaseMetadata(nil, targetBranch.Head.Metadata, nil, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil)
+	baseMetadata := convertDatabaseMetadata(nil, headBranch.Base.Metadata, nil, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil)
+	headMetadata := convertDatabaseMetadata(nil, headBranch.Head.Metadata, nil, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil)
+	targetHeadMetadata := convertDatabaseMetadata(nil, baseBranch.Head.Metadata, nil, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil)
 	mergedTarget, err := tryMerge(baseMetadata, headMetadata, targetHeadMetadata)
 	if err != nil {
 		return nil, status.Errorf(codes.FailedPrecondition, fmt.Sprintf("failed to merge branch: %v", err))
@@ -359,7 +360,7 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 	if mergedTarget == nil {
 		return nil, status.Errorf(codes.FailedPrecondition, "failed to merge branch: no change")
 	}
-	mergedTargetSchema, err := getDesignSchema(v1pb.Engine(branch.Engine), string(targetBranch.Head.Schema), mergedTarget)
+	mergedTargetSchema, err := getDesignSchema(v1pb.Engine(baseBranch.Engine), string(headBranch.Head.Schema), mergedTarget)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert merged metadata to schema string, %v", err)
 	}
@@ -370,8 +371,8 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
 	if err := s.store.UpdateBranch(ctx, &store.UpdateBranchMessage{
-		ProjectID:  targetProjectID,
-		ResourceID: targetBranchID,
+		ProjectID:  baseProjectID,
+		ResourceID: baseBranchID,
 		UpdaterID:  principalID,
 		Head: &storepb.BranchSnapshot{
 			Schema: []byte(mergedTargetSchema),
@@ -381,11 +382,11 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 		return nil, status.Errorf(codes.Internal, "failed update branch, error %v", err)
 	}
 
-	targetBranchV1, err := s.convertBranchToBranch(ctx, targetProject, targetBranch, v1pb.BranchView_BRANCH_VIEW_FULL)
+	v1Branch, err := s.convertBranchToBranch(ctx, baseProject, baseBranch, v1pb.BranchView_BRANCH_VIEW_FULL)
 	if err != nil {
 		return nil, err
 	}
-	return targetBranchV1, nil
+	return v1Branch, nil
 }
 
 // DeleteBranch deletes an existing branch.
