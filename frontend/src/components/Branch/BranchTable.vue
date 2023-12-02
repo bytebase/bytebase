@@ -94,7 +94,7 @@ const getFormattedValue = (branch: SchemaDesign) => {
   let parentBranch = "";
   if (branch.type === SchemaDesign_Type.PERSONAL_DRAFT) {
     const parentSchemaDesign = props.branches.find(
-      (br) => br.name === branch.baselineSheetName
+      (br) => br.name === branch.parentBranch
     );
     if (parentSchemaDesign) {
       parentBranch = parentSchemaDesign.title;

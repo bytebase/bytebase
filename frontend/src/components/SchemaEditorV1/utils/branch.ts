@@ -37,12 +37,9 @@ export const fetchBaselineMetadataOfBranch = async (
   branch: SchemaDesign
 ): Promise<DatabaseMetadata> => {
   // For personal branches, we use its parent branch's schema as the original schema in editing state.
-  if (
-    branch.type === SchemaDesign_Type.PERSONAL_DRAFT &&
-    branch.baselineSheetName
-  ) {
+  if (branch.type === SchemaDesign_Type.PERSONAL_DRAFT && branch.parentBranch) {
     const parentBranch = await useSchemaDesignStore().fetchSchemaDesignByName(
-      branch.baselineSheetName,
+      branch.parentBranch,
       false /* !useCache */
     );
     return (

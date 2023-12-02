@@ -87,7 +87,7 @@ export interface SchemaDesign {
    * For main branch, its format will be: projects/{project}/sheets/{sheet}
    * For personal draft, its format will be: projects/{project}/schemaDesigns/{schemaDesign}
    */
-  baselineSheetName: string;
+  parentBranch: string;
   /** The type of the schema design. */
   type: SchemaDesign_Type;
   /** The etag of the schema design. */
@@ -267,7 +267,7 @@ function createBaseSchemaDesign(): SchemaDesign {
     baselineSchemaMetadata: undefined,
     engine: 0,
     baselineDatabase: "",
-    baselineSheetName: "",
+    parentBranch: "",
     type: 0,
     etag: "",
     creator: "",
@@ -303,8 +303,8 @@ export const SchemaDesign = {
     if (message.baselineDatabase !== "") {
       writer.uint32(66).string(message.baselineDatabase);
     }
-    if (message.baselineSheetName !== "") {
-      writer.uint32(74).string(message.baselineSheetName);
+    if (message.parentBranch !== "") {
+      writer.uint32(74).string(message.parentBranch);
     }
     if (message.type !== 0) {
       writer.uint32(88).int32(message.type);
@@ -395,7 +395,7 @@ export const SchemaDesign = {
             break;
           }
 
-          message.baselineSheetName = reader.string();
+          message.parentBranch = reader.string();
           continue;
         case 11:
           if (tag !== 88) {
@@ -460,7 +460,7 @@ export const SchemaDesign = {
         : undefined,
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
       baselineDatabase: isSet(object.baselineDatabase) ? globalThis.String(object.baselineDatabase) : "",
-      baselineSheetName: isSet(object.baselineSheetName) ? globalThis.String(object.baselineSheetName) : "",
+      parentBranch: isSet(object.parentBranch) ? globalThis.String(object.parentBranch) : "",
       type: isSet(object.type) ? schemaDesign_TypeFromJSON(object.type) : 0,
       etag: isSet(object.etag) ? globalThis.String(object.etag) : "",
       creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
@@ -496,8 +496,8 @@ export const SchemaDesign = {
     if (message.baselineDatabase !== "") {
       obj.baselineDatabase = message.baselineDatabase;
     }
-    if (message.baselineSheetName !== "") {
-      obj.baselineSheetName = message.baselineSheetName;
+    if (message.parentBranch !== "") {
+      obj.parentBranch = message.parentBranch;
     }
     if (message.type !== 0) {
       obj.type = schemaDesign_TypeToJSON(message.type);
@@ -538,7 +538,7 @@ export const SchemaDesign = {
         : undefined;
     message.engine = object.engine ?? 0;
     message.baselineDatabase = object.baselineDatabase ?? "";
-    message.baselineSheetName = object.baselineSheetName ?? "";
+    message.parentBranch = object.parentBranch ?? "";
     message.type = object.type ?? 0;
     message.etag = object.etag ?? "";
     message.creator = object.creator ?? "";
