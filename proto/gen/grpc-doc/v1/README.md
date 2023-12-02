@@ -3450,6 +3450,7 @@ The type of the backup.
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent, which owns this collection of branches. Format: project/{project} |
 | branch | [Branch](#bytebase-v1-Branch) |  |  |
+| branch_id | [string](#string) |  | The ID to use for the branch, which will become the final component of the branch&#39;s resource name. Format: [a-zA-Z][a-zA-Z0-9-_/]&#43;. |
 
 
 
@@ -3563,8 +3564,8 @@ When paginating, all other parameters provided to `ListBranches` must match the 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the branch to merge. Format: projects/{project}/branches/{branch} |
-| target_name | [string](#string) |  | The target branch to merge into. Format: projects/{project}/branches/{branch} |
+| name | [string](#string) |  | The name of the base branch to merge to. Format: projects/{project}/branches/{branch} |
+| head_branch | [string](#string) |  | The head branch to merge from. Format: projects/{project}/branches/{branch} |
 
 
 
