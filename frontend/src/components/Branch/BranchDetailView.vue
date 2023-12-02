@@ -66,23 +66,6 @@
           class="flex-nowrap mr-4 shrink-0"
           :database="baselineDatabase"
         />
-        <div class="shrink-0 flex-nowrap">
-          <NTooltip v-if="changeHistory" trigger="hover">
-            <template #trigger> @{{ changeHistory.version }} </template>
-            <div class="w-full flex flex-row justify-start items-center">
-              <span class="block pr-2 w-full max-w-[32rem] truncate">
-                {{ changeHistory.version }} -
-                {{ changeHistory.description }}
-              </span>
-              <span class="opacity-60">
-                {{ humanizeDate(changeHistory.updateTime) }}
-              </span>
-            </div>
-          </NTooltip>
-          <div v-else>
-            {{ "Previously latest schema" }}
-          </div>
-        </div>
       </div>
     </div>
 
@@ -127,7 +110,7 @@
 import { asyncComputed } from "@vueuse/core";
 import dayjs from "dayjs";
 import { cloneDeep, head, isEqual, uniqueId } from "lodash-es";
-import { NButton, NDivider, NInput, NTooltip, useDialog, NTag } from "naive-ui";
+import { NButton, NDivider, NInput, useDialog, NTag } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { CSSProperties, computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -222,17 +205,6 @@ const parentBranch = asyncComputed(async () => {
   }
   return undefined;
 }, undefined);
-
-const changeHistory = computed(() => {
-  const changeHistoryName = `${baselineDatabase.value.name}/changeHistories/${schemaDesign.value.baselineChangeHistoryId}`;
-  if (
-    schemaDesign.value.baselineChangeHistoryId &&
-    schemaDesign.value.baselineChangeHistoryId !== String(UNKNOWN_ID)
-  ) {
-    return changeHistoryStore.getChangeHistoryByName(changeHistoryName);
-  }
-  return undefined;
-});
 
 const baselineDatabase = computed(() => {
   return databaseStore.getDatabaseByName(schemaDesign.value.baselineDatabase);
