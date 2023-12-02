@@ -456,11 +456,24 @@ func (*BranchService) DiffMetadata(_ context.Context, request *v1pb.DiffMetadata
 }
 
 func (s *BranchService) getProject(ctx context.Context, projectID string) (*store.ProjectMessage, error) {
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-		ResourceID: &projectID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+	var project *store.ProjectMessage
+	projectUID, isNumber := isNumber(projectID)
+	if isNumber {
+		v, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+			UID: &projectUID,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		project = v
+	} else {
+		v, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+			ResourceID: &projectID,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		project = v
 	}
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
