@@ -26,7 +26,6 @@ export const useBranchStore = defineStore("schema_design", () => {
     branchId: string,
     branch: Branch
   ) => {
-    console.log("Barny1: ", parent, branchId, branch);
     const createdBranch = await branchServiceClient.createBranch({
       parent: projectResourceId,
       branchId: branchId,

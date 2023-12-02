@@ -1242,7 +1242,7 @@ router.beforeEach((to, from, next) => {
           to.name === "workspace.project.branch.detail" &&
           to.params.branchName !== "new"
         ) {
-          const name = `${project.name}/schemaDesigns/${to.params.branchName}`;
+          const name = `${project.name}/branches/${to.params.branchName}`;
           useBranchStore()
             .fetchBranchByName(name, false /* !useCache */)
             .then((branch) => {

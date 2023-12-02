@@ -52,7 +52,7 @@ watch(
     if (!sheetId || !project.value) {
       return;
     }
-    branchFullName.value = `${project.value.name}/schemaDesigns/${sheetId}`;
+    branchFullName.value = `${project.value.name}/branches/${sheetId}`;
   },
   {
     immediate: true,
