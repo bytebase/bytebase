@@ -516,8 +516,6 @@
     - [ListSchemaDesignsRequest](#bytebase-v1-ListSchemaDesignsRequest)
     - [ListSchemaDesignsResponse](#bytebase-v1-ListSchemaDesignsResponse)
     - [MergeSchemaDesignRequest](#bytebase-v1-MergeSchemaDesignRequest)
-    - [ParseSchemaStringRequest](#bytebase-v1-ParseSchemaStringRequest)
-    - [ParseSchemaStringResponse](#bytebase-v1-ParseSchemaStringResponse)
     - [SchemaDesign](#bytebase-v1-SchemaDesign)
     - [UpdateSchemaDesignRequest](#bytebase-v1-UpdateSchemaDesignRequest)
   
@@ -8379,37 +8377,6 @@ When paginating, all other parameters provided to `ListSchemaDesigns` must match
 
 
 
-<a name="bytebase-v1-ParseSchemaStringRequest"></a>
-
-### ParseSchemaStringRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| schema_string | [string](#string) |  | The schema string to parse. |
-| engine | [Engine](#bytebase-v1-Engine) |  | The database engine of the schema string. |
-
-
-
-
-
-
-<a name="bytebase-v1-ParseSchemaStringResponse"></a>
-
-### ParseSchemaStringResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| schema_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the parsed schema. |
-
-
-
-
-
-
 <a name="bytebase-v1-SchemaDesign"></a>
 
 ### SchemaDesign
@@ -8501,7 +8468,6 @@ The schema design&#39;s `name` field is used to identify the schema design to up
 | CreateSchemaDesign | [CreateSchemaDesignRequest](#bytebase-v1-CreateSchemaDesignRequest) | [SchemaDesign](#bytebase-v1-SchemaDesign) |  |
 | UpdateSchemaDesign | [UpdateSchemaDesignRequest](#bytebase-v1-UpdateSchemaDesignRequest) | [SchemaDesign](#bytebase-v1-SchemaDesign) |  |
 | MergeSchemaDesign | [MergeSchemaDesignRequest](#bytebase-v1-MergeSchemaDesignRequest) | [SchemaDesign](#bytebase-v1-SchemaDesign) |  |
-| ParseSchemaString | [ParseSchemaStringRequest](#bytebase-v1-ParseSchemaStringRequest) | [ParseSchemaStringResponse](#bytebase-v1-ParseSchemaStringResponse) |  |
 | DeleteSchemaDesign | [DeleteSchemaDesignRequest](#bytebase-v1-DeleteSchemaDesignRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 | DiffMetadata | [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest) | [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse) |  |
 
