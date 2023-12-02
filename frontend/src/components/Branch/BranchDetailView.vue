@@ -392,8 +392,8 @@ const handleSaveBranch = async () => {
       });
       try {
         await branchStore.mergeBranch({
-          name: newBranch.name,
-          targetName: schemaDesign.value.name,
+          name: schemaDesign.value.name,
+          headBranch: newBranch.name,
         });
       } catch (error: any) {
         // If there is conflict, we need to show the conflict and let user resolve it.
