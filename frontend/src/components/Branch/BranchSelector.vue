@@ -41,7 +41,7 @@ defineEmits<{
   (event: "update:branch", name: string | undefined): void;
 }>();
 
-const { branchList: branchList } = useBranchList();
+const { branchList: branchList } = useBranchList(props.project || "");
 const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
 

@@ -6,45 +6,49 @@ import {
   Branch,
   BranchView,
 } from "@/types/proto/v1/branch_service";
-import {
-  getProjectAndBranchId,
-  projectNamePrefix,
-  branchNamePrefix,
-} from "./v1/common";
+import { projectNamePrefix } from "./v1/common";
 
 export const useBranchStore = defineStore("schema_design", () => {
   const branchMapByName = reactive(new Map<string, Branch>());
   const getBranchRequestCacheByName = new Map<string, Promise<Branch>>();
 
   // Actions
-  const fetchBranchList = async (projectName: string = "projects/-") => {
+  const fetchBranchList = async (projectName: string) => {
     const { branches } = await branchServiceClient.listBranches({
-      parent: projectName,
+      parent: projectNamePrefix + projectName,
       view: BranchView.BRANCH_VIEW_BASIC,
     });
     return branches;
   };
 
-  const createBranch = async (projectResourceId: string, branch: Branch) => {
+  const createBranch = async (
+    projectResourceId: string,
+    branchId: string,
+    branch: Branch
+  ) => {
+    console.log("Barny1: ", parent, branchId, branch);
     const createdBranch = await branchServiceClient.createBranch({
       parent: projectResourceId,
+      branchId: branchId,
       branch,
     });
-    console.debug("baseline schema", branch.baselineSchema);
-    console.debug("target metadata", branch.schemaMetadata);
     console.debug("got schema", createdBranch.schema);
     branchMapByName.set(createdBranch.name, createdBranch);
     return createdBranch;
   };
 
-  const createBranchDraft = async (branch: Branch) => {
-    const [projectName, branchId] = getProjectAndBranchId(branch.name);
-    const projectResourceId = `${projectNamePrefix}${projectName}`;
-    const parentBranch = `${projectResourceId}/${branchNamePrefix}${branchId}`;
-    return createBranch(projectResourceId, {
-      ...branch,
-      parentBranch: parentBranch,
-    });
+  const createBranchDraft = async (
+    projectResourceId: string,
+    branchId: string,
+    parentBranch: string
+  ) => {
+    return createBranch(
+      projectResourceId,
+      branchId,
+      Branch.fromPartial({
+        parentBranch: parentBranch,
+      })
+    );
   };
 
   const updateBranch = async (branch: Branch, updateMask: string[]) => {
@@ -118,7 +122,7 @@ export const useBranchStore = defineStore("schema_design", () => {
   };
 });
 
-export const useBranchList = (projectName: string | undefined = undefined) => {
+export const useBranchList = (projectName: string) => {
   const store = useBranchStore();
   const ready = ref(false);
   const branchList = ref<Branch[]>([]);
