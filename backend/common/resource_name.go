@@ -43,6 +43,7 @@ const (
 	LogNamePrefix                = "logs/"
 	InboxNamePrefix              = "inbox/"
 	SchemaDesignPrefix           = "schemaDesigns/"
+	BranchPrefix                 = "branches/"
 	DeploymentConfigPrefix       = "deploymentConfigs/"
 	ChangelistsPrefix            = "changelists/"
 
@@ -475,6 +476,15 @@ func GetProjectResourceIDSheetUID(name string) (string, int, error) {
 // GetProjectResourceIDAndSchemaDesignSheetID returns the project ID and schema design sheet ID from a resource name.
 func GetProjectResourceIDAndSchemaDesignSheetID(name string) (string, string, error) {
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, SchemaDesignPrefix)
+	if err != nil {
+		return "", "", err
+	}
+	return tokens[0], tokens[1], nil
+}
+
+// GetProjectAndBranchID returns the project and branch ID from a resource name.
+func GetProjectAndBranchID(name string) (string, string, error) {
+	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, BranchPrefix)
 	if err != nil {
 		return "", "", err
 	}

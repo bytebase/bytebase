@@ -35,6 +35,8 @@ type BranchMessage struct {
 type FindBranchMessage struct {
 	ProjectID  *string
 	ResourceID *string
+	// TODO(d): handle LoadFull.
+	LoadFull bool
 }
 
 // UpdateBranchMessage is the message to update a branch.
