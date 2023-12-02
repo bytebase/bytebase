@@ -124,7 +124,6 @@ import TargetDatabasesSelectPanel from "@/components/SyncDatabaseSchema/TargetDa
 import { schemaDesignServiceClient } from "@/grpcweb";
 import {
   pushNotification,
-  useChangeHistoryStore,
   useDatabaseV1Store,
   useSchemaEditorV1Store,
 } from "@/store";
@@ -136,7 +135,6 @@ import {
   getProjectAndSchemaDesignSheetId,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
-import { UNKNOWN_ID } from "@/types";
 import {
   SchemaDesign,
   SchemaDesign_Type,
@@ -165,7 +163,6 @@ const props = defineProps<{
 const { t } = useI18n();
 const router = useRouter();
 const databaseStore = useDatabaseV1Store();
-const changeHistoryStore = useChangeHistoryStore();
 const schemaDesignStore = useSchemaDesignStore();
 const { schemaDesignList, ready } = useSchemaDesignList();
 const { runSQLCheck } = provideSQLCheckContext();
@@ -231,14 +228,9 @@ const titleInputStyle = computed(() => {
 });
 
 const prepareBaselineDatabase = async () => {
-  const database = await databaseStore.getOrFetchDatabaseByName(
+  await databaseStore.getOrFetchDatabaseByName(
     schemaDesign.value.baselineDatabase
   );
-  if (database.uid !== String(UNKNOWN_ID)) {
-    await changeHistoryStore.getOrFetchChangeHistoryListOfDatabase(
-      database.name
-    );
-  }
 };
 
 watch(
