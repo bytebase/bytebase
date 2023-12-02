@@ -193,10 +193,10 @@ const parentBranch = asyncComputed(async () => {
   // Show parent branch when the current branch is a personal draft and it's not the new created one.
   if (
     schemaDesign.value.type === SchemaDesign_Type.PERSONAL_DRAFT &&
-    schemaDesign.value.baselineSheetName
+    schemaDesign.value.parentBranch
   ) {
     return await schemaDesignStore.fetchSchemaDesignByName(
-      schemaDesign.value.baselineSheetName,
+      schemaDesign.value.parentBranch,
       true /* useCache */
     );
   }
@@ -241,10 +241,10 @@ watch(
     // Prepare the parent branch for personal draft.
     if (
       schemaDesign.value.type === SchemaDesign_Type.PERSONAL_DRAFT &&
-      schemaDesign.value.baselineSheetName
+      schemaDesign.value.parentBranch
     ) {
       await schemaDesignStore.fetchSchemaDesignByName(
-        schemaDesign.value.baselineSheetName,
+        schemaDesign.value.parentBranch,
         true /* useCache */
       );
     }
