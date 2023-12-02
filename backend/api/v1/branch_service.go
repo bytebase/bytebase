@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"path"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -13,6 +14,7 @@ import (
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -37,13 +39,19 @@ func (s *BranchService) GetSchemaDesign(ctx context.Context, request *v1pb.GetSc
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
+	project, err := s.getProject(ctx, projectID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
 	if err := s.checkBranchPermission(ctx, projectID); err != nil {
 		return nil, err
 	}
-
-	project, branch, err := s.getBranch(ctx, projectID, branchID, true /* loadFull */)
+	branch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &projectID, ResourceID: &branchID, LoadFull: true})
 	if err != nil {
 		return nil, err
+	}
+	if branch == nil {
+		return nil, status.Errorf(codes.NotFound, "branch %q not found", branchID)
 	}
 
 	schemaDesign, err := s.convertBranchToSchemaDesign(ctx, project, branch, v1pb.SchemaDesignView_SCHEMA_DESIGN_VIEW_FULL)
@@ -93,8 +101,128 @@ func (s *BranchService) ListSchemaDesigns(ctx context.Context, request *v1pb.Lis
 }
 
 // CreateSchemaDesign creates a new schema design.
-func (*BranchService) CreateSchemaDesign(_ context.Context, _ *v1pb.CreateSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
-	return nil, nil
+func (s *BranchService) CreateSchemaDesign(ctx context.Context, request *v1pb.CreateSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
+	projectID, err := common.GetProjectID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.getProject(ctx, projectID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkBranchPermission(ctx, projectID); err != nil {
+		return nil, err
+	}
+
+	// TODO(d): move to resource_id in the request.
+	projectID, branchID, err := common.GetProjectAndBranchID(request.SchemaDesign.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	branch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &projectID, ResourceID: &branchID, LoadFull: false})
+	if err != nil {
+		return nil, err
+	}
+	if branch != nil {
+		return nil, status.Errorf(codes.FailedPrecondition, "branch %q has already existed", branchID)
+	}
+	// Branch protection check.
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+	if err := s.checkProtectionRules(ctx, project, branchID, principalID); err != nil {
+		return nil, err
+	}
+
+	var createdBranch *store.BranchMessage
+	if request.SchemaDesign.ParentBranch != "" {
+		parentProjectID, parentBranchID, err := common.GetProjectAndBranchID(request.SchemaDesign.ParentBranch)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		parentBranch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &parentProjectID, ResourceID: &parentBranchID, LoadFull: true})
+		if err != nil {
+			return nil, err
+		}
+		if parentBranch == nil {
+			return nil, status.Errorf(codes.NotFound, "parent branch %q not found", parentBranchID)
+		}
+		created, err := s.store.CreateBranch(ctx, &store.BranchMessage{
+			ProjectID:  projectID,
+			ResourceID: branchID,
+			Engine:     parentBranch.Engine,
+			Base:       parentBranch.Head,
+			Head:       parentBranch.Head,
+			Config: &storepb.BranchConfig{
+				SourceBranch:   request.SchemaDesign.ParentBranch,
+				SourceDatabase: parentBranch.Config.GetSourceDatabase(),
+			},
+			CreatorID: principalID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		createdBranch = created
+	} else if request.SchemaDesign.BaselineDatabase != "" {
+		instanceID, databaseName, err := common.GetInstanceDatabaseID(request.SchemaDesign.BaselineDatabase)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+			InstanceID:          &instanceID,
+			DatabaseName:        &databaseName,
+			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		if database == nil {
+			return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+		}
+		databaseSchema, err := s.store.GetDBSchema(ctx, database.UID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		if databaseSchema == nil {
+			return nil, status.Errorf(codes.NotFound, "database schema %q not found", databaseName)
+		}
+		created, err := s.store.CreateBranch(ctx, &store.BranchMessage{
+			ProjectID:  projectID,
+			ResourceID: branchID,
+			Engine:     instance.Engine,
+			Base: &storepb.BranchSnapshot{
+				Schema:         databaseSchema.GetSchema(),
+				Metadata:       databaseSchema.GetMetadata(),
+				DatabaseConfig: databaseSchema.GetConfig(),
+			},
+			Head: &storepb.BranchSnapshot{
+				Schema:         databaseSchema.GetSchema(),
+				Metadata:       databaseSchema.GetMetadata(),
+				DatabaseConfig: databaseSchema.GetConfig(),
+			},
+			Config: &storepb.BranchConfig{
+				SourceDatabase: request.SchemaDesign.BaselineDatabase,
+			},
+			CreatorID: principalID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		createdBranch = created
+	} else {
+		return nil, status.Errorf(codes.InvalidArgument, "either baseline database or parent branch must be specified")
+	}
+
+	schemaDesign, err := s.convertBranchToSchemaDesign(ctx, project, createdBranch, v1pb.SchemaDesignView_SCHEMA_DESIGN_VIEW_FULL)
+	if err != nil {
+		return nil, err
+	}
+	return schemaDesign, nil
 }
 
 // UpdateSchemaDesign updates an existing schema design.
@@ -113,12 +241,19 @@ func (s *BranchService) DeleteSchemaDesign(ctx context.Context, request *v1pb.De
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	project, branch, err := s.getBranch(ctx, projectID, branchID, false /* loadFull */)
+	project, err := s.getProject(ctx, projectID)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if err := s.checkBranchPermission(ctx, project.ResourceID); err != nil {
 		return nil, err
+	}
+	branch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &projectID, ResourceID: &branchID, LoadFull: false})
+	if err != nil {
+		return nil, err
+	}
+	if branch == nil {
+		return nil, status.Errorf(codes.NotFound, "branch %q not found", branchID)
 	}
 
 	if err := s.store.DeleteBranch(ctx, project.ResourceID, branch.ResourceID); err != nil {
@@ -141,21 +276,6 @@ func (s *BranchService) getProject(ctx context.Context, projectID string) (*stor
 		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", projectID)
 	}
 	return project, nil
-}
-
-func (s *BranchService) getBranch(ctx context.Context, projectID, branchID string, loadFull bool) (*store.ProjectMessage, *store.BranchMessage, error) {
-	project, err := s.getProject(ctx, projectID)
-	if err != nil {
-		return nil, nil, status.Errorf(codes.Internal, err.Error())
-	}
-	branch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &projectID, ResourceID: &branchID, LoadFull: loadFull})
-	if err != nil {
-		return nil, nil, err
-	}
-	if branch == nil {
-		return nil, nil, status.Errorf(codes.NotFound, "branch %q not found", branchID)
-	}
-	return project, branch, nil
 }
 
 func (s *BranchService) checkBranchPermission(ctx context.Context, projectID string) error {
@@ -185,6 +305,63 @@ func (s *BranchService) checkBranchPermission(ctx context.Context, projectID str
 		}
 	}
 	return status.Errorf(codes.PermissionDenied, "permission denied")
+}
+
+func (s *BranchService) checkProtectionRules(ctx context.Context, project *store.ProjectMessage, branchID string, currentPrincipalID int) error {
+	if project.Setting == nil {
+		return nil
+	}
+	user, err := s.store.GetUserByID(ctx, currentPrincipalID)
+	if err != nil {
+		return err
+	}
+	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
+	if err != nil {
+		return err
+	}
+	// Skip protection check for workspace owner and DBA.
+	if isOwnerOrDBA(user.Role) {
+		return nil
+	}
+
+	for _, rule := range project.Setting.ProtectionRules {
+		if rule.Target != storepb.ProtectionRule_BRANCH {
+			continue
+		}
+		ok, err := path.Match(rule.NameFilter, branchID)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			continue
+		}
+		pass := false
+		for _, binding := range policy.Bindings {
+			matchUser := false
+			for _, member := range binding.Members {
+				if member.Email == user.Email {
+					matchUser = true
+					break
+				}
+			}
+			if matchUser {
+				for _, role := range rule.CreateAllowedRoles {
+					// Convert role format.
+					if role == convertToProjectRole(binding.Role) {
+						pass = true
+						break
+					}
+				}
+			}
+			if pass {
+				break
+			}
+		}
+		if !pass {
+			return status.Errorf(codes.InvalidArgument, "not allowed to create branch by project protection rules")
+		}
+	}
+	return nil
 }
 
 func (s *BranchService) convertBranchToSchemaDesign(ctx context.Context, project *store.ProjectMessage, branch *store.BranchMessage, view v1pb.SchemaDesignView) (*v1pb.SchemaDesign, error) {
@@ -231,9 +408,9 @@ func (s *BranchService) convertBranchToSchemaDesign(ctx context.Context, project
 		return schemaDesign, nil
 	}
 
-	schemaDesign.Schema = branch.Head.Schema
+	schemaDesign.Schema = string(branch.Head.Schema)
 	schemaDesign.SchemaMetadata = convertDatabaseMetadata(nil /* database */, branch.Head.Metadata, branch.Head.DatabaseConfig, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil /* filter */)
-	schemaDesign.BaselineSchema = branch.Base.Schema
+	schemaDesign.BaselineSchema = string(branch.Base.Schema)
 	schemaDesign.BaselineSchemaMetadata = convertDatabaseMetadata(nil /* database */, branch.Base.Metadata, branch.Base.DatabaseConfig, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil /* filter */)
 	return schemaDesign, nil
 }
