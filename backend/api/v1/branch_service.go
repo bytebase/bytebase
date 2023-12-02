@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -414,6 +415,45 @@ func (s *BranchService) DeleteSchemaDesign(ctx context.Context, request *v1pb.De
 	return &emptypb.Empty{}, nil
 }
 
+func (*BranchService) DiffMetadata(_ context.Context, request *v1pb.DiffMetadataRequest) (*v1pb.DiffMetadataResponse, error) {
+	switch request.Engine {
+	case v1pb.Engine_MYSQL, v1pb.Engine_POSTGRES, v1pb.Engine_TIDB:
+	default:
+		return nil, status.Errorf(codes.InvalidArgument, "unsupported engine: %v", request.Engine)
+	}
+	if request.SourceMetadata == nil || request.TargetMetadata == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "source_metadata and target_metadata are required")
+	}
+
+	if err := checkDatabaseMetadata(request.Engine, request.SourceMetadata); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid source metadata: %v", err))
+	}
+	if err := checkDatabaseMetadata(request.Engine, request.TargetMetadata); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid target metadata: %v", err))
+	}
+
+	sanitizeCommentForSchemaMetadata(request.SourceMetadata)
+	sanitizeCommentForSchemaMetadata(request.TargetMetadata)
+
+	sourceSchema, err := transformDatabaseMetadataToSchemaString(request.Engine, request.SourceMetadata)
+	if err != nil {
+		return nil, err
+	}
+	targetSchema, err := transformDatabaseMetadataToSchemaString(request.Engine, request.TargetMetadata)
+	if err != nil {
+		return nil, err
+	}
+
+	diff, err := base.SchemaDiff(convertEngine(request.Engine), sourceSchema, targetSchema, false /* ignoreCaseSensitive */)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to compute diff between source and target schemas, error: %v", err)
+	}
+
+	return &v1pb.DiffMetadataResponse{
+		Diff: diff,
+	}, nil
+}
+
 func (s *BranchService) getProject(ctx context.Context, projectID string) (*store.ProjectMessage, error) {
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
@@ -565,4 +605,35 @@ func (s *BranchService) convertBranchToSchemaDesign(ctx context.Context, project
 	schemaDesign.BaselineSchema = string(branch.Base.Schema)
 	schemaDesign.BaselineSchemaMetadata = convertDatabaseMetadata(nil /* database */, branch.Base.Metadata, branch.Base.DatabaseConfig, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil /* filter */)
 	return schemaDesign, nil
+}
+
+func sanitizeSchemaDesignSchemaMetadata(design *v1pb.SchemaDesign) {
+	if dbSchema := design.GetBaselineSchemaMetadata(); dbSchema != nil {
+		sanitizeCommentForSchemaMetadata(dbSchema)
+	}
+	if dbSchema := design.GetSchemaMetadata(); dbSchema != nil {
+		sanitizeCommentForSchemaMetadata(dbSchema)
+	}
+}
+
+func sanitizeCommentForSchemaMetadata(dbSchema *v1pb.DatabaseMetadata) {
+	for _, schema := range dbSchema.Schemas {
+		for _, table := range schema.Tables {
+			table.Comment = common.GetCommentFromClassificationAndUserComment(table.Classification, table.UserComment)
+			for _, col := range table.Columns {
+				col.Comment = common.GetCommentFromClassificationAndUserComment(col.Classification, col.UserComment)
+			}
+		}
+	}
+}
+
+func setClassificationAndUserCommentFromComment(dbSchema *v1pb.DatabaseMetadata) {
+	for _, schema := range dbSchema.Schemas {
+		for _, table := range schema.Tables {
+			table.Classification, table.UserComment = common.GetClassificationAndUserComment(table.Comment)
+			for _, col := range table.Columns {
+				col.Classification, col.UserComment = common.GetClassificationAndUserComment(col.Comment)
+			}
+		}
+	}
 }

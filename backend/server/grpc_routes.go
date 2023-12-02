@@ -84,7 +84,7 @@ func configureGrpcRouters(
 	v1pb.RegisterRolloutServiceServer(grpcServer, rolloutService)
 	v1pb.RegisterRoleServiceServer(grpcServer, apiv1.NewRoleService(stores, licenseService))
 	v1pb.RegisterSheetServiceServer(grpcServer, apiv1.NewSheetService(stores, licenseService))
-	v1pb.RegisterSchemaDesignServiceServer(grpcServer, apiv1.NewSchemaDesignService(stores, licenseService))
+	v1pb.RegisterSchemaDesignServiceServer(grpcServer, apiv1.NewBranchService(stores, licenseService))
 	v1pb.RegisterCelServiceServer(grpcServer, apiv1.NewCelService())
 	v1pb.RegisterLoggingServiceServer(grpcServer, apiv1.NewLoggingService(stores))
 	v1pb.RegisterInboxServiceServer(grpcServer, apiv1.NewInboxService(stores))
