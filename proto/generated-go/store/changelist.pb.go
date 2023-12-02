@@ -84,7 +84,7 @@ type Changelist_Change struct {
 	Sheet string `protobuf:"bytes,1,opt,name=sheet,proto3" json:"sheet,omitempty"`
 	// The source of origin.
 	// 1) change history: instances/{instance}/databases/{database}/changeHistories/{changeHistory}.
-	// 2) branch: projects/{project}/schemaDesigns/{schemaDesign}.
+	// 2) branch: projects/{project}/branches/{branch}.
 	// 3) raw SQL if empty.
 	Source string `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"`
 }
