@@ -158,7 +158,15 @@ export interface CreateBranchRequest {
    * Format: project/{project}
    */
   parent: string;
-  branch: Branch | undefined;
+  branch:
+    | Branch
+    | undefined;
+  /**
+   * The ID to use for the branch, which will become the final component of
+   * the branch's resource name.
+   * Format: [a-zA-Z][a-zA-Z0-9-_/]+.
+   */
+  branchId: string;
 }
 
 export interface UpdateBranchRequest {
@@ -177,15 +185,15 @@ export interface UpdateBranchRequest {
 
 export interface MergeBranchRequest {
   /**
-   * The name of the branch to merge.
+   * The name of the base branch to merge to.
    * Format: projects/{project}/branches/{branch}
    */
   name: string;
   /**
-   * The target branch to merge into.
+   * The head branch to merge from.
    * Format: projects/{project}/branches/{branch}
    */
-  targetName: string;
+  headBranch: string;
 }
 
 export interface DeleteBranchRequest {
@@ -741,7 +749,7 @@ export const ListBranchesResponse = {
 };
 
 function createBaseCreateBranchRequest(): CreateBranchRequest {
-  return { parent: "", branch: undefined };
+  return { parent: "", branch: undefined, branchId: "" };
 }
 
 export const CreateBranchRequest = {
@@ -751,6 +759,9 @@ export const CreateBranchRequest = {
     }
     if (message.branch !== undefined) {
       Branch.encode(message.branch, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.branchId !== "") {
+      writer.uint32(26).string(message.branchId);
     }
     return writer;
   },
@@ -776,6 +787,13 @@ export const CreateBranchRequest = {
 
           message.branch = Branch.decode(reader, reader.uint32());
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.branchId = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -789,6 +807,7 @@ export const CreateBranchRequest = {
     return {
       parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
       branch: isSet(object.branch) ? Branch.fromJSON(object.branch) : undefined,
+      branchId: isSet(object.branchId) ? globalThis.String(object.branchId) : "",
     };
   },
 
@@ -799,6 +818,9 @@ export const CreateBranchRequest = {
     }
     if (message.branch !== undefined) {
       obj.branch = Branch.toJSON(message.branch);
+    }
+    if (message.branchId !== "") {
+      obj.branchId = message.branchId;
     }
     return obj;
   },
@@ -812,6 +834,7 @@ export const CreateBranchRequest = {
     message.branch = (object.branch !== undefined && object.branch !== null)
       ? Branch.fromPartial(object.branch)
       : undefined;
+    message.branchId = object.branchId ?? "";
     return message;
   },
 };
@@ -893,7 +916,7 @@ export const UpdateBranchRequest = {
 };
 
 function createBaseMergeBranchRequest(): MergeBranchRequest {
-  return { name: "", targetName: "" };
+  return { name: "", headBranch: "" };
 }
 
 export const MergeBranchRequest = {
@@ -901,8 +924,8 @@ export const MergeBranchRequest = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (message.targetName !== "") {
-      writer.uint32(18).string(message.targetName);
+    if (message.headBranch !== "") {
+      writer.uint32(18).string(message.headBranch);
     }
     return writer;
   },
@@ -926,7 +949,7 @@ export const MergeBranchRequest = {
             break;
           }
 
-          message.targetName = reader.string();
+          message.headBranch = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -940,7 +963,7 @@ export const MergeBranchRequest = {
   fromJSON(object: any): MergeBranchRequest {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      targetName: isSet(object.targetName) ? globalThis.String(object.targetName) : "",
+      headBranch: isSet(object.headBranch) ? globalThis.String(object.headBranch) : "",
     };
   },
 
@@ -949,8 +972,8 @@ export const MergeBranchRequest = {
     if (message.name !== "") {
       obj.name = message.name;
     }
-    if (message.targetName !== "") {
-      obj.targetName = message.targetName;
+    if (message.headBranch !== "") {
+      obj.headBranch = message.headBranch;
     }
     return obj;
   },
@@ -961,7 +984,7 @@ export const MergeBranchRequest = {
   fromPartial(object: DeepPartial<MergeBranchRequest>): MergeBranchRequest {
     const message = createBaseMergeBranchRequest();
     message.name = object.name ?? "";
-    message.targetName = object.targetName ?? "";
+    message.headBranch = object.headBranch ?? "";
     return message;
   },
 };
