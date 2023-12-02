@@ -85,7 +85,7 @@ import { Drawer, DrawerContent } from "@/components/v2";
 import { pushNotification, useSheetV1Store } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
 import {
-  getProjectAndSchemaDesignSheetId,
+  getProjectAndBranchId,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
 import { Branch } from "@/types/proto/v1/branch_service";
@@ -167,9 +167,7 @@ const targetBranchFilter = (branch: Branch) => {
 
 const handleSaveDraft = async (ignoreNotify?: boolean) => {
   const updateMask = ["schema", "parent_branch"];
-  const [projectName] = getProjectAndSchemaDesignSheetId(
-    sourceBranch.value.name
-  );
+  const [projectName] = getProjectAndBranchId(sourceBranch.value.name);
   // Create a baseline sheet for the schema design.
   const baselineSheet = await sheetStore.createSheet(
     `${projectNamePrefix}${projectName}`,

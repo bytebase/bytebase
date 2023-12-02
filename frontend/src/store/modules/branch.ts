@@ -7,9 +7,9 @@ import {
   BranchView,
 } from "@/types/proto/v1/branch_service";
 import {
-  getProjectAndSchemaDesignSheetId,
+  getProjectAndBranchId,
   projectNamePrefix,
-  sheetNamePrefix,
+  branchNamePrefix,
 } from "./v1/common";
 
 export const useBranchStore = defineStore("schema_design", () => {
@@ -38,11 +38,9 @@ export const useBranchStore = defineStore("schema_design", () => {
   };
 
   const createBranchDraft = async (branch: Branch) => {
-    const [projectName, sheetId] = getProjectAndSchemaDesignSheetId(
-      branch.name
-    );
+    const [projectName, branchId] = getProjectAndBranchId(branch.name);
     const projectResourceId = `${projectNamePrefix}${projectName}`;
-    const parentBranch = `${projectResourceId}/${sheetNamePrefix}${sheetId}`;
+    const parentBranch = `${projectResourceId}/${branchNamePrefix}${branchId}`;
     return createBranch(projectResourceId, {
       ...branch,
       parentBranch: parentBranch,

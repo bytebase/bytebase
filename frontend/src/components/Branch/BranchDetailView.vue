@@ -129,7 +129,7 @@ import {
 } from "@/store";
 import { useBranchList, useBranchStore } from "@/store/modules/branch";
 import {
-  getProjectAndSchemaDesignSheetId,
+  getProjectAndBranchId,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
 import { Branch } from "@/types/proto/v1/branch_service";
@@ -284,7 +284,7 @@ const handleBranchTitleInputBlur = async () => {
 
 const handleMergeBranch = () => {
   const tempList = branchList.value.filter((item) => {
-    const [projectName] = getProjectAndSchemaDesignSheetId(item.name);
+    const [projectName] = getProjectAndBranchId(item.name);
     return (
       `${projectNamePrefix}${projectName}` === project.value.name &&
       item.engine === schemaDesign.value.engine &&
@@ -409,15 +409,13 @@ const handleSaveBranch = async () => {
             closeOnEsc: true,
             onNegativeClick: () => {
               // Go to draft branch detail page after merge failed.
-              const [_, sheetId] = getProjectAndSchemaDesignSheetId(
-                newBranch.name
-              );
+              const [_, branchId] = getProjectAndBranchId(newBranch.name);
               state.isEditing = false;
               router.replace({
                 name: "workspace.project.branch.detail",
                 params: {
                   projectSlug: projectV1Slug(project.value),
-                  branchName: sheetId,
+                  branchName: branchId,
                 },
               });
             },
@@ -475,12 +473,12 @@ const handleSaveBranch = async () => {
 const handleMergeAfterConflictResolved = (branchName: string) => {
   state.showDiffEditor = false;
   state.isEditing = false;
-  const [_, sheetId] = getProjectAndSchemaDesignSheetId(branchName);
+  const [_, branchId] = getProjectAndBranchId(branchName);
   router.replace({
     name: "workspace.project.branch.detail",
     params: {
       projectSlug: projectV1Slug(project.value),
-      branchName: sheetId,
+      branchName: branchId,
     },
   });
 };

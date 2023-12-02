@@ -18,7 +18,7 @@ import { NSelect, SelectOption, SelectRenderLabel } from "naive-ui";
 import { computed, h } from "vue";
 import { useDatabaseV1Store, useProjectV1Store, useBranchList } from "@/store";
 import {
-  getProjectAndSchemaDesignSheetId,
+  getProjectAndBranchId,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
 import { UNKNOWN_ID } from "@/types";
@@ -51,7 +51,7 @@ const combinedBranchList = computed(() => {
     const project = projectStore.getProjectByUID(props.project);
     if (project) {
       list = list.filter((branch) => {
-        const [projectName] = getProjectAndSchemaDesignSheetId(branch.name);
+        const [projectName] = getProjectAndBranchId(branch.name);
         return project.name === `${projectNamePrefix}${projectName}`;
       });
     }

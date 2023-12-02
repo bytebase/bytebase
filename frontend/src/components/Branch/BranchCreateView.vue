@@ -94,7 +94,7 @@ import {
 import { useBranchStore } from "@/store/modules/branch";
 import {
   databaseNamePrefix,
-  getProjectAndSchemaDesignSheetId,
+  getProjectAndBranchId,
 } from "@/store/modules/v1/common";
 import { UNKNOWN_ID } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
@@ -335,14 +335,12 @@ const handleConfirm = async () => {
   });
 
   // Go to branch detail page after created.
-  const [_, sheetId] = getProjectAndSchemaDesignSheetId(
-    createdSchemaDesign.name
-  );
+  const [_, branchId] = getProjectAndBranchId(createdSchemaDesign.name);
   router.replace({
     name: "workspace.project.branch.detail",
     params: {
       projectSlug: projectV1Slug(project.value),
-      branchName: sheetId,
+      branchName: branchId,
     },
   });
 };

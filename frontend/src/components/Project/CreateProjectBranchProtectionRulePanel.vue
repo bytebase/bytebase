@@ -91,7 +91,7 @@ import { computed, reactive, watch } from "vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useRoleStore, useBranchList } from "@/store";
 import {
-  getProjectAndSchemaDesignSheetId,
+  getProjectAndBranchId,
   projectNamePrefix,
   protectionRulesSuffix,
 } from "@/store/modules/v1/common";
@@ -142,7 +142,7 @@ const state = reactive<LocalState>({
 
 const branches = computed(() => {
   return branchList.value.filter((branch) => {
-    const [projectName] = getProjectAndSchemaDesignSheetId(branch.name);
+    const [projectName] = getProjectAndBranchId(branch.name);
     return projectNamePrefix + projectName === props.project.name;
   });
 });

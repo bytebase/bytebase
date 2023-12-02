@@ -18,7 +18,7 @@ import { useI18n } from "vue-i18n";
 import BranchBaseline from "@/components/Branch/BranchBaseline.vue";
 import { useDatabaseV1Store, useProjectV1Store, useUserStore } from "@/store";
 import {
-  getProjectAndSchemaDesignSheetId,
+  getProjectAndBranchId,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
 import { Branch } from "@/types/proto/v1/branch_service";
@@ -53,7 +53,7 @@ const dataTableRows = computed(() => {
     return branch.parentBranch === "";
   });
   const parentRows: BranchRowData[] = parentBranches.map((branch) => {
-    const [projectName] = getProjectAndSchemaDesignSheetId(branch.name);
+    const [projectName] = getProjectAndBranchId(branch.name);
     const project = projectV1Store.getProjectByName(
       `${projectNamePrefix}${projectName}`
     );

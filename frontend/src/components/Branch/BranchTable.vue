@@ -45,7 +45,7 @@ import { BBGridColumn } from "@/bbkit";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
 import { useDatabaseV1Store, useProjectV1Store, useUserStore } from "@/store";
 import {
-  getProjectAndSchemaDesignSheetId,
+  getProjectAndBranchId,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
 import { Branch } from "@/types/proto/v1/branch_service";
@@ -84,7 +84,7 @@ const COLUMN_LIST = computed(() => {
 });
 
 const getFormattedValue = (branch: Branch) => {
-  const [projectName] = getProjectAndSchemaDesignSheetId(branch.name);
+  const [projectName] = getProjectAndBranchId(branch.name);
   const project = projectV1Store.getProjectByName(
     `${projectNamePrefix}${projectName}`
   );

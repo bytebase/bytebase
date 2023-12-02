@@ -4,6 +4,7 @@ import { reactive } from "vue";
 import { rolloutServiceClient } from "@/grpcweb";
 import { TemplateType } from "@/plugins";
 import {
+  useBranchStore,
   useChangelistStore,
   useCurrentUserV1,
   useDatabaseV1Store,
@@ -11,13 +12,13 @@ import {
   useProjectV1Store,
   useSheetV1Store,
 } from "@/store";
-import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
 import {
   ComposedProject,
   emptyIssue,
   TaskTypeListWithStatement,
   UNKNOWN_ID,
 } from "@/types";
+import { DatabaseConfig } from "@/types/proto/v1/database_service";
 import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
 import {
   Plan,
@@ -29,6 +30,7 @@ import {
   Stage,
   Task_Type,
 } from "@/types/proto/v1/rollout_service";
+import { SheetPayload } from "@/types/proto/v1/sheet_service";
 import {
   extractSheetUID,
   generateSQLForChangeToDatabase,
@@ -106,8 +108,7 @@ export const createIssueSkeleton = async (query: Record<string, string>) => {
 
 const prepareParamsContext = async (params: CreateIssueParams) => {
   if (params.branch) {
-    const [_, sheetId] = getProjectAndSchemaDesignSheetId(params.branch);
-    await useSheetV1Store().getOrFetchSheetByUID(sheetId);
+    await useBranchStore().fetchBranchByName(params.branch);
   }
 };
 
@@ -410,7 +411,7 @@ const maybeSetInitialSQLForSpec = (
   }
 };
 
-const maybeSetInitialDatabaseConfigForSpec = (
+const maybeSetInitialDatabaseConfigForSpec = async (
   spec: Plan_Spec,
   params: CreateIssueParams
 ) => {
@@ -427,11 +428,19 @@ const maybeSetInitialDatabaseConfigForSpec = (
     return;
   }
 
-  const [_, sheetId] = getProjectAndSchemaDesignSheetId(branch);
-  const temp = useSheetV1Store().getSheetByUID(sheetId);
-  if (temp && temp.payload) {
+  // TODO(d): double check setting database config.
+  const temp = await useBranchStore().fetchBranchByName(branch);
+  if (temp) {
     const sheetEntity = getLocalSheetByName(sheetName);
-    sheetEntity.payload = temp.payload;
+    if (!sheetEntity.payload) {
+      sheetEntity.payload = SheetPayload.fromPartial({});
+    }
+    sheetEntity.payload.databaseConfig = DatabaseConfig.fromPartial({
+      schemaConfigs: temp.schemaMetadata?.schemaConfigs,
+    });
+    sheetEntity.payload.baselineDatabaseConfig = DatabaseConfig.fromPartial({
+      schemaConfigs: temp.baselineSchemaMetadata?.schemaConfigs,
+    });
   }
 };
 
