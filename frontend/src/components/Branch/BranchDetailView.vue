@@ -129,6 +129,7 @@ import {
 } from "@/store";
 import { useBranchList, useBranchStore } from "@/store/modules/branch";
 import {
+  getProjectName,
   getProjectAndBranchId,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
@@ -158,7 +159,9 @@ const { t } = useI18n();
 const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const branchStore = useBranchStore();
-const { branchList, ready } = useBranchList();
+const { branchList, ready } = useBranchList(
+  getProjectAndBranchId(props.branch.name)[0]
+);
 const { runSQLCheck } = provideSQLCheckContext();
 const dialog = useDialog();
 const state = reactive<LocalState>({
@@ -383,13 +386,12 @@ const handleSaveBranch = async () => {
   if (updateMask.length !== 0) {
     if (schemaDesign.value.parentBranch === "") {
       const branchName = generateForkedBranchName(schemaDesign.value);
-      const newBranch = await branchStore.createBranchDraft({
-        ...schemaDesign.value,
-        baselineSchema: schemaDesign.value.schema,
-        schemaMetadata: mergedMetadata,
-        baselineSchemaMetadata: baselineMetadata,
-        title: branchName,
-      });
+      const projectId = getProjectName(project.value.name);
+      const newBranch = await branchStore.createBranchDraft(
+        projectId,
+        branchName,
+        "" // TODO(d): use parent branch name.
+      );
       try {
         await branchStore.mergeBranch({
           name: schemaDesign.value.name,

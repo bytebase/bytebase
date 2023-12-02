@@ -91,6 +91,7 @@ import { computed, reactive, watch } from "vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useRoleStore, useBranchList } from "@/store";
 import {
+  getProjectName,
   getProjectAndBranchId,
   projectNamePrefix,
   protectionRulesSuffix,
@@ -122,7 +123,7 @@ const emit = defineEmits<{
   (event: "close"): void;
 }>();
 
-const { branchList } = useBranchList();
+const { branchList } = useBranchList(getProjectName(props.project.name));
 const protectionRuleStore = useProjectProtectionRulesStore();
 const branchProtectionRules = useProjectBranchProtectionRules(
   props.project.name

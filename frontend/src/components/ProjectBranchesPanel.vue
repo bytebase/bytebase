@@ -44,7 +44,7 @@ interface LocalState {
 
 const router = useRouter();
 const projectV1Store = useProjectV1Store();
-const { branchList, ready } = useBranchList();
+const { branchList, ready } = useBranchList(props.projectId);
 const state = reactive<LocalState>({
   searchKeyword: "",
 });
