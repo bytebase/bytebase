@@ -137,7 +137,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import ActionConfirmModal from "@/components/SchemaEditorV1/Modals/ActionConfirmModal.vue";
 import SchemaEditorV1 from "@/components/SchemaEditorV1/index.vue";
-import { schemaDesignServiceClient } from "@/grpcweb";
+import { branchServiceClient } from "@/grpcweb";
 import {
   pushNotification,
   useDBSchemaV1Store,
@@ -346,7 +346,7 @@ const fetchStatementMapWithSchemaEditor = async () => {
       continue;
     }
 
-    const { diff } = await schemaDesignServiceClient.diffMetadata({
+    const { diff } = await branchServiceClient.diffMetadata({
       sourceMetadata,
       targetMetadata,
       engine: database.instanceEntity.engine,

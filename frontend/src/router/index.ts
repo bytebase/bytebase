@@ -36,7 +36,7 @@ import {
   useDatabaseV1Store,
   useChangeHistoryStore,
   useChangelistStore,
-  useSchemaDesignStore,
+  useBranchStore,
   useSQLEditorTreeStore,
 } from "@/store";
 import {
@@ -1243,8 +1243,8 @@ router.beforeEach((to, from, next) => {
           to.params.branchName !== "new"
         ) {
           const name = `${project.name}/schemaDesigns/${to.params.branchName}`;
-          useSchemaDesignStore()
-            .fetchSchemaDesignByName(name, false /* !useCache */)
+          useBranchStore()
+            .fetchBranchByName(name, false /* !useCache */)
             .then((branch) => {
               if (branch) {
                 next();

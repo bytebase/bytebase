@@ -86,14 +86,14 @@ import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { fetchBaselineMetadataOfBranch } from "@/components/SchemaEditorV1/utils/branch";
 import { Drawer, DrawerContent, ErrorTipsButton } from "@/components/v2";
-import { schemaDesignServiceClient } from "@/grpcweb";
+import { branchServiceClient } from "@/grpcweb";
 import {
   pushNotification,
   useChangeHistoryStore,
   useChangelistStore,
   useLocalSheetStore,
 } from "@/store";
-import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
+import { useBranchStore } from "@/store/modules/branch";
 import {
   Changelist_Change as Change,
   Changelist,
@@ -170,14 +170,14 @@ const doAddChange = async () => {
       }
       if (sourceType === "BRANCH") {
         // For branch changes, use its diff DDL
-        const branch = await useSchemaDesignStore().fetchSchemaDesignByName(
+        const branch = await useBranchStore().fetchBranchByName(
           change.source,
           false /* !useCache */
         );
         const source = await fetchBaselineMetadataOfBranch(branch);
         const target = branch.schemaMetadata;
 
-        const { diff } = await schemaDesignServiceClient.diffMetadata({
+        const { diff } = await branchServiceClient.diffMetadata({
           sourceMetadata: source,
           targetMetadata: target,
           engine: branch.engine,

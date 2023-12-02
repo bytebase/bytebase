@@ -18,16 +18,13 @@ import { useI18n } from "vue-i18n";
 import BranchBaseline from "@/components/Branch/BranchBaseline.vue";
 import { useDatabaseV1Store, useProjectV1Store, useUserStore } from "@/store";
 import {
-  getProjectAndSchemaDesignSheetId,
+  getProjectAndBranchId,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
-import {
-  SchemaDesign,
-  SchemaDesign_Type,
-} from "@/types/proto/v1/schema_design_service";
+import { Branch } from "@/types/proto/v1/branch_service";
 
 type BranchRowData = {
-  branch: SchemaDesign;
+  branch: Branch;
   name: string;
   branchName: string;
   projectName: string;
@@ -37,13 +34,13 @@ type BranchRowData = {
 };
 
 const props = defineProps<{
-  branches: SchemaDesign[];
+  branches: Branch[];
   hideProjectColumn?: boolean;
   ready?: boolean;
 }>();
 
 const emit = defineEmits<{
-  (event: "click", schemaDesign: SchemaDesign): void;
+  (event: "click", branch: Branch): void;
 }>();
 
 const { t } = useI18n();
@@ -53,10 +50,10 @@ const databaseStore = useDatabaseV1Store();
 
 const dataTableRows = computed(() => {
   const parentBranches = props.branches.filter((branch) => {
-    return branch.type === SchemaDesign_Type.MAIN_BRANCH;
+    return branch.parentBranch === "";
   });
   const parentRows: BranchRowData[] = parentBranches.map((branch) => {
-    const [projectName] = getProjectAndSchemaDesignSheetId(branch.name);
+    const [projectName] = getProjectAndBranchId(branch.name);
     const project = projectV1Store.getProjectByName(
       `${projectNamePrefix}${projectName}`
     );
@@ -74,7 +71,7 @@ const dataTableRows = computed(() => {
     };
   });
   const childBranches = props.branches.filter((branch) => {
-    return branch.type === SchemaDesign_Type.PERSONAL_DRAFT;
+    return branch.parentBranch !== "";
   });
   for (const childBranch of childBranches) {
     const parentRow = parentRows.find(
@@ -148,7 +145,7 @@ const rowProps = (row: BranchRowData) => {
   };
 };
 
-const getUpdatedTimeStr = (branch: SchemaDesign) => {
+const getUpdatedTimeStr = (branch: Branch) => {
   const updater = userV1Store.getUserByEmail(branch.updater.split("/")[1]);
   const updatedTimeStr = t("schema-designer.message.updated-time-by-user", {
     time: dayjs

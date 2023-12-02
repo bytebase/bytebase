@@ -4,7 +4,7 @@ import {
   mergeSchemaEditToMetadata,
   validateDatabaseMetadata,
 } from "@/components/SchemaEditorV1/utils";
-import { schemaDesignServiceClient } from "@/grpcweb";
+import { branchServiceClient } from "@/grpcweb";
 import { t } from "@/plugins/i18n";
 import { useDBSchemaV1Store, useSchemaEditorV1Store } from "@/store";
 import { ComposedDatabase } from "@/types";
@@ -70,7 +70,7 @@ export const useSchemaEditorSQLCheck = (params: {
     }
 
     try {
-      const { diff } = await schemaDesignServiceClient.diffMetadata(
+      const { diff } = await branchServiceClient.diffMetadata(
         {
           sourceMetadata: metadata,
           targetMetadata: mergedMetadata,

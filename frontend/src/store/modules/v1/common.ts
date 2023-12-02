@@ -15,7 +15,7 @@ export const externalVersionControlPrefix = "externalVersionControls/";
 export const logNamePrefix = "logs/";
 export const issueNamePrefix = "issues/";
 export const secretNamePrefix = "secrets/";
-export const schemaDesignNamePrefix = "schemaDesigns/";
+export const branchNamePrefix = "branches/";
 
 export const protectionRulesSuffix = "/protectionRules";
 
@@ -79,10 +79,10 @@ export const getProjectAndSheetId = (name: string): string[] => {
   return tokens;
 };
 
-export const getProjectAndSchemaDesignSheetId = (name: string): string[] => {
+export const getProjectAndBranchId = (name: string): string[] => {
   const tokens = getNameParentTokens(name, [
     projectNamePrefix,
-    schemaDesignNamePrefix,
+    branchNamePrefix,
   ]);
 
   if (tokens.length != 2) {
