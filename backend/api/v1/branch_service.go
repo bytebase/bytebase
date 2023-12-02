@@ -408,9 +408,9 @@ func (s *BranchService) convertBranchToSchemaDesign(ctx context.Context, project
 		return schemaDesign, nil
 	}
 
-	schemaDesign.Schema = branch.Head.Schema
+	schemaDesign.Schema = string(branch.Head.Schema)
 	schemaDesign.SchemaMetadata = convertDatabaseMetadata(nil /* database */, branch.Head.Metadata, branch.Head.DatabaseConfig, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil /* filter */)
-	schemaDesign.BaselineSchema = branch.Base.Schema
+	schemaDesign.BaselineSchema = string(branch.Base.Schema)
 	schemaDesign.BaselineSchemaMetadata = convertDatabaseMetadata(nil /* database */, branch.Base.Metadata, branch.Base.DatabaseConfig, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil /* filter */)
 	return schemaDesign, nil
 }
