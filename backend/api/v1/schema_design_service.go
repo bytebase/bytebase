@@ -540,20 +540,6 @@ func (s *SchemaDesignService) MergeSchemaDesign(ctx context.Context, request *v1
 	return targetSchemaDesign, nil
 }
 
-// ParseSchemaString parses a schema string to database metadata.
-func (*SchemaDesignService) ParseSchemaString(_ context.Context, request *v1pb.ParseSchemaStringRequest) (*v1pb.ParseSchemaStringResponse, error) {
-	if request.SchemaString == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "schema_string is required")
-	}
-	metadata, err := transformSchemaStringToDatabaseMetadata(request.Engine, request.SchemaString)
-	if err != nil {
-		return nil, err
-	}
-	return &v1pb.ParseSchemaStringResponse{
-		SchemaMetadata: metadata,
-	}, nil
-}
-
 // DeleteSchemaDesign deletes an existing schema design.
 func (s *SchemaDesignService) DeleteSchemaDesign(ctx context.Context, request *v1pb.DeleteSchemaDesignRequest) (*emptypb.Empty, error) {
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
