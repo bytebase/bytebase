@@ -31,7 +31,7 @@
 import { asyncComputed } from "@vueuse/core";
 import { File, GitBranch, History } from "lucide-vue-next";
 import { computed } from "vue";
-import { useChangeHistoryStore, useSchemaDesignStore } from "@/store";
+import { useChangeHistoryStore, useBranchStore } from "@/store";
 import { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
 import { getChangelistChangeSourceType } from "@/utils";
 
@@ -50,7 +50,7 @@ const changeHistory = computed(() => {
 
 const branch = asyncComputed(() => {
   if (type.value !== "BRANCH") return undefined;
-  return useSchemaDesignStore().fetchSchemaDesignByName(
+  return useBranchStore().fetchBranchByName(
     props.change.source,
     true /* useCache */
   );

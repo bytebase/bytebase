@@ -17,19 +17,19 @@ import { useRoute } from "vue-router";
 import BranchCreateView from "@/components/Branch/BranchCreateView.vue";
 import BranchDetailView from "@/components/Branch/BranchDetailView.vue";
 import { useProjectV1Store } from "@/store";
-import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
+import { useBranchStore } from "@/store/modules/branch";
 import { idFromSlug } from "@/utils";
 
 const { t } = useI18n();
 const route = useRoute();
 const projectStore = useProjectV1Store();
-const schemaDesignStore = useSchemaDesignStore();
+const branchStore = useBranchStore();
 const branchFullName = ref<string>("");
 const ready = ref<boolean>(false);
 
 const isCreating = computed(() => route.params.branchName === "new");
 const branch = computed(() => {
-  return schemaDesignStore.getSchemaDesignByName(branchFullName.value);
+  return branchStore.getBranchByName(branchFullName.value);
 });
 const project = computed(() => {
   if (route.params.projectSlug === "-") {
@@ -69,7 +69,7 @@ watch(
       return;
     }
 
-    await schemaDesignStore.fetchSchemaDesignByName(
+    await branchStore.fetchBranchByName(
       branchFullName.value,
       false /* useCache */
     );

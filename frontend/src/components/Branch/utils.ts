@@ -1,7 +1,7 @@
 import { useCurrentUserV1 } from "@/store";
-import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
+import { Branch } from "@/types/proto/v1/branch_service";
 
-export const generateForkedBranchName = (branch: SchemaDesign): string => {
+export const generateForkedBranchName = (branch: Branch): string => {
   const currentUser = useCurrentUserV1();
   const parentBranchName = branch.title;
   const branchName =

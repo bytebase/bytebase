@@ -28,7 +28,7 @@
         </div>
       </div>
     </template>
-    <template #item="{ item: branch }: BBGridRow<SchemaDesign>">
+    <template #item="{ item: branch }: BBGridRow<Branch>">
       <div class="bb-grid-cell">
         <NCheckbox
           :checked="isSelected(branch)"
@@ -63,19 +63,19 @@ import { BBGrid, BBGridColumn, BBGridRow } from "@/bbkit";
 import BranchBaseline from "@/components/Branch/BranchBaseline.vue";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { useUserStore } from "@/store";
-import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
+import { Branch } from "@/types/proto/v1/branch_service";
 import { extractUserResourceName, getHighlightHTMLByRegExp } from "@/utils";
 
 const props = defineProps<{
   selected: string[];
-  branchList: SchemaDesign[];
+  branchList: Branch[];
   isFetching: boolean;
   keyword: string;
 }>();
 
 const emit = defineEmits<{
   (event: "update:selected", selected: string[]): void;
-  (event: "click-item", branch: SchemaDesign): void;
+  (event: "click-item", branch: Branch): void;
 }>();
 
 const { t } = useI18n();
@@ -117,11 +117,11 @@ const toggleSelectAll = (on: boolean) => {
   }
 };
 
-const isSelected = (branch: SchemaDesign) => {
+const isSelected = (branch: Branch) => {
   return props.selected.includes(branch.name);
 };
 
-const toggleSelect = (branch: SchemaDesign, on: boolean) => {
+const toggleSelect = (branch: Branch, on: boolean) => {
   const set = new Set(props.selected);
   const key = branch.name;
   if (on) {
@@ -137,7 +137,7 @@ const toggleSelect = (branch: SchemaDesign, on: boolean) => {
   }
 };
 
-const renderTitle = (item: SchemaDesign) => {
+const renderTitle = (item: Branch) => {
   const keyword = props.keyword.trim().toLowerCase();
 
   const { title } = item;
@@ -158,7 +158,7 @@ const getUser = (name: string) => {
   return useUserStore().getUserByEmail(email);
 };
 
-const handleClickRow = (item: SchemaDesign) => {
+const handleClickRow = (item: Branch) => {
   emit("click-item", item);
 };
 </script>

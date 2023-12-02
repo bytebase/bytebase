@@ -83,7 +83,7 @@
         :style="'DELETE'"
         :button-text="$t('database.delete-this-branch')"
         :require-confirm="true"
-        @confirm="deleteSchemaDesign"
+        @confirm="deleteBranch"
       />
     </div>
   </div>
@@ -121,24 +121,18 @@ import {
   validateDatabaseMetadata,
 } from "@/components/SchemaEditorV1/utils";
 import TargetDatabasesSelectPanel from "@/components/SyncDatabaseSchema/TargetDatabasesSelectPanel.vue";
-import { schemaDesignServiceClient } from "@/grpcweb";
+import { branchServiceClient } from "@/grpcweb";
 import {
   pushNotification,
   useDatabaseV1Store,
   useSchemaEditorV1Store,
 } from "@/store";
+import { useBranchList, useBranchStore } from "@/store/modules/branch";
 import {
-  useSchemaDesignList,
-  useSchemaDesignStore,
-} from "@/store/modules/schemaDesign";
-import {
-  getProjectAndSchemaDesignSheetId,
+  getProjectAndBranchId,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
-import {
-  SchemaDesign,
-  SchemaDesign_Type,
-} from "@/types/proto/v1/schema_design_service";
+import { Branch } from "@/types/proto/v1/branch_service";
 import { projectV1Slug } from "@/utils";
 import { provideSQLCheckContext } from "../SQLCheck";
 import { fetchBaselineMetadataOfBranch } from "../SchemaEditorV1/utils/branch";
@@ -156,15 +150,15 @@ interface LocalState {
 
 const props = defineProps<{
   // Should be a schema design name of main branch.
-  branch: SchemaDesign;
+  branch: Branch;
   viewMode?: boolean;
 }>();
 
 const { t } = useI18n();
 const router = useRouter();
 const databaseStore = useDatabaseV1Store();
-const schemaDesignStore = useSchemaDesignStore();
-const { schemaDesignList, ready } = useSchemaDesignList();
+const branchStore = useBranchStore();
+const { branchList, ready } = useBranchList();
 const { runSQLCheck } = provideSQLCheckContext();
 const dialog = useDialog();
 const state = reactive<LocalState>({
@@ -191,11 +185,8 @@ const schemaDesign = computed(() => {
 
 const parentBranch = asyncComputed(async () => {
   // Show parent branch when the current branch is a personal draft and it's not the new created one.
-  if (
-    schemaDesign.value.type === SchemaDesign_Type.PERSONAL_DRAFT &&
-    schemaDesign.value.parentBranch
-  ) {
-    return await schemaDesignStore.fetchSchemaDesignByName(
+  if (schemaDesign.value.parentBranch !== "") {
+    return await branchStore.fetchBranchByName(
       schemaDesign.value.parentBranch,
       true /* useCache */
     );
@@ -239,11 +230,8 @@ watch(
     state.schemaDesignTitle = schemaDesign.value.title;
     await prepareBaselineDatabase();
     // Prepare the parent branch for personal draft.
-    if (
-      schemaDesign.value.type === SchemaDesign_Type.PERSONAL_DRAFT &&
-      schemaDesign.value.parentBranch
-    ) {
-      await schemaDesignStore.fetchSchemaDesignByName(
+    if (schemaDesign.value.parentBranch !== "") {
+      await branchStore.fetchBranchByName(
         schemaDesign.value.parentBranch,
         true /* useCache */
       );
@@ -277,8 +265,8 @@ const handleBranchTitleInputBlur = async () => {
     updateMask.push("title");
   }
   if (updateMask.length !== 0) {
-    await schemaDesignStore.updateSchemaDesign(
-      SchemaDesign.fromPartial({
+    await branchStore.updateBranch(
+      Branch.fromPartial({
         name: schemaDesign.value.name,
         title: state.schemaDesignTitle,
         baselineDatabase: schemaDesign.value.baselineDatabase,
@@ -295,8 +283,8 @@ const handleBranchTitleInputBlur = async () => {
 };
 
 const handleMergeBranch = () => {
-  const tempList = schemaDesignList.value.filter((item) => {
-    const [projectName] = getProjectAndSchemaDesignSheetId(item.name);
+  const tempList = branchList.value.filter((item) => {
+    const [projectName] = getProjectAndBranchId(item.name);
     return (
       `${projectNamePrefix}${projectName}` === project.value.name &&
       item.engine === schemaDesign.value.engine &&
@@ -393,9 +381,9 @@ const handleSaveBranch = async () => {
 
   state.isSaving = true;
   if (updateMask.length !== 0) {
-    if (schemaDesign.value.type === SchemaDesign_Type.MAIN_BRANCH) {
+    if (schemaDesign.value.parentBranch === "") {
       const branchName = generateForkedBranchName(schemaDesign.value);
-      const newBranch = await schemaDesignStore.createSchemaDesignDraft({
+      const newBranch = await branchStore.createBranchDraft({
         ...schemaDesign.value,
         baselineSchema: schemaDesign.value.schema,
         schemaMetadata: mergedMetadata,
@@ -403,7 +391,7 @@ const handleSaveBranch = async () => {
         title: branchName,
       });
       try {
-        await schemaDesignStore.mergeSchemaDesign({
+        await branchStore.mergeBranch({
           name: newBranch.name,
           targetName: schemaDesign.value.name,
         });
@@ -421,15 +409,13 @@ const handleSaveBranch = async () => {
             closeOnEsc: true,
             onNegativeClick: () => {
               // Go to draft branch detail page after merge failed.
-              const [_, sheetId] = getProjectAndSchemaDesignSheetId(
-                newBranch.name
-              );
+              const [_, branchId] = getProjectAndBranchId(newBranch.name);
               state.isEditing = false;
               router.replace({
                 name: "workspace.project.branch.detail",
                 params: {
                   projectSlug: projectV1Slug(project.value),
-                  branchName: sheetId,
+                  branchName: branchId,
                 },
               });
             },
@@ -454,15 +440,15 @@ const handleSaveBranch = async () => {
       }
 
       // Delete the draft after merged.
-      await schemaDesignStore.deleteSchemaDesign(newBranch.name);
+      await branchStore.deleteBranch(newBranch.name);
       // Fetch the latest schema design after merged.
-      await schemaDesignStore.fetchSchemaDesignByName(
+      await branchStore.fetchBranchByName(
         schemaDesign.value.name,
         false /* !useCache */
       );
     } else {
-      await schemaDesignStore.updateSchemaDesign(
-        SchemaDesign.fromPartial({
+      await branchStore.updateBranch(
+        Branch.fromPartial({
           name: schemaDesign.value.name,
           title: state.schemaDesignTitle,
           engine: schemaDesign.value.engine,
@@ -487,12 +473,12 @@ const handleSaveBranch = async () => {
 const handleMergeAfterConflictResolved = (branchName: string) => {
   state.showDiffEditor = false;
   state.isEditing = false;
-  const [_, sheetId] = getProjectAndSchemaDesignSheetId(branchName);
+  const [_, branchId] = getProjectAndBranchId(branchName);
   router.replace({
     name: "workspace.project.branch.detail",
     params: {
       projectSlug: projectV1Slug(project.value),
-      branchName: sheetId,
+      branchName: branchId,
     },
   });
 };
@@ -502,7 +488,7 @@ const handleSelectedDatabaseIdListChanged = async (
 ) => {
   let statement = "";
   try {
-    const diffResponse = await schemaDesignServiceClient.diffMetadata(
+    const diffResponse = await branchServiceClient.diffMetadata(
       {
         sourceMetadata: schemaDesign.value.baselineSchemaMetadata,
         targetMetadata: schemaDesign.value.schemaMetadata,
@@ -576,8 +562,8 @@ const generateIssueName = (databaseNameList: string[]) => {
   return issueNameParts.join(" ");
 };
 
-const deleteSchemaDesign = async () => {
-  await schemaDesignStore.deleteSchemaDesign(schemaDesign.value.name);
+const deleteBranch = async () => {
+  await branchStore.deleteBranch(schemaDesign.value.name);
   router.replace({
     name: "workspace.project.detail",
     hash: "#branches",

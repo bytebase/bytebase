@@ -28,7 +28,7 @@ import { useI18n } from "vue-i18n";
 import SchemaDesignEditor from "@/components/Branch/SchemaDesignEditor.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useDatabaseV1Store } from "@/store";
-import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
+import { useBranchStore } from "@/store/modules/branch";
 import BranchBaseline from "./BranchBaseline.vue";
 
 const props = defineProps<{
@@ -47,7 +47,7 @@ const branch = asyncComputed(async () => {
   if (!branchName) {
     return undefined;
   }
-  return await useSchemaDesignStore().fetchSchemaDesignByName(
+  return await useBranchStore().fetchBranchByName(
     branchName,
     true /* useCache */
   );

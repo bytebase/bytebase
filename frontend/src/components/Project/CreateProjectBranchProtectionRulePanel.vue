@@ -89,9 +89,9 @@ import { NButton, NCheckbox, NInput, NDivider, NSelect, NTag } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, watch } from "vue";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { useRoleStore, useSchemaDesignList } from "@/store";
+import { useRoleStore, useBranchList } from "@/store";
 import {
-  getProjectAndSchemaDesignSheetId,
+  getProjectAndBranchId,
   projectNamePrefix,
   protectionRulesSuffix,
 } from "@/store/modules/v1/common";
@@ -122,7 +122,7 @@ const emit = defineEmits<{
   (event: "close"): void;
 }>();
 
-const { schemaDesignList } = useSchemaDesignList();
+const { branchList } = useBranchList();
 const protectionRuleStore = useProjectProtectionRulesStore();
 const branchProtectionRules = useProjectBranchProtectionRules(
   props.project.name
@@ -140,15 +140,15 @@ const state = reactive<LocalState>({
   selectedRoles: props.protectionRule?.createAllowedRoles || [],
 });
 
-const branchList = computed(() => {
-  return schemaDesignList.value.filter((branch) => {
-    const [projectName] = getProjectAndSchemaDesignSheetId(branch.name);
+const branches = computed(() => {
+  return branchList.value.filter((branch) => {
+    const [projectName] = getProjectAndBranchId(branch.name);
     return projectNamePrefix + projectName === props.project.name;
   });
 });
 
 const matchedBranchList = computed(() => {
-  return branchList.value.filter((branch) => {
+  return branches.value.filter((branch) => {
     return wildcardToRegex(state.protectionRule.nameFilter).test(branch.title);
   });
 });

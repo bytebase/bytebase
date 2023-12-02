@@ -8,6 +8,7 @@ import {
 import { ActuatorServiceDefinition } from "@/types/proto/v1/actuator_service";
 import { AnomalyServiceDefinition } from "@/types/proto/v1/anomaly_service";
 import { AuthServiceDefinition } from "@/types/proto/v1/auth_service";
+import { BranchServiceDefinition } from "@/types/proto/v1/branch_service";
 import { CelServiceDefinition } from "@/types/proto/v1/cel_service";
 import { ChangelistServiceDefinition } from "@/types/proto/v1/changelist_service";
 import { DatabaseServiceDefinition } from "@/types/proto/v1/database_service";
@@ -24,7 +25,6 @@ import { ProjectServiceDefinition } from "@/types/proto/v1/project_service";
 import { RiskServiceDefinition } from "@/types/proto/v1/risk_service";
 import { RoleServiceDefinition } from "@/types/proto/v1/role_service";
 import { RolloutServiceDefinition } from "@/types/proto/v1/rollout_service";
-import { SchemaDesignServiceDefinition } from "@/types/proto/v1/schema_design_service";
 import { SettingServiceDefinition } from "@/types/proto/v1/setting_service";
 import { SheetServiceDefinition } from "@/types/proto/v1/sheet_service";
 import { SQLServiceDefinition } from "@/types/proto/v1/sql_service";
@@ -178,8 +178,8 @@ export const anomalyServiceClient = clientFactory.create(
   channel
 );
 
-export const schemaDesignServiceClient = clientFactory.create(
-  SchemaDesignServiceDefinition,
+export const branchServiceClient = clientFactory.create(
+  BranchServiceDefinition,
   channel
 );
 
