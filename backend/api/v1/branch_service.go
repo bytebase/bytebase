@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path"
 
+	"golang.org/x/exp/slices"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -226,8 +227,83 @@ func (s *BranchService) CreateSchemaDesign(ctx context.Context, request *v1pb.Cr
 }
 
 // UpdateSchemaDesign updates an existing schema design.
-func (*BranchService) UpdateSchemaDesign(_ context.Context, _ *v1pb.UpdateSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
-	return nil, nil
+func (s *BranchService) UpdateSchemaDesign(ctx context.Context, request *v1pb.UpdateSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
+	projectID, branchID, err := common.GetProjectAndBranchID(request.SchemaDesign.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid schema design name: %v", err))
+	}
+	if request.UpdateMask == nil || len(request.UpdateMask.Paths) == 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "update_mask is required")
+	}
+	project, err := s.getProject(ctx, projectID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkBranchPermission(ctx, projectID); err != nil {
+		return nil, err
+	}
+
+	branch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &projectID, ResourceID: &branchID, LoadFull: true})
+	if err != nil {
+		return nil, err
+	}
+	if branch == nil {
+		return nil, status.Errorf(codes.NotFound, "branch %q not found", branchID)
+	}
+	schemaDesign := request.SchemaDesign
+
+	if slices.Contains(request.UpdateMask.Paths, "title") {
+		// TODO(d): support branch id update.
+	}
+
+	headUpdate := branch.Head
+	hasHeadUpdate := false
+	// TODO(d): this section needs some clarifications for merging branches.
+	if slices.Contains(request.UpdateMask.Paths, "schema") && slices.Contains(request.UpdateMask.Paths, "metadata") {
+		headUpdate.Schema = []byte(schemaDesign.Schema)
+		sanitizeSchemaDesignSchemaMetadata(schemaDesign)
+		// TODO(d): update database metadata and config.
+		hasHeadUpdate = true
+	} else if slices.Contains(request.UpdateMask.Paths, "schema") {
+		headUpdate.Schema = []byte(schemaDesign.Schema)
+		hasHeadUpdate = true
+		// TODO(d): convert schema to metadata.
+		// Try to transform the schema string to database metadata to make sure it's valid.
+		// if _, err := transformSchemaStringToDatabaseMetadata(schemaDesign.Engine, *sheetUpdate.Statement); err != nil {
+		// 	return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
+		// }
+	} else if slices.Contains(request.UpdateMask.Paths, "metadata") {
+		sanitizeSchemaDesignSchemaMetadata(schemaDesign)
+		// schema, err := getDesignSchema(schemaDesign.Engine, schemaDesign.BaselineSchema, schemaDesign.SchemaMetadata)
+		// if err != nil {
+		// 	return nil, err
+		// }
+		// TODO(d): convert metadata to schema.
+		hasHeadUpdate = true
+	}
+	// TODO(d): handle database config as well.
+
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+	updateBranchMessage := &store.UpdateBranchMessage{ProjectID: projectID, ResourceID: branchID, UpdaterID: principalID}
+	if hasHeadUpdate {
+		updateBranchMessage.Head = headUpdate
+	}
+	if err := s.store.UpdateBranch(ctx, updateBranchMessage); err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to update branch, error %v", err))
+	}
+
+	branch, err = s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &projectID, ResourceID: &branchID, LoadFull: true})
+	if err != nil {
+		return nil, err
+	}
+	schemaDesign, err = s.convertBranchToSchemaDesign(ctx, project, branch, v1pb.SchemaDesignView_SCHEMA_DESIGN_VIEW_FULL)
+	if err != nil {
+		return nil, err
+	}
+	return schemaDesign, nil
 }
 
 // MergeSchemaDesign merges a personal draft schema design to the target schema design.
