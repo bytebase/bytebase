@@ -75,7 +75,7 @@ func (s *BranchService) ListSchemaDesigns(ctx context.Context, request *v1pb.Lis
 	}
 	branches, err := s.store.ListBranches(ctx, branchFind)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to list sheet: %v", err))
+		return nil, status.Errorf(codes.Internal, "failed to list branches, error %v", err)
 	}
 
 	var schemaDesigns []*v1pb.SchemaDesign
@@ -122,7 +122,7 @@ func (s *BranchService) DeleteSchemaDesign(ctx context.Context, request *v1pb.De
 	}
 
 	if err := s.store.DeleteBranch(ctx, project.ResourceID, branch.ResourceID); err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to delete sheet: %v", err))
+		return nil, status.Errorf(codes.Internal, "failed to delete branch, error %v", err)
 	}
 	return &emptypb.Empty{}, nil
 }
@@ -190,17 +190,17 @@ func (s *BranchService) checkBranchPermission(ctx context.Context, projectID str
 func (s *BranchService) convertBranchToSchemaDesign(ctx context.Context, project *store.ProjectMessage, branch *store.BranchMessage, view v1pb.SchemaDesignView) (*v1pb.SchemaDesign, error) {
 	creator, err := s.store.GetUserByID(ctx, branch.CreatorID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get creator: %v", err))
+		return nil, status.Errorf(codes.Internal, "failed to get creator, error %v", err)
 	}
 	if creator == nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("cannot find the creator: %d", branch.CreatorID))
+		return nil, status.Errorf(codes.NotFound, "creator %d not found", branch.CreatorID)
 	}
 	updater, err := s.store.GetUserByID(ctx, branch.UpdaterID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get updater: %v", err))
+		return nil, status.Errorf(codes.Internal, "failed to get updater, error %v", err)
 	}
 	if updater == nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("cannot find the updater: %d", branch.UpdaterID))
+		return nil, status.Errorf(codes.NotFound, "updater %d not found", branch.UpdaterID)
 	}
 
 	var baselineDatabase, baselineBranch string
