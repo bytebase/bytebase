@@ -1081,7 +1081,7 @@ ViewMetadata is the metadata for views.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| schema | [string](#string) |  |  |
+| schema | [bytes](#bytes) |  |  |
 | metadata | [DatabaseSchemaMetadata](#bytebase-store-DatabaseSchemaMetadata) |  |  |
 | database_config | [DatabaseConfig](#bytebase-store-DatabaseConfig) |  |  |
 
