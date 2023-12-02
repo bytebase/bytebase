@@ -1,12 +1,11 @@
 import { defineStore } from "pinia";
 import { reactive, ref, watchEffect } from "vue";
-import { schemaDesignServiceClient } from "@/grpcweb";
+import { branchServiceClient } from "@/grpcweb";
 import {
-  MergeSchemaDesignRequest,
-  SchemaDesign,
-  SchemaDesign_Type,
-  SchemaDesignView,
-} from "@/types/proto/v1/schema_design_service";
+  MergeBranchRequest,
+  Branch,
+  BranchView,
+} from "@/types/proto/v1/branch_service";
 import {
   getProjectAndSchemaDesignSheetId,
   projectNamePrefix,
@@ -14,71 +13,59 @@ import {
 } from "./v1/common";
 
 export const useSchemaDesignStore = defineStore("schema_design", () => {
-  const schemaDesignMapByName = reactive(new Map<string, SchemaDesign>());
-  const getSchemaDesignRequestCacheByName = new Map<
-    string,
-    Promise<SchemaDesign>
-  >();
+  const branchMapByName = reactive(new Map<string, Branch>());
+  const getBranchRequestCacheByName = new Map<string, Promise<Branch>>();
 
   // Actions
   const fetchSchemaDesignList = async (projectName: string = "projects/-") => {
-    const { schemaDesigns } = await schemaDesignServiceClient.listSchemaDesigns(
-      {
-        parent: projectName,
-        view: SchemaDesignView.SCHEMA_DESIGN_VIEW_BASIC,
-      }
-    );
-    return schemaDesigns;
+    const { branches } = await branchServiceClient.listBranches({
+      parent: projectName,
+      view: BranchView.BRANCH_VIEW_BASIC,
+    });
+    return branches;
   };
 
   const createSchemaDesign = async (
     projectResourceId: string,
-    schemaDesign: SchemaDesign
+    branch: Branch
   ) => {
-    const createdSchemaDesign =
-      await schemaDesignServiceClient.createSchemaDesign({
-        parent: projectResourceId,
-        schemaDesign,
-      });
-    console.debug("baseline schema", schemaDesign.baselineSchema);
-    console.debug("target metadata", schemaDesign.schemaMetadata);
-    console.debug("got schema", createdSchemaDesign.schema);
-    schemaDesignMapByName.set(createdSchemaDesign.name, createdSchemaDesign);
-    return createdSchemaDesign;
+    const createdBranch = await branchServiceClient.createBranch({
+      parent: projectResourceId,
+      branch,
+    });
+    console.debug("baseline schema", branch.baselineSchema);
+    console.debug("target metadata", branch.schemaMetadata);
+    console.debug("got schema", createdBranch.schema);
+    branchMapByName.set(createdBranch.name, createdBranch);
+    return createdBranch;
   };
 
-  const createSchemaDesignDraft = async (schemaDesign: SchemaDesign) => {
+  const createSchemaDesignDraft = async (branch: Branch) => {
     const [projectName, sheetId] = getProjectAndSchemaDesignSheetId(
-      schemaDesign.name
+      branch.name
     );
     const projectResourceId = `${projectNamePrefix}${projectName}`;
     const parentBranch = `${projectResourceId}/${sheetNamePrefix}${sheetId}`;
     return createSchemaDesign(projectResourceId, {
-      ...schemaDesign,
-      type: SchemaDesign_Type.PERSONAL_DRAFT,
+      ...branch,
       parentBranch: parentBranch,
     });
   };
 
-  const updateSchemaDesign = async (
-    schemaDesign: SchemaDesign,
-    updateMask: string[]
-  ) => {
-    const updatedSchemaDesign =
-      await schemaDesignServiceClient.updateSchemaDesign({
-        schemaDesign,
-        updateMask,
-      });
-    schemaDesignMapByName.set(updatedSchemaDesign.name, updatedSchemaDesign);
-    return updatedSchemaDesign;
+  const updateSchemaDesign = async (branch: Branch, updateMask: string[]) => {
+    const updatedBranch = await branchServiceClient.updateBranch({
+      branch,
+      updateMask,
+    });
+    branchMapByName.set(updatedBranch.name, updatedBranch);
+    return updatedBranch;
   };
 
-  const mergeSchemaDesign = async (request: MergeSchemaDesignRequest) => {
-    const updatedSchemaDesign =
-      await schemaDesignServiceClient.mergeSchemaDesign(request, {
-        silent: true,
-      });
-    schemaDesignMapByName.set(updatedSchemaDesign.name, updatedSchemaDesign);
+  const mergeSchemaDesign = async (request: MergeBranchRequest) => {
+    const updatedBranch = await branchServiceClient.mergeBranch(request, {
+      silent: true,
+    });
+    branchMapByName.set(updatedBranch.name, updatedBranch);
   };
 
   const fetchSchemaDesignByName = async (
@@ -87,18 +74,18 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
     silent = false
   ) => {
     if (useCache) {
-      const cachedEntity = schemaDesignMapByName.get(name);
+      const cachedEntity = branchMapByName.get(name);
       if (cachedEntity) {
         return cachedEntity;
       }
 
       // Avoid making duplicated requests concurrently
-      const cachedRequest = getSchemaDesignRequestCacheByName.get(name);
+      const cachedRequest = getBranchRequestCacheByName.get(name);
       if (cachedRequest) {
         return cachedRequest;
       }
     }
-    const request = schemaDesignServiceClient.getSchemaDesign(
+    const request = branchServiceClient.getBranch(
       {
         name,
       },
@@ -106,22 +93,22 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
         silent,
       }
     );
-    request.then((schemaDesign) => {
-      schemaDesignMapByName.set(schemaDesign.name, schemaDesign);
+    request.then((branch) => {
+      branchMapByName.set(branch.name, branch);
     });
-    getSchemaDesignRequestCacheByName.set(name, request);
+    getBranchRequestCacheByName.set(name, request);
     return request;
   };
 
   const getSchemaDesignByName = (name: string) => {
-    return schemaDesignMapByName.get(name);
+    return branchMapByName.get(name);
   };
 
   const deleteSchemaDesign = async (name: string) => {
-    await schemaDesignServiceClient.deleteSchemaDesign({
+    await branchServiceClient.deleteBranch({
       name,
     });
-    schemaDesignMapByName.delete(name);
+    branchMapByName.delete(name);
   };
 
   return {
@@ -141,7 +128,7 @@ export const useSchemaDesignList = (
 ) => {
   const store = useSchemaDesignStore();
   const ready = ref(false);
-  const schemaDesignList = ref<SchemaDesign[]>([]);
+  const schemaDesignList = ref<Branch[]>([]);
 
   watchEffect(() => {
     ready.value = false;

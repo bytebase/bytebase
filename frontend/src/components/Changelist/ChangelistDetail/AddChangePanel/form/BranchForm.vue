@@ -57,8 +57,8 @@ import {
   useSchemaDesignStore,
 } from "@/store/modules/schemaDesign";
 import { UNKNOWN_ID } from "@/types";
+import { Branch } from "@/types/proto/v1/branch_service";
 import { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
-import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import { keyBy } from "@/utils";
 import BranchDetailPanel from "../../BranchDetailPanel";
 import { useChangelistDetailContext } from "../../context";
@@ -69,7 +69,7 @@ import BranchTable from "./BranchTable";
 type LocalState = {
   keyword: string;
   databaseUID: string | undefined;
-  branchList: SchemaDesign[];
+  branchList: Branch[];
   detailBranchName: string | undefined;
 };
 

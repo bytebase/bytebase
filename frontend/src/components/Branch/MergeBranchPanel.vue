@@ -88,7 +88,7 @@ import {
   getProjectAndSchemaDesignSheetId,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
-import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
+import { Branch } from "@/types/proto/v1/branch_service";
 import {
   Sheet_Source,
   Sheet_Type,
@@ -123,7 +123,7 @@ const sheetStore = useSheetV1Store();
 const schemaDesignStore = useSchemaDesignStore();
 const isLoadingSourceBranch = ref(false);
 const isLoadingTargetBranch = ref(false);
-const emptyBranch = () => SchemaDesign.fromPartial({});
+const emptyBranch = () => Branch.fromPartial({});
 
 const sourceBranch = asyncComputed(
   async () => {
@@ -164,7 +164,7 @@ const ready = computed(() => {
   return !isLoadingSourceBranch.value && !isLoadingTargetBranch.value;
 });
 
-const targetBranchFilter = (branch: SchemaDesign) => {
+const targetBranchFilter = (branch: Branch) => {
   return (
     branch.name !== props.sourceBranchName &&
     branch.engine === sourceBranch.value.engine
@@ -191,7 +191,7 @@ const handleSaveDraft = async (ignoreNotify?: boolean) => {
 
   // Update the schema design draft first.
   await schemaDesignStore.updateSchemaDesign(
-    SchemaDesign.fromPartial({
+    Branch.fromPartial({
       name: sourceBranch.value.name,
       engine: sourceBranch.value.engine,
       baselineDatabase: sourceBranch.value.baselineDatabase,

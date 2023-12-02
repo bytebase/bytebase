@@ -121,7 +121,7 @@ import {
   validateDatabaseMetadata,
 } from "@/components/SchemaEditorV1/utils";
 import TargetDatabasesSelectPanel from "@/components/SyncDatabaseSchema/TargetDatabasesSelectPanel.vue";
-import { schemaDesignServiceClient } from "@/grpcweb";
+import { branchServiceClient } from "@/grpcweb";
 import {
   pushNotification,
   useDatabaseV1Store,
@@ -135,10 +135,7 @@ import {
   getProjectAndSchemaDesignSheetId,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
-import {
-  SchemaDesign,
-  SchemaDesign_Type,
-} from "@/types/proto/v1/schema_design_service";
+import { Branch } from "@/types/proto/v1/branch_service";
 import { projectV1Slug } from "@/utils";
 import { provideSQLCheckContext } from "../SQLCheck";
 import { fetchBaselineMetadataOfBranch } from "../SchemaEditorV1/utils/branch";
@@ -156,7 +153,7 @@ interface LocalState {
 
 const props = defineProps<{
   // Should be a schema design name of main branch.
-  branch: SchemaDesign;
+  branch: Branch;
   viewMode?: boolean;
 }>();
 
@@ -191,10 +188,7 @@ const schemaDesign = computed(() => {
 
 const parentBranch = asyncComputed(async () => {
   // Show parent branch when the current branch is a personal draft and it's not the new created one.
-  if (
-    schemaDesign.value.type === SchemaDesign_Type.PERSONAL_DRAFT &&
-    schemaDesign.value.parentBranch
-  ) {
+  if (schemaDesign.value.parentBranch !== "") {
     return await schemaDesignStore.fetchSchemaDesignByName(
       schemaDesign.value.parentBranch,
       true /* useCache */
@@ -239,10 +233,7 @@ watch(
     state.schemaDesignTitle = schemaDesign.value.title;
     await prepareBaselineDatabase();
     // Prepare the parent branch for personal draft.
-    if (
-      schemaDesign.value.type === SchemaDesign_Type.PERSONAL_DRAFT &&
-      schemaDesign.value.parentBranch
-    ) {
+    if (schemaDesign.value.parentBranch !== "") {
       await schemaDesignStore.fetchSchemaDesignByName(
         schemaDesign.value.parentBranch,
         true /* useCache */
@@ -278,7 +269,7 @@ const handleBranchTitleInputBlur = async () => {
   }
   if (updateMask.length !== 0) {
     await schemaDesignStore.updateSchemaDesign(
-      SchemaDesign.fromPartial({
+      Branch.fromPartial({
         name: schemaDesign.value.name,
         title: state.schemaDesignTitle,
         baselineDatabase: schemaDesign.value.baselineDatabase,
@@ -393,7 +384,7 @@ const handleSaveBranch = async () => {
 
   state.isSaving = true;
   if (updateMask.length !== 0) {
-    if (schemaDesign.value.type === SchemaDesign_Type.MAIN_BRANCH) {
+    if (schemaDesign.value.parentBranch === "") {
       const branchName = generateForkedBranchName(schemaDesign.value);
       const newBranch = await schemaDesignStore.createSchemaDesignDraft({
         ...schemaDesign.value,
@@ -462,7 +453,7 @@ const handleSaveBranch = async () => {
       );
     } else {
       await schemaDesignStore.updateSchemaDesign(
-        SchemaDesign.fromPartial({
+        Branch.fromPartial({
           name: schemaDesign.value.name,
           title: state.schemaDesignTitle,
           engine: schemaDesign.value.engine,
@@ -502,7 +493,7 @@ const handleSelectedDatabaseIdListChanged = async (
 ) => {
   let statement = "";
   try {
-    const diffResponse = await schemaDesignServiceClient.diffMetadata(
+    const diffResponse = await branchServiceClient.diffMetadata(
       {
         sourceMetadata: schemaDesign.value.baselineSchemaMetadata,
         targetMetadata: schemaDesign.value.schemaMetadata,

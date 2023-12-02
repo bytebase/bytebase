@@ -1,10 +1,7 @@
 import { markRaw } from "vue";
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
+import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import {
-  SchemaDesign,
-  SchemaDesign_Type,
-} from "@/types/proto/v1/schema_design_service";
 import {
   BranchSchema,
   convertSchemaMetadataList,
@@ -12,7 +9,7 @@ import {
 import { rebuildEditableSchemas } from "./metadata";
 
 export const convertBranchToBranchSchema = async (
-  branch: SchemaDesign
+  branch: Branch
 ): Promise<BranchSchema> => {
   const baselineMetadata = await fetchBaselineMetadataOfBranch(branch);
   const originalSchemas = convertSchemaMetadataList(
@@ -34,10 +31,10 @@ export const convertBranchToBranchSchema = async (
 };
 
 export const fetchBaselineMetadataOfBranch = async (
-  branch: SchemaDesign
+  branch: Branch
 ): Promise<DatabaseMetadata> => {
   // For personal branches, we use its parent branch's schema as the original schema in editing state.
-  if (branch.type === SchemaDesign_Type.PERSONAL_DRAFT && branch.parentBranch) {
+  if (branch.parentBranch !== "") {
     const parentBranch = await useSchemaDesignStore().fetchSchemaDesignByName(
       branch.parentBranch,
       false /* !useCache */

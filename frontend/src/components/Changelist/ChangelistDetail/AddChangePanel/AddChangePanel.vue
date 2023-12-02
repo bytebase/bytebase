@@ -86,7 +86,7 @@ import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { fetchBaselineMetadataOfBranch } from "@/components/SchemaEditorV1/utils/branch";
 import { Drawer, DrawerContent, ErrorTipsButton } from "@/components/v2";
-import { schemaDesignServiceClient } from "@/grpcweb";
+import { branchServiceClient } from "@/grpcweb";
 import {
   pushNotification,
   useChangeHistoryStore,
@@ -177,7 +177,7 @@ const doAddChange = async () => {
         const source = await fetchBaselineMetadataOfBranch(branch);
         const target = branch.schemaMetadata;
 
-        const { diff } = await schemaDesignServiceClient.diffMetadata({
+        const { diff } = await branchServiceClient.diffMetadata({
           sourceMetadata: source,
           targetMetadata: target,
           engine: branch.engine,

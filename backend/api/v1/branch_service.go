@@ -20,14 +20,14 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-// NewBranchService implements SchemaDesignServiceServer interface.
+// NewBranchService implements BranchServiceServer interface.
 type BranchService struct {
-	v1pb.UnimplementedSchemaDesignServiceServer
+	v1pb.UnimplementedBranchServiceServer
 	store          *store.Store
 	licenseService enterprise.LicenseService
 }
 
-// NewBranchService creates a new SchemaDesignService.
+// NewBranchService creates a new BranchService.
 func NewBranchService(store *store.Store, licenseService enterprise.LicenseService) *BranchService {
 	return &BranchService{
 		store:          store,
@@ -35,8 +35,8 @@ func NewBranchService(store *store.Store, licenseService enterprise.LicenseServi
 	}
 }
 
-// GetSchemaDesign gets the schema design.
-func (s *BranchService) GetSchemaDesign(ctx context.Context, request *v1pb.GetSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
+// GetBranch gets the branch.
+func (s *BranchService) GetBranch(ctx context.Context, request *v1pb.GetBranchRequest) (*v1pb.Branch, error) {
 	projectID, branchID, err := common.GetProjectAndBranchID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -56,15 +56,15 @@ func (s *BranchService) GetSchemaDesign(ctx context.Context, request *v1pb.GetSc
 		return nil, status.Errorf(codes.NotFound, "branch %q not found", branchID)
 	}
 
-	schemaDesign, err := s.convertBranchToSchemaDesign(ctx, project, branch, v1pb.SchemaDesignView_SCHEMA_DESIGN_VIEW_FULL)
+	schemaDesign, err := s.convertBranchToBranch(ctx, project, branch, v1pb.BranchView_BRANCH_VIEW_FULL)
 	if err != nil {
 		return nil, err
 	}
 	return schemaDesign, nil
 }
 
-// ListSchemaDesigns lists schema designs.
-func (s *BranchService) ListSchemaDesigns(ctx context.Context, request *v1pb.ListSchemaDesignsRequest) (*v1pb.ListSchemaDesignsResponse, error) {
+// ListBranches lists branches.
+func (s *BranchService) ListBranches(ctx context.Context, request *v1pb.ListBranchesRequest) (*v1pb.ListBranchesResponse, error) {
 	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -80,7 +80,7 @@ func (s *BranchService) ListSchemaDesigns(ctx context.Context, request *v1pb.Lis
 	branchFind := &store.FindBranchMessage{
 		ProjectID: &project.ResourceID,
 	}
-	if request.View == v1pb.SchemaDesignView_SCHEMA_DESIGN_VIEW_FULL {
+	if request.View == v1pb.BranchView_BRANCH_VIEW_FULL {
 		branchFind.LoadFull = true
 	}
 	branches, err := s.store.ListBranches(ctx, branchFind)
@@ -88,22 +88,22 @@ func (s *BranchService) ListSchemaDesigns(ctx context.Context, request *v1pb.Lis
 		return nil, status.Errorf(codes.Internal, "failed to list branches, error %v", err)
 	}
 
-	var schemaDesigns []*v1pb.SchemaDesign
+	var schemaDesigns []*v1pb.Branch
 	for _, branch := range branches {
-		schemaDesign, err := s.convertBranchToSchemaDesign(ctx, project, branch, request.View)
+		schemaDesign, err := s.convertBranchToBranch(ctx, project, branch, request.View)
 		if err != nil {
 			return nil, err
 		}
 		schemaDesigns = append(schemaDesigns, schemaDesign)
 	}
-	response := &v1pb.ListSchemaDesignsResponse{
-		SchemaDesigns: schemaDesigns,
+	response := &v1pb.ListBranchesResponse{
+		Branches: schemaDesigns,
 	}
 	return response, nil
 }
 
-// CreateSchemaDesign creates a new schema design.
-func (s *BranchService) CreateSchemaDesign(ctx context.Context, request *v1pb.CreateSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
+// CreateBranch creates a new branch.
+func (s *BranchService) CreateBranch(ctx context.Context, request *v1pb.CreateBranchRequest) (*v1pb.Branch, error) {
 	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -117,7 +117,7 @@ func (s *BranchService) CreateSchemaDesign(ctx context.Context, request *v1pb.Cr
 	}
 
 	// TODO(d): move to resource_id in the request.
-	projectID, branchID, err := common.GetProjectAndBranchID(request.SchemaDesign.Name)
+	projectID, branchID, err := common.GetProjectAndBranchID(request.Branch.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -138,8 +138,8 @@ func (s *BranchService) CreateSchemaDesign(ctx context.Context, request *v1pb.Cr
 	}
 
 	var createdBranch *store.BranchMessage
-	if request.SchemaDesign.ParentBranch != "" {
-		parentProjectID, parentBranchID, err := common.GetProjectAndBranchID(request.SchemaDesign.ParentBranch)
+	if request.Branch.ParentBranch != "" {
+		parentProjectID, parentBranchID, err := common.GetProjectAndBranchID(request.Branch.ParentBranch)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
@@ -157,7 +157,7 @@ func (s *BranchService) CreateSchemaDesign(ctx context.Context, request *v1pb.Cr
 			Base:       parentBranch.Head,
 			Head:       parentBranch.Head,
 			Config: &storepb.BranchConfig{
-				SourceBranch:   request.SchemaDesign.ParentBranch,
+				SourceBranch:   request.Branch.ParentBranch,
 				SourceDatabase: parentBranch.Config.GetSourceDatabase(),
 			},
 			CreatorID: principalID,
@@ -166,8 +166,8 @@ func (s *BranchService) CreateSchemaDesign(ctx context.Context, request *v1pb.Cr
 			return nil, err
 		}
 		createdBranch = created
-	} else if request.SchemaDesign.BaselineDatabase != "" {
-		instanceID, databaseName, err := common.GetInstanceDatabaseID(request.SchemaDesign.BaselineDatabase)
+	} else if request.Branch.BaselineDatabase != "" {
+		instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Branch.BaselineDatabase)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
@@ -208,7 +208,7 @@ func (s *BranchService) CreateSchemaDesign(ctx context.Context, request *v1pb.Cr
 				DatabaseConfig: databaseSchema.GetConfig(),
 			},
 			Config: &storepb.BranchConfig{
-				SourceDatabase: request.SchemaDesign.BaselineDatabase,
+				SourceDatabase: request.Branch.BaselineDatabase,
 			},
 			CreatorID: principalID,
 		})
@@ -220,18 +220,18 @@ func (s *BranchService) CreateSchemaDesign(ctx context.Context, request *v1pb.Cr
 		return nil, status.Errorf(codes.InvalidArgument, "either baseline database or parent branch must be specified")
 	}
 
-	schemaDesign, err := s.convertBranchToSchemaDesign(ctx, project, createdBranch, v1pb.SchemaDesignView_SCHEMA_DESIGN_VIEW_FULL)
+	schemaDesign, err := s.convertBranchToBranch(ctx, project, createdBranch, v1pb.BranchView_BRANCH_VIEW_FULL)
 	if err != nil {
 		return nil, err
 	}
 	return schemaDesign, nil
 }
 
-// UpdateSchemaDesign updates an existing schema design.
-func (s *BranchService) UpdateSchemaDesign(ctx context.Context, request *v1pb.UpdateSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
-	projectID, branchID, err := common.GetProjectAndBranchID(request.SchemaDesign.Name)
+// UpdateBranch updates an existing branch.
+func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBranchRequest) (*v1pb.Branch, error) {
+	projectID, branchID, err := common.GetProjectAndBranchID(request.Branch.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid schema design name: %v", err))
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid branch name: %v", err))
 	}
 	if request.UpdateMask == nil || len(request.UpdateMask.Paths) == 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask is required")
@@ -251,7 +251,7 @@ func (s *BranchService) UpdateSchemaDesign(ctx context.Context, request *v1pb.Up
 	if branch == nil {
 		return nil, status.Errorf(codes.NotFound, "branch %q not found", branchID)
 	}
-	schemaDesign := request.SchemaDesign
+	schemaDesign := request.Branch
 
 	// TODO(d): handle etag.
 	// TODO(d): support branch id update.
@@ -263,7 +263,7 @@ func (s *BranchService) UpdateSchemaDesign(ctx context.Context, request *v1pb.Up
 	// TODO(d): this section needs some clarifications for merging branches.
 	if slices.Contains(request.UpdateMask.Paths, "schema") && slices.Contains(request.UpdateMask.Paths, "metadata") {
 		headUpdate.Schema = []byte(schemaDesign.Schema)
-		sanitizeSchemaDesignSchemaMetadata(schemaDesign)
+		sanitizeBranchSchemaMetadata(schemaDesign)
 		// TODO(d): update database metadata and config.
 		hasHeadUpdate = true
 	} else if slices.Contains(request.UpdateMask.Paths, "schema") {
@@ -275,7 +275,7 @@ func (s *BranchService) UpdateSchemaDesign(ctx context.Context, request *v1pb.Up
 		// 	return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
 		// }
 	} else if slices.Contains(request.UpdateMask.Paths, "metadata") {
-		sanitizeSchemaDesignSchemaMetadata(schemaDesign)
+		sanitizeBranchSchemaMetadata(schemaDesign)
 		// schema, err := getDesignSchema(schemaDesign.Engine, schemaDesign.BaselineSchema, schemaDesign.SchemaMetadata)
 		// if err != nil {
 		// 	return nil, err
@@ -301,15 +301,15 @@ func (s *BranchService) UpdateSchemaDesign(ctx context.Context, request *v1pb.Up
 	if err != nil {
 		return nil, err
 	}
-	schemaDesign, err = s.convertBranchToSchemaDesign(ctx, project, branch, v1pb.SchemaDesignView_SCHEMA_DESIGN_VIEW_FULL)
+	schemaDesign, err = s.convertBranchToBranch(ctx, project, branch, v1pb.BranchView_BRANCH_VIEW_FULL)
 	if err != nil {
 		return nil, err
 	}
 	return schemaDesign, nil
 }
 
-// MergeSchemaDesign merges a personal draft schema design to the target schema design.
-func (s *BranchService) MergeSchemaDesign(ctx context.Context, request *v1pb.MergeSchemaDesignRequest) (*v1pb.SchemaDesign, error) {
+// MergeBranch merges a personal draft branch to the target branch.
+func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBranchRequest) (*v1pb.Branch, error) {
 	projectID, branchID, err := common.GetProjectAndBranchID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -347,17 +347,17 @@ func (s *BranchService) MergeSchemaDesign(ctx context.Context, request *v1pb.Mer
 		return nil, status.Errorf(codes.NotFound, "branch %q not found", targetBranchID)
 	}
 
-	// Restrict merging only when the target schema design is not updated.
+	// Restrict merging only when the target branch is not updated.
 	// Maybe we can support auto-merging in the future.
 	baseMetadata := convertDatabaseMetadata(nil, branch.Base.Metadata, nil, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil)
 	headMetadata := convertDatabaseMetadata(nil, branch.Head.Metadata, nil, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil)
 	targetHeadMetadata := convertDatabaseMetadata(nil, targetBranch.Head.Metadata, nil, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil)
 	mergedTarget, err := tryMerge(baseMetadata, headMetadata, targetHeadMetadata)
 	if err != nil {
-		return nil, status.Errorf(codes.FailedPrecondition, fmt.Sprintf("failed to merge schema design: %v", err))
+		return nil, status.Errorf(codes.FailedPrecondition, fmt.Sprintf("failed to merge branch: %v", err))
 	}
 	if mergedTarget == nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "failed to merge schema design: no change")
+		return nil, status.Errorf(codes.FailedPrecondition, "failed to merge branch: no change")
 	}
 	mergedTargetSchema, err := getDesignSchema(v1pb.Engine(branch.Engine), string(targetBranch.Head.Schema), mergedTarget)
 	if err != nil {
@@ -381,15 +381,15 @@ func (s *BranchService) MergeSchemaDesign(ctx context.Context, request *v1pb.Mer
 		return nil, status.Errorf(codes.Internal, "failed update branch, error %v", err)
 	}
 
-	targetSchemaDesign, err := s.convertBranchToSchemaDesign(ctx, targetProject, targetBranch, v1pb.SchemaDesignView_SCHEMA_DESIGN_VIEW_FULL)
+	targetBranchV1, err := s.convertBranchToBranch(ctx, targetProject, targetBranch, v1pb.BranchView_BRANCH_VIEW_FULL)
 	if err != nil {
 		return nil, err
 	}
-	return targetSchemaDesign, nil
+	return targetBranchV1, nil
 }
 
-// DeleteSchemaDesign deletes an existing schema design.
-func (s *BranchService) DeleteSchemaDesign(ctx context.Context, request *v1pb.DeleteSchemaDesignRequest) (*emptypb.Empty, error) {
+// DeleteBranch deletes an existing branch.
+func (s *BranchService) DeleteBranch(ctx context.Context, request *v1pb.DeleteBranchRequest) (*emptypb.Empty, error) {
 	projectID, branchID, err := common.GetProjectAndBranchID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -556,7 +556,7 @@ func (s *BranchService) checkProtectionRules(ctx context.Context, project *store
 	return nil
 }
 
-func (s *BranchService) convertBranchToSchemaDesign(ctx context.Context, project *store.ProjectMessage, branch *store.BranchMessage, view v1pb.SchemaDesignView) (*v1pb.SchemaDesign, error) {
+func (s *BranchService) convertBranchToBranch(ctx context.Context, project *store.ProjectMessage, branch *store.BranchMessage, view v1pb.BranchView) (*v1pb.Branch, error) {
 	creator, err := s.store.GetUserByID(ctx, branch.CreatorID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get creator, error %v", err)
@@ -573,30 +573,27 @@ func (s *BranchService) convertBranchToSchemaDesign(ctx context.Context, project
 	}
 
 	var baselineDatabase, baselineBranch string
-	schemaDesignType := v1pb.SchemaDesign_MAIN_BRANCH
 	if branch.Config != nil {
 		baselineDatabase = branch.Config.SourceDatabase
 		if branch.Config.SourceBranch != "" {
-			schemaDesignType = v1pb.SchemaDesign_PERSONAL_DRAFT
 			baselineBranch = branch.Config.SourceBranch
 		}
 	}
 
-	schemaDesign := &v1pb.SchemaDesign{
+	schemaDesign := &v1pb.Branch{
 		Name:             fmt.Sprintf("%s%s/%s%v", common.ProjectNamePrefix, project.ResourceID, common.BranchPrefix, branch.ResourceID),
 		Title:            branch.ResourceID,
 		Etag:             fmt.Sprintf("%d", branch.CreatedTime.UnixMilli()),
 		ParentBranch:     baselineBranch,
 		Engine:           v1pb.Engine(branch.Engine),
 		BaselineDatabase: baselineDatabase,
-		Type:             schemaDesignType,
 		Creator:          common.FormatUserEmail(creator.Email),
 		Updater:          common.FormatUserEmail(updater.Email),
 		CreateTime:       timestamppb.New(branch.CreatedTime),
 		UpdateTime:       timestamppb.New(branch.UpdatedTime),
 	}
 
-	if view != v1pb.SchemaDesignView_SCHEMA_DESIGN_VIEW_FULL {
+	if view != v1pb.BranchView_BRANCH_VIEW_FULL {
 		return schemaDesign, nil
 	}
 
@@ -607,7 +604,7 @@ func (s *BranchService) convertBranchToSchemaDesign(ctx context.Context, project
 	return schemaDesign, nil
 }
 
-func sanitizeSchemaDesignSchemaMetadata(design *v1pb.SchemaDesign) {
+func sanitizeBranchSchemaMetadata(design *v1pb.Branch) {
 	if dbSchema := design.GetBaselineSchemaMetadata(); dbSchema != nil {
 		sanitizeCommentForSchemaMetadata(dbSchema)
 	}

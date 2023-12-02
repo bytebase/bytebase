@@ -85,8 +85,8 @@ import TableIcon from "~icons/heroicons-outline/table-cells";
 import SchemaIcon from "~icons/heroicons-outline/view-columns";
 import EllipsisIcon from "~icons/heroicons-solid/ellipsis-horizontal";
 import { generateUniqueTabId, useSchemaEditorV1Store } from "@/store";
+import { Branch } from "@/types/proto/v1/branch_service";
 import { Engine } from "@/types/proto/v1/common";
-import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
 import { Table } from "@/types/v1/schemaEditor";
 import { BranchSchema, SchemaEditorTabType } from "@/types/v1/schemaEditor";
 import { getHighlightHTMLByKeyWords, isDescendantOf } from "@/utils";
@@ -169,7 +169,7 @@ const branchSchema = computed(
     ) as BranchSchema
 );
 const engine = computed(() => {
-  return (branchSchema.value.branch as any as SchemaDesign).engine;
+  return (branchSchema.value.branch as any as Branch).engine;
 });
 
 const schemaList = computed(() =>

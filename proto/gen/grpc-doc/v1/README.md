@@ -97,26 +97,6 @@
   
     - [AuthService](#bytebase-v1-AuthService)
   
-- [v1/cel_service.proto](#v1_cel_service-proto)
-    - [BatchDeparseRequest](#bytebase-v1-BatchDeparseRequest)
-    - [BatchDeparseResponse](#bytebase-v1-BatchDeparseResponse)
-    - [BatchParseRequest](#bytebase-v1-BatchParseRequest)
-    - [BatchParseResponse](#bytebase-v1-BatchParseResponse)
-  
-    - [CelService](#bytebase-v1-CelService)
-  
-- [v1/changelist_service.proto](#v1_changelist_service-proto)
-    - [Changelist](#bytebase-v1-Changelist)
-    - [Changelist.Change](#bytebase-v1-Changelist-Change)
-    - [CreateChangelistRequest](#bytebase-v1-CreateChangelistRequest)
-    - [DeleteChangelistRequest](#bytebase-v1-DeleteChangelistRequest)
-    - [GetChangelistRequest](#bytebase-v1-GetChangelistRequest)
-    - [ListChangelistsRequest](#bytebase-v1-ListChangelistsRequest)
-    - [ListChangelistsResponse](#bytebase-v1-ListChangelistsResponse)
-    - [UpdateChangelistRequest](#bytebase-v1-UpdateChangelistRequest)
-  
-    - [ChangelistService](#bytebase-v1-ChangelistService)
-  
 - [v1/vcs.proto](#v1_vcs-proto)
     - [Commit](#bytebase-v1-Commit)
     - [FileCommit](#bytebase-v1-FileCommit)
@@ -202,6 +182,42 @@
     - [TaskMetadata.State](#bytebase-v1-TaskMetadata-State)
   
     - [DatabaseService](#bytebase-v1-DatabaseService)
+  
+- [v1/branch_service.proto](#v1_branch_service-proto)
+    - [Branch](#bytebase-v1-Branch)
+    - [CreateBranchRequest](#bytebase-v1-CreateBranchRequest)
+    - [DeleteBranchRequest](#bytebase-v1-DeleteBranchRequest)
+    - [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest)
+    - [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse)
+    - [GetBranchRequest](#bytebase-v1-GetBranchRequest)
+    - [ListBranchesRequest](#bytebase-v1-ListBranchesRequest)
+    - [ListBranchesResponse](#bytebase-v1-ListBranchesResponse)
+    - [MergeBranchRequest](#bytebase-v1-MergeBranchRequest)
+    - [UpdateBranchRequest](#bytebase-v1-UpdateBranchRequest)
+  
+    - [BranchView](#bytebase-v1-BranchView)
+  
+    - [BranchService](#bytebase-v1-BranchService)
+  
+- [v1/cel_service.proto](#v1_cel_service-proto)
+    - [BatchDeparseRequest](#bytebase-v1-BatchDeparseRequest)
+    - [BatchDeparseResponse](#bytebase-v1-BatchDeparseResponse)
+    - [BatchParseRequest](#bytebase-v1-BatchParseRequest)
+    - [BatchParseResponse](#bytebase-v1-BatchParseResponse)
+  
+    - [CelService](#bytebase-v1-CelService)
+  
+- [v1/changelist_service.proto](#v1_changelist_service-proto)
+    - [Changelist](#bytebase-v1-Changelist)
+    - [Changelist.Change](#bytebase-v1-Changelist-Change)
+    - [CreateChangelistRequest](#bytebase-v1-CreateChangelistRequest)
+    - [DeleteChangelistRequest](#bytebase-v1-DeleteChangelistRequest)
+    - [GetChangelistRequest](#bytebase-v1-GetChangelistRequest)
+    - [ListChangelistsRequest](#bytebase-v1-ListChangelistsRequest)
+    - [ListChangelistsResponse](#bytebase-v1-ListChangelistsResponse)
+    - [UpdateChangelistRequest](#bytebase-v1-UpdateChangelistRequest)
+  
+    - [ChangelistService](#bytebase-v1-ChangelistService)
   
 - [v1/environment_service.proto](#v1_environment_service-proto)
     - [CreateEnvironmentRequest](#bytebase-v1-CreateEnvironmentRequest)
@@ -506,23 +522,6 @@
     - [TaskRun.Status](#bytebase-v1-TaskRun-Status)
   
     - [RolloutService](#bytebase-v1-RolloutService)
-  
-- [v1/schema_design_service.proto](#v1_schema_design_service-proto)
-    - [CreateSchemaDesignRequest](#bytebase-v1-CreateSchemaDesignRequest)
-    - [DeleteSchemaDesignRequest](#bytebase-v1-DeleteSchemaDesignRequest)
-    - [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest)
-    - [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse)
-    - [GetSchemaDesignRequest](#bytebase-v1-GetSchemaDesignRequest)
-    - [ListSchemaDesignsRequest](#bytebase-v1-ListSchemaDesignsRequest)
-    - [ListSchemaDesignsResponse](#bytebase-v1-ListSchemaDesignsResponse)
-    - [MergeSchemaDesignRequest](#bytebase-v1-MergeSchemaDesignRequest)
-    - [SchemaDesign](#bytebase-v1-SchemaDesign)
-    - [UpdateSchemaDesignRequest](#bytebase-v1-UpdateSchemaDesignRequest)
-  
-    - [SchemaDesign.Type](#bytebase-v1-SchemaDesign-Type)
-    - [SchemaDesignView](#bytebase-v1-SchemaDesignView)
-  
-    - [SchemaDesignService](#bytebase-v1-SchemaDesignService)
   
 - [v1/subscription_service.proto](#v1_subscription_service-proto)
     - [Feature](#bytebase-v1-Feature)
@@ -1957,262 +1956,6 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | UndeleteUser | [UndeleteUserRequest](#bytebase-v1-UndeleteUserRequest) | [User](#bytebase-v1-User) |  |
 | Login | [LoginRequest](#bytebase-v1-LoginRequest) | [LoginResponse](#bytebase-v1-LoginResponse) |  |
 | Logout | [LogoutRequest](#bytebase-v1-LogoutRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-
- 
-
-
-
-<a name="v1_cel_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/cel_service.proto
-
-
-
-<a name="bytebase-v1-BatchDeparseRequest"></a>
-
-### BatchDeparseRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| expressions | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchDeparseResponse"></a>
-
-### BatchDeparseResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| expressions | [string](#string) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchParseRequest"></a>
-
-### BatchParseRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| expressions | [string](#string) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchParseResponse"></a>
-
-### BatchParseResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| expressions | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) | repeated |  |
-
-
-
-
-
- 
-
- 
-
- 
-
-
-<a name="bytebase-v1-CelService"></a>
-
-### CelService
-
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| BatchParse | [BatchParseRequest](#bytebase-v1-BatchParseRequest) | [BatchParseResponse](#bytebase-v1-BatchParseResponse) |  |
-| BatchDeparse | [BatchDeparseRequest](#bytebase-v1-BatchDeparseRequest) | [BatchDeparseResponse](#bytebase-v1-BatchDeparseResponse) |  |
-
- 
-
-
-
-<a name="v1_changelist_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/changelist_service.proto
-
-
-
-<a name="bytebase-v1-Changelist"></a>
-
-### Changelist
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the changelist resource. Canonical parent is project. Format: projects/{project}/changelists/{changelist} |
-| description | [string](#string) |  |  |
-| creator | [string](#string) |  | The creator of the changelist. Format: users/{email} |
-| updater | [string](#string) |  | The updater of the changelist. Format: users/{email} |
-| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The create time of the changelist. |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last update time of the changelist. |
-| changes | [Changelist.Change](#bytebase-v1-Changelist-Change) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-Changelist-Change"></a>
-
-### Changelist.Change
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| sheet | [string](#string) |  | The name of a sheet. |
-| source | [string](#string) |  | The source of origin. 1) change history: instances/{instance}/databases/{database}/changeHistories/{changeHistory}. 2) branch: projects/{project}/schemaDesigns/{schemaDesign}. 3) raw SQL if empty. |
-
-
-
-
-
-
-<a name="bytebase-v1-CreateChangelistRequest"></a>
-
-### CreateChangelistRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource where this changelist will be created. Foramt: projects/{project} |
-| changelist | [Changelist](#bytebase-v1-Changelist) |  | The changelist to create. |
-| changelist_id | [string](#string) |  | The ID to use for the changelist, which will become the final component of the changelist&#39;s resource name.
-
-This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
-
-
-
-
-
-
-<a name="bytebase-v1-DeleteChangelistRequest"></a>
-
-### DeleteChangelistRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the changelist to delete. Format: projects/{project}/changelists/{changelist} |
-
-
-
-
-
-
-<a name="bytebase-v1-GetChangelistRequest"></a>
-
-### GetChangelistRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the changelist to retrieve. Format: projects/{project}/changelists/{changelist} |
-
-
-
-
-
-
-<a name="bytebase-v1-ListChangelistsRequest"></a>
-
-### ListChangelistsRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of changelists. Format: projects/{project} Use &#34;projects/-&#34; to list all changelists. |
-| page_size | [int32](#int32) |  | The maximum number of databases to return. The service may return fewer than this value. If unspecified, at most 50 databases will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListDatabases` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListDatabases` must match the call that provided the page token. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListChangelistsResponse"></a>
-
-### ListChangelistsResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| changelists | [Changelist](#bytebase-v1-Changelist) | repeated | The changelists from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateChangelistRequest"></a>
-
-### UpdateChangelistRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| changelist | [Changelist](#bytebase-v1-Changelist) |  | The changelist to update.
-
-The changelist&#39;s `name` field is used to identify the changelist to update. Format: projects/{project}/changelists/{changelist} |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. |
-
-
-
-
-
- 
-
- 
-
- 
-
-
-<a name="bytebase-v1-ChangelistService"></a>
-
-### ChangelistService
-
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| CreateChangelist | [CreateChangelistRequest](#bytebase-v1-CreateChangelistRequest) | [Changelist](#bytebase-v1-Changelist) |  |
-| GetChangelist | [GetChangelistRequest](#bytebase-v1-GetChangelistRequest) | [Changelist](#bytebase-v1-Changelist) |  |
-| ListChangelists | [ListChangelistsRequest](#bytebase-v1-ListChangelistsRequest) | [ListChangelistsResponse](#bytebase-v1-ListChangelistsResponse) |  |
-| UpdateChangelist | [UpdateChangelistRequest](#bytebase-v1-UpdateChangelistRequest) | [Changelist](#bytebase-v1-Changelist) |  |
-| DeleteChangelist | [DeleteChangelistRequest](#bytebase-v1-DeleteChangelistRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
  
 
@@ -3657,6 +3400,484 @@ The type of the backup.
 | AdviseIndex | [AdviseIndexRequest](#bytebase-v1-AdviseIndexRequest) | [AdviseIndexResponse](#bytebase-v1-AdviseIndexResponse) |  |
 | ListChangeHistories | [ListChangeHistoriesRequest](#bytebase-v1-ListChangeHistoriesRequest) | [ListChangeHistoriesResponse](#bytebase-v1-ListChangeHistoriesResponse) |  |
 | GetChangeHistory | [GetChangeHistoryRequest](#bytebase-v1-GetChangeHistoryRequest) | [ChangeHistory](#bytebase-v1-ChangeHistory) |  |
+
+ 
+
+
+
+<a name="v1_branch_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/branch_service.proto
+
+
+
+<a name="bytebase-v1-Branch"></a>
+
+### Branch
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the branch. Format: projects/{project}/branches/{branch} {branch} should be the id of a sheet. |
+| title | [string](#string) |  | The title of branch. AKA sheet&#39;s name. |
+| schema | [string](#string) |  | The schema of branch. AKA sheet&#39;s statement. |
+| schema_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the current editing schema. |
+| baseline_schema | [string](#string) |  | The baseline schema. |
+| baseline_schema_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the baseline schema. |
+| engine | [Engine](#bytebase-v1-Engine) |  | The database engine of the branch. |
+| baseline_database | [string](#string) |  | The name of the baseline database. Format: instances/{instance}/databases/{database} |
+| parent_branch | [string](#string) |  | The name of the parent branch. For main branch, it&#39;s empty. For child branch, its format will be: projects/{project}/branches/{branch} |
+| etag | [string](#string) |  | The etag of the branch. |
+| creator | [string](#string) |  | The creator of the branch. Format: users/{email} |
+| updater | [string](#string) |  | The updater of the branch. Format: users/{email} |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the branch was created. |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the branch was last updated. |
+
+
+
+
+
+
+<a name="bytebase-v1-CreateBranchRequest"></a>
+
+### CreateBranchRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent, which owns this collection of branches. Format: project/{project} |
+| branch | [Branch](#bytebase-v1-Branch) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DeleteBranchRequest"></a>
+
+### DeleteBranchRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the branch to delete. Format: projects/{project}/branches/{branch} |
+
+
+
+
+
+
+<a name="bytebase-v1-DiffMetadataRequest"></a>
+
+### DiffMetadataRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| source_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the source schema. |
+| target_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the target schema. |
+| engine | [Engine](#bytebase-v1-Engine) |  | The database engine of the schema. |
+
+
+
+
+
+
+<a name="bytebase-v1-DiffMetadataResponse"></a>
+
+### DiffMetadataResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| diff | [string](#string) |  | The diff of the metadata. |
+
+
+
+
+
+
+<a name="bytebase-v1-GetBranchRequest"></a>
+
+### GetBranchRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the branch to retrieve. Format: projects/{project}/branches/{branch} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListBranchesRequest"></a>
+
+### ListBranchesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource of the branch. Foramt: projects/{project} |
+| filter | [string](#string) |  | To filter the search result. |
+| page_size | [int32](#int32) |  | The maximum number of branches to return. The service may return fewer than this value. If unspecified, at most 50 branches will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListBranches` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListBranches` must match the call that provided the page token. |
+| view | [BranchView](#bytebase-v1-BranchView) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ListBranchesResponse"></a>
+
+### ListBranchesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| branches | [Branch](#bytebase-v1-Branch) | repeated | The branches from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-MergeBranchRequest"></a>
+
+### MergeBranchRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the branch to merge. Format: projects/{project}/branches/{branch} |
+| target_name | [string](#string) |  | The target branch to merge into. Format: projects/{project}/branches/{branch} |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateBranchRequest"></a>
+
+### UpdateBranchRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| branch | [Branch](#bytebase-v1-Branch) |  | The branch to update.
+
+The branch&#39;s `name` field is used to identify the branch to update. Format: projects/{project}/branches/{branch} |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-BranchView"></a>
+
+### BranchView
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| BRANCH_VIEW_UNSPECIFIED | 0 | The default / unset value. The API will default to the BASIC view. |
+| BRANCH_VIEW_BASIC | 1 | Exclude schema, baseline_schema. |
+| BRANCH_VIEW_FULL | 2 | Include everything. |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-BranchService"></a>
+
+### BranchService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetBranch | [GetBranchRequest](#bytebase-v1-GetBranchRequest) | [Branch](#bytebase-v1-Branch) |  |
+| ListBranches | [ListBranchesRequest](#bytebase-v1-ListBranchesRequest) | [ListBranchesResponse](#bytebase-v1-ListBranchesResponse) |  |
+| CreateBranch | [CreateBranchRequest](#bytebase-v1-CreateBranchRequest) | [Branch](#bytebase-v1-Branch) |  |
+| UpdateBranch | [UpdateBranchRequest](#bytebase-v1-UpdateBranchRequest) | [Branch](#bytebase-v1-Branch) |  |
+| MergeBranch | [MergeBranchRequest](#bytebase-v1-MergeBranchRequest) | [Branch](#bytebase-v1-Branch) |  |
+| DeleteBranch | [DeleteBranchRequest](#bytebase-v1-DeleteBranchRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| DiffMetadata | [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest) | [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse) |  |
+
+ 
+
+
+
+<a name="v1_cel_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/cel_service.proto
+
+
+
+<a name="bytebase-v1-BatchDeparseRequest"></a>
+
+### BatchDeparseRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| expressions | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchDeparseResponse"></a>
+
+### BatchDeparseResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| expressions | [string](#string) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchParseRequest"></a>
+
+### BatchParseRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| expressions | [string](#string) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchParseResponse"></a>
+
+### BatchParseResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| expressions | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) | repeated |  |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-CelService"></a>
+
+### CelService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| BatchParse | [BatchParseRequest](#bytebase-v1-BatchParseRequest) | [BatchParseResponse](#bytebase-v1-BatchParseResponse) |  |
+| BatchDeparse | [BatchDeparseRequest](#bytebase-v1-BatchDeparseRequest) | [BatchDeparseResponse](#bytebase-v1-BatchDeparseResponse) |  |
+
+ 
+
+
+
+<a name="v1_changelist_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/changelist_service.proto
+
+
+
+<a name="bytebase-v1-Changelist"></a>
+
+### Changelist
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the changelist resource. Canonical parent is project. Format: projects/{project}/changelists/{changelist} |
+| description | [string](#string) |  |  |
+| creator | [string](#string) |  | The creator of the changelist. Format: users/{email} |
+| updater | [string](#string) |  | The updater of the changelist. Format: users/{email} |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The create time of the changelist. |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last update time of the changelist. |
+| changes | [Changelist.Change](#bytebase-v1-Changelist-Change) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Changelist-Change"></a>
+
+### Changelist.Change
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sheet | [string](#string) |  | The name of a sheet. |
+| source | [string](#string) |  | The source of origin. 1) change history: instances/{instance}/databases/{database}/changeHistories/{changeHistory}. 2) branch: projects/{project}/schemaDesigns/{schemaDesign}. 3) raw SQL if empty. |
+
+
+
+
+
+
+<a name="bytebase-v1-CreateChangelistRequest"></a>
+
+### CreateChangelistRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource where this changelist will be created. Foramt: projects/{project} |
+| changelist | [Changelist](#bytebase-v1-Changelist) |  | The changelist to create. |
+| changelist_id | [string](#string) |  | The ID to use for the changelist, which will become the final component of the changelist&#39;s resource name.
+
+This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
+
+
+
+
+
+
+<a name="bytebase-v1-DeleteChangelistRequest"></a>
+
+### DeleteChangelistRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the changelist to delete. Format: projects/{project}/changelists/{changelist} |
+
+
+
+
+
+
+<a name="bytebase-v1-GetChangelistRequest"></a>
+
+### GetChangelistRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the changelist to retrieve. Format: projects/{project}/changelists/{changelist} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListChangelistsRequest"></a>
+
+### ListChangelistsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent, which owns this collection of changelists. Format: projects/{project} Use &#34;projects/-&#34; to list all changelists. |
+| page_size | [int32](#int32) |  | The maximum number of databases to return. The service may return fewer than this value. If unspecified, at most 50 databases will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListDatabases` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListDatabases` must match the call that provided the page token. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListChangelistsResponse"></a>
+
+### ListChangelistsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| changelists | [Changelist](#bytebase-v1-Changelist) | repeated | The changelists from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateChangelistRequest"></a>
+
+### UpdateChangelistRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| changelist | [Changelist](#bytebase-v1-Changelist) |  | The changelist to update.
+
+The changelist&#39;s `name` field is used to identify the changelist to update. Format: projects/{project}/changelists/{changelist} |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-ChangelistService"></a>
+
+### ChangelistService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| CreateChangelist | [CreateChangelistRequest](#bytebase-v1-CreateChangelistRequest) | [Changelist](#bytebase-v1-Changelist) |  |
+| GetChangelist | [GetChangelistRequest](#bytebase-v1-GetChangelistRequest) | [Changelist](#bytebase-v1-Changelist) |  |
+| ListChangelists | [ListChangelistsRequest](#bytebase-v1-ListChangelistsRequest) | [ListChangelistsResponse](#bytebase-v1-ListChangelistsResponse) |  |
+| UpdateChangelist | [UpdateChangelistRequest](#bytebase-v1-UpdateChangelistRequest) | [Changelist](#bytebase-v1-Changelist) |  |
+| DeleteChangelist | [DeleteChangelistRequest](#bytebase-v1-DeleteChangelistRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
  
 
@@ -8234,242 +8455,6 @@ Type is the database change type.
 | BatchRunTasks | [BatchRunTasksRequest](#bytebase-v1-BatchRunTasksRequest) | [BatchRunTasksResponse](#bytebase-v1-BatchRunTasksResponse) |  |
 | BatchSkipTasks | [BatchSkipTasksRequest](#bytebase-v1-BatchSkipTasksRequest) | [BatchSkipTasksResponse](#bytebase-v1-BatchSkipTasksResponse) |  |
 | BatchCancelTaskRuns | [BatchCancelTaskRunsRequest](#bytebase-v1-BatchCancelTaskRunsRequest) | [BatchCancelTaskRunsResponse](#bytebase-v1-BatchCancelTaskRunsResponse) |  |
-
- 
-
-
-
-<a name="v1_schema_design_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/schema_design_service.proto
-
-
-
-<a name="bytebase-v1-CreateSchemaDesignRequest"></a>
-
-### CreateSchemaDesignRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of schema designs. Format: project/{project} |
-| schema_design | [SchemaDesign](#bytebase-v1-SchemaDesign) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-DeleteSchemaDesignRequest"></a>
-
-### DeleteSchemaDesignRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the schema design to delete. Format: projects/{project}/schemaDesigns/{schemaDesign} |
-
-
-
-
-
-
-<a name="bytebase-v1-DiffMetadataRequest"></a>
-
-### DiffMetadataRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| source_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the source schema. |
-| target_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the target schema. |
-| engine | [Engine](#bytebase-v1-Engine) |  | The database engine of the schema. |
-
-
-
-
-
-
-<a name="bytebase-v1-DiffMetadataResponse"></a>
-
-### DiffMetadataResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| diff | [string](#string) |  | The diff of the metadata. |
-
-
-
-
-
-
-<a name="bytebase-v1-GetSchemaDesignRequest"></a>
-
-### GetSchemaDesignRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the schema design to retrieve. Format: projects/{project}/schemaDesigns/{schemaDesign} |
-
-
-
-
-
-
-<a name="bytebase-v1-ListSchemaDesignsRequest"></a>
-
-### ListSchemaDesignsRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource of the schema design. Foramt: projects/{project} |
-| filter | [string](#string) |  | To filter the search result. |
-| page_size | [int32](#int32) |  | The maximum number of schema designs to return. The service may return fewer than this value. If unspecified, at most 50 schema designs will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListSchemaDesigns` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListSchemaDesigns` must match the call that provided the page token. |
-| view | [SchemaDesignView](#bytebase-v1-SchemaDesignView) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ListSchemaDesignsResponse"></a>
-
-### ListSchemaDesignsResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| schema_designs | [SchemaDesign](#bytebase-v1-SchemaDesign) | repeated | The schema designs from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
-<a name="bytebase-v1-MergeSchemaDesignRequest"></a>
-
-### MergeSchemaDesignRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the schema design to merge. Format: projects/{project}/schemaDesigns/{schemaDesign} |
-| target_name | [string](#string) |  | The target schema design to merge into. Format: projects/{project}/schemaDesigns/{schemaDesign} |
-
-
-
-
-
-
-<a name="bytebase-v1-SchemaDesign"></a>
-
-### SchemaDesign
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the schema design. Format: projects/{project}/schemaDesigns/{schemaDesign} {schemaDesign} should be the id of a sheet. |
-| title | [string](#string) |  | The title of schema design. AKA sheet&#39;s name. |
-| schema | [string](#string) |  | The schema of schema design. AKA sheet&#39;s statement. |
-| schema_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the current editing schema. |
-| baseline_schema | [string](#string) |  | The baseline schema. |
-| baseline_schema_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the baseline schema. |
-| engine | [Engine](#bytebase-v1-Engine) |  | The database engine of the schema design. |
-| baseline_database | [string](#string) |  | The name of the baseline database. Format: instances/{instance}/databases/{database} |
-| parent_branch | [string](#string) |  | The name of the baseline sheet. For main branch, its format will be: projects/{project}/sheets/{sheet} For personal draft, its format will be: projects/{project}/schemaDesigns/{schemaDesign} |
-| type | [SchemaDesign.Type](#bytebase-v1-SchemaDesign-Type) |  | The type of the schema design. |
-| etag | [string](#string) |  | The etag of the schema design. |
-| creator | [string](#string) |  | The creator of the schema design. Format: users/{email} |
-| updater | [string](#string) |  | The updater of the schema design. Format: users/{email} |
-| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the schema design was created. |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the schema design was last updated. |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateSchemaDesignRequest"></a>
-
-### UpdateSchemaDesignRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| schema_design | [SchemaDesign](#bytebase-v1-SchemaDesign) |  | The schema design to update.
-
-The schema design&#39;s `name` field is used to identify the schema design to update. Format: projects/{project}/schemaDesigns/{schemaDesign} |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-SchemaDesign-Type"></a>
-
-### SchemaDesign.Type
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| MAIN_BRANCH | 1 | Main branch type is the main version of schema design. And only allow to be updated/merged with personal drafts. |
-| PERSONAL_DRAFT | 2 | Personal draft type is a copy of the main branch type schema designs. |
-
-
-
-<a name="bytebase-v1-SchemaDesignView"></a>
-
-### SchemaDesignView
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| SCHEMA_DESIGN_VIEW_UNSPECIFIED | 0 | The default / unset value. The API will default to the BASIC view. |
-| SCHEMA_DESIGN_VIEW_BASIC | 1 | Exclude schema, baseline_schema. |
-| SCHEMA_DESIGN_VIEW_FULL | 2 | Include everything. |
-
-
- 
-
- 
-
-
-<a name="bytebase-v1-SchemaDesignService"></a>
-
-### SchemaDesignService
-
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| GetSchemaDesign | [GetSchemaDesignRequest](#bytebase-v1-GetSchemaDesignRequest) | [SchemaDesign](#bytebase-v1-SchemaDesign) |  |
-| ListSchemaDesigns | [ListSchemaDesignsRequest](#bytebase-v1-ListSchemaDesignsRequest) | [ListSchemaDesignsResponse](#bytebase-v1-ListSchemaDesignsResponse) |  |
-| CreateSchemaDesign | [CreateSchemaDesignRequest](#bytebase-v1-CreateSchemaDesignRequest) | [SchemaDesign](#bytebase-v1-SchemaDesign) |  |
-| UpdateSchemaDesign | [UpdateSchemaDesignRequest](#bytebase-v1-UpdateSchemaDesignRequest) | [SchemaDesign](#bytebase-v1-SchemaDesign) |  |
-| MergeSchemaDesign | [MergeSchemaDesignRequest](#bytebase-v1-MergeSchemaDesignRequest) | [SchemaDesign](#bytebase-v1-SchemaDesign) |  |
-| DeleteSchemaDesign | [DeleteSchemaDesignRequest](#bytebase-v1-DeleteSchemaDesignRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| DiffMetadata | [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest) | [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse) |  |
 
  
 

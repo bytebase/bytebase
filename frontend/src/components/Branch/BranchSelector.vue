@@ -26,19 +26,19 @@ import {
   projectNamePrefix,
 } from "@/store/modules/v1/common";
 import { UNKNOWN_ID } from "@/types";
-import { SchemaDesign } from "@/types/proto/v1/schema_design_service";
+import { Branch } from "@/types/proto/v1/branch_service";
 import { InstanceV1EngineIcon } from "../v2";
 
 interface BranchSelectOption extends SelectOption {
   value: string;
-  branch: SchemaDesign;
+  branch: Branch;
 }
 
 const props = defineProps<{
   project?: string;
   branch?: string;
   clearable?: boolean;
-  filter?: (branch: SchemaDesign, index: number) => boolean;
+  filter?: (branch: Branch, index: number) => boolean;
 }>();
 
 defineEmits<{
