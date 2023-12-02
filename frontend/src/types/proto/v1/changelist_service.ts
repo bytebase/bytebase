@@ -124,7 +124,7 @@ export interface Changelist_Change {
   /**
    * The source of origin.
    * 1) change history: instances/{instance}/databases/{database}/changeHistories/{changeHistory}.
-   * 2) branch: projects/{project}/schemaDesigns/{schemaDesign}.
+   * 2) branch: projects/{project}/branches/{branch}.
    * 3) raw SQL if empty.
    */
   source: string;

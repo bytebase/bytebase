@@ -14,7 +14,7 @@ export const isChangeHistoryChangeSource = (change: Change) => {
   return change.source.match(/(^|\/)changeHistories\//);
 };
 export const isBranchChangeSource = (change: Change) => {
-  return change.source.match(/(^|\/)schemaDesigns\//);
+  return change.source.match(/(^|\/)branches\//);
 };
 
 export const getChangelistChangeSourceType = (

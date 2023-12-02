@@ -276,8 +276,7 @@ const handleConfirm = async () => {
   }
 
   state.isCreating = true;
-  const baselineDatabase = `${database.instanceEntity.name}/${databaseNamePrefix}${state.baselineSchema.databaseId}`;
-
+  const baselineDatabase = `${database.instanceEntity.name}/${databaseNamePrefix}${database.databaseName}`;
   let createdSchemaDesign;
   if (!state.parentBranchName) {
     createdSchemaDesign = await branchStore.createBranch(

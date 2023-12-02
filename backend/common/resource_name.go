@@ -42,7 +42,6 @@ const (
 	PipelineNamePrefix           = "pipelines/"
 	LogNamePrefix                = "logs/"
 	InboxNamePrefix              = "inbox/"
-	SchemaDesignPrefix           = "schemaDesigns/"
 	BranchPrefix                 = "branches/"
 	DeploymentConfigPrefix       = "deploymentConfigs/"
 	ChangelistsPrefix            = "changelists/"
@@ -471,15 +470,6 @@ func GetProjectResourceIDSheetUID(name string) (string, int, error) {
 		return "", 0, errors.Wrapf(err, "failed to convert sheet uid %q to int", tokens[1])
 	}
 	return tokens[0], sheetUID, nil
-}
-
-// GetProjectResourceIDAndSchemaDesignSheetID returns the project ID and schema design sheet ID from a resource name.
-func GetProjectResourceIDAndSchemaDesignSheetID(name string) (string, string, error) {
-	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, SchemaDesignPrefix)
-	if err != nil {
-		return "", "", err
-	}
-	return tokens[0], tokens[1], nil
 }
 
 // GetProjectAndBranchID returns the project and branch ID from a resource name.
