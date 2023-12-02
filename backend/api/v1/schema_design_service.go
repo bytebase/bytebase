@@ -276,9 +276,6 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 		// baselineSheetID is a reference to the baseline schema design.
 		schemaDesignSheetPayload.SchemaDesign.BaselineSchemaDesignId = fmt.Sprintf("%d", baselineSheetUID)
 	}
-	if schemaDesign.BaselineChangeHistoryId != nil {
-		schemaDesignSheetPayload.SchemaDesign.BaselineChangeHistoryId = *schemaDesign.BaselineChangeHistoryId
-	}
 
 	sheetCreate := &store.SheetMessage{
 		Title:       schemaDesign.Title,
@@ -766,10 +763,6 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 		Updater:                common.FormatUserEmail(updater.Email),
 		CreateTime:             timestamppb.New(sheet.CreatedTime),
 		UpdateTime:             timestamppb.New(sheet.UpdatedTime),
-	}
-	baselineChangeHistoryID := sheet.Payload.SchemaDesign.BaselineChangeHistoryId
-	if baselineChangeHistoryID != "" {
-		schemaDesign.BaselineChangeHistoryId = &baselineChangeHistoryID
 	}
 
 	if view == v1pb.SchemaDesignView_SCHEMA_DESIGN_VIEW_BASIC || view == v1pb.SchemaDesignView_SCHEMA_DESIGN_VIEW_UNSPECIFIED {
