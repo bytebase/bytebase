@@ -93,7 +93,7 @@ import {
   useChangelistStore,
   useLocalSheetStore,
 } from "@/store";
-import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
+import { useBranchStore } from "@/store/modules/branch";
 import {
   Changelist_Change as Change,
   Changelist,
@@ -170,7 +170,7 @@ const doAddChange = async () => {
       }
       if (sourceType === "BRANCH") {
         // For branch changes, use its diff DDL
-        const branch = await useSchemaDesignStore().fetchSchemaDesignByName(
+        const branch = await useBranchStore().fetchBranchByName(
           change.source,
           false /* !useCache */
         );

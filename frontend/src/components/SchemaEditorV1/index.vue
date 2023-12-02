@@ -24,7 +24,7 @@ import { isEqual } from "lodash-es";
 import { Splitpanes, Pane } from "splitpanes";
 import { onMounted, watch, reactive, computed } from "vue";
 import { useSchemaEditorV1Store, useSettingV1Store } from "@/store";
-import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
+import { useBranchStore } from "@/store/modules/branch";
 import { ComposedProject, ComposedDatabase } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { BranchSchema } from "@/types/v1/schemaEditor";
@@ -51,7 +51,7 @@ interface LocalState {
 
 const settingStore = useSettingV1Store();
 const schemaEditorV1Store = useSchemaEditorV1Store();
-const schemaDesignStore = useSchemaDesignStore();
+const branchStore = useBranchStore();
 const state = reactive<LocalState>({
   loading: false,
   initialized: false,
@@ -68,7 +68,7 @@ const prepareBranchContext = async () => {
   for (const branch of props.branches) {
     if (branch.parentBranch !== "") {
       // Prepare parent branch for personal draft.
-      await schemaDesignStore.fetchSchemaDesignByName(
+      await branchStore.fetchBranchByName(
         branch.parentBranch,
         true /* useCache */
       );

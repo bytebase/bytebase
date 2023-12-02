@@ -1,5 +1,5 @@
 import { markRaw } from "vue";
-import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
+import { useBranchStore } from "@/store/modules/branch";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import {
@@ -35,7 +35,7 @@ export const fetchBaselineMetadataOfBranch = async (
 ): Promise<DatabaseMetadata> => {
   // For personal branches, we use its parent branch's schema as the original schema in editing state.
   if (branch.parentBranch !== "") {
-    const parentBranch = await useSchemaDesignStore().fetchSchemaDesignByName(
+    const parentBranch = await useBranchStore().fetchBranchByName(
       branch.parentBranch,
       false /* !useCache */
     );

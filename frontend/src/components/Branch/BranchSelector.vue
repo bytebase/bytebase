@@ -16,11 +16,7 @@
 <script lang="ts" setup>
 import { NSelect, SelectOption, SelectRenderLabel } from "naive-ui";
 import { computed, h } from "vue";
-import {
-  useDatabaseV1Store,
-  useProjectV1Store,
-  useSchemaDesignList,
-} from "@/store";
+import { useDatabaseV1Store, useProjectV1Store, useBranchList } from "@/store";
 import {
   getProjectAndSchemaDesignSheetId,
   projectNamePrefix,
@@ -45,7 +41,7 @@ defineEmits<{
   (event: "update:branch", name: string | undefined): void;
 }>();
 
-const { schemaDesignList: branchList } = useSchemaDesignList();
+const { branchList: branchList } = useBranchList();
 const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
 

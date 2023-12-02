@@ -52,10 +52,7 @@ import { first, orderBy } from "lodash-es";
 import { computed, reactive, watch } from "vue";
 import { DatabaseSelect } from "@/components/v2";
 import { useDatabaseV1Store, useLocalSheetStore } from "@/store";
-import {
-  useSchemaDesignList,
-  useSchemaDesignStore,
-} from "@/store/modules/schemaDesign";
+import { useBranchList, useBranchStore } from "@/store/modules/branch";
 import { UNKNOWN_ID } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
@@ -82,7 +79,7 @@ const state = reactive<LocalState>({
 
 const { project } = useChangelistDetailContext();
 const { changesFromBranch: changes } = useAddChangeContext();
-const { schemaDesignList: branchList, ready } = useSchemaDesignList();
+const { branchList, ready } = useBranchList();
 const localSheetStore = useLocalSheetStore();
 
 const database = computed(() => {
@@ -154,7 +151,7 @@ const handleRemoveChange = (change: Change) => {
 
 const handleClickChange = async (change: Change) => {
   const branchName = change.source;
-  const branch = await useSchemaDesignStore().fetchSchemaDesignByName(
+  const branch = await useBranchStore().fetchBranchByName(
     branchName,
     true /* useCache */
   );

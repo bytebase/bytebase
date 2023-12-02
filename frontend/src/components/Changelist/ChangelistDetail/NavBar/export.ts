@@ -1,7 +1,7 @@
 import JSZip from "jszip";
 import { padStart } from "lodash-es";
 import { useChangeHistoryStore, useSheetV1Store } from "@/store";
-import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
+import { useBranchStore } from "@/store/modules/branch";
 import { Changelist_Change_Source as ChangeSource } from "@/types";
 import { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
 import {
@@ -54,7 +54,7 @@ const zipFileForBranch = async (zip: JSZip, change: Change, index: number) => {
   if (!sheet) {
     return;
   }
-  const branch = await useSchemaDesignStore().fetchSchemaDesignByName(
+  const branch = await useBranchStore().fetchBranchByName(
     change.source,
     false /* !useCache */
   );

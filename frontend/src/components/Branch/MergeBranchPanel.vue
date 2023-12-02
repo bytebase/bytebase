@@ -83,7 +83,7 @@ import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { pushNotification, useSheetV1Store } from "@/store";
-import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
+import { useBranchStore } from "@/store/modules/branch";
 import {
   getProjectAndSchemaDesignSheetId,
   projectNamePrefix,
@@ -120,7 +120,7 @@ const state = reactive<LocalState>({
 const { t } = useI18n();
 const dialog = useDialog();
 const sheetStore = useSheetV1Store();
-const schemaDesignStore = useSchemaDesignStore();
+const branchStore = useBranchStore();
 const isLoadingSourceBranch = ref(false);
 const isLoadingTargetBranch = ref(false);
 const emptyBranch = () => Branch.fromPartial({});
@@ -131,10 +131,7 @@ const sourceBranch = asyncComputed(
     if (!name) {
       return emptyBranch();
     }
-    return await schemaDesignStore.fetchSchemaDesignByName(
-      name,
-      true /* useCache */
-    );
+    return await branchStore.fetchBranchByName(name, true /* useCache */);
   },
   emptyBranch(),
   {
@@ -148,10 +145,7 @@ const targetBranch = asyncComputed(
     if (!name) {
       return emptyBranch();
     }
-    return await schemaDesignStore.fetchSchemaDesignByName(
-      name,
-      true /* useCache */
-    );
+    return await branchStore.fetchBranchByName(name, true /* useCache */);
   },
   emptyBranch(),
   {
@@ -190,7 +184,7 @@ const handleSaveDraft = async (ignoreNotify?: boolean) => {
   );
 
   // Update the schema design draft first.
-  await schemaDesignStore.updateSchemaDesign(
+  await branchStore.updateBranch(
     Branch.fromPartial({
       name: sourceBranch.value.name,
       engine: sourceBranch.value.engine,
@@ -215,7 +209,7 @@ const handleMergeBranch = async () => {
   await handleSaveDraft(true);
 
   try {
-    await schemaDesignStore.mergeSchemaDesign({
+    await branchStore.mergeBranch({
       name: sourceBranch.value.name,
       targetName: targetBranch.value.name,
     });
@@ -236,7 +230,7 @@ const handleMergeBranch = async () => {
         },
         onPositiveClick: async () => {
           // Fetching the latest target branch.
-          await schemaDesignStore.fetchSchemaDesignByName(
+          await branchStore.fetchBranchByName(
             state.targetBranchName,
             false /* !useCache */
           );
@@ -261,7 +255,7 @@ const handleMergeBranch = async () => {
 
   emit("merged", state.targetBranchName);
   if (state.deleteBranchAfterMerged) {
-    await schemaDesignStore.deleteSchemaDesign(props.sourceBranchName);
+    await branchStore.deleteBranch(props.sourceBranchName);
   }
 };
 

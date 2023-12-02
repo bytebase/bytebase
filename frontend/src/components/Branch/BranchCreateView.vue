@@ -91,7 +91,7 @@ import {
   useSchemaEditorV1Store,
   useSheetV1Store,
 } from "@/store";
-import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
+import { useBranchStore } from "@/store/modules/branch";
 import {
   databaseNamePrefix,
   getProjectAndSchemaDesignSheetId,
@@ -135,7 +135,7 @@ const { t } = useI18n();
 const router = useRouter();
 const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
-const schemaDesignStore = useSchemaDesignStore();
+const branchStore = useBranchStore();
 const sheetStore = useSheetV1Store();
 const state = reactive<LocalState>({
   projectId: props.projectId,
@@ -184,7 +184,7 @@ watch(
       return;
     }
 
-    const branch = await schemaDesignStore.fetchSchemaDesignByName(
+    const branch = await branchStore.fetchBranchByName(
       state.parentBranchName,
       false /* !useCache */
     );
@@ -303,7 +303,7 @@ const handleConfirm = async () => {
 
   let createdSchemaDesign;
   if (!state.parentBranchName) {
-    createdSchemaDesign = await schemaDesignStore.createSchemaDesign(
+    createdSchemaDesign = await branchStore.createBranch(
       project.value.name,
       Branch.fromPartial({
         title: branchTitle.value,
@@ -318,11 +318,11 @@ const handleConfirm = async () => {
       })
     );
   } else {
-    const parentBranch = await schemaDesignStore.fetchSchemaDesignByName(
+    const parentBranch = await branchStore.fetchBranchByName(
       state.parentBranchName,
       false /* useCache */
     );
-    createdSchemaDesign = await schemaDesignStore.createSchemaDesignDraft({
+    createdSchemaDesign = await branchStore.createBranchDraft({
       ...parentBranch,
       title: branchTitle.value,
     });

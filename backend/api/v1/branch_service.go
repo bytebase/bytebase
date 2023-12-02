@@ -56,11 +56,11 @@ func (s *BranchService) GetBranch(ctx context.Context, request *v1pb.GetBranchRe
 		return nil, status.Errorf(codes.NotFound, "branch %q not found", branchID)
 	}
 
-	schemaDesign, err := s.convertBranchToBranch(ctx, project, branch, v1pb.BranchView_BRANCH_VIEW_FULL)
+	branchV1, err := s.convertBranchToBranch(ctx, project, branch, v1pb.BranchView_BRANCH_VIEW_FULL)
 	if err != nil {
 		return nil, err
 	}
-	return schemaDesign, nil
+	return branchV1, nil
 }
 
 // ListBranches lists branches.
@@ -88,16 +88,16 @@ func (s *BranchService) ListBranches(ctx context.Context, request *v1pb.ListBran
 		return nil, status.Errorf(codes.Internal, "failed to list branches, error %v", err)
 	}
 
-	var schemaDesigns []*v1pb.Branch
+	var v1Branches []*v1pb.Branch
 	for _, branch := range branches {
-		schemaDesign, err := s.convertBranchToBranch(ctx, project, branch, request.View)
+		v1Branch, err := s.convertBranchToBranch(ctx, project, branch, request.View)
 		if err != nil {
 			return nil, err
 		}
-		schemaDesigns = append(schemaDesigns, schemaDesign)
+		v1Branches = append(v1Branches, v1Branch)
 	}
 	response := &v1pb.ListBranchesResponse{
-		Branches: schemaDesigns,
+		Branches: v1Branches,
 	}
 	return response, nil
 }
@@ -220,11 +220,11 @@ func (s *BranchService) CreateBranch(ctx context.Context, request *v1pb.CreateBr
 		return nil, status.Errorf(codes.InvalidArgument, "either baseline database or parent branch must be specified")
 	}
 
-	schemaDesign, err := s.convertBranchToBranch(ctx, project, createdBranch, v1pb.BranchView_BRANCH_VIEW_FULL)
+	v1Branch, err := s.convertBranchToBranch(ctx, project, createdBranch, v1pb.BranchView_BRANCH_VIEW_FULL)
 	if err != nil {
 		return nil, err
 	}
-	return schemaDesign, nil
+	return v1Branch, nil
 }
 
 // UpdateBranch updates an existing branch.

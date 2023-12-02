@@ -26,7 +26,7 @@
         </button>
       </div>
       <div v-if="!hideSQLCheckButton" class="flex items-center flex-end">
-        <SchemaDesignSQLCheckButton class="justify-end" :branch="branch" />
+        <BranchSQLCheckButton class="justify-end" :branch="branch" />
       </div>
     </div>
     <div class="grow w-full h-auto overflow-auto">

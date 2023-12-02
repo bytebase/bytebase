@@ -12,12 +12,12 @@ import {
   sheetNamePrefix,
 } from "./v1/common";
 
-export const useSchemaDesignStore = defineStore("schema_design", () => {
+export const useBranchStore = defineStore("schema_design", () => {
   const branchMapByName = reactive(new Map<string, Branch>());
   const getBranchRequestCacheByName = new Map<string, Promise<Branch>>();
 
   // Actions
-  const fetchSchemaDesignList = async (projectName: string = "projects/-") => {
+  const fetchBranchList = async (projectName: string = "projects/-") => {
     const { branches } = await branchServiceClient.listBranches({
       parent: projectName,
       view: BranchView.BRANCH_VIEW_BASIC,
@@ -25,10 +25,7 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
     return branches;
   };
 
-  const createSchemaDesign = async (
-    projectResourceId: string,
-    branch: Branch
-  ) => {
+  const createBranch = async (projectResourceId: string, branch: Branch) => {
     const createdBranch = await branchServiceClient.createBranch({
       parent: projectResourceId,
       branch,
@@ -40,19 +37,19 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
     return createdBranch;
   };
 
-  const createSchemaDesignDraft = async (branch: Branch) => {
+  const createBranchDraft = async (branch: Branch) => {
     const [projectName, sheetId] = getProjectAndSchemaDesignSheetId(
       branch.name
     );
     const projectResourceId = `${projectNamePrefix}${projectName}`;
     const parentBranch = `${projectResourceId}/${sheetNamePrefix}${sheetId}`;
-    return createSchemaDesign(projectResourceId, {
+    return createBranch(projectResourceId, {
       ...branch,
       parentBranch: parentBranch,
     });
   };
 
-  const updateSchemaDesign = async (branch: Branch, updateMask: string[]) => {
+  const updateBranch = async (branch: Branch, updateMask: string[]) => {
     const updatedBranch = await branchServiceClient.updateBranch({
       branch,
       updateMask,
@@ -61,14 +58,14 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
     return updatedBranch;
   };
 
-  const mergeSchemaDesign = async (request: MergeBranchRequest) => {
+  const mergeBranch = async (request: MergeBranchRequest) => {
     const updatedBranch = await branchServiceClient.mergeBranch(request, {
       silent: true,
     });
     branchMapByName.set(updatedBranch.name, updatedBranch);
   };
 
-  const fetchSchemaDesignByName = async (
+  const fetchBranchByName = async (
     name: string,
     useCache = true,
     silent = false
@@ -100,11 +97,11 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
     return request;
   };
 
-  const getSchemaDesignByName = (name: string) => {
+  const getBranchByName = (name: string) => {
     return branchMapByName.get(name);
   };
 
-  const deleteSchemaDesign = async (name: string) => {
+  const deleteBranch = async (name: string) => {
     await branchServiceClient.deleteBranch({
       name,
     });
@@ -112,32 +109,30 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
   };
 
   return {
-    fetchSchemaDesignList,
-    createSchemaDesign,
-    createSchemaDesignDraft,
-    updateSchemaDesign,
-    mergeSchemaDesign,
-    fetchSchemaDesignByName,
-    getSchemaDesignByName,
-    deleteSchemaDesign,
+    fetchBranchList,
+    createBranch,
+    createBranchDraft,
+    updateBranch,
+    mergeBranch,
+    fetchBranchByName,
+    getBranchByName,
+    deleteBranch,
   };
 });
 
-export const useSchemaDesignList = (
-  projectName: string | undefined = undefined
-) => {
-  const store = useSchemaDesignStore();
+export const useBranchList = (projectName: string | undefined = undefined) => {
+  const store = useBranchStore();
   const ready = ref(false);
-  const schemaDesignList = ref<Branch[]>([]);
+  const branchList = ref<Branch[]>([]);
 
   watchEffect(() => {
     ready.value = false;
-    schemaDesignList.value = [];
-    store.fetchSchemaDesignList(projectName).then((response) => {
+    branchList.value = [];
+    store.fetchBranchList(projectName).then((response) => {
       ready.value = true;
-      schemaDesignList.value = response;
+      branchList.value = response;
     });
   });
 
-  return { schemaDesignList, ready };
+  return { branchList, ready };
 };

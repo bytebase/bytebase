@@ -29,7 +29,7 @@ import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
 import BranchDataTable from "@/components/Branch/BranchDataTable.vue";
 import { useProjectV1Store } from "@/store";
-import { useSchemaDesignList } from "@/store/modules/schemaDesign";
+import { useBranchList } from "@/store/modules/branch";
 import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { projectV1Slug } from "@/utils";
@@ -44,7 +44,7 @@ interface LocalState {
 
 const router = useRouter();
 const projectV1Store = useProjectV1Store();
-const { schemaDesignList, ready } = useSchemaDesignList();
+const { branchList, ready } = useBranchList();
 const state = reactive<LocalState>({
   searchKeyword: "",
 });
@@ -54,10 +54,10 @@ const project = computed(() => projectV1Store.getProjectByUID(props.projectId));
 const filteredBranches = computed(() => {
   return orderBy(
     props.projectId
-      ? schemaDesignList.value.filter((schemaDesign) =>
-          schemaDesign.name.startsWith(project.value.name)
+      ? branchList.value.filter((branch) =>
+          branch.name.startsWith(project.value.name)
         )
-      : schemaDesignList.value,
+      : branchList.value,
     "updateTime",
     "desc"
   ).filter((branch) => {
