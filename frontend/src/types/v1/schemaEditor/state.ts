@@ -1,5 +1,5 @@
 import { ComposedDatabase, ComposedProject } from "..";
-import { SchemaDesign } from "../../proto/v1/schema_design_service";
+import { Branch } from "../../proto/v1/branch_service";
 import { Schema } from "./atomType";
 
 export enum SchemaEditorTabType {
@@ -37,7 +37,7 @@ export interface DatabaseSchema {
 }
 
 export interface BranchSchema {
-  branch: SchemaDesign;
+  branch: Branch;
   schemaList: Schema[];
   originSchemaList: Schema[];
 }
