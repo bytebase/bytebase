@@ -1,7 +1,6 @@
 <template>
   <NDataTable
     v-bind="$attrs"
-    :loading="isLoading"
     :bordered="false"
     :columns="dataTableColumns"
     :data="dataTableRows"
@@ -14,20 +13,14 @@
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { NDataTable } from "naive-ui";
-import { computed, ref, watch, h } from "vue";
+import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import BranchBaseline from "@/components/Branch/BranchBaseline.vue";
-import {
-  useChangeHistoryStore,
-  useDatabaseV1Store,
-  useProjectV1Store,
-  useUserStore,
-} from "@/store";
+import { useDatabaseV1Store, useProjectV1Store, useUserStore } from "@/store";
 import {
   getProjectAndSchemaDesignSheetId,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
-import { UNKNOWN_ID } from "@/types";
 import {
   SchemaDesign,
   SchemaDesign_Type,
@@ -57,38 +50,6 @@ const { t } = useI18n();
 const userV1Store = useUserStore();
 const projectV1Store = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
-const changeHistoryStore = useChangeHistoryStore();
-const isFetching = ref(true);
-
-watch(
-  () => props.branches,
-  async () => {
-    for (const branch of props.branches) {
-      const database = await databaseStore.getOrFetchDatabaseByName(
-        branch.baselineDatabase
-      );
-      if (
-        database &&
-        branch.baselineChangeHistoryId &&
-        branch.baselineChangeHistoryId !== String(UNKNOWN_ID)
-      ) {
-        const changeHistoryName = `${database.name}/changeHistories/${branch.baselineChangeHistoryId}`;
-        await changeHistoryStore.getOrFetchChangeHistoryByName(
-          changeHistoryName
-        );
-      }
-    }
-    isFetching.value = false;
-  },
-  {
-    deep: true,
-    immediate: true,
-  }
-);
-
-const isLoading = computed(() => {
-  return isFetching.value || !props.ready;
-});
 
 const dataTableRows = computed(() => {
   const parentBranches = props.branches.filter((branch) => {
@@ -100,16 +61,7 @@ const dataTableRows = computed(() => {
       `${projectNamePrefix}${projectName}`
     );
     const database = databaseStore.getDatabaseByName(branch.baselineDatabase);
-    const changeHistory =
-      branch.baselineChangeHistoryId &&
-      branch.baselineChangeHistoryId !== String(UNKNOWN_ID)
-        ? changeHistoryStore.getChangeHistoryByName(
-            `${database.name}/changeHistories/${branch.baselineChangeHistoryId}`
-          )
-        : undefined;
-    const baselineVersion = `(${database.effectiveEnvironmentEntity.title}) ${
-      database.databaseName
-    } @${changeHistory ? changeHistory.version : "Previously latest schema"}`;
+    const baselineVersion = `(${database.effectiveEnvironmentEntity.title}) ${database.databaseName}`;
 
     return {
       branch: branch,
