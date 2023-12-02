@@ -25,42 +25,14 @@
         @update:database="handleDatabaseSelect"
       />
     </div>
-    <div class="w-full flex flex-row justify-start items-center">
-      <span class="flex w-40 items-center shrink-0 text-sm">
-        {{ $t("schema-designer.schema-version") }}
-      </span>
-      <div class="w-192 flex flex-row justify-start items-center relative">
-        <NSelect
-          :value="state.changeHistory?.name"
-          :options="schemaVersionOptions"
-          :placeholder="$t('change-history.select')"
-          :disabled="
-            $props.readonly ||
-            !isValidId(props.projectId) ||
-            schemaVersionOptions.length === 0
-          "
-          :render-label="renderSchemaVersionLabel"
-          :fallback-option="
-            isMockLatestSchemaChangeHistorySelected
-              ? fallbackSchemaVersionOption
-              : false
-          "
-          @update:value="handleSchemaVersionSelect"
-        />
-      </div>
-    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { debounce, head, isNull, isUndefined } from "lodash-es";
-import { NEllipsis, SelectOption } from "naive-ui";
-import { computed, h, reactive, watch } from "vue";
-import { useI18n } from "vue-i18n";
-import HumanizeDate from "@/components/misc/HumanizeDate.vue";
+import { debounce, isNull, isUndefined } from "lodash-es";
+import { computed, reactive, watch } from "vue";
 import { EnvironmentSelect, DatabaseSelect } from "@/components/v2";
 import {
-  useChangeHistoryStore,
   useDBSchemaV1Store,
   useDatabaseV1Store,
   useEnvironmentV1Store,
@@ -69,17 +41,15 @@ import { UNKNOWN_ID } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import {
   ChangeHistory,
-  ChangeHistory_Type,
+  DatabaseMetadata,
   DatabaseMetadataView,
 } from "@/types/proto/v1/database_service";
-import {
-  extractChangeHistoryUID,
-  mockLatestSchemaChangeHistory,
-} from "@/utils";
 
 const props = defineProps<{
   projectId?: string;
   databaseId?: string;
+  schema?: string;
+  databaseMetadata?: DatabaseMetadata;
   changeHistory?: ChangeHistory;
   readonly?: boolean;
 }>();
@@ -91,14 +61,14 @@ const emit = defineEmits<{
 interface LocalState {
   environmentId?: string;
   databaseId?: string;
+  schema?: string;
+  databaseMetadata?: DatabaseMetadata;
   changeHistory?: ChangeHistory;
 }
 
-const { t } = useI18n();
 const state = reactive<LocalState>({});
 const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
-const changeHistoryStore = useChangeHistoryStore();
 const environmentStore = useEnvironmentV1Store();
 
 const database = computed(() => {
@@ -108,107 +78,6 @@ const database = computed(() => {
   }
   return databaseStore.getDatabaseByUID(databaseId);
 });
-
-const prepareChangeHistoryList = async () => {
-  if (!database.value) {
-    return;
-  }
-
-  return await changeHistoryStore.fetchChangeHistoryList({
-    parent: database.value.name,
-  });
-};
-
-const schemaVersionOptions = computed(() => {
-  const { databaseId } = state;
-  if (!databaseId || databaseId === String(UNKNOWN_ID)) {
-    return [];
-  }
-  const changeHistories = databaseChangeHistoryList(databaseId);
-  if (changeHistories.length === 0) return [];
-  const options: SelectOption[] = [
-    {
-      value: "PLACEHOLDER",
-      label: t("change-history.select"),
-      disabled: true,
-      style: "cursor: default",
-    },
-  ];
-  options.push(
-    ...changeHistories.map<SelectOption>((changeHistory, index) => {
-      return {
-        changeHistory,
-        index,
-        value: changeHistory.name,
-        label: changeHistory.name,
-        class: "bb-baseline-schema-select-option",
-      };
-    })
-  );
-  return options;
-});
-const renderSchemaVersionLabel = (option: SelectOption) => {
-  if (
-    option.value === "PLACEHOLDER" ||
-    option.disabled ||
-    !option.changeHistory
-  ) {
-    return option.label;
-  }
-  const changeHistory = option.changeHistory as ChangeHistory;
-  const { version, description, updateTime } = changeHistory;
-
-  const children = [
-    h(
-      NEllipsis,
-      { class: "flex-1 pr-2", tooltip: false },
-      {
-        default: () => `${version} - ${description}`,
-      }
-    ),
-  ];
-  if (updateTime) {
-    children.push(
-      h(HumanizeDate, {
-        date: updateTime,
-        class: "text-control-light",
-      })
-    );
-  }
-
-  return h("div", { class: "w-full flex justify-between" }, children);
-};
-const isMockLatestSchemaChangeHistorySelected = computed(() => {
-  if (!state.changeHistory) return false;
-  return (
-    extractChangeHistoryUID(state.changeHistory.name) === String(UNKNOWN_ID)
-  );
-});
-const fallbackSchemaVersionOption = (value: string): SelectOption => {
-  if (extractChangeHistoryUID(value) === String(UNKNOWN_ID)) {
-    const { databaseId } = state;
-    if (databaseId && databaseId !== String(UNKNOWN_ID)) {
-      const db = databaseStore.getDatabaseByUID(databaseId);
-      const changeHistory = mockLatestSchemaChangeHistory(db);
-      return {
-        changeHistory,
-        value: changeHistory.name,
-        label: changeHistory.name,
-      };
-    }
-  }
-  return {
-    value: "PLACEHOLDER",
-    disabled: true,
-    label: t("change-history.select"),
-    style: "cursor: default",
-  };
-};
-
-const handleSchemaVersionSelect = (name: string, option: SelectOption) => {
-  const changeHistory = option.changeHistory as ChangeHistory;
-  state.changeHistory = changeHistory;
-};
 
 watch(
   () => props.databaseId,
@@ -221,12 +90,14 @@ watch(
         );
         state.databaseId = database.uid;
         state.environmentId = database.effectiveEnvironmentEntity.uid;
-        state.changeHistory = props.changeHistory;
+        state.schema = props.schema;
+        state.databaseMetadata = props.databaseMetadata;
       } catch (error) {
         // do nothing.
       }
     } else {
-      state.changeHistory = undefined;
+      state.schema = undefined;
+      state.databaseMetadata = undefined;
     }
   }
 );
@@ -248,25 +119,23 @@ watch(
   () => state.databaseId,
   async (databaseId) => {
     if (!database.value || !databaseId) {
-      state.changeHistory = undefined;
+      state.schema = undefined;
+      state.databaseMetadata = undefined;
       return;
     }
 
-    const list = (await prepareChangeHistoryList())?.filter(
-      filterChangeHistoryByType
+    // If database has no migration history, we will use its latest schema.
+    const schema = await databaseStore.fetchDatabaseSchema(
+      `${database.value.name}/schema`
     );
-    if (!list || list.length === 0) {
-      // If database has no migration history, we will use its latest schema.
-      const schema = await databaseStore.fetchDatabaseSchema(
-        `${database.value.name}/schema`
-      );
-      state.changeHistory = mockLatestSchemaChangeHistory(
-        database.value,
-        schema
-      );
-    } else {
-      state.changeHistory = head(list);
-    }
+    const databaseMetadata = await dbSchemaStore.getOrFetchDatabaseMetadata({
+      database: database.value.name,
+      skipCache: false,
+      view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
+    });
+
+    state.schema = schema.schema;
+    state.databaseMetadata = databaseMetadata;
   }
 );
 
@@ -275,15 +144,6 @@ const allowedEngineTypeList: Engine[] = [
   Engine.TIDB,
   Engine.POSTGRES,
 ];
-const allowedMigrationTypeList: ChangeHistory_Type[] = [
-  ChangeHistory_Type.BASELINE,
-  ChangeHistory_Type.MIGRATE,
-  ChangeHistory_Type.BRANCH,
-];
-
-const filterChangeHistoryByType = (changeHistory: ChangeHistory): boolean => {
-  return allowedMigrationTypeList.includes(changeHistory.type);
-};
 
 const isValidId = (id: any): id is string => {
   if (isNull(id) || isUndefined(id) || String(id) === String(UNKNOWN_ID)) {
@@ -311,21 +171,7 @@ const handleDatabaseSelect = (databaseId?: string) => {
     );
     state.environmentId = environment?.uid ?? "";
     state.databaseId = databaseId;
-    dbSchemaStore.getOrFetchDatabaseMetadata({
-      database: database.name,
-      skipCache: false,
-      view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
-    });
   }
-};
-
-const databaseChangeHistoryList = (databaseId: string) => {
-  const database = databaseStore.getDatabaseByUID(databaseId);
-  const list = changeHistoryStore
-    .changeHistoryListByDatabase(database.name)
-    .filter(filterChangeHistoryByType);
-
-  return list;
 };
 
 const debouncedUpdate = debounce((state: LocalState) => {

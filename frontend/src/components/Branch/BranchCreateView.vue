@@ -47,7 +47,8 @@
     <BaselineSchemaSelector
       :project-id="state.projectId"
       :database-id="state.baselineSchema.databaseId"
-      :change-history="state.baselineSchema.changeHistory"
+      :schema="state.baselineSchema.schema"
+      :database-metadata="state.baselineSchema.databaseMetadata"
       :readonly="disallowToChangeBaseline"
       @update="handleBaselineSchemaChange"
     />
@@ -85,7 +86,6 @@ import { mergeSchemaEditToMetadata } from "@/components/SchemaEditorV1/utils";
 import { ProjectSelect } from "@/components/v2";
 import {
   pushNotification,
-  useChangeHistoryStore,
   useDatabaseV1Store,
   useProjectV1Store,
   useSchemaEditorV1Store,
@@ -97,11 +97,7 @@ import {
   getProjectAndSchemaDesignSheetId,
 } from "@/store/modules/v1/common";
 import { UNKNOWN_ID } from "@/types";
-import {
-  ChangeHistory,
-  ChangeHistoryView,
-  DatabaseMetadata,
-} from "@/types/proto/v1/database_service";
+import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import {
   SchemaDesign,
   SchemaDesign_Type,
@@ -111,14 +107,15 @@ import {
   Sheet_Type,
   Sheet_Visibility,
 } from "@/types/proto/v1/sheet_service";
-import { extractChangeHistoryUID, projectV1Slug } from "@/utils";
+import { projectV1Slug } from "@/utils";
 import BaselineSchemaSelector from "./BaselineSchemaSelector.vue";
 import { validateBranchName } from "./utils";
 
 interface BaselineSchema {
   // The uid of database.
   databaseId?: string;
-  changeHistory?: ChangeHistory;
+  schema?: string;
+  databaseMetadata?: DatabaseMetadata;
 }
 
 interface LocalState {
@@ -142,7 +139,6 @@ const router = useRouter();
 const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
 const schemaDesignStore = useSchemaDesignStore();
-const changeHistoryStore = useChangeHistoryStore();
 const sheetStore = useSheetV1Store();
 const state = reactive<LocalState>({
   projectId: props.projectId,
@@ -207,65 +203,28 @@ watch(
     );
     state.projectId = database.projectEntity.uid;
     state.baselineSchema.databaseId = database.uid;
-    if (
-      branch.baselineChangeHistoryId &&
-      branch.baselineChangeHistoryId !== String(UNKNOWN_ID)
-    ) {
-      const changeHistoryName = `${database.name}/changeHistories/${branch.baselineChangeHistoryId}`;
-      state.baselineSchema.changeHistory =
-        await changeHistoryStore.getOrFetchChangeHistoryByName(
-          changeHistoryName
-        );
-    } else {
-      state.baselineSchema.changeHistory = undefined;
-    }
+    state.baselineSchema.schema = undefined;
+    state.baselineSchema.databaseMetadata = undefined;
     state.schemaDesign = branch;
     refreshId.value = uniqueId();
   }
 );
 
-const prepareFullChangeHistorySchema = async (changeHistory: ChangeHistory) => {
-  // While a database has no change histories, the state.baselineSchema.changeHistory
-  // is a mock ChangeHistory entity with uid = -1
-  // so we should use the changeHistory it self and need not to fetch the
-  // full view of a real ChangeHistory entity.
-  const uid = extractChangeHistoryUID(changeHistory.name);
-  if (uid === String(UNKNOWN_ID)) {
-    return changeHistory.schema;
-  }
-
-  const changeHistoryWithFullView =
-    await useChangeHistoryStore().fetchChangeHistory({
-      name: changeHistory.name,
-      view: ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL,
-    });
-  return changeHistoryWithFullView?.schema ?? changeHistory.schema;
-};
-
 const prepareSchemaDesign = async () => {
-  const changeHistory = state.baselineSchema.changeHistory;
-  if (changeHistory && state.baselineSchema.databaseId) {
+  if (
+    state.baselineSchema.schema &&
+    state.baselineSchema.databaseMetadata &&
+    state.baselineSchema.databaseId
+  ) {
     const database = databaseStore.getDatabaseByUID(
       state.baselineSchema.databaseId
     );
-    const fullSchema = await prepareFullChangeHistorySchema(changeHistory);
-    const baselineMetadata = await schemaDesignStore.parseSchemaString(
-      fullSchema,
-      database.instanceEntity.engine
-    );
-    if (changeHistory.statementSheet) {
-      const sheet = await sheetStore.getOrFetchSheetByName(
-        changeHistory.statementSheet
-      );
-      baselineMetadata.schemaConfigs =
-        sheet?.payload?.databaseConfig?.schemaConfigs ?? [];
-    }
     return SchemaDesign.fromPartial({
       engine: database.instanceEntity.engine,
-      baselineSchema: fullSchema,
-      baselineSchemaMetadata: baselineMetadata,
-      schema: fullSchema,
-      schemaMetadata: baselineMetadata,
+      baselineSchema: state.baselineSchema.schema,
+      baselineSchemaMetadata: state.baselineSchema.databaseMetadata,
+      schema: state.baselineSchema.schema,
+      schemaMetadata: state.baselineSchema.databaseMetadata,
       type: SchemaDesign_Type.MAIN_BRANCH,
     });
   }
@@ -371,7 +330,6 @@ const handleConfirm = async () => {
         type: SchemaDesign_Type.MAIN_BRANCH,
         baselineDatabase: baselineDatabase,
         baselineSheetName: baselineSheet.name,
-        baselineChangeHistoryId: state.baselineSchema.changeHistory?.uid,
       })
     );
   } else {
