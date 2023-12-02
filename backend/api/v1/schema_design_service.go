@@ -230,7 +230,7 @@ func (s *SchemaDesignService) CreateSchemaDesign(ctx context.Context, request *v
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
 	}
 
-	_, baselineSheetUID, err := common.GetProjectResourceIDSheetUID(schemaDesign.BaselineSheetName)
+	_, baselineSheetUID, err := common.GetProjectResourceIDSheetUID(schemaDesign.ParentBranch)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -416,8 +416,8 @@ func (s *SchemaDesignService) UpdateSchemaDesign(ctx context.Context, request *v
 		sheetUpdate.Payload = sheet.Payload
 	}
 	// Update baseline schema design id for personal draft schema design.
-	if slices.Contains(request.UpdateMask.Paths, "baseline_sheet_name") {
-		_, sheetUID, err := common.GetProjectResourceIDSheetUID(schemaDesign.BaselineSheetName)
+	if slices.Contains(request.UpdateMask.Paths, "parent_branch") {
+		_, sheetUID, err := common.GetProjectResourceIDSheetUID(schemaDesign.ParentBranch)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid baseline sheet name: %v", err))
 		}
@@ -723,14 +723,14 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 	}
 	name := fmt.Sprintf("%s%s/%s%v", common.ProjectNamePrefix, project.ResourceID, common.SchemaDesignPrefix, sheet.UID)
 
-	var baselineSheetName string
+	var parentBranch string
 	if schemaDesignType == v1pb.SchemaDesign_MAIN_BRANCH {
 		if sheet.Payload.SchemaDesign.BaselineSheetId != "" {
-			baselineSheetName = fmt.Sprintf("%s%s/%s%v", common.ProjectNamePrefix, project.ResourceID, common.SheetIDPrefix, sheet.Payload.SchemaDesign.BaselineSheetId)
+			parentBranch = fmt.Sprintf("%s%s/%s%v", common.ProjectNamePrefix, project.ResourceID, common.SheetIDPrefix, sheet.Payload.SchemaDesign.BaselineSheetId)
 		}
 	} else {
 		if sheet.Payload.SchemaDesign.BaselineSchemaDesignId != "" {
-			baselineSheetName = fmt.Sprintf("%s%s/%s%v", common.ProjectNamePrefix, project.ResourceID, common.SchemaDesignPrefix, sheet.Payload.SchemaDesign.BaselineSchemaDesignId)
+			parentBranch = fmt.Sprintf("%s%s/%s%v", common.ProjectNamePrefix, project.ResourceID, common.SchemaDesignPrefix, sheet.Payload.SchemaDesign.BaselineSchemaDesignId)
 		}
 	}
 	schemaDesign := &v1pb.SchemaDesign{
@@ -741,7 +741,7 @@ func (s *SchemaDesignService) convertSheetToSchemaDesign(ctx context.Context, sh
 		SchemaMetadata:         nil,
 		BaselineSchema:         "",
 		BaselineSchemaMetadata: nil,
-		BaselineSheetName:      baselineSheetName,
+		ParentBranch:           parentBranch,
 		Engine:                 engine,
 		BaselineDatabase:       fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Type:                   schemaDesignType,

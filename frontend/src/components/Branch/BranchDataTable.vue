@@ -78,7 +78,7 @@ const dataTableRows = computed(() => {
   });
   for (const childBranch of childBranches) {
     const parentRow = parentRows.find(
-      (row) => row.branch.name === childBranch.baselineSheetName
+      (row) => row.branch.name === childBranch.parentBranch
     );
     if (parentRow) {
       parentRow.children?.push({

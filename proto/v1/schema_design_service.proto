@@ -100,7 +100,7 @@ message SchemaDesign {
   // The name of the baseline sheet.
   // For main branch, its format will be: projects/{project}/sheets/{sheet}
   // For personal draft, its format will be: projects/{project}/schemaDesigns/{schemaDesign}
-  string baseline_sheet_name = 9 [(google.api.field_behavior) = IMMUTABLE];
+  string parent_branch = 9 [(google.api.field_behavior) = IMMUTABLE];
 
   enum Type {
     TYPE_UNSPECIFIED = 0;

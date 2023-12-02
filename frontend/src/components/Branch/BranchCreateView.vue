@@ -329,7 +329,7 @@ const handleConfirm = async () => {
         engine: state.schemaDesign.engine,
         type: SchemaDesign_Type.MAIN_BRANCH,
         baselineDatabase: baselineDatabase,
-        baselineSheetName: baselineSheet.name,
+        parentBranch: baselineSheet.name,
       })
     );
   } else {

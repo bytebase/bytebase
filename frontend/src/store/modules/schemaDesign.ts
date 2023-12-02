@@ -52,11 +52,11 @@ export const useSchemaDesignStore = defineStore("schema_design", () => {
       schemaDesign.name
     );
     const projectResourceId = `${projectNamePrefix}${projectName}`;
-    const baselineSheetName = `${projectResourceId}/${sheetNamePrefix}${sheetId}`;
+    const parentBranch = `${projectResourceId}/${sheetNamePrefix}${sheetId}`;
     return createSchemaDesign(projectResourceId, {
       ...schemaDesign,
       type: SchemaDesign_Type.PERSONAL_DRAFT,
-      baselineSheetName: baselineSheetName,
+      parentBranch: parentBranch,
     });
   };
 
