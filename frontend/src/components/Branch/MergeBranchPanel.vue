@@ -172,7 +172,7 @@ const targetBranchFilter = (branch: SchemaDesign) => {
 };
 
 const handleSaveDraft = async (ignoreNotify?: boolean) => {
-  const updateMask = ["schema", "baseline_sheet_name"];
+  const updateMask = ["schema", "parent_branch"];
   const [projectName] = getProjectAndSchemaDesignSheetId(
     sourceBranch.value.name
   );
@@ -196,7 +196,7 @@ const handleSaveDraft = async (ignoreNotify?: boolean) => {
       engine: sourceBranch.value.engine,
       baselineDatabase: sourceBranch.value.baselineDatabase,
       schema: state.editingSchema,
-      baselineSheetName: baselineSheet.name,
+      parentBranch: baselineSheet.name,
     }),
     updateMask
   );

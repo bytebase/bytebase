@@ -214,17 +214,17 @@ func (s *BranchService) convertBranchToSchemaDesign(ctx context.Context, project
 	}
 
 	schemaDesign := &v1pb.SchemaDesign{
-		Name:              fmt.Sprintf("%s%s/%s%v", common.ProjectNamePrefix, project.ResourceID, common.BranchPrefix, branch.ResourceID),
-		Title:             branch.ResourceID,
-		Etag:              fmt.Sprintf("%d", branch.CreatedTime.UnixMilli()),
-		BaselineSheetName: baselineBranch,
-		Engine:            v1pb.Engine(branch.Engine),
-		BaselineDatabase:  baselineDatabase,
-		Type:              schemaDesignType,
-		Creator:           common.FormatUserEmail(creator.Email),
-		Updater:           common.FormatUserEmail(updater.Email),
-		CreateTime:        timestamppb.New(branch.CreatedTime),
-		UpdateTime:        timestamppb.New(branch.UpdatedTime),
+		Name:             fmt.Sprintf("%s%s/%s%v", common.ProjectNamePrefix, project.ResourceID, common.BranchPrefix, branch.ResourceID),
+		Title:            branch.ResourceID,
+		Etag:             fmt.Sprintf("%d", branch.CreatedTime.UnixMilli()),
+		ParentBranch:     baselineBranch,
+		Engine:           v1pb.Engine(branch.Engine),
+		BaselineDatabase: baselineDatabase,
+		Type:             schemaDesignType,
+		Creator:          common.FormatUserEmail(creator.Email),
+		Updater:          common.FormatUserEmail(updater.Email),
+		CreateTime:       timestamppb.New(branch.CreatedTime),
+		UpdateTime:       timestamppb.New(branch.UpdatedTime),
 	}
 
 	if view != v1pb.SchemaDesignView_SCHEMA_DESIGN_VIEW_FULL {
