@@ -76,20 +76,18 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, uniqueId } from "lodash-es";
+import { uniqueId } from "lodash-es";
 import { NButton, NDivider, NInput } from "naive-ui";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import SchemaEditorV1 from "@/components/SchemaEditorV1/index.vue";
-import { mergeSchemaEditToMetadata } from "@/components/SchemaEditorV1/utils";
 import { ProjectSelect } from "@/components/v2";
 import {
   pushNotification,
   useDatabaseV1Store,
   useProjectV1Store,
   useSchemaEditorV1Store,
-  useSheetV1Store,
 } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
 import {
@@ -99,11 +97,6 @@ import {
 import { UNKNOWN_ID } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import {
-  Sheet_Source,
-  Sheet_Type,
-  Sheet_Visibility,
-} from "@/types/proto/v1/sheet_service";
 import { projectV1Slug } from "@/utils";
 import BaselineSchemaSelector from "./BaselineSchemaSelector.vue";
 import { validateBranchName } from "./utils";
@@ -136,7 +129,6 @@ const router = useRouter();
 const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
 const branchStore = useBranchStore();
-const sheetStore = useSheetV1Store();
 const state = reactive<LocalState>({
   projectId: props.projectId,
   loading: false,
@@ -284,37 +276,15 @@ const handleConfirm = async () => {
   }
 
   state.isCreating = true;
-  const metadata = mergeSchemaEditToMetadata(
-    branchSchema.schemaList,
-    cloneDeep(
-      state.branch.baselineSchemaMetadata || DatabaseMetadata.fromPartial({})
-    )
-  );
   const baselineDatabase = `${database.instanceEntity.name}/${databaseNamePrefix}${state.baselineSchema.databaseId}`;
-  // Create a baseline sheet for the schema design.
-  const baselineSheet = await sheetStore.createSheet(project.value.name, {
-    title: `baseline schema of ${branchTitle.value}`,
-    database: baselineDatabase,
-    content: new TextEncoder().encode(state.branch.baselineSchema),
-    visibility: Sheet_Visibility.VISIBILITY_PROJECT,
-    source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
-    type: Sheet_Type.TYPE_SQL,
-  });
 
   let createdSchemaDesign;
   if (!state.parentBranchName) {
     createdSchemaDesign = await branchStore.createBranch(
       project.value.name,
+      branchTitle.value,
       Branch.fromPartial({
-        title: branchTitle.value,
-        // Keep schema empty in frontend. Backend will generate the design schema.
-        schema: "",
-        schemaMetadata: metadata,
-        baselineSchema: state.branch.baselineSchema,
-        baselineSchemaMetadata: state.branch.baselineSchemaMetadata,
-        engine: state.branch.engine,
         baselineDatabase: baselineDatabase,
-        parentBranch: baselineSheet.name,
       })
     );
   } else {
@@ -322,10 +292,11 @@ const handleConfirm = async () => {
       state.parentBranchName,
       false /* useCache */
     );
-    createdSchemaDesign = await branchStore.createBranchDraft({
-      ...parentBranch,
-      title: branchTitle.value,
-    });
+    createdSchemaDesign = await branchStore.createBranchDraft(
+      project.value.name,
+      branchTitle.value,
+      parentBranch.name
+    );
   }
   state.isCreating = false;
   pushNotification({
