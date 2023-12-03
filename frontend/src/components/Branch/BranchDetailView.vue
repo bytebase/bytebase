@@ -264,7 +264,7 @@ const handleBranchTitleInputBlur = async () => {
 
   const updateMask = [];
   if (schemaDesign.value.branchId !== state.schemaDesignTitle) {
-    updateMask.push("title");
+    updateMask.push("branch_id");
   }
   if (updateMask.length !== 0) {
     await branchStore.updateBranch(
