@@ -1981,6 +1981,9 @@ type metadataFilter struct {
 }
 
 func convertDatabaseMetadata(database *store.DatabaseMessage, metadata *storepb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig, requestView v1pb.DatabaseMetadataView, filter *metadataFilter) *v1pb.DatabaseMetadata {
+	if metadata == nil {
+		return nil
+	}
 	m := &v1pb.DatabaseMetadata{
 		CharacterSet: metadata.CharacterSet,
 		Collation:    metadata.Collation,
