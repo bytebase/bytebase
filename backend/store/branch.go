@@ -41,12 +41,13 @@ type FindBranchMessage struct {
 
 // UpdateBranchMessage is the message to update a branch.
 type UpdateBranchMessage struct {
-	ProjectID  string
-	ResourceID string
-	UpdaterID  int
-	Config     *storepb.BranchConfig
-	Base       *storepb.BranchSnapshot
-	Head       *storepb.BranchSnapshot
+	ProjectID        string
+	ResourceID       string
+	UpdaterID        int
+	Config           *storepb.BranchConfig
+	Base             *storepb.BranchSnapshot
+	Head             *storepb.BranchSnapshot
+	UpdateResourceID *string
 }
 
 // GetBranch gets a branch.
@@ -273,6 +274,9 @@ func (s *Store) UpdateBranch(ctx context.Context, update *UpdateBranchMessage) e
 			return err
 		}
 		set, args = append(set, fmt.Sprintf("config = $%d", len(args)+1)), append(args, config)
+	}
+	if v := update.UpdateResourceID; v != nil {
+		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
 	args = append(args, project.UID, update.ResourceID)
 
