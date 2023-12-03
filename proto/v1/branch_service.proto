@@ -75,8 +75,8 @@ message Branch {
   // {branch} should be the id of a sheet.
   string name = 1;
 
-  // The title of branch. AKA sheet's name.
-  string title = 2;
+  // The branch ID.
+  string branch_id = 2;
 
   // The schema of branch. AKA sheet's statement.
   string schema = 3 [(google.api.field_behavior) = OUTPUT_ONLY];

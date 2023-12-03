@@ -3,7 +3,7 @@ import { Branch } from "@/types/proto/v1/branch_service";
 
 export const generateForkedBranchName = (branch: Branch): string => {
   const currentUser = useCurrentUserV1();
-  const parentBranchName = branch.title;
+  const parentBranchName = branch.branchId;
   const branchName =
     `${currentUser.value.title}/${parentBranchName}-draft`.replaceAll(" ", "-");
   return branchName;

@@ -61,8 +61,8 @@ export interface Branch {
    * {branch} should be the id of a sheet.
    */
   name: string;
-  /** The title of branch. AKA sheet's name. */
-  title: string;
+  /** The branch ID. */
+  branchId: string;
   /** The schema of branch. AKA sheet's statement. */
   schema: string;
   /** The metadata of the current editing schema. */
@@ -225,7 +225,7 @@ export interface DiffMetadataResponse {
 function createBaseBranch(): Branch {
   return {
     name: "",
-    title: "",
+    branchId: "",
     schema: "",
     schemaMetadata: undefined,
     baselineSchema: "",
@@ -246,8 +246,8 @@ export const Branch = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (message.title !== "") {
-      writer.uint32(18).string(message.title);
+    if (message.branchId !== "") {
+      writer.uint32(18).string(message.branchId);
     }
     if (message.schema !== "") {
       writer.uint32(26).string(message.schema);
@@ -307,7 +307,7 @@ export const Branch = {
             break;
           }
 
-          message.title = reader.string();
+          message.branchId = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
@@ -405,7 +405,7 @@ export const Branch = {
   fromJSON(object: any): Branch {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      branchId: isSet(object.branchId) ? globalThis.String(object.branchId) : "",
       schema: isSet(object.schema) ? globalThis.String(object.schema) : "",
       schemaMetadata: isSet(object.schemaMetadata) ? DatabaseMetadata.fromJSON(object.schemaMetadata) : undefined,
       baselineSchema: isSet(object.baselineSchema) ? globalThis.String(object.baselineSchema) : "",
@@ -428,8 +428,8 @@ export const Branch = {
     if (message.name !== "") {
       obj.name = message.name;
     }
-    if (message.title !== "") {
-      obj.title = message.title;
+    if (message.branchId !== "") {
+      obj.branchId = message.branchId;
     }
     if (message.schema !== "") {
       obj.schema = message.schema;
@@ -476,7 +476,7 @@ export const Branch = {
   fromPartial(object: DeepPartial<Branch>): Branch {
     const message = createBaseBranch();
     message.name = object.name ?? "";
-    message.title = object.title ?? "";
+    message.branchId = object.branchId ?? "";
     message.schema = object.schema ?? "";
     message.schemaMetadata = (object.schemaMetadata !== undefined && object.schemaMetadata !== null)
       ? DatabaseMetadata.fromPartial(object.schemaMetadata)

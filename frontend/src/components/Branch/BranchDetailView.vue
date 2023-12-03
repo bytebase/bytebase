@@ -14,7 +14,7 @@
         />
         <NTag v-if="parentBranch" round>
           {{ $t("schema-designer.parent-branch") }}:
-          {{ parentBranch.title }}
+          {{ parentBranch.branchId }}
         </NTag>
       </div>
       <div>
@@ -229,7 +229,7 @@ const prepareBaselineDatabase = async () => {
 watch(
   () => [props.branch],
   async () => {
-    state.schemaDesignTitle = schemaDesign.value.title;
+    state.schemaDesignTitle = schemaDesign.value.branchId;
     await prepareBaselineDatabase();
     // Prepare the parent branch for personal draft.
     if (schemaDesign.value.parentBranch !== "") {
@@ -263,14 +263,14 @@ const handleBranchTitleInputBlur = async () => {
   }
 
   const updateMask = [];
-  if (schemaDesign.value.title !== state.schemaDesignTitle) {
+  if (schemaDesign.value.branchId !== state.schemaDesignTitle) {
     updateMask.push("title");
   }
   if (updateMask.length !== 0) {
     await branchStore.updateBranch(
       Branch.fromPartial({
         name: schemaDesign.value.name,
-        title: state.schemaDesignTitle,
+        branchId: state.schemaDesignTitle,
         baselineDatabase: schemaDesign.value.baselineDatabase,
       }),
       updateMask
@@ -450,7 +450,7 @@ const handleSaveBranch = async () => {
       await branchStore.updateBranch(
         Branch.fromPartial({
           name: schemaDesign.value.name,
-          title: state.schemaDesignTitle,
+          branchId: state.schemaDesignTitle,
           engine: schemaDesign.value.engine,
           baselineDatabase: schemaDesign.value.baselineDatabase,
           baselineSchema: schemaDesign.value.baselineSchema,

@@ -40,7 +40,7 @@
             <NInput
               class="!w-4/5 text-center"
               readonly
-              :value="sourceBranch.title"
+              :value="sourceBranch.branchId"
               size="large"
             />
           </div>
@@ -172,7 +172,7 @@ const handleSaveDraft = async (ignoreNotify?: boolean) => {
   const baselineSheet = await sheetStore.createSheet(
     `${projectNamePrefix}${projectName}`,
     {
-      title: `baseline schema of ${targetBranch.value.title}`,
+      title: `baseline schema of ${targetBranch.value.branchId}`,
       database: targetBranch.value.baselineDatabase,
       content: new TextEncoder().encode(targetBranch.value.schema),
       visibility: Sheet_Visibility.VISIBILITY_PROJECT,
