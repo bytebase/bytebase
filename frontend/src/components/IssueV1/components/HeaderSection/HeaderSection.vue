@@ -23,8 +23,6 @@
       class="flex flex-col md:flex-row md:items-stretch md:justify-between gap-2 px-4"
     >
       <div class="flex-1 flex flex-col gap-x-2">
-        <Description />
-
         <VCSInfo />
 
         <RollbackFromTips />
@@ -46,7 +44,6 @@ import { useIssueContext } from "../../logic";
 import IssueStatusIcon from "../IssueStatusIcon.vue";
 import Actions from "./Actions";
 import Assignee from "./Assignee";
-import Description from "./Description.vue";
 import ReviewSection from "./ReviewSection";
 import RollbackFromTips from "./RollbackFromTips.vue";
 import Title from "./Title.vue";
