@@ -129,7 +129,6 @@ import {
 } from "@/store";
 import { useBranchList, useBranchStore } from "@/store/modules/branch";
 import {
-  getProjectName,
   getProjectAndBranchId,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
@@ -386,11 +385,10 @@ const handleSaveBranch = async () => {
   if (updateMask.length !== 0) {
     if (schemaDesign.value.parentBranch === "") {
       const branchName = generateForkedBranchName(schemaDesign.value);
-      const projectId = getProjectName(project.value.name);
       const newBranch = await branchStore.createBranchDraft(
-        projectId,
+        project.value.name,
         branchName,
-        "" // TODO(d): use parent branch name.
+        schemaDesign.value.name
       );
       try {
         await branchStore.mergeBranch({

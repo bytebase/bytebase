@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -472,13 +473,15 @@ func GetProjectResourceIDSheetUID(name string) (string, int, error) {
 	return tokens[0], sheetUID, nil
 }
 
+var branchRegexp = regexp.MustCompile("^projects/([^/]+)/branches/(.+)$")
+
 // GetProjectAndBranchID returns the project and branch ID from a resource name.
 func GetProjectAndBranchID(name string) (string, string, error) {
-	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, BranchPrefix)
-	if err != nil {
-		return "", "", err
+	matches := branchRegexp.FindStringSubmatch(name)
+	if len(matches) != 3 {
+		return "", "", errors.Errorf("invalid branch name %q", name)
 	}
-	return tokens[0], tokens[1], nil
+	return matches[1], matches[2], nil
 }
 
 // TrimSuffix trims the suffix from the name and returns the trimmed name.

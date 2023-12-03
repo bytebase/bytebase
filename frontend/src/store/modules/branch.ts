@@ -22,12 +22,12 @@ export const useBranchStore = defineStore("schema_design", () => {
   };
 
   const createBranch = async (
-    projectResourceId: string,
+    projectName: string,
     branchId: string,
     branch: Branch
   ) => {
     const createdBranch = await branchServiceClient.createBranch({
-      parent: projectResourceId,
+      parent: projectName,
       branchId: branchId,
       branch,
     });
@@ -37,12 +37,12 @@ export const useBranchStore = defineStore("schema_design", () => {
   };
 
   const createBranchDraft = async (
-    projectResourceId: string,
+    projectName: string,
     branchId: string,
     parentBranch: string
   ) => {
     return createBranch(
-      projectResourceId,
+      projectName,
       branchId,
       Branch.fromPartial({
         parentBranch: parentBranch,
