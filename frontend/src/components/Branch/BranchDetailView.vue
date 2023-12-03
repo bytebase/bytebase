@@ -376,7 +376,7 @@ const handleSaveBranch = async () => {
     return;
   }
   if (!isEqual(mergedMetadata, branch.value.schemaMetadata)) {
-    updateMask.push("metadata");
+    updateMask.push("schema_metadata");
   }
 
   state.isSaving = true;
