@@ -30,7 +30,7 @@ import {
 import { branchServiceClient } from "@/grpcweb";
 import { useDatabaseV1Store, useSchemaEditorV1Store } from "@/store";
 import { Branch } from "@/types/proto/v1/branch_service";
-import { fetchBaselineMetadataOfBranch } from "../SchemaEditorV1/utils/branch";
+import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 
 const props = defineProps<{
   branch: Branch;
@@ -43,11 +43,6 @@ const database = computed(() => {
   return databaseStore.getDatabaseByName(props.branch.baselineDatabase);
 });
 
-const getSourceMetadata = async () => {
-  const branch = props.branch;
-
-  return await fetchBaselineMetadataOfBranch(branch);
-};
 const getEditingMetadata = async () => {
   const branchSchema = schemaEditorV1Store.resourceMap["branch"].get(
     props.branch.name
@@ -55,9 +50,9 @@ const getEditingMetadata = async () => {
   if (!branchSchema) {
     return undefined;
   }
-  const baselineMetadata = await fetchBaselineMetadataOfBranch(
-    branchSchema.branch
-  );
+  const baselineMetadata =
+    branchSchema.branch.baselineSchemaMetadata ||
+    DatabaseMetadata.fromPartial({});
   const metadata = mergeSchemaEditToMetadata(
     branchSchema.schemaList,
     cloneDeep(baselineMetadata)
@@ -85,7 +80,7 @@ const getStatement = async () => {
 
   // Prepare to diff
   const db = database.value;
-  const source = await getSourceMetadata();
+  const source = props.branch.baselineSchemaMetadata;
   const target = editingMetadata;
 
   try {
