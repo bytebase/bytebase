@@ -188,7 +188,7 @@ func (c *SMTPClient) SendMail(e *Email) error {
 	case SMTPEncryptionTypeNone:
 		return e.e.Send(fmt.Sprintf("%s:%d", c.host, c.port), c.getAuth())
 	case SMTPEncryptionTypeSSLTLS:
-		return e.e.SendWithTLS(fmt.Sprintf("%s:%d", c.host, c.port), c.getAuth(), &tls.Config{})
+		return e.e.SendWithTLS(fmt.Sprintf("%s:%d", c.host, c.port), c.getAuth(), &tls.Config{ServerName: c.host})
 	case SMTPEncryptionTypeSTARTTLS:
 		return e.e.SendWithStartTLS(fmt.Sprintf("%s:%d", c.host, c.port), c.getAuth(), &tls.Config{InsecureSkipVerify: true})
 	default:
