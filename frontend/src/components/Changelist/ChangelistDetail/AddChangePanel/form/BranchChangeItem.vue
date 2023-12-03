@@ -14,7 +14,7 @@
         />
         <span>@</span>
         <div>
-          {{ branch.title }}
+          {{ branch.branchId }}
         </div>
       </div>
     </div>
@@ -58,7 +58,7 @@ const branch = computed(() => {
     props.branch ??
     Branch.fromPartial({
       name: props.change.source,
-      title: "<<Unknown Branch>>",
+      branchId: "<<Unknown Branch>>",
     })
   );
 });

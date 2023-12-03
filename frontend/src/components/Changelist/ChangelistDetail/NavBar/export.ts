@@ -62,7 +62,7 @@ const zipFileForBranch = async (zip: JSZip, change: Change, index: number) => {
     return;
   }
 
-  const filename = buildFileName("BRANCH", branch.title, index);
+  const filename = buildFileName("BRANCH", branch.branchId, index);
   zip.file(filename, getSheetStatement(sheet));
 };
 

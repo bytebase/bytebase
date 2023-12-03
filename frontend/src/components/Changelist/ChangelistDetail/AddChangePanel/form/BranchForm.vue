@@ -105,7 +105,7 @@ const filteredBranchList = computed(() => {
 
   const kw = state.keyword.trim().toLowerCase();
   if (kw) {
-    list = list.filter((branch) => branch.title.toLowerCase().includes(kw));
+    list = list.filter((branch) => branch.branchId.toLowerCase().includes(kw));
   }
 
   return list;

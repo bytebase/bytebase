@@ -76,7 +76,7 @@ const show = computed(() => {
 
 watch(branch, (branch) => {
   if (branch) {
-    title.value = branch.title;
+    title.value = branch.branchId;
   }
 });
 </script>

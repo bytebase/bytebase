@@ -62,7 +62,7 @@ const filteredBranches = computed(() => {
     "desc"
   ).filter((branch) => {
     return state.searchKeyword
-      ? branch.title.includes(state.searchKeyword)
+      ? branch.branchId.includes(state.searchKeyword)
       : true;
   });
 });
