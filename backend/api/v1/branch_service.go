@@ -279,13 +279,12 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 
 	headUpdate := branch.Head
 	hasHeadUpdate := false
+	// The update includes the following cases.
+	// 1) schema_metadata: update the current branch. We need to update schema accordingly, or we lazily update it till merge branch.
+	// 2) baseline_database and schema: rebase the baseline schema metadata and baseline schema. Use schema to create schema_metadata.
+
 	// TODO(d): this section needs some clarifications for merging branches.
-	if slices.Contains(request.UpdateMask.Paths, "schema") && slices.Contains(request.UpdateMask.Paths, "metadata") {
-		headUpdate.Schema = []byte(request.Branch.Schema)
-		sanitizeBranchSchemaMetadata(request.Branch)
-		// TODO(d): update database metadata and config.
-		hasHeadUpdate = true
-	} else if slices.Contains(request.UpdateMask.Paths, "schema") {
+	if slices.Contains(request.UpdateMask.Paths, "schema") {
 		headUpdate.Schema = []byte(request.Branch.Schema)
 		hasHeadUpdate = true
 		// TODO(d): convert schema to metadata.
@@ -293,7 +292,7 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 		// if _, err := transformSchemaStringToDatabaseMetadata(schemaDesign.Engine, *sheetUpdate.Statement); err != nil {
 		// 	return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
 		// }
-	} else if slices.Contains(request.UpdateMask.Paths, "metadata") {
+	} else if slices.Contains(request.UpdateMask.Paths, "schema_metadata") {
 		sanitizeBranchSchemaMetadata(request.Branch)
 		// schema, err := getDesignSchema(schemaDesign.Engine, schemaDesign.BaselineSchema, schemaDesign.SchemaMetadata)
 		// if err != nil {

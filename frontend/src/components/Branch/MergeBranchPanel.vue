@@ -82,18 +82,9 @@ import { Status } from "nice-grpc-common";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { pushNotification, useSheetV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
-import {
-  getProjectAndBranchId,
-  projectNamePrefix,
-} from "@/store/modules/v1/common";
 import { Branch } from "@/types/proto/v1/branch_service";
-import {
-  Sheet_Source,
-  Sheet_Type,
-  Sheet_Visibility,
-} from "@/types/proto/v1/sheet_service";
 import { DiffEditor } from "../MonacoEditor";
 
 interface LocalState {
@@ -119,7 +110,6 @@ const state = reactive<LocalState>({
 });
 const { t } = useI18n();
 const dialog = useDialog();
-const sheetStore = useSheetV1Store();
 const branchStore = useBranchStore();
 const isLoadingSourceBranch = ref(false);
 const isLoadingTargetBranch = ref(false);
@@ -166,29 +156,14 @@ const targetBranchFilter = (branch: Branch) => {
 };
 
 const handleSaveDraft = async (ignoreNotify?: boolean) => {
-  const updateMask = ["schema", "parent_branch"];
-  const [projectName] = getProjectAndBranchId(sourceBranch.value.name);
-  // Create a baseline sheet for the schema design.
-  const baselineSheet = await sheetStore.createSheet(
-    `${projectNamePrefix}${projectName}`,
-    {
-      title: `baseline schema of ${targetBranch.value.branchId}`,
-      database: targetBranch.value.baselineDatabase,
-      content: new TextEncoder().encode(targetBranch.value.schema),
-      visibility: Sheet_Visibility.VISIBILITY_PROJECT,
-      source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
-      type: Sheet_Type.TYPE_SQL,
-    }
-  );
-
+  const updateMask = ["schema"];
   // Update the schema design draft first.
+  // TODO(d): rebase the baseline schema metadata.
   await branchStore.updateBranch(
     Branch.fromPartial({
       name: sourceBranch.value.name,
-      engine: sourceBranch.value.engine,
       baselineDatabase: sourceBranch.value.baselineDatabase,
       schema: state.editingSchema,
-      parentBranch: baselineSheet.name,
     }),
     updateMask
   );
