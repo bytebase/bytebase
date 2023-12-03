@@ -44,7 +44,7 @@
             type="success"
             round
           >
-            {{ branch.title }}
+            {{ branch.branchId }}
           </NTag>
         </div>
       </div>
@@ -150,7 +150,9 @@ const branches = computed(() => {
 
 const matchedBranchList = computed(() => {
   return branches.value.filter((branch) => {
-    return wildcardToRegex(state.protectionRule.nameFilter).test(branch.title);
+    return wildcardToRegex(state.protectionRule.nameFilter).test(
+      branch.branchId
+    );
   });
 });
 

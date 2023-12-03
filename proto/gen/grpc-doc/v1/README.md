@@ -3421,7 +3421,7 @@ The type of the backup.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the branch. Format: projects/{project}/branches/{branch} {branch} should be the id of a sheet. |
-| title | [string](#string) |  | The title of branch. AKA sheet&#39;s name. |
+| branch_id | [string](#string) |  | The branch ID. |
 | schema | [string](#string) |  | The schema of branch. AKA sheet&#39;s statement. |
 | schema_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the current editing schema. |
 | baseline_schema | [string](#string) |  | The baseline schema. |

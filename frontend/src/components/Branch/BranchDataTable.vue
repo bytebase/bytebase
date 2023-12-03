@@ -62,8 +62,8 @@ const dataTableRows = computed(() => {
 
     return {
       branch: branch,
-      name: branch.title,
-      branchName: branch.title,
+      name: branch.branchId,
+      branchName: branch.branchId,
       projectName: project.title,
       baselineVersion: baselineVersion,
       updatedTimeStr: getUpdatedTimeStr(branch),
@@ -80,8 +80,8 @@ const dataTableRows = computed(() => {
     if (parentRow) {
       parentRow.children?.push({
         branch: childBranch,
-        name: childBranch.title,
-        branchName: `${parentRow.branchName}/${childBranch.title}`,
+        name: childBranch.branchId,
+        branchName: `${parentRow.branchName}/${childBranch.branchId}`,
         // Child branch does not show project name.
         projectName: "",
         baselineVersion: "",

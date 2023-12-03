@@ -596,7 +596,7 @@ func (s *BranchService) convertBranchToBranch(ctx context.Context, project *stor
 
 	schemaDesign := &v1pb.Branch{
 		Name:             fmt.Sprintf("%s%s/%s%v", common.ProjectNamePrefix, project.ResourceID, common.BranchPrefix, branch.ResourceID),
-		Title:            branch.ResourceID,
+		BranchId:         branch.ResourceID,
 		Etag:             fmt.Sprintf("%d", branch.CreatedTime.UnixMilli()),
 		ParentBranch:     baselineBranch,
 		Engine:           v1pb.Engine(branch.Engine),

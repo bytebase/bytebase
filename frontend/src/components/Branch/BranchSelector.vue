@@ -67,7 +67,7 @@ const options = computed(() => {
     return {
       branch,
       value: branch.name,
-      label: branch.title,
+      label: branch.branchId,
     };
   });
 });
@@ -77,7 +77,7 @@ const filterByName = (pattern: string, option: SelectOption) => {
   pattern = pattern.toLowerCase();
   return (
     branch.name.toLowerCase().includes(pattern) ||
-    branch.title.toLowerCase().includes(pattern)
+    branch.branchId.toLowerCase().includes(pattern)
   );
 };
 
@@ -87,7 +87,7 @@ const renderLabel: SelectRenderLabel = (option) => {
     return;
   }
 
-  const children = [h("div", {}, [branch.title])];
+  const children = [h("div", {}, [branch.branchId])];
   const database = databaseStore.getDatabaseByName(branch.baselineDatabase);
   if (database.uid !== String(UNKNOWN_ID)) {
     // prefix engine icon

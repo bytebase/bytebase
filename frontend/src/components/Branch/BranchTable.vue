@@ -14,7 +14,7 @@
       </div>
       <div class="bb-grid-cell">
         <NPerformantEllipsis :line-clamp="1">{{
-          branch.title
+          branch.branchId
         }}</NPerformantEllipsis>
       </div>
       <div class="bb-grid-cell">
@@ -94,7 +94,7 @@ const getFormattedValue = (branch: Branch) => {
       (br) => br.name === branch.parentBranch
     );
     if (parentSchemaDesign) {
-      parentBranch = parentSchemaDesign.title;
+      parentBranch = parentSchemaDesign.branchId;
     }
   }
 
@@ -107,7 +107,7 @@ const getFormattedValue = (branch: Branch) => {
   });
 
   return {
-    name: branch.title,
+    name: branch.branchId,
     project: project,
     database: databaseV1Store.getDatabaseByName(branch.baselineDatabase),
     parentBranch: parentBranch,
