@@ -84,7 +84,6 @@ import { NRadio, NRadioGroup } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { fetchBaselineMetadataOfBranch } from "@/components/SchemaEditorV1/utils/branch";
 import { Drawer, DrawerContent, ErrorTipsButton } from "@/components/v2";
 import { branchServiceClient } from "@/grpcweb";
 import {
@@ -174,12 +173,10 @@ const doAddChange = async () => {
           change.source,
           false /* !useCache */
         );
-        const source = await fetchBaselineMetadataOfBranch(branch);
-        const target = branch.schemaMetadata;
 
         const { diff } = await branchServiceClient.diffMetadata({
-          sourceMetadata: source,
-          targetMetadata: target,
+          sourceMetadata: branch.baselineSchemaMetadata,
+          targetMetadata: branch.schemaMetadata,
           engine: branch.engine,
         });
         setSheetStatement(sheet, diff);

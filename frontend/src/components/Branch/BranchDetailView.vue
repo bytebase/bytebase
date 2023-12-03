@@ -133,9 +133,9 @@ import {
   projectNamePrefix,
 } from "@/store/modules/v1/common";
 import { Branch } from "@/types/proto/v1/branch_service";
+import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { projectV1Slug } from "@/utils";
 import { provideSQLCheckContext } from "../SQLCheck";
-import { fetchBaselineMetadataOfBranch } from "../SchemaEditorV1/utils/branch";
 import MergeBranchPanel from "./MergeBranchPanel.vue";
 import SchemaDesignEditor from "./SchemaDesignEditor.vue";
 import { generateForkedBranchName, validateBranchName } from "./utils";
@@ -323,9 +323,9 @@ const handleCancelEdit = async () => {
     return;
   }
 
-  const baselineMetadata = await fetchBaselineMetadataOfBranch(
-    branchSchema.branch
-  );
+  const baselineMetadata =
+    branchSchema.branch.baselineSchemaMetadata ||
+    DatabaseMetadata.fromPartial({});
   const mergedMetadata = mergeSchemaEditToMetadata(
     branchSchema.schemaList,
     cloneDeep(baselineMetadata)
@@ -358,9 +358,9 @@ const handleSaveBranch = async () => {
     return;
   }
 
-  const baselineMetadata = await fetchBaselineMetadataOfBranch(
-    branchSchema.branch
-  );
+  const baselineMetadata =
+    branchSchema.branch.baselineSchemaMetadata ||
+    DatabaseMetadata.fromPartial({});
   const mergedMetadata = mergeSchemaEditToMetadata(
     branchSchema.schemaList,
     cloneDeep(baselineMetadata)
@@ -448,10 +448,6 @@ const handleSaveBranch = async () => {
       await branchStore.updateBranch(
         Branch.fromPartial({
           name: branch.value.name,
-          branchId: state.branchId,
-          engine: branch.value.engine,
-          baselineDatabase: branch.value.baselineDatabase,
-          baselineSchema: branch.value.baselineSchema,
           schemaMetadata: mergedMetadata,
         }),
         updateMask
