@@ -14,7 +14,7 @@
         <GitBranch :size="16" />
         <span>{{ $t("common.branch") }}</span>
         <span v-if="branch" class="textinfolabel">
-          {{ branch.title }}
+          {{ branch.branchId }}
         </span>
       </div>
     </template>
