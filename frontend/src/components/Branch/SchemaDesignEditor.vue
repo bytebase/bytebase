@@ -69,12 +69,12 @@ import {
 } from "@/store";
 import { ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
+import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { MonacoEditor } from "../MonacoEditor";
 import {
   mergeSchemaEditToMetadata,
   validateDatabaseMetadata,
 } from "../SchemaEditorV1/utils";
-import { fetchBaselineMetadataOfBranch } from "../SchemaEditorV1/utils/branch";
 
 type TabType = "schema-editor" | "raw-sql-preview";
 
@@ -119,7 +119,6 @@ const fetchRawSQLPreview = async () => {
     return;
   }
 
-  const sourceMetadata = await fetchBaselineMetadataOfBranch(props.branch);
   const branchSchema = schemaEditorV1Store.resourceMap["branch"].get(
     props.branch.name
   );
@@ -127,9 +126,10 @@ const fetchRawSQLPreview = async () => {
     return undefined;
   }
 
-  const baselineMetadata = await fetchBaselineMetadataOfBranch(
-    branchSchema.branch
-  );
+  const sourceMetadata = props.branch.baselineSchemaMetadata;
+  const baselineMetadata =
+    branchSchema.branch.baselineSchemaMetadata ||
+    DatabaseMetadata.fromPartial({});
   const metadata = mergeSchemaEditToMetadata(
     branchSchema.schemaList,
     cloneDeep(baselineMetadata)
