@@ -3,14 +3,14 @@
     <div class="w-full flex flex-row justify-between items-center">
       <div class="w-full flex flex-row justify-start items-center gap-x-2">
         <NInput
-          v-model:value="state.schemaDesignTitle"
+          v-model:value="state.branchId"
           class="!w-auto"
           :passively-activated="true"
-          :style="titleInputStyle"
-          :readonly="!state.isEditingTitle"
+          :style="branchIdInputStyle"
+          :readonly="!state.isEditingBranchId"
           :placeholder="'feature/add-billing'"
-          @focus="state.isEditingTitle = true"
-          @blur="handleBranchTitleInputBlur"
+          @focus="state.isEditingBranchId = true"
+          @blur="handleBranchIdInputBlur"
         />
         <NTag v-if="parentBranch" round>
           {{ $t("schema-designer.parent-branch") }}:
@@ -74,7 +74,7 @@
         :key="schemaEditorKey"
         :project="project"
         :readonly="!state.isEditing"
-        :branch="schemaDesign"
+        :branch="branch"
       />
     </div>
     <!-- Don't show delete button in view mode. -->
@@ -91,7 +91,7 @@
   <TargetDatabasesSelectPanel
     v-if="selectTargetDatabasesContext.show"
     :project-id="project.uid"
-    :engine="schemaDesign.engine"
+    :engine="branch.engine"
     :selected-database-id-list="[]"
     @close="selectTargetDatabasesContext.show = false"
     @update="handleSelectedDatabaseIdListChanged"
@@ -141,9 +141,9 @@ import SchemaDesignEditor from "./SchemaDesignEditor.vue";
 import { generateForkedBranchName, validateBranchName } from "./utils";
 
 interface LocalState {
-  schemaDesignTitle: string;
+  branchId: string;
   isEditing: boolean;
-  isEditingTitle: boolean;
+  isEditingBranchId: boolean;
   showDiffEditor: boolean;
   isSaving: boolean;
 }
@@ -164,9 +164,9 @@ const { branchList, ready } = useBranchList(
 const { runSQLCheck } = provideSQLCheckContext();
 const dialog = useDialog();
 const state = reactive<LocalState>({
-  schemaDesignTitle: "",
+  branchId: "",
   isEditing: false,
-  isEditingTitle: false,
+  isEditingBranchId: false,
   showDiffEditor: false,
   isSaving: false,
 });
@@ -181,15 +181,15 @@ const selectTargetDatabasesContext = ref<{
   show: false,
 });
 
-const schemaDesign = computed(() => {
+const branch = computed(() => {
   return props.branch;
 });
 
 const parentBranch = asyncComputed(async () => {
   // Show parent branch when the current branch is a personal draft and it's not the new created one.
-  if (schemaDesign.value.parentBranch !== "") {
+  if (branch.value.parentBranch !== "") {
     return await branchStore.fetchBranchByName(
-      schemaDesign.value.parentBranch,
+      branch.value.parentBranch,
       true /* useCache */
     );
   }
@@ -197,21 +197,21 @@ const parentBranch = asyncComputed(async () => {
 }, undefined);
 
 const baselineDatabase = computed(() => {
-  return databaseStore.getDatabaseByName(schemaDesign.value.baselineDatabase);
+  return databaseStore.getDatabaseByName(branch.value.baselineDatabase);
 });
 
 const project = computed(() => {
   return baselineDatabase.value.projectEntity;
 });
 
-const titleInputStyle = computed(() => {
+const branchIdInputStyle = computed(() => {
   const style: CSSProperties = {
     cursor: "default",
     minWidth: "10rem",
     "--n-color-disabled": "transparent",
     "--n-font-size": "20px",
   };
-  const border = state.isEditingTitle
+  const border = state.isEditingBranchId
     ? "1px solid rgb(var(--color-control-border))"
     : "none";
   style["--n-border"] = border;
@@ -221,20 +221,18 @@ const titleInputStyle = computed(() => {
 });
 
 const prepareBaselineDatabase = async () => {
-  await databaseStore.getOrFetchDatabaseByName(
-    schemaDesign.value.baselineDatabase
-  );
+  await databaseStore.getOrFetchDatabaseByName(branch.value.baselineDatabase);
 };
 
 watch(
   () => [props.branch],
   async () => {
-    state.schemaDesignTitle = schemaDesign.value.branchId;
+    state.branchId = branch.value.branchId;
     await prepareBaselineDatabase();
     // Prepare the parent branch for personal draft.
-    if (schemaDesign.value.parentBranch !== "") {
+    if (branch.value.parentBranch !== "") {
       await branchStore.fetchBranchByName(
-        schemaDesign.value.parentBranch,
+        branch.value.parentBranch,
         true /* useCache */
       );
     }
@@ -244,8 +242,8 @@ watch(
   }
 );
 
-const handleBranchTitleInputBlur = async () => {
-  if (state.schemaDesignTitle === "") {
+const handleBranchIdInputBlur = async () => {
+  if (state.branchId === "") {
     pushNotification({
       module: "bytebase",
       style: "WARN",
@@ -253,7 +251,7 @@ const handleBranchTitleInputBlur = async () => {
     });
     return;
   }
-  if (!validateBranchName(state.schemaDesignTitle)) {
+  if (!validateBranchName(state.branchId)) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
@@ -263,15 +261,15 @@ const handleBranchTitleInputBlur = async () => {
   }
 
   const updateMask = [];
-  if (schemaDesign.value.branchId !== state.schemaDesignTitle) {
-    updateMask.push("title");
+  if (branch.value.branchId !== state.branchId) {
+    updateMask.push("branch_id");
   }
   if (updateMask.length !== 0) {
     await branchStore.updateBranch(
       Branch.fromPartial({
-        name: schemaDesign.value.name,
-        branchId: state.schemaDesignTitle,
-        baselineDatabase: schemaDesign.value.baselineDatabase,
+        name: branch.value.name,
+        branchId: state.branchId,
+        baselineDatabase: branch.value.baselineDatabase,
       }),
       updateMask
     );
@@ -281,7 +279,7 @@ const handleBranchTitleInputBlur = async () => {
       title: t("schema-designer.message.updated-succeed"),
     });
   }
-  state.isEditingTitle = false;
+  state.isEditingBranchId = false;
 };
 
 const handleMergeBranch = () => {
@@ -289,8 +287,8 @@ const handleMergeBranch = () => {
     const [projectName] = getProjectAndBranchId(item.name);
     return (
       `${projectNamePrefix}${projectName}` === project.value.name &&
-      item.engine === schemaDesign.value.engine &&
-      item.name !== schemaDesign.value.name
+      item.engine === branch.value.engine &&
+      item.name !== branch.value.name
     );
   });
   const targetBranchName = parentBranch.value
@@ -306,7 +304,7 @@ const handleMergeBranch = () => {
   }
 
   mergeBranchPanelContext.value = {
-    sourceBranchName: schemaDesign.value.name,
+    sourceBranchName: branch.value.name,
     targetBranchName: targetBranchName,
   };
   state.showDiffEditor = true;
@@ -319,7 +317,7 @@ const handleEdit = async () => {
 const handleCancelEdit = async () => {
   const schemaEditorV1Store = useSchemaEditorV1Store();
   const branchSchema = schemaEditorV1Store.resourceMap["branch"].get(
-    schemaDesign.value.name
+    branch.value.name
   );
   if (!branchSchema) {
     return;
@@ -332,7 +330,7 @@ const handleCancelEdit = async () => {
     branchSchema.schemaList,
     cloneDeep(baselineMetadata)
   );
-  if (!isEqual(mergedMetadata, schemaDesign.value.schemaMetadata)) {
+  if (!isEqual(mergedMetadata, branch.value.schemaMetadata)) {
     // If the metadata is changed, we need to rebuild the editing state.
     schemaEditorKey.value = uniqueId();
   }
@@ -354,7 +352,7 @@ const handleSaveBranch = async () => {
   const updateMask = [];
   const schemaEditorV1Store = useSchemaEditorV1Store();
   const branchSchema = schemaEditorV1Store.resourceMap["branch"].get(
-    schemaDesign.value.name
+    branch.value.name
   );
   if (!branchSchema) {
     return;
@@ -377,22 +375,22 @@ const handleSaveBranch = async () => {
     });
     return;
   }
-  if (!isEqual(mergedMetadata, schemaDesign.value.schemaMetadata)) {
+  if (!isEqual(mergedMetadata, branch.value.schemaMetadata)) {
     updateMask.push("metadata");
   }
 
   state.isSaving = true;
   if (updateMask.length !== 0) {
-    if (schemaDesign.value.parentBranch === "") {
-      const branchName = generateForkedBranchName(schemaDesign.value);
+    if (branch.value.parentBranch === "") {
+      const branchName = generateForkedBranchName(branch.value);
       const newBranch = await branchStore.createBranchDraft(
         project.value.name,
         branchName,
-        schemaDesign.value.name
+        branch.value.name
       );
       try {
         await branchStore.mergeBranch({
-          name: schemaDesign.value.name,
+          name: branch.value.name,
           headBranch: newBranch.name,
         });
       } catch (error: any) {
@@ -423,7 +421,7 @@ const handleSaveBranch = async () => {
               state.showDiffEditor = true;
               mergeBranchPanelContext.value = {
                 sourceBranchName: newBranch.name,
-                targetBranchName: schemaDesign.value.name,
+                targetBranchName: branch.value.name,
               };
             },
           });
@@ -443,17 +441,17 @@ const handleSaveBranch = async () => {
       await branchStore.deleteBranch(newBranch.name);
       // Fetch the latest schema design after merged.
       await branchStore.fetchBranchByName(
-        schemaDesign.value.name,
+        branch.value.name,
         false /* !useCache */
       );
     } else {
       await branchStore.updateBranch(
         Branch.fromPartial({
-          name: schemaDesign.value.name,
-          branchId: state.schemaDesignTitle,
-          engine: schemaDesign.value.engine,
-          baselineDatabase: schemaDesign.value.baselineDatabase,
-          baselineSchema: schemaDesign.value.baselineSchema,
+          name: branch.value.name,
+          branchId: state.branchId,
+          engine: branch.value.engine,
+          baselineDatabase: branch.value.baselineDatabase,
+          baselineSchema: branch.value.baselineSchema,
           schemaMetadata: mergedMetadata,
         }),
         updateMask
@@ -490,9 +488,9 @@ const handleSelectedDatabaseIdListChanged = async (
   try {
     const diffResponse = await branchServiceClient.diffMetadata(
       {
-        sourceMetadata: schemaDesign.value.baselineSchemaMetadata,
-        targetMetadata: schemaDesign.value.schemaMetadata,
-        engine: schemaDesign.value.engine,
+        sourceMetadata: branch.value.baselineSchemaMetadata,
+        targetMetadata: branch.value.schemaMetadata,
+        engine: branch.value.engine,
       },
       {
         silent: true,
@@ -511,8 +509,8 @@ const handleSelectedDatabaseIdListChanged = async (
   if (
     statement === "" &&
     !isEqual(
-      schemaDesign.value.baselineSchemaMetadata?.schemaConfigs,
-      schemaDesign.value.schemaMetadata?.schemaConfigs
+      branch.value.baselineSchemaMetadata?.schemaConfigs,
+      branch.value.schemaMetadata?.schemaConfigs
     )
   ) {
     pushNotification({
@@ -531,7 +529,7 @@ const handleSelectedDatabaseIdListChanged = async (
     project: project.value.uid,
     mode: "normal",
     ghost: undefined,
-    branch: schemaDesign.value.name,
+    branch: branch.value.name,
   };
   query.databaseList = databaseIdList.join(",");
   query.sql = statement;
@@ -563,7 +561,7 @@ const generateIssueName = (databaseNameList: string[]) => {
 };
 
 const deleteBranch = async () => {
-  await branchStore.deleteBranch(schemaDesign.value.name);
+  await branchStore.deleteBranch(branch.value.name);
   router.replace({
     name: "workspace.project.detail",
     hash: "#branches",

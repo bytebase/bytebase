@@ -251,23 +251,42 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 	if branch == nil {
 		return nil, status.Errorf(codes.NotFound, "branch %q not found", branchID)
 	}
-	schemaDesign := request.Branch
-
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
 	// TODO(d): handle etag.
-	// TODO(d): support branch id update.
-	// if slices.Contains(request.UpdateMask.Paths, "title") {
-	// }
+
+	// Handle branch ID update.
+	if slices.Contains(request.UpdateMask.Paths, "branch_id") {
+		if len(request.UpdateMask.Paths) > 1 {
+			return nil, status.Errorf(codes.InvalidArgument, "cannot update branch_id with other types of updates")
+		}
+		updateBranchMessage := &store.UpdateBranchMessage{ProjectID: projectID, ResourceID: branchID, UpdaterID: principalID, UpdateResourceID: &request.Branch.BranchId}
+		if err := s.store.UpdateBranch(ctx, updateBranchMessage); err != nil {
+			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to update branch, error %v", err))
+		}
+		branch, err = s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &projectID, ResourceID: &request.Branch.BranchId, LoadFull: true})
+		if err != nil {
+			return nil, err
+		}
+		v1Branch, err := s.convertBranchToBranch(ctx, project, branch, v1pb.BranchView_BRANCH_VIEW_FULL)
+		if err != nil {
+			return nil, err
+		}
+		return v1Branch, nil
+	}
 
 	headUpdate := branch.Head
 	hasHeadUpdate := false
 	// TODO(d): this section needs some clarifications for merging branches.
 	if slices.Contains(request.UpdateMask.Paths, "schema") && slices.Contains(request.UpdateMask.Paths, "metadata") {
-		headUpdate.Schema = []byte(schemaDesign.Schema)
-		sanitizeBranchSchemaMetadata(schemaDesign)
+		headUpdate.Schema = []byte(request.Branch.Schema)
+		sanitizeBranchSchemaMetadata(request.Branch)
 		// TODO(d): update database metadata and config.
 		hasHeadUpdate = true
 	} else if slices.Contains(request.UpdateMask.Paths, "schema") {
-		headUpdate.Schema = []byte(schemaDesign.Schema)
+		headUpdate.Schema = []byte(request.Branch.Schema)
 		hasHeadUpdate = true
 		// TODO(d): convert schema to metadata.
 		// Try to transform the schema string to database metadata to make sure it's valid.
@@ -275,7 +294,7 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 		// 	return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
 		// }
 	} else if slices.Contains(request.UpdateMask.Paths, "metadata") {
-		sanitizeBranchSchemaMetadata(schemaDesign)
+		sanitizeBranchSchemaMetadata(request.Branch)
 		// schema, err := getDesignSchema(schemaDesign.Engine, schemaDesign.BaselineSchema, schemaDesign.SchemaMetadata)
 		// if err != nil {
 		// 	return nil, err
@@ -285,10 +304,6 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 	}
 	// TODO(d): handle database config as well.
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
 	updateBranchMessage := &store.UpdateBranchMessage{ProjectID: projectID, ResourceID: branchID, UpdaterID: principalID}
 	if hasHeadUpdate {
 		updateBranchMessage.Head = headUpdate
@@ -301,11 +316,11 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 	if err != nil {
 		return nil, err
 	}
-	schemaDesign, err = s.convertBranchToBranch(ctx, project, branch, v1pb.BranchView_BRANCH_VIEW_FULL)
+	v1Branch, err := s.convertBranchToBranch(ctx, project, branch, v1pb.BranchView_BRANCH_VIEW_FULL)
 	if err != nil {
 		return nil, err
 	}
-	return schemaDesign, nil
+	return v1Branch, nil
 }
 
 // MergeBranch merges a personal draft branch to the target branch.
