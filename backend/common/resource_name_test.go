@@ -15,6 +15,18 @@ func TestGetInstanceDatabaseID(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestGetProjectAndBranchID(t *testing.T) {
+	projectID, branchID, err := GetProjectAndBranchID("projects/aaa/branches/feat/hello")
+	require.NoError(t, err)
+	require.Equal(t, "aaa", projectID)
+	require.Equal(t, "feat/hello", branchID)
+
+	projectID, branchID, err = GetProjectAndBranchID("projects/new-project/branches/vv")
+	require.NoError(t, err)
+	require.Equal(t, "new-project", projectID)
+	require.Equal(t, "vv", branchID)
+}
+
 func TestGetSchemaTableName(t *testing.T) {
 	schema, table, err := GetSchemaTableName("schemas/a/tables/b")
 	require.NoError(t, err)
