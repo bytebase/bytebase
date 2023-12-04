@@ -1047,8 +1047,8 @@ func convertSchemaTemplateSetting(template *storepb.SchemaTemplateSetting) *v1pb
 			Id:       v.Id,
 			Engine:   convertToEngine(v.Engine),
 			Category: v.Category,
-			Column:   convertColumnMetadata(v.Column),
-			Config:   convertColumnConfig(v.Config),
+			Column:   convertStoreColumnMetadata(v.Column),
+			Config:   convertStoreColumnConfig(v.Config),
 		})
 	}
 	for _, v := range template.TableTemplates {
@@ -1056,8 +1056,8 @@ func convertSchemaTemplateSetting(template *storepb.SchemaTemplateSetting) *v1pb
 			Id:       v.Id,
 			Engine:   convertToEngine(v.Engine),
 			Category: v.Category,
-			Table:    convertTableMetadata(v.Table, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL),
-			Config:   convertTableConfig(v.Config),
+			Table:    convertStoreTableMetadata(v.Table, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL),
+			Config:   convertStoreTableConfig(v.Config),
 		})
 	}
 
