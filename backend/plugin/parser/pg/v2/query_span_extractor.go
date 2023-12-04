@@ -72,7 +72,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	// Our querySpanExtractor is based on the pg_query_go library, which does not support listening to or walking the AST.
 	// We separate the logic for querying spans and accessing data.
 	// The second one is achieved using ParseToJson, which is simpler.
-	accessColumns, err := q.getAccessTables(stmt)
+	accessTables, err := q.getAccessTables(stmt)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get access columns from statement: %s", stmt)
 	}
@@ -80,7 +80,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	// because we do not synchronize the schema of the system table.
 	// This causes an error (NOT_FOUND) when using querySpanExtractor.findTableSchema.
 	// As a result, we exclude getting query span results for accessing only the system table.
-	allSystems, mixed := isMixedQuery(accessColumns)
+	allSystems, mixed := isMixedQuery(accessTables)
 	if mixed != nil {
 		return nil, mixed
 	}
@@ -125,7 +125,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 
 	return &base.QuerySpan{
 		Results:       tableSource.GetQuerySpanResult(),
-		SourceColumns: accessColumns,
+		SourceColumns: accessTables,
 	}, nil
 }
 
@@ -810,7 +810,8 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 		}
 	}
 	table := schema.GetTable(tableName)
-	if table == nil {
+	view := schema.GetView(tableName)
+	if table == nil && view == nil {
 		return nil, &parsererror.ResourceNotFoundError{
 			Database: &q.connectedDB,
 			Schema:   &schemaName,
@@ -818,17 +819,31 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 		}
 	}
 
-	var columns []string
-	for _, column := range table.GetColumns() {
-		columns = append(columns, column.Name)
+	if table != nil {
+		var columns []string
+		for _, column := range table.GetColumns() {
+			columns = append(columns, column.Name)
+		}
+		return &base.PhysicalTable{
+			Server:   "",
+			Database: q.connectedDB,
+			Schema:   schemaName,
+			Name:     tableName,
+			Columns:  columns,
+		}, nil
 	}
-	return &base.PhysicalTable{
-		Server:   "",
-		Database: q.connectedDB,
-		Schema:   schemaName,
-		Name:     tableName,
-		Columns:  columns,
-	}, nil
+
+	if view != nil && view.Definition != "" {
+		columns, err := q.getColumnsForView(view.Definition)
+		if err != nil {
+			return nil, err
+		}
+		return &base.PseudoTable{
+			Name:    tableName,
+			Columns: columns,
+		}, nil
+	}
+	return nil, nil
 }
 
 func extractSchemaTableColumnName(columnName *ast.ColumnNameDef) (string, string, string) {
@@ -1076,8 +1091,15 @@ func (q *querySpanExtractor) getRangeVarsFromJSONRecursive(jsonData map[string]a
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", currentDatabase)
 			}
-			// Access pseudo table or table we do not sync, return directly.
-			if databaseMetadata == nil || databaseMetadata.GetSchema(resource.Schema) == nil || databaseMetadata.GetSchema(resource.Schema).GetTable(resource.Table) == nil {
+			// Access pseudo table or table/view we do not sync, return directly.
+			if databaseMetadata == nil {
+				return nil, nil
+			}
+			schema := databaseMetadata.GetSchema(resource.Schema)
+			if schema == nil {
+				return nil, nil
+			}
+			if schema.GetTable(resource.Table) == nil && schema.GetView(resource.Table) == nil {
 				return nil, nil
 			}
 		}
@@ -1145,4 +1167,13 @@ func isSystemResource(resource base.ColumnResource) string {
 		return fmt.Sprintf("system table %q", resource.Table)
 	}
 	return ""
+}
+
+func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QuerySpanResult, error) {
+	newQ := newQuerySpanExtractor(q.connectedDB, q.f)
+	span, err := newQ.getQuerySpan(q.ctx, definition)
+	if err != nil {
+		return nil, err
+	}
+	return span.Results, nil
 }
