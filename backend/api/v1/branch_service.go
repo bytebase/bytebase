@@ -3,7 +3,6 @@ package v1
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"path"
 
 	"golang.org/x/exp/slices"
@@ -272,22 +271,23 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 	}
 
 	if slices.Contains(request.UpdateMask.Paths, "schema_metadata") {
-		headUpdate := branch.Head
 		sanitizeBranchSchemaMetadata(request.Branch)
 		metadata, config := convertV1DatabaseMetadata(request.Branch.GetSchemaMetadata())
-		// TODO(d): convert to schema.
-		slog.Info("metadata %v %v", metadata.Name, config)
-		// schema, err := getDesignSchema(branch.Engine, schemaDesign.BaselineSchema, schemaDesign.SchemaMetadata)
-		// if err != nil {
-		// 	return nil, err
-		// }
+		schema, err := getDesignSchema(branch.Engine, string(branch.Head.GetSchema()), metadata)
+		if err != nil {
+			return nil, err
+		}
+		headUpdate := &storepb.BranchSnapshot{
+			Schema:         []byte(schema),
+			Metadata:       metadata,
+			DatabaseConfig: config,
+		}
 		updateBranchMessage := &store.UpdateBranchMessage{ProjectID: projectID, ResourceID: branchID, UpdaterID: principalID}
 		updateBranchMessage.Head = headUpdate
 		if err := s.store.UpdateBranch(ctx, updateBranchMessage); err != nil {
 			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to update branch, error %v", err))
 		}
 	}
-	// TODO(d): handle database config as well.
 
 	branch, err = s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &projectID, ResourceID: &branchID, LoadFull: true})
 	if err != nil {
