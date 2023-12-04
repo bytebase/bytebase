@@ -483,7 +483,8 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 		}
 		filter = &metadataFilter{schema: schema, table: table}
 	}
-	v1pbMetadata := convertStoreDatabaseMetadata(database, dbSchema.GetMetadata(), dbSchema.GetConfig(), request.View, filter)
+	v1pbMetadata := convertStoreDatabaseMetadata(dbSchema.GetMetadata(), dbSchema.GetConfig(), request.View, filter)
+	v1pbMetadata.Name = fmt.Sprintf("%s%s/%s%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName, common.MetadataSuffix)
 
 	// Set effective masking level only if filter is set for a table.
 	if filter != nil && request.View == v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL {
@@ -604,7 +605,8 @@ func (s *DatabaseService) UpdateDatabaseMetadata(ctx context.Context, request *v
 		return nil, status.Errorf(codes.NotFound, "database schema %q not found", databaseName)
 	}
 
-	v1pbMetadata := convertStoreDatabaseMetadata(database, dbSchema.GetMetadata(), dbSchema.GetConfig(), v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_BASIC, nil /* filter */)
+	v1pbMetadata := convertStoreDatabaseMetadata(dbSchema.GetMetadata(), dbSchema.GetConfig(), v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_BASIC, nil /* filter */)
+	v1pbMetadata.Name = fmt.Sprintf("%s%s/%s%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName, common.MetadataSuffix)
 	return v1pbMetadata, nil
 }
 
