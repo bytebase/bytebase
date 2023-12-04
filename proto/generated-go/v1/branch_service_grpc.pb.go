@@ -25,6 +25,7 @@ const (
 	BranchService_CreateBranch_FullMethodName = "/bytebase.v1.BranchService/CreateBranch"
 	BranchService_UpdateBranch_FullMethodName = "/bytebase.v1.BranchService/UpdateBranch"
 	BranchService_MergeBranch_FullMethodName  = "/bytebase.v1.BranchService/MergeBranch"
+	BranchService_RebaseBranch_FullMethodName = "/bytebase.v1.BranchService/RebaseBranch"
 	BranchService_DeleteBranch_FullMethodName = "/bytebase.v1.BranchService/DeleteBranch"
 	BranchService_DiffMetadata_FullMethodName = "/bytebase.v1.BranchService/DiffMetadata"
 )
@@ -38,6 +39,7 @@ type BranchServiceClient interface {
 	CreateBranch(ctx context.Context, in *CreateBranchRequest, opts ...grpc.CallOption) (*Branch, error)
 	UpdateBranch(ctx context.Context, in *UpdateBranchRequest, opts ...grpc.CallOption) (*Branch, error)
 	MergeBranch(ctx context.Context, in *MergeBranchRequest, opts ...grpc.CallOption) (*Branch, error)
+	RebaseBranch(ctx context.Context, in *RebaseBranchRequest, opts ...grpc.CallOption) (*Branch, error)
 	DeleteBranch(ctx context.Context, in *DeleteBranchRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	DiffMetadata(ctx context.Context, in *DiffMetadataRequest, opts ...grpc.CallOption) (*DiffMetadataResponse, error)
 }
@@ -95,6 +97,15 @@ func (c *branchServiceClient) MergeBranch(ctx context.Context, in *MergeBranchRe
 	return out, nil
 }
 
+func (c *branchServiceClient) RebaseBranch(ctx context.Context, in *RebaseBranchRequest, opts ...grpc.CallOption) (*Branch, error) {
+	out := new(Branch)
+	err := c.cc.Invoke(ctx, BranchService_RebaseBranch_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *branchServiceClient) DeleteBranch(ctx context.Context, in *DeleteBranchRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, BranchService_DeleteBranch_FullMethodName, in, out, opts...)
@@ -122,6 +133,7 @@ type BranchServiceServer interface {
 	CreateBranch(context.Context, *CreateBranchRequest) (*Branch, error)
 	UpdateBranch(context.Context, *UpdateBranchRequest) (*Branch, error)
 	MergeBranch(context.Context, *MergeBranchRequest) (*Branch, error)
+	RebaseBranch(context.Context, *RebaseBranchRequest) (*Branch, error)
 	DeleteBranch(context.Context, *DeleteBranchRequest) (*emptypb.Empty, error)
 	DiffMetadata(context.Context, *DiffMetadataRequest) (*DiffMetadataResponse, error)
 	mustEmbedUnimplementedBranchServiceServer()
@@ -145,6 +157,9 @@ func (UnimplementedBranchServiceServer) UpdateBranch(context.Context, *UpdateBra
 }
 func (UnimplementedBranchServiceServer) MergeBranch(context.Context, *MergeBranchRequest) (*Branch, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MergeBranch not implemented")
+}
+func (UnimplementedBranchServiceServer) RebaseBranch(context.Context, *RebaseBranchRequest) (*Branch, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RebaseBranch not implemented")
 }
 func (UnimplementedBranchServiceServer) DeleteBranch(context.Context, *DeleteBranchRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteBranch not implemented")
@@ -255,6 +270,24 @@ func _BranchService_MergeBranch_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _BranchService_RebaseBranch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RebaseBranchRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BranchServiceServer).RebaseBranch(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BranchService_RebaseBranch_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BranchServiceServer).RebaseBranch(ctx, req.(*RebaseBranchRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _BranchService_DeleteBranch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteBranchRequest)
 	if err := dec(in); err != nil {
@@ -317,6 +350,10 @@ var BranchService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "MergeBranch",
 			Handler:    _BranchService_MergeBranch_Handler,
+		},
+		{
+			MethodName: "RebaseBranch",
+			Handler:    _BranchService_RebaseBranch_Handler,
 		},
 		{
 			MethodName: "DeleteBranch",
