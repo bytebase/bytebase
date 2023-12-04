@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"testing"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
@@ -89,20 +88,14 @@ func extractLinkRecursive() (map[string]bool, error) {
 }
 
 func checkLinkWithRetry(link string) error {
-	for i := 0; i < 3; i++ {
-		// Request the link and check the response status code is 200.
-		res, err := http.Head(link)
-		// Make the linter happy.
-		_ = res.Body.Close()
-		if err != nil {
-			return errors.Wrapf(err, "failed to request link: %s", link)
-		}
-		if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusPermanentRedirect {
-			time.Sleep(1 * time.Minute)
-			continue
-		}
-		return nil
+	// Request the link and check the response status code is 200.
+	res, err := http.Head(link)
+	if err != nil {
+		return errors.Wrapf(err, "failed to request link: %s", link)
 	}
-
-	return errors.Errorf("Link %s is not reachable after %d retries", link, 3)
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusPermanentRedirect {
+		return errors.Errorf("link %q returned status %q", link, res.Status)
+	}
+	return nil
 }
