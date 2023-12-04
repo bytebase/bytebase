@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -89,13 +90,17 @@ func extractLinkRecursive() (map[string]bool, error) {
 
 func checkLinkWithRetry(link string) error {
 	// Request the link and check the response status code is 200.
-	res, err := http.Head(link)
+	resp, err := http.Head(link)
 	if err != nil {
-		return errors.Wrapf(err, "failed to request link: %s", link)
+		return errors.Wrapf(err, "failed to request link %q", link)
 	}
-	defer res.Body.Close()
-	if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusPermanentRedirect {
-		return errors.Errorf("link %q returned status %q", link, res.Status)
+	defer resp.Body.Close()
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return errors.Wrapf(err, "failed to read link %q", link)
+	}
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusPermanentRedirect {
+		return errors.Errorf("link %q returned status %q content %q", link, resp.Status, b)
 	}
 	return nil
 }
