@@ -2,117 +2,215 @@
   want:
     - text: db
       type: DATABASE
+      definition: ""
+      comment: ""
     - text: t1
       type: TABLE
+      definition: ""
+      comment: ""
     - text: t2
       type: TABLE
+      definition: ""
+      comment: ""
     - text: c1
       type: COLUMN
+      definition: t2 | , NOT NULL
+      comment: ""
     - text: c2
       type: COLUMN
+      definition: t2 | , NOT NULL
+      comment: ""
     - text: eid
       type: COLUMN
+      definition: ""
+      comment: ""
     - text: xid
       type: COLUMN
+      definition: ""
+      comment: ""
     - text: v1
       type: VIEW
+      definition: ""
+      comment: ""
 - input: SELECT c1 as eid FROM t1 ORDER BY |
   want:
     - text: db
       type: DATABASE
+      definition: ""
+      comment: ""
     - text: t1
       type: TABLE
+      definition: ""
+      comment: ""
     - text: t2
       type: TABLE
+      definition: ""
+      comment: ""
     - text: c1
       type: COLUMN
+      definition: t1 | , NOT NULL
+      comment: ""
     - text: eid
       type: COLUMN
+      definition: ""
+      comment: ""
     - text: v1
       type: VIEW
+      definition: ""
+      comment: ""
 - input: SELECT FROM basdkfjasldf;SELECT | FROM t1
   want:
     - text: db
       type: DATABASE
+      definition: ""
+      comment: ""
     - text: t1
       type: TABLE
+      definition: ""
+      comment: ""
     - text: t2
       type: TABLE
+      definition: ""
+      comment: ""
     - text: c1
       type: COLUMN
+      definition: t1 | , NOT NULL
+      comment: ""
     - text: v1
       type: VIEW
+      definition: ""
+      comment: ""
 - input: SELECT | FROM (SELECT c1 FROM t1) cc1(cc1c1)
   want:
     - text: db
       type: DATABASE
+      definition: ""
+      comment: ""
     - text: cc1
       type: TABLE
+      definition: ""
+      comment: ""
     - text: t1
       type: TABLE
+      definition: ""
+      comment: ""
     - text: t2
       type: TABLE
+      definition: ""
+      comment: ""
     - text: cc1c1
       type: COLUMN
+      definition: ""
+      comment: ""
     - text: v1
       type: VIEW
+      definition: ""
+      comment: ""
 - input: SELECT | FROM (SELECT c1 FROM t1) cc1
   want:
     - text: db
       type: DATABASE
+      definition: ""
+      comment: ""
     - text: cc1
       type: TABLE
+      definition: ""
+      comment: ""
     - text: t1
       type: TABLE
+      definition: ""
+      comment: ""
     - text: t2
       type: TABLE
+      definition: ""
+      comment: ""
     - text: v1
       type: VIEW
+      definition: ""
+      comment: ""
 - input: SELECT * from t1 cc1 JOIN t2 on cc1.|
   want:
     - text: c1
       type: COLUMN
+      definition: t1 | , NOT NULL
+      comment: ""
 - input: SELECT MAX(cc1.|) FROM t2 cc1
   want:
     - text: c1
       type: COLUMN
+      definition: t2 | , NOT NULL
+      comment: ""
     - text: c2
       type: COLUMN
+      definition: t2 | , NOT NULL
+      comment: ""
 - input: SELECT * FROM |
   want:
     - text: db
       type: DATABASE
+      definition: ""
+      comment: ""
     - text: t1
       type: TABLE
+      definition: ""
+      comment: ""
     - text: t2
       type: TABLE
+      definition: ""
+      comment: ""
     - text: v1
       type: VIEW
+      definition: ""
+      comment: ""
 - input: SELECT | FROM t1
   want:
     - text: db
       type: DATABASE
+      definition: ""
+      comment: ""
     - text: t1
       type: TABLE
+      definition: ""
+      comment: ""
     - text: t2
       type: TABLE
+      definition: ""
+      comment: ""
     - text: c1
       type: COLUMN
+      definition: t1 | , NOT NULL
+      comment: ""
     - text: v1
       type: VIEW
+      definition: ""
+      comment: ""
 - input: SELECT | FROM t2 x
   want:
     - text: db
       type: DATABASE
+      definition: ""
+      comment: ""
     - text: t1
       type: TABLE
+      definition: ""
+      comment: ""
     - text: t2
       type: TABLE
+      definition: ""
+      comment: ""
     - text: x
       type: TABLE
+      definition: ""
+      comment: ""
     - text: c1
       type: COLUMN
+      definition: t2 | , NOT NULL
+      comment: ""
     - text: c2
       type: COLUMN
+      definition: t2 | , NOT NULL
+      comment: ""
     - text: v1
       type: VIEW
+      definition: ""
+      comment: ""

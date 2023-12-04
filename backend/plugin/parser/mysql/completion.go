@@ -1091,12 +1091,38 @@ func (m CompletionMap) insertViews(c *Completer, schemas map[string]bool) {
 	}
 }
 
-func (m CompletionMap) insertColumns(c *Completer, schemas, tables map[string]bool) {
-	for _, columnName := range c.listColumns(schemas, tables) {
-		m.Insert(base.Candidate{
-			Type: base.CandidateTypeColumn,
-			Text: columnName,
-		})
+func (m CompletionMap) insertColumns(c *Completer, databases, tables map[string]bool) {
+	for database := range databases {
+		if _, exists := c.metadataCache[database]; !exists {
+			metadata, err := c.getMetadata(c.ctx, database)
+			if err != nil || metadata == nil {
+				continue
+			}
+			c.metadataCache[database] = metadata
+		}
+
+		for table := range tables {
+			tableMeta := c.metadataCache[database].GetSchema("").GetTable(table)
+			if tableMeta == nil {
+				continue
+			}
+			for _, column := range tableMeta.GetColumns() {
+				definition := fmt.Sprintf("%s | %s", table, column.Type)
+				if !column.Nullable {
+					definition += ", NOT NULL"
+				}
+				comment := column.UserComment
+				if len(column.Classification) != 0 {
+					comment = column.Classification + "\n" + column.UserComment
+				}
+				m.Insert(base.Candidate{
+					Type:       base.CandidateTypeColumn,
+					Text:       column.Name,
+					Definition: definition,
+					Comment:    comment,
+				})
+			}
+		}
 	}
 }
 
@@ -1137,29 +1163,4 @@ func (c *Completer) listViews(database string) []string {
 	}
 
 	return c.metadataCache[database].GetSchema("").ListViewNames()
-}
-
-func (c *Completer) listColumns(databases, tables map[string]bool) []string {
-	var result []string
-	for database := range databases {
-		if _, exists := c.metadataCache[database]; !exists {
-			metadata, err := c.getMetadata(c.ctx, database)
-			if err != nil || metadata == nil {
-				continue
-			}
-			c.metadataCache[database] = metadata
-		}
-
-		for table := range tables {
-			tableMeta := c.metadataCache[database].GetSchema("").GetTable(table)
-			if tableMeta == nil {
-				continue
-			}
-			for _, column := range tableMeta.GetColumns() {
-				result = append(result, column.Name)
-			}
-		}
-	}
-
-	return result
 }
