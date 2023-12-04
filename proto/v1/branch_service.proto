@@ -42,7 +42,12 @@ service BranchService {
 
   rpc MergeBranch(MergeBranchRequest) returns (Branch) {
     option (google.api.http) = {post: "/v1/{name=projects/*/branches/*}:merge"};
-    option (google.api.method_signature) = "name,target_name";
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc RebaseBranch(RebaseBranchRequest) returns (Branch) {
+    option (google.api.http) = {post: "/v1/{name=projects/*/branches/*}:rebase"};
+    option (google.api.method_signature) = "name";
   }
 
   rpc DeleteBranch(DeleteBranchRequest) returns (google.protobuf.Empty) {
@@ -190,7 +195,30 @@ message MergeBranchRequest {
 
   // The head branch to merge from.
   // Format: projects/{project}/branches/{branch}
-  string head_branch = 2 [(google.api.field_behavior) = REQUIRED];
+  string head_branch = 2;
+
+  // For failed merge.
+  string merged_schema = 3;
+}
+
+message RebaseBranchRequest {
+  // The name of the base branch to merge to.
+  // Format: projects/{project}/branches/{branch}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The database (remote upstream) used to rebase.
+  // We use its schema as baseline and reapply the difference between base and head of the named branch.
+  // Format: instances/{instance}/databases/{database}
+  string source_database = 2;
+
+  // The branch (remote upstream) used to rebase. We use its head as baseline.
+  // We use its head schema as baseline and reapply the difference between base and head of the named branch.
+  // Format: projects/{project}/branches/{branch}
+  string source_branch = 3;
+
+  // For failed merge, we will pass in this addition merged schema and use it for head.
+  // This has to be set together with source_database or source_branch.
+  string merged_schema = 4;
 }
 
 message DeleteBranchRequest {

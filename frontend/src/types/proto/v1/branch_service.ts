@@ -194,6 +194,33 @@ export interface MergeBranchRequest {
    * Format: projects/{project}/branches/{branch}
    */
   headBranch: string;
+  /** For failed merge. */
+  mergedSchema: string;
+}
+
+export interface RebaseBranchRequest {
+  /**
+   * The name of the base branch to merge to.
+   * Format: projects/{project}/branches/{branch}
+   */
+  name: string;
+  /**
+   * The database (remote upstream) used to rebase.
+   * We use its schema as baseline and reapply the difference between base and head of the named branch.
+   * Format: instances/{instance}/databases/{database}
+   */
+  sourceDatabase: string;
+  /**
+   * The branch (remote upstream) used to rebase. We use its head as baseline.
+   * We use its head schema as baseline and reapply the difference between base and head of the named branch.
+   * Format: projects/{project}/branches/{branch}
+   */
+  sourceBranch: string;
+  /**
+   * For failed merge, we will pass in this addition merged schema and use it for head.
+   * This has to be set together with source_database or source_branch.
+   */
+  mergedSchema: string;
 }
 
 export interface DeleteBranchRequest {
@@ -916,7 +943,7 @@ export const UpdateBranchRequest = {
 };
 
 function createBaseMergeBranchRequest(): MergeBranchRequest {
-  return { name: "", headBranch: "" };
+  return { name: "", headBranch: "", mergedSchema: "" };
 }
 
 export const MergeBranchRequest = {
@@ -926,6 +953,9 @@ export const MergeBranchRequest = {
     }
     if (message.headBranch !== "") {
       writer.uint32(18).string(message.headBranch);
+    }
+    if (message.mergedSchema !== "") {
+      writer.uint32(26).string(message.mergedSchema);
     }
     return writer;
   },
@@ -951,6 +981,13 @@ export const MergeBranchRequest = {
 
           message.headBranch = reader.string();
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.mergedSchema = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -964,6 +1001,7 @@ export const MergeBranchRequest = {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       headBranch: isSet(object.headBranch) ? globalThis.String(object.headBranch) : "",
+      mergedSchema: isSet(object.mergedSchema) ? globalThis.String(object.mergedSchema) : "",
     };
   },
 
@@ -975,6 +1013,9 @@ export const MergeBranchRequest = {
     if (message.headBranch !== "") {
       obj.headBranch = message.headBranch;
     }
+    if (message.mergedSchema !== "") {
+      obj.mergedSchema = message.mergedSchema;
+    }
     return obj;
   },
 
@@ -985,6 +1026,111 @@ export const MergeBranchRequest = {
     const message = createBaseMergeBranchRequest();
     message.name = object.name ?? "";
     message.headBranch = object.headBranch ?? "";
+    message.mergedSchema = object.mergedSchema ?? "";
+    return message;
+  },
+};
+
+function createBaseRebaseBranchRequest(): RebaseBranchRequest {
+  return { name: "", sourceDatabase: "", sourceBranch: "", mergedSchema: "" };
+}
+
+export const RebaseBranchRequest = {
+  encode(message: RebaseBranchRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.sourceDatabase !== "") {
+      writer.uint32(18).string(message.sourceDatabase);
+    }
+    if (message.sourceBranch !== "") {
+      writer.uint32(26).string(message.sourceBranch);
+    }
+    if (message.mergedSchema !== "") {
+      writer.uint32(34).string(message.mergedSchema);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): RebaseBranchRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRebaseBranchRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.sourceDatabase = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.sourceBranch = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.mergedSchema = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RebaseBranchRequest {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      sourceDatabase: isSet(object.sourceDatabase) ? globalThis.String(object.sourceDatabase) : "",
+      sourceBranch: isSet(object.sourceBranch) ? globalThis.String(object.sourceBranch) : "",
+      mergedSchema: isSet(object.mergedSchema) ? globalThis.String(object.mergedSchema) : "",
+    };
+  },
+
+  toJSON(message: RebaseBranchRequest): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.sourceDatabase !== "") {
+      obj.sourceDatabase = message.sourceDatabase;
+    }
+    if (message.sourceBranch !== "") {
+      obj.sourceBranch = message.sourceBranch;
+    }
+    if (message.mergedSchema !== "") {
+      obj.mergedSchema = message.mergedSchema;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<RebaseBranchRequest>): RebaseBranchRequest {
+    return RebaseBranchRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<RebaseBranchRequest>): RebaseBranchRequest {
+    const message = createBaseRebaseBranchRequest();
+    message.name = object.name ?? "";
+    message.sourceDatabase = object.sourceDatabase ?? "";
+    message.sourceBranch = object.sourceBranch ?? "";
+    message.mergedSchema = object.mergedSchema ?? "";
     return message;
   },
 };
@@ -1436,7 +1582,7 @@ export const BranchServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
-          8410: [new Uint8Array([16, 110, 97, 109, 101, 44, 116, 97, 114, 103, 101, 116, 95, 110, 97, 109, 101])],
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
           578365826: [
             new Uint8Array([
               40,
@@ -1479,6 +1625,64 @@ export const BranchServiceDefinition = {
               101,
               114,
               103,
+              101,
+            ]),
+          ],
+        },
+      },
+    },
+    rebaseBranch: {
+      name: "RebaseBranch",
+      requestType: RebaseBranchRequest,
+      requestStream: false,
+      responseType: Branch,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          578365826: [
+            new Uint8Array([
+              41,
+              34,
+              39,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              47,
+              98,
+              114,
+              97,
+              110,
+              99,
+              104,
+              101,
+              115,
+              47,
+              42,
+              125,
+              58,
+              114,
+              101,
+              98,
+              97,
+              115,
               101,
             ]),
           ],
