@@ -2,6 +2,7 @@ package v1
 
 import (
 	"cmp"
+	"log/slog"
 	"time"
 
 	"github.com/pkg/errors"
@@ -99,8 +100,15 @@ func (m *maskingLevelEvaluator) evaluateMaskingAlgorithmOfColumn(databaseMessage
 			if v, ok := m.maskingAlgorithms[algorithmID]; ok {
 				return v, maskingLevel, nil
 			}
-			// If we cannot find the algorithm, we will return the masking level and a error message to the caller.
-			return nil, maskingLevel, errors.Errorf("failed to find the masking algorithm %q", algorithmID)
+			slog.Warn(
+				"failed to find the masking algorithm",
+				slog.String("algorithm", algorithmID),
+				slog.String("schema", schemaName),
+				slog.String("table", tableName),
+				slog.String("column", columnName),
+			)
+			// If we cannot find the algorithm, we just log the warning and treat it is as none masking.
+			return nil, storepb.MaskingLevel_NONE, nil
 		}
 	}
 
@@ -110,7 +118,14 @@ func (m *maskingLevelEvaluator) evaluateMaskingAlgorithmOfColumn(databaseMessage
 
 	semanticType, ok := m.semanticTypesMap[columnSemanticTypeID]
 	if !ok {
-		return nil, maskingLevel, errors.Errorf("failed to find the semantic type %q", columnSemanticTypeID)
+		slog.Warn(
+			"failed to find the semantic type",
+			slog.String("semantic_type", columnSemanticTypeID),
+			slog.String("schema", schemaName),
+			slog.String("table", tableName),
+			slog.String("column", columnName),
+		)
+		return nil, storepb.MaskingLevel_NONE, nil
 	}
 	algorithmID := ""
 	switch maskingLevel {
@@ -123,8 +138,15 @@ func (m *maskingLevelEvaluator) evaluateMaskingAlgorithmOfColumn(databaseMessage
 		if v, ok := m.maskingAlgorithms[algorithmID]; ok {
 			return v, maskingLevel, nil
 		}
-		// If we cannot find the algorithm, we will return the masking level and a error message to the caller.
-		return nil, maskingLevel, errors.Errorf("failed to find the masking algorithm %q", algorithmID)
+		slog.Warn(
+			"failed to find the masking algorithm",
+			slog.String("algorithm", algorithmID),
+			slog.String("schema", schemaName),
+			slog.String("table", tableName),
+			slog.String("column", columnName),
+		)
+		// If we cannot find the algorithm, we just log the warning and treat it is as none masking.
+		return nil, storepb.MaskingLevel_NONE, nil
 	}
 
 	return nil, maskingLevel, nil
