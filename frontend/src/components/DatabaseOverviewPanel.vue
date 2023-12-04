@@ -174,7 +174,7 @@
 import { head } from "lodash-es";
 import { computed, reactive, watch, PropType } from "vue";
 import { useRoute } from "vue-router";
-import { useAnomalyV1List, useDBSchemaV1Store } from "@/store";
+import { useDBSchemaV1Store } from "@/store";
 import { Anomaly } from "@/types/proto/v1/anomaly_service";
 import { Engine, State } from "@/types/proto/v1/common";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
@@ -197,6 +197,10 @@ const props = defineProps({
   database: {
     required: true,
     type: Object as PropType<ComposedDatabase>,
+  },
+  anomalyList: {
+    required: true,
+    type: Object as PropType<Anomaly[]>,
   },
 });
 const route = useRoute();
@@ -253,16 +257,12 @@ watch(
   { immediate: true }
 );
 
-const anomalyList = useAnomalyV1List(
-  computed(() => ({ database: props.database.name }))
-);
-
 const anomalySectionList = computed((): BBTableSectionDataSource<Anomaly>[] => {
   const list: BBTableSectionDataSource<Anomaly>[] = [];
-  if (anomalyList.value.length > 0) {
+  if (props.anomalyList.length > 0) {
     list.push({
       title: props.database.name,
-      list: anomalyList.value,
+      list: props.anomalyList,
     });
   }
   return list;

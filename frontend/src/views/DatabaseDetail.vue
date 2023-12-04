@@ -122,7 +122,10 @@
 
     <NTabs v-model:value="state.selectedTab">
       <NTabPane name="overview" :tab="$t('common.overview')">
-        <DatabaseOverviewPanel :database="database" />
+        <DatabaseOverviewPanel
+          :database="database"
+          :anomaly-list="anomalyList"
+        />
       </NTabPane>
       <NTabPane
         v-if="allowToChangeDatabase"
@@ -232,7 +235,7 @@
 import dayjs from "dayjs";
 import { NButton, NTabPane, NTabs } from "naive-ui";
 import { ClientError } from "nice-grpc-web";
-import { computed, reactive, watch } from "vue";
+import { computed, reactive, watch, ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useRoute } from "vue-router";
@@ -254,6 +257,7 @@ import {
 } from "@/components/v2";
 import {
   pushNotification,
+  useAnomalyV1Store,
   useCurrentUserIamPolicy,
   useCurrentUserV1,
   useDatabaseV1Store,
@@ -265,6 +269,7 @@ import {
   DEFAULT_PROJECT_V1_NAME,
   unknownEnvironment,
 } from "@/types";
+import { Anomaly } from "@/types/proto/v1/anomaly_service";
 import { State } from "@/types/proto/v1/common";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import {
@@ -327,6 +332,13 @@ const state = reactive<LocalState>({
 const route = useRoute();
 const currentUserV1 = useCurrentUserV1();
 const currentUserIamPolicy = useCurrentUserIamPolicy();
+const anomalyList = ref<Anomaly[]>([]);
+
+onMounted(async () => {
+  anomalyList.value = await useAnomalyV1Store().fetchAnomalyList({
+    database: database.value.name,
+  });
+});
 
 watch(
   () => route.hash,
@@ -552,6 +564,9 @@ const syncDatabaseSchema = async () => {
         "db.successfully-synced-schema-for-database-database-value-name",
         [database.value.databaseName]
       ),
+    });
+    anomalyList.value = await useAnomalyV1Store().fetchAnomalyList({
+      database: database.value.name,
     });
   } catch (error) {
     pushNotification({
