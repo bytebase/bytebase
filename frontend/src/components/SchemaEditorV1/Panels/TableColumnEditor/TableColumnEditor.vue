@@ -70,9 +70,14 @@ import LabelEditorDrawer from "@/components/LabelEditorDrawer.vue";
 import SelectClassificationDrawer from "@/components/SchemaTemplate/SelectClassificationDrawer.vue";
 import SemanticTypesDrawer from "@/components/SensitiveData/components/SemanticTypesDrawer.vue";
 import { InlineInput } from "@/components/v2";
-import { useSettingV1Store, useSubscriptionV1Store } from "@/store/modules";
+import {
+  useSettingV1Store,
+  useSubscriptionV1Store,
+  useSchemaEditorV1Store,
+} from "@/store/modules";
 import { Engine } from "@/types/proto/v1/common";
 import { ColumnConfig } from "@/types/proto/v1/database_service";
+import { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import { Table, Column, ForeignKey } from "@/types/v1/schemaEditor";
 import ColumnDefaultValueExpressionModal from "../../Modals/ColumnDefaultValueExpressionModal.vue";
 import {
@@ -164,6 +169,7 @@ const layoutReady = computed(() => tableHeaderHeight.value > 0);
 const { t } = useI18n();
 const subscriptionV1Store = useSubscriptionV1Store();
 const settingStore = useSettingV1Store();
+const schemaEditorV1Store = useSchemaEditorV1Store();
 const editColumnDefaultValueExpressionContext = ref<Column>();
 
 const classificationConfig = computed(() => {
@@ -180,8 +186,15 @@ const semanticTypeList = computed(() => {
   );
 });
 
+const showDatabaseConfigColumn = computed(
+  () => schemaEditorV1Store.resourceType === "branch"
+);
+
 const showSemanticTypeColumn = computed(() => {
-  return subscriptionV1Store.hasFeature("bb.feature.sensitive-data");
+  return (
+    subscriptionV1Store.hasFeature("bb.feature.sensitive-data") &&
+    showDatabaseConfigColumn.value
+  );
 });
 
 const columns = computed(() => {
@@ -249,10 +262,12 @@ const columns = computed(() => {
       width: 140,
       render: (column) => {
         return h(ClassificationCell, {
-          column,
+          classification: column.classification,
           readonly: props.readonly,
           disabled: props.disableChangeTable,
-          classificationConfig: classificationConfig.value,
+          classificationConfig:
+            classificationConfig.value ??
+            DataClassificationConfig.fromPartial({}),
           onEdit: () => openClassificationDrawer(column),
           onRemove: () => (column.classification = ""),
         });
@@ -368,6 +383,7 @@ const columns = computed(() => {
       title: t("common.labels"),
       resizable: true,
       width: 140,
+      hide: !showDatabaseConfigColumn.value,
       render: (column) => {
         return h(LabelsCell, {
           column,
