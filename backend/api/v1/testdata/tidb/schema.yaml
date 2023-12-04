@@ -4,7 +4,7 @@
       (
         c int,
         a int default 1 comment 'abcdefg',
-        b varchar(20) default 'NULL' comment '',
+        b varchar(20) default NULL comment '',
         d varbinary(500),
         e binary(20),
         primary key (a, b),
@@ -26,7 +26,6 @@
                 },
                 {
                   "name": "a",
-                  "hasDefault": true,
                   "defaultExpression": "1",
                   "nullable": true,
                   "type": "int",
@@ -35,8 +34,7 @@
                 },
                 {
                   "name": "b",
-                  "hasDefault": true,
-                  "defaultString": "NULL",
+                  "defaultNull": true,
                   "nullable": true,
                   "type": "varchar(20)"
                 },
@@ -81,7 +79,6 @@
               "columns": [
                 {
                   "name": "b",
-                  "hasDefault": true,
                   "defaultNull": true,
                   "type": "int"
                 }

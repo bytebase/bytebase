@@ -48,7 +48,6 @@
                   "name":  "c1",
                   "nullable":  true,
                   "type":  "int",
-                  "hasDefault": true,
                   "defaultExpression": "AUTO_INCREMENT"
                 }
               ],
@@ -103,8 +102,7 @@
                 {
                   "name":  "a",
                   "type":  "varchar(10)",
-                  "hasDefault":  true,
-                  "defaultString":  "default value",
+                  "default": "default value",
                   "comment":  "this is comment, aha"
                 },
                 {
@@ -114,7 +112,6 @@
                 {
                   "name":  "c",
                   "type":  "int",
-                  "hasDefault":  true,
                   "defaultExpression":  "1",
                   "comment":  "col_b"
                 },
@@ -122,7 +119,6 @@
                   "name":  "e",
                   "nullable":  true,
                   "type":  "int",
-                  "hasDefault":  true,
                   "defaultExpression":  "1",
                   "comment":  "col_e"
                 },
@@ -257,7 +253,6 @@
                   "name":  "a",
                   "nullable":  true,
                   "type":  "int",
-                  "hasDefault": true,
                   "defaultExpression": "AUTO_INCREMENT"
                 }
               ]
@@ -269,7 +264,6 @@
                   "name":  "a",
                   "nullable":  true,
                   "type":  "int",
-                  "hasDefault": true,
                   "defaultExpression": "AUTO_INCREMENT"
                 }
               ]
@@ -281,7 +275,6 @@
                   "name":  "a",
                   "nullable":  true,
                   "type":  "int",
-                  "hasDefault": true,
                   "defaultExpression": "AUTO_INCREMENT"
                 }
               ]
@@ -293,7 +286,6 @@
                   "name":  "a",
                   "nullable":  true,
                   "type":  "int",
-                  "hasDefault": true,
                   "defaultExpression": "1"
                 }
               ]

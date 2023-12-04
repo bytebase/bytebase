@@ -14,7 +14,7 @@ import (
 	tidbtypes "github.com/pingcap/tidb/pkg/parser/types"
 
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func checkTiDBColumnType(tp string) bool {
@@ -29,7 +29,7 @@ type tidbTransformer struct {
 	err   error
 }
 
-func parseTiDBSchemaStringToDatabaseMetadata(schema string) (*v1pb.DatabaseMetadata, error) {
+func parseTiDBSchemaStringToDatabaseMetadata(schema string) (*storepb.DatabaseSchemaMetadata, error) {
 	stmts, err := tidbparser.ParseTiDB(schema, "", "")
 	if err != nil {
 		return nil, err
@@ -293,7 +293,7 @@ func (*tidbTransformer) Leave(in tidbast.Node) (tidbast.Node, bool) {
 	return in, true
 }
 
-func getTiDBDesignSchema(baselineSchema string, to *v1pb.DatabaseMetadata) (string, error) {
+func getTiDBDesignSchema(baselineSchema string, to *storepb.DatabaseSchemaMetadata) (string, error) {
 	toState := convertToDatabaseState(to)
 	stmts, err := tidbparser.ParseTiDB(baselineSchema, "", "")
 	if err != nil {

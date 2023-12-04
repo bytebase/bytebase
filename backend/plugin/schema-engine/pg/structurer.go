@@ -7,6 +7,7 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	postgres "github.com/bytebase/postgresql-parser"
 
@@ -14,11 +15,11 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // ParseToMetadata converts a schema string to database metadata.
-func ParseToMetadata(schema string) (*v1pb.DatabaseMetadata, error) {
+func ParseToMetadata(schema string) (*storepb.DatabaseSchemaMetadata, error) {
 	list, err := pgrawparser.Parse(pgrawparser.ParseContext{}, schema)
 	if err != nil {
 		return nil, err
@@ -245,7 +246,7 @@ func newDatabaseState() *databaseState {
 	}
 }
 
-func convertToDatabaseState(database *v1pb.DatabaseMetadata) *databaseState {
+func convertToDatabaseState(database *storepb.DatabaseSchemaMetadata) *databaseState {
 	state := newDatabaseState()
 	state.name = database.Name
 	for i, schema := range database.Schemas {
@@ -254,7 +255,7 @@ func convertToDatabaseState(database *v1pb.DatabaseMetadata) *databaseState {
 	return state
 }
 
-func (s *databaseState) convertToDatabaseMetadata() *v1pb.DatabaseMetadata {
+func (s *databaseState) convertToDatabaseMetadata() *storepb.DatabaseSchemaMetadata {
 	schemaStates := []*schemaState{}
 	for _, schema := range s.schemas {
 		schemaStates = append(schemaStates, schema)
@@ -262,15 +263,15 @@ func (s *databaseState) convertToDatabaseMetadata() *v1pb.DatabaseMetadata {
 	sort.Slice(schemaStates, func(i, j int) bool {
 		return schemaStates[i].id < schemaStates[j].id
 	})
-	schemas := []*v1pb.SchemaMetadata{}
+	schemas := []*storepb.SchemaMetadata{}
 	for _, schema := range schemaStates {
 		schemas = append(schemas, schema.convertToSchemaMetadata())
 	}
-	return &v1pb.DatabaseMetadata{
+	return &storepb.DatabaseSchemaMetadata{
 		Name:    s.name,
 		Schemas: schemas,
 		// Unsupported, for tests only.
-		Extensions: []*v1pb.ExtensionMetadata{},
+		Extensions: []*storepb.ExtensionMetadata{},
 	}
 }
 
@@ -302,7 +303,7 @@ func newSchemaState(id int, name string) *schemaState {
 	}
 }
 
-func convertToSchemaState(id int, schema *v1pb.SchemaMetadata) *schemaState {
+func convertToSchemaState(id int, schema *storepb.SchemaMetadata) *schemaState {
 	state := newSchemaState(id, schema.Name)
 	for i, table := range schema.Tables {
 		state.tables[table.Name] = convertToTableState(i, table)
@@ -310,7 +311,7 @@ func convertToSchemaState(id int, schema *v1pb.SchemaMetadata) *schemaState {
 	return state
 }
 
-func (s *schemaState) convertToSchemaMetadata() *v1pb.SchemaMetadata {
+func (s *schemaState) convertToSchemaMetadata() *storepb.SchemaMetadata {
 	tableStates := []*tableState{}
 	for _, table := range s.tables {
 		tableStates = append(tableStates, table)
@@ -318,18 +319,18 @@ func (s *schemaState) convertToSchemaMetadata() *v1pb.SchemaMetadata {
 	sort.Slice(tableStates, func(i, j int) bool {
 		return tableStates[i].id < tableStates[j].id
 	})
-	tables := []*v1pb.TableMetadata{}
+	tables := []*storepb.TableMetadata{}
 	for _, table := range tableStates {
 		tables = append(tables, table.convertToTableMetadata())
 	}
-	return &v1pb.SchemaMetadata{
+	return &storepb.SchemaMetadata{
 		Name:   s.name,
 		Tables: tables,
 		// Unsupported, for tests only.
-		Views:     []*v1pb.ViewMetadata{},
-		Functions: []*v1pb.FunctionMetadata{},
-		Streams:   []*v1pb.StreamMetadata{},
-		Tasks:     []*v1pb.TaskMetadata{},
+		Views:     []*storepb.ViewMetadata{},
+		Functions: []*storepb.FunctionMetadata{},
+		Streams:   []*storepb.StreamMetadata{},
+		Tasks:     []*storepb.TaskMetadata{},
 	}
 }
 
@@ -440,7 +441,7 @@ func newTableState(id int, name string) *tableState {
 	}
 }
 
-func convertToTableState(id int, table *v1pb.TableMetadata) *tableState {
+func convertToTableState(id int, table *storepb.TableMetadata) *tableState {
 	state := newTableState(id, table.Name)
 	for i, column := range table.Columns {
 		state.columns[column.Name] = convertToColumnState(i, column)
@@ -455,7 +456,7 @@ func convertToTableState(id int, table *v1pb.TableMetadata) *tableState {
 	return state
 }
 
-func (t *tableState) convertToTableMetadata() *v1pb.TableMetadata {
+func (t *tableState) convertToTableMetadata() *storepb.TableMetadata {
 	columnStates := []*columnState{}
 	for _, column := range t.columns {
 		columnStates = append(columnStates, column)
@@ -463,7 +464,7 @@ func (t *tableState) convertToTableMetadata() *v1pb.TableMetadata {
 	sort.Slice(columnStates, func(i, j int) bool {
 		return columnStates[i].id < columnStates[j].id
 	})
-	columns := []*v1pb.ColumnMetadata{}
+	columns := []*storepb.ColumnMetadata{}
 	for _, column := range columnStates {
 		columns = append(columns, column.convertToColumnMetadata())
 	}
@@ -475,7 +476,7 @@ func (t *tableState) convertToTableMetadata() *v1pb.TableMetadata {
 	sort.Slice(indexStates, func(i, j int) bool {
 		return indexStates[i].id < indexStates[j].id
 	})
-	indexes := []*v1pb.IndexMetadata{}
+	indexes := []*storepb.IndexMetadata{}
 	for _, index := range indexStates {
 		indexes = append(indexes, index.convertToIndexMetadata())
 	}
@@ -487,12 +488,12 @@ func (t *tableState) convertToTableMetadata() *v1pb.TableMetadata {
 	sort.Slice(fkStates, func(i, j int) bool {
 		return fkStates[i].id < fkStates[j].id
 	})
-	fks := []*v1pb.ForeignKeyMetadata{}
+	fks := []*storepb.ForeignKeyMetadata{}
 	for _, fk := range fkStates {
 		fks = append(fks, fk.convertToForeignKeyMetadata())
 	}
 
-	return &v1pb.TableMetadata{
+	return &storepb.TableMetadata{
 		Name:        t.name,
 		Columns:     columns,
 		Indexes:     indexes,
@@ -510,8 +511,8 @@ type foreignKeyState struct {
 	referencedColumns []string
 }
 
-func (f *foreignKeyState) convertToForeignKeyMetadata() *v1pb.ForeignKeyMetadata {
-	return &v1pb.ForeignKeyMetadata{
+func (f *foreignKeyState) convertToForeignKeyMetadata() *storepb.ForeignKeyMetadata {
+	return &storepb.ForeignKeyMetadata{
 		Name:              f.name,
 		Columns:           f.columns,
 		ReferencedSchema:  f.referencedSchema,
@@ -520,7 +521,7 @@ func (f *foreignKeyState) convertToForeignKeyMetadata() *v1pb.ForeignKeyMetadata
 	}
 }
 
-func convertToForeignKeyState(id int, foreignKey *v1pb.ForeignKeyMetadata) *foreignKeyState {
+func convertToForeignKeyState(id int, foreignKey *storepb.ForeignKeyMetadata) *foreignKeyState {
 	return &foreignKeyState{
 		id:                id,
 		name:              foreignKey.Name,
@@ -614,8 +615,8 @@ type indexState struct {
 	unique  bool
 }
 
-func (i *indexState) convertToIndexMetadata() *v1pb.IndexMetadata {
-	return &v1pb.IndexMetadata{
+func (i *indexState) convertToIndexMetadata() *storepb.IndexMetadata {
+	return &storepb.IndexMetadata{
 		Name:        i.name,
 		Expressions: i.keys,
 		Primary:     i.primary,
@@ -625,7 +626,7 @@ func (i *indexState) convertToIndexMetadata() *v1pb.IndexMetadata {
 	}
 }
 
-func convertToIndexState(id int, index *v1pb.IndexMetadata) *indexState {
+func convertToIndexState(id int, index *storepb.IndexMetadata) *indexState {
 	return &indexState{
 		id:      id,
 		name:    index.Name,
@@ -739,43 +740,46 @@ func (c *columnState) toString(buf *strings.Builder) error {
 	return nil
 }
 
-func (c *columnState) convertToColumnMetadata() *v1pb.ColumnMetadata {
-	result := &v1pb.ColumnMetadata{
-		Name:       c.name,
-		Type:       c.tp,
-		Nullable:   c.nullable,
-		Comment:    c.comment,
-		HasDefault: c.hasDefault,
+func (c *columnState) convertToColumnMetadata() *storepb.ColumnMetadata {
+	result := &storepb.ColumnMetadata{
+		Name:     c.name,
+		Type:     c.tp,
+		Nullable: c.nullable,
+		Comment:  c.comment,
 	}
 	if c.hasDefault {
 		switch value := c.defaultValue.(type) {
 		case *defaultValueNull:
-			result.Default = &v1pb.ColumnMetadata_DefaultNull{DefaultNull: true}
+			result.DefaultValue = &storepb.ColumnMetadata_DefaultNull{DefaultNull: true}
 		case *defaultValueString:
-			result.Default = &v1pb.ColumnMetadata_DefaultString{DefaultString: value.value}
+			result.DefaultValue = &storepb.ColumnMetadata_Default{Default: wrapperspb.String(value.value)}
 		case *defaultValueExpression:
-			result.Default = &v1pb.ColumnMetadata_DefaultExpression{DefaultExpression: value.value}
+			result.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: value.value}
 		}
 	}
 	return result
 }
 
-func convertToColumnState(id int, column *v1pb.ColumnMetadata) *columnState {
+func convertToColumnState(id int, column *storepb.ColumnMetadata) *columnState {
 	result := &columnState{
 		id:         id,
 		name:       column.Name,
 		tp:         column.Type,
-		hasDefault: column.HasDefault,
+		hasDefault: column.GetDefaultValue() != nil,
 		nullable:   column.Nullable,
 		comment:    column.Comment,
 	}
-	if column.HasDefault {
-		switch value := column.Default.(type) {
-		case *v1pb.ColumnMetadata_DefaultNull:
+	if result.hasDefault {
+		switch value := column.GetDefaultValue().(type) {
+		case *storepb.ColumnMetadata_DefaultNull:
 			result.defaultValue = &defaultValueNull{}
-		case *v1pb.ColumnMetadata_DefaultString:
-			result.defaultValue = &defaultValueString{value: value.DefaultString}
-		case *v1pb.ColumnMetadata_DefaultExpression:
+		case *storepb.ColumnMetadata_Default:
+			if value.Default == nil {
+				result.defaultValue = &defaultValueNull{}
+			} else {
+				result.defaultValue = &defaultValueString{value: value.Default.GetValue()}
+			}
+		case *storepb.ColumnMetadata_DefaultExpression:
 			result.defaultValue = &defaultValueExpression{value: value.DefaultExpression}
 		}
 	}
@@ -797,7 +801,7 @@ type designSchemaGenerator struct {
 }
 
 // GetDesignSchema returns the schema string for the design schema.
-func GetDesignSchema(baselineSchema string, to *v1pb.DatabaseMetadata) (string, error) {
+func GetDesignSchema(baselineSchema string, to *storepb.DatabaseSchemaMetadata) (string, error) {
 	toState := convertToDatabaseState(to)
 	parseResult, err := pgparser.ParsePostgreSQL(baselineSchema)
 	if err != nil {

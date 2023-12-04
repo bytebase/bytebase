@@ -61,7 +61,6 @@
               "columns": [
                 {
                   "name": "a",
-                  "hasDefault": true,
                   "defaultExpression": "'default value'",
                   "nullable": false,
                   "type": "varchar(10)",
