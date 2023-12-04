@@ -248,7 +248,9 @@ func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *DatabaseMeta
 			}
 		}
 		for _, view := range schema.Views {
-			schemaMetadata.internalViews[view.Name] = &ViewMetadata{}
+			schemaMetadata.internalViews[view.Name] = &ViewMetadata{
+				Definition: view.Definition,
+			}
 		}
 		databaseMetadata.internal[schema.Name] = schemaMetadata
 	}
@@ -269,6 +271,10 @@ type SchemaMetadata struct {
 // GetTable gets the schema by name.
 func (s *SchemaMetadata) GetTable(name string) *TableMetadata {
 	return s.internalTables[name]
+}
+
+func (s *SchemaMetadata) GetView(name string) *ViewMetadata {
+	return s.internalViews[name]
 }
 
 // ListTableNames lists the table names.
@@ -374,4 +380,5 @@ func (t *TableMetadata) GetRowCount() int64 {
 
 // ViewMetadata is the metadata for a view.
 type ViewMetadata struct {
+	Definition string
 }
