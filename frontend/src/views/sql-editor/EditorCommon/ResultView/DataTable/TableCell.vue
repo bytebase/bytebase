@@ -63,7 +63,7 @@ const database = computed(() => {
 const valueContainerAdditionalClass = computed(() => {
   // Always only show the first line for MongoDB.
   if (database.value.instanceEntity.engine === Engine.MONGODB) {
-    return "line-clamp-1";
+    return "!whitespace-nowrap";
   }
   return "";
 });
@@ -72,8 +72,10 @@ const clickable = computed(() => {
   if (truncated.value) return true;
   if (database.value.instanceEntity.engine === Engine.MONGODB) {
     // A cheap way to check JSON string without paying the parsing cost.
+    const maybeJSON = String(props.value).trim();
     return (
-      String(props.value).startsWith("{") && String(props.value).endsWith("}")
+      (maybeJSON.startsWith("{") && maybeJSON.endsWith("}")) ||
+      (maybeJSON.startsWith("[") && maybeJSON.endsWith("]"))
     );
   }
   return false;
