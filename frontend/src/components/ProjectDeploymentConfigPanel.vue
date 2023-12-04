@@ -1,11 +1,11 @@
 <template>
-  <div class="max-w-[60rem] mx-auto">
-    <div v-if="state.ready && state.deployment" class="mb-6">
+  <div class="w-full pt-6 space-y-6">
+    <div v-if="state.ready && state.deployment" class="space-y-4">
       <div class="text-lg font-medium leading-7 text-main">
         {{ $t("deployment-config.preview-deployment-pipeline") }}
       </div>
       <DeploymentMatrix
-        class="w-full mt-4 !px-0 overflow-x-auto"
+        class="w-full !px-0 overflow-x-auto"
         :project="project"
         :deployment="state.deployment"
         :database-list="databaseList"
@@ -14,62 +14,70 @@
       />
     </div>
 
-    <div class="text-lg font-medium leading-7 text-main mt-6 pt-4">
-      {{ $t("common.deployment-config") }}
-    </div>
+    <div class="space-y-4">
+      <div class="text-lg font-medium leading-7 text-main">
+        {{ $t("common.deployment-config") }}
+      </div>
 
-    <template v-if="state.ready">
-      <BBAttention
-        v-if="state.deployment === undefined"
-        :style="'WARN'"
-        :title="$t('common.deployment-config')"
-        :description="$t('deployment-config.this-is-example-deployment-config')"
-      >
-      </BBAttention>
+      <template v-if="state.ready">
+        <BBAttention
+          v-if="state.deployment === undefined"
+          :style="'WARN'"
+          :title="$t('common.deployment-config')"
+          :description="
+            $t('deployment-config.this-is-example-deployment-config')
+          "
+        >
+        </BBAttention>
 
-      <div v-else>
-        <DeploymentConfigTool
-          v-if="state.deployment.schedule"
-          :schedule="state.deployment.schedule"
-          :allow-edit="allowEdit"
-          :database-list="databaseList"
-        />
-        <div class="pt-4 border-t flex justify-between items-center">
-          <div class="flex items-center space-x-2">
-            <NButton v-if="allowEdit" @click="addStage">
-              {{ $t("deployment-config.add-stage") }}
-            </NButton>
-          </div>
-          <div class="flex items-center space-x-2">
-            <NButton
-              v-if="allowEdit"
-              :disabled="!isDeploymentConfigDirty"
-              @click="revertDeploymentConfig"
-            >
-              {{ $t("common.revert") }}
-            </NButton>
-            <NPopover v-if="allowEdit" :disabled="!state.error" trigger="hover">
-              <template #trigger>
-                <NButton
-                  type="primary"
-                  :disabled="!allowUpdateDeploymentConfig"
-                  @click="updateDeploymentConfig"
-                >
-                  {{ $t("common.update") }}
-                </NButton>
-              </template>
+        <div v-else>
+          <DeploymentConfigTool
+            v-if="state.deployment.schedule"
+            :schedule="state.deployment.schedule"
+            :allow-edit="allowEdit"
+            :database-list="databaseList"
+          />
+          <div class="pt-4 border-t flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+              <NButton v-if="allowEdit" @click="addStage">
+                {{ $t("deployment-config.add-stage") }}
+              </NButton>
+            </div>
+            <div class="flex items-center space-x-2">
+              <NButton
+                v-if="allowEdit"
+                :disabled="!isDeploymentConfigDirty"
+                @click="revertDeploymentConfig"
+              >
+                {{ $t("common.revert") }}
+              </NButton>
+              <NPopover
+                v-if="allowEdit"
+                :disabled="!state.error"
+                trigger="hover"
+              >
+                <template #trigger>
+                  <NButton
+                    type="primary"
+                    :disabled="!allowUpdateDeploymentConfig"
+                    @click="updateDeploymentConfig"
+                  >
+                    {{ $t("common.update") }}
+                  </NButton>
+                </template>
 
-              <span v-if="state.error" class="text-error">
-                {{ $t(state.error) }}
-              </span>
-            </NPopover>
+                <span v-if="state.error" class="text-error">
+                  {{ $t(state.error) }}
+                </span>
+              </NPopover>
+            </div>
           </div>
         </div>
-      </div>
-    </template>
+      </template>
 
-    <div v-else class="flex justify-center items-center py-10">
-      <BBSpin />
+      <div v-else class="flex justify-center items-center py-10">
+        <BBSpin />
+      </div>
     </div>
   </div>
 </template>

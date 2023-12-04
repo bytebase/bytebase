@@ -1,6 +1,6 @@
 <template>
-  <div class="w-full flex flex-col justify-start items-start py-2">
-    <div class="w-full flex flex-row justify-between items-center mt-4 mb-4">
+  <div class="w-full flex flex-col justify-start items-start pt-6">
+    <div class="w-full flex flex-row justify-between items-center mb-4">
       <h3 class="text-lg font-medium leading-7 text-main">
         {{ $t("project.settings.branch-protection-rules.self") }}
       </h3>
