@@ -364,9 +364,9 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 
 	// Restrict merging only when the head branch is not updated.
 	// Maybe we can support auto-merging in the future.
-	baseMetadata := convertStoreDatabaseMetadata(nil, headBranch.Base.Metadata, nil, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil)
-	headMetadata := convertStoreDatabaseMetadata(nil, headBranch.Head.Metadata, nil, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil)
-	targetHeadMetadata := convertStoreDatabaseMetadata(nil, baseBranch.Head.Metadata, nil, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil)
+	baseMetadata := convertStoreDatabaseMetadata(headBranch.Base.Metadata, nil, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil)
+	headMetadata := convertStoreDatabaseMetadata(headBranch.Head.Metadata, nil, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil)
+	targetHeadMetadata := convertStoreDatabaseMetadata(baseBranch.Head.Metadata, nil, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil)
 	mergedTarget, err := tryMerge(baseMetadata, headMetadata, targetHeadMetadata)
 	if err != nil {
 		return nil, status.Errorf(codes.FailedPrecondition, fmt.Sprintf("failed to merge branch: %v", err))
@@ -626,9 +626,9 @@ func (s *BranchService) convertBranchToBranch(ctx context.Context, project *stor
 	}
 
 	schemaDesign.Schema = string(branch.Head.Schema)
-	schemaDesign.SchemaMetadata = convertStoreDatabaseMetadata(nil /* database */, branch.Head.Metadata, branch.Head.DatabaseConfig, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil /* filter */)
+	schemaDesign.SchemaMetadata = convertStoreDatabaseMetadata(branch.Head.Metadata, branch.Head.DatabaseConfig, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil /* filter */)
 	schemaDesign.BaselineSchema = string(branch.Base.Schema)
-	schemaDesign.BaselineSchemaMetadata = convertStoreDatabaseMetadata(nil /* database */, branch.Base.Metadata, branch.Base.DatabaseConfig, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil /* filter */)
+	schemaDesign.BaselineSchemaMetadata = convertStoreDatabaseMetadata(branch.Base.Metadata, branch.Base.DatabaseConfig, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil /* filter */)
 	return schemaDesign, nil
 }
 
