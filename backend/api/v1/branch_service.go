@@ -275,7 +275,8 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 		headUpdate := branch.Head
 		sanitizeBranchSchemaMetadata(request.Branch)
 		metadata, config := convertV1DatabaseMetadata(request.Branch.GetSchemaMetadata())
-		slog.Info("metadata", metadata, config)
+		// TODO(d): convert to schema.
+		slog.Info("metadata %v %v", metadata.Name, config)
 		// schema, err := getDesignSchema(branch.Engine, schemaDesign.BaselineSchema, schemaDesign.SchemaMetadata)
 		// if err != nil {
 		// 	return nil, err
