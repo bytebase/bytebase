@@ -433,12 +433,13 @@ func (*SQLService) StringifyMetadata(_ context.Context, request *v1pb.StringifyM
 	if request.Metadata == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "metadata is required")
 	}
-	if err := checkDatabaseMetadata(request.Engine, request.Metadata); err != nil {
+	storeSchemaMetadata, _ := convertV1DatabaseMetadata(request.Metadata)
+	if err := checkDatabaseMetadata(storepb.Engine(request.Engine), storeSchemaMetadata); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid metadata: %v", err))
 	}
 
 	sanitizeCommentForSchemaMetadata(request.Metadata)
-	schema, err := transformDatabaseMetadataToSchemaString(request.Engine, request.Metadata)
+	schema, err := transformDatabaseMetadataToSchemaString(storepb.Engine(request.Engine), storeSchemaMetadata)
 	if err != nil {
 		return nil, err
 	}
@@ -2555,7 +2556,8 @@ func encodeToBase64String(statement string) string {
 
 // DifferPreview returns the diff preview of the given SQL statement and metadata.
 func (*SQLService) DifferPreview(_ context.Context, request *v1pb.DifferPreviewRequest) (*v1pb.DifferPreviewResponse, error) {
-	schema, err := getDesignSchema(request.Engine, request.OldSchema, request.NewMetadata)
+	storeSchemaMetadata, _ := convertV1DatabaseMetadata(request.NewMetadata)
+	schema, err := getDesignSchema(storepb.Engine(request.Engine), request.OldSchema, storeSchemaMetadata)
 	if err != nil {
 		return nil, err
 	}

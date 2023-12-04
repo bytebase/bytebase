@@ -9,40 +9,41 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mysql "github.com/bytebase/mysql-parser"
 
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	pgse "github.com/bytebase/bytebase/backend/plugin/schema-engine/pg"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 const (
 	autoIncrementSymbol = "AUTO_INCREMENT"
 )
 
-func transformDatabaseMetadataToSchemaString(engine v1pb.Engine, database *v1pb.DatabaseMetadata) (string, error) {
+func transformDatabaseMetadataToSchemaString(engine storepb.Engine, database *storepb.DatabaseSchemaMetadata) (string, error) {
 	switch engine {
-	case v1pb.Engine_MYSQL:
+	case storepb.Engine_MYSQL:
 		return getMySQLDesignSchema("", database)
-	case v1pb.Engine_TIDB:
+	case storepb.Engine_TIDB:
 		return getTiDBDesignSchema("", database)
-	case v1pb.Engine_POSTGRES:
+	case storepb.Engine_POSTGRES:
 		return pgse.GetDesignSchema("", database)
 	default:
 		return "", status.Errorf(codes.InvalidArgument, fmt.Sprintf("unsupported engine: %v", engine))
 	}
 }
 
-func transformSchemaStringToDatabaseMetadata(engine v1pb.Engine, schema string) (*v1pb.DatabaseMetadata, error) {
-	dbSchema, err := func() (*v1pb.DatabaseMetadata, error) {
+func transformSchemaStringToDatabaseMetadata(engine storepb.Engine, schema string) (*storepb.DatabaseSchemaMetadata, error) {
+	dbSchema, err := func() (*storepb.DatabaseSchemaMetadata, error) {
 		switch engine {
-		case v1pb.Engine_MYSQL:
+		case storepb.Engine_MYSQL:
 			return parseMySQLSchemaStringToDatabaseMetadata(schema)
-		case v1pb.Engine_POSTGRES:
+		case storepb.Engine_POSTGRES:
 			return pgse.ParseToMetadata(schema)
-		case v1pb.Engine_TIDB:
+		case storepb.Engine_TIDB:
 			return parseTiDBSchemaStringToDatabaseMetadata(schema)
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("unsupported engine: %v", engine))
@@ -55,7 +56,7 @@ func transformSchemaStringToDatabaseMetadata(engine v1pb.Engine, schema string) 
 	return dbSchema, nil
 }
 
-func parseMySQLSchemaStringToDatabaseMetadata(schema string) (*v1pb.DatabaseMetadata, error) {
+func parseMySQLSchemaStringToDatabaseMetadata(schema string) (*storepb.DatabaseSchemaMetadata, error) {
 	list, err := mysqlparser.ParseMySQL(schema)
 	if err != nil {
 		return nil, err
@@ -92,7 +93,7 @@ func newDatabaseState() *databaseState {
 	}
 }
 
-func convertToDatabaseState(database *v1pb.DatabaseMetadata) *databaseState {
+func convertToDatabaseState(database *storepb.DatabaseSchemaMetadata) *databaseState {
 	state := newDatabaseState()
 	state.name = database.Name
 	for _, schema := range database.Schemas {
@@ -101,7 +102,7 @@ func convertToDatabaseState(database *v1pb.DatabaseMetadata) *databaseState {
 	return state
 }
 
-func (s *databaseState) convertToDatabaseMetadata() *v1pb.DatabaseMetadata {
+func (s *databaseState) convertToDatabaseMetadata() *storepb.DatabaseSchemaMetadata {
 	schemaStates := []*schemaState{}
 	for _, schema := range s.schemas {
 		schemaStates = append(schemaStates, schema)
@@ -109,15 +110,15 @@ func (s *databaseState) convertToDatabaseMetadata() *v1pb.DatabaseMetadata {
 	sort.Slice(schemaStates, func(i, j int) bool {
 		return schemaStates[i].id < schemaStates[j].id
 	})
-	schemas := []*v1pb.SchemaMetadata{}
+	schemas := []*storepb.SchemaMetadata{}
 	for _, schema := range schemaStates {
 		schemas = append(schemas, schema.convertToSchemaMetadata())
 	}
-	return &v1pb.DatabaseMetadata{
+	return &storepb.DatabaseSchemaMetadata{
 		Name:    s.name,
 		Schemas: schemas,
 		// Unsupported, for tests only.
-		Extensions: []*v1pb.ExtensionMetadata{},
+		Extensions: []*storepb.ExtensionMetadata{},
 	}
 }
 
@@ -133,7 +134,7 @@ func newSchemaState() *schemaState {
 	}
 }
 
-func convertToSchemaState(schema *v1pb.SchemaMetadata) *schemaState {
+func convertToSchemaState(schema *storepb.SchemaMetadata) *schemaState {
 	state := newSchemaState()
 	state.name = schema.Name
 	for i, table := range schema.Tables {
@@ -142,7 +143,7 @@ func convertToSchemaState(schema *v1pb.SchemaMetadata) *schemaState {
 	return state
 }
 
-func (s *schemaState) convertToSchemaMetadata() *v1pb.SchemaMetadata {
+func (s *schemaState) convertToSchemaMetadata() *storepb.SchemaMetadata {
 	tableStates := []*tableState{}
 	for _, table := range s.tables {
 		tableStates = append(tableStates, table)
@@ -150,18 +151,18 @@ func (s *schemaState) convertToSchemaMetadata() *v1pb.SchemaMetadata {
 	sort.Slice(tableStates, func(i, j int) bool {
 		return tableStates[i].id < tableStates[j].id
 	})
-	tables := []*v1pb.TableMetadata{}
+	tables := []*storepb.TableMetadata{}
 	for _, table := range tableStates {
 		tables = append(tables, table.convertToTableMetadata())
 	}
-	return &v1pb.SchemaMetadata{
+	return &storepb.SchemaMetadata{
 		Name:   s.name,
 		Tables: tables,
 		// Unsupported, for tests only.
-		Views:     []*v1pb.ViewMetadata{},
-		Functions: []*v1pb.FunctionMetadata{},
-		Streams:   []*v1pb.StreamMetadata{},
-		Tasks:     []*v1pb.TaskMetadata{},
+		Views:     []*storepb.ViewMetadata{},
+		Functions: []*storepb.FunctionMetadata{},
+		Streams:   []*storepb.StreamMetadata{},
+		Tasks:     []*storepb.TaskMetadata{},
 	}
 }
 
@@ -274,7 +275,7 @@ func newTableState(id int, name string) *tableState {
 	}
 }
 
-func convertToTableState(id int, table *v1pb.TableMetadata) *tableState {
+func convertToTableState(id int, table *storepb.TableMetadata) *tableState {
 	state := newTableState(id, table.Name)
 	state.comment = table.Comment
 	for i, column := range table.Columns {
@@ -289,7 +290,7 @@ func convertToTableState(id int, table *v1pb.TableMetadata) *tableState {
 	return state
 }
 
-func (t *tableState) convertToTableMetadata() *v1pb.TableMetadata {
+func (t *tableState) convertToTableMetadata() *storepb.TableMetadata {
 	columnStates := []*columnState{}
 	for _, column := range t.columns {
 		columnStates = append(columnStates, column)
@@ -297,7 +298,7 @@ func (t *tableState) convertToTableMetadata() *v1pb.TableMetadata {
 	sort.Slice(columnStates, func(i, j int) bool {
 		return columnStates[i].id < columnStates[j].id
 	})
-	columns := []*v1pb.ColumnMetadata{}
+	columns := []*storepb.ColumnMetadata{}
 	for _, column := range columnStates {
 		columns = append(columns, column.convertToColumnMetadata())
 	}
@@ -309,7 +310,7 @@ func (t *tableState) convertToTableMetadata() *v1pb.TableMetadata {
 	sort.Slice(indexStates, func(i, j int) bool {
 		return indexStates[i].id < indexStates[j].id
 	})
-	indexes := []*v1pb.IndexMetadata{}
+	indexes := []*storepb.IndexMetadata{}
 	for _, index := range indexStates {
 		indexes = append(indexes, index.convertToIndexMetadata())
 	}
@@ -321,12 +322,12 @@ func (t *tableState) convertToTableMetadata() *v1pb.TableMetadata {
 	sort.Slice(fkStates, func(i, j int) bool {
 		return fkStates[i].id < fkStates[j].id
 	})
-	fks := []*v1pb.ForeignKeyMetadata{}
+	fks := []*storepb.ForeignKeyMetadata{}
 	for _, fk := range fkStates {
 		fks = append(fks, fk.convertToForeignKeyMetadata())
 	}
 
-	return &v1pb.TableMetadata{
+	return &storepb.TableMetadata{
 		Name:        t.name,
 		Columns:     columns,
 		Indexes:     indexes,
@@ -343,8 +344,8 @@ type foreignKeyState struct {
 	referencedColumns []string
 }
 
-func (f *foreignKeyState) convertToForeignKeyMetadata() *v1pb.ForeignKeyMetadata {
-	return &v1pb.ForeignKeyMetadata{
+func (f *foreignKeyState) convertToForeignKeyMetadata() *storepb.ForeignKeyMetadata {
+	return &storepb.ForeignKeyMetadata{
 		Name:              f.name,
 		Columns:           f.columns,
 		ReferencedTable:   f.referencedTable,
@@ -352,7 +353,7 @@ func (f *foreignKeyState) convertToForeignKeyMetadata() *v1pb.ForeignKeyMetadata
 	}
 }
 
-func convertToForeignKeyState(id int, foreignKey *v1pb.ForeignKeyMetadata) *foreignKeyState {
+func convertToForeignKeyState(id int, foreignKey *storepb.ForeignKeyMetadata) *foreignKeyState {
 	return &foreignKeyState{
 		id:                id,
 		name:              foreignKey.Name,
@@ -427,8 +428,8 @@ type indexState struct {
 	unique  bool
 }
 
-func (i *indexState) convertToIndexMetadata() *v1pb.IndexMetadata {
-	return &v1pb.IndexMetadata{
+func (i *indexState) convertToIndexMetadata() *storepb.IndexMetadata {
+	return &storepb.IndexMetadata{
 		Name:        i.name,
 		Expressions: i.keys,
 		Primary:     i.primary,
@@ -438,7 +439,7 @@ func (i *indexState) convertToIndexMetadata() *v1pb.IndexMetadata {
 	}
 }
 
-func convertToIndexState(id int, index *v1pb.IndexMetadata) *indexState {
+func convertToIndexState(id int, index *storepb.IndexMetadata) *indexState {
 	return &indexState{
 		id:      id,
 		name:    index.Name,
@@ -545,43 +546,46 @@ func (c *columnState) toString(buf *strings.Builder) error {
 	return nil
 }
 
-func (c *columnState) convertToColumnMetadata() *v1pb.ColumnMetadata {
-	result := &v1pb.ColumnMetadata{
-		Name:       c.name,
-		Type:       c.tp,
-		HasDefault: c.hasDefault,
-		Nullable:   c.nullable,
-		Comment:    c.comment,
+func (c *columnState) convertToColumnMetadata() *storepb.ColumnMetadata {
+	result := &storepb.ColumnMetadata{
+		Name:     c.name,
+		Type:     c.tp,
+		Nullable: c.nullable,
+		Comment:  c.comment,
 	}
 	if c.hasDefault {
 		switch value := c.defaultValue.(type) {
 		case *defaultValueNull:
-			result.Default = &v1pb.ColumnMetadata_DefaultNull{DefaultNull: true}
+			result.DefaultValue = &storepb.ColumnMetadata_DefaultNull{DefaultNull: true}
 		case *defaultValueString:
-			result.Default = &v1pb.ColumnMetadata_DefaultString{DefaultString: value.value}
+			result.DefaultValue = &storepb.ColumnMetadata_Default{Default: wrapperspb.String(value.value)}
 		case *defaultValueExpression:
-			result.Default = &v1pb.ColumnMetadata_DefaultExpression{DefaultExpression: value.value}
+			result.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: value.value}
 		}
 	}
 	return result
 }
 
-func convertToColumnState(id int, column *v1pb.ColumnMetadata) *columnState {
+func convertToColumnState(id int, column *storepb.ColumnMetadata) *columnState {
 	result := &columnState{
 		id:         id,
 		name:       column.Name,
 		tp:         column.Type,
-		hasDefault: column.HasDefault,
+		hasDefault: column.GetDefaultValue() != nil,
 		nullable:   column.Nullable,
 		comment:    column.Comment,
 	}
-	if column.HasDefault {
-		switch value := column.Default.(type) {
-		case *v1pb.ColumnMetadata_DefaultNull:
+	if result.hasDefault {
+		switch value := column.GetDefaultValue().(type) {
+		case *storepb.ColumnMetadata_DefaultNull:
 			result.defaultValue = &defaultValueNull{}
-		case *v1pb.ColumnMetadata_DefaultString:
-			result.defaultValue = &defaultValueString{value: value.DefaultString}
-		case *v1pb.ColumnMetadata_DefaultExpression:
+		case *storepb.ColumnMetadata_Default:
+			if value.Default == nil {
+				result.defaultValue = &defaultValueNull{}
+			} else {
+				result.defaultValue = &defaultValueString{value: value.Default.GetValue()}
+			}
+		case *storepb.ColumnMetadata_DefaultExpression:
 			result.defaultValue = &defaultValueExpression{value: value.DefaultExpression}
 		}
 	}
@@ -800,21 +804,21 @@ func (t *mysqlTransformer) EnterColumnDefinition(ctx *mysql.ColumnDefinitionCont
 	table.columns[columnName] = columnState
 }
 
-func getDesignSchema(engine v1pb.Engine, baselineSchema string, to *v1pb.DatabaseMetadata) (string, error) {
+func getDesignSchema(engine storepb.Engine, baselineSchema string, to *storepb.DatabaseSchemaMetadata) (string, error) {
 	switch engine {
-	case v1pb.Engine_MYSQL:
+	case storepb.Engine_MYSQL:
 		result, err := getMySQLDesignSchema(baselineSchema, to)
 		if err != nil {
 			return "", status.Errorf(codes.Internal, "failed to generate mysql design schema: %v", err)
 		}
 		return result, nil
-	case v1pb.Engine_TIDB:
+	case storepb.Engine_TIDB:
 		result, err := getTiDBDesignSchema(baselineSchema, to)
 		if err != nil {
 			return "", status.Errorf(codes.Internal, "failed to generate tidb design schema: %v", err)
 		}
 		return result, nil
-	case v1pb.Engine_POSTGRES:
+	case storepb.Engine_POSTGRES:
 		result, err := pgse.GetDesignSchema(baselineSchema, to)
 		if err != nil {
 			return "", status.Errorf(codes.Internal, "failed to generate postgres design schema: %v", err)
@@ -825,7 +829,7 @@ func getDesignSchema(engine v1pb.Engine, baselineSchema string, to *v1pb.Databas
 	}
 }
 
-func getMySQLDesignSchema(baselineSchema string, to *v1pb.DatabaseMetadata) (string, error) {
+func getMySQLDesignSchema(baselineSchema string, to *storepb.DatabaseSchemaMetadata) (string, error) {
 	toState := convertToDatabaseState(to)
 	list, err := mysqlparser.ParseMySQL(baselineSchema)
 	if err != nil {
@@ -1583,7 +1587,7 @@ func nextDefaultChannelTokenIndex(tokens antlr.TokenStream, currentIndex int) in
 	return 0
 }
 
-func checkDatabaseMetadata(engine v1pb.Engine, metadata *v1pb.DatabaseMetadata) error {
+func checkDatabaseMetadata(engine storepb.Engine, metadata *storepb.DatabaseSchemaMetadata) error {
 	type fkMetadata struct {
 		name                string
 		tableName           string
@@ -1592,12 +1596,12 @@ func checkDatabaseMetadata(engine v1pb.Engine, metadata *v1pb.DatabaseMetadata) 
 	}
 	fkMap := make(map[string][]*fkMetadata)
 	switch engine {
-	case v1pb.Engine_MYSQL, v1pb.Engine_TIDB, v1pb.Engine_POSTGRES:
+	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_POSTGRES:
 	default:
 		return errors.Errorf("unsupported engine for check database metadata: %v", engine)
 	}
 	for _, schema := range metadata.Schemas {
-		if (engine == v1pb.Engine_MYSQL || engine == v1pb.Engine_TIDB) && schema.Name != "" {
+		if (engine == storepb.Engine_MYSQL || engine == storepb.Engine_TIDB) && schema.Name != "" {
 			return errors.Errorf("schema name should be empty for MySQL and TiDB")
 		}
 		tableNameMap := make(map[string]bool)
@@ -1706,7 +1710,7 @@ func checkDatabaseMetadata(engine v1pb.Engine, metadata *v1pb.DatabaseMetadata) 
 					}
 				}
 				if !hasIndex {
-					if engine == v1pb.Engine_POSTGRES {
+					if engine == storepb.Engine_POSTGRES {
 						// PostgreSQL does not support indexes currently, so we just skip this check.
 						continue
 					}
@@ -1726,13 +1730,13 @@ func checkDatabaseMetadata(engine v1pb.Engine, metadata *v1pb.DatabaseMetadata) 
 	return nil
 }
 
-func checkColumnType(engine v1pb.Engine, tp string) bool {
+func checkColumnType(engine storepb.Engine, tp string) bool {
 	switch engine {
-	case v1pb.Engine_MYSQL:
+	case storepb.Engine_MYSQL:
 		return checkMySQLColumnType(tp)
-	case v1pb.Engine_TIDB:
+	case storepb.Engine_TIDB:
 		return checkTiDBColumnType(tp)
-	case v1pb.Engine_POSTGRES:
+	case storepb.Engine_POSTGRES:
 		return checkPostgreSQLColumnType(tp)
 	default:
 		return false

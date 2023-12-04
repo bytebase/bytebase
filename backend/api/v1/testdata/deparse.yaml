@@ -14,7 +14,6 @@
                 },
                 {
                   "name":  "a",
-                  "hasDefault":  true,
                   "defaultExpression":  "1",
                   "nullable":  true,
                   "type":  "int",
@@ -23,8 +22,7 @@
                 },
                 {
                   "name":  "b",
-                  "hasDefault":  true,
-                  "defaultString":  "NULL",
+                  "defaultNull": true,
                   "nullable":  true,
                   "type":  "varchar(20)"
                 }
@@ -59,7 +57,6 @@
               "columns":  [
                 {
                   "name":  "b",
-                  "hasDefault":  true,
                   "defaultNull":  true,
                   "type":  "int"
                 }
@@ -84,7 +81,7 @@
     CREATE TABLE `t` (
       `c` int NULL,
       `a` int NULL DEFAULT 1 COMMENT 'abcdefg',
-      `b` varchar(20) NULL DEFAULT 'NULL',
+      `b` varchar(20) NULL DEFAULT NULL,
       PRIMARY KEY (`a`, `b`),
       CONSTRAINT `fk1` FOREIGN KEY (`a`) REFERENCES `t2` (`b`)
     );
