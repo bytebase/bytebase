@@ -90,7 +90,7 @@ func extractLinkRecursive() (map[string]bool, error) {
 
 func checkLinkWithRetry(link string) error {
 	// Request the link and check the response status code is 200.
-	resp, err := http.Head(link)
+	resp, err := http.Get(link)
 	if err != nil {
 		return errors.Wrapf(err, "failed to request link %q", link)
 	}
