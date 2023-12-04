@@ -1259,8 +1259,8 @@ CREATE TABLE branch (
   project_id INTEGER NOT NULL REFERENCES project (id),
   name TEXT NOT NULL,
   engine TEXT NOT NULL,
-  base JSONB NOT NULL,
-  head JSONB NOT NULL,
+  base JSONB NOT NULL DEFAULT '{}',
+  head JSONB NOT NULL DEFAULT '{}',
   config JSONB NOT NULL DEFAULT '{}'
 );
 
