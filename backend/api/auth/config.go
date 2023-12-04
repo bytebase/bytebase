@@ -4,6 +4,7 @@ import "strings"
 
 var authenticationAllowlistMethods = map[string]bool{
 	"/bytebase.v1.ActuatorService/GetActuatorInfo":               true,
+	"/bytebase.v1.ActuatorService/DeleteCache":                   true,
 	"/bytebase.v1.SubscriptionService/GetSubscription":           true,
 	"/bytebase.v1.SubscriptionService/GetFeatureMatrix":          true,
 	"/bytebase.v1.AuthService/Login":                             true,
