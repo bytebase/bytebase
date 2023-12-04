@@ -31,7 +31,7 @@ var (
 	frontendDirectory = "../frontend"
 )
 
-func TestLinkHealth(t *testing.T) {
+func TestValidateLinks(t *testing.T) {
 	links, err := extractLinkRecursive()
 	require.NoError(t, err)
 
@@ -44,10 +44,10 @@ func TestLinkHealth(t *testing.T) {
 }
 
 func extractLinkRecursive() (map[string]bool, error) {
-	// Initialize the result map
+	// Initialize the result map.
 	links := make(map[string]bool)
 
-	// Define the function to be used with os.Walk
+	// Define the function to be used with os.Walk.
 	walkFn := func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -99,7 +99,7 @@ func checkLinkWithRetry(link string) error {
 	if err != nil {
 		return errors.Wrapf(err, "failed to read link %q", link)
 	}
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusPermanentRedirect {
+	if resp.StatusCode != http.StatusOK {
 		return errors.Errorf("link %q returned status %q content %q", link, resp.Status, b)
 	}
 	return nil
