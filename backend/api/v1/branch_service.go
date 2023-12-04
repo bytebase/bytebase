@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"path"
 
 	"golang.org/x/exp/slices"
@@ -266,50 +267,26 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 		if err := s.store.UpdateBranch(ctx, updateBranchMessage); err != nil {
 			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to update branch, error %v", err))
 		}
-		branch, err = s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &projectID, ResourceID: &request.Branch.BranchId, LoadFull: true})
-		if err != nil {
-			return nil, err
-		}
-		v1Branch, err := s.convertBranchToBranch(ctx, project, branch, v1pb.BranchView_BRANCH_VIEW_FULL)
-		if err != nil {
-			return nil, err
-		}
-		return v1Branch, nil
+		// Update the branchID for getting branch in the end.
+		branchID = request.Branch.BranchId
 	}
 
-	headUpdate := branch.Head
-	hasHeadUpdate := false
-	// The update includes the following cases.
-	// 1) schema_metadata: update the current branch. We need to update schema accordingly, or we lazily update it till merge branch.
-	// 2) baseline_database and schema: rebase the baseline schema metadata and baseline schema. Use schema to create schema_metadata.
-
-	// TODO(d): this section needs some clarifications for merging branches.
-	if slices.Contains(request.UpdateMask.Paths, "schema") {
-		headUpdate.Schema = []byte(request.Branch.Schema)
-		hasHeadUpdate = true
-		// TODO(d): convert schema to metadata.
-		// Try to transform the schema string to database metadata to make sure it's valid.
-		// if _, err := transformSchemaStringToDatabaseMetadata(schemaDesign.Engine, *sheetUpdate.Statement); err != nil {
-		// 	return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
-		// }
-	} else if slices.Contains(request.UpdateMask.Paths, "schema_metadata") {
+	if slices.Contains(request.UpdateMask.Paths, "schema_metadata") {
+		headUpdate := branch.Head
 		sanitizeBranchSchemaMetadata(request.Branch)
-		// schema, err := getDesignSchema(schemaDesign.Engine, schemaDesign.BaselineSchema, schemaDesign.SchemaMetadata)
+		metadata, config := convertV1DatabaseMetadata(request.Branch.GetSchemaMetadata())
+		slog.Info("metadata", metadata, config)
+		// schema, err := getDesignSchema(branch.Engine, schemaDesign.BaselineSchema, schemaDesign.SchemaMetadata)
 		// if err != nil {
 		// 	return nil, err
 		// }
-		// TODO(d): convert metadata to schema.
-		hasHeadUpdate = true
+		updateBranchMessage := &store.UpdateBranchMessage{ProjectID: projectID, ResourceID: branchID, UpdaterID: principalID}
+		updateBranchMessage.Head = headUpdate
+		if err := s.store.UpdateBranch(ctx, updateBranchMessage); err != nil {
+			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to update branch, error %v", err))
+		}
 	}
 	// TODO(d): handle database config as well.
-
-	updateBranchMessage := &store.UpdateBranchMessage{ProjectID: projectID, ResourceID: branchID, UpdaterID: principalID}
-	if hasHeadUpdate {
-		updateBranchMessage.Head = headUpdate
-	}
-	if err := s.store.UpdateBranch(ctx, updateBranchMessage); err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to update branch, error %v", err))
-	}
 
 	branch, err = s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &projectID, ResourceID: &branchID, LoadFull: true})
 	if err != nil {
