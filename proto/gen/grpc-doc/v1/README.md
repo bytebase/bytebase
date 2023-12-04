@@ -193,6 +193,7 @@
     - [ListBranchesRequest](#bytebase-v1-ListBranchesRequest)
     - [ListBranchesResponse](#bytebase-v1-ListBranchesResponse)
     - [MergeBranchRequest](#bytebase-v1-MergeBranchRequest)
+    - [RebaseBranchRequest](#bytebase-v1-RebaseBranchRequest)
     - [UpdateBranchRequest](#bytebase-v1-UpdateBranchRequest)
   
     - [BranchView](#bytebase-v1-BranchView)
@@ -3566,6 +3567,25 @@ When paginating, all other parameters provided to `ListBranches` must match the 
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the base branch to merge to. Format: projects/{project}/branches/{branch} |
 | head_branch | [string](#string) |  | The head branch to merge from. Format: projects/{project}/branches/{branch} |
+| merged_schema | [string](#string) |  | For failed merge. |
+
+
+
+
+
+
+<a name="bytebase-v1-RebaseBranchRequest"></a>
+
+### RebaseBranchRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the base branch to merge to. Format: projects/{project}/branches/{branch} |
+| source_database | [string](#string) |  | The database (remote upstream) used to rebase. We use its schema as baseline and reapply the difference between base and head of the named branch. Format: instances/{instance}/databases/{database} |
+| source_branch | [string](#string) |  | The branch (remote upstream) used to rebase. We use its head as baseline. We use its head schema as baseline and reapply the difference between base and head of the named branch. Format: projects/{project}/branches/{branch} |
+| merged_schema | [string](#string) |  | For failed merge, we will pass in this addition merged schema and use it for head. This has to be set together with source_database or source_branch. |
 
 
 
@@ -3621,6 +3641,7 @@ The branch&#39;s `name` field is used to identify the branch to update. Format: 
 | CreateBranch | [CreateBranchRequest](#bytebase-v1-CreateBranchRequest) | [Branch](#bytebase-v1-Branch) |  |
 | UpdateBranch | [UpdateBranchRequest](#bytebase-v1-UpdateBranchRequest) | [Branch](#bytebase-v1-Branch) |  |
 | MergeBranch | [MergeBranchRequest](#bytebase-v1-MergeBranchRequest) | [Branch](#bytebase-v1-Branch) |  |
+| RebaseBranch | [RebaseBranchRequest](#bytebase-v1-RebaseBranchRequest) | [Branch](#bytebase-v1-Branch) |  |
 | DeleteBranch | [DeleteBranchRequest](#bytebase-v1-DeleteBranchRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 | DiffMetadata | [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest) | [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse) |  |
 
