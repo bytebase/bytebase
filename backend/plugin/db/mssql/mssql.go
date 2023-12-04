@@ -52,6 +52,10 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 	if config.Database != "" {
 		query.Add("database", config.Database)
 	}
+
+	// In order to be compatible with db servers that only support old versions of tls.
+	// See: https://github.com/microsoft/go-mssqldb/issues/33
+	query.Add("tlsmin", "1.0")
 	u := &url.URL{
 		Scheme:   "sqlserver",
 		User:     url.UserPassword(config.Username, config.Password),
