@@ -690,6 +690,7 @@
         "self": "Tipos Semánticos",
         "label": "Las columnas que tengan el mismo tipo semántico utilizarán los mismos algoritmos de enmascaramiento.",
         "use-predefined-type": "Utiliza el Tipo Predefinido",
+        "add-from-template": "Agregar desde plantilla",
         "table": {
           "semantic-type": "Tipo Semántico",
           "description": "Descripción",
