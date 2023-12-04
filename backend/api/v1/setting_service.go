@@ -760,10 +760,11 @@ func validateTableMetadata(engine v1pb.Engine, tableMetadata *v1pb.TableMetadata
 		Name:    "temp_database",
 		Schemas: []*v1pb.SchemaMetadata{tempSchema},
 	}
-	if err := checkDatabaseMetadata(engine, tempMetadata); err != nil {
+	tempStoreSchemaMetadata, _ := convertV1DatabaseMetadata(tempMetadata)
+	if err := checkDatabaseMetadata(storepb.Engine(engine), tempStoreSchemaMetadata); err != nil {
 		return errors.Wrap(err, "failed to check database metadata")
 	}
-	if _, err := transformDatabaseMetadataToSchemaString(engine, tempMetadata); err != nil {
+	if _, err := transformDatabaseMetadataToSchemaString(storepb.Engine(engine), tempStoreSchemaMetadata); err != nil {
 		return errors.Wrap(err, "failed to transform database metadata to schema string")
 	}
 	return nil

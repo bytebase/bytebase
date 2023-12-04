@@ -352,7 +352,7 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 	if mergedTarget == nil {
 		return nil, status.Errorf(codes.FailedPrecondition, "failed to merge branch: no change")
 	}
-	mergedTargetSchema, err := getDesignSchema(v1pb.Engine(baseBranch.Engine), string(headBranch.Head.Schema), mergedTarget)
+	mergedTargetSchema, err := getDesignSchema(storepb.Engine(baseBranch.Engine), string(headBranch.Head.Schema), nil /* mergedTarget */)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert merged metadata to schema string, %v", err)
 	}
@@ -418,21 +418,23 @@ func (*BranchService) DiffMetadata(_ context.Context, request *v1pb.DiffMetadata
 		return nil, status.Errorf(codes.InvalidArgument, "source_metadata and target_metadata are required")
 	}
 
-	if err := checkDatabaseMetadata(request.Engine, request.SourceMetadata); err != nil {
+	storeSourceMetadata, _ := convertV1DatabaseMetadata(request.SourceMetadata)
+	storeTargetMetadata, _ := convertV1DatabaseMetadata(request.TargetMetadata)
+	if err := checkDatabaseMetadata(storepb.Engine(request.Engine), storeSourceMetadata); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid source metadata: %v", err))
 	}
-	if err := checkDatabaseMetadata(request.Engine, request.TargetMetadata); err != nil {
+	if err := checkDatabaseMetadata(storepb.Engine(request.Engine), storeTargetMetadata); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid target metadata: %v", err))
 	}
 
 	sanitizeCommentForSchemaMetadata(request.SourceMetadata)
 	sanitizeCommentForSchemaMetadata(request.TargetMetadata)
 
-	sourceSchema, err := transformDatabaseMetadataToSchemaString(request.Engine, request.SourceMetadata)
+	sourceSchema, err := transformDatabaseMetadataToSchemaString(storepb.Engine(request.Engine), storeSourceMetadata)
 	if err != nil {
 		return nil, err
 	}
-	targetSchema, err := transformDatabaseMetadataToSchemaString(request.Engine, request.TargetMetadata)
+	targetSchema, err := transformDatabaseMetadataToSchemaString(storepb.Engine(request.Engine), storeTargetMetadata)
 	if err != nil {
 		return nil, err
 	}
@@ -630,7 +632,7 @@ func sanitizeCommentForSchemaMetadata(dbSchema *v1pb.DatabaseMetadata) {
 	}
 }
 
-func setClassificationAndUserCommentFromComment(dbSchema *v1pb.DatabaseMetadata) {
+func setClassificationAndUserCommentFromComment(dbSchema *storepb.DatabaseSchemaMetadata) {
 	for _, schema := range dbSchema.Schemas {
 		for _, table := range schema.Tables {
 			table.Classification, table.UserComment = common.GetClassificationAndUserComment(table.Comment)
