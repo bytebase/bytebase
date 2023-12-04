@@ -298,6 +298,109 @@ func convertStoreColumnConfig(column *storepb.ColumnConfig) *v1pb.ColumnConfig {
 	}
 }
 
+func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.DatabaseSchemaMetadata, *storepb.DatabaseConfig) {
+	m := &storepb.DatabaseSchemaMetadata{
+		CharacterSet: metadata.GetCharacterSet(),
+		Collation:    metadata.GetCollation(),
+	}
+	for _, schema := range metadata.GetSchemas() {
+		if schema == nil {
+			continue
+		}
+		s := &storepb.SchemaMetadata{
+			Name: schema.GetName(),
+		}
+		for _, table := range schema.GetTables() {
+			if table == nil {
+				continue
+			}
+			s.Tables = append(s.Tables, convertV1TableMetadata(table))
+		}
+		for _, view := range schema.GetViews() {
+			if view == nil {
+				continue
+			}
+			storeView := &storepb.ViewMetadata{
+				Name: view.GetName(),
+			}
+			var dependentColumnList []*storepb.DependentColumn
+			for _, dependentColumn := range view.GetDependentColumns() {
+				dependentColumnList = append(dependentColumnList, &storepb.DependentColumn{
+					Schema: dependentColumn.GetSchema(),
+					Table:  dependentColumn.GetTable(),
+					Column: dependentColumn.GetColumn(),
+				})
+			}
+			storeView.Definition = view.GetDefinition()
+			storeView.Comment = view.GetComment()
+			storeView.DependentColumns = dependentColumnList
+
+			s.Views = append(s.Views, storeView)
+		}
+		for _, function := range schema.Functions {
+			if function == nil {
+				continue
+			}
+			storeFunc := &storepb.FunctionMetadata{
+				Name:       function.GetName(),
+				Definition: function.GetDefinition(),
+			}
+			s.Functions = append(s.Functions, storeFunc)
+		}
+		for _, task := range schema.GetTasks() {
+			if task == nil {
+				continue
+			}
+			storeTask := &storepb.TaskMetadata{
+				Name:         task.GetName(),
+				Id:           task.GetId(),
+				Owner:        task.GetOwner(),
+				Comment:      task.GetComment(),
+				Warehouse:    task.GetWarehouse(),
+				Schedule:     task.GetSchedule(),
+				Predecessors: task.GetPredecessors(),
+				State:        storepb.TaskMetadata_State(task.GetState()),
+				Condition:    task.GetCondition(),
+				Definition:   task.GetDefinition(),
+			}
+			s.Tasks = append(s.Tasks, storeTask)
+		}
+		for _, stream := range schema.Streams {
+			if stream == nil {
+				continue
+			}
+			storeStream := &storepb.StreamMetadata{
+				Name:       stream.GetName(),
+				TableName:  stream.GetTableName(),
+				Owner:      stream.GetOwner(),
+				Comment:    stream.GetComment(),
+				Type:       storepb.StreamMetadata_Type(stream.GetType()),
+				Stale:      stream.GetStale(),
+				Mode:       storepb.StreamMetadata_Mode(stream.GetMode()),
+				Definition: stream.GetDefinition(),
+			}
+			s.Streams = append(s.Streams, storeStream)
+		}
+		m.Schemas = append(m.Schemas, s)
+	}
+	for _, extension := range metadata.GetExtensions() {
+		if extension == nil {
+			continue
+		}
+		m.Extensions = append(m.Extensions, &storepb.ExtensionMetadata{
+			Name:        extension.GetName(),
+			Schema:      extension.GetSchema(),
+			Version:     extension.GetVersion(),
+			Description: extension.GetDescription(),
+		})
+	}
+
+	databaseConfig := convertV1DatabaseConfig(&v1pb.DatabaseConfig{
+		SchemaConfigs: metadata.GetSchemaConfigs(),
+	})
+	return m, databaseConfig
+}
+
 func convertV1TableMetadata(table *v1pb.TableMetadata) *storepb.TableMetadata {
 	t := &storepb.TableMetadata{
 		Name:           table.GetName(),
