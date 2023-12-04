@@ -834,7 +834,7 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 	}
 
 	if view != nil && view.Definition != "" {
-		columns, err := q.getColumnsForView(tableName, view.Definition)
+		columns, err := q.getColumnsForView(view.Definition)
 		if err != nil {
 			return nil, err
 		}
@@ -1169,7 +1169,7 @@ func isSystemResource(resource base.ColumnResource) string {
 	return ""
 }
 
-func (q *querySpanExtractor) getColumnsForView(view string, definition string) ([]base.QuerySpanResult, error) {
+func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QuerySpanResult, error) {
 	newQ := newQuerySpanExtractor(q.connectedDB, q.f)
 	span, err := newQ.getQuerySpan(q.ctx, definition)
 	if err != nil {
