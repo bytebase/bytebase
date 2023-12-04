@@ -11,7 +11,7 @@ import (
 
 	// Import PostgreSQL parser.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 type parseToMetadataTest struct {
@@ -44,8 +44,8 @@ func TestParseToMetadata(t *testing.T) {
 		if record {
 			tests[i].Metadata = resultText
 		} else {
-			resultMeta := &v1pb.DatabaseMetadata{}
-			expectedMeta := &v1pb.DatabaseMetadata{}
+			resultMeta := &storepb.DatabaseSchemaMetadata{}
+			expectedMeta := &storepb.DatabaseSchemaMetadata{}
 			a.NoError(protojson.Unmarshal([]byte(t.Metadata), resultMeta))
 			a.NoError(protojson.Unmarshal([]byte(t.Metadata), expectedMeta))
 			a.Equal(expectedMeta, resultMeta)
@@ -85,7 +85,7 @@ func TestGetSchemaDesign(t *testing.T) {
 	a.NoError(yaml.Unmarshal(byteValue, &tests))
 
 	for i, t := range tests {
-		targetSchema := &v1pb.DatabaseMetadata{}
+		targetSchema := &storepb.DatabaseSchemaMetadata{}
 		a.NoError(protojson.Unmarshal([]byte(t.Target), targetSchema))
 		result, err := GetDesignSchema(t.Baseline, targetSchema)
 		a.NoError(err)
