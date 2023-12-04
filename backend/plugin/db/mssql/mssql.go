@@ -53,7 +53,7 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 		query.Add("database", config.Database)
 	}
 
-	// in order to be compatible with db servers that only support old versions of tls.
+	// In order to be compatible with db servers that only support old versions of tls.
 	query.Add("tlsmin", "1.0")
 	u := &url.URL{
 		Scheme:   "sqlserver",
