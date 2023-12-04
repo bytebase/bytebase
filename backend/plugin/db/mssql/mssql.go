@@ -46,12 +46,15 @@ func newDriver(db.DriverConfig) db.Driver {
 }
 
 // Open opens a MSSQL driver.
-func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig, connectCtx db.ConnectionContext) (db.Driver, error) {
 	query := url.Values{}
 	query.Add("app name", "Bytebase")
 	if config.Database != "" {
 		query.Add("database", config.Database)
 	}
+
+	// in order to be compatible with db servers that only support old versions of tls.
+	query.Add("tlsmin", "1.0")
 	u := &url.URL{
 		Scheme:   "sqlserver",
 		User:     url.UserPassword(config.Username, config.Password),
