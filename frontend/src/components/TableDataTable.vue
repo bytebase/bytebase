@@ -187,6 +187,7 @@ const columns = computed(() => {
 
 const rowProps = (row: TableMetadata) => {
   return {
+    style: "cursor: pointer;",
     onClick: () => {
       state.selectedTableName = row.name;
     },
