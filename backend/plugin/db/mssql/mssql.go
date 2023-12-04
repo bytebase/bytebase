@@ -46,7 +46,7 @@ func newDriver(db.DriverConfig) db.Driver {
 }
 
 // Open opens a MSSQL driver.
-func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig, connectCtx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
 	query := url.Values{}
 	query.Add("app name", "Bytebase")
 	if config.Database != "" {
