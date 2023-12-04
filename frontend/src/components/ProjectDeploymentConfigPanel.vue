@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-[60rem] mx-auto">
+  <div class="w-full pt-6">
     <div v-if="state.ready && state.deployment" class="mb-6">
       <div class="text-lg font-medium leading-7 text-main">
         {{ $t("deployment-config.preview-deployment-pipeline") }}
