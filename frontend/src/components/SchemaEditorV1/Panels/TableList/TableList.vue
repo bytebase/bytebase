@@ -74,7 +74,10 @@ import {
   useSettingV1Store,
   useSchemaEditorV1Store,
 } from "@/store";
-import { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
+import {
+  SchemaTemplateSetting_TableTemplate,
+  DataClassificationSetting_DataClassificationConfig as DataClassificationConfig,
+} from "@/types/proto/v1/setting_service";
 import {
   Table,
   DatabaseTabContext,
@@ -85,7 +88,8 @@ import { bytesToString } from "@/utils";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import TableNameModal from "../../Modals/TableNameModal.vue";
 import { isTableChanged } from "../../utils";
-import { NameCell, ClassificationCell, OperationCell } from "./components";
+import ClassificationCell from "../TableColumnEditor/components/ClassificationCell.vue";
+import { NameCell, OperationCell } from "./components";
 
 const props = defineProps<{
   schemaId: string;
@@ -190,10 +194,12 @@ const columns = computed(() => {
       hide: !classificationConfig.value,
       render: (table) => {
         return h(ClassificationCell, {
-          table,
+          classification: table.classification,
           readonly: readonly.value,
           disabled: !disableChangeTable(table),
-          classificationConfig: classificationConfig.value,
+          classificationConfig:
+            classificationConfig.value ??
+            DataClassificationConfig.fromPartial({}),
           onEdit: () => showClassificationDrawer(table),
           onRemove: () => (table.classification = ""),
         });
