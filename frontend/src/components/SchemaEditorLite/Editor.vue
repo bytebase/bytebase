@@ -1,21 +1,22 @@
 <template>
   <main class="px-2 py-2 w-full h-full flex flex-col overflow-y-hidden">
-    <template v-if="currentTab">
+    <!-- <template v-if="currentTab">
       <TabsContainer
-        @on-table-search-pattern="handleTableSearchPattern"
-        @on-column-search-pattern="handleColumnSearchPattern"
+      @on-table-search-pattern="handleTableSearchPattern"
+      @on-column-search-pattern="handleColumnSearchPattern"
       />
       <div :key="currentTab.id" class="w-full flex-1 relative overflow-hidden">
         <DatabaseEditor
-          v-if="currentTab.type === SchemaEditorTabType.TabForDatabase"
-          :search-pattern="state.tableSearchPattern"
+        v-if="currentTab.type === SchemaEditorTabType.TabForDatabase"
+        :search-pattern="state.tableSearchPattern"
         />
         <TableEditor
-          v-else-if="currentTab.type === SchemaEditorTabType.TabForTable"
-          :search-pattern="state.columnSearchPattern"
+        v-else-if="currentTab.type === SchemaEditorTabType.TabForTable"
+        :search-pattern="state.columnSearchPattern"
         />
       </div>
-    </template>
+    </template> -->
+    <template v-if="false"></template>
     <EmptyTips v-else />
   </main>
 </template>
@@ -33,8 +34,8 @@ interface LocalState {
   columnSearchPattern: string;
 }
 
-const schemaEditorV1Store = useSchemaEditorV1Store();
-const currentTab = computed(() => schemaEditorV1Store.currentTab);
+// const schemaEditorV1Store = useSchemaEditorV1Store();
+// const currentTab = computed(() => schemaEditorV1Store.currentTab);
 
 const state = reactive<LocalState>({
   tableSearchPattern: "",
@@ -49,8 +50,8 @@ const handleColumnSearchPattern = (columnSearchPattern: string) => {
   state.columnSearchPattern = columnSearchPattern;
 };
 
-watch([() => currentTab.value], () => {
-  state.tableSearchPattern = "";
-  state.columnSearchPattern = "";
-});
+// watch([() => currentTab.value], () => {
+//   state.tableSearchPattern = "";
+//   state.columnSearchPattern = "";
+// });
 </script>
