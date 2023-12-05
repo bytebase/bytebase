@@ -6,26 +6,26 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func TestIsDiffConflict(t *testing.T) {
 	type testCase struct {
 		description string
-		base        *v1pb.DatabaseMetadata
-		head        *v1pb.DatabaseMetadata
-		target      *v1pb.DatabaseMetadata
+		base        *storepb.DatabaseSchemaMetadata
+		head        *storepb.DatabaseSchemaMetadata
+		target      *storepb.DatabaseSchemaMetadata
 		want        bool
 	}
 
-	defaultBase := &v1pb.DatabaseMetadata{
-		Schemas: []*v1pb.SchemaMetadata{
+	defaultBase := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
 			{
 				Name: "",
-				Tables: []*v1pb.TableMetadata{
+				Tables: []*storepb.TableMetadata{
 					{
 						Name: "employees",
-						Columns: []*v1pb.ColumnMetadata{
+						Columns: []*storepb.ColumnMetadata{
 							{
 								Name: "id",
 								Type: "int",
@@ -45,14 +45,14 @@ func TestIsDiffConflict(t *testing.T) {
 		{
 			description: "create different table with different name should not conflict",
 			base:        defaultBase,
-			head: &v1pb.DatabaseMetadata{
-				Schemas: []*v1pb.SchemaMetadata{
+			head: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
 					{
 						Name: "",
-						Tables: []*v1pb.TableMetadata{
+						Tables: []*storepb.TableMetadata{
 							{
 								Name: "employees",
-								Columns: []*v1pb.ColumnMetadata{
+								Columns: []*storepb.ColumnMetadata{
 									{
 										Name: "id",
 										Type: "int",
@@ -65,7 +65,7 @@ func TestIsDiffConflict(t *testing.T) {
 							},
 							{
 								Name: "salary",
-								Columns: []*v1pb.ColumnMetadata{
+								Columns: []*storepb.ColumnMetadata{
 									{
 										Name: "employee_id",
 										Type: "int",
@@ -80,14 +80,14 @@ func TestIsDiffConflict(t *testing.T) {
 					},
 				},
 			},
-			target: &v1pb.DatabaseMetadata{
-				Schemas: []*v1pb.SchemaMetadata{
+			target: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
 					{
 						Name: "",
-						Tables: []*v1pb.TableMetadata{
+						Tables: []*storepb.TableMetadata{
 							{
 								Name: "employees",
-								Columns: []*v1pb.ColumnMetadata{
+								Columns: []*storepb.ColumnMetadata{
 									{
 										Name: "id",
 										Type: "int",
@@ -100,7 +100,7 @@ func TestIsDiffConflict(t *testing.T) {
 							},
 							{
 								Name: "office",
-								Columns: []*v1pb.ColumnMetadata{
+								Columns: []*storepb.ColumnMetadata{
 									{
 										Name: "id",
 										Type: "int",
@@ -137,20 +137,20 @@ func TestIsDiffConflict(t *testing.T) {
 func TestTryMerge(t *testing.T) {
 	type testCase struct {
 		description string
-		base        *v1pb.DatabaseMetadata
-		head        *v1pb.DatabaseMetadata
-		target      *v1pb.DatabaseMetadata
-		want        *v1pb.DatabaseMetadata
+		base        *storepb.DatabaseSchemaMetadata
+		head        *storepb.DatabaseSchemaMetadata
+		target      *storepb.DatabaseSchemaMetadata
+		want        *storepb.DatabaseSchemaMetadata
 	}
 
-	defaultBase := &v1pb.DatabaseMetadata{
-		Schemas: []*v1pb.SchemaMetadata{
+	defaultBase := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
 			{
 				Name: "",
-				Tables: []*v1pb.TableMetadata{
+				Tables: []*storepb.TableMetadata{
 					{
 						Name: "employees",
-						Columns: []*v1pb.ColumnMetadata{
+						Columns: []*storepb.ColumnMetadata{
 							{
 								Name: "id",
 								Type: "int",
@@ -170,14 +170,14 @@ func TestTryMerge(t *testing.T) {
 		{
 			description: "create different table with different name should not conflict",
 			base:        defaultBase,
-			head: &v1pb.DatabaseMetadata{
-				Schemas: []*v1pb.SchemaMetadata{
+			head: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
 					{
 						Name: "",
-						Tables: []*v1pb.TableMetadata{
+						Tables: []*storepb.TableMetadata{
 							{
 								Name: "employees",
-								Columns: []*v1pb.ColumnMetadata{
+								Columns: []*storepb.ColumnMetadata{
 									{
 										Name: "id",
 										Type: "int",
@@ -190,7 +190,7 @@ func TestTryMerge(t *testing.T) {
 							},
 							{
 								Name: "salary",
-								Columns: []*v1pb.ColumnMetadata{
+								Columns: []*storepb.ColumnMetadata{
 									{
 										Name: "employee_id",
 										Type: "int",
@@ -205,14 +205,14 @@ func TestTryMerge(t *testing.T) {
 					},
 				},
 			},
-			target: &v1pb.DatabaseMetadata{
-				Schemas: []*v1pb.SchemaMetadata{
+			target: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
 					{
 						Name: "",
-						Tables: []*v1pb.TableMetadata{
+						Tables: []*storepb.TableMetadata{
 							{
 								Name: "employees",
-								Columns: []*v1pb.ColumnMetadata{
+								Columns: []*storepb.ColumnMetadata{
 									{
 										Name: "id",
 										Type: "int",
@@ -225,7 +225,7 @@ func TestTryMerge(t *testing.T) {
 							},
 							{
 								Name: "office",
-								Columns: []*v1pb.ColumnMetadata{
+								Columns: []*storepb.ColumnMetadata{
 									{
 										Name: "id",
 										Type: "int",
@@ -240,14 +240,14 @@ func TestTryMerge(t *testing.T) {
 					},
 				},
 			},
-			want: &v1pb.DatabaseMetadata{
-				Schemas: []*v1pb.SchemaMetadata{
+			want: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
 					{
 						Name: "",
-						Tables: []*v1pb.TableMetadata{
+						Tables: []*storepb.TableMetadata{
 							{
 								Name: "employees",
-								Columns: []*v1pb.ColumnMetadata{
+								Columns: []*storepb.ColumnMetadata{
 									{
 										Name: "id",
 										Type: "int",
@@ -260,7 +260,7 @@ func TestTryMerge(t *testing.T) {
 							},
 							{
 								Name: "office",
-								Columns: []*v1pb.ColumnMetadata{
+								Columns: []*storepb.ColumnMetadata{
 									{
 										Name: "id",
 										Type: "int",
@@ -273,7 +273,7 @@ func TestTryMerge(t *testing.T) {
 							},
 							{
 								Name: "salary",
-								Columns: []*v1pb.ColumnMetadata{
+								Columns: []*storepb.ColumnMetadata{
 									{
 										Name: "employee_id",
 										Type: "int",
@@ -292,14 +292,14 @@ func TestTryMerge(t *testing.T) {
 		{
 			description: "add different column in the same table",
 			base:        defaultBase,
-			head: &v1pb.DatabaseMetadata{
-				Schemas: []*v1pb.SchemaMetadata{
+			head: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
 					{
 						Name: "",
-						Tables: []*v1pb.TableMetadata{
+						Tables: []*storepb.TableMetadata{
 							{
 								Name: "employees",
-								Columns: []*v1pb.ColumnMetadata{
+								Columns: []*storepb.ColumnMetadata{
 									{
 										Name: "id",
 										Type: "int",
@@ -318,14 +318,14 @@ func TestTryMerge(t *testing.T) {
 					},
 				},
 			},
-			target: &v1pb.DatabaseMetadata{
-				Schemas: []*v1pb.SchemaMetadata{
+			target: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
 					{
 						Name: "",
-						Tables: []*v1pb.TableMetadata{
+						Tables: []*storepb.TableMetadata{
 							{
 								Name: "employees",
-								Columns: []*v1pb.ColumnMetadata{
+								Columns: []*storepb.ColumnMetadata{
 									{
 										Name: "id",
 										Type: "int",
@@ -344,14 +344,14 @@ func TestTryMerge(t *testing.T) {
 					},
 				},
 			},
-			want: &v1pb.DatabaseMetadata{
-				Schemas: []*v1pb.SchemaMetadata{
+			want: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
 					{
 						Name: "",
-						Tables: []*v1pb.TableMetadata{
+						Tables: []*storepb.TableMetadata{
 							{
 								Name: "employees",
-								Columns: []*v1pb.ColumnMetadata{
+								Columns: []*storepb.ColumnMetadata{
 									{
 										Name: "id",
 										Type: "int",
