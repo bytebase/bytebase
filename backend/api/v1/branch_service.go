@@ -369,7 +369,8 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 		if mergedTarget == nil {
 			return nil, status.Errorf(codes.FailedPrecondition, "failed to merge branch: no change")
 		}
-		mergedTargetSchema, err := getDesignSchema(storepb.Engine(baseBranch.Engine), string(headBranch.Head.Schema), nil /* mergedTarget */)
+		storepbMergedTarget, _ := convertV1DatabaseMetadata(mergedTarget)
+		mergedTargetSchema, err := getDesignSchema(storepb.Engine(baseBranch.Engine), string(headBranch.Head.Schema), storepbMergedTarget)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to convert merged metadata to schema string, %v", err)
 		}
@@ -454,7 +455,8 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 		if mergedTarget == nil {
 			return nil, status.Errorf(codes.FailedPrecondition, "failed to rebase branch: no change")
 		}
-		newHeadSchema, err = getDesignSchema(storepb.Engine(baseBranch.Engine), string(baseBranch.Head.Schema), nil /* mergedTarget */)
+		storepbMergedTarget, _ := convertV1DatabaseMetadata(mergedTarget)
+		newHeadSchema, err = getDesignSchema(storepb.Engine(baseBranch.Engine), string(baseBranch.Head.Schema), storepbMergedTarget)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to convert merged metadata to schema string, %v", err)
 		}
