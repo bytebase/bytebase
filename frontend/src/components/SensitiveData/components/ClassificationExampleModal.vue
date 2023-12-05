@@ -31,7 +31,7 @@ import { pushNotification } from "@/store";
 
 hljs.registerLanguage("json", json);
 
-const emit = defineEmits<{
+defineEmits<{
   (event: "dismiss"): void;
 }>();
 
