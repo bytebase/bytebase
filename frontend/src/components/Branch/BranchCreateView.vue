@@ -2,19 +2,6 @@
   <div
     class="w-full h-full flex flex-col gap-y-3 overflow-y-hidden overflow-x-auto"
   >
-    <div
-      v-if="showProjectSelector"
-      class="w-full flex flex-row justify-start items-center"
-    >
-      <span class="flex w-40 items-center shrink-0 text-sm">
-        {{ $t("common.project") }}
-      </span>
-      <ProjectSelect
-        class="!w-60 shrink-0"
-        :project="state.projectId"
-        @update:project="handleProjectSelect"
-      />
-    </div>
     <div class="w-full flex flex-row justify-start items-center">
       <span class="flex w-40 items-center text-sm">{{
         $t("database.branch-name")
@@ -47,7 +34,6 @@
     <BaselineSchemaSelector
       :project-id="state.projectId"
       :database-id="state.baselineSchema.databaseId"
-      :schema="state.baselineSchema.schema"
       :database-metadata="state.baselineSchema.databaseMetadata"
       :readonly="disallowToChangeBaseline"
       @update="handleBaselineSchemaChange"
@@ -78,11 +64,10 @@
 <script lang="ts" setup>
 import { uniqueId } from "lodash-es";
 import { NButton, NDivider, NInput } from "naive-ui";
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import SchemaEditorV1 from "@/components/SchemaEditorV1/index.vue";
-import { ProjectSelect } from "@/components/v2";
 import {
   pushNotification,
   useDatabaseV1Store,
@@ -104,7 +89,6 @@ import { validateBranchName } from "./utils";
 interface BaselineSchema {
   // The uid of database.
   databaseId?: string;
-  schema?: string;
   databaseMetadata?: DatabaseMetadata;
 }
 
@@ -137,7 +121,6 @@ const state = reactive<LocalState>({
   isCreating: false,
 });
 const branchTitle = ref<string>("");
-const showProjectSelector = ref<boolean>(true);
 const refreshId = ref<string>("");
 
 const project = computed(() => {
@@ -151,14 +134,6 @@ const disallowToChangeBaseline = computed(() => {
 
 // Avoid to create array or object literals in template to improve performance
 const branches = computed(() => [state.branch]);
-
-onMounted(async () => {
-  if (props.projectId) {
-    state.projectId = props.projectId;
-    // When we are creating a branch from a project page, we don't show the project selector.
-    showProjectSelector.value = false;
-  }
-});
 
 watch(
   () => [state.branch.baselineDatabase, state.branch.baselineSchema],
@@ -183,9 +158,7 @@ watch(
     const database = await databaseStore.getOrFetchDatabaseByName(
       branch.baselineDatabase
     );
-    state.projectId = database.projectEntity.uid;
     state.baselineSchema.databaseId = database.uid;
-    state.baselineSchema.schema = undefined;
     state.baselineSchema.databaseMetadata = undefined;
     state.branch = branch;
     refreshId.value = uniqueId();
@@ -194,18 +167,15 @@ watch(
 
 const prepareSchemaDesign = async () => {
   if (
-    state.baselineSchema.schema &&
-    state.baselineSchema.databaseMetadata &&
-    state.baselineSchema.databaseId
+    state.baselineSchema.databaseId &&
+    state.baselineSchema.databaseMetadata
   ) {
     const database = databaseStore.getDatabaseByUID(
       state.baselineSchema.databaseId
     );
     return Branch.fromPartial({
       engine: database.instanceEntity.engine,
-      baselineSchema: state.baselineSchema.schema,
       baselineSchemaMetadata: state.baselineSchema.databaseMetadata,
-      schema: state.baselineSchema.schema,
       schemaMetadata: state.baselineSchema.databaseMetadata,
     });
   }
@@ -214,10 +184,7 @@ const prepareSchemaDesign = async () => {
 
 const allowConfirm = computed(() => {
   return (
-    state.projectId &&
-    branchTitle.value &&
-    state.baselineSchema.databaseId &&
-    !state.isCreating
+    branchTitle.value && state.baselineSchema.databaseId && !state.isCreating
   );
 });
 
@@ -225,24 +192,12 @@ const confirmText = computed(() => {
   return t("common.create");
 });
 
-const handleProjectSelect = async (projectId?: string) => {
-  state.projectId = projectId;
-  state.parentBranchName = "";
-};
-
 const handleBaselineSchemaChange = async (baselineSchema: BaselineSchema) => {
   if (state.parentBranchName) {
     return;
   }
 
   state.baselineSchema = baselineSchema;
-  if (
-    baselineSchema.databaseId &&
-    baselineSchema.databaseId !== String(UNKNOWN_ID)
-  ) {
-    const database = databaseStore.getDatabaseByUID(baselineSchema.databaseId);
-    state.projectId = database.projectEntity.uid;
-  }
   console.time("prepareSchemaDesign");
   state.loading = true;
   state.branch = await prepareSchemaDesign();

@@ -47,7 +47,6 @@ import {
 const props = defineProps<{
   projectId?: string;
   databaseId?: string;
-  schema?: string;
   databaseMetadata?: DatabaseMetadata;
   readonly?: boolean;
 }>();
@@ -59,7 +58,6 @@ const emit = defineEmits<{
 interface LocalState {
   environmentId?: string;
   databaseId?: string;
-  schema?: string;
   databaseMetadata?: DatabaseMetadata;
 }
 
@@ -87,13 +85,11 @@ watch(
         );
         state.databaseId = database.uid;
         state.environmentId = database.effectiveEnvironmentEntity.uid;
-        state.schema = props.schema;
         state.databaseMetadata = props.databaseMetadata;
       } catch (error) {
         // do nothing.
       }
     } else {
-      state.schema = undefined;
       state.databaseMetadata = undefined;
     }
   }
@@ -116,22 +112,15 @@ watch(
   () => state.databaseId,
   async (databaseId) => {
     if (!database.value || !databaseId) {
-      state.schema = undefined;
       state.databaseMetadata = undefined;
       return;
     }
 
-    // If database has no migration history, we will use its latest schema.
-    const schema = await databaseStore.fetchDatabaseSchema(
-      `${database.value.name}/schema`
-    );
     const databaseMetadata = await dbSchemaStore.getOrFetchDatabaseMetadata({
       database: database.value.name,
       skipCache: true,
       view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
     });
-
-    state.schema = schema.schema;
     state.databaseMetadata = databaseMetadata;
   }
 );
