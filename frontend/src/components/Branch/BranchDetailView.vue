@@ -100,8 +100,8 @@
   <MergeBranchPanel
     v-if="state.showDiffEditor && mergeBranchPanelContext"
     :project="project"
-    :source-branch-name="mergeBranchPanelContext.sourceBranchName"
-    :target-branch-name="mergeBranchPanelContext.targetBranchName"
+    :head-branch-name="mergeBranchPanelContext.headBranchName"
+    :branch-name="mergeBranchPanelContext.branchName"
     @dismiss="state.showDiffEditor = false"
     @merged="handleMergeAfterConflictResolved"
   />
@@ -168,8 +168,8 @@ const state = reactive<LocalState>({
   isSaving: false,
 });
 const mergeBranchPanelContext = ref<{
-  sourceBranchName: string;
-  targetBranchName: string;
+  headBranchName: string;
+  branchName: string;
 }>();
 const schemaEditorKey = ref<string>(uniqueId());
 const selectTargetDatabasesContext = ref<{
@@ -288,10 +288,10 @@ const handleMergeBranch = () => {
       item.name !== branch.value.name
     );
   });
-  const targetBranchName = parentBranch.value
+  const branchName = parentBranch.value
     ? parentBranch.value.name
     : head(tempList)?.name;
-  if (!targetBranchName) {
+  if (!branchName) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
@@ -301,8 +301,8 @@ const handleMergeBranch = () => {
   }
 
   mergeBranchPanelContext.value = {
-    sourceBranchName: branch.value.name,
-    targetBranchName: targetBranchName,
+    headBranchName: branch.value.name,
+    branchName: branchName,
   };
   state.showDiffEditor = true;
 };
