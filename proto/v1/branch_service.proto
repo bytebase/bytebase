@@ -186,6 +186,12 @@ message UpdateBranchRequest {
 
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 2;
+
+  // The current etag of the branch.
+  // If an etag is provided and does not match the current etag of the branch,
+  // the call will be blocked and an ABORTED error will be returned.
+  // The etag should be specified for using merged_schema. The etag should be the etag from named branch.
+  string etag = 3;
 }
 
 message MergeBranchRequest {
@@ -197,8 +203,14 @@ message MergeBranchRequest {
   // Format: projects/{project}/branches/{branch}
   string head_branch = 2;
 
-  // For failed merge.
+  // For failed merge, we will pass in this addition merged schema and use it for head.
   string merged_schema = 3;
+
+  // The current etag of the branch.
+  // If an etag is provided and does not match the current etag of the branch,
+  // the call will be blocked and an ABORTED error will be returned.
+  // The etag should be specified for using merged_schema. The etag should be the etag from named branch.
+  string etag = 4 [(google.api.field_behavior) = OPTIONAL];
 }
 
 message RebaseBranchRequest {
@@ -219,6 +231,12 @@ message RebaseBranchRequest {
   // For failed merge, we will pass in this addition merged schema and use it for head.
   // This has to be set together with source_database or source_branch.
   string merged_schema = 4;
+
+  // The current etag of the branch.
+  // If an etag is provided and does not match the current etag of the branch,
+  // the call will be blocked and an ABORTED error will be returned.
+  // The etag should be specified for using merged_schema. The etag should be the etag from named branch.
+  string etag = 5;
 }
 
 message DeleteBranchRequest {
