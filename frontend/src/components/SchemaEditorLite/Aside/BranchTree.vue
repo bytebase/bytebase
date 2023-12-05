@@ -509,13 +509,13 @@ const extractDuplicateNumber = (name: string): number => {
   return num;
 };
 
-const getDuplicateName = (name: string): string => {
-  const num = extractDuplicateNumber(name);
-  if (num < 0) {
-    return `${name}_copy`;
-  }
-  return `${getOriginalName(name)}_copy${num + 1}`;
-};
+// const getDuplicateName = (name: string): string => {
+//   const num = extractDuplicateNumber(name);
+//   if (num < 0) {
+//     return `${name}_copy`;
+//   }
+//   return `${getOriginalName(name)}_copy${num + 1}`;
+// };
 
 const handleShowDropdown = (e: MouseEvent, treeNode: TreeNode) => {
   e.preventDefault();
