@@ -85,7 +85,7 @@ const documentTitle = computed(() => {
     return t("schema-designer.new-branch");
   } else {
     if (branch.value) {
-      return branch.value.title;
+      return branch.value.branchId;
     }
   }
   return t("common.loading");
