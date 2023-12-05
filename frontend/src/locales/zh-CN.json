@@ -802,6 +802,19 @@
         "self": "操作类型",
         "query": "查询",
         "export": "导出"
+      },
+      "classification": {
+        "self": "数据分类分级",
+        "upload": "导入分类分级",
+        "upload-succeed": "导入成功",
+        "search": "搜索分类分级",
+        "label": "您可以上传数据分类分级的 JSON 格式文件。",
+        "view-example": "查看样例",
+        "json-format-example": "分类分级 JSON 格式样例",
+        "copy-succeed": "样例已复制",
+        "override-title": "覆盖分类分级数据",
+        "override-desc": "已有的分类分级数据将会被覆盖，涉及到的项目都会受到影响。",
+        "override-confirm": "继续导入"
       }
     },
     "access-control": {

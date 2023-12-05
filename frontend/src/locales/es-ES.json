@@ -804,6 +804,19 @@
         "self": "Acción",
         "query": "Consulta",
         "export": "Exportar"
+      },
+      "classification": {
+        "self": "Clasificación de datos",
+        "upload": "Subir clasificación",
+        "upload-succeed": "Subida exitosa",
+        "search": "Clasificación de búsqueda",
+        "label": "Puede cargar un archivo de clasificación con formato JSON.",
+        "view-example": "Ver ejemplo",
+        "json-format-example": "Ejemplo de formato JSON de clasificación",
+        "copy-succeed": "Copiar ejemplo correctamente",
+        "override-title": "Anulación de datos de clasificación",
+        "override-desc": "Los datos de clasificación existentes se anularán y afectarán a todos los proyectos.",
+        "override-confirm": "Aún subiendo"
       }
     },
     "access-control": {
