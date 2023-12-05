@@ -93,7 +93,7 @@ func Execute() error {
 
 func init() {
 	rootCmd.PersistentFlags().StringVar(&flags.host, "host", "http://localhost", "host where Bytebase SQL service backend is accessed from, must start with http:// or https://.")
-	rootCmd.PersistentFlags().IntVar(&flags.port, "port", 80, "port where Bytebase SQL service backend is accessed from.")
+	rootCmd.PersistentFlags().IntVar(&flags.port, "port", 8080, "port where Bytebase SQL service backend is accessed from.")
 	rootCmd.PersistentFlags().BoolVar(&flags.debug, "debug", false, "whether to enable debug level logging")
 	rootCmd.PersistentFlags().StringVar(&flags.workspaceID, "workspace-id", "", "the identifier for SQL service")
 }
