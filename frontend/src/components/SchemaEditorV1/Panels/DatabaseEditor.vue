@@ -20,7 +20,7 @@
             </div>
             <button
               v-if="!readonly"
-              class="flex flex-row justify-center items-center border px-3 py-1 leading-6 rounded text-sm hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+              class="flex flex-row justify-center items-center border px-3 py-1 leading-6 rounded text-sm hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60 whitespace-nowrap"
               :disabled="!allowCreateTable"
               @click="handleCreateNewTable"
             >
@@ -29,7 +29,7 @@
             </button>
             <button
               v-if="!readonly"
-              class="flex flex-row justify-center items-center border px-3 py-1 leading-6 rounded text-sm hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+              class="flex flex-row justify-center items-center border px-3 py-1 leading-6 rounded text-sm hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60 whitespace-nowrap"
               :disabled="!allowCreateTable"
               @click="state.showSchemaTemplateDrawer = true"
             >
@@ -42,7 +42,7 @@
       </div>
       <div class="flex justify-end items-center">
         <div
-          class="flex flex-row justify-end items-center bg-gray-100 p-1 rounded"
+          class="flex flex-row justify-end items-center bg-gray-100 p-1 rounded whitespace-nowrap"
         >
           <button
             class="px-2 leading-7 text-sm text-gray-500 cursor-pointer select-none rounded flex justify-center items-center"
