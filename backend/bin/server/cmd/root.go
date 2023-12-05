@@ -106,7 +106,7 @@ func Execute() error {
 func init() {
 	// In the release build, Bytebase bundles frontend and backend together and runs on a single port as a mono server.
 	// During development, Bytebase frontend runs on a separate port.
-	rootCmd.PersistentFlags().IntVar(&flags.port, "port", 80, "port where Bytebase server runs. Default to 80")
+	rootCmd.PersistentFlags().IntVar(&flags.port, "port", 8080, "port where Bytebase server runs. Default to 80")
 	// When running the release build in production, most of the time, users would not expose Bytebase directly to the public.
 	// Instead they would configure a gateway to forward the traffic to Bytebase. Users need to set --external-url to the address
 	// exposed on that gateway accordingly.
