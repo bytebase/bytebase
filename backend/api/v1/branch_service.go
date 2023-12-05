@@ -326,42 +326,58 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 		return nil, status.Errorf(codes.Aborted, "there is concurrent update to the branch, please refresh and try again.")
 	}
 
-	headProjectID, headBranchID, err := common.GetProjectAndBranchID(request.HeadBranch)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	_, err = s.getProject(ctx, headProjectID)
-	if err != nil {
-		return nil, err
-	}
-	if err := s.checkBranchPermission(ctx, headProjectID); err != nil {
-		return nil, err
-	}
-	headBranch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &headProjectID, ResourceID: &headBranchID, LoadFull: true})
-	if err != nil {
-		return nil, err
-	}
-	if headBranch == nil {
-		return nil, status.Errorf(codes.NotFound, "branch %q not found", headBranchID)
-	}
+	var mergedSchema string
+	var mergedMetadata *storepb.DatabaseSchemaMetadata
+	// While user specify the merged schema, backend would not parcitipate in the merge process,
+	// instead, it would just update the HEAD of the base branch to the merged schema.
+	if request.MergedSchema != "" {
+		mergedSchema = request.MergedSchema
+		metadata, err := transformSchemaStringToDatabaseMetadata(storepb.Engine(baseBranch.Engine), mergedSchema)
+		if err != nil {
+			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to convert merged schema to metadata, %v", err))
+		}
+		mergedMetadata = metadata
+	} else {
+		headProjectID, headBranchID, err := common.GetProjectAndBranchID(request.HeadBranch)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		_, err = s.getProject(ctx, headProjectID)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.checkBranchPermission(ctx, headProjectID); err != nil {
+			return nil, err
+		}
+		headBranch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &headProjectID, ResourceID: &headBranchID, LoadFull: true})
+		if err != nil {
+			return nil, err
+		}
+		if headBranch == nil {
+			return nil, status.Errorf(codes.NotFound, "branch %q not found", headBranchID)
+		}
 
-	// Restrict merging only when the head branch is not updated.
-	// Maybe we can support auto-merging in the future.
-	baseMetadata := convertStoreDatabaseMetadata(headBranch.Base.Metadata, nil, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil)
-	headMetadata := convertStoreDatabaseMetadata(headBranch.Head.Metadata, nil, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil)
-	targetHeadMetadata := convertStoreDatabaseMetadata(baseBranch.Head.Metadata, nil, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil)
-	mergedTarget, err := tryMerge(baseMetadata, headMetadata, targetHeadMetadata)
-	if err != nil {
-		return nil, status.Errorf(codes.FailedPrecondition, fmt.Sprintf("failed to merge branch: %v", err))
+		// Restrict merging only when the head branch is not updated.
+		// Maybe we can support auto-merging in the future.
+		baseMetadata := convertStoreDatabaseMetadata(headBranch.Base.Metadata, nil, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil)
+		headMetadata := convertStoreDatabaseMetadata(headBranch.Head.Metadata, nil, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil)
+		targetHeadMetadata := convertStoreDatabaseMetadata(baseBranch.Head.Metadata, nil, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil)
+		mergedTarget, err := tryMerge(baseMetadata, headMetadata, targetHeadMetadata)
+		if err != nil {
+			return nil, status.Errorf(codes.FailedPrecondition, fmt.Sprintf("failed to merge branch: %v", err))
+		}
+		if mergedTarget == nil {
+			return nil, status.Errorf(codes.FailedPrecondition, "failed to merge branch: no change")
+		}
+		mergedTargetSchema, err := getDesignSchema(storepb.Engine(baseBranch.Engine), string(headBranch.Head.Schema), nil /* mergedTarget */)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to convert merged metadata to schema string, %v", err)
+		}
+		mergedSchema = mergedTargetSchema
+		metadata, _ := convertV1DatabaseMetadata(mergedTarget)
+		mergedMetadata = metadata
+		// TODO(d): handle database config.
 	}
-	if mergedTarget == nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "failed to merge branch: no change")
-	}
-	mergedTargetSchema, err := getDesignSchema(storepb.Engine(baseBranch.Engine), string(headBranch.Head.Schema), nil /* mergedTarget */)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert merged metadata to schema string, %v", err)
-	}
-	// TODO(d): handle database config.
 
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
 	if !ok {
@@ -372,8 +388,8 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 		ResourceID: baseBranchID,
 		UpdaterID:  principalID,
 		Head: &storepb.BranchSnapshot{
-			Schema: []byte(mergedTargetSchema),
-			// TODO(d): Metadata: mergedTarget,
+			Schema:   []byte(mergedSchema),
+			Metadata: mergedMetadata,
 			// TODO(d): handle config.
 		}}); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed update branch, error %v", err)
