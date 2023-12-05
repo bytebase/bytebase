@@ -180,7 +180,16 @@ export interface UpdateBranchRequest {
     | Branch
     | undefined;
   /** The list of fields to update. */
-  updateMask: string[] | undefined;
+  updateMask:
+    | string[]
+    | undefined;
+  /**
+   * The current etag of the branch.
+   * If an etag is provided and does not match the current etag of the branch,
+   * deletion will be blocked and an ABORTED error will be returned.
+   * The etag should be specified for using merged_schema. The etag should be the etag from named branch.
+   */
+  etag: string;
 }
 
 export interface MergeBranchRequest {
@@ -196,7 +205,12 @@ export interface MergeBranchRequest {
   headBranch: string;
   /** For failed merge, we will pass in this addition merged schema and use it for head. */
   mergedSchema: string;
-  /** The etag should be specified for using merged_schema. The etag should be the etag from named branch. */
+  /**
+   * The current etag of the branch.
+   * If an etag is provided and does not match the current etag of the branch,
+   * deletion will be blocked and an ABORTED error will be returned.
+   * The etag should be specified for using merged_schema. The etag should be the etag from named branch.
+   */
   etag: string;
 }
 
@@ -223,7 +237,12 @@ export interface RebaseBranchRequest {
    * This has to be set together with source_database or source_branch.
    */
   mergedSchema: string;
-  /** The etag should be specified for using merged_schema. The etag should be the etag from named branch. */
+  /**
+   * The current etag of the branch.
+   * If an etag is provided and does not match the current etag of the branch,
+   * deletion will be blocked and an ABORTED error will be returned.
+   * The etag should be specified for using merged_schema. The etag should be the etag from named branch.
+   */
   etag: string;
 }
 
@@ -871,7 +890,7 @@ export const CreateBranchRequest = {
 };
 
 function createBaseUpdateBranchRequest(): UpdateBranchRequest {
-  return { branch: undefined, updateMask: undefined };
+  return { branch: undefined, updateMask: undefined, etag: "" };
 }
 
 export const UpdateBranchRequest = {
@@ -881,6 +900,9 @@ export const UpdateBranchRequest = {
     }
     if (message.updateMask !== undefined) {
       FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(18).fork()).ldelim();
+    }
+    if (message.etag !== "") {
+      writer.uint32(26).string(message.etag);
     }
     return writer;
   },
@@ -906,6 +928,13 @@ export const UpdateBranchRequest = {
 
           message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.etag = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -919,6 +948,7 @@ export const UpdateBranchRequest = {
     return {
       branch: isSet(object.branch) ? Branch.fromJSON(object.branch) : undefined,
       updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
+      etag: isSet(object.etag) ? globalThis.String(object.etag) : "",
     };
   },
 
@@ -929,6 +959,9 @@ export const UpdateBranchRequest = {
     }
     if (message.updateMask !== undefined) {
       obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
+    }
+    if (message.etag !== "") {
+      obj.etag = message.etag;
     }
     return obj;
   },
@@ -942,6 +975,7 @@ export const UpdateBranchRequest = {
       ? Branch.fromPartial(object.branch)
       : undefined;
     message.updateMask = object.updateMask ?? undefined;
+    message.etag = object.etag ?? "";
     return message;
   },
 };
