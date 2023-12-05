@@ -359,24 +359,17 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 
 		// Restrict merging only when the head branch is not updated.
 		// Maybe we can support auto-merging in the future.
-		baseMetadata := convertStoreDatabaseMetadata(headBranch.Base.Metadata, nil, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil)
-		headMetadata := convertStoreDatabaseMetadata(headBranch.Head.Metadata, nil, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil)
-		targetHeadMetadata := convertStoreDatabaseMetadata(baseBranch.Head.Metadata, nil, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil)
-		mergedTarget, err := tryMerge(baseMetadata, headMetadata, targetHeadMetadata)
+		mergedMetadata, err = tryMerge(headBranch.Base.Metadata, headBranch.Head.Metadata, baseBranch.Head.Metadata)
 		if err != nil {
 			return nil, status.Errorf(codes.Aborted, "cannot auto merge branch due to conflict: %v", err)
 		}
-		if mergedTarget == nil {
+		if mergedMetadata == nil {
 			return nil, status.Errorf(codes.FailedPrecondition, "failed to merge branch: no change")
 		}
-		storepbMergedTarget, _ := convertV1DatabaseMetadata(mergedTarget)
-		mergedTargetSchema, err := getDesignSchema(storepb.Engine(baseBranch.Engine), string(headBranch.Head.Schema), storepbMergedTarget)
+		mergedSchema, err = getDesignSchema(storepb.Engine(baseBranch.Engine), string(headBranch.Head.Schema), mergedMetadata)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to convert merged metadata to schema string, %v", err)
 		}
-		mergedSchema = mergedTargetSchema
-		metadata, _ := convertV1DatabaseMetadata(mergedTarget)
-		mergedMetadata = metadata
 		// TODO(d): handle database config.
 	}
 
@@ -441,22 +434,18 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("failed to convert merged schema to metadata, %v", err))
 		}
 	} else {
-		baseMetadata := convertStoreDatabaseMetadata(baseBranch.Base.Metadata, nil, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil)
-		headMetadata := convertStoreDatabaseMetadata(baseBranch.Head.Metadata, nil, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil)
 		upstreamMetadata, err := transformSchemaStringToDatabaseMetadata(storepb.Engine(baseBranch.Engine), newBaseSchema)
 		if err != nil {
 			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to convert upstream schema to metadata, %v", err))
 		}
-		v1UpstreamMetadata := convertStoreDatabaseMetadata(upstreamMetadata, nil, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil)
-		mergedTarget, err := tryMerge(baseMetadata, headMetadata, v1UpstreamMetadata)
+		mergedTarget, err := tryMerge(baseBranch.Base.Metadata, baseBranch.Head.Metadata, upstreamMetadata)
 		if err != nil {
 			return nil, status.Errorf(codes.Aborted, "cannot auto rebase branch due to conflict: %v", err)
 		}
 		if mergedTarget == nil {
 			return nil, status.Errorf(codes.FailedPrecondition, "failed to rebase branch: no change")
 		}
-		storepbMergedTarget, _ := convertV1DatabaseMetadata(mergedTarget)
-		newHeadSchema, err = getDesignSchema(storepb.Engine(baseBranch.Engine), string(baseBranch.Head.Schema), storepbMergedTarget)
+		newHeadSchema, err = getDesignSchema(storepb.Engine(baseBranch.Engine), string(baseBranch.Head.Schema), mergedTarget)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to convert merged metadata to schema string, %v", err)
 		}
