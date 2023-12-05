@@ -231,9 +231,9 @@ const handleConfirm = async () => {
 
   state.isCreating = true;
   const baselineDatabase = `${database.instanceEntity.name}/${databaseNamePrefix}${database.databaseName}`;
-  let createdSchemaDesign;
+  let createdBranch;
   if (!state.parentBranchName) {
-    createdSchemaDesign = await branchStore.createBranch(
+    createdBranch = await branchStore.createBranch(
       project.value.name,
       branchTitle.value,
       Branch.fromPartial({
@@ -245,10 +245,12 @@ const handleConfirm = async () => {
       state.parentBranchName,
       false /* useCache */
     );
-    createdSchemaDesign = await branchStore.createBranchDraft(
+    createdBranch = await branchStore.createBranch(
       project.value.name,
       branchTitle.value,
-      parentBranch.name
+      Branch.fromPartial({
+        parentBranch: parentBranch.name,
+      })
     );
   }
   state.isCreating = false;
@@ -259,7 +261,7 @@ const handleConfirm = async () => {
   });
 
   // Go to branch detail page after created.
-  const [_, branchId] = getProjectAndBranchId(createdSchemaDesign.name);
+  const [_, branchId] = getProjectAndBranchId(createdBranch.name);
   router.replace({
     name: "workspace.project.branch.detail",
     params: {

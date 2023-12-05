@@ -110,7 +110,7 @@ const emit = defineEmits<{
 const state = reactive<LocalState>({
   targetBranchName: "",
   editingSchema: "",
-  deleteBranchAfterMerged: true,
+  deleteBranchAfterMerged: false,
 });
 const { t } = useI18n();
 const dialog = useDialog();
