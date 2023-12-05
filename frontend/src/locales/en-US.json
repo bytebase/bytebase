@@ -805,6 +805,19 @@
         "self": "Action",
         "query": "Query",
         "export": "Export"
+      },
+      "classification": {
+        "self": "Data classification",
+        "upload": "Upload classification",
+        "upload-succeed": "Upload succeed",
+        "search": "Search classification",
+        "label": "You can upload classification file with JSON format.",
+        "view-example": "View example",
+        "json-format-example": "Classification JSON format example",
+        "copy-succeed": "Copy example succeed",
+        "override-title": "Classification data override",
+        "override-desc": "Existed classification data will be overridden and affect all projects.",
+        "override-confirm": "Still upload"
       }
     },
     "access-control": {
