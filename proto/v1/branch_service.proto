@@ -197,8 +197,11 @@ message MergeBranchRequest {
   // Format: projects/{project}/branches/{branch}
   string head_branch = 2;
 
-  // For failed merge.
+  // For failed merge, we will pass in this addition merged schema and use it for head.
   string merged_schema = 3;
+
+  // The etag should be specified for using merged_schema. The etag should be the etag from named branch.
+  string etag = 4;
 }
 
 message RebaseBranchRequest {
@@ -219,6 +222,9 @@ message RebaseBranchRequest {
   // For failed merge, we will pass in this addition merged schema and use it for head.
   // This has to be set together with source_database or source_branch.
   string merged_schema = 4;
+
+  // The etag should be specified for using merged_schema. The etag should be the etag from named branch.
+  string etag = 5;
 }
 
 message DeleteBranchRequest {

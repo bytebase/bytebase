@@ -194,8 +194,10 @@ export interface MergeBranchRequest {
    * Format: projects/{project}/branches/{branch}
    */
   headBranch: string;
-  /** For failed merge. */
+  /** For failed merge, we will pass in this addition merged schema and use it for head. */
   mergedSchema: string;
+  /** The etag should be specified for using merged_schema. The etag should be the etag from named branch. */
+  etag: string;
 }
 
 export interface RebaseBranchRequest {
@@ -221,6 +223,8 @@ export interface RebaseBranchRequest {
    * This has to be set together with source_database or source_branch.
    */
   mergedSchema: string;
+  /** The etag should be specified for using merged_schema. The etag should be the etag from named branch. */
+  etag: string;
 }
 
 export interface DeleteBranchRequest {
@@ -943,7 +947,7 @@ export const UpdateBranchRequest = {
 };
 
 function createBaseMergeBranchRequest(): MergeBranchRequest {
-  return { name: "", headBranch: "", mergedSchema: "" };
+  return { name: "", headBranch: "", mergedSchema: "", etag: "" };
 }
 
 export const MergeBranchRequest = {
@@ -956,6 +960,9 @@ export const MergeBranchRequest = {
     }
     if (message.mergedSchema !== "") {
       writer.uint32(26).string(message.mergedSchema);
+    }
+    if (message.etag !== "") {
+      writer.uint32(34).string(message.etag);
     }
     return writer;
   },
@@ -988,6 +995,13 @@ export const MergeBranchRequest = {
 
           message.mergedSchema = reader.string();
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.etag = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1002,6 +1016,7 @@ export const MergeBranchRequest = {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       headBranch: isSet(object.headBranch) ? globalThis.String(object.headBranch) : "",
       mergedSchema: isSet(object.mergedSchema) ? globalThis.String(object.mergedSchema) : "",
+      etag: isSet(object.etag) ? globalThis.String(object.etag) : "",
     };
   },
 
@@ -1016,6 +1031,9 @@ export const MergeBranchRequest = {
     if (message.mergedSchema !== "") {
       obj.mergedSchema = message.mergedSchema;
     }
+    if (message.etag !== "") {
+      obj.etag = message.etag;
+    }
     return obj;
   },
 
@@ -1027,12 +1045,13 @@ export const MergeBranchRequest = {
     message.name = object.name ?? "";
     message.headBranch = object.headBranch ?? "";
     message.mergedSchema = object.mergedSchema ?? "";
+    message.etag = object.etag ?? "";
     return message;
   },
 };
 
 function createBaseRebaseBranchRequest(): RebaseBranchRequest {
-  return { name: "", sourceDatabase: "", sourceBranch: "", mergedSchema: "" };
+  return { name: "", sourceDatabase: "", sourceBranch: "", mergedSchema: "", etag: "" };
 }
 
 export const RebaseBranchRequest = {
@@ -1048,6 +1067,9 @@ export const RebaseBranchRequest = {
     }
     if (message.mergedSchema !== "") {
       writer.uint32(34).string(message.mergedSchema);
+    }
+    if (message.etag !== "") {
+      writer.uint32(42).string(message.etag);
     }
     return writer;
   },
@@ -1087,6 +1109,13 @@ export const RebaseBranchRequest = {
 
           message.mergedSchema = reader.string();
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.etag = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1102,6 +1131,7 @@ export const RebaseBranchRequest = {
       sourceDatabase: isSet(object.sourceDatabase) ? globalThis.String(object.sourceDatabase) : "",
       sourceBranch: isSet(object.sourceBranch) ? globalThis.String(object.sourceBranch) : "",
       mergedSchema: isSet(object.mergedSchema) ? globalThis.String(object.mergedSchema) : "",
+      etag: isSet(object.etag) ? globalThis.String(object.etag) : "",
     };
   },
 
@@ -1119,6 +1149,9 @@ export const RebaseBranchRequest = {
     if (message.mergedSchema !== "") {
       obj.mergedSchema = message.mergedSchema;
     }
+    if (message.etag !== "") {
+      obj.etag = message.etag;
+    }
     return obj;
   },
 
@@ -1131,6 +1164,7 @@ export const RebaseBranchRequest = {
     message.sourceDatabase = object.sourceDatabase ?? "";
     message.sourceBranch = object.sourceBranch ?? "";
     message.mergedSchema = object.mergedSchema ?? "";
+    message.etag = object.etag ?? "";
     return message;
   },
 };

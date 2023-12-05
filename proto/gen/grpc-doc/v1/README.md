@@ -3567,7 +3567,8 @@ When paginating, all other parameters provided to `ListBranches` must match the 
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the base branch to merge to. Format: projects/{project}/branches/{branch} |
 | head_branch | [string](#string) |  | The head branch to merge from. Format: projects/{project}/branches/{branch} |
-| merged_schema | [string](#string) |  | For failed merge. |
+| merged_schema | [string](#string) |  | For failed merge, we will pass in this addition merged schema and use it for head. |
+| etag | [string](#string) |  | The etag should be specified for using merged_schema. The etag should be the etag from named branch. |
 
 
 
@@ -3586,6 +3587,7 @@ When paginating, all other parameters provided to `ListBranches` must match the 
 | source_database | [string](#string) |  | The database (remote upstream) used to rebase. We use its schema as baseline and reapply the difference between base and head of the named branch. Format: instances/{instance}/databases/{database} |
 | source_branch | [string](#string) |  | The branch (remote upstream) used to rebase. We use its head as baseline. We use its head schema as baseline and reapply the difference between base and head of the named branch. Format: projects/{project}/branches/{branch} |
 | merged_schema | [string](#string) |  | For failed merge, we will pass in this addition merged schema and use it for head. This has to be set together with source_database or source_branch. |
+| etag | [string](#string) |  | The etag should be specified for using merged_schema. The etag should be the etag from named branch. |
 
 
 
