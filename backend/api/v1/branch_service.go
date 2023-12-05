@@ -255,7 +255,9 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
-	// TODO(d): handle etag.
+	if request.Etag != "" && request.Etag != fmt.Sprintf("%d", branch.UpdatedTime.UnixMilli()) {
+		return nil, status.Errorf(codes.Aborted, "there is concurrent update to the branch, please refresh and try again.")
+	}
 
 	// Handle branch ID update.
 	if slices.Contains(request.UpdateMask.Paths, "branch_id") {
@@ -319,6 +321,9 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 	}
 	if baseBranch == nil {
 		return nil, status.Errorf(codes.NotFound, "branch %q not found", baseBranchID)
+	}
+	if request.Etag != "" && request.Etag != fmt.Sprintf("%d", baseBranch.UpdatedTime.UnixMilli()) {
+		return nil, status.Errorf(codes.Aborted, "there is concurrent update to the branch, please refresh and try again.")
 	}
 
 	headProjectID, headBranchID, err := common.GetProjectAndBranchID(request.HeadBranch)
@@ -591,7 +596,7 @@ func (s *BranchService) convertBranchToBranch(ctx context.Context, project *stor
 	schemaDesign := &v1pb.Branch{
 		Name:             fmt.Sprintf("%s%s/%s%v", common.ProjectNamePrefix, project.ResourceID, common.BranchPrefix, branch.ResourceID),
 		BranchId:         branch.ResourceID,
-		Etag:             fmt.Sprintf("%d", branch.CreatedTime.UnixMilli()),
+		Etag:             fmt.Sprintf("%d", branch.UpdatedTime.UnixMilli()),
 		ParentBranch:     baselineBranch,
 		Engine:           v1pb.Engine(branch.Engine),
 		BaselineDatabase: baselineDatabase,
