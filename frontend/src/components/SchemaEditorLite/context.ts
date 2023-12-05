@@ -1,4 +1,4 @@
-import { InjectionKey, Ref, inject, provide, ref } from "vue";
+import { InjectionKey, Ref, inject, provide } from "vue";
 import { ComposedProject } from "@/types";
 import { EditTarget, ResourceType } from "./types";
 

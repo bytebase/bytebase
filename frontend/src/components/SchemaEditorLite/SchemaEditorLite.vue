@@ -23,9 +23,10 @@
 import { Splitpanes, Pane } from "splitpanes";
 import { reactive, computed, onMounted, toRef } from "vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
-import { useSettingV1Store } from "@/store";
+import { useDatabaseV1Store, useSettingV1Store } from "@/store";
 import { ComposedProject, ComposedDatabase } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
+import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import Aside from "./Aside";
 import Editor from "./Editor.vue";
 import { provideSchemaEditorContext } from "./context";
@@ -200,11 +201,16 @@ const targets = computed(() => {
   if (props.resourceType === "database") {
     return (props.databases ?? []).map<EditTarget>((database) => ({
       database,
+      metadata: DatabaseMetadata.fromPartial({}), // TODO,
+      baselineMetadata: DatabaseMetadata.fromPartial({}),
     }));
   }
   if (props.resourceType === "branch") {
     return (props.branches ?? []).map<EditTarget>((branch) => ({
-      branch,
+      database: useDatabaseV1Store().getDatabaseByName(branch.baselineDatabase),
+      metadata: branch.schemaMetadata ?? DatabaseMetadata.fromPartial({}),
+      baselineMetadata:
+        branch.baselineSchemaMetadata ?? DatabaseMetadata.fromPartial({}),
     }));
   }
   return [];

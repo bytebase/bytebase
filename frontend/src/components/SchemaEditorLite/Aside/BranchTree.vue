@@ -83,10 +83,8 @@ import DuplicateIcon from "~icons/heroicons-outline/document-duplicate";
 import TableIcon from "~icons/heroicons-outline/table-cells";
 import SchemaIcon from "~icons/heroicons-outline/view-columns";
 import EllipsisIcon from "~icons/heroicons-solid/ellipsis-horizontal";
-import { useDatabaseV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import {
-  DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
@@ -164,37 +162,18 @@ const contextMenu = reactive<TreeContextMenu>({
 });
 
 // NOTE: we only support editing one branch for now.
-// const branchSchema = computed(
-//   () =>
-//     head(
-//       Array.from(schemaEditorV1Store.resourceMap.branch.values())
-//     ) as BranchSchema
-// );
-// NOTE: we only support editing one branch for now.
-const branch = computed(() => {
-  return targets.value[0].branch!;
-});
 const database = computed(() => {
-  return useDatabaseV1Store().getDatabaseByName(branch.value.baselineDatabase);
+  return targets.value[0].database;
 });
 const metadata = computed(() => {
-  return branch.value.schemaMetadata ?? DatabaseMetadata.fromPartial({});
+  return targets.value[0].metadata;
 });
 const engine = computed(() => {
-  return branch.value.engine;
+  return database.value.instanceEntity.engine;
 });
 
 const schemaList = computed(() => {
   return metadata.value.schemas;
-  // return branchSchema.value.schemaList.map((schema) => {
-  //   return {
-  //     ...schema,
-  //     tableList: schema.tableList.map((table) => {
-  //       // Don't watch column changes in database tree.
-  //       return pick(table, ["id", "name", "status"]);
-  //     }),
-  //   };
-  // });
 });
 const tableList = computed(() => {
   return metadata.value.schemas.flatMap((schema) => schema.tables);

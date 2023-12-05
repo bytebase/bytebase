@@ -1,9 +1,10 @@
 import { ComposedDatabase } from "@/types";
-import { Branch } from "@/types/proto/v1/branch_service";
+import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 
 export type EditTarget = {
-  branch?: Branch;
-  database?: ComposedDatabase;
+  database: ComposedDatabase;
+  metadata: DatabaseMetadata;
+  baselineMetadata: DatabaseMetadata;
 };
 
 export type ResourceType = "branch" | "database";
