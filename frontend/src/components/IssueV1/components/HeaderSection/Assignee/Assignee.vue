@@ -31,6 +31,7 @@
           :map-options="mapUserOptions"
           :fallback-option="fallbackUser"
           :clearable="true"
+          :auto-reset="false"
           style="width: 14rem"
           @update:user="changeAssigneeUID"
         />
