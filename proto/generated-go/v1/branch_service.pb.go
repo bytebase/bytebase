@@ -529,7 +529,7 @@ type UpdateBranchRequest struct {
 	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
 	// The current etag of the branch.
 	// If an etag is provided and does not match the current etag of the branch,
-	// deletion will be blocked and an ABORTED error will be returned.
+	// the call will be blocked and an ABORTED error will be returned.
 	// The etag should be specified for using merged_schema. The etag should be the etag from named branch.
 	Etag string `protobuf:"bytes,3,opt,name=etag,proto3" json:"etag,omitempty"`
 }
@@ -602,7 +602,7 @@ type MergeBranchRequest struct {
 	MergedSchema string `protobuf:"bytes,3,opt,name=merged_schema,json=mergedSchema,proto3" json:"merged_schema,omitempty"`
 	// The current etag of the branch.
 	// If an etag is provided and does not match the current etag of the branch,
-	// deletion will be blocked and an ABORTED error will be returned.
+	// the call will be blocked and an ABORTED error will be returned.
 	// The etag should be specified for using merged_schema. The etag should be the etag from named branch.
 	Etag string `protobuf:"bytes,4,opt,name=etag,proto3" json:"etag,omitempty"`
 }
@@ -688,7 +688,7 @@ type RebaseBranchRequest struct {
 	MergedSchema string `protobuf:"bytes,4,opt,name=merged_schema,json=mergedSchema,proto3" json:"merged_schema,omitempty"`
 	// The current etag of the branch.
 	// If an etag is provided and does not match the current etag of the branch,
-	// deletion will be blocked and an ABORTED error will be returned.
+	// the call will be blocked and an ABORTED error will be returned.
 	// The etag should be specified for using merged_schema. The etag should be the etag from named branch.
 	Etag string `protobuf:"bytes,5,opt,name=etag,proto3" json:"etag,omitempty"`
 }

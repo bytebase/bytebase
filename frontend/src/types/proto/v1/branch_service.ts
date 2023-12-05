@@ -186,7 +186,7 @@ export interface UpdateBranchRequest {
   /**
    * The current etag of the branch.
    * If an etag is provided and does not match the current etag of the branch,
-   * deletion will be blocked and an ABORTED error will be returned.
+   * the call will be blocked and an ABORTED error will be returned.
    * The etag should be specified for using merged_schema. The etag should be the etag from named branch.
    */
   etag: string;
@@ -208,7 +208,7 @@ export interface MergeBranchRequest {
   /**
    * The current etag of the branch.
    * If an etag is provided and does not match the current etag of the branch,
-   * deletion will be blocked and an ABORTED error will be returned.
+   * the call will be blocked and an ABORTED error will be returned.
    * The etag should be specified for using merged_schema. The etag should be the etag from named branch.
    */
   etag: string;
@@ -240,7 +240,7 @@ export interface RebaseBranchRequest {
   /**
    * The current etag of the branch.
    * If an etag is provided and does not match the current etag of the branch,
-   * deletion will be blocked and an ABORTED error will be returned.
+   * the call will be blocked and an ABORTED error will be returned.
    * The etag should be specified for using merged_schema. The etag should be the etag from named branch.
    */
   etag: string;
