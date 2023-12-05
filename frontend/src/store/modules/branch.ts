@@ -36,20 +36,6 @@ export const useBranchStore = defineStore("schema_design", () => {
     return createdBranch;
   };
 
-  const createBranchDraft = async (
-    projectName: string,
-    branchId: string,
-    parentBranch: string
-  ) => {
-    return createBranch(
-      projectName,
-      branchId,
-      Branch.fromPartial({
-        parentBranch: parentBranch,
-      })
-    );
-  };
-
   const updateBranch = async (branch: Branch, updateMask: string[]) => {
     const updatedBranch = await branchServiceClient.updateBranch({
       branch,
@@ -112,7 +98,6 @@ export const useBranchStore = defineStore("schema_design", () => {
   return {
     fetchBranchList,
     createBranch,
-    createBranchDraft,
     updateBranch,
     mergeBranch,
     fetchBranchByName,

@@ -50,11 +50,11 @@ watch(
     }
 
     // Prepare branch name from route params.
-    const sheetId = (route.params.branchName as string) || "";
-    if (!sheetId || !project.value) {
+    const branchId = (route.params.branchName as string) || "";
+    if (!branchId || !project.value) {
       return;
     }
-    branchFullName.value = `${project.value.name}/branches/${sheetId}`;
+    branchFullName.value = `${project.value.name}/branches/${branchId}`;
   },
   {
     immediate: true,
