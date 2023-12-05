@@ -79,7 +79,6 @@ import {
   databaseNamePrefix,
   getProjectAndBranchId,
 } from "@/store/modules/v1/common";
-import { UNKNOWN_ID } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { projectV1Slug } from "@/utils";
