@@ -99,6 +99,7 @@
 
   <MergeBranchPanel
     v-if="state.showDiffEditor && mergeBranchPanelContext"
+    :project="project"
     :source-branch-name="mergeBranchPanelContext.sourceBranchName"
     :target-branch-name="mergeBranchPanelContext.targetBranchName"
     @dismiss="state.showDiffEditor = false"
@@ -148,7 +149,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  // Should be a schema design name of main branch.
+  projectId: string;
   branch: Branch;
   viewMode?: boolean;
 }>();
@@ -157,9 +158,7 @@ const { t } = useI18n();
 const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const branchStore = useBranchStore();
-const { branchList, ready } = useBranchList(
-  getProjectAndBranchId(props.branch.name)[0]
-);
+const { branchList, ready } = useBranchList(props.projectId);
 const { runSQLCheck } = provideSQLCheckContext();
 const state = reactive<LocalState>({
   branchId: "",
