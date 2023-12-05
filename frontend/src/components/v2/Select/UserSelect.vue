@@ -221,8 +221,16 @@ const combinedUserList = computed(() => {
 const handleValueUpdated = (value: string | string[]) => {
   showStatus.value = false;
   if (props.multiple) {
+    if (!value) {
+      // normalize value
+      value = [];
+    }
     emit("update:users", value as string[]);
   } else {
+    if (value === null) {
+      // normalize value
+      value = "";
+    }
     emit("update:user", value as string);
   }
 };
