@@ -15,7 +15,6 @@
     <BranchDataTable
       class="border"
       :branches="filteredBranches"
-      :hide-project-column="true"
       :ready="ready"
       @click="handleBranchClick"
     />
@@ -77,8 +76,8 @@ const handleCreateBranch = () => {
   });
 };
 
-const handleBranchClick = async (schemaDesign: Branch) => {
-  const [_, branchId] = getProjectAndBranchId(schemaDesign.name);
+const handleBranchClick = async (branch: Branch) => {
+  const [_, branchId] = getProjectAndBranchId(branch.name);
   router.push({
     name: "workspace.project.branch.detail",
     params: {
