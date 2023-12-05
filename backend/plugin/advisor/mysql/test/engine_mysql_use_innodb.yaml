@@ -29,6 +29,7 @@
           FOREIGN KEY fk1(roomId) REFERENCES room(id),
           INDEX idx_userTable_content(content)) ENGINE = CSV COLLATE latin1_bin;" doesn't use InnoDB engine
       line: 12
+      column: 0
       details: ""
 - statement: |
     CREATE TABLE user(
@@ -48,6 +49,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: CREATE TABLE book(id int) ENGINE = INNODB;
   want:
@@ -56,6 +58,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: CREATE TABLE book(id int);
   want:
@@ -64,6 +67,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: |
     CREATE TABLE book(
@@ -80,6 +84,7 @@
           price INT
         ) ENGINE = CSV;" doesn't use InnoDB engine
       line: 4
+      column: 0
       details: ""
 - statement: |
     CREATE TABLE teck_book(a INT);
@@ -97,6 +102,7 @@
           price INT
         ) ENGINE = CSV;" doesn't use InnoDB engine
       line: 5
+      column: 0
       details: ""
 - statement: ALTER TABLE tech_book ENGINE = INNODB;
   want:
@@ -105,6 +111,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: |
     CREATE TABLE teck_book(a INT);
@@ -114,9 +121,9 @@
     - status: WARN
       code: 501
       title: engine.mysql.use-innodb
-      content: |-
-        "ALTER TABLE tech_book ENGINE = CSV;" doesn't use InnoDB engine
+      content: '"ALTER TABLE tech_book ENGINE = CSV;" doesn''t use InnoDB engine'
       line: 3
+      column: 0
       details: ""
 - statement: SET default_storage_engine=INNODB;
   want:
@@ -125,6 +132,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: |
     CREATE TABLE book(a INT);
@@ -133,7 +141,17 @@
     - status: WARN
       code: 501
       title: engine.mysql.use-innodb
-      content: |-
-        "SET default_storage_engine=CSV;" doesn't use InnoDB engine
+      content: '"SET default_storage_engine=CSV;" doesn''t use InnoDB engine'
       line: 2
+      column: 0
+      details: ""
+- statement: |
+    SET foreign_key_checks=0;
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      column: 0
       details: ""
