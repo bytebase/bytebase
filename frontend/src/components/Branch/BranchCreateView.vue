@@ -75,10 +75,7 @@ import {
   useSchemaEditorV1Store,
 } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
-import {
-  databaseNamePrefix,
-  getProjectAndBranchId,
-} from "@/store/modules/v1/common";
+import { databaseNamePrefix } from "@/store/modules/v1/common";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { projectV1Slug } from "@/utils";
