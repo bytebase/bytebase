@@ -136,6 +136,13 @@ func (c *useInnoDBChecker) EnterSetStatement(ctx *mysql.SetStatementContext) {
 		return
 	}
 	optionValueNoOptionType := startOptionValueList.OptionValueNoOptionType()
+	if optionValueNoOptionType.InternalVariableName() == nil {
+		return
+	}
+	name := optionValueNoOptionType.InternalVariableName().GetText()
+	if strings.ToLower(name) != defaultStorageEngin {
+		return
+	}
 	if optionValueNoOptionType.SetExprOrDefault() != nil {
 		engine := optionValueNoOptionType.SetExprOrDefault().GetText()
 		if strings.ToLower(engine) != innoDB {
