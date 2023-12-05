@@ -63,7 +63,7 @@ const example = {
     },
     "1-1-1": {
       id: "1-1-1",
-      title: "个人基本概况信息",
+      title: "个人基本信息",
       description: "指个人基本情况数据，如个人姓名、性别、国籍、家庭住址等。",
       levelId: "1",
     },
@@ -75,7 +75,7 @@ const example = {
     },
     "1-2": {
       id: "1-2",
-      title: "个人身份鉴别信息",
+      title: "个人身份信息",
       description: "",
     },
     "1-2-1": {
