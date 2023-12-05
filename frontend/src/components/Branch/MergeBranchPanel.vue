@@ -9,9 +9,6 @@
         class="space-y-3 w-[calc(100vw-24rem)] min-w-[64rem] max-w-[calc(100vw-8rem)] h-full overflow-x-auto"
       >
         <div class="w-full flex flex-row justify-end items-center gap-2">
-          <NButton @click="() => handleSaveDraft()">{{
-            $t("schema-designer.save-draft")
-          }}</NButton>
           <NButton type="primary" @click="handleMergeBranch">
             {{ $t("common.merge") }}
           </NButton>
@@ -27,11 +24,9 @@
               class="!w-4/5 text-center"
               :clearable="false"
               :project="getProjectName(project.name)"
-              :branch="state.targetBranchName"
+              :branch="state.branchName"
               :filter="targetBranchFilter"
-              @update:branch="
-                (branch) => (state.targetBranchName = branch ?? '')
-              "
+              @update:branch="(branch) => (state.branchName = branch ?? '')"
             />
           </div>
           <div class="flex flex-row justify-center">
@@ -48,16 +43,16 @@
         </div>
         <div class="w-full grid grid-cols-2">
           <div class="col-span-1">
-            <span>{{ $t("schema-designer.diff-editor.latest-schema") }}</span>
+            <span>base</span>
           </div>
           <div class="col-span-1">
-            <span>{{ $t("schema-designer.diff-editor.editing-schema") }}</span>
+            <span>compare</span>
           </div>
         </div>
         <div class="w-full h-[calc(100%-14rem)] border relative">
           <DiffEditor
             v-if="ready"
-            :key="state.targetBranchName"
+            :key="state.branchName"
             class="h-full"
             :original="targetBranch.schema"
             :modified="state.editingSchema"
@@ -91,15 +86,15 @@ import { Branch } from "@/types/proto/v1/branch_service";
 import { DiffEditor } from "../MonacoEditor";
 
 interface LocalState {
-  targetBranchName: string;
+  branchName: string;
   editingSchema: string;
   deleteBranchAfterMerged: boolean;
 }
 
 const props = defineProps<{
   project: ComposedProject;
-  sourceBranchName: string;
-  targetBranchName: string;
+  headBranchName: string;
+  branchName: string;
 }>();
 
 const emit = defineEmits<{
@@ -108,7 +103,7 @@ const emit = defineEmits<{
 }>();
 
 const state = reactive<LocalState>({
-  targetBranchName: "",
+  branchName: "",
   editingSchema: "",
   deleteBranchAfterMerged: false,
 });
@@ -121,7 +116,7 @@ const emptyBranch = () => Branch.fromPartial({});
 
 const sourceBranch = asyncComputed(
   async () => {
-    const name = props.sourceBranchName;
+    const name = props.headBranchName;
     if (!name) {
       return emptyBranch();
     }
@@ -135,7 +130,7 @@ const sourceBranch = asyncComputed(
 
 const targetBranch = asyncComputed(
   async () => {
-    const name = state.targetBranchName;
+    const name = state.branchName;
     if (!name) {
       return emptyBranch();
     }
@@ -154,37 +149,12 @@ const ready = computed(() => {
 
 const targetBranchFilter = (branch: Branch) => {
   return (
-    branch.name !== props.sourceBranchName &&
+    branch.name !== props.headBranchName &&
     branch.engine === sourceBranch.value.engine
   );
 };
 
-const handleSaveDraft = async (ignoreNotify?: boolean) => {
-  const updateMask = ["schema"];
-  // Update the schema design draft first.
-  // TODO(d): rebase the baseline schema metadata.
-  await branchStore.updateBranch(
-    Branch.fromPartial({
-      name: sourceBranch.value.name,
-      baselineDatabase: sourceBranch.value.baselineDatabase,
-      schema: state.editingSchema,
-    }),
-    updateMask
-  );
-
-  if (!ignoreNotify) {
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("schema-designer.message.updated-succeed"),
-    });
-    emit("dismiss");
-  }
-};
-
 const handleMergeBranch = async () => {
-  await handleSaveDraft(true);
-
   try {
     await branchStore.mergeBranch({
       name: targetBranch.value.name,
@@ -196,7 +166,6 @@ const handleMergeBranch = async () => {
     // If there is conflict, we need to show the conflict and let user resolve it.
     if (error.code === Status.ABORTED) {
       dialog.create({
-        negativeText: t("schema-designer.save-draft"),
         positiveText: t("schema-designer.diff-editor.resolve"),
         title: t("schema-designer.diff-editor.auto-merge-failed"),
         content: t("schema-designer.diff-editor.need-to-resolve-conflicts"),
@@ -204,13 +173,11 @@ const handleMergeBranch = async () => {
         closable: true,
         maskClosable: true,
         closeOnEsc: true,
-        onNegativeClick: () => {
-          // Do nothing.
-        },
         onPositiveClick: async () => {
-          // Fetching the latest target branch.
+          // TODO(d): open resolve window.
+          // Fetching the latest base branch.
           await branchStore.fetchBranchByName(
-            state.targetBranchName,
+            state.branchName,
             false /* !useCache */
           );
         },
@@ -232,9 +199,9 @@ const handleMergeBranch = async () => {
     title: t("schema-designer.message.merge-to-main-successfully"),
   });
 
-  emit("merged", state.targetBranchName);
+  emit("merged", state.branchName);
   if (state.deleteBranchAfterMerged) {
-    await branchStore.deleteBranch(props.sourceBranchName);
+    await branchStore.deleteBranch(props.headBranchName);
   }
 };
 
@@ -247,9 +214,9 @@ watch(
 );
 
 watch(
-  () => props.targetBranchName,
+  () => props.branchName,
   () => {
-    state.targetBranchName = props.targetBranchName;
+    state.branchName = props.branchName;
   },
   { immediate: true }
 );
