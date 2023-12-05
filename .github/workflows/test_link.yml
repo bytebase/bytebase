@@ -17,5 +17,6 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version: 1.21.3
+          cache: false
       - name: Validate links
         run: go test -timeout 600s -v ./scripts/... | tee test.log; exit ${PIPESTATUS[0]}
