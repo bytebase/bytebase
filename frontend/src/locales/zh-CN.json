@@ -3223,8 +3223,6 @@
     "diff-editor": {
       "self": "Diff 编辑器",
       "resolve": "解决",
-      "latest-schema": "最新 Schema",
-      "editing-schema": "正在编辑的 Schema",
       "auto-merge-failed": "自动合并失败",
       "need-to-resolve-conflicts": "父分支已经被其他用户更新，您需要先解决可能存在的冲突。",
       "resolve-and-merge-again": "解决冲突并再次合并",
