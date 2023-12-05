@@ -50,6 +50,7 @@
     </div>
     <div class="w-full flex-1 overflow-y-hidden">
       <SchemaEditorLite
+        v-if="branches.length > 0"
         :loading="isPreparingBranch"
         :project="project"
         :resource-type="'branch'"

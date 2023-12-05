@@ -21,12 +21,15 @@
 
 <script lang="ts" setup>
 import { Splitpanes, Pane } from "splitpanes";
-import { reactive, computed } from "vue";
+import { reactive, computed, onMounted, toRef } from "vue";
+import MaskSpinner from "@/components/misc/MaskSpinner.vue";
+import { useSettingV1Store } from "@/store";
 import { ComposedProject, ComposedDatabase } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
-import MaskSpinner from "../misc/MaskSpinner.vue";
-import Aside from "./Aside/index.vue";
+import Aside from "./Aside";
 import Editor from "./Editor.vue";
+import { provideSchemaEditorContext } from "./context";
+import { EditTarget } from "./types";
 
 const props = defineProps<{
   project: ComposedProject;
@@ -43,12 +46,12 @@ interface LocalState {
   initialized: boolean;
 }
 
-// const settingStore = useSettingV1Store();
+const settingStore = useSettingV1Store();
 // const schemaEditorV1Store = useSchemaEditorV1Store();
 // const branchStore = useBranchStore();
 const state = reactive<LocalState>({
   loading: false,
-  initialized: true,
+  initialized: false,
 });
 
 const mergedLoading = computed(() => {
@@ -122,13 +125,13 @@ const mergedLoading = computed(() => {
 //   }
 // };
 
-// // Prepare schema template contexts.
-// onMounted(async () => {
-//   await settingStore.getOrFetchSettingByName("bb.workspace.schema-template");
-//   await prepareBranchContext();
-//   await initialSchemaEditorState();
-//   state.initialized = true;
-// });
+// Prepare schema template contexts.
+onMounted(async () => {
+  await settingStore.getOrFetchSettingByName("bb.workspace.schema-template");
+  // await prepareBranchContext();
+  // await initialSchemaEditorState();
+  state.initialized = true;
+});
 
 // watch(
 //   () => props,
@@ -192,6 +195,27 @@ const mergedLoading = computed(() => {
 //     deep: true,
 //   }
 // );
+
+const targets = computed(() => {
+  if (props.resourceType === "database") {
+    return (props.databases ?? []).map<EditTarget>((database) => ({
+      database,
+    }));
+  }
+  if (props.resourceType === "branch") {
+    return (props.branches ?? []).map<EditTarget>((branch) => ({
+      branch,
+    }));
+  }
+  return [];
+});
+
+provideSchemaEditorContext({
+  targets,
+  project: toRef(props, "project"),
+  resourceType: toRef(props, "resourceType"),
+  readonly: toRef(props, "readonly"),
+});
 </script>
 
 <style>
