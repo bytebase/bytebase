@@ -194,7 +194,7 @@ const handleMergeBranch = async () => {
     });
   } catch (error: any) {
     // If there is conflict, we need to show the conflict and let user resolve it.
-    if (error.code === Status.FAILED_PRECONDITION) {
+    if (error.code === Status.ABORTED) {
       dialog.create({
         negativeText: t("schema-designer.save-draft"),
         positiveText: t("schema-designer.diff-editor.resolve"),
