@@ -1,13 +1,13 @@
 <template>
   <div
-    class="w-full h-full flex flex-col gap-y-3 overflow-y-hidden overflow-x-auto"
+    class="w-full h-full flex flex-col gap-y-3 relative overflow-y-hidden overflow-x-auto"
   >
     <div class="w-full flex flex-row justify-start items-center">
       <span class="flex w-40 items-center text-sm">{{
         $t("database.branch-name")
       }}</span>
       <NInput
-        v-model:value="branchId"
+        v-model:value="branchTitle"
         type="text"
         class="!w-60 text-sm"
         :placeholder="'feature/add-billing'"
@@ -16,32 +16,41 @@
         $t("schema-designer.parent-branch")
       }}</span>
       <BranchSelector
+        v-model:branch="parentBranchName"
+        :project="projectId"
         class="!w-60"
         clearable
-        :branch="state.parentBranchName"
-        :project="state.projectId"
-        @update:branch="(branch) => (state.parentBranchName = branch ?? '')"
       />
     </div>
     <NDivider class="!my-0" />
     <div class="w-full flex flex-row justify-start items-center">
       <span class="flex w-full items-center text-sm font-medium">{{
-        state.parentBranchName
+        parentBranchName
           ? $t("schema-designer.baseline-version-from-parent")
           : $t("schema-designer.baseline-version")
       }}</span>
     </div>
     <BaselineSchemaSelector
-      :project-id="state.projectId"
-      :database-id="state.baselineSchema.databaseId"
-      :database-metadata="state.baselineSchema.databaseMetadata"
+      v-model:database-id="databaseId"
+      :project-id="projectId"
       :readonly="disallowToChangeBaseline"
-      @update="handleBaselineSchemaChange"
     />
+    <div class="w-full">
+      <div>isPreparingBranch: {{ isPreparingBranch }}</div>
+      <div>databaseId: {{ databaseId }}</div>
+      <div>parentBranchName: {{ parentBranchName }}</div>
+      <div>state.source: {{ state?.source }}</div>
+      <div>state.branch.name: {{ state?.branch.name }}</div>
+      <div>
+        size(state.branch):
+        <template v-if="state?.branch">{{
+          bytesToString(JSON.stringify(state.branch).length)
+        }}</template>
+      </div>
+    </div>
     <div class="w-full flex-1 overflow-y-hidden">
-      <SchemaEditorV1
-        :key="refreshId"
-        :loading="state.loading"
+      <SchemaEditorLite
+        :loading="isPreparingBranch"
         :project="project"
         :resource-type="'branch'"
         :branches="branches"
@@ -52,50 +61,41 @@
       <NButton
         type="primary"
         :disabled="!allowConfirm"
-        :loading="state.isCreating"
+        :loading="isCreating"
         @click.prevent="handleConfirm"
       >
         {{ confirmText }}
       </NButton>
     </div>
+
+    <MaskSpinner v-show="isPreparingBranch" />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { uniqueId } from "lodash-es";
+import { useDebounce } from "@vueuse/core";
+import { cloneDeep, uniqueId } from "lodash-es";
 import { NButton, NDivider, NInput } from "naive-ui";
-import { computed, reactive, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
-import SchemaEditorV1 from "@/components/SchemaEditorV1/index.vue";
+import SchemaEditorLite from "@/components/SchemaEditorLite";
 import {
-  pushNotification,
+  useDBSchemaV1Store,
   useDatabaseV1Store,
   useProjectV1Store,
-  useSchemaEditorV1Store,
 } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
-import { databaseNamePrefix } from "@/store/modules/v1/common";
+import { UNKNOWN_ID } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
-import { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import { projectV1Slug } from "@/utils";
+import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
+import { bytesToString } from "@/utils";
+import MaskSpinner from "../misc/MaskSpinner.vue";
 import BaselineSchemaSelector from "./BaselineSchemaSelector.vue";
-import { validateBranchName } from "./utils";
 
-interface BaselineSchema {
-  // The uid of database.
-  databaseId?: string;
-  databaseMetadata?: DatabaseMetadata;
-}
-
-interface LocalState {
-  projectId?: string;
-  loading: boolean;
-  baselineSchema: BaselineSchema;
+type BranchPrepareState = {
   branch: Branch;
-  parentBranchName?: string;
-  isCreating: boolean;
-}
+  source: "parent" | "head";
+};
 
 const props = defineProps({
   projectId: {
@@ -104,163 +104,207 @@ const props = defineProps({
   },
 });
 
+const DEBOUNCE_RATE = 100;
 const { t } = useI18n();
-const router = useRouter();
-const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
+const dbSchemaStore = useDBSchemaV1Store();
+const projectStore = useProjectV1Store();
 const branchStore = useBranchStore();
-const state = reactive<LocalState>({
-  projectId: props.projectId,
-  loading: false,
-  baselineSchema: {},
-  branch: Branch.fromPartial({}),
-  isCreating: false,
-});
-const branchId = ref<string>("");
-const refreshId = ref<string>("");
+const projectId = ref(props.projectId);
+const databaseId = ref<string>();
+const parentBranchName = ref<string>();
+const isCreating = ref(false);
+const branchTitle = ref<string>("");
+const isPreparingBranch = ref(false);
 
 const project = computed(() => {
-  const project = projectStore.getProjectByUID(state.projectId || "");
+  const project = projectStore.getProjectByUID(projectId.value || "");
   return project;
 });
 
+const debouncedDatabaseId = useDebounce(databaseId, DEBOUNCE_RATE);
+const debouncedParentBranchName = useDebounce(parentBranchName, DEBOUNCE_RATE);
 const disallowToChangeBaseline = computed(() => {
-  return !!state.parentBranchName;
+  return !!parentBranchName.value;
 });
 
-// Avoid to create array or object literals in template to improve performance
-const branches = computed(() => [state.branch]);
+const nextFakeBranchName = () => {
+  return `${project.value.name}/branches/-${uniqueId()}`;
+};
 
-watch(
-  () => [state.branch.baselineDatabase, state.branch.baselineSchema],
-  () => {
-    refreshId.value = uniqueId();
-  }
-);
+const prepareBranchFromParentBranch = async (parent: string) => {
+  const tag = `prepareBranchFromParentBranch(${parent})`;
+  console.time(tag);
+  const parentBranch = await branchStore.fetchBranchByName(
+    parent,
+    false /* !useCache */
+  );
+  const branch = cloneDeep(parentBranch);
+  branch.name = nextFakeBranchName();
+  console.timeEnd(tag);
+  return branch;
+};
+const prepareBranchFromDatabaseHead = async (uid: string) => {
+  const tag = `prepareBranchFromDatabaseHead(${uid})`;
+  console.log(tag);
+  console.time(tag);
 
-watch(
-  () => state.parentBranchName,
-  async () => {
-    if (!state.parentBranchName) {
-      state.baselineSchema = {};
-      state.branch = Branch.fromPartial({});
+  console.time("--fetch metadata");
+  const database = databaseStore.getDatabaseByUID(uid);
+  const metadata = await dbSchemaStore.getOrFetchDatabaseMetadata({
+    database: database.name,
+    skipCache: false,
+    view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
+  });
+  console.timeEnd("--fetch metadata");
+
+  console.time("--build branch object");
+  // Here metadata is not used for editing, so we need not to clone a copy
+  // for baseline
+  const branch = Branch.fromPartial({
+    name: nextFakeBranchName(),
+    engine: database.instanceEntity.engine,
+    baselineDatabase: database.name,
+    baselineSchemaMetadata: metadata,
+    schemaMetadata: metadata,
+  });
+  console.timeEnd("--build branch object");
+
+  console.timeEnd(tag);
+  return branch;
+};
+
+const state = ref<BranchPrepareState>();
+const prepareBranch = async (
+  _parentBranchName: string | undefined,
+  _databaseId: string | undefined
+) => {
+  isPreparingBranch.value = true;
+
+  const finish = (s: BranchPrepareState | undefined) => {
+    const isOutdated =
+      _parentBranchName !== parentBranchName.value ||
+      _databaseId !== databaseId.value;
+    if (isOutdated) {
       return;
     }
 
-    const branch = await branchStore.fetchBranchByName(
-      state.parentBranchName,
-      false /* !useCache */
-    );
-    const database = await databaseStore.getOrFetchDatabaseByName(
-      branch.baselineDatabase
-    );
-    state.baselineSchema.databaseId = database.uid;
-    state.baselineSchema.databaseMetadata = undefined;
-    state.branch = branch;
-    refreshId.value = uniqueId();
+    state.value = s;
+    isPreparingBranch.value = false;
+  };
+
+  if (_parentBranchName) {
+    const branch = await prepareBranchFromParentBranch(_parentBranchName);
+    return finish({
+      branch,
+      source: "parent",
+    });
+  }
+  if (_databaseId && _databaseId !== String(UNKNOWN_ID)) {
+    const branch = await prepareBranchFromDatabaseHead(_databaseId);
+    return finish({
+      branch,
+      source: "head",
+    });
+  }
+  return finish(undefined);
+};
+
+watch(
+  [debouncedParentBranchName, debouncedDatabaseId],
+  ([parentBranchName, databaseId]) => {
+    prepareBranch(parentBranchName, databaseId);
   }
 );
 
-const prepareBranch = async () => {
-  if (
-    state.baselineSchema.databaseId &&
-    state.baselineSchema.databaseMetadata
-  ) {
-    const database = databaseStore.getDatabaseByUID(
-      state.baselineSchema.databaseId
-    );
-    return Branch.fromPartial({
-      engine: database.instanceEntity.engine,
-      baselineSchemaMetadata: state.baselineSchema.databaseMetadata,
-      schemaMetadata: state.baselineSchema.databaseMetadata,
-    });
-  }
-  return Branch.fromPartial({});
-};
+const branches = computed(() => {
+  if (state.value) return [state.value.branch];
+  return [];
+});
 
 const allowConfirm = computed(() => {
-  return branchId.value && state.baselineSchema.databaseId && !state.isCreating;
+  return branchTitle.value && state.value && !isCreating.value;
 });
 
 const confirmText = computed(() => {
   return t("common.create");
 });
 
-const handleBaselineSchemaChange = async (baselineSchema: BaselineSchema) => {
-  if (state.parentBranchName) {
-    return;
-  }
-
-  state.baselineSchema = baselineSchema;
-  console.time("prepareSchemaDesign");
-  state.loading = true;
-  state.branch = await prepareBranch();
-  state.loading = false;
-  console.timeEnd("prepareSchemaDesign");
-};
+// watch(debouncedDatabaseId, async (databaseId) => {
+//   if (state.parentBranchName) {
+//     return;
+//   }
+//   console.time("prepareSchemaDesign");
+//   state.loading = true;
+//   state.branch = await prepareBranchFromDatabase();
+//   state.loading = false;
+//   console.timeEnd("prepareSchemaDesign");
+// });
 
 const handleConfirm = async () => {
-  if (!state.branch) {
-    return;
-  }
+  return;
 
-  if (!validateBranchName(branchId.value)) {
-    pushNotification({
-      module: "bytebase",
-      style: "CRITICAL",
-      title: "Branch name valid characters: /^[a-zA-Z][a-zA-Z0-9-_/]+$/",
-    });
-    return;
-  }
+  // TODO: re-implement
 
-  const database = useDatabaseV1Store().getDatabaseByUID(
-    state.baselineSchema.databaseId || ""
-  );
-  const schemaEditorV1Store = useSchemaEditorV1Store();
-  const branchSchema = schemaEditorV1Store.resourceMap["branch"].get(
-    state.branch.name
-  );
-  if (!branchSchema) {
-    return;
-  }
+  // if (!state.branch) {
+  //   return;
+  // }
 
-  state.isCreating = true;
-  const baselineDatabase = `${database.instanceEntity.name}/${databaseNamePrefix}${database.databaseName}`;
-  if (!state.parentBranchName) {
-    await branchStore.createBranch(
-      project.value.name,
-      branchId.value,
-      Branch.fromPartial({
-        baselineDatabase: baselineDatabase,
-      })
-    );
-  } else {
-    const parentBranch = await branchStore.fetchBranchByName(
-      state.parentBranchName,
-      false /* useCache */
-    );
-    await branchStore.createBranch(
-      project.value.name,
-      branchId.value,
-      Branch.fromPartial({
-        parentBranch: parentBranch.name,
-      })
-    );
-  }
-  state.isCreating = false;
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("schema-designer.message.created-succeed"),
-  });
+  // if (!validateBranchName(branchTitle.value)) {
+  //   pushNotification({
+  //     module: "bytebase",
+  //     style: "CRITICAL",
+  //     title: "Branch name valid characters: /^[a-zA-Z][a-zA-Z0-9-_/]+$/",
+  //   });
+  //   return;
+  // }
 
-  // Go to branch detail page after created.
-  router.replace({
-    name: "workspace.project.branch.detail",
-    params: {
-      projectSlug: projectV1Slug(project.value),
-      branchName: branchId.value,
-    },
-  });
+  // const database = useDatabaseV1Store().getDatabaseByUID(state.databaseId!);
+  // const schemaEditorV1Store = useSchemaEditorV1Store();
+  // const branchSchema = schemaEditorV1Store.resourceMap["branch"].get(
+  //   state.branch.name
+  // );
+  // if (!branchSchema) {
+  //   return;
+  // }
+
+  // state.isCreating = true;
+  // const baselineDatabase = `${database.instanceEntity.name}/${databaseNamePrefix}${database.databaseName}`;
+  // let createdSchemaDesign;
+  // if (!state.parentBranchName) {
+  //   createdSchemaDesign = await branchStore.createBranch(
+  //     project.value.name,
+  //     branchTitle.value,
+  //     Branch.fromPartial({
+  //       baselineDatabase: baselineDatabase,
+  //     })
+  //   );
+  // } else {
+  //   const parentBranch = await branchStore.fetchBranchByName(
+  //     state.parentBranchName,
+  //     false /* useCache */
+  //   );
+  //   createdSchemaDesign = await branchStore.createBranchDraft(
+  //     project.value.name,
+  //     branchTitle.value,
+  //     parentBranch.name
+  //   );
+  // }
+  // state.isCreating = false;
+  // pushNotification({
+  //   module: "bytebase",
+  //   style: "SUCCESS",
+  //   title: t("schema-designer.message.created-succeed"),
+  // });
+
+  // // Go to branch detail page after created.
+  // const [_, branchId] = getProjectAndBranchId(createdSchemaDesign.name);
+  // router.replace({
+  //   name: "workspace.project.branch.detail",
+  //   params: {
+  //     projectSlug: projectV1Slug(project.value),
+  //     branchName: branchId,
+  //   },
+  // });
 };
 </script>

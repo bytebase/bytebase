@@ -5,7 +5,7 @@
     </template>
     <template v-else-if="branch">
       <BranchDetailView
-        :project-id="getProjectName(project?.name) || ''"
+        :project-id="getProjectName(project?.name ?? '')"
         :branch="branch"
         v-bind="$attrs"
       />
@@ -17,7 +17,6 @@
 import { useTitle } from "@vueuse/core";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoute } from "vue-router";
 import BranchCreateView from "@/components/Branch/BranchCreateView.vue";
 import BranchDetailView from "@/components/Branch/BranchDetailView.vue";
 import { useProjectV1Store } from "@/store";
@@ -25,32 +24,39 @@ import { useBranchStore } from "@/store/modules/branch";
 import { getProjectName } from "@/store/modules/v1/common";
 import { idFromSlug } from "@/utils";
 
+const props = defineProps<{
+  projectSlug: string;
+  branchName: string;
+}>();
+
 const { t } = useI18n();
-const route = useRoute();
 const projectStore = useProjectV1Store();
 const branchStore = useBranchStore();
 const branchFullName = ref<string>("");
 const ready = ref<boolean>(false);
 
-const isCreating = computed(() => route.params.branchName === "new");
+const isCreating = computed(() => props.branchName === "new");
 const branch = computed(() => {
   return branchStore.getBranchByName(branchFullName.value);
 });
 const project = computed(() => {
+  if (props.projectSlug === "-") {
+    return;
+  }
   return projectStore.getProjectByUID(
-    String(idFromSlug(route.params.projectSlug as string))
+    String(idFromSlug(props.projectSlug as string))
   );
 });
 
 watch(
-  () => route.params,
+  [() => props.projectSlug, () => props.branchName],
   async () => {
     if (isCreating.value) {
       return;
     }
 
     // Prepare branch name from route params.
-    const branchId = (route.params.branchName as string) || "";
+    const branchId = props.branchName;
     if (!branchId || !project.value) {
       return;
     }
@@ -58,7 +64,6 @@ watch(
   },
   {
     immediate: true,
-    deep: true,
   }
 );
 

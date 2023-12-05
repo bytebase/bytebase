@@ -45,6 +45,10 @@ const props = defineProps({
     type: String,
     default: undefined,
   },
+  branchName: {
+    type: String,
+    default: undefined,
+  },
 });
 
 const currentUserV1 = useCurrentUserV1();
