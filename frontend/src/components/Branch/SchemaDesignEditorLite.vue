@@ -133,7 +133,6 @@ const fetchRawSQLPreview = async () => {
         silent: true,
       }
     );
-    console.log("diffResponse", diffResponse);
     rawSQLPreviewState.value = diffResponse.diff;
   } catch {
     pushNotification({
