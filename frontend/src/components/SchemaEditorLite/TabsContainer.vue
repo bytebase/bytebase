@@ -65,6 +65,7 @@ import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, nextTick, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useSchemaEditorContext } from "./context";
+import { useEditStatus } from "./edit";
 import { useTabs } from "./tabs";
 import { TabContext } from "./types";
 
@@ -75,10 +76,11 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const { setCurrentTab, closeTab } = useTabs();
+const { getTableStatus } = useEditStatus();
 const tabsContainerRef = ref();
 const searchPattern = ref("");
 const originalTabContext = ref<TabContext | undefined>(undefined);
-const { targets, resourceType, tabList, currentTab } = useSchemaEditorContext();
+const { resourceType, tabList, currentTab } = useSchemaEditorContext();
 
 const searchBoxPlaceholder = computed(() => {
   return currentTab.value?.type === "database"
@@ -119,40 +121,34 @@ watch(
 
 const getTabComputedClassList = (tab: TabContext) => {
   if (tab.type === "table") {
-    // const { table } = tab;
-    return []; // TODO
-    // if (!table) {
-    //   return [];
-    // }
+    const { database, metadata } = tab;
+    const status = getTableStatus(database, metadata);
 
-    // if (table.status === "dropped") {
-    //   return ["text-red-700", "line-through"];
-    // }
-    // if (table.status === "created") {
-    //   return ["text-green-700"];
-    // }
-    // if (isTableChanged(tab.parentName, tab.schemaId, tab.tableId)) {
-    //   return ["text-yellow-700"];
-    // }
+    if (status === "dropped") {
+      return ["text-red-700", "line-through"];
+    }
+    if (status === "created") {
+      return ["text-green-700"];
+    }
+    if (status === "updated") {
+      return ["text-yellow-700"];
+    }
   }
   return [];
 };
 
 const getTabName = (tab: TabContext) => {
-  if (tab.name) {
-    return tab.name;
-  }
   if (tab.type === "database") {
     if (resourceType.value === "branch") {
       return "Tables";
     }
-    const database = targets.value.find(
-      (target) => target.database.name === tab.database.name
-    )?.database;
-    return database?.databaseName || "Unknown database";
+    const { database } = tab;
+    return database.databaseName;
   } else if (tab.type === "table") {
-    const { table } = tab;
-    return table?.name || "Unknown table";
+    const {
+      metadata: { table },
+    } = tab;
+    return table.name;
   } else {
     // Should never reach here.
     return "unknown tab";
