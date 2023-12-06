@@ -35,6 +35,7 @@ type BranchMessage struct {
 type FindBranchMessage struct {
 	ProjectID  *string
 	ResourceID *string
+	UID        *int
 	// TODO(d): handle LoadFull.
 	LoadFull bool
 }
@@ -78,6 +79,9 @@ func (s *Store) ListBranches(ctx context.Context, find *FindBranchMessage) ([]*B
 	}
 	if v := find.ResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("branch.name = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.UID; v != nil {
+		where, args = append(where, fmt.Sprintf("branch.id = $%d", len(args)+1)), append(args, *v)
 	}
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
@@ -307,4 +311,37 @@ func (s *Store) DeleteBranch(ctx context.Context, projectID, resourceID string) 
 	}
 
 	return tx.Commit()
+}
+
+func (s *Store) ListBackfillBranches(ctx context.Context) ([]int, error) {
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.QueryContext(ctx, `SELECT id FROM branch WHERE head ? 'metadata' = false`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var ids []int
+	for rows.Next() {
+		var id int
+		if err := rows.Scan(
+			&id,
+		); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return ids, nil
 }

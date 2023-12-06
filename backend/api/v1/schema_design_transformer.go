@@ -36,7 +36,7 @@ func transformDatabaseMetadataToSchemaString(engine storepb.Engine, database *st
 	}
 }
 
-func transformSchemaStringToDatabaseMetadata(engine storepb.Engine, schema string) (*storepb.DatabaseSchemaMetadata, error) {
+func TransformSchemaStringToDatabaseMetadata(engine storepb.Engine, schema string) (*storepb.DatabaseSchemaMetadata, error) {
 	dbSchema, err := func() (*storepb.DatabaseSchemaMetadata, error) {
 		switch engine {
 		case storepb.Engine_MYSQL:
