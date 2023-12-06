@@ -24,6 +24,7 @@ import (
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	metricapi "github.com/bytebase/bytebase/backend/metric"
+	relayplugin "github.com/bytebase/bytebase/backend/plugin/app/relay"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/runner/relay"
@@ -645,6 +646,13 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 	if step == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "the issue has been approved")
 	}
+	if len(step.Nodes) == 1 {
+		node := step.Nodes[0]
+		_, ok := node.Payload.(*storepb.ApprovalNode_ExternalNodeId)
+		if ok {
+			return s.updateExternalApprovalWithStatus(ctx, issue, relayplugin.StatusApproved)
+		}
+	}
 
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
 	if !ok {
@@ -910,6 +918,13 @@ func (s *IssueService) RejectIssue(ctx context.Context, request *v1pb.RejectIssu
 	step := utils.FindNextPendingStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers)
 	if step == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "the issue has been approved")
+	}
+	if len(step.Nodes) == 1 {
+		node := step.Nodes[0]
+		_, ok := node.Payload.(*storepb.ApprovalNode_ExternalNodeId)
+		if ok {
+			return s.updateExternalApprovalWithStatus(ctx, issue, relayplugin.StatusRejected)
+		}
 	}
 
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
@@ -1510,6 +1525,35 @@ func (s *IssueService) getIssueMessage(ctx context.Context, name string) (*store
 		return nil, status.Errorf(codes.NotFound, "issue %d not found", issueID)
 	}
 	return issue, nil
+}
+
+func (s *IssueService) updateExternalApprovalWithStatus(ctx context.Context, issue *store.IssueMessage, approvalStatus relayplugin.Status) (*v1pb.Issue, error) {
+	approval, err := s.store.GetExternalApprovalByIssueIDV2(ctx, issue.UID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get external approval for issue %v, error: %v", issue.UID, err)
+	}
+	if approvalStatus == relayplugin.StatusApproved {
+		if err := s.relayRunner.ApproveExternalApprovalNode(ctx, issue.UID); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to approve external node, error: %v", err)
+		}
+	} else {
+		if err := s.relayRunner.RejectExternalApprovalNode(ctx, issue.UID); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to approve external node, error: %v", err)
+		}
+	}
+
+	if _, err := s.store.UpdateExternalApprovalV2(ctx, &store.UpdateExternalApprovalMessage{
+		ID:        approval.ID,
+		RowStatus: api.Archived,
+	}); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to update external approval, error: %v", err)
+	}
+
+	issueV1, err := convertToIssue(ctx, s.store, issue)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
+	}
+	return issueV1, nil
 }
 
 func canRequestIssue(issueCreator *store.UserMessage, user *store.UserMessage) bool {
