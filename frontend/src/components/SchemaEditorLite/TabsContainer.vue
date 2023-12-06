@@ -65,8 +65,6 @@ import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, nextTick, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useSchemaEditorContext } from "./context";
-import { useEditStatus } from "./edit";
-import { useTabs } from "./tabs";
 import { TabContext } from "./types";
 
 const emit = defineEmits<{
@@ -75,12 +73,17 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { setCurrentTab, closeTab } = useTabs();
-const { getTableStatus } = useEditStatus();
+const {
+  resourceType,
+  tabList,
+  currentTab,
+  setCurrentTab,
+  closeTab,
+  getTableStatus,
+} = useSchemaEditorContext();
 const tabsContainerRef = ref();
 const searchPattern = ref("");
 const originalTabContext = ref<TabContext | undefined>(undefined);
-const { resourceType, tabList, currentTab } = useSchemaEditorContext();
 
 const searchBoxPlaceholder = computed(() => {
   return currentTab.value?.type === "database"

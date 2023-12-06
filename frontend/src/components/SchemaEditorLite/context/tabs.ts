@@ -1,9 +1,17 @@
 import { v1 as uuidv1 } from "uuid";
-import { useSchemaEditorContext } from "./context";
-import { CoreTabContext, TabContext } from "./types";
+import { computed, ref } from "vue";
+import { CoreTabContext, TabContext } from "../types";
 
 export const useTabs = () => {
-  const { tabMap, tabList, currentTabId } = useSchemaEditorContext();
+  const tabMap = ref(new Map<string, TabContext>());
+  const tabList = computed(() => {
+    return Array.from(tabMap.value.values());
+  });
+  const currentTabId = ref<string>("");
+  const currentTab = computed(() => {
+    if (!currentTabId.value) return undefined;
+    return tabMap.value.get(currentTabId.value);
+  });
 
   const addTab = (coreTab: CoreTabContext, setAsCurrentTab = true) => {
     const id = uuidv1();
@@ -50,6 +58,10 @@ export const useTabs = () => {
   };
 
   return {
+    tabMap,
+    tabList,
+    currentTabId,
+    currentTab,
     addTab,
     setCurrentTab,
     closeTab,

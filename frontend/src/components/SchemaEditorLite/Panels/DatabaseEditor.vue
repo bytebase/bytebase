@@ -140,8 +140,6 @@ import { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_se
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import { useSchemaEditorContext } from "../context";
-import { useEditStatus } from "../edit";
-import { useTabs } from "../tabs";
 import { DatabaseTabContext } from "../types";
 import TableList from "./TableList";
 
@@ -169,9 +167,7 @@ interface LocalState {
 }
 
 const context = useSchemaEditorContext();
-const { readonly } = context;
-const { getSchemaStatus } = useEditStatus();
-const { addTab } = useTabs();
+const { readonly, addTab, getSchemaStatus } = context;
 const currentTab = computed(() => {
   return context.currentTab.value as DatabaseTabContext;
 });

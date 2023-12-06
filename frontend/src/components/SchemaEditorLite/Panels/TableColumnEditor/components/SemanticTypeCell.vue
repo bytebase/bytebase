@@ -22,6 +22,8 @@
 <script lang="ts" setup>
 import { PencilIcon, XIcon } from "lucide-vue-next";
 import { computed } from "vue";
+import { useSchemaEditorContext } from "@/components/SchemaEditorLite/context";
+import { TableTabContext } from "@/components/SchemaEditorLite/types";
 import { MiniActionButton } from "@/components/v2";
 import { ColumnMetadata } from "@/types/proto/v1/database_service";
 import { SemanticTypeSetting_SemanticType as SemanticType } from "@/types/proto/v1/setting_service";
@@ -38,14 +40,22 @@ defineEmits<{
   (event: "remove"): void;
 }>();
 
+const { currentTab, getColumnConfig } = useSchemaEditorContext();
+
+const columnConfig = computed(() => {
+  const tab = currentTab.value as TableTabContext;
+  return getColumnConfig(tab.database, {
+    ...tab.metadata,
+    column: props.column,
+  });
+});
+
 const semanticType = computed(() => {
-  return undefined;
-  // const { column, semanticTypeList } = props;
-  // if (!column.config.semanticTypeId) {
-  //   return;
-  // }
-  // return semanticTypeList.find(
-  //   (data) => data.id === column.config.semanticTypeId
-  // );
+  const { semanticTypeList } = props;
+  const config = columnConfig.value;
+  if (!config?.semanticTypeId) {
+    return;
+  }
+  return semanticTypeList.find((data) => data.id === config.semanticTypeId);
 });
 </script>

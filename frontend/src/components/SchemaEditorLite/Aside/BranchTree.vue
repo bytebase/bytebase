@@ -92,8 +92,6 @@ import { getHighlightHTMLByKeyWords, isDescendantOf } from "@/utils";
 import SchemaNameModal from "../Modals/SchemaNameModal.vue";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import { useSchemaEditorContext } from "../context";
-import { useEditStatus } from "../edit";
-import { useTabs } from "../tabs";
 
 interface BaseTreeNode extends TreeOption {
   key: string;
@@ -139,11 +137,15 @@ const { t } = useI18n();
 const state = reactive<LocalState>({
   shouldRelocateTreeNode: false,
 });
-const { targets, readonly } = useSchemaEditorContext();
-const { addTab } = useTabs();
-const { markEditStatus, removeEditStatus, getSchemaStatus, getTableStatus } =
-  useEditStatus();
-
+const {
+  targets,
+  readonly,
+  addTab,
+  markEditStatus,
+  removeEditStatus,
+  getSchemaStatus,
+  getTableStatus,
+} = useSchemaEditorContext();
 const treeContainerElRef = ref<HTMLElement>();
 const { height: treeContainerHeight } = useElementSize(
   treeContainerElRef,

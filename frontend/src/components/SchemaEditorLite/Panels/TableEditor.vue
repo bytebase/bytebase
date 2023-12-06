@@ -94,11 +94,9 @@ import { arraySwap, instanceV1AllowsReorderColumns } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import { useSchemaEditorContext } from "../context";
 import {
-  upsertColumnConfig,
   removeColumnForeignKey,
   removeColumnPrimaryKey,
   upsertColumnPrimaryKey,
-  useEditStatus,
 } from "../edit";
 import { EditStatus, TableTabContext } from "../types";
 import TableColumnEditor from "./TableColumnEditor";
@@ -120,15 +118,16 @@ interface LocalState {
 
 const { t } = useI18n();
 const context = useSchemaEditorContext();
-const { project, readonly } = context;
-
 const {
+  project,
+  readonly,
   markEditStatus,
   removeEditStatus,
   getSchemaStatus,
   getTableStatus,
   getColumnStatus,
-} = useEditStatus();
+  upsertColumnConfig,
+} = context;
 const currentTab = computed(() => {
   return context.currentTab.value as TableTabContext;
 });
@@ -304,11 +303,12 @@ const handleApplyColumnTemplate = (
   table.value.columns.push(column);
   const { metadata } = currentTab.value;
   upsertColumnConfig(
-    metadata.database,
-    metadata.schema,
-    metadata.table,
-    column,
-    template.config
+    database.value,
+    {
+      ...metadata,
+      column,
+    },
+    (config) => Object.assign(config, template.config)
   );
   markColumnStatus(column, "created");
 };

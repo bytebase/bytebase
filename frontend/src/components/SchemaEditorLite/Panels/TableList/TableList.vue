@@ -83,8 +83,6 @@ import { bytesToString } from "@/utils";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import TableNameModal from "../../Modals/TableNameModal.vue";
 import { useSchemaEditorContext } from "../../context";
-import { upsertTableConfig, useEditStatus } from "../../edit";
-import { useTabs } from "../../tabs";
 import { DatabaseTabContext } from "../../types";
 import ClassificationCell from "../TableColumnEditor/components/ClassificationCell.vue";
 import { NameCell, OperationCell } from "./components";
@@ -109,10 +107,16 @@ interface LocalState {
 
 const { t } = useI18n();
 const context = useSchemaEditorContext();
-const { project, readonly } = context;
-const { addTab } = useTabs();
-const { markEditStatus, removeEditStatus, getSchemaStatus, getTableStatus } =
-  useEditStatus();
+const {
+  project,
+  readonly,
+  addTab,
+  markEditStatus,
+  removeEditStatus,
+  getSchemaStatus,
+  getTableStatus,
+  upsertTableConfig,
+} = context;
 const containerElRef = ref<HTMLElement>();
 const tableHeaderElRef = computed(
   () =>
@@ -327,15 +331,18 @@ const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
   }
 
   const table = cloneDeep(template.table);
-  upsertTableConfig(
-    currentTab.value.metadata.database,
-    props.schema,
-    table,
-    template.config
-  );
-
   /* eslint-disable-next-line vue/no-mutating-props */
   props.schema.tables.push(table);
+  upsertTableConfig(
+    props.database,
+    {
+      database: currentTab.value.metadata.database,
+      schema: props.schema,
+      table,
+    },
+    (config) => Object.assign(config, template.config)
+  );
+
   const metadata = {
     database: currentTab.value.metadata.database,
     schema: props.schema,

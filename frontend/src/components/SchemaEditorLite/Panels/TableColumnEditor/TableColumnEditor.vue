@@ -72,6 +72,7 @@ import { InlineInput } from "@/components/v2";
 import { useSettingV1Store, useSubscriptionV1Store } from "@/store/modules";
 import { Engine } from "@/types/proto/v1/common";
 import {
+  ColumnConfig,
   ColumnMetadata,
   ForeignKeyMetadata,
   TableMetadata,
@@ -79,7 +80,6 @@ import {
 import { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import ColumnDefaultValueExpressionModal from "../../Modals/ColumnDefaultValueExpressionModal.vue";
 import { useSchemaEditorContext } from "../../context";
-import { useEditStatus } from "../../edit";
 import { EditStatus, TableTabContext } from "../../types";
 import {
   getDefaultValueByKey,
@@ -158,11 +158,11 @@ const state = reactive<LocalState>({
 });
 
 const context = useSchemaEditorContext();
-const { resourceType } = context;
+const { resourceType, markEditStatus, getColumnStatus, upsertColumnConfig } =
+  context;
 const currentTab = computed(() => {
   return context.currentTab.value as TableTabContext;
 });
-const { markEditStatus, getColumnStatus } = useEditStatus();
 const database = computed(() => currentTab.value.database);
 const containerElRef = ref<HTMLElement>();
 const tableHeaderElRef = computed(
@@ -565,35 +565,47 @@ const onClassificationSelect = (classificationId: string) => {
   markColumnStatus(state.pendingUpdateColumn, "updated");
 };
 
+const updateColumnConfig = (
+  column: ColumnMetadata,
+  update: (config: ColumnConfig) => void
+) => {
+  const { metadata } = currentTab.value;
+  upsertColumnConfig(
+    database.value,
+    {
+      ...metadata,
+      column,
+    },
+    update
+  );
+  markColumnStatus(column, "updated");
+};
+
 const onSemanticTypeApply = async (semanticTypeId: string) => {
   if (!state.pendingUpdateColumn) {
     return;
   }
 
-  // state.pendingUpdateColumn.config = ColumnConfig.fromPartial({
-  //   ...state.pendingUpdateColumn.config,
-  //   semanticTypeId,
-  // });
-  markColumnStatus(state.pendingUpdateColumn, "updated");
+  updateColumnConfig(state.pendingUpdateColumn, (config) => {
+    config.semanticTypeId = semanticTypeId;
+  });
 };
 
 const onLabelsApply = (labelsList: { [key: string]: string }[]) => {
   if (!state.pendingUpdateColumn) {
     return;
   }
-  // state.pendingUpdateColumn.config = ColumnConfig.fromPartial({
-  //   ...state.pendingUpdateColumn.config,
-  //   labels: labelsList[0],
-  // });
+  updateColumnConfig(state.pendingUpdateColumn, (config) => {
+    config.labels = labelsList[0];
+  });
   markColumnStatus(state.pendingUpdateColumn, "updated");
 };
 
 const onSemanticTypeRemove = async (column: ColumnMetadata) => {
-  // column.config = ColumnConfig.fromPartial({
-  //   ...column.config,
-  //   semanticTypeId: "",
-  // });
   markColumnStatus(column, "updated");
+  updateColumnConfig(column, (config) => {
+    config.semanticTypeId = "";
+  });
 };
 
 const classesForRow = (column: ColumnMetadata, index: number) => {
