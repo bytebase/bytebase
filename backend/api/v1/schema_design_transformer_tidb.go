@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log/slog"
 	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -944,46 +943,4 @@ func tidbGetAttrOrder(option *tidbast.ColumnOption) int {
 		return columnAttrOrder["ENFORCED"]
 	}
 	return len(columnAttrOrder) + 1
-}
-
-func tidbNewFieldType(tp string) *tidbtypes.FieldType {
-	tpStr := strings.ToLower(tp)
-	var s []byte
-	var flen []byte
-	var decimal []byte
-	stage := 1
-	for i := 0; i < len(tpStr); i++ {
-		if tpStr[i] == '(' {
-			stage = 2
-			continue
-		} else if tpStr[i] == ',' {
-			stage = 3
-			continue
-		} else if tpStr[i] == ')' {
-			continue
-		}
-
-		if stage == 1 {
-			s = append(s, tpStr[i])
-		} else if stage == 2 {
-			flen = append(flen, tpStr[i])
-		} else if stage == 3 {
-			decimal = append(decimal, tpStr[i])
-		}
-	}
-	ft := tidbtypes.NewFieldType(tidbtypes.StrToType(string(s)))
-	flenInt, _ := strconv.Atoi(string(flen))
-	if flenInt > 0 {
-		ft.SetFlen(flenInt)
-	}
-	decimalInt, _ := strconv.Atoi(string(decimal))
-	if decimalInt > 0 {
-		ft.SetDecimal(decimalInt)
-	}
-	if strings.Contains(tpStr, "binary") {
-		ft.SetFlag(tidbmysql.BinaryFlag)
-		ft.SetCharset("binary")
-		ft.SetCollate("binary")
-	}
-	return ft
 }
