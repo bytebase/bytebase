@@ -19,16 +19,12 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep } from "lodash-es";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { SQLCheckButton, SQLCheckSummary } from "@/components/SQLCheck";
-import {
-  mergeSchemaEditToMetadata,
-  validateDatabaseMetadata,
-} from "@/components/SchemaEditorV1/utils";
+import { validateDatabaseMetadata } from "@/components/SchemaEditorLite/utils";
 import { branchServiceClient } from "@/grpcweb";
-import { useDatabaseV1Store, useSchemaEditorV1Store } from "@/store";
+import { useDatabaseV1Store } from "@/store";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 
@@ -37,40 +33,21 @@ const props = defineProps<{
 }>();
 const { t } = useI18n();
 const databaseStore = useDatabaseV1Store();
-const schemaEditorV1Store = useSchemaEditorV1Store();
 
 const database = computed(() => {
   return databaseStore.getDatabaseByName(props.branch.baselineDatabase);
 });
 
-const getEditingMetadata = async () => {
-  const branchSchema = schemaEditorV1Store.resourceMap["branch"].get(
-    props.branch.name
-  );
-  if (!branchSchema) {
-    return undefined;
-  }
-  const baselineMetadata =
-    branchSchema.branch.baselineSchemaMetadata ||
-    DatabaseMetadata.fromPartial({});
-  const metadata = mergeSchemaEditToMetadata(
-    branchSchema.schemaList,
-    cloneDeep(baselineMetadata)
-  );
-
-  return metadata;
-};
-
 const getStatement = async () => {
-  const editingMetadata = await getEditingMetadata();
-
-  if (!editingMetadata) {
+  const source = props.branch.baselineSchemaMetadata;
+  const editing = props.branch.schemaMetadata;
+  if (!editing) {
     return {
       statement: "",
       errors: [t("schema-editor.message.invalid-schema")],
     };
   }
-  const validationMessages = validateDatabaseMetadata(editingMetadata);
+  const validationMessages = validateDatabaseMetadata(editing);
   if (validationMessages.length > 0) {
     return {
       statement: "",
@@ -80,14 +57,12 @@ const getStatement = async () => {
 
   // Prepare to diff
   const db = database.value;
-  const source = props.branch.baselineSchemaMetadata;
-  const target = editingMetadata;
 
   try {
     const diffResponse = await branchServiceClient.diffMetadata(
       {
         sourceMetadata: source,
-        targetMetadata: target,
+        targetMetadata: editing,
         engine: db.instanceEntity.engine,
       },
       {
@@ -100,7 +75,7 @@ const getStatement = async () => {
       statement: diff,
       errors: errs,
     };
-  } catch {
+  } catch (ex) {
     // The grpc error message is too long not readable. So we won't use it here.
     return {
       statement: "",

@@ -58,13 +58,17 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive } from "vue";
+import { reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { useDatabaseV1Store } from "@/store";
+import { branchServiceClient } from "@/grpcweb";
+import { pushNotification } from "@/store";
 import { ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
+import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { MonacoEditor } from "../MonacoEditor";
 import SchemaEditorLite from "../SchemaEditorLite";
+import { validateDatabaseMetadata } from "../SchemaEditorLite/utils";
+import BranchSQLCheckButton from "./BranchSQLCheckButton.vue";
 
 type TabType = "schema-editor" | "raw-sql-preview";
 
@@ -100,63 +104,45 @@ const fetchRawSQLPreview = async () => {
     return;
   }
 
-  // const branchSchema = schemaEditorV1Store.resourceMap["branch"].get(
-  //   props.branch.name
-  // );
-  // if (!branchSchema) {
-  //   return undefined;
-  // }
+  const source =
+    props.branch.baselineSchemaMetadata ?? DatabaseMetadata.fromPartial({});
+  const editing =
+    props.branch.schemaMetadata ?? DatabaseMetadata.fromPartial({});
 
-  // const sourceMetadata = props.branch.baselineSchemaMetadata;
-  // const baselineMetadata =
-  //   branchSchema.branch.baselineSchemaMetadata ||
-  //   DatabaseMetadata.fromPartial({});
-  // const metadata = mergeSchemaEditToMetadata(
-  //   branchSchema.schemaList,
-  //   cloneDeep(baselineMetadata)
-  // );
-  // if (!metadata) {
-  //   rawSQLPreviewState.value = "";
-  //   pushNotification({
-  //     module: "bytebase",
-  //     style: "CRITICAL",
-  //     title: t("schema-editor.message.invalid-schema"),
-  //   });
-  //   return;
-  // }
-  // const validationMessages = validateDatabaseMetadata(metadata);
-  // if (validationMessages.length > 0) {
-  //   rawSQLPreviewState.value = "";
-  //   pushNotification({
-  //     module: "bytebase",
-  //     style: "WARN",
-  //     title: "Invalid schema structure",
-  //     description: validationMessages.join("\n"),
-  //   });
-  //   return;
-  // }
+  const validationMessages = validateDatabaseMetadata(editing);
+  if (validationMessages.length > 0) {
+    rawSQLPreviewState.value = "";
+    pushNotification({
+      module: "bytebase",
+      style: "WARN",
+      title: "Invalid schema structure",
+      description: validationMessages.join("\n"),
+    });
+    return;
+  }
 
-  // try {
-  //   rawSQLPreviewState.isFetching = true;
-  //   const diffResponse = await branchServiceClient.diffMetadata(
-  //     {
-  //       sourceMetadata,
-  //       targetMetadata: metadata,
-  //       engine: baselineDatabase.value.instanceEntity.engine,
-  //     },
-  //     {
-  //       silent: true,
-  //     }
-  //   );
-  //   rawSQLPreviewState.value = diffResponse.diff;
-  // } catch {
-  //   pushNotification({
-  //     module: "bytebase",
-  //     style: "WARN",
-  //     title: t("schema-editor.message.invalid-schema"),
-  //   });
-  //   rawSQLPreviewState.value = "";
-  // }
-  // rawSQLPreviewState.isFetching = false;
+  try {
+    rawSQLPreviewState.isFetching = true;
+    const diffResponse = await branchServiceClient.diffMetadata(
+      {
+        sourceMetadata: source,
+        targetMetadata: editing,
+        engine: props.branch.engine,
+      },
+      {
+        silent: true,
+      }
+    );
+    console.log("diffResponse", diffResponse);
+    rawSQLPreviewState.value = diffResponse.diff;
+  } catch {
+    pushNotification({
+      module: "bytebase",
+      style: "WARN",
+      title: t("schema-editor.message.invalid-schema"),
+    });
+    rawSQLPreviewState.value = "";
+  }
+  rawSQLPreviewState.isFetching = false;
 };
 </script>
