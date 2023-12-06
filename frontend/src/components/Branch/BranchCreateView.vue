@@ -7,7 +7,7 @@
         $t("database.branch-name")
       }}</span>
       <NInput
-        v-model:value="branchTitle"
+        v-model:value="branchId"
         type="text"
         class="!w-60 text-sm"
         :placeholder="'feature/add-billing'"
@@ -75,10 +75,7 @@ import {
   useSchemaEditorV1Store,
 } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
-import {
-  databaseNamePrefix,
-  getProjectAndBranchId,
-} from "@/store/modules/v1/common";
+import { databaseNamePrefix } from "@/store/modules/v1/common";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { projectV1Slug } from "@/utils";
@@ -119,7 +116,7 @@ const state = reactive<LocalState>({
   branch: Branch.fromPartial({}),
   isCreating: false,
 });
-const branchTitle = ref<string>("");
+const branchId = ref<string>("");
 const refreshId = ref<string>("");
 
 const project = computed(() => {
@@ -164,7 +161,7 @@ watch(
   }
 );
 
-const prepareSchemaDesign = async () => {
+const prepareBranch = async () => {
   if (
     state.baselineSchema.databaseId &&
     state.baselineSchema.databaseMetadata
@@ -182,9 +179,7 @@ const prepareSchemaDesign = async () => {
 };
 
 const allowConfirm = computed(() => {
-  return (
-    branchTitle.value && state.baselineSchema.databaseId && !state.isCreating
-  );
+  return branchId.value && state.baselineSchema.databaseId && !state.isCreating;
 });
 
 const confirmText = computed(() => {
@@ -199,7 +194,7 @@ const handleBaselineSchemaChange = async (baselineSchema: BaselineSchema) => {
   state.baselineSchema = baselineSchema;
   console.time("prepareSchemaDesign");
   state.loading = true;
-  state.branch = await prepareSchemaDesign();
+  state.branch = await prepareBranch();
   state.loading = false;
   console.timeEnd("prepareSchemaDesign");
 };
@@ -209,7 +204,7 @@ const handleConfirm = async () => {
     return;
   }
 
-  if (!validateBranchName(branchTitle.value)) {
+  if (!validateBranchName(branchId.value)) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
@@ -231,11 +226,10 @@ const handleConfirm = async () => {
 
   state.isCreating = true;
   const baselineDatabase = `${database.instanceEntity.name}/${databaseNamePrefix}${database.databaseName}`;
-  let createdSchemaDesign;
   if (!state.parentBranchName) {
-    createdSchemaDesign = await branchStore.createBranch(
+    await branchStore.createBranch(
       project.value.name,
-      branchTitle.value,
+      branchId.value,
       Branch.fromPartial({
         baselineDatabase: baselineDatabase,
       })
@@ -245,10 +239,12 @@ const handleConfirm = async () => {
       state.parentBranchName,
       false /* useCache */
     );
-    createdSchemaDesign = await branchStore.createBranchDraft(
+    await branchStore.createBranch(
       project.value.name,
-      branchTitle.value,
-      parentBranch.name
+      branchId.value,
+      Branch.fromPartial({
+        parentBranch: parentBranch.name,
+      })
     );
   }
   state.isCreating = false;
@@ -259,12 +255,11 @@ const handleConfirm = async () => {
   });
 
   // Go to branch detail page after created.
-  const [_, branchId] = getProjectAndBranchId(createdSchemaDesign.name);
   router.replace({
     name: "workspace.project.branch.detail",
     params: {
       projectSlug: projectV1Slug(project.value),
-      branchName: branchId,
+      branchName: branchId.value,
     },
   });
 };

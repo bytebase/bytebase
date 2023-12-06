@@ -3231,8 +3231,6 @@
     "diff-editor": {
       "self": "Diff editor",
       "resolve": "Resolve",
-      "latest-schema": "Latest schema",
-      "editing-schema": "Editing schema",
       "auto-merge-failed": "Auto merge failed",
       "need-to-resolve-conflicts": "Branch has been updated by others. You need to resolve the conflicts before you can merge.",
       "resolve-and-merge-again": "Resolve and merge again",

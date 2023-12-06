@@ -3229,8 +3229,6 @@
     "diff-editor": {
       "self": "Editor de diferencias",
       "resolve": "Resolver",
-      "latest-schema": "Último esquema",
-      "editing-schema": "Editando esquema",
       "auto-merge-failed": "Falló la fusión automática",
       "need-to-resolve-conflicts": "El diseño del esquema ha sido actualizado por otros. Debe resolver los conflictos antes de poder fusionar.",
       "resolve-and-merge-again": "Resolver y fusionar nuevamente",
