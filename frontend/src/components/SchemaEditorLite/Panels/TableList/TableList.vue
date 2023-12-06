@@ -111,7 +111,8 @@ const { t } = useI18n();
 const context = useSchemaEditorContext();
 const { project, readonly } = context;
 const { addTab } = useTabs();
-const { markEditStatus, removeEditStatus, getTableStatus } = useEditStatus();
+const { markEditStatus, removeEditStatus, getSchemaStatus, getTableStatus } =
+  useEditStatus();
 const containerElRef = ref<HTMLElement>();
 const tableHeaderElRef = computed(
   () =>
@@ -181,6 +182,15 @@ const classesForRow = (table: TableMetadata, index: number) => {
   return statusForTable(table);
 };
 
+const isDroppedSchema = computed(() => {
+  return (
+    getSchemaStatus(props.database, {
+      ...currentTab.value.metadata,
+      schema: props.schema,
+    }) === "dropped"
+  );
+});
+
 const columns = computed(() => {
   const columns: (DataTableColumn<TableMetadata> & { hide?: boolean })[] = [
     {
@@ -206,7 +216,7 @@ const columns = computed(() => {
         return h(ClassificationCell, {
           classification: table.classification,
           readonly: readonly.value,
-          disabled: isDroppedTable(table),
+          disabled: isDroppedSchema.value || isDroppedTable(table),
           classificationConfig:
             classificationConfig.value ??
             DataClassificationConfig.fromPartial({}),
@@ -272,6 +282,7 @@ const columns = computed(() => {
         return h(OperationCell, {
           table,
           dropped: isDroppedTable(table),
+          disabled: isDroppedSchema.value,
           onDrop: () => handleDropTable(table),
           onRestore: () => handleRestoreTable(table),
         });
