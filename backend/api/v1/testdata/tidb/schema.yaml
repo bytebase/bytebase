@@ -7,91 +7,127 @@
         b varchar(20) default NULL comment '',
         d varbinary(500),
         e binary(20),
+        f blob,
+        g tinyblob,
+        h mediumblob,
+        i longblob,
+        j text,
+        k tinytext,
         primary key (a, b),
         constraint fk1 foreign key (a) references t2 (b)
       );
     create table t2(b int NOT NULL default NULL, primary key (b));
   metadata: |-
     {
-      "schemas": [
+      "schemas":  [
         {
-          "tables": [
+          "tables":  [
             {
-              "name": "t",
-              "columns": [
+              "name":  "t",
+              "columns":  [
                 {
-                  "name": "c",
-                  "nullable": true,
-                  "type": "int"
+                  "name":  "c",
+                  "nullable":  true,
+                  "type":  "int"
                 },
                 {
-                  "name": "a",
-                  "defaultExpression": "1",
-                  "nullable": true,
-                  "type": "int",
-                  "comment": "abcdefg",
-                  "userComment": "abcdefg"
+                  "name":  "a",
+                  "defaultExpression":  "1",
+                  "nullable":  true,
+                  "type":  "int",
+                  "comment":  "abcdefg",
+                  "userComment":  "abcdefg"
                 },
                 {
-                  "name": "b",
-                  "defaultNull": true,
-                  "nullable": true,
-                  "type": "varchar(20)"
+                  "name":  "b",
+                  "defaultNull":  true,
+                  "nullable":  true,
+                  "type":  "varchar(20)"
                 },
                 {
-                  "name": "d",
-                  "nullable": true,
-                  "type": "varbinary(500)"
+                  "name":  "d",
+                  "nullable":  true,
+                  "type":  "varbinary(500)"
                 },
                 {
-                  "name": "e",
-                  "nullable": true,
-                  "type": "binary(20)"
+                  "name":  "e",
+                  "nullable":  true,
+                  "type":  "binary(20)"
+                },
+                {
+                  "name":  "f",
+                  "nullable":  true,
+                  "type":  "blob"
+                },
+                {
+                  "name":  "g",
+                  "nullable":  true,
+                  "type":  "tinyblob"
+                },
+                {
+                  "name":  "h",
+                  "nullable":  true,
+                  "type":  "mediumblob"
+                },
+                {
+                  "name":  "i",
+                  "nullable":  true,
+                  "type":  "longblob"
+                },
+                {
+                  "name":  "j",
+                  "nullable":  true,
+                  "type":  "text"
+                },
+                {
+                  "name":  "k",
+                  "nullable":  true,
+                  "type":  "tinytext"
                 }
               ],
-              "indexes": [
+              "indexes":  [
                 {
-                  "name": "PRIMARY",
-                  "expressions": [
+                  "name":  "PRIMARY",
+                  "expressions":  [
                     "a",
                     "b"
                   ],
-                  "unique": true,
-                  "primary": true,
-                  "visible": true
+                  "unique":  true,
+                  "primary":  true,
+                  "visible":  true
                 }
               ],
-              "foreignKeys": [
+              "foreignKeys":  [
                 {
-                  "name": "fk1",
-                  "columns": [
+                  "name":  "fk1",
+                  "columns":  [
                     "a"
                   ],
-                  "referencedTable": "t2",
-                  "referencedColumns": [
+                  "referencedTable":  "t2",
+                  "referencedColumns":  [
                     "b"
                   ]
                 }
               ]
             },
             {
-              "name": "t2",
-              "columns": [
+              "name":  "t2",
+              "columns":  [
                 {
-                  "name": "b",
-                  "defaultNull": true,
-                  "type": "int"
+                  "name":  "b",
+                  "defaultNull":  true,
+                  "type":  "int"
                 }
               ],
-              "indexes": [
+              "indexes":  [
                 {
-                  "name": "PRIMARY",
-                  "expressions": [
+                  "name":  "PRIMARY",
+                  "expressions":  [
                     "b"
                   ],
-                  "unique": true,
-                  "primary": true,
-                  "visible": true
+                  "unique":  true,
+                  "primary":  true,
+                  "visible":  true
                 }
               ]
             }
