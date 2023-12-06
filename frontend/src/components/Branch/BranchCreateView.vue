@@ -54,12 +54,12 @@
     </div>
     <div class="w-full flex-1 overflow-y-hidden">
       <SchemaEditorLite
-        v-if="branches.length > 0"
-        :key="state?.branch.name"
+        v-if="state?.branch"
+        :key="state.branch.name"
         :loading="isPreparingBranch"
         :project="project"
         :resource-type="'branch'"
-        :branches="branches"
+        :branch="state.branch"
         :readonly="true"
       />
     </div>
@@ -226,11 +226,6 @@ watch(
     prepareBranch(parentBranchName, databaseId);
   }
 );
-
-const branches = computed(() => {
-  if (state.value) return [state.value.branch];
-  return [];
-});
 
 const allowConfirm = computed(() => {
   return branchId.value && state.value && !isCreating.value;

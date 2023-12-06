@@ -38,7 +38,7 @@ const props = defineProps<{
   readonly?: boolean;
   databases?: ComposedDatabase[];
   // NOTE: we only support editing one branch for now.
-  branches?: Branch[];
+  branch: Branch;
   loading?: boolean;
 }>();
 
@@ -206,12 +206,14 @@ const targets = computed(() => {
     }));
   }
   if (props.resourceType === "branch") {
-    return (props.branches ?? []).map<EditTarget>((branch) => ({
+    const { branch } = props;
+    const target: EditTarget = {
       database: useDatabaseV1Store().getDatabaseByName(branch.baselineDatabase),
       metadata: branch.schemaMetadata ?? DatabaseMetadata.fromPartial({}),
       baselineMetadata:
         branch.baselineSchemaMetadata ?? DatabaseMetadata.fromPartial({}),
-    }));
+    };
+    return [target];
   }
   return [];
 });
