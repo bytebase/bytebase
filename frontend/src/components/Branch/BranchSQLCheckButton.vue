@@ -26,7 +26,6 @@ import { validateDatabaseMetadata } from "@/components/SchemaEditorLite/utils";
 import { branchServiceClient } from "@/grpcweb";
 import { useDatabaseV1Store } from "@/store";
 import { Branch } from "@/types/proto/v1/branch_service";
-import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 
 const props = defineProps<{
   branch: Branch;
