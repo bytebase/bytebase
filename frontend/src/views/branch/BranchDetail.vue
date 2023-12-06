@@ -8,6 +8,8 @@
         :project-id="getProjectName(project?.name ?? '')"
         :branch="branch"
         v-bind="$attrs"
+        @update:branch="branch = $event"
+        @update:branch-id="handleUpdateBranchId"
       />
     </template>
   </template>
@@ -17,6 +19,7 @@
 import { useTitle } from "@vueuse/core";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import BranchCreateView from "@/components/Branch/BranchCreateView.vue";
 import BranchDetailView from "@/components/Branch/BranchDetailView.vue";
 import { useProjectV1Store } from "@/store";
@@ -30,6 +33,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
+const router = useRouter();
 const projectStore = useProjectV1Store();
 const branchStore = useBranchStore();
 const branchFullName = ref<string>("");
@@ -47,6 +51,15 @@ const project = computed(() => {
     String(idFromSlug(props.projectSlug as string))
   );
 });
+
+const handleUpdateBranchId = (id: string) => {
+  router.replace({
+    params: {
+      projectSlug: props.projectSlug,
+      branchName: id,
+    },
+  });
+};
 
 watch(
   [() => props.projectSlug, () => props.branchName],
@@ -76,10 +89,13 @@ watch(
       return;
     }
 
-    await branchStore.fetchBranchByName(
+    const branch = await branchStore.fetchBranchByName(
       branchFullName.value,
       false /* useCache */
     );
+    if (!branch) {
+      router.replace("error.404");
+    }
     ready.value = true;
   },
   {

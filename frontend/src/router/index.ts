@@ -36,7 +36,6 @@ import {
   useDatabaseV1Store,
   useChangeHistoryStore,
   useChangelistStore,
-  useBranchStore,
   useSQLEditorTreeStore,
 } from "@/store";
 import {
@@ -1242,27 +1241,28 @@ router.beforeEach((to, from, next) => {
           to.name === "workspace.project.branch.detail" &&
           to.params.branchName !== "new"
         ) {
-          const name = `${project.name}/branches/${to.params.branchName}`;
-          useBranchStore()
-            .fetchBranchByName(name, false /* !useCache */)
-            .then((branch) => {
-              if (branch) {
-                next();
-              } else {
-                next({
-                  name: "error.404",
-                  replace: false,
-                });
-                throw new Error("not found");
-              }
-            })
-            .catch((error) => {
-              next({
-                name: "error.404",
-                replace: false,
-              });
-              throw error;
-            });
+          next();
+          // const name = `${project.name}/branches/${to.params.branchName}`;
+          // useBranchStore()
+          //   .fetchBranchByName(name, false /* !useCache */)
+          //   .then((branch) => {
+          //     if (branch) {
+          //       next();
+          //     } else {
+          //       next({
+          //         name: "error.404",
+          //         replace: false,
+          //       });
+          //       throw new Error("not found");
+          //     }
+          //   })
+          //   .catch((error) => {
+          //     next({
+          //       name: "error.404",
+          //       replace: false,
+          //     });
+          //     throw error;
+          //   });
         } else {
           next();
         }
