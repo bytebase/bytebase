@@ -188,7 +188,7 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 	evalArg := statement
 	if simpleStatement {
 		limit := ""
-		if queryContext.Limit > 0 {
+		if queryContext != nil && queryContext.Limit > 0 {
 			limit = fmt.Sprintf(".slice(0, %d)", queryContext.Limit)
 		}
 		evalArg = fmt.Sprintf(`"a = %s; if (typeof a.toArray === 'function') {print(EJSON.stringify(a.toArray()%s)); sleep(0);} else {print(EJSON.stringify(a)); sleep(0);}"`, strings.TrimRight(statement, " \t\n\r\f;"), limit)
@@ -196,7 +196,7 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 
 	fileName := fmt.Sprintf("mongodb-query-%s-%s", driver.connCfg.ConnectionDatabase, uuid.New().String())
 	defer func() {
-		// While error occured in mongosh, the temporary file may not created, so we ignore the error here.
+		// While error occurred in mongosh, the temporary file may not created, so we ignore the error here.
 		_ = os.Remove(fileName)
 	}()
 	mongoshArgs := []string{
