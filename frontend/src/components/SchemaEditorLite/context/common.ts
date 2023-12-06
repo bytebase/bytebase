@@ -29,13 +29,13 @@ export const keyForResourceName = (
   column?: string
 ) => {
   const parts = [database];
-  if (schema) {
+  if (schema !== undefined) {
     parts.push(`schemas/${schema}`);
   }
-  if (table) {
+  if (table !== undefined) {
     parts.push(`tables/${table}`);
   }
-  if (column) {
+  if (column !== undefined) {
     parts.push(`columns/${column}`);
   }
   return parts.join("/");

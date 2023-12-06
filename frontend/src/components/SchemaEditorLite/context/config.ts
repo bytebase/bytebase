@@ -162,7 +162,10 @@ export const useEditConfigs = (targets: Ref<EditTarget[]>) => {
       column: ColumnMetadata;
     }
   ) => {
-    const key = keyForResource(database, metadata);
+    const key = keyForResource(
+      database,
+      pick(metadata, "schema", "table", "column")
+    );
     return maps.value.columnConfig.get(key);
   };
   const insertColumnConfig = (
