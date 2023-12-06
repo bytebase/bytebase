@@ -1351,6 +1351,7 @@
   },
   "environment": {
     "id": "ID del Entorno",
+    "all": "Todo el entorno",
     "id-description": "El ID del entorno es el identificador único para su entorno. No puede cambiarlo después de creado.",
     "select": "Seleccionar entorno",
     "archive": "Archivar este entorno",
