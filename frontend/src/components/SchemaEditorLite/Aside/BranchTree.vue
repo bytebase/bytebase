@@ -92,6 +92,8 @@ import { getHighlightHTMLByKeyWords, isDescendantOf } from "@/utils";
 import SchemaNameModal from "../Modals/SchemaNameModal.vue";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import { useSchemaEditorContext } from "../context";
+import { useEditStatus } from "../edit";
+import { useTabs } from "../tabs";
 
 interface BaseTreeNode extends TreeOption {
   key: string;
@@ -138,8 +140,8 @@ const state = reactive<LocalState>({
   shouldRelocateTreeNode: false,
 });
 const { targets, readonly } = useSchemaEditorContext();
-// const readonly = computed(() => schemaEditorV1Store.readonly);
-// const currentTab = computed(() => schemaEditorV1Store.currentTab);
+const { addTab } = useTabs();
+const { getSchemaStatus, getTableStatus } = useEditStatus();
 
 const treeContainerElRef = ref<HTMLElement>();
 const { height: treeContainerHeight } = useElementSize(
@@ -177,7 +179,6 @@ const schemaList = computed(() => {
 });
 const tableList = computed(() => {
   return metadata.value.schemas.flatMap((schema) => schema.tables);
-  // return branchSchema.value.schemaList.map((schema) => schema.tableList).flat();
 });
 
 const contextMenuOptions = computed(() => {
@@ -357,31 +358,34 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
       if (engine.value !== Engine.POSTGRES) {
         label = t("db.tables");
       }
-      // if (schema.status === "created") {
-      //   additionalClassList.push("text-green-700");
-      // } else if (schema.status === "dropped") {
-      //   additionalClassList.push("text-red-700 line-through");
-      // } else {
-      //   // To optimize the performance of the comparison, skip check if schema is changed for now.
-      // }
+      const status = getSchemaStatus(database.value, {
+        database: metadata.value,
+        schema,
+      });
+      if (status === "created") {
+        additionalClassList.push("text-green-700");
+      } else if (status === "dropped") {
+        additionalClassList.push("text-red-700 line-through");
+      } else if (status === "updated") {
+        additionalClassList.push("text-yellow-700");
+      }
     }
   } else if (treeNode.type === "table") {
-    const { table } = treeNode as TreeNodeForTable;
+    const { schema, table } = treeNode as TreeNodeForTable;
 
     if (table) {
-      // if (table.status === "created") {
-      //   additionalClassList.push("text-green-700");
-      // } else if (table.status === "dropped") {
-      //   additionalClassList.push("text-red-700 line-through");
-      // } else if (
-      //   isTableChanged(
-      //     branchSchema.value.branch.name,
-      //     treeNode.schemaId,
-      //     treeNode.tableId
-      //   )
-      // ) {
-      //   additionalClassList.push("text-yellow-700");
-      // }
+      const status = getTableStatus(database.value, {
+        database: metadata.value,
+        schema,
+        table,
+      });
+      if (status === "created") {
+        additionalClassList.push("text-green-700");
+      } else if (status === "dropped") {
+        additionalClassList.push("text-red-700 line-through");
+      } else if (status === "updated") {
+        additionalClassList.push("text-yellow-700");
+      }
     }
   }
 
@@ -564,33 +568,35 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
   };
 };
 
-const openTabForTreeNode = (treeNode: TreeNode) => {
+const openTabForTreeNode = (node: TreeNode) => {
   state.shouldRelocateTreeNode = false;
 
-  // if (treeNode.type === "table") {
-  //   schemaEditorV1Store.addTab({
-  //     id: generateUniqueTabId(),
-  //     type: SchemaEditorTabType.TabForTable,
-  //     parentName: branchSchema.value.branch.name,
-  //     schemaId: treeNode.schemaId,
-  //     tableId: treeNode.tableId,
-  //     name: treeNode.label,
-  //   });
-  // } else if (treeNode.type === "schema") {
-  //   const index = expandedKeysRef.value.findIndex(
-  //     (key) => key === treeNode.key
-  //   );
-  //   if (index < 0) {
-  //     expandedKeysRef.value.push(treeNode.key);
-  //   }
-  //   schemaEditorV1Store.addTab({
-  //     id: generateUniqueTabId(),
-  //     type: SchemaEditorTabType.TabForDatabase,
-  //     parentName: branchSchema.value.branch.name,
-  //     selectedSchemaId: treeNode.schemaId,
-  //     name: treeNode.label,
-  //   });
-  // }
+  if (node.type === "table") {
+    addTab({
+      type: "table",
+      name: node.label,
+      database: database.value,
+      metadata: {
+        database: metadata.value,
+        schema: node.schema,
+        table: node.table,
+      },
+    });
+  } else if (node.type === "schema") {
+    const index = expandedKeysRef.value.findIndex((key) => key === node.key);
+    if (index < 0) {
+      expandedKeysRef.value.push(node.key);
+    }
+    addTab({
+      type: "database",
+      name: node.label,
+      database: database.value,
+      metadata: {
+        database: metadata.value,
+      },
+      selectedSchema: node.schema.name,
+    });
+  }
 
   state.shouldRelocateTreeNode = true;
 };

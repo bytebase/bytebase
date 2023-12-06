@@ -17,10 +17,10 @@
 <script setup lang="ts">
 import { ChevronDownIcon, ChevronUpIcon } from "lucide-vue-next";
 import { MiniActionButton } from "@/components/v2";
-import { Column } from "@/types/v1/schemaEditor";
+import { ColumnMetadata } from "@/types/proto/v1/database_service";
 
 defineProps<{
-  column: Column;
+  column: ColumnMetadata;
   allowMoveUp?: boolean;
   allowMoveDown?: boolean;
   disabled?: boolean;

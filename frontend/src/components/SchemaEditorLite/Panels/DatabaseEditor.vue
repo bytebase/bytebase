@@ -3,7 +3,7 @@
     <div class="py-2 w-full flex flex-row justify-between items-center">
       <div>
         <div
-          v-if="state.selectedSubtab === 'table-list'"
+          v-if="state.selectedSubTab === 'table-list'"
           class="w-full flex justify-between items-center space-x-2"
         >
           <div class="flex flex-row justify-start items-center space-x-3">
@@ -12,8 +12,9 @@
               class="ml-2 flex flex-row justify-start items-center text-sm"
             >
               <span class="mr-1">Schema:</span>
-              <n-select
-                v-model:value="state.selectedSchemaId"
+              <NSelect
+                v-if="currentTab"
+                v-model:value="currentTab.selectedSchema"
                 class="min-w-[8rem]"
                 :options="schemaSelectorOptionList"
               />
@@ -47,7 +48,7 @@
           <button
             class="px-2 leading-7 text-sm text-gray-500 cursor-pointer select-none rounded flex justify-center items-center"
             :class="
-              state.selectedSubtab === 'table-list' &&
+              state.selectedSubTab === 'table-list' &&
               'bg-gray-200 text-gray-800'
             "
             @click="handleChangeTab('table-list')"
@@ -58,7 +59,7 @@
           <button
             class="px-2 leading-7 text-sm text-gray-500 cursor-pointer select-none rounded flex justify-center items-center"
             :class="
-              state.selectedSubtab === 'schema-diagram' &&
+              state.selectedSubTab === 'schema-diagram' &&
               'bg-gray-200 text-gray-800'
             "
             @click="handleChangeTab('schema-diagram')"
@@ -72,16 +73,18 @@
 
     <div class="flex-1 overflow-y-hidden">
       <!-- List view -->
-      <template v-if="state.selectedSubtab === 'table-list'">
+      <template v-if="state.selectedSubTab === 'table-list'">
         <TableList
-          :schema-id="selectedSchema?.id || ''"
+          v-if="selectedSchema"
+          :database="database"
+          :schema="selectedSchema"
           :table-list="shownTableList"
         />
       </template>
-      <template v-else-if="state.selectedSubtab === 'schema-diagram'">
-        <SchemaDiagram
+      <template v-else-if="state.selectedSubTab === 'schema-diagram'">
+        <!-- <SchemaDiagram
           :key="currentTab.parentName"
-          :database="databaseV1"
+          :database="database"
           :database-metadata="databaseMetadata"
           :schema-status="schemaStatus"
           :table-status="tableStatus"
@@ -89,7 +92,7 @@
           :editable="true"
           @edit-table="tryEditTable"
           @edit-column="tryEditColumn"
-        />
+        /> -->
       </template>
     </div>
   </div>
@@ -126,15 +129,10 @@
 
 <script lang="ts" setup>
 import { head } from "lodash-es";
-import scrollIntoView from "scroll-into-view-if-needed";
-import { computed, nextTick, reactive, watch } from "vue";
-import { SchemaDiagram, SchemaDiagramIcon } from "@/components/SchemaDiagram";
+import { computed, reactive, watch } from "vue";
+import { SchemaDiagramIcon } from "@/components/SchemaDiagram";
 import { Drawer, DrawerContent } from "@/components/v2";
-import {
-  hasFeature,
-  generateUniqueTabId,
-  useSchemaEditorV1Store,
-} from "@/store";
+import { hasFeature } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import {
   ColumnMetadata,
@@ -143,16 +141,10 @@ import {
 } from "@/types/proto/v1/database_service";
 import { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
 import { emptyDatabase } from "@/types/v1/database";
-import {
-  Table,
-  DatabaseTabContext,
-  DatabaseSchema,
-  SchemaEditorTabType,
-  convertTableMetadataToTable,
-} from "@/types/v1/schemaEditor";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import TableNameModal from "../Modals/TableNameModal.vue";
-import { useMetadataForDiagram } from "../utils/useMetadataForDiagram";
+import { useSchemaEditorContext } from "../context";
+import { DatabaseTabContext } from "../types";
 import TableList from "./TableList";
 
 const props = withDefaults(
@@ -164,11 +156,11 @@ const props = withDefaults(
   }
 );
 
-type SubtabType = "table-list" | "schema-diagram";
+type SubTabType = "table-list" | "schema-diagram";
 
 interface LocalState {
-  selectedSubtab: SubtabType;
-  selectedSchemaId: string;
+  selectedSubTab: SubTabType;
+  // selectedSchema: string;
   showFeatureModal: boolean;
   showSchemaTemplateDrawer: boolean;
   tableNameModalContext?: {
@@ -179,38 +171,32 @@ interface LocalState {
   activeTableId?: string;
 }
 
-const editorStore = useSchemaEditorV1Store();
-const currentTab = computed(() => editorStore.currentTab as DatabaseTabContext);
+const context = useSchemaEditorContext();
+const { readonly } = context;
+const currentTab = computed(() => {
+  return context.currentTab.value as DatabaseTabContext;
+});
 const state = reactive<LocalState>({
-  selectedSubtab: "table-list",
-  selectedSchemaId: currentTab.value?.selectedSchemaId ?? "",
+  selectedSubTab: "table-list",
   showFeatureModal: false,
   showSchemaTemplateDrawer: false,
 });
-const databaseV1 = computed(
-  () => editorStore.currentDatabase ?? emptyDatabase()
-);
-const readonly = computed(() => editorStore.readonly);
+const database = computed(() => currentTab.value.database);
 const engine = computed(() => {
-  return editorStore.getCurrentEngine(currentTab.value.parentName);
+  return database.value.instanceEntity.engine;
+});
+const metadata = computed(() => {
+  return currentTab.value.metadata.database;
 });
 const schemaList = computed(() => {
-  return editorStore.currentSchemaList;
-});
-const databaseSchema = computed((): DatabaseSchema => {
-  return {
-    database: databaseV1.value,
-    schemaList: schemaList.value,
-    originSchemaList: [],
-  };
+  return metadata.value?.schemas ?? [];
 });
 const selectedSchema = computed(() => {
-  return schemaList.value.find(
-    (schema) => schema.id === state.selectedSchemaId
-  );
+  const selectedSchema = currentTab.value.selectedSchema;
+  return schemaList.value.find((schema) => schema.name === selectedSchema);
 });
 const tableList = computed(() => {
-  return selectedSchema.value?.tableList ?? [];
+  return selectedSchema.value?.tables ?? [];
 });
 const shownTableList = computed(() => {
   return tableList.value.filter((table) =>
@@ -224,9 +210,7 @@ const shouldShowSchemaSelector = computed(() => {
 const allowCreateTable = computed(() => {
   if (engine.value === Engine.POSTGRES) {
     return (
-      schemaList.value.length > 0 &&
-      selectedSchema.value &&
-      selectedSchema.value.status !== "dropped"
+      schemaList.value.length > 0 && selectedSchema.value && true // TODO:  selectedSchema.value.status !== "dropped"
     );
   }
   return true;
@@ -237,81 +221,75 @@ const schemaSelectorOptionList = computed(() => {
   for (const schema of schemaList.value) {
     optionList.push({
       label: schema.name,
-      value: schema.id,
+      value: schema.name,
     });
   }
   return optionList;
 });
 
 watch(
-  [() => currentTab.value],
-  () => {
-    const schemaIdList = schemaList.value.map((schema) => schema.id);
-    if (
-      currentTab.value &&
-      currentTab.value.selectedSchemaId &&
-      schemaIdList.includes(currentTab.value.selectedSchemaId)
-    ) {
-      state.selectedSchemaId = currentTab.value.selectedSchemaId;
-    } else {
-      state.selectedSchemaId = head(schemaIdList) || "";
+  schemaSelectorOptionList,
+  (options) => {
+    if (currentTab.value) {
+      if (
+        !options.find((opt) => opt.value === currentTab.value.selectedSchema)
+      ) {
+        currentTab.value.selectedSchema = head(options)?.value;
+      }
     }
   },
   {
     immediate: true,
-    deep: true,
   }
 );
 
-const handleChangeTab = (tab: SubtabType) => {
-  state.selectedSubtab = tab;
+const handleChangeTab = (tab: SubTabType) => {
+  state.selectedSubTab = tab;
 };
 
 const handleCreateNewTable = () => {
-  const selectedSchema = schemaList.value.find(
-    (schema) => schema.id === state.selectedSchemaId
-  );
-  if (selectedSchema) {
-    state.tableNameModalContext = {
-      parentName: currentTab.value.parentName,
-      schemaId: selectedSchema.id,
-      tableName: undefined,
-    };
+  if (selectedSchema.value) {
+    // TODO
+    // state.tableNameModalContext = {
+    //   parentName: currentTab.value.parentName,
+    //   schemaId: selectedSchema.id,
+    //   tableName: undefined,
+    // };
   }
 };
 
-const handleTableItemClick = (table: Table) => {
-  editorStore.addTab({
-    id: generateUniqueTabId(),
-    type: SchemaEditorTabType.TabForTable,
-    parentName: currentTab.value.parentName,
-    schemaId: state.selectedSchemaId,
-    tableId: table.id,
-    name: table.name,
-  });
+const handleTableItemClick = (table: TableMetadata) => {
+  // editorStore.addTab({
+  //   id: generateUniqueTabId(),
+  //   type: SchemaEditorTabType.TabForTable,
+  //   parentName: currentTab.value.parentName,
+  //   schemaId: state.selectedSchema,
+  //   tableId: table.id,
+  //   name: table.name,
+  // });
 };
 
-const {
-  databaseMetadata,
-  schemaStatus,
-  tableStatus,
-  columnStatus,
-  editableSchema,
-  editableTable,
-  editableColumn,
-} = useMetadataForDiagram(databaseSchema);
+// const {
+//   databaseMetadata,
+//   schemaStatus,
+//   tableStatus,
+//   columnStatus,
+//   editableSchema,
+//   editableTable,
+//   editableColumn,
+// } = useMetadataForDiagram(databaseSchema);
 
 const tryEditTable = async (
   schemaMeta: SchemaMetadata,
   tableMeta: TableMetadata
 ) => {
-  const schema = editableSchema(schemaMeta);
-  const table = editableTable(tableMeta);
-  if (schema && table) {
-    state.selectedSchemaId = schema.id;
-    await nextTick();
-    handleTableItemClick(table);
-  }
+  // const schema = editableSchema(schemaMeta);
+  // const table = editableTable(tableMeta);
+  // if (schema && table) {
+  //   state.selectedSchema = schema.id;
+  //   await nextTick();
+  //   handleTableItemClick(table);
+  // }
 };
 
 const tryEditColumn = async (
@@ -320,21 +298,21 @@ const tryEditColumn = async (
   columnMeta: ColumnMetadata,
   target: "name" | "type"
 ) => {
-  const schema = editableSchema(schemaMeta);
-  const table = editableTable(tableMeta);
-  const column = editableColumn(columnMeta);
-  if (schema && table && column) {
-    await tryEditTable(schemaMeta, tableMeta);
-    await nextTick();
-    const container = document.querySelector("#table-editor-container");
-    const input = container?.querySelector(
-      `.column-${column.id} .column-${target}-input`
-    ) as HTMLInputElement | undefined;
-    if (input) {
-      input.focus();
-      scrollIntoView(input);
-    }
-  }
+  // const schema = editableSchema(schemaMeta);
+  // const table = editableTable(tableMeta);
+  // const column = editableColumn(columnMeta);
+  // if (schema && table && column) {
+  //   await tryEditTable(schemaMeta, tableMeta);
+  //   await nextTick();
+  //   const container = document.querySelector("#table-editor-container");
+  //   const input = container?.querySelector(
+  //     `.column-${column.id} .column-${target}-input`
+  //   ) as HTMLInputElement | undefined;
+  //   if (input) {
+  //     input.focus();
+  //     scrollIntoView(input);
+  //   }
+  // }
 };
 
 const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
@@ -347,25 +325,25 @@ const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
     return;
   }
 
-  const tableEdit = convertTableMetadataToTable(
-    template.table,
-    "created",
-    template.config
-  );
+  // const tableEdit = convertTableMetadataToTable(
+  //   template.table,
+  //   "created",
+  //   template.config
+  // );
 
-  const selectedSchema = schemaList.value.find(
-    (schema) => schema.id === state.selectedSchemaId
-  );
-  if (selectedSchema) {
-    selectedSchema.tableList.push(tableEdit);
-    editorStore.addTab({
-      id: generateUniqueTabId(),
-      type: SchemaEditorTabType.TabForTable,
-      parentName: currentTab.value.parentName,
-      schemaId: state.selectedSchemaId,
-      tableId: tableEdit.id,
-      name: template.table.name,
-    });
-  }
+  // const selectedSchema = schemaList.value.find(
+  //   (schema) => schema.id === state.selectedSchema
+  // );
+  // if (selectedSchema) {
+  //   selectedSchema.tableList.push(tableEdit);
+  //   editorStore.addTab({
+  //     id: generateUniqueTabId(),
+  //     type: SchemaEditorTabType.TabForTable,
+  //     parentName: currentTab.value.parentName,
+  //     schemaId: state.selectedSchema,
+  //     tableId: tableEdit.id,
+  //     name: template.table.name,
+  //   });
+  // }
 };
 </script>

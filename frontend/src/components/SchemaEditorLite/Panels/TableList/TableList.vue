@@ -9,7 +9,7 @@
     <NDataTable
       v-bind="$attrs"
       size="small"
-      :row-key="(table: Table) => table.id"
+      :row-key="(table: TableMetadata) => table.name"
       :columns="columns"
       :data="layoutReady ? tableList : []"
       :row-class-name="classesForRow"
@@ -68,32 +68,29 @@ import { useI18n } from "vue-i18n";
 import FeatureModal from "@/components/FeatureGuard/FeatureModal.vue";
 import SelectClassificationDrawer from "@/components/SchemaTemplate/SelectClassificationDrawer.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
+import { hasFeature, useSettingV1Store } from "@/store";
+import { ComposedDatabase } from "@/types";
 import {
-  hasFeature,
-  generateUniqueTabId,
-  useSettingV1Store,
-  useSchemaEditorV1Store,
-} from "@/store";
+  SchemaMetadata,
+  TableMetadata,
+} from "@/types/proto/v1/database_service";
 import {
   SchemaTemplateSetting_TableTemplate,
   DataClassificationSetting_DataClassificationConfig as DataClassificationConfig,
 } from "@/types/proto/v1/setting_service";
-import {
-  Table,
-  DatabaseTabContext,
-  SchemaEditorTabType,
-  convertTableMetadataToTable,
-} from "@/types/v1/schemaEditor";
 import { bytesToString } from "@/utils";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import TableNameModal from "../../Modals/TableNameModal.vue";
-import { isTableChanged } from "../../utils";
+import { useSchemaEditorContext } from "../../context";
+import { useTabs } from "../../tabs";
+import { DatabaseTabContext } from "../../types";
 import ClassificationCell from "../TableColumnEditor/components/ClassificationCell.vue";
 import { NameCell, OperationCell } from "./components";
 
 const props = defineProps<{
-  schemaId: string;
-  tableList: Table[];
+  database: ComposedDatabase;
+  schema: SchemaMetadata;
+  tableList: TableMetadata[];
 }>();
 
 interface LocalState {
@@ -105,10 +102,13 @@ interface LocalState {
     schemaId: string;
     tableName: string | undefined;
   };
-  activeTableId?: string;
+  activeTableName?: string;
 }
 
 const { t } = useI18n();
+const context = useSchemaEditorContext();
+const { project, readonly } = context;
+const { addTab } = useTabs();
 const containerElRef = ref<HTMLElement>();
 const tableHeaderElRef = computed(
   () =>
@@ -123,11 +123,10 @@ const tableBodyHeight = computed(() => {
 });
 // Use this to avoid unnecessary initial rendering
 const layoutReady = computed(() => tableHeaderHeight.value > 0);
-const editorStore = useSchemaEditorV1Store();
 const settingStore = useSettingV1Store();
-const currentTab = computed(
-  () => (editorStore.currentTab || {}) as DatabaseTabContext
-);
+const currentTab = computed(() => {
+  return context.currentTab.value as DatabaseTabContext;
+});
 const state = reactive<LocalState>({
   showFeatureModal: false,
   showSchemaTemplateDrawer: false,
@@ -135,44 +134,36 @@ const state = reactive<LocalState>({
 });
 
 const engine = computed(() => {
-  return editorStore.getCurrentEngine(currentTab.value.parentName);
-});
-const readonly = computed(() => editorStore.readonly);
-
-const schemaList = computed(() => {
-  return editorStore.currentSchemaList;
-});
-const tableList = computed(() => {
-  return props.tableList;
+  return props.database.instanceEntity.engine;
 });
 
 const classificationConfig = computed(() => {
-  if (!editorStore.project.dataClassificationConfigId) {
+  if (!project.value.dataClassificationConfigId) {
     return;
   }
   return settingStore.getProjectClassification(
-    editorStore.project.dataClassificationConfigId
+    project.value.dataClassificationConfigId
   );
 });
 
-const showClassificationDrawer = (table: Table) => {
-  state.activeTableId = table.id;
+const showClassificationDrawer = (table: TableMetadata) => {
+  state.activeTableName = table.name;
   state.showClassificationDrawer = true;
 };
 
 const onClassificationSelect = (classificationId: string) => {
-  const table = tableList.value.find(
-    (table) => table.id === state.activeTableId
+  const table = props.tableList.find(
+    (table) => table.name === state.activeTableName
   );
   if (!table) {
     return;
   }
   table.classification = classificationId;
-  state.activeTableId = undefined;
+  state.activeTableName = undefined;
 };
 
 const columns = computed(() => {
-  const columns: (DataTableColumn<Table> & { hide?: boolean })[] = [
+  const columns: (DataTableColumn<TableMetadata> & { hide?: boolean })[] = [
     {
       key: "name",
       title: t("schema-editor.database.name"),
@@ -268,40 +259,44 @@ const columns = computed(() => {
   return columns.filter((header) => !header.hide);
 });
 
-const classesForRow = (table: Table, index: number) => {
-  if (table.status === "dropped") {
-    return "dropped";
-  } else if (table.status === "created") {
-    return "created";
-  } else if (
-    isTableChanged(currentTab.value.parentName, props.schemaId, table.id)
-  ) {
-    return "updated";
-  }
+const classesForRow = (table: TableMetadata, index: number) => {
+  // if (table.status === "dropped") {
+  //   return "dropped";
+  // } else if (table.status === "created") {
+  //   return "created";
+  // } else if (
+  //   isTableChanged(currentTab.value.parentName, props.schemaId, table.id)
+  // ) {
+  //   return "updated";
+  // }
   return "";
 };
 
-const handleTableItemClick = (table: Table) => {
-  editorStore.addTab({
-    id: generateUniqueTabId(),
-    type: SchemaEditorTabType.TabForTable,
-    parentName: currentTab.value.parentName,
-    schemaId: props.schemaId,
-    tableId: table.id,
+const handleTableItemClick = (table: TableMetadata) => {
+  addTab({
+    type: "table",
     name: table.name,
+    database: currentTab.value.database,
+    metadata: {
+      database: currentTab.value.metadata.database,
+      schema: props.schema,
+      table,
+    },
   });
 };
 
-const handleDropTable = (table: Table) => {
-  editorStore.dropTable(currentTab.value.parentName, props.schemaId, table.id);
+const handleDropTable = (table: TableMetadata) => {
+  // TODO
+  // editorStore.dropTable(currentTab.value.parentName, props.schemaId, table.id);
 };
 
-const handleRestoreTable = (table: Table) => {
-  editorStore.restoreTable(
-    currentTab.value.parentName,
-    props.schemaId,
-    table.id
-  );
+const handleRestoreTable = (table: TableMetadata) => {
+  // TODO
+  // editorStore.restoreTable(
+  //   currentTab.value.parentName,
+  //   props.schemaId,
+  //   table.id
+  // );
 };
 
 const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
@@ -314,33 +309,35 @@ const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
     return;
   }
 
-  const tableEdit = convertTableMetadataToTable(
-    template.table,
-    "created",
-    template.config
-  );
+  // const tableEdit = convertTableMetadataToTable(
+  //   template.table,
+  //   "created",
+  //   template.config
+  // );
 
-  const selectedSchema = schemaList.value.find(
-    (schema) => schema.id === props.schemaId
-  );
-  if (selectedSchema) {
-    selectedSchema.tableList.push(tableEdit);
-    editorStore.addTab({
-      id: generateUniqueTabId(),
-      type: SchemaEditorTabType.TabForTable,
-      parentName: currentTab.value.parentName,
-      schemaId: props.schemaId,
-      tableId: tableEdit.id,
-      name: template.table.name,
-    });
-  }
+  // const selectedSchema = schemaList.value.find(
+  //   (schema) => schema.id === props.schemaId
+  // );
+  // if (selectedSchema) {
+  //   selectedSchema.tableList.push(tableEdit);
+  //   editorStore.addTab({
+  //     id: generateUniqueTabId(),
+  //     type: SchemaEditorTabType.TabForTable,
+  //     parentName: currentTab.value.parentName,
+  //     schemaId: props.schemaId,
+  //     tableId: tableEdit.id,
+  //     name: template.table.name,
+  //   });
+  // }
 };
 
-const disableChangeTable = (table: Table): boolean => {
-  return table.status === "dropped";
+const disableChangeTable = (table: TableMetadata): boolean => {
+  return false;
+  // return table.status === "dropped";
 };
-const isDroppedTable = (table: Table) => {
-  return table.status === "dropped";
+const isDroppedTable = (table: TableMetadata) => {
+  return false;
+  // return table.status === "dropped";
 };
 </script>
 

@@ -10,10 +10,10 @@
 
 <script lang="ts" setup>
 import { NPerformantEllipsis } from "naive-ui";
-import { Table } from "@/types/v1/schemaEditor";
+import { TableMetadata } from "@/types/proto/v1/database_service";
 
 defineProps<{
-  table: Table;
+  table: TableMetadata;
 }>();
 defineEmits<{
   (event: "click"): void;

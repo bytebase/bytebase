@@ -21,11 +21,11 @@
           <div class="flex flex-row justify-start items-center mr-1">
             <span class="mr-1">
               <heroicons-outline:circle-stack
-                v-if="tab.type === SchemaEditorTabType.TabForDatabase"
+                v-if="tab.type === 'database'"
                 class="rounded w-4 h-auto text-gray-400"
               />
               <heroicons-outline:table-cells
-                v-if="tab.type === SchemaEditorTabType.TabForTable"
+                v-if="tab.type === 'table'"
                 class="rounded w-4 h-auto text-gray-400"
               />
             </span>
@@ -64,41 +64,35 @@ import { NEllipsis, NInput } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, nextTick, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useSchemaEditorV1Store } from "@/store";
-import { SchemaEditorTabType, TabContext } from "@/types/v1/schemaEditor";
-import { isTableChanged } from "./utils";
+import { useSchemaEditorContext } from "./context";
+import { useTabs } from "./tabs";
+import { TabContext } from "./types";
 
 const emit = defineEmits<{
-  (event: "onTableSearchPattern", tableSearchPattern: string): void;
-  (event: "onColumnSearchPattern", columnSearchPattern: string): void;
+  (event: "update:table-search-pattern", pattern: string): void;
+  (event: "update:column-search-pattern", pattern: string): void;
 }>();
 
 const { t } = useI18n();
-const schemaEditorV1Store = useSchemaEditorV1Store();
+const { setCurrentTab, closeTab } = useTabs();
 const tabsContainerRef = ref();
 const searchPattern = ref("");
 const originalTabContext = ref<TabContext | undefined>(undefined);
-
-const tabList = computed(() => {
-  return schemaEditorV1Store.tabList;
-});
-const currentTab = computed(() => {
-  return schemaEditorV1Store.currentTab;
-});
+const { targets, resourceType, tabList, currentTab } = useSchemaEditorContext();
 
 const searchBoxPlaceholder = computed(() => {
-  return currentTab.value?.type === SchemaEditorTabType.TabForDatabase
+  return currentTab.value?.type === "database"
     ? t("schema-editor.search-table")
-    : currentTab.value?.type === SchemaEditorTabType.TabForTable
+    : currentTab.value?.type === "table"
     ? t("schema-editor.search-column")
     : "";
 });
 
 const handleSearchBoxInput = (value: string) => {
-  if (currentTab.value?.type === SchemaEditorTabType.TabForDatabase) {
-    emit("onTableSearchPattern", value);
-  } else if (currentTab.value?.type === SchemaEditorTabType.TabForTable) {
-    emit("onColumnSearchPattern", value);
+  if (currentTab.value?.type === "database") {
+    emit("update:table-search-pattern", value);
+  } else if (currentTab.value?.type === "table") {
+    emit("update:column-search-pattern", value);
   }
 };
 
@@ -124,21 +118,22 @@ watch(
 );
 
 const getTabComputedClassList = (tab: TabContext) => {
-  if (tab.type === SchemaEditorTabType.TabForTable) {
-    const table = schemaEditorV1Store.getTableWithTableTab(tab);
-    if (!table) {
-      return [];
-    }
+  if (tab.type === "table") {
+    // const { table } = tab;
+    return []; // TODO
+    // if (!table) {
+    //   return [];
+    // }
 
-    if (table.status === "dropped") {
-      return ["text-red-700", "line-through"];
-    }
-    if (table.status === "created") {
-      return ["text-green-700"];
-    }
-    if (isTableChanged(tab.parentName, tab.schemaId, tab.tableId)) {
-      return ["text-yellow-700"];
-    }
+    // if (table.status === "dropped") {
+    //   return ["text-red-700", "line-through"];
+    // }
+    // if (table.status === "created") {
+    //   return ["text-green-700"];
+    // }
+    // if (isTableChanged(tab.parentName, tab.schemaId, tab.tableId)) {
+    //   return ["text-yellow-700"];
+    // }
   }
   return [];
 };
@@ -147,17 +142,17 @@ const getTabName = (tab: TabContext) => {
   if (tab.name) {
     return tab.name;
   }
-  if (tab.type === SchemaEditorTabType.TabForDatabase) {
-    if (schemaEditorV1Store.resourceType === "branch") {
+  if (tab.type === "database") {
+    if (resourceType.value === "branch") {
       return "Tables";
     }
-    const database = schemaEditorV1Store.databaseList.find(
-      (database) => database.name === tab.parentName
-    );
-    return database?.databaseName || "Uknown database";
-  } else if (tab.type === SchemaEditorTabType.TabForTable) {
-    const table = schemaEditorV1Store.getTableWithTableTab(tab);
-    return table?.name || "Uknown table";
+    const database = targets.value.find(
+      (target) => target.database.name === tab.database.name
+    )?.database;
+    return database?.databaseName || "Unknown database";
+  } else if (tab.type === "table") {
+    const { table } = tab;
+    return table?.name || "Unknown table";
   } else {
     // Should never reach here.
     return "unknown tab";
@@ -165,10 +160,10 @@ const getTabName = (tab: TabContext) => {
 };
 
 const handleSelectTab = (tab: TabContext) => {
-  schemaEditorV1Store.setCurrentTab(tab.id);
+  setCurrentTab(tab.id);
 };
 
 const handleCloseTab = (tab: TabContext) => {
-  schemaEditorV1Store.closeTab(tab.id);
+  closeTab(tab.id);
 };
 </script>

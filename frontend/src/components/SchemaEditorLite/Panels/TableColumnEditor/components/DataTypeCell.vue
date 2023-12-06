@@ -19,11 +19,11 @@ import { SelectOption } from "naive-ui";
 import { CSSProperties, computed, ref } from "vue";
 import { DropdownInput } from "@/components/v2";
 import { Engine } from "@/types/proto/v1/common";
-import { Column } from "@/types/v1/schemaEditor";
+import { ColumnMetadata } from "@/types/proto/v1/database_service";
 import { getDataTypeSuggestionList } from "@/utils";
 
 const props = defineProps<{
-  column: Column;
+  column: ColumnMetadata;
   readonly?: boolean;
   engine: Engine;
   schemaTemplateColumnTypes: string[];

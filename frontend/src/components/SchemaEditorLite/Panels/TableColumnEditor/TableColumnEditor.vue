@@ -9,7 +9,7 @@
     <NDataTable
       v-bind="$attrs"
       size="small"
-      :row-key="(column: Column) => column.id"
+      :row-key="(column: ColumnMetadata) => column.name"
       :columns="columns"
       :data="layoutReady ? shownColumnList : []"
       :row-class-name="classesForRow"
@@ -45,7 +45,7 @@
     @apply="onSemanticTypeApply($event)"
   />
 
-  <LabelEditorDrawer
+  <!-- <LabelEditorDrawer
     v-if="state.pendingUpdateColumn"
     :show="state.showLabelsDrawer"
     :readonly="false"
@@ -57,29 +57,27 @@
     :labels="[state.pendingUpdateColumn.config.labels]"
     @dismiss="state.showLabelsDrawer = false"
     @apply="onLabelsApply"
-  />
+  /> -->
 </template>
 
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
-import { flatten } from "lodash-es";
 import { DataTableColumn, NCheckbox, NDataTable } from "naive-ui";
 import { computed, h, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import LabelEditorDrawer from "@/components/LabelEditorDrawer.vue";
 import SelectClassificationDrawer from "@/components/SchemaTemplate/SelectClassificationDrawer.vue";
 import SemanticTypesDrawer from "@/components/SensitiveData/components/SemanticTypesDrawer.vue";
 import { InlineInput } from "@/components/v2";
-import {
-  useSettingV1Store,
-  useSubscriptionV1Store,
-  useSchemaEditorV1Store,
-} from "@/store/modules";
+import { useSettingV1Store, useSubscriptionV1Store } from "@/store/modules";
 import { Engine } from "@/types/proto/v1/common";
-import { ColumnConfig } from "@/types/proto/v1/database_service";
+import {
+  ColumnMetadata,
+  ForeignKeyMetadata,
+  TableMetadata,
+} from "@/types/proto/v1/database_service";
 import { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto/v1/setting_service";
-import { Table, Column, ForeignKey } from "@/types/v1/schemaEditor";
 import ColumnDefaultValueExpressionModal from "../../Modals/ColumnDefaultValueExpressionModal.vue";
+import { useSchemaEditorContext } from "../../context";
 import {
   getDefaultValueByKey,
   isTextOfColumnType,
@@ -96,7 +94,7 @@ import DefaultValueCell from "./components/DefaultValueCell.vue";
 import LabelsCell from "./components/LabelsCell.vue";
 
 interface LocalState {
-  pendingUpdateColumn?: Column;
+  pendingUpdateColumn?: ColumnMetadata;
   showClassificationDrawer: boolean;
   showSemanticTypesDrawer: boolean;
   showLabelsDrawer: boolean;
@@ -106,17 +104,17 @@ const props = withDefaults(
   defineProps<{
     readonly: boolean;
     showForeignKey?: boolean;
-    table: Table;
+    table: TableMetadata;
     engine: Engine;
-    foreignKeyList?: ForeignKey[];
+    foreignKeyList?: ForeignKeyMetadata[];
     classificationConfigId?: string;
     disableChangeTable?: boolean;
     allowReorderColumns?: boolean;
     maxBodyHeight?: number;
-    filterColumn?: (column: Column) => boolean;
-    disableAlterColumn?: (column: Column) => boolean;
-    getReferencedForeignKeyName?: (column: Column) => string;
-    getColumnItemComputedClassList?: (column: Column) => string;
+    filterColumn?: (column: ColumnMetadata) => boolean;
+    disableAlterColumn?: (column: ColumnMetadata) => boolean;
+    getReferencedForeignKeyName?: (column: ColumnMetadata) => string;
+    getColumnItemComputedClassList?: (column: ColumnMetadata) => string;
   }>(),
   {
     showForeignKey: true,
@@ -125,20 +123,29 @@ const props = withDefaults(
     maxBodyHeight: undefined,
     foreignKeyList: () => [],
     classificationConfigId: "",
-    filterColumn: (_: Column) => true,
-    disableAlterColumn: (_: Column) => false,
-    getReferencedForeignKeyName: (_: Column) => "",
-    getColumnItemComputedClassList: (_: Column) => "",
+    filterColumn: (_: ColumnMetadata) => true,
+    disableAlterColumn: (_: ColumnMetadata) => false,
+    getReferencedForeignKeyName: (_: ColumnMetadata) => "",
+    getColumnItemComputedClassList: (_: ColumnMetadata) => "",
   }
 );
 
 const emit = defineEmits<{
-  (event: "drop", column: Column): void;
-  (event: "restore", column: Column): void;
-  (event: "reorder", column: Column, index: number, delta: -1 | 1): void;
-  (event: "foreign-key-edit", column: Column): void;
-  (event: "foreign-key-click", column: Column): void;
-  (event: "primary-key-set", column: Column, isPrimaryKey: boolean): void;
+  (event: "drop", column: ColumnMetadata): void;
+  (event: "restore", column: ColumnMetadata): void;
+  (
+    event: "reorder",
+    column: ColumnMetadata,
+    index: number,
+    delta: -1 | 1
+  ): void;
+  (event: "foreign-key-edit", column: ColumnMetadata): void;
+  (event: "foreign-key-click", column: ColumnMetadata): void;
+  (
+    event: "primary-key-set",
+    column: ColumnMetadata,
+    isPrimaryKey: boolean
+  ): void;
 }>();
 
 const state = reactive<LocalState>({
@@ -147,6 +154,7 @@ const state = reactive<LocalState>({
   showLabelsDrawer: false,
 });
 
+const { resourceType } = useSchemaEditorContext();
 const containerElRef = ref<HTMLElement>();
 const tableHeaderElRef = computed(
   () =>
@@ -169,27 +177,26 @@ const layoutReady = computed(() => tableHeaderHeight.value > 0);
 const { t } = useI18n();
 const subscriptionV1Store = useSubscriptionV1Store();
 const settingStore = useSettingV1Store();
-const schemaEditorV1Store = useSchemaEditorV1Store();
-const editColumnDefaultValueExpressionContext = ref<Column>();
+const editColumnDefaultValueExpressionContext = ref<ColumnMetadata>();
 
+const primaryKey = computed(() => {
+  return props.table.indexes.find((idx) => idx.primary);
+});
 const classificationConfig = computed(() => {
   if (!props.classificationConfigId) {
     return;
   }
   return settingStore.getProjectClassification(props.classificationConfigId);
 });
-
 const semanticTypeList = computed(() => {
   return (
     settingStore.getSettingByName("bb.workspace.semantic-types")?.value
       ?.semanticTypeSettingValue?.types ?? []
   );
 });
-
 const showDatabaseConfigColumn = computed(
-  () => schemaEditorV1Store.resourceType === "branch"
+  () => resourceType.value === "branch"
 );
-
 const showSemanticTypeColumn = computed(() => {
   return (
     subscriptionV1Store.hasFeature("bb.feature.sensitive-data") &&
@@ -198,7 +205,7 @@ const showSemanticTypeColumn = computed(() => {
 });
 
 const columns = computed(() => {
-  const columns: (DataTableColumn<Column> & { hide?: boolean })[] = [
+  const columns: (DataTableColumn<ColumnMetadata> & { hide?: boolean })[] = [
     {
       key: "reorder",
       title: "",
@@ -415,18 +422,20 @@ const columns = computed(() => {
 });
 
 const shownColumnList = computed(() => {
-  return props.table.columnList.filter(props.filterColumn);
+  return props.table.columns.filter(props.filterColumn);
 });
 
-const isColumnPrimaryKey = (column: Column): boolean => {
-  return props.table.primaryKey.columnIdList.includes(column.id);
+const isColumnPrimaryKey = (column: ColumnMetadata): boolean => {
+  const pk = primaryKey.value;
+  if (!pk) return false;
+  return pk.expressions.includes(column.name);
 };
 
-const checkColumnHasForeignKey = (column: Column): boolean => {
-  const columnIdList = flatten(
-    props.foreignKeyList.map((fk) => fk.columnIdList)
+const checkColumnHasForeignKey = (column: ColumnMetadata): boolean => {
+  const foreignKeyColumnNames = props.foreignKeyList.flatMap(
+    (fk) => fk.columns
   );
-  return columnIdList.includes(column.id);
+  return foreignKeyColumnNames.includes(column.name);
 };
 
 const schemaTemplateColumnTypes = computed(() => {
@@ -443,7 +452,7 @@ const schemaTemplateColumnTypes = computed(() => {
   return [];
 });
 
-const handleColumnDefaultInput = (column: Column, value: string) => {
+const handleColumnDefaultInput = (column: ColumnMetadata, value: string) => {
   column.hasDefault = true;
   column.defaultNull = undefined;
   // If column is text type or has default string, we will treat user's input as string.
@@ -459,7 +468,7 @@ const handleColumnDefaultInput = (column: Column, value: string) => {
   column.defaultExpression = value;
 };
 
-const handleColumnDefaultSelect = (column: Column, key: string) => {
+const handleColumnDefaultSelect = (column: ColumnMetadata, key: string) => {
   if (key === "expression") {
     editColumnDefaultValueExpressionContext.value = column;
     return;
@@ -490,17 +499,17 @@ const handleSelectColumnDefaultValueExpression = (expression: string) => {
   column.defaultExpression = expression;
 };
 
-const openClassificationDrawer = (column: Column) => {
+const openClassificationDrawer = (column: ColumnMetadata) => {
   state.pendingUpdateColumn = column;
   state.showClassificationDrawer = true;
 };
 
-const openSemanticTypeDrawer = (column: Column) => {
+const openSemanticTypeDrawer = (column: ColumnMetadata) => {
   state.pendingUpdateColumn = column;
   state.showSemanticTypesDrawer = true;
 };
 
-const openLabelsDrawer = (column: Column) => {
+const openLabelsDrawer = (column: ColumnMetadata) => {
   state.pendingUpdateColumn = column;
   state.showLabelsDrawer = true;
 };
@@ -517,35 +526,36 @@ const onSemanticTypeApply = async (semanticTypeId: string) => {
     return;
   }
 
-  state.pendingUpdateColumn.config = ColumnConfig.fromPartial({
-    ...state.pendingUpdateColumn.config,
-    semanticTypeId,
-  });
+  // state.pendingUpdateColumn.config = ColumnConfig.fromPartial({
+  //   ...state.pendingUpdateColumn.config,
+  //   semanticTypeId,
+  // });
 };
 
 const onLabelsApply = (labelsList: { [key: string]: string }[]) => {
   if (!state.pendingUpdateColumn) {
     return;
   }
-  state.pendingUpdateColumn.config = ColumnConfig.fromPartial({
-    ...state.pendingUpdateColumn.config,
-    labels: labelsList[0],
-  });
+  // state.pendingUpdateColumn.config = ColumnConfig.fromPartial({
+  //   ...state.pendingUpdateColumn.config,
+  //   labels: labelsList[0],
+  // });
 };
 
-const onSemanticTypeRemove = async (column: Column) => {
-  column.config = ColumnConfig.fromPartial({
-    ...column.config,
-    semanticTypeId: "",
-  });
+const onSemanticTypeRemove = async (column: ColumnMetadata) => {
+  // column.config = ColumnConfig.fromPartial({
+  //   ...column.config,
+  //   semanticTypeId: "",
+  // });
 };
 
-const classesForRow = (column: Column, index: number) => {
+const classesForRow = (column: ColumnMetadata, index: number) => {
   return props.getColumnItemComputedClassList(column);
 };
 
-const isDroppedColumn = (column: Column): boolean => {
-  return column.status === "dropped";
+const isDroppedColumn = (column: ColumnMetadata): boolean => {
+  return false;
+  // return column.status === "dropped";
 };
 </script>
 

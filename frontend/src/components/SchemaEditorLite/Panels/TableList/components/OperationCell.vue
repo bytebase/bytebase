@@ -21,10 +21,10 @@
   </div>
 </template>
 <script lang="ts" setup>
-import { Table } from "@/types/v1/schemaEditor";
+import { TableMetadata } from "@/types/proto/v1/database_service";
 
 defineProps<{
-  table: Table;
+  table: TableMetadata;
   dropped?: boolean;
 }>();
 defineEmits<{

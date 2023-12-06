@@ -37,7 +37,7 @@
         :classification-config-id="project.dataClassificationConfigId"
         :disable-change-table="disableChangeTable"
         :allow-reorder-columns="allowReorderColumns"
-        :filter-column="(column: Column) => column.name.includes(props.searchPattern.trim())"
+        :filter-column="(column: ColumnMetadata) => column.name.includes(props.searchPattern.trim())"
         :disable-alter-column="disableAlterColumn"
         :get-referenced-foreign-key-name="getReferencedForeignKeyName"
         :get-column-item-computed-class-list="getColumnItemComputedClassList"
@@ -51,14 +51,14 @@
     </div>
   </div>
 
-  <EditColumnForeignKeyModal
+  <!-- <EditColumnForeignKeyModal
     v-if="state.showEditColumnForeignKeyModal && editForeignKeyColumn"
     :parent-name="currentTab.parentName"
     :schema-id="schema.id"
     :table-id="table.id"
     :column-id="editForeignKeyColumn.id"
     @close="state.showEditColumnForeignKeyModal = false"
-  />
+  /> -->
 
   <Drawer
     :show="state.showSchemaTemplateDrawer"
@@ -82,33 +82,16 @@
 </template>
 
 <script lang="ts" setup>
-import { isUndefined, flatten } from "lodash-es";
-import scrollIntoView from "scroll-into-view-if-needed";
-import { computed, nextTick, reactive, ref } from "vue";
-import { useI18n } from "vue-i18n";
+import { computed, reactive, ref } from "vue";
 import { Drawer, DrawerContent } from "@/components/v2";
-import {
-  hasFeature,
-  generateUniqueTabId,
-  useSchemaEditorV1Store,
-  pushNotification,
-} from "@/store/modules";
+import { hasFeature } from "@/store/modules";
 import { Engine } from "@/types/proto/v1/common";
 import { ColumnMetadata } from "@/types/proto/v1/database_service";
 import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
-import {
-  Column,
-  Table,
-  Schema,
-  convertColumnMetadataToColumn,
-  ForeignKey,
-  SchemaEditorTabType,
-} from "@/types/v1/schemaEditor";
-import { TableTabContext } from "@/types/v1/schemaEditor";
-import { arraySwap, instanceV1AllowsReorderColumns } from "@/utils";
+import { instanceV1AllowsReorderColumns } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
-import EditColumnForeignKeyModal from "../Modals/EditColumnForeignKeyModal.vue";
-import { isColumnChanged } from "../utils";
+import { useSchemaEditorContext } from "../context";
+import { TableTabContext } from "../types";
 import TableColumnEditor from "./TableColumnEditor";
 
 const props = withDefaults(
@@ -126,117 +109,135 @@ interface LocalState {
   showFeatureModal: boolean;
 }
 
-const { t } = useI18n();
-const schemaEditorV1Store = useSchemaEditorV1Store();
-const currentTab = computed(
-  () => schemaEditorV1Store.currentTab as TableTabContext
-);
-
-const parentResource = computed(() => {
-  return schemaEditorV1Store.resourceMap[schemaEditorV1Store.resourceType].get(
-    currentTab.value.parentName
-  )!;
+const context = useSchemaEditorContext();
+const { project, readonly } = context;
+const currentTab = computed(() => {
+  return context.currentTab.value as TableTabContext;
 });
+const database = computed(() => currentTab.value.database);
 const engine = computed(() => {
-  return schemaEditorV1Store.getCurrentEngine(currentTab.value.parentName);
+  return database.value.instanceEntity.engine;
 });
-const readonly = computed(() => schemaEditorV1Store.readonly);
-const project = computed(() => schemaEditorV1Store.project);
 const state = reactive<LocalState>({
   showEditColumnForeignKeyModal: false,
   showSchemaTemplateDrawer: false,
   showFeatureModal: false,
 });
-
-const schema = computed(() => {
-  return schemaEditorV1Store.getSchema(
-    currentTab.value.parentName,
-    currentTab.value.schemaId
-  ) as Schema;
+const table = computed(() => {
+  return currentTab.value.metadata.table;
 });
-const table = computed(
-  () =>
-    schema.value.tableList.find(
-      (table) => table.id === currentTab.value.tableId
-    ) as Table
-);
 const foreignKeyList = computed(() => {
-  return table.value.foreignKeyList.filter(
-    (pk) => pk.tableId === currentTab.value.tableId
-  ) as ForeignKey[];
+  return table.value.foreignKeys;
+  // return table.value.foreignKeyList.filter(
+  //   (pk) => pk.tableId === currentTab.value.tableId
+  // ) as ForeignKey[];
 });
 
-const editForeignKeyColumn = ref<Column>();
+const editForeignKeyColumn = ref<ColumnMetadata>();
 
 const isDroppedSchema = computed(() => {
-  return schema.value.status === "dropped";
+  return false;
+  // return schema.value.status === "dropped";
 });
 
 const isDroppedTable = computed(() => {
-  return table.value.status === "dropped";
+  return false;
+  // return table.value.status === "dropped";
 });
 
-const getColumnItemComputedClassList = (column: Column): string => {
-  if (column.status === "dropped") {
-    return "dropped";
-  } else if (column.status === "created") {
-    return "created";
-  } else if (
-    isColumnChanged(
-      currentTab.value.parentName,
-      currentTab.value.schemaId,
-      currentTab.value.tableId,
-      column.id
-    )
-  ) {
-    return "updated";
-  }
+const getColumnItemComputedClassList = (column: ColumnMetadata): string => {
+  // if (column.status === "dropped") {
+  //   return "dropped";
+  // } else if (column.status === "created") {
+  //   return "created";
+  // } else if (
+  //   isColumnChanged(
+  //     currentTab.value.parentName,
+  //     currentTab.value.schemaId,
+  //     currentTab.value.tableId,
+  //     column.id
+  //   )
+  // ) {
+  //   return "updated";
+  // }
   return "";
 };
 
-const checkColumnHasForeignKey = (column: Column): boolean => {
-  const columnIdList = flatten(
-    foreignKeyList.value.map((fk) => fk.columnIdList)
-  );
-  return columnIdList.includes(column.id);
+const checkColumnHasForeignKey = (column: ColumnMetadata): boolean => {
+  return foreignKeyList.value.flatMap((fk) => fk.columns).includes(column.name);
+  // const columnIdList = flatten(
+  //   foreignKeyList.value.map((fk) => fk.columnIdList)
+  // );
+  // return columnIdList.includes(column.id);
 };
 
-const getReferencedForeignKeyName = (column: Column) => {
+const getReferencedForeignKeyName = (column: ColumnMetadata) => {
   if (!checkColumnHasForeignKey(column)) {
     return "";
   }
-  const fk = foreignKeyList.value.find(
-    (fk) =>
-      fk.columnIdList.find((columnId) => columnId === column.id) !== undefined
+  const fk = foreignKeyList.value.find((fk) =>
+    fk.columns.includes(column.name)
   );
-  const index = fk?.columnIdList.findIndex(
-    (columnId) => columnId === column.id
-  );
-
-  if (isUndefined(fk) || isUndefined(index) || index < 0) {
+  if (!fk) {
     return "";
   }
-  const referencedSchema = parentResource.value.schemaList.find(
-    (schema) => schema.id === fk.referencedSchemaId
+  const index = fk.columns.indexOf(column.name);
+  // const fk = foreignKeyList.value.find(
+  //   (fk) =>
+  //     fk.columnIdList.find((columnId) => columnId === column.id) !== undefined
+  // );
+  // const index = fk?.columnIdList.findIndex(
+  //   (columnId) => columnId === column.id
+  // );
+  if (index < 0) {
+    return "";
+  }
+
+  // if (isUndefined(fk) || isUndefined(index) || index < 0) {
+  //   return "";
+  // }
+
+  const database = currentTab.value.metadata.database;
+  const referencedSchema = database.schemas.find(
+    (schema) => schema.name === fk.referencedSchema
   );
-  const referencedTable = referencedSchema?.tableList.find(
-    (table) => table.id === fk.referencedTableId
+  if (!referencedSchema) {
+    return "";
+  }
+  // const referencedSchema = parentResource.value.schemaList.find(
+  //   (schema) => schema.id === fk.referencedSchemaId
+  // );
+
+  const referencedTable = referencedSchema.tables.find(
+    (table) => table.name === fk.referencedTable
   );
   if (!referencedTable) {
     return "";
   }
-  const referColumn = referencedTable.columnList.find(
-    (column) => column.id === fk.referencedColumnIdList[index]
+  // const referencedTable = referencedSchema?.tableList.find(
+  //   (table) => table.id === fk.referencedTableId
+  // );
+  // if (!referencedTable) {
+  //   return "";
+  // }
+
+  const referencedColumn = referencedTable.columns.find(
+    (column) => column.name === fk.referencedColumns[index]
   );
+  // const referColumn = referencedTable.columnList.find(
+  //   (column) => column.id === fk.referencedColumnIdList[index]
+  // );
+
   if (engine.value === Engine.MYSQL) {
-    return `${referencedTable.name}(${referColumn?.name})`;
+    return `${referencedTable.name}(${referencedColumn?.name})`;
   } else {
-    return `${referencedSchema?.name}.${referencedTable.name}(${referColumn?.name})`;
+    return `${referencedSchema.name}.${referencedTable.name}(${referencedColumn?.name})`;
   }
 };
 
-const isDroppedColumn = (column: Column): boolean => {
-  return column.status === "dropped";
+const isDroppedColumn = (column: ColumnMetadata): boolean => {
+  return false;
+  // return column.status === "dropped";
 };
 
 const disableChangeTable = computed(() => {
@@ -250,43 +251,42 @@ const allowReorderColumns = computed(() => {
   }
 
   return (
-    instanceV1AllowsReorderColumns(engine.value) &&
-    table.value.status === "created"
+    instanceV1AllowsReorderColumns(engine.value) && true // TODO // table.value.status === "created"
   );
 });
 
-const disableAlterColumn = (column: Column): boolean => {
+const disableAlterColumn = (column: ColumnMetadata): boolean => {
   return (
     isDroppedSchema.value || isDroppedTable.value || isDroppedColumn(column)
   );
 };
 
-const setColumnPrimaryKey = (column: Column, isPrimaryKey: boolean) => {
-  if (isPrimaryKey) {
-    column.nullable = false;
-    table.value.primaryKey.columnIdList.push(column.id);
-  } else {
-    table.value.primaryKey.columnIdList =
-      table.value.primaryKey.columnIdList.filter(
-        (columnId) => columnId !== column.id
-      );
-  }
+const setColumnPrimaryKey = (column: ColumnMetadata, isPrimaryKey: boolean) => {
+  // if (isPrimaryKey) {
+  //   column.nullable = false;
+  //   table.value.primaryKey.columnIdList.push(column.id);
+  // } else {
+  //   table.value.primaryKey.columnIdList =
+  //     table.value.primaryKey.columnIdList.filter(
+  //       (columnId) => columnId !== column.id
+  //     );
+  // }
 };
 
 const handleAddColumn = () => {
-  const column = convertColumnMetadataToColumn(
-    ColumnMetadata.fromPartial({}),
-    "created"
-  );
-  table.value.columnList.push(column);
-  nextTick(() => {
-    const container = document.querySelector("#table-editor-container");
-    (
-      container?.querySelector(
-        `.column-${column.id} .column-name-input`
-      ) as HTMLInputElement
-    )?.focus();
-  });
+  // const column = convertColumnMetadataToColumn(
+  //   ColumnMetadata.fromPartial({}),
+  //   "created"
+  // );
+  // table.value.columnList.push(column);
+  // nextTick(() => {
+  //   const container = document.querySelector("#table-editor-container");
+  //   (
+  //     container?.querySelector(
+  //       `.column-${column.id} .column-name-input`
+  //     ) as HTMLInputElement
+  //   )?.focus();
+  // });
 };
 
 const handleApplyColumnTemplate = (
@@ -300,124 +300,125 @@ const handleApplyColumnTemplate = (
   if (template.engine !== engine.value || !template.column) {
     return;
   }
-  const column = convertColumnMetadataToColumn(
-    template.column,
-    "created",
-    template.config
-  );
-  table.value.columnList.push(column);
+  // const column = convertColumnMetadataToColumn(
+  //   template.column,
+  //   "created",
+  //   template.config
+  // );
+  // table.value.columnList.push(column);
 };
 
-const gotoForeignKeyReferencedTable = (column: Column) => {
+const gotoForeignKeyReferencedTable = (column: ColumnMetadata) => {
   if (!checkColumnHasForeignKey(column)) {
     return;
   }
-  const fk = foreignKeyList.value.find(
-    (fk) =>
-      fk.columnIdList.find((columnId) => columnId === column.id) !== undefined
-  );
-  const index = fk?.columnIdList.findIndex(
-    (columnId) => columnId === column.id
-  );
-  if (isUndefined(fk) || isUndefined(index) || index < 0) {
-    return;
-  }
+  // const fk = foreignKeyList.value.find(
+  //   (fk) =>
+  //     fk.columnIdList.find((columnId) => columnId === column.id) !== undefined
+  // );
+  // const index = fk?.columnIdList.findIndex(
+  //   (columnId) => columnId === column.id
+  // );
+  // if (isUndefined(fk) || isUndefined(index) || index < 0) {
+  //   return;
+  // }
 
-  const referencedSchema = parentResource.value.schemaList.find(
-    (schema) => schema.id === fk.referencedSchemaId
-  );
-  const referencedTable = referencedSchema?.tableList.find(
-    (table) => table.id === fk.referencedTableId
-  );
-  if (!referencedTable) {
-    return;
-  }
-  const referColumn = referencedTable?.columnList.find(
-    (column) => column.id === fk.referencedColumnIdList[index]
-  );
-  if (!referencedSchema || !referencedTable || !referColumn) {
-    return;
-  }
+  // const referencedSchema = parentResource.value.schemaList.find(
+  //   (schema) => schema.id === fk.referencedSchemaId
+  // );
+  // const referencedTable = referencedSchema?.tableList.find(
+  //   (table) => table.id === fk.referencedTableId
+  // );
+  // if (!referencedTable) {
+  //   return;
+  // }
+  // const referColumn = referencedTable?.columnList.find(
+  //   (column) => column.id === fk.referencedColumnIdList[index]
+  // );
+  // if (!referencedSchema || !referencedTable || !referColumn) {
+  //   return;
+  // }
 
-  schemaEditorV1Store.addTab({
-    id: generateUniqueTabId(),
-    type: SchemaEditorTabType.TabForTable,
-    parentName: currentTab.value.parentName,
-    schemaId: referencedSchema.id,
-    tableId: referencedTable.id,
-    name: referencedTable.name,
-  });
+  // schemaEditorV1Store.addTab({
+  //   id: generateUniqueTabId(),
+  //   type: SchemaEditorTabType.TabForTable,
+  //   parentName: currentTab.value.parentName,
+  //   schemaId: referencedSchema.id,
+  //   tableId: referencedTable.id,
+  //   name: referencedTable.name,
+  // });
 
-  nextTick(() => {
-    const container = document.querySelector("#table-editor-container");
-    const input = container?.querySelector(
-      `.column-${referColumn.id} .column-name-input`
-    ) as HTMLInputElement | undefined;
-    if (input) {
-      input.focus();
-      scrollIntoView(input);
-    }
-  });
+  // nextTick(() => {
+  //   const container = document.querySelector("#table-editor-container");
+  //   const input = container?.querySelector(
+  //     `.column-${referColumn.id} .column-name-input`
+  //   ) as HTMLInputElement | undefined;
+  //   if (input) {
+  //     input.focus();
+  //     scrollIntoView(input);
+  //   }
+  // });
 };
 
-const handleEditColumnForeignKey = (column: Column) => {
+const handleEditColumnForeignKey = (column: ColumnMetadata) => {
   editForeignKeyColumn.value = column;
   state.showEditColumnForeignKeyModal = true;
 };
 
-const handleDropColumn = (column: Column) => {
-  // Disallow to drop the last column.
-  if (
-    table.value.columnList.filter((column) => column.status !== "dropped")
-      .length === 1
-  ) {
-    pushNotification({
-      module: "bytebase",
-      style: "CRITICAL",
-      title: t("schema-editor.message.cannot-drop-the-last-column"),
-    });
-    return;
-  }
-
-  if (column.status === "created") {
-    table.value.columnList = table.value.columnList.filter(
-      (item) => item !== column
-    );
-    table.value.primaryKey.columnIdList =
-      table.value.primaryKey.columnIdList.filter(
-        (columnId) => columnId !== column.id
-      );
-
-    const foreignKeyList = table.value.foreignKeyList.filter(
-      (fk) => fk.tableId === currentTab.value.tableId
-    );
-    for (const foreignKey of foreignKeyList) {
-      const columnRefIndex = foreignKey.columnIdList.findIndex(
-        (columnId) => columnId === column.id
-      );
-      if (columnRefIndex > -1) {
-        foreignKey.columnIdList.splice(columnRefIndex, 1);
-        foreignKey.referencedColumnIdList.splice(columnRefIndex, 1);
-      }
-    }
-  } else {
-    column.status = "dropped";
-  }
+const handleDropColumn = (column: ColumnMetadata) => {
+  // // Disallow to drop the last column.
+  // if (
+  //   table.value.columnList.filter((column) => column.status !== "dropped")
+  //     .length === 1
+  // ) {
+  //   pushNotification({
+  //     module: "bytebase",
+  //     style: "CRITICAL",
+  //     title: t("schema-editor.message.cannot-drop-the-last-column"),
+  //   });
+  //   return;
+  // }
+  // if (column.status === "created") {
+  //   table.value.columnList = table.value.columnList.filter(
+  //     (item) => item !== column
+  //   );
+  //   table.value.primaryKey.columnIdList =
+  //     table.value.primaryKey.columnIdList.filter(
+  //       (columnId) => columnId !== column.id
+  //     );
+  //   const foreignKeyList = table.value.foreignKeyList.filter(
+  //     (fk) => fk.tableId === currentTab.value.tableId
+  //   );
+  //   for (const foreignKey of foreignKeyList) {
+  //     const columnRefIndex = foreignKey.columnIdList.findIndex(
+  //       (columnId) => columnId === column.id
+  //     );
+  //     if (columnRefIndex > -1) {
+  //       foreignKey.columnIdList.splice(columnRefIndex, 1);
+  //       foreignKey.referencedColumnIdList.splice(columnRefIndex, 1);
+  //     }
+  //   }
+  // } else {
+  //   column.status = "dropped";
+  // }
 };
 
-const handleRestoreColumn = (column: Column) => {
-  if (column.status === "created") {
-    return;
-  }
-  column.status = "normal";
+const handleRestoreColumn = (column: ColumnMetadata) => {
+  // if (column.status === "created") {
+  //   return;
+  // }
+  // column.status = "normal";
 };
 
-const handleReorderColumn = (column: Column, index: number, delta: -1 | 1) => {
-  const target = index + delta;
-  const { columnList } = table.value;
-  if (target < 0) return;
-  if (target >= columnList.length) return;
-
-  arraySwap(columnList, index, target);
+const handleReorderColumn = (
+  column: ColumnMetadata,
+  index: number,
+  delta: -1 | 1
+) => {
+  // const target = index + delta;
+  // const { columnList } = table.value;
+  // if (target < 0) return;
+  // if (target >= columnList.length) return;
+  // arraySwap(columnList, index, target);
 };
 </script>

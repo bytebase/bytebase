@@ -23,15 +23,15 @@
 import { PencilIcon, XIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { MiniActionButton } from "@/components/v2";
+import { ColumnMetadata } from "@/types/proto/v1/database_service";
 import { SemanticTypeSetting_SemanticType as SemanticType } from "@/types/proto/v1/setting_service";
-import { Column } from "@/types/v1/schemaEditor";
 
 const props = defineProps<{
-  column: Column;
+  column: ColumnMetadata;
   readonly?: boolean;
   disabled?: boolean;
   semanticTypeList: SemanticType[];
-  disableAlterColumn: (column: Column) => boolean;
+  disableAlterColumn: (column: ColumnMetadata) => boolean;
 }>();
 defineEmits<{
   (event: "edit"): void;
@@ -39,12 +39,13 @@ defineEmits<{
 }>();
 
 const semanticType = computed(() => {
-  const { column, semanticTypeList } = props;
-  if (!column.config.semanticTypeId) {
-    return;
-  }
-  return semanticTypeList.find(
-    (data) => data.id === column.config.semanticTypeId
-  );
+  return undefined;
+  // const { column, semanticTypeList } = props;
+  // if (!column.config.semanticTypeId) {
+  //   return;
+  // }
+  // return semanticTypeList.find(
+  //   (data) => data.id === column.config.semanticTypeId
+  // );
 });
 </script>

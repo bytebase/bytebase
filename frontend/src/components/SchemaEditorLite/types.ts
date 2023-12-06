@@ -15,11 +15,20 @@ export type ResourceType = "branch" | "database";
 
 export type TabType = "database" | "table";
 
-// Tab context for editing database.
-export type DatabaseTabContext = {
+export type CommonTabContext = {
   id: string;
+  name?: string;
+  type: TabType;
+};
+
+// Tab context for editing database.
+export type DatabaseTabContext = CommonTabContext & {
   type: "database";
   database: ComposedDatabase;
+  metadata: {
+    database: DatabaseMetadata;
+  };
+  selectedSchema?: string;
 };
 
 // export interface DatabaseTabContext {
@@ -31,11 +40,14 @@ export type DatabaseTabContext = {
 // }
 
 // Tab context for editing table.
-export type TableTabContext = {
-  id: string;
+export type TableTabContext = CommonTabContext & {
   type: "table";
-  schema: SchemaMetadata;
-  table: TableMetadata;
+  database: ComposedDatabase;
+  metadata: {
+    database: DatabaseMetadata;
+    schema: SchemaMetadata;
+    table: TableMetadata;
+  };
 };
 
 // export interface TableTabContext {
@@ -47,32 +59,10 @@ export type TableTabContext = {
 //   tableId: string;
 // }
 
-// export type TabContext = {
-//   name?: string;
-// } & (DatabaseTabContext | TableTabContext);
+export type TabContext = DatabaseTabContext | TableTabContext;
 
-// export interface DatabaseSchema {
-//   database: ComposedDatabase;
-//   schemaList: Schema[];
-//   originSchemaList: Schema[];
-// }
+export type CoreTabContext =
+  | Omit<DatabaseTabContext, "id">
+  | Omit<TableTabContext, "id">;
 
-// export interface BranchSchema {
-//   branch: Branch;
-//   schemaList: Schema[];
-//   originSchemaList: Schema[];
-// }
-
-// export interface SchemaEditorV1State {
-//   project: ComposedProject;
-//   readonly: boolean;
-//   resourceType: "database" | "branch";
-//   resourceMap: {
-//     database: Map<string, DatabaseSchema>;
-//     branch: Map<string, BranchSchema>;
-//   };
-//   tabState: {
-//     tabMap: Map<string, TabContext>;
-//     currentTabId?: string;
-//   };
-// }
+export type EditStatus = "normal" | "created" | "dropped" | "updated";
