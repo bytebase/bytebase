@@ -487,7 +487,13 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 		case "ARRAY":
 			column.Type = udtName.String
 		case "character", "character varying", "bit", "bit varying":
-			column.Type = fmt.Sprintf("%s(%s)", column.Type, characterMaxLength.String)
+			if characterMaxLength.Valid {
+				// For character varying(n), the character maximum length is n.
+				// For character without length specifier, key character_maximum_length is null,
+				// we don't need to append the length.
+				// https://www.postgresql.org/docs/current/infoschema-columns.html.
+				column.Type = fmt.Sprintf("%s(%s)", column.Type, characterMaxLength.String)
+			}
 		}
 		column.Collation = collation.String
 		column.Comment = comment.String
