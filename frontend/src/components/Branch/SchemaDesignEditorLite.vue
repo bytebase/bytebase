@@ -26,7 +26,11 @@
         </button>
       </div>
       <div v-if="!hideSQLCheckButton" class="flex items-center flex-end">
-        <BranchSQLCheckButton class="justify-end" :branch="branch" />
+        <BranchSQLCheckButton
+          class="justify-end"
+          :branch="branch"
+          :get-statement="generateDDL"
+        />
       </div>
     </div>
     <div class="grow w-full h-auto overflow-auto">
@@ -35,6 +39,7 @@
         class="w-full h-full pt-2"
       >
         <SchemaEditorLite
+          ref="schemaEditorRef"
           :project="project"
           :readonly="readonly"
           :resource-type="'branch'"
@@ -59,10 +64,11 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive } from "vue";
+import { cloneDeep } from "lodash-es";
+import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { branchServiceClient } from "@/grpcweb";
-import { pushNotification } from "@/store";
+import { pushNotification, useDatabaseV1Store } from "@/store";
 import { ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
@@ -93,6 +99,10 @@ const rawSQLPreviewState = reactive({
   value: "",
   isFetching: false,
 });
+const database = computed(() => {
+  return useDatabaseV1Store().getDatabaseByName(props.branch.baselineDatabase);
+});
+const schemaEditorRef = ref<InstanceType<typeof SchemaEditorLite>>();
 
 const handleChangeTab = async (tab: TabType) => {
   state.selectedTab = tab;
@@ -101,31 +111,29 @@ const handleChangeTab = async (tab: TabType) => {
   }
 };
 
-const fetchRawSQLPreview = async () => {
-  if (rawSQLPreviewState.isFetching) {
-    return;
+const generateDDL = async () => {
+  const applyMetadataEdit = schemaEditorRef.value?.applyMetadataEdit;
+  if (typeof applyMetadataEdit !== "function") {
+    throw new Error("SchemaEditor is not accessible");
   }
 
   const source =
     props.branch.baselineSchemaMetadata ?? DatabaseMetadata.fromPartial({});
-  const editing =
-    props.branch.schemaMetadata ?? DatabaseMetadata.fromPartial({});
+  const editing = props.branch.schemaMetadata
+    ? cloneDeep(props.branch.schemaMetadata)
+    : DatabaseMetadata.fromPartial({});
+  await applyMetadataEdit(database.value, editing);
 
   const validationMessages = validateDatabaseMetadata(editing);
   if (validationMessages.length > 0) {
-    rawSQLPreviewState.value = "";
-    pushNotification({
-      module: "bytebase",
-      style: "WARN",
-      title: "Invalid schema structure",
-      description: validationMessages.join("\n"),
-    });
-    return;
+    return {
+      statement: "",
+      errors: [t("schema-editor.message.invalid-schema")],
+    };
   }
 
   try {
-    rawSQLPreviewState.isFetching = true;
-    const diffResponse = await branchServiceClient.diffMetadata(
+    const diffMetadataResponse = await branchServiceClient.diffMetadata(
       {
         sourceMetadata: source,
         targetMetadata: editing,
@@ -135,15 +143,48 @@ const fetchRawSQLPreview = async () => {
         silent: true,
       }
     );
-    rawSQLPreviewState.value = diffResponse.diff;
-  } catch {
+    const { diff } = diffMetadataResponse;
+    const errs = diff.length === 0 ? [t("schema-editor.nothing-changed")] : [];
+    return {
+      statement: diff,
+      errors: errs,
+    };
+  } catch (ex) {
+    // The grpc error message is too long not readable. So we won't use it here.
+    return {
+      statement: "",
+      errors: [t("schema-editor.message.invalid-schema")],
+    };
+  }
+};
+
+const fetchRawSQLPreview = async () => {
+  if (rawSQLPreviewState.isFetching) {
+    return;
+  }
+
+  rawSQLPreviewState.isFetching = true;
+
+  const applyMetadataEdit = schemaEditorRef.value?.applyMetadataEdit;
+  if (typeof applyMetadataEdit !== "function") {
+    rawSQLPreviewState.isFetching = false;
+    return;
+  }
+
+  const result = await generateDDL();
+  if (result.errors.length > 0) {
     pushNotification({
       module: "bytebase",
       style: "WARN",
-      title: t("schema-editor.message.invalid-schema"),
+      title: "Invalid schema structure",
+      description: result.errors.join("\n"),
     });
-    rawSQLPreviewState.value = "";
   }
+  rawSQLPreviewState.value = result.statement;
   rawSQLPreviewState.isFetching = false;
 };
+
+defineExpose({
+  schemaEditor: schemaEditorRef,
+});
 </script>

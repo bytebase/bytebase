@@ -62,15 +62,13 @@
         <span class="mr-4 shrink-0"
           >{{ $t("schema-designer.baseline-version") }}:</span
         >
-        <DatabaseInfo
-          class="flex-nowrap mr-4 shrink-0"
-          :database="baselineDatabase"
-        />
+        <DatabaseInfo class="flex-nowrap mr-4 shrink-0" :database="database" />
       </div>
     </div>
 
     <div class="w-full h-[32rem]">
       <SchemaDesignEditorLite
+        ref="schemaDesignerRef"
         :project="project"
         :readonly="!state.isEditing"
         :branch="branch"
@@ -109,7 +107,7 @@
 <script lang="ts" setup>
 import { asyncComputed } from "@vueuse/core";
 import dayjs from "dayjs";
-import { head, isEqual } from "lodash-es";
+import { cloneDeep, head, isEqual } from "lodash-es";
 import { NButton, NDivider, NInput, NTag } from "naive-ui";
 import { CSSProperties, computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -157,6 +155,7 @@ const databaseStore = useDatabaseV1Store();
 const branchStore = useBranchStore();
 const { branchList, ready } = useBranchList(props.projectId);
 const { runSQLCheck } = provideSQLCheckContext();
+const schemaDesignerRef = ref<InstanceType<typeof SchemaDesignEditorLite>>();
 const state = reactive<LocalState>({
   branchId: "",
   isEditing: false,
@@ -186,12 +185,12 @@ const parentBranch = asyncComputed(async () => {
   return undefined;
 }, undefined);
 
-const baselineDatabase = computed(() => {
+const database = computed(() => {
   return databaseStore.getDatabaseByName(props.branch.baselineDatabase);
 });
 
 const project = computed(() => {
-  return baselineDatabase.value.projectEntity;
+  return database.value.projectEntity;
 });
 
 const branchIdInputStyle = computed(() => {
@@ -311,13 +310,28 @@ const handleSaveBranch = async () => {
   if (state.isSaving) {
     return;
   }
+  const cleanup = () => {
+    state.isSaving = false;
+  };
+
+  state.isSaving = true;
+
+  const applyMetadataEdit =
+    schemaDesignerRef.value?.schemaEditor?.applyMetadataEdit;
+  if (typeof applyMetadataEdit !== "function") {
+    return cleanup();
+  }
+
   const check = runSQLCheck.value;
   if (check && !(await check())) {
-    return;
+    return cleanup();
   }
   const updateMask = [];
-  const editing =
-    props.branch.schemaMetadata ?? DatabaseMetadata.fromPartial({});
+  const editing = props.branch.schemaMetadata
+    ? cloneDeep(props.branch.schemaMetadata)
+    : DatabaseMetadata.fromPartial({});
+  await applyMetadataEdit(database.value, editing);
+
   const validationMessages = validateDatabaseMetadata(editing);
   if (validationMessages.length > 0) {
     pushNotification({
@@ -326,10 +340,9 @@ const handleSaveBranch = async () => {
       title: "Invalid schema design",
       description: validationMessages.join("\n"),
     });
-    return;
+    return cleanup();
   }
   updateMask.push("schema_metadata");
-  state.isSaving = true;
   if (updateMask.length !== 0) {
     await branchStore.updateBranch(
       Branch.fromPartial({

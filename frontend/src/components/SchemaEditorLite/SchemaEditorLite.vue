@@ -28,6 +28,7 @@ import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import Aside from "./Aside";
 import Editor from "./Editor.vue";
+import { useAlgorithm } from "./algorithm";
 import { provideSchemaEditorContext } from "./context";
 import { EditTarget } from "./types";
 
@@ -47,8 +48,6 @@ interface LocalState {
 }
 
 const settingStore = useSettingV1Store();
-// const schemaEditorV1Store = useSchemaEditorV1Store();
-// const branchStore = useBranchStore();
 const state = reactive<LocalState>({
   loading: false,
   initialized: false,
@@ -58,143 +57,13 @@ const mergedLoading = computed(() => {
   return props.loading || state.loading;
 });
 
-// const prepareBranchContext = async () => {
-//   if (props.resourceType !== "branch" || !props.branches) {
-//     return;
-//   }
-//   for (const branch of props.branches) {
-//     if (branch.parentBranch !== "") {
-//       // Prepare parent branch for personal draft.
-//       await branchStore.fetchBranchByName(
-//         branch.parentBranch,
-//         true /* useCache */
-//       );
-//     }
-//   }
-// };
-
-// const batchConvertBranchSchemas = async (branches: Branch[]) => {
-//   try {
-//     state.loading = true;
-//     await nextAnimationFrame();
-//     return await Promise.all(
-//       branches.map<Promise<[string, BranchSchema]>>(async (branch) => {
-//         return [branch.name, await convertBranchToBranchSchema(branch)];
-//       })
-//     );
-//   } finally {
-//     state.loading = false;
-//   }
-// };
-
-// const initialSchemaEditorState = async () => {
-//   schemaEditorV1Store.setState({
-//     project: props.project,
-//     resourceType: props.resourceType,
-//     // NOTE: this will clear all tabs. We will restore tabs as needed later.
-//     tabState: {
-//       tabMap: new Map(),
-//     },
-//     readonly: props.readonly || false,
-//   });
-
-//   if (props.resourceType === "database") {
-//     schemaEditorV1Store.setState({
-//       resourceMap: {
-//         // NOTE: we will dynamically fetch schema list for each database in database tree view.
-//         database: new Map(
-//           (props.databases || []).map((database) => [
-//             database.name,
-//             {
-//               database,
-//               schemaList: [],
-//               originSchemaList: [],
-//             },
-//           ])
-//         ),
-//         branch: new Map(),
-//       },
-//     });
-//   } else {
-//     schemaEditorV1Store.setState({
-//       resourceMap: {
-//         database: new Map(),
-//         branch: new Map(await batchConvertBranchSchemas(props.branches ?? [])),
-//       },
-//     });
-//   }
-// };
-
 // Prepare schema template contexts.
 onMounted(async () => {
   await settingStore.getOrFetchSettingByName("bb.workspace.schema-template");
-  // await prepareBranchContext();
-  // await initialSchemaEditorState();
+
+  // TODO: generate initial diff state
   state.initialized = true;
 });
-
-// watch(
-//   () => props,
-//   () => {
-//     schemaEditorV1Store.setState({
-//       project: props.project,
-//       resourceType: props.resourceType,
-//       readonly: props.readonly || false,
-//     });
-//   },
-//   {
-//     deep: true,
-//   }
-// );
-
-// watch(
-//   [() => props.databases, () => props.branches],
-//   async ([newDatabases, newBranches], [oldDatabases, oldBranches]) => {
-//     // Update editor state if needed.
-//     // * If we update databases/branches, we need to rebuild the editing state.
-//     // * If we update databases/branches, we need to clear all tabs.
-//     if (props.resourceType === "database") {
-//       if (isEqual(newDatabases, oldDatabases)) {
-//         return;
-//       }
-//       schemaEditorV1Store.setState({
-//         tabState: {
-//           tabMap: new Map(),
-//         },
-//         resourceMap: {
-//           // NOTE: we will dynamically fetch schema list for each database in database tree view.
-//           database: new Map(
-//             (newDatabases || []).map((database) => [
-//               database.name,
-//               {
-//                 database,
-//                 schemaList: [],
-//                 originSchemaList: [],
-//               },
-//             ])
-//           ),
-//           branch: new Map(),
-//         },
-//       });
-//     } else {
-//       if (isEqual(newBranches, oldBranches)) {
-//         return;
-//       }
-//       schemaEditorV1Store.setState({
-//         tabState: {
-//           tabMap: new Map(),
-//         },
-//         resourceMap: {
-//           database: new Map(),
-//           branch: new Map(await batchConvertBranchSchemas(newBranches ?? [])),
-//         },
-//       });
-//     }
-//   },
-//   {
-//     deep: true,
-//   }
-// );
 
 const targets = computed(() => {
   if (props.resourceType === "database") {
@@ -222,6 +91,12 @@ const context = provideSchemaEditorContext({
   project: toRef(props, "project"),
   resourceType: toRef(props, "resourceType"),
   readonly: toRef(props, "readonly"),
+});
+const { diff, applyMetadataEdit } = useAlgorithm(context);
+
+defineExpose({
+  diff,
+  applyMetadataEdit,
 });
 </script>
 
