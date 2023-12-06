@@ -7,7 +7,7 @@
         $t("database.branch-name")
       }}</span>
       <NInput
-        v-model:value="branchTitle"
+        v-model:value="branchId"
         type="text"
         class="!w-60 text-sm"
         :placeholder="'feature/add-billing'"
@@ -39,8 +39,12 @@
       <div>isPreparingBranch: {{ isPreparingBranch }}</div>
       <div>databaseId: {{ databaseId }}</div>
       <div>parentBranchName: {{ parentBranchName }}</div>
-      <div>state.source: {{ state?.source }}</div>
+      <div>state.parent: {{ state?.parent }}</div>
       <div>state.branch.name: {{ state?.branch.name }}</div>
+      <div>
+        len(tables):
+        {{ state?.branch.schemaMetadata?.schemas.map((s) => s.tables.length) }}
+      </div>
       <div>
         size(state.branch):
         <template v-if="state?.branch">{{
@@ -51,6 +55,7 @@
     <div class="w-full flex-1 overflow-y-hidden">
       <SchemaEditorLite
         v-if="branches.length > 0"
+        :key="state?.branch.name"
         :loading="isPreparingBranch"
         :project="project"
         :resource-type="'branch'"
@@ -79,8 +84,10 @@ import { cloneDeep, uniqueId } from "lodash-es";
 import { NButton, NDivider, NInput } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import SchemaEditorLite from "@/components/SchemaEditorLite";
 import {
+  pushNotification,
   useDBSchemaV1Store,
   useDatabaseV1Store,
   useProjectV1Store,
@@ -89,13 +96,14 @@ import { useBranchStore } from "@/store/modules/branch";
 import { UNKNOWN_ID } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
-import { bytesToString } from "@/utils";
+import { bytesToString, projectV1Slug } from "@/utils";
 import MaskSpinner from "../misc/MaskSpinner.vue";
 import BaselineSchemaSelector from "./BaselineSchemaSelector.vue";
+import { validateBranchName } from "./utils";
 
 type BranchPrepareState = {
   branch: Branch;
-  source: "parent" | "head";
+  parent: string | undefined;
 };
 
 const props = defineProps({
@@ -107,6 +115,7 @@ const props = defineProps({
 
 const DEBOUNCE_RATE = 100;
 const { t } = useI18n();
+const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const projectStore = useProjectV1Store();
@@ -115,7 +124,7 @@ const projectId = ref(props.projectId);
 const databaseId = ref<string>();
 const parentBranchName = ref<string>();
 const isCreating = ref(false);
-const branchTitle = ref<string>("");
+const branchId = ref<string>("");
 const isPreparingBranch = ref(false);
 
 const project = computed(() => {
@@ -198,14 +207,14 @@ const prepareBranch = async (
     const branch = await prepareBranchFromParentBranch(_parentBranchName);
     return finish({
       branch,
-      source: "parent",
+      parent: _parentBranchName,
     });
   }
   if (_databaseId && _databaseId !== String(UNKNOWN_ID)) {
     const branch = await prepareBranchFromDatabaseHead(_databaseId);
     return finish({
       branch,
-      source: "head",
+      parent: undefined,
     });
   }
   return finish(undefined);
@@ -224,88 +233,62 @@ const branches = computed(() => {
 });
 
 const allowConfirm = computed(() => {
-  return branchTitle.value && state.value && !isCreating.value;
+  return branchId.value && state.value && !isCreating.value;
 });
 
 const confirmText = computed(() => {
   return t("common.create");
 });
 
-// watch(debouncedDatabaseId, async (databaseId) => {
-//   if (state.parentBranchName) {
-//     return;
-//   }
-//   console.time("prepareSchemaDesign");
-//   state.loading = true;
-//   state.branch = await prepareBranchFromDatabase();
-//   state.loading = false;
-//   console.timeEnd("prepareSchemaDesign");
-// });
-
 const handleConfirm = async () => {
-  return;
+  if (!state.value) {
+    return;
+  }
 
-  // TODO: re-implement
+  if (!validateBranchName(branchId.value)) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: "Branch name valid characters: /^[a-zA-Z][a-zA-Z0-9-_/]+$/",
+    });
+    return;
+  }
 
-  // if (!state.branch) {
-  //   return;
-  // }
+  const { branch, parent } = state.value;
 
-  // if (!validateBranchName(branchTitle.value)) {
-  //   pushNotification({
-  //     module: "bytebase",
-  //     style: "CRITICAL",
-  //     title: "Branch name valid characters: /^[a-zA-Z][a-zA-Z0-9-_/]+$/",
-  //   });
-  //   return;
-  // }
+  const { baselineDatabase } = branch;
+  isCreating.value = true;
+  if (!parent) {
+    await branchStore.createBranch(
+      project.value.name,
+      branchId.value,
+      Branch.fromPartial({
+        baselineDatabase,
+      })
+    );
+  } else {
+    await branchStore.createBranch(
+      project.value.name,
+      branchId.value,
+      Branch.fromPartial({
+        parentBranch: parent!,
+      })
+    );
+  }
+  isCreating.value = false;
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("schema-designer.message.created-succeed"),
+  });
 
-  // const database = useDatabaseV1Store().getDatabaseByUID(state.databaseId!);
-  // const schemaEditorV1Store = useSchemaEditorV1Store();
-  // const branchSchema = schemaEditorV1Store.resourceMap["branch"].get(
-  //   state.branch.name
-  // );
-  // if (!branchSchema) {
-  //   return;
-  // }
-
-  // state.isCreating = true;
-  // const baselineDatabase = `${database.instanceEntity.name}/${databaseNamePrefix}${database.databaseName}`;
-  // let createdSchemaDesign;
-  // if (!state.parentBranchName) {
-  //   createdSchemaDesign = await branchStore.createBranch(
-  //     project.value.name,
-  //     branchTitle.value,
-  //     Branch.fromPartial({
-  //       baselineDatabase: baselineDatabase,
-  //     })
-  //   );
-  // } else {
-  //   const parentBranch = await branchStore.fetchBranchByName(
-  //     state.parentBranchName,
-  //     false /* useCache */
-  //   );
-  //   createdSchemaDesign = await branchStore.createBranchDraft(
-  //     project.value.name,
-  //     branchTitle.value,
-  //     parentBranch.name
-  //   );
-  // }
-  // state.isCreating = false;
-  // pushNotification({
-  //   module: "bytebase",
-  //   style: "SUCCESS",
-  //   title: t("schema-designer.message.created-succeed"),
-  // });
-
-  // // Go to branch detail page after created.
-  // const [_, branchId] = getProjectAndBranchId(createdSchemaDesign.name);
-  // router.replace({
-  //   name: "workspace.project.branch.detail",
-  //   params: {
-  //     projectSlug: projectV1Slug(project.value),
-  //     branchName: branchId,
-  //   },
-  // });
+  // Go to branch detail page after created.
+  router.replace({
+    name: "workspace.project.branch.detail",
+    params: {
+      projectSlug: projectV1Slug(project.value),
+      branchName: branchId.value,
+    },
+  });
 };
 </script>
