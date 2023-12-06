@@ -82,6 +82,7 @@ import { bytesToString } from "@/utils";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import TableNameModal from "../../Modals/TableNameModal.vue";
 import { useSchemaEditorContext } from "../../context";
+import { useEditStatus } from "../../edit";
 import { useTabs } from "../../tabs";
 import { DatabaseTabContext } from "../../types";
 import ClassificationCell from "../TableColumnEditor/components/ClassificationCell.vue";
@@ -109,6 +110,7 @@ const { t } = useI18n();
 const context = useSchemaEditorContext();
 const { project, readonly } = context;
 const { addTab } = useTabs();
+const { markEditStatus, removeEditStatus, getTableStatus } = useEditStatus();
 const containerElRef = ref<HTMLElement>();
 const tableHeaderElRef = computed(
   () =>
@@ -259,44 +261,40 @@ const columns = computed(() => {
   return columns.filter((header) => !header.hide);
 });
 
+const metadataForTable = (table: TableMetadata) => {
+  return {
+    ...currentTab.value.metadata,
+    schema: props.schema,
+    table,
+  };
+};
+const statusForTable = (table: TableMetadata) => {
+  return getTableStatus(props.database, metadataForTable(table));
+};
+
 const classesForRow = (table: TableMetadata, index: number) => {
-  // if (table.status === "dropped") {
-  //   return "dropped";
-  // } else if (table.status === "created") {
-  //   return "created";
-  // } else if (
-  //   isTableChanged(currentTab.value.parentName, props.schemaId, table.id)
-  // ) {
-  //   return "updated";
-  // }
-  return "";
+  return statusForTable(table);
 };
 
 const handleTableItemClick = (table: TableMetadata) => {
   addTab({
     type: "table",
     name: table.name,
-    database: currentTab.value.database,
-    metadata: {
-      database: currentTab.value.metadata.database,
-      schema: props.schema,
-      table,
-    },
+    database: props.database,
+    metadata: metadataForTable(table),
   });
 };
 
 const handleDropTable = (table: TableMetadata) => {
-  // TODO
-  // editorStore.dropTable(currentTab.value.parentName, props.schemaId, table.id);
+  markEditStatus(props.database, metadataForTable(table), "dropped");
 };
 
 const handleRestoreTable = (table: TableMetadata) => {
-  // TODO
-  // editorStore.restoreTable(
-  //   currentTab.value.parentName,
-  //   props.schemaId,
-  //   table.id
-  // );
+  removeEditStatus(
+    props.database,
+    metadataForTable(table),
+    /* recursive */ false
+  );
 };
 
 const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
@@ -331,13 +329,11 @@ const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
   // }
 };
 
-const disableChangeTable = (table: TableMetadata): boolean => {
-  return false;
-  // return table.status === "dropped";
-};
 const isDroppedTable = (table: TableMetadata) => {
-  return false;
-  // return table.status === "dropped";
+  return statusForTable(table) === "dropped";
+};
+const disableChangeTable = (table: TableMetadata): boolean => {
+  return isDroppedTable(table);
 };
 </script>
 

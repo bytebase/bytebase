@@ -128,9 +128,6 @@ const table = computed(() => {
 });
 const foreignKeyList = computed(() => {
   return table.value.foreignKeys;
-  // return table.value.foreignKeyList.filter(
-  //   (pk) => pk.tableId === currentTab.value.tableId
-  // ) as ForeignKey[];
 });
 
 const editForeignKeyColumn = ref<ColumnMetadata>();

@@ -141,7 +141,8 @@ const state = reactive<LocalState>({
 });
 const { targets, readonly } = useSchemaEditorContext();
 const { addTab } = useTabs();
-const { getSchemaStatus, getTableStatus } = useEditStatus();
+const { markEditStatus, removeEditStatus, getSchemaStatus, getTableStatus } =
+  useEditStatus();
 
 const treeContainerElRef = ref<HTMLElement>();
 const { height: treeContainerHeight } = useElementSize(
@@ -181,80 +182,82 @@ const tableList = computed(() => {
   return metadata.value.schemas.flatMap((schema) => schema.tables);
 });
 
+const metadataForSchemaOrTable = (
+  schema: SchemaMetadata,
+  table?: TableMetadata
+) => {
+  return {
+    database: metadata.value,
+    schema,
+    table,
+  };
+};
+const statusForSchema = (schema: SchemaMetadata) => {
+  return getSchemaStatus(database.value, metadataForSchemaOrTable(schema));
+};
+const statusForTable = (schema: SchemaMetadata, table: TableMetadata) => {
+  return getTableStatus(
+    database.value,
+    metadataForSchemaOrTable(schema, table) as any
+  );
+};
+
 const contextMenuOptions = computed(() => {
+  const { treeNode } = contextMenu;
+  if (!treeNode) return;
+
+  if (treeNode.type === "schema") {
+    const options = [];
+    if (engine.value === Engine.POSTGRES) {
+      const { schema } = treeNode;
+
+      const status = statusForSchema(schema);
+      const isDropped = status === "dropped";
+      if (isDropped) {
+        options.push({
+          key: "restore",
+          label: t("schema-editor.actions.restore"),
+        });
+      } else {
+        options.push({
+          key: "create-table",
+          label: t("schema-editor.actions.create-table"),
+          disabled: readonly.value,
+        });
+        options.push({
+          key: "drop",
+          label: t("schema-editor.actions.drop-schema"),
+          disabled: readonly.value,
+        });
+      }
+    }
+    return options;
+  } else if (treeNode.type === "table") {
+    const { schema, table } = treeNode;
+
+    const status = statusForTable(schema, table);
+    const isDropped = status === "dropped";
+    const options = [];
+    if (isDropped) {
+      options.push({
+        key: "restore",
+        label: t("schema-editor.actions.restore"),
+      });
+    } else {
+      options.push({
+        key: "rename",
+        label: t("schema-editor.actions.rename"),
+      });
+      options.push({
+        key: "drop",
+        label: t("schema-editor.actions.drop-table"),
+        disabled: readonly.value,
+      });
+    }
+    return options;
+  }
+
   return [];
-  // const treeNode = contextMenu.treeNode;
-  // if (isUndefined(treeNode)) {
-  //   return [];
-  // }
-
-  // if (treeNode.type === "schema") {
-  //   const options = [];
-  //   if (engine.value === Engine.POSTGRES) {
-  //     const schema = schemaList.value.find(
-  //       (schema) => schema.id === treeNode.schemaId
-  //     );
-  //     if (!schema) {
-  //       return [];
-  //     }
-
-  //     const isDropped = schema.status === "dropped";
-  //     if (isDropped) {
-  //       options.push({
-  //         key: "restore",
-  //         label: t("schema-editor.actions.restore"),
-  //       });
-  //     } else {
-  //       options.push({
-  //         key: "create-table",
-  //         label: t("schema-editor.actions.create-table"),
-  //         disabled: readonly.value,
-  //       });
-  //       options.push({
-  //         key: "drop",
-  //         label: t("schema-editor.actions.drop-schema"),
-  //         disabled: readonly.value,
-  //       });
-  //     }
-  //   }
-  //   return options;
-  // } else if (treeNode.type === "table") {
-  //   const schema = schemaList.value.find(
-  //     (schema) => schema.id === treeNode.schemaId
-  //   );
-  //   if (!schema) {
-  //     return [];
-  //   }
-
-  //   const table = schema.tableList.find(
-  //     (table) => table.id === treeNode.tableId
-  //   );
-  //   if (!table) {
-  //     return [];
-  //   }
-
-  //   const isDropped = table.status === "dropped";
-  //   const options = [];
-  //   if (isDropped) {
-  //     options.push({
-  //       key: "restore",
-  //       label: t("schema-editor.actions.restore"),
-  //     });
-  //   } else {
-  //     options.push({
-  //       key: "rename",
-  //       label: t("schema-editor.actions.rename"),
-  //     });
-  //     options.push({
-  //       key: "drop",
-  //       label: t("schema-editor.actions.drop-table"),
-  //       disabled: readonly.value,
-  //     });
-  //   }
-  //   return options;
-  // }
-
-  // return [];
 });
 
 onMounted(() => {
@@ -358,10 +361,7 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
       if (engine.value !== Engine.POSTGRES) {
         label = t("db.tables");
       }
-      const status = getSchemaStatus(database.value, {
-        database: metadata.value,
-        schema,
-      });
+      const status = statusForSchema(schema);
       if (status === "created") {
         additionalClassList.push("text-green-700");
       } else if (status === "dropped") {
@@ -374,11 +374,7 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
     const { schema, table } = treeNode as TreeNodeForTable;
 
     if (table) {
-      const status = getTableStatus(database.value, {
-        database: metadata.value,
-        schema,
-        table,
-      });
+      const status = statusForTable(schema, table);
       if (status === "created") {
         additionalClassList.push("text-green-700");
       } else if (status === "dropped") {
@@ -602,57 +598,53 @@ const openTabForTreeNode = (node: TreeNode) => {
 };
 
 const handleContextMenuDropdownSelect = async (key: string) => {
-  const treeNode = contextMenu.treeNode;
+  const { treeNode } = contextMenu;
   if (!treeNode) {
     return;
   }
 
-  // if (treeNode.type === "schema") {
-  //   if (key === "create-table") {
-  //     state.tableNameModalContext = {
-  //       parentName: branchSchema.value.branch.name,
-  //       schemaId: treeNode.schemaId,
-  //     };
-  //   } else if (key === "drop") {
-  //     schemaEditorV1Store.dropSchema(
-  //       branchSchema.value.branch.name,
-  //       treeNode.schemaId
-  //     );
-  //   } else if (key === "restore") {
-  //     const schema = schemaEditorV1Store.getSchema(
-  //       branchSchema.value.branch.name,
-  //       treeNode.schemaId
-  //     );
-  //     if (!schema) {
-  //       return;
-  //     }
-  //     schema.status = "normal";
-  //   }
-  // } else if (treeNode.type === "table") {
-  //   if (key === "rename") {
-  //     state.tableNameModalContext = {
-  //       parentName: branchSchema.value.branch.name,
-  //       schemaId: treeNode.schemaId,
-  //       tableId: treeNode.tableId,
-  //     };
-  //   } else if (key === "drop") {
-  //     schemaEditorV1Store.dropTable(
-  //       branchSchema.value.branch.name,
-  //       treeNode.schemaId,
-  //       treeNode.tableId
-  //     );
-  //   } else if (key === "restore") {
-  //     const table = schemaEditorV1Store.getTable(
-  //       branchSchema.value.branch.name,
-  //       treeNode.schemaId,
-  //       treeNode.tableId
-  //     );
-  //     if (!table) {
-  //       return;
-  //     }
-  //     table.status = "normal";
-  //   }
-  // }
+  if (treeNode.type === "schema") {
+    const { schema } = treeNode;
+    if (key === "create-table") {
+      // state.tableNameModalContext = {
+      //   parentName: branchSchema.value.branch.name,
+      //   schemaId: treeNode.schemaId,
+      // };
+    } else if (key === "drop") {
+      markEditStatus(
+        database.value,
+        metadataForSchemaOrTable(schema),
+        "dropped"
+      );
+    } else if (key === "restore") {
+      removeEditStatus(
+        database.value,
+        metadataForSchemaOrTable(schema),
+        /* recursive */ false
+      );
+    }
+  } else if (treeNode.type === "table") {
+    const { schema, table } = treeNode;
+    if (key === "rename") {
+      //   state.tableNameModalContext = {
+      //     parentName: branchSchema.value.branch.name,
+      //     schemaId: treeNode.schemaId,
+      //     tableId: treeNode.tableId,
+      //   };
+    } else if (key === "drop") {
+      markEditStatus(
+        database.value,
+        metadataForSchemaOrTable(schema, table),
+        "dropped"
+      );
+    } else if (key === "restore") {
+      removeEditStatus(
+        database.value,
+        metadataForSchemaOrTable(schema, table),
+        /* recursive */ false
+      );
+    }
+  }
   contextMenu.showDropdown = false;
 };
 

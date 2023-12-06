@@ -59,7 +59,7 @@ export const useEditStatus = () => {
       table?: TableMetadata;
       column?: ColumnMetadata;
     },
-    recursive = false
+    recursive: boolean
   ) => {
     const key = keyForResource(database, metadata);
     const keys = recursive

@@ -140,10 +140,10 @@ import {
   TableMetadata,
 } from "@/types/proto/v1/database_service";
 import { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
-import { emptyDatabase } from "@/types/v1/database";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import { useSchemaEditorContext } from "../context";
+import { useEditStatus } from "../edit";
 import { DatabaseTabContext } from "../types";
 import TableList from "./TableList";
 
@@ -160,7 +160,6 @@ type SubTabType = "table-list" | "schema-diagram";
 
 interface LocalState {
   selectedSubTab: SubTabType;
-  // selectedSchema: string;
   showFeatureModal: boolean;
   showSchemaTemplateDrawer: boolean;
   tableNameModalContext?: {
@@ -173,6 +172,7 @@ interface LocalState {
 
 const context = useSchemaEditorContext();
 const { readonly } = context;
+const { markEditStatus, removeEditStatus, getSchemaStatus } = useEditStatus();
 const currentTab = computed(() => {
   return context.currentTab.value as DatabaseTabContext;
 });
@@ -208,9 +208,18 @@ const shouldShowSchemaSelector = computed(() => {
 });
 
 const allowCreateTable = computed(() => {
+  const schema = selectedSchema.value;
+  if (!schema) return false;
   if (engine.value === Engine.POSTGRES) {
+    const status = getSchemaStatus(database.value, {
+      database: metadata.value,
+      schema,
+    });
+
     return (
-      schemaList.value.length > 0 && selectedSchema.value && true // TODO:  selectedSchema.value.status !== "dropped"
+      schemaList.value.length > 0 &&
+      selectedSchema.value &&
+      status !== "dropped"
     );
   }
   return true;
