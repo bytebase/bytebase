@@ -4,6 +4,7 @@ import {
   ColumnMetadata,
   DatabaseMetadata,
   SchemaMetadata,
+  TableConfig,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
 import { useSchemaEditorContext } from "./context";
@@ -130,4 +131,14 @@ export const useEditStatus = () => {
     getTableStatus,
     getColumnStatus,
   };
+};
+
+export const upsertTableConfig = (
+  database: DatabaseMetadata,
+  schema: SchemaMetadata,
+  table: TableMetadata,
+  config: TableConfig | undefined
+) => {
+  // TODO
+  console.log("upsertTableConfig", database, schema, table, config);
 };

@@ -62,6 +62,7 @@
 
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
+import { cloneDeep } from "lodash-es";
 import { DataTableColumn, NDataTable } from "naive-ui";
 import { computed, h, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -82,7 +83,7 @@ import { bytesToString } from "@/utils";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import TableNameModal from "../../Modals/TableNameModal.vue";
 import { useSchemaEditorContext } from "../../context";
-import { useEditStatus } from "../../edit";
+import { upsertTableConfig, useEditStatus } from "../../edit";
 import { useTabs } from "../../tabs";
 import { DatabaseTabContext } from "../../types";
 import ClassificationCell from "../TableColumnEditor/components/ClassificationCell.vue";
@@ -162,6 +163,22 @@ const onClassificationSelect = (classificationId: string) => {
   }
   table.classification = classificationId;
   state.activeTableName = undefined;
+  markEditStatus(props.database, metadataForTable(table), "updated");
+};
+
+const metadataForTable = (table: TableMetadata) => {
+  return {
+    ...currentTab.value.metadata,
+    schema: props.schema,
+    table,
+  };
+};
+const statusForTable = (table: TableMetadata) => {
+  return getTableStatus(props.database, metadataForTable(table));
+};
+
+const classesForRow = (table: TableMetadata, index: number) => {
+  return statusForTable(table);
 };
 
 const columns = computed(() => {
@@ -189,12 +206,15 @@ const columns = computed(() => {
         return h(ClassificationCell, {
           classification: table.classification,
           readonly: readonly.value,
-          disabled: !disableChangeTable(table),
+          disabled: isDroppedTable(table),
           classificationConfig:
             classificationConfig.value ??
             DataClassificationConfig.fromPartial({}),
           onEdit: () => showClassificationDrawer(table),
-          onRemove: () => (table.classification = ""),
+          onRemove: () => {
+            table.classification = "";
+            markEditStatus(props.database, metadataForTable(table), "updated");
+          },
         });
       },
     },
@@ -261,21 +281,6 @@ const columns = computed(() => {
   return columns.filter((header) => !header.hide);
 });
 
-const metadataForTable = (table: TableMetadata) => {
-  return {
-    ...currentTab.value.metadata,
-    schema: props.schema,
-    table,
-  };
-};
-const statusForTable = (table: TableMetadata) => {
-  return getTableStatus(props.database, metadataForTable(table));
-};
-
-const classesForRow = (table: TableMetadata, index: number) => {
-  return statusForTable(table);
-};
-
 const handleTableItemClick = (table: TableMetadata) => {
   addTab({
     type: "table",
@@ -303,37 +308,39 @@ const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
     state.showFeatureModal = true;
     return;
   }
-  if (!template.table || template.engine !== engine.value) {
+  if (!template.table) {
+    return;
+  }
+  if (template.engine !== engine.value) {
     return;
   }
 
-  // const tableEdit = convertTableMetadataToTable(
-  //   template.table,
-  //   "created",
-  //   template.config
-  // );
+  const table = cloneDeep(template.table);
+  upsertTableConfig(
+    currentTab.value.metadata.database,
+    props.schema,
+    table,
+    template.config
+  );
 
-  // const selectedSchema = schemaList.value.find(
-  //   (schema) => schema.id === props.schemaId
-  // );
-  // if (selectedSchema) {
-  //   selectedSchema.tableList.push(tableEdit);
-  //   editorStore.addTab({
-  //     id: generateUniqueTabId(),
-  //     type: SchemaEditorTabType.TabForTable,
-  //     parentName: currentTab.value.parentName,
-  //     schemaId: props.schemaId,
-  //     tableId: tableEdit.id,
-  //     name: template.table.name,
-  //   });
-  // }
+  /* eslint-disable-next-line vue/no-mutating-props */
+  props.schema.tables.push(table);
+  const metadata = {
+    database: currentTab.value.metadata.database,
+    schema: props.schema,
+    table,
+  };
+  markEditStatus(props.database, metadata, "created");
+  addTab({
+    type: "table",
+    name: table.name,
+    database: props.database,
+    metadata,
+  });
 };
 
 const isDroppedTable = (table: TableMetadata) => {
   return statusForTable(table) === "dropped";
-};
-const disableChangeTable = (table: TableMetadata): boolean => {
-  return isDroppedTable(table);
 };
 </script>
 

@@ -1,13 +1,17 @@
 <template>
   <div
-    class="w-full h-full border rounded-lg overflow-hidden relative"
+    class="w-full h-full flex flex-col border rounded-lg overflow-hidden relative"
     v-bind="$attrs"
   >
     <MaskSpinner v-if="mergedLoading" />
 
+    <div>
+      {{ Array.from(context.dirtyPaths.value.entries()) }}
+    </div>
+
     <Splitpanes
       v-if="state.initialized"
-      class="default-theme w-full h-full flex flex-row overflow-hidden relative"
+      class="default-theme w-full flex-1 flex flex-row overflow-hidden relative"
     >
       <Pane min-size="15" size="25">
         <Aside />
@@ -218,7 +222,7 @@ const targets = computed(() => {
   return [];
 });
 
-provideSchemaEditorContext({
+const context = provideSchemaEditorContext({
   targets,
   project: toRef(props, "project"),
   resourceType: toRef(props, "resourceType"),
