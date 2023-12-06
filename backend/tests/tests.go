@@ -24,8 +24,8 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
 	// Import pg driver.
-	// init() in pgx/v4/stdlib will register it's pgx driver.
-	_ "github.com/jackc/pgx/v4/stdlib"
+	// init() in pgx/v5/stdlib will register it's pgx driver.
+	_ "github.com/jackc/pgx/v5/stdlib"
 
 	"github.com/bytebase/bytebase/backend/common"
 	component "github.com/bytebase/bytebase/backend/component/config"
