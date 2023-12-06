@@ -109,16 +109,13 @@
 <script lang="ts" setup>
 import { asyncComputed } from "@vueuse/core";
 import dayjs from "dayjs";
-import { cloneDeep, head, isEqual, uniqueId } from "lodash-es";
+import { head, isEqual } from "lodash-es";
 import { NButton, NDivider, NInput, NTag } from "naive-ui";
 import { CSSProperties, computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
-import {
-  mergeSchemaEditToMetadata,
-  validateDatabaseMetadata,
-} from "@/components/SchemaEditorV1/utils";
+import { validateDatabaseMetadata } from "@/components/SchemaEditorV1/utils";
 import TargetDatabasesSelectPanel from "@/components/SyncDatabaseSchema/TargetDatabasesSelectPanel.vue";
 import { branchServiceClient } from "@/grpcweb";
 import { pushNotification, useDatabaseV1Store } from "@/store";
@@ -212,10 +209,6 @@ const branchIdInputStyle = computed(() => {
 
   return style;
 });
-
-// const prepareBaselineDatabase = async () => {
-//   await databaseStore.getOrFetchDatabaseByName(branch.value.baselineDatabase);
-// };
 
 watch(
   () => props.branch.branchId,
@@ -312,61 +305,47 @@ const handleCancelEdit = async () => {
 };
 
 const handleSaveBranch = async () => {
-  // if (!state.isEditing) {
-  //   return;
-  // }
-  // if (state.isSaving) {
-  //   return;
-  // }
-  // const check = runSQLCheck.value;
-  // if (check && !(await check())) {
-  //   return;
-  // }
-  // const updateMask = [];
-  // const schemaEditorV1Store = useSchemaEditorV1Store();
-  // const branchSchema = schemaEditorV1Store.resourceMap["branch"].get(
-  //   props.branch.name
-  // );
-  // if (!branchSchema) {
-  //   return;
-  // }
-  // const baselineMetadata =
-  //   branchSchema.branch.baselineSchemaMetadata ||
-  //   DatabaseMetadata.fromPartial({});
-  // const mergedMetadata = mergeSchemaEditToMetadata(
-  //   branchSchema.schemaList,
-  //   cloneDeep(baselineMetadata)
-  // );
-  // const validationMessages = validateDatabaseMetadata(mergedMetadata);
-  // if (validationMessages.length > 0) {
-  //   pushNotification({
-  //     module: "bytebase",
-  //     style: "WARN",
-  //     title: "Invalid schema design",
-  //     description: validationMessages.join("\n"),
-  //   });
-  //   return;
-  // }
-  // if (!isEqual(mergedMetadata, branch.value.schemaMetadata)) {
-  //   updateMask.push("schema_metadata");
-  // }
-  // state.isSaving = true;
-  // if (updateMask.length !== 0) {
-  //   await branchStore.updateBranch(
-  //     Branch.fromPartial({
-  //       name: branch.value.name,
-  //       schemaMetadata: mergedMetadata,
-  //     }),
-  //     updateMask
-  //   );
-  //   pushNotification({
-  //     module: "bytebase",
-  //     style: "SUCCESS",
-  //     title: t("schema-designer.message.updated-succeed"),
-  //   });
-  // }
-  // state.isSaving = false;
-  // state.isEditing = false;
+  if (!state.isEditing) {
+    return;
+  }
+  if (state.isSaving) {
+    return;
+  }
+  const check = runSQLCheck.value;
+  if (check && !(await check())) {
+    return;
+  }
+  const updateMask = [];
+  const editing =
+    props.branch.schemaMetadata ?? DatabaseMetadata.fromPartial({});
+  const validationMessages = validateDatabaseMetadata(editing);
+  if (validationMessages.length > 0) {
+    pushNotification({
+      module: "bytebase",
+      style: "WARN",
+      title: "Invalid schema design",
+      description: validationMessages.join("\n"),
+    });
+    return;
+  }
+  updateMask.push("schema_metadata");
+  state.isSaving = true;
+  if (updateMask.length !== 0) {
+    await branchStore.updateBranch(
+      Branch.fromPartial({
+        name: props.branch.name,
+        schemaMetadata: editing,
+      }),
+      updateMask
+    );
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("schema-designer.message.updated-succeed"),
+    });
+  }
+  state.isSaving = false;
+  state.isEditing = false;
 };
 
 const handleMergeAfterConflictResolved = (branchName: string) => {
