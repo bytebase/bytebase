@@ -1,12 +1,16 @@
+import { pull, pullAt } from "lodash-es";
 import { computed } from "vue";
 import { ComposedDatabase } from "@/types";
 import {
+  ColumnConfig,
   ColumnMetadata,
   DatabaseMetadata,
+  IndexMetadata,
   SchemaMetadata,
   TableConfig,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
+import { upsertArray } from "@/utils";
 import { useSchemaEditorContext } from "./context";
 import { EditStatus } from "./types";
 
@@ -141,4 +145,60 @@ export const upsertTableConfig = (
 ) => {
   // TODO
   console.log("upsertTableConfig", database, schema, table, config);
+};
+export const upsertColumnConfig = (
+  database: DatabaseMetadata,
+  schema: SchemaMetadata,
+  table: TableMetadata,
+  column: ColumnMetadata,
+  config: ColumnConfig | undefined
+) => {
+  // TODO
+  console.log("upsertColumnConfig", database, schema, table, column, config);
+};
+
+export const upsertColumnPrimaryKey = (
+  table: TableMetadata,
+  columnName: string
+) => {
+  const pkIndex = table.indexes.findIndex((idx) => idx.primary);
+  if (pkIndex < 0) {
+    table.indexes.push(
+      IndexMetadata.fromPartial({
+        primary: true,
+        name: "PRIMARY",
+        expressions: [columnName],
+      })
+    );
+  } else {
+    const pk = table.indexes[pkIndex];
+    upsertArray(pk.expressions, columnName);
+  }
+};
+export const removeColumnPrimaryKey = (
+  table: TableMetadata,
+  columnName: string
+) => {
+  const pkIndex = table.indexes.findIndex((idx) => idx.primary);
+  if (pkIndex < 0) {
+    return;
+  }
+  const pk = table.indexes[pkIndex];
+  pull(pk.expressions, columnName);
+  if (pk.expressions.length === 0) {
+    pullAt(table.indexes, pkIndex);
+  }
+};
+export const removeColumnForeignKey = (
+  table: TableMetadata,
+  columnName: string
+) => {
+  for (let i = 0; i < table.foreignKeys.length; i++) {
+    const fk = table.foreignKeys[i];
+    const columnIndex = fk.columns.indexOf(columnName);
+    if (columnIndex < 0) continue;
+    pullAt(fk.columns, columnIndex);
+    pullAt(fk.referencedColumns, columnIndex);
+  }
+  table.foreignKeys = table.foreignKeys.filter((fk) => fk.columns.length > 0);
 };

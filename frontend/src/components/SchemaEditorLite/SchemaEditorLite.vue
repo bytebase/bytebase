@@ -4,11 +4,6 @@
     v-bind="$attrs"
   >
     <MaskSpinner v-if="mergedLoading" />
-
-    <div>
-      {{ Array.from(context.dirtyPaths.value.entries()) }}
-    </div>
-
     <Splitpanes
       v-if="state.initialized"
       class="default-theme w-full flex-1 flex flex-row overflow-hidden relative"

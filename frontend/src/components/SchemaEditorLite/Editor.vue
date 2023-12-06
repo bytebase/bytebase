@@ -5,13 +5,18 @@
         @update:table-search-pattern="handleTableSearchPattern"
         @update:column-search-pattern="handleColumnSearchPattern"
       />
-      <div :key="currentTab.id" class="w-full flex-1 relative overflow-hidden">
+      <div
+        class="w-full flex-1 relative overflow-hidden"
+        :data-key="currentTab.id"
+      >
         <DatabaseEditor
           v-if="currentTab.type === 'database'"
+          :key="currentTab.id"
           :search-pattern="state.tableSearchPattern"
         />
         <TableEditor
           v-if="currentTab.type === 'table'"
+          :key="currentTab.id"
           :search-pattern="state.columnSearchPattern"
         />
       </div>

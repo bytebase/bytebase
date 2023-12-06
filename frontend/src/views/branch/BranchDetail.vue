@@ -5,10 +5,11 @@
     </template>
     <template v-else-if="branch">
       <BranchDetailView
+        :key="detailViewKey"
         :project-id="getProjectName(project?.name ?? '')"
         :branch="branch"
         v-bind="$attrs"
-        @update:branch="branch = $event"
+        @update:branch="handleUpdateBranch"
         @update:branch-id="handleUpdateBranchId"
       />
     </template>
@@ -17,6 +18,7 @@
 
 <script lang="ts" setup>
 import { useTitle } from "@vueuse/core";
+import { uniqueId } from "lodash-es";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -25,6 +27,7 @@ import BranchDetailView from "@/components/Branch/BranchDetailView.vue";
 import { useProjectV1Store } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
 import { getProjectName } from "@/store/modules/v1/common";
+import { Branch } from "@/types/proto/v1/branch_service";
 import { idFromSlug } from "@/utils";
 
 const props = defineProps<{
@@ -38,11 +41,13 @@ const projectStore = useProjectV1Store();
 const branchStore = useBranchStore();
 const branchFullName = ref<string>("");
 const ready = ref<boolean>(false);
+const detailViewKey = ref(uniqueId());
 
 const isCreating = computed(() => props.branchName === "new");
-const branch = computed(() => {
-  return branchStore.getBranchByName(branchFullName.value);
-});
+// const branch = computed(() => {
+//   return branchStore.getBranchByName(branchFullName.value);
+// });
+const branch = ref<Branch>();
 const project = computed(() => {
   if (props.projectSlug === "-") {
     return;
@@ -52,6 +57,10 @@ const project = computed(() => {
   );
 });
 
+const handleUpdateBranch = (br: Branch) => {
+  branch.value = br;
+  detailViewKey.value = uniqueId();
+};
 const handleUpdateBranchId = (id: string) => {
   router.replace({
     params: {
@@ -89,11 +98,12 @@ watch(
       return;
     }
 
-    const branch = await branchStore.fetchBranchByName(
+    const br = await branchStore.fetchBranchByName(
       branchFullName.value,
       false /* useCache */
     );
-    if (!branch) {
+    branch.value = br;
+    if (!br) {
       router.replace("error.404");
     }
     ready.value = true;

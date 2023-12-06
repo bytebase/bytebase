@@ -82,17 +82,25 @@
 </template>
 
 <script lang="ts" setup>
+import { cloneDeep, pull } from "lodash-es";
 import { computed, reactive, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { hasFeature } from "@/store/modules";
+import { hasFeature, pushNotification } from "@/store/modules";
 import { Engine } from "@/types/proto/v1/common";
 import { ColumnMetadata } from "@/types/proto/v1/database_service";
 import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
-import { instanceV1AllowsReorderColumns } from "@/utils";
+import { arraySwap, instanceV1AllowsReorderColumns } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import { useSchemaEditorContext } from "../context";
-import { useEditStatus } from "../edit";
-import { TableTabContext } from "../types";
+import {
+  upsertColumnConfig,
+  removeColumnForeignKey,
+  removeColumnPrimaryKey,
+  upsertColumnPrimaryKey,
+  useEditStatus,
+} from "../edit";
+import { EditStatus, TableTabContext } from "../types";
 import TableColumnEditor from "./TableColumnEditor";
 
 const props = withDefaults(
@@ -110,6 +118,7 @@ interface LocalState {
   showFeatureModal: boolean;
 }
 
+const { t } = useI18n();
 const context = useSchemaEditorContext();
 const { project, readonly } = context;
 
@@ -165,6 +174,10 @@ const statusForTable = () => {
 const statusForColumn = (column: ColumnMetadata) => {
   return getColumnStatus(database.value, metadataForColumn(column));
 };
+const markColumnStatus = (column: ColumnMetadata, status: EditStatus) => {
+  const { metadata } = currentTab.value;
+  markEditStatus(database.value, { ...metadata, column }, status);
+};
 
 const isDroppedSchema = computed(() => {
   return statusForSchema() === "dropped";
@@ -180,10 +193,6 @@ const getColumnItemComputedClassList = (column: ColumnMetadata): string => {
 
 const checkColumnHasForeignKey = (column: ColumnMetadata): boolean => {
   return foreignKeyList.value.flatMap((fk) => fk.columns).includes(column.name);
-  // const columnIdList = flatten(
-  //   foreignKeyList.value.map((fk) => fk.columnIdList)
-  // );
-  // return columnIdList.includes(column.id);
 };
 
 const getReferencedForeignKeyName = (column: ColumnMetadata) => {
@@ -197,20 +206,9 @@ const getReferencedForeignKeyName = (column: ColumnMetadata) => {
     return "";
   }
   const index = fk.columns.indexOf(column.name);
-  // const fk = foreignKeyList.value.find(
-  //   (fk) =>
-  //     fk.columnIdList.find((columnId) => columnId === column.id) !== undefined
-  // );
-  // const index = fk?.columnIdList.findIndex(
-  //   (columnId) => columnId === column.id
-  // );
   if (index < 0) {
     return "";
   }
-
-  // if (isUndefined(fk) || isUndefined(index) || index < 0) {
-  //   return "";
-  // }
 
   const database = currentTab.value.metadata.database;
   const referencedSchema = database.schemas.find(
@@ -219,9 +217,6 @@ const getReferencedForeignKeyName = (column: ColumnMetadata) => {
   if (!referencedSchema) {
     return "";
   }
-  // const referencedSchema = parentResource.value.schemaList.find(
-  //   (schema) => schema.id === fk.referencedSchemaId
-  // );
 
   const referencedTable = referencedSchema.tables.find(
     (table) => table.name === fk.referencedTable
@@ -229,19 +224,10 @@ const getReferencedForeignKeyName = (column: ColumnMetadata) => {
   if (!referencedTable) {
     return "";
   }
-  // const referencedTable = referencedSchema?.tableList.find(
-  //   (table) => table.id === fk.referencedTableId
-  // );
-  // if (!referencedTable) {
-  //   return "";
-  // }
 
   const referencedColumn = referencedTable.columns.find(
     (column) => column.name === fk.referencedColumns[index]
   );
-  // const referColumn = referencedTable.columnList.find(
-  //   (column) => column.id === fk.referencedColumnIdList[index]
-  // );
 
   if (engine.value === Engine.MYSQL) {
     return `${referencedTable.name}(${referencedColumn?.name})`;
@@ -275,15 +261,13 @@ const disableAlterColumn = (column: ColumnMetadata): boolean => {
 };
 
 const setColumnPrimaryKey = (column: ColumnMetadata, isPrimaryKey: boolean) => {
-  // if (isPrimaryKey) {
-  //   column.nullable = false;
-  //   table.value.primaryKey.columnIdList.push(column.id);
-  // } else {
-  //   table.value.primaryKey.columnIdList =
-  //     table.value.primaryKey.columnIdList.filter(
-  //       (columnId) => columnId !== column.id
-  //     );
-  // }
+  if (isPrimaryKey) {
+    column.nullable = false;
+    upsertColumnPrimaryKey(table.value, column.name);
+  } else {
+    removeColumnPrimaryKey(table.value, column.name);
+  }
+  markColumnStatus(column, "updated");
 };
 
 const handleAddColumn = () => {
@@ -310,15 +294,23 @@ const handleApplyColumnTemplate = (
     state.showFeatureModal = true;
     return;
   }
-  if (template.engine !== engine.value || !template.column) {
+  if (!template.column) {
     return;
   }
-  // const column = convertColumnMetadataToColumn(
-  //   template.column,
-  //   "created",
-  //   template.config
-  // );
-  // table.value.columnList.push(column);
+  if (template.engine !== engine.value) {
+    return;
+  }
+  const column = cloneDeep(template.column);
+  table.value.columns.push(column);
+  const { metadata } = currentTab.value;
+  upsertColumnConfig(
+    metadata.database,
+    metadata.schema,
+    metadata.table,
+    column,
+    template.config
+  );
+  markColumnStatus(column, "created");
 };
 
 const gotoForeignKeyReferencedTable = (column: ColumnMetadata) => {
@@ -379,48 +371,39 @@ const handleEditColumnForeignKey = (column: ColumnMetadata) => {
 };
 
 const handleDropColumn = (column: ColumnMetadata) => {
-  // // Disallow to drop the last column.
-  // if (
-  //   table.value.columnList.filter((column) => column.status !== "dropped")
-  //     .length === 1
-  // ) {
-  //   pushNotification({
-  //     module: "bytebase",
-  //     style: "CRITICAL",
-  //     title: t("schema-editor.message.cannot-drop-the-last-column"),
-  //   });
-  //   return;
-  // }
-  // if (column.status === "created") {
-  //   table.value.columnList = table.value.columnList.filter(
-  //     (item) => item !== column
-  //   );
-  //   table.value.primaryKey.columnIdList =
-  //     table.value.primaryKey.columnIdList.filter(
-  //       (columnId) => columnId !== column.id
-  //     );
-  //   const foreignKeyList = table.value.foreignKeyList.filter(
-  //     (fk) => fk.tableId === currentTab.value.tableId
-  //   );
-  //   for (const foreignKey of foreignKeyList) {
-  //     const columnRefIndex = foreignKey.columnIdList.findIndex(
-  //       (columnId) => columnId === column.id
-  //     );
-  //     if (columnRefIndex > -1) {
-  //       foreignKey.columnIdList.splice(columnRefIndex, 1);
-  //       foreignKey.referencedColumnIdList.splice(columnRefIndex, 1);
-  //     }
-  //   }
-  // } else {
-  //   column.status = "dropped";
-  // }
+  // Disallow to drop the last column.
+  const nonDroppedColumns = table.value.columns.filter((column) => {
+    return statusForColumn(column) !== "dropped";
+  });
+  if (nonDroppedColumns.length === 1) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: t("schema-editor.message.cannot-drop-the-last-column"),
+    });
+    return;
+  }
+  const status = statusForColumn(column);
+  if (status === "created") {
+    pull(table.value.columns, column);
+    table.value.columns = table.value.columns.filter((col) => col !== column);
+
+    removeColumnPrimaryKey(table.value, column.name);
+    removeColumnForeignKey(table.value, column.name);
+  } else {
+    markColumnStatus(column, "dropped");
+  }
 };
 
 const handleRestoreColumn = (column: ColumnMetadata) => {
-  // if (column.status === "created") {
-  //   return;
-  // }
-  // column.status = "normal";
+  if (statusForColumn(column) === "created") {
+    return;
+  }
+  removeEditStatus(
+    database.value,
+    metadataForColumn(column),
+    /* recursive */ false
+  );
 };
 
 const handleReorderColumn = (
@@ -428,10 +411,10 @@ const handleReorderColumn = (
   index: number,
   delta: -1 | 1
 ) => {
-  // const target = index + delta;
-  // const { columnList } = table.value;
-  // if (target < 0) return;
-  // if (target >= columnList.length) return;
-  // arraySwap(columnList, index, target);
+  const target = index + delta;
+  const { columns } = table.value;
+  if (target < 0) return;
+  if (target >= columns.length) return;
+  arraySwap(columns, index, target);
 };
 </script>

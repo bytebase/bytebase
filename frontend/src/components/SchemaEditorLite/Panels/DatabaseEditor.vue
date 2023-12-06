@@ -82,17 +82,14 @@
         />
       </template>
       <template v-else-if="state.selectedSubTab === 'schema-diagram'">
-        <!-- <SchemaDiagram
-          :key="currentTab.parentName"
+        <!-- TODO: bring status coloring back -->
+        <SchemaDiagram
           :database="database"
-          :database-metadata="databaseMetadata"
-          :schema-status="schemaStatus"
-          :table-status="tableStatus"
-          :column-status="columnStatus"
+          :database-metadata="metadata"
           :editable="true"
           @edit-table="tryEditTable"
           @edit-column="tryEditColumn"
-        /> -->
+        />
       </template>
     </div>
   </div>
@@ -129,7 +126,7 @@
 
 <script lang="ts" setup>
 import { head } from "lodash-es";
-import { computed, reactive, watch } from "vue";
+import { computed, nextTick, reactive, watch } from "vue";
 import { SchemaDiagramIcon } from "@/components/SchemaDiagram";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { hasFeature } from "@/store";
@@ -144,6 +141,7 @@ import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import { useSchemaEditorContext } from "../context";
 import { useEditStatus } from "../edit";
+import { useTabs } from "../tabs";
 import { DatabaseTabContext } from "../types";
 import TableList from "./TableList";
 
@@ -172,7 +170,8 @@ interface LocalState {
 
 const context = useSchemaEditorContext();
 const { readonly } = context;
-const { markEditStatus, removeEditStatus, getSchemaStatus } = useEditStatus();
+const { getSchemaStatus } = useEditStatus();
+const { addTab } = useTabs();
 const currentTab = computed(() => {
   return context.currentTab.value as DatabaseTabContext;
 });
@@ -267,61 +266,40 @@ const handleCreateNewTable = () => {
   }
 };
 
-const handleTableItemClick = (table: TableMetadata) => {
-  // editorStore.addTab({
-  //   id: generateUniqueTabId(),
-  //   type: SchemaEditorTabType.TabForTable,
-  //   parentName: currentTab.value.parentName,
-  //   schemaId: state.selectedSchema,
-  //   tableId: table.id,
-  //   name: table.name,
-  // });
-};
-
-// const {
-//   databaseMetadata,
-//   schemaStatus,
-//   tableStatus,
-//   columnStatus,
-//   editableSchema,
-//   editableTable,
-//   editableColumn,
-// } = useMetadataForDiagram(databaseSchema);
-
-const tryEditTable = async (
-  schemaMeta: SchemaMetadata,
-  tableMeta: TableMetadata
-) => {
-  // const schema = editableSchema(schemaMeta);
-  // const table = editableTable(tableMeta);
-  // if (schema && table) {
-  //   state.selectedSchema = schema.id;
-  //   await nextTick();
-  //   handleTableItemClick(table);
-  // }
+const tryEditTable = async (schema: SchemaMetadata, table: TableMetadata) => {
+  currentTab.value.selectedSchema = schema.name;
+  await nextTick();
+  addTab({
+    type: "table",
+    database: database.value,
+    metadata: {
+      database: metadata.value,
+      schema,
+      table,
+    },
+  });
 };
 
 const tryEditColumn = async (
-  schemaMeta: SchemaMetadata,
-  tableMeta: TableMetadata,
-  columnMeta: ColumnMetadata,
+  schema: SchemaMetadata,
+  table: TableMetadata,
+  column: ColumnMetadata,
   target: "name" | "type"
 ) => {
-  // const schema = editableSchema(schemaMeta);
-  // const table = editableTable(tableMeta);
-  // const column = editableColumn(columnMeta);
-  // if (schema && table && column) {
-  //   await tryEditTable(schemaMeta, tableMeta);
-  //   await nextTick();
-  //   const container = document.querySelector("#table-editor-container");
-  //   const input = container?.querySelector(
-  //     `.column-${column.id} .column-${target}-input`
-  //   ) as HTMLInputElement | undefined;
-  //   if (input) {
-  //     input.focus();
-  //     scrollIntoView(input);
-  //   }
-  // }
+  if (schema && table && column) {
+    await tryEditTable(schema, table);
+
+    // TODO: scroll column into view and focus the input box
+    // await nextTick();
+    // const container = document.querySelector("#table-editor-container");
+    // const input = container?.querySelector(
+    //   `.column-${column.id} .column-${target}-input`
+    // ) as HTMLInputElement | undefined;
+    // if (input) {
+    //   input.focus();
+    //   scrollIntoView(input);
+    // }
+  }
 };
 
 const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {

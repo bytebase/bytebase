@@ -9,7 +9,7 @@
     <NDataTable
       v-bind="$attrs"
       size="small"
-      :row-key="(column: ColumnMetadata) => column.name"
+      :row-key="(column: ColumnMetadata) => (column as any).__id ?? column.name"
       :columns="columns"
       :data="layoutReady ? shownColumnList : []"
       :row-class-name="classesForRow"
@@ -63,7 +63,8 @@
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
 import { DataTableColumn, NCheckbox, NDataTable } from "naive-ui";
-import { computed, h, reactive, ref } from "vue";
+import { v1 as uuidv1 } from "uuid";
+import { computed, h, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import SelectClassificationDrawer from "@/components/SchemaTemplate/SelectClassificationDrawer.vue";
 import SemanticTypesDrawer from "@/components/SensitiveData/components/SemanticTypesDrawer.vue";
@@ -78,6 +79,8 @@ import {
 import { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import ColumnDefaultValueExpressionModal from "../../Modals/ColumnDefaultValueExpressionModal.vue";
 import { useSchemaEditorContext } from "../../context";
+import { useEditStatus } from "../../edit";
+import { EditStatus, TableTabContext } from "../../types";
 import {
   getDefaultValueByKey,
   isTextOfColumnType,
@@ -154,7 +157,13 @@ const state = reactive<LocalState>({
   showLabelsDrawer: false,
 });
 
-const { resourceType } = useSchemaEditorContext();
+const context = useSchemaEditorContext();
+const { resourceType } = context;
+const currentTab = computed(() => {
+  return context.currentTab.value as TableTabContext;
+});
+const { markEditStatus, getColumnStatus } = useEditStatus();
+const database = computed(() => currentTab.value.database);
 const containerElRef = ref<HTMLElement>();
 const tableHeaderElRef = computed(
   () =>
@@ -178,6 +187,20 @@ const { t } = useI18n();
 const subscriptionV1Store = useSubscriptionV1Store();
 const settingStore = useSettingV1Store();
 const editColumnDefaultValueExpressionContext = ref<ColumnMetadata>();
+
+const metadataForColumn = (column: ColumnMetadata) => {
+  return {
+    ...currentTab.value.metadata,
+    column,
+  };
+};
+const statusForColumn = (column: ColumnMetadata) => {
+  return getColumnStatus(database.value, metadataForColumn(column));
+};
+const markColumnStatus = (column: ColumnMetadata, status: EditStatus) => {
+  const { metadata } = currentTab.value;
+  markEditStatus(database.value, { ...metadata, column }, status);
+};
 
 const primaryKey = computed(() => {
   return props.table.indexes.find((idx) => idx.primary);
@@ -239,7 +262,10 @@ const columns = computed(() => {
             "--n-padding-right": "4px",
             "--n-text-color-disabled": "rgb(var(--color-main))",
           },
-          "onUpdate:value": (value) => (column.name = value),
+          "onUpdate:value": (value) => {
+            column.name = value;
+            markColumnStatus(column, "updated");
+          },
         });
       },
     },
@@ -276,7 +302,10 @@ const columns = computed(() => {
             classificationConfig.value ??
             DataClassificationConfig.fromPartial({}),
           onEdit: () => openClassificationDrawer(column),
-          onRemove: () => (column.classification = ""),
+          onRemove: () => {
+            column.classification = "";
+            markColumnStatus(column, "updated");
+          },
         });
       },
     },
@@ -292,7 +321,10 @@ const columns = computed(() => {
           disabled: props.readonly || props.disableAlterColumn(column),
           schemaTemplateColumnTypes: schemaTemplateColumnTypes.value,
           engine: props.engine,
-          "onUpdate:value": (value) => (column.type = value),
+          "onUpdate:value": (value) => {
+            column.type = value;
+            markColumnStatus(column, "updated");
+          },
         });
       },
     },
@@ -329,7 +361,10 @@ const columns = computed(() => {
             "--n-padding-right": "4px",
             "--n-text-color-disabled": "rgb(var(--color-main))",
           },
-          "onUpdate:value": (value) => (column.userComment = value),
+          "onUpdate:value": (value) => {
+            column.userComment = value;
+            markColumnStatus(column, "updated");
+          },
         });
       },
     },
@@ -346,8 +381,10 @@ const columns = computed(() => {
             props.readonly ||
             props.disableAlterColumn(column) ||
             isColumnPrimaryKey(column),
-          "onUpdate:checked": (checked: boolean) =>
-            (column.nullable = !checked),
+          "onUpdate:checked": (checked: boolean) => {
+            column.nullable = !checked;
+            markColumnStatus(column, "updated");
+          },
         });
       },
     },
@@ -462,15 +499,18 @@ const handleColumnDefaultInput = (column: ColumnMetadata, value: string) => {
   ) {
     column.defaultString = value;
     column.defaultExpression = undefined;
+    markColumnStatus(column, "updated");
     return;
   }
   // Otherwise we will treat user's input as expression.
   column.defaultExpression = value;
+  markColumnStatus(column, "updated");
 };
 
 const handleColumnDefaultSelect = (column: ColumnMetadata, key: string) => {
   if (key === "expression") {
     editColumnDefaultValueExpressionContext.value = column;
+    markColumnStatus(column, "updated");
     return;
   }
 
@@ -486,6 +526,7 @@ const handleColumnDefaultSelect = (column: ColumnMetadata, key: string) => {
   if (column.hasDefault && column.defaultNull) {
     column.nullable = true;
   }
+  markColumnStatus(column, "updated");
 };
 
 const handleSelectColumnDefaultValueExpression = (expression: string) => {
@@ -497,6 +538,8 @@ const handleSelectColumnDefaultValueExpression = (expression: string) => {
   column.defaultNull = undefined;
   column.defaultString = undefined;
   column.defaultExpression = expression;
+
+  markColumnStatus(column, "updated");
 };
 
 const openClassificationDrawer = (column: ColumnMetadata) => {
@@ -519,6 +562,7 @@ const onClassificationSelect = (classificationId: string) => {
     return;
   }
   state.pendingUpdateColumn.classification = classificationId;
+  markColumnStatus(state.pendingUpdateColumn, "updated");
 };
 
 const onSemanticTypeApply = async (semanticTypeId: string) => {
@@ -530,6 +574,7 @@ const onSemanticTypeApply = async (semanticTypeId: string) => {
   //   ...state.pendingUpdateColumn.config,
   //   semanticTypeId,
   // });
+  markColumnStatus(state.pendingUpdateColumn, "updated");
 };
 
 const onLabelsApply = (labelsList: { [key: string]: string }[]) => {
@@ -540,6 +585,7 @@ const onLabelsApply = (labelsList: { [key: string]: string }[]) => {
   //   ...state.pendingUpdateColumn.config,
   //   labels: labelsList[0],
   // });
+  markColumnStatus(state.pendingUpdateColumn, "updated");
 };
 
 const onSemanticTypeRemove = async (column: ColumnMetadata) => {
@@ -547,6 +593,7 @@ const onSemanticTypeRemove = async (column: ColumnMetadata) => {
   //   ...column.config,
   //   semanticTypeId: "",
   // });
+  markColumnStatus(column, "updated");
 };
 
 const classesForRow = (column: ColumnMetadata, index: number) => {
@@ -554,9 +601,21 @@ const classesForRow = (column: ColumnMetadata, index: number) => {
 };
 
 const isDroppedColumn = (column: ColumnMetadata): boolean => {
-  return false;
-  // return column.status === "dropped";
+  return statusForColumn(column) === "dropped";
 };
+
+watch(
+  () => props.table.columns,
+  (columns) => {
+    // column.name is editable, so we need to insert another hidden field
+    // as a column's stable unique key.
+    for (let i = 0; i < columns.length; i++) {
+      const c = columns[i] as any;
+      if (!c.__id) c.__id = uuidv1();
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <style lang="postcss" scoped>

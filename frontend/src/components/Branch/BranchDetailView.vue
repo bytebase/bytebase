@@ -71,7 +71,6 @@
 
     <div class="w-full h-[32rem]">
       <SchemaDesignEditorLite
-        :key="schemaEditorKey"
         :project="project"
         :readonly="!state.isEditing"
         :branch="branch"
@@ -173,7 +172,6 @@ const mergeBranchPanelContext = ref<{
   sourceBranchName: string;
   targetBranchName: string;
 }>();
-const schemaEditorKey = ref<string>(uniqueId());
 const selectTargetDatabasesContext = ref<{
   show: boolean;
 }>({
