@@ -1351,6 +1351,7 @@
     }
   },
   "environment": {
+    "all": "All environment",
     "id": "Environment ID",
     "id-description": "The Environment ID is the unique identifier for your environment. You cannot change it after created.",
     "select": "Select environment",
