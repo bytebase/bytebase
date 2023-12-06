@@ -1,20 +1,19 @@
 <template>
   <ArchiveBanner v-if="project.state === State.DELETED" class="py-2" />
-  <HideInStandaloneMode>
-    <template v-if="isDefaultProject">
-      <h1 class="px-6 py-2 text-xl font-bold leading-6 text-main truncate">
-        {{ $t("database.unassigned-databases") }}
-      </h1>
-    </template>
-    <BBAttention
-      v-if="isDefaultProject"
-      class="mx-6 mb-4"
-      :style="'INFO'"
-      :title="$t('project.overview.info-slot-content')"
-    />
-  </HideInStandaloneMode>
-
   <div class="p-6 h-full overflow-auto">
+    <HideInStandaloneMode>
+      <template v-if="isDefaultProject">
+        <h1 class="mb-4 text-xl font-bold leading-6 text-main truncate">
+          {{ $t("database.unassigned-databases") }}
+        </h1>
+      </template>
+      <BBAttention
+        v-if="isDefaultProject"
+        class="mb-4"
+        :style="'INFO'"
+        :title="$t('project.overview.info-slot-content')"
+      />
+    </HideInStandaloneMode>
     <router-view
       :project-slug="projectSlug"
       :project-webhook-slug="projectWebhookSlug"

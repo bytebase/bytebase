@@ -13,9 +13,9 @@ import (
 	"time"
 
 	// Import pg driver.
-	// init() in pgx/v4/stdlib will register it's pgx driver.
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/stdlib"
+	// init() in pgx/v5/stdlib will register it's pgx driver.
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 	"golang.org/x/crypto/ssh"
@@ -84,8 +84,7 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 	}
 
 	connStr := fmt.Sprintf("host=%s port=%s", config.Host, config.Port)
-	// Neon requires new driver, however due to https://github.com/jackc/pgx/issues/1600, we have to
-	// stay at pgx/v4 to support SSH tunnelling. So we do a hack here to support Neon SSL following
+	// TODO(tianzhou): this work-around is no longer needed probably.
 	// https://neon.tech/docs/connect/connectivity-issues#c-set-verify-full-for-golang-based-clients
 	if strings.HasSuffix(config.Host, ".neon.tech") {
 		connStr += " sslmode=verify-full"

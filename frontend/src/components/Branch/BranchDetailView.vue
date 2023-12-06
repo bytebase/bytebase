@@ -97,8 +97,8 @@
   <MergeBranchPanel
     v-if="state.showDiffEditor && mergeBranchPanelContext"
     :project="project"
-    :source-branch-name="mergeBranchPanelContext.sourceBranchName"
-    :target-branch-name="mergeBranchPanelContext.targetBranchName"
+    :head-branch-name="mergeBranchPanelContext.headBranchName"
+    :branch-name="mergeBranchPanelContext.branchName"
     @dismiss="state.showDiffEditor = false"
     @merged="handleMergeAfterConflictResolved"
   />
@@ -109,7 +109,7 @@ import { asyncComputed } from "@vueuse/core";
 import dayjs from "dayjs";
 import { cloneDeep, head, isEqual } from "lodash-es";
 import { NButton, NDivider, NInput, NTag } from "naive-ui";
-import { CSSProperties, computed, onMounted, reactive, ref, watch } from "vue";
+import { CSSProperties, computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
@@ -165,8 +165,8 @@ const state = reactive<LocalState>({
   isSaving: false,
 });
 const mergeBranchPanelContext = ref<{
-  sourceBranchName: string;
-  targetBranchName: string;
+  headBranchName: string;
+  branchName: string;
 }>();
 const selectTargetDatabasesContext = ref<{
   show: boolean;
@@ -269,10 +269,10 @@ const handleMergeBranch = () => {
       item.name !== props.branch.name
     );
   });
-  const targetBranchName = parentBranch.value
+  const branchName = parentBranch.value
     ? parentBranch.value.name
     : head(tempList)?.name;
-  if (!targetBranchName) {
+  if (!branchName) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
@@ -282,8 +282,8 @@ const handleMergeBranch = () => {
   }
 
   mergeBranchPanelContext.value = {
-    sourceBranchName: props.branch.name,
-    targetBranchName: targetBranchName,
+    headBranchName: props.branch.name,
+    branchName: branchName,
   };
   state.showDiffEditor = true;
 };

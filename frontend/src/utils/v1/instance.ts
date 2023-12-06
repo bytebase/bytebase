@@ -2,7 +2,7 @@ import { keyBy, orderBy } from "lodash-es";
 import slug from "slug";
 import { useI18n } from "vue-i18n";
 import { useSubscriptionV1Store } from "@/store";
-import { ComposedInstance } from "@/types";
+import { ComposedInstance, UNKNOWN_ID } from "@/types";
 import { Engine, State } from "@/types/proto/v1/common";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { DataSourceType, Instance } from "@/types/proto/v1/instance_service";
@@ -19,7 +19,11 @@ export function instanceV1Name(instance: Instance) {
   // instance cannot be deleted and activated at the same time.
   if (instance.state === State.DELETED) {
     name += ` (${t("common.archived")})`;
-  } else if (!instance.activation && store.currentPlan !== PlanType.FREE) {
+  } else if (
+    instance.uid !== `${UNKNOWN_ID}` &&
+    !instance.activation &&
+    store.currentPlan !== PlanType.FREE
+  ) {
     name += ` (${t("common.no-license")})`;
   }
   return name;

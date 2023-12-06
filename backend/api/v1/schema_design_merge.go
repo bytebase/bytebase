@@ -7,11 +7,11 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func tryMerge(base, head, target *v1pb.DatabaseMetadata) (*v1pb.DatabaseMetadata, error) {
-	base, head, target = proto.Clone(base).(*v1pb.DatabaseMetadata), proto.Clone(head).(*v1pb.DatabaseMetadata), proto.Clone(target).(*v1pb.DatabaseMetadata)
+func tryMerge(base, head, target *storepb.DatabaseSchemaMetadata) (*storepb.DatabaseSchemaMetadata, error) {
+	base, head, target = proto.Clone(base).(*storepb.DatabaseSchemaMetadata), proto.Clone(head).(*storepb.DatabaseSchemaMetadata), proto.Clone(target).(*storepb.DatabaseSchemaMetadata)
 
 	diffBetweenBaseAndHead, err := diffMetadata(base, head)
 	if err != nil {
@@ -69,7 +69,7 @@ func (mr *metadataDiffRootNode) isConflictWith(other *metadataDiffRootNode) (boo
 	return false, ""
 }
 
-func (mr *metadataDiffRootNode) applyDiffTo(target *v1pb.DatabaseMetadata) error {
+func (mr *metadataDiffRootNode) applyDiffTo(target *storepb.DatabaseSchemaMetadata) error {
 	for _, schema := range mr.schemas {
 		if err := schema.applyDiffTo(target); err != nil {
 			return errors.Wrapf(err, "failed to apply diff to schema %q", schema.name)
@@ -83,8 +83,8 @@ type metadataDiffSchemaNode struct {
 	metadataDiffBaseNode
 	name string
 	//nolint
-	from *v1pb.SchemaMetadata
-	to   *v1pb.SchemaMetadata
+	from *storepb.SchemaMetadata
+	to   *storepb.SchemaMetadata
 
 	tables map[string]metadataDiffNode
 
@@ -122,7 +122,7 @@ func (n *metadataDiffSchemaNode) isConflictWith(other metadataDiffNode) (bool, s
 }
 
 func (n *metadataDiffSchemaNode) applyDiffTo(target proto.Message) error {
-	databaseTarget, ok := target.(*v1pb.DatabaseMetadata)
+	databaseTarget, ok := target.(*storepb.DatabaseSchemaMetadata)
 	if !ok {
 		return errors.Errorf("target is not a database metadata, but %T", target)
 	}
@@ -157,8 +157,8 @@ type metadataDiffTableNode struct {
 	metadataDiffBaseNode
 	name string
 	//nolint
-	from *v1pb.TableMetadata
-	to   *v1pb.TableMetadata
+	from *storepb.TableMetadata
+	to   *storepb.TableMetadata
 
 	columns     map[string]metadataDiffNode
 	foreignKeys map[string]metadataDiffNode
@@ -208,7 +208,7 @@ func (n *metadataDiffTableNode) isConflictWith(other metadataDiffNode) (bool, st
 }
 
 func (n *metadataDiffTableNode) applyDiffTo(target proto.Message) error {
-	schemaTarget, ok := target.(*v1pb.SchemaMetadata)
+	schemaTarget, ok := target.(*storepb.SchemaMetadata)
 	if !ok {
 		return errors.Errorf("target is not a schema metadata, but %T", target)
 	}
@@ -248,8 +248,8 @@ type metadataDiffColumnNode struct {
 	metadataDiffBaseNode
 	name string
 	//nolint
-	from *v1pb.ColumnMetadata
-	to   *v1pb.ColumnMetadata
+	from *storepb.ColumnMetadata
+	to   *storepb.ColumnMetadata
 }
 
 func (n *metadataDiffColumnNode) isConflictWith(other metadataDiffNode) (bool, string) {
@@ -270,7 +270,7 @@ func (n *metadataDiffColumnNode) isConflictWith(other metadataDiffNode) (bool, s
 }
 
 func (n *metadataDiffColumnNode) applyDiffTo(target proto.Message) error {
-	tableTarget, ok := target.(*v1pb.TableMetadata)
+	tableTarget, ok := target.(*storepb.TableMetadata)
 	if !ok {
 		return errors.Errorf("target is not a table metadata, but %T", target)
 	}
@@ -302,8 +302,8 @@ type metadataDiffForeignKeyNode struct {
 	metadataDiffBaseNode
 	name string
 	//nolint
-	from *v1pb.ForeignKeyMetadata
-	to   *v1pb.ForeignKeyMetadata
+	from *storepb.ForeignKeyMetadata
+	to   *storepb.ForeignKeyMetadata
 }
 
 func (n *metadataDiffForeignKeyNode) isConflictWith(other metadataDiffNode) (bool, string) {
@@ -324,7 +324,7 @@ func (n *metadataDiffForeignKeyNode) isConflictWith(other metadataDiffNode) (boo
 }
 
 func (n *metadataDiffForeignKeyNode) applyDiffTo(target proto.Message) error {
-	tableTarget, ok := target.(*v1pb.TableMetadata)
+	tableTarget, ok := target.(*storepb.TableMetadata)
 	if !ok {
 		return errors.Errorf("target is not a table metadata, but %T", target)
 	}
@@ -350,7 +350,7 @@ func (n *metadataDiffForeignKeyNode) applyDiffTo(target proto.Message) error {
 	return nil
 }
 
-func diffMetadata(from, to *v1pb.DatabaseMetadata) (*metadataDiffRootNode, error) {
+func diffMetadata(from, to *storepb.DatabaseSchemaMetadata) (*metadataDiffRootNode, error) {
 	if from == nil || to == nil {
 		return nil, errors.New("from and to database metadata must not be nil")
 	}
@@ -359,7 +359,7 @@ func diffMetadata(from, to *v1pb.DatabaseMetadata) (*metadataDiffRootNode, error
 		schemas: make(map[string]*metadataDiffSchemaNode),
 	}
 
-	fromSchemaMap := make(map[string]*v1pb.SchemaMetadata)
+	fromSchemaMap := make(map[string]*storepb.SchemaMetadata)
 	for _, schema := range from.Schemas {
 		fromSchemaMap[schema.Name] = schema
 	}
@@ -398,7 +398,7 @@ func diffMetadata(from, to *v1pb.DatabaseMetadata) (*metadataDiffRootNode, error
 	return root, nil
 }
 
-func diffSchemaMetadata(from, to *v1pb.SchemaMetadata) (*metadataDiffSchemaNode, error) {
+func diffSchemaMetadata(from, to *storepb.SchemaMetadata) (*metadataDiffSchemaNode, error) {
 	if from == nil || to == nil {
 		return nil, errors.New("from and to schema metadata must not be nil")
 	}
@@ -411,7 +411,7 @@ func diffSchemaMetadata(from, to *v1pb.SchemaMetadata) (*metadataDiffSchemaNode,
 		tables: make(map[string]metadataDiffNode),
 	}
 
-	fromTableMap := make(map[string]*v1pb.TableMetadata)
+	fromTableMap := make(map[string]*storepb.TableMetadata)
 	for _, table := range from.Tables {
 		fromTableMap[table.Name] = table
 	}
@@ -455,7 +455,7 @@ func diffSchemaMetadata(from, to *v1pb.SchemaMetadata) (*metadataDiffSchemaNode,
 	return nil, nil
 }
 
-func diffTableMetadata(from, to *v1pb.TableMetadata) (*metadataDiffTableNode, error) {
+func diffTableMetadata(from, to *storepb.TableMetadata) (*metadataDiffTableNode, error) {
 	if from == nil || to == nil {
 		return nil, errors.New("from and to table metadata must not be nil")
 	}
@@ -469,11 +469,11 @@ func diffTableMetadata(from, to *v1pb.TableMetadata) (*metadataDiffTableNode, er
 		foreignKeys: make(map[string]metadataDiffNode),
 	}
 
-	fromColumnMap := make(map[string]*v1pb.ColumnMetadata)
+	fromColumnMap := make(map[string]*storepb.ColumnMetadata)
 	for _, column := range from.Columns {
 		fromColumnMap[column.Name] = column
 	}
-	fromForeignKeyMap := make(map[string]*v1pb.ForeignKeyMetadata)
+	fromForeignKeyMap := make(map[string]*storepb.ForeignKeyMetadata)
 	for _, foreignKey := range from.ForeignKeys {
 		fromForeignKeyMap[foreignKey.Name] = foreignKey
 	}
@@ -549,7 +549,7 @@ func diffTableMetadata(from, to *v1pb.TableMetadata) (*metadataDiffTableNode, er
 	return nil, nil
 }
 
-func diffColumnMetadata(from, to *v1pb.ColumnMetadata) (*metadataDiffColumnNode, error) {
+func diffColumnMetadata(from, to *storepb.ColumnMetadata) (*metadataDiffColumnNode, error) {
 	if from == nil || to == nil {
 		return nil, errors.New("from and to column metadata must not be nil")
 	}
@@ -566,7 +566,7 @@ func diffColumnMetadata(from, to *v1pb.ColumnMetadata) (*metadataDiffColumnNode,
 	return nil, nil
 }
 
-func diffForeignKeyMetadata(from, to *v1pb.ForeignKeyMetadata) (*metadataDiffForeignKeyNode, error) {
+func diffForeignKeyMetadata(from, to *storepb.ForeignKeyMetadata) (*metadataDiffForeignKeyNode, error) {
 	if from == nil || to == nil {
 		return nil, errors.New("from and to foreign key metadata must not be nil")
 	}
