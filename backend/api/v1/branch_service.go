@@ -332,7 +332,7 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 	// instead, it would just update the HEAD of the base branch to the merged schema.
 	if request.MergedSchema != "" {
 		mergedSchema = request.MergedSchema
-		metadata, err := transformSchemaStringToDatabaseMetadata(storepb.Engine(baseBranch.Engine), mergedSchema)
+		metadata, err := TransformSchemaStringToDatabaseMetadata(storepb.Engine(baseBranch.Engine), mergedSchema)
 		if err != nil {
 			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to convert merged schema to metadata, %v", err))
 		}
@@ -429,12 +429,12 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 	var newHeadMetadata *storepb.DatabaseSchemaMetadata
 	if request.MergedSchema != "" {
 		newHeadSchema = request.MergedSchema
-		newHeadMetadata, err = transformSchemaStringToDatabaseMetadata(storepb.Engine(baseBranch.Engine), newBaseSchema)
+		newHeadMetadata, err = TransformSchemaStringToDatabaseMetadata(storepb.Engine(baseBranch.Engine), newBaseSchema)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("failed to convert merged schema to metadata, %v", err))
 		}
 	} else {
-		upstreamMetadata, err := transformSchemaStringToDatabaseMetadata(storepb.Engine(baseBranch.Engine), newBaseSchema)
+		upstreamMetadata, err := TransformSchemaStringToDatabaseMetadata(storepb.Engine(baseBranch.Engine), newBaseSchema)
 		if err != nil {
 			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to convert upstream schema to metadata, %v", err))
 		}
@@ -449,13 +449,13 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to convert merged metadata to schema string, %v", err)
 		}
-		newHeadMetadata, err = transformSchemaStringToDatabaseMetadata(storepb.Engine(baseBranch.Engine), newHeadSchema)
+		newHeadMetadata, err = TransformSchemaStringToDatabaseMetadata(storepb.Engine(baseBranch.Engine), newHeadSchema)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to convert merged schema to metadata, %v", err)
 		}
 	}
 
-	newBaseMetadata, err := transformSchemaStringToDatabaseMetadata(storepb.Engine(baseBranch.Engine), newBaseSchema)
+	newBaseMetadata, err := TransformSchemaStringToDatabaseMetadata(storepb.Engine(baseBranch.Engine), newBaseSchema)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to convert new base schema to metadata, %v", err))
 	}
