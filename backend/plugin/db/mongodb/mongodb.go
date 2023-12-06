@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -183,35 +184,60 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 	// It appears that the truncation occurs specifically within a Linux container, while everything functions as expected on MacOS.
 	// This might be due to the surprising Javascript async behavior or unflushed buffer.
 	// We put a sleep(0) for the eval() to wait for its completion.
+	// In some cases, the sleep(0) would not work properly, try to let shell to take the responsibility of read from pipe, this is the reason we call sh -c.
 	evalArg := statement
 	if simpleStatement {
 		limit := ""
-		if queryContext.Limit > 0 {
+		if queryContext != nil && queryContext.Limit > 0 {
 			limit = fmt.Sprintf(".slice(0, %d)", queryContext.Limit)
 		}
-		evalArg = fmt.Sprintf("a = %s; if (typeof a.toArray === 'function') {print(EJSON.stringify(a.toArray()%s)); sleep(0);} else {print(EJSON.stringify(a)); sleep(0);}", strings.TrimRight(statement, " \t\n\r\f;"), limit)
+		evalArg = fmt.Sprintf(`"a = %s; if (typeof a.toArray === 'function') {print(EJSON.stringify(a.toArray()%s)); sleep(0);} else {print(EJSON.stringify(a)); sleep(0);}"`, strings.TrimRight(statement, " \t\n\r\f;"), limit)
 	}
+
+	fileName := fmt.Sprintf("mongodb-query-%s-%s", driver.connCfg.ConnectionDatabase, uuid.New().String())
+	defer func() {
+		// While error occurred in mongosh, the temporary file may not created, so we ignore the error here.
+		_ = os.Remove(fileName)
+	}()
 	mongoshArgs := []string{
+		mongoutil.GetMongoshPath(driver.dbBinDir),
 		connectionURI,
 		"--quiet",
 		"--eval",
 		evalArg,
+		">>",
+		fileName,
 	}
 
-	mongoshCmd := exec.CommandContext(ctx, mongoutil.GetMongoshPath(driver.dbBinDir), mongoshArgs...)
+	shellArgs := []string{
+		"-c",
+		strings.Join(mongoshArgs, " "),
+	}
+	shCmd := exec.CommandContext(ctx, "sh", shellArgs...)
 	var errContent bytes.Buffer
 	var outContent bytes.Buffer
-	mongoshCmd.Stderr = &errContent
-	mongoshCmd.Stdout = &outContent
-	if err := mongoshCmd.Run(); err != nil {
-		return nil, errors.Wrapf(err, "failed to execute statement in mongosh: %s", errContent.String())
+	shCmd.Stderr = &errContent
+	shCmd.Stdout = &outContent
+	if err := shCmd.Run(); err != nil {
+		return nil, errors.Wrapf(err, "failed to execute statement in mongosh: \n stdout: %s\n stderr: %s", outContent.String(), errContent.String())
+	}
+
+	f, err := os.OpenFile(fileName, os.O_RDONLY, 0644)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to open file: %s", fileName)
+	}
+	defer f.Close()
+
+	content, err := io.ReadAll(f)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to read file: %s", fileName)
 	}
 
 	if simpleStatement {
 		// We make best-effort attempt to parse the content and fallback to single bulk result on failure.
-		result, err := getSimpleStatementResult(outContent.Bytes())
+		result, err := getSimpleStatementResult(content)
 		if err != nil {
-			slog.Error("failed to get simple statement result", slog.String("content", outContent.String()), log.BBError(err))
+			slog.Error("failed to get simple statement result", slog.String("content", string(content)), log.BBError(err))
 		} else {
 			result.Latency = durationpb.New(time.Since(startTime))
 			result.Statement = statement
