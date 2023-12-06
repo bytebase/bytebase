@@ -1349,6 +1349,7 @@
   },
   "environment": {
     "id": "环境 ID",
+    "all": "所有环境",
     "id-description": "环境 ID 是环境的唯一标识符。一旦创建不能修改。",
     "select": "选择环境",
     "archive": "归档此环境",
