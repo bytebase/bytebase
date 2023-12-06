@@ -45,7 +45,7 @@
     @apply="onSemanticTypeApply($event)"
   />
 
-  <!-- <LabelEditorDrawer
+  <LabelEditorDrawer
     v-if="state.pendingUpdateColumn"
     :show="state.showLabelsDrawer"
     :readonly="false"
@@ -54,10 +54,10 @@
         resource: `'${state.pendingUpdateColumn.name}'`,
       })
     "
-    :labels="[state.pendingUpdateColumn.config.labels]"
+    :labels="[configForColumn(state.pendingUpdateColumn).labels]"
     @dismiss="state.showLabelsDrawer = false"
     @apply="onLabelsApply"
-  /> -->
+  />
 </template>
 
 <script lang="ts" setup>
@@ -158,8 +158,13 @@ const state = reactive<LocalState>({
 });
 
 const context = useSchemaEditorContext();
-const { resourceType, markEditStatus, getColumnStatus, upsertColumnConfig } =
-  context;
+const {
+  resourceType,
+  markEditStatus,
+  getColumnStatus,
+  getColumnConfig,
+  upsertColumnConfig,
+} = context;
 const currentTab = computed(() => {
   return context.currentTab.value as TableTabContext;
 });
@@ -200,6 +205,15 @@ const statusForColumn = (column: ColumnMetadata) => {
 const markColumnStatus = (column: ColumnMetadata, status: EditStatus) => {
   const { metadata } = currentTab.value;
   markEditStatus(database.value, { ...metadata, column }, status);
+};
+const configForColumn = (column: ColumnMetadata) => {
+  const { metadata } = currentTab.value;
+  return (
+    getColumnConfig(database.value, { ...metadata, column }) ??
+    ColumnConfig.fromPartial({
+      name: column.name,
+    })
+  );
 };
 
 const primaryKey = computed(() => {
