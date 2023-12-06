@@ -12,7 +12,7 @@
 
     <slot name="prefix" />
 
-    <NEllipsis v-if="tooltip" :line-clamp="1" :class="textClass">
+    <NEllipsis :disabled="!tooltip" :line-clamp="1" :class="textClass">
       {{ instanceV1Name(instance) }}
     </NEllipsis>
 

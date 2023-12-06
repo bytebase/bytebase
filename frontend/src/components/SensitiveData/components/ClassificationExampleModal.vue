@@ -107,7 +107,6 @@ const { copy: copyTextToClipboard } = useClipboard();
 const { t } = useI18n();
 
 const handleCopy = () => {
-  console.log("handleCopy");
   copyTextToClipboard(JSON.stringify(example, null, 2));
   pushNotification({
     module: "bytebase",

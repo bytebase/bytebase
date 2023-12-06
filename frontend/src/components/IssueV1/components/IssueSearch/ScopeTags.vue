@@ -21,6 +21,8 @@
 import dayjs from "dayjs";
 import { NTag, TagProps } from "naive-ui";
 import { computed, h } from "vue";
+import { useI18n } from "vue-i18n";
+import { UNKNOWN_ID } from "@/types";
 import {
   SearchParams,
   SearchScope,
@@ -33,10 +35,14 @@ const props = defineProps<{
   focusedTagId?: SearchScopeId;
   readonlyScopes?: SearchScope[];
 }>();
+
 defineEmits<{
   (event: "remove-scope", id: SearchScopeId, value: string): void;
   (event: "select-scope", id: SearchScopeId, value: string): void;
 }>();
+
+const { t } = useI18n();
+
 const readonlyScopeIds = computed(() => {
   return new Set((props.readonlyScopes ?? []).map((s) => s.id));
 });
@@ -61,6 +67,9 @@ const renderValue = (scope: SearchScope, index: number) => {
   if (scope.id === "created") {
     const [begin, end] = scope.value.split(",").map((ts) => parseInt(ts, 10));
     return [dayjs(begin).format("L"), dayjs(end).format("L")].join("-");
+  }
+  if (scope.value === `${UNKNOWN_ID}`) {
+    return h("span", {}, t("common.all").toLocaleLowerCase());
   }
   return h("span", {}, scope.value);
 };
