@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	v1 "github.com/bytebase/bytebase/backend/api/v1"
+	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -22,13 +22,13 @@ func backfillBranches(ctx context.Context, stores *store.Store) {
 			slog.Error("failed to get branch", slog.Int("branchID", id), log.BBError(err))
 			continue
 		}
-		headMetadata, err := v1.TransformSchemaStringToDatabaseMetadata(branch.Engine, string(branch.Head.Schema))
+		headMetadata, err := apiv1.TransformSchemaStringToDatabaseMetadata(branch.Engine, string(branch.Head.Schema))
 		if err != nil {
 			slog.Error("failed to transform head metadata", slog.Int("branchID", id), log.BBError(err))
 			continue
 		}
 		branch.Head.Metadata = headMetadata
-		baseMetadata, err := v1.TransformSchemaStringToDatabaseMetadata(branch.Engine, string(branch.Base.Schema))
+		baseMetadata, err := apiv1.TransformSchemaStringToDatabaseMetadata(branch.Engine, string(branch.Base.Schema))
 		if err != nil {
 			slog.Error("failed to transform head metadata", slog.Int("branchID", id), log.BBError(err))
 			continue
