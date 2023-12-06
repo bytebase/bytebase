@@ -92,10 +92,10 @@ const context = provideSchemaEditorContext({
   resourceType: toRef(props, "resourceType"),
   readonly: toRef(props, "readonly"),
 });
-const { diff, applyMetadataEdit } = useAlgorithm(context);
+const { rebuildMetadataEdit, applyMetadataEdit } = useAlgorithm(context);
 
 defineExpose({
-  diff,
+  rebuildMetadataEdit,
   applyMetadataEdit,
 });
 </script>

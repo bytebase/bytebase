@@ -29,6 +29,10 @@ export const useEditStatus = () => {
     dirtyPaths.value.set(key, status);
   };
 
+  const markEditStatusByKey = (key: string, status: EditStatus) => {
+    dirtyPaths.value.set(key, status);
+  };
+
   const removeEditStatus = (
     database: ComposedDatabase,
     metadata: {
@@ -101,10 +105,15 @@ export const useEditStatus = () => {
     return "normal";
   };
 
+  const clearEditStatus = () => {
+    dirtyPaths.value.clear();
+  };
+
   return {
-    dirtyPaths,
     markEditStatus,
+    markEditStatusByKey,
     removeEditStatus,
+    clearEditStatus,
     getSchemaStatus,
     getTableStatus,
     getColumnStatus,

@@ -109,7 +109,7 @@ import { asyncComputed } from "@vueuse/core";
 import dayjs from "dayjs";
 import { cloneDeep, head, isEqual } from "lodash-es";
 import { NButton, NDivider, NInput, NTag } from "naive-ui";
-import { CSSProperties, computed, reactive, ref, watch } from "vue";
+import { CSSProperties, computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
@@ -463,4 +463,18 @@ const deleteBranch = async () => {
     },
   });
 };
+
+watch(
+  [() => props.branch.name, schemaDesignerRef],
+  ([branchName, schemaDesigner]) => {
+    if (branchName && schemaDesigner) {
+      schemaDesigner.schemaEditor?.rebuildMetadataEdit(
+        database.value,
+        props.branch.baselineSchemaMetadata ?? DatabaseMetadata.fromPartial({}),
+        props.branch.schemaMetadata ?? DatabaseMetadata.fromPartial({})
+      );
+    }
+  },
+  { immediate: true }
+);
 </script>

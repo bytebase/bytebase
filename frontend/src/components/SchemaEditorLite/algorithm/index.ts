@@ -1,13 +1,21 @@
 import { ComposedDatabase } from "@/types";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import { useSchemaEditorContext } from "./context";
+import { SchemaEditorContext } from "../context";
+import { DiffMerge } from "./diff-merge";
 
-export const useAlgorithm = (
-  context: ReturnType<typeof useSchemaEditorContext>
-) => {
-  const { getSchemaStatus, getTableStatus, getColumnStatus } = context;
+export const useAlgorithm = (context: SchemaEditorContext) => {
+  const { getSchemaStatus, getTableStatus, getColumnStatus, clearEditStatus } =
+    context;
 
-  const diff = () => {};
+  const rebuildMetadataEdit = (
+    database: ComposedDatabase,
+    source: DatabaseMetadata,
+    target: DatabaseMetadata
+  ) => {
+    clearEditStatus();
+    const dm = new DiffMerge(context, database, source, target);
+    dm.merge();
+  };
 
   const applyMetadataEdit = (
     database: ComposedDatabase,
@@ -48,5 +56,5 @@ export const useAlgorithm = (
     });
   };
 
-  return { diff, applyMetadataEdit };
+  return { rebuildMetadataEdit, applyMetadataEdit };
 };
