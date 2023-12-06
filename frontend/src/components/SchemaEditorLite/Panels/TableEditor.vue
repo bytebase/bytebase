@@ -91,6 +91,7 @@ import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_se
 import { instanceV1AllowsReorderColumns } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import { useSchemaEditorContext } from "../context";
+import { useEditStatus } from "../edit";
 import { TableTabContext } from "../types";
 import TableColumnEditor from "./TableColumnEditor";
 
@@ -111,6 +112,14 @@ interface LocalState {
 
 const context = useSchemaEditorContext();
 const { project, readonly } = context;
+
+const {
+  markEditStatus,
+  removeEditStatus,
+  getSchemaStatus,
+  getTableStatus,
+  getColumnStatus,
+} = useEditStatus();
 const currentTab = computed(() => {
   return context.currentTab.value as TableTabContext;
 });
@@ -132,32 +141,41 @@ const foreignKeyList = computed(() => {
 
 const editForeignKeyColumn = ref<ColumnMetadata>();
 
+const metadataForColumn = (column: ColumnMetadata) => {
+  return {
+    ...currentTab.value.metadata,
+    column,
+  };
+};
+const statusForSchema = () => {
+  const { metadata } = currentTab.value;
+  return getSchemaStatus(database.value, {
+    database: metadata.database,
+    schema: metadata.schema,
+  });
+};
+const statusForTable = () => {
+  const { metadata } = currentTab.value;
+  return getTableStatus(database.value, {
+    database: metadata.database,
+    schema: metadata.schema,
+    table: metadata.table,
+  });
+};
+const statusForColumn = (column: ColumnMetadata) => {
+  return getColumnStatus(database.value, metadataForColumn(column));
+};
+
 const isDroppedSchema = computed(() => {
-  return false;
-  // return schema.value.status === "dropped";
+  return statusForSchema() === "dropped";
 });
 
 const isDroppedTable = computed(() => {
-  return false;
-  // return table.value.status === "dropped";
+  return statusForTable() === "dropped";
 });
 
 const getColumnItemComputedClassList = (column: ColumnMetadata): string => {
-  // if (column.status === "dropped") {
-  //   return "dropped";
-  // } else if (column.status === "created") {
-  //   return "created";
-  // } else if (
-  //   isColumnChanged(
-  //     currentTab.value.parentName,
-  //     currentTab.value.schemaId,
-  //     currentTab.value.tableId,
-  //     column.id
-  //   )
-  // ) {
-  //   return "updated";
-  // }
-  return "";
+  return statusForColumn(column);
 };
 
 const checkColumnHasForeignKey = (column: ColumnMetadata): boolean => {
@@ -233,8 +251,7 @@ const getReferencedForeignKeyName = (column: ColumnMetadata) => {
 };
 
 const isDroppedColumn = (column: ColumnMetadata): boolean => {
-  return false;
-  // return column.status === "dropped";
+  return statusForColumn(column) === "dropped";
 };
 
 const disableChangeTable = computed(() => {
@@ -247,9 +264,8 @@ const allowReorderColumns = computed(() => {
     return false;
   }
 
-  return (
-    instanceV1AllowsReorderColumns(engine.value) && true // TODO // table.value.status === "created"
-  );
+  const status = statusForTable();
+  return instanceV1AllowsReorderColumns(engine.value) && status === "created";
 });
 
 const disableAlterColumn = (column: ColumnMetadata): boolean => {
