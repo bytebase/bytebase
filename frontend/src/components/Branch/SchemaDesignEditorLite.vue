@@ -48,10 +48,12 @@
         />
       </div>
       <div
-        v-show="state.selectedTab === 'raw-sql-preview'"
+        v-if="state.selectedTab === 'raw-sql-preview'"
         class="w-full h-full pt-2 overflow-y-auto relative"
       >
-        <MaskSpinner v-if="rawSQLPreviewState.isFetching" />
+        <MaskSpinner v-if="rawSQLPreviewState.isFetching">
+          <div class="text-control-placeholder">Generating diff DDL</div>
+        </MaskSpinner>
         <MonacoEditor
           class="w-full h-full border rounded-lg overflow-auto"
           data-label="bb-schema-editor-sql-editor"
