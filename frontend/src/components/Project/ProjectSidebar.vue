@@ -155,9 +155,7 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       type: "link",
       hide:
         isDefaultProject.value ||
-        !currentUserIamPolicy.allowToChangeDatabaseOfProject(
-          project.value.name
-        ),
+        !currentUserIamPolicy.isMemberOfProject(project.value.name),
     },
     {
       title: t("common.branches"),
@@ -177,9 +175,7 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       type: "link",
       hide:
         isDefaultProject.value ||
-        !currentUserIamPolicy.allowToChangeDatabaseOfProject(
-          project.value.name
-        ),
+        !currentUserIamPolicy.isMemberOfProject(project.value.name),
     },
     {
       title: t("database.sync-schema.title"),
@@ -198,9 +194,7 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       type: "div",
       hide:
         isDefaultProject.value ||
-        !currentUserIamPolicy.allowToChangeDatabaseOfProject(
-          project.value.name
-        ),
+        !currentUserIamPolicy.isMemberOfProject(project.value.name),
       children: [
         {
           title: t("common.gitops"),
