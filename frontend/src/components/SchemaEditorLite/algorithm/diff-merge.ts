@@ -10,6 +10,17 @@ import { TinyTimer } from "@/utils";
 import { SchemaEditorContext } from "../context";
 import { keyForResourceName } from "../context/common";
 
+type RichSchemaMetadata = {
+  database: DatabaseMetadata;
+  schema: SchemaMetadata;
+};
+type RichTableMetadata = RichSchemaMetadata & {
+  table: TableMetadata;
+};
+type RichColumnMetadata = RichTableMetadata & {
+  column: ColumnMetadata;
+};
+
 export class DiffMerge {
   context: SchemaEditorContext;
   database: ComposedDatabase;
@@ -64,7 +75,16 @@ export class DiffMerge {
         // existed schema
         mergedSchemas.push(targetSchema);
         // merge tables for existed (maybe updated) schema
-        this.mergeTables(sourceSchema, targetSchema);
+        this.mergeTables(
+          {
+            database: sourceMetadata,
+            schema: sourceSchema,
+          },
+          {
+            database: targetMetadata,
+            schema: targetSchema,
+          }
+        );
         continue;
       }
       // dropped schema
@@ -87,8 +107,10 @@ export class DiffMerge {
     targetMetadata.schemas = mergedSchemas;
     this.timer.end("mergeSchemas", sourceSchemas.length + targetSchemas.length);
   }
-  mergeTables(sourceSchema: SchemaMetadata, targetSchema: SchemaMetadata) {
+  mergeTables(source: RichSchemaMetadata, target: RichSchemaMetadata) {
     const { context, database, sourceTableMap, targetTableMap } = this;
+    const { schema: sourceSchema } = source;
+    const { schema: targetSchema } = target;
     const sourceTables = sourceSchema.tables;
     const targetTables = targetSchema.tables;
     this.timer.begin("mergeTables");
@@ -108,7 +130,10 @@ export class DiffMerge {
         // existed table
         mergedTables.push(targetTable);
         // merge columns for existed (maybe updated) table
-        this.mergeColumns(sourceSchema, sourceTable, targetSchema, targetTable);
+        this.mergeColumns(
+          { ...source, table: sourceTable },
+          { ...target, table: targetTable }
+        );
         continue;
       }
       // dropped table
@@ -135,13 +160,10 @@ export class DiffMerge {
     targetSchema.tables = mergedTables;
     this.timer.end("mergeTables", sourceTables.length + targetTables.length);
   }
-  mergeColumns(
-    sourceSchema: SchemaMetadata,
-    sourceTable: TableMetadata,
-    targetSchema: SchemaMetadata,
-    targetTable: TableMetadata
-  ) {
+  mergeColumns(source: RichTableMetadata, target: RichTableMetadata) {
     const { context, database, sourceColumnMap, targetColumnMap } = this;
+    const { schema: sourceSchema, table: sourceTable } = source;
+    const { schema: targetSchema, table: targetTable } = target;
     const sourceColumns = sourceTable.columns;
     const targetColumns = targetTable.columns;
     this.timer.begin("mergeColumns");
@@ -173,7 +195,10 @@ export class DiffMerge {
       if (targetColumn) {
         // existed column
         mergedColumns.push(targetColumn);
-        // TODO: diff column and check if it is updated
+        this.diffColumn(
+          { ...source, column: sourceColumn },
+          { ...target, column: targetColumn }
+        );
         continue;
       }
       // dropped column
@@ -200,6 +225,9 @@ export class DiffMerge {
     }
     targetTable.columns = mergedColumns;
     this.timer.end("mergeColumns", sourceColumns.length + targetColumns.length);
+  }
+  diffColumn(source: RichColumnMetadata, target: RichColumnMetadata) {
+    // TODO: diff column and check if it is updated
   }
 }
 
