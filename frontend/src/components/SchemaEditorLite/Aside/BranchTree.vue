@@ -66,9 +66,10 @@
 
   <TableNameModal
     v-if="state.tableNameModalContext !== undefined"
-    :parent-name="state.tableNameModalContext.parentName"
-    :schema-id="state.tableNameModalContext.schemaId"
-    :table-id="state.tableNameModalContext.tableId"
+    :database="state.tableNameModalContext.database"
+    :metadata="state.tableNameModalContext.metadata"
+    :schema="state.tableNameModalContext.schema"
+    :table="state.tableNameModalContext.table"
     @close="state.tableNameModalContext = undefined"
   />
 </template>
@@ -83,8 +84,10 @@ import DuplicateIcon from "~icons/heroicons-outline/document-duplicate";
 import TableIcon from "~icons/heroicons-outline/table-cells";
 import SchemaIcon from "~icons/heroicons-outline/view-columns";
 import EllipsisIcon from "~icons/heroicons-solid/ellipsis-horizontal";
+import { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import {
+  DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
@@ -126,9 +129,10 @@ interface LocalState {
     parentName: string;
   };
   tableNameModalContext?: {
-    parentName: string;
-    schemaId: string;
-    tableId?: string;
+    database: ComposedDatabase;
+    metadata: DatabaseMetadata;
+    schema: SchemaMetadata;
+    table?: TableMetadata;
   };
 }
 
@@ -608,10 +612,11 @@ const handleContextMenuDropdownSelect = async (key: string) => {
   if (treeNode.type === "schema") {
     const { schema } = treeNode;
     if (key === "create-table") {
-      // state.tableNameModalContext = {
-      //   parentName: branchSchema.value.branch.name,
-      //   schemaId: treeNode.schemaId,
-      // };
+      state.tableNameModalContext = {
+        database: database.value,
+        metadata: metadata.value,
+        schema,
+      };
     } else if (key === "drop") {
       markEditStatus(
         database.value,
@@ -628,11 +633,12 @@ const handleContextMenuDropdownSelect = async (key: string) => {
   } else if (treeNode.type === "table") {
     const { schema, table } = treeNode;
     if (key === "rename") {
-      //   state.tableNameModalContext = {
-      //     parentName: branchSchema.value.branch.name,
-      //     schemaId: treeNode.schemaId,
-      //     tableId: treeNode.tableId,
-      //   };
+      state.tableNameModalContext = {
+        database: database.value,
+        metadata: metadata.value,
+        schema,
+        table,
+      };
     } else if (key === "drop") {
       markEditStatus(
         database.value,

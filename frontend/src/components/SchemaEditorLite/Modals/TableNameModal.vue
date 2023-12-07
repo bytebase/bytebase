@@ -1,7 +1,7 @@
 <template>
   <BBModal
     :title="
-      isCreatingTable
+      mode === 'create'
         ? $t('schema-editor.actions.create-table')
         : $t('schema-editor.actions.rename')
     "
@@ -22,7 +22,7 @@
         {{ $t("common.cancel") }}
       </NButton>
       <NButton type="primary" @click="handleConfirmButtonClick">
-        {{ isCreatingTable ? $t("common.create") : $t("common.save") }}
+        {{ mode === "create" ? $t("common.create") : $t("common.save") }}
       </NButton>
     </div>
   </BBModal>
@@ -32,20 +32,17 @@
 import { InputInst, NButton, NInput } from "naive-ui";
 import { computed, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  generateUniqueTabId,
-  useNotificationStore,
-  useSchemaEditorV1Store,
-} from "@/store";
+import { useNotificationStore } from "@/store";
+import { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import {
   ColumnMetadata,
+  DatabaseMetadata,
+  SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import {
-  SchemaEditorTabType,
-  convertTableMetadataToTable,
-} from "@/types/v1/schemaEditor";
+import { useSchemaEditorContext } from "../context";
+import { upsertColumnPrimaryKey } from "../edit";
 
 // Table name must start with a non-space character, end with a non-space character, and can contain space in between.
 const tableNameFieldRegexp = /^\S[\S ]*\S?$/;
@@ -55,9 +52,10 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  parentName: string;
-  schemaId: string;
-  tableId?: string;
+  database: ComposedDatabase;
+  metadata: DatabaseMetadata;
+  schema: SchemaMetadata;
+  table?: TableMetadata;
 }>();
 
 const emit = defineEmits<{
@@ -65,19 +63,15 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const context = useSchemaEditorContext();
+const { addTab, markEditStatus } = context;
 const inputRef = ref<InputInst>();
-const schemaEditorV1Store = useSchemaEditorV1Store();
 const notificationStore = useNotificationStore();
+const mode = computed(() => {
+  return props.table ? "edit" : "create";
+});
 const state = reactive<LocalState>({
-  tableName: "",
-});
-
-const engine = computed(() => {
-  return schemaEditorV1Store.getCurrentEngine(props.parentName);
-});
-
-const isCreatingTable = computed(() => {
-  return props.tableId === undefined;
+  tableName: props.table?.name ?? "",
 });
 
 const handleConfirmButtonClick = async () => {
@@ -89,21 +83,11 @@ const handleConfirmButtonClick = async () => {
     });
     return;
   }
-
-  const schema = schemaEditorV1Store.getSchema(
-    props.parentName,
-    props.schemaId
+  const { schema } = props;
+  const existedTable = schema.tables.find(
+    (table) => table.name === state.tableName
   );
-  if (!schema) {
-    notificationStore.pushNotification({
-      module: "bytebase",
-      style: "CRITICAL",
-      title: t("schema-editor.message.schema-not-found"),
-    });
-    return;
-  }
-  const tableNameList = schema.tableList.map((table) => table.name);
-  if (tableNameList.includes(state.tableName)) {
+  if (existedTable) {
     notificationStore.pushNotification({
       module: "bytebase",
       style: "CRITICAL",
@@ -112,37 +96,61 @@ const handleConfirmButtonClick = async () => {
     return;
   }
 
-  if (isCreatingTable.value) {
-    const column = ColumnMetadata.fromPartial({});
-    column.name = "id";
-    if (engine.value === Engine.POSTGRES) {
-      column.type = "INTEGER";
-    } else {
-      column.type = "INT";
-    }
-    column.comment = "ID";
+  if (!props.table) {
     const table = TableMetadata.fromPartial({
       name: state.tableName,
-      columns: [column],
+      columns: [],
     });
-    const tableEdit = convertTableMetadataToTable(table, "created");
-    tableEdit.primaryKey.columnIdList.push(
-      ...tableEdit.columnList.map((col) => col.id)
+    schema.tables.push(table);
+    markEditStatus(
+      props.database,
+      {
+        database: props.metadata,
+        schema,
+        table,
+      },
+      "created"
     );
-    schema.tableList.push(tableEdit);
-    schemaEditorV1Store.addTab({
-      id: generateUniqueTabId(),
-      type: SchemaEditorTabType.TabForTable,
-      parentName: props.parentName,
-      schemaId: props.schemaId,
-      tableId: tableEdit.id,
-      name: state.tableName,
+
+    const column = ColumnMetadata.fromPartial({});
+    column.name = "id";
+    const engine = props.database.instanceEntity.engine;
+    column.type = engine === Engine.POSTGRES ? "INTEGER" : "INT";
+    column.comment = "ID";
+    table.columns.push(column);
+    upsertColumnPrimaryKey(table, column.name);
+    markEditStatus(
+      props.database,
+      {
+        database: props.metadata,
+        schema,
+        table,
+        column,
+      },
+      "created"
+    );
+
+    addTab({
+      type: "table",
+      database: props.database,
+      metadata: {
+        database: props.metadata,
+        schema: props.schema,
+        table,
+      },
     });
   } else {
-    const table = schema.tableList.find((table) => table.id === props.tableId);
-    if (table) {
-      table.name = state.tableName;
-    }
+    const { table } = props;
+    table.name = state.tableName;
+    markEditStatus(
+      props.database,
+      {
+        database: props.metadata,
+        schema,
+        table,
+      },
+      "updated"
+    );
   }
   dismissModal();
 };

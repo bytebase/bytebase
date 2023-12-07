@@ -6,12 +6,12 @@
           v-if="state.selectedSubTab === 'table-list'"
           class="w-full flex justify-between items-center space-x-2"
         >
-          <div class="flex flex-row justify-start items-center space-x-3">
+          <div class="flex flex-row justify-start items-center gap-x-3">
             <div
               v-if="shouldShowSchemaSelector"
-              class="ml-2 flex flex-row justify-start items-center text-sm"
+              class="pl-1 flex flex-row justify-start items-center text-sm gap-x-2"
             >
-              <span class="mr-1">Schema:</span>
+              <span>Schema:</span>
               <NSelect
                 v-if="currentTab"
                 v-model:value="currentTab.selectedSchema"
@@ -19,25 +19,27 @@
                 :options="schemaSelectorOptionList"
               />
             </div>
-            <button
+            <NButton
               v-if="!readonly"
-              class="flex flex-row justify-center items-center border px-3 py-1 leading-6 rounded text-sm hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60 whitespace-nowrap"
               :disabled="!allowCreateTable"
               @click="handleCreateNewTable"
             >
-              <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
+              <template #icon>
+                <PlusIcon class="w-4 h-4" />
+              </template>
               {{ $t("schema-editor.actions.create-table") }}
-            </button>
-            <button
+            </NButton>
+            <NButton
               v-if="!readonly"
-              class="flex flex-row justify-center items-center border px-3 py-1 leading-6 rounded text-sm hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60 whitespace-nowrap"
               :disabled="!allowCreateTable"
               @click="state.showSchemaTemplateDrawer = true"
             >
-              <FeatureBadge feature="bb.feature.schema-template" />
-              <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
+              <template #icon>
+                <FeatureBadge feature="bb.feature.schema-template" />
+                <PlusIcon class="w-4 h-4" />
+              </template>
               {{ $t("schema-editor.actions.add-from-template") }}
-            </button>
+            </NButton>
           </div>
         </div>
       </div>
@@ -96,9 +98,10 @@
 
   <TableNameModal
     v-if="state.tableNameModalContext !== undefined"
-    :parent-name="state.tableNameModalContext.parentName"
-    :schema-id="state.tableNameModalContext.schemaId"
-    :table-name="state.tableNameModalContext.tableName"
+    :database="database"
+    :metadata="metadata"
+    :schema="state.tableNameModalContext.schema"
+    mode="create"
     @close="state.tableNameModalContext = undefined"
   />
 
@@ -126,6 +129,7 @@
 
 <script lang="ts" setup>
 import { head } from "lodash-es";
+import { PlusIcon } from "lucide-vue-next";
 import { computed, nextTick, reactive, watch } from "vue";
 import { SchemaDiagramIcon } from "@/components/SchemaDiagram";
 import { Drawer, DrawerContent } from "@/components/v2";
@@ -159,9 +163,7 @@ interface LocalState {
   showFeatureModal: boolean;
   showSchemaTemplateDrawer: boolean;
   tableNameModalContext?: {
-    parentName: string;
-    schemaId: string;
-    tableName: string | undefined;
+    schema: SchemaMetadata;
   };
   activeTableId?: string;
 }
@@ -253,12 +255,9 @@ const handleChangeTab = (tab: SubTabType) => {
 
 const handleCreateNewTable = () => {
   if (selectedSchema.value) {
-    // TODO
-    // state.tableNameModalContext = {
-    //   parentName: currentTab.value.parentName,
-    //   schemaId: selectedSchema.id,
-    //   tableName: undefined,
-    // };
+    state.tableNameModalContext = {
+      schema: selectedSchema.value,
+    };
   }
 };
 

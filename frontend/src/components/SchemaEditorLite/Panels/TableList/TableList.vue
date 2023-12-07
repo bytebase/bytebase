@@ -22,14 +22,6 @@
     />
   </div>
 
-  <TableNameModal
-    v-if="state.tableNameModalContext !== undefined"
-    :parent-name="state.tableNameModalContext.parentName"
-    :schema-id="state.tableNameModalContext.schemaId"
-    :table-name="state.tableNameModalContext.tableName"
-    @close="state.tableNameModalContext = undefined"
-  />
-
   <Drawer
     :show="state.showSchemaTemplateDrawer"
     @close="state.showSchemaTemplateDrawer = false"
@@ -62,7 +54,7 @@
 
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
-import { cloneDeep } from "lodash-es";
+import { cloneDeep, pull } from "lodash-es";
 import { DataTableColumn, NDataTable } from "naive-ui";
 import { computed, h, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -81,7 +73,6 @@ import {
 } from "@/types/proto/v1/setting_service";
 import { bytesToString } from "@/utils";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
-import TableNameModal from "../../Modals/TableNameModal.vue";
 import { useSchemaEditorContext } from "../../context";
 import { DatabaseTabContext } from "../../types";
 import ClassificationCell from "../TableColumnEditor/components/ClassificationCell.vue";
@@ -97,12 +88,7 @@ interface LocalState {
   showFeatureModal: boolean;
   showSchemaTemplateDrawer: boolean;
   showClassificationDrawer: boolean;
-  tableNameModalContext?: {
-    parentName: string;
-    schemaId: string;
-    tableName: string | undefined;
-  };
-  activeTableName?: string;
+  activeTable?: TableMetadata;
 }
 
 const { t } = useI18n();
@@ -155,19 +141,15 @@ const classificationConfig = computed(() => {
 });
 
 const showClassificationDrawer = (table: TableMetadata) => {
-  state.activeTableName = table.name;
+  state.activeTable = table;
   state.showClassificationDrawer = true;
 };
 
 const onClassificationSelect = (classificationId: string) => {
-  const table = props.tableList.find(
-    (table) => table.name === state.activeTableName
-  );
-  if (!table) {
-    return;
-  }
+  const table = state.activeTable;
+  if (!table) return;
   table.classification = classificationId;
-  state.activeTableName = undefined;
+  state.activeTable = undefined;
   markEditStatus(props.database, metadataForTable(table), "updated");
 };
 
@@ -306,7 +288,22 @@ const handleTableItemClick = (table: TableMetadata) => {
 };
 
 const handleDropTable = (table: TableMetadata) => {
-  markEditStatus(props.database, metadataForTable(table), "dropped");
+  const status = statusForTable(table);
+  if (status === "created") {
+    // If a table is newly created, remove it directly from its schema
+    pull(props.schema.tables, table);
+    markEditStatus(
+      props.database,
+      {
+        database: currentTab.value.metadata.database,
+        schema: props.schema,
+      },
+      "updated"
+    );
+  } else {
+    // Otherwise don't physically remove it, mark it as 'dropped' instead
+    markEditStatus(props.database, metadataForTable(table), "dropped");
+  }
 };
 
 const handleRestoreTable = (table: TableMetadata) => {
