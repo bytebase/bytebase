@@ -1,5 +1,10 @@
 <template>
-  <div class="space-y-3 w-full overflow-x-auto" v-bind="$attrs">
+  <div class="space-y-3 w-full overflow-x-auto relative" v-bind="$attrs">
+    <MaskSpinner v-if="state.savingStatus" class="!bg-white/75">
+      <div class="text-sm">
+        {{ state.savingStatus }}
+      </div>
+    </MaskSpinner>
     <div class="w-full flex flex-row justify-between items-center">
       <div class="w-full flex flex-row justify-start items-center gap-x-2">
         <NInput
@@ -43,7 +48,7 @@
               }}</NButton>
               <NButton
                 type="primary"
-                :loading="state.isSaving"
+                :loading="state.savingStatus"
                 @click="handleSaveBranch"
                 >{{ $t("common.save") }}</NButton
               >
@@ -126,6 +131,7 @@ import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { projectV1Slug } from "@/utils";
 import { provideSQLCheckContext } from "../SQLCheck";
+import MaskSpinner from "../misc/MaskSpinner.vue";
 import MergeBranchPanel from "./MergeBranchPanel.vue";
 import SchemaDesignEditorLite from "./SchemaDesignEditorLite.vue";
 import { validateBranchName } from "./utils";
@@ -136,7 +142,7 @@ interface LocalState {
   isEditingBranchId: boolean;
   showDiffEditor: boolean;
   isReverting: boolean;
-  isSaving: boolean;
+  savingStatus: string | undefined;
 }
 
 const props = defineProps<{
@@ -162,7 +168,7 @@ const state = reactive<LocalState>({
   isEditingBranchId: false,
   showDiffEditor: false,
   isReverting: false,
-  isSaving: false,
+  savingStatus: undefined,
 });
 const mergeBranchPanelContext = ref<{
   headBranchName: string;
@@ -317,11 +323,17 @@ const handleSaveBranch = async () => {
   if (!state.isEditing) {
     return;
   }
-  if (state.isSaving) {
+  if (state.savingStatus) {
+    return;
+  }
+
+  const applyMetadataEdit =
+    schemaDesignerRef.value?.schemaEditor?.applyMetadataEdit;
+  if (typeof applyMetadataEdit !== "function") {
     return;
   }
   const cleanup = async (success = false) => {
-    state.isSaving = false;
+    state.savingStatus = undefined;
     if (success) {
       state.isEditing = false;
       await nextTick();
@@ -329,18 +341,16 @@ const handleSaveBranch = async () => {
     }
   };
 
-  state.isSaving = true;
-
-  const applyMetadataEdit =
-    schemaDesignerRef.value?.schemaEditor?.applyMetadataEdit;
-  if (typeof applyMetadataEdit !== "function") {
-    return cleanup();
-  }
-
   const check = runSQLCheck.value;
-  if (check && !(await check())) {
-    return cleanup();
+  if (check) {
+    state.savingStatus = "Checking SQL";
+    await new Promise((r) => setTimeout(r, 2000));
+    if (!(await check())) {
+      return cleanup();
+    }
   }
+
+  state.savingStatus = "Validating schema";
   const editing = props.branch.schemaMetadata
     ? cloneDeep(props.branch.schemaMetadata)
     : DatabaseMetadata.fromPartial({});
@@ -356,6 +366,8 @@ const handleSaveBranch = async () => {
     });
     return cleanup();
   }
+
+  state.savingStatus = "Saving";
   const updateMask = ["schema_metadata"];
   await branchStore.updateBranch(
     Branch.fromPartial({
@@ -364,6 +376,7 @@ const handleSaveBranch = async () => {
     }),
     updateMask
   );
+
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",

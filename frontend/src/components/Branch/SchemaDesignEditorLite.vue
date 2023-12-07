@@ -52,7 +52,7 @@
         class="w-full h-full pt-2 overflow-y-auto relative"
       >
         <MaskSpinner v-if="rawSQLPreviewState.isFetching">
-          <div class="text-control-placeholder">Generating diff DDL</div>
+          <div class="text-sm">Generating diff DDL</div>
         </MaskSpinner>
         <MonacoEditor
           class="w-full h-full border rounded-lg overflow-auto"
@@ -122,6 +122,7 @@ const generateDDL = async () => {
 
   const source =
     props.branch.baselineSchemaMetadata ?? DatabaseMetadata.fromPartial({});
+  // We will not really apply the edits here, so we need to clone the edited copy
   const editing = props.branch.schemaMetadata
     ? cloneDeep(props.branch.schemaMetadata)
     : DatabaseMetadata.fromPartial({});
