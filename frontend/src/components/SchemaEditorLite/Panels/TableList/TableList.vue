@@ -9,7 +9,7 @@
     <NDataTable
       v-bind="$attrs"
       size="small"
-      :row-key="(table: TableMetadata) => table.name"
+      :row-key="getTableKey"
       :columns="columns"
       :data="layoutReady ? tableList : []"
       :row-class-name="classesForRow"
@@ -56,6 +56,7 @@
 import { useElementSize } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
 import { DataTableColumn, NDataTable } from "naive-ui";
+import { v1 as uuidv1 } from "uuid";
 import { computed, h, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import FeatureModal from "@/components/FeatureGuard/FeatureModal.vue";
@@ -341,6 +342,15 @@ const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
 
 const isDroppedTable = (table: TableMetadata) => {
   return statusForTable(table) === "dropped";
+};
+
+const getTableKey = (table: any) => {
+  // table.name is editable for newly created tables, so we need to insert another hidden field
+  // as a table's stable unique key.
+  if (!table.__uuid) {
+    table.__uuid = uuidv1();
+  }
+  return table.__uuid as string;
 };
 </script>
 
