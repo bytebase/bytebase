@@ -33,13 +33,11 @@
         :show-foreign-key="true"
         :table="table"
         :engine="engine"
-        :foreign-key-list="foreignKeyList"
         :classification-config-id="project.dataClassificationConfigId"
         :disable-change-table="disableChangeTable"
         :allow-reorder-columns="allowReorderColumns"
         :filter-column="(column: ColumnMetadata) => column.name.includes(props.searchPattern.trim())"
         :disable-alter-column="disableAlterColumn"
-        :get-referenced-foreign-key-name="getReferencedForeignKeyName"
         :get-column-item-computed-class-list="getColumnItemComputedClassList"
         @drop="handleDropColumn"
         @restore="handleRestoreColumn"
@@ -51,14 +49,16 @@
     </div>
   </div>
 
-  <!-- <EditColumnForeignKeyModal
-    v-if="state.showEditColumnForeignKeyModal && editForeignKeyColumn"
-    :parent-name="currentTab.parentName"
-    :schema-id="schema.id"
-    :table-id="table.id"
-    :column-id="editForeignKeyColumn.id"
+  <EditColumnForeignKeyModal
+    v-if="state.showEditColumnForeignKeyModal && editForeignKeyContext"
+    :database="database"
+    :metadata="metadata.database"
+    :schema="metadata.schema"
+    :table="metadata.table"
+    :column="editForeignKeyContext.column"
+    :foreign-key="editForeignKeyContext.foreignKey"
     @close="state.showEditColumnForeignKeyModal = false"
-  /> -->
+  />
 
   <Drawer
     :show="state.showSchemaTemplateDrawer"
@@ -87,14 +87,17 @@ import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { hasFeature, pushNotification } from "@/store/modules";
-import { Engine } from "@/types/proto/v1/common";
-import { ColumnMetadata } from "@/types/proto/v1/database_service";
+import {
+  ColumnMetadata,
+  ForeignKeyMetadata,
+} from "@/types/proto/v1/database_service";
 import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
 import { arraySwap, instanceV1AllowsReorderColumns } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
+import EditColumnForeignKeyModal from "../Modals/EditColumnForeignKeyModal.vue";
 import { useSchemaEditorContext } from "../context";
 import {
-  removeColumnForeignKey,
+  removeColumnFromAllForeignKeys,
   removeColumnPrimaryKey,
   upsertColumnPrimaryKey,
 } from "../edit";
@@ -135,6 +138,9 @@ const database = computed(() => currentTab.value.database);
 const engine = computed(() => {
   return database.value.instanceEntity.engine;
 });
+const metadata = computed(() => {
+  return currentTab.value.metadata;
+});
 const state = reactive<LocalState>({
   showEditColumnForeignKeyModal: false,
   showSchemaTemplateDrawer: false,
@@ -143,11 +149,11 @@ const state = reactive<LocalState>({
 const table = computed(() => {
   return currentTab.value.metadata.table;
 });
-const foreignKeyList = computed(() => {
-  return table.value.foreignKeys;
-});
 
-const editForeignKeyColumn = ref<ColumnMetadata>();
+const editForeignKeyContext = ref<{
+  column: ColumnMetadata;
+  foreignKey: ForeignKeyMetadata | undefined;
+}>();
 
 const metadataForColumn = (column: ColumnMetadata) => {
   return {
@@ -188,51 +194,6 @@ const isDroppedTable = computed(() => {
 
 const getColumnItemComputedClassList = (column: ColumnMetadata): string => {
   return statusForColumn(column);
-};
-
-const checkColumnHasForeignKey = (column: ColumnMetadata): boolean => {
-  return foreignKeyList.value.flatMap((fk) => fk.columns).includes(column.name);
-};
-
-const getReferencedForeignKeyName = (column: ColumnMetadata) => {
-  if (!checkColumnHasForeignKey(column)) {
-    return "";
-  }
-  const fk = foreignKeyList.value.find((fk) =>
-    fk.columns.includes(column.name)
-  );
-  if (!fk) {
-    return "";
-  }
-  const index = fk.columns.indexOf(column.name);
-  if (index < 0) {
-    return "";
-  }
-
-  const database = currentTab.value.metadata.database;
-  const referencedSchema = database.schemas.find(
-    (schema) => schema.name === fk.referencedSchema
-  );
-  if (!referencedSchema) {
-    return "";
-  }
-
-  const referencedTable = referencedSchema.tables.find(
-    (table) => table.name === fk.referencedTable
-  );
-  if (!referencedTable) {
-    return "";
-  }
-
-  const referencedColumn = referencedTable.columns.find(
-    (column) => column.name === fk.referencedColumns[index]
-  );
-
-  if (engine.value === Engine.MYSQL) {
-    return `${referencedTable.name}(${referencedColumn?.name})`;
-  } else {
-    return `${referencedSchema.name}.${referencedTable.name}(${referencedColumn?.name})`;
-  }
 };
 
 const isDroppedColumn = (column: ColumnMetadata): boolean => {
@@ -317,10 +278,11 @@ const handleApplyColumnTemplate = (
   markColumnStatus(column, "created");
 };
 
-const gotoForeignKeyReferencedTable = (column: ColumnMetadata) => {
-  if (!checkColumnHasForeignKey(column)) {
-    return;
-  }
+const gotoForeignKeyReferencedTable = (
+  column: ColumnMetadata,
+  fk: ForeignKeyMetadata
+) => {
+  console.log("TODO: gotoForeignKeyReferencedTable", column, fk);
   // const fk = foreignKeyList.value.find(
   //   (fk) =>
   //     fk.columnIdList.find((columnId) => columnId === column.id) !== undefined
@@ -369,8 +331,14 @@ const gotoForeignKeyReferencedTable = (column: ColumnMetadata) => {
   // });
 };
 
-const handleEditColumnForeignKey = (column: ColumnMetadata) => {
-  editForeignKeyColumn.value = column;
+const handleEditColumnForeignKey = (
+  column: ColumnMetadata,
+  foreignKey: ForeignKeyMetadata | undefined
+) => {
+  editForeignKeyContext.value = {
+    column,
+    foreignKey,
+  };
   state.showEditColumnForeignKeyModal = true;
 };
 
@@ -393,7 +361,7 @@ const handleDropColumn = (column: ColumnMetadata) => {
     table.value.columns = table.value.columns.filter((col) => col !== column);
 
     removeColumnPrimaryKey(table.value, column.name);
-    removeColumnForeignKey(table.value, column.name);
+    removeColumnFromAllForeignKeys(table.value, column.name);
   } else {
     markColumnStatus(column, "dropped");
   }

@@ -1,5 +1,6 @@
 import { pull, pullAt } from "lodash-es";
 import {
+  ForeignKeyMetadata,
   IndexMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
@@ -37,7 +38,38 @@ export const removeColumnPrimaryKey = (
     pullAt(table.indexes, pkIndex);
   }
 };
-export const removeColumnForeignKey = (
+export const upsertColumnFromForeignKey = (
+  fk: ForeignKeyMetadata,
+  columnName: string,
+  referencedColumnName: string
+) => {
+  const position = fk.columns.indexOf(columnName);
+  if (position < 0) {
+    fk.columns.push(columnName);
+    fk.referencedColumns.push(referencedColumnName);
+  } else {
+    fk.referencedColumns[position] = referencedColumnName;
+  }
+};
+export const removeColumnFromForeignKey = (
+  table: TableMetadata,
+  fk: ForeignKeyMetadata,
+  columnName: string
+) => {
+  const position = fk.columns.indexOf(columnName);
+  if (position < 0) {
+    return;
+  }
+  pullAt(fk.columns, position);
+  pullAt(fk.referencedColumns, position);
+  if (fk.columns.length === 0) {
+    const position = table.foreignKeys.findIndex((_fk) => _fk.name === fk.name);
+    if (position >= 0) {
+      pullAt(table.foreignKeys, position);
+    }
+  }
+};
+export const removeColumnFromAllForeignKeys = (
   table: TableMetadata,
   columnName: string
 ) => {

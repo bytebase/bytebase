@@ -109,14 +109,12 @@ const props = withDefaults(
     showForeignKey?: boolean;
     table: TableMetadata;
     engine: Engine;
-    foreignKeyList?: ForeignKeyMetadata[];
     classificationConfigId?: string;
     disableChangeTable?: boolean;
     allowReorderColumns?: boolean;
     maxBodyHeight?: number;
     filterColumn?: (column: ColumnMetadata) => boolean;
     disableAlterColumn?: (column: ColumnMetadata) => boolean;
-    getReferencedForeignKeyName?: (column: ColumnMetadata) => string;
     getColumnItemComputedClassList?: (column: ColumnMetadata) => string;
   }>(),
   {
@@ -124,11 +122,9 @@ const props = withDefaults(
     disableChangeTable: false,
     allowReorderColumns: false,
     maxBodyHeight: undefined,
-    foreignKeyList: () => [],
     classificationConfigId: "",
     filterColumn: (_: ColumnMetadata) => true,
     disableAlterColumn: (_: ColumnMetadata) => false,
-    getReferencedForeignKeyName: (_: ColumnMetadata) => "",
     getColumnItemComputedClassList: (_: ColumnMetadata) => "",
   }
 );
@@ -142,8 +138,16 @@ const emit = defineEmits<{
     index: number,
     delta: -1 | 1
   ): void;
-  (event: "foreign-key-edit", column: ColumnMetadata): void;
-  (event: "foreign-key-click", column: ColumnMetadata): void;
+  (
+    event: "foreign-key-edit",
+    column: ColumnMetadata,
+    fk: ForeignKeyMetadata | undefined
+  ): void;
+  (
+    event: "foreign-key-click",
+    column: ColumnMetadata,
+    fk: ForeignKeyMetadata
+  ): void;
   (
     event: "primary-key-set",
     column: ColumnMetadata,
@@ -425,14 +429,17 @@ const columns = computed(() => {
       width: 140,
       className: "text-cell",
       render: (column) => {
+        const { metadata } = currentTab.value;
         return h(ForeignKeyCell, {
-          column,
+          db: database.value,
+          database: metadata.database,
+          schema: metadata.schema,
+          table: props.table,
+          column: column,
           readonly: props.readonly,
           disabled: props.readonly || props.disableAlterColumn(column),
-          hasForeignKey: checkColumnHasForeignKey(column),
-          referencedForeignKeyName: props.getReferencedForeignKeyName(column),
-          onClick: () => emit("foreign-key-click", column),
-          onEdit: () => emit("foreign-key-edit", column),
+          onClick: (fk) => emit("foreign-key-click", column, fk),
+          onEdit: (fk) => emit("foreign-key-edit", column, fk),
         });
       },
     },
@@ -480,13 +487,6 @@ const isColumnPrimaryKey = (column: ColumnMetadata): boolean => {
   const pk = primaryKey.value;
   if (!pk) return false;
   return pk.expressions.includes(column.name);
-};
-
-const checkColumnHasForeignKey = (column: ColumnMetadata): boolean => {
-  const foreignKeyColumnNames = props.foreignKeyList.flatMap(
-    (fk) => fk.columns
-  );
-  return foreignKeyColumnNames.includes(column.name);
 };
 
 const schemaTemplateColumnTypes = computed(() => {

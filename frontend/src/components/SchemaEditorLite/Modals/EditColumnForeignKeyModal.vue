@@ -4,253 +4,255 @@
     class="shadow-inner outline outline-gray-200"
     @close="dismissModal"
   >
+    <div class="w-72 text-xs font-mono">
+      {{ state }}
+    </div>
     <div v-if="shouldShowSchemaSelector" class="w-72">
       <p class="mb-2">{{ $t("schema-editor.select-reference-schema") }}</p>
-      <BBSelect
-        :selected-item="selectedSchema"
-        :item-list="schemas"
+      <NSelect
+        v-model:value="state.referencedSchemaName"
+        :options="referenceSelectOptions"
         :placeholder="$t('schema-editor.schema.select')"
-        :show-prefix-item="true"
-        @select-item="(schema) => (state.referencedSchemaId = schema.id)"
-      >
-        <template #menuItem="{ item }">
-          {{ item.name }}
-        </template>
-      </BBSelect>
+        @update:value="
+          () => {
+            state.referencedTableName = null;
+            state.referencedColumnName = null;
+          }
+        "
+      />
     </div>
     <div class="w-72">
       <p class="mt-4 mb-2">{{ $t("schema-editor.select-reference-table") }}</p>
-      <BBSelect
-        :selected-item="selectedTable"
-        :item-list="tableList"
+      <NSelect
+        v-model:value="state.referencedTableName"
+        :options="referencedTableOptions"
         :placeholder="$t('schema-editor.table.select')"
-        :show-prefix-item="true"
-        @select-item="(table) => (state.referencedTableId = table.id)"
-      >
-        <template #menuItem="{ item }">
-          {{ item.name }}
-        </template>
-      </BBSelect>
+        @update:value="state.referencedColumnName = null"
+      />
     </div>
     <div class="w-72">
       <p class="mt-4 mb-2">{{ $t("schema-editor.select-reference-column") }}</p>
-      <BBSelect
-        :selected-item="selectedColumn"
-        :item-list="columnList"
+      <NSelect
+        v-model:value="state.referencedColumnName"
+        :options="referencedColumnOptions"
         :placeholder="$t('schema-editor.column.select')"
-        :show-prefix-item="true"
-        @select-item="(column) => (state.referencedColumnId = column.id)"
-      >
-        <template #menuItem="{ item }">
-          {{ item.name }}
-        </template>
-      </BBSelect>
+      />
     </div>
-    <div
-      class="w-full flex items-center justify-between mt-6 space-x-2 pr-1 pb-1"
-    >
-      <div class="flex items-center justify-start">
-        <button
+
+    <div class="w-full flex items-center justify-between mt-6">
+      <div class="flex flex-row items-center justify-start">
+        <NButton
           v-if="foreignKey !== undefined"
-          type="button"
-          class="btn-danger"
-          @click="handleRemoveFKButtonClick"
+          type="error"
+          @click="handleRemove"
         >
           {{ $t("common.delete") }}
-        </button>
+        </NButton>
       </div>
-      <div class="flex items-center justify-end space-x-2">
-        <button type="button" class="btn-normal" @click="dismissModal">
+      <div class="flex flex-row items-center justify-end gap-x-2">
+        <NButton @click="dismissModal">
           {{ $t("common.cancel") }}
-        </button>
-        <button class="btn-primary" @click="handleConfirmButtonClick">
+        </NButton>
+        <NButton
+          type="primary"
+          :disabled="!allowConfirm"
+          @click="handleConfirm"
+        >
           {{ $t("common.save") }}
-        </button>
+        </NButton>
       </div>
     </div>
   </BBModal>
 </template>
 
 <script lang="ts" setup>
-import { isUndefined } from "lodash-es";
-import { computed, onMounted, reactive, watch } from "vue";
-import { BBModal, BBSelect } from "@/bbkit";
-import { useSchemaEditorV1Store } from "@/store";
+import { NSelect, SelectOption } from "naive-ui";
+import { computed, onMounted, reactive } from "vue";
+import { BBModal } from "@/bbkit";
+import { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import { Column, ForeignKey } from "@/types/v1/schemaEditor";
+import {
+  ColumnMetadata,
+  DatabaseMetadata,
+  ForeignKeyMetadata,
+  SchemaMetadata,
+  TableMetadata,
+} from "@/types/proto/v1/database_service";
+import { randomString } from "@/utils";
+import { useSchemaEditorContext } from "../context";
+import {
+  removeColumnFromForeignKey,
+  upsertColumnFromForeignKey,
+} from "../edit";
 
 interface LocalState {
-  referencedSchemaId?: string;
-  referencedTableId?: string;
-  referencedColumnId?: string;
+  referencedSchemaName: string;
+  referencedTableName: string | null;
+  referencedColumnName: string | null;
 }
 
+type SchemaSelectOption = SelectOption & {
+  label: string;
+  value: string;
+  schema: SchemaMetadata;
+};
+type TableSelectOption = SchemaSelectOption & {
+  table: TableMetadata;
+};
+type ColumnSelectOption = TableSelectOption & {
+  column: ColumnMetadata;
+};
+
 const props = defineProps<{
-  parentName: string;
-  schemaId: string;
-  tableId: string;
-  columnId: string;
+  database: ComposedDatabase;
+  metadata: DatabaseMetadata;
+  schema: SchemaMetadata;
+  table: TableMetadata;
+  column: ColumnMetadata;
+  foreignKey?: ForeignKeyMetadata;
 }>();
 
 const emit = defineEmits<{
   (event: "close"): void;
 }>();
 
-const schemaEditorV1Store = useSchemaEditorV1Store();
+const { markEditStatus, getColumnStatus } = useSchemaEditorContext();
 const state = reactive<LocalState>({
-  referencedSchemaId: props.schemaId,
+  referencedSchemaName: props.schema.name,
+  referencedTableName: null,
+  referencedColumnName: null,
 });
-
 const engine = computed(() => {
-  return schemaEditorV1Store.getCurrentEngine(props.parentName);
+  return props.database.instanceEntity.engine;
 });
 
-const parentResource = computed(() => {
-  return schemaEditorV1Store.resourceMap[schemaEditorV1Store.resourceType].get(
-    props.parentName
+const referencedSchema = computed(() => {
+  return props.metadata.schemas.find(
+    (s) => s.name === state.referencedSchemaName
   );
 });
-
-const schemas = computed(() => {
-  return parentResource.value?.schemaList || [];
+const referencedTable = computed(() => {
+  const schema = referencedSchema.value;
+  if (!schema) return undefined;
+  if (!state.referencedTableName) return undefined;
+  const table = schema.tables.find((t) => t.name === state.referencedTableName);
+  if (!table) return undefined;
+  return { schema, table };
 });
-
-const schema = computed(() => {
-  return schemaEditorV1Store.getSchema(props.parentName, props.schemaId);
+const referencedColumn = computed(() => {
+  if (!referencedTable.value) return undefined;
+  const { schema, table } = referencedTable.value;
+  if (!state.referencedColumnName) return undefined;
+  const column = table?.columns.find(
+    (c) => c.name === state.referencedColumnName
+  );
+  if (!column) return undefined;
+  return { schema, table, column };
 });
-
-const table = computed(() => {
-  return schema.value?.tableList.find((item) => item.id === props.tableId);
+const referenceSelectOptions = computed(() => {
+  return props.metadata.schemas.map<SchemaSelectOption>((schema) => ({
+    label: schema.name,
+    value: schema.name,
+    schema,
+  }));
 });
-
-const propsColumn = computed(() => {
-  return table.value?.columnList.find((item) => item.id === props.columnId);
+const referencedTableOptions = computed(() => {
+  const schema = referencedSchema.value;
+  if (!schema) return [];
+  return schema.tables.map<TableSelectOption>((table) => ({
+    label: table.name,
+    value: table.name,
+    schema,
+    table,
+  }));
 });
-
-const foreignKeyList = computed(() => {
-  return table.value?.foreignKeyList || [];
+const referencedColumnOptions = computed(() => {
+  if (!referencedTable.value) return [];
+  const { schema, table } = referencedTable.value;
+  return table.columns.map<ColumnSelectOption>((column) => ({
+    label: column.name,
+    value: column.name,
+    schema,
+    table,
+    column,
+  }));
+});
+const allowConfirm = computed(() => {
+  return referencedColumn.value !== undefined;
 });
 
 const shouldShowSchemaSelector = computed(() => {
   return engine.value === Engine.POSTGRES;
 });
 
-const selectedSchema = computed(() => {
-  return parentResource.value?.schemaList.find(
-    (schema) => schema.id === state.referencedSchemaId
-  );
-});
-
-const tableList = computed(() => {
-  return selectedSchema.value?.tableList || [];
-});
-
-const selectedTable = computed(() => {
-  return tableList.value.find((table) => table.id === state.referencedTableId);
-});
-
-const columnList = computed(() => {
-  if (!selectedTable.value) {
-    return [];
-  }
-
-  return selectedTable.value.columnList.filter(
-    (column) =>
-      column.id !== props.columnId &&
-      column.type.toUpperCase() === propsColumn.value?.type.toUpperCase()
-  );
-});
-
-const selectedColumn = computed(() => {
-  return columnList.value.find(
-    (column) => column.id === state.referencedColumnId
-  );
-});
-
-const foreignKey = computed(() => {
-  for (const fk of foreignKeyList.value) {
-    const foundIndex = fk.columnIdList.findIndex((id) => id === props.columnId);
-    if (foundIndex > -1) {
-      return fk;
-    }
-  }
-  return undefined;
-});
-
 onMounted(() => {
-  if (foreignKey.value) {
-    const foundIndex = foreignKey.value.columnIdList.findIndex(
-      (id) => id === props.columnId
-    );
-    if (foundIndex > -1) {
-      state.referencedSchemaId = foreignKey.value.referencedSchemaId;
-      state.referencedTableId = foreignKey.value.referencedTableId;
-      state.referencedColumnId =
-        foreignKey.value.referencedColumnIdList[foundIndex];
-    }
-  }
+  const { foreignKey } = props;
+  if (!foreignKey) return;
+  const position = foreignKey.columns.indexOf(props.column.name);
+  if (position < 0) return;
+  state.referencedSchemaName = foreignKey.referencedSchema;
+  state.referencedTableName = foreignKey.referencedTable;
+  state.referencedColumnName = foreignKey.referencedColumns[position];
 });
 
-watch(
-  () => state.referencedTableId,
-  () => {
-    const found = columnList.value.find(
-      (column) => column.id === state.referencedColumnId
-    );
-    if (!found) {
-      state.referencedColumnId = undefined;
-    }
-  }
-);
-
-const handleRemoveFKButtonClick = async () => {
-  if (isUndefined(foreignKey.value)) {
-    return;
-  }
-
-  const index = foreignKey.value.columnIdList.findIndex(
-    (id) => id === propsColumn.value?.id
-  );
-  if (index > -1) {
-    foreignKey.value.referencedColumnIdList.splice(index, 1);
-    foreignKey.value.columnIdList.splice(index, 1);
-    dismissModal();
+const metadataForColumn = () => {
+  return {
+    database: props.metadata,
+    schema: props.schema,
+    table: props.table,
+    column: props.column,
+  };
+};
+const statusForColumn = () => {
+  return getColumnStatus(props.database, metadataForColumn());
+};
+const markColumnUpdatedIfNeeded = () => {
+  if (statusForColumn() !== "created") {
+    markEditStatus(props.database, metadataForColumn(), "updated");
   }
 };
 
-const handleConfirmButtonClick = async () => {
-  if (
-    isUndefined(state.referencedSchemaId) ||
-    isUndefined(state.referencedTableId) ||
-    isUndefined(state.referencedColumnId)
-  ) {
+const handleRemove = async () => {
+  const { foreignKey } = props;
+  if (!foreignKey) return;
+
+  removeColumnFromForeignKey(props.table, foreignKey, props.column.name);
+
+  markColumnUpdatedIfNeeded();
+  dismissModal();
+};
+
+const handleConfirm = async () => {
+  if (!referencedColumn.value) {
     return;
   }
 
-  const column = propsColumn.value as Column;
-  if (isUndefined(foreignKey.value)) {
-    const fk: ForeignKey = {
-      // NOTE: keep it empty, we will generate a formated name in `mergeSchemaEditToMetadata`.
-      name: "",
-      tableId: props.tableId,
-      columnIdList: [column.id],
-      referencedSchemaId: state.referencedSchemaId,
-      referencedTableId: state.referencedTableId,
-      referencedColumnIdList: [state.referencedColumnId],
-    };
-    table.value?.foreignKeyList.push(fk);
-  } else {
-    const index = foreignKey.value.columnIdList.findIndex(
-      (id) => id === column.id
-    );
-    if (index >= 0) {
-      foreignKey.value.referencedColumnIdList[index] = state.referencedColumnId;
-      foreignKey.value.columnIdList[index] = column.id;
-    } else {
-      foreignKey.value.referencedColumnIdList.push(state.referencedColumnId);
-      foreignKey.value.columnIdList.push(column.id);
+  const { foreignKey, table, column } = props;
+  const refed = referencedColumn.value;
+  if (foreignKey) {
+    // upsert column in existed foreignKey
+    if (
+      foreignKey.referencedSchema !== refed.schema.name ||
+      foreignKey.referencedTable !== refed.table.name
+    ) {
+      // refed schema/table changed, clear the ref column list
+      foreignKey.referencedSchema = refed.schema.name;
+      foreignKey.referencedTable = refed.table.name;
+      foreignKey.columns = [];
+      foreignKey.referencedColumns = [];
     }
+    upsertColumnFromForeignKey(foreignKey, column.name, refed.column.name);
+  } else {
+    const fk = ForeignKeyMetadata.fromPartial({
+      name: `${table.name}-fk-${randomString(8).toLowerCase()}`,
+      columns: [props.column.name],
+      referencedSchema: refed.schema.name,
+      referencedTable: refed.table.name,
+      referencedColumns: [refed.column.name],
+    });
+    table.foreignKeys.push(fk);
   }
+  markColumnUpdatedIfNeeded();
   dismissModal();
 };
 
