@@ -13,7 +13,6 @@
 </h1>
 
 <p align="center">
-  <a href="https://demo.bytebase.com?source=github" target="_blank"><b>🔥 Live Demo</b></a> •
   <a href="https://bytebase.com/docs/get-started/install/overview" target="_blank"><b>⚙️ Install</b></a> •
   <a href="https://bytebase.com/docs"><b>📚 Docs</b></a> •
   <a href="https://discord.gg/huyw7gRsyA"><b>💬 Discord</b></a> •
@@ -121,7 +120,7 @@
 
 # 🖖 Intro
 
-Bytebase is a Database CI/CD solution for the Developers and DBAs. It's the **only database CI/CD project** included by the [CNCF Landscape](https://landscape.cncf.io/?selected=bytebase). The Bytebase family consists of these tools:
+Bytebase is a Database CI/CD solution for the Developers and DBAs. It's the **only database CI/CD project** included by the [CNCF Landscape](https://landscape.cncf.io/?selected=bytebase) and [Platform Engineering](https://platformengineering.org/tools/bytebase). The Bytebase family consists of these tools:
 
 - [Bytebase Console](https://bytebase.com/?source=github): A web-based GUI for developers and DBAs to manage the database development lifecycle.
 - [Bytebase CLI (bb)](https://www.bytebase.com/docs/cli/overview): The CLI to help developers integrate database changes into the existing CI/CD workflow.
@@ -133,7 +132,7 @@ Bytebase is a Database CI/CD solution for the Developers and DBAs. It's the **on
 
 |     | Topic                                                               |
 | --- | :------------------------------------------------------------------ |
-| 🏗️  | <b>[Installation](#-installation)</b>                               |
+| 🔧  | <b>[Installation](#-installation)</b>                               |
 | 🎮  | <b>[Demo](#-demo)</b>                                               |
 | 👩‍🏫  | <b>[Tutorials](#-tutorials)</b>                                     |
 | 💎  | <b>[Design Principles](#-design-principles)</b>                     |
@@ -144,21 +143,15 @@ Bytebase is a Database CI/CD solution for the Developers and DBAs. It's the **on
 
 <br />
 
-# 🏗️ Installation
+# 🔧 Installation
 
-### One liner
-
-```bash
-# One-liner installation script from latest release
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/bytebase/install/main/install.sh)"
-
-```
-
-- [Build from source](https://www.bytebase.com/docs/get-started/install/build-from-source-code)
+- One liner installation script from latest release
+  ```bash
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/bytebase/install/main/install.sh)"
+  ```
 - [Docker](https://www.bytebase.com/docs/get-started/install/deploy-with-docker)
 - [Kubernetes](https://www.bytebase.com/docs/get-started/install/deploy-to-kubernetes)
-- [render.com](https://www.bytebase.com/docs/get-started/install/deploy-to-render)
-- [Rainbond](https://www.bytebase.com/docs/get-started/install/deploy-to-rainbond)
+- [Build from source](https://www.bytebase.com/docs/get-started/install/build-from-source-code)
 
 <br />
 
@@ -280,10 +273,10 @@ Below diagram describes a typical mapping between an engineering org and the cor
 
 1. Create an external Postgres database on localhost.
 
-  ```sql
-  CREATE USER bbdev SUPERUSER;
-  CREATE DATABASE bbdev;
-  ```
+   ```sql
+   CREATE USER bbdev SUPERUSER;
+   CREATE DATABASE bbdev;
+   ```
 
 1. Start backend using air (with live reload).
 
@@ -313,9 +306,8 @@ Below diagram describes a typical mapping between an engineering org and the cor
 
 ### Tips
 
-* Use [Code Inspector](https://en.inspector.fe-dev.cn/guide/start.html#method1-recommend) to locate
-frontend code from UI. Hold `Option + Shift` on Mac or `Alt + Shift` on Windows
-
+- Use [Code Inspector](https://en.inspector.fe-dev.cn/guide/start.html#method1-recommend) to locate
+  frontend code from UI. Hold `Option + Shift` on Mac or `Alt + Shift` on Windows
 
 <br />
 
