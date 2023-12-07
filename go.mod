@@ -1,6 +1,6 @@
 module github.com/bytebase/bytebase
 
-go 1.21.3
+go 1.21.5
 
 require (
 	cloud.google.com/go/spanner v1.53.0
