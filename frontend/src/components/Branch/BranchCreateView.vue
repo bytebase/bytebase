@@ -18,6 +18,7 @@
       <BranchSelector
         v-model:branch="parentBranchName"
         :project="projectId"
+        :loading="isPreparingBranch"
         class="!w-60"
         clearable
       />
@@ -36,6 +37,7 @@
       v-model:database-id="databaseId"
       :project-id="projectId"
       :readonly="disallowToChangeBaseline"
+      :loading="isPreparingBranch"
     />
     <div v-if="false" class="w-full text-xs font-mono">
       <div>debug info</div>
@@ -97,7 +99,6 @@ import { UNKNOWN_ID } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { bytesToString, projectV1Slug } from "@/utils";
-import MaskSpinner from "../misc/MaskSpinner.vue";
 import BaselineSchemaSelector from "./BaselineSchemaSelector.vue";
 import { validateBranchName } from "./utils";
 
