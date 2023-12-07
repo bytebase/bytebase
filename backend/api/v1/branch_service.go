@@ -45,10 +45,10 @@ func (s *BranchService) GetBranch(ctx context.Context, request *v1pb.GetBranchRe
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	if err := s.checkBranchPermission(ctx, projectID); err != nil {
+	if err := s.checkBranchPermission(ctx, project.ResourceID); err != nil {
 		return nil, err
 	}
-	branch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &projectID, ResourceID: &branchID, LoadFull: true})
+	branch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &project.ResourceID, ResourceID: &branchID, LoadFull: true})
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func (s *BranchService) ListBranches(ctx context.Context, request *v1pb.ListBran
 	if err != nil {
 		return nil, err
 	}
-	if err := s.checkBranchPermission(ctx, projectID); err != nil {
+	if err := s.checkBranchPermission(ctx, project.ResourceID); err != nil {
 		return nil, err
 	}
 
@@ -117,11 +117,11 @@ func (s *BranchService) CreateBranch(ctx context.Context, request *v1pb.CreateBr
 	if err != nil {
 		return nil, err
 	}
-	if err := s.checkBranchPermission(ctx, projectID); err != nil {
+	if err := s.checkBranchPermission(ctx, project.ResourceID); err != nil {
 		return nil, err
 	}
 
-	branch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &projectID, ResourceID: &branchID, LoadFull: false})
+	branch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &project.ResourceID, ResourceID: &branchID, LoadFull: false})
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +151,7 @@ func (s *BranchService) CreateBranch(ctx context.Context, request *v1pb.CreateBr
 			return nil, status.Errorf(codes.NotFound, "parent branch %q not found", parentBranchID)
 		}
 		created, err := s.store.CreateBranch(ctx, &store.BranchMessage{
-			ProjectID:  projectID,
+			ProjectID:  project.ResourceID,
 			ResourceID: branchID,
 			Engine:     parentBranch.Engine,
 			Base:       parentBranch.Head,
@@ -194,7 +194,7 @@ func (s *BranchService) CreateBranch(ctx context.Context, request *v1pb.CreateBr
 			return nil, status.Errorf(codes.NotFound, "database schema %q not found", databaseName)
 		}
 		created, err := s.store.CreateBranch(ctx, &store.BranchMessage{
-			ProjectID:  projectID,
+			ProjectID:  project.ResourceID,
 			ResourceID: branchID,
 			Engine:     instance.Engine,
 			Base: &storepb.BranchSnapshot{
@@ -240,11 +240,11 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 	if err != nil {
 		return nil, err
 	}
-	if err := s.checkBranchPermission(ctx, projectID); err != nil {
+	if err := s.checkBranchPermission(ctx, project.ResourceID); err != nil {
 		return nil, err
 	}
 
-	branch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &projectID, ResourceID: &branchID, LoadFull: true})
+	branch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &project.ResourceID, ResourceID: &branchID, LoadFull: true})
 	if err != nil {
 		return nil, err
 	}
@@ -264,7 +264,7 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 		if len(request.UpdateMask.Paths) > 1 {
 			return nil, status.Errorf(codes.InvalidArgument, "cannot update branch_id with other types of updates")
 		}
-		updateBranchMessage := &store.UpdateBranchMessage{ProjectID: projectID, ResourceID: branchID, UpdaterID: principalID, UpdateResourceID: &request.Branch.BranchId}
+		updateBranchMessage := &store.UpdateBranchMessage{ProjectID: project.ResourceID, ResourceID: branchID, UpdaterID: principalID, UpdateResourceID: &request.Branch.BranchId}
 		if err := s.store.UpdateBranch(ctx, updateBranchMessage); err != nil {
 			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to update branch, error %v", err))
 		}
@@ -284,14 +284,14 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 			Metadata:       metadata,
 			DatabaseConfig: config,
 		}
-		updateBranchMessage := &store.UpdateBranchMessage{ProjectID: projectID, ResourceID: branchID, UpdaterID: principalID}
+		updateBranchMessage := &store.UpdateBranchMessage{ProjectID: project.ResourceID, ResourceID: branchID, UpdaterID: principalID}
 		updateBranchMessage.Head = headUpdate
 		if err := s.store.UpdateBranch(ctx, updateBranchMessage); err != nil {
 			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to update branch, error %v", err))
 		}
 	}
 
-	branch, err = s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &projectID, ResourceID: &branchID, LoadFull: true})
+	branch, err = s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &project.ResourceID, ResourceID: &branchID, LoadFull: true})
 	if err != nil {
 		return nil, err
 	}
@@ -553,7 +553,7 @@ func (s *BranchService) DeleteBranch(ctx context.Context, request *v1pb.DeleteBr
 	if err := s.checkBranchPermission(ctx, project.ResourceID); err != nil {
 		return nil, err
 	}
-	branch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &projectID, ResourceID: &branchID, LoadFull: false})
+	branch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &project.ResourceID, ResourceID: &branchID, LoadFull: false})
 	if err != nil {
 		return nil, err
 	}
