@@ -163,7 +163,7 @@ const columns = computed(() => {
       key: "comment",
       title: t("database.comment"),
       render: (row) => {
-        return h(EllipsisText, { text: row.comment });
+        return h(EllipsisText, { text: row.userComment });
       },
     },
   ];
