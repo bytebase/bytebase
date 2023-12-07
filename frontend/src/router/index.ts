@@ -731,6 +731,36 @@ const routes: Array<RouteRecordRaw> = [
             ],
           },
           {
+            path: "projects/:projectId",
+            components: {
+              content: () => import("../layouts/ProjectV1Layout.vue"),
+              leftSidebar: ProjectSidebar,
+            },
+            props: { content: true, leftSidebar: true },
+            children: [
+              {
+                path: "databases",
+                name: "workspace.project.database.dashboard",
+                meta: {
+                  overrideTitle: true,
+                },
+                component: () =>
+                  import("../views/project/ProjectDatabaseDashboard.vue"),
+                props: true,
+              },
+              {
+                path: "issues",
+                name: "workspace.project.issue.dashboard",
+                meta: {
+                  overrideTitle: true,
+                },
+                component: () =>
+                  import("../views/project/ProjectIssueDashboard.vue"),
+                props: true,
+              },
+            ],
+          },
+          {
             path: "instance",
             name: "workspace.instance",
             meta: {
@@ -1106,11 +1136,19 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.issue" ||
     to.name === "workspace.environment" ||
     to.name === "sql-editor.home" ||
-    to.name?.toString().startsWith("sheets") ||
     (to.name?.toString().startsWith("setting") &&
       to.name?.toString() != "setting.workspace.gitops.detail" &&
       to.name?.toString() != "setting.workspace.sql-review.detail" &&
       to.name?.toString() != "setting.workspace.sso.detail")
+  ) {
+    next();
+    return;
+  }
+
+  if (
+    to.name === "workspace.project.detailV1" ||
+    to.name === "workspace.project.database.dashboard" ||
+    to.name === "workspace.project.issue.dashboard"
   ) {
     next();
     return;

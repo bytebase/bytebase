@@ -6,12 +6,14 @@ import {
   useDatabaseV1Store,
   experimentalFetchIssueByUID,
 } from "@/store";
+import { projectNamePrefix } from "@/store/modules/v1/common";
 import { unknownProject, unknownDatabase, UNKNOWN_ID, EMPTY_ID } from "@/types";
 import { idFromSlug } from "@/utils";
 
 export const useCurrentProject = (
   params: ComputedRef<{
     projectSlug?: string;
+    projectId?: string;
     issueSlug?: string;
     databaseSlug?: string;
     changeHistorySlug?: string;
@@ -53,6 +55,10 @@ export const useCurrentProject = (
     } else if (unref(params).projectSlug) {
       return useProjectV1Store().getProjectByUID(
         String(idFromSlug(unref(params).projectSlug!))
+      );
+    } else if (unref(params).projectId) {
+      return useProjectV1Store().getProjectByName(
+        `${projectNamePrefix}${unref(params).projectId}`
       );
     } else if (unref(params).databaseSlug || unref(params).changeHistorySlug) {
       return database.value.projectEntity;

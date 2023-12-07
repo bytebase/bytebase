@@ -62,6 +62,7 @@ interface ProjectSidebarItem extends SidebarItem {
 
 const props = defineProps<{
   projectSlug?: string;
+  projectId?: string;
   issueSlug?: string;
   databaseSlug?: string;
   changeHistorySlug?: string;
@@ -83,6 +84,7 @@ const state = reactive<LocalState>({
 const params = computed(() => {
   return {
     projectSlug: props.projectSlug,
+    projectId: props.projectId,
     issueSlug: props.issueSlug,
     databaseSlug: props.databaseSlug,
     changeHistorySlug: props.changeHistorySlug,
