@@ -14,6 +14,14 @@ export const useTabs = () => {
   });
 
   const addTab = (coreTab: CoreTabContext, setAsCurrentTab = true) => {
+    const existedTab = findTab(coreTab);
+    if (existedTab) {
+      if (setAsCurrentTab) {
+        currentTabId.value = existedTab.id;
+      }
+      return;
+    }
+
     const id = uuidv1();
     const tab: TabContext = {
       id,
@@ -53,8 +61,21 @@ export const useTabs = () => {
     }
     tabMap.value.delete(id);
   };
-  const findTab = () => {
-    // TBD
+  const findTab = (target: CoreTabContext) => {
+    return tabList.value.find((tab) => {
+      if (tab.type !== target.type) return false;
+      if (tab.database.name !== target.database.name) return false;
+      if (tab.type === "database" && target.type === "database") {
+        return tab.metadata.database.name === target.database.name;
+      }
+      if (tab.type === "table" && target.type === "table") {
+        return (
+          tab.metadata.schema.name === target.metadata.schema.name &&
+          tab.metadata.table.name === target.metadata.table.name
+        );
+      }
+      return false;
+    });
   };
 
   return {
@@ -68,101 +89,3 @@ export const useTabs = () => {
     findTab,
   };
 };
-
-// findTab(parentName: string, tableId?: string) {
-//   let tabType = SchemaEditorTabType.TabForDatabase;
-//   if (tableId !== undefined) {
-//     tabType = SchemaEditorTabType.TabForTable;
-//   }
-
-//   const tab = this.tabList.find((tab) => {
-//     if (
-//       tab.type === tabType &&
-//       tab.parentName === parentName &&
-//       (tab.type === SchemaEditorTabType.TabForDatabase ||
-//         (tab.type === SchemaEditorTabType.TabForTable &&
-//           tab.tableId === tableId))
-//     ) {
-//       return true;
-//     }
-//     return false;
-//   });
-
-//   return tab;
-// }
-
-// addTab(tab: TabContext, setAsCurrentTab = true) {
-//   const tabCache = this.tabList.find((item) => {
-//     if (
-//       item.type === tab.type &&
-//       item.parentName === tab.parentName &&
-//       (item.type === SchemaEditorTabType.TabForDatabase ||
-//         (item.type === SchemaEditorTabType.TabForTable &&
-//           item.tableId === (tab as TableTabContext).tableId))
-//     ) {
-//       return true;
-//     }
-//     return false;
-//   });
-
-//   if (tabCache !== undefined) {
-//     tab = {
-//       ...tabCache,
-//       ...tab,
-//       id: tabCache.id,
-//     };
-//   }
-//   this.tabState.tabMap.set(tab.id, tab);
-
-//   if (setAsCurrentTab) {
-//     this.setCurrentTab(tab.id);
-//   }
-// },
-// setCurrentTab(tabId: string) {
-//   if (isUndefined(this.tabState.tabMap.get(tabId))) {
-//     this.tabState.currentTabId = undefined;
-//   } else {
-//     this.tabState.currentTabId = tabId;
-//   }
-// },
-// closeTab(tabId: string) {
-//   const tabList = Array.from(this.tabState.tabMap.values());
-//   const tabIndex = tabList.findIndex((tab) => tab.id === tabId);
-//   // Find next tab for showing.
-//   if (this.tabState.currentTabId === tabId) {
-//     let nextTabIndex = -1;
-//     if (tabIndex === 0) {
-//       nextTabIndex = 1;
-//     } else {
-//       nextTabIndex = tabIndex - 1;
-//     }
-//     const nextTab = tabList[nextTabIndex];
-//     if (nextTab) {
-//       this.setCurrentTab(nextTab.id);
-//     } else {
-//       this.setCurrentTab("");
-//     }
-//   }
-//   this.tabState.tabMap.delete(tabId);
-// },
-// findTab(parentName: string, tableId?: string) {
-//   let tabType = SchemaEditorTabType.TabForDatabase;
-//   if (tableId !== undefined) {
-//     tabType = SchemaEditorTabType.TabForTable;
-//   }
-
-//   const tab = this.tabList.find((tab) => {
-//     if (
-//       tab.type === tabType &&
-//       tab.parentName === parentName &&
-//       (tab.type === SchemaEditorTabType.TabForDatabase ||
-//         (tab.type === SchemaEditorTabType.TabForTable &&
-//           tab.tableId === tableId))
-//     ) {
-//       return true;
-//     }
-//     return false;
-//   });
-
-//   return tab;
-// }
