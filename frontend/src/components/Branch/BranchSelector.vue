@@ -7,6 +7,8 @@
     :filterable="true"
     :clearable="clearable"
     :filter="filterByName"
+    :loading="!ready"
+    :disabled="disabled || loading"
     class="bb-branch-select"
     :render-label="renderLabel"
     @update:value="$emit('update:branch', $event)"
@@ -30,6 +32,8 @@ const props = defineProps<{
   project?: string;
   branch?: string;
   clearable?: boolean;
+  loading?: boolean;
+  disabled?: boolean;
   filter?: (branch: Branch, index: number) => boolean;
 }>();
 
@@ -37,7 +41,7 @@ defineEmits<{
   (event: "update:branch", name: string | undefined): void;
 }>();
 
-const { branchList: branchList } = useBranchList(props.project || "");
+const { branchList, ready } = useBranchList(props.project || "");
 const databaseStore = useDatabaseV1Store();
 
 const combinedBranchList = computed(() => {
