@@ -128,7 +128,7 @@
 </template>
 
 <script lang="ts" setup>
-import { head } from "lodash-es";
+import { cloneDeep, head } from "lodash-es";
 import { PlusIcon } from "lucide-vue-next";
 import { computed, nextTick, reactive, watch } from "vue";
 import { SchemaDiagramIcon } from "@/components/SchemaDiagram";
@@ -169,7 +169,8 @@ interface LocalState {
 }
 
 const context = useSchemaEditorContext();
-const { readonly, addTab, getSchemaStatus } = context;
+const { readonly, addTab, getSchemaStatus, markEditStatus, upsertTableConfig } =
+  context;
 const currentTab = computed(() => {
   return context.currentTab.value as DatabaseTabContext;
 });
@@ -303,29 +304,35 @@ const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
     state.showFeatureModal = true;
     return;
   }
-  if (!template.table || template.engine !== engine.value) {
+  if (!template.table) {
+    return;
+  }
+  if (template.engine !== engine.value) {
     return;
   }
 
-  // const tableEdit = convertTableMetadataToTable(
-  //   template.table,
-  //   "created",
-  //   template.config
-  // );
-
-  // const selectedSchema = schemaList.value.find(
-  //   (schema) => schema.id === state.selectedSchema
-  // );
-  // if (selectedSchema) {
-  //   selectedSchema.tableList.push(tableEdit);
-  //   editorStore.addTab({
-  //     id: generateUniqueTabId(),
-  //     type: SchemaEditorTabType.TabForTable,
-  //     parentName: currentTab.value.parentName,
-  //     schemaId: state.selectedSchema,
-  //     tableId: tableEdit.id,
-  //     name: template.table.name,
-  //   });
-  // }
+  const db = database.value;
+  const table = cloneDeep(template.table);
+  const schema = selectedSchema.value;
+  if (!schema) {
+    return;
+  }
+  schema.tables.push(table);
+  const metadataForTable = () => {
+    return {
+      database: metadata.value,
+      schema,
+      table,
+    };
+  };
+  if (template.config) {
+    upsertTableConfig(db, metadataForTable(), (config) => {
+      Object.assign(config, template.config);
+    });
+  }
+  markEditStatus(db, metadataForTable(), "created");
+  table.columns.forEach((column) => {
+    markEditStatus(db, { ...metadataForTable(), column }, "created");
+  });
 };
 </script>

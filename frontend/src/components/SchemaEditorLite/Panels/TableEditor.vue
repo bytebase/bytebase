@@ -302,14 +302,18 @@ const handleApplyColumnTemplate = (
   const column = cloneDeep(template.column);
   table.value.columns.push(column);
   const { metadata } = currentTab.value;
-  upsertColumnConfig(
-    database.value,
-    {
-      ...metadata,
-      column,
-    },
-    (config) => Object.assign(config, template.config)
-  );
+  if (template.config) {
+    upsertColumnConfig(
+      database.value,
+      {
+        ...metadata,
+        column,
+      },
+      (config) => {
+        Object.assign(config, template.config);
+      }
+    );
+  }
   markColumnStatus(column, "created");
 };
 
