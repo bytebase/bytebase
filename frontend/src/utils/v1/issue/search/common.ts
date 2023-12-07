@@ -7,7 +7,10 @@ export const UIIssueFilterScopeIdList = [
   "approval",
   "releaser",
 ] as const;
-export type UIIssueFilterScopeId = typeof UIIssueFilterScopeIdList[number];
+type UIIssueFilterScopeId = typeof UIIssueFilterScopeIdList[number];
+
+export const CommonFilterScopeIdList = ["environment", "instance"] as const;
+type CommonFilterScopeId = typeof CommonFilterScopeIdList[number];
 
 export const SearchScopeIdList = [
   "project",
@@ -23,7 +26,8 @@ export const SearchScopeIdList = [
 
 export type SearchScopeId =
   | typeof SearchScopeIdList[number]
-  | UIIssueFilterScopeId;
+  | UIIssueFilterScopeId
+  | CommonFilterScopeId;
 
 export type SearchScope = {
   id: SearchScopeId;
@@ -38,7 +42,8 @@ export interface SearchParams {
 export const isValidSearchScopeId = (id: string): id is SearchScopeId => {
   return (
     SearchScopeIdList.includes(id as any) ||
-    UIIssueFilterScopeIdList.includes(id as any)
+    UIIssueFilterScopeIdList.includes(id as any) ||
+    CommonFilterScopeIdList.includes(id as any)
   );
 };
 

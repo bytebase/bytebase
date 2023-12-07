@@ -16,11 +16,7 @@
 <script lang="ts" setup>
 import { NSelect, SelectOption, SelectRenderLabel } from "naive-ui";
 import { computed, h } from "vue";
-import { useDatabaseV1Store, useProjectV1Store, useBranchList } from "@/store";
-import {
-  getProjectAndBranchId,
-  projectNamePrefix,
-} from "@/store/modules/v1/common";
+import { useDatabaseV1Store, useBranchList } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { InstanceV1EngineIcon } from "../v2";
@@ -42,20 +38,10 @@ defineEmits<{
 }>();
 
 const { branchList: branchList } = useBranchList(props.project || "");
-const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
 
 const combinedBranchList = computed(() => {
   let list = branchList.value;
-  if (props.project) {
-    const project = projectStore.getProjectByUID(props.project);
-    if (project) {
-      list = list.filter((branch) => {
-        const [projectName] = getProjectAndBranchId(branch.name);
-        return project.name === `${projectNamePrefix}${projectName}`;
-      });
-    }
-  }
   if (props.filter) {
     list = list.filter(props.filter);
   }

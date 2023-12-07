@@ -36,8 +36,7 @@
                 {
                   "name": "a",
                   "type": "varchar(10)",
-                  "hasDefault": true,
-                  "defaultString": "default value",
+                  "default": "default value",
                   "comment": "this is comment, aha"
                 },
                 {
@@ -47,7 +46,6 @@
                 {
                   "name": "c",
                   "type": "int",
-                  "hasDefault": true,
                   "defaultExpression": "AUTO_INCREMENT"
                 },
                 {
@@ -198,7 +196,6 @@
                   "name":  "a",
                   "nullable":  true,
                   "type":  "int",
-                  "hasDefault": true,
                   "defaultExpression": "AUTO_INCREMENT"
                 }
               ]
@@ -210,7 +207,6 @@
                   "name":  "a",
                   "nullable":  true,
                   "type":  "int",
-                  "hasDefault": true,
                   "defaultExpression": "AUTO_INCREMENT"
                 }
               ]
@@ -222,7 +218,6 @@
                   "name":  "a",
                   "nullable":  true,
                   "type":  "int",
-                  "hasDefault": true,
                   "defaultExpression": "AUTO_INCREMENT"
                 }
               ]
@@ -234,7 +229,6 @@
                   "name":  "a",
                   "nullable":  true,
                   "type":  "int",
-                  "hasDefault": true,
                   "defaultExpression": "1"
                 }
               ]

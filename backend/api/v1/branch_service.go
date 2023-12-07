@@ -255,7 +255,9 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
-	// TODO(d): handle etag.
+	if request.Etag != "" && request.Etag != fmt.Sprintf("%d", branch.UpdatedTime.UnixMilli()) {
+		return nil, status.Errorf(codes.Aborted, "there is concurrent update to the branch, please refresh and try again.")
+	}
 
 	// Handle branch ID update.
 	if slices.Contains(request.UpdateMask.Paths, "branch_id") {
@@ -266,49 +268,27 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 		if err := s.store.UpdateBranch(ctx, updateBranchMessage); err != nil {
 			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to update branch, error %v", err))
 		}
-		branch, err = s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &projectID, ResourceID: &request.Branch.BranchId, LoadFull: true})
-		if err != nil {
-			return nil, err
-		}
-		v1Branch, err := s.convertBranchToBranch(ctx, project, branch, v1pb.BranchView_BRANCH_VIEW_FULL)
-		if err != nil {
-			return nil, err
-		}
-		return v1Branch, nil
+		// Update the branchID for getting branch in the end.
+		branchID = request.Branch.BranchId
 	}
 
-	headUpdate := branch.Head
-	hasHeadUpdate := false
-	// The update includes the following cases.
-	// 1) schema_metadata: update the current branch. We need to update schema accordingly, or we lazily update it till merge branch.
-	// 2) baseline_database and schema: rebase the baseline schema metadata and baseline schema. Use schema to create schema_metadata.
-
-	// TODO(d): this section needs some clarifications for merging branches.
-	if slices.Contains(request.UpdateMask.Paths, "schema") {
-		headUpdate.Schema = []byte(request.Branch.Schema)
-		hasHeadUpdate = true
-		// TODO(d): convert schema to metadata.
-		// Try to transform the schema string to database metadata to make sure it's valid.
-		// if _, err := transformSchemaStringToDatabaseMetadata(schemaDesign.Engine, *sheetUpdate.Statement); err != nil {
-		// 	return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to transform schema string to database metadata: %v", err))
-		// }
-	} else if slices.Contains(request.UpdateMask.Paths, "schema_metadata") {
+	if slices.Contains(request.UpdateMask.Paths, "schema_metadata") {
 		sanitizeBranchSchemaMetadata(request.Branch)
-		// schema, err := getDesignSchema(schemaDesign.Engine, schemaDesign.BaselineSchema, schemaDesign.SchemaMetadata)
-		// if err != nil {
-		// 	return nil, err
-		// }
-		// TODO(d): convert metadata to schema.
-		hasHeadUpdate = true
-	}
-	// TODO(d): handle database config as well.
-
-	updateBranchMessage := &store.UpdateBranchMessage{ProjectID: projectID, ResourceID: branchID, UpdaterID: principalID}
-	if hasHeadUpdate {
+		metadata, config := convertV1DatabaseMetadata(request.Branch.GetSchemaMetadata())
+		schema, err := getDesignSchema(branch.Engine, string(branch.Head.GetSchema()), metadata)
+		if err != nil {
+			return nil, err
+		}
+		headUpdate := &storepb.BranchSnapshot{
+			Schema:         []byte(schema),
+			Metadata:       metadata,
+			DatabaseConfig: config,
+		}
+		updateBranchMessage := &store.UpdateBranchMessage{ProjectID: projectID, ResourceID: branchID, UpdaterID: principalID}
 		updateBranchMessage.Head = headUpdate
-	}
-	if err := s.store.UpdateBranch(ctx, updateBranchMessage); err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to update branch, error %v", err))
+		if err := s.store.UpdateBranch(ctx, updateBranchMessage); err != nil {
+			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to update branch, error %v", err))
+		}
 	}
 
 	branch, err = s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &projectID, ResourceID: &branchID, LoadFull: true})
@@ -342,43 +322,56 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 	if baseBranch == nil {
 		return nil, status.Errorf(codes.NotFound, "branch %q not found", baseBranchID)
 	}
-
-	headProjectID, headBranchID, err := common.GetProjectAndBranchID(request.HeadBranch)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	_, err = s.getProject(ctx, headProjectID)
-	if err != nil {
-		return nil, err
-	}
-	if err := s.checkBranchPermission(ctx, headProjectID); err != nil {
-		return nil, err
-	}
-	headBranch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &headProjectID, ResourceID: &headBranchID, LoadFull: true})
-	if err != nil {
-		return nil, err
-	}
-	if headBranch == nil {
-		return nil, status.Errorf(codes.NotFound, "branch %q not found", headBranchID)
+	if request.Etag != "" && request.Etag != fmt.Sprintf("%d", baseBranch.UpdatedTime.UnixMilli()) {
+		return nil, status.Errorf(codes.Aborted, "there is concurrent update to the branch, please refresh and try again.")
 	}
 
-	// Restrict merging only when the head branch is not updated.
-	// Maybe we can support auto-merging in the future.
-	baseMetadata := convertStoreDatabaseMetadata(nil, headBranch.Base.Metadata, nil, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil)
-	headMetadata := convertStoreDatabaseMetadata(nil, headBranch.Head.Metadata, nil, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil)
-	targetHeadMetadata := convertStoreDatabaseMetadata(nil, baseBranch.Head.Metadata, nil, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil)
-	mergedTarget, err := tryMerge(baseMetadata, headMetadata, targetHeadMetadata)
-	if err != nil {
-		return nil, status.Errorf(codes.FailedPrecondition, fmt.Sprintf("failed to merge branch: %v", err))
+	var mergedSchema string
+	var mergedMetadata *storepb.DatabaseSchemaMetadata
+	// While user specify the merged schema, backend would not parcitipate in the merge process,
+	// instead, it would just update the HEAD of the base branch to the merged schema.
+	if request.MergedSchema != "" {
+		mergedSchema = request.MergedSchema
+		metadata, err := TransformSchemaStringToDatabaseMetadata(storepb.Engine(baseBranch.Engine), mergedSchema)
+		if err != nil {
+			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to convert merged schema to metadata, %v", err))
+		}
+		mergedMetadata = metadata
+	} else {
+		headProjectID, headBranchID, err := common.GetProjectAndBranchID(request.HeadBranch)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		_, err = s.getProject(ctx, headProjectID)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.checkBranchPermission(ctx, headProjectID); err != nil {
+			return nil, err
+		}
+		headBranch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &headProjectID, ResourceID: &headBranchID, LoadFull: true})
+		if err != nil {
+			return nil, err
+		}
+		if headBranch == nil {
+			return nil, status.Errorf(codes.NotFound, "branch %q not found", headBranchID)
+		}
+
+		// Restrict merging only when the head branch is not updated.
+		// Maybe we can support auto-merging in the future.
+		mergedMetadata, err = tryMerge(headBranch.Base.Metadata, headBranch.Head.Metadata, baseBranch.Head.Metadata)
+		if err != nil {
+			return nil, status.Errorf(codes.Aborted, "cannot auto merge branch due to conflict: %v", err)
+		}
+		if mergedMetadata == nil {
+			return nil, status.Errorf(codes.FailedPrecondition, "failed to merge branch: no change")
+		}
+		mergedSchema, err = getDesignSchema(storepb.Engine(baseBranch.Engine), string(headBranch.Head.Schema), mergedMetadata)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to convert merged metadata to schema string, %v", err)
+		}
+		// TODO(d): handle database config.
 	}
-	if mergedTarget == nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "failed to merge branch: no change")
-	}
-	mergedTargetSchema, err := getDesignSchema(v1pb.Engine(baseBranch.Engine), string(headBranch.Head.Schema), mergedTarget)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert merged metadata to schema string, %v", err)
-	}
-	// TODO(d): handle database config.
 
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
 	if !ok {
@@ -389,8 +382,8 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 		ResourceID: baseBranchID,
 		UpdaterID:  principalID,
 		Head: &storepb.BranchSnapshot{
-			Schema: []byte(mergedTargetSchema),
-			// TODO(d): Metadata: mergedTarget,
+			Schema:   []byte(mergedSchema),
+			Metadata: mergedMetadata,
 			// TODO(d): handle config.
 		}}); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed update branch, error %v", err)
@@ -401,6 +394,150 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 		return nil, err
 	}
 	return v1Branch, nil
+}
+
+// RebaseBranch rebases a branch to the target branch.
+func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBranchRequest) (*v1pb.Branch, error) {
+	baseProjectID, baseBranchID, err := common.GetProjectAndBranchID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	baseProject, err := s.getProject(ctx, baseProjectID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkBranchPermission(ctx, baseProjectID); err != nil {
+		return nil, err
+	}
+	baseBranch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &baseProjectID, ResourceID: &baseBranchID, LoadFull: true})
+	if err != nil {
+		return nil, err
+	}
+	if baseBranch == nil {
+		return nil, status.Errorf(codes.NotFound, "branch %q not found", baseBranchID)
+	}
+	if request.Etag != "" && request.Etag != fmt.Sprintf("%d", baseBranch.UpdatedTime.UnixMilli()) {
+		return nil, status.Errorf(codes.Aborted, "there is concurrent update to the branch, please refresh and try again.")
+	}
+
+	newBaseSchema, err := s.getNewBaseFromRebaseRequest(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+
+	var newHeadSchema string
+	var newHeadMetadata *storepb.DatabaseSchemaMetadata
+	if request.MergedSchema != "" {
+		newHeadSchema = request.MergedSchema
+		newHeadMetadata, err = TransformSchemaStringToDatabaseMetadata(storepb.Engine(baseBranch.Engine), newBaseSchema)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("failed to convert merged schema to metadata, %v", err))
+		}
+	} else {
+		upstreamMetadata, err := TransformSchemaStringToDatabaseMetadata(storepb.Engine(baseBranch.Engine), newBaseSchema)
+		if err != nil {
+			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to convert upstream schema to metadata, %v", err))
+		}
+		mergedTarget, err := tryMerge(baseBranch.Base.Metadata, baseBranch.Head.Metadata, upstreamMetadata)
+		if err != nil {
+			return nil, status.Errorf(codes.Aborted, "cannot auto rebase branch due to conflict: %v", err)
+		}
+		if mergedTarget == nil {
+			return nil, status.Errorf(codes.FailedPrecondition, "failed to rebase branch: no change")
+		}
+		newHeadSchema, err = getDesignSchema(storepb.Engine(baseBranch.Engine), string(baseBranch.Head.Schema), mergedTarget)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to convert merged metadata to schema string, %v", err)
+		}
+		newHeadMetadata, err = TransformSchemaStringToDatabaseMetadata(storepb.Engine(baseBranch.Engine), newHeadSchema)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to convert merged schema to metadata, %v", err)
+		}
+	}
+
+	newBaseMetadata, err := TransformSchemaStringToDatabaseMetadata(storepb.Engine(baseBranch.Engine), newBaseSchema)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to convert new base schema to metadata, %v", err))
+	}
+
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+	if err := s.store.UpdateBranch(ctx, &store.UpdateBranchMessage{
+		ProjectID:  baseProjectID,
+		ResourceID: baseBranchID,
+		UpdaterID:  principalID,
+		Base: &storepb.BranchSnapshot{
+			Schema:   []byte(newBaseSchema),
+			Metadata: newBaseMetadata,
+			// TODO(d): handle config.
+		},
+		Head: &storepb.BranchSnapshot{
+			Schema:   []byte(newHeadSchema),
+			Metadata: newHeadMetadata,
+			// TODO(d): handle config.
+		}}); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed update branch, error %v", err)
+	}
+
+	v1Branch, err := s.convertBranchToBranch(ctx, baseProject, baseBranch, v1pb.BranchView_BRANCH_VIEW_FULL)
+	if err != nil {
+		return nil, err
+	}
+	return v1Branch, nil
+}
+
+func (s *BranchService) getNewBaseFromRebaseRequest(ctx context.Context, request *v1pb.RebaseBranchRequest) (string, error) {
+	if request.SourceDatabase != "" {
+		instanceID, databaseName, err := common.GetInstanceDatabaseID(request.SourceDatabase)
+		if err != nil {
+			return "", status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+		if err != nil {
+			return "", status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		if instance == nil {
+			return "", status.Errorf(codes.NotFound, "instance %q not found or had been deleted", instanceID)
+		}
+		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+			InstanceID:          &instanceID,
+			DatabaseName:        &databaseName,
+			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		})
+		if err != nil {
+			return "", status.Errorf(codes.Internal, err.Error())
+		}
+		if database == nil {
+			return "", status.Errorf(codes.NotFound, "database %q not found or had been archieve", databaseName)
+		}
+		databaseSchema, err := s.store.GetDBSchema(ctx, database.UID)
+		if err != nil {
+			return "", status.Errorf(codes.Internal, err.Error())
+		}
+		if databaseSchema == nil {
+			return "", status.Errorf(codes.NotFound, "database schema %q not found", databaseName)
+		}
+		return string(databaseSchema.GetSchema()), nil
+	}
+
+	if request.SourceBranch != "" {
+		sourceProjectID, sourceBranchID, err := common.GetProjectAndBranchID(request.SourceBranch)
+		if err != nil {
+			return "", status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		sourceBranch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &sourceProjectID, ResourceID: &sourceBranchID, LoadFull: true})
+		if err != nil {
+			return "", err
+		}
+		if sourceBranch == nil {
+			return "", status.Errorf(codes.NotFound, "branch %q not found", sourceBranchID)
+		}
+		return string(sourceBranch.Head.Schema), nil
+	}
+
+	return "", status.Errorf(codes.InvalidArgument, "either source_database or source_branch should be specified")
 }
 
 // DeleteBranch deletes an existing branch.
@@ -440,21 +577,23 @@ func (*BranchService) DiffMetadata(_ context.Context, request *v1pb.DiffMetadata
 		return nil, status.Errorf(codes.InvalidArgument, "source_metadata and target_metadata are required")
 	}
 
-	if err := checkDatabaseMetadata(request.Engine, request.SourceMetadata); err != nil {
+	storeSourceMetadata, _ := convertV1DatabaseMetadata(request.SourceMetadata)
+	storeTargetMetadata, _ := convertV1DatabaseMetadata(request.TargetMetadata)
+	if err := checkDatabaseMetadata(storepb.Engine(request.Engine), storeSourceMetadata); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid source metadata: %v", err))
 	}
-	if err := checkDatabaseMetadata(request.Engine, request.TargetMetadata); err != nil {
+	if err := checkDatabaseMetadata(storepb.Engine(request.Engine), storeTargetMetadata); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid target metadata: %v", err))
 	}
 
 	sanitizeCommentForSchemaMetadata(request.SourceMetadata)
 	sanitizeCommentForSchemaMetadata(request.TargetMetadata)
 
-	sourceSchema, err := transformDatabaseMetadataToSchemaString(request.Engine, request.SourceMetadata)
+	sourceSchema, err := transformDatabaseMetadataToSchemaString(storepb.Engine(request.Engine), storeSourceMetadata)
 	if err != nil {
 		return nil, err
 	}
-	targetSchema, err := transformDatabaseMetadataToSchemaString(request.Engine, request.TargetMetadata)
+	targetSchema, err := transformDatabaseMetadataToSchemaString(storepb.Engine(request.Engine), storeTargetMetadata)
 	if err != nil {
 		return nil, err
 	}
@@ -611,7 +750,7 @@ func (s *BranchService) convertBranchToBranch(ctx context.Context, project *stor
 	schemaDesign := &v1pb.Branch{
 		Name:             fmt.Sprintf("%s%s/%s%v", common.ProjectNamePrefix, project.ResourceID, common.BranchPrefix, branch.ResourceID),
 		BranchId:         branch.ResourceID,
-		Etag:             fmt.Sprintf("%d", branch.CreatedTime.UnixMilli()),
+		Etag:             fmt.Sprintf("%d", branch.UpdatedTime.UnixMilli()),
 		ParentBranch:     baselineBranch,
 		Engine:           v1pb.Engine(branch.Engine),
 		BaselineDatabase: baselineDatabase,
@@ -626,9 +765,9 @@ func (s *BranchService) convertBranchToBranch(ctx context.Context, project *stor
 	}
 
 	schemaDesign.Schema = string(branch.Head.Schema)
-	schemaDesign.SchemaMetadata = convertStoreDatabaseMetadata(nil /* database */, branch.Head.Metadata, branch.Head.DatabaseConfig, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil /* filter */)
+	schemaDesign.SchemaMetadata = convertStoreDatabaseMetadata(branch.Head.Metadata, branch.Head.DatabaseConfig, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil /* filter */)
 	schemaDesign.BaselineSchema = string(branch.Base.Schema)
-	schemaDesign.BaselineSchemaMetadata = convertStoreDatabaseMetadata(nil /* database */, branch.Base.Metadata, branch.Base.DatabaseConfig, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil /* filter */)
+	schemaDesign.BaselineSchemaMetadata = convertStoreDatabaseMetadata(branch.Base.Metadata, branch.Base.DatabaseConfig, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil /* filter */)
 	return schemaDesign, nil
 }
 
@@ -652,7 +791,7 @@ func sanitizeCommentForSchemaMetadata(dbSchema *v1pb.DatabaseMetadata) {
 	}
 }
 
-func setClassificationAndUserCommentFromComment(dbSchema *v1pb.DatabaseMetadata) {
+func setClassificationAndUserCommentFromComment(dbSchema *storepb.DatabaseSchemaMetadata) {
 	for _, schema := range dbSchema.Schemas {
 		for _, table := range schema.Tables {
 			table.Classification, table.UserComment = common.GetClassificationAndUserComment(table.Comment)

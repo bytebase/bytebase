@@ -19,13 +19,13 @@ COPY . .
 RUN pnpm --dir frontend install --frozen-lockfile
 RUN pnpm --dir frontend release-docker
 
-FROM golang:1.21.3 as backend
+FROM golang:1.21.5 as backend
 ADD go.mod go.sum /
 RUN go mod download
 
 ARG VERSION="development"
 ARG VERSION_SUFFIX=""
-ARG GO_VERSION="1.21.3"
+ARG GO_VERSION="1.21.5"
 ARG GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
 ARG BUILD_USER="unknown"
@@ -96,8 +96,8 @@ COPY --from=backend /etc/ssl/certs /etc/ssl/certs
 
 ENV OPENSSL_CONF /etc/ssl/
 
-CMD ["--port", "80", "--data", "/var/opt/bytebase"]
+CMD ["--port", "8080", "--data", "/var/opt/bytebase"]
 
-HEALTHCHECK --interval=5m --timeout=60s CMD curl -f http://localhost:80/healthz || exit 1
+HEALTHCHECK --interval=5m --timeout=60s CMD curl -f http://localhost:8080/healthz || exit 1
 
 ENTRYPOINT ["bytebase"]

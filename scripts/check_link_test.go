@@ -1,12 +1,12 @@
 package tests
 
 import (
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
 	"testing"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
@@ -31,7 +31,7 @@ var (
 	frontendDirectory = "../frontend"
 )
 
-func TestLinkHealth(t *testing.T) {
+func TestValidateLinks(t *testing.T) {
 	links, err := extractLinkRecursive()
 	require.NoError(t, err)
 
@@ -44,10 +44,10 @@ func TestLinkHealth(t *testing.T) {
 }
 
 func extractLinkRecursive() (map[string]bool, error) {
-	// Initialize the result map
+	// Initialize the result map.
 	links := make(map[string]bool)
 
-	// Define the function to be used with os.Walk
+	// Define the function to be used with os.Walk.
 	walkFn := func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -89,20 +89,18 @@ func extractLinkRecursive() (map[string]bool, error) {
 }
 
 func checkLinkWithRetry(link string) error {
-	for i := 0; i < 3; i++ {
-		// Request the link and check the response status code is 200.
-		res, err := http.Head(link)
-		// Make the linter happy.
-		_ = res.Body.Close()
-		if err != nil {
-			return errors.Wrapf(err, "failed to request link: %s", link)
-		}
-		if res.StatusCode != http.StatusOK {
-			time.Sleep(1 * time.Minute)
-			continue
-		}
-		return nil
+	// Request the link and check the response status code is 200.
+	resp, err := http.Get(link)
+	if err != nil {
+		return errors.Wrapf(err, "failed to request link %q", link)
 	}
-
-	return errors.Errorf("Link %s is not reachable after %d retries", link, 3)
+	defer resp.Body.Close()
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return errors.Wrapf(err, "failed to read link %q", link)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return errors.Errorf("link %q returned status %q content %q", link, resp.Status, b)
+	}
+	return nil
 }

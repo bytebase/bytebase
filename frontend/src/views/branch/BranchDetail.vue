@@ -4,7 +4,11 @@
       <BranchCreateView :project-id="project?.uid" v-bind="$attrs" />
     </template>
     <template v-else-if="branch">
-      <BranchDetailView :branch="branch" v-bind="$attrs" />
+      <BranchDetailView
+        :project-id="getProjectName(project?.name) || ''"
+        :branch="branch"
+        v-bind="$attrs"
+      />
     </template>
   </template>
 </template>
@@ -18,6 +22,7 @@ import BranchCreateView from "@/components/Branch/BranchCreateView.vue";
 import BranchDetailView from "@/components/Branch/BranchDetailView.vue";
 import { useProjectV1Store } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
+import { getProjectName } from "@/store/modules/v1/common";
 import { idFromSlug } from "@/utils";
 
 const { t } = useI18n();
@@ -32,9 +37,6 @@ const branch = computed(() => {
   return branchStore.getBranchByName(branchFullName.value);
 });
 const project = computed(() => {
-  if (route.params.projectSlug === "-") {
-    return;
-  }
   return projectStore.getProjectByUID(
     String(idFromSlug(route.params.projectSlug as string))
   );
@@ -48,11 +50,11 @@ watch(
     }
 
     // Prepare branch name from route params.
-    const sheetId = (route.params.branchName as string) || "";
-    if (!sheetId || !project.value) {
+    const branchId = (route.params.branchName as string) || "";
+    if (!branchId || !project.value) {
       return;
     }
-    branchFullName.value = `${project.value.name}/branches/${sheetId}`;
+    branchFullName.value = `${project.value.name}/branches/${branchId}`;
   },
   {
     immediate: true,
@@ -85,7 +87,7 @@ const documentTitle = computed(() => {
     return t("schema-designer.new-branch");
   } else {
     if (branch.value) {
-      return branch.value.title;
+      return branch.value.branchId;
     }
   }
   return t("common.loading");

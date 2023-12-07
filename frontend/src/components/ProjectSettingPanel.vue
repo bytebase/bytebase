@@ -6,14 +6,13 @@
         :project="project"
         :allow-edit="allowEdit"
       />
-      <div v-if="isTenantProject" class="pt-6">
-        <ProjectDeploymentConfigPanel
-          id="deployment-config"
-          :project="project"
-          :database-list="databaseV1List"
-          :allow-edit="allowEdit"
-        />
-      </div>
+      <ProjectDeploymentConfigPanel
+        v-if="isTenantProject"
+        id="deployment-config"
+        :project="project"
+        :database-list="databaseV1List"
+        :allow-edit="allowEdit"
+      />
       <div class="pt-4">
         <ProjectArchiveRestoreButton :project="project" />
       </div>

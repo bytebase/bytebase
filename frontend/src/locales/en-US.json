@@ -691,6 +691,7 @@
         "self": "Semantic Types",
         "label": "Columns having the same semantic type will use the same masking algorithms.",
         "use-predefined-type": "Use Predefined Type",
+        "add-from-template": "Add from template",
         "table": {
           "semantic-type": "Semantic Type",
           "description": "Description",
@@ -804,6 +805,19 @@
         "self": "Action",
         "query": "Query",
         "export": "Export"
+      },
+      "classification": {
+        "self": "Data classification",
+        "upload": "Upload classification",
+        "upload-succeed": "Upload succeed",
+        "search": "Search classification",
+        "label": "You can upload classification file with JSON format.",
+        "view-example": "View example",
+        "json-format-example": "Classification JSON format example",
+        "copy-succeed": "Copy example succeed",
+        "override-title": "Classification data override",
+        "override-desc": "Existed classification data will be overridden and affect all projects.",
+        "override-confirm": "Still upload"
       }
     },
     "access-control": {
@@ -1337,6 +1351,7 @@
     }
   },
   "environment": {
+    "all": "All environment",
     "id": "Environment ID",
     "id-description": "The Environment ID is the unique identifier for your environment. You cannot change it after created.",
     "select": "Select environment",
@@ -3216,8 +3231,6 @@
     "diff-editor": {
       "self": "Diff editor",
       "resolve": "Resolve",
-      "latest-schema": "Latest schema",
-      "editing-schema": "Editing schema",
       "auto-merge-failed": "Auto merge failed",
       "need-to-resolve-conflicts": "Branch has been updated by others. You need to resolve the conflicts before you can merge.",
       "resolve-and-merge-again": "Resolve and merge again",

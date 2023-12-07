@@ -27,7 +27,7 @@
                 </button>
               </div>
               <!-- Mobile Sidebar -->
-              <div class="flex-1 h-0 py-4 overflow-y-auto">
+              <div class="flex-1 h-0 py-0 overflow-y-auto">
                 <router-view
                   name="leftSidebar"
                   @click="state.showMobileOverlay = false"
@@ -192,7 +192,7 @@
               <div
                 class="w-full flex flex-row justify-between items-center flex-wrap px-2 gap-x-4"
               >
-                <div v-if="quickActionList.length > 0" class="flex-1 pt-3 pb-2">
+                <div v-if="quickActionList.length > 0" class="flex-1 pt-3 pb-4">
                   <QuickActionPanel :quick-action-list="quickActionList" />
                 </div>
                 <div

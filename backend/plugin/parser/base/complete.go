@@ -31,8 +31,10 @@ const (
 
 // Candidate is the candidate for auto-completion.
 type Candidate struct {
-	Text string
-	Type CandidateType
+	Text       string
+	Type       CandidateType
+	Definition string
+	Comment    string
 }
 
 func (c Candidate) String() string {

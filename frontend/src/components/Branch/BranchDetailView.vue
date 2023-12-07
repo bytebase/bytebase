@@ -99,8 +99,9 @@
 
   <MergeBranchPanel
     v-if="state.showDiffEditor && mergeBranchPanelContext"
-    :source-branch-name="mergeBranchPanelContext.sourceBranchName"
-    :target-branch-name="mergeBranchPanelContext.targetBranchName"
+    :project="project"
+    :head-branch-name="mergeBranchPanelContext.headBranchName"
+    :branch-name="mergeBranchPanelContext.branchName"
     @dismiss="state.showDiffEditor = false"
     @merged="handleMergeAfterConflictResolved"
   />
@@ -110,8 +111,7 @@
 import { asyncComputed } from "@vueuse/core";
 import dayjs from "dayjs";
 import { cloneDeep, head, isEqual, uniqueId } from "lodash-es";
-import { NButton, NDivider, NInput, useDialog, NTag } from "naive-ui";
-import { Status } from "nice-grpc-common";
+import { NButton, NDivider, NInput, NTag } from "naive-ui";
 import { CSSProperties, computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -138,7 +138,7 @@ import { projectV1Slug } from "@/utils";
 import { provideSQLCheckContext } from "../SQLCheck";
 import MergeBranchPanel from "./MergeBranchPanel.vue";
 import SchemaDesignEditor from "./SchemaDesignEditor.vue";
-import { generateForkedBranchName, validateBranchName } from "./utils";
+import { validateBranchName } from "./utils";
 
 interface LocalState {
   branchId: string;
@@ -149,7 +149,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  // Should be a schema design name of main branch.
+  projectId: string;
   branch: Branch;
   viewMode?: boolean;
 }>();
@@ -158,11 +158,8 @@ const { t } = useI18n();
 const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const branchStore = useBranchStore();
-const { branchList, ready } = useBranchList(
-  getProjectAndBranchId(props.branch.name)[0]
-);
+const { branchList, ready } = useBranchList(props.projectId);
 const { runSQLCheck } = provideSQLCheckContext();
-const dialog = useDialog();
 const state = reactive<LocalState>({
   branchId: "",
   isEditing: false,
@@ -171,8 +168,8 @@ const state = reactive<LocalState>({
   isSaving: false,
 });
 const mergeBranchPanelContext = ref<{
-  sourceBranchName: string;
-  targetBranchName: string;
+  headBranchName: string;
+  branchName: string;
 }>();
 const schemaEditorKey = ref<string>(uniqueId());
 const selectTargetDatabasesContext = ref<{
@@ -291,10 +288,10 @@ const handleMergeBranch = () => {
       item.name !== branch.value.name
     );
   });
-  const targetBranchName = parentBranch.value
+  const branchName = parentBranch.value
     ? parentBranch.value.name
     : head(tempList)?.name;
-  if (!targetBranchName) {
+  if (!branchName) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
@@ -304,8 +301,8 @@ const handleMergeBranch = () => {
   }
 
   mergeBranchPanelContext.value = {
-    sourceBranchName: branch.value.name,
-    targetBranchName: targetBranchName,
+    headBranchName: branch.value.name,
+    branchName: branchName,
   };
   state.showDiffEditor = true;
 };
@@ -381,78 +378,13 @@ const handleSaveBranch = async () => {
 
   state.isSaving = true;
   if (updateMask.length !== 0) {
-    if (branch.value.parentBranch === "") {
-      const branchName = generateForkedBranchName(branch.value);
-      const newBranch = await branchStore.createBranchDraft(
-        project.value.name,
-        branchName,
-        branch.value.name
-      );
-      try {
-        await branchStore.mergeBranch({
-          name: branch.value.name,
-          headBranch: newBranch.name,
-        });
-      } catch (error: any) {
-        // If there is conflict, we need to show the conflict and let user resolve it.
-        if (error.code === Status.FAILED_PRECONDITION) {
-          dialog.create({
-            negativeText: t("schema-designer.save-draft"),
-            positiveText: t("schema-designer.diff-editor.resolve"),
-            title: t("schema-designer.diff-editor.auto-merge-failed"),
-            content: t("schema-designer.diff-editor.need-to-resolve-conflicts"),
-            autoFocus: true,
-            closable: true,
-            maskClosable: true,
-            closeOnEsc: true,
-            onNegativeClick: () => {
-              // Go to draft branch detail page after merge failed.
-              const [_, branchId] = getProjectAndBranchId(newBranch.name);
-              state.isEditing = false;
-              router.replace({
-                name: "workspace.project.branch.detail",
-                params: {
-                  projectSlug: projectV1Slug(project.value),
-                  branchName: branchId,
-                },
-              });
-            },
-            onPositiveClick: () => {
-              state.showDiffEditor = true;
-              mergeBranchPanelContext.value = {
-                sourceBranchName: newBranch.name,
-                targetBranchName: branch.value.name,
-              };
-            },
-          });
-        } else {
-          pushNotification({
-            module: "bytebase",
-            style: "CRITICAL",
-            title: `Request error occurred`,
-            description: error.details,
-          });
-        }
-        state.isSaving = false;
-        return;
-      }
-
-      // Delete the draft after merged.
-      await branchStore.deleteBranch(newBranch.name);
-      // Fetch the latest schema design after merged.
-      await branchStore.fetchBranchByName(
-        branch.value.name,
-        false /* !useCache */
-      );
-    } else {
-      await branchStore.updateBranch(
-        Branch.fromPartial({
-          name: branch.value.name,
-          schemaMetadata: mergedMetadata,
-        }),
-        updateMask
-      );
-    }
+    await branchStore.updateBranch(
+      Branch.fromPartial({
+        name: branch.value.name,
+        schemaMetadata: mergedMetadata,
+      }),
+      updateMask
+    );
 
     pushNotification({
       module: "bytebase",

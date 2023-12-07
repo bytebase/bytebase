@@ -2,25 +2,12 @@
   <div
     class="w-full h-full flex flex-col gap-y-3 overflow-y-hidden overflow-x-auto"
   >
-    <div
-      v-if="showProjectSelector"
-      class="w-full flex flex-row justify-start items-center"
-    >
-      <span class="flex w-40 items-center shrink-0 text-sm">
-        {{ $t("common.project") }}
-      </span>
-      <ProjectSelect
-        class="!w-60 shrink-0"
-        :project="state.projectId"
-        @update:project="handleProjectSelect"
-      />
-    </div>
     <div class="w-full flex flex-row justify-start items-center">
       <span class="flex w-40 items-center text-sm">{{
         $t("database.branch-name")
       }}</span>
       <NInput
-        v-model:value="branchTitle"
+        v-model:value="branchId"
         type="text"
         class="!w-60 text-sm"
         :placeholder="'feature/add-billing'"
@@ -47,7 +34,6 @@
     <BaselineSchemaSelector
       :project-id="state.projectId"
       :database-id="state.baselineSchema.databaseId"
-      :schema="state.baselineSchema.schema"
       :database-metadata="state.baselineSchema.databaseMetadata"
       :readonly="disallowToChangeBaseline"
       @update="handleBaselineSchemaChange"
@@ -78,11 +64,10 @@
 <script lang="ts" setup>
 import { uniqueId } from "lodash-es";
 import { NButton, NDivider, NInput } from "naive-ui";
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import SchemaEditorV1 from "@/components/SchemaEditorV1/index.vue";
-import { ProjectSelect } from "@/components/v2";
 import {
   pushNotification,
   useDatabaseV1Store,
@@ -90,11 +75,7 @@ import {
   useSchemaEditorV1Store,
 } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
-import {
-  databaseNamePrefix,
-  getProjectAndBranchId,
-} from "@/store/modules/v1/common";
-import { UNKNOWN_ID } from "@/types";
+import { databaseNamePrefix } from "@/store/modules/v1/common";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { projectV1Slug } from "@/utils";
@@ -104,7 +85,6 @@ import { validateBranchName } from "./utils";
 interface BaselineSchema {
   // The uid of database.
   databaseId?: string;
-  schema?: string;
   databaseMetadata?: DatabaseMetadata;
 }
 
@@ -136,8 +116,7 @@ const state = reactive<LocalState>({
   branch: Branch.fromPartial({}),
   isCreating: false,
 });
-const branchTitle = ref<string>("");
-const showProjectSelector = ref<boolean>(true);
+const branchId = ref<string>("");
 const refreshId = ref<string>("");
 
 const project = computed(() => {
@@ -151,14 +130,6 @@ const disallowToChangeBaseline = computed(() => {
 
 // Avoid to create array or object literals in template to improve performance
 const branches = computed(() => [state.branch]);
-
-onMounted(async () => {
-  if (props.projectId) {
-    state.projectId = props.projectId;
-    // When we are creating a branch from a project page, we don't show the project selector.
-    showProjectSelector.value = false;
-  }
-});
 
 watch(
   () => [state.branch.baselineDatabase, state.branch.baselineSchema],
@@ -183,29 +154,24 @@ watch(
     const database = await databaseStore.getOrFetchDatabaseByName(
       branch.baselineDatabase
     );
-    state.projectId = database.projectEntity.uid;
     state.baselineSchema.databaseId = database.uid;
-    state.baselineSchema.schema = undefined;
     state.baselineSchema.databaseMetadata = undefined;
     state.branch = branch;
     refreshId.value = uniqueId();
   }
 );
 
-const prepareSchemaDesign = async () => {
+const prepareBranch = async () => {
   if (
-    state.baselineSchema.schema &&
-    state.baselineSchema.databaseMetadata &&
-    state.baselineSchema.databaseId
+    state.baselineSchema.databaseId &&
+    state.baselineSchema.databaseMetadata
   ) {
     const database = databaseStore.getDatabaseByUID(
       state.baselineSchema.databaseId
     );
     return Branch.fromPartial({
       engine: database.instanceEntity.engine,
-      baselineSchema: state.baselineSchema.schema,
       baselineSchemaMetadata: state.baselineSchema.databaseMetadata,
-      schema: state.baselineSchema.schema,
       schemaMetadata: state.baselineSchema.databaseMetadata,
     });
   }
@@ -213,22 +179,12 @@ const prepareSchemaDesign = async () => {
 };
 
 const allowConfirm = computed(() => {
-  return (
-    state.projectId &&
-    branchTitle.value &&
-    state.baselineSchema.databaseId &&
-    !state.isCreating
-  );
+  return branchId.value && state.baselineSchema.databaseId && !state.isCreating;
 });
 
 const confirmText = computed(() => {
   return t("common.create");
 });
-
-const handleProjectSelect = async (projectId?: string) => {
-  state.projectId = projectId;
-  state.parentBranchName = "";
-};
 
 const handleBaselineSchemaChange = async (baselineSchema: BaselineSchema) => {
   if (state.parentBranchName) {
@@ -236,16 +192,9 @@ const handleBaselineSchemaChange = async (baselineSchema: BaselineSchema) => {
   }
 
   state.baselineSchema = baselineSchema;
-  if (
-    baselineSchema.databaseId &&
-    baselineSchema.databaseId !== String(UNKNOWN_ID)
-  ) {
-    const database = databaseStore.getDatabaseByUID(baselineSchema.databaseId);
-    state.projectId = database.projectEntity.uid;
-  }
   console.time("prepareSchemaDesign");
   state.loading = true;
-  state.branch = await prepareSchemaDesign();
+  state.branch = await prepareBranch();
   state.loading = false;
   console.timeEnd("prepareSchemaDesign");
 };
@@ -255,7 +204,7 @@ const handleConfirm = async () => {
     return;
   }
 
-  if (!validateBranchName(branchTitle.value)) {
+  if (!validateBranchName(branchId.value)) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
@@ -277,11 +226,10 @@ const handleConfirm = async () => {
 
   state.isCreating = true;
   const baselineDatabase = `${database.instanceEntity.name}/${databaseNamePrefix}${database.databaseName}`;
-  let createdSchemaDesign;
   if (!state.parentBranchName) {
-    createdSchemaDesign = await branchStore.createBranch(
+    await branchStore.createBranch(
       project.value.name,
-      branchTitle.value,
+      branchId.value,
       Branch.fromPartial({
         baselineDatabase: baselineDatabase,
       })
@@ -291,10 +239,12 @@ const handleConfirm = async () => {
       state.parentBranchName,
       false /* useCache */
     );
-    createdSchemaDesign = await branchStore.createBranchDraft(
+    await branchStore.createBranch(
       project.value.name,
-      branchTitle.value,
-      parentBranch.name
+      branchId.value,
+      Branch.fromPartial({
+        parentBranch: parentBranch.name,
+      })
     );
   }
   state.isCreating = false;
@@ -305,12 +255,11 @@ const handleConfirm = async () => {
   });
 
   // Go to branch detail page after created.
-  const [_, branchId] = getProjectAndBranchId(createdSchemaDesign.name);
   router.replace({
     name: "workspace.project.branch.detail",
     params: {
       projectSlug: projectV1Slug(project.value),
-      branchName: branchId,
+      branchName: branchId.value,
     },
   });
 };

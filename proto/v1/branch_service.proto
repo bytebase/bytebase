@@ -42,7 +42,12 @@ service BranchService {
 
   rpc MergeBranch(MergeBranchRequest) returns (Branch) {
     option (google.api.http) = {post: "/v1/{name=projects/*/branches/*}:merge"};
-    option (google.api.method_signature) = "name,target_name";
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc RebaseBranch(RebaseBranchRequest) returns (Branch) {
+    option (google.api.http) = {post: "/v1/{name=projects/*/branches/*}:rebase"};
+    option (google.api.method_signature) = "name";
   }
 
   rpc DeleteBranch(DeleteBranchRequest) returns (google.protobuf.Empty) {
@@ -181,6 +186,12 @@ message UpdateBranchRequest {
 
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 2;
+
+  // The current etag of the branch.
+  // If an etag is provided and does not match the current etag of the branch,
+  // the call will be blocked and an ABORTED error will be returned.
+  // The etag should be specified for using merged_schema. The etag should be the etag from named branch.
+  string etag = 3;
 }
 
 message MergeBranchRequest {
@@ -190,7 +201,42 @@ message MergeBranchRequest {
 
   // The head branch to merge from.
   // Format: projects/{project}/branches/{branch}
-  string head_branch = 2 [(google.api.field_behavior) = REQUIRED];
+  string head_branch = 2;
+
+  // For failed merge, we will pass in this addition merged schema and use it for head.
+  string merged_schema = 3;
+
+  // The current etag of the branch.
+  // If an etag is provided and does not match the current etag of the branch,
+  // the call will be blocked and an ABORTED error will be returned.
+  // The etag should be specified for using merged_schema. The etag should be the etag from named branch.
+  string etag = 4 [(google.api.field_behavior) = OPTIONAL];
+}
+
+message RebaseBranchRequest {
+  // The name of the base branch to merge to.
+  // Format: projects/{project}/branches/{branch}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The database (remote upstream) used to rebase.
+  // We use its schema as baseline and reapply the difference between base and head of the named branch.
+  // Format: instances/{instance}/databases/{database}
+  string source_database = 2;
+
+  // The branch (remote upstream) used to rebase. We use its head as baseline.
+  // We use its head schema as baseline and reapply the difference between base and head of the named branch.
+  // Format: projects/{project}/branches/{branch}
+  string source_branch = 3;
+
+  // For failed merge, we will pass in this addition merged schema and use it for head.
+  // This has to be set together with source_database or source_branch.
+  string merged_schema = 4;
+
+  // The current etag of the branch.
+  // If an etag is provided and does not match the current etag of the branch,
+  // the call will be blocked and an ABORTED error will be returned.
+  // The etag should be specified for using merged_schema. The etag should be the etag from named branch.
+  string etag = 5;
 }
 
 message DeleteBranchRequest {

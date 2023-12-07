@@ -222,6 +222,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	if err := s.store.BackfillIssueTsVector(ctx); err != nil {
 		slog.Warn("failed to backfill issue ts vector", log.BBError(err))
 	}
+	go backfillBranches(ctx, storeInstance)
 
 	s.licenseService, err = enterprisesvc.NewLicenseService(profile.Mode, storeInstance)
 	if err != nil {

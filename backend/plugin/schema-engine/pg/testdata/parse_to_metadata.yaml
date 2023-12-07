@@ -25,7 +25,6 @@
                 },
                 {
                   "name":  "a",
-                  "hasDefault":  true,
                   "defaultExpression":  "1",
                   "nullable":  true,
                   "type":  "integer",
@@ -33,7 +32,6 @@
                 },
                 {
                   "name":  "b",
-                  "hasDefault":  true,
                   "defaultExpression":  "'NULL'",
                   "nullable":  true,
                   "type":  "character varying(20)"
@@ -69,7 +67,6 @@
               "columns":  [
                 {
                   "name":  "b",
-                  "hasDefault":  true,
                   "defaultExpression":  "NULL",
                   "type":  "integer"
                 }

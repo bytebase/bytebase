@@ -2,8 +2,8 @@ package v1
 
 import (
 	"fmt"
+	"log/slog"
 	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -14,7 +14,7 @@ import (
 	tidbtypes "github.com/pingcap/tidb/pkg/parser/types"
 
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func checkTiDBColumnType(tp string) bool {
@@ -29,7 +29,7 @@ type tidbTransformer struct {
 	err   error
 }
 
-func parseTiDBSchemaStringToDatabaseMetadata(schema string) (*v1pb.DatabaseMetadata, error) {
+func parseTiDBSchemaStringToDatabaseMetadata(schema string) (*storepb.DatabaseSchemaMetadata, error) {
 	stmts, err := tidbparser.ParseTiDB(schema, "", "")
 	if err != nil {
 		return nil, err
@@ -200,14 +200,12 @@ func columnTypeStr(tp *tidbtypes.FieldType) string {
 		// tp.String() return bigint(20)
 		return "bigint"
 	default:
-		str := tp.String()
-		if strings.Contains(str, "binary") {
-			tp.SetFlag(tidbmysql.BinaryFlag)
-			tp.SetCharset("binary")
-			tp.SetCollate("binary")
-			return tp.CompactStr()
+		text, err := tidbRestoreFieldType(tp)
+		if err != nil {
+			slog.Debug("tidbRestoreFieldType failed", "err", err, "type", tp.String())
+			return tp.String()
 		}
-		return tp.String()
+		return text
 	}
 }
 
@@ -266,9 +264,6 @@ func tidbRestoreNodeDefault(node tidbast.Node) (string, error) {
 }
 
 func tidbRestoreFieldType(fieldType *tidbtypes.FieldType) (string, error) {
-	if strings.Contains(fieldType.String(), "binary") {
-		return fieldType.CompactStr(), nil
-	}
 	var buffer strings.Builder
 	// we want to use Default format flags but with lowercase keyword.
 	flag := tidbformat.RestoreKeyWordLowercase | tidbformat.RestoreStringSingleQuotes | tidbformat.RestoreNameBackQuotes
@@ -293,7 +288,7 @@ func (*tidbTransformer) Leave(in tidbast.Node) (tidbast.Node, bool) {
 	return in, true
 }
 
-func getTiDBDesignSchema(baselineSchema string, to *v1pb.DatabaseMetadata) (string, error) {
+func getTiDBDesignSchema(baselineSchema string, to *storepb.DatabaseSchemaMetadata) (string, error) {
 	toState := convertToDatabaseState(to)
 	stmts, err := tidbparser.ParseTiDB(baselineSchema, "", "")
 	if err != nil {
@@ -468,13 +463,16 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 			// Compare column types.
 			dataType := columnTypeStr(column.Tp)
 			if !strings.EqualFold(dataType, stateColumn.tp) {
-				// write lower case column type for tidb
-				column.Tp = tidbNewFieldType(stateColumn.tp)
-			}
-			if typeStr, err := tidbRestoreFieldType(column.Tp); err == nil {
-				if _, err := g.columnDefine.WriteString(typeStr); err != nil {
+				if _, err := g.columnDefine.WriteString(stateColumn.tp); err != nil {
 					g.err = err
 					return in, true
+				}
+			} else {
+				if typeStr, err := tidbRestoreFieldType(column.Tp); err == nil {
+					if _, err := g.columnDefine.WriteString(typeStr); err != nil {
+						g.err = err
+						return in, true
+					}
 				}
 			}
 
@@ -945,46 +943,4 @@ func tidbGetAttrOrder(option *tidbast.ColumnOption) int {
 		return columnAttrOrder["ENFORCED"]
 	}
 	return len(columnAttrOrder) + 1
-}
-
-func tidbNewFieldType(tp string) *tidbtypes.FieldType {
-	tpStr := strings.ToLower(tp)
-	var s []byte
-	var flen []byte
-	var decimal []byte
-	stage := 1
-	for i := 0; i < len(tpStr); i++ {
-		if tpStr[i] == '(' {
-			stage = 2
-			continue
-		} else if tpStr[i] == ',' {
-			stage = 3
-			continue
-		} else if tpStr[i] == ')' {
-			continue
-		}
-
-		if stage == 1 {
-			s = append(s, tpStr[i])
-		} else if stage == 2 {
-			flen = append(flen, tpStr[i])
-		} else if stage == 3 {
-			decimal = append(decimal, tpStr[i])
-		}
-	}
-	ft := tidbtypes.NewFieldType(tidbtypes.StrToType(string(s)))
-	flenInt, _ := strconv.Atoi(string(flen))
-	if flenInt > 0 {
-		ft.SetFlen(flenInt)
-	}
-	decimalInt, _ := strconv.Atoi(string(decimal))
-	if decimalInt > 0 {
-		ft.SetDecimal(decimalInt)
-	}
-	if strings.Contains(tpStr, "binary") {
-		ft.SetFlag(tidbmysql.BinaryFlag)
-		ft.SetCharset("binary")
-		ft.SetCollate("binary")
-	}
-	return ft
 }

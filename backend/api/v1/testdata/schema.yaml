@@ -4,7 +4,7 @@
       (
         c int auto_increment,
         a int default 1 comment 'abcdefg',
-        b varchar(20) default 'NULL' comment '',
+        b varchar(20) default NULL comment '',
         primary key (a, b),
         constraint fk1 foreign key (a) references t2 (b)
       ) COMMENT 'this is comment with '' escaped';
@@ -19,14 +19,12 @@
               "columns": [
                 {
                   "name": "c",
-                  "hasDefault": true,
                   "defaultExpression": "AUTO_INCREMENT",
                   "nullable": true,
                   "type": "int"
                 },
                 {
                   "name": "a",
-                  "hasDefault": true,
                   "defaultExpression": "1",
                   "nullable": true,
                   "type": "int",
@@ -35,8 +33,7 @@
                 },
                 {
                   "name": "b",
-                  "hasDefault": true,
-                  "defaultString": "NULL",
+                  "defaultNull": true,
                   "nullable": true,
                   "type": "varchar(20)"
                 }
@@ -73,7 +70,6 @@
               "columns": [
                 {
                   "name": "b",
-                  "hasDefault": true,
                   "defaultNull": true,
                   "type": "int"
                 }

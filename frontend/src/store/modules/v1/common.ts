@@ -80,16 +80,12 @@ export const getProjectAndSheetId = (name: string): string[] => {
 };
 
 export const getProjectAndBranchId = (name: string): string[] => {
-  const tokens = getNameParentTokens(name, [
-    projectNamePrefix,
-    branchNamePrefix,
-  ]);
-
-  if (tokens.length != 2) {
+  const branchRegex = /^projects\/([^/]+)\/branches\/(.+)$/;
+  const matches = name.match(branchRegex);
+  if (!matches || matches.length != 3) {
     return ["", ""];
   }
-
-  return tokens;
+  return [matches[1], matches[2]];
 };
 
 export const getInstanceAndDatabaseId = (name: string): string[] => {

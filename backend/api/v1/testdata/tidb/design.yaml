@@ -14,6 +14,7 @@
       `d` int,
       `e` char(10) NOT NULL DEFAULT 'NULL' comment 'this is comment',
       `f` int comment 'this is comment',
+      `g` blob,
       PRIMARY KEY (`a`, `c`, `d`),
       CONSTRAINT fk1 FOREIGN KEY (`a`) REFERENCES `t2` (`b`)
     );
@@ -45,10 +46,14 @@
                   "type":  "enum('ROW','MIXED','STATEMENT','')"
                 },
                 {
+                  "name": "x1",
+                  "nullable": true,
+                  "type": "blob"
+                },
+                {
                   "name":  "c1",
                   "nullable":  true,
                   "type":  "int",
-                  "hasDefault": true,
                   "defaultExpression": "AUTO_INCREMENT"
                 }
               ],
@@ -103,8 +108,7 @@
                 {
                   "name":  "a",
                   "type":  "varchar(10)",
-                  "hasDefault":  true,
-                  "defaultString":  "default value",
+                  "default": "default value",
                   "comment":  "this is comment, aha"
                 },
                 {
@@ -114,7 +118,6 @@
                 {
                   "name":  "c",
                   "type":  "int",
-                  "hasDefault":  true,
                   "defaultExpression":  "1",
                   "comment":  "col_b"
                 },
@@ -122,13 +125,17 @@
                   "name":  "e",
                   "nullable":  true,
                   "type":  "int",
-                  "hasDefault":  true,
                   "defaultExpression":  "1",
                   "comment":  "col_e"
                 },
                 {
                   "name":  "f",
                   "type":  "int",
+                  "nullable":  true
+                },
+                {
+                  "name":  "g",
+                  "type":  "blob",
                   "nullable":  true
                 }
               ],
@@ -209,6 +216,7 @@
       `c` int NOT NULL DEFAULT 1 COMMENT 'col_b',
       `e` int NULL DEFAULT 1 COMMENT 'col_e',
       `f` int,
+      `g` blob,
       `b` char(10) NOT NULL,
       PRIMARY KEY (`a`, `b`, `c`),
       CONSTRAINT `fk1` FOREIGN KEY (`b`) REFERENCES `t2` (`b`)
@@ -222,7 +230,8 @@
     CREATE TABLE `rds` (
       `id` bigint(20) NOT NULL COMMENT 'ID',
       `binlog_format` enum('ROW','MIXED','STATEMENT',''),
-      `c1` int AUTO_INCREMENT
+      `c1` int AUTO_INCREMENT,
+      `x1` blob NULL
     ) COMMENT 'hello';
 
     CREATE TABLE `t2` (
@@ -257,7 +266,6 @@
                   "name":  "a",
                   "nullable":  true,
                   "type":  "int",
-                  "hasDefault": true,
                   "defaultExpression": "AUTO_INCREMENT"
                 }
               ]
@@ -269,7 +277,6 @@
                   "name":  "a",
                   "nullable":  true,
                   "type":  "int",
-                  "hasDefault": true,
                   "defaultExpression": "AUTO_INCREMENT"
                 }
               ]
@@ -281,7 +288,6 @@
                   "name":  "a",
                   "nullable":  true,
                   "type":  "int",
-                  "hasDefault": true,
                   "defaultExpression": "AUTO_INCREMENT"
                 }
               ]
@@ -293,7 +299,6 @@
                   "name":  "a",
                   "nullable":  true,
                   "type":  "int",
-                  "hasDefault": true,
                   "defaultExpression": "1"
                 }
               ]
