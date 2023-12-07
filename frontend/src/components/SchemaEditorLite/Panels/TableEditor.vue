@@ -31,6 +31,9 @@
       <TableColumnEditor
         :readonly="readonly"
         :show-foreign-key="true"
+        :db="db"
+        :database="metadata.database"
+        :schema="metadata.schema"
         :table="table"
         :engine="engine"
         :classification-config-id="project.dataClassificationConfigId"
@@ -51,7 +54,7 @@
 
   <EditColumnForeignKeyModal
     v-if="state.showEditColumnForeignKeyModal && editForeignKeyContext"
-    :database="database"
+    :database="db"
     :metadata="metadata.database"
     :schema="metadata.schema"
     :table="metadata.table"
@@ -134,9 +137,9 @@ const {
 const currentTab = computed(() => {
   return context.currentTab.value as TableTabContext;
 });
-const database = computed(() => currentTab.value.database);
+const db = computed(() => currentTab.value.database);
 const engine = computed(() => {
-  return database.value.instanceEntity.engine;
+  return db.value.instanceEntity.engine;
 });
 const metadata = computed(() => {
   return currentTab.value.metadata;
@@ -163,25 +166,25 @@ const metadataForColumn = (column: ColumnMetadata) => {
 };
 const statusForSchema = () => {
   const { metadata } = currentTab.value;
-  return getSchemaStatus(database.value, {
+  return getSchemaStatus(db.value, {
     database: metadata.database,
     schema: metadata.schema,
   });
 };
 const statusForTable = () => {
   const { metadata } = currentTab.value;
-  return getTableStatus(database.value, {
+  return getTableStatus(db.value, {
     database: metadata.database,
     schema: metadata.schema,
     table: metadata.table,
   });
 };
 const statusForColumn = (column: ColumnMetadata) => {
-  return getColumnStatus(database.value, metadataForColumn(column));
+  return getColumnStatus(db.value, metadataForColumn(column));
 };
 const markColumnStatus = (column: ColumnMetadata, status: EditStatus) => {
   const { metadata } = currentTab.value;
-  markEditStatus(database.value, { ...metadata, column }, status);
+  markEditStatus(db.value, { ...metadata, column }, status);
 };
 
 const isDroppedSchema = computed(() => {
@@ -265,7 +268,7 @@ const handleApplyColumnTemplate = (
   const { metadata } = currentTab.value;
   if (template.config) {
     upsertColumnConfig(
-      database.value,
+      db.value,
       {
         ...metadata,
         column,
@@ -371,11 +374,7 @@ const handleRestoreColumn = (column: ColumnMetadata) => {
   if (statusForColumn(column) === "created") {
     return;
   }
-  removeEditStatus(
-    database.value,
-    metadataForColumn(column),
-    /* recursive */ false
-  );
+  removeEditStatus(db.value, metadataForColumn(column), /* recursive */ false);
 };
 
 const handleReorderColumn = (
