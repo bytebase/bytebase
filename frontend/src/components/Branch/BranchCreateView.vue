@@ -37,33 +37,31 @@
       :project-id="projectId"
       :readonly="disallowToChangeBaseline"
     />
-    <div class="w-full text-xs font-mono">
+    <div v-if="false" class="w-full text-xs font-mono">
+      <div>debug info</div>
       <div>isPreparingBranch: {{ isPreparingBranch }}</div>
       <div>databaseId: {{ databaseId }}</div>
       <div>parentBranchName: {{ parentBranchName }}</div>
       <div>state.parent: {{ branchData?.parent }}</div>
       <div>state.branch.name: {{ branchData?.branch.name }}</div>
       <div>
-        len(tables):
+        flatten table count:
         {{
           branchData?.branch.schemaMetadata?.schemas.map((s) => s.tables.length)
         }}
       </div>
-      <div>
+      <div v-if="branchData">
         size(state.branch):
-        <template v-if="branchData?.branch">{{
-          bytesToString(JSON.stringify(branchData.branch).length)
-        }}</template>
+        {{ bytesToString(JSON.stringify(branchData?.branch).length) }}
       </div>
     </div>
     <div class="w-full flex-1 overflow-y-hidden">
       <SchemaEditorLite
-        v-if="branchData?.branch"
-        :key="branchData.branch.name"
+        :key="branchData?.branch.name ?? ''"
         :loading="isPreparingBranch"
         :project="project"
         :resource-type="'branch'"
-        :branch="branchData.branch"
+        :branch="branchData?.branch ?? EMPTY_BRANCH"
         :readonly="true"
       />
     </div>
@@ -77,8 +75,6 @@
         {{ confirmText }}
       </NButton>
     </div>
-
-    <MaskSpinner v-show="isPreparingBranch" />
   </div>
 </template>
 
@@ -130,6 +126,8 @@ const parentBranchName = ref<string>();
 const isCreating = ref(false);
 const branchId = ref<string>("");
 const isPreparingBranch = ref(false);
+
+const EMPTY_BRANCH = Branch.fromPartial({});
 
 const project = computed(() => {
   const project = projectStore.getProjectByUID(projectId.value || "");
@@ -189,6 +187,7 @@ const prepareBranchFromDatabaseHead = async (uid: string) => {
 };
 
 const branchData = shallowRef<BranchData>();
+
 const prepareBranch = async (
   _parentBranchName: string | undefined,
   _databaseId: string | undefined
