@@ -96,10 +96,8 @@ const handleSelectScope = (id: SearchScopeId) => {
   }
 };
 
-const supportOptionIdList = computed(() =>
-  [...UIIssueFilterScopeIdList, ...SearchScopeIdList].map((id) => ({
-    id,
-    includeAll: false,
-  }))
-);
+const supportOptionIdList = computed(() => [
+  ...UIIssueFilterScopeIdList,
+  ...SearchScopeIdList,
+]);
 </script>

@@ -120,16 +120,7 @@ const state = reactive<LocalState>({
   selectedDatabaseIds: new Set(),
   params: {
     query: "",
-    scopes: [
-      {
-        id: "environment",
-        value: String(UNKNOWN_ID),
-      },
-      {
-        id: "instance",
-        value: String(UNKNOWN_ID),
-      },
-    ],
+    scopes: [],
   },
 });
 
@@ -316,7 +307,5 @@ const selectedDatabases = computed((): ComposedDatabase[] => {
   );
 });
 
-const supportOptionIdList = computed(() =>
-  [...CommonFilterScopeIdList].map((id) => ({ id, includeAll: true }))
-);
+const supportOptionIdList = computed(() => [...CommonFilterScopeIdList]);
 </script>
