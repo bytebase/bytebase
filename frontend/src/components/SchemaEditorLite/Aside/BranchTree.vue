@@ -95,6 +95,7 @@ import { getHighlightHTMLByKeyWords, isDescendantOf } from "@/utils";
 import SchemaNameModal from "../Modals/SchemaNameModal.vue";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import { useSchemaEditorContext } from "../context";
+import { keyForResource, keyForResourceName } from "../context/common";
 
 interface BaseTreeNode extends TreeOption {
   key: string;
@@ -144,6 +145,7 @@ const state = reactive<LocalState>({
 const {
   targets,
   readonly,
+  currentTab,
   addTab,
   markEditStatus,
   removeEditStatus,
@@ -278,17 +280,23 @@ onMounted(() => {
 });
 
 const buildBranchTreeData = () => {
+  const db = database.value;
   const treeNodeList: TreeNode[] = [];
   for (const schema of schemaList.value) {
     const schemaTreeNode: TreeNodeForSchema = {
       type: "schema",
-      key: `s-${schema.name}`,
+      key: keyForResource(db, {
+        schema,
+      }),
       label: schema.name,
       isLeaf: false,
       schema: schema,
       children: schema.tables.map<TreeNodeForTable>((table) => ({
         type: "table",
-        key: `t-${schema.name}-${table.name}`,
+        key: keyForResource(db, {
+          schema,
+          table,
+        }),
         label: table.name,
         children: [],
         isLeaf: true,
@@ -308,37 +316,51 @@ watch(() => schemaList.value, debounce(buildBranchTreeData, 250), {
   deep: true,
 });
 
-// watch(
-//   () => currentTab.value,
-//   () => {
-//     if (!currentTab.value) {
-//       selectedKeysRef.value = [];
-//       return;
-//     }
+const tabWatchKey = computed(() => {
+  const tab = currentTab.value;
+  if (!tab) return undefined;
+  if (tab.type === "database") {
+    return keyForResourceName(tab.database.name, tab.selectedSchema);
+  }
+  return keyForResource(tab.database, tab.metadata);
+});
+watch(tabWatchKey, () => {
+  const tab = currentTab.value;
+  if (!tab) {
+    selectedKeysRef.value = [];
+    return;
+  }
 
-//     if (currentTab.value.type === SchemaEditorTabType.TabForDatabase) {
-//       if (currentTab.value.selectedSchemaId) {
-//         const schemaTreeNodeKey = `s-${currentTab.value.selectedSchemaId}`;
-//         selectedKeysRef.value = [schemaTreeNodeKey];
-//       }
-//     } else if (currentTab.value.type === SchemaEditorTabType.TabForTable) {
-//       const schemaTreeNodeKey = `s-${currentTab.value.schemaId}`;
-//       if (!expandedKeysRef.value.includes(schemaTreeNodeKey)) {
-//         expandedKeysRef.value.push(schemaTreeNodeKey);
-//       }
-//       const tableTreeNodeKey = `t-${currentTab.value.schemaId}-${currentTab.value.tableId}`;
-//       selectedKeysRef.value = [tableTreeNodeKey];
-//     }
+  if (tab.type === "database") {
+    const { database, selectedSchema: schema } = tab;
+    if (schema) {
+      const key = keyForResourceName(database.name, schema);
+      if (!expandedKeysRef.value.includes(key)) {
+        expandedKeysRef.value.push(key);
+      }
+      selectedKeysRef.value = [key];
+    }
+  } else if (tab.type === "table") {
+    const {
+      database,
+      metadata: { schema, table },
+    } = tab;
+    const schemaKey = keyForResource(database, { schema });
+    if (!expandedKeysRef.value.includes(schemaKey)) {
+      expandedKeysRef.value.push(schemaKey);
+    }
+    const tableKey = keyForResource(database, { schema, table });
+    selectedKeysRef.value = [tableKey];
+  }
 
-//     if (state.shouldRelocateTreeNode) {
-//       nextTick(() => {
-//         treeRef.value?.scrollTo({
-//           key: selectedKeysRef.value[0],
-//         });
-//       });
-//     }
-//   }
-// );
+  if (state.shouldRelocateTreeNode) {
+    nextTick(() => {
+      treeRef.value?.scrollTo({
+        key: selectedKeysRef.value[0],
+      });
+    });
+  }
+});
 
 // Render prefix icons before label text.
 const renderPrefix = ({ option }: { option: TreeOption }) => {
