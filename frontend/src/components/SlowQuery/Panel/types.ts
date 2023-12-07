@@ -1,63 +1,38 @@
 import dayjs from "dayjs";
+import { useDatabaseV1Store } from "@/store";
 import { UNKNOWN_ID } from "@/types";
-import {
-  Database,
-  ListSlowQueriesRequest,
-} from "@/types/proto/v1/database_service";
-import { Environment } from "@/types/proto/v1/environment_service";
-import { Instance } from "@/types/proto/v1/instance_service";
-import { Project } from "@/types/proto/v1/project_service";
+import { ListSlowQueriesRequest } from "@/types/proto/v1/database_service";
+import { SearchScope } from "@/utils";
 
-export type SlowQueryFilterParams = {
-  project: Project | undefined; // undefined to "All"
-  environment: Environment | undefined; // undefined to "All"
-  instance: Instance | undefined; // undefined to "All"
-  database: Database | undefined; // undefined to "All"
-  fromTime: number | undefined;
-  toTime: number | undefined;
-};
-
-export const FilterTypeList = [
-  "project",
-  "environment",
-  "instance",
-  "database",
-  "time-range",
-] as const;
-
-export type FilterType = typeof FilterTypeList[number];
-
-export const defaultSlowQueryFilterParams = (): SlowQueryFilterParams => {
-  const now = dayjs();
-  const aWeekAgo = now.subtract(7, "days").startOf("day").valueOf();
-  const tonight = now.endOf("day").valueOf();
-  return {
-    project: undefined,
-    environment: undefined,
-    instance: undefined,
-    database: undefined,
-    fromTime: aWeekAgo,
-    toTime: tonight,
-  };
-};
-
-export const buildListSlowQueriesRequest = (filter: SlowQueryFilterParams) => {
+export const buildListSlowQueriesRequest = (
+  scopes: SearchScope[],
+  timeRange: { fromTime: number | undefined; toTime: number | undefined }
+) => {
   const request = {} as Partial<ListSlowQueriesRequest>;
-  const { project, environment, instance, database, fromTime, toTime } = filter;
+
+  const project = scopes.find((s) => s.id === "project")?.value;
+  const environment = scopes.find((s) => s.id === "environment")?.value;
+  const instance = scopes.find((s) => s.id === "instance")?.value;
+  const database = scopes.find((s) => s.id === "database")?.value;
+  const { fromTime, toTime } = timeRange;
 
   const query: string[] = [];
   request.parent = "instances/-/databases/-";
-  if (database && database.uid !== String(UNKNOWN_ID)) {
-    request.parent = database.name;
-  } else if (instance && instance.uid !== String(UNKNOWN_ID)) {
-    request.parent = `${instance.name}/databases/-`;
-  } else if (environment && environment.uid !== String(UNKNOWN_ID)) {
+  if (database) {
+    const uid = database.split("-").slice(-1)[0];
+    const db = useDatabaseV1Store().getDatabaseByUID(uid);
+    if (db.uid !== `${UNKNOWN_ID}`) {
+      request.parent = db.name;
+    }
+  } else if (instance) {
+    request.parent = `instances/${instance}/databases/-`;
+  } else if (environment) {
     request.parent = `instances/-/databases/-`;
-    query.push(`environment = "${environment.name}"`);
+    query.push(`environment = "environments/${environment}"`);
   }
 
   if (project) {
-    query.push(`project = "${project.name}"`);
+    query.push(`project = "projects/${project}"`);
   }
   if (fromTime) {
     const start = dayjs(fromTime).toISOString();
