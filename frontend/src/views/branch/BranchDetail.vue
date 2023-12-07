@@ -5,8 +5,9 @@
     </template>
     <template v-else-if="branch">
       <BranchDetailView
+        v-if="project"
         :key="detailViewKey"
-        :project-id="getProjectName(project?.name ?? '')"
+        :project="project"
         :branch="branch"
         v-bind="$attrs"
         @update:branch="handleUpdateBranch"
@@ -29,7 +30,6 @@ import BranchCreateView from "@/components/Branch/BranchCreateView.vue";
 import BranchDetailView from "@/components/Branch/BranchDetailView.vue";
 import { useProjectV1Store } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
-import { getProjectName } from "@/store/modules/v1/common";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { idFromSlug } from "@/utils";
 

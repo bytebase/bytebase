@@ -23,7 +23,7 @@
             <BranchSelector
               class="!w-4/5 text-center"
               :clearable="false"
-              :project="getProjectName(project.name)"
+              :project="project"
               :branch="state.branchName"
               :filter="targetBranchFilter"
               @update:branch="(branch) => (state.branchName = branch ?? '')"
@@ -80,7 +80,6 @@ import { useI18n } from "vue-i18n";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { pushNotification } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
-import { getProjectName } from "@/store/modules/v1/common";
 import { ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DiffEditor } from "../MonacoEditor";

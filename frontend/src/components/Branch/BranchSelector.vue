@@ -18,8 +18,8 @@
 <script lang="ts" setup>
 import { NSelect, SelectOption, SelectRenderLabel } from "naive-ui";
 import { computed, h } from "vue";
-import { useDatabaseV1Store, useBranchList } from "@/store";
-import { UNKNOWN_ID } from "@/types";
+import { useDatabaseV1Store, useBranchListByProject } from "@/store";
+import { ComposedProject, UNKNOWN_ID } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { InstanceV1EngineIcon } from "../v2";
 
@@ -29,7 +29,7 @@ interface BranchSelectOption extends SelectOption {
 }
 
 const props = defineProps<{
-  project?: string;
+  project: ComposedProject;
   branch?: string;
   clearable?: boolean;
   loading?: boolean;
@@ -41,7 +41,9 @@ defineEmits<{
   (event: "update:branch", name: string | undefined): void;
 }>();
 
-const { branchList, ready } = useBranchList(props.project || "");
+const { branchList, ready } = useBranchListByProject(
+  computed(() => props.project.name)
+);
 const databaseStore = useDatabaseV1Store();
 
 const combinedBranchList = computed(() => {

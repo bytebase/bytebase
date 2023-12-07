@@ -1,12 +1,12 @@
 import { defineStore } from "pinia";
-import { reactive, ref, watchEffect } from "vue";
+import { reactive, ref, unref, watchEffect } from "vue";
 import { branchServiceClient } from "@/grpcweb";
+import { MaybeRef } from "@/types";
 import {
   MergeBranchRequest,
   Branch,
   BranchView,
 } from "@/types/proto/v1/branch_service";
-import { projectNamePrefix } from "./v1/common";
 
 export const useBranchStore = defineStore("schema_design", () => {
   const branchMapByName = reactive(new Map<string, Branch>());
@@ -15,7 +15,7 @@ export const useBranchStore = defineStore("schema_design", () => {
   // Actions
   const fetchBranchList = async (projectName: string) => {
     const { branches } = await branchServiceClient.listBranches({
-      parent: projectNamePrefix + projectName,
+      parent: projectName,
       view: BranchView.BRANCH_VIEW_BASIC,
     });
     return branches;
@@ -106,7 +106,7 @@ export const useBranchStore = defineStore("schema_design", () => {
   };
 });
 
-export const useBranchList = (projectName: string) => {
+export const useBranchListByProject = (project: MaybeRef<string>) => {
   const store = useBranchStore();
   const ready = ref(false);
   const branchList = ref<Branch[]>([]);
@@ -114,7 +114,7 @@ export const useBranchList = (projectName: string) => {
   watchEffect(() => {
     ready.value = false;
     branchList.value = [];
-    store.fetchBranchList(projectName).then((response) => {
+    store.fetchBranchList(unref(project)).then((response) => {
       ready.value = true;
       branchList.value = response;
     });

@@ -122,11 +122,12 @@ import { validateDatabaseMetadata } from "@/components/SchemaEditorV1/utils";
 import TargetDatabasesSelectPanel from "@/components/SyncDatabaseSchema/TargetDatabasesSelectPanel.vue";
 import { branchServiceClient } from "@/grpcweb";
 import { pushNotification, useDatabaseV1Store } from "@/store";
-import { useBranchList, useBranchStore } from "@/store/modules/branch";
+import { useBranchListByProject, useBranchStore } from "@/store/modules/branch";
 import {
   getProjectAndBranchId,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
+import { ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { projectV1Slug } from "@/utils";
@@ -146,7 +147,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  projectId: string;
+  project: ComposedProject;
   branch: Branch;
   readonly?: boolean;
 }>();
@@ -159,7 +160,9 @@ const { t } = useI18n();
 const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const branchStore = useBranchStore();
-const { branchList, ready } = useBranchList(props.projectId);
+const { branchList, ready } = useBranchListByProject(
+  computed(() => props.project.name)
+);
 const { runSQLCheck } = provideSQLCheckContext();
 const schemaDesignerRef = ref<InstanceType<typeof SchemaDesignEditorLite>>();
 const state = reactive<LocalState>({
@@ -193,9 +196,6 @@ const parentBranch = asyncComputed(async () => {
 
 const database = computed(() => {
   return databaseStore.getDatabaseByName(props.branch.baselineDatabase);
-});
-const project = computed(() => {
-  return database.value.projectEntity;
 });
 
 const rebuildMetadataEdit = () => {
@@ -278,7 +278,7 @@ const handleMergeBranch = () => {
   const tempList = branchList.value.filter((item) => {
     const [projectName] = getProjectAndBranchId(item.name);
     return (
-      `${projectNamePrefix}${projectName}` === project.value.name &&
+      `${projectNamePrefix}${projectName}` === props.project.name &&
       item.engine === props.branch.engine &&
       item.name !== props.branch.name
     );
@@ -392,7 +392,7 @@ const handleMergeAfterConflictResolved = (branchName: string) => {
   router.replace({
     name: "workspace.project.branch.detail",
     params: {
-      projectSlug: projectV1Slug(project.value),
+      projectSlug: projectV1Slug(props.project),
       branchName: branchId,
     },
   });
@@ -443,7 +443,7 @@ const handleSelectedDatabaseIdListChanged = async (
   );
   const query: Record<string, any> = {
     template: "bb.issue.database.schema.update",
-    project: project.value.uid,
+    project: props.project.uid,
     mode: "normal",
     ghost: undefined,
     branch: props.branch.name,
@@ -483,7 +483,7 @@ const deleteBranch = async () => {
     name: "workspace.project.detail",
     hash: "#branches",
     params: {
-      projectSlug: projectV1Slug(project.value),
+      projectSlug: projectV1Slug(props.project),
     },
   });
 };

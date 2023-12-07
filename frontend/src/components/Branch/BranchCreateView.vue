@@ -17,7 +17,7 @@
       </span>
       <BranchSelector
         v-model:branch="parentBranchName"
-        :project="projectId"
+        :project="project"
         :loading="isPreparingBranch"
         class="!w-60"
         clearable

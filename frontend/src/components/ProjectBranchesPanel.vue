@@ -27,14 +27,14 @@ import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
 import BranchDataTable from "@/components/Branch/BranchDataTable.vue";
-import { useProjectV1Store } from "@/store";
-import { useBranchList } from "@/store/modules/branch";
+import { useBranchListByProject } from "@/store/modules/branch";
 import { getProjectAndBranchId } from "@/store/modules/v1/common";
+import { ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { projectV1Slug } from "@/utils";
 
 const props = defineProps<{
-  projectId: string;
+  project: ComposedProject;
 }>();
 
 interface LocalState {
@@ -42,24 +42,15 @@ interface LocalState {
 }
 
 const router = useRouter();
-const projectV1Store = useProjectV1Store();
-const { branchList, ready } = useBranchList(props.projectId);
+const { branchList, ready } = useBranchListByProject(
+  computed(() => props.project.name)
+);
 const state = reactive<LocalState>({
   searchKeyword: "",
 });
 
-const project = computed(() => projectV1Store.getProjectByUID(props.projectId));
-
 const filteredBranches = computed(() => {
-  return orderBy(
-    props.projectId
-      ? branchList.value.filter((branch) =>
-          branch.name.startsWith(project.value.name)
-        )
-      : branchList.value,
-    "updateTime",
-    "desc"
-  ).filter((branch) => {
+  return orderBy(branchList.value, "updateTime", "desc").filter((branch) => {
     return state.searchKeyword
       ? branch.branchId.includes(state.searchKeyword)
       : true;
@@ -70,7 +61,7 @@ const handleCreateBranch = () => {
   router.push({
     name: "workspace.project.branch.detail",
     params: {
-      projectSlug: projectV1Slug(project.value),
+      projectSlug: projectV1Slug(props.project),
       branchName: "new",
     },
   });
@@ -81,7 +72,7 @@ const handleBranchClick = async (branch: Branch) => {
   router.push({
     name: "workspace.project.branch.detail",
     params: {
-      projectSlug: projectV1Slug(project.value),
+      projectSlug: projectV1Slug(props.project),
       branchName: `${branchId}`,
     },
   });
