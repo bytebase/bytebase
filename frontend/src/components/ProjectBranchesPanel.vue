@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-4 w-full overflow-x-auto">
-    <div class="flex flex-row justify-end items-center gap-x-2">
+    <div class="flex flex-row justify-end items-center gap-x-2 pt-0.5">
       <SearchBox
         v-model:value="state.searchKeyword"
         :autofocus="true"
