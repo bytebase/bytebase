@@ -1,6 +1,12 @@
 <template>
-  <div class="space-y-3 w-full overflow-x-auto relative" v-bind="$attrs">
-    <MaskSpinner v-if="state.savingStatus" class="!bg-white/75">
+  <div
+    class="flex flex-col gap-y-3 w-full overflow-x-auto relative"
+    v-bind="$attrs"
+  >
+    <MaskSpinner
+      v-if="state.isReverting || state.savingStatus"
+      class="!bg-white/75"
+    >
       <div class="text-sm">
         {{ state.savingStatus }}
       </div>
