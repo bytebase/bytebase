@@ -32,8 +32,8 @@
         :readonly="readonly"
         :show-foreign-key="true"
         :db="db"
-        :database="metadata.database"
-        :schema="metadata.schema"
+        :database="database"
+        :schema="schema"
         :table="table"
         :engine="engine"
         :classification-config-id="project.dataClassificationConfigId"
@@ -55,9 +55,9 @@
   <EditColumnForeignKeyModal
     v-if="state.showEditColumnForeignKeyModal && editForeignKeyContext"
     :database="db"
-    :metadata="metadata.database"
-    :schema="metadata.schema"
-    :table="metadata.table"
+    :metadata="database"
+    :schema="schema"
+    :table="table"
     :column="editForeignKeyContext.column"
     :foreign-key="editForeignKeyContext.foreignKey"
     @close="state.showEditColumnForeignKeyModal = false"
@@ -90,9 +90,13 @@ import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { hasFeature, pushNotification } from "@/store/modules";
+import { ComposedDatabase } from "@/types";
 import {
   ColumnMetadata,
+  DatabaseMetadata,
   ForeignKeyMetadata,
+  SchemaMetadata,
+  TableMetadata,
 } from "@/types/proto/v1/database_service";
 import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
 import { arraySwap, instanceV1AllowsReorderColumns } from "@/utils";
@@ -104,11 +108,15 @@ import {
   removeColumnPrimaryKey,
   upsertColumnPrimaryKey,
 } from "../edit";
-import { EditStatus, TableTabContext } from "../types";
+import { EditStatus } from "../types";
 import TableColumnEditor from "./TableColumnEditor";
 
 const props = withDefaults(
   defineProps<{
+    db: ComposedDatabase;
+    database: DatabaseMetadata;
+    schema: SchemaMetadata;
+    table: TableMetadata;
     searchPattern: string;
   }>(),
   {
@@ -123,7 +131,6 @@ interface LocalState {
 }
 
 const { t } = useI18n();
-const context = useSchemaEditorContext();
 const {
   project,
   readonly,
@@ -133,24 +140,14 @@ const {
   getTableStatus,
   getColumnStatus,
   upsertColumnConfig,
-} = context;
-const currentTab = computed(() => {
-  return context.currentTab.value as TableTabContext;
-});
-const db = computed(() => currentTab.value.database);
+} = useSchemaEditorContext();
 const engine = computed(() => {
-  return db.value.instanceEntity.engine;
-});
-const metadata = computed(() => {
-  return currentTab.value.metadata;
+  return props.db.instanceEntity.engine;
 });
 const state = reactive<LocalState>({
   showEditColumnForeignKeyModal: false,
   showSchemaTemplateDrawer: false,
   showFeatureModal: false,
-});
-const table = computed(() => {
-  return currentTab.value.metadata.table;
 });
 
 const editForeignKeyContext = ref<{
@@ -160,31 +157,30 @@ const editForeignKeyContext = ref<{
 
 const metadataForColumn = (column: ColumnMetadata) => {
   return {
-    ...currentTab.value.metadata,
+    database: props.database,
+    schema: props.schema,
+    table: props.table,
     column,
   };
 };
 const statusForSchema = () => {
-  const { metadata } = currentTab.value;
-  return getSchemaStatus(db.value, {
-    database: metadata.database,
-    schema: metadata.schema,
+  return getSchemaStatus(props.db, {
+    database: props.database,
+    schema: props.schema,
   });
 };
 const statusForTable = () => {
-  const { metadata } = currentTab.value;
-  return getTableStatus(db.value, {
-    database: metadata.database,
-    schema: metadata.schema,
-    table: metadata.table,
+  return getTableStatus(props.db, {
+    database: props.database,
+    schema: props.schema,
+    table: props.table,
   });
 };
 const statusForColumn = (column: ColumnMetadata) => {
-  return getColumnStatus(db.value, metadataForColumn(column));
+  return getColumnStatus(props.db, metadataForColumn(column));
 };
 const markColumnStatus = (column: ColumnMetadata, status: EditStatus) => {
-  const { metadata } = currentTab.value;
-  markEditStatus(db.value, { ...metadata, column }, status);
+  markEditStatus(props.db, metadataForColumn(column), status);
 };
 
 const isDroppedSchema = computed(() => {
@@ -226,17 +222,19 @@ const disableAlterColumn = (column: ColumnMetadata): boolean => {
 const setColumnPrimaryKey = (column: ColumnMetadata, isPrimaryKey: boolean) => {
   if (isPrimaryKey) {
     column.nullable = false;
-    upsertColumnPrimaryKey(table.value, column.name);
+    upsertColumnPrimaryKey(props.table, column.name);
   } else {
-    removeColumnPrimaryKey(table.value, column.name);
+    removeColumnPrimaryKey(props.table, column.name);
   }
   markColumnStatus(column, "updated");
 };
 
 const handleAddColumn = () => {
   const column = ColumnMetadata.fromPartial({});
-  table.value.columns.push(column);
+  /* eslint-disable-next-line vue/no-mutating-props */
+  props.table.columns.push(column);
   markColumnStatus(column, "created");
+
   // TODO: scroll to the new column and focus its name textbox
   // table.value.columnList.push(column);
   // nextTick(() => {
@@ -264,19 +262,12 @@ const handleApplyColumnTemplate = (
     return;
   }
   const column = cloneDeep(template.column);
-  table.value.columns.push(column);
-  const { metadata } = currentTab.value;
+  /* eslint-disable-next-line vue/no-mutating-props */
+  props.table.columns.push(column);
   if (template.config) {
-    upsertColumnConfig(
-      db.value,
-      {
-        ...metadata,
-        column,
-      },
-      (config) => {
-        Object.assign(config, template.config);
-      }
-    );
+    upsertColumnConfig(props.db, metadataForColumn(column), (config) => {
+      Object.assign(config, template.config);
+    });
   }
   markColumnStatus(column, "created");
 };
@@ -346,8 +337,9 @@ const handleEditColumnForeignKey = (
 };
 
 const handleDropColumn = (column: ColumnMetadata) => {
+  const { table } = props;
   // Disallow to drop the last column.
-  const nonDroppedColumns = table.value.columns.filter((column) => {
+  const nonDroppedColumns = table.columns.filter((column) => {
     return statusForColumn(column) !== "dropped";
   });
   if (nonDroppedColumns.length === 1) {
@@ -360,11 +352,11 @@ const handleDropColumn = (column: ColumnMetadata) => {
   }
   const status = statusForColumn(column);
   if (status === "created") {
-    pull(table.value.columns, column);
-    table.value.columns = table.value.columns.filter((col) => col !== column);
+    pull(table.columns, column);
+    table.columns = table.columns.filter((col) => col !== column);
 
-    removeColumnPrimaryKey(table.value, column.name);
-    removeColumnFromAllForeignKeys(table.value, column.name);
+    removeColumnPrimaryKey(table, column.name);
+    removeColumnFromAllForeignKeys(table, column.name);
   } else {
     markColumnStatus(column, "dropped");
   }
@@ -374,7 +366,7 @@ const handleRestoreColumn = (column: ColumnMetadata) => {
   if (statusForColumn(column) === "created") {
     return;
   }
-  removeEditStatus(db.value, metadataForColumn(column), /* recursive */ false);
+  removeEditStatus(props.db, metadataForColumn(column), /* recursive */ false);
 };
 
 const handleReorderColumn = (
@@ -383,7 +375,7 @@ const handleReorderColumn = (
   delta: -1 | 1
 ) => {
   const target = index + delta;
-  const { columns } = table.value;
+  const { columns } = props.table;
   if (target < 0) return;
   if (target >= columns.length) return;
   arraySwap(columns, index, target);

@@ -20,6 +20,10 @@
         <TableEditor
           v-if="currentTab.type === 'table'"
           :key="currentTab.id"
+          :db="currentTab.database"
+          :database="currentTab.metadata.database"
+          :schema="currentTab.metadata.schema"
+          :table="currentTab.metadata.table"
           :search-pattern="state.columnSearchPattern"
         />
       </div>
