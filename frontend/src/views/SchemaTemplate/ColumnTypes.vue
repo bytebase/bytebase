@@ -2,7 +2,7 @@
   <div class="w-full space-y-4 text-sm">
     <div class="space-y-4">
       <div class="flex items-center justify-between gap-x-6">
-        <div class="flex-1 textinfolabel !leading-8">
+        <div class="flex-1 textinfolabel">
           {{ $t("schema-template.column-type-restriction.description") }}
         </div>
       </div>
