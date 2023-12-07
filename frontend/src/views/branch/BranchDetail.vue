@@ -14,6 +14,9 @@
       />
     </template>
   </template>
+  <div v-else class="w-full h-full relative">
+    <MaskSpinner />
+  </div>
 </template>
 
 <script lang="ts" setup>
