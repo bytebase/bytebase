@@ -13,10 +13,10 @@
             >
               <span>Schema:</span>
               <NSelect
-                v-if="currentTab"
-                v-model:value="currentTab.selectedSchema"
-                class="min-w-[8rem]"
+                :value="selectedSchemaName"
                 :options="schemaSelectorOptionList"
+                class="min-w-[8rem]"
+                @update:value="$emit('update:selected-schema-name', $event)"
               />
             </div>
             <NButton
@@ -135,9 +135,11 @@ import { computed, nextTick, reactive, watch } from "vue";
 import { SchemaDiagramIcon } from "@/components/SchemaDiagram";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { hasFeature } from "@/store";
+import { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import {
   ColumnMetadata,
+  DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
@@ -145,17 +147,22 @@ import { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_se
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import { useSchemaEditorContext } from "../context";
-import { DatabaseTabContext } from "../types";
 import tables from "./TableList";
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
+    db: ComposedDatabase;
+    database: DatabaseMetadata;
+    selectedSchemaName: string | undefined;
     searchPattern: string;
   }>(),
   {
     searchPattern: "",
   }
 );
+const emit = defineEmits<{
+  (event: "update:selected-schema-name", schema: string | undefined): void;
+}>();
 
 type SubTabType = "table-list" | "schema-diagram";
 
@@ -172,27 +179,18 @@ interface LocalState {
 const context = useSchemaEditorContext();
 const { readonly, addTab, getSchemaStatus, markEditStatus, upsertTableConfig } =
   context;
-const currentTab = computed(() => {
-  return context.currentTab.value as DatabaseTabContext;
-});
 const state = reactive<LocalState>({
   selectedSubTab: "table-list",
   showFeatureModal: false,
   showSchemaTemplateDrawer: false,
 });
-const db = computed(() => currentTab.value.database);
 const engine = computed(() => {
-  return db.value.instanceEntity.engine;
-});
-const database = computed(() => {
-  return currentTab.value.metadata.database;
-});
-const schemaList = computed(() => {
-  return database.value?.schemas ?? [];
+  return props.db.instanceEntity.engine;
 });
 const selectedSchema = computed(() => {
-  const selectedSchema = currentTab.value.selectedSchema;
-  return schemaList.value.find((schema) => schema.name === selectedSchema);
+  return props.database.schemas.find(
+    (schema) => schema.name === props.selectedSchemaName
+  );
 });
 const shouldShowSchemaSelector = computed(() => {
   return engine.value === Engine.POSTGRES;
@@ -202,13 +200,13 @@ const allowCreateTable = computed(() => {
   const schema = selectedSchema.value;
   if (!schema) return false;
   if (engine.value === Engine.POSTGRES) {
-    const status = getSchemaStatus(db.value, {
-      database: database.value,
+    const status = getSchemaStatus(props.db, {
+      database: props.database,
       schema,
     });
 
     return (
-      schemaList.value.length > 0 &&
+      props.database.schemas.length > 0 &&
       selectedSchema.value &&
       status !== "dropped"
     );
@@ -218,7 +216,7 @@ const allowCreateTable = computed(() => {
 
 const schemaSelectorOptionList = computed(() => {
   const optionList = [];
-  for (const schema of schemaList.value) {
+  for (const schema of props.database.schemas) {
     optionList.push({
       label: schema.name,
       value: schema.name,
@@ -230,12 +228,8 @@ const schemaSelectorOptionList = computed(() => {
 watch(
   schemaSelectorOptionList,
   (options) => {
-    if (currentTab.value) {
-      if (
-        !options.find((opt) => opt.value === currentTab.value.selectedSchema)
-      ) {
-        currentTab.value.selectedSchema = head(options)?.value;
-      }
+    if (!options.find((opt) => opt.value === props.selectedSchemaName)) {
+      emit("update:selected-schema-name", head(options)?.value);
     }
   },
   {
@@ -256,13 +250,13 @@ const handleCreateNewTable = () => {
 };
 
 const tryEditTable = async (schema: SchemaMetadata, table: TableMetadata) => {
-  currentTab.value.selectedSchema = schema.name;
+  emit("update:selected-schema-name", schema.name);
   await nextTick();
   addTab({
     type: "table",
-    database: db.value,
+    database: props.db,
     metadata: {
-      database: database.value,
+      database: props.database,
       schema,
       table,
     },
@@ -312,19 +306,20 @@ const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
   schema.tables.push(table);
   const metadataForTable = () => {
     return {
-      database: database.value,
+      database: props.database,
       schema,
       table,
     };
   };
+  const { db } = props;
   if (template.config) {
-    upsertTableConfig(db.value, metadataForTable(), (config) => {
+    upsertTableConfig(db, metadataForTable(), (config) => {
       Object.assign(config, template.config);
     });
   }
-  markEditStatus(db.value, metadataForTable(), "created");
+  markEditStatus(db, metadataForTable(), "created");
   table.columns.forEach((column) => {
-    markEditStatus(db.value, { ...metadataForTable(), column }, "created");
+    markEditStatus(db, { ...metadataForTable(), column }, "created");
   });
 };
 </script>

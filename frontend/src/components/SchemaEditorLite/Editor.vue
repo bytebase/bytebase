@@ -12,6 +12,9 @@
         <DatabaseEditor
           v-if="currentTab.type === 'database'"
           :key="currentTab.id"
+          v-model:selected-schema-name="currentTab.selectedSchema"
+          :db="currentTab.database"
+          :database="currentTab.metadata.database"
           :search-pattern="state.tableSearchPattern"
         />
         <TableEditor
