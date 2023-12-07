@@ -31,7 +31,7 @@ export const useBranchStore = defineStore("schema_design", () => {
       branchId: branchId,
       branch,
     });
-    console.debug("got schema", createdBranch.schema);
+    // console.debug("got schema", createdBranch.schema);
     branchMapByName.set(createdBranch.name, createdBranch);
     return createdBranch;
   };

@@ -1,4 +1,4 @@
-import { cloneDeep } from "lodash-es";
+import { cloneDeep, isEqual } from "lodash-es";
 import { ComposedDatabase } from "@/types";
 import {
   ColumnMetadata,
@@ -227,7 +227,25 @@ export class DiffMerge {
     this.timer.end("mergeColumns", sourceColumns.length + targetColumns.length);
   }
   diffColumn(source: RichColumnMetadata, target: RichColumnMetadata) {
+    const { column: sourceColumn } = source;
+    const {
+      schema: targetSchema,
+      table: targetTable,
+      column: targetColumn,
+    } = target;
+    this.timer.begin("diffColumn");
+
     // TODO: diff column and check if it is updated
+    if (!isEqual(sourceColumn, targetColumn)) {
+      const key = keyForResourceName(
+        this.database.name,
+        targetSchema.name,
+        targetTable.name,
+        targetColumn.name
+      );
+      this.context.markEditStatusByKey(key, "updated");
+    }
+    this.timer.end("diffColumn", 1);
   }
 }
 
