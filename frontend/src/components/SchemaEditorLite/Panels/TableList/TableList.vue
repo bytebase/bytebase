@@ -11,7 +11,7 @@
       size="small"
       :row-key="getTableKey"
       :columns="columns"
-      :data="layoutReady ? tableList : []"
+      :data="layoutReady ? filteredTables : []"
       :row-class-name="classesForRow"
       :max-height="tableBodyHeight"
       :virtual-scroll="true"
@@ -65,6 +65,7 @@ import { Drawer, DrawerContent } from "@/components/v2";
 import { hasFeature, useSettingV1Store } from "@/store";
 import { ComposedDatabase } from "@/types";
 import {
+  DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
@@ -75,14 +76,15 @@ import {
 import { bytesToString } from "@/utils";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import { useSchemaEditorContext } from "../../context";
-import { DatabaseTabContext } from "../../types";
 import ClassificationCell from "../TableColumnEditor/components/ClassificationCell.vue";
 import { NameCell, OperationCell } from "./components";
 
 const props = defineProps<{
-  database: ComposedDatabase;
+  db: ComposedDatabase;
+  database: DatabaseMetadata;
   schema: SchemaMetadata;
-  tableList: TableMetadata[];
+  tables: TableMetadata[];
+  searchPattern?: string;
 }>();
 
 interface LocalState {
@@ -119,17 +121,19 @@ const tableBodyHeight = computed(() => {
 // Use this to avoid unnecessary initial rendering
 const layoutReady = computed(() => tableHeaderHeight.value > 0);
 const settingStore = useSettingV1Store();
-const currentTab = computed(() => {
-  return context.currentTab.value as DatabaseTabContext;
-});
 const state = reactive<LocalState>({
   showFeatureModal: false,
   showSchemaTemplateDrawer: false,
   showClassificationDrawer: false,
 });
+const filteredTables = computed(() => {
+  const keyword = props.searchPattern?.trim();
+  if (!keyword) return props.tables;
+  return props.tables.filter((table) => table.name.includes(keyword));
+});
 
 const engine = computed(() => {
-  return props.database.instanceEntity.engine;
+  return props.db.instanceEntity.engine;
 });
 
 const classificationConfig = computed(() => {
@@ -151,18 +155,18 @@ const onClassificationSelect = (classificationId: string) => {
   if (!table) return;
   table.classification = classificationId;
   state.activeTable = undefined;
-  markEditStatus(props.database, metadataForTable(table), "updated");
+  markEditStatus(props.db, metadataForTable(table), "updated");
 };
 
 const metadataForTable = (table: TableMetadata) => {
   return {
-    ...currentTab.value.metadata,
+    database: props.database,
     schema: props.schema,
     table,
   };
 };
 const statusForTable = (table: TableMetadata) => {
-  return getTableStatus(props.database, metadataForTable(table));
+  return getTableStatus(props.db, metadataForTable(table));
 };
 
 const classesForRow = (table: TableMetadata, index: number) => {
@@ -171,8 +175,8 @@ const classesForRow = (table: TableMetadata, index: number) => {
 
 const isDroppedSchema = computed(() => {
   return (
-    getSchemaStatus(props.database, {
-      ...currentTab.value.metadata,
+    getSchemaStatus(props.db, {
+      database: props.database,
       schema: props.schema,
     }) === "dropped"
   );
@@ -210,7 +214,7 @@ const columns = computed(() => {
           onEdit: () => showClassificationDrawer(table),
           onRemove: () => {
             table.classification = "";
-            markEditStatus(props.database, metadataForTable(table), "updated");
+            markEditStatus(props.db, metadataForTable(table), "updated");
           },
         });
       },
@@ -282,7 +286,7 @@ const columns = computed(() => {
 const handleTableItemClick = (table: TableMetadata) => {
   addTab({
     type: "table",
-    database: props.database,
+    database: props.db,
     metadata: metadataForTable(table),
   });
 };
@@ -290,15 +294,11 @@ const handleTableItemClick = (table: TableMetadata) => {
 const handleDropTable = (table: TableMetadata) => {
   // We don't physically remove it, mark it as 'dropped' instead
   // If it a 'created' table, it will remains till the page is refreshed.
-  markEditStatus(props.database, metadataForTable(table), "dropped");
+  markEditStatus(props.db, metadataForTable(table), "dropped");
 };
 
 const handleRestoreTable = (table: TableMetadata) => {
-  removeEditStatus(
-    props.database,
-    metadataForTable(table),
-    /* recursive */ false
-  );
+  removeEditStatus(props.db, metadataForTable(table), /* recursive */ false);
 };
 
 const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
@@ -317,25 +317,15 @@ const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
   const table = cloneDeep(template.table);
   /* eslint-disable-next-line vue/no-mutating-props */
   props.schema.tables.push(table);
-  upsertTableConfig(
-    props.database,
-    {
-      database: currentTab.value.metadata.database,
-      schema: props.schema,
-      table,
-    },
-    (config) => Object.assign(config, template.config)
+  const metadata = metadataForTable(table);
+  upsertTableConfig(props.db, metadata, (config) =>
+    Object.assign(config, template.config)
   );
 
-  const metadata = {
-    database: currentTab.value.metadata.database,
-    schema: props.schema,
-    table,
-  };
-  markEditStatus(props.database, metadata, "created");
+  markEditStatus(props.db, metadata, "created");
   addTab({
     type: "table",
-    database: props.database,
+    database: props.db,
     metadata,
   });
 };

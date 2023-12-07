@@ -76,18 +76,19 @@
     <div class="flex-1 overflow-y-hidden">
       <!-- List view -->
       <template v-if="state.selectedSubTab === 'table-list'">
-        <TableList
+        <tables
           v-if="selectedSchema"
+          :db="db"
           :database="database"
           :schema="selectedSchema"
-          :table-list="shownTableList"
+          :tables="selectedSchema.tables"
         />
       </template>
       <template v-else-if="state.selectedSubTab === 'schema-diagram'">
         <!-- TODO: bring status coloring back -->
         <SchemaDiagram
-          :database="database"
-          :database-metadata="metadata"
+          :database="db"
+          :database-metadata="database"
           :editable="true"
           @edit-table="tryEditTable"
           @edit-column="tryEditColumn"
@@ -98,8 +99,8 @@
 
   <TableNameModal
     v-if="state.tableNameModalContext !== undefined"
-    :database="database"
-    :metadata="metadata"
+    :database="db"
+    :metadata="database"
     :schema="state.tableNameModalContext.schema"
     mode="create"
     @close="state.tableNameModalContext = undefined"
@@ -145,9 +146,9 @@ import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import { useSchemaEditorContext } from "../context";
 import { DatabaseTabContext } from "../types";
-import TableList from "./TableList";
+import tables from "./TableList";
 
-const props = withDefaults(
+withDefaults(
   defineProps<{
     searchPattern: string;
   }>(),
@@ -179,27 +180,19 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
   showSchemaTemplateDrawer: false,
 });
-const database = computed(() => currentTab.value.database);
+const db = computed(() => currentTab.value.database);
 const engine = computed(() => {
-  return database.value.instanceEntity.engine;
+  return db.value.instanceEntity.engine;
 });
-const metadata = computed(() => {
+const database = computed(() => {
   return currentTab.value.metadata.database;
 });
 const schemaList = computed(() => {
-  return metadata.value?.schemas ?? [];
+  return database.value?.schemas ?? [];
 });
 const selectedSchema = computed(() => {
   const selectedSchema = currentTab.value.selectedSchema;
   return schemaList.value.find((schema) => schema.name === selectedSchema);
-});
-const tableList = computed(() => {
-  return selectedSchema.value?.tables ?? [];
-});
-const shownTableList = computed(() => {
-  return tableList.value.filter((table) =>
-    table.name.includes(props.searchPattern.trim())
-  );
 });
 const shouldShowSchemaSelector = computed(() => {
   return engine.value === Engine.POSTGRES;
@@ -209,8 +202,8 @@ const allowCreateTable = computed(() => {
   const schema = selectedSchema.value;
   if (!schema) return false;
   if (engine.value === Engine.POSTGRES) {
-    const status = getSchemaStatus(database.value, {
-      database: metadata.value,
+    const status = getSchemaStatus(db.value, {
+      database: database.value,
       schema,
     });
 
@@ -267,9 +260,9 @@ const tryEditTable = async (schema: SchemaMetadata, table: TableMetadata) => {
   await nextTick();
   addTab({
     type: "table",
-    database: database.value,
+    database: db.value,
     metadata: {
-      database: metadata.value,
+      database: database.value,
       schema,
       table,
     },
@@ -311,7 +304,6 @@ const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
     return;
   }
 
-  const db = database.value;
   const table = cloneDeep(template.table);
   const schema = selectedSchema.value;
   if (!schema) {
@@ -320,19 +312,19 @@ const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
   schema.tables.push(table);
   const metadataForTable = () => {
     return {
-      database: metadata.value,
+      database: database.value,
       schema,
       table,
     };
   };
   if (template.config) {
-    upsertTableConfig(db, metadataForTable(), (config) => {
+    upsertTableConfig(db.value, metadataForTable(), (config) => {
       Object.assign(config, template.config);
     });
   }
-  markEditStatus(db, metadataForTable(), "created");
+  markEditStatus(db.value, metadataForTable(), "created");
   table.columns.forEach((column) => {
-    markEditStatus(db, { ...metadataForTable(), column }, "created");
+    markEditStatus(db.value, { ...metadataForTable(), column }, "created");
   });
 };
 </script>
