@@ -41,8 +41,9 @@
         :node-props="nodeProps"
         :expanded-keys="expandedKeysRef"
         :selected-keys="selectedKeysRef"
-        :on-update:expanded-keys="handleExpandedKeysChange"
+        :show-irrelevant-nodes="false"
         :theme-overrides="{ nodeHeight: '28px' }"
+        @update:expanded-keys="handleExpandedKeysChange"
       />
       <NDropdown
         trigger="manual"
