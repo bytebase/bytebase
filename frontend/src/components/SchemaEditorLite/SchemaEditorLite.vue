@@ -3,7 +3,7 @@
     class="w-full h-full flex flex-col border rounded-lg overflow-hidden relative"
     v-bind="$attrs"
   >
-    <MaskSpinner v-if="mergedLoading" />
+    <MaskSpinner v-if="combinedLoading" />
     <Splitpanes
       class="default-theme w-full flex-1 flex flex-row overflow-hidden relative"
     >
@@ -81,7 +81,7 @@ const ready = computed(() => {
   return state.initialized && targets.value.length > 0;
 });
 
-const mergedLoading = computed(() => {
+const combinedLoading = computed(() => {
   return props.loading || state.diffing || !ready.value;
 });
 
