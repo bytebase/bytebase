@@ -762,82 +762,30 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
   const treeNode = option as TreeNode;
   return {
     async onClick(e: MouseEvent) {
-      // // Check if clicked on the content part.
-      // // And ignore the fold/unfold arrow.
-      // if (isDescendantOf(e.target as Element, ".n-tree-node-content")) {
-      //   state.shouldRelocateTreeNode = false;
-      //   if (treeNode.type === "instance") {
-      //     // Toggle instance tree node expanded status.
-      //     const index = expandedKeysRef.value.findIndex(
-      //       (key) => key === treeNode.key
-      //     );
-      //     if (index >= 0) {
-      //       expandedKeysRef.value.splice(index, 1);
-      //     } else {
-      //       expandedKeysRef.value.push(treeNode.key);
-      //     }
-      //   } else if (treeNode.type === "database") {
-      //     const index = expandedKeysRef.value.findIndex(
-      //       (key) => key === treeNode.key
-      //     );
-      //     if (index < 0) {
-      //       expandedKeysRef.value.push(treeNode.key);
-      //     }
-      //     schemaEditorV1Store.addTab({
-      //       id: generateUniqueTabId(),
-      //       type: SchemaEditorTabType.TabForDatabase,
-      //       parentName: treeNode.database,
-      //       name: treeNode.label,
-      //     });
-      //   } else if (treeNode.type === "schema") {
-      //     const index = expandedKeysRef.value.findIndex(
-      //       (key) => key === treeNode.key
-      //     );
-      //     if (index < 0) {
-      //       expandedKeysRef.value.push(treeNode.key);
-      //     }
-      //   } else if (treeNode.type === "table") {
-      //     schemaEditorV1Store.addTab({
-      //       id: generateUniqueTabId(),
-      //       type: SchemaEditorTabType.TabForTable,
-      //       parentName: treeNode.database,
-      //       schemaId: treeNode.schemaId,
-      //       tableId: treeNode.tableId,
-      //       name: treeNode.label,
-      //     });
-      //   }
-      //   nextTick(() => {
-      //     if (treeNode.type === "database") {
-      //       selectedKeysRef.value = [`d-${treeNode.database}`];
-      //     } else if (treeNode.type === "schema") {
-      //       selectedKeysRef.value = [
-      //         `s-${treeNode.database}-${treeNode.schemaId}`,
-      //       ];
-      //     } else if (treeNode.type === "table") {
-      //       selectedKeysRef.value = [
-      //         `t-${treeNode.database}-${treeNode.tableId}`,
-      //       ];
-      //     }
-      //     state.shouldRelocateTreeNode = true;
-      //   });
-      // } else {
-      //   nextTick(() => {
-      //     selectedKeysRef.value = [];
-      //   });
-      // }
-    },
-    ondblclick() {
-      // await loadSubTree(treeNode);
-      // nextTick(() => {
-      //   const index = expandedKeysRef.value.findIndex(
-      //     (key) => key === treeNode.key
-      //   );
-      //   if (index >= 0) {
-      //     expandedKeysRef.value.splice(index, 1);
-      //   } else {
-      //     expandedKeysRef.value.push(treeNode.key);
-      //   }
-      // });
+      // Check if clicked on the content part.
+      // And ignore the fold/unfold arrow.
+      if (isDescendantOf(e.target as Element, ".n-tree-node-content")) {
+        state.shouldRelocateTreeNode = false;
+        if (treeNode.type === "instance") {
+          expandNodeRecursively(treeNode);
+        } else if (treeNode.type === "database") {
+          expandNodeRecursively(treeNode);
+          addTab({
+            type: "database",
+            database: treeNode.database,
+            metadata: treeNode.metadata,
+            selectedSchema: head(treeNode.metadata.database.schemas)?.name,
+          });
+        } else if (treeNode.type === "schema") {
+          openTabForTreeNode(treeNode);
+        } else if (treeNode.type === "table") {
+          openTabForTreeNode(treeNode);
+        }
+      } else {
+        nextTick(() => {
+          selectedKeysRef.value = [];
+        });
+      }
     },
     oncontextmenu(e: MouseEvent) {
       handleShowDropdown(e, treeNode);
