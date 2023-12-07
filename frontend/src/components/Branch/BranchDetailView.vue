@@ -20,7 +20,7 @@
       <div>
         <div class="w-full flex flex-row justify-between items-center">
           <div
-            v-if="!viewMode"
+            v-if="!readonly"
             class="flex flex-row justify-end items-center space-x-2"
           >
             <template v-if="!state.isEditing">
@@ -75,7 +75,7 @@
       />
     </div>
     <!-- Don't show delete button in view mode. -->
-    <div v-if="!viewMode">
+    <div v-if="!readonly">
       <BBButtonConfirm
         :style="'DELETE'"
         :button-text="$t('database.delete-this-branch')"
@@ -142,7 +142,7 @@ interface LocalState {
 const props = defineProps<{
   projectId: string;
   branch: Branch;
-  viewMode?: boolean;
+  readonly?: boolean;
 }>();
 const emit = defineEmits<{
   (event: "update:branch", branch: Branch): void;
