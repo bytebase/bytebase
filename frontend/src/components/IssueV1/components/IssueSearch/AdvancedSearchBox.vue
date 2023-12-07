@@ -18,7 +18,12 @@
             'max-width': `calc(${containerWidth}px - 14rem)`,
           }"
         >
-          <SearchIcon class="w-4 h-4 text-control-placeholder" />
+          <div class="flex items-center space-x-2">
+            <FilterIcon class="w-4 h-4 text-control-placeholder" />
+            <span class="textinfolabel">
+              {{ $t("issue.advanced-search.filter") }}
+            </span>
+          </div>
           <div
             ref="tagsContainerRef"
             class="flex-1 flex flex-row items-center flex-nowrap gap-1 overflow-auto hide-scrollbar"
@@ -80,7 +85,7 @@
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
 import { cloneDeep, last } from "lodash-es";
-import { SearchIcon } from "lucide-vue-next";
+import { FilterIcon } from "lucide-vue-next";
 import { XIcon } from "lucide-vue-next";
 import { matchSorter } from "match-sorter";
 import { InputInst, NInput } from "naive-ui";
@@ -115,7 +120,7 @@ const props = withDefaults(
     params: SearchParams;
     readonlyScopes?: SearchScope[];
     autofocus?: boolean;
-    supportOptionIdList?: { id: SearchScopeId; includeAll: boolean }[];
+    supportOptionIdList?: SearchScopeId[];
   }>(),
   {
     readonlyScopes: () => [],

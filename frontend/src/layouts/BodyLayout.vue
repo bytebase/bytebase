@@ -27,7 +27,7 @@
                 </button>
               </div>
               <!-- Mobile Sidebar -->
-              <div class="flex-1 h-0 py-4 overflow-y-auto">
+              <div class="flex-1 h-0 py-0 overflow-y-auto">
                 <router-view
                   name="leftSidebar"
                   @click="state.showMobileOverlay = false"
