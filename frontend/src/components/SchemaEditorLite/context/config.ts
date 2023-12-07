@@ -16,26 +16,6 @@ import { keyForResource, keyForResourceName } from "./common";
 export const useEditConfigs = (targets: Ref<EditTarget[]>) => {
   // Build maps from keys to metadata objects for acceleration
   const buildMaps = (targets: EditTarget[]) => {
-    // const schema = new Map(
-    //   targets.flatMap((target) => {
-    //     return target.metadata.schemas.map((schema) => {
-    //       const key = keyForResource(target.database, {
-    //         schema,
-    //       });
-    //       return [key, schema];
-    //     });
-    //   })
-    // );
-    // const table = new Map(
-    //   targets.flatMap((target) => {
-    //     return target.metadata.schemas.flatMap((schema) => {
-    //       return schema.tables.map((table) => {
-    //         const key = keyForResource(target.database, { schema, table });
-    //         return [key, table];
-    //       });
-    //     });
-    //   })
-    // );
     const schemaConfig = new Map(
       targets.flatMap((target) => {
         return target.metadata.schemaConfigs.map((schemaConfig) => {
