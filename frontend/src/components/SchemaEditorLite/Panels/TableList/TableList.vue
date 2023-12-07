@@ -281,7 +281,6 @@ const columns = computed(() => {
 const handleTableItemClick = (table: TableMetadata) => {
   addTab({
     type: "table",
-    name: table.name,
     database: props.database,
     metadata: metadataForTable(table),
   });
@@ -335,7 +334,6 @@ const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
   markEditStatus(props.database, metadata, "created");
   addTab({
     type: "table",
-    name: table.name,
     database: props.database,
     metadata,
   });

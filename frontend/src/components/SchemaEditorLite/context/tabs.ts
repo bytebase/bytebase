@@ -16,6 +16,7 @@ export const useTabs = () => {
   const addTab = (coreTab: CoreTabContext, setAsCurrentTab = true) => {
     const existedTab = findTab(coreTab);
     if (existedTab) {
+      Object.assign(existedTab, coreTab);
       if (setAsCurrentTab) {
         currentTabId.value = existedTab.id;
       }
@@ -66,7 +67,7 @@ export const useTabs = () => {
       if (tab.type !== target.type) return false;
       if (tab.database.name !== target.database.name) return false;
       if (tab.type === "database" && target.type === "database") {
-        return tab.metadata.database.name === target.database.name;
+        return tab.metadata.database.name === target.metadata.database.name;
       }
       if (tab.type === "table" && target.type === "table") {
         return (

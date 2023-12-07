@@ -599,7 +599,6 @@ const openTabForTreeNode = (node: TreeNode) => {
   if (node.type === "table") {
     addTab({
       type: "table",
-      name: node.label,
       database: database.value,
       metadata: {
         database: metadata.value,
@@ -614,7 +613,6 @@ const openTabForTreeNode = (node: TreeNode) => {
     }
     addTab({
       type: "database",
-      name: node.label,
       database: database.value,
       metadata: {
         database: metadata.value,
