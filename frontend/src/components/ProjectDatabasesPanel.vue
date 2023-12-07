@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-4">
     <div
-      class="text-lg space-x-2 font-medium leading-7 text-main flex flex-col lg:flex-row items-start lg:items-end justify-between space-y-2"
+      class="w-full text-lg font-medium leading-7 text-main flex flex-col sm:flex-row items-start sm:items-end justify-between gap-2"
     >
       <AdvancedSearchBox
         v-model:params="state.params"
@@ -17,7 +17,7 @@
     </div>
 
     <DatabaseOperations
-      v-if="selectedDatabases.length > 0"
+      v-if="showDatabaseOperations"
       :databases="selectedDatabases"
       @dismiss="state.selectedDatabaseIds.clear()"
     />
@@ -59,7 +59,11 @@
       </DatabaseV1Table>
     </template>
     <div v-else class="text-center textinfolabel">
-      <i18n-t keypath="project.overview.no-db-prompt" tag="p">
+      <i18n-t
+        v-if="showEmptyActions"
+        keypath="project.overview.no-db-prompt"
+        tag="p"
+      >
         <template #newDb>
           <span class="text-main">{{ $t("quick-action.new-db") }}</span>
         </template>
@@ -73,7 +77,7 @@
 
 <script lang="ts" setup>
 import { reactive, PropType, computed, ref, watchEffect } from "vue";
-import { useCurrentUserV1, usePolicyV1Store } from "@/store";
+import { useCurrentUserV1, usePageMode, usePolicyV1Store } from "@/store";
 import { ComposedDatabase, UNKNOWN_ID } from "@/types";
 import {
   Policy,
@@ -104,6 +108,7 @@ const props = defineProps({
 });
 
 const currentUserV1 = useCurrentUserV1();
+const pageMode = usePageMode();
 
 const state = reactive<LocalState>({
   selectedDatabaseIds: new Set(),
@@ -175,6 +180,18 @@ const filteredDatabaseList = computed(() => {
     });
   }
   return list;
+});
+
+const showDatabaseOperations = computed(() => {
+  if (pageMode.value === "STANDALONE") {
+    return true;
+  }
+
+  return selectedDatabases.value.length > 0;
+});
+
+const showEmptyActions = computed(() => {
+  return pageMode.value === "BUNDLED";
 });
 
 const getAllSelectionState = (
