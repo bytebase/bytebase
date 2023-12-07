@@ -967,18 +967,23 @@
     "view-commit": "Ver commit",
     "advanced-search": {
       "self": "Búsqueda Avanzada",
+      "filter": "Filtrar",
       "scope": {
         "project": {
           "title": "Proyecto",
-          "description": "Incluir solo ediciones de este proyecto"
+          "description": "Filtrar por proyecto"
         },
         "instance": {
           "title": "Instancia",
-          "description": "Incluir solo problemas relacionados con la instancia"
+          "description": "Filtrar por instancia"
         },
         "database": {
           "title": "Base de datos",
-          "description": "Incluir sólo cuestiones relacionadas con la base de datos"
+          "description": "Filtrar por base de datos"
+        },
+        "environment": {
+          "title": "Ambiente",
+          "description": "Filtrar por entorno"
         },
         "type": {
           "title": "Tipo de cambio",

@@ -968,18 +968,23 @@
     "view-commit": "View commit",
     "advanced-search": {
       "self": "Advanced search",
+      "filter": "Filter",
       "scope": {
         "project": {
           "title": "Project",
-          "description": "Include only issues from this project"
+          "description": "Filter by project"
         },
         "instance": {
           "title": "Instance",
-          "description": "Include only issues related with the instance"
+          "description": "Filter by instance"
+        },
+        "environment": {
+          "title": "Environment",
+          "description": "Filter by environment"
         },
         "database": {
           "title": "Database",
-          "description": "Include only issues related with the database"
+          "description": "Filter by database"
         },
         "type": {
           "title": "Change Type",
