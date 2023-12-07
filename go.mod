@@ -69,7 +69,7 @@ require (
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8
 	github.com/xo/dburl v0.18.3
 	github.com/xuri/excelize/v2 v2.8.0
-	go.mongodb.org/mongo-driver v1.13.0
+	go.mongodb.org/mongo-driver v1.13.1
 	go.uber.org/multierr v1.11.0
 	golang.org/x/crypto v0.16.0
 	golang.org/x/exp v0.0.0-20231127185646-65229373498e
