@@ -76,7 +76,7 @@
 
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
-import { debounce, escape, head } from "lodash-es";
+import { cloneDeep, debounce, escape, head } from "lodash-es";
 import { TreeOption, NEllipsis, NInput, NDropdown, NTree } from "naive-ui";
 import { computed, watch, ref, h, reactive, nextTick, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
@@ -151,6 +151,7 @@ const {
   removeEditStatus,
   getSchemaStatus,
   getTableStatus,
+  upsertTableConfig,
 } = useSchemaEditorContext();
 const treeContainerElRef = ref<HTMLElement>();
 const { height: treeContainerHeight } = useElementSize(
@@ -190,24 +191,20 @@ const tableList = computed(() => {
   return metadata.value.schemas.flatMap((schema) => schema.tables);
 });
 
-const metadataForSchemaOrTable = (
-  schema: SchemaMetadata,
-  table?: TableMetadata
-) => {
+const metadataForSchema = (schema: SchemaMetadata) => {
   return {
     database: metadata.value,
     schema,
-    table,
   };
 };
+const metadataForTable = (schema: SchemaMetadata, table: TableMetadata) => {
+  return { ...metadataForSchema(schema), table };
+};
 const statusForSchema = (schema: SchemaMetadata) => {
-  return getSchemaStatus(database.value, metadataForSchemaOrTable(schema));
+  return getSchemaStatus(database.value, metadataForSchema(schema));
 };
 const statusForTable = (schema: SchemaMetadata, table: TableMetadata) => {
-  return getTableStatus(
-    database.value,
-    metadataForSchemaOrTable(schema, table) as any
-  );
+  return getTableStatus(database.value, metadataForTable(schema, table));
 };
 
 const contextMenuOptions = computed(() => {
@@ -244,22 +241,23 @@ const contextMenuOptions = computed(() => {
     const { schema, table } = treeNode;
 
     const status = statusForTable(schema, table);
-    const isDropped = status === "dropped";
     const options = [];
-    if (isDropped) {
+    if (status === "dropped") {
       options.push({
         key: "restore",
         label: t("schema-editor.actions.restore"),
       });
     } else {
       options.push({
-        key: "rename",
-        label: t("schema-editor.actions.rename"),
-      });
-      options.push({
         key: "drop",
         label: t("schema-editor.actions.drop-table"),
         disabled: readonly.value,
+      });
+    }
+    if (status === "created") {
+      options.push({
+        key: "rename",
+        label: t("schema-editor.actions.rename"),
       });
     }
     return options;
@@ -449,6 +447,7 @@ const renderSuffix = ({ option }: { option: TreeOption }) => {
       e.stopPropagation();
       e.stopImmediatePropagation();
 
+      const db = database.value;
       const { schema, table } = treeNode as TreeNodeForTable;
       if (!schema || !table) {
         return;
@@ -468,42 +467,44 @@ const renderSuffix = ({ option }: { option: TreeOption }) => {
         });
       const targetName = copiedTableNames.slice(-1)[0]?.name ?? table.name;
 
-      console.log("should create table", targetName);
-
-      // const newTable: Table = {
-      //   ...table,
-      //   id: uuidv1(),
-      //   name: getDuplicateName(targetName),
-      //   status: "created",
-      //   primaryKey: {
-      //     name: "",
-      //     columnIdList: [],
-      //   },
-      //   columnList: table.columnList.map((column) => {
-      //     return {
-      //       ...column,
-      //       id: uuidv1(),
-      //       status: "created",
-      //     };
-      //   }),
-      // };
-
-      // for (const primaryKeyId of table.primaryKey.columnIdList) {
-      //   const column = table.columnList.find((col) => col.id === primaryKeyId);
-      //   if (!column) {
-      //     continue;
-      //   }
-      //   const newColumn = newTable.columnList.find(
-      //     (col) => col.name === column.name
-      //   );
-      //   if (!newColumn) {
-      //     continue;
-      //   }
-      //   newTable.primaryKey.columnIdList.push(newColumn.id);
-      // }
-
-      // schema.tableList.push(newTable);
-      // openTabForTreeNode(treeNode);
+      const newTable = cloneDeep(table);
+      newTable.name = getDuplicateName(targetName);
+      schema.tables.push(newTable);
+      markEditStatus(db, metadataForTable(schema, newTable), "created");
+      newTable.columns.forEach((newColumn) => {
+        markEditStatus(
+          db,
+          { ...metadataForTable(schema, newTable), column: newColumn },
+          "created"
+        );
+      });
+      const tableConfig = metadata.value.schemaConfigs
+        .find((sc) => sc.name === schema.name)
+        ?.tableConfigs.find((tc) => tc.name === table.name);
+      if (tableConfig) {
+        const tableConfigCopy = cloneDeep(tableConfig);
+        tableConfigCopy.name = newTable.name;
+        upsertTableConfig(
+          db,
+          {
+            database: metadata.value,
+            schema,
+            table: newTable,
+          },
+          (config) => {
+            Object.assign(config, tableConfigCopy);
+          }
+        );
+      }
+      addTab({
+        type: "table",
+        database: database.value,
+        metadata: {
+          database: metadata.value,
+          schema: schema,
+          table: newTable,
+        },
+      });
     },
   });
   if (treeNode.type === "schema") {
@@ -537,13 +538,13 @@ const extractDuplicateNumber = (name: string): number => {
   return num;
 };
 
-// const getDuplicateName = (name: string): string => {
-//   const num = extractDuplicateNumber(name);
-//   if (num < 0) {
-//     return `${name}_copy`;
-//   }
-//   return `${getOriginalName(name)}_copy${num + 1}`;
-// };
+const getDuplicateName = (name: string): string => {
+  const num = extractDuplicateNumber(name);
+  if (num < 0) {
+    return `${name}_copy`;
+  }
+  return `${getOriginalName(name)}_copy${num + 1}`;
+};
 
 const handleShowDropdown = (e: MouseEvent, treeNode: TreeNode) => {
   e.preventDefault();
@@ -640,15 +641,11 @@ const handleContextMenuDropdownSelect = async (key: string) => {
         schema,
       };
     } else if (key === "drop") {
-      markEditStatus(
-        database.value,
-        metadataForSchemaOrTable(schema),
-        "dropped"
-      );
+      markEditStatus(database.value, metadataForSchema(schema), "dropped");
     } else if (key === "restore") {
       removeEditStatus(
         database.value,
-        metadataForSchemaOrTable(schema),
+        metadataForSchema(schema),
         /* recursive */ false
       );
     }
@@ -662,15 +659,17 @@ const handleContextMenuDropdownSelect = async (key: string) => {
         table,
       };
     } else if (key === "drop") {
+      // We don't physically remove it, mark it as 'dropped' instead
+      // If it a 'created' table, it will remains till the page is refreshed.
       markEditStatus(
         database.value,
-        metadataForSchemaOrTable(schema, table),
+        metadataForTable(schema, table),
         "dropped"
       );
     } else if (key === "restore") {
       removeEditStatus(
         database.value,
-        metadataForSchemaOrTable(schema, table),
+        metadataForTable(schema, table),
         /* recursive */ false
       );
     }

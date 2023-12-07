@@ -54,7 +54,7 @@
 
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
-import { cloneDeep, pull } from "lodash-es";
+import { cloneDeep } from "lodash-es";
 import { DataTableColumn, NDataTable } from "naive-ui";
 import { computed, h, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -288,22 +288,9 @@ const handleTableItemClick = (table: TableMetadata) => {
 };
 
 const handleDropTable = (table: TableMetadata) => {
-  const status = statusForTable(table);
-  if (status === "created") {
-    // If a table is newly created, remove it directly from its schema
-    pull(props.schema.tables, table);
-    markEditStatus(
-      props.database,
-      {
-        database: currentTab.value.metadata.database,
-        schema: props.schema,
-      },
-      "updated"
-    );
-  } else {
-    // Otherwise don't physically remove it, mark it as 'dropped' instead
-    markEditStatus(props.database, metadataForTable(table), "dropped");
-  }
+  // We don't physically remove it, mark it as 'dropped' instead
+  // If it a 'created' table, it will remains till the page is refreshed.
+  markEditStatus(props.database, metadataForTable(table), "dropped");
 };
 
 const handleRestoreTable = (table: TableMetadata) => {
