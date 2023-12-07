@@ -965,18 +965,23 @@
     "view-commit": "查看提交",
     "advanced-search": {
       "self": "高级搜索",
+      "filter": "过滤",
       "scope": {
         "project": {
           "title": "项目",
-          "description": "仅搜索某个项目下的工单"
+          "description": "根据项目过滤"
         },
         "instance": {
           "title": "实例",
-          "description": "仅搜索与某个实例关联的工单"
+          "description": "根据实例过滤"
         },
         "database": {
           "title": "数据库",
-          "description": "仅搜索与某个数据库关联的工单"
+          "description": "根据数据库过滤"
+        },
+        "environment": {
+          "title": "环境",
+          "description": "根据环境过滤"
         },
         "type": {
           "title": "变更类型",

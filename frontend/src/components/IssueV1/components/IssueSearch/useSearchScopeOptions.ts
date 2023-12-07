@@ -20,12 +20,7 @@ import {
   useUserStore,
   useEnvironmentV1List,
 } from "@/store";
-import {
-  SYSTEM_BOT_EMAIL,
-  UNKNOWN_ID,
-  unknownEnvironment,
-  unknownInstance,
-} from "@/types";
+import { SYSTEM_BOT_EMAIL, UNKNOWN_ID } from "@/types";
 import { engineToJSON } from "@/types/proto/v1/common";
 import { Workflow } from "@/types/proto/v1/project_service";
 import {
@@ -51,13 +46,9 @@ export type ValueOption = {
   render: RenderFunction;
 };
 
-interface LocalScopeOption extends ScopeOption {
-  optionForAll?: ValueOption;
-}
-
 export const useSearchScopeOptions = (
   params: Ref<SearchParams>,
-  supportOptionIdList: { id: SearchScopeId; includeAll: boolean }[]
+  supportOptionIdList: SearchScopeId[]
 ) => {
   const { t } = useI18n();
   const me = useCurrentUserV1();
@@ -101,7 +92,7 @@ export const useSearchScopeOptions = (
   // fullScopeOptions provides full search scopes and options.
   // we need this as the source of truth.
   const fullScopeOptions = computed((): ScopeOption[] => {
-    const scopes: LocalScopeOption[] = [
+    const scopes: ScopeOption[] = [
       {
         id: "project",
         title: t("issue.advanced-search.scope.project.title"),
@@ -193,21 +184,6 @@ export const useSearchScopeOptions = (
         id: "instance",
         title: t("issue.advanced-search.scope.instance.title"),
         description: t("issue.advanced-search.scope.instance.description"),
-        optionForAll: {
-          value: `${UNKNOWN_ID}`,
-          keywords: [],
-          custom: true,
-          render: () =>
-            h(InstanceV1Name, {
-              instance: {
-                ...unknownInstance(),
-                title: t("instance.all"),
-              },
-              icon: false,
-              link: false,
-              tooltip: false,
-            }),
-        },
         options: instanceList.value.map((ins) => {
           const name = extractInstanceResourceName(ins.name);
           return {
@@ -263,21 +239,8 @@ export const useSearchScopeOptions = (
       },
       {
         id: "environment",
-        title: "Environment",
-        description: "xxxxxxxx",
-        optionForAll: {
-          value: `${UNKNOWN_ID}`,
-          keywords: [],
-          custom: true,
-          render: () =>
-            h(EnvironmentV1Name, {
-              environment: {
-                ...unknownEnvironment(),
-                title: t("environment.all"),
-              },
-              link: false,
-            }),
-        },
+        title: t("issue.advanced-search.scope.environment.title"),
+        description: t("issue.advanced-search.scope.environment.description"),
         options: environmentList.value.map((env) => {
           return {
             value: extractEnvironmentResourceName(env.name),
@@ -308,20 +271,8 @@ export const useSearchScopeOptions = (
         ],
       },
     ];
-    const supportOptionIdMap = new Map(
-      supportOptionIdList.map((data) => [data.id, data.includeAll])
-    );
-    return scopes
-      .filter((scope) => supportOptionIdMap.has(scope.id))
-      .map((scope) => {
-        if (supportOptionIdMap.get(scope.id) && scope.optionForAll) {
-          return {
-            ...scope,
-            options: [scope.optionForAll, ...scope.options],
-          };
-        }
-        return scope;
-      });
+    const supportOptionIdSet = new Set(supportOptionIdList);
+    return scopes.filter((scope) => supportOptionIdSet.has(scope.id));
   });
 
   // filteredScopeOptions will filter search options by chosen scope.
