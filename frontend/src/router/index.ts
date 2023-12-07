@@ -731,7 +731,7 @@ const routes: Array<RouteRecordRaw> = [
             ],
           },
           {
-            path: "projects/:projectName",
+            path: "projects/:projectId",
             components: {
               content: () => import("../layouts/ProjectV1Layout.vue"),
               leftSidebar: ProjectSidebar,

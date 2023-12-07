@@ -13,7 +13,7 @@ import { idFromSlug } from "@/utils";
 export const useCurrentProject = (
   params: ComputedRef<{
     projectSlug?: string;
-    projectName?: string;
+    projectId?: string;
     issueSlug?: string;
     databaseSlug?: string;
     changeHistorySlug?: string;
@@ -56,9 +56,9 @@ export const useCurrentProject = (
       return useProjectV1Store().getProjectByUID(
         String(idFromSlug(unref(params).projectSlug!))
       );
-    } else if (unref(params).projectName) {
+    } else if (unref(params).projectId) {
       return useProjectV1Store().getProjectByName(
-        `${projectNamePrefix}${unref(params).projectName}`
+        `${projectNamePrefix}${unref(params).projectId}`
       );
     } else if (unref(params).databaseSlug || unref(params).changeHistorySlug) {
       return database.value.projectEntity;

@@ -28,7 +28,7 @@ import {
 } from "@/utils";
 
 const props = defineProps({
-  projectName: {
+  projectId: {
     required: true,
     type: String,
   },
@@ -39,7 +39,7 @@ const pageMode = usePageMode();
 
 const project = computed(() => {
   return projectV1Store.getProjectByName(
-    `${projectNamePrefix}${props.projectName}`
+    `${projectNamePrefix}${props.projectId}`
   );
 });
 

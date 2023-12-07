@@ -8,7 +8,7 @@ import { useProjectV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 
 const props = defineProps({
-  projectName: {
+  projectId: {
     required: true,
     type: String,
   },
@@ -18,7 +18,7 @@ const projectV1Store = useProjectV1Store();
 
 const project = computed(() => {
   return projectV1Store.getProjectByName(
-    `${projectNamePrefix}${props.projectName}`
+    `${projectNamePrefix}${props.projectId}`
   );
 });
 </script>

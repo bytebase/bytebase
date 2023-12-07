@@ -14,7 +14,7 @@
         :title="$t('project.overview.info-slot-content')"
       />
     </HideInStandaloneMode>
-    <router-view :project-name="projectName" :allow-edit="allowEdit" />
+    <router-view :project-id="projectId" :allow-edit="allowEdit" />
   </div>
 </template>
 
@@ -29,7 +29,7 @@ import { State } from "@/types/proto/v1/common";
 import { hasWorkspacePermissionV1, hasPermissionInProjectV1 } from "@/utils";
 
 const props = defineProps({
-  projectName: {
+  projectId: {
     required: true,
     type: String,
   },
@@ -40,7 +40,7 @@ const projectV1Store = useProjectV1Store();
 
 const project = computed(() => {
   return projectV1Store.getProjectByName(
-    `${projectNamePrefix}${props.projectName}`
+    `${projectNamePrefix}${props.projectId}`
   );
 });
 
@@ -76,7 +76,7 @@ const allowEdit = computed(() => {
 
 onMounted(async () => {
   await projectV1Store.getOrFetchProjectByName(
-    `${projectNamePrefix}${props.projectName}`
+    `${projectNamePrefix}${props.projectId}`
   );
 });
 </script>
