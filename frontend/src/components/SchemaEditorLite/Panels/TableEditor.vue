@@ -270,10 +270,10 @@ const setColumnPrimaryKey = (column: ColumnMetadata, isPrimaryKey: boolean) => {
 };
 
 const handleAddColumn = () => {
-  // const column = convertColumnMetadataToColumn(
-  //   ColumnMetadata.fromPartial({}),
-  //   "created"
-  // );
+  const column = ColumnMetadata.fromPartial({});
+  table.value.columns.push(column);
+  markColumnStatus(column, "created");
+  // TODO: scroll to the new column and focus its name textbox
   // table.value.columnList.push(column);
   // nextTick(() => {
   //   const container = document.querySelector("#table-editor-container");
