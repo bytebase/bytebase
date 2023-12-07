@@ -202,7 +202,6 @@ const syncNow = async () => {
           `instances/${selectedInstanceName.value}`
         );
       } else if (selectedProjectName.value) {
-        console.log(`selectedProjectName.value: ${selectedProjectName.value}`);
         await slowQueryStore.syncSlowQueries(
           `projects/${selectedProjectName.value}`
         );
