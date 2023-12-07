@@ -3,7 +3,7 @@
     <NInput
       ref="inputRef"
       v-model:value="inputText"
-      :placeholder="placeholder || $t('issue.advanced-search.self')"
+      :placeholder="placeholder ?? $t('issue.advanced-search.self')"
       class="bb-advanced-issue-search-box__input"
       style="--n-padding-left: 8px; --n-padding-right: 4px"
       @click="handleInputClick"
@@ -116,7 +116,7 @@ import { useSearchScopeOptions } from "./useSearchScopeOptions";
 
 const props = withDefaults(
   defineProps<{
-    placeholder?: string;
+    placeholder?: string | undefined;
     params: SearchParams;
     readonlyScopes?: SearchScope[];
     autofocus?: boolean;
@@ -126,7 +126,7 @@ const props = withDefaults(
     readonlyScopes: () => [],
     supportOptionIdList: () => [],
     autofocus: false,
-    placeholder: "",
+    placeholder: undefined,
   }
 );
 
