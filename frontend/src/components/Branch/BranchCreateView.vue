@@ -1,20 +1,20 @@
 <template>
   <div
-    class="w-full h-full flex flex-col gap-y-3 relative overflow-y-hidden overflow-x-auto"
+    class="w-full h-full flex flex-col gap-y-3 relative overflow-y-hidden overflow-x-auto pt-0.5"
   >
     <div class="w-full flex flex-row justify-start items-center">
-      <span class="flex w-40 items-center text-sm">{{
-        $t("database.branch-name")
-      }}</span>
+      <span class="flex w-40 items-center text-sm">
+        {{ $t("database.branch-name") }}
+      </span>
       <NInput
         v-model:value="branchId"
         type="text"
         class="!w-60 text-sm"
         :placeholder="'feature/add-billing'"
       />
-      <span class="ml-8 mr-4 flex items-center text-sm">{{
-        $t("schema-designer.parent-branch")
-      }}</span>
+      <span class="ml-4 mr-4 flex items-center text-sm">
+        {{ $t("schema-designer.parent-branch") }}
+      </span>
       <BranchSelector
         v-model:branch="parentBranchName"
         :project="projectId"
@@ -24,42 +24,46 @@
     </div>
     <NDivider class="!my-0" />
     <div class="w-full flex flex-row justify-start items-center">
-      <span class="flex w-full items-center text-sm font-medium">{{
-        parentBranchName
-          ? $t("schema-designer.baseline-version-from-parent")
-          : $t("schema-designer.baseline-version")
-      }}</span>
+      <span class="flex w-full items-center text-sm font-medium">
+        {{
+          parentBranchName
+            ? $t("schema-designer.baseline-version-from-parent")
+            : $t("schema-designer.baseline-version")
+        }}
+      </span>
     </div>
     <BaselineSchemaSelector
       v-model:database-id="databaseId"
       :project-id="projectId"
       :readonly="disallowToChangeBaseline"
     />
-    <div class="w-full">
+    <div class="w-full text-xs font-mono">
       <div>isPreparingBranch: {{ isPreparingBranch }}</div>
       <div>databaseId: {{ databaseId }}</div>
       <div>parentBranchName: {{ parentBranchName }}</div>
-      <div>state.parent: {{ state?.parent }}</div>
-      <div>state.branch.name: {{ state?.branch.name }}</div>
+      <div>state.parent: {{ branchData?.parent }}</div>
+      <div>state.branch.name: {{ branchData?.branch.name }}</div>
       <div>
         len(tables):
-        {{ state?.branch.schemaMetadata?.schemas.map((s) => s.tables.length) }}
+        {{
+          branchData?.branch.schemaMetadata?.schemas.map((s) => s.tables.length)
+        }}
       </div>
       <div>
         size(state.branch):
-        <template v-if="state?.branch">{{
-          bytesToString(JSON.stringify(state.branch).length)
+        <template v-if="branchData?.branch">{{
+          bytesToString(JSON.stringify(branchData.branch).length)
         }}</template>
       </div>
     </div>
     <div class="w-full flex-1 overflow-y-hidden">
       <SchemaEditorLite
-        v-if="state?.branch"
-        :key="state.branch.name"
+        v-if="branchData?.branch"
+        :key="branchData.branch.name"
         :loading="isPreparingBranch"
         :project="project"
         :resource-type="'branch'"
-        :branch="state.branch"
+        :branch="branchData.branch"
         :readonly="true"
       />
     </div>
@@ -82,7 +86,7 @@
 import { useDebounce } from "@vueuse/core";
 import { cloneDeep, uniqueId } from "lodash-es";
 import { NButton, NDivider, NInput } from "naive-ui";
-import { computed, ref, watch } from "vue";
+import { computed, ref, shallowRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import SchemaEditorLite from "@/components/SchemaEditorLite";
@@ -101,7 +105,7 @@ import MaskSpinner from "../misc/MaskSpinner.vue";
 import BaselineSchemaSelector from "./BaselineSchemaSelector.vue";
 import { validateBranchName } from "./utils";
 
-type BranchPrepareState = {
+type BranchData = {
   branch: Branch;
   parent: string | undefined;
 };
@@ -184,14 +188,14 @@ const prepareBranchFromDatabaseHead = async (uid: string) => {
   return branch;
 };
 
-const state = ref<BranchPrepareState>();
+const branchData = shallowRef<BranchData>();
 const prepareBranch = async (
   _parentBranchName: string | undefined,
   _databaseId: string | undefined
 ) => {
   isPreparingBranch.value = true;
 
-  const finish = (s: BranchPrepareState | undefined) => {
+  const finish = (s: BranchData | undefined) => {
     const isOutdated =
       _parentBranchName !== parentBranchName.value ||
       _databaseId !== databaseId.value;
@@ -199,7 +203,7 @@ const prepareBranch = async (
       return;
     }
 
-    state.value = s;
+    branchData.value = s;
     isPreparingBranch.value = false;
   };
 
@@ -228,7 +232,7 @@ watch(
 );
 
 const allowConfirm = computed(() => {
-  return branchId.value && state.value && !isCreating.value;
+  return branchId.value && branchData.value && !isCreating.value;
 });
 
 const confirmText = computed(() => {
@@ -236,7 +240,7 @@ const confirmText = computed(() => {
 });
 
 const handleConfirm = async () => {
-  if (!state.value) {
+  if (!branchData.value) {
     return;
   }
 
@@ -249,7 +253,7 @@ const handleConfirm = async () => {
     return;
   }
 
-  const { branch, parent } = state.value;
+  const { branch, parent } = branchData.value;
 
   const { baselineDatabase } = branch;
   isCreating.value = true;
