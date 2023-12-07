@@ -32,9 +32,8 @@
       </div>
       <div class="flex items-center flex-end">
         <SchemaEditorSQLCheckButton
-          :selected-tab="state.selectedTab"
           :database-list="databaseList"
-          :edit-statement="state.editStatement"
+          :get-statement="generateOrGetDDL"
         />
       </div>
     </div>
@@ -44,10 +43,18 @@
         class="w-full h-full py-2"
       >
         <SchemaEditorV1
+          v-if="false"
           :engine="databaseEngine"
           :project="project"
           :resource-type="'database'"
           :databases="databaseList"
+        />
+        <SchemaEditorLite
+          resource-type="database"
+          :project="project"
+          :targets="state.targets"
+          :loading="state.isPreparingMetadata"
+          :diff-when-ready="false"
         />
       </div>
       <div
@@ -98,7 +105,7 @@
     <div class="w-full flex flex-row justify-between items-center mt-4 pr-px">
       <div class="">
         <div
-          v-if="isTenantProject"
+          v-if="isBatchMode"
           class="flex flex-row items-center text-sm text-gray-500"
         >
           <heroicons-outline:exclamation-circle class="w-4 h-auto mr-1" />
@@ -132,7 +139,7 @@
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { cloneDeep, head, isEqual, uniq } from "lodash-es";
-import { computed, onMounted, PropType, reactive } from "vue";
+import { computed, onMounted, PropType, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import ActionConfirmModal from "@/components/SchemaEditorV1/Modals/ActionConfirmModal.vue";
@@ -151,10 +158,15 @@ import {
   unknownProject,
 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import { DatabaseMetadata } from "@/types/proto/v1/database_service";
+import {
+  DatabaseMetadata,
+  DatabaseMetadataView,
+} from "@/types/proto/v1/database_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
+import { TinyTimer } from "@/utils";
 import { MonacoEditor } from "../MonacoEditor";
 import { provideSQLCheckContext } from "../SQLCheck";
+import SchemaEditorLite, { EditTarget } from "../SchemaEditorLite";
 import {
   initialSchemaConfigToMetadata,
   mergeSchemaEditToMetadata,
@@ -170,6 +182,8 @@ interface LocalState {
   selectedTab: TabType;
   editStatement: string;
   showActionConfirmModal: boolean;
+  isPreparingMetadata: boolean;
+  targets: EditTarget[];
 }
 
 const props = defineProps({
@@ -197,6 +211,8 @@ const state = reactive<LocalState>({
   selectedTab: "schema-editor",
   editStatement: "",
   showActionConfirmModal: false,
+  isPreparingMetadata: false,
+  targets: [],
 });
 const schemaEditorV1Store = useSchemaEditorV1Store();
 const databaseV1Store = useDatabaseV1Store();
@@ -231,17 +247,54 @@ const databaseEngine = computed((): Engine => {
 const project = computed(
   () => head(databaseList.value)?.projectEntity ?? unknownProject()
 );
-const isTenantProject = computed(
+const isBatchMode = computed(
   () => project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED
 );
+const editTargetsKey = computed(() => {
+  return JSON.stringify({
+    databaseIdList: props.databaseIdList,
+    alterType: props.alterType,
+  });
+});
 
-const prepareDatabaseMetadatas = async () => {
-  for (const database of databaseList.value) {
-    await dbSchemaV1Store.getOrFetchDatabaseMetadata({
-      database: database.name,
-    });
-  }
+const prepareDatabaseMetadata = async () => {
+  // for (const database of databaseList.value) {
+  //   await dbSchemaV1Store.getOrFetchDatabaseMetadata({
+  //     database: database.name,
+  //   });
+  // }
+  console.log("prepareDatabaseMetadata", databaseList.value);
+  state.isPreparingMetadata = true;
+  state.targets = [];
+  const timer = new TinyTimer<"fetchMetadata" | "convertEditTargets">();
+  timer.begin("fetchMetadata");
+  const targets = await Promise.all(
+    databaseList.value.map(async (database) => {
+      const metadata = await dbSchemaV1Store.getOrFetchDatabaseMetadata({
+        database: database.name,
+        skipCache: false,
+        view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
+      });
+      return { database, metadata };
+    })
+  );
+  timer.end("fetchMetadata", databaseList.value.length);
+  timer.begin("convertEditTargets");
+  state.targets = targets.map<EditTarget>(({ database, metadata }) => {
+    return {
+      database,
+      metadata: cloneDeep(metadata),
+      baselineMetadata: metadata,
+    };
+  });
+  timer.end("convertEditTargets", databaseList.value.length);
+  timer.printAll();
+  state.isPreparingMetadata = false;
 };
+
+watch(editTargetsKey, prepareDatabaseMetadata, {
+  immediate: true,
+});
 
 onMounted(async () => {
   if (
@@ -256,8 +309,6 @@ onMounted(async () => {
     emit("close");
     return;
   }
-
-  await prepareDatabaseMetadatas();
 });
 
 const handleChangeTab = (tab: TabType) => {
@@ -278,6 +329,20 @@ const handleSyncSQLFromSchemaEditor = async () => {
     return;
   }
   state.editStatement = Array.from(statementMap.values()).join("\n");
+};
+
+const generateOrGetDDL = async () => {
+  if (state.selectedTab === "raw-sql") {
+    return {
+      statement: state.editStatement,
+      errors: [],
+    };
+  }
+  // TODO
+  return {
+    statement: "",
+    errors: ["not implemented yet"],
+  };
 };
 
 const getChangedDatabaseMetadatas = () => {
@@ -420,7 +485,7 @@ const handlePreviewIssue = async () => {
     template: "bb.issue.database.schema.update",
     project: project.value.uid,
   };
-  if (isTenantProject.value) {
+  if (isBatchMode.value) {
     if (props.databaseIdList.length > 1) {
       // A tenant pipeline with 2 or more databases will be generated
       // via deployment config, so we don't need the databaseList parameter.
@@ -460,7 +525,7 @@ const handlePreviewIssue = async () => {
       databaseIdList.push(key);
       statementList.push(val);
     }
-    if (isTenantProject.value) {
+    if (isBatchMode.value) {
       query.sql = statementList.join("\n");
       query.name = generateIssueName(
         databaseList.value.map((db) => db.databaseName),
