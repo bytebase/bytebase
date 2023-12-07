@@ -7,7 +7,7 @@
       <EnvironmentSelect
         class="!w-60 mr-4 shrink-0"
         name="environment"
-        :disabled="props.readonly"
+        :disabled="readonly || props.loading"
         :selected-id="state.environmentId"
         :select-default="false"
         :environment="state.environmentId"
@@ -16,7 +16,7 @@
       <DatabaseSelect
         class="!w-128"
         :placeholder="$t('schema-designer.select-database-placeholder')"
-        :disabled="props.readonly"
+        :disabled="readonly || props.loading"
         :allowed-engine-type-list="allowedEngineTypeList"
         :environment="state.environmentId"
         :project="projectId"
@@ -40,6 +40,7 @@ const props = defineProps<{
   projectId?: string;
   databaseId?: string;
   readonly?: boolean;
+  loading?: boolean;
 }>();
 
 const emit = defineEmits<{
