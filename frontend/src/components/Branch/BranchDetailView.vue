@@ -8,9 +8,12 @@
       class="!bg-white/75"
     >
       <div class="text-sm">
-        {{ state.savingStatus }}
+        <template v-if="state.savingStatus">
+          {{ state.savingStatus }}
+        </template>
       </div>
     </MaskSpinner>
+
     <div class="w-full flex flex-row justify-between items-center">
       <div class="w-full flex flex-row justify-start items-center gap-x-2">
         <NInput
@@ -101,6 +104,7 @@
     :project-id="project.uid"
     :engine="branch.engine"
     :selected-database-id-list="[]"
+    :loading="!!state.applyingToDatabaseStatus"
     @close="selectTargetDatabasesContext.show = false"
     @update="handleSelectedDatabaseIdListChanged"
   />
@@ -149,7 +153,8 @@ interface LocalState {
   isEditingBranchId: boolean;
   showDiffEditor: boolean;
   isReverting: boolean;
-  savingStatus: string | undefined;
+  savingStatus: string;
+  applyingToDatabaseStatus: boolean;
 }
 
 const props = defineProps<{
@@ -177,7 +182,8 @@ const state = reactive<LocalState>({
   isEditingBranchId: false,
   showDiffEditor: false,
   isReverting: false,
-  savingStatus: undefined,
+  savingStatus: "",
+  applyingToDatabaseStatus: false,
 });
 const mergeBranchPanelContext = ref<{
   headBranchName: string;
@@ -339,7 +345,7 @@ const handleSaveBranch = async () => {
     return;
   }
   const cleanup = async (success = false) => {
-    state.savingStatus = undefined;
+    state.savingStatus = "";
     if (success) {
       state.isEditing = false;
       await nextTick();
@@ -407,6 +413,11 @@ const handleMergeAfterConflictResolved = (branchName: string) => {
 const handleSelectedDatabaseIdListChanged = async (
   databaseIdList: string[]
 ) => {
+  const cleanup = () => {
+    state.applyingToDatabaseStatus = false;
+  };
+
+  state.applyingToDatabaseStatus = true;
   let statement = "";
   try {
     const diffResponse = await branchServiceClient.diffMetadata(
@@ -426,7 +437,7 @@ const handleSelectedDatabaseIdListChanged = async (
       style: "WARN",
       title: t("schema-editor.message.invalid-schema"),
     });
-    return;
+    return cleanup();
   }
 
   if (
@@ -441,7 +452,7 @@ const handleSelectedDatabaseIdListChanged = async (
       style: "WARN",
       title: t("schema-editor.message.cannot-change-config"),
     });
-    return;
+    return cleanup();
   }
 
   const targetDatabaseList = databaseIdList.map((id) =>
