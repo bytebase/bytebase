@@ -60,7 +60,8 @@
 
   <SchemaNameModal
     v-if="state.schemaNameModalContext !== undefined"
-    :parent-name="state.schemaNameModalContext.parentName"
+    :database="state.schemaNameModalContext.database"
+    :metadata="state.schemaNameModalContext.metadata"
     @close="state.schemaNameModalContext = undefined"
   />
 
@@ -76,7 +77,7 @@
 
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
-import { cloneDeep, debounce, escape, head } from "lodash-es";
+import { cloneDeep, escape, head } from "lodash-es";
 import { TreeOption, NEllipsis, NInput, NDropdown, NTree } from "naive-ui";
 import { computed, watch, ref, h, reactive, nextTick, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
@@ -127,7 +128,8 @@ interface TreeContextMenu {
 interface LocalState {
   shouldRelocateTreeNode: boolean;
   schemaNameModalContext?: {
-    parentName: string;
+    database: ComposedDatabase;
+    metadata: DatabaseMetadata;
   };
   tableNameModalContext?: {
     database: ComposedDatabase;
@@ -187,7 +189,7 @@ const engine = computed(() => {
 const schemaList = computed(() => {
   return metadata.value.schemas;
 });
-const tableList = computed(() => {
+const flattenTableList = computed(() => {
   return metadata.value.schemas.flatMap((schema) => schema.tables);
 });
 
@@ -310,9 +312,13 @@ const buildBranchTreeData = () => {
   treeDataRef.value = treeNodeList;
 };
 
-watch(() => schemaList.value, debounce(buildBranchTreeData, 250), {
-  deep: true,
-});
+watch(
+  [() => schemaList.value.length, () => flattenTableList.value.length],
+  buildBranchTreeData,
+  {
+    deep: false,
+  }
+);
 
 const tabWatchKey = computed(() => {
   const tab = currentTab.value;
@@ -456,7 +462,7 @@ const renderSuffix = ({ option }: { option: TreeOption }) => {
       const matchPattern = new RegExp(
         `^${getOriginalName(table.name)}` + "(_copy[0-9]{0,}){0,1}$"
       );
-      const copiedTableNames = tableList.value
+      const copiedTableNames = flattenTableList.value
         .filter((table) => {
           return matchPattern.test(table.name);
         })
@@ -557,19 +563,22 @@ const handleShowDropdown = (e: MouseEvent, treeNode: TreeNode) => {
 };
 
 const handleCreateSchemaOrTable = () => {
-  // if (engine.value === Engine.MYSQL || engine.value === Engine.TIDB) {
-  //   const schema = schemaList.value[0];
-  //   if (schema) {
-  //     state.tableNameModalContext = {
-  //       parentName: branchSchema.value.branch.name,
-  //       schemaId: schema.id,
-  //     };
-  //   }
-  // } else if (engine.value === Engine.POSTGRES) {
-  //   state.schemaNameModalContext = {
-  //     parentName: branchSchema.value.branch.name,
-  //   };
-  // }
+  if (engine.value === Engine.MYSQL || engine.value === Engine.TIDB) {
+    const schema = head(schemaList.value);
+    if (schema) {
+      state.tableNameModalContext = {
+        database: database.value,
+        metadata: metadata.value,
+        schema,
+        table: undefined,
+      };
+    }
+  } else if (engine.value === Engine.POSTGRES) {
+    state.schemaNameModalContext = {
+      database: database.value,
+      metadata: metadata.value,
+    };
+  }
 };
 
 // Set event handler to tree nodes.

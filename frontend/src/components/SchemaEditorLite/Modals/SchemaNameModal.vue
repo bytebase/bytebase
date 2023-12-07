@@ -6,31 +6,35 @@
   >
     <div class="w-72">
       <p>{{ $t("schema-editor.schema.name") }}</p>
-      <BBTextField
-        class="my-2 w-full"
-        :required="true"
-        :focus-on-mount="true"
-        :value="state.schemaName"
-        @input="handleSchemaNameChange"
+      <NInput
+        ref="inputRef"
+        v-model:value="state.schemaName"
+        class="my-2"
+        :autofocus="true"
       />
     </div>
-    <div class="w-full flex items-center justify-end mt-2 space-x-3 pr-1 pb-1">
-      <button type="button" class="btn-normal" @click="dismissModal">
+    <div class="w-full flex items-center justify-end mt-2 space-x-3">
+      <NButton @click="dismissModal">
         {{ $t("common.cancel") }}
-      </button>
-      <button class="btn-primary" @click="handleConfirmButtonClick">
+      </NButton>
+      <NButton type="primary" @click="handleConfirmButtonClick">
         {{ $t("common.create") }}
-      </button>
+      </NButton>
     </div>
   </BBModal>
 </template>
 
 <script lang="ts" setup>
+import { NInput } from "naive-ui";
 import { reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { useNotificationStore, useSchemaEditorV1Store } from "@/store";
-import { SchemaMetadata } from "@/types/proto/v1/database_service";
-import { convertSchemaMetadataToSchema } from "@/types/v1/schemaEditor";
+import { useNotificationStore } from "@/store";
+import { ComposedDatabase } from "@/types";
+import {
+  DatabaseMetadata,
+  SchemaMetadata,
+} from "@/types/proto/v1/database_service";
+import { useSchemaEditorContext } from "../context";
 
 const schemaNameFieldRegexp = /^\S+$/;
 
@@ -39,7 +43,8 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  parentName: string;
+  database: ComposedDatabase;
+  metadata: DatabaseMetadata;
 }>();
 
 const emit = defineEmits<{
@@ -47,15 +52,12 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const schemaEditorV1Store = useSchemaEditorV1Store();
+const context = useSchemaEditorContext();
+const { addTab, markEditStatus } = context;
 const notificationStore = useNotificationStore();
 const state = reactive<LocalState>({
   schemaName: "",
 });
-
-const handleSchemaNameChange = (event: Event) => {
-  state.schemaName = (event.target as HTMLInputElement).value;
-};
 
 const handleConfirmButtonClick = async () => {
   if (!schemaNameFieldRegexp.test(state.schemaName)) {
@@ -67,23 +69,28 @@ const handleConfirmButtonClick = async () => {
     return;
   }
 
-  const parentResource = schemaEditorV1Store.resourceMap[
-    schemaEditorV1Store.resourceType
-  ].get(props.parentName);
-  if (!parentResource) {
-    throw new Error(
-      `Failed to find parent resource ${props.parentName} of type ${schemaEditorV1Store.resourceType}`
-    );
-  }
-
-  const schema = convertSchemaMetadataToSchema(
-    SchemaMetadata.fromPartial({
-      name: state.schemaName,
-    }),
+  const schema = SchemaMetadata.fromPartial({
+    name: state.schemaName,
+  });
+  /* eslint-disable-next-line vue/no-mutating-props */
+  props.metadata.schemas.push(schema);
+  markEditStatus(
+    props.database,
+    {
+      database: props.metadata,
+      schema,
+    },
     "created"
   );
-  parentResource.schemaList.push(schema);
-  // TODO(steven): Open the schema tab.
+  addTab({
+    type: "database",
+    database: props.database,
+    metadata: {
+      database: props.metadata,
+    },
+    selectedSchema: schema.name,
+  });
+
   dismissModal();
 };
 
