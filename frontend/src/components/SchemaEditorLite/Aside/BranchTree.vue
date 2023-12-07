@@ -271,13 +271,6 @@ const contextMenuOptions = computed(() => {
 
 onMounted(() => {
   buildBranchTreeData();
-  const firstChildNode = head(treeDataRef.value);
-  if (firstChildNode) {
-    nextTick(() => {
-      // Auto expand the first tree node.
-      openTabForTreeNode(firstChildNode);
-    });
-  }
 });
 
 const buildBranchTreeData = () => {
@@ -311,6 +304,13 @@ const buildBranchTreeData = () => {
     treeNodeList.push(schemaTreeNode);
   }
   treeDataRef.value = treeNodeList;
+  const firstChildNode = head(treeDataRef.value);
+  if (firstChildNode) {
+    nextTick(() => {
+      // Auto expand the first tree node.
+      openTabForTreeNode(firstChildNode);
+    });
+  }
 };
 
 watch(
