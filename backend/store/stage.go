@@ -127,8 +127,8 @@ func (s *Store) ListStageV2(ctx context.Context, pipelineUID int) ([]*StageMessa
 					) AS latest_task_run ON TRUE
 					WHERE task.pipeline_id = stage.pipeline_id
 					AND task.stage_id <= stage.id
-					AND (
-						COALESCE((task.payload->>'skipped')::BOOLEAN, FALSE) IS FALSE
+					AND NOT (
+						COALESCE((task.payload->>'skipped')::BOOLEAN, FALSE) IS TRUE
 						OR latest_task_run.status = 'DONE'
 					)
 				)
