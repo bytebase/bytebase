@@ -6,6 +6,7 @@ import {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
+import { TinyTimer } from "@/utils";
 import { SchemaEditorContext } from "../context";
 import { keyForResourceName } from "../context/common";
 
@@ -20,6 +21,9 @@ export class DiffMerge {
   targetTableMap = new Map<string, TableMetadata>();
   sourceColumnMap = new Map<string, ColumnMetadata>();
   targetColumnMap = new Map<string, ColumnMetadata>();
+  timer = new TinyTimer<
+    "merge" | "mergeSchemas" | "mergeTables" | "mergeColumns" | "diffColumn"
+  >();
   constructor(
     context: SchemaEditorContext,
     database: ComposedDatabase,
@@ -32,7 +36,9 @@ export class DiffMerge {
     this.targetMetadata = targetMetadata;
   }
   merge() {
+    this.timer.begin("merge");
     this.mergeSchemas();
+    this.timer.end("merge");
   }
   mergeSchemas() {
     const {
@@ -45,9 +51,7 @@ export class DiffMerge {
     } = this;
     const sourceSchemas = sourceMetadata.schemas;
     const targetSchemas = targetMetadata.schemas;
-    const tag = `mergeSchemas(${sourceSchemas.length}, ${targetSchemas.length})`;
-    console.debug("start", tag);
-    console.time(tag);
+    this.timer.begin("mergeSchemas");
     mapSchemas(database, sourceSchemas, sourceSchemaMap);
     mapSchemas(database, targetSchemas, targetSchemaMap);
 
@@ -81,15 +85,13 @@ export class DiffMerge {
       }
     }
     targetMetadata.schemas = mergedSchemas;
-    console.timeEnd(tag);
+    this.timer.end("mergeSchemas", sourceSchemas.length + targetSchemas.length);
   }
   mergeTables(sourceSchema: SchemaMetadata, targetSchema: SchemaMetadata) {
     const { context, database, sourceTableMap, targetTableMap } = this;
     const sourceTables = sourceSchema.tables;
     const targetTables = targetSchema.tables;
-    const tag = `  mergeTables("${targetSchema.name}", ${sourceTables.length}, ${targetTables.length})`;
-    console.debug("  start", tag.trim());
-    console.time(tag);
+    this.timer.begin("mergeTables");
     mapTables(database, sourceSchema, sourceTables, sourceTableMap);
     mapTables(database, targetSchema, targetTables, targetTableMap);
 
@@ -131,7 +133,7 @@ export class DiffMerge {
       }
     }
     targetSchema.tables = mergedTables;
-    console.timeEnd(tag);
+    this.timer.end("mergeTables", sourceTables.length + targetTables.length);
   }
   mergeColumns(
     sourceSchema: SchemaMetadata,
@@ -142,9 +144,7 @@ export class DiffMerge {
     const { context, database, sourceColumnMap, targetColumnMap } = this;
     const sourceColumns = sourceTable.columns;
     const targetColumns = targetTable.columns;
-    const tag = `    mergeColumns("${targetSchema.name}", "${targetTable.name}", ${sourceColumns.length}, ${targetColumns.length})`;
-    console.debug("    start", tag.trim());
-    console.time(tag);
+    this.timer.begin("mergeColumns");
     mapColumns(
       database,
       sourceSchema,
@@ -199,7 +199,7 @@ export class DiffMerge {
       }
     }
     targetTable.columns = mergedColumns;
-    console.timeEnd(tag);
+    this.timer.end("mergeColumns", sourceColumns.length + targetColumns.length);
   }
 }
 

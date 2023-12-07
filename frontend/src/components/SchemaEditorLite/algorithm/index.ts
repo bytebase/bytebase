@@ -15,6 +15,7 @@ export const useAlgorithm = (context: SchemaEditorContext) => {
     clearEditStatus();
     const dm = new DiffMerge(context, database, source, target);
     dm.merge();
+    dm.timer.printAll();
   };
 
   const applyMetadataEdit = (
