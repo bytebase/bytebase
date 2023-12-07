@@ -11,12 +11,21 @@
 import { PencilIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { useSchemaEditorContext } from "@/components/SchemaEditorLite/context";
-import { TableTabContext } from "@/components/SchemaEditorLite/types";
 import { MiniActionButton } from "@/components/v2";
 import LabelsColumn from "@/components/v2/Model/DatabaseV1Table/LabelsColumn.vue";
-import { ColumnMetadata } from "@/types/proto/v1/database_service";
+import { ComposedDatabase } from "@/types";
+import {
+  ColumnMetadata,
+  DatabaseMetadata,
+  SchemaMetadata,
+  TableMetadata,
+} from "@/types/proto/v1/database_service";
 
 const props = defineProps<{
+  db: ComposedDatabase;
+  database: DatabaseMetadata;
+  schema: SchemaMetadata;
+  table: TableMetadata;
   column: ColumnMetadata;
   readonly?: boolean;
   disabled?: boolean;
@@ -25,12 +34,13 @@ defineEmits<{
   (event: "edit"): void;
 }>();
 
-const { currentTab, getColumnConfig } = useSchemaEditorContext();
+const { getColumnConfig } = useSchemaEditorContext();
 
 const columnConfig = computed(() => {
-  const tab = currentTab.value as TableTabContext;
-  return getColumnConfig(tab.database, {
-    ...tab.metadata,
+  return getColumnConfig(props.db, {
+    database: props.database,
+    schema: props.schema,
+    table: props.table,
     column: props.column,
   });
 });

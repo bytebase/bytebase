@@ -70,17 +70,20 @@ import SelectClassificationDrawer from "@/components/SchemaTemplate/SelectClassi
 import SemanticTypesDrawer from "@/components/SensitiveData/components/SemanticTypesDrawer.vue";
 import { InlineInput } from "@/components/v2";
 import { useSettingV1Store, useSubscriptionV1Store } from "@/store/modules";
+import { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import {
   ColumnConfig,
   ColumnMetadata,
+  DatabaseMetadata,
   ForeignKeyMetadata,
+  SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
 import { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import ColumnDefaultValueExpressionModal from "../../Modals/ColumnDefaultValueExpressionModal.vue";
 import { useSchemaEditorContext } from "../../context";
-import { EditStatus, TableTabContext } from "../../types";
+import { EditStatus } from "../../types";
 import {
   getDefaultValueByKey,
   isTextOfColumnType,
@@ -107,6 +110,9 @@ const props = withDefaults(
   defineProps<{
     readonly: boolean;
     showForeignKey?: boolean;
+    db: ComposedDatabase;
+    database: DatabaseMetadata;
+    schema: SchemaMetadata;
     table: TableMetadata;
     engine: Engine;
     classificationConfigId?: string;
@@ -169,10 +175,6 @@ const {
   getColumnConfig,
   upsertColumnConfig,
 } = context;
-const currentTab = computed(() => {
-  return context.currentTab.value as TableTabContext;
-});
-const database = computed(() => currentTab.value.database);
 const containerElRef = ref<HTMLElement>();
 const tableHeaderElRef = computed(
   () =>
@@ -199,21 +201,21 @@ const editColumnDefaultValueExpressionContext = ref<ColumnMetadata>();
 
 const metadataForColumn = (column: ColumnMetadata) => {
   return {
-    ...currentTab.value.metadata,
+    database: props.database,
+    schema: props.schema,
+    table: props.table,
     column,
   };
 };
 const statusForColumn = (column: ColumnMetadata) => {
-  return getColumnStatus(database.value, metadataForColumn(column));
+  return getColumnStatus(props.db, metadataForColumn(column));
 };
 const markColumnStatus = (column: ColumnMetadata, status: EditStatus) => {
-  const { metadata } = currentTab.value;
-  markEditStatus(database.value, { ...metadata, column }, status);
+  markEditStatus(props.db, metadataForColumn(column), status);
 };
 const configForColumn = (column: ColumnMetadata) => {
-  const { metadata } = currentTab.value;
   return (
-    getColumnConfig(database.value, { ...metadata, column }) ??
+    getColumnConfig(props.db, metadataForColumn(column)) ??
     ColumnConfig.fromPartial({
       name: column.name,
     })
@@ -295,6 +297,10 @@ const columns = computed(() => {
       hide: !showSemanticTypeColumn.value,
       render: (column) => {
         return h(SemanticTypeCell, {
+          db: props.db,
+          database: props.database,
+          schema: props.schema,
+          table: props.table,
           column,
           readonly: props.readonly,
           disabled: props.disableChangeTable,
@@ -429,11 +435,10 @@ const columns = computed(() => {
       width: 140,
       className: "text-cell",
       render: (column) => {
-        const { metadata } = currentTab.value;
         return h(ForeignKeyCell, {
-          db: database.value,
-          database: metadata.database,
-          schema: metadata.schema,
+          db: props.db,
+          database: props.database,
+          schema: props.schema,
           table: props.table,
           column: column,
           readonly: props.readonly,
@@ -451,6 +456,10 @@ const columns = computed(() => {
       hide: !showDatabaseConfigColumn.value,
       render: (column) => {
         return h(LabelsCell, {
+          db: props.db,
+          database: props.database,
+          schema: props.schema,
+          table: props.table,
           column,
           readonly: props.readonly,
           disabled: props.disableChangeTable,
@@ -583,15 +592,7 @@ const updateColumnConfig = (
   column: ColumnMetadata,
   update: (config: ColumnConfig) => void
 ) => {
-  const { metadata } = currentTab.value;
-  upsertColumnConfig(
-    database.value,
-    {
-      ...metadata,
-      column,
-    },
-    update
-  );
+  upsertColumnConfig(props.db, metadataForColumn(column), update);
   markColumnStatus(column, "updated");
 };
 
