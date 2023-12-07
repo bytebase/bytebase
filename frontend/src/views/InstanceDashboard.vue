@@ -54,12 +54,7 @@ const environmentList = useEnvironmentV1List(false /* !showDeleted */);
 const state = reactive<LocalState>({
   params: {
     query: "",
-    scopes: [
-      {
-        id: "environment",
-        value: String(UNKNOWN_ID),
-      },
-    ],
+    scopes: [],
   },
 });
 
@@ -128,14 +123,7 @@ const instanceCountAttention = computed((): string => {
   return `${status} ${upgrade}`;
 });
 
-const supportOptionIdList = computed(
-  (): { id: SearchScopeId; includeAll: boolean }[] => {
-    return [
-      {
-        id: "environment",
-        includeAll: true,
-      },
-    ];
-  }
-);
+const supportOptionIdList = computed((): SearchScopeId[] => {
+  return ["environment"];
+});
 </script>
