@@ -50,6 +50,7 @@
           :databases="databaseList"
         />
         <SchemaEditorLite
+          ref="schemaEditorRef"
           resource-type="database"
           :project="project"
           :targets="state.targets"
@@ -139,7 +140,7 @@
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { cloneDeep, head, isEqual, uniq } from "lodash-es";
-import { computed, onMounted, PropType, reactive, watch } from "vue";
+import { computed, onMounted, PropType, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import ActionConfirmModal from "@/components/SchemaEditorV1/Modals/ActionConfirmModal.vue";
@@ -205,6 +206,7 @@ const emit = defineEmits<{
   (event: "close"): void;
 }>();
 
+const schemaEditorRef = ref<InstanceType<typeof SchemaEditorLite>>();
 const { t } = useI18n();
 const router = useRouter();
 const state = reactive<LocalState>({
