@@ -109,7 +109,7 @@ import { asyncComputed } from "@vueuse/core";
 import dayjs from "dayjs";
 import { cloneDeep, head, isEqual } from "lodash-es";
 import { NButton, NDivider, NInput, NTag } from "naive-ui";
-import { CSSProperties, computed, reactive, ref, watch } from "vue";
+import { CSSProperties, computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
@@ -188,10 +188,18 @@ const parentBranch = asyncComputed(async () => {
 const database = computed(() => {
   return databaseStore.getDatabaseByName(props.branch.baselineDatabase);
 });
-
 const project = computed(() => {
   return database.value.projectEntity;
 });
+
+const rebuildMetadataEdit = () => {
+  const schemaDesigner = schemaDesignerRef.value;
+  schemaDesigner?.schemaEditor?.rebuildMetadataEdit(
+    database.value,
+    props.branch.baselineSchemaMetadata ?? DatabaseMetadata.fromPartial({}),
+    props.branch.schemaMetadata ?? DatabaseMetadata.fromPartial({})
+  );
+};
 
 const branchIdInputStyle = computed(() => {
   const style: CSSProperties = {
@@ -301,6 +309,8 @@ const handleCancelEdit = async () => {
   emit("update:branch", originalBranch);
   state.isReverting = false;
   state.isEditing = false;
+  await nextTick();
+  rebuildMetadataEdit();
 };
 
 const handleSaveBranch = async () => {
@@ -310,8 +320,13 @@ const handleSaveBranch = async () => {
   if (state.isSaving) {
     return;
   }
-  const cleanup = () => {
+  const cleanup = async (success = false) => {
     state.isSaving = false;
+    if (success) {
+      state.isEditing = false;
+      await nextTick();
+      rebuildMetadataEdit();
+    }
   };
 
   state.isSaving = true;
@@ -326,7 +341,6 @@ const handleSaveBranch = async () => {
   if (check && !(await check())) {
     return cleanup();
   }
-  const updateMask = [];
   const editing = props.branch.schemaMetadata
     ? cloneDeep(props.branch.schemaMetadata)
     : DatabaseMetadata.fromPartial({});
@@ -342,23 +356,20 @@ const handleSaveBranch = async () => {
     });
     return cleanup();
   }
-  updateMask.push("schema_metadata");
-  if (updateMask.length !== 0) {
-    await branchStore.updateBranch(
-      Branch.fromPartial({
-        name: props.branch.name,
-        schemaMetadata: editing,
-      }),
-      updateMask
-    );
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("schema-designer.message.updated-succeed"),
-    });
-  }
-  state.isSaving = false;
-  state.isEditing = false;
+  const updateMask = ["schema_metadata"];
+  await branchStore.updateBranch(
+    Branch.fromPartial({
+      name: props.branch.name,
+      schemaMetadata: editing,
+    }),
+    updateMask
+  );
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("schema-designer.message.updated-succeed"),
+  });
+  cleanup(/* success */ true);
 };
 
 const handleMergeAfterConflictResolved = (branchName: string) => {
@@ -463,18 +474,4 @@ const deleteBranch = async () => {
     },
   });
 };
-
-watch(
-  [() => props.branch.name, schemaDesignerRef],
-  ([branchName, schemaDesigner]) => {
-    if (branchName && schemaDesigner) {
-      schemaDesigner.schemaEditor?.rebuildMetadataEdit(
-        database.value,
-        props.branch.baselineSchemaMetadata ?? DatabaseMetadata.fromPartial({}),
-        props.branch.schemaMetadata ?? DatabaseMetadata.fromPartial({})
-      );
-    }
-  },
-  { immediate: true }
-);
 </script>
