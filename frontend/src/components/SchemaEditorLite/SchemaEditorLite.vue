@@ -5,14 +5,13 @@
   >
     <MaskSpinner v-if="mergedLoading" />
     <Splitpanes
-      v-if="state.initialized"
       class="default-theme w-full flex-1 flex flex-row overflow-hidden relative"
     >
       <Pane min-size="15" size="25">
-        <Aside />
+        <Aside v-if="ready" />
       </Pane>
       <Pane min-size="60" size="75">
-        <Editor />
+        <Editor v-if="ready" />
       </Pane>
     </Splitpanes>
   </div>
@@ -20,10 +19,10 @@
 
 <script lang="ts" setup>
 import { Splitpanes, Pane } from "splitpanes";
-import { reactive, computed, onMounted, toRef } from "vue";
+import { reactive, computed, onMounted, toRef, watch } from "vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { useDatabaseV1Store, useSettingV1Store } from "@/store";
-import { ComposedProject, ComposedDatabase } from "@/types";
+import { ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import Aside from "./Aside";
@@ -36,45 +35,37 @@ const props = defineProps<{
   project: ComposedProject;
   resourceType: "database" | "branch";
   readonly?: boolean;
-  databases?: ComposedDatabase[];
+  targets?: EditTarget[];
   // NOTE: we only support editing one branch for now.
-  branch: Branch;
+  branch?: Branch;
   loading?: boolean;
+  diffWhenReady?: boolean;
 }>();
 
 interface LocalState {
-  loading: boolean;
+  diffing: boolean;
   initialized: boolean;
 }
 
 const settingStore = useSettingV1Store();
 const state = reactive<LocalState>({
-  loading: false,
+  diffing: false,
   initialized: false,
-});
-
-const mergedLoading = computed(() => {
-  return props.loading || state.loading;
 });
 
 // Prepare schema template contexts.
 onMounted(async () => {
   await settingStore.getOrFetchSettingByName("bb.workspace.schema-template");
-
-  // TODO: generate initial diff state
   state.initialized = true;
 });
 
 const targets = computed(() => {
   if (props.resourceType === "database") {
-    return (props.databases ?? []).map<EditTarget>((database) => ({
-      database,
-      metadata: DatabaseMetadata.fromPartial({}), // TODO,
-      baselineMetadata: DatabaseMetadata.fromPartial({}),
-    }));
+    return props.targets ?? [];
   }
   if (props.resourceType === "branch") {
     const { branch } = props;
+    if (!branch) return [];
     const target: EditTarget = {
       database: useDatabaseV1Store().getDatabaseByName(branch.baselineDatabase),
       metadata: branch.schemaMetadata ?? DatabaseMetadata.fromPartial({}),
@@ -86,6 +77,14 @@ const targets = computed(() => {
   return [];
 });
 
+const ready = computed(() => {
+  return state.initialized && targets.value.length > 0;
+});
+
+const mergedLoading = computed(() => {
+  return props.loading || state.diffing || !ready.value;
+});
+
 const context = provideSchemaEditorContext({
   targets,
   project: toRef(props, "project"),
@@ -93,6 +92,22 @@ const context = provideSchemaEditorContext({
   readonly: toRef(props, "readonly"),
 });
 const { rebuildMetadataEdit, applyMetadataEdit } = useAlgorithm(context);
+
+watch(
+  [ready, () => props.diffWhenReady],
+  ([ready, diffWhenReady]) => {
+    if (ready && diffWhenReady) {
+      targets.value.forEach((target) => {
+        rebuildMetadataEdit(
+          target.database,
+          target.baselineMetadata,
+          target.metadata
+        );
+      });
+    }
+  },
+  { immediate: true }
+);
 
 defineExpose({
   rebuildMetadataEdit,

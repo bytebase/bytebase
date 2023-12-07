@@ -44,6 +44,7 @@
           :readonly="readonly"
           :resource-type="'branch'"
           :branch="branch"
+          :diff-when-ready="true"
         />
       </div>
       <div
