@@ -31,5 +31,6 @@ export * from "./projectIamPolicy";
 export * from "./slowQuery";
 export * from "./resource-composer";
 export * from "./quickAction";
+export * from "./TinyTimer";
 
 export * from "./v1";

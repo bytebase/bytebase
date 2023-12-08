@@ -52,8 +52,7 @@ import { first, orderBy } from "lodash-es";
 import { computed, reactive, watch } from "vue";
 import { DatabaseSelect } from "@/components/v2";
 import { useDatabaseV1Store, useLocalSheetStore } from "@/store";
-import { useBranchList, useBranchStore } from "@/store/modules/branch";
-import { getProjectName } from "@/store/modules/v1/common";
+import { useBranchListByProject, useBranchStore } from "@/store/modules/branch";
 import { UNKNOWN_ID } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
@@ -80,7 +79,9 @@ const state = reactive<LocalState>({
 
 const { project } = useChangelistDetailContext();
 const { changesFromBranch: changes } = useAddChangeContext();
-const { branchList, ready } = useBranchList(getProjectName(project.value.name));
+const { branchList, ready } = useBranchListByProject(
+  computed(() => project.value.name)
+);
 const localSheetStore = useLocalSheetStore();
 
 const database = computed(() => {
