@@ -6,6 +6,7 @@
     :data="dataTableRows"
     :row-key="rowKey"
     :row-props="rowProps"
+    :loading="!ready"
     class="bb-branch-data-table"
   />
 </template>
