@@ -235,7 +235,6 @@ export class DiffMerge {
     } = target;
     this.timer.begin("diffColumn");
 
-    // TODO: diff column and check if it is updated
     if (!isEqual(sourceColumn, targetColumn)) {
       const key = keyForResourceName(
         this.database.name,
