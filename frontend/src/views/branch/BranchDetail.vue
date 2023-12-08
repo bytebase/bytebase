@@ -11,7 +11,6 @@
         :clean-branch="branch.clean"
         :dirty-branch="branch.dirty"
         v-bind="$attrs"
-        @update:branch="handleUpdateBranch"
         @update:branch-id="handleUpdateBranchId"
       />
     </template>
@@ -58,14 +57,10 @@ const project = computed(() => {
   );
 });
 
-const handleUpdateBranch = (br: Branch) => {
-  branch.value = {
-    clean: br,
-    dirty: cloneDeep(br),
-  };
-  detailViewKey.value = uniqueId();
-};
 const handleUpdateBranchId = (id: string) => {
+  if (!branch.value) return;
+  branch.value.clean.branchId = id;
+  branch.value.dirty.branchId = id;
   router.replace({
     params: {
       projectSlug: props.projectSlug,

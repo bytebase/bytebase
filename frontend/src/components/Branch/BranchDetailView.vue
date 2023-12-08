@@ -164,8 +164,6 @@ const props = defineProps<{
   readonly?: boolean;
 }>();
 const emit = defineEmits<{
-  (event: "revert", branch: Branch): void;
-  (event: "update:branch", branch: Branch): void;
   (event: "update:branch-id", id: string): void;
 }>();
 
@@ -214,9 +212,13 @@ const database = computed(() => {
 });
 
 const rebuildMetadataEdit = () => {
+  const rebuild = schemaDesignerRef.value?.schemaEditor?.rebuildMetadataEdit;
+  if (typeof rebuild !== "function") {
+    console.warn("<SchemaEditor> ref is missing");
+    return;
+  }
   const branch = props.dirtyBranch;
-  const schemaDesigner = schemaDesignerRef.value;
-  schemaDesigner?.schemaEditor?.rebuildMetadataEdit(
+  rebuild(
     database.value,
     branch.baselineSchemaMetadata ?? DatabaseMetadata.fromPartial({}),
     branch.schemaMetadata ?? DatabaseMetadata.fromPartial({})
@@ -326,11 +328,14 @@ const handleEdit = async () => {
 
 const handleCancelEdit = async () => {
   state.isReverting = true;
-  emit("update:branch", props.cleanBranch);
-  state.isReverting = false;
-  state.isEditing = false;
+
+  Object.assign(props.dirtyBranch, cloneDeep(props.cleanBranch));
+
   await nextTick();
   rebuildMetadataEdit();
+
+  state.isReverting = false;
+  state.isEditing = false;
 };
 
 const handleSaveBranch = async () => {
@@ -383,13 +388,14 @@ const handleSaveBranch = async () => {
 
   state.savingStatus = "Saving";
   const updateMask = ["schema_metadata"];
-  await branchStore.updateBranch(
+  const updatedBranch = await branchStore.updateBranch(
     Branch.fromPartial({
       name: branch.name,
       schemaMetadata: editing,
     }),
     updateMask
   );
+  Object.assign(props.dirtyBranch, updatedBranch);
 
   pushNotification({
     module: "bytebase",
