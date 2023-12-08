@@ -56,7 +56,7 @@ export const getDataTypeSuggestionList = (engine: Engine = Engine.MYSQL) => {
       "tinublob",
       "tinyint",
       "tinytext",
-      // Unlike Postgres, MySQL does not support varchar.
+      // Unlike Postgres, MySQL does not support varchar with no length specified.
       "varchar(255)",
       "year",
     ];
