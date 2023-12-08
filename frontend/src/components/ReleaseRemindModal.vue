@@ -40,7 +40,7 @@
           type="button"
           class="btn-primary"
           target="_blank"
-          href="https://www.bytebase.com/docs/get-started/install/overview"
+          :href="link"
           @click="$emit('cancel')"
         >
           {{ $t("common.learn-more") }}
@@ -51,9 +51,18 @@
 </template>
 
 <script lang="ts" setup>
-import { useActuatorV1Store } from "@/store";
+import { computed } from "vue";
+import { useActuatorV1Store, useSubscriptionV1Store } from "@/store";
 
 defineEmits(["cancel"]);
 
 const actuatorStore = useActuatorV1Store();
+const subscriptionStore = useSubscriptionV1Store();
+
+const link = computed(() => {
+  if (subscriptionStore.isSelfHostLicense) {
+    return "https://www.bytebase.com/docs/get-started/install/overview";
+  }
+  return subscriptionStore.purchaseLicenseUrl;
+});
 </script>
