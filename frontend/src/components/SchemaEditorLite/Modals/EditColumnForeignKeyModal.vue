@@ -4,9 +4,6 @@
     class="shadow-inner outline outline-gray-200"
     @close="dismissModal"
   >
-    <div class="w-72 text-xs font-mono">
-      {{ state }}
-    </div>
     <div v-if="shouldShowSchemaSelector" class="w-72">
       <p class="mb-2">{{ $t("schema-editor.select-reference-schema") }}</p>
       <NSelect
