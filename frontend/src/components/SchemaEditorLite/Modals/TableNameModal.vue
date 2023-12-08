@@ -115,8 +115,8 @@ const handleConfirmButtonClick = async () => {
     const column = ColumnMetadata.fromPartial({});
     column.name = "id";
     const engine = props.database.instanceEntity.engine;
-    column.type = engine === Engine.POSTGRES ? "INTEGER" : "INT";
-    column.comment = "ID";
+    column.type = engine === Engine.POSTGRES ? "integer" : "int";
+    column.comment = "";
     table.columns.push(column);
     upsertColumnPrimaryKey(table, column.name);
     markEditStatus(
