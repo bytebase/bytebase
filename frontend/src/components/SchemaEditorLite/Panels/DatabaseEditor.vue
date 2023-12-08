@@ -335,5 +335,11 @@ const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
   table.columns.forEach((column) => {
     markEditStatus(db, { ...metadataForTable(), column }, "created");
   });
+
+  addTab({
+    type: "table",
+    database: db,
+    metadata: metadataForTable(),
+  });
 };
 </script>
