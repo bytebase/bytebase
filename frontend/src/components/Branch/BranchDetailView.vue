@@ -57,7 +57,7 @@
               }}</NButton>
               <NButton
                 type="primary"
-                :loading="state.savingStatus"
+                :loading="!!state.savingStatus"
                 @click="handleSaveBranch"
                 >{{ $t("common.save") }}</NButton
               >
