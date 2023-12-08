@@ -37,6 +37,7 @@ const focused = ref(false);
 const originalType = ref("");
 
 onMounted(() => (originalType.value = props.column.type));
+
 const allowFilter = computed(() => {
   return !props.column.type || originalType.value !== props.column.type;
 });
