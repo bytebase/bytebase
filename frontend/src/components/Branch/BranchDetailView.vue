@@ -106,7 +106,7 @@
     :selected-database-id-list="[]"
     :loading="!!state.applyingToDatabaseStatus"
     @close="selectTargetDatabasesContext.show = false"
-    @update="handleSelectedDatabaseIdListChanged"
+    @update="handleApplyToDatabase"
   />
 
   <MergeBranchPanel
@@ -397,7 +397,8 @@ const handleSaveBranch = async () => {
     }),
     updateMask
   );
-  Object.assign(props.dirtyBranch, updatedBranch);
+  Object.assign(props.cleanBranch, updatedBranch);
+  Object.assign(props.dirtyBranch, cloneDeep(updatedBranch));
 
   pushNotification({
     module: "bytebase",
@@ -420,9 +421,7 @@ const handleMergeAfterConflictResolved = (branchName: string) => {
   });
 };
 
-const handleSelectedDatabaseIdListChanged = async (
-  databaseIdList: string[]
-) => {
+const handleApplyToDatabase = async (databaseIdList: string[]) => {
   const cleanup = () => {
     state.applyingToDatabaseStatus = false;
   };
