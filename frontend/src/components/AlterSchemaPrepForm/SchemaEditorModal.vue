@@ -5,8 +5,16 @@
     class="schema-editor-modal-container !w-[96rem] h-auto overflow-auto !max-w-[calc(100vw-40px)] !max-h-[calc(100vh-40px)]"
     @close="dismissModal"
   >
-    <MaskSpinner v-if="state.isGeneratingDDL" class="!bg-white/75">
-      <span class="text-sm">Generating DDL</span>
+    <MaskSpinner
+      v-if="state.isGeneratingDDL || state.previewStatus"
+      class="!bg-white/75"
+    >
+      <span class="text-sm">
+        <template v-if="state.previewStatus">{{
+          state.previewStatus
+        }}</template>
+        <template v-else-if="state.isGeneratingDDL">Generating DDL</template>
+      </span>
     </MaskSpinner>
     <div
       class="w-full flex flex-row justify-between items-center border-b pl-1 border-b-gray-300"
@@ -179,6 +187,7 @@ interface LocalState {
   showActionConfirmModal: boolean;
   isPreparingMetadata: boolean;
   isGeneratingDDL: boolean;
+  previewStatus: string;
   targets: EditTarget[];
 }
 
@@ -210,6 +219,7 @@ const state = reactive<LocalState>({
   showActionConfirmModal: false,
   isPreparingMetadata: false,
   isGeneratingDDL: false,
+  previewStatus: "",
   targets: [],
 });
 const databaseV1Store = useDatabaseV1Store();
@@ -270,23 +280,8 @@ const prepareDatabaseMetadata = async () => {
       name: `${database.name}/metadata`,
       view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
     });
-    // const metadata = await dbSchemaV1Store.getOrFetchDatabaseMetadata({
-    //   database: database.name,
-    //   skipCache: true,
-    //   view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
-    // });
     targets.push({ database, metadata });
   }
-  // const targets = await Promise.all(
-  //   databaseList.value.map(async (database) => {
-  //     const metadata = await dbSchemaV1Store.getOrFetchDatabaseMetadata({
-  //       database: database.name,
-  //       skipCache: true,
-  //       view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
-  //     });
-  //     return { database, metadata };
-  //   })
-  // );
   timer.end("fetchMetadata", databaseList.value.length);
 
   timer.begin("convertEditTargets");
@@ -447,9 +442,22 @@ const handleUploadFile = (e: Event) => {
 };
 
 const handlePreviewIssue = async () => {
-  const check = runSQLCheck.value;
-  if (check && !(await check())) {
+  if (state.previewStatus) {
     return;
+  }
+
+  const cleanup = async () => {
+    state.previewStatus = "";
+  };
+
+  const check = runSQLCheck.value;
+  if (check) {
+    state.previewStatus = "Checking SQL";
+    if (!(await check())) {
+      return cleanup();
+    }
+    // TODO: optimize: check() could return the generated DDL to avoid
+    // generating one more time below. useful for large schemas
   }
 
   const query: Record<string, any> = {
@@ -473,6 +481,7 @@ const handlePreviewIssue = async () => {
     // we need to pass the databaseList explicitly.
     query.databaseList = props.databaseIdList.join(",");
   }
+
   if (state.selectedTab === "raw-sql") {
     query.sql = state.editStatement;
 
@@ -486,11 +495,12 @@ const handlePreviewIssue = async () => {
       false /* !onlineMode */
     );
 
+    state.previewStatus = "Generating DDL";
     const statementMap = await generateDiffDDLMap(/* !silent */ false);
-    const databaseIdList: string[] = [];
+
+    const databaseIdList = databaseList.value.map((db) => db.uid);
     const statementList: string[] = [];
-    for (const [key, result] of statementMap.entries()) {
-      databaseIdList.push(key);
+    for (const [_, result] of statementMap.entries()) {
       statementList.push(result.statement);
     }
     if (isBatchMode.value) {

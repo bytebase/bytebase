@@ -366,6 +366,8 @@ const handleSaveBranch = async () => {
     if (!(await check())) {
       return cleanup();
     }
+    // TODO: optimize: check() could return the generated DDL to avoid
+    // generating one more time below. useful for large schemas
   }
 
   state.savingStatus = "Validating schema";
