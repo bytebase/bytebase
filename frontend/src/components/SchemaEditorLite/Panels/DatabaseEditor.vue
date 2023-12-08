@@ -47,28 +47,31 @@
         <div
           class="flex flex-row justify-end items-center bg-gray-100 p-1 rounded whitespace-nowrap"
         >
-          <button
-            class="px-2 leading-7 text-sm text-gray-500 cursor-pointer select-none rounded flex justify-center items-center"
-            :class="
-              state.selectedSubTab === 'table-list' &&
-              'bg-gray-200 text-gray-800'
-            "
+          <NButton
+            size="small"
+            :secondary="state.selectedSubTab === 'table-list'"
+            :quaternary="state.selectedSubTab !== 'table-list'"
             @click="handleChangeTab('table-list')"
           >
             <heroicons-outline:queue-list class="inline w-4 h-auto mr-1" />
             {{ $t("schema-editor.tables") }}
-          </button>
-          <button
-            class="px-2 leading-7 text-sm text-gray-500 cursor-pointer select-none rounded flex justify-center items-center"
-            :class="
-              state.selectedSubTab === 'schema-diagram' &&
-              'bg-gray-200 text-gray-800'
-            "
-            @click="handleChangeTab('schema-diagram')"
-          >
-            <SchemaDiagramIcon class="mr-1" />
-            {{ $t("schema-diagram.self") }}
-          </button>
+          </NButton>
+          <NTooltip :disabled="!schemaDiagramDisabled">
+            <template #trigger>
+              <NButton
+                tag="div"
+                size="small"
+                :disabled="schemaDiagramDisabled"
+                :secondary="state.selectedSubTab === 'schema-diagram'"
+                :quaternary="state.selectedSubTab !== 'schema-diagram'"
+                @click="handleChangeTab('schema-diagram')"
+              >
+                <SchemaDiagramIcon class="mr-1" />
+                {{ $t("schema-diagram.self") }}
+              </NButton>
+            </template>
+            <div class="whitespace-nowrap">Too many tables</div>
+          </NTooltip>
         </div>
       </div>
     </div>
@@ -129,8 +132,9 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, head } from "lodash-es";
+import { cloneDeep, head, sumBy } from "lodash-es";
 import { PlusIcon } from "lucide-vue-next";
+import { NButton, NTooltip } from "naive-ui";
 import { computed, nextTick, reactive, watch } from "vue";
 import { SchemaDiagramIcon } from "@/components/SchemaDiagram";
 import { Drawer, DrawerContent } from "@/components/v2";
@@ -240,6 +244,16 @@ watch(
 const handleChangeTab = (tab: SubTabType) => {
   state.selectedSubTab = tab;
 };
+const schemaDiagramDisabled = computed(() => {
+  return sumBy(props.database.schemas, (schema) => schema.tables.length) >= 200;
+});
+watch(
+  schemaDiagramDisabled,
+  (disabled) => {
+    if (disabled) handleChangeTab("table-list");
+  },
+  { immediate: true }
+);
 
 const handleCreateNewTable = () => {
   if (selectedSchema.value) {
