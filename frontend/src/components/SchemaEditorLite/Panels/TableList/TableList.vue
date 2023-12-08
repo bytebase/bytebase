@@ -72,7 +72,6 @@ import {
   SchemaTemplateSetting_TableTemplate,
   DataClassificationSetting_DataClassificationConfig as DataClassificationConfig,
 } from "@/types/proto/v1/setting_service";
-import { bytesToString } from "@/utils";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import { useSchemaEditorContext } from "../../context";
 import ClassificationCell from "../TableColumnEditor/components/ClassificationCell.vue";
@@ -217,24 +216,6 @@ const columns = computed(() => {
             markEditStatus(props.db, metadataForTable(table), "updated");
           },
         });
-      },
-    },
-    {
-      key: "rowCount",
-      title: t("schema-editor.database.row-count"),
-      resizable: true,
-      width: 120,
-      render: (table) => {
-        return table.rowCount.toString();
-      },
-    },
-    {
-      key: "dataSize",
-      title: t("schema-editor.database.data-size"),
-      resizable: true,
-      width: 120,
-      render: (table) => {
-        return bytesToString(table.dataSize.toNumber());
       },
     },
     {
