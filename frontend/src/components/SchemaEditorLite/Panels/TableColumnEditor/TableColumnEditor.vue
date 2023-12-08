@@ -63,7 +63,6 @@
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
 import { DataTableColumn, NCheckbox, NDataTable } from "naive-ui";
-import { v1 as uuidv1 } from "uuid";
 import { computed, h, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import SelectClassificationDrawer from "@/components/SchemaTemplate/SelectClassificationDrawer.vue";
@@ -88,6 +87,7 @@ import {
   getDefaultValueByKey,
   isTextOfColumnType,
 } from "../../utils/columnDefaultValue";
+import { markUUID } from "../common";
 import {
   ClassificationCell,
   DataTypeCell,
@@ -631,13 +631,8 @@ const isDroppedColumn = (column: ColumnMetadata): boolean => {
   return statusForColumn(column) === "dropped";
 };
 
-const getColumnKey = (column: any) => {
-  // column.name is editable, so we need to insert another hidden field
-  // as a column's stable unique key.
-  if (!column.__uuid) {
-    column.__uuid = uuidv1();
-  }
-  return column.__uuid as string;
+const getColumnKey = (column: ColumnMetadata) => {
+  return markUUID(column);
 };
 </script>
 

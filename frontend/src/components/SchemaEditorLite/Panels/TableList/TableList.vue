@@ -56,7 +56,6 @@
 import { useElementSize } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
 import { DataTableColumn, NDataTable } from "naive-ui";
-import { v1 as uuidv1 } from "uuid";
 import { computed, h, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import FeatureModal from "@/components/FeatureGuard/FeatureModal.vue";
@@ -77,6 +76,7 @@ import { bytesToString } from "@/utils";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import { useSchemaEditorContext } from "../../context";
 import ClassificationCell from "../TableColumnEditor/components/ClassificationCell.vue";
+import { markUUID } from "../common";
 import { NameCell, OperationCell } from "./components";
 
 const props = defineProps<{
@@ -334,13 +334,8 @@ const isDroppedTable = (table: TableMetadata) => {
   return statusForTable(table) === "dropped";
 };
 
-const getTableKey = (table: any) => {
-  // table.name is editable for newly created tables, so we need to insert another hidden field
-  // as a table's stable unique key.
-  if (!table.__uuid) {
-    table.__uuid = uuidv1();
-  }
-  return table.__uuid as string;
+const getTableKey = (table: TableMetadata) => {
+  return markUUID(table);
 };
 </script>
 
