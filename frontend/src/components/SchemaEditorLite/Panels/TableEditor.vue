@@ -134,6 +134,7 @@ const { t } = useI18n();
 const {
   project,
   readonly,
+  addTab,
   markEditStatus,
   removeEditStatus,
   getSchemaStatus,
@@ -276,43 +277,44 @@ const gotoForeignKeyReferencedTable = (
   column: ColumnMetadata,
   fk: ForeignKeyMetadata
 ) => {
-  console.log("TODO: gotoForeignKeyReferencedTable", column, fk);
-  // const fk = foreignKeyList.value.find(
-  //   (fk) =>
-  //     fk.columnIdList.find((columnId) => columnId === column.id) !== undefined
-  // );
-  // const index = fk?.columnIdList.findIndex(
-  //   (columnId) => columnId === column.id
-  // );
-  // if (isUndefined(fk) || isUndefined(index) || index < 0) {
-  //   return;
-  // }
+  const position = fk.columns.indexOf(column.name);
+  if (position < 0) {
+    return;
+  }
+  const referencedColumnName = fk.referencedColumns[position];
+  if (!referencedColumnName) {
+    return;
+  }
+  const referencedSchema = props.database.schemas.find(
+    (schema) => schema.name === fk.referencedSchema
+  );
+  if (!referencedSchema) {
+    return;
+  }
+  const referencedTable = referencedSchema.tables.find(
+    (table) => table.name === fk.referencedTable
+  );
+  if (!referencedTable) {
+    return;
+  }
+  const referencedColumn = referencedTable.columns.find(
+    (column) => column.name === referencedColumnName
+  );
+  if (!referencedColumn) {
+    return;
+  }
 
-  // const referencedSchema = parentResource.value.schemaList.find(
-  //   (schema) => schema.id === fk.referencedSchemaId
-  // );
-  // const referencedTable = referencedSchema?.tableList.find(
-  //   (table) => table.id === fk.referencedTableId
-  // );
-  // if (!referencedTable) {
-  //   return;
-  // }
-  // const referColumn = referencedTable?.columnList.find(
-  //   (column) => column.id === fk.referencedColumnIdList[index]
-  // );
-  // if (!referencedSchema || !referencedTable || !referColumn) {
-  //   return;
-  // }
+  addTab({
+    type: "table",
+    database: props.db,
+    metadata: {
+      database: props.database,
+      schema: referencedSchema,
+      table: referencedTable,
+    },
+  });
 
-  // schemaEditorV1Store.addTab({
-  //   id: generateUniqueTabId(),
-  //   type: SchemaEditorTabType.TabForTable,
-  //   parentName: currentTab.value.parentName,
-  //   schemaId: referencedSchema.id,
-  //   tableId: referencedTable.id,
-  //   name: referencedTable.name,
-  // });
-
+  // TODO: scroll column into view
   // nextTick(() => {
   //   const container = document.querySelector("#table-editor-container");
   //   const input = container?.querySelector(
