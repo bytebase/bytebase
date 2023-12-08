@@ -70,7 +70,7 @@ const dataTableRows = computed(() => {
       parentRow.children?.push({
         branch: childBranch,
         name: childBranch.branchId,
-        branchName: `${parentRow.branchName}/${childBranch.branchId}`,
+        branchName: `${childBranch.branchId}`,
         baselineVersion: "",
         updatedTimeStr: getUpdatedTimeStr(childBranch),
       });
