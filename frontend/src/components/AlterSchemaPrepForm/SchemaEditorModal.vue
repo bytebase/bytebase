@@ -140,19 +140,23 @@ import { computed, onMounted, PropType, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import ActionConfirmModal from "@/components/SchemaEditorV1/Modals/ActionConfirmModal.vue";
+import { databaseServiceClient } from "@/grpcweb";
 import {
   pushNotification,
-  useDBSchemaV1Store,
   useDatabaseV1Store,
   useNotificationStore,
 } from "@/store";
 import {
+  ComposedDatabase,
   dialectOfEngineV1,
   UNKNOWN_PROJECT_NAME,
   unknownProject,
 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
+import {
+  DatabaseMetadata,
+  DatabaseMetadataView,
+} from "@/types/proto/v1/database_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import { TinyTimer } from "@/utils";
 import { MonacoEditor } from "../MonacoEditor";
@@ -209,7 +213,6 @@ const state = reactive<LocalState>({
   targets: [],
 });
 const databaseV1Store = useDatabaseV1Store();
-const dbSchemaV1Store = useDBSchemaV1Store();
 const notificationStore = useNotificationStore();
 const { runSQLCheck } = provideSQLCheckContext();
 
@@ -257,16 +260,33 @@ const prepareDatabaseMetadata = async () => {
     "SchemaEditorModal"
   );
   timer.begin("fetchMetadata");
-  const targets = await Promise.all(
-    databaseList.value.map(async (database) => {
-      const metadata = await dbSchemaV1Store.getOrFetchDatabaseMetadata({
-        database: database.name,
-        skipCache: true,
-        view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
-      });
-      return { database, metadata };
-    })
-  );
+  const targets: {
+    database: ComposedDatabase;
+    metadata: DatabaseMetadata;
+  }[] = [];
+  for (let i = 0; i < databaseList.value.length; i++) {
+    const database = databaseList.value[i];
+    const metadata = await databaseServiceClient.getDatabaseMetadata({
+      name: `${database.name}/metadata`,
+      view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
+    });
+    // const metadata = await dbSchemaV1Store.getOrFetchDatabaseMetadata({
+    //   database: database.name,
+    //   skipCache: true,
+    //   view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
+    // });
+    targets.push({ database, metadata });
+  }
+  // const targets = await Promise.all(
+  //   databaseList.value.map(async (database) => {
+  //     const metadata = await dbSchemaV1Store.getOrFetchDatabaseMetadata({
+  //       database: database.name,
+  //       skipCache: true,
+  //       view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
+  //     });
+  //     return { database, metadata };
+  //   })
+  // );
   timer.end("fetchMetadata", databaseList.value.length);
 
   timer.begin("convertEditTargets");

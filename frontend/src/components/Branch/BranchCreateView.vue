@@ -88,9 +88,9 @@ import { computed, ref, shallowRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import SchemaEditorLite from "@/components/SchemaEditorLite";
+import { databaseServiceClient } from "@/grpcweb";
 import {
   pushNotification,
-  useDBSchemaV1Store,
   useDatabaseV1Store,
   useProjectV1Store,
 } from "@/store";
@@ -118,7 +118,6 @@ const DEBOUNCE_RATE = 100;
 const { t } = useI18n();
 const router = useRouter();
 const databaseStore = useDatabaseV1Store();
-const dbSchemaStore = useDBSchemaV1Store();
 const projectStore = useProjectV1Store();
 const branchStore = useBranchStore();
 const projectId = ref(props.projectId);
@@ -164,9 +163,8 @@ const prepareBranchFromDatabaseHead = async (uid: string) => {
 
   console.time("--fetch metadata");
   const database = databaseStore.getDatabaseByUID(uid);
-  const metadata = await dbSchemaStore.getOrFetchDatabaseMetadata({
-    database: database.name,
-    skipCache: false,
+  const metadata = await databaseServiceClient.getDatabaseMetadata({
+    name: `${database.name}/metadata`,
     view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
   });
   console.timeEnd("--fetch metadata");
