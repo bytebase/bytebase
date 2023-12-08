@@ -1,6 +1,8 @@
 <template>
   <Drawer
     :show="true"
+    :close-on-esc="!loading"
+    :mask-closable="!loading"
     width="auto"
     @update:show="(show: boolean) => !show && $emit('close')"
   >
@@ -108,11 +110,16 @@
           </div>
         </NCollapseItem>
       </NCollapse>
+      <MaskSpinner v-if="loading" />
 
       <template #footer>
         <div class="flex items-center justify-end gap-x-2">
           <NButton @click="$emit('close')">{{ $t("common.cancel") }}</NButton>
-          <NButton type="primary" @click="handleConfirm">
+          <NButton
+            :disabled="state.selectedDatabaseList.length === 0"
+            type="primary"
+            @click="handleConfirm"
+          >
             {{ $t("common.select") }}
           </NButton>
         </div>
@@ -134,6 +141,7 @@ import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
 import { ComposedDatabase } from "@/types";
 import { Engine, State } from "@/types/proto/v1/common";
 import { Environment } from "@/types/proto/v1/environment_service";
+import MaskSpinner from "../misc/MaskSpinner.vue";
 
 type LocalState = {
   searchText: string;
@@ -144,6 +152,7 @@ const props = defineProps<{
   projectId: string;
   engine: Engine;
   selectedDatabaseIdList: string[];
+  loading?: boolean;
 }>();
 
 const emit = defineEmits<{

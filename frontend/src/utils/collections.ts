@@ -28,3 +28,10 @@ export const unwrapArray = <T>(arrayOrPrimitive: T | T[]): T => {
   if (Array.isArray(arrayOrPrimitive)) return arrayOrPrimitive[0];
   return arrayOrPrimitive;
 };
+
+export const upsertArray = <T>(array: T[], item: T) => {
+  const index = array.indexOf(item);
+  if (index < 0) {
+    array.push(item);
+  }
+};

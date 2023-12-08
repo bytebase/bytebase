@@ -6,7 +6,7 @@
     <ProjectIssuesPanel id="issues" :project="project" />
   </template>
   <template v-if="hash === 'branches'">
-    <ProjectBranchesPanel id="branches" :project-id="project.uid" />
+    <ProjectBranchesPanel id="branches" :project="project" />
   </template>
   <template v-if="hash === 'databases'">
     <ProjectDatabasesPanel :database-list="databaseV1List" />
