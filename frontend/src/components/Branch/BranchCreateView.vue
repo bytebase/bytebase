@@ -65,7 +65,9 @@
         :resource-type="'branch'"
         :branch="branchData?.branch ?? EMPTY_BRANCH"
         :readonly="true"
+        :diff-when-ready="!!branchData?.parent"
       />
+      <!-- turn on diff-when-ready is useful when the branch is created from a parent branch -->
     </div>
     <div class="w-full flex items-center justify-end">
       <NButton
@@ -268,7 +270,7 @@ const handleConfirm = async () => {
       project.value.name,
       branchId.value,
       Branch.fromPartial({
-        parentBranch: parent!,
+        parentBranch: parent,
       })
     );
   }
