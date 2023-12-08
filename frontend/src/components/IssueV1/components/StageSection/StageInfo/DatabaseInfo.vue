@@ -55,7 +55,7 @@
         }}
       </span>
 
-      <SQLEditorButtonV1 v-if="database" :database="database" />
+      <SQLEditorButtonV1 v-if="showSQLEditorButton" :database="database" />
     </div>
   </div>
 </template>
@@ -70,13 +70,15 @@ import {
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import { DatabaseV1Name, InstanceV1Name } from "@/components/v2";
-import { useDatabaseV1Store } from "@/store";
+import { useDatabaseV1Store, usePageMode } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
 
 type DatabaseCreationStatus = "EXISTED" | "PENDING_CREATE" | "CREATED";
 
 const { issue, selectedTask } = useIssueContext();
+const pageMode = usePageMode();
+
 const coreDatabaseInfo = computed(() => {
   return databaseForTask(issue.value, selectedTask.value);
 });
@@ -136,4 +138,8 @@ const database = computedAsync(async () => {
   }
   return undefined;
 }, undefined);
+
+const showSQLEditorButton = computed(() => {
+  return pageMode.value === "BUNDLED" && database.value;
+});
 </script>
