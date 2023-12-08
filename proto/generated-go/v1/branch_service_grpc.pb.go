@@ -20,14 +20,15 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	BranchService_GetBranch_FullMethodName    = "/bytebase.v1.BranchService/GetBranch"
-	BranchService_ListBranches_FullMethodName = "/bytebase.v1.BranchService/ListBranches"
-	BranchService_CreateBranch_FullMethodName = "/bytebase.v1.BranchService/CreateBranch"
-	BranchService_UpdateBranch_FullMethodName = "/bytebase.v1.BranchService/UpdateBranch"
-	BranchService_MergeBranch_FullMethodName  = "/bytebase.v1.BranchService/MergeBranch"
-	BranchService_RebaseBranch_FullMethodName = "/bytebase.v1.BranchService/RebaseBranch"
-	BranchService_DeleteBranch_FullMethodName = "/bytebase.v1.BranchService/DeleteBranch"
-	BranchService_DiffMetadata_FullMethodName = "/bytebase.v1.BranchService/DiffMetadata"
+	BranchService_GetBranch_FullMethodName           = "/bytebase.v1.BranchService/GetBranch"
+	BranchService_ListBranches_FullMethodName        = "/bytebase.v1.BranchService/ListBranches"
+	BranchService_CreateBranch_FullMethodName        = "/bytebase.v1.BranchService/CreateBranch"
+	BranchService_UpdateBranch_FullMethodName        = "/bytebase.v1.BranchService/UpdateBranch"
+	BranchService_MergeBranch_FullMethodName         = "/bytebase.v1.BranchService/MergeBranch"
+	BranchService_RebaseBranch_FullMethodName        = "/bytebase.v1.BranchService/RebaseBranch"
+	BranchService_DeleteBranch_FullMethodName        = "/bytebase.v1.BranchService/DeleteBranch"
+	BranchService_DiffBranchDatabases_FullMethodName = "/bytebase.v1.BranchService/DiffBranchDatabases"
+	BranchService_DiffMetadata_FullMethodName        = "/bytebase.v1.BranchService/DiffMetadata"
 )
 
 // BranchServiceClient is the client API for BranchService service.
@@ -41,6 +42,11 @@ type BranchServiceClient interface {
 	MergeBranch(ctx context.Context, in *MergeBranchRequest, opts ...grpc.CallOption) (*MergeBranchResponse, error)
 	RebaseBranch(ctx context.Context, in *RebaseBranchRequest, opts ...grpc.CallOption) (*RebaseBranchResponse, error)
 	DeleteBranch(ctx context.Context, in *DeleteBranchRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// DiffBranchDatabases works similar to branch rebase.
+	// 1) set the base as the schema of a database;
+	// 2) apply the changes between base and head of branch to the new base (schema of database);
+	// 3) resolve these conflicts manually if any.
+	DiffBranchDatabases(ctx context.Context, in *DiffBranchDatabasesRequest, opts ...grpc.CallOption) (*DiffBranchDatabasesResponse, error)
 	DiffMetadata(ctx context.Context, in *DiffMetadataRequest, opts ...grpc.CallOption) (*DiffMetadataResponse, error)
 }
 
@@ -115,6 +121,15 @@ func (c *branchServiceClient) DeleteBranch(ctx context.Context, in *DeleteBranch
 	return out, nil
 }
 
+func (c *branchServiceClient) DiffBranchDatabases(ctx context.Context, in *DiffBranchDatabasesRequest, opts ...grpc.CallOption) (*DiffBranchDatabasesResponse, error) {
+	out := new(DiffBranchDatabasesResponse)
+	err := c.cc.Invoke(ctx, BranchService_DiffBranchDatabases_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *branchServiceClient) DiffMetadata(ctx context.Context, in *DiffMetadataRequest, opts ...grpc.CallOption) (*DiffMetadataResponse, error) {
 	out := new(DiffMetadataResponse)
 	err := c.cc.Invoke(ctx, BranchService_DiffMetadata_FullMethodName, in, out, opts...)
@@ -135,6 +150,11 @@ type BranchServiceServer interface {
 	MergeBranch(context.Context, *MergeBranchRequest) (*MergeBranchResponse, error)
 	RebaseBranch(context.Context, *RebaseBranchRequest) (*RebaseBranchResponse, error)
 	DeleteBranch(context.Context, *DeleteBranchRequest) (*emptypb.Empty, error)
+	// DiffBranchDatabases works similar to branch rebase.
+	// 1) set the base as the schema of a database;
+	// 2) apply the changes between base and head of branch to the new base (schema of database);
+	// 3) resolve these conflicts manually if any.
+	DiffBranchDatabases(context.Context, *DiffBranchDatabasesRequest) (*DiffBranchDatabasesResponse, error)
 	DiffMetadata(context.Context, *DiffMetadataRequest) (*DiffMetadataResponse, error)
 	mustEmbedUnimplementedBranchServiceServer()
 }
@@ -163,6 +183,9 @@ func (UnimplementedBranchServiceServer) RebaseBranch(context.Context, *RebaseBra
 }
 func (UnimplementedBranchServiceServer) DeleteBranch(context.Context, *DeleteBranchRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteBranch not implemented")
+}
+func (UnimplementedBranchServiceServer) DiffBranchDatabases(context.Context, *DiffBranchDatabasesRequest) (*DiffBranchDatabasesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DiffBranchDatabases not implemented")
 }
 func (UnimplementedBranchServiceServer) DiffMetadata(context.Context, *DiffMetadataRequest) (*DiffMetadataResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DiffMetadata not implemented")
@@ -306,6 +329,24 @@ func _BranchService_DeleteBranch_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _BranchService_DiffBranchDatabases_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DiffBranchDatabasesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BranchServiceServer).DiffBranchDatabases(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BranchService_DiffBranchDatabases_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BranchServiceServer).DiffBranchDatabases(ctx, req.(*DiffBranchDatabasesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _BranchService_DiffMetadata_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DiffMetadataRequest)
 	if err := dec(in); err != nil {
@@ -358,6 +399,10 @@ var BranchService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteBranch",
 			Handler:    _BranchService_DeleteBranch_Handler,
+		},
+		{
+			MethodName: "DiffBranchDatabases",
+			Handler:    _BranchService_DiffBranchDatabases_Handler,
 		},
 		{
 			MethodName: "DiffMetadata",

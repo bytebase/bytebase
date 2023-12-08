@@ -187,6 +187,8 @@
     - [Branch](#bytebase-v1-Branch)
     - [CreateBranchRequest](#bytebase-v1-CreateBranchRequest)
     - [DeleteBranchRequest](#bytebase-v1-DeleteBranchRequest)
+    - [DiffBranchDatabasesRequest](#bytebase-v1-DiffBranchDatabasesRequest)
+    - [DiffBranchDatabasesResponse](#bytebase-v1-DiffBranchDatabasesResponse)
     - [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest)
     - [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse)
     - [GetBranchRequest](#bytebase-v1-GetBranchRequest)
@@ -3475,6 +3477,40 @@ The type of the backup.
 
 
 
+<a name="bytebase-v1-DiffBranchDatabasesRequest"></a>
+
+### DiffBranchDatabasesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of database to merge the branch to. |
+| branch | [string](#string) |  | The name of the branch. Format: projects/{project}/branches/{branch} |
+| merged_schema | [string](#string) |  | For failed merge, we will pass in this addition merged schema and use it for head. The diff between current database schema and this merged schema will be returned. |
+| validate_only | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DiffBranchDatabasesResponse"></a>
+
+### DiffBranchDatabasesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| diff | [string](#string) |  | The schema diff when merge occurs seamlessly. |
+| conflict_schema | [string](#string) |  | The conflict schema when rebase has conflicts. The conflict section is enclosed by the following. &lt;&lt;&lt;&lt;&lt; HEAD ==== &gt;&gt;&gt;&gt;&gt; main |
+
+
+
+
+
+
 <a name="bytebase-v1-DiffMetadataRequest"></a>
 
 ### DiffMetadataRequest
@@ -3682,6 +3718,7 @@ The branch&#39;s `name` field is used to identify the branch to update. Format: 
 | MergeBranch | [MergeBranchRequest](#bytebase-v1-MergeBranchRequest) | [MergeBranchResponse](#bytebase-v1-MergeBranchResponse) |  |
 | RebaseBranch | [RebaseBranchRequest](#bytebase-v1-RebaseBranchRequest) | [RebaseBranchResponse](#bytebase-v1-RebaseBranchResponse) |  |
 | DeleteBranch | [DeleteBranchRequest](#bytebase-v1-DeleteBranchRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| DiffBranchDatabases | [DiffBranchDatabasesRequest](#bytebase-v1-DiffBranchDatabasesRequest) | [DiffBranchDatabasesResponse](#bytebase-v1-DiffBranchDatabasesResponse) | DiffBranchDatabases works similar to branch rebase. 1) set the base as the schema of a database; 2) apply the changes between base and head of branch to the new base (schema of database); 3) resolve these conflicts manually if any. |
 | DiffMetadata | [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest) | [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse) |  |
 
  

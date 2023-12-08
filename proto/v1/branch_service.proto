@@ -55,6 +55,15 @@ service BranchService {
     option (google.api.method_signature) = "name";
   }
 
+  // DiffBranchDatabases works similar to branch rebase.
+  // 1) set the base as the schema of a database;
+  // 2) apply the changes between base and head of branch to the new base (schema of database);
+  // 3) resolve these conflicts manually if any.
+  rpc DiffBranchDatabases(DiffBranchDatabasesRequest) returns (DiffBranchDatabasesResponse) {
+    option (google.api.http) = {post: "/v1/{name=instances/*/databases/*}:mergeDatabases"};
+    option (google.api.method_signature) = "name";
+  }
+
   rpc DiffMetadata(DiffMetadataRequest) returns (DiffMetadataResponse) {
     option (google.api.http) = {
       post: "/v1/schemaDesign:diffMetadata"
@@ -275,6 +284,34 @@ message DeleteBranchRequest {
   // The name of the branch to delete.
   // Format: projects/{project}/branches/{branch}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message DiffBranchDatabasesRequest {
+  // The name of database to merge the branch to.
+  string name = 1;
+
+  // The name of the branch.
+  // Format: projects/{project}/branches/{branch}
+  string branch = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // For failed merge, we will pass in this addition merged schema and use it for head.
+  // The diff between current database schema and this merged schema will be returned.
+  string merged_schema = 3;
+
+  bool validate_only = 4;
+}
+
+message DiffBranchDatabasesResponse {
+  oneof result {
+    // The schema diff when merge occurs seamlessly.
+    string diff = 1;
+    // The conflict schema when rebase has conflicts.
+    // The conflict section is enclosed by the following.
+    // <<<<< HEAD
+    // ====
+    // >>>>> main
+    string conflict_schema = 2;
+  }
 }
 
 message DiffMetadataRequest {
