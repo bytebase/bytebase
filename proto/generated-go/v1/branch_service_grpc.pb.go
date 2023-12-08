@@ -38,8 +38,8 @@ type BranchServiceClient interface {
 	ListBranches(ctx context.Context, in *ListBranchesRequest, opts ...grpc.CallOption) (*ListBranchesResponse, error)
 	CreateBranch(ctx context.Context, in *CreateBranchRequest, opts ...grpc.CallOption) (*Branch, error)
 	UpdateBranch(ctx context.Context, in *UpdateBranchRequest, opts ...grpc.CallOption) (*Branch, error)
-	MergeBranch(ctx context.Context, in *MergeBranchRequest, opts ...grpc.CallOption) (*Branch, error)
-	RebaseBranch(ctx context.Context, in *RebaseBranchRequest, opts ...grpc.CallOption) (*Branch, error)
+	MergeBranch(ctx context.Context, in *MergeBranchRequest, opts ...grpc.CallOption) (*MergeBranchResponse, error)
+	RebaseBranch(ctx context.Context, in *RebaseBranchRequest, opts ...grpc.CallOption) (*RebaseBranchResponse, error)
 	DeleteBranch(ctx context.Context, in *DeleteBranchRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	DiffMetadata(ctx context.Context, in *DiffMetadataRequest, opts ...grpc.CallOption) (*DiffMetadataResponse, error)
 }
@@ -88,8 +88,8 @@ func (c *branchServiceClient) UpdateBranch(ctx context.Context, in *UpdateBranch
 	return out, nil
 }
 
-func (c *branchServiceClient) MergeBranch(ctx context.Context, in *MergeBranchRequest, opts ...grpc.CallOption) (*Branch, error) {
-	out := new(Branch)
+func (c *branchServiceClient) MergeBranch(ctx context.Context, in *MergeBranchRequest, opts ...grpc.CallOption) (*MergeBranchResponse, error) {
+	out := new(MergeBranchResponse)
 	err := c.cc.Invoke(ctx, BranchService_MergeBranch_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -97,8 +97,8 @@ func (c *branchServiceClient) MergeBranch(ctx context.Context, in *MergeBranchRe
 	return out, nil
 }
 
-func (c *branchServiceClient) RebaseBranch(ctx context.Context, in *RebaseBranchRequest, opts ...grpc.CallOption) (*Branch, error) {
-	out := new(Branch)
+func (c *branchServiceClient) RebaseBranch(ctx context.Context, in *RebaseBranchRequest, opts ...grpc.CallOption) (*RebaseBranchResponse, error) {
+	out := new(RebaseBranchResponse)
 	err := c.cc.Invoke(ctx, BranchService_RebaseBranch_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -132,8 +132,8 @@ type BranchServiceServer interface {
 	ListBranches(context.Context, *ListBranchesRequest) (*ListBranchesResponse, error)
 	CreateBranch(context.Context, *CreateBranchRequest) (*Branch, error)
 	UpdateBranch(context.Context, *UpdateBranchRequest) (*Branch, error)
-	MergeBranch(context.Context, *MergeBranchRequest) (*Branch, error)
-	RebaseBranch(context.Context, *RebaseBranchRequest) (*Branch, error)
+	MergeBranch(context.Context, *MergeBranchRequest) (*MergeBranchResponse, error)
+	RebaseBranch(context.Context, *RebaseBranchRequest) (*RebaseBranchResponse, error)
 	DeleteBranch(context.Context, *DeleteBranchRequest) (*emptypb.Empty, error)
 	DiffMetadata(context.Context, *DiffMetadataRequest) (*DiffMetadataResponse, error)
 	mustEmbedUnimplementedBranchServiceServer()
@@ -155,10 +155,10 @@ func (UnimplementedBranchServiceServer) CreateBranch(context.Context, *CreateBra
 func (UnimplementedBranchServiceServer) UpdateBranch(context.Context, *UpdateBranchRequest) (*Branch, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateBranch not implemented")
 }
-func (UnimplementedBranchServiceServer) MergeBranch(context.Context, *MergeBranchRequest) (*Branch, error) {
+func (UnimplementedBranchServiceServer) MergeBranch(context.Context, *MergeBranchRequest) (*MergeBranchResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MergeBranch not implemented")
 }
-func (UnimplementedBranchServiceServer) RebaseBranch(context.Context, *RebaseBranchRequest) (*Branch, error) {
+func (UnimplementedBranchServiceServer) RebaseBranch(context.Context, *RebaseBranchRequest) (*RebaseBranchResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RebaseBranch not implemented")
 }
 func (UnimplementedBranchServiceServer) DeleteBranch(context.Context, *DeleteBranchRequest) (*emptypb.Empty, error) {

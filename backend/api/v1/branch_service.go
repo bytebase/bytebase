@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"path"
 
 	"golang.org/x/exp/slices"
@@ -12,6 +13,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -303,7 +305,7 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 }
 
 // MergeBranch merges a personal draft branch to the target branch.
-func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBranchRequest) (*v1pb.Branch, error) {
+func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBranchRequest) (*v1pb.MergeBranchResponse, error) {
 	baseProjectID, baseBranchID, err := common.GetProjectAndBranchID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -312,10 +314,10 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 	if err != nil {
 		return nil, err
 	}
-	if err := s.checkBranchPermission(ctx, baseProjectID); err != nil {
+	if err := s.checkBranchPermission(ctx, baseProject.ResourceID); err != nil {
 		return nil, err
 	}
-	baseBranch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &baseProjectID, ResourceID: &baseBranchID, LoadFull: true})
+	baseBranch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &baseProject.ResourceID, ResourceID: &baseBranchID, LoadFull: true})
 	if err != nil {
 		return nil, err
 	}
@@ -361,9 +363,11 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 		// Maybe we can support auto-merging in the future.
 		mergedMetadata, err = tryMerge(headBranch.Base.Metadata, headBranch.Head.Metadata, baseBranch.Head.Metadata)
 		if err != nil {
-			return nil, status.Errorf(codes.Aborted, "cannot auto merge branch due to conflict: %v", err)
+			slog.Info("cannot merge branches", log.BBError(err))
+			return &v1pb.MergeBranchResponse{Result: &v1pb.MergeBranchResponse_ConflictSchema{ConflictSchema: "TBD"}}, nil
 		}
 		if mergedMetadata == nil {
+			// TODO(zp): bug, this should not be no change.
 			return nil, status.Errorf(codes.FailedPrecondition, "failed to merge branch: no change")
 		}
 		mergedSchema, err = getDesignSchema(storepb.Engine(baseBranch.Engine), string(headBranch.Head.Schema), mergedMetadata)
@@ -378,7 +382,7 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
 	if err := s.store.UpdateBranch(ctx, &store.UpdateBranchMessage{
-		ProjectID:  baseProjectID,
+		ProjectID:  baseProject.ResourceID,
 		ResourceID: baseBranchID,
 		UpdaterID:  principalID,
 		Head: &storepb.BranchSnapshot{
@@ -388,16 +392,19 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 		}}); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed update branch, error %v", err)
 	}
-
+	baseBranch, err = s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &baseProject.ResourceID, ResourceID: &baseBranchID})
+	if err != nil {
+		return nil, err
+	}
 	v1Branch, err := s.convertBranchToBranch(ctx, baseProject, baseBranch, v1pb.BranchView_BRANCH_VIEW_FULL)
 	if err != nil {
 		return nil, err
 	}
-	return v1Branch, nil
+	return &v1pb.MergeBranchResponse{Result: &v1pb.MergeBranchResponse_Branch{Branch: v1Branch}}, nil
 }
 
 // RebaseBranch rebases a branch to the target branch.
-func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBranchRequest) (*v1pb.Branch, error) {
+func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBranchRequest) (*v1pb.RebaseBranchResponse, error) {
 	baseProjectID, baseBranchID, err := common.GetProjectAndBranchID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -406,10 +413,10 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 	if err != nil {
 		return nil, err
 	}
-	if err := s.checkBranchPermission(ctx, baseProjectID); err != nil {
+	if err := s.checkBranchPermission(ctx, baseProject.ResourceID); err != nil {
 		return nil, err
 	}
-	baseBranch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &baseProjectID, ResourceID: &baseBranchID, LoadFull: true})
+	baseBranch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &baseProject.ResourceID, ResourceID: &baseBranchID, LoadFull: true})
 	if err != nil {
 		return nil, err
 	}
@@ -440,9 +447,11 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 		}
 		mergedTarget, err := tryMerge(baseBranch.Base.Metadata, baseBranch.Head.Metadata, upstreamMetadata)
 		if err != nil {
-			return nil, status.Errorf(codes.Aborted, "cannot auto rebase branch due to conflict: %v", err)
+			slog.Info("cannot rebase branches", log.BBError(err))
+			return &v1pb.RebaseBranchResponse{Result: &v1pb.RebaseBranchResponse_ConflictSchema{ConflictSchema: "TBD"}}, nil
 		}
 		if mergedTarget == nil {
+			// TODO(zp): bug, this should not be no change.
 			return nil, status.Errorf(codes.FailedPrecondition, "failed to rebase branch: no change")
 		}
 		newHeadSchema, err = getDesignSchema(storepb.Engine(baseBranch.Engine), string(baseBranch.Head.Schema), mergedTarget)
@@ -465,7 +474,7 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
 	if err := s.store.UpdateBranch(ctx, &store.UpdateBranchMessage{
-		ProjectID:  baseProjectID,
+		ProjectID:  baseProject.ResourceID,
 		ResourceID: baseBranchID,
 		UpdaterID:  principalID,
 		Base: &storepb.BranchSnapshot{
@@ -480,12 +489,15 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 		}}); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed update branch, error %v", err)
 	}
-
+	baseBranch, err = s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &baseProject.ResourceID, ResourceID: &baseBranchID})
+	if err != nil {
+		return nil, err
+	}
 	v1Branch, err := s.convertBranchToBranch(ctx, baseProject, baseBranch, v1pb.BranchView_BRANCH_VIEW_FULL)
 	if err != nil {
 		return nil, err
 	}
-	return v1Branch, nil
+	return &v1pb.RebaseBranchResponse{Result: &v1pb.RebaseBranchResponse_Branch{Branch: v1Branch}}, nil
 }
 
 func (s *BranchService) getNewBaseFromRebaseRequest(ctx context.Context, request *v1pb.RebaseBranchRequest) (string, error) {
