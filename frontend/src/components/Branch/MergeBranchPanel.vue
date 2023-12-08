@@ -119,7 +119,9 @@ const sourceBranch = asyncComputed(
     if (!name) {
       return emptyBranch();
     }
-    return await branchStore.fetchBranchByName(name, true /* useCache */);
+    // Don't use local store cache since we need to ensure the branch is
+    // fresh clean here
+    return await branchStore.fetchBranchByName(name, /* !useCache */ false);
   },
   emptyBranch(),
   {
@@ -133,7 +135,9 @@ const targetBranch = asyncComputed(
     if (!name) {
       return emptyBranch();
     }
-    return await branchStore.fetchBranchByName(name, true /* useCache */);
+    // Don't use local store cache since we need to ensure the branch is
+    // fresh clean here
+    return await branchStore.fetchBranchByName(name, /* !useCache */ false);
   },
   emptyBranch(),
   {
