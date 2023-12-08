@@ -164,8 +164,10 @@ const handleMergeBranch = async () => {
       headBranch: sourceBranch.value.name,
       mergedSchema: "",
       etag: "",
+      validateOnly: false,
     });
   } catch (error: any) {
+    // TODO(Jim): this needs to be updated.
     // If there is conflict, we need to show the conflict and let user resolve it.
     if (error.code === Status.ABORTED) {
       dialog.create({
