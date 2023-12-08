@@ -78,16 +78,7 @@ import {
   NTree,
   DropdownOption,
 } from "naive-ui";
-import {
-  computed,
-  onMounted,
-  watch,
-  ref,
-  h,
-  reactive,
-  nextTick,
-  watchEffect,
-} from "vue";
+import { computed, onMounted, watch, ref, h, reactive, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import DatabaseIcon from "~icons/heroicons-outline/circle-stack";
 import TableIcon from "~icons/heroicons-outline/table-cells";
@@ -320,7 +311,6 @@ const expandNodeRecursively = (node: TreeNode) => {
   }
 };
 const buildDatabaseTreeData = () => {
-  console.log("buildDatabaseTreeData");
   const groupedByInstance = groupBy(
     targets.value,
     (target) => target.database.instance
@@ -421,11 +411,6 @@ watch(
     deep: false,
   }
 );
-watchEffect(() => {
-  console.log(databaseList.value.map((db) => db.name));
-  console.log(flattenSchemaList.value.map((schema) => schema.name));
-  console.log(flattenTableList.value.map((table) => table.name));
-});
 
 const tabWatchKey = computed(() => {
   const tab = currentTab.value;
