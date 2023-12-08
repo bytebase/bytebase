@@ -395,26 +395,14 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
         label = t("db.tables");
       }
       const status = statusForSchema(schema);
-      if (status === "created") {
-        additionalClassList.push("text-green-700");
-      } else if (status === "dropped") {
-        additionalClassList.push("text-red-700 line-through");
-      } else if (status === "updated") {
-        additionalClassList.push("text-yellow-700");
-      }
+      additionalClassList.push(status);
     }
   } else if (treeNode.type === "table") {
     const { schema, table } = treeNode as TreeNodeForTable;
 
     if (table) {
       const status = statusForTable(schema, table);
-      if (status === "created") {
-        additionalClassList.push("text-green-700");
-      } else if (status === "dropped") {
-        additionalClassList.push("text-red-700 line-through");
-      } else if (status === "updated") {
-        additionalClassList.push("text-yellow-700");
-      }
+      additionalClassList.push(status);
     }
   }
 
@@ -725,5 +713,14 @@ const handleExpandedKeysChange = (expandedKeys: string[]) => {
 }
 .schema-designer-database-tree :deep(.n-tree-node-switcher) {
   @apply px-0 !w-4 !h-7;
+}
+.schema-designer-database-tree :deep(.n-tree-node-content .created) {
+  @apply text-green-700;
+}
+.schema-designer-database-tree :deep(.n-tree-node-content .dropped) {
+  @apply text-red-700 line-through;
+}
+.schema-designer-database-tree :deep(.n-tree-node-content .updated) {
+  @apply text-yellow-700;
 }
 </style>
