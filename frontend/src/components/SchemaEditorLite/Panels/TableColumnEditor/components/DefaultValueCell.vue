@@ -22,7 +22,7 @@ import {
   getColumnDefaultValueOptions,
   getColumnDefaultValuePlaceholder,
   getDefaultValueByKey,
-} from "@/components/SchemaEditorLite/utils/columnDefaultValue";
+} from "@/components/SchemaEditorLite/utils";
 import { DropdownInput } from "@/components/v2";
 import { Engine } from "@/types/proto/v1/common";
 import { ColumnMetadata } from "@/types/proto/v1/database_service";

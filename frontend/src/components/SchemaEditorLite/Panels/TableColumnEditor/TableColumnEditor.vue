@@ -83,10 +83,7 @@ import { DataClassificationSetting_DataClassificationConfig as DataClassificatio
 import ColumnDefaultValueExpressionModal from "../../Modals/ColumnDefaultValueExpressionModal.vue";
 import { useSchemaEditorContext } from "../../context";
 import { EditStatus } from "../../types";
-import {
-  getDefaultValueByKey,
-  isTextOfColumnType,
-} from "../../utils/columnDefaultValue";
+import { getDefaultValueByKey, isTextOfColumnType } from "../../utils";
 import { markUUID } from "../common";
 import {
   ClassificationCell,
