@@ -29,6 +29,10 @@ export const generateDiffDDL = async (
     };
   };
 
+  if (isEqual(source, target)) {
+    return finish("", [t("schema-editor.nothing-changed")], true);
+  }
+
   const validationMessages = validateDatabaseMetadata(target);
   if (validationMessages.length > 0) {
     return finish(
