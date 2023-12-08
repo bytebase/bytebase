@@ -8,7 +8,8 @@
         v-if="project"
         :key="detailViewKey"
         :project="project"
-        :branch="branch"
+        :clean-branch="branch.clean"
+        :dirty-branch="branch.dirty"
         v-bind="$attrs"
         @update:branch="handleUpdateBranch"
         @update:branch-id="handleUpdateBranchId"
@@ -22,7 +23,7 @@
 
 <script lang="ts" setup>
 import { useTitle } from "@vueuse/core";
-import { uniqueId } from "lodash-es";
+import { cloneDeep, uniqueId } from "lodash-es";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -47,10 +48,7 @@ const ready = ref<boolean>(false);
 const detailViewKey = ref(uniqueId());
 
 const isCreating = computed(() => props.branchName === "new");
-// const branch = computed(() => {
-//   return branchStore.getBranchByName(branchFullName.value);
-// });
-const branch = ref<Branch>();
+const branch = ref<{ clean: Branch; dirty: Branch }>();
 const project = computed(() => {
   if (props.projectSlug === "-") {
     return;
@@ -61,7 +59,10 @@ const project = computed(() => {
 });
 
 const handleUpdateBranch = (br: Branch) => {
-  branch.value = br;
+  branch.value = {
+    clean: br,
+    dirty: cloneDeep(br),
+  };
   detailViewKey.value = uniqueId();
 };
 const handleUpdateBranchId = (id: string) => {
@@ -105,7 +106,10 @@ watch(
       branchFullName.value,
       false /* useCache */
     );
-    branch.value = br;
+    branch.value = {
+      clean: br,
+      dirty: cloneDeep(br),
+    };
     if (!br) {
       router.replace("error.404");
     }
@@ -121,7 +125,7 @@ const documentTitle = computed(() => {
     return t("schema-designer.new-branch");
   } else {
     if (branch.value) {
-      return branch.value.branchId;
+      return branch.value.clean.branchId;
     }
   }
   return t("common.loading");

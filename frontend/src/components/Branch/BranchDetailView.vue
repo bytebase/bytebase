@@ -85,7 +85,7 @@
         ref="schemaDesignerRef"
         :project="project"
         :readonly="!state.isEditing"
-        :branch="branch"
+        :branch="dirtyBranch"
       />
     </div>
     <!-- Don't show delete button in view mode. -->
@@ -102,7 +102,7 @@
   <TargetDatabasesSelectPanel
     v-if="selectTargetDatabasesContext.show"
     :project-id="project.uid"
-    :engine="branch.engine"
+    :engine="dirtyBranch.engine"
     :selected-database-id-list="[]"
     :loading="!!state.applyingToDatabaseStatus"
     @close="selectTargetDatabasesContext.show = false"
@@ -122,7 +122,7 @@
 <script lang="ts" setup>
 import { asyncComputed } from "@vueuse/core";
 import dayjs from "dayjs";
-import { cloneDeep, head, isEqual } from "lodash-es";
+import { cloneDeep, head } from "lodash-es";
 import { NButton, NDivider, NInput, NTag } from "naive-ui";
 import { CSSProperties, computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -130,7 +130,6 @@ import { useRouter } from "vue-router";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
 import { validateDatabaseMetadata } from "@/components/SchemaEditorV1/utils";
 import TargetDatabasesSelectPanel from "@/components/SyncDatabaseSchema/TargetDatabasesSelectPanel.vue";
-import { branchServiceClient } from "@/grpcweb";
 import { pushNotification, useDatabaseV1Store } from "@/store";
 import { useBranchListByProject, useBranchStore } from "@/store/modules/branch";
 import {
@@ -142,6 +141,7 @@ import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { projectV1Slug } from "@/utils";
 import { provideSQLCheckContext } from "../SQLCheck";
+import { generateDiffDDL } from "../SchemaEditorLite";
 import MaskSpinner from "../misc/MaskSpinner.vue";
 import MergeBranchPanel from "./MergeBranchPanel.vue";
 import SchemaDesignEditorLite from "./SchemaDesignEditorLite.vue";
@@ -159,10 +159,12 @@ interface LocalState {
 
 const props = defineProps<{
   project: ComposedProject;
-  branch: Branch;
+  cleanBranch: Branch;
+  dirtyBranch: Branch;
   readonly?: boolean;
 }>();
 const emit = defineEmits<{
+  (event: "revert", branch: Branch): void;
   (event: "update:branch", branch: Branch): void;
   (event: "update:branch-id", id: string): void;
 }>();
@@ -196,10 +198,11 @@ const selectTargetDatabasesContext = ref<{
 });
 
 const parentBranch = asyncComputed(async () => {
+  const branch = props.dirtyBranch;
   // Show parent branch when the current branch is a personal draft and it's not the new created one.
-  if (props.branch.parentBranch !== "") {
+  if (branch.parentBranch !== "") {
     return await branchStore.fetchBranchByName(
-      props.branch.parentBranch,
+      branch.parentBranch,
       true /* useCache */
     );
   }
@@ -207,15 +210,16 @@ const parentBranch = asyncComputed(async () => {
 }, undefined);
 
 const database = computed(() => {
-  return databaseStore.getDatabaseByName(props.branch.baselineDatabase);
+  return databaseStore.getDatabaseByName(props.dirtyBranch.baselineDatabase);
 });
 
 const rebuildMetadataEdit = () => {
+  const branch = props.dirtyBranch;
   const schemaDesigner = schemaDesignerRef.value;
   schemaDesigner?.schemaEditor?.rebuildMetadataEdit(
     database.value,
-    props.branch.baselineSchemaMetadata ?? DatabaseMetadata.fromPartial({}),
-    props.branch.schemaMetadata ?? DatabaseMetadata.fromPartial({})
+    branch.baselineSchemaMetadata ?? DatabaseMetadata.fromPartial({}),
+    branch.schemaMetadata ?? DatabaseMetadata.fromPartial({})
   );
 };
 
@@ -236,7 +240,7 @@ const branchIdInputStyle = computed(() => {
 });
 
 watch(
-  () => props.branch.branchId,
+  () => props.dirtyBranch.branchId,
   (title) => {
     state.branchId = title;
   },
@@ -263,16 +267,17 @@ const handleBranchIdInputBlur = async () => {
     return;
   }
 
+  const branch = props.dirtyBranch;
   const updateMask = [];
-  if (props.branch.branchId !== state.branchId) {
+  if (branch.branchId !== state.branchId) {
     updateMask.push("branch_id");
   }
   if (updateMask.length !== 0) {
     await branchStore.updateBranch(
       Branch.fromPartial({
-        name: props.branch.name,
+        name: branch.name,
         branchId: state.branchId,
-        baselineDatabase: props.branch.baselineDatabase,
+        baselineDatabase: branch.baselineDatabase,
       }),
       updateMask
     );
@@ -287,12 +292,13 @@ const handleBranchIdInputBlur = async () => {
 };
 
 const handleMergeBranch = () => {
+  const branch = props.dirtyBranch;
   const tempList = branchList.value.filter((item) => {
     const [projectName] = getProjectAndBranchId(item.name);
     return (
       `${projectNamePrefix}${projectName}` === props.project.name &&
-      item.engine === props.branch.engine &&
-      item.name !== props.branch.name
+      item.engine === branch.engine &&
+      item.name !== branch.name
     );
   });
   const branchName = parentBranch.value
@@ -308,7 +314,7 @@ const handleMergeBranch = () => {
   }
 
   mergeBranchPanelContext.value = {
-    headBranchName: props.branch.name,
+    headBranchName: branch.name,
     branchName: branchName,
   };
   state.showDiffEditor = true;
@@ -320,11 +326,7 @@ const handleEdit = async () => {
 
 const handleCancelEdit = async () => {
   state.isReverting = true;
-  const originalBranch = await branchStore.fetchBranchByName(
-    props.branch.name,
-    /* !useCache */ false
-  );
-  emit("update:branch", originalBranch);
+  emit("update:branch", props.cleanBranch);
   state.isReverting = false;
   state.isEditing = false;
   await nextTick();
@@ -356,15 +358,15 @@ const handleSaveBranch = async () => {
   const check = runSQLCheck.value;
   if (check) {
     state.savingStatus = "Checking SQL";
-    await new Promise((r) => setTimeout(r, 2000));
     if (!(await check())) {
       return cleanup();
     }
   }
 
   state.savingStatus = "Validating schema";
-  const editing = props.branch.schemaMetadata
-    ? cloneDeep(props.branch.schemaMetadata)
+  const branch = props.dirtyBranch;
+  const editing = branch.schemaMetadata
+    ? cloneDeep(branch.schemaMetadata)
     : DatabaseMetadata.fromPartial({});
   await applyMetadataEdit(database.value, editing);
 
@@ -383,7 +385,7 @@ const handleSaveBranch = async () => {
   const updateMask = ["schema_metadata"];
   await branchStore.updateBranch(
     Branch.fromPartial({
-      name: props.branch.name,
+      name: branch.name,
       schemaMetadata: editing,
     }),
     updateMask
@@ -418,39 +420,20 @@ const handleSelectedDatabaseIdListChanged = async (
   };
 
   state.applyingToDatabaseStatus = true;
-  let statement = "";
-  try {
-    const diffResponse = await branchServiceClient.diffMetadata(
-      {
-        sourceMetadata: props.branch.baselineSchemaMetadata,
-        targetMetadata: props.branch.schemaMetadata,
-        engine: props.branch.engine,
-      },
-      {
-        silent: true,
-      }
-    );
-    statement = diffResponse.diff;
-  } catch {
-    pushNotification({
-      module: "bytebase",
-      style: "WARN",
-      title: t("schema-editor.message.invalid-schema"),
-    });
-    return cleanup();
-  }
+  // Use the raw branch since the branch might be dirty by schema editor
+  const branch = props.cleanBranch;
 
-  if (
-    statement === "" &&
-    !isEqual(
-      props.branch.baselineSchemaMetadata?.schemaConfigs,
-      props.branch.schemaMetadata?.schemaConfigs
-    )
-  ) {
+  const source =
+    branch.baselineSchemaMetadata ?? DatabaseMetadata.fromPartial({});
+  const target = branch.schemaMetadata ?? DatabaseMetadata.fromPartial({});
+  const result = await generateDiffDDL(database.value, source, target);
+
+  if (result.fatal) {
     pushNotification({
       module: "bytebase",
-      style: "WARN",
-      title: t("schema-editor.message.cannot-change-config"),
+      style: "CRITICAL",
+      title: t("common.error"),
+      description: result.errors.join("\n"),
     });
     return cleanup();
   }
@@ -463,10 +446,10 @@ const handleSelectedDatabaseIdListChanged = async (
     project: props.project.uid,
     mode: "normal",
     ghost: undefined,
-    branch: props.branch.name,
+    branch: branch.name,
   };
   query.databaseList = databaseIdList.join(",");
-  query.sql = statement;
+  query.sql = result.statement;
   query.name = generateIssueName(
     targetDatabaseList.map((db) => db.databaseName)
   );
@@ -495,7 +478,8 @@ const generateIssueName = (databaseNameList: string[]) => {
 };
 
 const deleteBranch = async () => {
-  await branchStore.deleteBranch(props.branch.name);
+  const branch = props.dirtyBranch;
+  await branchStore.deleteBranch(branch.name);
   router.replace({
     name: "workspace.project.detail",
     hash: "#branches",
