@@ -22,6 +22,7 @@
 </template>
 
 <script lang="ts" setup>
+import { v1 as uuidv1 } from "uuid";
 import { computed, nextTick, ref, watch } from "vue";
 import type {
   AdviceOption,
@@ -99,9 +100,11 @@ const readonly = computed(() => sheetAndTabStore.isReadOnly);
 const currentTabId = computed(() => tabStore.currentTabId);
 const isSwitchingTab = ref(false);
 
-const filename = computed(
-  () => `${tabStore.currentTab.id}.${extensionNameOfLanguage(language.value)}`
-);
+const filename = computed(() => {
+  const name = tabStore.currentTab.id || uuidv1();
+  const ext = extensionNameOfLanguage(language.value);
+  return `${name}.${ext}`;
+});
 
 watch(currentTabId, () => {
   isSwitchingTab.value = true;
