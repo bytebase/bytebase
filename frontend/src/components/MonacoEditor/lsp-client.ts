@@ -35,14 +35,13 @@ export const createLanguageClient = (
 };
 
 export const createUrl = (
-  hostname: string,
-  port: number,
+  host: string,
   path: string,
   searchParams: Record<string, any> = {},
   secure: boolean = location.protocol === "https:"
 ): string => {
   const protocol = secure ? "wss" : "ws";
-  const url = new URL(`${protocol}://${hostname}:${port}${path}`);
+  const url = new URL(`${protocol}://${host}${path}`);
 
   for (const [key, value] of Object.entries(searchParams)) {
     const v = value instanceof Array ? value.join(",") : value;
@@ -88,7 +87,7 @@ const state = {
 };
 
 const initializeRunner = async () => {
-  const url = createUrl(location.hostname, parseInt(location.port, 10), "/lsp");
+  const url = createUrl(location.host, "/lsp");
   const client = await createWebSocketAndStartClient(url).languageClient;
   state.client = client;
   return client;
