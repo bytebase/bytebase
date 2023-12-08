@@ -29,7 +29,7 @@
         <BranchSQLCheckButton
           class="justify-end"
           :branch="branch"
-          :get-statement="generateDDL"
+          :get-statement="() => generateDDL(false)"
         />
       </div>
     </div>
@@ -70,14 +70,12 @@
 import { cloneDeep } from "lodash-es";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { branchServiceClient } from "@/grpcweb";
 import { pushNotification, useDatabaseV1Store } from "@/store";
 import { ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { MonacoEditor } from "../MonacoEditor";
-import SchemaEditorLite from "../SchemaEditorLite";
-import { validateDatabaseMetadata } from "../SchemaEditorLite/utils";
+import SchemaEditorLite, { generateDiffDDL } from "../SchemaEditorLite";
 import MaskSpinner from "../misc/MaskSpinner.vue";
 import BranchSQLCheckButton from "./BranchSQLCheckButton.vue";
 
@@ -114,7 +112,7 @@ const handleChangeTab = async (tab: TabType) => {
   }
 };
 
-const generateDDL = async () => {
+const generateDDL = async (silent: boolean) => {
   const applyMetadataEdit = schemaEditorRef.value?.applyMetadataEdit;
   if (typeof applyMetadataEdit !== "function") {
     throw new Error("SchemaEditor is not accessible");
@@ -128,38 +126,16 @@ const generateDDL = async () => {
     : DatabaseMetadata.fromPartial({});
   await applyMetadataEdit(database.value, editing);
 
-  const validationMessages = validateDatabaseMetadata(editing);
-  if (validationMessages.length > 0) {
-    return {
-      statement: "",
-      errors: [t("schema-editor.message.invalid-schema")],
-    };
+  const result = await generateDiffDDL(database.value, source, editing);
+  if (result.fatal && !silent) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: t("common.error"),
+      description: result.errors.join("\n"),
+    });
   }
-
-  try {
-    const diffMetadataResponse = await branchServiceClient.diffMetadata(
-      {
-        sourceMetadata: source,
-        targetMetadata: editing,
-        engine: props.branch.engine,
-      },
-      {
-        silent: true,
-      }
-    );
-    const { diff } = diffMetadataResponse;
-    const errs = diff.length === 0 ? [t("schema-editor.nothing-changed")] : [];
-    return {
-      statement: diff,
-      errors: errs,
-    };
-  } catch (ex) {
-    // The grpc error message is too long not readable. So we won't use it here.
-    return {
-      statement: "",
-      errors: [t("schema-editor.message.invalid-schema")],
-    };
-  }
+  return result;
 };
 
 const fetchRawSQLPreview = async () => {
@@ -175,12 +151,12 @@ const fetchRawSQLPreview = async () => {
     return;
   }
 
-  const result = await generateDDL();
+  const result = await generateDDL(true);
   if (result.errors.length > 0) {
     pushNotification({
       module: "bytebase",
-      style: "WARN",
-      title: "Invalid schema structure",
+      style: result.fatal ? "CRITICAL" : "WARN",
+      title: t("common.error"),
       description: result.errors.join("\n"),
     });
   }

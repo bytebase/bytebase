@@ -33,7 +33,7 @@
       <div class="flex items-center flex-end">
         <SchemaEditorSQLCheckButton
           :database-list="databaseList"
-          :get-statement="generateOrGetDDL"
+          :get-statement="generateOrGetEditingDDL"
         />
       </div>
     </div>
@@ -139,19 +139,17 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
-import { cloneDeep, head, isEqual, uniq } from "lodash-es";
+import { cloneDeep, head, uniq } from "lodash-es";
 import { computed, onMounted, PropType, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import ActionConfirmModal from "@/components/SchemaEditorV1/Modals/ActionConfirmModal.vue";
 import SchemaEditorV1 from "@/components/SchemaEditorV1/index.vue";
-import { branchServiceClient } from "@/grpcweb";
 import {
   pushNotification,
   useDBSchemaV1Store,
   useDatabaseV1Store,
   useNotificationStore,
-  useSchemaEditorV1Store,
 } from "@/store";
 import {
   dialectOfEngineV1,
@@ -159,20 +157,16 @@ import {
   unknownProject,
 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import {
-  DatabaseMetadata,
-  DatabaseMetadataView,
-} from "@/types/proto/v1/database_service";
+import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import { TinyTimer } from "@/utils";
 import { MonacoEditor } from "../MonacoEditor";
 import { provideSQLCheckContext } from "../SQLCheck";
-import SchemaEditorLite, { EditTarget } from "../SchemaEditorLite";
-import {
-  initialSchemaConfigToMetadata,
-  mergeSchemaEditToMetadata,
-  validateDatabaseMetadata,
-} from "../SchemaEditorV1/utils";
+import SchemaEditorLite, {
+  EditTarget,
+  GenerateDiffDDLResult,
+  generateDiffDDL as generateSingleDiffDDL,
+} from "../SchemaEditorLite";
 import SchemaEditorSQLCheckButton from "./SchemaEditorSQLCheckButton/SchemaEditorSQLCheckButton.vue";
 
 const MAX_UPLOAD_FILE_SIZE_MB = 1;
@@ -216,7 +210,6 @@ const state = reactive<LocalState>({
   isPreparingMetadata: false,
   targets: [],
 });
-const schemaEditorV1Store = useSchemaEditorV1Store();
 const databaseV1Store = useDatabaseV1Store();
 const dbSchemaV1Store = useDBSchemaV1Store();
 const notificationStore = useNotificationStore();
@@ -260,11 +253,6 @@ const editTargetsKey = computed(() => {
 });
 
 const prepareDatabaseMetadata = async () => {
-  // for (const database of databaseList.value) {
-  //   await dbSchemaV1Store.getOrFetchDatabaseMetadata({
-  //     database: database.name,
-  //   });
-  // }
   console.log("prepareDatabaseMetadata", databaseList.value);
   state.isPreparingMetadata = true;
   state.targets = [];
@@ -274,7 +262,7 @@ const prepareDatabaseMetadata = async () => {
     databaseList.value.map(async (database) => {
       const metadata = await dbSchemaV1Store.getOrFetchDatabaseMetadata({
         database: database.name,
-        skipCache: false,
+        skipCache: true,
         view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
       });
       return { database, metadata };
@@ -326,110 +314,64 @@ const dismissModal = () => {
 };
 
 const handleSyncSQLFromSchemaEditor = async () => {
-  const statementMap = await fetchStatementMapWithSchemaEditor();
-  if (!statementMap) {
-    return;
-  }
-  state.editStatement = Array.from(statementMap.values()).join("\n");
+  const statementMap = await generateDiffDDLMap(/* !silent */ false);
+  const results = Array.from(statementMap.values());
+
+  state.editStatement = results.map((result) => result.statement).join("\n\n");
 };
 
-const generateOrGetDDL = async () => {
+const generateOrGetEditingDDL = async () => {
   if (state.selectedTab === "raw-sql") {
     return {
       statement: state.editStatement,
       errors: [],
     };
   }
-  // TODO
+
+  const statementMap = await generateDiffDDLMap(/* silent */ true);
+  const results = Array.from(statementMap.values());
+  const statement = results.map((result) => result.statement).join("\n\n");
+  results.forEach((result) => {
+    if (result.errors.length > 0) {
+      pushNotification({
+        module: "bytebase",
+        style: result.fatal ? "CRITICAL" : "WARN",
+        title: t("common.error"),
+        description: result.errors.join("\n"),
+      });
+    }
+  });
+  const errors = results.flatMap((result) => result.errors);
   return {
-    statement: "",
-    errors: ["not implemented yet"],
+    statement,
+    errors,
   };
 };
 
-const getChangedDatabaseMetadatas = () => {
-  const databaseMetadataMap: Map<string, [DatabaseMetadata, DatabaseMetadata]> =
-    new Map();
-  for (const database of databaseList.value) {
-    const databaseSchema = schemaEditorV1Store.resourceMap["database"].get(
-      database.name
-    );
-    if (!databaseSchema) {
-      continue;
-    }
+const generateDiffDDLMap = async (silent: boolean) => {
+  const statementMap = new Map<string, GenerateDiffDDLResult>();
 
-    const metadata = dbSchemaV1Store.getDatabaseMetadata(database.name);
-    const mergedMetadata = mergeSchemaEditToMetadata(
-      databaseSchema.schemaList,
-      cloneDeep(metadata)
-    );
-    // Initial an empty schema config to origin metadata to prevent unexpected diff.
-    initialSchemaConfigToMetadata(metadata);
-    if (
-      // If there is no schema change, we don't need to create an issue.
-      databaseSchema.schemaList.length === 0 ||
-      isEqual(metadata, mergedMetadata)
-    ) {
-      databaseMetadataMap.set(database.uid, [
-        DatabaseMetadata.fromPartial({}),
-        DatabaseMetadata.fromPartial({}),
-      ]);
-      continue;
-    }
+  const applyMetadataEdit = schemaEditorRef.value?.applyMetadataEdit;
+  if (typeof applyMetadataEdit !== "function") {
+    throw new Error("SchemaEditor is not accessible");
+  }
+  for (let i = 0; i < state.targets.length; i++) {
+    const target = state.targets[i];
+    const { database, baselineMetadata: source } = target;
+    // To avoid affect the editing status, we need to copy it here for DDL generation
+    const editing = cloneDeep(target.metadata);
 
-    const validationMessages = validateDatabaseMetadata(mergedMetadata);
-    if (validationMessages.length > 0) {
+    const result = await generateSingleDiffDDL(database, source, editing);
+    if (result.fatal && !silent) {
       pushNotification({
         module: "bytebase",
-        style: "WARN",
-        title: "Invalid schema structure",
-        description: validationMessages.join("\n"),
+        style: "CRITICAL",
+        title: t("common.error"),
+        description: result.errors.join("\n"),
       });
-      return;
     }
 
-    databaseMetadataMap.set(database.uid, [metadata, mergedMetadata]);
-  }
-  return databaseMetadataMap;
-};
-
-const fetchStatementMapWithSchemaEditor = async () => {
-  const statementMap: Map<string, string> = new Map();
-  const databaseMetadataMap = getChangedDatabaseMetadatas();
-  if (!databaseMetadataMap) {
-    return;
-  }
-
-  for (const [
-    databaseId,
-    [sourceMetadata, targetMetadata],
-  ] of databaseMetadataMap.entries()) {
-    const database = databaseV1Store.getDatabaseByUID(databaseId);
-    if (!database) {
-      continue;
-    }
-    if (isEqual(sourceMetadata, targetMetadata)) {
-      statementMap.set(database.uid, "");
-      continue;
-    }
-
-    const { diff } = await branchServiceClient.diffMetadata({
-      sourceMetadata,
-      targetMetadata,
-      engine: database.instanceEntity.engine,
-    });
-    if (
-      diff === "" &&
-      !isEqual(sourceMetadata.schemaConfigs, targetMetadata.schemaConfigs)
-    ) {
-      pushNotification({
-        module: "bytebase",
-        style: "WARN",
-        title: t("schema-editor.message.cannot-change-config"),
-      });
-      return;
-    }
-    statementMap.set(database.uid, diff);
+    statementMap.set(database.name, result);
   }
   return statementMap;
 };
@@ -517,18 +459,15 @@ const handlePreviewIssue = async () => {
       false /* !onlineMode */
     );
 
-    const statementMap = await fetchStatementMapWithSchemaEditor();
-    if (!statementMap) {
-      return;
-    }
+    const statementMap = await generateDiffDDLMap(/* !silent */ false);
     const databaseIdList: string[] = [];
     const statementList: string[] = [];
-    for (const [key, val] of statementMap.entries()) {
+    for (const [key, result] of statementMap.entries()) {
       databaseIdList.push(key);
-      statementList.push(val);
+      statementList.push(result.statement);
     }
     if (isBatchMode.value) {
-      query.sql = statementList.join("\n");
+      query.sql = statementList.join("\n\n");
       query.name = generateIssueName(
         databaseList.value.map((db) => db.databaseName),
         !!query.ghost
