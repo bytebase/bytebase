@@ -34,7 +34,7 @@ export class DiffMerge {
   targetColumnMap = new Map<string, ColumnMetadata>();
   timer = new TinyTimer<
     "merge" | "mergeSchemas" | "mergeTables" | "mergeColumns" | "diffColumn"
-  >();
+  >("DiffMerge");
   constructor(
     context: SchemaEditorContext,
     database: ComposedDatabase,

@@ -23,7 +23,10 @@ const emptyTimerEntry = (tag: string): TimerEntry => {
 export class TinyTimer<T extends string = string> {
   private entires: Record<T, TimerEntry> = {} as any;
   private begins: Record<T, number> = {} as any;
-  constructor() {}
+  title: string;
+  constructor(title: string = "") {
+    this.title = title;
+  }
   begin(tag: T) {
     if (isRelease()) return;
 
@@ -48,7 +51,11 @@ export class TinyTimer<T extends string = string> {
 
     const entry = this.entires[tag];
     if (!entry) return;
-    console.debug(JSON.stringify(entry, null, "  "));
+    const contents = [JSON.stringify(entry, null, "  ")];
+    if (this.title) {
+      contents.unshift(`[${this.title}]`);
+    }
+    console.debug(contents.join(" "));
   }
   printAll() {
     if (isRelease()) return;

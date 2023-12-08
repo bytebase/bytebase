@@ -5,6 +5,9 @@
     class="schema-editor-modal-container !w-[96rem] h-auto overflow-auto !max-w-[calc(100vw-40px)] !max-h-[calc(100vh-40px)]"
     @close="dismissModal"
   >
+    <MaskSpinner v-if="state.isGeneratingDDL" class="!bg-white/75">
+      <span class="text-sm">Generating DDL</span>
+    </MaskSpinner>
     <div
       class="w-full flex flex-row justify-between items-center border-b pl-1 border-b-gray-300"
     >
@@ -42,13 +45,6 @@
         v-show="state.selectedTab === 'schema-editor'"
         class="w-full h-full py-2"
       >
-        <SchemaEditorV1
-          v-if="false"
-          :engine="databaseEngine"
-          :project="project"
-          :resource-type="'database'"
-          :databases="databaseList"
-        />
         <SchemaEditorLite
           ref="schemaEditorRef"
           resource-type="database"
@@ -144,7 +140,6 @@ import { computed, onMounted, PropType, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import ActionConfirmModal from "@/components/SchemaEditorV1/Modals/ActionConfirmModal.vue";
-import SchemaEditorV1 from "@/components/SchemaEditorV1/index.vue";
 import {
   pushNotification,
   useDBSchemaV1Store,
@@ -167,6 +162,7 @@ import SchemaEditorLite, {
   GenerateDiffDDLResult,
   generateDiffDDL as generateSingleDiffDDL,
 } from "../SchemaEditorLite";
+import MaskSpinner from "../misc/MaskSpinner.vue";
 import SchemaEditorSQLCheckButton from "./SchemaEditorSQLCheckButton/SchemaEditorSQLCheckButton.vue";
 
 const MAX_UPLOAD_FILE_SIZE_MB = 1;
@@ -178,6 +174,7 @@ interface LocalState {
   editStatement: string;
   showActionConfirmModal: boolean;
   isPreparingMetadata: boolean;
+  isGeneratingDDL: boolean;
   targets: EditTarget[];
 }
 
@@ -208,6 +205,7 @@ const state = reactive<LocalState>({
   editStatement: "",
   showActionConfirmModal: false,
   isPreparingMetadata: false,
+  isGeneratingDDL: false,
   targets: [],
 });
 const databaseV1Store = useDatabaseV1Store();
@@ -253,10 +251,11 @@ const editTargetsKey = computed(() => {
 });
 
 const prepareDatabaseMetadata = async () => {
-  console.log("prepareDatabaseMetadata", databaseList.value);
   state.isPreparingMetadata = true;
   state.targets = [];
-  const timer = new TinyTimer<"fetchMetadata" | "convertEditTargets">();
+  const timer = new TinyTimer<"fetchMetadata" | "convertEditTargets">(
+    "SchemaEditorModal"
+  );
   timer.begin("fetchMetadata");
   const targets = await Promise.all(
     databaseList.value.map(async (database) => {
@@ -269,6 +268,7 @@ const prepareDatabaseMetadata = async () => {
     })
   );
   timer.end("fetchMetadata", databaseList.value.length);
+
   timer.begin("convertEditTargets");
   state.targets = targets.map<EditTarget>(({ database, metadata }) => {
     return {
@@ -349,6 +349,10 @@ const generateOrGetEditingDDL = async () => {
 };
 
 const generateDiffDDLMap = async (silent: boolean) => {
+  if (!silent) {
+    state.isGeneratingDDL = true;
+  }
+
   const statementMap = new Map<string, GenerateDiffDDLResult>();
 
   const applyMetadataEdit = schemaEditorRef.value?.applyMetadataEdit;
@@ -374,6 +378,8 @@ const generateDiffDDLMap = async (silent: boolean) => {
 
     statementMap.set(database.name, result);
   }
+
+  state.isGeneratingDDL = false;
   return statementMap;
 };
 

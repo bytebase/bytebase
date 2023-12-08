@@ -7,7 +7,9 @@ import { TinyTimer } from "@/utils";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
 import { validateDatabaseMetadata } from "./utils";
 
-export const _generateDiffDDLTimer = new TinyTimer<"generateDiffDDL">();
+export const _generateDiffDDLTimer = new TinyTimer<"generateDiffDDL">(
+  "GenerateDiffDDL"
+);
 
 export type GenerateDiffDDLResult = {
   statement: string;
