@@ -77,7 +77,7 @@ func TestBuildTablesMetadata(t *testing.T) {
 
 	a := require.New(t)
 	for _, tc := range testCases {
-		tables, names := BuildTablesMetadata(tc.input)
+		tables, names := buildTablesMetadata(tc.input)
 
 		// The length of the tables should be the same as the length of the names.
 		a.Equal(len(tables), len(names))

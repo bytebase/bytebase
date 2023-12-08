@@ -242,7 +242,7 @@ func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *DatabaseMeta
 			internalViews:  make(map[string]*ViewMetadata),
 		}
 		for _, table := range schema.Tables {
-			tables, names := BuildTablesMetadata(table)
+			tables, names := buildTablesMetadata(table)
 			for i, table := range tables {
 				schemaMetadata.internalTables[names[i]] = table
 			}
@@ -299,7 +299,7 @@ func (s *SchemaMetadata) ListViewNames() []string {
 	return result
 }
 
-func BuildTablesMetadata(table *storepb.TableMetadata) ([]*TableMetadata, []string) {
+func buildTablesMetadata(table *storepb.TableMetadata) ([]*TableMetadata, []string) {
 	if table == nil {
 		return nil, nil
 	}
