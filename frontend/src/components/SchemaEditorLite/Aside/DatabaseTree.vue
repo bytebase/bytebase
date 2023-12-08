@@ -555,10 +555,13 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
 
     if (database.instanceEntity.engine !== Engine.POSTGRES) {
       label = t("db.tables");
+    } else {
+      label = metadata.schema.name;
     }
   } else if (treeNode.type === "table") {
     const { database, metadata } = treeNode;
     additionalClassList.push(getTableStatus(database, metadata));
+    label = metadata.table.name;
   }
 
   return h(
