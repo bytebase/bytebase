@@ -1,3 +1,43 @@
+- input: WITH x(x1, x2) AS (SELECT * FROM t2) SELECT x.| FROM x;
+  want:
+    - text: x1
+      type: COLUMN
+      definition: ""
+      comment: ""
+    - text: x2
+      type: COLUMN
+      definition: ""
+      comment: ""
+- input: WITH x(x1, x2) AS (SELECT * FROM t2) SELECT | FROM x
+  want:
+    - text: db
+      type: DATABASE
+      definition: ""
+      comment: ""
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+    - text: x
+      type: TABLE
+      definition: ""
+      comment: ""
+    - text: x1
+      type: COLUMN
+      definition: ""
+      comment: ""
+    - text: x2
+      type: COLUMN
+      definition: ""
+      comment: ""
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
 - input: SELECT c1 as eid, c2 as xid FROM t2 ORDER BY |
   want:
     - text: db
