@@ -3,7 +3,8 @@
     :value="column.type || null"
     :allow-input-value="allowInputValue"
     :options="columnTypeOptions"
-    :consistent-menu-width="false"
+    :consistent-menu-width="true"
+    :allow-filter="allowFilter"
     :style="style"
     suffix-style="right: 3px"
     placeholder="column type"
@@ -16,7 +17,7 @@
 
 <script lang="ts" setup>
 import { SelectOption } from "naive-ui";
-import { CSSProperties, computed, ref } from "vue";
+import { CSSProperties, computed, ref, onMounted } from "vue";
 import { DropdownInput } from "@/components/v2";
 import { Engine } from "@/types/proto/v1/common";
 import { Column } from "@/types/v1/schemaEditor";
@@ -33,6 +34,13 @@ defineEmits<{
 }>();
 
 const focused = ref(false);
+const originalType = ref("");
+
+onMounted(() => (originalType.value = props.column.type));
+
+const allowFilter = computed(() => {
+  return !props.column.type || originalType.value !== props.column.type;
+});
 
 const allowInputValue = computed(() => {
   return props.schemaTemplateColumnTypes.length === 0;
