@@ -31,7 +31,11 @@ export const useTabs = () => {
 
     tabMap.value.set(id, tab);
     if (setAsCurrentTab) {
-      currentTabId.value = id;
+      // It's weird that nextTick doesn't work here
+      // So we need to delay a little bit longer
+      requestAnimationFrame(() => {
+        currentTabId.value = id;
+      });
     }
   };
 

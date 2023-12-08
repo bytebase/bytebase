@@ -82,13 +82,15 @@ const handleConfirmButtonClick = async () => {
     },
     "created"
   );
-  addTab({
-    type: "database",
-    database: props.database,
-    metadata: {
-      database: props.metadata,
-    },
-    selectedSchema: schema.name,
+  requestAnimationFrame(() => {
+    addTab({
+      type: "database",
+      database: props.database,
+      metadata: {
+        database: props.metadata,
+      },
+      selectedSchema: schema.name,
+    });
   });
 
   dismissModal();
