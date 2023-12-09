@@ -1,12 +1,12 @@
 import { defineStore } from "pinia";
-import { reactive, ref, watchEffect } from "vue";
+import { reactive, ref, unref, watchEffect } from "vue";
 import { branchServiceClient } from "@/grpcweb";
+import { MaybeRef } from "@/types";
 import {
   MergeBranchRequest,
   Branch,
   BranchView,
 } from "@/types/proto/v1/branch_service";
-import { projectNamePrefix } from "./v1/common";
 
 export const useBranchStore = defineStore("schema_design", () => {
   const branchMapByName = reactive(new Map<string, Branch>());
@@ -15,7 +15,7 @@ export const useBranchStore = defineStore("schema_design", () => {
   // Actions
   const fetchBranchList = async (projectName: string) => {
     const { branches } = await branchServiceClient.listBranches({
-      parent: projectNamePrefix + projectName,
+      parent: projectName,
       view: BranchView.BRANCH_VIEW_BASIC,
     });
     return branches;
@@ -31,7 +31,7 @@ export const useBranchStore = defineStore("schema_design", () => {
       branchId: branchId,
       branch,
     });
-    console.debug("got schema", createdBranch.schema);
+    // console.debug("got schema", createdBranch.schema);
     branchMapByName.set(createdBranch.name, createdBranch);
     return createdBranch;
   };
@@ -46,10 +46,12 @@ export const useBranchStore = defineStore("schema_design", () => {
   };
 
   const mergeBranch = async (request: MergeBranchRequest) => {
-    const updatedBranch = await branchServiceClient.mergeBranch(request, {
+    const resp = await branchServiceClient.mergeBranch(request, {
       silent: true,
     });
-    branchMapByName.set(updatedBranch.name, updatedBranch);
+    if (resp.branch) {
+      branchMapByName.set(resp.branch.name, resp.branch);
+    }
   };
 
   const fetchBranchByName = async (
@@ -106,7 +108,7 @@ export const useBranchStore = defineStore("schema_design", () => {
   };
 });
 
-export const useBranchList = (projectName: string) => {
+export const useBranchListByProject = (project: MaybeRef<string>) => {
   const store = useBranchStore();
   const ready = ref(false);
   const branchList = ref<Branch[]>([]);
@@ -114,7 +116,7 @@ export const useBranchList = (projectName: string) => {
   watchEffect(() => {
     ready.value = false;
     branchList.value = [];
-    store.fetchBranchList(projectName).then((response) => {
+    store.fetchBranchList(unref(project)).then((response) => {
       ready.value = true;
       branchList.value = response;
     });

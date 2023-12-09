@@ -1,4 +1,5 @@
 import { Uri, editor } from "monaco-editor";
+import slug from "slug";
 import { isRef, markRaw, ref, shallowRef, unref, watch } from "vue";
 import { Language, MaybeRef } from "@/types";
 import { MonacoEditorReady } from "./editor";
@@ -15,13 +16,15 @@ export const createTextModel = (
   content: string,
   language: string
 ) => {
-  if (TextModelMapByFilename.has(filename)) {
-    return TextModelMapByFilename.get(filename)!;
+  console.debug("[createTextModel]", filename);
+  const normalizedFilename = slug(filename);
+  if (TextModelMapByFilename.has(normalizedFilename)) {
+    return TextModelMapByFilename.get(normalizedFilename)!;
   }
 
-  const uri = Uri.parse(`/workspace/${filename}`);
+  const uri = Uri.parse(`/workspace/${normalizedFilename}`);
   const model = editor.createModel(content, language, uri);
-  TextModelMapByFilename.set(filename, model);
+  TextModelMapByFilename.set(normalizedFilename, model);
   return model;
 };
 

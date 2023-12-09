@@ -40,18 +40,29 @@ service BranchService {
     option (google.api.method_signature) = "branch,update_mask";
   }
 
-  rpc MergeBranch(MergeBranchRequest) returns (Branch) {
+  rpc MergeBranch(MergeBranchRequest) returns (MergeBranchResponse) {
     option (google.api.http) = {post: "/v1/{name=projects/*/branches/*}:merge"};
     option (google.api.method_signature) = "name";
   }
 
-  rpc RebaseBranch(RebaseBranchRequest) returns (Branch) {
+  rpc RebaseBranch(RebaseBranchRequest) returns (RebaseBranchResponse) {
     option (google.api.http) = {post: "/v1/{name=projects/*/branches/*}:rebase"};
     option (google.api.method_signature) = "name";
   }
 
   rpc DeleteBranch(DeleteBranchRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=projects/*/branches/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  // DiffDatabase works similar to branch rebase.
+  // 1) set the base as the schema of a database;
+  // 2) apply the changes between base and head of branch to the new base (schema of database);
+  // 3) return the diff DDLs similar to DiffSchema in database service.
+  // 4) return the conflict schema if conflict needs to be resolved by user. Once resolved, user
+  // will call DiffSchema() in database service to get diff DDLs.
+  rpc DiffDatabase(DiffDatabaseRequest) returns (DiffDatabaseResponse) {
+    option (google.api.http) = {post: "/v1/{name=projects/*/branches/*}:diffDatabase"};
     option (google.api.method_signature) = "name";
   }
 
@@ -211,6 +222,22 @@ message MergeBranchRequest {
   // the call will be blocked and an ABORTED error will be returned.
   // The etag should be specified for using merged_schema. The etag should be the etag from named branch.
   string etag = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // validate_only determines if the merge can occur seamlessly without any conflicts.
+  bool validate_only = 5;
+}
+
+message MergeBranchResponse {
+  oneof result {
+    // The merged branch when merge occurs seamlessly.
+    Branch branch = 1;
+    // The conflict schema when merge has conflicts.
+    // The conflict section is enclosed by the following.
+    // <<<<< HEAD
+    // ====
+    // >>>>> main
+    string conflict_schema = 2;
+  }
 }
 
 message RebaseBranchRequest {
@@ -237,12 +264,49 @@ message RebaseBranchRequest {
   // the call will be blocked and an ABORTED error will be returned.
   // The etag should be specified for using merged_schema. The etag should be the etag from named branch.
   string etag = 5;
+
+  // validate_only determines if the rebase can occur seamlessly without any conflicts.
+  bool validate_only = 6;
+}
+
+message RebaseBranchResponse {
+  oneof result {
+    // The rebased branch when rebase occurs seamlessly.
+    Branch branch = 1;
+    // The conflict schema when rebase has conflicts.
+    // The conflict section is enclosed by the following.
+    // <<<<< HEAD
+    // ====
+    // >>>>> main
+    string conflict_schema = 2;
+  }
 }
 
 message DeleteBranchRequest {
   // The name of the branch to delete.
   // Format: projects/{project}/branches/{branch}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message DiffDatabaseRequest {
+  // The name of branch.
+  string name = 1;
+
+  // The name of the databsae to merge the branch to.
+  string database = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message DiffDatabaseResponse {
+  oneof result {
+    // The schema diff when merge occurs seamlessly.
+    string diff = 1;
+    // The conflict schema when rebase has conflicts.
+    // The conflict section is enclosed by the following.
+    // <<<<< HEAD
+    // ====
+    // >>>>> main
+    string conflict_schema = 2;
+  }
 }
 
 message DiffMetadataRequest {

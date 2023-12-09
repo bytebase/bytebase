@@ -1,5 +1,5 @@
 <template>
-  <div ref="containerRef" class="bb-advanced-issue-search-box relative">
+  <div ref="containerRef" class="bb-advanced-issue-search-box w-full relative">
     <NInput
       ref="inputRef"
       v-model:value="inputText"

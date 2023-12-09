@@ -187,13 +187,17 @@
     - [Branch](#bytebase-v1-Branch)
     - [CreateBranchRequest](#bytebase-v1-CreateBranchRequest)
     - [DeleteBranchRequest](#bytebase-v1-DeleteBranchRequest)
+    - [DiffDatabaseRequest](#bytebase-v1-DiffDatabaseRequest)
+    - [DiffDatabaseResponse](#bytebase-v1-DiffDatabaseResponse)
     - [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest)
     - [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse)
     - [GetBranchRequest](#bytebase-v1-GetBranchRequest)
     - [ListBranchesRequest](#bytebase-v1-ListBranchesRequest)
     - [ListBranchesResponse](#bytebase-v1-ListBranchesResponse)
     - [MergeBranchRequest](#bytebase-v1-MergeBranchRequest)
+    - [MergeBranchResponse](#bytebase-v1-MergeBranchResponse)
     - [RebaseBranchRequest](#bytebase-v1-RebaseBranchRequest)
+    - [RebaseBranchResponse](#bytebase-v1-RebaseBranchResponse)
     - [UpdateBranchRequest](#bytebase-v1-UpdateBranchRequest)
   
     - [BranchView](#bytebase-v1-BranchView)
@@ -3473,6 +3477,38 @@ The type of the backup.
 
 
 
+<a name="bytebase-v1-DiffDatabaseRequest"></a>
+
+### DiffDatabaseRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of branch. |
+| database | [string](#string) |  | The name of the databsae to merge the branch to. |
+
+
+
+
+
+
+<a name="bytebase-v1-DiffDatabaseResponse"></a>
+
+### DiffDatabaseResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| diff | [string](#string) |  | The schema diff when merge occurs seamlessly. |
+| conflict_schema | [string](#string) |  | The conflict schema when rebase has conflicts. The conflict section is enclosed by the following. &lt;&lt;&lt;&lt;&lt; HEAD ==== &gt;&gt;&gt;&gt;&gt; main |
+
+
+
+
+
+
 <a name="bytebase-v1-DiffMetadataRequest"></a>
 
 ### DiffMetadataRequest
@@ -3569,6 +3605,23 @@ When paginating, all other parameters provided to `ListBranches` must match the 
 | head_branch | [string](#string) |  | The head branch to merge from. Format: projects/{project}/branches/{branch} |
 | merged_schema | [string](#string) |  | For failed merge, we will pass in this addition merged schema and use it for head. |
 | etag | [string](#string) |  | The current etag of the branch. If an etag is provided and does not match the current etag of the branch, the call will be blocked and an ABORTED error will be returned. The etag should be specified for using merged_schema. The etag should be the etag from named branch. |
+| validate_only | [bool](#bool) |  | validate_only determines if the merge can occur seamlessly without any conflicts. |
+
+
+
+
+
+
+<a name="bytebase-v1-MergeBranchResponse"></a>
+
+### MergeBranchResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| branch | [Branch](#bytebase-v1-Branch) |  | The merged branch when merge occurs seamlessly. |
+| conflict_schema | [string](#string) |  | The conflict schema when merge has conflicts. The conflict section is enclosed by the following. &lt;&lt;&lt;&lt;&lt; HEAD ==== &gt;&gt;&gt;&gt;&gt; main |
 
 
 
@@ -3588,6 +3641,23 @@ When paginating, all other parameters provided to `ListBranches` must match the 
 | source_branch | [string](#string) |  | The branch (remote upstream) used to rebase. We use its head as baseline. We use its head schema as baseline and reapply the difference between base and head of the named branch. Format: projects/{project}/branches/{branch} |
 | merged_schema | [string](#string) |  | For failed merge, we will pass in this addition merged schema and use it for head. This has to be set together with source_database or source_branch. |
 | etag | [string](#string) |  | The current etag of the branch. If an etag is provided and does not match the current etag of the branch, the call will be blocked and an ABORTED error will be returned. The etag should be specified for using merged_schema. The etag should be the etag from named branch. |
+| validate_only | [bool](#bool) |  | validate_only determines if the rebase can occur seamlessly without any conflicts. |
+
+
+
+
+
+
+<a name="bytebase-v1-RebaseBranchResponse"></a>
+
+### RebaseBranchResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| branch | [Branch](#bytebase-v1-Branch) |  | The rebased branch when rebase occurs seamlessly. |
+| conflict_schema | [string](#string) |  | The conflict schema when rebase has conflicts. The conflict section is enclosed by the following. &lt;&lt;&lt;&lt;&lt; HEAD ==== &gt;&gt;&gt;&gt;&gt; main |
 
 
 
@@ -3643,9 +3713,10 @@ The branch&#39;s `name` field is used to identify the branch to update. Format: 
 | ListBranches | [ListBranchesRequest](#bytebase-v1-ListBranchesRequest) | [ListBranchesResponse](#bytebase-v1-ListBranchesResponse) |  |
 | CreateBranch | [CreateBranchRequest](#bytebase-v1-CreateBranchRequest) | [Branch](#bytebase-v1-Branch) |  |
 | UpdateBranch | [UpdateBranchRequest](#bytebase-v1-UpdateBranchRequest) | [Branch](#bytebase-v1-Branch) |  |
-| MergeBranch | [MergeBranchRequest](#bytebase-v1-MergeBranchRequest) | [Branch](#bytebase-v1-Branch) |  |
-| RebaseBranch | [RebaseBranchRequest](#bytebase-v1-RebaseBranchRequest) | [Branch](#bytebase-v1-Branch) |  |
+| MergeBranch | [MergeBranchRequest](#bytebase-v1-MergeBranchRequest) | [MergeBranchResponse](#bytebase-v1-MergeBranchResponse) |  |
+| RebaseBranch | [RebaseBranchRequest](#bytebase-v1-RebaseBranchRequest) | [RebaseBranchResponse](#bytebase-v1-RebaseBranchResponse) |  |
 | DeleteBranch | [DeleteBranchRequest](#bytebase-v1-DeleteBranchRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| DiffDatabase | [DiffDatabaseRequest](#bytebase-v1-DiffDatabaseRequest) | [DiffDatabaseResponse](#bytebase-v1-DiffDatabaseResponse) | DiffDatabase works similar to branch rebase. 1) set the base as the schema of a database; 2) apply the changes between base and head of branch to the new base (schema of database); 3) return the diff DDLs similar to DiffSchema in database service. 4) return the conflict schema if conflict needs to be resolved by user. Once resolved, user will call DiffSchema() in database service to get diff DDLs. |
 | DiffMetadata | [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest) | [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse) |  |
 
  

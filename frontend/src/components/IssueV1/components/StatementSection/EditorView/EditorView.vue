@@ -224,6 +224,7 @@ import { cloneDeep } from "lodash-es";
 import Long from "long";
 import { ExpandIcon } from "lucide-vue-next";
 import { NButton, NTooltip, useDialog } from "naive-ui";
+import { v1 as uuidv1 } from "uuid";
 import { computed, h, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
@@ -304,9 +305,9 @@ const language = useInstanceV1EditorLanguage(
   computed(() => database.value.instanceEntity)
 );
 const filename = computed(() => {
-  return `${selectedTask.value.name}.${extensionNameOfLanguage(
-    language.value
-  )}`;
+  const name = selectedTask.value.name || uuidv1();
+  const ext = extensionNameOfLanguage(language.value);
+  return `${name}.${ext}`;
 });
 const dialect = computed((): SQLDialect => {
   const db = database.value;
