@@ -25,7 +25,11 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useLanguage } from "@/composables/useLanguage";
 import { useSubscriptionV1Store, useCurrentUserV1 } from "@/store";
-import { FeatureType, planTypeToString } from "@/types";
+import {
+  FeatureType,
+  planTypeToString,
+  ENTERPRISE_INQUIRE_LINK,
+} from "@/types";
 import { Instance } from "@/types/proto/v1/instance_service";
 import { hasWorkspacePermissionV1 } from "@/utils";
 
@@ -143,10 +147,7 @@ const onClick = () => {
     if (locale.value === "zh-CN") {
       state.showQRCodeModal = true;
     } else {
-      window.open(
-        "https://www.bytebase.com/contact-us/?source=console",
-        "_blank"
-      );
+      window.open(ENTERPRISE_INQUIRE_LINK, "_blank");
     }
   } else {
     router.push({ name: "setting.workspace.subscription" });

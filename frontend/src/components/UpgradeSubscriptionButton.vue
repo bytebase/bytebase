@@ -25,6 +25,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useLanguage } from "@/composables/useLanguage";
 import { useSubscriptionV1Store } from "@/store";
+import { ENTERPRISE_INQUIRE_LINK } from "@/types";
 
 interface LocalState {
   showQRCodeModal: boolean;
@@ -56,10 +57,7 @@ const onClick = () => {
     if (locale.value === "zh-CN") {
       state.showQRCodeModal = true;
     } else {
-      window.open(
-        "https://www.bytebase.com/contact-us/?source=console",
-        "_blank"
-      );
+      window.open(ENTERPRISE_INQUIRE_LINK, "_blank");
     }
   } else {
     router.push({ name: "setting.workspace.subscription" });
