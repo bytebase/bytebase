@@ -8,6 +8,11 @@
     :action-text="actionText"
     @click-action="onClick"
   />
+  <WeChatQRModal
+    v-if="state.showQRCodeModal"
+    :title="$t('subscription.request-with-qr')"
+    @close="state.showQRCodeModal = false"
+  />
   <InstanceAssignment
     :show="state.showInstanceAssignmentDrawer"
     @dismiss="state.showInstanceAssignmentDrawer = false"
@@ -18,18 +23,15 @@
 import { reactive, PropType, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import {
-  useSubscriptionV1Store,
-  useCurrentUserV1,
-  pushNotification,
-} from "@/store";
+import { useLanguage } from "@/composables/useLanguage";
+import { useSubscriptionV1Store, useCurrentUserV1 } from "@/store";
 import { FeatureType, planTypeToString } from "@/types";
 import { Instance } from "@/types/proto/v1/instance_service";
-import { PlanType } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV1 } from "@/utils";
 
 interface LocalState {
   showInstanceAssignmentDrawer: boolean;
+  showQRCodeModal: boolean;
 }
 
 const props = defineProps({
@@ -55,9 +57,12 @@ const props = defineProps({
 
 const router = useRouter();
 const { t } = useI18n();
+const { locale } = useLanguage();
+
 const subscriptionStore = useSubscriptionV1Store();
 const state = reactive<LocalState>({
   showInstanceAssignmentDrawer: false,
+  showQRCodeModal: false,
 });
 
 const hasPermission = hasWorkspacePermissionV1(
@@ -89,7 +94,7 @@ const actionText = computed(() => {
   if (subscriptionStore.canUpgradeTrial) {
     return t("subscription.upgrade-trial-button");
   }
-  return t("subscription.start-n-days-trial", {
+  return t("subscription.request-n-days-trial", {
     days: subscriptionStore.trialingDays,
   });
 });
@@ -135,25 +140,14 @@ const onClick = () => {
   if (instanceMissingLicense.value) {
     state.showInstanceAssignmentDrawer = true;
   } else if (subscriptionStore.canTrial) {
-    const isUpgrade = subscriptionStore.canUpgradeTrial;
-    subscriptionStore.trialSubscription(PlanType.ENTERPRISE).then(() => {
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("common.success"),
-        description: isUpgrade
-          ? t("subscription.successfully-upgrade-trial", {
-              plan: t(
-                `subscription.plan.${planTypeToString(
-                  subscriptionStore.currentPlan
-                )}.title`
-              ),
-            })
-          : t("subscription.successfully-start-trial", {
-              days: subscriptionStore.trialingDays,
-            }),
-      });
-    });
+    if (locale.value === "zh-CN") {
+      state.showQRCodeModal = true;
+    } else {
+      window.open(
+        "https://www.bytebase.com/contact-us/?source=console",
+        "_blank"
+      );
+    }
   } else {
     router.push({ name: "setting.workspace.subscription" });
   }
