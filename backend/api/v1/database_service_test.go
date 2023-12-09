@@ -171,15 +171,15 @@ func TestIsSecretValid(t *testing.T) {
 func TestGetDatabasesFromExpression(t *testing.T) {
 	tests := []struct {
 		expression string
-		want       []string
+		want       map[string]bool
 	}{
 		{
 			expression: "",
-			want:       nil,
+			want:       map[string]bool{},
 		},
 		{
 			expression: `request.time < timestamp("2023-12-16T06:16:57.064Z") && ((resource.database in ["instances/new-instance/databases/d2"]) || (resource.database == "instances/new-instance/databases/largedb" && resource.schema == "" && resource.table in ["hello0"]))`,
-			want:       []string{"instances/new-instance/databases/d2", "instances/new-instance/databases/largedb"},
+			want:       map[string]bool{"instances/new-instance/databases/d2": true, "instances/new-instance/databases/largedb": true},
 		},
 	}
 
