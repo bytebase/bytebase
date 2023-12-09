@@ -288,6 +288,28 @@ export interface DeleteBranchRequest {
   name: string;
 }
 
+export interface DiffDatabaseRequest {
+  /** The name of branch. */
+  name: string;
+  /** The name of the databsae to merge the branch to. */
+  database: string;
+}
+
+export interface DiffDatabaseResponse {
+  /** The schema diff when merge occurs seamlessly. */
+  diff?:
+    | string
+    | undefined;
+  /**
+   * The conflict schema when rebase has conflicts.
+   * The conflict section is enclosed by the following.
+   * <<<<< HEAD
+   * ====
+   * >>>>> main
+   */
+  conflictSchema?: string | undefined;
+}
+
 export interface DiffMetadataRequest {
   /** The metadata of the source schema. */
   sourceMetadata:
@@ -1476,6 +1498,154 @@ export const DeleteBranchRequest = {
   },
 };
 
+function createBaseDiffDatabaseRequest(): DiffDatabaseRequest {
+  return { name: "", database: "" };
+}
+
+export const DiffDatabaseRequest = {
+  encode(message: DiffDatabaseRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.database !== "") {
+      writer.uint32(18).string(message.database);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DiffDatabaseRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDiffDatabaseRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.database = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DiffDatabaseRequest {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      database: isSet(object.database) ? globalThis.String(object.database) : "",
+    };
+  },
+
+  toJSON(message: DiffDatabaseRequest): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.database !== "") {
+      obj.database = message.database;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DiffDatabaseRequest>): DiffDatabaseRequest {
+    return DiffDatabaseRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DiffDatabaseRequest>): DiffDatabaseRequest {
+    const message = createBaseDiffDatabaseRequest();
+    message.name = object.name ?? "";
+    message.database = object.database ?? "";
+    return message;
+  },
+};
+
+function createBaseDiffDatabaseResponse(): DiffDatabaseResponse {
+  return { diff: undefined, conflictSchema: undefined };
+}
+
+export const DiffDatabaseResponse = {
+  encode(message: DiffDatabaseResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.diff !== undefined) {
+      writer.uint32(10).string(message.diff);
+    }
+    if (message.conflictSchema !== undefined) {
+      writer.uint32(18).string(message.conflictSchema);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DiffDatabaseResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDiffDatabaseResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.diff = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.conflictSchema = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DiffDatabaseResponse {
+    return {
+      diff: isSet(object.diff) ? globalThis.String(object.diff) : undefined,
+      conflictSchema: isSet(object.conflictSchema) ? globalThis.String(object.conflictSchema) : undefined,
+    };
+  },
+
+  toJSON(message: DiffDatabaseResponse): unknown {
+    const obj: any = {};
+    if (message.diff !== undefined) {
+      obj.diff = message.diff;
+    }
+    if (message.conflictSchema !== undefined) {
+      obj.conflictSchema = message.conflictSchema;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DiffDatabaseResponse>): DiffDatabaseResponse {
+    return DiffDatabaseResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DiffDatabaseResponse>): DiffDatabaseResponse {
+    const message = createBaseDiffDatabaseResponse();
+    message.diff = object.diff ?? undefined;
+    message.conflictSchema = object.conflictSchema ?? undefined;
+    return message;
+  },
+};
+
 function createBaseDiffMetadataRequest(): DiffMetadataRequest {
   return { sourceMetadata: undefined, targetMetadata: undefined, engine: 0 };
 }
@@ -2019,6 +2189,78 @@ export const BranchServiceDefinition = {
               47,
               42,
               125,
+            ]),
+          ],
+        },
+      },
+    },
+    /**
+     * DiffDatabase works similar to branch rebase.
+     * 1) set the base as the schema of a database;
+     * 2) apply the changes between base and head of branch to the new base (schema of database);
+     * 3) return the diff DDLs similar to DiffSchema in database service.
+     * 4) return the conflict schema if conflict needs to be resolved by user. Once resolved, user
+     * will call DiffSchema() in database service to get diff DDLs.
+     */
+    diffDatabase: {
+      name: "DiffDatabase",
+      requestType: DiffDatabaseRequest,
+      requestStream: false,
+      responseType: DiffDatabaseResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          578365826: [
+            new Uint8Array([
+              47,
+              34,
+              45,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              47,
+              98,
+              114,
+              97,
+              110,
+              99,
+              104,
+              101,
+              115,
+              47,
+              42,
+              125,
+              58,
+              100,
+              105,
+              102,
+              102,
+              68,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
             ]),
           ],
         },
