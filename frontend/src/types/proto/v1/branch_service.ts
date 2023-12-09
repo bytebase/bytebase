@@ -297,7 +297,9 @@ export interface DiffDatabaseRequest {
 
 export interface DiffDatabaseResponse {
   /** The schema diff when merge occurs seamlessly. */
-  diff?:
+  diff: string;
+  /** The merged schema if there is no conflict. */
+  schema?:
     | string
     | undefined;
   /**
@@ -1573,16 +1575,19 @@ export const DiffDatabaseRequest = {
 };
 
 function createBaseDiffDatabaseResponse(): DiffDatabaseResponse {
-  return { diff: undefined, conflictSchema: undefined };
+  return { diff: "", schema: undefined, conflictSchema: undefined };
 }
 
 export const DiffDatabaseResponse = {
   encode(message: DiffDatabaseResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.diff !== undefined) {
+    if (message.diff !== "") {
       writer.uint32(10).string(message.diff);
     }
+    if (message.schema !== undefined) {
+      writer.uint32(18).string(message.schema);
+    }
     if (message.conflictSchema !== undefined) {
-      writer.uint32(18).string(message.conflictSchema);
+      writer.uint32(26).string(message.conflictSchema);
     }
     return writer;
   },
@@ -1606,6 +1611,13 @@ export const DiffDatabaseResponse = {
             break;
           }
 
+          message.schema = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
           message.conflictSchema = reader.string();
           continue;
       }
@@ -1619,15 +1631,19 @@ export const DiffDatabaseResponse = {
 
   fromJSON(object: any): DiffDatabaseResponse {
     return {
-      diff: isSet(object.diff) ? globalThis.String(object.diff) : undefined,
+      diff: isSet(object.diff) ? globalThis.String(object.diff) : "",
+      schema: isSet(object.schema) ? globalThis.String(object.schema) : undefined,
       conflictSchema: isSet(object.conflictSchema) ? globalThis.String(object.conflictSchema) : undefined,
     };
   },
 
   toJSON(message: DiffDatabaseResponse): unknown {
     const obj: any = {};
-    if (message.diff !== undefined) {
+    if (message.diff !== "") {
       obj.diff = message.diff;
+    }
+    if (message.schema !== undefined) {
+      obj.schema = message.schema;
     }
     if (message.conflictSchema !== undefined) {
       obj.conflictSchema = message.conflictSchema;
@@ -1640,7 +1656,8 @@ export const DiffDatabaseResponse = {
   },
   fromPartial(object: DeepPartial<DiffDatabaseResponse>): DiffDatabaseResponse {
     const message = createBaseDiffDatabaseResponse();
-    message.diff = object.diff ?? undefined;
+    message.diff = object.diff ?? "";
+    message.schema = object.schema ?? undefined;
     message.conflictSchema = object.conflictSchema ?? undefined;
     return message;
   },

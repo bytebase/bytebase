@@ -297,15 +297,19 @@ message DiffDatabaseRequest {
 }
 
 message DiffDatabaseResponse {
+  // The schema diff when merge occurs seamlessly.
+  string diff = 1;
+
   oneof result {
-    // The schema diff when merge occurs seamlessly.
-    string diff = 1;
+    // The merged schema if there is no conflict.
+    string schema = 2;
+
     // The conflict schema when rebase has conflicts.
     // The conflict section is enclosed by the following.
     // <<<<< HEAD
     // ====
     // >>>>> main
-    string conflict_schema = 2;
+    string conflict_schema = 3;
   }
 }
 
