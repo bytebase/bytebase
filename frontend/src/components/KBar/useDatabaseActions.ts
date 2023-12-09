@@ -15,7 +15,6 @@ import {
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import {
-  isDatabaseV1Accessible,
   groupBy,
   environmentV1Name,
   databaseV1Slug,
@@ -27,13 +26,10 @@ export const useDatabaseActions = (
 ) => {
   const { t } = useI18n();
   const router = useRouter();
-  const me = useCurrentUserV1();
   const environmentList = useEnvironmentV1List();
 
   const accessibleDatabaseList = computed(() => {
-    return unref(databaseList)
-      .filter((db) => db.syncState === State.ACTIVE)
-      .filter((db) => isDatabaseV1Accessible(db, me.value));
+    return unref(databaseList).filter((db) => db.syncState === State.ACTIVE);
   });
 
   const sortedDatabaseList = computed(() => {

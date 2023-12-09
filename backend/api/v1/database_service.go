@@ -123,10 +123,6 @@ func (s *DatabaseService) GetDatabase(ctx context.Context, request *v1pb.GetData
 
 // ListDatabases lists all databases.
 func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListDatabasesRequest) (*v1pb.ListDatabasesResponse, error) {
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "failed to retrieve user from context")
-	}
 	instanceID, err := common.GetInstanceID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -150,27 +146,81 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
+	databases, err = s.filterDatabases(ctx, databases)
+	if err != nil {
+		return nil, err
+	}
 	response := &v1pb.ListDatabasesResponse{}
 	for _, database := range databases {
-		if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionManageGeneral); err != nil {
-			st := status.Convert(err)
-			if st.Code() == codes.PermissionDenied {
-				continue
-			}
-			return nil, err
-		}
-		if s.profile.DevelopmentIAM {
-			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionDatabasesList, user, database.ProjectID)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
-			}
-			if !ok {
-				continue
-			}
-		}
 		response.Databases = append(response.Databases, convertToDatabase(database))
 	}
 	return response, nil
+}
+
+func (s *DatabaseService) filterDatabases(ctx context.Context, databases []*store.DatabaseMessage) ([]*store.DatabaseMessage, error) {
+	role, ok := ctx.Value(common.RoleContextKey).(api.Role)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "role not found")
+	}
+	if isOwnerOrDBA(role) {
+		return databases, nil
+	}
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+
+	var filteredDatabases []*store.DatabaseMessage
+	projectDatabases := make(map[string][]*store.DatabaseMessage)
+	for _, database := range databases {
+		projectDatabases[database.ProjectID] = append(projectDatabases[database.ProjectID], database)
+	}
+	for projectID, dbs := range projectDatabases {
+		policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &projectID})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		filteredDBs := filterPolicyDatabases(principalID, policy, dbs)
+		filteredDatabases = append(filteredDatabases, filteredDBs...)
+	}
+
+	return filteredDatabases, nil
+}
+
+func filterPolicyDatabases(userID int, policy *store.IAMPolicyMessage, databases []*store.DatabaseMessage) []*store.DatabaseMessage {
+	var filteredDatabases []*store.DatabaseMessage
+	for _, binding := range policy.Bindings {
+		for _, member := range binding.Members {
+			if member.ID != userID && member.Email != api.AllUsers {
+				continue
+			}
+			if binding.Role != api.Querier && binding.Role != api.Exporter {
+				return databases
+			}
+			expressionDBs := getDatabasesFromExpression(binding.Condition.Expression)
+			if len(expressionDBs) == 0 {
+				return databases
+			}
+			for _, database := range databases {
+				databaseName := fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName)
+				if expressionDBs[databaseName] {
+					filteredDatabases = append(filteredDatabases, database)
+				}
+			}
+		}
+	}
+	return filteredDatabases
+}
+
+var databaseNamePattern = regexp.MustCompile(`"instances/[^/]+/databases/[^"]+"`)
+
+func getDatabasesFromExpression(expression string) map[string]bool {
+	matches := databaseNamePattern.FindAllString(expression, -1)
+	databaseNames := make(map[string]bool)
+	for _, m := range matches {
+		databaseNames[m[1:len(m)-1]] = true
+	}
+	return databaseNames
 }
 
 // SearchDatabases searches all databases.
