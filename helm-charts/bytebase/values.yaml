@@ -3,18 +3,47 @@
 # Declare variables to be passed into your templates.
 
 bytebase:
+  version: 2.11.1
+  registryMirrorHost: ""
   option:
     port: 8080
-    existingPgURLSecret: ""
-    existingPgURLSecretKey: ""
-    pg: postgresql://user:secret@host:port/dbname
     data: /var/opt/bytebase
     external-url: "https://www.bytebase.com/docs/get-started/install/external-url"
     disable-sample: false
-  version: 2.11.1
-  registryMirrorHost: ""
+    externalPg:
+      url: postgresql://user:secret@host:port/dbname
+      # If users need to read the pgURL from a secret, they can specify the secret name and key here.
+      # Bytebase will ignore the bytebase.option.externalPg.url if this is specified.
+      existingPgURLSecret: ""
+      existingPgURLSecretKey: ""
+      pgHost: ""
+      pgPort: 5432
+      pgUsername: ""
+      pgPassword: ""
+      pgDatabase: ""
+      existingPgPasswordSecret: ""
+      existingPgPasswordSecretKey: ""
   persistence:
-    storage: 2Gi
     enabled: false
-    storageClass: ""
     existingClaim: ""
+    storage: 2Gi
+    storageClass: ""
+
+  # Additional Bytebase secret mounts
+  # Defines additional mounts with secret. Secret must be manually created in the namespace.
+  extraSecretMounts:
+    []
+    # - name: secrets-store-inline
+    #   mountPath: "/mnt/secrets-store"
+    #   readOnly: true
+  # Additional Bytebase Volume
+  extraVolumes:
+    []
+    # - name: secrets-store-inline
+    #   csi:
+    #     driver: secrets-store.csi.k8s.io
+    #     readOnly: true
+    #     volumeAttributes:
+    #       secretProviderClass: "akv-bytebase-spc"
+    #     nodePublishSecretRef:                       # Only required when using service principal mode
+    #       name: bytebase-akv-creds          # Only required when using service principal mode

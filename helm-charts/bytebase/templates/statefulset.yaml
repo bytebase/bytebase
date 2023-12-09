@@ -1,12 +1,32 @@
-{{- $external_url := index .Values.bytebase.option "external-url" -}}
-{{- $existingPgURLSecret := .Values.bytebase.option.existingPgURLSecret -}}
-{{- $existingPgURLSecretKey := .Values.bytebase.option.existingPgURLSecretKey -}}
-{{- $port := .Values.bytebase.option.port -}}
-{{- $pg := .Values.bytebase.option.pg -}}
-{{- $data := .Values.bytebase.option.data -}}
+# bytebase
 {{- $version := .Values.bytebase.version -}}
 {{- $registryMirrorHost := .Values.bytebase.registryMirrorHost -}}
+
+# bytebase.option
+{{- $port := .Values.bytebase.option.port -}}
+{{- $data := .Values.bytebase.option.data -}}
+{{- $external_url := index .Values.bytebase.option "external-url" -}}
 {{- $disable_sample := index .Values.bytebase.option "disable-sample" -}}
+
+# bytebase.option.externalPg
+{{- $externalPgURL := .Values.bytebase.option.externalPg.url -}}
+{{- $externalPgExistingPgURLSecret := .Values.bytebase.option.externalPg.existingPgURLSecret -}}
+{{- $externalPgexistingPgURLSecretKey := .Values.bytebase.option.externalPg.existingPgURLSecretKey -}}
+{{- $externalPgHost := .Values.bytebase.option.externalPg.pgHost -}}
+{{- $externalPgPort := .Values.bytebase.option.externalPg.pgPort -}}
+{{- $externalPgUsername := .Values.bytebase.option.externalPg.pgUsername -}}
+{{- $externalPgPassword := .Values.bytebase.option.externalPg.pgPassword -}}
+{{- $externalPgDatabase := .Values.bytebase.option.externalPg.pgDatabase -}}
+{{- $externalPgExistingPgPasswordSecret := .Values.bytebase.option.externalPg.existingPgPasswordSecret -}}
+{{- $externalPgExistingPgPasswordSecretKey := .Values.bytebase.option.externalPg.existingPgPasswordSecretKey -}}
+
+# bytbease.persistence
+{{- $persistenceEnable := .Values.bytebase.persistence.enabled -}}
+{{- $persistenceExistingClaim := .Values.bytebase.persistence.existingClaim -}}
+{{- $persistenceStorage := .Values.bytebase.persistence.storage -}}
+{{- $persistenceStorageClass := .Values.bytebase.persistence.storageClass}}
+
+
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -36,14 +56,14 @@ spec:
           imagePullPolicy: Always
           env:
           - name: PG_URL
-            {{ if $existingPgURLSecret }}
+            {{ if $externalPgExistingPgURLSecret }}
             # If user specifies an existing secret, we should read the external pg connection string in that secret.
             valueFrom:
               secretKeyRef:
-                name: {{ $existingPgURLSecret }}
-                key: {{ $existingPgURLSecretKey }}
+                name: {{ $externalPgExistingPgURLSecret }}
+                key: {{ $externalPgexistingPgURLSecretKey }}
             {{ else }}
-            value: {{ $pg }}
+            value: {{ $externalPgURL }}
             {{ end }}
           args:
             [
@@ -70,21 +90,21 @@ spec:
             timeoutSeconds: 60
           volumeMounts:
             - mountPath: {{ $data }}
-              {{ if .Values.bytebase.persistence.existingClaim }}
+              {{ if $persistenceExistingClaim }}
               # If user specifies an existing PVC, use that instead of "bytebase-volume".
-              name: {{ .Values.bytebase.persistence.existingClaim | quote }}
+              name: {{ $persistenceExistingClaim | quote }}
               {{ else }}
               # Either user disable persistence or enable persistence but not specify an existing PVC, use "bytebase-volume" as the volume name. It means
               # that we will request to create a PVC with the specified storage class with name "bytebase-volume".
               name: bytebase-volume
               {{ end }}
       volumes:
-        {{ if .Values.bytebase.persistence.enabled }}
-        {{ if .Values.bytebase.persistence.existingClaim }}
+        {{ if $persistenceEnable }}
+        {{ if $persistenceExistingClaim }}
         # If user specifies an existing PVC, use that instead of "bytebase-volume".
-        - name: {{ .Values.bytebase.persistence.existingClaim | quote }}
+        - name: {{ $persistenceExistingClaim| quote }}
           persistentVolumeClaim:
-            claimName: {{ .Values.bytebase.persistence.existingClaim | quote }}
+            claimName: {{ $persistenceExistingClaim | quote }}
         {{ else }}
         # If user enable persistence, but not specify an existing PVC, create a PVC with the specified storage class with name "bytebase-volume".
         - name: bytebase-volume
@@ -98,8 +118,8 @@ spec:
         {{ end }}
 
 ---
-{{ if .Values.bytebase.persistence.enabled }}
-{{ if not .Values.bytebase.persistence.existingClaim }}
+{{ if $persistenceEnable }}
+{{ if not $persistenceExistingClaim }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -108,12 +128,12 @@ metadata:
   labels:
     {{- include "bytebase.labels" . | nindent 4}}
 spec:
-  storageClassName: {{ .Values.bytebase.persistence.storageClass | quote }}
+  storageClassName: {{ $persistenceStorageClass | quote }}
   accessModes:
   - ReadWriteOnce
   resources:
     requests:
-      storage: {{ .Values.bytebase.persistence.storage }}
+      storage: {{ $persistenceStorage }}
 {{ end }}
 {{ end }}
 
