@@ -97,7 +97,6 @@ import {
   SearchParams,
   filterDatabaseV1ByKeyword,
   sortDatabaseV1List,
-  isDatabaseV1Accessible,
   CommonFilterScopeIdList,
   extractEnvironmentResourceName,
   extractInstanceResourceName,
@@ -202,9 +201,7 @@ watchEffect(async () => {
 });
 
 const filteredDatabaseList = computed(() => {
-  let list = databaseV1List.value.filter((database) =>
-    isDatabaseV1Accessible(database, currentUserV1.value)
-  );
+  let list = databaseV1List.value;
   if (selectedEnvironment.value !== `${UNKNOWN_ID}`) {
     list = list.filter(
       (db) =>
