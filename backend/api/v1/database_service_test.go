@@ -167,3 +167,24 @@ func TestIsSecretValid(t *testing.T) {
 		}
 	}
 }
+
+func TestGetDatabasesFromExpression(t *testing.T) {
+	tests := []struct {
+		expression string
+		want       []string
+	}{
+		{
+			expression: "",
+			want:       nil,
+		},
+		{
+			expression: `request.time < timestamp("2023-12-16T06:16:57.064Z") && ((resource.database in ["instances/new-instance/databases/d2"]) || (resource.database == "instances/new-instance/databases/largedb" && resource.schema == "" && resource.table in ["hello0"]))`,
+			want:       []string{"instances/new-instance/databases/d2", "instances/new-instance/databases/largedb"},
+		},
+	}
+
+	for _, tc := range tests {
+		got := getDatabasesFromExpression(tc.expression)
+		require.Equal(t, tc.want, got)
+	}
+}
