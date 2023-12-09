@@ -187,8 +187,8 @@
     - [Branch](#bytebase-v1-Branch)
     - [CreateBranchRequest](#bytebase-v1-CreateBranchRequest)
     - [DeleteBranchRequest](#bytebase-v1-DeleteBranchRequest)
-    - [DiffBranchDatabasesRequest](#bytebase-v1-DiffBranchDatabasesRequest)
-    - [DiffBranchDatabasesResponse](#bytebase-v1-DiffBranchDatabasesResponse)
+    - [DiffDatabaseRequest](#bytebase-v1-DiffDatabaseRequest)
+    - [DiffDatabaseResponse](#bytebase-v1-DiffDatabaseResponse)
     - [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest)
     - [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse)
     - [GetBranchRequest](#bytebase-v1-GetBranchRequest)
@@ -3477,9 +3477,9 @@ The type of the backup.
 
 
 
-<a name="bytebase-v1-DiffBranchDatabasesRequest"></a>
+<a name="bytebase-v1-DiffDatabaseRequest"></a>
 
-### DiffBranchDatabasesRequest
+### DiffDatabaseRequest
 
 
 
@@ -3495,9 +3495,9 @@ The type of the backup.
 
 
 
-<a name="bytebase-v1-DiffBranchDatabasesResponse"></a>
+<a name="bytebase-v1-DiffDatabaseResponse"></a>
 
-### DiffBranchDatabasesResponse
+### DiffDatabaseResponse
 
 
 
@@ -3718,7 +3718,7 @@ The branch&#39;s `name` field is used to identify the branch to update. Format: 
 | MergeBranch | [MergeBranchRequest](#bytebase-v1-MergeBranchRequest) | [MergeBranchResponse](#bytebase-v1-MergeBranchResponse) |  |
 | RebaseBranch | [RebaseBranchRequest](#bytebase-v1-RebaseBranchRequest) | [RebaseBranchResponse](#bytebase-v1-RebaseBranchResponse) |  |
 | DeleteBranch | [DeleteBranchRequest](#bytebase-v1-DeleteBranchRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| DiffBranchDatabases | [DiffBranchDatabasesRequest](#bytebase-v1-DiffBranchDatabasesRequest) | [DiffBranchDatabasesResponse](#bytebase-v1-DiffBranchDatabasesResponse) | DiffBranchDatabases works similar to branch rebase. 1) set the base as the schema of a database; 2) apply the changes between base and head of branch to the new base (schema of database); 3) resolve these conflicts manually if any. |
+| DiffDatabase | [DiffDatabaseRequest](#bytebase-v1-DiffDatabaseRequest) | [DiffDatabaseResponse](#bytebase-v1-DiffDatabaseResponse) | DiffDatabase works similar to branch rebase. 1) set the base as the schema of a database; 2) apply the changes between base and head of branch to the new base (schema of database); 3) return the diff DDLs similar to DiffSchema in database service. 4) return the conflict schema if conflict needs to be resolved by user. Once resolved, user will call DiffSchema() in database service to get diff DDLs. |
 | DiffMetadata | [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest) | [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse) |  |
 
  

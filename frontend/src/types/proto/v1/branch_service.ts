@@ -288,7 +288,7 @@ export interface DeleteBranchRequest {
   name: string;
 }
 
-export interface DiffBranchDatabasesRequest {
+export interface DiffDatabaseRequest {
   /** The name of database to merge the branch to. */
   name: string;
   /**
@@ -304,7 +304,7 @@ export interface DiffBranchDatabasesRequest {
   validateOnly: boolean;
 }
 
-export interface DiffBranchDatabasesResponse {
+export interface DiffDatabaseResponse {
   /** The schema diff when merge occurs seamlessly. */
   diff?:
     | string
@@ -1507,12 +1507,12 @@ export const DeleteBranchRequest = {
   },
 };
 
-function createBaseDiffBranchDatabasesRequest(): DiffBranchDatabasesRequest {
+function createBaseDiffDatabaseRequest(): DiffDatabaseRequest {
   return { name: "", branch: "", mergedSchema: "", validateOnly: false };
 }
 
-export const DiffBranchDatabasesRequest = {
-  encode(message: DiffBranchDatabasesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const DiffDatabaseRequest = {
+  encode(message: DiffDatabaseRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
@@ -1528,10 +1528,10 @@ export const DiffBranchDatabasesRequest = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): DiffBranchDatabasesRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): DiffDatabaseRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDiffBranchDatabasesRequest();
+    const message = createBaseDiffDatabaseRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1572,7 +1572,7 @@ export const DiffBranchDatabasesRequest = {
     return message;
   },
 
-  fromJSON(object: any): DiffBranchDatabasesRequest {
+  fromJSON(object: any): DiffDatabaseRequest {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       branch: isSet(object.branch) ? globalThis.String(object.branch) : "",
@@ -1581,7 +1581,7 @@ export const DiffBranchDatabasesRequest = {
     };
   },
 
-  toJSON(message: DiffBranchDatabasesRequest): unknown {
+  toJSON(message: DiffDatabaseRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
@@ -1598,11 +1598,11 @@ export const DiffBranchDatabasesRequest = {
     return obj;
   },
 
-  create(base?: DeepPartial<DiffBranchDatabasesRequest>): DiffBranchDatabasesRequest {
-    return DiffBranchDatabasesRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<DiffDatabaseRequest>): DiffDatabaseRequest {
+    return DiffDatabaseRequest.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<DiffBranchDatabasesRequest>): DiffBranchDatabasesRequest {
-    const message = createBaseDiffBranchDatabasesRequest();
+  fromPartial(object: DeepPartial<DiffDatabaseRequest>): DiffDatabaseRequest {
+    const message = createBaseDiffDatabaseRequest();
     message.name = object.name ?? "";
     message.branch = object.branch ?? "";
     message.mergedSchema = object.mergedSchema ?? "";
@@ -1611,12 +1611,12 @@ export const DiffBranchDatabasesRequest = {
   },
 };
 
-function createBaseDiffBranchDatabasesResponse(): DiffBranchDatabasesResponse {
+function createBaseDiffDatabaseResponse(): DiffDatabaseResponse {
   return { diff: undefined, conflictSchema: undefined };
 }
 
-export const DiffBranchDatabasesResponse = {
-  encode(message: DiffBranchDatabasesResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const DiffDatabaseResponse = {
+  encode(message: DiffDatabaseResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.diff !== undefined) {
       writer.uint32(10).string(message.diff);
     }
@@ -1626,10 +1626,10 @@ export const DiffBranchDatabasesResponse = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): DiffBranchDatabasesResponse {
+  decode(input: _m0.Reader | Uint8Array, length?: number): DiffDatabaseResponse {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDiffBranchDatabasesResponse();
+    const message = createBaseDiffDatabaseResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1656,14 +1656,14 @@ export const DiffBranchDatabasesResponse = {
     return message;
   },
 
-  fromJSON(object: any): DiffBranchDatabasesResponse {
+  fromJSON(object: any): DiffDatabaseResponse {
     return {
       diff: isSet(object.diff) ? globalThis.String(object.diff) : undefined,
       conflictSchema: isSet(object.conflictSchema) ? globalThis.String(object.conflictSchema) : undefined,
     };
   },
 
-  toJSON(message: DiffBranchDatabasesResponse): unknown {
+  toJSON(message: DiffDatabaseResponse): unknown {
     const obj: any = {};
     if (message.diff !== undefined) {
       obj.diff = message.diff;
@@ -1674,11 +1674,11 @@ export const DiffBranchDatabasesResponse = {
     return obj;
   },
 
-  create(base?: DeepPartial<DiffBranchDatabasesResponse>): DiffBranchDatabasesResponse {
-    return DiffBranchDatabasesResponse.fromPartial(base ?? {});
+  create(base?: DeepPartial<DiffDatabaseResponse>): DiffDatabaseResponse {
+    return DiffDatabaseResponse.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<DiffBranchDatabasesResponse>): DiffBranchDatabasesResponse {
-    const message = createBaseDiffBranchDatabasesResponse();
+  fromPartial(object: DeepPartial<DiffDatabaseResponse>): DiffDatabaseResponse {
+    const message = createBaseDiffDatabaseResponse();
     message.diff = object.diff ?? undefined;
     message.conflictSchema = object.conflictSchema ?? undefined;
     return message;
@@ -2234,25 +2234,27 @@ export const BranchServiceDefinition = {
       },
     },
     /**
-     * DiffBranchDatabases works similar to branch rebase.
+     * DiffDatabase works similar to branch rebase.
      * 1) set the base as the schema of a database;
      * 2) apply the changes between base and head of branch to the new base (schema of database);
-     * 3) resolve these conflicts manually if any.
+     * 3) return the diff DDLs similar to DiffSchema in database service.
+     * 4) return the conflict schema if conflict needs to be resolved by user. Once resolved, user
+     * will call DiffSchema() in database service to get diff DDLs.
      */
-    diffBranchDatabases: {
-      name: "DiffBranchDatabases",
-      requestType: DiffBranchDatabasesRequest,
+    diffDatabase: {
+      name: "DiffDatabase",
+      requestType: DiffDatabaseRequest,
       requestStream: false,
-      responseType: DiffBranchDatabasesResponse,
+      responseType: DiffDatabaseResponse,
       responseStream: false,
       options: {
         _unknownFields: {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
           578365826: [
             new Uint8Array([
-              51,
+              47,
               34,
-              49,
+              45,
               47,
               118,
               49,
@@ -2263,36 +2265,33 @@ export const BranchServiceDefinition = {
               109,
               101,
               61,
-              105,
-              110,
-              115,
-              116,
-              97,
-              110,
-              99,
+              112,
+              114,
+              111,
+              106,
               101,
+              99,
+              116,
               115,
               47,
               42,
               47,
-              100,
-              97,
-              116,
-              97,
               98,
+              114,
               97,
-              115,
+              110,
+              99,
+              104,
               101,
               115,
               47,
               42,
               125,
               58,
-              109,
-              101,
-              114,
-              103,
-              101,
+              100,
+              105,
+              102,
+              102,
               68,
               97,
               116,
@@ -2301,7 +2300,6 @@ export const BranchServiceDefinition = {
               97,
               115,
               101,
-              115,
             ]),
           ],
         },

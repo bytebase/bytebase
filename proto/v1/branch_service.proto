@@ -55,12 +55,14 @@ service BranchService {
     option (google.api.method_signature) = "name";
   }
 
-  // DiffBranchDatabases works similar to branch rebase.
+  // DiffDatabase works similar to branch rebase.
   // 1) set the base as the schema of a database;
   // 2) apply the changes between base and head of branch to the new base (schema of database);
-  // 3) resolve these conflicts manually if any.
-  rpc DiffBranchDatabases(DiffBranchDatabasesRequest) returns (DiffBranchDatabasesResponse) {
-    option (google.api.http) = {post: "/v1/{name=instances/*/databases/*}:mergeDatabases"};
+  // 3) return the diff DDLs similar to DiffSchema in database service.
+  // 4) return the conflict schema if conflict needs to be resolved by user. Once resolved, user
+  // will call DiffSchema() in database service to get diff DDLs.
+  rpc DiffDatabase(DiffDatabaseRequest) returns (DiffDatabaseResponse) {
+    option (google.api.http) = {post: "/v1/{name=projects/*/branches/*}:diffDatabase"};
     option (google.api.method_signature) = "name";
   }
 
@@ -286,7 +288,7 @@ message DeleteBranchRequest {
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
-message DiffBranchDatabasesRequest {
+message DiffDatabaseRequest {
   // The name of database to merge the branch to.
   string name = 1;
 
@@ -301,7 +303,7 @@ message DiffBranchDatabasesRequest {
   bool validate_only = 4;
 }
 
-message DiffBranchDatabasesResponse {
+message DiffDatabaseResponse {
   oneof result {
     // The schema diff when merge occurs seamlessly.
     string diff = 1;
