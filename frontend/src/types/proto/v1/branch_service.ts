@@ -291,10 +291,7 @@ export interface DeleteBranchRequest {
 export interface DiffDatabaseRequest {
   /** The name of branch. */
   name: string;
-  /**
-   * The name of the databsae to merge the branch to.
-   * Format: projects/{project}/branches/{branch}
-   */
+  /** The name of the databsae to merge the branch to. */
   database: string;
 }
 

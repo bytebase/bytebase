@@ -1009,7 +1009,6 @@ type DiffDatabaseRequest struct {
 	// The name of branch.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The name of the databsae to merge the branch to.
-	// Format: projects/{project}/branches/{branch}
 	Database string `protobuf:"bytes,2,opt,name=database,proto3" json:"database,omitempty"`
 }
 

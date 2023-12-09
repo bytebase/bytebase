@@ -3486,7 +3486,7 @@ The type of the backup.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of branch. |
-| database | [string](#string) |  | The name of the databsae to merge the branch to. Format: projects/{project}/branches/{branch} |
+| database | [string](#string) |  | The name of the databsae to merge the branch to. |
 
 
 
