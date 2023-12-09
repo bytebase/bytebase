@@ -62,7 +62,7 @@ import { reactive } from "vue";
 import { useRouter } from "vue-router";
 import { useLanguage } from "@/composables/useLanguage";
 import { useSubscriptionV1Store } from "@/store";
-import { planTypeToString } from "@/types";
+import { planTypeToString, ENTERPRISE_INQUIRE_LINK } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 
 interface LocalState {
@@ -86,10 +86,7 @@ const trialSubscription = () => {
   if (locale.value === "zh-CN") {
     state.showQRCodeModal = true;
   } else {
-    window.open(
-      "https://www.bytebase.com/contact-us/?source=console",
-      "_blank"
-    );
+    window.open(ENTERPRISE_INQUIRE_LINK, "_blank");
   }
 };
 </script>
