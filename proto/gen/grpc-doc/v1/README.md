@@ -3502,6 +3502,7 @@ The type of the backup.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | diff | [string](#string) |  | The schema diff when merge occurs seamlessly. |
+| schema | [string](#string) |  | The merged schema if there is no conflict. |
 | conflict_schema | [string](#string) |  | The conflict schema when rebase has conflicts. The conflict section is enclosed by the following. &lt;&lt;&lt;&lt;&lt; HEAD ==== &gt;&gt;&gt;&gt;&gt; main |
 
 
