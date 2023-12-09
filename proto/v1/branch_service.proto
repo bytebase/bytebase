@@ -289,18 +289,12 @@ message DeleteBranchRequest {
 }
 
 message DiffDatabaseRequest {
-  // The name of database to merge the branch to.
+  // The name of branch.
   string name = 1;
 
-  // The name of the branch.
+  // The name of the databsae to merge the branch to.
   // Format: projects/{project}/branches/{branch}
-  string branch = 2 [(google.api.field_behavior) = REQUIRED];
-
-  // For failed merge, we will pass in this addition merged schema and use it for head.
-  // The diff between current database schema and this merged schema will be returned.
-  string merged_schema = 3;
-
-  bool validate_only = 4;
+  string database = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 message DiffDatabaseResponse {

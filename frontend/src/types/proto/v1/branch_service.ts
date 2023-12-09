@@ -289,19 +289,13 @@ export interface DeleteBranchRequest {
 }
 
 export interface DiffDatabaseRequest {
-  /** The name of database to merge the branch to. */
+  /** The name of branch. */
   name: string;
   /**
-   * The name of the branch.
+   * The name of the databsae to merge the branch to.
    * Format: projects/{project}/branches/{branch}
    */
-  branch: string;
-  /**
-   * For failed merge, we will pass in this addition merged schema and use it for head.
-   * The diff between current database schema and this merged schema will be returned.
-   */
-  mergedSchema: string;
-  validateOnly: boolean;
+  database: string;
 }
 
 export interface DiffDatabaseResponse {
@@ -1508,7 +1502,7 @@ export const DeleteBranchRequest = {
 };
 
 function createBaseDiffDatabaseRequest(): DiffDatabaseRequest {
-  return { name: "", branch: "", mergedSchema: "", validateOnly: false };
+  return { name: "", database: "" };
 }
 
 export const DiffDatabaseRequest = {
@@ -1516,14 +1510,8 @@ export const DiffDatabaseRequest = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (message.branch !== "") {
-      writer.uint32(18).string(message.branch);
-    }
-    if (message.mergedSchema !== "") {
-      writer.uint32(26).string(message.mergedSchema);
-    }
-    if (message.validateOnly === true) {
-      writer.uint32(32).bool(message.validateOnly);
+    if (message.database !== "") {
+      writer.uint32(18).string(message.database);
     }
     return writer;
   },
@@ -1547,21 +1535,7 @@ export const DiffDatabaseRequest = {
             break;
           }
 
-          message.branch = reader.string();
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.mergedSchema = reader.string();
-          continue;
-        case 4:
-          if (tag !== 32) {
-            break;
-          }
-
-          message.validateOnly = reader.bool();
+          message.database = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1575,9 +1549,7 @@ export const DiffDatabaseRequest = {
   fromJSON(object: any): DiffDatabaseRequest {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      branch: isSet(object.branch) ? globalThis.String(object.branch) : "",
-      mergedSchema: isSet(object.mergedSchema) ? globalThis.String(object.mergedSchema) : "",
-      validateOnly: isSet(object.validateOnly) ? globalThis.Boolean(object.validateOnly) : false,
+      database: isSet(object.database) ? globalThis.String(object.database) : "",
     };
   },
 
@@ -1586,14 +1558,8 @@ export const DiffDatabaseRequest = {
     if (message.name !== "") {
       obj.name = message.name;
     }
-    if (message.branch !== "") {
-      obj.branch = message.branch;
-    }
-    if (message.mergedSchema !== "") {
-      obj.mergedSchema = message.mergedSchema;
-    }
-    if (message.validateOnly === true) {
-      obj.validateOnly = message.validateOnly;
+    if (message.database !== "") {
+      obj.database = message.database;
     }
     return obj;
   },
@@ -1604,9 +1570,7 @@ export const DiffDatabaseRequest = {
   fromPartial(object: DeepPartial<DiffDatabaseRequest>): DiffDatabaseRequest {
     const message = createBaseDiffDatabaseRequest();
     message.name = object.name ?? "";
-    message.branch = object.branch ?? "";
-    message.mergedSchema = object.mergedSchema ?? "";
-    message.validateOnly = object.validateOnly ?? false;
+    message.database = object.database ?? "";
     return message;
   },
 };

@@ -3485,10 +3485,8 @@ The type of the backup.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of database to merge the branch to. |
-| branch | [string](#string) |  | The name of the branch. Format: projects/{project}/branches/{branch} |
-| merged_schema | [string](#string) |  | For failed merge, we will pass in this addition merged schema and use it for head. The diff between current database schema and this merged schema will be returned. |
-| validate_only | [bool](#bool) |  |  |
+| name | [string](#string) |  | The name of branch. |
+| database | [string](#string) |  | The name of the databsae to merge the branch to. Format: projects/{project}/branches/{branch} |
 
 
 
