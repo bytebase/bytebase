@@ -22,8 +22,6 @@ const (
 	SettingWorkspaceExternalApproval SettingName = "bb.workspace.approval.external"
 	// SettingEnterpriseLicense is the setting name for enterprise license.
 	SettingEnterpriseLicense SettingName = "bb.enterprise.license"
-	// SettingEnterpriseTrial is the setting name for free trial.
-	SettingEnterpriseTrial SettingName = "bb.enterprise.trial"
 	// SettingAppIM is the setting name for IM applications.
 	SettingAppIM SettingName = "bb.app.im"
 	// SettingWatermark is the setting name for watermark displaying.
