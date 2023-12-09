@@ -68,17 +68,11 @@
     </div>
   </div>
 
-  <BBModal
+  <WeChatQRModal
     v-if="state.showQRCodeModal"
     :title="$t('common.want-help')"
     @close="state.showQRCodeModal = false"
-  >
-    <img
-      class="w-48 h-48"
-      src="@/assets/bb-helper-wechat-qrcode.webp"
-      alt="bb_helper"
-    />
-  </BBModal>
+  />
 
   <ProjectSwitchModal
     v-if="state.showProjectModal"
