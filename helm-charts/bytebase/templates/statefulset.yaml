@@ -1,17 +1,17 @@
 # bytebase
 {{- $version := .Values.bytebase.version -}}
 {{- $registryMirrorHost := .Values.bytebase.registryMirrorHost -}}
-
+{{- $extraSecretMounts := .Values.bytebase.extraSecretMounts -}}
+{{- $extraVolumes := .Values.bytebase.extraVolumes }}
 # bytebase.option
 {{- $port := .Values.bytebase.option.port -}}
 {{- $data := .Values.bytebase.option.data -}}
 {{- $external_url := index .Values.bytebase.option "external-url" -}}
-{{- $disable_sample := index .Values.bytebase.option "disable-sample" -}}
-
+{{- $disable_sample := index .Values.bytebase.option "disable-sample" }}
 # bytebase.option.externalPg
 {{- $externalPgURL := .Values.bytebase.option.externalPg.url -}}
 {{- $externalPgExistingPgURLSecret := .Values.bytebase.option.externalPg.existingPgURLSecret -}}
-{{- $externalPgexistingPgURLSecretKey := .Values.bytebase.option.externalPg.existingPgURLSecretKey -}}
+{{- $externalPgExistingPgURLSecretKey := .Values.bytebase.option.externalPg.existingPgURLSecretKey -}}
 {{- $externalPgHost := .Values.bytebase.option.externalPg.pgHost -}}
 {{- $externalPgPort := .Values.bytebase.option.externalPg.pgPort -}}
 {{- $externalPgUsername := .Values.bytebase.option.externalPg.pgUsername -}}
@@ -19,14 +19,13 @@
 {{- $externalPgDatabase := .Values.bytebase.option.externalPg.pgDatabase -}}
 {{- $externalPgExistingPgPasswordSecret := .Values.bytebase.option.externalPg.existingPgPasswordSecret -}}
 {{- $externalPgExistingPgPasswordSecretKey := .Values.bytebase.option.externalPg.existingPgPasswordSecretKey -}}
-
+{{- $externalPgEscapePgPassword := .Values.bytebase.option.externalPg.escapePassword }}
 # bytbease.persistence
 {{- $persistenceEnable := .Values.bytebase.persistence.enabled -}}
 {{- $persistenceExistingClaim := .Values.bytebase.persistence.existingClaim -}}
 {{- $persistenceStorage := .Values.bytebase.persistence.storage -}}
-{{- $persistenceStorageClass := .Values.bytebase.persistence.storageClass}}
-
-
+{{- $persistenceStorageClass := .Values.bytebase.persistence.storageClass }}
+---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -45,39 +44,126 @@ spec:
       labels:
         app: bytebase
     spec:
+      {{- if $externalPgEscapePgPassword }}
+      # If user specify the externalPgEscapePgPassword, we should escape the password in the PG_URL in the shell,
+      # because the password may comes from a secret, which is invisible in helm.
+      # Hence, we do the escaping in the initialization container, and write the escaped password to the shared volume.
+      initContainers:
+        - name: init-container
+          {{- if $registryMirrorHost }}
+          image: {{ trimSuffix "/" $registryMirrorHost }}/busybox
+          {{- else }}
+          image: busybox
+          {{- end }}
+          imagePullPolicy: IfNotPresent
+          env:
+          - name: PG_PASSWORD
+            {{- if $externalPgExistingPgPasswordSecret }}
+            # If user specifies an existing secret, we should read the external pg password in that secret.
+            valueFrom:
+              secretKeyRef:
+                name: {{ $externalPgExistingPgPasswordSecret }}
+                key: {{ $externalPgExistingPgPasswordSecretKey }}
+            {{- else }}
+            value: {{ $externalPgPassword }}
+            {{- end }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo $(echo $PG_PASSWORD \
+              | sed \
+                -e 's/%/%25/g' \
+                -e 's/ /%20/g' \
+                -e 's/!/%21/g' \
+                -e 's/"/%22/g' \
+                -e "s/'/%27/g" \
+                -e 's/#/%23/g' \
+                -e 's/(/%28/g' \
+                -e 's/)/%29/g' \
+                -e 's/+/%2b/g' \
+                -e 's/,/%2c/g' \
+                -e 's/-/%2d/g' \
+                -e 's/:/%3a/g' \
+                -e 's/;/%3b/g' \
+                -e 's/?/%3f/g' \
+                -e 's/@/%40/g' \
+                -e 's/\$/%24/g' \
+                -e 's/\&/%26/g' \
+                -e 's/\*/%2a/g' \
+                -e 's/\./%2e/g' \
+                -e 's/\//%2f/g' \
+                -e 's/\[/%5b/g' \
+                -e 's/\\/%5c/g' \
+                -e 's/\]/%5d/g' \
+                -e 's/\^/%5e/g' \
+                -e 's/_/%5f/g' \
+                -e 's/`/%60/g' \
+                -e 's/{/%7b/g' \
+                -e 's/|/%7c/g' \
+                -e 's/}/%7d/g' \
+                -e 's/~/%7e/g' \
+              ) > /mnt/bytebase-shared-volume/pg_escaped_password
+          volumeMounts:
+            - mountPath: /mnt/bytebase-shared-volume
+              name: bytebase-shared-volume
+      {{- end }}
       containers:
         - name: bytebase
-          {{ if $registryMirrorHost }}
+          {{- if $registryMirrorHost }}
           # If user specifies a registry mirror host, we should use that instead of the default.
           image: {{ trimSuffix "/" $registryMirrorHost }}/bytebase/bytebase:{{ $version }}
-          {{ else }}
+          {{- else }}
           image: bytebase/bytebase:{{ $version }}
-          {{ end }}
+          {{- end }}
           imagePullPolicy: Always
           env:
+          {{- if $externalPgExistingPgURLSecret }}
+          # If user specifies an existing secret, we should read the external pg connection string in that secret.
           - name: PG_URL
-            {{ if $externalPgExistingPgURLSecret }}
-            # If user specifies an existing secret, we should read the external pg connection string in that secret.
             valueFrom:
               secretKeyRef:
                 name: {{ $externalPgExistingPgURLSecret }}
-                key: {{ $externalPgexistingPgURLSecretKey }}
-            {{ else }}
+                key: {{ $externalPgExistingPgURLSecretKey }}
+          {{- else if $externalPgURL }}
+          # If user specifies the external pg connection string directly, we should use that.
+          - name: PG_URL
             value: {{ $externalPgURL }}
-            {{ end }}
+          {{- else }}
+          # Otherwise, we should construct the external pg connection string from the specified parameters.
+          {{- if and $externalPgExistingPgPasswordSecret (not $externalPgEscapePgPassword) }}
+          # If user specifies an existing secret, we should read the external pg password in that secret.
+          - name: PG_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ $externalPgExistingPgPasswordSecret }}
+                key: {{ $externalPgExistingPgPasswordSecretKey }}
+          - name: PG_URL
+            value: postgres://{{ $externalPgUsername }}:$(PG_PASSWORD)@{{ $externalPgHost }}:{{ $externalPgPort }}/{{ $externalPgDatabase }}
+          {{- else }}
+          - name: PG_URL
+            value: postgres://{{ $externalPgUsername }}:{{ $externalPgPassword }}@{{ $externalPgHost }}:{{ $externalPgPort }}/{{ $externalPgDatabase }}
+          {{- end }}
+          {{- end }}
+          command:
+            - /bin/sh
+            - -c
           args:
-            [
-              "--data",
-              {{ $data | quote }},
-              "--port",
-              {{ $port | quote }},
-              "--external-url",
-              # helm parser cannot handle the dash in the value, so we need to quote it, so we use $external_url instead of $external-url.
-              {{ $external_url | quote }},
-              {{ if $disable_sample }}
-              "--disable-sample",
-              {{ end }}
-            ]
+            - |
+              {{- if $externalPgEscapePgPassword }}
+              # If user escape the password, we should read the escaped password from the shared volume, and construct the PG_PASSWORD.
+              export PG_URL=postgres://{{ $externalPgUsername }}:$(cat /mnt/bytebase-shared-volume/pg_escaped_password)@{{ $externalPgHost }}:{{ $externalPgPort }}/{{ $externalPgDatabase }}
+              {{- end }}
+              exec bytebase \
+              --data \
+              {{ $data | quote }} \
+              --port \
+              {{ $port | quote }} \
+              --external-url \
+              {{ $external_url | quote }} \
+              {{- if $disable_sample }}
+              --disable-sample
+              {{- end }}
           ports:
             - containerPort: {{ $port }}
               name: web
@@ -90,36 +176,40 @@ spec:
             timeoutSeconds: 60
           volumeMounts:
             - mountPath: {{ $data }}
-              {{ if $persistenceExistingClaim }}
+              {{- if $persistenceExistingClaim }}
               # If user specifies an existing PVC, use that instead of "bytebase-volume".
               name: {{ $persistenceExistingClaim | quote }}
-              {{ else }}
+              {{- else }}
               # Either user disable persistence or enable persistence but not specify an existing PVC, use "bytebase-volume" as the volume name. It means
               # that we will request to create a PVC with the specified storage class with name "bytebase-volume".
               name: bytebase-volume
-              {{ end }}
+              {{- end }}
+            - mountPath: /mnt/bytebase-shared-volume
+              name: bytebase-shared-volume
+            {{- toYaml $extraSecretMounts | nindent 12 }}
       volumes:
-        {{ if $persistenceEnable }}
-        {{ if $persistenceExistingClaim }}
+        {{- if $persistenceEnable }}
+        {{- if $persistenceExistingClaim }}
         # If user specifies an existing PVC, use that instead of "bytebase-volume".
-        - name: {{ $persistenceExistingClaim| quote }}
+        - name: {{ $persistenceExistingClaim | quote }}
           persistentVolumeClaim:
             claimName: {{ $persistenceExistingClaim | quote }}
-        {{ else }}
+        {{- else }}
         # If user enable persistence, but not specify an existing PVC, create a PVC with the specified storage class with name "bytebase-volume".
         - name: bytebase-volume
           persistentVolumeClaim:
             claimName: bytebase-volume
-        {{ end }}
-        {{ else }}
-        # If user disable persistence, use an emptyDir volume.
+        {{- end }}
+        {{- else }}
+        # Mount the shared volume.
         - name: bytebase-volume
           emptyDir: {}
-        {{ end }}
-
+        {{- end }}
+        - name: bytebase-shared-volume
+          emptyDir: {}
+        {{- toYaml $extraVolumes | nindent 8 }}
 ---
-{{ if $persistenceEnable }}
-{{ if not $persistenceExistingClaim }}
+{{- if and $persistenceEnable (not $persistenceExistingClaim) }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -134,6 +224,4 @@ spec:
   resources:
     requests:
       storage: {{ $persistenceStorage }}
-{{ end }}
-{{ end }}
-
+{{- end }}

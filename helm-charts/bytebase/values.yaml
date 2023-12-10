@@ -7,22 +7,27 @@ bytebase:
   registryMirrorHost: ""
   option:
     port: 8080
-    data: /var/opt/bytebase
+    data: "/var/opt/bytebase"
     external-url: "https://www.bytebase.com/docs/get-started/install/external-url"
     disable-sample: false
     externalPg:
-      url: postgresql://user:secret@host:port/dbname
+      url: ""
       # If users need to read the pgURL from a secret, they can specify the secret name and key here.
       # Bytebase will ignore the bytebase.option.externalPg.url if this is specified.
       existingPgURLSecret: ""
       existingPgURLSecretKey: ""
-      pgHost: ""
-      pgPort: 5432
-      pgUsername: ""
-      pgPassword: ""
-      pgDatabase: ""
+      pgHost: "host"
+      pgPort: "port"
+      pgUsername: "username"
+      pgPassword: "password"
+      pgDatabase: "database"
       existingPgPasswordSecret: ""
       existingPgPasswordSecretKey: ""
+      # escapePassword controls whether to escape the password in the connection string,
+      # this is useful when the password contains special characters and it is read from a secret.
+      # It's only be applied in pgPassword or existingPgPasswordSecret.
+      # NOTE: This is an experimental feature and it may be removed in the future without any notice!!!
+      escapePassword: false
   persistence:
     enabled: false
     existingClaim: ""
@@ -35,8 +40,8 @@ bytebase:
     []
     # - name: secrets-store-inline
     #   mountPath: "/mnt/secrets-store"
-    #   readOnly: true
-  # Additional Bytebase Volume
+    #   readOnly: true # Only required when using service principal mode
+  # Additional Bytebase Volume, name prefix with "bytebase-" should be avoided.
   extraVolumes:
     []
     # - name: secrets-store-inline
@@ -44,6 +49,8 @@ bytebase:
     #     driver: secrets-store.csi.k8s.io
     #     readOnly: true
     #     volumeAttributes:
-    #       secretProviderClass: "akv-bytebase-spc"
-    #     nodePublishSecretRef:                       # Only required when using service principal mode
-    #       name: bytebase-akv-creds          # Only required when using service principal mode
+    #       secretProviderClass: akv-bytebase-spc
+    #     # Only required when using service principal mode
+    #     nodePublishSecretRef:
+    #       # Only required when using service principal mode, usually is the secret store the service principal's credentials
+    #       name: secrets-store-creds
