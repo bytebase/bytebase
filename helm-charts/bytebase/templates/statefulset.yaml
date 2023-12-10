@@ -12,11 +12,11 @@
 {{- $externalPgURL := .Values.bytebase.option.externalPg.url -}}
 {{- $externalPgExistingPgURLSecret := .Values.bytebase.option.externalPg.existingPgURLSecret -}}
 {{- $externalPgExistingPgURLSecretKey := .Values.bytebase.option.externalPg.existingPgURLSecretKey -}}
-{{- $externalPgHost := .Values.bytebase.option.externalPg.pgHost -}}
-{{- $externalPgPort := .Values.bytebase.option.externalPg.pgPort -}}
-{{- $externalPgUsername := .Values.bytebase.option.externalPg.pgUsername -}}
-{{- $externalPgPassword := .Values.bytebase.option.externalPg.pgPassword -}}
-{{- $externalPgDatabase := .Values.bytebase.option.externalPg.pgDatabase -}}
+{{- $externalPgHost := .Values.bytebase.option.externalPg.pgHost | default "host" -}}
+{{- $externalPgPort := .Values.bytebase.option.externalPg.pgPort | default "port" -}}
+{{- $externalPgUsername := .Values.bytebase.option.externalPg.pgUsername | default "username" -}}
+{{- $externalPgPassword := .Values.bytebase.option.externalPg.pgPassword | default "password" -}}
+{{- $externalPgDatabase := .Values.bytebase.option.externalPg.pgDatabase | default "database" -}}
 {{- $externalPgExistingPgPasswordSecret := .Values.bytebase.option.externalPg.existingPgPasswordSecret -}}
 {{- $externalPgExistingPgPasswordSecretKey := .Values.bytebase.option.externalPg.existingPgPasswordSecretKey -}}
 {{- $externalPgEscapePgPassword := .Values.bytebase.option.externalPg.escapePassword }}
@@ -186,7 +186,9 @@ spec:
               {{- end }}
             - mountPath: /mnt/bytebase-shared-volume
               name: bytebase-shared-volume
+            {{- if gt (len $extraSecretMounts) 0 }}
             {{- toYaml $extraSecretMounts | nindent 12 }}
+            {{- end }}
       volumes:
         {{- if $persistenceEnable }}
         {{- if $persistenceExistingClaim }}
@@ -207,7 +209,9 @@ spec:
         {{- end }}
         - name: bytebase-shared-volume
           emptyDir: {}
+        {{- if gt (len $extraVolumes) 0 }}
         {{- toYaml $extraVolumes | nindent 8 }}
+        {{- end }}
 ---
 {{- if and $persistenceEnable (not $persistenceExistingClaim) }}
 apiVersion: v1
