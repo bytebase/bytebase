@@ -59,9 +59,6 @@ func permissionExist(p Permission) bool {
 		PermissionIssuesGet,
 		PermissionIssuesCreate,
 		PermissionIssuesUpdate,
-		PermissionIssuesApprove,
-		PermissionIssuesReject,
-		PermissionIssueRerequestReview,
 		PermissionIssueCommentsCreate,
 		PermissionIssueCommentsUpdate:
 		return true

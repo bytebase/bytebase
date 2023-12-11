@@ -35,9 +35,6 @@ roles:
       - bb.issues.get
       - bb.issues.create
       - bb.issues.update
-      - bb.issues.approve
-      - bb.issues.reject
-      - bb.issues.rerequestReview
       - bb.issueComments.create
       - bb.issueComments.update
   - name: roles/workspaceDBA
@@ -76,9 +73,6 @@ roles:
       - bb.issues.get
       - bb.issues.create
       - bb.issues.update
-      - bb.issues.approve
-      - bb.issues.reject
-      - bb.issues.rerequestReview
       - bb.issueComments.create
       - bb.issueComments.update
   - name: roles/workspaceMember

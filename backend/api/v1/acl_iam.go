@@ -20,11 +20,19 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 	}
 
 	switch fullMethod {
+	// skip checking for custom approval.
+	case
+		v1pb.IssueService_ApproveIssue_FullMethodName,
+		v1pb.IssueService_RejectIssue_FullMethodName,
+		v1pb.IssueService_RequestIssue_FullMethodName:
+		return nil
 	// handled in the method because checking is complex.
 	case
 		v1pb.DatabaseService_ListSlowQueries_FullMethodName,
 		v1pb.DatabaseService_ListDatabases_FullMethodName, // TODO(p0ny): implement
-		v1pb.DatabaseService_DiffSchema_FullMethodName:    // TODO(p0ny): implement
+		v1pb.DatabaseService_DiffSchema_FullMethodName,    // TODO(p0ny): implement
+		v1pb.IssueService_ListIssues_FullMethodName:       // TODO(p0ny): implement
+		return nil
 	// below are "workspace-level" permissions.
 	// we don't have to go down to the project level.
 	case
@@ -83,6 +91,24 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 		if !ok {
 			return status.Errorf(codes.PermissionDenied, "permission denied for method %q, user does not have permission %q", fullMethod, p)
 		}
+	case
+		v1pb.IssueService_GetIssue_FullMethodName,
+		v1pb.IssueService_CreateIssue_FullMethodName,
+		v1pb.IssueService_UpdateIssue_FullMethodName,
+		v1pb.IssueService_CreateIssueComment_FullMethodName,
+		v1pb.IssueService_UpdateIssueComment_FullMethodName,
+		v1pb.IssueService_BatchUpdateIssuesStatus_FullMethodName:
+		projectIDs, err := in.getProjectIDsForIssueService(ctx, req)
+		if err != nil {
+			return status.Errorf(codes.Internal, "failed to check permission, err %v", err)
+		}
+		ok, err = in.iamManager.CheckPermission(ctx, p, user, projectIDs...)
+		if err != nil {
+			return status.Errorf(codes.Internal, "failed to check permission for method %q, err: %v", fullMethod, err)
+		}
+		if !ok {
+			return status.Errorf(codes.PermissionDenied, "permission denied for method %q, user does not have permission %q", fullMethod, p)
+		}
 	}
 
 	return nil
@@ -121,6 +147,40 @@ func getDatabaseMessage(ctx context.Context, s *store.Store, databaseResourceNam
 		return nil, errors.Wrapf(err, "database %q not found", databaseResourceName)
 	}
 	return database, nil
+}
+
+func (*ACLInterceptor) getProjectIDsForIssueService(_ context.Context, req any) ([]string, error) {
+	var issueNames []string
+
+	switch r := req.(type) {
+	case *v1pb.GetIssueRequest:
+		issueNames = append(issueNames, r.GetName())
+	case *v1pb.CreateIssueRequest:
+		issueNames = append(issueNames, r.GetIssue().GetName())
+	case *v1pb.UpdateIssueRequest:
+		issueNames = append(issueNames, r.GetIssue().GetName())
+	case *v1pb.CreateIssueCommentRequest:
+		issueNames = append(issueNames, r.GetParent())
+	case *v1pb.UpdateIssueCommentRequest:
+		issueNames = append(issueNames, r.GetParent())
+	case *v1pb.BatchUpdateIssuesStatusRequest:
+		issueNames = append(issueNames, r.GetIssues()...)
+	}
+
+	projectIDsMap := make(map[string]struct{})
+	for _, issueName := range issueNames {
+		projectID, _, err := common.GetProjectIDIssueID(issueName)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get projectID from %q", issueName)
+		}
+		projectIDsMap[projectID] = struct{}{}
+	}
+
+	var projectIDs []string
+	for projectID := range projectIDsMap {
+		projectIDs = append(projectIDs, projectID)
+	}
+	return projectIDs, nil
 }
 
 func (in *ACLInterceptor) getProjectIDsForDatabaseService(ctx context.Context, req any) ([]string, error) {
