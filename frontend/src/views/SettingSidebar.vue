@@ -88,15 +88,6 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
           type: "route",
         },
         {
-          title: t("common.projects"),
-          path: "/setting/project",
-          hide: !hasSettingPagePermission(
-            "setting.workspace.project",
-            currentUserV1.value.userRole
-          ),
-          type: "route",
-        },
-        {
           title: t("settings.sidebar.subscription"),
           path: "/setting/subscription",
           type: "route",
