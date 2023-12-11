@@ -31,6 +31,7 @@ type RepositoryMessage struct {
 	SchemaPathTemplate string
 	SheetPathTemplate  string
 	EnableSQLReviewCI  bool
+	EnableCD           bool
 	ExternalID         string
 	ExternalWebhookID  string
 	WebhookURLHost     string
@@ -62,6 +63,7 @@ type PatchRepositoryMessage struct {
 	SchemaPathTemplate *string
 	SheetPathTemplate  *string
 	EnableSQLReviewCI  *bool
+	EnableCD           *bool
 	AccessToken        *string
 	ExpiresTs          *int64
 	RefreshToken       *string
@@ -213,6 +215,7 @@ func (s *Store) createRepositoryImplV2(ctx context.Context, tx *Tx, create *Repo
 			schema_path_template,
 			sheet_path_template,
 			enable_sql_review_ci,
+			enable_cd,
 			external_id,
 			external_webhook_id,
 			webhook_url_host,
@@ -222,8 +225,8 @@ func (s *Store) createRepositoryImplV2(ctx context.Context, tx *Tx, create *Repo
 			expires_ts,
 			refresh_token
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
-		RETURNING id, vcs_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, schema_path_template, sheet_path_template, enable_sql_review_ci, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
+		RETURNING id, vcs_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, schema_path_template, sheet_path_template, enable_sql_review_ci, enable_cd, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
 	`
 	if err := tx.QueryRowContext(ctx, query,
 		creatorID,
@@ -239,6 +242,7 @@ func (s *Store) createRepositoryImplV2(ctx context.Context, tx *Tx, create *Repo
 		create.SchemaPathTemplate,
 		create.SheetPathTemplate,
 		false, /* EnableSQLReviewCI */
+		true,  /* EnableCD */
 		create.ExternalID,
 		create.ExternalWebhookID,
 		create.WebhookURLHost,
@@ -259,6 +263,7 @@ func (s *Store) createRepositoryImplV2(ctx context.Context, tx *Tx, create *Repo
 		&repository.SchemaPathTemplate,
 		&repository.SheetPathTemplate,
 		&repository.EnableSQLReviewCI,
+		&repository.EnableCD,
 		&repository.ExternalID,
 		&repository.ExternalWebhookID,
 		&repository.WebhookURLHost,
@@ -309,6 +314,7 @@ func (*Store) listRepositoryImplV2(ctx context.Context, tx *Tx, find *FindReposi
 			schema_path_template,
 			sheet_path_template,
 			enable_sql_review_ci,
+			enable_cd,
 			external_id,
 			external_webhook_id,
 			webhook_url_host,
@@ -344,6 +350,7 @@ func (*Store) listRepositoryImplV2(ctx context.Context, tx *Tx, find *FindReposi
 			&repository.SchemaPathTemplate,
 			&repository.SheetPathTemplate,
 			&repository.EnableSQLReviewCI,
+			&repository.EnableCD,
 			&repository.ExternalID,
 			&repository.ExternalWebhookID,
 			&repository.WebhookURLHost,
@@ -396,6 +403,9 @@ func (*Store) patchRepositoryImplV2(ctx context.Context, tx *Tx, patch *PatchRep
 	}
 	if v := patch.EnableSQLReviewCI; v != nil {
 		set, args = append(set, fmt.Sprintf("enable_sql_review_ci = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.EnableCD; v != nil {
+		set, args = append(set, fmt.Sprintf("enable_cd = $%d", len(args)+1)), append(args, *v)
 	}
 
 	where := []string{}
