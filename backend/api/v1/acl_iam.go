@@ -24,7 +24,6 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 	case
 		v1pb.DatabaseService_ListSlowQueries_FullMethodName,
 		v1pb.DatabaseService_ListDatabases_FullMethodName,
-		v1pb.DatabaseService_SearchDatabases_FullMethodName,
 		v1pb.DatabaseService_DiffSchema_FullMethodName:
 
 	// below are "workspace-level" permissions.
